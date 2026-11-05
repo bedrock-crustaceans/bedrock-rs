@@ -6,7 +6,6 @@ use bedrock_addon_core::diagnostic::Location;
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Phase,
 };
-use bedrock_addon_core::json::StrictString;
 use bedrock_addon_core::molang::{
     Molang, MolangFieldSpec, MolangFields, MolangVisitor, ReaderKind, Step,
 };
@@ -71,9 +70,9 @@ pub(crate) const FILE: &str = "\u{0}file";
 
 /// The text the loader builds for `initialize` or `pre_animation`: the strings joined with no
 /// separator. `None` when the member is absent or the text is empty.
-pub(crate) fn joined(parts: Option<&[StrictString]>) -> Option<String> {
+pub(crate) fn joined(parts: Option<&[String]>) -> Option<String> {
     // An array is read as its string elements concatenated with no separator.
-    let text: String = parts?.iter().map(|part| part.0.as_str()).collect();
+    let text: String = parts?.iter().map(String::as_str).collect();
     (!text.is_empty()).then_some(text)
 }
 

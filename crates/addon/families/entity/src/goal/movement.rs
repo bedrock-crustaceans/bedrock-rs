@@ -1,11 +1,12 @@
 //! Movement goals: wandering, following, fleeing and moving to places.
 
+use crate::component::descriptor_tags;
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
 };
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
-use bedrock_addon_core::schema::{self, GoalMeta, Schema, SchemaCx, SchemaFields};
+use bedrock_addon_core::schema::{self, GoalMeta, Schema};
 use bedrock_addon_core::shared::{EventTrigger, Filter, FloatRange, IntRange, ItemDescriptor};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::version::known;
@@ -43,58 +44,45 @@ impl Goal for BreakDoor {
 /// `minecraft:behavior.circle_around_anchor`: causes an entity to circle around an anchor point placed near a point or target.
 // `behavior.circle_around_anchor`: typed from 1.21.100.
 #[doc(alias = "minecraft:behavior.circle_around_anchor")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct CircleAroundAnchor {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `angle_change`: number of degrees to change this entity's facing by, when the entity selects its next anchor point. Default 15.
+    #[facet(schema::fallback = 15.0)]
     pub angle_change: Option<f32>,
     /// `goal_radius`: maximum distance from the anchor-point in which this entity considers itself to have reached the anchor point. This is to prevent the entity from bouncing back and forth trying to reach a specific spot. Default 0.5.
+    #[facet(schema::fallback = 0.5)]
     pub goal_radius: Option<f32>,
     /// `height_above_target_range`: the number of blocks above the target that the next anchor point can be set. This value is used only when the entity is tracking a target. Default 0 to 0.
     pub height_above_target_range: Option<FloatRange>,
     /// `height_adjustment_chance`: percent chance to determine how often to increase or decrease the current height around the anchor point. 1 = 100%. `height_change_chance` is deprecated and has been replaced with `height_adjustment_chance`. Default 0.002857.
+    #[facet(schema::fallback = 0.002_857)]
     pub height_adjustment_chance: Option<f32>,
     /// `height_offset_range`: vertical distance from the anchor point this entity must stay within, upon a successful height adjustment. Default 0 to 0.
     pub height_offset_range: Option<FloatRange>,
     /// `radius_adjustment_chance`: percent chance to determine how often to increase the size of the current movement radius around the anchor point. 1 = 100%. `radius_change_chance` is deprecated and has been replaced with `radius_adjustment_chance`. Default 0.004.
+    #[facet(schema::fallback = 0.004)]
     pub radius_adjustment_chance: Option<f32>,
     /// `radius_change`: the number of blocks to increase the current movement radius by, upon successful `radius_adjustment_chance`. If the current radius increases over the range maximum, the current radius will be set back to the range minimum and the entity will change between clockwise and counter-clockwise movement. Default 1.
+    #[facet(schema::fallback = 1.0)]
     pub radius_change: Option<f32>,
     /// `radius_range`: horizontal distance from the anchor point this entity must stay within upon a successful radius adjustment. Default 5 to 15.
     pub radius_range: Option<FloatRange>,
     /// `speed_multiplier`: multiplies the speed at which this entity travels to its next desired position. Default 1.
+    #[facet(schema::fallback = 1.0)]
     pub speed_multiplier: Option<f32>,
 }
 
 impl CircleAroundAnchor {
-    /// `priority`, or its default 0.
-    pub fn priority(&self) -> i32 {
-        self.priority.unwrap_or(0)
-    }
-
-    /// `angle_change`, or its default 15.
-    pub fn angle_change(&self) -> f32 {
-        self.angle_change.unwrap_or(15.0)
-    }
-
-    /// `goal_radius`, or its default 0.5.
-    pub fn goal_radius(&self) -> f32 {
-        self.goal_radius.unwrap_or(0.5)
-    }
-
     /// `height_above_target_range`, or its default 0 to 0.
     pub fn height_above_target_range(&self) -> (f32, f32) {
         self.height_above_target_range
             .map_or((0.0, 0.0), |range| range.resolve(0.0, 0.0))
-    }
-
-    /// `height_adjustment_chance`, or its default 0.002857.
-    pub fn height_adjustment_chance(&self) -> f32 {
-        self.height_adjustment_chance.unwrap_or(0.002_857)
     }
 
     /// `height_offset_range`, or its default 0 to 0.
@@ -103,30 +91,15 @@ impl CircleAroundAnchor {
             .map_or((0.0, 0.0), |range| range.resolve(0.0, 0.0))
     }
 
-    /// `radius_adjustment_chance`, or its default 0.004.
-    pub fn radius_adjustment_chance(&self) -> f32 {
-        self.radius_adjustment_chance.unwrap_or(0.004)
-    }
-
-    /// `radius_change`, or its default 1.
-    pub fn radius_change(&self) -> f32 {
-        self.radius_change.unwrap_or(1.0)
-    }
-
     /// `radius_range`, or its default 5 to 15.
     pub fn radius_range(&self) -> (f32, f32) {
         self.radius_range
             .map_or((5.0, 15.0), |range| range.resolve(5.0, 15.0))
     }
-
-    /// `speed_multiplier`, or its default 1.
-    pub fn speed_multiplier(&self) -> f32 {
-        self.speed_multiplier.unwrap_or(1.0)
-    }
 }
 
 impl Goal for CircleAroundAnchor {
-    const TYPED: FormatVersion = known::V1_21_100;
+    const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
         c.base(&mut self.priority);
@@ -138,8 +111,6 @@ impl Goal for CircleAroundAnchor {
         c.range("radius_range", &mut self.radius_range);
     }
 }
-
-bedrock_addon_core::impl_no_molang!(CircleAroundAnchor);
 
 /// `minecraft:behavior.controlled_by_player`: allows the entity to be controlled by a player which is holding the item specified in `minecraft:item_controllable` component's `control_items` field (required). Also requires the `minecraft:movement` component, and the `minecraft:rideable` component. On every tick, the entity will attempt to rotate towards where the player is facing with the control item whilst simultaneously moving forward.
 // `behavior.controlled_by_player`: typed from 1.21.100.
@@ -460,124 +431,70 @@ impl Goal for Float {
 /// `minecraft:behavior.float_wander`: allows the mob to float around like the Ghast.
 // `behavior.float_wander`: typed from 1.26.40.
 #[doc(alias = "minecraft:behavior.float_wander")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct FloatWander {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `additional_collision_buffer`: if true, the mob will have an additional buffer zone around it to avoid collisions with blocks when picking a position to wander to. Default `false`.
+    #[facet(schema::fallback = false)]
     pub additional_collision_buffer: Option<bool>,
     /// `allow_navigating_through_liquids`: if true allows the mob to navigate through liquids on its way to the target position. Default `false`.
+    #[facet(schema::fallback = false)]
     pub allow_navigating_through_liquids: Option<bool>,
     /// `float_duration`: range of time in seconds the mob will float around before landing and choosing to do something else. Default 0 to 0.
     pub float_duration: Option<FloatRange>,
     /// `float_wander_has_move_control`: if true, the `MoveControl` flag will be added to the behavior which means that it can no longer be active at the same time as other behaviors with `MoveControl`. Default `true`.
+    #[facet(schema::fallback = true)]
     pub float_wander_has_move_control: Option<bool>,
     /// `must_reach`: if true, the point has to be reachable to be a valid target. Default `false`.
+    #[facet(schema::fallback = false)]
     pub must_reach: Option<bool>,
     /// `navigate_around_surface`: if true, will prioritize finding random positions in the vicinity of surfaces, `i.e`. blocks that are not Air or Liquid. Default `false`.
+    #[facet(schema::fallback = false)]
     pub navigate_around_surface: Option<bool>,
     /// `random_reselect`: if true, the mob will randomly pick a new point while moving to the previously selected one. Default `false`.
+    #[facet(schema::fallback = false)]
     pub random_reselect: Option<bool>,
     /// `surface_xz_dist`: the horizontal distance in blocks that the goal will check for a surface from a candidate position. Only valid when `navigate_around_surface` is true. Default 8.
+    #[facet(schema::fallback = 8)]
     pub surface_xz_dist: Option<i32>,
     /// `surface_y_dist`: the vertical distance in blocks that the goal will check for a surface from a candidate position. Only valid when `navigate_around_surface` is true. Default 8.
+    #[facet(schema::fallback = 8)]
     pub surface_y_dist: Option<i32>,
     /// `use_home_position_restriction`: if true, the mob will respect home position restrictions when choosing new target positions. If false, it will choose target position without considering home restrictions. Default `true`.
+    #[facet(schema::fallback = true)]
     pub use_home_position_restriction: Option<bool>,
     /// `xz_dist`: distance in blocks on ground that the mob will look for a new spot to move to. Must be at least 1. Default 10.
+    #[facet(schema::fallback = 10)]
     pub xz_dist: Option<i32>,
     /// `y_dist`: distance in blocks that the mob will look up or down for a new spot to move to. Must be at least 1. Default 7.
+    #[facet(schema::fallback = 7)]
     pub y_dist: Option<i32>,
     /// `y_offset`: height in blocks to add to the selected target position. Default 0.
+    #[facet(schema::fallback = 0.0)]
     pub y_offset: Option<f32>,
 }
 
 impl FloatWander {
-    /// `priority`, or its default 0.
-    pub fn priority(&self) -> i32 {
-        self.priority.unwrap_or(0)
-    }
-
-    /// `additional_collision_buffer`, or its default `false`.
-    pub fn additional_collision_buffer(&self) -> bool {
-        self.additional_collision_buffer.is_some_and(|v| v)
-    }
-
-    /// `allow_navigating_through_liquids`, or its default `false`.
-    pub fn allow_navigating_through_liquids(&self) -> bool {
-        self.allow_navigating_through_liquids.is_some_and(|v| v)
-    }
-
     /// `float_duration`, or its default 0 to 0.
     pub fn float_duration(&self) -> (f32, f32) {
         self.float_duration
             .map_or((0.0, 0.0), |range| range.resolve(0.0, 0.0))
     }
-
-    /// `float_wander_has_move_control`, or its default `true`.
-    pub fn float_wander_has_move_control(&self) -> bool {
-        self.float_wander_has_move_control.is_none_or(|v| v)
-    }
-
-    /// `must_reach`, or its default `false`.
-    pub fn must_reach(&self) -> bool {
-        self.must_reach.is_some_and(|v| v)
-    }
-
-    /// `navigate_around_surface`, or its default `false`.
-    pub fn navigate_around_surface(&self) -> bool {
-        self.navigate_around_surface.is_some_and(|v| v)
-    }
-
-    /// `random_reselect`, or its default `false`.
-    pub fn random_reselect(&self) -> bool {
-        self.random_reselect.is_some_and(|v| v)
-    }
-
-    /// `surface_xz_dist`, or its default 8.
-    pub fn surface_xz_dist(&self) -> i32 {
-        self.surface_xz_dist.unwrap_or(8)
-    }
-
-    /// `surface_y_dist`, or its default 8.
-    pub fn surface_y_dist(&self) -> i32 {
-        self.surface_y_dist.unwrap_or(8)
-    }
-
-    /// `use_home_position_restriction`, or its default `true`.
-    pub fn use_home_position_restriction(&self) -> bool {
-        self.use_home_position_restriction.is_none_or(|v| v)
-    }
-
-    /// `xz_dist`, or its default 10.
-    pub fn xz_dist(&self) -> i32 {
-        self.xz_dist.unwrap_or(10)
-    }
-
-    /// `y_dist`, or its default 7.
-    pub fn y_dist(&self) -> i32 {
-        self.y_dist.unwrap_or(7)
-    }
-
-    /// `y_offset`, or its default 0.
-    pub fn y_offset(&self) -> f32 {
-        self.y_offset.unwrap_or(0.0)
-    }
 }
 
 impl Goal for FloatWander {
-    const TYPED: FormatVersion = known::V1_26_40;
+    const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
         c.base(&mut self.priority);
         c.object_range("float_duration", &mut self.float_duration);
     }
 }
-
-bedrock_addon_core::impl_no_molang!(FloatWander);
 
 /// `minecraft:behavior.follow_caravan`: allows the mob to follow mobs that are in a caravan.
 // `behavior.follow_caravan`: typed from 1.26.30.
@@ -612,41 +529,35 @@ impl Goal for FollowCaravan {
 /// `minecraft:behavior.follow_mob`: allows the mob to follow other mobs.
 // `behavior.follow_mob`: typed from 1.26.50.
 #[doc(alias = "minecraft:behavior.follow_mob")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct FollowMob {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `abort_navigation_on_stop`: whether the mob stops its navigation when the goal stops. Default `true`; the 1.26.50 fixer writes `false` into older documents. The newest struct deprecates the name: it is read from an older document and never written.
-    #[facet(default, skip_serializing_if = never_written)]
+    #[facet(schema::fallback = true, skip_serializing_if = never_written)]
     pub abort_navigation_on_stop: Option<bool>,
     /// `filters`: if non-empty, provides criteria for filtering which nearby Mobs can be followed. If empty default criteria will be used, which will exclude Players, Squid variants, Fish variants, Tadpoles, Dolphins, and mobs of the same type as the owner of the Goal.
     pub filters: Option<Filter>,
     /// `preferred_actor_type`: the type of actor to prefer following. If left unspecified, a random actor among those in range will be chosen. Default `""`.
     pub preferred_actor_type: Option<String>,
     /// `search_range`: the distance in blocks it will look for a mob to follow. Default 0.
+    #[facet(schema::fallback = 0)]
     pub search_range: Option<i32>,
     /// `speed_multiplier`: movement speed multiplier of the mob when using this AI Goal. Default 1.
+    #[facet(schema::fallback = 1.0)]
     pub speed_multiplier: Option<f32>,
     /// `stop_distance`: the distance in blocks this mob stops from the mob it is following.
     pub stop_distance: Option<f32>,
     /// `use_home_position_restriction`: if true, the mob will respect the '`minecraft:home`' component's '`restriction_radius`' field when choosing a target to follow. If false, it will choose target position without considering home restrictions. Default `false`.
+    #[facet(schema::fallback = false)]
     pub use_home_position_restriction: Option<bool>,
 }
 
 impl FollowMob {
-    /// `priority`, or its default 0.
-    pub fn priority(&self) -> i32 {
-        self.priority.unwrap_or(0)
-    }
-
-    /// `abort_navigation_on_stop`, or its default `true`.
-    pub fn abort_navigation_on_stop(&self) -> bool {
-        self.abort_navigation_on_stop.is_none_or(|v| v)
-    }
-
     /// `preferred_actor_type`, or its default `""`.
     pub fn preferred_actor_type(&self) -> &str {
         self.preferred_actor_type
@@ -654,29 +565,14 @@ impl FollowMob {
             .map_or("", |v| v.as_str())
     }
 
-    /// `search_range`, or its default 0.
-    pub fn search_range(&self) -> i32 {
-        self.search_range.unwrap_or(0)
-    }
-
-    /// `speed_multiplier`, or its default 1.
-    pub fn speed_multiplier(&self) -> f32 {
-        self.speed_multiplier.unwrap_or(1.0)
-    }
-
     /// `stop_distance`, when written.
     pub fn stop_distance(&self) -> Option<f32> {
         self.stop_distance
     }
-
-    /// `use_home_position_restriction`, or its default `false`.
-    pub fn use_home_position_restriction(&self) -> bool {
-        self.use_home_position_restriction.is_some_and(|v| v)
-    }
 }
 
 impl Goal for FollowMob {
-    const TYPED: FormatVersion = known::V1_26_50;
+    const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
         c.base(&mut self.priority);
@@ -699,8 +595,6 @@ impl Goal for FollowMob {
 fn never_written(_: &Option<bool>) -> bool {
     true
 }
-
-bedrock_addon_core::impl_no_molang!(FollowMob);
 
 /// `minecraft:behavior.follow_owner`: allows a mob to follow the player that owns it.
 // `behavior.follow_owner`: typed from 1.26.20.
@@ -781,61 +675,35 @@ impl Goal for FollowParent {
 /// `minecraft:behavior.follow_target_leader`: allows mob to move towards its target leader.
 // `behavior.follow_target_leader`: typed from 1.26.30.
 #[doc(alias = "minecraft:behavior.follow_target_leader")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct FollowTargetLeader {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `always_look_for_leader`: if true, the mob will always search for a valid leader to follow if none is found or current leader is not valid anymore. Default `false`.
+    #[facet(schema::fallback = false)]
     pub always_look_for_leader: Option<bool>,
     /// `follow_distance`: defines the distance in blocks the mob will stay from its target while following. Default 0.
+    #[facet(schema::fallback = 0.0)]
     pub follow_distance: Option<f32>,
     /// `leader_filters`: the filters to use when determining if a mob is a suitable leader or not.
     pub leader_filters: Option<Filter>,
     /// `search_cooldown`: number of ticks that must pass before a new search is initiated after a target is not found, lost, or becomes invalid. Default 20.
+    #[facet(schema::fallback = 20)]
     pub search_cooldown: Option<i32>,
     /// `speed_multiplier`: movement speed multiplier of the mob when using this AI Goal. Default 1.
+    #[facet(schema::fallback = 1.0)]
     pub speed_multiplier: Option<f32>,
     /// `within_radius`: defines the maximum distance in blocks a mob can get from its target leader before giving up trying to follow it. Default 0.
+    #[facet(schema::fallback = 0.0)]
     pub within_radius: Option<f32>,
 }
 
-impl FollowTargetLeader {
-    /// `priority`, or its default 0.
-    pub fn priority(&self) -> i32 {
-        self.priority.unwrap_or(0)
-    }
-
-    /// `always_look_for_leader`, or its default `false`.
-    pub fn always_look_for_leader(&self) -> bool {
-        self.always_look_for_leader.is_some_and(|v| v)
-    }
-
-    /// `follow_distance`, or its default 0.
-    pub fn follow_distance(&self) -> f32 {
-        self.follow_distance.unwrap_or(0.0)
-    }
-
-    /// `search_cooldown`, or its default 20.
-    pub fn search_cooldown(&self) -> i32 {
-        self.search_cooldown.unwrap_or(20)
-    }
-
-    /// `speed_multiplier`, or its default 1.
-    pub fn speed_multiplier(&self) -> f32 {
-        self.speed_multiplier.unwrap_or(1.0)
-    }
-
-    /// `within_radius`, or its default 0.
-    pub fn within_radius(&self) -> f32 {
-        self.within_radius.unwrap_or(0.0)
-    }
-}
-
 impl Goal for FollowTargetLeader {
-    const TYPED: FormatVersion = known::V1_26_30;
+    const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
 
     // The game's legacy goal reader logs this when `leader_filters` is present but its filter
     // group fails to parse, at the warning level, and keeps the goal.
@@ -860,8 +728,6 @@ impl Goal for FollowTargetLeader {
         c.filter("leader_filters", self.leader_filters.as_ref());
     }
 }
-
-bedrock_addon_core::impl_no_molang!(FollowTargetLeader);
 
 /// `minecraft:behavior.go_home`: allows the mob to move back to the position they were spawned.
 // `behavior.go_home`: typed from 1.26.20.
@@ -1001,85 +867,55 @@ impl Goal for Hover {
 /// `minecraft:behavior.jump_to_block`: allows an entity to jump to another random block.
 // `behavior.jump_to_block`: typed from 1.26.20.
 #[doc(alias = "minecraft:behavior.jump_to_block")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct JumpToBlock {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `cooldown_range`: minimum and maximum cooldown time-range (positive, in seconds) between each attempted jump. Default 1e+01 to 2e+01.
     pub cooldown_range: Option<FloatRange>,
     /// `forbidden_blocks`: blocks that the mob can't jump to.
+    #[facet(schema::molang_with = descriptor_tags)]
     pub forbidden_blocks: Option<Vec<ItemDescriptor>>,
     /// `max_velocity`: the maximum velocity with which the mob can jump. Default 1.5.
+    #[facet(schema::fallback = 1.5)]
     pub max_velocity: Option<f32>,
     /// `minimum_distance`: the minimum distance (in blocks) from the mob to a block, in order to consider jumping to it. Default 2.
+    #[facet(schema::fallback = 2)]
     pub minimum_distance: Option<i32>,
     /// `minimum_path_length`: the minimum length (in blocks) of the mobs path to a block, in order to consider jumping to it. Default 5.
+    #[facet(schema::fallback = 5)]
     pub minimum_path_length: Option<i32>,
     /// `preferred_blocks`: blocks that the mob prefers jumping to.
+    #[facet(schema::molang_with = descriptor_tags)]
     pub preferred_blocks: Option<Vec<ItemDescriptor>>,
     /// `preferred_blocks_chance`: chance (between 0.0 and 1.0) that the mob will jump to a preferred block, if in range. Only matters if preferred blocks are defined. Default 1; 0 to 1.
+    #[facet(schema::fallback = 1.0)]
     pub preferred_blocks_chance: Option<f32>,
     /// `scale_factor`: the scalefactor of the bounding box of the mob while it is jumping. Default 0.7.
+    #[facet(schema::fallback = 0.7)]
     pub scale_factor: Option<f32>,
     /// `search_height`: the height (in blocks, in range \[1, 15\]) of the search box, centered around the mob. Default 10; 1 to 15.
+    #[facet(schema::fallback = 10)]
     pub search_height: Option<i32>,
     /// `search_width`: the width (in blocks, in range \[1, 15\]) of the search box, centered around the mob. Default 8; 1 to 15.
+    #[facet(schema::fallback = 8)]
     pub search_width: Option<i32>,
 }
 
 impl JumpToBlock {
-    /// `priority`, or its default 0.
-    pub fn priority(&self) -> i32 {
-        self.priority.unwrap_or(0)
-    }
-
     /// `cooldown_range`, or its default 1e+01 to 2e+01.
     pub fn cooldown_range(&self) -> (f32, f32) {
         self.cooldown_range
             .map_or((1.0e1, 2.0e1), |range| range.resolve(1.0e1, 2.0e1))
     }
-
-    /// `max_velocity`, or its default 1.5.
-    pub fn max_velocity(&self) -> f32 {
-        self.max_velocity.unwrap_or(1.5)
-    }
-
-    /// `minimum_distance`, or its default 2.
-    pub fn minimum_distance(&self) -> i32 {
-        self.minimum_distance.unwrap_or(2)
-    }
-
-    /// `minimum_path_length`, or its default 5.
-    pub fn minimum_path_length(&self) -> i32 {
-        self.minimum_path_length.unwrap_or(5)
-    }
-
-    /// `preferred_blocks_chance`, or its default 1.
-    pub fn preferred_blocks_chance(&self) -> f32 {
-        self.preferred_blocks_chance.unwrap_or(1.0)
-    }
-
-    /// `scale_factor`, or its default 0.7.
-    pub fn scale_factor(&self) -> f32 {
-        self.scale_factor.unwrap_or(0.7)
-    }
-
-    /// `search_height`, or its default 10.
-    pub fn search_height(&self) -> i32 {
-        self.search_height.unwrap_or(10)
-    }
-
-    /// `search_width`, or its default 8.
-    pub fn search_width(&self) -> i32 {
-        self.search_width.unwrap_or(8)
-    }
 }
 
 impl Goal for JumpToBlock {
-    const TYPED: FormatVersion = known::V1_26_20;
+    const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
         c.base(&mut self.priority);
@@ -1097,13 +933,6 @@ impl Goal for JumpToBlock {
             Bound::MinMax(1, 15),
         );
         c.int("search_width", &mut self.search_width, Bound::MinMax(1, 15));
-    }
-}
-
-impl MolangFields for JumpToBlock {
-    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
-        visit_items(visitor, "forbidden_blocks", &mut self.forbidden_blocks);
-        visit_items(visitor, "preferred_blocks", &mut self.preferred_blocks);
     }
 }
 
@@ -1146,69 +975,45 @@ impl Goal for MountPathing {
 /// `minecraft:behavior.move_around_target`: allows an entity to move around a `target.If` the entity is too close(`i.e.closer` than destination range min and height difference limit) it will try to move away from its `target.If` the entity is too far away from its target it will try to move closer to a random position within the destination `range.A` randomized amount of those positions will be behind the target, and the spread can be tweaked with '`destination_pos_spread_degrees`'.
 // `behavior.move_around_target`: typed from 1.26.20.
 #[doc(alias = "minecraft:behavior.move_around_target")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct MoveAroundTarget {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `destination_pos_spread_degrees`: this angle (in degrees) is used for controlling the spread when picking a destination position behind the target. A zero spread angle means the destination position will be straight behind the target with no variance. A 90 degree spread angle means the destination position can be up to 45 degrees to the left and to the right of the position straight behind the target's view direction. Default 9e+01.
+    #[facet(schema::fallback = 9.0e1)]
     pub destination_pos_spread_degrees: Option<f32>,
     /// `destination_position_range`: the range of distances from the target entity within which the goal should look for a position to move the owner entity to. Default 4 to 8.
     pub destination_position_range: Option<FloatRange>,
     /// `filters`: conditions that need to be met for the behavior to start.
     pub filters: Option<Filter>,
     /// `height_difference_limit`: distance in height (in blocks) between the owner entity and the target has to be less than this value when owner checks if it is too close and should move away from the target. This value needs to be bigger than zero for the move away logic to trigger. Default 1e+01; at least 0.
+    #[facet(schema::fallback = 1.0e1)]
     pub height_difference_limit: Option<f32>,
     /// `horizontal_search_distance`: horizontal search distance (in blocks) when searching for a position to move away from target. Default 5; at least 0.
+    #[facet(schema::fallback = 5)]
     pub horizontal_search_distance: Option<i32>,
     /// `movement_speed`: the speed with which the entity should move to its target position. Default 0.6.
+    #[facet(schema::fallback = 0.6)]
     pub movement_speed: Option<f32>,
     /// `vertical_search_distance`: vertical search distance (in blocks) when searching for a position to move away from target. Default 5; at least 0.
+    #[facet(schema::fallback = 5)]
     pub vertical_search_distance: Option<i32>,
 }
 
 impl MoveAroundTarget {
-    /// `priority`, or its default 0.
-    pub fn priority(&self) -> i32 {
-        self.priority.unwrap_or(0)
-    }
-
-    /// `destination_pos_spread_degrees`, or its default 9e+01.
-    pub fn destination_pos_spread_degrees(&self) -> f32 {
-        self.destination_pos_spread_degrees.unwrap_or(9.0e1)
-    }
-
     /// `destination_position_range`, or its default 4 to 8.
     pub fn destination_position_range(&self) -> (f32, f32) {
         self.destination_position_range
             .map_or((4.0, 8.0), |range| range.resolve(4.0, 8.0))
     }
-
-    /// `height_difference_limit`, or its default 1e+01.
-    pub fn height_difference_limit(&self) -> f32 {
-        self.height_difference_limit.unwrap_or(1.0e1)
-    }
-
-    /// `horizontal_search_distance`, or its default 5.
-    pub fn horizontal_search_distance(&self) -> i32 {
-        self.horizontal_search_distance.unwrap_or(5)
-    }
-
-    /// `movement_speed`, or its default 0.6.
-    pub fn movement_speed(&self) -> f32 {
-        self.movement_speed.unwrap_or(0.6)
-    }
-
-    /// `vertical_search_distance`, or its default 5.
-    pub fn vertical_search_distance(&self) -> i32 {
-        self.vertical_search_distance.unwrap_or(5)
-    }
 }
 
 impl Goal for MoveAroundTarget {
-    const TYPED: FormatVersion = known::V1_26_20;
+    const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
         c.base(&mut self.priority);
@@ -1234,8 +1039,6 @@ impl Goal for MoveAroundTarget {
         );
     }
 }
-
-bedrock_addon_core::impl_no_molang!(MoveAroundTarget);
 
 /// `minecraft:behavior.move_indoors`: allows this entity to move indoors.
 // `behavior.move_indoors`: typed from 1.26.20.
@@ -1977,75 +1780,49 @@ impl Goal for RandomFly {
 /// `minecraft:behavior.random_hover`: allows the mob to hover around randomly, close to the surface.
 // `behavior.random_hover`: typed from 1.26.20.
 #[doc(alias = "minecraft:behavior.random_hover")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct RandomHover {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `hover_height`: the height above the surface which the mob will try to maintain. Default 0 to 0.
     pub hover_height: Option<IntRange>,
     /// `interval`: a random value to determine when to randomly move somewhere. This has a 1/interval chance to choose this goal. Default 120.
+    #[facet(schema::fallback = 120)]
     pub interval: Option<i32>,
     /// `speed_multiplier`: movement speed multiplier of the mob when using this AI Goal. Default 1.
+    #[facet(schema::fallback = 1.0)]
     pub speed_multiplier: Option<f32>,
     /// `xz_dist`: distance in blocks on ground that the mob will look for a new spot to move to. Must be at least 1. Default 10.
+    #[facet(schema::fallback = 10)]
     pub xz_dist: Option<i32>,
     /// `y_dist`: distance in blocks that the mob will look up or down for a new spot to move to. Must be at least 1. Default 7.
+    #[facet(schema::fallback = 7)]
     pub y_dist: Option<i32>,
     /// `y_offset`: height in blocks to add to the selected target position. Default 0.
+    #[facet(schema::fallback = 0.0)]
     pub y_offset: Option<f32>,
 }
 
 impl RandomHover {
-    /// `priority`, or its default 0.
-    pub fn priority(&self) -> i32 {
-        self.priority.unwrap_or(0)
-    }
-
     /// `hover_height`, or its default 0 to 0.
     pub fn hover_height(&self) -> (i32, i32) {
         self.hover_height
             .map_or((0, 0), |range| range.resolve(0, 0))
     }
-
-    /// `interval`, or its default 120.
-    pub fn interval(&self) -> i32 {
-        self.interval.unwrap_or(120)
-    }
-
-    /// `speed_multiplier`, or its default 1.
-    pub fn speed_multiplier(&self) -> f32 {
-        self.speed_multiplier.unwrap_or(1.0)
-    }
-
-    /// `xz_dist`, or its default 10.
-    pub fn xz_dist(&self) -> i32 {
-        self.xz_dist.unwrap_or(10)
-    }
-
-    /// `y_dist`, or its default 7.
-    pub fn y_dist(&self) -> i32 {
-        self.y_dist.unwrap_or(7)
-    }
-
-    /// `y_offset`, or its default 0.
-    pub fn y_offset(&self) -> f32 {
-        self.y_offset.unwrap_or(0.0)
-    }
 }
 
 impl Goal for RandomHover {
-    const TYPED: FormatVersion = known::V1_26_20;
+    const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
         c.base(&mut self.priority);
         c.range("hover_height", &mut self.hover_height);
     }
 }
-
-bedrock_addon_core::impl_no_molang!(RandomHover);
 
 /// `minecraft:behavior.random_stroll`: allows a mob to randomly stroll around.
 // `behavior.random_stroll`: typed from 1.26.20.
@@ -2564,6 +2341,8 @@ impl Goal for SwimWithEntity {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
+        // Bounds by hand, not schema::min/max: a bound here follows another check, and the
+        // derived check runs first, which would reorder the findings.
         c.base(&mut self.priority);
         c.float(
             "catch_up_multiplier",
@@ -2605,33 +2384,23 @@ impl Goal for SwimWithEntity {
 /// `minecraft:behavior.teleport_to_owner`: allows an entity to teleport to its owner.
 // `behavior.teleport_to_owner`: typed from 1.26.10.
 #[doc(alias = "minecraft:behavior.teleport_to_owner")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct TeleportToOwner {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `cooldown`: the time in seconds that must pass for the entity to be able to try to teleport again. Default 1; at least 0.
+    #[facet(schema::fallback = 1.0)]
     pub cooldown: Option<f32>,
     /// `filters`: conditions to be satisfied for the entity to teleport to its owner.
     pub filters: Option<Filter>,
 }
 
-impl TeleportToOwner {
-    /// `priority`, or its default 0.
-    pub fn priority(&self) -> i32 {
-        self.priority.unwrap_or(0)
-    }
-
-    /// `cooldown`, or its default 1.
-    pub fn cooldown(&self) -> f32 {
-        self.cooldown.unwrap_or(1.0)
-    }
-}
-
 impl Goal for TeleportToOwner {
-    const TYPED: FormatVersion = known::V1_26_10;
+    const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
         c.base(&mut self.priority);
@@ -2639,8 +2408,6 @@ impl Goal for TeleportToOwner {
         c.filter("filters", self.filters.as_ref());
     }
 }
-
-bedrock_addon_core::impl_no_molang!(TeleportToOwner);
 
 /// `minecraft:behavior.wither_random_attack_pos_goal`: allows the wither to launch random attacks. Can only be used by the Wither Boss.
 ///
@@ -2694,48 +2461,38 @@ pub(crate) const ALL_IS_NOT_THE_ONLY_SOURCE: &str = "\"all\" is not the only dam
 
 /// `minecraft:behavior.panic`: allows a mob to panic when receiving damage, making it run around and away from the damage source that made it enter this state.
 #[doc(alias = "minecraft:behavior.panic")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct Panic {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `damage_sources`: the list of damage sources that will cause this mob to panic. Default empty (the game then picks its list by the document's version).
     pub damage_sources: Option<Vec<DamageCause>>,
     /// `force`: if true, the mob will stop panicking only when it can no longer find positions to run away to, or when the goal is removed. Default `false`.
+    #[facet(schema::fallback = false)]
     pub force: Option<bool>,
     /// `ignore_mob_damage`: if true, the mob will not panic in response to damage from other mobs. This overrides the damage types in `damage_sources`. Default `false`.
+    #[facet(schema::fallback = false)]
     pub ignore_mob_damage: Option<bool>,
     /// `panic_sound`: sound to play while the mob is panicking. Default `undefined`.
     pub panic_sound: Option<SoundEvent>,
     /// `prefer_water`: if true, the mob will prefer water over land. Default `false`.
+    #[facet(schema::fallback = false)]
     pub prefer_water: Option<bool>,
     /// `sound_interval`: range of random ticks to wait between playing the panic sound. Default 0 to 0.
     pub sound_interval: Option<FloatRange>,
     /// `speed_multiplier`: movement speed multiplier when using this goal. Default 1.
+    #[facet(schema::fallback = 1.0)]
     pub speed_multiplier: Option<f32>,
 }
 
 impl Panic {
-    /// `priority`, or its default 0.
-    pub fn priority(&self) -> i32 {
-        self.priority.unwrap_or(0)
-    }
-
     /// `damage_sources`, or its default (empty).
     pub fn damage_sources(&self) -> &[DamageCause] {
         self.damage_sources.as_deref().unwrap_or_default()
-    }
-
-    /// `force`, or its default `false`.
-    pub fn force(&self) -> bool {
-        self.force.is_some_and(|v| v)
-    }
-
-    /// `ignore_mob_damage`, or its default `false`.
-    pub fn ignore_mob_damage(&self) -> bool {
-        self.ignore_mob_damage.is_some_and(|v| v)
     }
 
     /// `panic_sound`, or its default `undefined`.
@@ -2745,20 +2502,10 @@ impl Panic {
             .map_or(UNDEFINED_SOUND, SoundEvent::name)
     }
 
-    /// `prefer_water`, or its default `false`.
-    pub fn prefer_water(&self) -> bool {
-        self.prefer_water.is_some_and(|v| v)
-    }
-
     /// `sound_interval`, or its default 0 to 0.
     pub fn sound_interval(&self) -> (f32, f32) {
         self.sound_interval
             .map_or((0.0, 0.0), |range| range.resolve(0.0, 0.0))
-    }
-
-    /// `speed_multiplier`, or its default 1.
-    pub fn speed_multiplier(&self) -> f32 {
-        self.speed_multiplier.unwrap_or(1.0)
     }
 }
 
@@ -2800,8 +2547,6 @@ impl Goal for Panic {
         }
     }
 }
-
-bedrock_addon_core::impl_no_molang!(Panic);
 
 /// A warning of the legacy goal parser at the goal's member `key`, with its text (it logs and
 /// loads the goal): the game's warning level for `all` beside others; the caller makes
@@ -2907,15 +2652,12 @@ macro_rules! tempt_base {
             }
         }
 
-        // Its two triggers; it holds core shared types, so it derives no `Schema`.
-        impl SchemaFields for $name {
-            fn check_fields(&mut self, _: &mut SchemaCx<'_>) {}
-
-            fn trigger_members(prefix: &str, out: &mut Vec<String>) {
-                out.push(schema::member(prefix, "on_tempt_end"));
-                out.push(schema::member(prefix, "on_tempt_start"));
-            }
-        }
+        // Its two triggers; its Molang walk (the triggers' legacy conditions) crosses fields,
+        // which the derive's per-field walk cannot, so it derives no `Schema`.
+        crate::trigger_fields!($name {
+            on_tempt_end: Option<EventTrigger>,
+            on_tempt_start: Option<EventTrigger>,
+        });
 
         impl Goal for $name {
             const TYPED: FormatVersion = V1_26_60;
@@ -2955,117 +2697,11 @@ tempt_base!(
     "minecraft:behavior.float_tempt"
 );
 
-crate::hand_fields!(CircleAroundAnchor {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "angle_change": Option<f32>,
-    "goal_radius": Option<f32>,
-    "height_adjustment_chance": Option<f32>,
-    "radius_adjustment_chance": Option<f32>,
-    "radius_change": Option<f32>,
-    "speed_multiplier": Option<f32>,
+crate::trigger_fields!(GoHome {
+    on_failed: Option<Vec<EventTrigger>>,
+    on_home: Option<Vec<EventTrigger>>,
 });
-crate::hand_fields!(FloatWander {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "additional_collision_buffer": Option<bool>,
-    "allow_navigating_through_liquids": Option<bool>,
-    "float_wander_has_move_control": Option<bool>,
-    "must_reach": Option<bool>,
-    "navigate_around_surface": Option<bool>,
-    "random_reselect": Option<bool>,
-    "surface_xz_dist": Option<i32>,
-    "surface_y_dist": Option<i32>,
-    "use_home_position_restriction": Option<bool>,
-    "xz_dist": Option<i32>,
-    "y_dist": Option<i32>,
-    "y_offset": Option<f32>,
-});
-crate::hand_fields!(FollowMob {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "abort_navigation_on_stop": Option<bool>,
-    "preferred_actor_type": Option<String>,
-    "search_range": Option<i32>,
-    "speed_multiplier": Option<f32>,
-    "stop_distance": Option<f32>,
-    "use_home_position_restriction": Option<bool>,
-});
-crate::hand_fields!(FollowTargetLeader {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "always_look_for_leader": Option<bool>,
-    "follow_distance": Option<f32>,
-    "search_cooldown": Option<i32>,
-    "speed_multiplier": Option<f32>,
-    "within_radius": Option<f32>,
-});
-crate::hand_fields!(GoHome {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "calculate_new_path_radius": Option<f32>,
-    "goal_radius": Option<f32>,
-    "interval": Option<i32>,
-    "on_failed": Option<Vec<EventTrigger>>,
-    "on_home": Option<Vec<EventTrigger>>,
-    "speed_multiplier": Option<f32>,
-});
-crate::hand_fields!(JumpToBlock {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "max_velocity": Option<f32>,
-    "minimum_distance": Option<i32>,
-    "minimum_path_length": Option<i32>,
-    "preferred_blocks_chance": Option<f32>,
-    "scale_factor": Option<f32>,
-    "search_height": Option<i32>,
-    "search_width": Option<i32>,
-});
-crate::hand_fields!(MoveAroundTarget {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "destination_pos_spread_degrees": Option<f32>,
-    "height_difference_limit": Option<f32>,
-    "horizontal_search_distance": Option<i32>,
-    "movement_speed": Option<f32>,
-    "vertical_search_distance": Option<i32>,
-});
-crate::hand_fields!(MoveToBlock {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "goal_radius": Option<f32>,
-    "on_reach": Option<Vec<EventTrigger>>,
-    "on_stay_completed": Option<Vec<EventTrigger>>,
-    "search_height": Option<i32>,
-    "search_range": Option<i32>,
-    "speed_multiplier": Option<f32>,
-    "start_chance": Option<f32>,
-    "stay_duration": Option<f32>,
-    "target_offset": Option<Vec3>,
-    "target_selection_method": Option<TargetSelectionMethod>,
-    "tick_interval": Option<i32>,
-});
-crate::hand_fields!(RandomHover {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "interval": Option<i32>,
-    "speed_multiplier": Option<f32>,
-    "xz_dist": Option<i32>,
-    "y_dist": Option<i32>,
-    "y_offset": Option<f32>,
-});
-crate::hand_fields!(TeleportToOwner {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "cooldown": Option<f32>,
-});
-crate::hand_fields!(Panic {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "damage_sources": Option<Vec<DamageCause>>,
-    "force": Option<bool>,
-    "ignore_mob_damage": Option<bool>,
-    "panic_sound": Option<SoundEvent>,
-    "prefer_water": Option<bool>,
-    "speed_multiplier": Option<f32>,
+crate::trigger_fields!(MoveToBlock {
+    on_reach: Option<Vec<EventTrigger>>,
+    on_stay_completed: Option<Vec<EventTrigger>>,
 });

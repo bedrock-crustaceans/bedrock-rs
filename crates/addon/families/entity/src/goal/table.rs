@@ -2,321 +2,92 @@
 
 use super::check::{VersionedParseFn, parse_versioned};
 
-/// `(key, parse)` for every goal, Brain memory goal and memory sensor.
-pub(crate) const VERSIONED: &[(&str, VersionedParseFn)] = &[
-    (
-        "minecraft:behavior.admire_item",
-        parse_versioned::<super::AdmireItem>,
-    ),
-    (
-        "minecraft:behavior.aquatic_charge_attack",
-        parse_versioned::<super::AquaticChargeAttack>,
-    ),
-    (
-        "minecraft:behavior.avoid_block",
-        parse_versioned::<super::AvoidBlock>,
-    ),
-    (
-        "minecraft:behavior.avoid_mob_type",
-        parse_versioned::<super::AvoidMobType>,
-    ),
-    ("minecraft:behavior.beg", parse_versioned::<super::Beg>),
-    (
-        "minecraft:behavior.celebrate",
-        parse_versioned::<super::Celebrate>,
-    ),
-    (
-        "minecraft:behavior.celebrate_survive",
-        parse_versioned::<super::CelebrateSurvive>,
-    ),
-    (
-        "minecraft:behavior.charge_held_item",
-        parse_versioned::<super::ChargeHeldItem>,
-    ),
-    (
-        "minecraft:behavior.circle_around_anchor",
-        parse_versioned::<super::CircleAroundAnchor>,
-    ),
-    ("minecraft:behavior.croak", parse_versioned::<super::Croak>),
-    (
-        "minecraft:behavior.defend_trusted_target",
-        parse_versioned::<super::DefendTrustedTarget>,
-    ),
-    (
-        "minecraft:behavior.delayed_attack",
-        parse_versioned::<super::DelayedAttack>,
-    ),
-    ("minecraft:behavior.dig", parse_versioned::<super::Dig>),
-    (
-        "minecraft:behavior.dragonchargeplayer",
-        parse_versioned::<super::DragonChargePlayer>,
-    ),
-    (
-        "minecraft:behavior.dragonstrafeplayer",
-        parse_versioned::<super::DragonStrafePlayer>,
-    ),
-    (
-        "minecraft:behavior.drink_milk",
-        parse_versioned::<super::DrinkMilk>,
-    ),
-    (
-        "minecraft:behavior.drop_item_for",
-        parse_versioned::<super::DropItemFor>,
-    ),
-    (
-        "minecraft:behavior.eat_block",
-        parse_versioned::<super::EatBlock>,
-    ),
-    (
-        "minecraft:behavior.emerge",
-        parse_versioned::<super::Emerge>,
-    ),
-    (
-        "minecraft:behavior.fire_at_target",
-        parse_versioned::<super::FireAtTarget>,
-    ),
+/// The goals still listed by hand, each `key => Type`: [`VERSIONED`], and (for the test that
+/// holds each goal's `Goal::TYPED` to its row) `TYPED`, from the one list.
+macro_rules! goals {
+    ($($key:literal => $goal:ident,)*) => {
+        /// `(key, parse)` for every goal, Brain memory goal and memory sensor.
+        pub(crate) const VERSIONED: &[(&str, VersionedParseFn)] =
+            &[$(($key, parse_versioned::<super::$goal>)),*];
+
+        /// `(key, Goal::TYPED)` of each goal of [`VERSIONED`].
+        #[cfg(test)]
+        pub(crate) const TYPED: &[(&str, bedrock_addon_core::version::FormatVersion)] =
+            &[$(($key, <super::$goal as super::check::Goal>::TYPED)),*];
+    };
+}
+
+goals! {
+    "minecraft:behavior.admire_item" => AdmireItem,
+    "minecraft:behavior.avoid_block" => AvoidBlock,
+    "minecraft:behavior.avoid_mob_type" => AvoidMobType,
+    "minecraft:behavior.celebrate" => Celebrate,
+    "minecraft:behavior.celebrate_survive" => CelebrateSurvive,
+    "minecraft:behavior.defend_trusted_target" => DefendTrustedTarget,
+    "minecraft:behavior.delayed_attack" => DelayedAttack,
+    "minecraft:behavior.dig" => Dig,
+    "minecraft:behavior.drop_item_for" => DropItemFor,
+    "minecraft:behavior.eat_block" => EatBlock,
+    "minecraft:behavior.emerge" => Emerge,
     // Typed from 1.26.60.
-    (
-        "minecraft:behavior.float_tempt",
-        parse_versioned::<super::FloatTempt>,
-    ),
-    (
-        "minecraft:behavior.float_wander",
-        parse_versioned::<super::FloatWander>,
-    ),
-    (
-        "minecraft:behavior.follow_mob",
-        parse_versioned::<super::FollowMob>,
-    ),
-    (
-        "minecraft:behavior.follow_target_leader",
-        parse_versioned::<super::FollowTargetLeader>,
-    ),
-    (
-        "minecraft:behavior.go_and_give_items_to_noteblock",
-        parse_versioned::<super::GoAndGiveItemsToNoteblock>,
-    ),
-    (
-        "minecraft:behavior.go_and_give_items_to_owner",
-        parse_versioned::<super::GoAndGiveItemsToOwner>,
-    ),
-    (
-        "minecraft:behavior.go_home",
-        parse_versioned::<super::GoHome>,
-    ),
-    (
-        "minecraft:behavior.hold_ground",
-        parse_versioned::<super::HoldGround>,
-    ),
-    (
-        "minecraft:behavior.jump_around_target",
-        parse_versioned::<super::JumpAroundTarget>,
-    ),
-    (
-        "minecraft:behavior.jump_to_block",
-        parse_versioned::<super::JumpToBlock>,
-    ),
-    (
-        "minecraft:behavior.knockback_roar",
-        parse_versioned::<super::KnockbackRoar>,
-    ),
-    (
-        "minecraft:behavior.lay_egg",
-        parse_versioned::<super::LayEgg>,
-    ),
-    (
-        "minecraft:behavior.look_at_entity",
-        parse_versioned::<super::LookAtEntity>,
-    ),
-    (
-        "minecraft:behavior.look_at_player",
-        parse_versioned::<super::LookAtPlayer>,
-    ),
-    (
-        "minecraft:behavior.look_at_target",
-        parse_versioned::<super::LookAtTarget>,
-    ),
-    (
-        "minecraft:behavior.look_at_trading_player",
-        parse_versioned::<super::LookAtTradingPlayer>,
-    ),
-    (
-        "minecraft:behavior.melee_attack",
-        parse_versioned::<super::MeleeAttack>,
-    ),
-    (
-        "minecraft:behavior.melee_box_attack",
-        parse_versioned::<super::MeleeBoxAttack>,
-    ),
-    (
-        "minecraft:behavior.move_around_target",
-        parse_versioned::<super::MoveAroundTarget>,
-    ),
-    (
-        "minecraft:behavior.move_to_block",
-        parse_versioned::<super::MoveToBlock>,
-    ),
-    ("minecraft:behavior.nap", parse_versioned::<super::Nap>),
-    (
-        "minecraft:behavior.nearest_attackable_target",
-        parse_versioned::<super::NearestAttackableTarget>,
-    ),
-    (
-        "minecraft:behavior.nearest_prioritized_attackable_target",
-        parse_versioned::<super::NearestPrioritizedAttackableTarget>,
-    ),
-    (
-        "minecraft:behavior.offer_flower",
-        parse_versioned::<super::OfferFlower>,
-    ),
+    "minecraft:behavior.float_tempt" => FloatTempt,
+    "minecraft:behavior.go_and_give_items_to_noteblock" => GoAndGiveItemsToNoteblock,
+    "minecraft:behavior.go_and_give_items_to_owner" => GoAndGiveItemsToOwner,
+    "minecraft:behavior.go_home" => GoHome,
+    "minecraft:behavior.hold_ground" => HoldGround,
+    "minecraft:behavior.knockback_roar" => KnockbackRoar,
+    "minecraft:behavior.lay_egg" => LayEgg,
+    "minecraft:behavior.melee_attack" => MeleeAttack,
+    "minecraft:behavior.melee_box_attack" => MeleeBoxAttack,
+    "minecraft:behavior.move_to_block" => MoveToBlock,
     // Typed from 1.26.60.
-    ("minecraft:behavior.panic", parse_versioned::<super::Panic>),
-    (
-        "minecraft:behavior.pickup_items",
-        parse_versioned::<super::PickupItems>,
-    ),
-    (
-        "minecraft:behavior.place_block",
-        parse_versioned::<super::PlaceBlock>,
-    ),
-    (
-        "minecraft:behavior.play_dead",
-        parse_versioned::<super::PlayDead>,
-    ),
-    (
-        "minecraft:behavior.ram_attack",
-        parse_versioned::<super::RamAttack>,
-    ),
-    (
-        "minecraft:behavior.random_hover",
-        parse_versioned::<super::RandomHover>,
-    ),
-    (
-        "minecraft:behavior.random_look_around",
-        parse_versioned::<super::RandomLookAround>,
-    ),
-    (
-        "minecraft:behavior.random_search_and_dig",
-        parse_versioned::<super::RandomSearchAndDig>,
-    ),
-    (
-        "minecraft:behavior.ranged_attack",
-        parse_versioned::<super::RangedAttack>,
-    ),
-    (
-        "minecraft:behavior.snacking",
-        parse_versioned::<super::Snacking>,
-    ),
-    ("minecraft:behavior.sniff", parse_versioned::<super::Sniff>),
-    (
-        "minecraft:behavior.stalk_and_pounce_on_target",
-        parse_versioned::<super::StalkAndPounceOnTarget>,
-    ),
-    (
-        "minecraft:behavior.stomp_attack",
-        parse_versioned::<super::StompAttack>,
-    ),
-    (
-        "minecraft:behavior.swoop_attack",
-        parse_versioned::<super::SwoopAttack>,
-    ),
-    (
-        "minecraft:behavior.take_block",
-        parse_versioned::<super::TakeBlock>,
-    ),
-    (
-        "minecraft:behavior.take_flower",
-        parse_versioned::<super::TakeFlower>,
-    ),
-    (
-        "minecraft:behavior.teleport_to_owner",
-        parse_versioned::<super::TeleportToOwner>,
-    ),
+    "minecraft:behavior.panic" => Panic,
+    "minecraft:behavior.pickup_items" => PickupItems,
+    "minecraft:behavior.place_block" => PlaceBlock,
+    "minecraft:behavior.ram_attack" => RamAttack,
+    "minecraft:behavior.random_search_and_dig" => RandomSearchAndDig,
+    "minecraft:behavior.stomp_attack" => StompAttack,
+    "minecraft:behavior.take_block" => TakeBlock,
+    "minecraft:behavior.take_flower" => TakeFlower,
     // Typed from 1.26.60.
-    ("minecraft:behavior.tempt", parse_versioned::<super::Tempt>),
-    (
-        "minecraft:behavior.timer_flag_1",
-        parse_versioned::<super::TimerFlag1>,
-    ),
-    (
-        "minecraft:behavior.timer_flag_2",
-        parse_versioned::<super::TimerFlag2>,
-    ),
-    (
-        "minecraft:behavior.timer_flag_3",
-        parse_versioned::<super::TimerFlag3>,
-    ),
-    (
-        "minecraft:behavior.trade_with_player",
-        parse_versioned::<super::TradeWithPlayer>,
-    ),
-    (
-        "minecraft:behavior.transport_items",
-        parse_versioned::<super::TransportItems>,
-    ),
-    (
-        "minecraft:behavior.use_kinetic_weapon",
-        parse_versioned::<super::UseKineticWeapon>,
-    ),
-    ("minecraft:behavior.work", parse_versioned::<super::Work>),
-    (
-        "minecraft:behavior.work_composter",
-        parse_versioned::<super::WorkComposter>,
-    ),
-    (
-        "minecraft:memory_behavior.follow_target",
-        parse_versioned::<super::MemoryFollowTarget>,
-    ),
+    "minecraft:behavior.tempt" => Tempt,
+    "minecraft:behavior.timer_flag_1" => TimerFlag1,
+    "minecraft:behavior.timer_flag_2" => TimerFlag2,
+    "minecraft:behavior.timer_flag_3" => TimerFlag3,
+    "minecraft:behavior.use_kinetic_weapon" => UseKineticWeapon,
+    "minecraft:behavior.work" => Work,
+    "minecraft:behavior.work_composter" => WorkComposter,
     // Typed from 1.26.50.
-    (
-        "minecraft:memory_behavior.jump_to_block",
-        parse_versioned::<super::MemoryJumpToBlock>,
-    ),
-    (
-        "minecraft:memory_behavior.look_at_entity",
-        parse_versioned::<super::MemoryLookAtEntity>,
-    ),
-    (
-        "minecraft:memory_behavior.move_to_position",
-        parse_versioned::<super::MemoryMoveToPosition>,
-    ),
+    "minecraft:memory_behavior.jump_to_block" => MemoryJumpToBlock,
+    "minecraft:memory_behavior.move_to_position" => MemoryMoveToPosition,
     // Typed from 1.26.50.
-    (
-        "minecraft:memory_behavior.prepare_ram_attack",
-        parse_versioned::<super::MemoryPrepareRamAttack>,
-    ),
+    "minecraft:memory_behavior.prepare_ram_attack" => MemoryPrepareRamAttack,
     // Typed from 1.26.50.
-    (
-        "minecraft:memory_behavior.ram_attack",
-        parse_versioned::<super::MemoryRamAttack>,
-    ),
-    (
-        "minecraft:memory_behavior.wait",
-        parse_versioned::<super::MemoryWait>,
-    ),
-    (
-        "minecraft:memory_sensor.find_nearest_block",
-        parse_versioned::<super::MemorySensorFindNearestBlock>,
-    ),
-    (
-        "minecraft:memory_sensor.find_nearest_entity",
-        parse_versioned::<super::MemorySensorFindNearestEntity>,
-    ),
-    (
-        "minecraft:memory_sensor.find_nearest_poi",
-        parse_versioned::<super::MemorySensorFindNearestPoi>,
-    ),
+    "minecraft:memory_behavior.ram_attack" => MemoryRamAttack,
+    "minecraft:memory_sensor.find_nearest_block" => MemorySensorFindNearestBlock,
+    "minecraft:memory_sensor.find_nearest_entity" => MemorySensorFindNearestEntity,
+    "minecraft:memory_sensor.find_nearest_poi" => MemorySensorFindNearestPoi,
     // Typed from 1.26.50.
-    (
-        "minecraft:memory_sensor.find_ram_charge_position",
-        parse_versioned::<super::MemorySensorFindRamChargePosition>,
-    ),
-    (
-        "minecraft:memory_sensor.game_event",
-        parse_versioned::<super::MemorySensorGameEvent>,
-    ),
-    (
-        "minecraft:memory_sensor.in_range_of_entity",
-        parse_versioned::<super::MemorySensorInRangeOfEntity>,
-    ),
-];
+    "minecraft:memory_sensor.find_ram_charge_position" => MemorySensorFindRamChargePosition,
+    "minecraft:memory_sensor.game_event" => MemorySensorGameEvent,
+    "minecraft:memory_sensor.in_range_of_entity" => MemorySensorInRangeOfEntity,
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::component::EntityComponent;
+
+    /// Each goal listed by hand states the typed version its row does: `Goal::TYPED` is what the
+    /// parse splits on, `typed_since` what the component table says.
+    #[test]
+    fn each_hand_listed_goals_typed_version_is_its_rows() {
+        assert_eq!(super::TYPED.len(), super::VERSIONED.len());
+        for (key, typed) in super::TYPED {
+            assert_eq!(
+                EntityComponent::typed_since(key),
+                Some(*typed),
+                "{key}: Goal::TYPED against its row"
+            );
+        }
+    }
+}

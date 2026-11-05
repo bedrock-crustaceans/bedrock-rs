@@ -478,6 +478,8 @@ impl Goal for DefendVillageTarget {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
+        // Bounds by hand, not schema::min/max: a bound here follows another check, and the
+        // derived check runs first, which would reorder the findings.
         c.base(&mut self.priority);
         c.float(
             "attack_chance",
@@ -562,125 +564,69 @@ impl Goal for HurtByTarget {
 /// `minecraft:behavior.nearest_attackable_target`: allows an entity to attack the closest target within a given subset of specific target types.
 // `behavior.nearest_attackable_target`: typed from 1.26.0.
 #[doc(alias = "minecraft:behavior.nearest_attackable_target")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct NearestAttackableTarget {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `attack_interval`: time range (in seconds) between searching for an attack target, range is in (0, `attack_interval`\]. Only used if `attack_interval` is greater than 0, otherwise `scan_interval` is used. Default 0 to 0.
     pub attack_interval: Option<FloatRange>,
     /// `attack_owner`: if true, this entity can attack its owner. Default `false`.
+    #[facet(schema::fallback = false)]
     pub attack_owner: Option<bool>,
     /// `entity_types`: filters which types of targets are valid for this entity.
     pub entity_types: Option<EntityTypes>,
     /// `must_reach`: if true, this entity requires a path to the target. Default `false`.
+    #[facet(schema::fallback = false)]
     pub must_reach: Option<bool>,
     /// `must_see`: determines if target-validity requires this entity to be in range only, or both in range and in sight. Default `false`.
+    #[facet(schema::fallback = false)]
     pub must_see: Option<bool>,
     /// `must_see_forget_duration`: time (in seconds) the target must not be seen by this entity to become invalid. Used only if `must_see` is true. Default 3; at least 0.
+    #[facet(schema::fallback = 3.0)]
     pub must_see_forget_duration: Option<f32>,
     /// `persist_time`: time (in seconds) this entity can continue attacking the target after the target is no longer valid. Default 0; at least 0.
+    #[facet(schema::fallback = 0.0)]
     pub persist_time: Option<f32>,
     /// `reselect_targets`: allows the attacking entity to update the nearest target, otherwise a target is only reselected after each `scan_interval` or `attack_interval`. Default `false`.
+    #[facet(schema::fallback = false)]
     pub reselect_targets: Option<bool>,
     /// `scan_interval`: if `attack_interval` is 0 or isn't declared, then between attacks: scanning for a new target occurs every amount of ticks equal to `scan_interval`, minimum value is 1. Values under 10 can affect performance. Default 10; at least 1.
+    #[facet(schema::fallback = 10)]
     pub scan_interval: Option<i32>,
     /// `set_persistent`: allows the actor to be set to persist upon targeting a player. Default `false`.
+    #[facet(schema::fallback = false)]
     pub set_persistent: Option<bool>,
     /// `target_acquisition_probability`: probability (0.0 to 1.0) that this entity will accept a found target. Checked each time a valid target is found during scanning. Default 1.
+    #[facet(schema::fallback = 1.0)]
     pub target_acquisition_probability: Option<f32>,
     /// `target_invisible_multiplier`: multiplied with the target's armor coverage percentage to modify `max_dist` when detecting an invisible target. Default 0.7.
+    #[facet(schema::fallback = 0.7)]
     pub target_invisible_multiplier: Option<f32>,
     /// `target_search_height`: maximum vertical target-search distance, if it's greater than the target type's `max_dist`. A negative value defaults to `entity_types` greatest `max_dist`. Default -1; at least -1.
+    #[facet(schema::fallback = -1.0)]
     pub target_search_height: Option<f32>,
     /// `target_sneak_visibility_multiplier`: multiplied with the target type's `max_dist` when trying to detect a sneaking target. Default 0.8.
+    #[facet(schema::fallback = 0.8)]
     pub target_sneak_visibility_multiplier: Option<f32>,
     /// `within_radius`: maximum distance this entity can be from the target when following it, otherwise the target becomes invalid. This value is only used if the entity doesn't declare `minecraft:follow_range`. Default 0; at least 0.
+    #[facet(schema::fallback = 0.0)]
     pub within_radius: Option<f32>,
 }
 
 impl NearestAttackableTarget {
-    /// `priority`, or its default 0.
-    pub fn priority(&self) -> i32 {
-        self.priority.unwrap_or(0)
-    }
-
     /// `attack_interval`, or its default 0 to 0.
     pub fn attack_interval(&self) -> (f32, f32) {
         self.attack_interval
             .map_or((0.0, 0.0), |range| range.resolve(0.0, 0.0))
     }
-
-    /// `attack_owner`, or its default `false`.
-    pub fn attack_owner(&self) -> bool {
-        self.attack_owner.is_some_and(|v| v)
-    }
-
-    /// `must_reach`, or its default `false`.
-    pub fn must_reach(&self) -> bool {
-        self.must_reach.is_some_and(|v| v)
-    }
-
-    /// `must_see`, or its default `false`.
-    pub fn must_see(&self) -> bool {
-        self.must_see.is_some_and(|v| v)
-    }
-
-    /// `must_see_forget_duration`, or its default 3.
-    pub fn must_see_forget_duration(&self) -> f32 {
-        self.must_see_forget_duration.unwrap_or(3.0)
-    }
-
-    /// `persist_time`, or its default 0.
-    pub fn persist_time(&self) -> f32 {
-        self.persist_time.unwrap_or(0.0)
-    }
-
-    /// `reselect_targets`, or its default `false`.
-    pub fn reselect_targets(&self) -> bool {
-        self.reselect_targets.is_some_and(|v| v)
-    }
-
-    /// `scan_interval`, or its default 10.
-    pub fn scan_interval(&self) -> i32 {
-        self.scan_interval.unwrap_or(10)
-    }
-
-    /// `set_persistent`, or its default `false`.
-    pub fn set_persistent(&self) -> bool {
-        self.set_persistent.is_some_and(|v| v)
-    }
-
-    /// `target_acquisition_probability`, or its default 1.
-    pub fn target_acquisition_probability(&self) -> f32 {
-        self.target_acquisition_probability.unwrap_or(1.0)
-    }
-
-    /// `target_invisible_multiplier`, or its default 0.7.
-    pub fn target_invisible_multiplier(&self) -> f32 {
-        self.target_invisible_multiplier.unwrap_or(0.7)
-    }
-
-    /// `target_search_height`, or its default -1.
-    pub fn target_search_height(&self) -> f32 {
-        self.target_search_height.unwrap_or(-1.0)
-    }
-
-    /// `target_sneak_visibility_multiplier`, or its default 0.8.
-    pub fn target_sneak_visibility_multiplier(&self) -> f32 {
-        self.target_sneak_visibility_multiplier.unwrap_or(0.8)
-    }
-
-    /// `within_radius`, or its default 0.
-    pub fn within_radius(&self) -> f32 {
-        self.within_radius.unwrap_or(0.0)
-    }
 }
 
 impl Goal for NearestAttackableTarget {
-    const TYPED: FormatVersion = known::V1_26_0;
+    const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
         c.base(&mut self.priority);
@@ -702,17 +648,16 @@ impl Goal for NearestAttackableTarget {
     }
 }
 
-bedrock_addon_core::impl_no_molang!(NearestAttackableTarget);
-
 /// `minecraft:behavior.nearest_prioritized_attackable_target`: allows the mob to check for and pursue the nearest valid target.
 ///
 /// Deprecated members, reported and dropped: `attack_owner`, `target_acquisition_probability`, `target_invisible_multiplier`, `target_sneak_visibility_multiplier`.
 // `behavior.nearest_prioritized_attackable_target`: typed from 1.26.30.
 #[doc(alias = "minecraft:behavior.nearest_prioritized_attackable_target")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct NearestPrioritizedAttackableTarget {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
@@ -721,92 +666,47 @@ pub struct NearestPrioritizedAttackableTarget {
     /// `entity_types`: list of entity types that this mob considers valid targets.
     pub entity_types: Option<EntityTypes>,
     /// `hurt_owner`: if true, this mob will also attack mobs that hurt its owner. Default `false`.
+    #[facet(schema::fallback = false)]
     pub hurt_owner: Option<bool>,
     /// `must_reach`: if true, only entities that this mob can path to can be selected as targets. Default `false`.
+    #[facet(schema::fallback = false)]
     pub must_reach: Option<bool>,
     /// `must_see`: if true, only entities in this mob's viewing range can be selected as targets. Default `false`.
+    #[facet(schema::fallback = false)]
     pub must_see: Option<bool>,
     /// `must_see_forget_duration`: determines the amount of time in seconds that this mob will look for a target before forgetting about it and looking for a new one when the target isn't visible any more. Default 3; at least 0.
+    #[facet(schema::fallback = 3.0)]
     pub must_see_forget_duration: Option<f32>,
     /// `persist_time`: time in seconds for a valid target to stay targeted when it becomes an invalid target. Default 0; at least 0.
+    #[facet(schema::fallback = 0.0)]
     pub persist_time: Option<f32>,
     /// `reselect_targets`: if true, the target will change to the current closest entity whenever a different entity is closer. Default `false`.
+    #[facet(schema::fallback = false)]
     pub reselect_targets: Option<bool>,
     /// `scan_interval`: how many ticks to wait between scanning for a target. Default 10.
+    #[facet(schema::fallback = 10)]
     pub scan_interval: Option<i32>,
     /// `set_persistent`: allows the actor to be set to persist upon targeting a player. Default `false`.
+    #[facet(schema::fallback = false)]
     pub set_persistent: Option<bool>,
     /// `target_search_height`: height in blocks to search for a target mob. -`1.0f` means the height does not matter. Default -1.
+    #[facet(schema::fallback = -1.0)]
     pub target_search_height: Option<f32>,
     /// `within_radius`: distance in blocks that the target can be within to launch an attack. Default 0; at least 0.
+    #[facet(schema::fallback = 0.0)]
     pub within_radius: Option<f32>,
 }
 
 impl NearestPrioritizedAttackableTarget {
-    /// `priority`, or its default 0.
-    pub fn priority(&self) -> i32 {
-        self.priority.unwrap_or(0)
-    }
-
     /// `attack_interval`, or its default 0 to 0.
     pub fn attack_interval(&self) -> (f32, f32) {
         self.attack_interval
             .map_or((0.0, 0.0), |range| range.resolve(0.0, 0.0))
     }
-
-    /// `hurt_owner`, or its default `false`.
-    pub fn hurt_owner(&self) -> bool {
-        self.hurt_owner.is_some_and(|v| v)
-    }
-
-    /// `must_reach`, or its default `false`.
-    pub fn must_reach(&self) -> bool {
-        self.must_reach.is_some_and(|v| v)
-    }
-
-    /// `must_see`, or its default `false`.
-    pub fn must_see(&self) -> bool {
-        self.must_see.is_some_and(|v| v)
-    }
-
-    /// `must_see_forget_duration`, or its default 3.
-    pub fn must_see_forget_duration(&self) -> f32 {
-        self.must_see_forget_duration.unwrap_or(3.0)
-    }
-
-    /// `persist_time`, or its default 0.
-    pub fn persist_time(&self) -> f32 {
-        self.persist_time.unwrap_or(0.0)
-    }
-
-    /// `reselect_targets`, or its default `false`.
-    pub fn reselect_targets(&self) -> bool {
-        self.reselect_targets.is_some_and(|v| v)
-    }
-
-    /// `scan_interval`, or its default 10.
-    pub fn scan_interval(&self) -> i32 {
-        self.scan_interval.unwrap_or(10)
-    }
-
-    /// `set_persistent`, or its default `false`.
-    pub fn set_persistent(&self) -> bool {
-        self.set_persistent.is_some_and(|v| v)
-    }
-
-    /// `target_search_height`, or its default -1.
-    pub fn target_search_height(&self) -> f32 {
-        self.target_search_height.unwrap_or(-1.0)
-    }
-
-    /// `within_radius`, or its default 0.
-    pub fn within_radius(&self) -> f32 {
-        self.within_radius.unwrap_or(0.0)
-    }
 }
 
 impl Goal for NearestPrioritizedAttackableTarget {
-    const TYPED: FormatVersion = known::V1_26_30;
+    const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
 
     const DEPRECATED: &'static [Deprecated] = &[
         (
@@ -844,8 +744,6 @@ impl Goal for NearestPrioritizedAttackableTarget {
         c.float("within_radius", &mut self.within_radius, Bound::Min(0.0));
     }
 }
-
-bedrock_addon_core::impl_no_molang!(NearestPrioritizedAttackableTarget);
 
 /// `minecraft:behavior.owner_hurt_by_target`: allows the mob to target another mob that hurts their owner.
 ///
@@ -1039,76 +937,12 @@ impl Goal for WitherTargetHighestDamage {
     }
 }
 
-crate::hand_fields!(AvoidBlock {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "avoid_block_sound": Option<SoundEvent>,
-    "on_escape": Option<Vec<EventTrigger>>,
-    "search_height": Option<i32>,
-    "search_range": Option<i32>,
-    "sprint_speed_modifier": Option<f32>,
-    "target_selection_method": Option<TargetSelectionMethod>,
-    "tick_interval": Option<i32>,
-    "walk_speed_modifier": Option<f32>,
+crate::trigger_fields!(AvoidBlock {
+    on_escape: Option<Vec<EventTrigger>>,
 });
-crate::hand_fields!(AvoidMobType {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "avoid_mob_sound": Option<SoundEvent>,
-    "avoid_target_xz": Option<i32>,
-    "avoid_target_y": Option<i32>,
-    "entity_types": Option<EntityTypes>,
-    "ignore_visibility": Option<bool>,
-    "max_dist": Option<f32>,
-    "max_flee": Option<f32>,
-    "on_escape_event": Option<EventTrigger>,
-    "probability_per_strength": Option<f32>,
-    "remove_target": Option<bool>,
-    "river_speed_multiplier": Option<f32>,
-    "sprint_distance": Option<f32>,
-    "sprint_speed_multiplier": Option<f32>,
-    "walk_speed_multiplier": Option<f32>,
+crate::trigger_fields!(AvoidMobType {
+    on_escape_event: Option<EventTrigger>,
 });
-crate::hand_fields!(DefendTrustedTarget {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "aggro_sound": Option<SoundEvent>,
-    "entity_types": Option<EntityTypes>,
-    "must_see": Option<bool>,
-    "must_see_forget_duration": Option<f32>,
-    "on_defend_start": Option<EventTrigger>,
-    "within_radius": Option<f32>,
-});
-crate::hand_fields!(NearestAttackableTarget {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "attack_owner": Option<bool>,
-    "entity_types": Option<EntityTypes>,
-    "must_reach": Option<bool>,
-    "must_see": Option<bool>,
-    "must_see_forget_duration": Option<f32>,
-    "persist_time": Option<f32>,
-    "reselect_targets": Option<bool>,
-    "scan_interval": Option<i32>,
-    "set_persistent": Option<bool>,
-    "target_acquisition_probability": Option<f32>,
-    "target_invisible_multiplier": Option<f32>,
-    "target_search_height": Option<f32>,
-    "target_sneak_visibility_multiplier": Option<f32>,
-    "within_radius": Option<f32>,
-});
-crate::hand_fields!(NearestPrioritizedAttackableTarget {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "entity_types": Option<EntityTypes>,
-    "hurt_owner": Option<bool>,
-    "must_reach": Option<bool>,
-    "must_see": Option<bool>,
-    "must_see_forget_duration": Option<f32>,
-    "persist_time": Option<f32>,
-    "reselect_targets": Option<bool>,
-    "scan_interval": Option<i32>,
-    "set_persistent": Option<bool>,
-    "target_search_height": Option<f32>,
-    "within_radius": Option<f32>,
+crate::trigger_fields!(DefendTrustedTarget {
+    on_defend_start: Option<EventTrigger>,
 });

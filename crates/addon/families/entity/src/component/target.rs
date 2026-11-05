@@ -116,7 +116,7 @@ impl EntityTypes {
 }
 
 /// Which entities a goal applies to, and how (the game's mob descriptor).
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct MobDescriptor {
     /// `check_if_outnumbered`: only when the entity is outnumbered; default `false`.
@@ -156,25 +156,6 @@ pub struct MobDescriptor {
     pub walk_speed_multiplier: f32,
 }
 
-impl Default for MobDescriptor {
-    fn default() -> Self {
-        Self {
-            check_if_outnumbered: false,
-            cooldown: 0,
-            filters: None,
-            max_dist: 16.0,
-            max_flee: 10.0,
-            max_height: -1.0,
-            must_see: None,
-            must_see_forget_duration: 3,
-            priority: 0,
-            reevaluate_description: false,
-            sprint_speed_multiplier: 1.0,
-            walk_speed_multiplier: 1.0,
-        }
-    }
-}
-
 impl MobDescriptor {
     /// The findings of the descriptor's filters, under `at`.
     fn check(&self, at: &bedrock_addon_core::diagnostic::JsonPath, cx: &mut ComponentCheck<'_>) {
@@ -184,19 +165,5 @@ impl MobDescriptor {
     }
 }
 
-crate::hand_fields!(MobDescriptor {
-    "check_if_outnumbered": bool,
-    "cooldown": i32,
-    "max_dist": f32,
-    "max_flee": f32,
-    "max_height": f32,
-    "must_see": Option<bool>,
-    "must_see_forget_duration": i32,
-    "priority": i32,
-    "reevaluate_description": bool,
-    "sprint_speed_multiplier": f32,
-    "walk_speed_multiplier": f32,
-});
-bedrock_addon_core::impl_no_molang!(MobDescriptor);
 bedrock_addon_core::impl_schema_leaf!(EntityTypes);
 bedrock_addon_core::impl_no_molang!(EntityTypes);

@@ -27,67 +27,43 @@ use super::molang::{push_trigger, push_triggers, visit_conditions};
 /// Deprecated members, reported and dropped: `charge_speed_multiplier`.
 // `behavior.aquatic_charge_attack`: typed from 1.21.120, redeclared 1.26.0.
 #[doc(alias = "minecraft:behavior.aquatic_charge_attack")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct AquaticChargeAttack {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `attack_reach`: horizontal reach grown around the mob's AABB to register a hit. Default 0.05; at least 0.
+    #[facet(schema::fallback = 0.05)]
     pub attack_reach: Option<f32>,
     /// `charge_cooldown_time`: range of time in seconds to wait before starting another charge. Default 2 to 6.
     pub charge_cooldown_time: Option<FloatRange>,
     /// `charge_overshoot_distance`: distance beyond the target the mob aims during a charge. Default 1.5; at least 0.
+    #[facet(schema::fallback = 1.5)]
     pub charge_overshoot_distance: Option<f32>,
     /// `charge_speed`: absolute speed used during the charge attack. Default 0.06; at least 0.05.
+    #[facet(schema::fallback = 0.06)]
     pub charge_speed: Option<f32>,
     /// `knockback_force`: knockback force applied to the target on hit. Default 2; at least 0.
+    #[facet(schema::fallback = 2.0)]
     pub knockback_force: Option<f32>,
     /// `max_charge_distance`: maximum distance at which the mob attempts a charge. Default 16; at least 0.
+    #[facet(schema::fallback = 16.0)]
     pub max_charge_distance: Option<f32>,
 }
 
 impl AquaticChargeAttack {
-    /// `priority`, or its default 0.
-    pub fn priority(&self) -> i32 {
-        self.priority.unwrap_or(0)
-    }
-
-    /// `attack_reach`, or its default 0.05.
-    pub fn attack_reach(&self) -> f32 {
-        self.attack_reach.unwrap_or(0.05)
-    }
-
     /// `charge_cooldown_time`, or its default 2 to 6.
     pub fn charge_cooldown_time(&self) -> (f32, f32) {
         self.charge_cooldown_time
             .map_or((2.0, 6.0), |range| range.resolve(2.0, 6.0))
     }
-
-    /// `charge_overshoot_distance`, or its default 1.5.
-    pub fn charge_overshoot_distance(&self) -> f32 {
-        self.charge_overshoot_distance.unwrap_or(1.5)
-    }
-
-    /// `charge_speed`, or its default 0.06.
-    pub fn charge_speed(&self) -> f32 {
-        self.charge_speed.unwrap_or(0.06)
-    }
-
-    /// `knockback_force`, or its default 2.
-    pub fn knockback_force(&self) -> f32 {
-        self.knockback_force.unwrap_or(2.0)
-    }
-
-    /// `max_charge_distance`, or its default 16.
-    pub fn max_charge_distance(&self) -> f32 {
-        self.max_charge_distance.unwrap_or(16.0)
-    }
 }
 
 impl Goal for AquaticChargeAttack {
-    const TYPED: FormatVersion = known::V1_21_120;
+    const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
 
     const DEPRECATED: &'static [Deprecated] = &[(
         "charge_speed_multiplier",
@@ -135,8 +111,6 @@ impl Goal for AquaticChargeAttack {
         convert::charge_speed(json);
     }
 }
-
-bedrock_addon_core::impl_no_molang!(AquaticChargeAttack);
 
 /// `minecraft:behavior.charge_attack`: allows this entity to damage a target by using a running attack.
 // `behavior.charge_attack`: typed from 1.21.100.
@@ -508,71 +482,55 @@ impl Goal for EatMob {
 /// `minecraft:behavior.fire_at_target`: allows an entity to attack by firing a shot with a delay. Anchor and offset parameters of this component overrides the anchor and offset from projectile component.
 // `behavior.fire_at_target`: typed from 1.26.30.
 #[doc(alias = "minecraft:behavior.fire_at_target")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct FireAtTarget {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `attack_cooldown`: the cooldown time in seconds before this goal can be used again. Default 0.5; at least 0.
+    #[facet(schema::fallback = 0.5)]
     pub attack_cooldown: Option<f32>,
     /// `attack_range`: target needs to be within this range for the attack to happen. Default 0 to 0.
     pub attack_range: Option<FloatRange>,
     /// `filters`: conditions that need to be met for the behavior to start.
     pub filters: Option<Filter>,
     /// `max_head_rotation_x`: maximum head rotation (in degrees), on the X-axis, that this entity can apply while trying to look at the target. Default 3e+01.
+    #[facet(schema::fallback = 3.0e1)]
     pub max_head_rotation_x: Option<f32>,
     /// `max_head_rotation_y`: maximum head rotation (in degrees), on the Y-axis, that this entity can apply while trying to look at the target. Default 3e+01.
+    #[facet(schema::fallback = 3.0e1)]
     pub max_head_rotation_y: Option<f32>,
     /// `owner_anchor`: entity anchor for the projectile spawn location. Default 2.
+    #[facet(schema::fallback = 2)]
     pub owner_anchor: Option<i32>,
     /// `owner_offset`: offset vector from the `owner_anchor`. Default `[0, 0, 0]`.
     pub owner_offset: Option<Vec3>,
     /// `post_shoot_delay`: time in seconds between firing the projectile and ending the goal. Default 0.2; at least 0.
+    #[facet(schema::fallback = 0.2)]
     pub post_shoot_delay: Option<f32>,
     /// `pre_shoot_delay`: time in seconds before firing the projectile. Default 0.75; at least 0.
+    #[facet(schema::fallback = 0.75)]
     pub pre_shoot_delay: Option<f32>,
     /// `projectile_def`: actor definition to use as projectile for the ranged attack. The actor must be a projectile. This field is required for the goal to be usable. Default `""`.
     pub projectile_def: Option<String>,
     /// `ranged_fov`: field of view (in degrees) when using sensing to detect a target for attack. Default 9e+01.
+    #[facet(schema::fallback = 9.0e1)]
     pub ranged_fov: Option<f32>,
     /// `target_anchor`: entity anchor for projectile target. Default 2.
+    #[facet(schema::fallback = 2)]
     pub target_anchor: Option<i32>,
     /// `target_offset`: offset vector from the `target_anchor`. Default `[0, 0, 0]`.
     pub target_offset: Option<Vec3>,
 }
 
 impl FireAtTarget {
-    /// `priority`, or its default 0.
-    pub fn priority(&self) -> i32 {
-        self.priority.unwrap_or(0)
-    }
-
-    /// `attack_cooldown`, or its default 0.5.
-    pub fn attack_cooldown(&self) -> f32 {
-        self.attack_cooldown.unwrap_or(0.5)
-    }
-
     /// `attack_range`, or its default 0 to 0.
     pub fn attack_range(&self) -> (f32, f32) {
         self.attack_range
             .map_or((0.0, 0.0), |range| range.resolve(0.0, 0.0))
-    }
-
-    /// `max_head_rotation_x`, or its default 3e+01.
-    pub fn max_head_rotation_x(&self) -> f32 {
-        self.max_head_rotation_x.unwrap_or(3.0e1)
-    }
-
-    /// `max_head_rotation_y`, or its default 3e+01.
-    pub fn max_head_rotation_y(&self) -> f32 {
-        self.max_head_rotation_y.unwrap_or(3.0e1)
-    }
-
-    /// `owner_anchor`, or its default 2.
-    pub fn owner_anchor(&self) -> i32 {
-        self.owner_anchor.unwrap_or(2)
     }
 
     /// `owner_offset`, or its default `[0, 0, 0]`.
@@ -582,29 +540,9 @@ impl FireAtTarget {
             .map_or([0.0, 0.0, 0.0], |v| [v.x, v.y, v.z])
     }
 
-    /// `post_shoot_delay`, or its default 0.2.
-    pub fn post_shoot_delay(&self) -> f32 {
-        self.post_shoot_delay.unwrap_or(0.2)
-    }
-
-    /// `pre_shoot_delay`, or its default 0.75.
-    pub fn pre_shoot_delay(&self) -> f32 {
-        self.pre_shoot_delay.unwrap_or(0.75)
-    }
-
     /// `projectile_def`, or its default `""`.
     pub fn projectile_def(&self) -> &str {
         self.projectile_def.as_ref().map_or("", |v| v.as_str())
-    }
-
-    /// `ranged_fov`, or its default 9e+01.
-    pub fn ranged_fov(&self) -> f32 {
-        self.ranged_fov.unwrap_or(9.0e1)
-    }
-
-    /// `target_anchor`, or its default 2.
-    pub fn target_anchor(&self) -> i32 {
-        self.target_anchor.unwrap_or(2)
     }
 
     /// `target_offset`, or its default `[0, 0, 0]`.
@@ -616,7 +554,7 @@ impl FireAtTarget {
 }
 
 impl Goal for FireAtTarget {
-    const TYPED: FormatVersion = known::V1_26_30;
+    const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
         c.base(&mut self.priority);
@@ -644,8 +582,6 @@ impl Goal for FireAtTarget {
         );
     }
 }
-
-bedrock_addon_core::impl_no_molang!(FireAtTarget);
 
 /// `minecraft:behavior.guardian_attack`: allows this entity to use a laser beam attack. Can only be used by Guardians and Elder Guardians.
 // `behavior.guardian_attack`: typed from 1.26.0.
@@ -692,110 +628,62 @@ impl Goal for GuardianAttack {
 /// `minecraft:behavior.jump_around_target`: allows an entity to jump around a target.
 // `behavior.jump_around_target`: typed from 1.26.20.
 #[doc(alias = "minecraft:behavior.jump_around_target")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct JumpAroundTarget {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `check_collision`: enables collision checks when calculating the jump. Setting `check_collision` to true may affect performance and should be used with care. Default `false`.
+    #[facet(schema::fallback = false)]
     pub check_collision: Option<bool>,
     /// `entity_bounding_box_scale`: scaling temporarily applied to the entity's AABB bounds when jumping. A smaller bounding box reduces the risk of collisions during the jump. When `check_collision` is true it also increases the chance of being able to jump when close to obstacles. Default 0.7.
+    #[facet(schema::fallback = 0.7)]
     pub entity_bounding_box_scale: Option<f32>,
     /// `filters`: conditions that need to be met for the behavior to start.
     pub filters: Option<Filter>,
     /// `jump_angles`: the jump angles in float degrees that are allowed when performing the jump. The order in which the angles are chosen is randomized.
     pub jump_angles: Option<Vec<f32>>,
     /// `jump_cooldown_duration`: the time in seconds to spend in cooldown before this goal can be used again. Default 0.5.
+    #[facet(schema::fallback = 0.5)]
     pub jump_cooldown_duration: Option<f32>,
     /// `jump_cooldown_when_hurt_duration`: the time in seconds to spend in cooldown after being hurt before this goal can be used again. Default 0.1.
+    #[facet(schema::fallback = 0.1)]
     pub jump_cooldown_when_hurt_duration: Option<f32>,
     /// `landing_distance_from_target`: the range deciding how close to and how far away from the target the landing position can be when jumping. Default 4 to 8.
     pub landing_distance_from_target: Option<FloatRange>,
     /// `landing_position_spread_degrees`: this angle (in degrees) is used for controlling the spread when picking a landing position behind the target. A zero spread angle means the landing position will be straight behind the target with no variance. A 90 degree spread angle means the landing position can be up to 45 degrees to the left and to the right of the position straight behind the target's view direction. Default 90.
+    #[facet(schema::fallback = 90)]
     pub landing_position_spread_degrees: Option<i32>,
     /// `last_hurt_duration`: if the entity was hurt within these last seconds, the `jump_cooldown_when_hurt_duration` will be used instead of `jump_cooldown_duration`. Default 2.
+    #[facet(schema::fallback = 2.0)]
     pub last_hurt_duration: Option<f32>,
     /// `line_of_sight_obstruction_height_ignore`: if the entity's line of sight towards its target is obstructed by an obstacle with a height below this number, the obstacle will be ignored, and the goal will try to find a valid landing position. Default 4.
+    #[facet(schema::fallback = 4)]
     pub line_of_sight_obstruction_height_ignore: Option<i32>,
     /// `max_jump_velocity`: maximum velocity a jump can be performed at. Default 1.4.
+    #[facet(schema::fallback = 1.4)]
     pub max_jump_velocity: Option<f32>,
     /// `prepare_jump_duration`: the time in seconds to spend preparing for the jump. Default 0.5.
+    #[facet(schema::fallback = 0.5)]
     pub prepare_jump_duration: Option<f32>,
     /// `required_vertical_space`: the number of blocks above the entity's head that has to be air for this goal to be usable. Default 4.
+    #[facet(schema::fallback = 4)]
     pub required_vertical_space: Option<i32>,
     /// `snap_to_surface_block_range`: the number of blocks above and below from the jump target position that will be checked to find a surface to land on. Default 10.
+    #[facet(schema::fallback = 10)]
     pub snap_to_surface_block_range: Option<i32>,
     /// `valid_distance_to_target`: target needs to be within this range for the jump to happen. Default 4 to 2e+01.
     pub valid_distance_to_target: Option<FloatRange>,
 }
 
 impl JumpAroundTarget {
-    /// `priority`, or its default 0.
-    pub fn priority(&self) -> i32 {
-        self.priority.unwrap_or(0)
-    }
-
-    /// `check_collision`, or its default `false`.
-    pub fn check_collision(&self) -> bool {
-        self.check_collision.is_some_and(|v| v)
-    }
-
-    /// `entity_bounding_box_scale`, or its default 0.7.
-    pub fn entity_bounding_box_scale(&self) -> f32 {
-        self.entity_bounding_box_scale.unwrap_or(0.7)
-    }
-
-    /// `jump_cooldown_duration`, or its default 0.5.
-    pub fn jump_cooldown_duration(&self) -> f32 {
-        self.jump_cooldown_duration.unwrap_or(0.5)
-    }
-
-    /// `jump_cooldown_when_hurt_duration`, or its default 0.1.
-    pub fn jump_cooldown_when_hurt_duration(&self) -> f32 {
-        self.jump_cooldown_when_hurt_duration.unwrap_or(0.1)
-    }
-
     /// `landing_distance_from_target`, or its default 4 to 8.
     pub fn landing_distance_from_target(&self) -> (f32, f32) {
         self.landing_distance_from_target
             .map_or((4.0, 8.0), |range| range.resolve(4.0, 8.0))
-    }
-
-    /// `landing_position_spread_degrees`, or its default 90.
-    pub fn landing_position_spread_degrees(&self) -> i32 {
-        self.landing_position_spread_degrees.unwrap_or(90)
-    }
-
-    /// `last_hurt_duration`, or its default 2.
-    pub fn last_hurt_duration(&self) -> f32 {
-        self.last_hurt_duration.unwrap_or(2.0)
-    }
-
-    /// `line_of_sight_obstruction_height_ignore`, or its default 4.
-    pub fn line_of_sight_obstruction_height_ignore(&self) -> i32 {
-        self.line_of_sight_obstruction_height_ignore.unwrap_or(4)
-    }
-
-    /// `max_jump_velocity`, or its default 1.4.
-    pub fn max_jump_velocity(&self) -> f32 {
-        self.max_jump_velocity.unwrap_or(1.4)
-    }
-
-    /// `prepare_jump_duration`, or its default 0.5.
-    pub fn prepare_jump_duration(&self) -> f32 {
-        self.prepare_jump_duration.unwrap_or(0.5)
-    }
-
-    /// `required_vertical_space`, or its default 4.
-    pub fn required_vertical_space(&self) -> i32 {
-        self.required_vertical_space.unwrap_or(4)
-    }
-
-    /// `snap_to_surface_block_range`, or its default 10.
-    pub fn snap_to_surface_block_range(&self) -> i32 {
-        self.snap_to_surface_block_range.unwrap_or(10)
     }
 
     /// `valid_distance_to_target`, or its default 4 to 2e+01.
@@ -806,7 +694,7 @@ impl JumpAroundTarget {
 }
 
 impl Goal for JumpAroundTarget {
-    const TYPED: FormatVersion = known::V1_26_20;
+    const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
         c.base(&mut self.priority);
@@ -821,8 +709,6 @@ impl Goal for JumpAroundTarget {
         );
     }
 }
-
-bedrock_addon_core::impl_no_molang!(JumpAroundTarget);
 
 /// `minecraft:behavior.knockback_roar`: allows the mob to perform a damaging knockback that affects all nearby entities.
 // `behavior.knockback_roar`: typed from 1.26.40.
@@ -1624,10 +1510,11 @@ impl MolangFields for RamAttack {
 /// `minecraft:behavior.ranged_attack`: allows an entity to attack by using ranged shots. `charge_shoot_trigger` must be greater than 0 to enable charged up burst-shot attacks. Requires `minecraft:shooter` to define projectile behaviour.
 // `behavior.ranged_attack`: typed from 1.26.40, redeclared 1.26.50.
 #[doc(alias = "minecraft:behavior.ranged_attack")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct RangedAttack {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
@@ -1636,37 +1523,44 @@ pub struct RangedAttack {
     /// `attack_range`: range of distances from the target within which the entity can perform a ranged attack. Default 0 to 0.
     pub attack_range: Option<FloatRange>,
     /// `burst_interval`: time (in seconds) between each individual shot when firing a burst of shots from a charged up attack. Default 0; greater than 0.
+    #[facet(schema::fallback = 0.0)]
     pub burst_interval: Option<f32>,
     /// `burst_shots`: number of shots fired every time the attacking entity uses a charged up attack. Default 1.
+    #[facet(schema::fallback = 1)]
     pub burst_shots: Option<i32>,
     /// `charge_charged_trigger`: time (in seconds, then add `charge_shoot_trigger`), before a charged up attack is done charging. Charge-time decays while target is not in sight. Default 0; greater than 0.
+    #[facet(schema::fallback = 0.0)]
     pub charge_charged_trigger: Option<f32>,
     /// `charge_shoot_trigger`: amount of time (in seconds, then doubled) a charged shot must be charging before reloading burst shots. Charge-time decays while target is not in sight. Default 0; greater than 0.
+    #[facet(schema::fallback = 0.0)]
     pub charge_shoot_trigger: Option<f32>,
     /// `in_range_movement_mode`: controls how the entity moves while its target is within the configured attack range. `hold_position` makes the entity stop and hold its position while facing and attacking the target. `follow_target` makes the entity continue moving toward the target while attacking, stopping just outside the minimum attack range. Default `hold_position`.
+    #[facet(schema::fallback = InRangeMovementMode::HoldPosition)]
     pub in_range_movement_mode: Option<InRangeMovementMode>,
     /// `ranged_fov`: field of view (in degrees) when using sensing to detect a target for attack. Default 9e+01; at least 0.
+    #[facet(schema::fallback = 9.0e1)]
     pub ranged_fov: Option<f32>,
     /// `set_persistent`: allows the actor to be set to persist upon targeting a player. Default `false`.
+    #[facet(schema::fallback = false)]
     pub set_persistent: Option<bool>,
     /// `speed_multiplier`: during attack behavior, this multiplier modifies the entity's speed when moving toward the target. Default 1; greater than 0.
+    #[facet(schema::fallback = 1.0)]
     pub speed_multiplier: Option<f32>,
     /// `swing`: if a swing animation (using `variable.attack_time`) exists, this causes the actor to swing their arm(s) upon firing the ranged attack. Default `false`.
+    #[facet(schema::fallback = false)]
     pub swing: Option<bool>,
     /// `target_in_sight_time`: minimum amount of time (in seconds) the attacking entity needs to see the target before moving toward it. Default 1; greater than 0.
+    #[facet(schema::fallback = 1.0)]
     pub target_in_sight_time: Option<f32>,
     /// `x_max_rotation`: maximum rotation (in degrees), on the X-axis, this entity can rotate while trying to look at the target. Default 3e+01; at least 0.
+    #[facet(schema::fallback = 3.0e1)]
     pub x_max_rotation: Option<f32>,
     /// `y_max_head_rotation`: maximum rotation (in degrees), on the Y-axis, this entity can rotate its head while trying to look at the target. Default 3e+01; at least 0.
+    #[facet(schema::fallback = 3.0e1)]
     pub y_max_head_rotation: Option<f32>,
 }
 
 impl RangedAttack {
-    /// `priority`, or its default 0.
-    pub fn priority(&self) -> i32 {
-        self.priority.unwrap_or(0)
-    }
-
     /// `attack_interval`, or its default -1 to -1.
     pub fn attack_interval(&self) -> (f32, f32) {
         self.attack_interval
@@ -1683,71 +1577,10 @@ impl RangedAttack {
             )
         })
     }
-
-    /// `burst_interval`, or its default 0.
-    pub fn burst_interval(&self) -> f32 {
-        self.burst_interval.unwrap_or(0.0)
-    }
-
-    /// `burst_shots`, or its default 1.
-    pub fn burst_shots(&self) -> i32 {
-        self.burst_shots.unwrap_or(1)
-    }
-
-    /// `charge_charged_trigger`, or its default 0.
-    pub fn charge_charged_trigger(&self) -> f32 {
-        self.charge_charged_trigger.unwrap_or(0.0)
-    }
-
-    /// `charge_shoot_trigger`, or its default 0.
-    pub fn charge_shoot_trigger(&self) -> f32 {
-        self.charge_shoot_trigger.unwrap_or(0.0)
-    }
-
-    /// `in_range_movement_mode`, or its default `hold_position`.
-    pub fn in_range_movement_mode(&self) -> InRangeMovementMode {
-        self.in_range_movement_mode
-            .unwrap_or(InRangeMovementMode::HoldPosition)
-    }
-
-    /// `ranged_fov`, or its default 9e+01.
-    pub fn ranged_fov(&self) -> f32 {
-        self.ranged_fov.unwrap_or(9.0e1)
-    }
-
-    /// `set_persistent`, or its default `false`.
-    pub fn set_persistent(&self) -> bool {
-        self.set_persistent.is_some_and(|v| v)
-    }
-
-    /// `speed_multiplier`, or its default 1.
-    pub fn speed_multiplier(&self) -> f32 {
-        self.speed_multiplier.unwrap_or(1.0)
-    }
-
-    /// `swing`, or its default `false`.
-    pub fn swing(&self) -> bool {
-        self.swing.is_some_and(|v| v)
-    }
-
-    /// `target_in_sight_time`, or its default 1.
-    pub fn target_in_sight_time(&self) -> f32 {
-        self.target_in_sight_time.unwrap_or(1.0)
-    }
-
-    /// `x_max_rotation`, or its default 3e+01.
-    pub fn x_max_rotation(&self) -> f32 {
-        self.x_max_rotation.unwrap_or(3.0e1)
-    }
-
-    /// `y_max_head_rotation`, or its default 3e+01.
-    pub fn y_max_head_rotation(&self) -> f32 {
-        self.y_max_head_rotation.unwrap_or(3.0e1)
-    }
 }
 
 impl Goal for RangedAttack {
-    const TYPED: FormatVersion = known::V1_26_40;
+    const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
 
     const REJECTED: &'static [&'static str] = &["attack_interval_min", "attack_interval_max"];
 
@@ -1819,8 +1652,6 @@ impl Goal for RangedAttack {
         convert::ranged_radius(json, d);
     }
 }
-
-bedrock_addon_core::impl_no_molang!(RangedAttack);
 
 /// `minecraft:behavior.slime_attack`: causes the entity to grow tired every once in a while, while attacking.
 // `behavior.slime_attack`: typed from 1.21.110.
@@ -1927,6 +1758,8 @@ impl Goal for SonicBoom {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
+        // Bounds by hand, not schema::min/max: a bound here follows another check, and the
+        // derived check runs first, which would reorder the findings.
         c.base(&mut self.priority);
         c.sound("attack_sound", self.attack_sound.as_ref());
         c.sound("charge_sound", self.charge_sound.as_ref());
@@ -1937,97 +1770,53 @@ impl Goal for SonicBoom {
 /// `minecraft:behavior.stalk_and_pounce_on_target`: allows a mob to stalk a target, then once within range pounce onto a target, on success the target will be attacked dealing damage defined by the attack component. On failure, the mob will risk getting stuck.
 // `behavior.stalk_and_pounce_on_target`: typed from 1.26.40.
 #[doc(alias = "minecraft:behavior.stalk_and_pounce_on_target")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct StalkAndPounceOnTarget {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `interest_time`: the amount of time the mob will be interested before pouncing. This happens when the mob is within range of pouncing. Default 2.
+    #[facet(schema::fallback = 2.0)]
     pub interest_time: Option<f32>,
     /// `leap_dist`: the distance in blocks the mob jumps in the direction of its target. Default 0.8.
+    #[facet(schema::fallback = 0.8)]
     pub leap_dist: Option<f32>,
     /// `leap_height`: the height in blocks the mob jumps when leaping at its target. Default 0.9.
+    #[facet(schema::fallback = 0.9)]
     pub leap_height: Option<f32>,
     /// `max_stalk_dist`: the maximum distance away a target can be before the mob gives up on stalking. Default 1e+01.
+    #[facet(schema::fallback = 1.0e1)]
     pub max_stalk_dist: Option<f32>,
     /// `pounce_max_dist`: the maximum distance away from the target in blocks to begin pouncing at the target. Default 5.
+    #[facet(schema::fallback = 5.0)]
     pub pounce_max_dist: Option<f32>,
     /// `set_persistent`: allows the actor to be set to persist upon targeting a player. Default `false`.
+    #[facet(schema::fallback = false)]
     pub set_persistent: Option<bool>,
     /// `stalk_speed`: the movement speed in which you stalk your target. Default 1.2.
+    #[facet(schema::fallback = 1.2)]
     pub stalk_speed: Option<f32>,
     /// `strike_dist`: the max distance away from the target when landing from the pounce that will still result in damaging the target. Default 2.
+    #[facet(schema::fallback = 2.0)]
     pub strike_dist: Option<f32>,
     /// `stuck_blocks`: blocks that the mob can get stuck in after a pounce.
     pub stuck_blocks: Option<Filter>,
     /// `stuck_time`: the amount of time the mob will be stuck if they fail and land on a block they can be stuck on. Default 2.
+    #[facet(schema::fallback = 2.0)]
     pub stuck_time: Option<f32>,
 }
 
-impl StalkAndPounceOnTarget {
-    /// `priority`, or its default 0.
-    pub fn priority(&self) -> i32 {
-        self.priority.unwrap_or(0)
-    }
-
-    /// `interest_time`, or its default 2.
-    pub fn interest_time(&self) -> f32 {
-        self.interest_time.unwrap_or(2.0)
-    }
-
-    /// `leap_dist`, or its default 0.8.
-    pub fn leap_dist(&self) -> f32 {
-        self.leap_dist.unwrap_or(0.8)
-    }
-
-    /// `leap_height`, or its default 0.9.
-    pub fn leap_height(&self) -> f32 {
-        self.leap_height.unwrap_or(0.9)
-    }
-
-    /// `max_stalk_dist`, or its default 1e+01.
-    pub fn max_stalk_dist(&self) -> f32 {
-        self.max_stalk_dist.unwrap_or(1.0e1)
-    }
-
-    /// `pounce_max_dist`, or its default 5.
-    pub fn pounce_max_dist(&self) -> f32 {
-        self.pounce_max_dist.unwrap_or(5.0)
-    }
-
-    /// `set_persistent`, or its default `false`.
-    pub fn set_persistent(&self) -> bool {
-        self.set_persistent.is_some_and(|v| v)
-    }
-
-    /// `stalk_speed`, or its default 1.2.
-    pub fn stalk_speed(&self) -> f32 {
-        self.stalk_speed.unwrap_or(1.2)
-    }
-
-    /// `strike_dist`, or its default 2.
-    pub fn strike_dist(&self) -> f32 {
-        self.strike_dist.unwrap_or(2.0)
-    }
-
-    /// `stuck_time`, or its default 2.
-    pub fn stuck_time(&self) -> f32 {
-        self.stuck_time.unwrap_or(2.0)
-    }
-}
-
 impl Goal for StalkAndPounceOnTarget {
-    const TYPED: FormatVersion = known::V1_26_40;
+    const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
         c.base(&mut self.priority);
         c.filter("stuck_blocks", self.stuck_blocks.as_ref());
     }
 }
-
-bedrock_addon_core::impl_no_molang!(StalkAndPounceOnTarget);
 
 /// `minecraft:behavior.stomp_attack`: allows an entity to attack using stomp `AoE` damage behavior.
 ///
@@ -2348,54 +2137,40 @@ impl Goal for Swell {
 /// `minecraft:behavior.swoop_attack`: allows an entity to attack using swoop attack behavior; Ideal for use with flying mobs. The behavior ends if the entity has a horizontal collision or gets hit.
 // `behavior.swoop_attack`: typed from 1.21.110.
 #[doc(alias = "minecraft:behavior.swoop_attack")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct SwoopAttack {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `damage_reach`: added to the base size of the entity, to determine the target's maximum allowable distance, when trying to deal attack damage. Default 0.2.
+    #[facet(schema::fallback = 0.2)]
     pub damage_reach: Option<f32>,
     /// `delay_range`: minimum and maximum cooldown time-range (in seconds) between each attempted swoop attack. Default 1e+01 to 2e+01.
     pub delay_range: Option<FloatRange>,
     /// `speed_multiplier`: during swoop attack behavior, this determines the multiplier the entity's speed is modified by when moving toward the target. Default 1.
+    #[facet(schema::fallback = 1.0)]
     pub speed_multiplier: Option<f32>,
 }
 
 impl SwoopAttack {
-    /// `priority`, or its default 0.
-    pub fn priority(&self) -> i32 {
-        self.priority.unwrap_or(0)
-    }
-
-    /// `damage_reach`, or its default 0.2.
-    pub fn damage_reach(&self) -> f32 {
-        self.damage_reach.unwrap_or(0.2)
-    }
-
     /// `delay_range`, or its default 1e+01 to 2e+01.
     pub fn delay_range(&self) -> (f32, f32) {
         self.delay_range
             .map_or((1.0e1, 2.0e1), |range| range.resolve(1.0e1, 2.0e1))
     }
-
-    /// `speed_multiplier`, or its default 1.
-    pub fn speed_multiplier(&self) -> f32 {
-        self.speed_multiplier.unwrap_or(1.0)
-    }
 }
 
 impl Goal for SwoopAttack {
-    const TYPED: FormatVersion = known::V1_21_110;
+    const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
         c.base(&mut self.priority);
         c.range("delay_range", &mut self.delay_range);
     }
 }
-
-bedrock_addon_core::impl_no_molang!(SwoopAttack);
 
 /// `minecraft:behavior.use_kinetic_weapon`: enables a mob to use kinetic weaponry by intermittently charging at its target and repositioning afterward.
 // `behavior.use_kinetic_weapon`: typed from 1.21.120, redeclared 1.26.40.
@@ -2776,20 +2551,25 @@ impl SummonStage {
 }
 
 /// One spell `summon_entity` may cast: when it is chosen and the stages it runs.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct SummonChoice {
     /// `cast_duration`: time in seconds the spell casting will take. Default -1.
+    #[facet(schema::fallback = -1.0)]
     pub cast_duration: Option<f32>,
     /// `cooldown_time`: time in seconds the mob has to wait before using the spell again. Default 0.
+    #[facet(schema::fallback = 0.0)]
     pub cooldown_time: Option<f32>,
     /// `do_casting`: if true, the mob will do the casting animations and render spell particles. Default `true`.
+    #[facet(schema::fallback = true)]
     pub do_casting: Option<bool>,
     /// `filters`: filters allow data objects to specify test criteria which allows their use. Filters can be defined by a single object of type (Filter Test), an array of tests, collection groups, or a combination of these objects.
     pub filters: Option<Filter>,
     /// `max_activation_range`: upper bound of the activation distance in blocks for this spell, must not be negative. Default 32; at least 0.
+    #[facet(schema::fallback = 32.0)]
     pub max_activation_range: Option<f32>,
     /// `min_activation_range`: lower bound of the activation distance in blocks for this spell, must not be negative. Default 1; at least 0.
+    #[facet(schema::fallback = 1.0)]
     pub min_activation_range: Option<f32>,
     /// `particle_color`: the color of the particles for this spell.
     pub particle_color: Option<ParticleColor>,
@@ -2798,45 +2578,16 @@ pub struct SummonChoice {
     /// `start_sound_event`: the sound event to play when using this spell. Default `undefined`.
     pub start_sound_event: Option<SoundEvent>,
     /// `weight`: the weight of this spell. Controls how likely the mob is to choose this spell when casting one. Default 0.
+    #[facet(schema::fallback = 0.0)]
     pub weight: Option<f32>,
 }
 
 impl SummonChoice {
-    /// `cast_duration`, or its default -1.
-    pub fn cast_duration(&self) -> f32 {
-        self.cast_duration.unwrap_or(-1.0)
-    }
-
-    /// `cooldown_time`, or its default 0.
-    pub fn cooldown_time(&self) -> f32 {
-        self.cooldown_time.unwrap_or(0.0)
-    }
-
-    /// `do_casting`, or its default `true`.
-    pub fn do_casting(&self) -> bool {
-        self.do_casting.is_none_or(|v| v)
-    }
-
-    /// `max_activation_range`, or its default 32.
-    pub fn max_activation_range(&self) -> f32 {
-        self.max_activation_range.unwrap_or(32.0)
-    }
-
-    /// `min_activation_range`, or its default 1.
-    pub fn min_activation_range(&self) -> f32 {
-        self.min_activation_range.unwrap_or(1.0)
-    }
-
     /// `start_sound_event`, or its default `undefined`.
     pub fn start_sound_event(&self) -> &str {
         self.start_sound_event
             .as_ref()
             .map_or("undefined", SoundEvent::name)
-    }
-
-    /// `weight`, or its default 0.
-    pub fn weight(&self) -> f32 {
-        self.weight.unwrap_or(0.0)
     }
 }
 
@@ -3001,22 +2752,28 @@ fn f32_value(value: f32) -> Value {
 }
 
 /// One entry of `send_event.event_choices`.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct SendEventChoice {
     /// `cast_duration`: time in seconds for the entire event sending process. Default 0.
+    #[facet(schema::fallback = 0.0)]
     pub cast_duration: Option<f32>,
     /// `cooldown_time`: time in seconds the mob has to wait before using this spell again. Default 0.
+    #[facet(schema::fallback = 0.0)]
     pub cooldown_time: Option<f32>,
     /// `do_casting`: if true, the mob will show a casting animation while sending the event. Default `true`.
+    #[facet(schema::fallback = true)]
     pub do_casting: Option<bool>,
     /// `filters`: conditions that the target must meet to be eligible for receiving the event.
     pub filters: Option<Filter>,
     /// `look_at_target`: if true, the mob will face the entity it sends an event to. Default `true`.
+    #[facet(schema::fallback = true)]
     pub look_at_target: Option<bool>,
     /// `max_activation_range`: maximum distance in blocks the target can be for this spell to activate. Default 32.
+    #[facet(schema::fallback = 32.0)]
     pub max_activation_range: Option<f32>,
     /// `min_activation_range`: minimum distance in blocks the target must be for this spell to activate. Default 1.
+    #[facet(schema::fallback = 1.0)]
     pub min_activation_range: Option<f32>,
     /// `particle_color`: the color of the particles spawned while casting this spell. Default white.
     pub particle_color: Option<ParticleColor>,
@@ -3025,48 +2782,14 @@ pub struct SendEventChoice {
     /// `start_sound_event`: the sound event to play when this spell starts. Default `""`.
     pub start_sound_event: Option<SoundEvent>,
     /// `weight`: relative weight of this spell choice when randomly selected from valid choices. Default 0.
+    #[facet(schema::fallback = 0.0)]
     pub weight: Option<f32>,
 }
 
 impl SendEventChoice {
-    /// `cast_duration`, or its default 0.
-    pub fn cast_duration(&self) -> f32 {
-        self.cast_duration.unwrap_or(0.0)
-    }
-
-    /// `cooldown_time`, or its default 0.
-    pub fn cooldown_time(&self) -> f32 {
-        self.cooldown_time.unwrap_or(0.0)
-    }
-
-    /// `do_casting`, or its default `true`.
-    pub fn do_casting(&self) -> bool {
-        self.do_casting.is_none_or(|v| v)
-    }
-
-    /// `look_at_target`, or its default `true`.
-    pub fn look_at_target(&self) -> bool {
-        self.look_at_target.is_none_or(|v| v)
-    }
-
-    /// `max_activation_range`, or its default 32.
-    pub fn max_activation_range(&self) -> f32 {
-        self.max_activation_range.unwrap_or(32.0)
-    }
-
-    /// `min_activation_range`, or its default 1.
-    pub fn min_activation_range(&self) -> f32 {
-        self.min_activation_range.unwrap_or(1.0)
-    }
-
     /// `start_sound_event`, or its default `""`.
     pub fn start_sound_event(&self) -> &str {
         self.start_sound_event.as_ref().map_or("", SoundEvent::name)
-    }
-
-    /// `weight`, or its default 0.
-    pub fn weight(&self) -> f32 {
-        self.weight.unwrap_or(0.0)
     }
 
     /// Checks the entry's members.
@@ -3107,263 +2830,29 @@ impl SendEventStage {
     }
 }
 
-crate::hand_fields!(AquaticChargeAttack {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "attack_reach": Option<f32>,
-    "charge_overshoot_distance": Option<f32>,
-    "charge_speed": Option<f32>,
-    "knockback_force": Option<f32>,
-    "max_charge_distance": Option<f32>,
+crate::trigger_fields!(DelayedAttack {
+    on_attack: Option<EventTrigger>,
+    on_kill: Option<EventTrigger>,
 });
-crate::hand_fields!(DelayedAttack {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "attack_duration": Option<f32>,
-    "attack_once": Option<bool>,
-    "attack_types": Option<String>,
-    "can_spread_on_fire": Option<bool>,
-    "hit_delay_pct": Option<f32>,
-    "inner_boundary_time_increase": Option<f32>,
-    "max_path_time": Option<f32>,
-    "melee_fov": Option<f32>,
-    "min_path_time": Option<f32>,
-    "on_attack": Option<EventTrigger>,
-    "on_kill": Option<EventTrigger>,
-    "outer_boundary_time_increase": Option<f32>,
-    "path_fail_time_increase": Option<f32>,
-    "path_inner_boundary": Option<f32>,
-    "path_outer_boundary": Option<f32>,
-    "random_stop_interval": Option<i32>,
-    "reach_multiplier": Option<f32>,
-    "require_complete_path": Option<bool>,
-    "sound_event": Option<SoundEvent>,
-    "speed_multiplier": Option<f32>,
-    "track_target": Option<bool>,
-    "x_max_rotation": Option<f32>,
-    "y_max_head_rotation": Option<f32>,
+crate::trigger_fields!(KnockbackRoar {
+    on_roar_end: Option<EventTrigger>,
 });
-crate::hand_fields!(FireAtTarget {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "attack_cooldown": Option<f32>,
-    "max_head_rotation_x": Option<f32>,
-    "max_head_rotation_y": Option<f32>,
-    "owner_anchor": Option<i32>,
-    "owner_offset": Option<Vec3>,
-    "post_shoot_delay": Option<f32>,
-    "pre_shoot_delay": Option<f32>,
-    "projectile_def": Option<String>,
-    "ranged_fov": Option<f32>,
-    "target_anchor": Option<i32>,
-    "target_offset": Option<Vec3>,
+crate::trigger_fields!(MeleeAttack {
+    on_attack: Option<EventTrigger>,
+    on_kill: Option<EventTrigger>,
 });
-crate::hand_fields!(JumpAroundTarget {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "check_collision": Option<bool>,
-    "entity_bounding_box_scale": Option<f32>,
-    "jump_angles": Option<Vec<f32>>,
-    "jump_cooldown_duration": Option<f32>,
-    "jump_cooldown_when_hurt_duration": Option<f32>,
-    "landing_position_spread_degrees": Option<i32>,
-    "last_hurt_duration": Option<f32>,
-    "line_of_sight_obstruction_height_ignore": Option<i32>,
-    "max_jump_velocity": Option<f32>,
-    "prepare_jump_duration": Option<f32>,
-    "required_vertical_space": Option<i32>,
-    "snap_to_surface_block_range": Option<i32>,
+crate::trigger_fields!(MeleeBoxAttack {
+    on_attack: Option<EventTrigger>,
+    on_kill: Option<EventTrigger>,
 });
-crate::hand_fields!(KnockbackRoar {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "attack_time": Option<f32>,
-    "cooldown_time": Option<f32>,
-    "duration": Option<f32>,
-    "knockback_damage": Option<i32>,
-    "knockback_height_cap": Option<f32>,
-    "knockback_horizontal_strength": Option<i32>,
-    "knockback_range": Option<i32>,
-    "knockback_vertical_strength": Option<i32>,
-    "on_roar_end": Option<EventTrigger>,
+crate::trigger_fields!(RamAttack {
+    on_start: Option<Vec<EventTrigger>>,
 });
-crate::hand_fields!(MeleeAttack {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "attack_once": Option<bool>,
-    "attack_types": Option<String>,
-    "can_spread_on_fire": Option<bool>,
-    "cooldown_time": Option<f32>,
-    "inner_boundary_time_increase": Option<f32>,
-    "max_path_time": Option<f32>,
-    "melee_fov": Option<f32>,
-    "min_path_time": Option<f32>,
-    "on_attack": Option<EventTrigger>,
-    "on_kill": Option<EventTrigger>,
-    "outer_boundary_time_increase": Option<f32>,
-    "path_fail_time_increase": Option<f32>,
-    "path_inner_boundary": Option<f32>,
-    "path_outer_boundary": Option<f32>,
-    "random_stop_interval": Option<i32>,
-    "reach_multiplier": Option<f32>,
-    "require_complete_path": Option<bool>,
-    "speed_multiplier": Option<f32>,
-    "track_target": Option<bool>,
-    "x_max_rotation": Option<f32>,
-    "y_max_head_rotation": Option<f32>,
+crate::trigger_fields!(StompAttack {
+    on_attack: Option<EventTrigger>,
+    on_kill: Option<EventTrigger>,
 });
-crate::hand_fields!(MeleeBoxAttack {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "attack_once": Option<bool>,
-    "attack_types": Option<String>,
-    "can_spread_on_fire": Option<bool>,
-    "cooldown_time": Option<f32>,
-    "horizontal_reach": Option<f32>,
-    "inner_boundary_time_increase": Option<f32>,
-    "max_path_time": Option<f32>,
-    "melee_fov": Option<f32>,
-    "min_path_time": Option<f32>,
-    "on_attack": Option<EventTrigger>,
-    "on_kill": Option<EventTrigger>,
-    "outer_boundary_time_increase": Option<f32>,
-    "path_fail_time_increase": Option<f32>,
-    "path_inner_boundary": Option<f32>,
-    "path_outer_boundary": Option<f32>,
-    "random_stop_interval": Option<i32>,
-    "require_complete_path": Option<bool>,
-    "speed_multiplier": Option<f32>,
-    "track_target": Option<bool>,
-    "x_max_rotation": Option<f32>,
-    "y_max_head_rotation": Option<f32>,
+crate::trigger_fields!(UseKineticWeapon {
+    on_attack: Option<EventTrigger>,
+    on_kill: Option<EventTrigger>,
 });
-crate::hand_fields!(RamAttack {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "baby_knockback_modifier": Option<f32>,
-    "knockback_force": Option<f32>,
-    "knockback_height": Option<f32>,
-    "min_ram_distance": Option<i32>,
-    "on_start": Option<Vec<EventTrigger>>,
-    "pre_ram_sound": Option<SoundEvent>,
-    "ram_distance": Option<i32>,
-    "ram_impact_sound": Option<SoundEvent>,
-    "ram_speed": Option<f32>,
-    "run_speed": Option<f32>,
-});
-crate::hand_fields!(RangedAttack {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "burst_interval": Option<f32>,
-    "burst_shots": Option<i32>,
-    "charge_charged_trigger": Option<f32>,
-    "charge_shoot_trigger": Option<f32>,
-    "in_range_movement_mode": Option<InRangeMovementMode>,
-    "ranged_fov": Option<f32>,
-    "set_persistent": Option<bool>,
-    "speed_multiplier": Option<f32>,
-    "swing": Option<bool>,
-    "target_in_sight_time": Option<f32>,
-    "x_max_rotation": Option<f32>,
-    "y_max_head_rotation": Option<f32>,
-});
-crate::hand_fields!(StalkAndPounceOnTarget {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "interest_time": Option<f32>,
-    "leap_dist": Option<f32>,
-    "leap_height": Option<f32>,
-    "max_stalk_dist": Option<f32>,
-    "pounce_max_dist": Option<f32>,
-    "set_persistent": Option<bool>,
-    "stalk_speed": Option<f32>,
-    "strike_dist": Option<f32>,
-    "stuck_time": Option<f32>,
-});
-crate::hand_fields!(StompAttack {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "attack_once": Option<bool>,
-    "attack_types": Option<String>,
-    "can_spread_on_fire": Option<bool>,
-    "cooldown_time": Option<f32>,
-    "inner_boundary_time_increase": Option<f32>,
-    "max_path_time": Option<f32>,
-    "min_path_time": Option<f32>,
-    "no_damage_range_multiplier": Option<f32>,
-    "on_attack": Option<EventTrigger>,
-    "on_kill": Option<EventTrigger>,
-    "outer_boundary_time_increase": Option<f32>,
-    "path_fail_time_increase": Option<f32>,
-    "path_inner_boundary": Option<f32>,
-    "path_outer_boundary": Option<f32>,
-    "random_stop_interval": Option<i32>,
-    "reach_multiplier": Option<f32>,
-    "require_complete_path": Option<bool>,
-    "speed_multiplier": Option<f32>,
-    "stomp_range_multiplier": Option<f32>,
-    "track_target": Option<bool>,
-    "x_max_rotation": Option<f32>,
-    "y_max_head_rotation": Option<f32>,
-});
-crate::hand_fields!(SwoopAttack {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "damage_reach": Option<f32>,
-    "speed_multiplier": Option<f32>,
-});
-crate::hand_fields!(UseKineticWeapon {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "approach_distance": Option<f32>,
-    "attack_once": Option<bool>,
-    "attack_types": Option<String>,
-    "can_spread_on_fire": Option<bool>,
-    "cooldown_speed_multiplier": Option<f32>,
-    "cooldown_time": Option<f32>,
-    "hijack_mount_navigation": Option<bool>,
-    "inner_boundary_time_increase": Option<f32>,
-    "max_path_time": Option<f32>,
-    "melee_fov": Option<f32>,
-    "min_path_time": Option<f32>,
-    "on_attack": Option<EventTrigger>,
-    "on_kill": Option<EventTrigger>,
-    "outer_boundary_time_increase": Option<f32>,
-    "path_fail_time_increase": Option<f32>,
-    "path_inner_boundary": Option<f32>,
-    "path_outer_boundary": Option<f32>,
-    "random_stop_interval": Option<i32>,
-    "reposition_speed_multiplier": Option<f32>,
-    "require_complete_path": Option<bool>,
-    "speed_multiplier": Option<f32>,
-    "track_target": Option<bool>,
-    "weapon_min_speed_multiplier": Option<f32>,
-    "weapon_reach_multiplier": Option<f32>,
-    "x_max_rotation": Option<f32>,
-    "y_max_head_rotation": Option<f32>,
-});
-crate::hand_fields!(SummonChoice {
-    "cast_duration": Option<f32>,
-    "cooldown_time": Option<f32>,
-    "do_casting": Option<bool>,
-    "max_activation_range": Option<f32>,
-    "min_activation_range": Option<f32>,
-    "particle_color": Option<ParticleColor>,
-    "sequence": Option<Vec<SummonStage>>,
-    "start_sound_event": Option<SoundEvent>,
-    "weight": Option<f32>,
-});
-bedrock_addon_core::impl_no_molang!(SummonChoice);
-crate::hand_fields!(SendEventChoice {
-    "cast_duration": Option<f32>,
-    "cooldown_time": Option<f32>,
-    "do_casting": Option<bool>,
-    "look_at_target": Option<bool>,
-    "max_activation_range": Option<f32>,
-    "min_activation_range": Option<f32>,
-    "particle_color": Option<ParticleColor>,
-    "sequence": Option<Vec<SendEventStage>>,
-    "start_sound_event": Option<SoundEvent>,
-    "weight": Option<f32>,
-});
-bedrock_addon_core::impl_no_molang!(SendEventChoice);

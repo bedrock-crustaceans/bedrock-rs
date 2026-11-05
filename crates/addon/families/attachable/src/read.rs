@@ -10,7 +10,8 @@ use bedrock_addon_core::diagnostic::{
     code_for_deserialize_error_kind,
 };
 use bedrock_addon_core::json::{
-    ClampedText, JsonSlice, Value, Width, clamp_text, parse_at, unknown_members,
+    ClampedText, JsonSlice, ScalarFailure, Value, Width, clamp_text, parse_at, parse_with_rules,
+    unknown_members,
 };
 use bedrock_addon_core::molang::Molang;
 use bedrock_addon_core::versioning::ParseCx;
@@ -293,26 +294,51 @@ pub(crate) fn typed<D: for<'x> Facet<'x>>(
             text: &clamped.text,
             offset: described.slice.offset,
         });
-    let value = match parse_at::<D>(slice) {
-        Ok(value) => value,
-        Err(mut error) => {
+    // The scalars are read by the slice's rules (`crate::READING`: strict, a number beyond its
+    // float a type error).
+    let value = match parse_with_rules::<D>(slice, None, crate::READING.scalar_rules()) {
+        // What the pre-pass tells of a conversion is not pushed: under these rules it tells
+        // only a `null` read as a struct, and every `null` was refused above.
+        Ok(read) => read.value,
+        Err(failure) => {
+            // The failing value: its path below the description, its code, and its place in
+            // the text read.
+            let (code, failed, span) = match failure {
+                ScalarFailure::Read(error) => (
+                    code_for_deserialize_error_kind(
+                        &error.error.kind,
+                        !error.path.is_empty(),
+                        false,
+                    ),
+                    error.path,
+                    error.span,
+                ),
+                // A scalar no arm of an untagged enum takes: a type error at the enum.
+                ScalarFailure::Refused(refused) => (
+                    refused.finding(&JsonPath::new()).code,
+                    refused.path.clone(),
+                    refused.span.unwrap_or(Span {
+                        offset: u32::try_from(slice.offset).unwrap_or(u32::MAX),
+                        len: u32::try_from(slice.text.len()).unwrap_or(u32::MAX),
+                    }),
+                ),
+            };
             // The parse read the clamped text; the finding is of the file as written.
-            if let Some(clamped) = &clamped {
-                error.span = clamped.written_span(error.span, slice.offset);
-            }
-            let has_path = !error.path.is_empty();
-            let code = code_for_deserialize_error_kind(&error.error.kind, has_path, false);
+            let span = match &clamped {
+                Some(clamped) => clamped.written_span(span, slice.offset),
+                None => span,
+            };
             // A wrong type is the declared member's, however deep the reader got into it.
             let path = match code {
-                DiagnosticCode::InvalidType { .. } => declared(&error.path, names_only),
-                _ => error.path.clone(),
+                DiagnosticCode::InvalidType { .. } => declared(&failed, names_only),
+                _ => failed.clone(),
             };
             let mut at = described.at.clone();
             at.append(&path);
             // Whatever the reader says of a value inside `item` (a `null` condition is to it
             // a missing value), the schema's finding is a wrong type.
-            if error.path.segments().next() == Some(JsonPathSegment::Key("item")) {
-                d.push(item_type_error(described, error.span));
+            if failed.segments().next() == Some(JsonPathSegment::Key("item")) {
+                d.push(item_type_error(described, span));
                 return None;
             }
             let (member, _) = last_member(&path);
@@ -323,11 +349,11 @@ pub(crate) fn typed<D: for<'x> Facet<'x>>(
                     required(member.unwrap_or_default(), at)
                 }
                 DiagnosticCode::InvalidType { .. } => {
-                    wrong_type(allowed_at(&path, names_only), at, Some(error.span))
+                    wrong_type(allowed_at(&path, names_only), at, Some(span))
                 }
                 code => {
                     let mut found = Diagnostic::error(code).at(at);
-                    found.location.span = Some(error.span);
+                    found.location.span = Some(span);
                     found
                 }
             };
@@ -736,7 +762,7 @@ pub(crate) fn check_condition<'m>(
 /// `variable.[a-zA-Z_][a-zA-Z0-9_]*`, the object holds at least one, and every value is exactly
 /// `public`.
 pub(crate) fn check_variables(
-    variables: Option<&IndexMap<String, bedrock_addon_core::json::StrictString>>,
+    variables: Option<&IndexMap<String, String>>,
     at: &JsonPath,
     d: &mut Diagnostics,
 ) {
@@ -747,10 +773,10 @@ pub(crate) fn check_variables(
         let member_at = map_at.with(&[key]);
         if !is_variable_key(key) {
             d.push(not_valid_here(key, member_at));
-        } else if value.0 != "public" {
+        } else if value != "public" {
             d.push(
                 Diagnostic::error(DiagnosticCode::InvalidValue {
-                    text: text(NOT_ALLOWED_REGEX, &[&value.0, "public"]),
+                    text: text(NOT_ALLOWED_REGEX, &[value, "public"]),
                 })
                 .at(member_at),
             );

@@ -7,10 +7,11 @@
 // The member sets here are the typed Brain group. Where the game's schema does not fix a
 // member's type, the crate picks the type that reads the members the game's own packs write.
 
+use crate::component::descriptor_tags;
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath};
 use bedrock_addon_core::json::Value;
-use bedrock_addon_core::molang::{MolangFields, MolangVisitor, Step};
-use bedrock_addon_core::schema::{self, Schema, SchemaCx, SchemaFields};
+use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
+use bedrock_addon_core::schema::{self, GoalMeta, Schema};
 use bedrock_addon_core::shared::{BlockDescriptor, EventTrigger, Filter, FloatRange};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::version::known;
@@ -18,7 +19,7 @@ use facet::Facet;
 
 use super::check::{Bound, Goal, GoalCheck};
 use super::common::{ControlFlag, GameEventType, LegacyConditions, SoundEvent, Vec2, Vec3};
-use super::molang::{push_triggers, visit_blocks, visit_conditions};
+use super::molang::{push_triggers, visit_conditions};
 
 /// `minecraft:memory_behavior.move_to_position.<name>`: moves the mob to the block position a
 /// memory holds, sticking to it until the memory is cleared. The key needs a `.<name>` suffix
@@ -104,10 +105,11 @@ impl MolangFields for MemoryMoveToPosition {
 // Typed from 1.26.0, built on the shared memory-goal members from 1.26.30. The current
 // definition adds `on_complete` and makes the shared `duration` optional.
 #[doc(alias = "minecraft:memory_behavior.wait")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct MemoryWait {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
@@ -121,18 +123,14 @@ pub struct MemoryWait {
     /// shared memory-goal `duration`, optional).
     pub duration: Option<FloatRange>,
     /// `on_complete`: the events fired when the wait ends (a list of event triggers).
+    // Out of the reference check, as the hand-kept trigger list left it: whether it belongs
+    // there is an open question, not this conversion's.
+    #[facet(schema::foreign_event)]
     pub on_complete: Option<Vec<EventTrigger>>,
 }
 
-impl MemoryWait {
-    /// `priority`, or its default 0.
-    pub fn priority(&self) -> i32 {
-        self.priority.unwrap_or(0)
-    }
-}
-
 impl Goal for MemoryWait {
-    const TYPED: FormatVersion = known::V1_26_0;
+    const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
         c.base(&mut self.priority);
@@ -147,17 +145,16 @@ impl Goal for MemoryWait {
     }
 }
 
-bedrock_addon_core::impl_no_molang!(MemoryWait);
-
 /// `minecraft:memory_behavior.look_at_entity`: the mob looks at the entity a memory holds.
 // Typed from 1.26.10: `look_distance` (required, at least 0), `look_angle` (a `Vec2`, each
 // component 0 to 360) and `target_entity` (required). The current definition has no
 // `look_time`; it takes the shared memory-goal members instead.
 #[doc(alias = "minecraft:memory_behavior.look_at_entity")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct MemoryLookAtEntity {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
@@ -179,15 +176,8 @@ pub struct MemoryLookAtEntity {
     pub target_entity: Option<String>,
 }
 
-impl MemoryLookAtEntity {
-    /// `priority`, or its default 0.
-    pub fn priority(&self) -> i32 {
-        self.priority.unwrap_or(0)
-    }
-}
-
 impl Goal for MemoryLookAtEntity {
-    const TYPED: FormatVersion = known::V1_26_10;
+    const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
         c.base(&mut self.priority);
@@ -213,16 +203,15 @@ impl Goal for MemoryLookAtEntity {
     }
 }
 
-bedrock_addon_core::impl_no_molang!(MemoryLookAtEntity);
-
 /// `minecraft:memory_behavior.follow_target`: the mob follows the entity a memory holds.
 // Typed from 1.26.20: `target_memory` (an `entity_ref` memory) and `speed_modifier`. The
 // current definition also has `min_range` and the shared memory-goal members.
 #[doc(alias = "minecraft:memory_behavior.follow_target")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct MemoryFollowTarget {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
@@ -243,15 +232,8 @@ pub struct MemoryFollowTarget {
     pub min_range: Option<f32>,
 }
 
-impl MemoryFollowTarget {
-    /// `priority`, or its default 0.
-    pub fn priority(&self) -> i32 {
-        self.priority.unwrap_or(0)
-    }
-}
-
 impl Goal for MemoryFollowTarget {
-    const TYPED: FormatVersion = known::V1_26_20;
+    const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
         c.base(&mut self.priority);
@@ -266,8 +248,6 @@ impl Goal for MemoryFollowTarget {
         c.float_at_least("min_range", &mut self.min_range, 0.0);
     }
 }
-
-bedrock_addon_core::impl_no_molang!(MemoryFollowTarget);
 
 /// What a sensor does when its condition changes: fire `event` and write memories.
 // A response names the event to fire and the memory setters that write the memories.
@@ -298,23 +278,11 @@ macro_rules! sensor {
     ) => {
         $(#[$meta])*
         #[doc(alias = $key)]
-        #[derive(Clone, Debug, Default, PartialEq, Facet)]
+        #[derive(Clone, Debug, PartialEq, Facet, Schema)]
         #[facet(schema::unknown = "keep")]
         pub struct $name {
             /// `sensor_entries`: the sensor's entries, each searched on its own. Required.
             pub sensor_entries: Option<Vec<$entry>>,
-        }
-
-        // The entries' trigger members; the entries hold the checks (`Goal::check`).
-        impl SchemaFields for $name {
-            fn check_fields(&mut self, _: &mut SchemaCx<'_>) {}
-
-            fn trigger_members(prefix: &str, out: &mut Vec<String>) {
-                <Option<Vec<$entry>> as SchemaFields>::trigger_members(
-                    &schema::member(prefix, "sensor_entries"),
-                    out,
-                );
-            }
         }
 
         impl Goal for $name {
@@ -364,39 +332,8 @@ sensor! {
     MemorySensorInRangeOfEntity(InRangeOfEntityEntry, "minecraft:memory_sensor.in_range_of_entity", known::V1_26_0)
 }
 
-impl MolangFields for MemorySensorFindNearestBlock {
-    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
-        let Some(entries) = &mut self.sensor_entries else {
-            return;
-        };
-        visitor.enter(Step::from("sensor_entries"));
-        for (i, entry) in entries.iter_mut().enumerate() {
-            visitor.enter(Step::from(i));
-            visit_blocks(visitor, "blocks", &mut entry.blocks);
-            visitor.leave();
-        }
-        visitor.leave();
-    }
-}
-
-impl MolangFields for MemorySensorFindNearestEntity {
-    fn visit_molang(&mut self, _: &mut MolangVisitor<'_>) {}
-}
-
-impl MolangFields for MemorySensorFindNearestPoi {
-    fn visit_molang(&mut self, _: &mut MolangVisitor<'_>) {}
-}
-
-impl MolangFields for MemorySensorGameEvent {
-    fn visit_molang(&mut self, _: &mut MolangVisitor<'_>) {}
-}
-
-impl MolangFields for MemorySensorInRangeOfEntity {
-    fn visit_molang(&mut self, _: &mut MolangVisitor<'_>) {}
-}
-
 /// One entry of `memory_sensor.find_nearest_block`.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct FindNearestBlockEntry {
     /// `conditional_filters`: the entry searches only when these pass.
@@ -408,6 +345,7 @@ pub struct FindNearestBlockEntry {
     /// `found_blockpos_memory`: the block-position memory the result goes to.
     pub found_blockpos_memory: Option<String>,
     /// `blocks`: the blocks searched for.
+    #[facet(schema::molang_with = descriptor_tags)]
     pub blocks: Option<Vec<BlockDescriptor>>,
     /// `search_range`: the horizontal search distance, as written.
     pub search_range: Option<Value>,
@@ -424,7 +362,7 @@ impl FindNearestBlockEntry {
 }
 
 /// One entry of `memory_sensor.find_nearest_entity`.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct FindNearestEntityEntry {
     /// `name`: the entry's name.
@@ -450,7 +388,7 @@ impl FindNearestEntityEntry {
 }
 
 /// One entry of `memory_sensor.find_nearest_poi`.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct FindNearestPoiEntry {
     /// `name`: the entry's name.
@@ -475,7 +413,7 @@ impl FindNearestPoiEntry {
 }
 
 /// One entry of `memory_sensor.game_event`.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct GameEventEntry {
     /// `source_entity_filters`: the entities whose events count.
@@ -496,7 +434,7 @@ impl GameEventEntry {
 }
 
 /// One entry of `memory_sensor.in_range_of_entity`.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct InRangeOfEntityEntry {
     /// `conditional_filters`: the entry checks only when these pass.
@@ -707,12 +645,8 @@ sensor! {
     MemorySensorFindRamChargePosition(FindRamChargePositionEntry, "minecraft:memory_sensor.find_ram_charge_position", BRAIN_1_26_50)
 }
 
-impl MolangFields for MemorySensorFindRamChargePosition {
-    fn visit_molang(&mut self, _: &mut MolangVisitor<'_>) {}
-}
-
 /// One entry of `memory_sensor.find_ram_charge_position`.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct FindRamChargePositionEntry {
     /// `charge_position_memory`: the `block_pos` memory the charge position goes to.
@@ -722,8 +656,10 @@ pub struct FindRamChargePositionEntry {
     /// `cooldown`: seconds between searches, a number or a range.
     pub cooldown: Option<FloatRange>,
     /// `max_ram_distance`: the largest distance between the target and the charge position. Default 7; at least 0.
+    #[facet(schema::fallback = 7)]
     pub max_ram_distance: Option<i32>,
     /// `min_ram_distance`: the smallest distance between the target and the charge position. Default 4; at least 0.
+    #[facet(schema::fallback = 4)]
     pub min_ram_distance: Option<i32>,
     /// `ram_position_memory`: the `block_pos` memory the position past the target goes to.
     pub ram_position_memory: Option<String>,
@@ -734,16 +670,6 @@ pub struct FindRamChargePositionEntry {
 }
 
 impl FindRamChargePositionEntry {
-    /// `min_ram_distance`, or its default 4.
-    pub fn min_ram_distance(&self) -> i32 {
-        self.min_ram_distance.unwrap_or(4)
-    }
-
-    /// `max_ram_distance`, or its default 7.
-    pub fn max_ram_distance(&self) -> i32 {
-        self.max_ram_distance.unwrap_or(7)
-    }
-
     fn check(&mut self, c: &mut GoalCheck<'_>) {
         c.filter("conditional_filters", self.conditional_filters.as_ref());
         c.range("cooldown", &mut self.cooldown);
@@ -902,113 +828,15 @@ mod tests {
     }
 }
 
-crate::hand_fields!(MemoryMoveToPosition {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "chance_to_start": Option<f32>,
-    "retry_attempt_cooldown": Option<f32>,
-    "speed_modifier": Option<f32>,
-    "goal_radius": Option<f32>,
-    "maximum_range": Option<f32>,
-    "memory": Option<String>,
-    "on_reach": Option<Vec<EventTrigger>>,
+crate::trigger_fields!(MemoryMoveToPosition {
+    on_reach: Option<Vec<EventTrigger>>,
 });
-crate::hand_fields!(MemoryWait {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "chance_to_start": Option<f32>,
-    "retry_attempt_cooldown": Option<f32>,
+crate::trigger_fields!(MemoryJumpToBlock {
     // `on_complete` is no trigger of the reference check: today's list leaves it out.
 });
-crate::hand_fields!(MemoryLookAtEntity {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "chance_to_start": Option<f32>,
-    "retry_attempt_cooldown": Option<f32>,
-    "look_distance": Option<f32>,
-    "look_angle": Option<Vec2>,
-    "target_entity": Option<String>,
-});
-crate::hand_fields!(MemoryFollowTarget {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "chance_to_start": Option<f32>,
-    "retry_attempt_cooldown": Option<f32>,
-    "target_memory": Option<String>,
-    "speed_modifier": Option<f32>,
-    "min_range": Option<f32>,
-});
-crate::hand_fields!(FindNearestBlockEntry {
-    "cooldown": Option<f32>,
-    "search_blockpos_memory": Option<String>,
-    "found_blockpos_memory": Option<String>,
-    "search_range": Option<Value>,
-    "search_height": Option<Value>,
-});
-bedrock_addon_core::impl_no_molang!(FindNearestBlockEntry);
-crate::hand_fields!(FindNearestEntityEntry {
-    "name": Option<String>,
-    "found_entity_memory": Option<String>,
-    "cooldown": Option<f32>,
-    "search_range": Option<Vec3>,
-});
-bedrock_addon_core::impl_no_molang!(FindNearestEntityEntry);
-crate::hand_fields!(FindNearestPoiEntry {
-    "name": Option<String>,
-    "found_poi_memory": Option<String>,
-    "cooldown": Option<f32>,
-    "poi_name": Option<String>,
-    "search_radius": Option<f32>,
-});
-bedrock_addon_core::impl_no_molang!(FindNearestPoiEntry);
-crate::hand_fields!(GameEventEntry {
-    "radius": Option<f32>,
-    "event_type": Option<GameEventType>,
-    "response": Option<SensorResponse>,
-});
-bedrock_addon_core::impl_no_molang!(GameEventEntry);
-crate::hand_fields!(InRangeOfEntityEntry {
-    "cooldown": Option<f32>,
-    "target_entity_memory": Option<String>,
-    "search_range": Option<Value>,
-    "entered_range_response": Option<SensorResponse>,
-    "exited_range_response": Option<SensorResponse>,
-    "within_range_response": Option<SensorResponse>,
-    "out_of_range_response": Option<SensorResponse>,
-});
-bedrock_addon_core::impl_no_molang!(InRangeOfEntityEntry);
-crate::hand_fields!(MemoryJumpToBlock {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "jump_velocity_memory": Option<String>,
-    // `on_complete` is no trigger of the reference check: today's list leaves it out.
-    "scale_factor": Option<f32>,
-    "target_blockpos_memory": Option<String>,
-});
-crate::hand_fields!(MemoryPrepareRamAttack {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
+crate::trigger_fields!(MemoryPrepareRamAttack {
     // `on_entity_moved` is no trigger of the reference check: today's list leaves it out.
-    "target_entity_memory": Option<String>,
-    "target_position_memory": Option<String>,
 });
-crate::hand_fields!(MemoryRamAttack {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "baby_knockback_modifier": Option<f32>,
-    "knockback_force": Option<f32>,
-    "knockback_height": Option<f32>,
+crate::trigger_fields!(MemoryRamAttack {
     // `on_collide` is no trigger of the reference check: today's list leaves it out.
-    "pre_ram_sound": Option<SoundEvent>,
-    "ram_impact_sound": Option<SoundEvent>,
-    "ram_position_memory": Option<String>,
 });
-crate::hand_fields!(FindRamChargePositionEntry {
-    "charge_position_memory": Option<String>,
-    "max_ram_distance": Option<i32>,
-    "min_ram_distance": Option<i32>,
-    "ram_position_memory": Option<String>,
-    "target_entity_memory": Option<String>,
-    "target_position_memory": Option<String>,
-});
-bedrock_addon_core::impl_no_molang!(FindRamChargePositionEntry);

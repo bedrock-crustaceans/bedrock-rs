@@ -23,8 +23,7 @@
 //!   (`Registry`, `Files`, `Merged`), components and the `Content` / `Definition` traits.
 //! - `load`: what loading depends on (`LoadOptions`, `LoadContext`, `BuiltIns`, experiments,
 //!   limits and the virtual locations loaders speak in).
-//! - `json`: the public part of the facet helpers (`Value`, the strict scalar wrappers
-//!   `StrictInt`, `StrictFloat`, `StrictBool` and `StrictString` with their shape and error,
+//! - `json`: the public part of the facet helpers (`Value`, the scalar shape and its error,
 //!   `MAX_JSON_DEPTH`, the envelope of a versioned document, `WriteStyle`, `EncodeError`);
 //!   the other helpers `bedrock_addon` reads and writes with are named from here and not
 //!   listed on the module's page.

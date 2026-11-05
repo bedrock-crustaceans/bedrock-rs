@@ -1,6 +1,5 @@
 //! The stack: the accessor, the registry and the link pass.
 
-use bedrock_addon::diagnostic::{Diagnostic, Severity};
 use bedrock_addon::document::{Document, Registry};
 use bedrock_addon::families::server_sound_definitions::{SoundDuration, SoundMetadata};
 use bedrock_addon::id::SoundEventName;
@@ -220,8 +219,10 @@ fn ssd20_a_subpack_copy_replaces_the_packs() {
     assert!(named(registry, "DuplicateIdentifier").is_empty());
 }
 
+#[cfg(feature = "sound_definitions")]
 #[test]
 fn ssd23_a_name_without_a_resource_pack_definition_is_an_info() {
+    use bedrock_addon::diagnostic::{Diagnostic, Severity};
     use bedrock_addon::pack::{PackRepository, WorldPacks};
     // The behaviour pack declares `demo:missing` and `demo:present`; the resource pack's
     // `sounds/sound_definitions.json` defines `demo:present` only.

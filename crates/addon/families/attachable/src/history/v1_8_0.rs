@@ -5,7 +5,7 @@ use bedrock_addon_core::id::{
     AnimationRef, AttachableId, GeometryId, MaterialId, ParticleId, RenderControllerId,
     SoundEventName, TexturePath,
 };
-use bedrock_addon_core::json::{EncodeError, JsonSlice, StrictBool, StrictString, Value};
+use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor, Step};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::version::known;
@@ -50,22 +50,22 @@ pub struct Description {
     /// `particle_effects`.
     pub particle_effects: Option<IndexMap<String, ParticleId>>,
     /// `particle_emitters`: accepted and read by nothing.
-    pub particle_emitters: Option<IndexMap<String, StrictString>>,
+    pub particle_emitters: Option<IndexMap<String, String>>,
     /// `animations`.
     pub animations: Option<IndexMap<String, AnimationRef>>,
     /// `animation_controllers`: a list of `{ name: controller }` objects, of which vanilla
     /// reads one member each (the key that sorts first byte by byte).
-    pub animation_controllers: Option<Vec<IndexMap<String, StrictString>>>,
+    pub animation_controllers: Option<Vec<IndexMap<String, String>>>,
     /// `render_controllers`: names only.
-    pub render_controllers: Option<Vec<StrictString>>,
+    pub render_controllers: Option<Vec<String>>,
     /// `sound_effects`.
     pub sound_effects: Option<IndexMap<String, SoundEventName>>,
     /// `enable_attachables`.
-    pub enable_attachables: Option<StrictBool>,
+    pub enable_attachables: Option<bool>,
     /// `held_item_ignores_lighting`.
-    pub held_item_ignores_lighting: Option<StrictBool>,
+    pub held_item_ignores_lighting: Option<bool>,
     /// `hide_armor`.
-    pub hide_armor: Option<StrictBool>,
+    pub hide_armor: Option<bool>,
 }
 
 impl Versioned for Attachable {
@@ -197,7 +197,7 @@ impl Upgrade for Attachable {
                 render_controllers: d.render_controllers.map(|controllers| {
                     controllers
                         .into_iter()
-                        .map(|name| ControllerUse::Always(RenderControllerId::parse(name.0)))
+                        .map(|name| ControllerUse::Always(RenderControllerId::parse(name)))
                         .collect()
                 }),
                 sound_effects: d.sound_effects,

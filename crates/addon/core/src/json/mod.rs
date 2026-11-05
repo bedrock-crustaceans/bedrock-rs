@@ -1,7 +1,5 @@
 //! The public part of the thin helpers over facet-json and facet-value: the untyped value, the
-//! strict scalar wrappers component members are made of ([`StrictInt`], [`StrictFloat`],
-//! [`StrictBool`], [`StrictString`], with the scalar shape they are read through,
-//! [`ScalarShape`], and their error, [`StrictError`]), the nesting limit ([`MAX_JSON_DEPTH`]),
+//! scalar shape ([`ScalarShape`]) and its error ([`StrictError`]), the nesting limit ([`MAX_JSON_DEPTH`]),
 //! the envelope of a versioned document ([`RootProbe`], [`EnvelopeVersion`],
 //! [`probe_envelope`]), the write style and the encode error. Parsing is facet's; the crate
 //! adds no JSON tree of its own.
@@ -21,8 +19,10 @@
 //! - typed structs are deserialised from text with the jsonc entry points, a slice at a time
 //!   through `JsonSlice` and `parse_at`, which report failures at file offsets with the JSON
 //!   member names; a modern document's root through `probe_envelope`;
-//! - where vanilla rejects a value of the wrong JSON type, the strict wrappers `StrictInt`,
-//!   `StrictFloat`, `StrictBool`, `StrictString`;
+//! - where vanilla rejects a value of the wrong JSON type, the slice's `Reading` (the scalar
+//!   pre-pass, `parse_with_rules`); the strict wrappers `StrictInt`, `StrictFloat`,
+//!   `StrictBool`, `StrictString` remain where a core gap keeps them (`strict`'s module doc
+//!   lists them);
 //! - unknown members through `unknown_members` / `keep_unknown_members`, kept in a
 //!   document's `Unknown` table for the structs marked with `document::Extra`, and written
 //!   back by `merge_unknown` / `write_json_with`; every `#[facet(skip)]` field is renamed
@@ -81,6 +81,9 @@ pub use scalar::{
 };
 #[doc(hidden)]
 pub use slice::{JsonSlice, SliceError, parse_at, span_at};
+// Hidden: what still holds a wrapper is listed, with the gap it waits on, in `strict`'s
+// module doc.
+#[doc(hidden)]
 pub use strict::{
     ReaderMode, StrictBool, StrictFloat, StrictFloatType, StrictInt, StrictIntType, StrictString,
     with_reader_mode,

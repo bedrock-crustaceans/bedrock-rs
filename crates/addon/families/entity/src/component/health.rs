@@ -4,9 +4,9 @@
 // Types and defaults follow the game's 1.26.50 schemas (1.21.130 for `burns_in_daylight`,
 // 1.26.40 for `ignore_cannot_be_attacked`).
 
+use crate::component::descriptor_tags;
 use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath, VanillaText};
 use bedrock_addon_core::json::Value;
-use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
 use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::shared::{Filter, FloatRange, ItemDescriptor};
 use bedrock_addon_core::versioning::ConvertMode;
@@ -14,7 +14,7 @@ use facet::Facet;
 use facet_value::VObject;
 
 use super::parse::{ComponentCheck, Typed};
-use super::value::{EffectSeconds, EquipmentSlot, SecondsOrText, one_element, visit_item_tags};
+use super::value::{EffectSeconds, EquipmentSlot, SecondsOrText, one_element};
 
 /// `minecraft:boss`: the boss bar shown to players near the entity.
 #[doc(alias = "minecraft:boss")]
@@ -162,7 +162,7 @@ impl Typed for Insomnia {
 /// `minecraft:ignore_cannot_be_attacked`: the entity may attack entities that have
 /// `minecraft:cannot_be_attacked`, those its filters pass (all of them without filters).
 #[doc(alias = "minecraft:ignore_cannot_be_attacked")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct IgnoreCannotBeAttacked {
     /// `filters`: which protected entities may be attacked; absent means all.
@@ -181,7 +181,7 @@ impl Typed for IgnoreCannotBeAttacked {
 // `damage` is a nested `{min, max}` that also reads a plain number (default 0..0);
 // `effect_amplifier` defaults to 0.
 #[doc(alias = "minecraft:attack")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct Attack {
     /// `damage`: the range of the damage dealt; a negative value heals. Default 0 to 0.
@@ -283,7 +283,7 @@ impl Typed for Strength {}
 /// `minecraft:healable`: the items that heal the entity.
 // `healable` and its nested feed item and effect.
 #[doc(alias = "minecraft:healable")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct Healable {
     /// `items`: the items that heal it.
@@ -297,12 +297,14 @@ pub struct Healable {
 }
 
 /// One item of [`Healable`].
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct HealItem {
     /// `item`: the item; absent is no item.
+    #[facet(schema::molang_with = descriptor_tags)]
     pub item: Option<ItemDescriptor>,
     /// `result_item`: the item the used one turns into; absent is none.
+    #[facet(schema::molang_with = descriptor_tags)]
     pub result_item: Option<ItemDescriptor>,
     /// `heal_amount`: the health it gives; default 1.
     #[facet(default = 1_i32)]
@@ -310,17 +312,6 @@ pub struct HealItem {
     /// `effects`: the effects it applies.
     #[facet(default)]
     pub effects: Vec<HealEffect>,
-}
-
-impl Default for HealItem {
-    fn default() -> Self {
-        Self {
-            item: None,
-            result_item: None,
-            heal_amount: 1,
-            effects: Vec::new(),
-        }
-    }
 }
 
 /// One effect of a [`HealItem`].
@@ -391,42 +382,3 @@ impl Typed for Healable {
         }
     }
 }
-
-impl MolangFields for Healable {
-    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
-        visitor.enter("items".into());
-        for (i, item) in self.items.iter_mut().enumerate() {
-            visitor.enter(i.into());
-            for (key, descriptor) in [
-                ("item", &mut item.item),
-                ("result_item", &mut item.result_item),
-            ] {
-                if let Some(descriptor) = descriptor {
-                    visitor.enter(key.into());
-                    visit_item_tags(descriptor, visitor);
-                    visitor.leave();
-                }
-            }
-            visitor.leave();
-        }
-        visitor.leave();
-    }
-}
-
-crate::hand_fields!(IgnoreCannotBeAttacked {});
-bedrock_addon_core::impl_no_molang!(IgnoreCannotBeAttacked);
-crate::hand_fields!(Attack {
-    "effect_name": String,
-    "effect_duration": EffectSeconds,
-    "effect_amplifier": i32,
-});
-bedrock_addon_core::impl_no_molang!(Attack);
-crate::hand_fields!(Healable {
-    "items": Vec<HealItem>,
-    "force_use": bool,
-});
-crate::hand_fields!(HealItem {
-    "heal_amount": i32,
-    "effects": Vec<HealEffect>,
-});
-bedrock_addon_core::impl_no_molang!(HealItem);

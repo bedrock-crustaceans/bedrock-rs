@@ -154,9 +154,7 @@ impl VersionStruct for SimplifiedSpawnRules {
                 d.push(match failure {
                     ScalarFailure::Read(error) => error.into_diagnostic(&cx.at, |code, _| code),
                     // A scalar no arm of an untagged enum takes: a type error at the enum.
-                    ScalarFailure::Refused(misread) => {
-                        bedrock_addon_support::chain_file::refusal(payload, &misread, &cx.at)
-                    }
+                    ScalarFailure::Refused(misread) => misread.spanned_finding(&cx.at),
                 });
                 None
             }

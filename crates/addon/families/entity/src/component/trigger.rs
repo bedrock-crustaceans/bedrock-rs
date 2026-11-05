@@ -41,8 +41,8 @@ macro_rules! triggers {
             }
         }
 
-        // The component is a trigger itself (`{event, filters, target}`); it holds a `Filter`,
-        // so it derives no `Schema`.
+        // The component is a trigger itself (`{event, filters, target}`): its trigger member is
+        // the empty pattern, which the derive states only for an `EventTrigger` field.
         impl SchemaFields for $name {
             fn check_fields(&mut self, _: &mut SchemaCx<'_>) {}
 

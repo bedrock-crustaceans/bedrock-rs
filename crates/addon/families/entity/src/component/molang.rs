@@ -15,9 +15,7 @@ use bedrock_addon_core::diagnostic::Location;
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::json::{JsonSlice, Value};
 use bedrock_addon_core::load::LoadContext;
-use bedrock_addon_core::molang::{
-    Molang, MolangFieldSpec, MolangFields, MolangVisitor, ReaderKind,
-};
+use bedrock_addon_core::molang::{Molang, MolangFieldSpec, ReaderKind};
 #[cfg(feature = "molang")]
 use bedrock_addon_core::molang::{MolangContext, MolangOutcome, MolangSource, Side};
 use bedrock_addon_core::schema::{self, Schema};
@@ -198,7 +196,7 @@ impl Typed for ExperienceReward {
 
 /// `minecraft:anger_level`: the entity's anger towards nuisances (the warden).
 #[doc(alias = "minecraft:anger_level")]
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct AngerLevel {
     /// `anger_decrement_interval`: seconds between anger decreases; default 1.
@@ -230,27 +228,12 @@ pub struct AngerLevel {
     pub remove_targets_below_angry_threshold: bool,
 }
 
-impl Default for AngerLevel {
-    fn default() -> Self {
-        Self {
-            anger_decrement_interval: 1.0,
-            angry_boost: 20,
-            angry_threshold: 80,
-            default_annoyingness: 0,
-            default_projectile_annoyingness: 0,
-            max_anger: 100,
-            nuisance_filter: None,
-            on_increase_sounds: Vec::new(),
-            remove_targets_below_angry_threshold: true,
-        }
-    }
-}
-
 /// One sound of [`AngerLevel::on_increase_sounds`].
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct AngerSound {
     /// `condition`: when the sound plays, a Molang expression; required.
+    #[facet(schema::molang = EXPRESSION)]
     pub condition: Molang,
     /// `sound`: the sound event; required.
     pub sound: String,
@@ -288,18 +271,6 @@ impl Typed for AngerLevel {
             keep
         });
         cx.left_out(&sounds, &kept);
-    }
-}
-
-impl MolangFields for AngerLevel {
-    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
-        visitor.enter("on_increase_sounds".into());
-        for (i, sound) in self.on_increase_sounds.iter_mut().enumerate() {
-            visitor.enter(i.into());
-            visitor.field("condition", &EXPRESSION, &mut sound.condition);
-            visitor.leave();
-        }
-        visitor.leave();
     }
 }
 
@@ -428,6 +399,8 @@ impl Typed for Rideable {
                 seat.rotate_rider_by = Molang::Const(0.0);
             }
             // The typed reader bounds the seat limits to a range; the legacy schema has none.
+            // By hand: a broken bound resets the member to the low end (`Some(1.0)`), where a
+            // derived bound resets an `Option` to `None`.
             if matches!(cx.mode(), ConvertMode::Strict) {
                 for (key, bounds, value) in [
                     (
@@ -449,14 +422,3 @@ impl Typed for Rideable {
         }
     }
 }
-
-crate::hand_fields!(AngerLevel {
-    "anger_decrement_interval": f32,
-    "angry_boost": i32,
-    "angry_threshold": i32,
-    "default_annoyingness": i32,
-    "default_projectile_annoyingness": i32,
-    "max_anger": i32,
-    "on_increase_sounds": Vec<AngerSound>,
-    "remove_targets_below_angry_threshold": bool,
-});

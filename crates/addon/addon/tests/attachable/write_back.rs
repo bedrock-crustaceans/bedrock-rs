@@ -4,7 +4,7 @@
 use bedrock_addon::document::Content;
 use bedrock_addon::families::attachable::{Attachable, Description, ItemBinding};
 use bedrock_addon::id::{AttachableId, MaterialId, RenderControllerId};
-use bedrock_addon::json::{EncodeError, StrictString};
+use bedrock_addon::json::EncodeError;
 use bedrock_addon::molang::{Molang, MolangSource};
 use bedrock_addon::version::FormatVersion;
 use bedrock_addon::visual::{AnimateEntry, ControllerUse, HeldItemScale, Scripts};
@@ -120,7 +120,7 @@ fn a_description_the_schema_refuses_is_not_written() {
         d.scripts = Some(Scripts {
             variables: Some(IndexMap::from([(
                 "variable.x".to_owned(),
-                StrictString("private".to_owned()),
+                "private".to_owned(),
             )])),
             ..Scripts::default()
         });

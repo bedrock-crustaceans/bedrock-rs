@@ -449,6 +449,180 @@ mod tests {
         assert_eq!(rows("minecraft:health").len(), 0);
     }
 
+    /// Every `(component, trigger member)` pair of the table.
+    const PINNED_TRIGGERS: [(&str, &str); 116] = [
+        ("minecraft:ageable", "grow_up"),
+        ("minecraft:ageable", "on_pause_growth"),
+        ("minecraft:ageable", "on_reset_growth"),
+        ("minecraft:angry", "calm_event"),
+        (
+            "minecraft:attack_cooldown",
+            "attack_cooldown_complete_event",
+        ),
+        ("minecraft:balloonable", "on_balloon"),
+        ("minecraft:balloonable", "on_unballoon"),
+        ("minecraft:behavior.admire_item", "on_admire_item_start"),
+        ("minecraft:behavior.admire_item", "on_admire_item_stop"),
+        ("minecraft:behavior.avoid_block", "on_escape[]"),
+        ("minecraft:behavior.avoid_mob_type", "on_escape_event"),
+        ("minecraft:behavior.celebrate", "on_celebration_end_event"),
+        (
+            "minecraft:behavior.celebrate_survive",
+            "on_celebration_end_event",
+        ),
+        (
+            "minecraft:behavior.defend_trusted_target",
+            "on_defend_start",
+        ),
+        ("minecraft:behavior.delayed_attack", "on_attack"),
+        ("minecraft:behavior.delayed_attack", "on_kill"),
+        ("minecraft:behavior.dig", "on_start"),
+        ("minecraft:behavior.drop_item_for", "on_drop_attempt"),
+        ("minecraft:behavior.eat_block", "on_eat"),
+        ("minecraft:behavior.emerge", "on_done"),
+        ("minecraft:behavior.float_tempt", "on_tempt_end"),
+        ("minecraft:behavior.float_tempt", "on_tempt_start"),
+        (
+            "minecraft:behavior.go_and_give_items_to_noteblock",
+            "on_item_throw[]",
+        ),
+        (
+            "minecraft:behavior.go_and_give_items_to_owner",
+            "on_item_throw[]",
+        ),
+        ("minecraft:behavior.go_home", "on_failed[]"),
+        ("minecraft:behavior.go_home", "on_home[]"),
+        ("minecraft:behavior.hold_ground", "within_radius_event"),
+        ("minecraft:behavior.knockback_roar", "on_roar_end"),
+        ("minecraft:behavior.lay_egg", "on_lay"),
+        ("minecraft:behavior.melee_attack", "on_attack"),
+        ("minecraft:behavior.melee_attack", "on_kill"),
+        ("minecraft:behavior.melee_box_attack", "on_attack"),
+        ("minecraft:behavior.melee_box_attack", "on_kill"),
+        ("minecraft:behavior.move_to_block", "on_reach[]"),
+        ("minecraft:behavior.move_to_block", "on_stay_completed[]"),
+        ("minecraft:behavior.pickup_items", "on_pickup_item_end"),
+        ("minecraft:behavior.pickup_items", "on_pickup_item_start"),
+        ("minecraft:behavior.place_block", "on_place"),
+        ("minecraft:behavior.ram_attack", "on_start[]"),
+        (
+            "minecraft:behavior.random_search_and_dig",
+            "on_digging_start",
+        ),
+        (
+            "minecraft:behavior.random_search_and_dig",
+            "on_fail_during_digging",
+        ),
+        (
+            "minecraft:behavior.random_search_and_dig",
+            "on_fail_during_searching",
+        ),
+        ("minecraft:behavior.random_search_and_dig", "on_item_found"),
+        (
+            "minecraft:behavior.random_search_and_dig",
+            "on_searching_start",
+        ),
+        ("minecraft:behavior.random_search_and_dig", "on_success"),
+        ("minecraft:behavior.stomp_attack", "on_attack"),
+        ("minecraft:behavior.stomp_attack", "on_kill"),
+        ("minecraft:behavior.take_block", "on_take"),
+        ("minecraft:behavior.take_flower", "on_take_flower"),
+        ("minecraft:behavior.tempt", "on_tempt_end"),
+        ("minecraft:behavior.tempt", "on_tempt_start"),
+        ("minecraft:behavior.timer_flag_1", "on_end"),
+        ("minecraft:behavior.timer_flag_1", "on_start"),
+        ("minecraft:behavior.timer_flag_2", "on_end"),
+        ("minecraft:behavior.timer_flag_2", "on_start"),
+        ("minecraft:behavior.timer_flag_3", "on_end"),
+        ("minecraft:behavior.timer_flag_3", "on_start"),
+        ("minecraft:behavior.use_kinetic_weapon", "on_attack"),
+        ("minecraft:behavior.use_kinetic_weapon", "on_kill"),
+        ("minecraft:behavior.work", "on_arrival"),
+        ("minecraft:behavior.work_composter", "on_arrival"),
+        ("minecraft:block_sensor", "on_break[].on_block_broken"),
+        ("minecraft:breedable", "breeds_with.*"),
+        ("minecraft:damage_sensor", "triggers[].on_damage"),
+        ("minecraft:drying_out_timer", "dried_out_event"),
+        (
+            "minecraft:drying_out_timer",
+            "recover_after_dried_out_event",
+        ),
+        ("minecraft:drying_out_timer", "stopped_drying_out_event"),
+        ("minecraft:entity_sensor", "event"),
+        ("minecraft:entity_sensor", "subsensors[].event"),
+        ("minecraft:environment_sensor", "triggers[]"),
+        ("minecraft:equippable", "slots[].on_equip"),
+        ("minecraft:equippable", "slots[].on_unequip"),
+        (
+            "minecraft:genetics",
+            "genes[].genetic_variants[].birth_event",
+        ),
+        ("minecraft:giveable", "triggers[].on_give"),
+        (
+            "minecraft:inside_block_notifier",
+            "block_list[].entered_block_event",
+        ),
+        (
+            "minecraft:inside_block_notifier",
+            "block_list[].exited_block_event",
+        ),
+        ("minecraft:interact", "interactions[].on_interact"),
+        ("minecraft:leashable", "on_leash"),
+        ("minecraft:leashable", "on_unleash"),
+        ("minecraft:looked_at", "looked_at_event"),
+        ("minecraft:looked_at", "not_looked_at_event"),
+        ("minecraft:memory_behavior.move_to_position", "on_reach[]"),
+        ("minecraft:nameable", "default_trigger"),
+        ("minecraft:nameable", "name_actions[].on_named"),
+        ("minecraft:on_death", ""),
+        ("minecraft:on_equipment_changed", "slots[].on_equip"),
+        ("minecraft:on_equipment_changed", "slots[].on_unequip"),
+        ("minecraft:on_friendly_anger", ""),
+        ("minecraft:on_hurt", ""),
+        ("minecraft:on_hurt_by_player", ""),
+        ("minecraft:on_ignite", ""),
+        ("minecraft:on_start_landing", ""),
+        ("minecraft:on_start_takeoff", ""),
+        ("minecraft:on_target_acquired", ""),
+        ("minecraft:on_target_escape", ""),
+        ("minecraft:on_wake_with_owner", ""),
+        ("minecraft:peek", "on_close"),
+        ("minecraft:peek", "on_open"),
+        ("minecraft:peek", "on_target_open"),
+        ("minecraft:raid_trigger", "triggered_event"),
+        ("minecraft:rail_sensor", "on_activate"),
+        ("minecraft:rail_sensor", "on_deactivate"),
+        ("minecraft:ravager_blocked", "reaction_choices[].value"),
+        ("minecraft:rideable", "on_rider_enter_event"),
+        ("minecraft:rideable", "on_rider_exit_event"),
+        ("minecraft:scheduler", "scheduled_events[]"),
+        ("minecraft:sittable", "sit_event"),
+        ("minecraft:sittable", "stand_event"),
+        ("minecraft:spawn_entity", "entities[].spawn_item_event"),
+        ("minecraft:tameable", "tame_event"),
+        ("minecraft:tamemount", "tame_event"),
+        ("minecraft:target_nearby_sensor", "on_inside_range"),
+        ("minecraft:target_nearby_sensor", "on_outside_range"),
+        (
+            "minecraft:target_nearby_sensor",
+            "on_vision_lost_inside_range",
+        ),
+        ("minecraft:timer", "time_down_event"),
+        ("minecraft:trusting", "trust_event"),
+    ];
+
+    /// Every `(component, trigger member)` pair of the table, pinned: the table is read from
+    /// the payloads' `Schema` and the rows' `triggers = [..]`, so a payload that stops listing a
+    /// trigger (or starts listing one) shows here by name, not only in the count.
+    #[test]
+    fn the_trigger_table_lists_each_pinned_pair() {
+        let table: Vec<(&str, &str)> = TRIGGERS
+            .iter()
+            .map(|(component, member)| (*component, member.as_str()))
+            .collect();
+        assert_eq!(table, PINNED_TRIGGERS);
+    }
+
     /// An entity with `n` events, each triggering the next and setting a property, `n`
     /// animate entries and a sensor with `n` triggers; one reference in four names nothing.
     fn entity(n: usize) -> Entity {

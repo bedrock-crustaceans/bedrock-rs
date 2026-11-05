@@ -1,7 +1,7 @@
 //! Looking goals: looking at entities and around.
 
+use crate::component::descriptor_tags;
 use bedrock_addon_core::diagnostic::Diagnostics;
-use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
 use bedrock_addon_core::schema::{self, GoalMeta, Schema};
 use bedrock_addon_core::shared::{Filter, FloatRange, IntRange, ItemDescriptor};
 use bedrock_addon_core::version::FormatVersion;
@@ -12,37 +12,29 @@ use facet_value::VObject;
 use super::check::{Bound, Deprecated, Goal, GoalCheck, deprecated_text};
 use super::common::ControlFlag;
 use super::convert;
-use super::molang::visit_items;
 
 /// `minecraft:behavior.beg`: allows this mob to look at and follow the player that holds food they like.
 // `behavior.beg`: typed from 1.26.40.
 #[doc(alias = "minecraft:behavior.beg")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct Beg {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `items`: list of items that this mob likes.
+    #[facet(schema::molang_with = descriptor_tags)]
     pub items: Option<Vec<ItemDescriptor>>,
     /// `look_distance`: distance in blocks the mob will beg from. Default 8.
+    #[facet(schema::fallback = 8.0)]
     pub look_distance: Option<f32>,
     /// `look_time`: the range of time in seconds this mob will stare at the player holding a food they like, begging for it. Default 2 to 4.
     pub look_time: Option<IntRange>,
 }
 
 impl Beg {
-    /// `priority`, or its default 0.
-    pub fn priority(&self) -> i32 {
-        self.priority.unwrap_or(0)
-    }
-
-    /// `look_distance`, or its default 8.
-    pub fn look_distance(&self) -> f32 {
-        self.look_distance.unwrap_or(8.0)
-    }
-
     /// `look_time`, or its default 2 to 4.
     pub fn look_time(&self) -> (i32, i32) {
         self.look_time.map_or((2, 4), |range| range.resolve(2, 4))
@@ -50,7 +42,7 @@ impl Beg {
 }
 
 impl Goal for Beg {
-    const TYPED: FormatVersion = known::V1_26_40;
+    const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
         c.base(&mut self.priority);
@@ -59,71 +51,45 @@ impl Goal for Beg {
     }
 }
 
-impl MolangFields for Beg {
-    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
-        visit_items(visitor, "items", &mut self.items);
-    }
-}
-
 /// `minecraft:behavior.look_at_entity`: allows the mob to look at nearby entities.
 // `behavior.look_at_entity`: typed from 1.26.0.
 #[doc(alias = "minecraft:behavior.look_at_entity")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct LookAtEntity {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `angle_of_view_horizontal`: the angle in degrees that the mob can see rotated on the Y-axis (left-right). Default 360; 0 to 360.
+    #[facet(schema::fallback = 360)]
     pub angle_of_view_horizontal: Option<i32>,
     /// `angle_of_view_vertical`: the angle in degrees that the mob can see rotated on the X-axis (up-down). Default 360; 0 to 360.
+    #[facet(schema::fallback = 360)]
     pub angle_of_view_vertical: Option<i32>,
     /// `filters`: filter to determine the conditions for this mob to look at the entity.
     pub filters: Option<Filter>,
     /// `look_distance`: the distance in blocks from which the entity will look at the nearest entity. Default 8; at least 0.
+    #[facet(schema::fallback = 8.0)]
     pub look_distance: Option<f32>,
     /// `look_time`: time range to look at the nearest entity. Default 2 to 4.
     pub look_time: Option<FloatRange>,
     /// `probability`: the probability of looking at the target. A value of 1.00 is 100%. Default 0.02; 0 to 1.
+    #[facet(schema::fallback = 0.02)]
     pub probability: Option<f32>,
 }
 
 impl LookAtEntity {
-    /// `priority`, or its default 0.
-    pub fn priority(&self) -> i32 {
-        self.priority.unwrap_or(0)
-    }
-
-    /// `angle_of_view_horizontal`, or its default 360.
-    pub fn angle_of_view_horizontal(&self) -> i32 {
-        self.angle_of_view_horizontal.unwrap_or(360)
-    }
-
-    /// `angle_of_view_vertical`, or its default 360.
-    pub fn angle_of_view_vertical(&self) -> i32 {
-        self.angle_of_view_vertical.unwrap_or(360)
-    }
-
-    /// `look_distance`, or its default 8.
-    pub fn look_distance(&self) -> f32 {
-        self.look_distance.unwrap_or(8.0)
-    }
-
     /// `look_time`, or its default 2 to 4.
     pub fn look_time(&self) -> (f32, f32) {
         self.look_time
             .map_or((2.0, 4.0), |range| range.resolve(2.0, 4.0))
     }
-
-    /// `probability`, or its default 0.02.
-    pub fn probability(&self) -> f32 {
-        self.probability.unwrap_or(0.02)
-    }
 }
 
 impl Goal for LookAtEntity {
-    const TYPED: FormatVersion = known::V1_26_0;
+    const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
         c.base(&mut self.priority);
@@ -152,65 +118,43 @@ impl Goal for LookAtEntity {
     }
 }
 
-bedrock_addon_core::impl_no_molang!(LookAtEntity);
-
 /// `minecraft:behavior.look_at_player`: allows the mob to look at the player when the player is nearby.
 // `behavior.look_at_player`: typed from 1.26.0.
 #[doc(alias = "minecraft:behavior.look_at_player")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct LookAtPlayer {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `angle_of_view_horizontal`: the angle in degrees that the mob can see rotated on the Y-axis (left-right). Default 360; 0 to 360.
+    #[facet(schema::fallback = 360)]
     pub angle_of_view_horizontal: Option<i32>,
     /// `angle_of_view_vertical`: the angle in degrees that the mob can see rotated on the X-axis (up-down). Default 360; 0 to 360.
+    #[facet(schema::fallback = 360)]
     pub angle_of_view_vertical: Option<i32>,
     /// `look_distance`: the distance in blocks from which the entity will look at the nearest entity. Default 8; at least 0.
+    #[facet(schema::fallback = 8.0)]
     pub look_distance: Option<f32>,
     /// `look_time`: time range to look at the nearest entity. Default 2 to 4.
     pub look_time: Option<FloatRange>,
     /// `probability`: the probability of looking at the target. A value of 1.00 is 100%. Default 0.02; 0 to 1.
+    #[facet(schema::fallback = 0.02)]
     pub probability: Option<f32>,
 }
 
 impl LookAtPlayer {
-    /// `priority`, or its default 0.
-    pub fn priority(&self) -> i32 {
-        self.priority.unwrap_or(0)
-    }
-
-    /// `angle_of_view_horizontal`, or its default 360.
-    pub fn angle_of_view_horizontal(&self) -> i32 {
-        self.angle_of_view_horizontal.unwrap_or(360)
-    }
-
-    /// `angle_of_view_vertical`, or its default 360.
-    pub fn angle_of_view_vertical(&self) -> i32 {
-        self.angle_of_view_vertical.unwrap_or(360)
-    }
-
-    /// `look_distance`, or its default 8.
-    pub fn look_distance(&self) -> f32 {
-        self.look_distance.unwrap_or(8.0)
-    }
-
     /// `look_time`, or its default 2 to 4.
     pub fn look_time(&self) -> (f32, f32) {
         self.look_time
             .map_or((2.0, 4.0), |range| range.resolve(2.0, 4.0))
-    }
-
-    /// `probability`, or its default 0.02.
-    pub fn probability(&self) -> f32 {
-        self.probability.unwrap_or(0.02)
     }
 }
 
 impl Goal for LookAtPlayer {
-    const TYPED: FormatVersion = known::V1_26_0;
+    const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
         c.base(&mut self.priority);
@@ -237,66 +181,44 @@ impl Goal for LookAtPlayer {
         convert::look_time(json, d);
     }
 }
-
-bedrock_addon_core::impl_no_molang!(LookAtPlayer);
 
 /// `minecraft:behavior.look_at_target`: allows the mob to look at the entity they are targeting.
 // `behavior.look_at_target`: typed from 1.26.0.
 #[doc(alias = "minecraft:behavior.look_at_target")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct LookAtTarget {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `angle_of_view_horizontal`: the angle in degrees that the mob can see rotated on the Y-axis (left-right). Default 360; 0 to 360.
+    #[facet(schema::fallback = 360)]
     pub angle_of_view_horizontal: Option<i32>,
     /// `angle_of_view_vertical`: the angle in degrees that the mob can see rotated on the X-axis (up-down). Default 360; 0 to 360.
+    #[facet(schema::fallback = 360)]
     pub angle_of_view_vertical: Option<i32>,
     /// `look_distance`: the distance in blocks from which the entity will look at the nearest entity. Default 8; at least 0.
+    #[facet(schema::fallback = 8.0)]
     pub look_distance: Option<f32>,
     /// `look_time`: time range to look at the nearest entity. Default 2 to 4.
     pub look_time: Option<FloatRange>,
     /// `probability`: the probability of looking at the target. A value of 1.00 is 100%. Default 0.02; 0 to 1.
+    #[facet(schema::fallback = 0.02)]
     pub probability: Option<f32>,
 }
 
 impl LookAtTarget {
-    /// `priority`, or its default 0.
-    pub fn priority(&self) -> i32 {
-        self.priority.unwrap_or(0)
-    }
-
-    /// `angle_of_view_horizontal`, or its default 360.
-    pub fn angle_of_view_horizontal(&self) -> i32 {
-        self.angle_of_view_horizontal.unwrap_or(360)
-    }
-
-    /// `angle_of_view_vertical`, or its default 360.
-    pub fn angle_of_view_vertical(&self) -> i32 {
-        self.angle_of_view_vertical.unwrap_or(360)
-    }
-
-    /// `look_distance`, or its default 8.
-    pub fn look_distance(&self) -> f32 {
-        self.look_distance.unwrap_or(8.0)
-    }
-
     /// `look_time`, or its default 2 to 4.
     pub fn look_time(&self) -> (f32, f32) {
         self.look_time
             .map_or((2.0, 4.0), |range| range.resolve(2.0, 4.0))
-    }
-
-    /// `probability`, or its default 0.02.
-    pub fn probability(&self) -> f32 {
-        self.probability.unwrap_or(0.02)
     }
 }
 
 impl Goal for LookAtTarget {
-    const TYPED: FormatVersion = known::V1_26_0;
+    const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
         c.base(&mut self.priority);
@@ -324,65 +246,43 @@ impl Goal for LookAtTarget {
     }
 }
 
-bedrock_addon_core::impl_no_molang!(LookAtTarget);
-
 /// `minecraft:behavior.look_at_trading_player`: allows the mob to look at the player they are trading with.
 // `behavior.look_at_trading_player`: typed from 1.26.0.
 #[doc(alias = "minecraft:behavior.look_at_trading_player")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct LookAtTradingPlayer {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `angle_of_view_horizontal`: the angle in degrees that the mob can see rotated on the Y-axis (left-right). Default 360; 0 to 360.
+    #[facet(schema::fallback = 360)]
     pub angle_of_view_horizontal: Option<i32>,
     /// `angle_of_view_vertical`: the angle in degrees that the mob can see rotated on the X-axis (up-down). Default 360; 0 to 360.
+    #[facet(schema::fallback = 360)]
     pub angle_of_view_vertical: Option<i32>,
     /// `look_distance`: the distance in blocks from which the entity will look at the nearest entity. Default 8; at least 0.
+    #[facet(schema::fallback = 8.0)]
     pub look_distance: Option<f32>,
     /// `look_time`: time range to look at the nearest entity. Default 2 to 4.
     pub look_time: Option<FloatRange>,
     /// `probability`: the probability of looking at the target. A value of 1.00 is 100%. Default 0.02; 0 to 1.
+    #[facet(schema::fallback = 0.02)]
     pub probability: Option<f32>,
 }
 
 impl LookAtTradingPlayer {
-    /// `priority`, or its default 0.
-    pub fn priority(&self) -> i32 {
-        self.priority.unwrap_or(0)
-    }
-
-    /// `angle_of_view_horizontal`, or its default 360.
-    pub fn angle_of_view_horizontal(&self) -> i32 {
-        self.angle_of_view_horizontal.unwrap_or(360)
-    }
-
-    /// `angle_of_view_vertical`, or its default 360.
-    pub fn angle_of_view_vertical(&self) -> i32 {
-        self.angle_of_view_vertical.unwrap_or(360)
-    }
-
-    /// `look_distance`, or its default 8.
-    pub fn look_distance(&self) -> f32 {
-        self.look_distance.unwrap_or(8.0)
-    }
-
     /// `look_time`, or its default 2 to 4.
     pub fn look_time(&self) -> (f32, f32) {
         self.look_time
             .map_or((2.0, 4.0), |range| range.resolve(2.0, 4.0))
     }
-
-    /// `probability`, or its default 0.02.
-    pub fn probability(&self) -> f32 {
-        self.probability.unwrap_or(0.02)
-    }
 }
 
 impl Goal for LookAtTradingPlayer {
-    const TYPED: FormatVersion = known::V1_26_0;
+    const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
         c.base(&mut self.priority);
@@ -410,66 +310,46 @@ impl Goal for LookAtTradingPlayer {
     }
 }
 
-bedrock_addon_core::impl_no_molang!(LookAtTradingPlayer);
-
 /// `minecraft:behavior.random_look_around`: allows the mob to randomly look around.
 // `behavior.random_look_around`: typed from 1.26.30.
 #[doc(alias = "minecraft:behavior.random_look_around")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct RandomLookAround {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `look_time`: the range of time in seconds the mob will stay looking in a random direction before looking elsewhere. Default 20 to 40.
     pub look_time: Option<IntRange>,
     /// `max_angle_of_view_horizontal`: the rightmost angle a mob can look at on the horizontal plane with respect to its initial facing direction. Default 1.8e+02.
+    #[facet(schema::fallback = 1.8e2)]
     pub max_angle_of_view_horizontal: Option<f32>,
     /// `min_angle_of_view_horizontal`: the leftmost angle a mob can look at on the horizontal plane with respect to its initial facing direction. Default -1.8e+02.
+    #[facet(schema::fallback = -1.8e2)]
     pub min_angle_of_view_horizontal: Option<f32>,
     /// `probability`: the probability of randomly looking around. Default 0.02.
+    #[facet(schema::fallback = 0.02)]
     pub probability: Option<f32>,
 }
 
 impl RandomLookAround {
-    /// `priority`, or its default 0.
-    pub fn priority(&self) -> i32 {
-        self.priority.unwrap_or(0)
-    }
-
     /// `look_time`, or its default 20 to 40.
     pub fn look_time(&self) -> (i32, i32) {
         self.look_time
             .map_or((20, 40), |range| range.resolve(20, 40))
     }
-
-    /// `max_angle_of_view_horizontal`, or its default 1.8e+02.
-    pub fn max_angle_of_view_horizontal(&self) -> f32 {
-        self.max_angle_of_view_horizontal.unwrap_or(1.8e2)
-    }
-
-    /// `min_angle_of_view_horizontal`, or its default -1.8e+02.
-    pub fn min_angle_of_view_horizontal(&self) -> f32 {
-        self.min_angle_of_view_horizontal.unwrap_or(-1.8e2)
-    }
-
-    /// `probability`, or its default 0.02.
-    pub fn probability(&self) -> f32 {
-        self.probability.unwrap_or(0.02)
-    }
 }
 
 impl Goal for RandomLookAround {
-    const TYPED: FormatVersion = known::V1_26_30;
+    const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
         c.base(&mut self.priority);
         c.range("look_time", &mut self.look_time);
     }
 }
-
-bedrock_addon_core::impl_no_molang!(RandomLookAround);
 
 /// `minecraft:behavior.random_look_around_and_sit`: allows the mob to randomly sit and look around for a duration. Note: Must have a sitting animation set up to use this.
 ///
@@ -572,48 +452,3 @@ impl Goal for TradeInterest {
         c.bounds(self);
     }
 }
-
-crate::hand_fields!(Beg {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "look_distance": Option<f32>,
-});
-crate::hand_fields!(LookAtEntity {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "angle_of_view_horizontal": Option<i32>,
-    "angle_of_view_vertical": Option<i32>,
-    "look_distance": Option<f32>,
-    "probability": Option<f32>,
-});
-crate::hand_fields!(LookAtPlayer {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "angle_of_view_horizontal": Option<i32>,
-    "angle_of_view_vertical": Option<i32>,
-    "look_distance": Option<f32>,
-    "probability": Option<f32>,
-});
-crate::hand_fields!(LookAtTarget {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "angle_of_view_horizontal": Option<i32>,
-    "angle_of_view_vertical": Option<i32>,
-    "look_distance": Option<f32>,
-    "probability": Option<f32>,
-});
-crate::hand_fields!(LookAtTradingPlayer {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "angle_of_view_horizontal": Option<i32>,
-    "angle_of_view_vertical": Option<i32>,
-    "look_distance": Option<f32>,
-    "probability": Option<f32>,
-});
-crate::hand_fields!(RandomLookAround {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "max_angle_of_view_horizontal": Option<f32>,
-    "min_angle_of_view_horizontal": Option<f32>,
-    "probability": Option<f32>,
-});

@@ -854,7 +854,7 @@ const PROOFS: &[(&str, &str, Proof)] = &[
     (
         "Cameras",
         "splines",
-        Proof::Value(r#"Spline { name: StrictString("determinism:path")"#),
+        Proof::Value(r#"Spline { name: "determinism:path""#),
     ),
     (
         "SoundDefinitions",

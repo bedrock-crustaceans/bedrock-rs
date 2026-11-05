@@ -1,7 +1,8 @@
 //! Item and block goals: picking up, giving, eating, placing and carrying.
 
+use crate::component::descriptor_tags;
 use bedrock_addon_core::diagnostic::{Diagnostics, VanillaText};
-use bedrock_addon_core::molang::{Molang, MolangFields, MolangVisitor, Step};
+use bedrock_addon_core::molang::{Molang, MolangFields, MolangVisitor};
 use bedrock_addon_core::schema::{self, GoalMeta, Schema};
 use bedrock_addon_core::shared::{
     BlockDescriptor, EventTrigger, Filter, FloatRange, IntRange, ItemDescriptor,
@@ -18,8 +19,8 @@ use super::common::{
 };
 use super::convert;
 use super::molang::{
-    SUCCESS_CHANCE, SUCCESS_CHANCE_CONVERTED, push_trigger, push_triggers, visit_block,
-    visit_blocks, visit_conditions, visit_items,
+    SUCCESS_CHANCE, SUCCESS_CHANCE_CONVERTED, push_trigger, push_triggers, visit_blocks,
+    visit_conditions, visit_items,
 };
 
 /// Vanilla's message for a non-positive `transport_items.search_distance`.
@@ -122,26 +123,21 @@ impl Goal for Barter {
 /// `minecraft:behavior.charge_held_item`: allows an entity to charge and use their held item.
 // `behavior.charge_held_item`: typed from 1.26.40.
 #[doc(alias = "minecraft:behavior.charge_held_item")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct ChargeHeldItem {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `items`: the list of items that can be used to charge the held item. This list is required and must have at least one item in it.
+    #[facet(schema::molang_with = descriptor_tags)]
     pub items: Option<Vec<ItemDescriptor>>,
 }
 
-impl ChargeHeldItem {
-    /// `priority`, or its default 0.
-    pub fn priority(&self) -> i32 {
-        self.priority.unwrap_or(0)
-    }
-}
-
 impl Goal for ChargeHeldItem {
-    const TYPED: FormatVersion = known::V1_26_40;
+    const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
         c.base(&mut self.priority);
@@ -155,50 +151,32 @@ impl Goal for ChargeHeldItem {
     }
 }
 
-impl MolangFields for ChargeHeldItem {
-    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
-        visit_items(visitor, "items", &mut self.items);
-    }
-}
-
 /// `minecraft:behavior.drink_milk`: allows the mob to drink milk based on specified environment conditions.
 // `behavior.drink_milk`: typed from 1.21.120.
 #[doc(alias = "minecraft:behavior.drink_milk")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct DrinkMilk {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `cooldown_seconds`: time (in seconds) that the goal is on cooldown before it can be used again. Default 5.
+    #[facet(schema::fallback = 5.0)]
     pub cooldown_seconds: Option<f32>,
     /// `filters`: conditions that need to be met for the behavior to start.
     pub filters: Option<Filter>,
 }
 
-impl DrinkMilk {
-    /// `priority`, or its default 0.
-    pub fn priority(&self) -> i32 {
-        self.priority.unwrap_or(0)
-    }
-
-    /// `cooldown_seconds`, or its default 5.
-    pub fn cooldown_seconds(&self) -> f32 {
-        self.cooldown_seconds.unwrap_or(5.0)
-    }
-}
-
 impl Goal for DrinkMilk {
-    const TYPED: FormatVersion = known::V1_21_120;
+    const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
         c.base(&mut self.priority);
         c.filter("filters", self.filters.as_ref());
     }
 }
-
-bedrock_addon_core::impl_no_molang!(DrinkMilk);
 
 /// `minecraft:behavior.drink_potion`: allows the mob to drink potions based on specified environment conditions.
 // `behavior.drink_potion`: typed from 1.26.40.
@@ -746,53 +724,33 @@ impl MolangFields for GoAndGiveItemsToOwner {
 /// `minecraft:behavior.offer_flower`: allows the mob to offer a flower to another mob with the `minecraft:take_flower` behavior.
 // `behavior.offer_flower`: typed from 1.26.10.
 #[doc(alias = "minecraft:behavior.offer_flower")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct OfferFlower {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `chance_to_start`: percent chance that the mob will start this goal from 0.0 to 1.0 (where 1.0 = 100%). Default 0.000125; 0 to 1.
+    #[facet(schema::fallback = 0.000_125)]
     pub chance_to_start: Option<f32>,
     /// `filters`: conditions that need to be met for the behavior to start.
     pub filters: Option<Filter>,
     /// `max_head_rotation_y`: maximum rotation (in degrees), on the Y-axis, this entity can rotate its head while trying to look at the target. Default 3e+01; at least 0.
+    #[facet(schema::fallback = 3.0e1)]
     pub max_head_rotation_y: Option<f32>,
     /// `max_offer_flower_duration`: the max amount of time (in seconds) that the mob will offer the flower for before exiting the Goal. Default 2e+01; at least 0.
+    #[facet(schema::fallback = 2.0e1)]
     pub max_offer_flower_duration: Option<f32>,
     /// `max_rotation_x`: maximum rotation (in degrees), on the X-axis, this entity can rotate while trying to look at the target. Default 3e+01; at least 0.
+    #[facet(schema::fallback = 3.0e1)]
     pub max_rotation_x: Option<f32>,
     /// `search_area`: the dimensions of the AABB used to search for a potential mob to offer flower to. Default `[6, 2, 6]`.
     pub search_area: Option<Vec3>,
 }
 
 impl OfferFlower {
-    /// `priority`, or its default 0.
-    pub fn priority(&self) -> i32 {
-        self.priority.unwrap_or(0)
-    }
-
-    /// `chance_to_start`, or its default 0.000125.
-    pub fn chance_to_start(&self) -> f32 {
-        self.chance_to_start.unwrap_or(0.000_125)
-    }
-
-    /// `max_head_rotation_y`, or its default 3e+01.
-    pub fn max_head_rotation_y(&self) -> f32 {
-        self.max_head_rotation_y.unwrap_or(3.0e1)
-    }
-
-    /// `max_offer_flower_duration`, or its default 2e+01.
-    pub fn max_offer_flower_duration(&self) -> f32 {
-        self.max_offer_flower_duration.unwrap_or(2.0e1)
-    }
-
-    /// `max_rotation_x`, or its default 3e+01.
-    pub fn max_rotation_x(&self) -> f32 {
-        self.max_rotation_x.unwrap_or(3.0e1)
-    }
-
     /// `search_area`, or its default `[6, 2, 6]`.
     pub fn search_area(&self) -> [f32; 3] {
         self.search_area
@@ -802,7 +760,7 @@ impl OfferFlower {
 }
 
 impl Goal for OfferFlower {
-    const TYPED: FormatVersion = known::V1_26_10;
+    const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
         c.base(&mut self.priority);
@@ -826,8 +784,6 @@ impl Goal for OfferFlower {
         c.vector("search_area", self.search_area.as_ref().map(|v| &v.extra));
     }
 }
-
-bedrock_addon_core::impl_no_molang!(OfferFlower);
 
 /// `minecraft:behavior.pickup_items`: allows the mob to pick up items on the ground.
 // `behavior.pickup_items`: typed from 1.26.20, redeclared 1.26.30.
@@ -1108,57 +1064,34 @@ impl Goal for ShareItems {
 /// `minecraft:behavior.snacking`: allows the mob to take a load off and snack on food that it found nearby.
 // `behavior.snacking`: typed from 1.26.40.
 #[doc(alias = "minecraft:behavior.snacking")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct Snacking {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `items`: items that we are interested in snacking on.
+    #[facet(schema::molang_with = descriptor_tags)]
     pub items: Option<Vec<ItemDescriptor>>,
     /// `snacking_cooldown`: the cooldown time in seconds before the mob is able to snack again. Default 7.5.
+    #[facet(schema::fallback = 7.5)]
     pub snacking_cooldown: Option<f32>,
     /// `snacking_cooldown_min`: the minimum time in seconds before the mob is able to snack again. Default 0.5.
+    #[facet(schema::fallback = 0.5)]
     pub snacking_cooldown_min: Option<f32>,
     /// `snacking_stop_chance`: this is the chance that the mob will stop snacking, from 0 to 1. Default 0.0016666667.
+    #[facet(schema::fallback = 0.001_666_666_7)]
     pub snacking_stop_chance: Option<f32>,
 }
 
-impl Snacking {
-    /// `priority`, or its default 0.
-    pub fn priority(&self) -> i32 {
-        self.priority.unwrap_or(0)
-    }
-
-    /// `snacking_cooldown`, or its default 7.5.
-    pub fn snacking_cooldown(&self) -> f32 {
-        self.snacking_cooldown.unwrap_or(7.5)
-    }
-
-    /// `snacking_cooldown_min`, or its default 0.5.
-    pub fn snacking_cooldown_min(&self) -> f32 {
-        self.snacking_cooldown_min.unwrap_or(0.5)
-    }
-
-    /// `snacking_stop_chance`, or its default 0.0016666667.
-    pub fn snacking_stop_chance(&self) -> f32 {
-        self.snacking_stop_chance.unwrap_or(0.001_666_666_7)
-    }
-}
-
 impl Goal for Snacking {
-    const TYPED: FormatVersion = known::V1_26_40;
+    const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
         c.base(&mut self.priority);
         c.items("items", self.items.as_deref());
-    }
-}
-
-impl MolangFields for Snacking {
-    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
-        visit_items(visitor, "items", &mut self.items);
     }
 }
 
@@ -1377,33 +1310,23 @@ impl MolangFields for TakeFlower {
 /// `minecraft:behavior.trade_with_player`: allows the player to trade with this mob. When the goal starts, it will stop the mob's navigation.
 // `behavior.trade_with_player`: typed from 1.26.10.
 #[doc(alias = "minecraft:behavior.trade_with_player")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct TradeWithPlayer {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `filters`: conditions that need to be met for the behavior to start.
     pub filters: Option<Filter>,
     /// `max_distance_from_player`: the max distance that the mob can be from the player before exiting the goal. Default 8; greater than 0.
+    #[facet(schema::fallback = 8.0)]
     pub max_distance_from_player: Option<f32>,
 }
 
-impl TradeWithPlayer {
-    /// `priority`, or its default 0.
-    pub fn priority(&self) -> i32 {
-        self.priority.unwrap_or(0)
-    }
-
-    /// `max_distance_from_player`, or its default 8.
-    pub fn max_distance_from_player(&self) -> f32 {
-        self.max_distance_from_player.unwrap_or(8.0)
-    }
-}
-
 impl Goal for TradeWithPlayer {
-    const TYPED: FormatVersion = known::V1_26_10;
+    const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
         c.base(&mut self.priority);
@@ -1416,102 +1339,68 @@ impl Goal for TradeWithPlayer {
     }
 }
 
-bedrock_addon_core::impl_no_molang!(TradeWithPlayer);
-
 /// `minecraft:behavior.transport_items`: a behavior that enables a mob to transport items from and to containers.
 // `behavior.transport_items`: typed from 1.21.100.
 #[doc(alias = "minecraft:behavior.transport_items")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct TransportItems {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `allow_simultaneous_interaction`: when true the mob will wait until a container is not used by other entities before starting to interact with it. Default `false`.
+    #[facet(schema::fallback = false)]
     pub allow_simultaneous_interaction: Option<bool>,
     /// `allowed_items`: a list of item descriptors that are the only items the mob is allowed to transport. If this and `disallowed_items` are both empty, then all items are allowed. If non-empty `disallowed_items` must be empty.
+    #[facet(schema::molang_with = descriptor_tags)]
     pub allowed_items: Option<Vec<ItemDescriptor>>,
     /// `destination_container_types`: a list of block descriptors that should be a container type to put items in.
+    #[facet(schema::molang_with = descriptor_tags)]
     pub destination_container_types: Option<Vec<BlockDescriptor>>,
     /// `disallowed_items`: a list of item descriptors that are the mob is not allowed to transport. If non-empty `allowed_items` must be empty.
+    #[facet(schema::molang_with = descriptor_tags)]
     pub disallowed_items: Option<Vec<ItemDescriptor>>,
     /// `idle_cooldown`: when the mob cannot find a container in which to get or put items, the goal will stop being active for this amount of time in seconds. Default 20.
+    #[facet(schema::fallback = 20)]
     pub idle_cooldown: Option<u32>,
     /// `initial_cooldown`: how long the mob will wait after spawning or getting the goal added before the goal can start. Default 0.
+    #[facet(schema::fallback = 0)]
     pub initial_cooldown: Option<u32>,
     /// `interaction_time`: the amount of time in seconds spent interacting with the containers. Default 3; at least 0.
+    #[facet(schema::fallback = 3.0)]
     pub interaction_time: Option<f32>,
     /// `max_stack_size`: the maximum stack size that the mob will try to take from a container. Default 64; 1 to 64.
+    #[facet(schema::fallback = 64)]
     pub max_stack_size: Option<u32>,
     /// `max_visited_containers`: the maximum number of containers that the mob will try to take/place items from before going on cooldown and starting over. Default 16.
+    #[facet(schema::fallback = 16)]
     pub max_visited_containers: Option<u32>,
     /// `place_strategy`: the strategy to use for placing the transported item. Any - always place if there is room, With matching - place if there is a matching item in the container, With matching or empty - like With matching but will also place in empty containers. Default `any`.
+    #[facet(schema::fallback = PlaceStrategy::Any)]
     pub place_strategy: Option<PlaceStrategy>,
     /// `search_distance`: the maximum search distance horizontally and vertically at which to find containers for taking or placing items. Default `[64, 32]`.
     pub search_distance: Option<Vec2>,
     /// `search_strategy`: the strategy to use for finding source or destination containers. The nearest valid container or a random valid container in range. Default `random`.
+    #[facet(schema::fallback = SearchStrategy::Random)]
     pub search_strategy: Option<SearchStrategy>,
     /// `source_container_types`: a list of block descriptors that should be a container type to get items from.
+    #[facet(schema::molang_with = descriptor_tags)]
     pub source_container_types: Option<Vec<BlockDescriptor>>,
 }
 
 impl TransportItems {
-    /// `priority`, or its default 0.
-    pub fn priority(&self) -> i32 {
-        self.priority.unwrap_or(0)
-    }
-
-    /// `allow_simultaneous_interaction`, or its default `false`.
-    pub fn allow_simultaneous_interaction(&self) -> bool {
-        self.allow_simultaneous_interaction.is_some_and(|v| v)
-    }
-
-    /// `idle_cooldown`, or its default 20.
-    pub fn idle_cooldown(&self) -> u32 {
-        self.idle_cooldown.unwrap_or(20)
-    }
-
-    /// `initial_cooldown`, or its default 0.
-    pub fn initial_cooldown(&self) -> u32 {
-        self.initial_cooldown.unwrap_or(0)
-    }
-
-    /// `interaction_time`, or its default 3.
-    pub fn interaction_time(&self) -> f32 {
-        self.interaction_time.unwrap_or(3.0)
-    }
-
-    /// `max_stack_size`, or its default 64.
-    pub fn max_stack_size(&self) -> u32 {
-        self.max_stack_size.unwrap_or(64)
-    }
-
-    /// `max_visited_containers`, or its default 16.
-    pub fn max_visited_containers(&self) -> u32 {
-        self.max_visited_containers.unwrap_or(16)
-    }
-
-    /// `place_strategy`, or its default `any`.
-    pub fn place_strategy(&self) -> PlaceStrategy {
-        self.place_strategy.unwrap_or(PlaceStrategy::Any)
-    }
-
     /// `search_distance`, or its default `[64, 32]`.
     pub fn search_distance(&self) -> [f32; 2] {
         self.search_distance
             .as_ref()
             .map_or([64.0, 32.0], |v| [v.x, v.y])
     }
-
-    /// `search_strategy`, or its default `random`.
-    pub fn search_strategy(&self) -> SearchStrategy {
-        self.search_strategy.unwrap_or(SearchStrategy::Random)
-    }
 }
 
 impl Goal for TransportItems {
-    const TYPED: FormatVersion = known::V1_21_100;
+    const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
         c.base(&mut self.priority);
@@ -1553,45 +1442,18 @@ impl Goal for TransportItems {
     }
 }
 
-impl MolangFields for TransportItems {
-    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
-        visit_items(visitor, "allowed_items", &mut self.allowed_items);
-        visit_blocks(
-            visitor,
-            "destination_container_types",
-            &mut self.destination_container_types,
-        );
-        visit_items(visitor, "disallowed_items", &mut self.disallowed_items);
-        visit_blocks(
-            visitor,
-            "source_container_types",
-            &mut self.source_container_types,
-        );
-    }
-}
-
 /// One potion `drink_potion` may drink, and when.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct Potion {
     /// `chance`: the percent chance (from 0.0 to 1.0) of this potion being selected when searching for a potion to use. Default 1.
+    #[facet(schema::fallback = 1.0)]
     pub chance: Option<f32>,
     /// `filters`: the filters to use when determining if this potion can be selected.
     pub filters: Option<Filter>,
     /// `id`: the registry ID of the potion to use. Default -1.
+    #[facet(schema::fallback = -1)]
     pub id: Option<i32>,
-}
-
-impl Potion {
-    /// `chance`, or its default 1.
-    pub fn chance(&self) -> f32 {
-        self.chance.unwrap_or(1.0)
-    }
-
-    /// `id`, or its default -1.
-    pub fn id(&self) -> i32 {
-        self.id.unwrap_or(-1)
-    }
 }
 
 impl Potion {
@@ -1630,22 +1492,17 @@ impl EatAndReplaceBlockPair {
 }
 
 /// A block `place_block` may place at random, with its weight and condition.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct WeightedBlock {
     /// `block`: block descriptor for this entry.
+    #[facet(schema::molang_with = descriptor_tags)]
     pub block: Option<BlockDescriptor>,
     /// `filter`: filter for if this entry should be randomly selected from. Self, Target, and Block are set.
     pub filter: Option<Filter>,
     /// `weight`: weight for this entry. Default 1.
+    #[facet(schema::fallback = 1)]
     pub weight: Option<i32>,
-}
-
-impl WeightedBlock {
-    /// `weight`, or its default 1.
-    pub fn weight(&self) -> i32 {
-        self.weight.unwrap_or(1)
-    }
 }
 
 impl WeightedBlock {
@@ -1656,165 +1513,32 @@ impl WeightedBlock {
     }
 }
 
-impl MolangFields for WeightedBlock {
-    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
-        if let Some(block) = &mut self.block {
-            visitor.enter(Step::from("block"));
-            visit_block(visitor, block);
-            visitor.leave();
-        }
-    }
-}
-
-crate::hand_fields!(AdmireItem {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "admire_item_sound": Option<SoundEvent>,
-    "on_admire_item_start": Option<EventTrigger>,
-    "on_admire_item_stop": Option<EventTrigger>,
+crate::trigger_fields!(AdmireItem {
+    on_admire_item_start: Option<EventTrigger>,
+    on_admire_item_stop: Option<EventTrigger>,
 });
-crate::hand_fields!(ChargeHeldItem {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
+crate::trigger_fields!(DropItemFor {
+    on_drop_attempt: Option<EventTrigger>,
 });
-crate::hand_fields!(DrinkMilk {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "cooldown_seconds": Option<f32>,
+crate::trigger_fields!(EatBlock {
+    on_eat: Option<EventTrigger>,
 });
-crate::hand_fields!(DropItemFor {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "cooldown": Option<f32>,
-    "drop_item_chance": Option<f32>,
-    "entity_types": Option<EntityTypes>,
-    "goal_radius": Option<f32>,
-    "loot_table": Option<String>,
-    "max_head_look_at_height": Option<f32>,
-    "minimum_teleport_distance": Option<f32>,
-    "offering_distance": Option<f32>,
-    "on_drop_attempt": Option<EventTrigger>,
-    "search_count": Option<i32>,
-    "search_height": Option<i32>,
-    "search_range": Option<i32>,
-    "seconds_before_pickup": Option<f32>,
-    "speed_multiplier": Option<f32>,
-    "target_range": Option<Vec3>,
-    "teleport_offset": Option<Vec3>,
+crate::trigger_fields!(GoAndGiveItemsToNoteblock {
+    on_item_throw: Option<Vec<EventTrigger>>,
 });
-crate::hand_fields!(EatBlock {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "eat_and_replace_block_pairs": Option<Vec<EatAndReplaceBlockPair>>,
-    "on_eat": Option<EventTrigger>,
-    "success_chance": Option<Molang>,
-    "time_until_eat": Option<f32>,
+crate::trigger_fields!(GoAndGiveItemsToOwner {
+    on_item_throw: Option<Vec<EventTrigger>>,
 });
-crate::hand_fields!(GoAndGiveItemsToNoteblock {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "listen_time": Option<i32>,
-    "on_item_throw": Option<Vec<EventTrigger>>,
-    "reach_block_distance": Option<f32>,
-    "run_speed": Option<f32>,
-    "throw_force": Option<f32>,
-    "throw_sound": Option<SoundEvent>,
-    "vertical_throw_mul": Option<f32>,
+crate::trigger_fields!(PickupItems {
+    on_pickup_item_end: Option<EventTrigger>,
+    on_pickup_item_start: Option<EventTrigger>,
 });
-crate::hand_fields!(GoAndGiveItemsToOwner {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "on_item_throw": Option<Vec<EventTrigger>>,
-    "reach_mob_distance": Option<f32>,
-    "run_speed": Option<f32>,
-    "throw_force": Option<f32>,
-    "throw_sound": Option<SoundEvent>,
-    "vertical_throw_mul": Option<f32>,
+crate::trigger_fields!(PlaceBlock {
+    on_place: Option<EventTrigger>,
 });
-crate::hand_fields!(OfferFlower {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "chance_to_start": Option<f32>,
-    "max_head_rotation_y": Option<f32>,
-    "max_offer_flower_duration": Option<f32>,
-    "max_rotation_x": Option<f32>,
-    "search_area": Option<Vec3>,
+crate::trigger_fields!(TakeBlock {
+    on_take: Option<EventTrigger>,
 });
-crate::hand_fields!(PickupItems {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "can_pickup_any_item": Option<bool>,
-    "can_pickup_to_hand_or_equipment": Option<bool>,
-    "cooldown_after_being_attacked": Option<i32>,
-    "goal_radius": Option<f32>,
-    "max_dist": Option<i32>,
-    "on_pickup_item_end": Option<EventTrigger>,
-    "on_pickup_item_start": Option<EventTrigger>,
-    "pickup_based_on_chance": Option<bool>,
-    "pickup_same_items_as_in_hand": Option<bool>,
-    "search_height": Option<i32>,
-    "speed_multiplier": Option<f32>,
-    "stop_if_holding_item": Option<bool>,
-    "track_target": Option<bool>,
-});
-crate::hand_fields!(PlaceBlock {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "affected_by_griefing_rule": Option<bool>,
-    "chance": Option<f32>,
-    "on_place": Option<EventTrigger>,
-    "randomly_placeable_blocks": Option<Vec<WeightedBlock>>,
-});
-crate::hand_fields!(Snacking {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "snacking_cooldown": Option<f32>,
-    "snacking_cooldown_min": Option<f32>,
-    "snacking_stop_chance": Option<f32>,
-});
-crate::hand_fields!(TakeBlock {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "affected_by_griefing_rule": Option<bool>,
-    "chance": Option<f32>,
-    "on_take": Option<EventTrigger>,
-    "requires_line_of_sight": Option<bool>,
-});
-crate::hand_fields!(TakeFlower {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "max_head_rotation_y": Option<f32>,
-    "max_rotation_x": Option<f32>,
-    "max_wait_time": Option<f32>,
-    "min_distance_to_target": Option<f32>,
-    "min_wait_time": Option<f32>,
-    "on_take_flower": Option<EventTrigger>,
-    "search_area": Option<Vec3>,
-    "speed_multiplier": Option<f32>,
-});
-crate::hand_fields!(TradeWithPlayer {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "max_distance_from_player": Option<f32>,
-});
-crate::hand_fields!(TransportItems {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "allow_simultaneous_interaction": Option<bool>,
-    "idle_cooldown": Option<u32>,
-    "initial_cooldown": Option<u32>,
-    "interaction_time": Option<f32>,
-    "max_stack_size": Option<u32>,
-    "max_visited_containers": Option<u32>,
-    "place_strategy": Option<PlaceStrategy>,
-    "search_distance": Option<Vec2>,
-    "search_strategy": Option<SearchStrategy>,
-});
-crate::hand_fields!(Potion {
-    "chance": Option<f32>,
-    "id": Option<i32>,
-});
-bedrock_addon_core::impl_no_molang!(Potion);
-crate::hand_fields!(WeightedBlock {
-    "weight": Option<i32>,
+crate::trigger_fields!(TakeFlower {
+    on_take_flower: Option<EventTrigger>,
 });

@@ -3,19 +3,24 @@
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
-/// The `SchemaFields` of a struct that derives no `Schema` (it holds a core shared type that has
-/// no walk of its own): no check (its own checks stay by hand), and the trigger members of the
-/// fields named, each by its JSON key, as the derive would list them.
-macro_rules! hand_fields {
-    ($ty:ty { $($json:literal: $field:ty),* $(,)? }) => {
+/// The `SchemaFields` of a struct that derives no `Schema` (a goal whose Molang walk reads its
+/// triggers' legacy conditions, which the derive's per-field walk cannot, and `tamemount`, which
+/// walks its item lists out of declaration order): no check (its checks stay by hand), and the
+/// trigger members of the fields listed, each its field's name as the JSON key. Only the
+/// trigger-bearing fields are listed; `check_fields` names each, so a field that is not the
+/// struct's, or not of the type stated, does not compile.
+macro_rules! trigger_fields {
+    ($ty:ty { $($field:ident: $field_ty:ty),* $(,)? }) => {
         impl bedrock_addon_core::schema::SchemaFields for $ty {
-            fn check_fields(&mut self, _: &mut bedrock_addon_core::schema::SchemaCx<'_>) {}
+            fn check_fields(&mut self, _: &mut bedrock_addon_core::schema::SchemaCx<'_>) {
+                $(let _: &$field_ty = &self.$field;)*
+            }
 
             #[allow(unused_variables, reason = "a struct with no field that holds a trigger")]
             fn trigger_members(prefix: &str, out: &mut Vec<String>) {
                 $(
-                    <$field as bedrock_addon_core::schema::SchemaFields>::trigger_members(
-                        &bedrock_addon_core::schema::member(prefix, $json),
+                    <$field_ty as bedrock_addon_core::schema::SchemaFields>::trigger_members(
+                        &bedrock_addon_core::schema::member(prefix, stringify!($field)),
                         out,
                     );
                 )*
@@ -23,7 +28,7 @@ macro_rules! hand_fields {
         }
     };
 }
-pub(crate) use hand_fields;
+pub(crate) use trigger_fields;
 
 pub mod component;
 mod dynamic;

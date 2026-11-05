@@ -119,9 +119,7 @@ pub(crate) fn parse_strict_with<'a, T: Facet<'a>>(
         }
         // A scalar no arm of an untagged enum takes: a type error at the enum.
         Err(ScalarFailure::Refused(misread)) => {
-            d.push(bedrock_addon_support::chain_file::refusal(
-                payload, &misread, &cx.at,
-            ));
+            d.push(misread.spanned_finding(&cx.at));
             None
         }
         Err(ScalarFailure::Read(error)) => {

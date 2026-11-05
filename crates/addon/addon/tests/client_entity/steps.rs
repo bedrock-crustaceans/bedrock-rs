@@ -423,7 +423,7 @@ fn s02b_lowercase_before_1_18_20() {
     let document = loaded(entity(&ghost("1.16.0", UPPER), &cx()));
     let scripts = document.description.scripts.as_ref().unwrap();
     assert_eq!(
-        scripts.pre_animation.as_ref().unwrap()[0].0,
+        scripts.pre_animation.as_ref().unwrap()[0],
         "variable.foo = query.is_baby;"
     );
     let condition = scripts.animate.as_ref().unwrap()[0].condition().unwrap();
@@ -436,7 +436,7 @@ fn s02c_no_lowercase_at_1_18_20() {
     let document = loaded(entity(&ghost("1.18.20", UPPER), &cx()));
     let scripts = document.description.scripts.as_ref().unwrap();
     assert_eq!(
-        scripts.pre_animation.as_ref().unwrap()[0].0,
+        scripts.pre_animation.as_ref().unwrap()[0],
         "Variable.Foo = Query.Is_Baby;"
     );
 }
@@ -447,7 +447,7 @@ fn s02d_1_8_path_lowercases() {
     let document = loaded(entity(&ghost("1.8.0", members), &cx()));
     let scripts = document.description.scripts.as_ref().unwrap();
     assert_eq!(
-        scripts.pre_animation.as_ref().unwrap()[0].0,
+        scripts.pre_animation.as_ref().unwrap()[0],
         "variable.x = 1;"
     );
     assert_eq!(
@@ -459,7 +459,7 @@ fn s02d_1_8_path_lowercases() {
     let document = loaded(entity(text, &cx()));
     let scripts = document.description.scripts.as_ref().unwrap();
     assert_eq!(
-        scripts.pre_animation.as_ref().unwrap()[0].0,
+        scripts.pre_animation.as_ref().unwrap()[0],
         "variable.x = 1;"
     );
 }
@@ -610,7 +610,7 @@ fn a_script_literal_the_lower_casing_changes_is_noted_at_the_script() {
     let told = |version: &str| {
         let document = loaded(entity(&ghost(version, members), &cx()));
         let scripts = document.description.scripts.as_ref().unwrap();
-        let second = scripts.pre_animation.as_ref().unwrap()[1].0.clone();
+        let second = scripts.pre_animation.as_ref().unwrap()[1].clone();
         let told: Vec<String> = document
             .diagnostics()
             .iter()

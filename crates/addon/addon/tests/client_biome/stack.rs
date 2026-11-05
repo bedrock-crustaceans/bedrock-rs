@@ -1,7 +1,7 @@
 //! The registry of `rp.client_biomes()`: the walk of `biomes/`, the
 //! claim-first rule, duplicates, beta documents and `Placed::default_path`.
 
-use bedrock_addon::diagnostic::{Diagnostic, DiagnosticCode as Code, Diagnostics, Severity};
+use bedrock_addon::diagnostic::{Diagnostic, DiagnosticCode as Code, Severity};
 use bedrock_addon::document::{Content, Placed};
 use bedrock_addon::families::client_biome::ClientBiome;
 use bedrock_addon::families::client_biome::component::SkyColor;
@@ -9,7 +9,9 @@ use bedrock_addon::id::BiomeId;
 use bedrock_addon::load::LoadOptions;
 use bedrock_addon::pack::{Behavior, Pack, PackOrigin, PackSide, PackStack, Resource};
 
-use super::common::{biome, document, manifest, pack, world_stacks};
+#[cfg(feature = "biome")]
+use super::common::world_stacks;
+use super::common::{biome, document, manifest, pack};
 
 /// A client biome named `identifier` whose sky colour tells the packs apart.
 fn sky(identifier: &str, color: &str) -> String {
@@ -219,7 +221,11 @@ fn a_glue_failure_claims_the_identifier() {
 }
 
 /// The findings of `report` with a code `code` accepts.
-fn linked(report: &Diagnostics, code: impl Fn(&Code) -> bool) -> Vec<Diagnostic> {
+#[cfg(feature = "biome")]
+fn linked(
+    report: &bedrock_addon::diagnostic::Diagnostics,
+    code: impl Fn(&Code) -> bool,
+) -> Vec<Diagnostic> {
     // The client's findings; the game's validator line beside a miss is the link tests'.
     report
         .iter()
@@ -231,6 +237,12 @@ fn linked(report: &Diagnostics, code: impl Fn(&Code) -> bool) -> Vec<Diagnostic>
 /// `st03_glue_failure_shadows`: an unknown `fog_identifier` fails the top document,
 /// which still claims `minecraft:plains`: the pass tells the error, and the notice names the
 /// pack it shadows.
+#[cfg(all(
+    feature = "biome",
+    feature = "biomes_client",
+    feature = "fog",
+    feature = "deferred_settings"
+))]
 #[test]
 fn st03_glue_failure_shadows() {
     let top = pack(
@@ -289,6 +301,7 @@ fn st03_glue_failure_shadows() {
 }
 
 /// `st04_unknown_biome`: a client biome for a biome the server does not send.
+#[cfg(feature = "biome")]
 #[test]
 fn st04_unknown_biome() {
     let only = pack(
@@ -318,6 +331,12 @@ fn st04_unknown_biome() {
 
 /// `st05_glue_messages`: the rows that look a name up, each with vanilla's text.
 /// V4.7–V4.10 need no registry and are checked in `rules.rs`.
+#[cfg(all(
+    feature = "biome",
+    feature = "biomes_client",
+    feature = "fog",
+    feature = "deferred_settings"
+))]
 #[test]
 fn st05_glue_messages() {
     let rows = [

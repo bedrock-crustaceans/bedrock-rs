@@ -5,10 +5,10 @@
 //! `trail`, `annotation.break_door`.
 // Types and defaults follow the game's schemas (1.26.40 for `jump.*`, the rest 1.26.50).
 
+use super::value::descriptor_tags;
 use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath, Severity};
 use bedrock_addon_core::id::BlockId;
 use bedrock_addon_core::json::Value;
-use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
 use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::shared::{BlockDescriptor, Filter, FloatRange};
 use bedrock_addon_core::versioning::ConvertMode;
@@ -16,7 +16,7 @@ use facet::Facet;
 use facet_value::VObject;
 
 use super::parse::{ComponentCheck, Typed};
-use super::value::{tell_partial_vector, visit_block_tags};
+use super::value::tell_partial_vector;
 use crate::goal::Vec3;
 
 /// `minecraft:jump.static`: the entity jumps with a fixed power.
@@ -120,11 +120,11 @@ pub struct PreferredPath {
 }
 
 /// One block set of [`PreferredPath`].
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct BlockSet {
     /// `blocks`: the blocks.
-    #[facet(default)]
+    #[facet(schema::molang_with = descriptor_tags, default)]
     pub blocks: Vec<BlockDescriptor>,
     /// `cost`: the path cost of these blocks.
     pub cost: Option<f32>,
@@ -140,17 +140,6 @@ impl Typed for PreferredPath {
             }
         }
     }
-}
-
-/// Hands the `tags` of every descriptor of `blocks` (member `blocks`) to the Molang walk.
-fn visit_blocks(blocks: &mut [BlockDescriptor], visitor: &mut MolangVisitor<'_>) {
-    visitor.enter("blocks".into());
-    for (j, block) in blocks.iter_mut().enumerate() {
-        visitor.enter(j.into());
-        visit_block_tags(block, visitor);
-        visitor.leave();
-    }
-    visitor.leave();
 }
 
 /// `minecraft:flocking`: the entity moves in a flock with others of its kind.
@@ -299,11 +288,11 @@ impl Typed for CollisionBox {
 /// `minecraft:block_movement_slowdown_immunity`: blocks that do not slow the entity down
 /// (powder snow, cobwebs, sweet berry bushes).
 #[doc(alias = "minecraft:block_movement_slowdown_immunity")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct BlockMovementSlowdownImmunity {
     /// `blocks`: the blocks.
-    #[facet(default)]
+    #[facet(schema::molang_with = descriptor_tags, default)]
     pub blocks: Vec<BlockDescriptor>,
 }
 
@@ -313,12 +302,6 @@ impl Typed for BlockMovementSlowdownImmunity {
         for (i, block) in self.blocks.iter().enumerate() {
             cx.extend(block.check(&at.index(i)));
         }
-    }
-}
-
-impl MolangFields for BlockMovementSlowdownImmunity {
-    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
-        visit_blocks(&mut self.blocks, visitor);
     }
 }
 
@@ -403,7 +386,7 @@ impl Typed for MovementSway {}
 // `movement.jump`: `jump_delay` is a float range, (0, 0) by default; the legacy parser takes a
 // number, `[min, max]` or `{range_min, range_max}`.
 #[doc(alias = "minecraft:movement.jump")]
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct MovementJump {
     /// `max_turn`: the most the mob turns per tick, in degrees; default 30.
@@ -412,15 +395,6 @@ pub struct MovementJump {
     /// `jump_delay`: the delay after landing before the next jump, a range; default 0 to 0.
     #[facet(default = FloatRange::default())]
     pub jump_delay: FloatRange,
-}
-
-impl Default for MovementJump {
-    fn default() -> Self {
-        Self {
-            max_turn: MAX_TURN,
-            jump_delay: FloatRange::default(),
-        }
-    }
 }
 
 impl Typed for MovementJump {
@@ -566,7 +540,7 @@ pub enum DashDirection {
 
 /// `minecraft:buoyant`: the entity floats on the given liquid blocks.
 #[doc(alias = "minecraft:buoyant")]
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct Buoyant {
     /// `base_buoyancy`: how much the entity floats; default 1.
@@ -585,7 +559,7 @@ pub struct Buoyant {
     #[facet(default = 10.0_f32)]
     pub big_wave_speed: f32,
     /// `liquid_blocks`: the liquid blocks the entity floats on; default none.
-    #[facet(default)]
+    #[facet(schema::molang_with = descriptor_tags, default)]
     pub liquid_blocks: Vec<BlockDescriptor>,
     /// `drag_down_on_buoyancy_removed`: how much the entity is dragged down when the
     /// component goes; default 0.
@@ -597,33 +571,12 @@ pub struct Buoyant {
     pub can_auto_step_from_liquid: bool,
 }
 
-impl Default for Buoyant {
-    fn default() -> Self {
-        Self {
-            base_buoyancy: 1.0,
-            apply_gravity: true,
-            movement_type: BuoyancyMovement::Waves,
-            big_wave_probability: 0.03,
-            big_wave_speed: 10.0,
-            liquid_blocks: Vec::new(),
-            drag_down_on_buoyancy_removed: 0.0,
-            can_auto_step_from_liquid: false,
-        }
-    }
-}
-
 impl Typed for Buoyant {
     fn check(&mut self, cx: &mut ComponentCheck<'_>) {
         let blocks = JsonPath::new().child("liquid_blocks");
         for (i, block) in self.liquid_blocks.iter().enumerate() {
             cx.extend(block.check(&blocks.index(i)));
         }
-    }
-}
-
-impl MolangFields for Buoyant {
-    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
-        visit_block_list("liquid_blocks", &mut self.liquid_blocks, visitor);
     }
 }
 
@@ -644,22 +597,11 @@ pub enum BuoyancyMovement {
     Bobbing,
 }
 
-/// Hands the `tags` of every descriptor of `blocks` (member `key`) to the Molang walk.
-fn visit_block_list(key: &str, blocks: &mut [BlockDescriptor], visitor: &mut MolangVisitor<'_>) {
-    visitor.enter(key.into());
-    for (i, block) in blocks.iter_mut().enumerate() {
-        visitor.enter(i.into());
-        visit_block_tags(block, visitor);
-        visitor.leave();
-    }
-    visitor.leave();
-}
-
 /// `minecraft:teleport`: how the entity teleports.
 // `teleport`: `projectile_filter` is absent by default; the typed type binds no camel-case
 // spelling.
 #[doc(alias = "minecraft:teleport")]
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct Teleport {
     /// `random_teleports`: it teleports at random; default `true`.
@@ -694,23 +636,6 @@ pub struct Teleport {
     pub dark_teleport_chance: f32,
 }
 
-impl Default for Teleport {
-    fn default() -> Self {
-        Self {
-            random_teleports: true,
-            teleports_on_projectile_hit: false,
-            projectile_filter: None,
-            min_random_teleport_time: 0.0,
-            max_random_teleport_time: 20.0,
-            random_teleport_cube: Vec3::new(32.0, 16.0, 32.0),
-            target_distance: 16.0,
-            target_teleport_chance: 1.0,
-            light_teleport_chance: 0.01,
-            dark_teleport_chance: 0.01,
-        }
-    }
-}
-
 impl Typed for Teleport {
     /// The legacy reader binds no camel-case spelling: the schema reader's
     /// validation before the read refuses one, so nothing is renamed here.
@@ -731,19 +656,19 @@ impl Typed for Teleport {
 // −1 ..= 16); the new `replaceable_blocks` (empty: air only) and `force_replace_matched_blocks`
 // are ignored by the legacy reader.
 #[doc(alias = "minecraft:trail")]
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct Trail {
     /// `spawn_filter`: when the block spawns; absent means always.
     pub spawn_filter: Option<Filter>,
     /// `block_type`: the block spawned; default `air`.
-    #[facet(default = BlockDescriptor::block(BlockId::parse("air")))]
+    #[facet(schema::molang_with = descriptor_tags, default = BlockDescriptor::block(BlockId::parse("air")))]
     pub block_type: BlockDescriptor,
     /// `spawn_offset`: where the block spawns relative to the entity; default 0, 0, 0.
     #[facet(default = Vec3::new(0.0, 0.0, 0.0))]
     pub spawn_offset: Vec3,
     /// `replaceable_blocks`: the blocks the trail may replace; empty means air only.
-    #[facet(default)]
+    #[facet(schema::molang_with = descriptor_tags, default)]
     pub replaceable_blocks: Vec<BlockDescriptor>,
     /// `radius`: the trail covers a square of `2 × radius + 1` blocks; −1 (the default) is the
     /// legacy four-corner sampling. −1 to 16.
@@ -753,19 +678,6 @@ pub struct Trail {
     /// rules forbid it; default `false`.
     #[facet(default = false)]
     pub force_replace_matched_blocks: bool,
-}
-
-impl Default for Trail {
-    fn default() -> Self {
-        Self {
-            spawn_filter: None,
-            block_type: BlockDescriptor::block(BlockId::parse("air")),
-            spawn_offset: Vec3::new(0.0, 0.0, 0.0),
-            replaceable_blocks: Vec::new(),
-            radius: -1,
-            force_replace_matched_blocks: false,
-        }
-    }
 }
 
 /// The members 1.26.60 adds to `trail`, which the legacy reader does not read.
@@ -817,15 +729,6 @@ impl Typed for Trail {
     }
 }
 
-impl MolangFields for Trail {
-    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
-        visitor.enter("block_type".into());
-        visit_block_tags(&mut self.block_type, visitor);
-        visitor.leave();
-        visit_block_list("replaceable_blocks", &mut self.replaceable_blocks, visitor);
-    }
-}
-
 /// `minecraft:annotation.break_door`: the entity breaks doors, as its navigation allows.
 // `annotation.break_door`: the break time defaults to 12 and the minimum difficulty to 3
 // (`hard`).
@@ -861,46 +764,4 @@ pub enum Difficulty {
     #[default]
     #[facet(rename = "hard")]
     Hard,
-}
-
-crate::hand_fields!(BlockSet {
-    "cost": Option<f32>,
-});
-crate::hand_fields!(BlockMovementSlowdownImmunity {});
-crate::hand_fields!(MovementJump {
-    "max_turn": f32,
-});
-bedrock_addon_core::impl_no_molang!(MovementJump);
-crate::hand_fields!(Buoyant {
-    "base_buoyancy": f32,
-    "apply_gravity": bool,
-    "movement_type": BuoyancyMovement,
-    "big_wave_probability": f32,
-    "big_wave_speed": f32,
-    "drag_down_on_buoyancy_removed": f32,
-    "can_auto_step_from_liquid": bool,
-});
-crate::hand_fields!(Teleport {
-    "random_teleports": bool,
-    "teleports_on_projectile_hit": bool,
-    "min_random_teleport_time": f32,
-    "max_random_teleport_time": f32,
-    "random_teleport_cube": Vec3,
-    "target_distance": f32,
-    "target_teleport_chance": f32,
-    "light_teleport_chance": f32,
-    "dark_teleport_chance": f32,
-});
-bedrock_addon_core::impl_no_molang!(Teleport);
-crate::hand_fields!(Trail {
-    "spawn_offset": Vec3,
-    "radius": i32,
-    "force_replace_matched_blocks": bool,
-});
-
-/// The `tags` of every descriptor of `blocks` to the Molang walk.
-impl MolangFields for BlockSet {
-    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
-        visit_blocks(&mut self.blocks, visitor);
-    }
 }

@@ -317,7 +317,7 @@ fn every_client_entity_molang_occurrence_loads_with_its_text_and_version() {
                     for (index, element) in list.iter().flatten().enumerate() {
                         members.insert(
                             format!("/minecraft:client_entity/description/scripts/{name}/{index}"),
-                            (element.0.clone(), Some(file.cx.molang_version)),
+                            (element.clone(), Some(file.cx.molang_version)),
                         );
                     }
                 }

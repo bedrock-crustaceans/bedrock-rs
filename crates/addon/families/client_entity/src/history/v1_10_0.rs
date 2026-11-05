@@ -6,7 +6,7 @@ use bedrock_addon_core::diagnostic::{
 use bedrock_addon_core::id::{
     AnimationRef, EntityId, GeometryId, MaterialId, ParticleId, SoundEventName, TexturePath,
 };
-use bedrock_addon_core::json::{EncodeError, JsonSlice, StrictBool, StrictString, Value};
+use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::molang::{Molang, MolangFields, MolangSource, MolangVisitor, Step};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::version::known;
@@ -51,7 +51,7 @@ pub struct Description {
     /// `geometry`.
     pub geometry: Option<IndexMap<String, GeometryId>>,
     /// `queryable_geometry`.
-    pub queryable_geometry: Option<StrictString>,
+    pub queryable_geometry: Option<String>,
     /// `spawn_egg`.
     pub spawn_egg: Option<SpawnEgg>,
     /// `scripts`.
@@ -59,7 +59,7 @@ pub struct Description {
     /// `particle_effects`.
     pub particle_effects: Option<IndexMap<String, ParticleId>>,
     /// `particle_emitters`: accepted and read by nothing.
-    pub particle_emitters: Option<IndexMap<String, StrictString>>,
+    pub particle_emitters: Option<IndexMap<String, String>>,
     /// `animations`.
     pub animations: Option<IndexMap<String, AnimationRef>>,
     /// `render_controllers`: a name, or `{ name: condition }`.
@@ -67,11 +67,11 @@ pub struct Description {
     /// `sound_effects`.
     pub sound_effects: Option<IndexMap<String, SoundEventName>>,
     /// `enable_attachables`.
-    pub enable_attachables: Option<StrictBool>,
+    pub enable_attachables: Option<bool>,
     /// `held_item_ignores_lighting`.
-    pub held_item_ignores_lighting: Option<StrictBool>,
+    pub held_item_ignores_lighting: Option<bool>,
     /// `hide_armor`.
-    pub hide_armor: Option<StrictBool>,
+    pub hide_armor: Option<bool>,
 }
 
 impl Versioned for ClientEntity {
@@ -244,7 +244,7 @@ fn elements(
     fold: bool,
     at: &JsonPath,
     cx: &mut UpgradeCx<'_>,
-) -> Option<Vec<StrictString>> {
+) -> Option<Vec<String>> {
     let list = list?;
     let mut strings = Vec::with_capacity(list.len());
     for (index, element) in list.into_iter().enumerate() {
@@ -256,7 +256,7 @@ fn elements(
             if fold && has_cased_literal(source.as_str()) {
                 cx.diagnostics.push(literal_folded(element_at));
             }
-            strings.push(StrictString(folded(source.as_str(), fold)));
+            strings.push(folded(source.as_str(), fold));
         } else {
             // The game joins the string elements and skips the ones that are not strings.
             cx.diagnostics.push(

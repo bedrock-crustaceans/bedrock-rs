@@ -3,7 +3,6 @@
 use indexmap::IndexMap;
 
 use super::AnimateEntry;
-use crate::json::StrictString;
 use crate::molang::{Molang, MolangSource};
 
 /// `scripts`: the Molang a client runs for the model, and the animations it plays.
@@ -20,14 +19,14 @@ use crate::molang::{Molang, MolangSource};
 pub struct Scripts {
     /// `variables`: `variable.<name>` → `"public"`, the variables other entities may read.
     #[facet(default, skip_serializing_if = Option::is_none)]
-    pub variables: Option<IndexMap<String, StrictString>>,
+    pub variables: Option<IndexMap<String, String>>,
     /// `initialize`: run once when the entity is created; the strings concatenated with no
     /// separator form one expression.
     #[facet(default, skip_serializing_if = Option::is_none)]
-    pub initialize: Option<Vec<StrictString>>,
+    pub initialize: Option<Vec<String>>,
     /// `pre_animation`: run every frame before the animations; concatenated as `initialize`.
     #[facet(default, skip_serializing_if = Option::is_none)]
-    pub pre_animation: Option<Vec<StrictString>>,
+    pub pre_animation: Option<Vec<String>>,
     /// `scale`: the model's uniform scale.
     #[facet(default, skip_serializing_if = Option::is_none)]
     pub scale: Option<Molang>,

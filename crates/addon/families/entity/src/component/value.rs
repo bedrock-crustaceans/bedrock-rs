@@ -35,6 +35,49 @@ pub(crate) fn visit_block_tags(block: &mut BlockDescriptor, visitor: &mut Molang
     }
 }
 
+/// A value holding block or item descriptors whose `tags` the walk reads under
+/// [`DESCRIPTOR_TAGS`] (not the walk's default spec, which core's descriptor walks take).
+pub(crate) trait DescriptorTags {
+    /// Hands each descriptor's `tags` to the walk, at the visitor's current step.
+    fn visit_tags(&mut self, visitor: &mut MolangVisitor<'_>);
+}
+
+impl DescriptorTags for ItemDescriptor {
+    fn visit_tags(&mut self, visitor: &mut MolangVisitor<'_>) {
+        visit_item_tags(self, visitor);
+    }
+}
+
+impl DescriptorTags for BlockDescriptor {
+    fn visit_tags(&mut self, visitor: &mut MolangVisitor<'_>) {
+        visit_block_tags(self, visitor);
+    }
+}
+
+impl<T: DescriptorTags> DescriptorTags for Option<T> {
+    fn visit_tags(&mut self, visitor: &mut MolangVisitor<'_>) {
+        if let Some(value) = self {
+            value.visit_tags(visitor);
+        }
+    }
+}
+
+impl<T: DescriptorTags> DescriptorTags for Vec<T> {
+    fn visit_tags(&mut self, visitor: &mut MolangVisitor<'_>) {
+        for (i, value) in self.iter_mut().enumerate() {
+            visitor.enter(i.into());
+            value.visit_tags(visitor);
+            visitor.leave();
+        }
+    }
+}
+
+/// The `schema::molang_with` walk of a field holding descriptors: their `tags` under
+/// [`DESCRIPTOR_TAGS`].
+pub(crate) fn descriptor_tags<T: DescriptorTags>(value: &mut T, visitor: &mut MolangVisitor<'_>) {
+    value.visit_tags(visitor);
+}
+
 /// An equipment slot as the game names them. JSON: `slot.weapon.mainhand`,
 /// `slot.weapon.offhand`, `slot.armor.head`, `slot.armor.chest`, `slot.armor.legs`,
 /// `slot.armor.feet` or `slot.armor.body`.

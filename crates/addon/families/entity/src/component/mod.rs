@@ -105,7 +105,7 @@ pub enum EntityComponent {
     #[component(name = "minecraft:behavior.admire_item", typed = "1.26.20", released = "1.8.0", molang, parse = goal::parse::<goal::AdmireItem>)]
     BehaviorAdmireItem(goal::AdmireItem),
     /// `minecraft:behavior.aquatic_charge_attack`.
-    #[component(name = "minecraft:behavior.aquatic_charge_attack", typed = "1.21.120", released = "1.21.120", parse = goal::parse::<goal::AquaticChargeAttack>)]
+    #[component(name = "minecraft:behavior.aquatic_charge_attack", typed = "1.21.120", goal, released = "1.21.120", parse = goal::parse::<goal::AquaticChargeAttack>)]
     BehaviorAquaticChargeAttack(goal::AquaticChargeAttack),
     /// `minecraft:behavior.avoid_block`.
     #[component(name = "minecraft:behavior.avoid_block", typed = "1.21.120", released = "1.8.0", molang, parse = goal::parse::<goal::AvoidBlock>)]
@@ -117,7 +117,7 @@ pub enum EntityComponent {
     #[component(name = "minecraft:behavior.barter", typed = "1.26.20", goal, released = "1.8.0", parse = goal::parse::<goal::Barter>)]
     BehaviorBarter(goal::Barter),
     /// `minecraft:behavior.beg`.
-    #[component(name = "minecraft:behavior.beg", typed = "1.26.40", released = "1.8.0", molang, parse = goal::parse::<goal::Beg>)]
+    #[component(name = "minecraft:behavior.beg", typed = "1.26.40", goal, released = "1.8.0", molang, parse = goal::parse::<goal::Beg>)]
     BehaviorBeg(goal::Beg),
     /// `minecraft:behavior.break_door`.
     #[component(name = "minecraft:behavior.break_door", typed = "1.26.30", goal, released = "1.8.0", parse = goal::parse::<goal::BreakDoor>)]
@@ -135,16 +135,16 @@ pub enum EntityComponent {
     #[component(name = "minecraft:behavior.charge_attack", typed = "1.21.100", goal, released = "1.8.0", parse = goal::parse::<goal::ChargeAttack>)]
     BehaviorChargeAttack(goal::ChargeAttack),
     /// `minecraft:behavior.charge_held_item`.
-    #[component(name = "minecraft:behavior.charge_held_item", typed = "1.26.40", released = "1.8.0", molang, parse = goal::parse::<goal::ChargeHeldItem>)]
+    #[component(name = "minecraft:behavior.charge_held_item", typed = "1.26.40", goal, released = "1.8.0", molang, parse = goal::parse::<goal::ChargeHeldItem>)]
     BehaviorChargeHeldItem(goal::ChargeHeldItem),
     /// `minecraft:behavior.circle_around_anchor`.
-    #[component(name = "minecraft:behavior.circle_around_anchor", typed = "1.21.100", released = "1.8.0", parse = goal::parse::<goal::CircleAroundAnchor>)]
+    #[component(name = "minecraft:behavior.circle_around_anchor", typed = "1.21.100", goal, released = "1.8.0", parse = goal::parse::<goal::CircleAroundAnchor>)]
     BehaviorCircleAroundAnchor(goal::CircleAroundAnchor),
     /// `minecraft:behavior.controlled_by_player`.
     #[component(name = "minecraft:behavior.controlled_by_player", typed = "1.21.100", goal, released = "1.8.0", parse = goal::parse::<goal::ControlledByPlayer>)]
     BehaviorControlledByPlayer(goal::ControlledByPlayer),
     /// `minecraft:behavior.croak`.
-    #[component(name = "minecraft:behavior.croak", typed = "1.26.30", released = "1.8.0", parse = goal::parse::<goal::Croak>)]
+    #[component(name = "minecraft:behavior.croak", typed = "1.26.30", goal, released = "1.8.0", parse = goal::parse::<goal::Croak>)]
     BehaviorCroak(goal::Croak),
     /// `minecraft:behavior.defend_trusted_target`.
     #[component(name = "minecraft:behavior.defend_trusted_target", typed = "1.26.30", released = "1.8.0", molang, parse = goal::parse::<goal::DefendTrustedTarget>)]
@@ -162,7 +162,7 @@ pub enum EntityComponent {
     #[component(name = "minecraft:behavior.door_interact", typed = "1.26.30", goal, released = "1.8.0", parse = goal::parse::<goal::DoorInteract>)]
     BehaviorDoorInteract(goal::DoorInteract),
     /// `minecraft:behavior.dragonchargeplayer`.
-    #[component(name = "minecraft:behavior.dragonchargeplayer", typed = "1.26.0", released = "1.8.0", parse = goal::parse::<goal::DragonChargePlayer>)]
+    #[component(name = "minecraft:behavior.dragonchargeplayer", typed = "1.26.0", goal, released = "1.8.0", parse = goal::parse::<goal::DragonChargePlayer>)]
     BehaviorDragonChargePlayer(goal::DragonChargePlayer),
     /// `minecraft:behavior.dragondeath`.
     #[component(name = "minecraft:behavior.dragondeath", typed = "1.26.30", goal, released = "1.8.0", parse = goal::parse::<goal::DragonDeath>)]
@@ -180,13 +180,13 @@ pub enum EntityComponent {
     #[component(name = "minecraft:behavior.dragonscanning", typed = "1.26.30", goal, released = "1.8.0", parse = goal::parse::<goal::DragonScanning>)]
     BehaviorDragonScanning(goal::DragonScanning),
     /// `minecraft:behavior.dragonstrafeplayer`.
-    #[component(name = "minecraft:behavior.dragonstrafeplayer", typed = "1.26.0", released = "1.8.0", parse = goal::parse::<goal::DragonStrafePlayer>)]
+    #[component(name = "minecraft:behavior.dragonstrafeplayer", typed = "1.26.0", goal, released = "1.8.0", parse = goal::parse::<goal::DragonStrafePlayer>)]
     BehaviorDragonStrafePlayer(goal::DragonStrafePlayer),
     /// `minecraft:behavior.dragontakeoff`.
     #[component(name = "minecraft:behavior.dragontakeoff", typed = "1.26.30", goal, released = "1.8.0", parse = goal::parse::<goal::DragonTakeoff>)]
     BehaviorDragonTakeoff(goal::DragonTakeoff),
     /// `minecraft:behavior.drink_milk`.
-    #[component(name = "minecraft:behavior.drink_milk", typed = "1.21.120", released = "1.8.0", parse = goal::parse::<goal::DrinkMilk>)]
+    #[component(name = "minecraft:behavior.drink_milk", typed = "1.21.120", goal, released = "1.8.0", parse = goal::parse::<goal::DrinkMilk>)]
     BehaviorDrinkMilk(goal::DrinkMilk),
     /// `minecraft:behavior.drink_potion`.
     #[component(name = "minecraft:behavior.drink_potion", typed = "1.26.40", goal, released = "1.8.0", parse = goal::parse::<goal::DrinkPotion>)]
@@ -225,7 +225,7 @@ pub enum EntityComponent {
     #[component(name = "minecraft:behavior.find_underwater_treasure", typed = "1.26.20", goal, released = "1.8.0", parse = goal::parse::<goal::FindUnderwaterTreasure>)]
     BehaviorFindUnderwaterTreasure(goal::FindUnderwaterTreasure),
     /// `minecraft:behavior.fire_at_target`.
-    #[component(name = "minecraft:behavior.fire_at_target", typed = "1.26.30", released = "1.8.0", parse = goal::parse::<goal::FireAtTarget>)]
+    #[component(name = "minecraft:behavior.fire_at_target", typed = "1.26.30", goal, released = "1.8.0", parse = goal::parse::<goal::FireAtTarget>)]
     BehaviorFireAtTarget(goal::FireAtTarget),
     /// `minecraft:behavior.flee_sun`.
     #[component(name = "minecraft:behavior.flee_sun", typed = "1.26.20", goal, released = "1.8.0", parse = goal::parse::<goal::FleeSun>)]
@@ -237,13 +237,13 @@ pub enum EntityComponent {
     #[component(name = "minecraft:behavior.float_tempt", typed = "1.26.60", released = "1.8.0", molang, parse = goal::parse::<goal::FloatTempt>)]
     BehaviorFloatTempt(goal::FloatTempt),
     /// `minecraft:behavior.float_wander`.
-    #[component(name = "minecraft:behavior.float_wander", typed = "1.26.40", released = "1.8.0", parse = goal::parse::<goal::FloatWander>)]
+    #[component(name = "minecraft:behavior.float_wander", typed = "1.26.40", goal, released = "1.8.0", parse = goal::parse::<goal::FloatWander>)]
     BehaviorFloatWander(goal::FloatWander),
     /// `minecraft:behavior.follow_caravan`.
     #[component(name = "minecraft:behavior.follow_caravan", typed = "1.26.30", goal, released = "1.8.0", parse = goal::parse::<goal::FollowCaravan>)]
     BehaviorFollowCaravan(goal::FollowCaravan),
     /// `minecraft:behavior.follow_mob`.
-    #[component(name = "minecraft:behavior.follow_mob", typed = "1.26.50", released = "1.8.0", parse = goal::parse::<goal::FollowMob>)]
+    #[component(name = "minecraft:behavior.follow_mob", typed = "1.26.50", goal, released = "1.8.0", parse = goal::parse::<goal::FollowMob>)]
     BehaviorFollowMob(goal::FollowMob),
     /// `minecraft:behavior.follow_owner`.
     #[component(name = "minecraft:behavior.follow_owner", typed = "1.26.20", goal, released = "1.8.0", parse = goal::parse::<goal::FollowOwner>)]
@@ -252,7 +252,7 @@ pub enum EntityComponent {
     #[component(name = "minecraft:behavior.follow_parent", typed = "1.26.20", goal, released = "1.8.0", parse = goal::parse::<goal::FollowParent>)]
     BehaviorFollowParent(goal::FollowParent),
     /// `minecraft:behavior.follow_target_leader`.
-    #[component(name = "minecraft:behavior.follow_target_leader", typed = "1.26.30", released = "1.26.20", supersedes = "minecraft:behavior.follow_target_captain", parse = goal::parse::<goal::FollowTargetLeader>)]
+    #[component(name = "minecraft:behavior.follow_target_leader", typed = "1.26.30", goal, released = "1.26.20", supersedes = "minecraft:behavior.follow_target_captain", parse = goal::parse::<goal::FollowTargetLeader>)]
     BehaviorFollowTargetLeader(goal::FollowTargetLeader),
     /// `minecraft:behavior.go_and_give_items_to_noteblock`.
     #[component(name = "minecraft:behavior.go_and_give_items_to_noteblock", typed = "1.26.20", released = "1.8.0", molang, parse = goal::parse::<goal::GoAndGiveItemsToNoteblock>)]
@@ -288,10 +288,10 @@ pub enum EntityComponent {
     #[component(name = "minecraft:behavior.investigate_suspicious_location", typed = "1.21.130", goal, released = "1.8.0", parse = goal::parse::<goal::InvestigateSuspiciousLocation>)]
     BehaviorInvestigateSuspiciousLocation(goal::InvestigateSuspiciousLocation),
     /// `minecraft:behavior.jump_around_target`.
-    #[component(name = "minecraft:behavior.jump_around_target", typed = "1.26.20", released = "1.8.0", parse = goal::parse::<goal::JumpAroundTarget>)]
+    #[component(name = "minecraft:behavior.jump_around_target", typed = "1.26.20", goal, released = "1.8.0", parse = goal::parse::<goal::JumpAroundTarget>)]
     BehaviorJumpAroundTarget(goal::JumpAroundTarget),
     /// `minecraft:behavior.jump_to_block`.
-    #[component(name = "minecraft:behavior.jump_to_block", typed = "1.26.20", released = "1.8.0", molang, parse = goal::parse::<goal::JumpToBlock>)]
+    #[component(name = "minecraft:behavior.jump_to_block", typed = "1.26.20", goal, released = "1.8.0", molang, parse = goal::parse::<goal::JumpToBlock>)]
     BehaviorJumpToBlock(goal::JumpToBlock),
     /// `minecraft:behavior.knockback_roar`.
     #[component(name = "minecraft:behavior.knockback_roar", typed = "1.26.40", released = "1.8.0", molang, parse = goal::parse::<goal::KnockbackRoar>)]
@@ -306,16 +306,16 @@ pub enum EntityComponent {
     #[component(name = "minecraft:behavior.leap_at_target", typed = "1.26.40", goal, released = "1.8.0", parse = goal::parse::<goal::LeapAtTarget>)]
     BehaviorLeapAtTarget(goal::LeapAtTarget),
     /// `minecraft:behavior.look_at_entity`.
-    #[component(name = "minecraft:behavior.look_at_entity", typed = "1.26.0", released = "1.8.0", parse = goal::parse::<goal::LookAtEntity>)]
+    #[component(name = "minecraft:behavior.look_at_entity", typed = "1.26.0", goal, released = "1.8.0", parse = goal::parse::<goal::LookAtEntity>)]
     BehaviorLookAtEntity(goal::LookAtEntity),
     /// `minecraft:behavior.look_at_player`.
-    #[component(name = "minecraft:behavior.look_at_player", typed = "1.26.0", released = "1.8.0", parse = goal::parse::<goal::LookAtPlayer>)]
+    #[component(name = "minecraft:behavior.look_at_player", typed = "1.26.0", goal, released = "1.8.0", parse = goal::parse::<goal::LookAtPlayer>)]
     BehaviorLookAtPlayer(goal::LookAtPlayer),
     /// `minecraft:behavior.look_at_target`.
-    #[component(name = "minecraft:behavior.look_at_target", typed = "1.26.0", released = "1.8.0", parse = goal::parse::<goal::LookAtTarget>)]
+    #[component(name = "minecraft:behavior.look_at_target", typed = "1.26.0", goal, released = "1.8.0", parse = goal::parse::<goal::LookAtTarget>)]
     BehaviorLookAtTarget(goal::LookAtTarget),
     /// `minecraft:behavior.look_at_trading_player`.
-    #[component(name = "minecraft:behavior.look_at_trading_player", typed = "1.26.0", released = "1.8.0", parse = goal::parse::<goal::LookAtTradingPlayer>)]
+    #[component(name = "minecraft:behavior.look_at_trading_player", typed = "1.26.0", goal, released = "1.8.0", parse = goal::parse::<goal::LookAtTradingPlayer>)]
     BehaviorLookAtTradingPlayer(goal::LookAtTradingPlayer),
     /// `minecraft:behavior.make_love`.
     #[component(name = "minecraft:behavior.make_love", typed = "1.26.30", goal, released = "1.8.0", parse = goal::parse::<goal::MakeLove>)]
@@ -333,7 +333,7 @@ pub enum EntityComponent {
     #[component(name = "minecraft:behavior.mount_pathing", typed = "1.26.20", goal, released = "1.8.0", parse = goal::parse::<goal::MountPathing>)]
     BehaviorMountPathing(goal::MountPathing),
     /// `minecraft:behavior.move_around_target`.
-    #[component(name = "minecraft:behavior.move_around_target", typed = "1.26.20", released = "1.8.0", parse = goal::parse::<goal::MoveAroundTarget>)]
+    #[component(name = "minecraft:behavior.move_around_target", typed = "1.26.20", goal, released = "1.8.0", parse = goal::parse::<goal::MoveAroundTarget>)]
     BehaviorMoveAroundTarget(goal::MoveAroundTarget),
     /// `minecraft:behavior.move_indoors`.
     #[component(name = "minecraft:behavior.move_indoors", typed = "1.26.20", goal, released = "1.8.0", parse = goal::parse::<goal::MoveIndoors>)]
@@ -378,13 +378,13 @@ pub enum EntityComponent {
     #[component(name = "minecraft:behavior.move_towards_target", typed = "1.26.20", goal, released = "1.8.0", parse = goal::parse::<goal::MoveTowardsTarget>)]
     BehaviorMoveTowardsTarget(goal::MoveTowardsTarget),
     /// `minecraft:behavior.nap`.
-    #[component(name = "minecraft:behavior.nap", typed = "1.26.40", released = "1.8.0", parse = goal::parse::<goal::Nap>)]
+    #[component(name = "minecraft:behavior.nap", typed = "1.26.40", goal, released = "1.8.0", parse = goal::parse::<goal::Nap>)]
     BehaviorNap(goal::Nap),
     /// `minecraft:behavior.nearest_attackable_target`.
-    #[component(name = "minecraft:behavior.nearest_attackable_target", typed = "1.26.0", released = "1.8.0", parse = goal::parse::<goal::NearestAttackableTarget>)]
+    #[component(name = "minecraft:behavior.nearest_attackable_target", typed = "1.26.0", goal, released = "1.8.0", parse = goal::parse::<goal::NearestAttackableTarget>)]
     BehaviorNearestAttackableTarget(goal::NearestAttackableTarget),
     /// `minecraft:behavior.nearest_prioritized_attackable_target`.
-    #[component(name = "minecraft:behavior.nearest_prioritized_attackable_target", typed = "1.26.30", released = "1.8.0", parse = goal::parse::<goal::NearestPrioritizedAttackableTarget>)]
+    #[component(name = "minecraft:behavior.nearest_prioritized_attackable_target", typed = "1.26.30", goal, released = "1.8.0", parse = goal::parse::<goal::NearestPrioritizedAttackableTarget>)]
     BehaviorNearestPrioritizedAttackableTarget(goal::NearestPrioritizedAttackableTarget),
     /// `minecraft:behavior.ocelot_sit_on_block`.
     #[component(name = "minecraft:behavior.ocelot_sit_on_block", typed = "1.26.10", goal, released = "1.8.0", parse = goal::parse::<goal::OcelotSitOnBlock>)]
@@ -393,7 +393,7 @@ pub enum EntityComponent {
     #[component(name = "minecraft:behavior.ocelotattack", typed = "1.26.10", goal, released = "1.8.0", parse = goal::parse::<goal::Ocelotattack>)]
     BehaviorOcelotattack(goal::Ocelotattack),
     /// `minecraft:behavior.offer_flower`.
-    #[component(name = "minecraft:behavior.offer_flower", typed = "1.26.10", released = "1.8.0", parse = goal::parse::<goal::OfferFlower>)]
+    #[component(name = "minecraft:behavior.offer_flower", typed = "1.26.10", goal, released = "1.8.0", parse = goal::parse::<goal::OfferFlower>)]
     BehaviorOfferFlower(goal::OfferFlower),
     /// `minecraft:behavior.open_door`.
     #[component(name = "minecraft:behavior.open_door", typed = "1.26.30", goal, released = "1.8.0", parse = goal::parse::<goal::OpenDoor>)]
@@ -420,7 +420,7 @@ pub enum EntityComponent {
     #[component(name = "minecraft:behavior.play", typed = "1.26.10", goal, released = "1.8.0", parse = goal::parse::<goal::Play>)]
     BehaviorPlay(goal::Play),
     /// `minecraft:behavior.play_dead`.
-    #[component(name = "minecraft:behavior.play_dead", typed = "1.26.10", released = "1.8.0", parse = goal::parse::<goal::PlayDead>)]
+    #[component(name = "minecraft:behavior.play_dead", typed = "1.26.10", goal, released = "1.8.0", parse = goal::parse::<goal::PlayDead>)]
     BehaviorPlayDead(goal::PlayDead),
     /// `minecraft:behavior.player_ride_tamed`.
     #[component(name = "minecraft:behavior.player_ride_tamed", typed = "1.26.20", goal, released = "1.8.0", parse = goal::parse::<goal::PlayerRideTamed>)]
@@ -438,10 +438,10 @@ pub enum EntityComponent {
     #[component(name = "minecraft:behavior.random_fly", typed = "1.26.30", goal, released = "1.8.0", parse = goal::parse::<goal::RandomFly>)]
     BehaviorRandomFly(goal::RandomFly),
     /// `minecraft:behavior.random_hover`.
-    #[component(name = "minecraft:behavior.random_hover", typed = "1.26.20", released = "1.8.0", parse = goal::parse::<goal::RandomHover>)]
+    #[component(name = "minecraft:behavior.random_hover", typed = "1.26.20", goal, released = "1.8.0", parse = goal::parse::<goal::RandomHover>)]
     BehaviorRandomHover(goal::RandomHover),
     /// `minecraft:behavior.random_look_around`.
-    #[component(name = "minecraft:behavior.random_look_around", typed = "1.26.30", released = "1.8.0", parse = goal::parse::<goal::RandomLookAround>)]
+    #[component(name = "minecraft:behavior.random_look_around", typed = "1.26.30", goal, released = "1.8.0", parse = goal::parse::<goal::RandomLookAround>)]
     BehaviorRandomLookAround(goal::RandomLookAround),
     /// `minecraft:behavior.random_look_around_and_sit`.
     #[component(name = "minecraft:behavior.random_look_around_and_sit", typed = "1.26.30", goal, released = "1.8.0", parse = goal::parse::<goal::RandomLookAroundAndSit>)]
@@ -459,7 +459,7 @@ pub enum EntityComponent {
     #[component(name = "minecraft:behavior.random_swim", typed = "1.26.30", goal, released = "1.8.0", parse = goal::parse::<goal::RandomSwim>)]
     BehaviorRandomSwim(goal::RandomSwim),
     /// `minecraft:behavior.ranged_attack`.
-    #[component(name = "minecraft:behavior.ranged_attack", typed = "1.26.40", released = "1.8.0", parse = goal::parse::<goal::RangedAttack>)]
+    #[component(name = "minecraft:behavior.ranged_attack", typed = "1.26.40", goal, released = "1.8.0", parse = goal::parse::<goal::RangedAttack>)]
     BehaviorRangedAttack(goal::RangedAttack),
     /// `minecraft:behavior.receive_love`.
     #[component(name = "minecraft:behavior.receive_love", typed = "1.26.30", goal, released = "1.8.0", parse = goal::parse::<goal::ReceiveLove>)]
@@ -516,13 +516,13 @@ pub enum EntityComponent {
     #[component(name = "minecraft:behavior.slime_random_direction", typed = "1.21.110", goal, released = "1.8.0", parse = goal::parse::<goal::SlimeRandomDirection>)]
     BehaviorSlimeRandomDirection(goal::SlimeRandomDirection),
     /// `minecraft:behavior.snacking`.
-    #[component(name = "minecraft:behavior.snacking", typed = "1.26.40", released = "1.8.0", molang, parse = goal::parse::<goal::Snacking>)]
+    #[component(name = "minecraft:behavior.snacking", typed = "1.26.40", goal, released = "1.8.0", molang, parse = goal::parse::<goal::Snacking>)]
     BehaviorSnacking(goal::Snacking),
     /// `minecraft:behavior.sneeze`.
     #[component(name = "minecraft:behavior.sneeze", typed = "1.26.30", goal, released = "1.8.0", parse = goal::parse::<goal::Sneeze>)]
     BehaviorSneeze(goal::Sneeze),
     /// `minecraft:behavior.sniff`.
-    #[component(name = "minecraft:behavior.sniff", typed = "1.21.110", released = "1.8.0", parse = goal::parse::<goal::Sniff>)]
+    #[component(name = "minecraft:behavior.sniff", typed = "1.21.110", goal, released = "1.8.0", parse = goal::parse::<goal::Sniff>)]
     BehaviorSniff(goal::Sniff),
     /// `minecraft:behavior.sonic_boom`.
     #[component(name = "minecraft:behavior.sonic_boom", typed = "1.21.110", goal, released = "1.8.0", parse = goal::parse::<goal::SonicBoom>)]
@@ -543,7 +543,7 @@ pub enum EntityComponent {
     #[component(name = "minecraft:behavior.squid_out_of_water", typed = "1.26.40", goal, released = "1.8.0", parse = goal::parse::<goal::SquidOutOfWater>)]
     BehaviorSquidOutOfWater(goal::SquidOutOfWater),
     /// `minecraft:behavior.stalk_and_pounce_on_target`.
-    #[component(name = "minecraft:behavior.stalk_and_pounce_on_target", typed = "1.26.40", released = "1.8.0", parse = goal::parse::<goal::StalkAndPounceOnTarget>)]
+    #[component(name = "minecraft:behavior.stalk_and_pounce_on_target", typed = "1.26.40", goal, released = "1.8.0", parse = goal::parse::<goal::StalkAndPounceOnTarget>)]
     BehaviorStalkAndPounceOnTarget(goal::StalkAndPounceOnTarget),
     /// `minecraft:behavior.stay_near_noteblock`.
     #[component(name = "minecraft:behavior.stay_near_noteblock", typed = "1.21.110", goal, released = "1.8.0", parse = goal::parse::<goal::StayNearNoteblock>)]
@@ -579,7 +579,7 @@ pub enum EntityComponent {
     #[component(name = "minecraft:behavior.swim_with_entity", typed = "1.26.10", goal, released = "1.8.0", parse = goal::parse::<goal::SwimWithEntity>)]
     BehaviorSwimWithEntity(goal::SwimWithEntity),
     /// `minecraft:behavior.swoop_attack`.
-    #[component(name = "minecraft:behavior.swoop_attack", typed = "1.21.110", released = "1.8.0", parse = goal::parse::<goal::SwoopAttack>)]
+    #[component(name = "minecraft:behavior.swoop_attack", typed = "1.21.110", goal, released = "1.8.0", parse = goal::parse::<goal::SwoopAttack>)]
     BehaviorSwoopAttack(goal::SwoopAttack),
     /// `minecraft:behavior.take_block`.
     #[component(name = "minecraft:behavior.take_block", typed = "1.26.30", released = "1.21.100", molang, parse = goal::parse::<goal::TakeBlock>)]
@@ -591,7 +591,7 @@ pub enum EntityComponent {
     #[component(name = "minecraft:behavior.target_when_pushed", typed = "1.26.30", goal, released = "1.8.0", parse = goal::parse::<goal::TargetWhenPushed>)]
     BehaviorTargetWhenPushed(goal::TargetWhenPushed),
     /// `minecraft:behavior.teleport_to_owner`.
-    #[component(name = "minecraft:behavior.teleport_to_owner", typed = "1.26.10", released = "1.8.0", parse = goal::parse::<goal::TeleportToOwner>)]
+    #[component(name = "minecraft:behavior.teleport_to_owner", typed = "1.26.10", goal, released = "1.8.0", parse = goal::parse::<goal::TeleportToOwner>)]
     BehaviorTeleportToOwner(goal::TeleportToOwner),
     /// `minecraft:behavior.tempt` (typed at 1.26.60).
     #[component(name = "minecraft:behavior.tempt", typed = "1.26.60", released = "1.8.0", molang, parse = goal::parse::<goal::Tempt>)]
@@ -609,10 +609,10 @@ pub enum EntityComponent {
     #[component(name = "minecraft:behavior.trade_interest", typed = "1.26.30", goal, released = "1.8.0", parse = goal::parse::<goal::TradeInterest>)]
     BehaviorTradeInterest(goal::TradeInterest),
     /// `minecraft:behavior.trade_with_player`.
-    #[component(name = "minecraft:behavior.trade_with_player", typed = "1.26.10", released = "1.8.0", parse = goal::parse::<goal::TradeWithPlayer>)]
+    #[component(name = "minecraft:behavior.trade_with_player", typed = "1.26.10", goal, released = "1.8.0", parse = goal::parse::<goal::TradeWithPlayer>)]
     BehaviorTradeWithPlayer(goal::TradeWithPlayer),
     /// `minecraft:behavior.transport_items`.
-    #[component(name = "minecraft:behavior.transport_items", typed = "1.21.100", released = "1.21.100", molang, parse = goal::parse::<goal::TransportItems>)]
+    #[component(name = "minecraft:behavior.transport_items", typed = "1.21.100", goal, released = "1.21.100", molang, parse = goal::parse::<goal::TransportItems>)]
     BehaviorTransportItems(goal::TransportItems),
     /// `minecraft:behavior.use_kinetic_weapon`.
     #[component(name = "minecraft:behavior.use_kinetic_weapon", typed = "1.21.120", released = "1.21.120", molang, parse = goal::parse::<goal::UseKineticWeapon>)]
@@ -777,13 +777,13 @@ pub enum EntityComponent {
     #[component(name = "minecraft:managed_wandering_trader", typed = "1.26.40", released = "1.8.0", parse = parse_typed::<ManagedWanderingTrader>)]
     ManagedWanderingTrader(ManagedWanderingTrader),
     /// `minecraft:memory_behavior.follow_target`.
-    #[component(name = "minecraft:memory_behavior.follow_target", typed = "1.26.20", released = "1.8.0", parse = goal::parse::<goal::MemoryFollowTarget>)]
+    #[component(name = "minecraft:memory_behavior.follow_target", typed = "1.26.20", goal, released = "1.8.0", parse = goal::parse::<goal::MemoryFollowTarget>)]
     MemoryBehaviorFollowTarget(goal::MemoryFollowTarget),
     /// `minecraft:memory_behavior.jump_to_block` (a `.<name>` family).
     #[component(name = "minecraft:memory_behavior.jump_to_block", typed = "1.26.50", released = "1.26.50", molang, parse = goal::parse::<goal::MemoryJumpToBlock>)]
     MemoryBehaviorJumpToBlock(goal::MemoryJumpToBlock),
     /// `minecraft:memory_behavior.look_at_entity`.
-    #[component(name = "minecraft:memory_behavior.look_at_entity", typed = "1.26.10", released = "1.8.0", parse = goal::parse::<goal::MemoryLookAtEntity>)]
+    #[component(name = "minecraft:memory_behavior.look_at_entity", typed = "1.26.10", goal, released = "1.8.0", parse = goal::parse::<goal::MemoryLookAtEntity>)]
     MemoryBehaviorLookAtEntity(goal::MemoryLookAtEntity),
     /// `minecraft:memory_behavior.move_to_position`.
     #[component(name = "minecraft:memory_behavior.move_to_position", typed = "1.26.20", released = "1.26.20", molang, parse = goal::parse::<goal::MemoryMoveToPosition>)]
@@ -795,7 +795,7 @@ pub enum EntityComponent {
     #[component(name = "minecraft:memory_behavior.ram_attack", typed = "1.26.50", released = "1.26.50", molang, parse = goal::parse::<goal::MemoryRamAttack>)]
     MemoryBehaviorRamAttack(goal::MemoryRamAttack),
     /// `minecraft:memory_behavior.wait`.
-    #[component(name = "minecraft:memory_behavior.wait", typed = "1.26.0", released = "1.8.0", parse = goal::parse::<goal::MemoryWait>)]
+    #[component(name = "minecraft:memory_behavior.wait", typed = "1.26.0", goal, released = "1.8.0", parse = goal::parse::<goal::MemoryWait>)]
     MemoryBehaviorWait(goal::MemoryWait),
     /// `minecraft:memory_sensor.find_nearest_block`.
     #[component(name = "minecraft:memory_sensor.find_nearest_block", typed = "1.26.30", released = "1.8.0", molang, parse = goal::parse::<goal::MemorySensorFindNearestBlock>)]
@@ -1136,4 +1136,274 @@ pub enum EntityComponent {
     #[component(name = "minecraft:pushable", released = "1.8.0", deprecated_since = "1.26.10", parse = keep_json)]
     #[component(name = "minecraft:behavior.follow_target_captain", released = "1.8.0", deprecated_since = "1.26.20", parse = keep_json)]
     Dynamic(Value),
+}
+
+#[cfg(test)]
+mod tests {
+    use super::EntityComponent;
+
+    /// `(row, typed)` of every row the game table has no reader for.
+    const PINNED_TYPED: [(&str, Option<&str>); 199] = [
+        ("minecraft:absorption", None),
+        ("minecraft:air_drag_modifier", None),
+        ("minecraft:annotation.open_door", Some("1.26.40")),
+        ("minecraft:apply_knockback_rules", Some("1.8.0")),
+        ("minecraft:attack", Some("1.26.60")),
+        ("minecraft:attack_damage", None),
+        ("minecraft:behavior.admire_item", Some("1.26.20")),
+        ("minecraft:behavior.aquatic_charge_attack", Some("1.21.120")),
+        ("minecraft:behavior.barter", Some("1.26.20")),
+        ("minecraft:behavior.beg", Some("1.26.40")),
+        ("minecraft:behavior.break_door", Some("1.26.30")),
+        ("minecraft:behavior.breed", Some("1.21.90")),
+        ("minecraft:behavior.defend_trusted_target", Some("1.26.30")),
+        ("minecraft:behavior.door_interact", Some("1.26.30")),
+        ("minecraft:behavior.dragondeath", Some("1.26.30")),
+        ("minecraft:behavior.dragonholdingpattern", Some("1.26.30")),
+        ("minecraft:behavior.dragonlanding", Some("1.26.30")),
+        ("minecraft:behavior.dragonscanning", Some("1.26.30")),
+        ("minecraft:behavior.dragontakeoff", Some("1.26.30")),
+        ("minecraft:behavior.drink_potion", Some("1.26.40")),
+        ("minecraft:behavior.eat_carried_item", Some("1.26.20")),
+        ("minecraft:behavior.enderman_leave_block", None),
+        ("minecraft:behavior.enderman_take_block", None),
+        ("minecraft:behavior.find_cover", Some("1.26.20")),
+        ("minecraft:behavior.find_mount", Some("1.26.20")),
+        (
+            "minecraft:behavior.find_underwater_treasure",
+            Some("1.26.20"),
+        ),
+        ("minecraft:behavior.flee_sun", Some("1.26.20")),
+        ("minecraft:behavior.float", Some("1.26.20")),
+        ("minecraft:behavior.float_tempt", Some("1.26.60")),
+        ("minecraft:behavior.float_wander", Some("1.26.40")),
+        ("minecraft:behavior.follow_caravan", Some("1.26.30")),
+        ("minecraft:behavior.follow_mob", Some("1.26.50")),
+        ("minecraft:behavior.follow_owner", Some("1.26.20")),
+        ("minecraft:behavior.follow_parent", Some("1.26.20")),
+        ("minecraft:behavior.follow_target_captain", None),
+        ("minecraft:behavior.follow_target_leader", Some("1.26.30")),
+        ("minecraft:behavior.hide", Some("1.26.20")),
+        ("minecraft:behavior.hold_ground", Some("1.26.20")),
+        ("minecraft:behavior.hover", Some("1.26.20")),
+        ("minecraft:behavior.hurt_by_target", Some("1.26.30")),
+        ("minecraft:behavior.inspect_bookshelf", Some("1.26.10")),
+        ("minecraft:behavior.lay_down", Some("1.26.20")),
+        ("minecraft:behavior.lay_egg", Some("1.26.10")),
+        ("minecraft:behavior.leap_at_target", Some("1.26.40")),
+        ("minecraft:behavior.look_at_entity", Some("1.26.0")),
+        ("minecraft:behavior.look_at_player", Some("1.26.0")),
+        ("minecraft:behavior.look_at_target", Some("1.26.0")),
+        ("minecraft:behavior.look_at_trading_player", Some("1.26.0")),
+        ("minecraft:behavior.make_love", Some("1.26.30")),
+        ("minecraft:behavior.mingle", Some("1.26.20")),
+        ("minecraft:behavior.mount_pathing", Some("1.26.20")),
+        ("minecraft:behavior.move_through_village", Some("1.26.20")),
+        ("minecraft:behavior.move_to_block", Some("1.26.40")),
+        ("minecraft:behavior.move_to_land", Some("1.26.10")),
+        ("minecraft:behavior.move_to_lava", Some("1.26.10")),
+        ("minecraft:behavior.move_to_liquid", Some("1.26.10")),
+        ("minecraft:behavior.move_to_poi", Some("1.26.20")),
+        ("minecraft:behavior.move_to_random_block", Some("1.26.20")),
+        ("minecraft:behavior.move_to_village", Some("1.26.20")),
+        ("minecraft:behavior.move_to_water", Some("1.26.10")),
+        ("minecraft:behavior.move_towards_target", Some("1.26.20")),
+        ("minecraft:behavior.nap", Some("1.26.40")),
+        (
+            "minecraft:behavior.nearest_prioritized_attackable_target",
+            Some("1.26.30"),
+        ),
+        ("minecraft:behavior.ocelot_sit_on_block", Some("1.26.10")),
+        ("minecraft:behavior.open_door", Some("1.26.30")),
+        ("minecraft:behavior.owner_hurt_by_target", Some("1.26.30")),
+        ("minecraft:behavior.owner_hurt_target", Some("1.26.30")),
+        ("minecraft:behavior.panic", Some("1.26.60")),
+        ("minecraft:behavior.pet_sleep_with_owner", Some("1.26.20")),
+        ("minecraft:behavior.pickup_items", Some("1.26.20")),
+        ("minecraft:behavior.player_ride_tamed", Some("1.26.20")),
+        ("minecraft:behavior.raid_garden", Some("1.26.10")),
+        ("minecraft:behavior.random_breach", Some("1.26.30")),
+        ("minecraft:behavior.random_fly", Some("1.26.30")),
+        ("minecraft:behavior.random_hover", Some("1.26.20")),
+        ("minecraft:behavior.random_look_around", Some("1.26.30")),
+        (
+            "minecraft:behavior.random_look_around_and_sit",
+            Some("1.26.30"),
+        ),
+        ("minecraft:behavior.random_sitting", Some("1.26.20")),
+        ("minecraft:behavior.random_stroll", Some("1.26.20")),
+        ("minecraft:behavior.random_swim", Some("1.26.30")),
+        ("minecraft:behavior.receive_love", Some("1.26.30")),
+        ("minecraft:behavior.restrict_open_door", Some("1.26.30")),
+        ("minecraft:behavior.restrict_sun", Some("1.26.30")),
+        ("minecraft:behavior.rise_to_liquid_level", Some("1.26.30")),
+        ("minecraft:behavior.roll", Some("1.26.30")),
+        ("minecraft:behavior.run_around_like_crazy", Some("1.26.30")),
+        ("minecraft:behavior.scared", Some("1.26.30")),
+        ("minecraft:behavior.send_event", Some("1.26.60")),
+        ("minecraft:behavior.share_items", Some("1.26.30")),
+        (
+            "minecraft:behavior.silverfish_merge_with_stone",
+            Some("1.26.40"),
+        ),
+        (
+            "minecraft:behavior.silverfish_wake_up_friends",
+            Some("1.26.40"),
+        ),
+        ("minecraft:behavior.skeleton_horse_trap", Some("1.26.30")),
+        ("minecraft:behavior.sleep", Some("1.26.20")),
+        ("minecraft:behavior.snacking", Some("1.26.40")),
+        ("minecraft:behavior.sneeze", Some("1.26.30")),
+        ("minecraft:behavior.squid_dive", Some("1.26.40")),
+        ("minecraft:behavior.squid_flee", Some("1.26.40")),
+        ("minecraft:behavior.squid_idle", Some("1.26.40")),
+        (
+            "minecraft:behavior.squid_move_away_from_ground",
+            Some("1.26.40"),
+        ),
+        ("minecraft:behavior.squid_out_of_water", Some("1.26.40")),
+        (
+            "minecraft:behavior.stalk_and_pounce_on_target",
+            Some("1.26.40"),
+        ),
+        ("minecraft:behavior.stay_while_sitting", Some("1.26.30")),
+        ("minecraft:behavior.stomp_turtle_egg", Some("1.26.10")),
+        ("minecraft:behavior.stroll_towards_village", Some("1.26.20")),
+        ("minecraft:behavior.summon_entity", Some("1.26.40")),
+        ("minecraft:behavior.swell", Some("1.26.30")),
+        ("minecraft:behavior.target_when_pushed", Some("1.26.30")),
+        ("minecraft:behavior.tempt", Some("1.26.60")),
+        ("minecraft:behavior.trade_interest", Some("1.26.30")),
+        ("minecraft:behavior.transport_items", Some("1.21.100")),
+        ("minecraft:behavior.use_kinetic_weapon", Some("1.21.120")),
+        ("minecraft:behavior.vex_copy_owner_target", None),
+        ("minecraft:behavior.vex_random_move", None),
+        (
+            "minecraft:behavior.wither_random_attack_pos_goal",
+            Some("1.26.30"),
+        ),
+        (
+            "minecraft:behavior.wither_target_highest_damage",
+            Some("1.26.30"),
+        ),
+        (
+            "minecraft:block_movement_slowdown_immunity",
+            Some("1.26.50"),
+        ),
+        ("minecraft:body_rotation_axis_aligned", None),
+        ("minecraft:bounciness", None),
+        ("minecraft:break_blocks", None),
+        ("minecraft:bucketable", Some("1.26.40")),
+        ("minecraft:can_stand_on_powder_snow", Some("1.26.50")),
+        ("minecraft:dash", None),
+        ("minecraft:dweller", None),
+        ("minecraft:follow_range", None),
+        ("minecraft:foot_size", None),
+        ("minecraft:freezing_immune", Some("1.26.50")),
+        ("minecraft:freezing_vulnerable", Some("1.26.50")),
+        ("minecraft:friction_modifier", None),
+        ("minecraft:health", None),
+        ("minecraft:hide", Some("1.26.40")),
+        ("minecraft:horse.jump_strength", None),
+        ("minecraft:input_air_controlled", None),
+        ("minecraft:jump.dynamic", Some("1.26.40")),
+        ("minecraft:jump.static", Some("1.26.40")),
+        ("minecraft:knockback_resistance", None),
+        ("minecraft:lava_movement", None),
+        ("minecraft:lookat", None),
+        ("minecraft:luck", None),
+        ("minecraft:managed_wandering_trader", Some("1.26.40")),
+        ("minecraft:memory_behavior.flee_threat", None),
+        ("minecraft:memory_behavior.follow_target", Some("1.26.20")),
+        ("minecraft:memory_behavior.jump_to_block", Some("1.26.50")),
+        ("minecraft:memory_behavior.look_at_entity", Some("1.26.10")),
+        (
+            "minecraft:memory_behavior.move_to_position",
+            Some("1.26.20"),
+        ),
+        (
+            "minecraft:memory_behavior.prepare_ram_attack",
+            Some("1.26.50"),
+        ),
+        ("minecraft:memory_behavior.ram_attack", Some("1.26.50")),
+        ("minecraft:memory_behavior.wait", Some("1.26.0")),
+        (
+            "minecraft:memory_sensor.find_nearest_block",
+            Some("1.26.30"),
+        ),
+        ("minecraft:memory_sensor.find_nearest_block_from", None),
+        (
+            "minecraft:memory_sensor.find_nearest_entity",
+            Some("1.26.20"),
+        ),
+        ("minecraft:memory_sensor.find_nearest_entity_from", None),
+        ("minecraft:memory_sensor.find_nearest_poi", Some("1.26.20")),
+        (
+            "minecraft:memory_sensor.find_ram_charge_position",
+            Some("1.26.50"),
+        ),
+        ("minecraft:memory_sensor.game_event", Some("1.26.20")),
+        ("minecraft:memory_sensor.in_range_of_block", None),
+        ("minecraft:memory_sensor.in_range_of_entity", Some("1.26.0")),
+        ("minecraft:movement", None),
+        ("minecraft:movement.amphibious", Some("1.26.60")),
+        ("minecraft:movement.basic", Some("1.26.60")),
+        ("minecraft:movement.dolphin", None),
+        ("minecraft:movement.fly", Some("1.26.60")),
+        ("minecraft:movement.generic", Some("1.26.60")),
+        ("minecraft:movement.glide", Some("1.26.60")),
+        ("minecraft:movement.hover", Some("1.26.60")),
+        ("minecraft:movement.jump", Some("1.26.60")),
+        ("minecraft:movement.skip", Some("1.26.60")),
+        ("minecraft:movement.sway", Some("1.26.60")),
+        ("minecraft:navigation.climb", None),
+        ("minecraft:navigation.float", None),
+        ("minecraft:navigation.fly", None),
+        ("minecraft:navigation.generic", None),
+        ("minecraft:navigation.hover", None),
+        ("minecraft:navigation.swim", None),
+        ("minecraft:navigation.walk", None),
+        ("minecraft:not_pickable_from_inside", Some("1.26.40")),
+        ("minecraft:on_equipment_changed", Some("1.26.20")),
+        ("minecraft:persistent", Some("1.26.40")),
+        ("minecraft:player.exhaustion", None),
+        ("minecraft:player.experience", None),
+        ("minecraft:player.hunger", None),
+        ("minecraft:player.level", None),
+        ("minecraft:player.saturation", None),
+        ("minecraft:preferred_path", Some("1.26.50")),
+        ("minecraft:projectile", Some("1.26.50")),
+        ("minecraft:pushable", None),
+        ("minecraft:ravager_blocked", None),
+        ("minecraft:scaffolding_climber", None),
+        ("minecraft:spawn_on_death", Some("1.26.20")),
+        ("minecraft:spell_effects", Some("1.26.60")),
+        ("minecraft:tick_world", Some("1.21.100")),
+        ("minecraft:trade_resupply", Some("1.26.40")),
+        ("minecraft:trail", Some("1.26.60")),
+        ("minecraft:transformation", Some("1.26.60")),
+        ("minecraft:trust", Some("1.26.40")),
+        ("minecraft:underwater_movement", None),
+        ("minecraft:uses_legacy_ambient_sounds", Some("1.26.50")),
+        ("minecraft:uses_uniform_air_drag", Some("1.26.20")),
+        ("minecraft:water_movement", None),
+        ("minecraft:wither_target_highest_damage", Some("1.26.30")),
+    ];
+
+    /// The typed version of every row the game table has no reader for, pinned (the
+    /// `typed_table` test holds the others to the game table): `None` where the row is never
+    /// read by a typed struct.
+    #[test]
+    fn the_rows_the_game_table_lacks_keep_their_pinned_typed_version() {
+        let rows: Vec<(&str, Option<String>)> = EntityComponent::SCHEMA_ROWS
+            .iter()
+            .filter(|row| crate::game_schema::typed_since(row.name).is_none())
+            .map(|row| (row.name, row.typed.map(|version| version.to_string())))
+            .collect();
+        let pinned: Vec<(&str, Option<String>)> = PINNED_TYPED
+            .iter()
+            .map(|(name, typed)| (*name, typed.map(str::to_owned)))
+            .collect();
+        assert_eq!(rows, pinned);
+    }
 }

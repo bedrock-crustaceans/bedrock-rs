@@ -190,10 +190,11 @@ impl MolangFields for CelebrateSurvive {
 /// `minecraft:behavior.croak`: allows the entity to croak at a random time interval with configurable conditions.
 // `behavior.croak`: typed from 1.26.30.
 #[doc(alias = "minecraft:behavior.croak")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct Croak {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
@@ -206,11 +207,6 @@ pub struct Croak {
 }
 
 impl Croak {
-    /// `priority`, or its default 0.
-    pub fn priority(&self) -> i32 {
-        self.priority.unwrap_or(0)
-    }
-
     /// `duration`, or its default 4.5 to 4.5.
     pub fn duration(&self) -> (f32, f32) {
         self.duration
@@ -225,7 +221,7 @@ impl Croak {
 }
 
 impl Goal for Croak {
-    const TYPED: FormatVersion = known::V1_26_30;
+    const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
         c.base(&mut self.priority);
@@ -234,8 +230,6 @@ impl Goal for Croak {
         c.range("interval", &mut self.interval);
     }
 }
-
-bedrock_addon_core::impl_no_molang!(Croak);
 
 /// `minecraft:behavior.dig`: allows this entity to dig into the ground before despawning.
 // `behavior.dig`: typed from 1.21.120.
@@ -846,56 +840,34 @@ impl Goal for Mingle {
 /// `minecraft:behavior.nap`: allows mobs to occassionally stop and take a nap under certain conditions.
 // `behavior.nap`: typed from 1.26.40.
 #[doc(alias = "minecraft:behavior.nap")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct Nap {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `can_nap_filters`: conditions that need to be met for the entity to nap.
     pub can_nap_filters: Option<Filter>,
     /// `cooldown_max`: maximum time in seconds the mob has to wait before using the goal again. Default 0.
+    #[facet(schema::fallback = 0.0)]
     pub cooldown_max: Option<f32>,
     /// `cooldown_min`: minimum time in seconds the mob has to wait before using the goal again. Default 0.
+    #[facet(schema::fallback = 0.0)]
     pub cooldown_min: Option<f32>,
     /// `mob_detect_dist`: the block distance in x and z that will be checked for mobs that this mob detects. Default 6.
+    #[facet(schema::fallback = 6.0)]
     pub mob_detect_dist: Option<f32>,
     /// `mob_detect_height`: the block distance in y that will be checked for mobs that this mob detects. Default 6.
+    #[facet(schema::fallback = 6.0)]
     pub mob_detect_height: Option<f32>,
     /// `wake_mob_exceptions`: filters for mobs that will not wake this entity from napping.
     pub wake_mob_exceptions: Option<Filter>,
 }
 
-impl Nap {
-    /// `priority`, or its default 0.
-    pub fn priority(&self) -> i32 {
-        self.priority.unwrap_or(0)
-    }
-
-    /// `cooldown_max`, or its default 0.
-    pub fn cooldown_max(&self) -> f32 {
-        self.cooldown_max.unwrap_or(0.0)
-    }
-
-    /// `cooldown_min`, or its default 0.
-    pub fn cooldown_min(&self) -> f32 {
-        self.cooldown_min.unwrap_or(0.0)
-    }
-
-    /// `mob_detect_dist`, or its default 6.
-    pub fn mob_detect_dist(&self) -> f32 {
-        self.mob_detect_dist.unwrap_or(6.0)
-    }
-
-    /// `mob_detect_height`, or its default 6.
-    pub fn mob_detect_height(&self) -> f32 {
-        self.mob_detect_height.unwrap_or(6.0)
-    }
-}
-
 impl Goal for Nap {
-    const TYPED: FormatVersion = known::V1_26_40;
+    const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
         c.base(&mut self.priority);
@@ -903,8 +875,6 @@ impl Goal for Nap {
         c.filter("wake_mob_exceptions", self.wake_mob_exceptions.as_ref());
     }
 }
-
-bedrock_addon_core::impl_no_molang!(Nap);
 
 /// `minecraft:behavior.pet_sleep_with_owner`: allows the pet mob to move onto a bed with its owner while sleeping.
 // `behavior.pet_sleep_with_owner`: typed from 1.26.20.
@@ -987,6 +957,8 @@ impl Goal for Play {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
+        // Bounds by hand, not schema::min/max: a bound here follows another check, and the
+        // derived check runs first, which would reorder the findings.
         c.base(&mut self.priority);
         c.float(
             "chance_to_start",
@@ -1025,64 +997,44 @@ impl Goal for Play {
 /// `minecraft:behavior.play_dead`: allows this entity to pretend to be dead to avoid being targeted by attackers.
 // `behavior.play_dead`: typed from 1.26.10.
 #[doc(alias = "minecraft:behavior.play_dead")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct PlayDead {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `apply_regeneration`: whether the mob will receive the regeneration effect while playing dead. Default `false`.
+    #[facet(schema::fallback = false)]
     pub apply_regeneration: Option<bool>,
     /// `damage_sources`: the list of Entity Damage Sources that will cause this mob to play dead.
     pub damage_sources: Option<Vec<DamageCause>>,
     /// `duration`: the amount of time the mob will remain playing dead (in seconds). Default 1.
+    #[facet(schema::fallback = 1.0)]
     pub duration: Option<f32>,
     /// `filters`: the list of other triggers that are required for the mob to activate play dead.
     pub filters: Option<Filter>,
     /// `force_below_health`: the amount of health at which damage will cause the mob to play dead. Default 0.
+    #[facet(schema::fallback = 0)]
     pub force_below_health: Option<i32>,
     /// `random_damage_range`: the range of damage that may cause the goal to start depending on randomness. Damage taken below the min will never cause the goal to start. Damage taken above the max will always cause the goal to start. Default 0 to 0.
     pub random_damage_range: Option<IntRange>,
     /// `random_start_chance`: the likelihood of this goal starting upon taking damage. Default 1.
+    #[facet(schema::fallback = 1.0)]
     pub random_start_chance: Option<f32>,
 }
 
 impl PlayDead {
-    /// `priority`, or its default 0.
-    pub fn priority(&self) -> i32 {
-        self.priority.unwrap_or(0)
-    }
-
-    /// `apply_regeneration`, or its default `false`.
-    pub fn apply_regeneration(&self) -> bool {
-        self.apply_regeneration.is_some_and(|v| v)
-    }
-
-    /// `duration`, or its default 1.
-    pub fn duration(&self) -> f32 {
-        self.duration.unwrap_or(1.0)
-    }
-
-    /// `force_below_health`, or its default 0.
-    pub fn force_below_health(&self) -> i32 {
-        self.force_below_health.unwrap_or(0)
-    }
-
     /// `random_damage_range`, or its default 0 to 0.
     pub fn random_damage_range(&self) -> (i32, i32) {
         self.random_damage_range
             .map_or((0, 0), |range| range.resolve(0, 0))
     }
-
-    /// `random_start_chance`, or its default 1.
-    pub fn random_start_chance(&self) -> f32 {
-        self.random_start_chance.unwrap_or(1.0)
-    }
 }
 
 impl Goal for PlayDead {
-    const TYPED: FormatVersion = known::V1_26_10;
+    const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
         c.base(&mut self.priority);
@@ -1090,8 +1042,6 @@ impl Goal for PlayDead {
         c.range("random_damage_range", &mut self.random_damage_range);
     }
 }
-
-bedrock_addon_core::impl_no_molang!(PlayDead);
 
 /// `minecraft:behavior.raid_garden`: allows the mob to eat/raid crops out of farms until they are full.
 ///
@@ -1672,60 +1622,40 @@ impl Goal for Sneeze {
 /// `minecraft:behavior.sniff`: allows this entity to detect the nearest player within `sniffing_radius` and update its `minecraft:suspect_tracking` component state.
 // `behavior.sniff`: typed from 1.21.110.
 #[doc(alias = "minecraft:behavior.sniff")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct Sniff {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `cooldown_range`: cooldown range between sniffs in seconds. Default 3 to 1e+01.
     pub cooldown_range: Option<FloatRange>,
     /// `duration`: sniffing duration in seconds. Default 1.
+    #[facet(schema::fallback = 1.0)]
     pub duration: Option<f32>,
     /// `sniffing_radius`: mob detection radius. Default 5.
+    #[facet(schema::fallback = 5.0)]
     pub sniffing_radius: Option<f32>,
     /// `suspicion_radius_horizontal`: mob suspicion horizontal radius. When a player is within this radius horizontally, the anger level towards that player is increased. Default 3.
+    #[facet(schema::fallback = 3.0)]
     pub suspicion_radius_horizontal: Option<f32>,
     /// `suspicion_radius_vertical`: mob suspicion vertical radius. When a player is within this radius vertically, the anger level towards that player is increased. Default 3; at least 1.
+    #[facet(schema::fallback = 3.0)]
     pub suspicion_radius_vertical: Option<f32>,
 }
 
 impl Sniff {
-    /// `priority`, or its default 0.
-    pub fn priority(&self) -> i32 {
-        self.priority.unwrap_or(0)
-    }
-
     /// `cooldown_range`, or its default 3 to 1e+01.
     pub fn cooldown_range(&self) -> (f32, f32) {
         self.cooldown_range
             .map_or((3.0, 1.0e1), |range| range.resolve(3.0, 1.0e1))
     }
-
-    /// `duration`, or its default 1.
-    pub fn duration(&self) -> f32 {
-        self.duration.unwrap_or(1.0)
-    }
-
-    /// `sniffing_radius`, or its default 5.
-    pub fn sniffing_radius(&self) -> f32 {
-        self.sniffing_radius.unwrap_or(5.0)
-    }
-
-    /// `suspicion_radius_horizontal`, or its default 3.
-    pub fn suspicion_radius_horizontal(&self) -> f32 {
-        self.suspicion_radius_horizontal.unwrap_or(3.0)
-    }
-
-    /// `suspicion_radius_vertical`, or its default 3.
-    pub fn suspicion_radius_vertical(&self) -> f32 {
-        self.suspicion_radius_vertical.unwrap_or(3.0)
-    }
 }
 
 impl Goal for Sniff {
-    const TYPED: FormatVersion = known::V1_21_110;
+    const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
         c.base(&mut self.priority);
@@ -1737,8 +1667,6 @@ impl Goal for Sniff {
         );
     }
 }
-
-bedrock_addon_core::impl_no_molang!(Sniff);
 
 /// `minecraft:behavior.stay_near_noteblock`: the entity will attempt to toss the items from its inventory to a nearby recently played noteblock.
 // `behavior.stay_near_noteblock`: typed from 1.21.110.
@@ -2303,153 +2231,47 @@ impl MolangFields for WorkComposter {
     }
 }
 
-crate::hand_fields!(Celebrate {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "celebration_sound": Option<SoundEvent>,
-    "duration": Option<f32>,
-    "on_celebration_end_event": Option<EventTrigger>,
+crate::trigger_fields!(Celebrate {
+    on_celebration_end_event: Option<EventTrigger>,
 });
-crate::hand_fields!(CelebrateSurvive {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "duration": Option<f32>,
-    "on_celebration_end_event": Option<EventTrigger>,
+crate::trigger_fields!(CelebrateSurvive {
+    on_celebration_end_event: Option<EventTrigger>,
 });
-crate::hand_fields!(Croak {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
+crate::trigger_fields!(Dig {
+    on_start: Option<EventTrigger>,
 });
-crate::hand_fields!(Dig {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "allow_dig_when_named": Option<bool>,
-    "digs_in_daylight": Option<bool>,
-    "duration": Option<f32>,
-    "idle_time": Option<f32>,
-    "on_start": Option<EventTrigger>,
-    "suspicion_is_disturbance": Option<bool>,
-    "vibration_is_disturbance": Option<bool>,
+crate::trigger_fields!(Emerge {
+    on_done: Option<EventTrigger>,
 });
-crate::hand_fields!(Emerge {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "cooldown_time": Option<f32>,
-    "duration": Option<f32>,
-    "on_done": Option<EventTrigger>,
+crate::trigger_fields!(HoldGround {
+    within_radius_event: Option<EventTrigger>,
 });
-crate::hand_fields!(HoldGround {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "broadcast": Option<bool>,
-    "broadcast_range": Option<f32>,
-    "min_radius": Option<f32>,
-    "within_radius_event": Option<EventTrigger>,
+crate::trigger_fields!(LayEgg {
+    on_lay: Option<EventTrigger>,
 });
-crate::hand_fields!(LayEgg {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "allow_laying_from_below": Option<bool>,
-    "egg_type": Option<String>,
-    "goal_radius": Option<f32>,
-    "lay_egg_sound": Option<SoundEvent>,
-    "lay_seconds": Option<f32>,
-    "on_lay": Option<EventTrigger>,
-    "search_height": Option<i32>,
-    "search_range": Option<i32>,
-    "speed_multiplier": Option<f32>,
-    "target_blocks": Option<Vec<String>>,
-    "target_materials_above_block": Option<Vec<String>>,
-    "use_default_animation": Option<bool>,
+crate::trigger_fields!(RandomSearchAndDig {
+    on_digging_start: Option<EventTrigger>,
+    on_fail_during_digging: Option<EventTrigger>,
+    on_fail_during_searching: Option<EventTrigger>,
+    on_item_found: Option<EventTrigger>,
+    on_searching_start: Option<EventTrigger>,
+    on_success: Option<EventTrigger>,
 });
-crate::hand_fields!(Nap {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "cooldown_max": Option<f32>,
-    "cooldown_min": Option<f32>,
-    "mob_detect_dist": Option<f32>,
-    "mob_detect_height": Option<f32>,
+crate::trigger_fields!(TimerFlag1 {
+    on_end: Option<EventTrigger>,
+    on_start: Option<EventTrigger>,
 });
-crate::hand_fields!(PlayDead {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "apply_regeneration": Option<bool>,
-    "damage_sources": Option<Vec<DamageCause>>,
-    "duration": Option<f32>,
-    "force_below_health": Option<i32>,
-    "random_start_chance": Option<f32>,
+crate::trigger_fields!(TimerFlag2 {
+    on_end: Option<EventTrigger>,
+    on_start: Option<EventTrigger>,
 });
-crate::hand_fields!(RandomSearchAndDig {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "find_valid_position_retries": Option<i32>,
-    "goal_radius": Option<f32>,
-    "item_table": Option<String>,
-    "on_digging_start": Option<EventTrigger>,
-    "on_fail_during_digging": Option<EventTrigger>,
-    "on_fail_during_searching": Option<EventTrigger>,
-    "on_item_found": Option<EventTrigger>,
-    "on_searching_start": Option<EventTrigger>,
-    "on_success": Option<EventTrigger>,
-    "search_range_xz": Option<i32>,
-    "search_range_y": Option<i32>,
-    "spawn_item_after_seconds": Option<f32>,
-    "spawn_item_pos_offset": Option<f32>,
-    "speed_multiplier": Option<f32>,
-    "target_dig_position_offset": Option<f32>,
+crate::trigger_fields!(TimerFlag3 {
+    on_end: Option<EventTrigger>,
+    on_start: Option<EventTrigger>,
 });
-crate::hand_fields!(Sniff {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "duration": Option<f32>,
-    "sniffing_radius": Option<f32>,
-    "suspicion_radius_horizontal": Option<f32>,
-    "suspicion_radius_vertical": Option<f32>,
+crate::trigger_fields!(Work {
+    on_arrival: Option<EventTrigger>,
 });
-crate::hand_fields!(TimerFlag1 {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "on_end": Option<EventTrigger>,
-    "on_start": Option<EventTrigger>,
-});
-crate::hand_fields!(TimerFlag2 {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "on_end": Option<EventTrigger>,
-    "on_start": Option<EventTrigger>,
-});
-crate::hand_fields!(TimerFlag3 {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "on_end": Option<EventTrigger>,
-    "on_start": Option<EventTrigger>,
-});
-crate::hand_fields!(Work {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "active_time": Option<i32>,
-    "can_work_in_rain": Option<bool>,
-    "goal_cooldown": Option<i32>,
-    "on_arrival": Option<EventTrigger>,
-    "sound_delay_max": Option<i32>,
-    "sound_delay_min": Option<i32>,
-    "speed_multiplier": Option<f32>,
-    "work_in_rain_tolerance": Option<i32>,
-});
-crate::hand_fields!(WorkComposter {
-    "priority": Option<i32>,
-    "control_flags": Option<Vec<ControlFlag>>,
-    "active_time": Option<i32>,
-    "block_interaction_max": Option<i32>,
-    "can_empty_composter": Option<bool>,
-    "can_fill_composter": Option<bool>,
-    "can_work_in_rain": Option<bool>,
-    "goal_cooldown": Option<i32>,
-    "items_per_use_max": Option<i32>,
-    "min_item_count": Option<i32>,
-    "on_arrival": Option<EventTrigger>,
-    "speed_multiplier": Option<f32>,
-    "use_block_max": Option<i32>,
-    "use_block_min": Option<i32>,
-    "work_in_rain_tolerance": Option<i32>,
+crate::trigger_fields!(WorkComposter {
+    on_arrival: Option<EventTrigger>,
 });

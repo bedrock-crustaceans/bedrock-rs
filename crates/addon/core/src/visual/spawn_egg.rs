@@ -1,7 +1,5 @@
 //! `description.spawn_egg`: the spawn egg item's look, as written and as vanilla reads it.
 
-use crate::json::{StrictInt, StrictString};
-
 /// `spawn_egg`: how the entity's spawn egg looks, either a texture or two colours.
 ///
 /// Every member is kept as written; [`SpawnEgg::resolved`] gives the values vanilla reads,
@@ -10,16 +8,16 @@ use crate::json::{StrictInt, StrictString};
 pub struct SpawnEgg {
     /// `texture`: the egg's item texture name.
     #[facet(default, skip_serializing_if = Option::is_none)]
-    pub texture: Option<StrictString>,
+    pub texture: Option<String>,
     /// `texture_index`: which frame of that texture.
     #[facet(default, skip_serializing_if = Option::is_none)]
-    pub texture_index: Option<StrictInt<i64>>,
+    pub texture_index: Option<i64>,
     /// `base_color`: `"#RRGGBB"` or `"#AARRGGBB"`.
     #[facet(default, skip_serializing_if = Option::is_none)]
-    pub base_color: Option<StrictString>,
+    pub base_color: Option<String>,
     /// `overlay_color`: the spots, same form as `base_color`.
     #[facet(default, skip_serializing_if = Option::is_none)]
-    pub overlay_color: Option<StrictString>,
+    pub overlay_color: Option<String>,
 }
 
 /// A spawn egg as vanilla reads it (`SpawnEggInfo`).
@@ -45,23 +43,20 @@ impl SpawnEgg {
         // read as an unsigned integer defaulting to 0, so a negative value reads as the default
         // (jsoncpp's exact conversion of a negative integer is not established).
         SpawnEggInfo {
-            texture: self
-                .texture
-                .as_ref()
-                .map_or("", |texture| texture.0.as_str()),
+            texture: self.texture.as_ref().map_or("", String::as_str),
             texture_index: self
                 .texture_index
-                .and_then(|index| u32::try_from(index.0).ok())
+                .and_then(|index| u32::try_from(index).ok())
                 .unwrap_or(0),
             base_color: self
                 .base_color
                 .as_ref()
-                .and_then(|color| Color::from_hex(&color.0))
+                .and_then(|color| Color::from_hex(color))
                 .unwrap_or(Color::NIL),
             overlay_color: self
                 .overlay_color
                 .as_ref()
-                .and_then(|color| Color::from_hex(&color.0))
+                .and_then(|color| Color::from_hex(color))
                 .unwrap_or(Color::NIL),
         }
     }

@@ -355,7 +355,7 @@ pub struct HurtOwner {
     clippy::struct_excessive_bools,
     reason = "the game's flags, one member each"
 )]
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct ImpactDamage {
     /// `apply_knockback_to_blocking_targets`: a blocking target is knocked back too; default
@@ -403,27 +403,6 @@ pub struct ImpactDamage {
     /// default `true`.
     #[facet(default = true)]
     pub set_last_hurt_requires_damage: bool,
-}
-
-impl Default for ImpactDamage {
-    fn default() -> Self {
-        Self {
-            apply_knockback_to_blocking_targets: false,
-            catch_fire: false,
-            ceil_pre_critical_damage: false,
-            channeling: false,
-            damage: FloatRange::default(),
-            destroy_on_hit: false,
-            destroy_on_hit_requires_damage: true,
-            difficulty_randomization: DifficultyRandomization::None,
-            filter: String::new(),
-            knockback: false,
-            max_critical_damage: i32::MAX,
-            min_critical_damage: 0,
-            power_multiplier: 0.0,
-            set_last_hurt_requires_damage: true,
-        }
-    }
 }
 
 /// How [`ImpactDamage`] randomises its damage by difficulty.
@@ -483,7 +462,7 @@ pub enum EffectDuration {
 }
 
 /// `on_hit.particle_on_hit`.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct ParticleOnHit {
     /// `num_particles`: how many particles; default 1.
@@ -501,18 +480,6 @@ pub struct ParticleOnHit {
     /// `particle_type`: vanilla's legacy particle name; default `none`.
     #[facet(default = "none".to_owned())]
     pub particle_type: String,
-}
-
-impl Default for ParticleOnHit {
-    fn default() -> Self {
-        Self {
-            num_particles: 1,
-            on_entity_hit: false,
-            on_other_hit: false,
-            particle_item_name: IndexMap::new(),
-            particle_type: "none".to_owned(),
-        }
-    }
 }
 
 /// `on_hit.spawn_aoe_cloud`.
@@ -1090,28 +1057,5 @@ mod tests {
 
 bedrock_addon_core::impl_schema_leaf!(ProjectileOffset);
 bedrock_addon_core::impl_no_molang!(ProjectileOffset);
-crate::hand_fields!(ImpactDamage {
-    "apply_knockback_to_blocking_targets": bool,
-    "catch_fire": bool,
-    "ceil_pre_critical_damage": bool,
-    "channeling": bool,
-    "destroy_on_hit": bool,
-    "destroy_on_hit_requires_damage": bool,
-    "difficulty_randomization": DifficultyRandomization,
-    "filter": String,
-    "knockback": bool,
-    "max_critical_damage": i32,
-    "min_critical_damage": i32,
-    "power_multiplier": f32,
-    "set_last_hurt_requires_damage": bool,
-});
-bedrock_addon_core::impl_no_molang!(ImpactDamage);
 bedrock_addon_core::impl_schema_leaf!(EffectDuration);
 bedrock_addon_core::impl_no_molang!(EffectDuration);
-crate::hand_fields!(ParticleOnHit {
-    "num_particles": i32,
-    "on_entity_hit": bool,
-    "on_other_hit": bool,
-    "particle_type": String,
-});
-bedrock_addon_core::impl_no_molang!(ParticleOnHit);

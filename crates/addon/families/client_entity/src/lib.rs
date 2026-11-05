@@ -11,13 +11,15 @@ pub mod history;
 #[cfg(test)]
 mod peek_tests;
 mod read;
+#[cfg(test)]
+mod scalar_tests;
 mod validate;
 mod write;
 
 use bedrock_addon_core::id::{
     AnimationRef, EntityId, GeometryId, MaterialId, ParticleId, SoundEventName, TexturePath,
 };
-use bedrock_addon_core::json::{StrictBool, StrictString, Value};
+use bedrock_addon_core::json::Value;
 use bedrock_addon_core::version::{FormatVersion, SemVersion};
 use bedrock_addon_core::visual::{
     ControllerUse, DescriptionSlots, HasVisuals, HeldItemScale, Scripts, SharedDescription,
@@ -41,6 +43,7 @@ use bedrock_addon_core::json::{
     EncodeError, JsonSlice, Unrepresentable, WriteStyle, strip_bom, write_json,
 };
 use bedrock_addon_core::json::{PrepareError, Prepared};
+use bedrock_addon_core::load::DocumentSource;
 use bedrock_addon_core::load::{
     AppDataPlace, CollectionLoader, LoadContext, StackCx, Walk, WalkFile,
 };
@@ -48,8 +51,9 @@ use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::FormatVersionInput;
 use bedrock_addon_core::version::known;
 use bedrock_addon_core::versioning::{
-    DocumentRead, Envelope, EnvelopeCheck, Family, Identity, Loaded, MissingVersion, NoComponents,
-    Parsed, ValidateCx, VersionStruct, finish, parse_as_written,
+    BeyondWidth, DocumentRead, Envelope, EnvelopeCheck, Family, Identity, InputKind, Loaded,
+    MissingVersion, NoComponents, Parsed, Reading, Scalars, StructIndex, ValidateCx, VersionStruct,
+    finish, parse_as_written,
 };
 use bedrock_addon_core::visual::{MergeStep, merge_slots, merge_step};
 
@@ -116,7 +120,7 @@ pub struct Description {
     #[facet(default, skip_serializing_if = IndexMap::is_empty)]
     pub geometry: IndexMap<String, GeometryId>,
     /// `queryable_geometry`: the geometry slot Molang's geometry queries read.
-    pub queryable_geometry: Option<StrictString>,
+    pub queryable_geometry: Option<String>,
     /// `spawn_egg`: how the entity's spawn egg looks.
     pub spawn_egg: Option<SpawnEgg>,
     /// `scripts`: the Molang the client runs for the model and the animations it plays.
@@ -124,7 +128,7 @@ pub struct Description {
     /// `particle_effects`: short name → particle effect.
     pub particle_effects: Option<IndexMap<String, ParticleId>>,
     /// `particle_emitters`: accepted and read by nothing.
-    pub particle_emitters: Option<IndexMap<String, StrictString>>,
+    pub particle_emitters: Option<IndexMap<String, String>>,
     /// `animations`: short name → animation (`animation.…`) or animation controller
     /// (`controller.animation.…`). A value with neither prefix is ignored. `None` is a
     /// description without the member; an empty object the author wrote is kept.
@@ -135,14 +139,14 @@ pub struct Description {
     /// member; an empty object the author wrote is kept.
     pub sound_effects: Option<IndexMap<String, SoundEventName>>,
     /// `enable_attachables`: draw held and worn attachables; `false` when absent.
-    pub enable_attachables: Option<StrictBool>,
+    pub enable_attachables: Option<bool>,
     /// `held_item_ignores_lighting`: draw held items fully lit; `false` when absent.
-    pub held_item_ignores_lighting: Option<StrictBool>,
+    pub held_item_ignores_lighting: Option<bool>,
     /// `held_item_scale`: the scale of held items; 1.0 when absent. A number at or below 0 is
     /// not used.
     pub held_item_scale: Option<HeldItemScale>,
     /// `hide_armor`: do not draw worn armour; `false` when absent.
-    pub hide_armor: Option<StrictBool>,
+    pub hide_armor: Option<bool>,
 }
 
 impl ClientEntity {
@@ -162,19 +166,17 @@ impl ClientEntity {
 
     /// `enable_attachables`, `false` when absent.
     pub fn enable_attachables(&self) -> bool {
-        self.description.enable_attachables.is_some_and(|b| b.0)
+        self.description.enable_attachables.unwrap_or(false)
     }
 
     /// `held_item_ignores_lighting`, `false` when absent.
     pub fn held_item_ignores_lighting(&self) -> bool {
-        self.description
-            .held_item_ignores_lighting
-            .is_some_and(|b| b.0)
+        self.description.held_item_ignores_lighting.unwrap_or(false)
     }
 
     /// `hide_armor`, `false` when absent.
     pub fn hide_armor(&self) -> bool {
-        self.description.hide_armor.is_some_and(|b| b.0)
+        self.description.hide_armor.unwrap_or(false)
     }
 
     /// The constant scale of held items: the written number when it is above 0, else 1.0
@@ -270,6 +272,15 @@ const SCHEMA_MINIMUM: &str = "1.10.0";
 /// The message for a root that is null, no object or empty.
 const NOTHING_TO_PARSE: &str = "nothing to parse in";
 
+/// How every slice reads its description: the profile of the envelope's input kind (the
+/// default, [`InputKind::FirstRun`]), its scalars read as vanilla's strict schema types them (a
+/// member takes its own JSON type alone, and a number beyond its float is a type error; the
+/// floats are clamped in the text before the read).
+pub(crate) const READING: Reading = InputKind::FirstRun
+    .profile()
+    .with_scalars(Scalars::Strict)
+    .with_beyond_width(BeyondWidth::Error);
+
 impl Family for ClientEntityFamily {
     const NAME: &'static str = "client_entity";
     const PAYLOAD_KEY: &'static str = read::PAYLOAD;
@@ -290,6 +301,10 @@ impl Family for ClientEntityFamily {
         },
         ..Envelope::DEFAULT
     };
+
+    fn reading(_: StructIndex, _: DocumentSource) -> Reading {
+        READING
+    }
 
     fn validate(v: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {
         if let Loaded::Stable(entity) = v {
@@ -884,7 +899,7 @@ mod reading_table {
                 missing version: at the floor, told at Warning: Some(Fixed("Warning: The \"format_version\" field was not given. Fields from format version 1.8.0 and older will be loaded. Update your targeted \"format_version\" to use fields from newer versions."))
                 below floor: UseFormatVersion
                 empty document: Error
-                1.8.0..=1.26.0 (0..=2): json Own/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse
+                1.8.0..=1.26.0 (0..=2): json Own/Strict/Error/Warn/reports/lenient/Refuse, mcb Own/Strict/Error/Warn/reports/lenient/Refuse
             "#,
         );
     }

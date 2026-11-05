@@ -37,7 +37,7 @@ pub struct ApplyKnockbackRulesV1_8_0 {
 
 /// One preset of [`ApplyKnockbackRulesV1_8_0`].
 // The shape follows the game's 1.21.80 `minecraft_apply_knockback_rules_instance.json`.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct KnockbackPresetV1_8_0 {
     /// `filter`: which targets the preset applies to; absent means all.
@@ -54,18 +54,6 @@ pub struct KnockbackPresetV1_8_0 {
     /// `check_if_target_is_immersed_in_water`: default `false`.
     #[facet(default = false)]
     pub check_if_target_is_immersed_in_water: bool,
-}
-
-impl Default for KnockbackPresetV1_8_0 {
-    fn default() -> Self {
-        Self {
-            filter: None,
-            horizontal_power: 1.0,
-            vertical_power: 0.4,
-            vertical_velocity_cap: 0.4,
-            check_if_target_is_immersed_in_water: false,
-        }
-    }
 }
 
 impl ApplyKnockbackRulesV1_8_0 {
@@ -163,7 +151,7 @@ pub struct PushableByEntityV1_26_30 {
 
 /// One preset of [`PushableByEntityV1_26_30`]: [`PushPreset`] without
 /// `require_collision_overlap`.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct PushPresetV1_26_30 {
     /// `filters`: absent means all.
@@ -207,28 +195,6 @@ pub struct PushPresetV1_26_30 {
     /// `play_sound_impulse_threshold`: default 0.2.
     #[facet(default = 0.2_f32)]
     pub play_sound_impulse_threshold: f32,
-}
-
-impl Default for PushPresetV1_26_30 {
-    fn default() -> Self {
-        let new = PushPreset::default();
-        Self {
-            filters: new.filters,
-            push_mode: new.push_mode,
-            strength_multiplier: new.strength_multiplier,
-            min_distance: new.min_distance,
-            max_distance: new.max_distance,
-            push_scale_self: new.push_scale_self,
-            push_scale_other: new.push_scale_other,
-            kick_speed_scale: new.kick_speed_scale,
-            min_kick_speed: new.min_kick_speed,
-            max_kick_speed: new.max_kick_speed,
-            vertical_kick_multiplier: new.vertical_kick_multiplier,
-            play_sound: new.play_sound,
-            play_sound_cooldown_in_seconds: new.play_sound_cooldown_in_seconds,
-            play_sound_impulse_threshold: new.play_sound_impulse_threshold,
-        }
-    }
 }
 
 impl PushableByEntityV1_26_30 {
@@ -288,27 +254,3 @@ impl From<PushableByEntityV1_26_30> for PushableByEntity {
         }
     }
 }
-
-crate::hand_fields!(KnockbackPresetV1_8_0 {
-    "horizontal_power": f32,
-    "vertical_power": f32,
-    "vertical_velocity_cap": f32,
-    "check_if_target_is_immersed_in_water": bool,
-});
-bedrock_addon_core::impl_no_molang!(KnockbackPresetV1_8_0);
-crate::hand_fields!(PushPresetV1_26_30 {
-    "push_mode": PushMode,
-    "strength_multiplier": f32,
-    "min_distance": f32,
-    "max_distance": f32,
-    "push_scale_self": f32,
-    "push_scale_other": f32,
-    "kick_speed_scale": f32,
-    "min_kick_speed": f32,
-    "max_kick_speed": f32,
-    "vertical_kick_multiplier": f32,
-    "play_sound": bool,
-    "play_sound_cooldown_in_seconds": f32,
-    "play_sound_impulse_threshold": f32,
-});
-bedrock_addon_core::impl_no_molang!(PushPresetV1_26_30);

@@ -53,7 +53,7 @@ impl Typed for TickWorld {
 
 /// `minecraft:spawn_on_death`: entities spawned where the entity dies.
 #[doc(alias = "minecraft:spawn_on_death")]
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct SpawnOnDeath {
     /// `additional_spawn_range`: a random number of extra entities in this range; default
@@ -75,19 +75,6 @@ pub struct SpawnOnDeath {
     /// `spawn_method`: the spawn reason the new entities get; default `spawned`.
     #[facet(default = "spawned".to_owned())]
     pub spawn_method: String,
-}
-
-impl Default for SpawnOnDeath {
-    fn default() -> Self {
-        Self {
-            additional_spawn_range: IntRange::default(),
-            entity_to_spawn: "self".to_owned(),
-            filters: None,
-            inherit_parent_name: true,
-            spawn_amount: 1,
-            spawn_method: "spawned".to_owned(),
-        }
-    }
 }
 
 impl Typed for SpawnOnDeath {
@@ -361,6 +348,8 @@ impl Typed for Transformation {
         if !matches!(cx.mode(), ConvertMode::Strict) {
             return;
         }
+        // Bounds by hand: checked in another order than the delay's members are declared, so
+        // a derived check would reorder the findings.
         let delay = &mut self.delay;
         let at = |key: &str| JsonPath::new().with(&["delay", key]);
         cx.at_least(&at("value"), &mut delay.value, 0.0, 0.0);
@@ -386,7 +375,7 @@ impl Typed for Transformation {
 // type binds), `time` is an optional range, and the trigger and the weighted choices follow;
 // the legacy `{range_min, range_max}` time is the typed `{min, max}`.
 #[doc(alias = "minecraft:timer")]
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct Timer {
     /// `looping`: the timer restarts when it fires; default `true`.
@@ -402,18 +391,6 @@ pub struct Timer {
     /// `random_time_choices`: weighted times, one picked each time.
     #[facet(default)]
     pub random_time_choices: Vec<TimeChoice>,
-}
-
-impl Default for Timer {
-    fn default() -> Self {
-        Self {
-            looping: true,
-            random_interval: true,
-            time: None,
-            time_down_event: None,
-            random_time_choices: Vec::new(),
-        }
-    }
 }
 
 /// One of a [`Timer`]'s `random_time_choices`.
@@ -465,18 +442,3 @@ pub struct ScaleByAge {
 }
 
 impl Typed for ScaleByAge {}
-
-crate::hand_fields!(SpawnOnDeath {
-    "entity_to_spawn": String,
-    "inherit_parent_name": bool,
-    "spawn_amount": i32,
-    "spawn_method": String,
-});
-bedrock_addon_core::impl_no_molang!(SpawnOnDeath);
-crate::hand_fields!(Timer {
-    "looping": bool,
-    "randomInterval": bool,
-    "time_down_event": Option<EventTrigger>,
-    "random_time_choices": Vec<TimeChoice>,
-});
-bedrock_addon_core::impl_no_molang!(Timer);

@@ -11,9 +11,7 @@ use bedrock_addon_core::diagnostic::{
     code_for_deserialize_error_kind,
 };
 use bedrock_addon_core::document::{Document, Rejected};
-use bedrock_addon_core::json::{
-    JsonSlice, Misread, ScalarFailure, Value, parse_with_rules, probe_envelope,
-};
+use bedrock_addon_core::json::{JsonSlice, ScalarFailure, Value, parse_with_rules, probe_envelope};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::version::FormatVersionInput;
 use bedrock_addon_core::versioning::{
@@ -207,7 +205,7 @@ fn typed_as<'a, T: for<'f> Facet<'f>>(
         Err(ScalarFailure::Read(failure)) => failure,
         // A scalar no arm of an untagged enum takes: a type error at the enum.
         Err(ScalarFailure::Refused(misread)) => {
-            d.push(refusal(slice, &misread, &at));
+            d.push(misread.spanned_finding(&at));
             return None;
         }
     };
@@ -252,16 +250,6 @@ fn typed_failure(
     let path = base.join(member);
     let mut finding = shape::error(code, path);
     finding.location.span = Some(span);
-    finding
-}
-
-/// The finding of a scalar no arm of an untagged enum takes ([`ScalarFailure::Refused`] of a
-/// read of `slice` at `at`): a type error at the enum, with the scalar's place in the file
-/// (`Misread::finding` has no span).
-#[must_use]
-pub fn refusal(slice: JsonSlice<'_>, misread: &Misread, at: &JsonPath) -> Diagnostic {
-    let mut finding = misread.finding(at);
-    finding.location.span = Some(span_in(slice, &misread.path));
     finding
 }
 
@@ -363,54 +351,5 @@ mod source_version_tests {
         assert_eq!(version, FormatVersion::new(1, 21, 0));
         assert_eq!(SourceVersion::from(version), source);
         assert_eq!(source.version(), version);
-    }
-}
-
-#[cfg(test)]
-mod refusal_tests {
-    use super::*;
-
-    #[derive(Debug, Facet)]
-    #[facet(untagged)]
-    #[repr(u8)]
-    #[allow(dead_code, reason = "read, never looked at")]
-    enum Shorthand {
-        Enabled(bool),
-        Count(u8),
-    }
-
-    #[derive(Debug, Facet)]
-    #[allow(dead_code, reason = "read, never looked at")]
-    struct Holder {
-        shorthand: Shorthand,
-    }
-
-    #[test]
-    fn a_refused_arm_is_told_at_its_scalar_with_its_span() {
-        let file = r#"{"x": {"shorthand": "no"}}"#;
-        let start = file.find(r#"{"shorthand""#).expect("the payload");
-        let slice = JsonSlice {
-            text: &file[start..file.len() - 1],
-            offset: start,
-        };
-        let rules = strict(Reading::DOCUMENT).scalar_rules();
-        let Err(ScalarFailure::Refused(misread)) = parse_with_rules::<Holder>(slice, None, rules)
-        else {
-            panic!("refused");
-        };
-        let at = JsonPath::new().child("x");
-        let finding = refusal(slice, &misread, &at);
-        // The refusal carries the same span: this helper is the core's finding with it.
-        assert_eq!(misread.spanned_finding(&at), finding);
-        assert!(matches!(finding.code, DiagnosticCode::InvalidType { .. }));
-        assert_eq!(finding.location.json_path.to_string(), "x/shorthand");
-        let value = file.find(r#""no""#).expect("the value");
-        assert_eq!(
-            finding.location.span,
-            Some(Span {
-                offset: u32::try_from(value).expect("a short file"),
-                len: 4
-            })
-        );
     }
 }

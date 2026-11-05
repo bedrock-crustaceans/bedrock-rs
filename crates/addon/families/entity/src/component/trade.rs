@@ -4,6 +4,7 @@
 // Types and defaults follow the game's schemas (1.26.40 `admire_item`; 1.26.50 `barter`,
 // the legacy tradeable component and `tamemount`).
 
+use crate::component::descriptor_tags;
 use bedrock_addon_core::diagnostic::JsonPath;
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
 use bedrock_addon_core::schema::{self, Schema};
@@ -119,11 +120,11 @@ impl Default for Tamemount {
 }
 
 /// One item of [`Tamemount::feed_items`].
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
-#[derive(Default)]
 pub struct FeedItem {
     /// `item`: the item; absent matches nothing.
+    #[facet(schema::molang_with = descriptor_tags)]
     pub item: Option<ItemDescriptor>,
     /// `temper_mod`: temper added when it is fed; default 0.
     #[facet(default = 0_i32)]
@@ -131,10 +132,11 @@ pub struct FeedItem {
 }
 
 /// One item of [`Tamemount::auto_reject_items`].
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct RejectItem {
     /// `item`: the item; absent matches nothing.
+    #[facet(schema::molang_with = descriptor_tags)]
     pub item: Option<ItemDescriptor>,
 }
 
@@ -282,10 +284,11 @@ pub struct Shareables {
     clippy::struct_excessive_bools,
     reason = "the game's flags, one member each"
 )]
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct ShareableItem {
     /// `item`: the item or item tag; absent is no item.
+    #[facet(schema::molang_with = descriptor_tags)]
     pub item: Option<ItemDescriptor>,
     /// `want_amount`: how many it wants; default −1.
     #[facet(default = -1_i32)]
@@ -323,25 +326,6 @@ pub struct ShareableItem {
     pub pickup_only: bool,
 }
 
-impl Default for ShareableItem {
-    fn default() -> Self {
-        Self {
-            item: None,
-            want_amount: -1,
-            surplus_amount: -1,
-            max_amount: -1,
-            pickup_limit: -1,
-            craft_into: String::new(),
-            priority: 0,
-            admire: false,
-            barter: false,
-            stored_in_inventory: false,
-            consume_item: false,
-            pickup_only: false,
-        }
-    }
-}
-
 impl Typed for Shareables {
     // Not KEEP_NESTED: the legacy reader is one of the game's schema readers, which validates
     // the whole tree before it parses: a nested value of another type never reaches this
@@ -365,7 +349,7 @@ impl Typed for Shareables {
     reason = "the game's flags, one member each"
 )]
 #[doc(alias = "minecraft:economy_trade_table")]
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct EconomyTradeTable {
     /// `display_name`: the localization key of the trade screen's name; default none.
@@ -406,25 +390,6 @@ pub struct EconomyTradeTable {
     /// `use_legacy_price_formula`: the legacy price formula is used; default `false`.
     #[facet(default = false)]
     pub use_legacy_price_formula: bool,
-}
-
-impl Default for EconomyTradeTable {
-    fn default() -> Self {
-        Self {
-            display_name: String::new(),
-            table: String::new(),
-            new_screen: false,
-            hero_demand_discount: -4,
-            cured_discount: IntRange::new(-25, -20, RangeForm::Array),
-            max_cured_discount: IntRange::new(-25, -20, RangeForm::Array),
-            nearby_cured_discount: -20,
-            max_nearby_cured_discount: -200,
-            persist_trades: false,
-            convert_trades_economy: false,
-            show_trade_screen: true,
-            use_legacy_price_formula: false,
-        }
-    }
 }
 
 impl Typed for EconomyTradeTable {
@@ -468,56 +433,6 @@ mod tests {
     }
 }
 
-crate::hand_fields!(Tamemount {
-    "attempt_temper_mod": i32,
-    "auto_reject_items": Vec<RejectItem>,
-    "feed_items": Vec<FeedItem>,
-    "feed_text": String,
-    "max_temper": i32,
-    "min_temper": i32,
-    "ride_text": String,
-    "tame_event": Option<EventTrigger>,
+crate::trigger_fields!(Tamemount {
+    tame_event: Option<EventTrigger>,
 });
-crate::hand_fields!(FeedItem {
-    "temper_mod": i32,
-});
-bedrock_addon_core::impl_no_molang!(FeedItem);
-crate::hand_fields!(RejectItem {});
-bedrock_addon_core::impl_no_molang!(RejectItem);
-crate::hand_fields!(ShareableItem {
-    "want_amount": i32,
-    "surplus_amount": i32,
-    "max_amount": i32,
-    "pickup_limit": i32,
-    "craft_into": String,
-    "priority": i32,
-    "admire": bool,
-    "barter": bool,
-    "stored_in_inventory": bool,
-    "consume_item": bool,
-    "pickup_only": bool,
-});
-crate::hand_fields!(EconomyTradeTable {
-    "display_name": String,
-    "table": String,
-    "new_screen": bool,
-    "hero_demand_discount": i32,
-    "nearby_cured_discount": i32,
-    "max_nearby_cured_discount": i32,
-    "persist_trades": bool,
-    "convert_trades_economy": bool,
-    "show_trade_screen": bool,
-    "use_legacy_price_formula": bool,
-});
-bedrock_addon_core::impl_no_molang!(EconomyTradeTable);
-
-/// The `item` descriptor's `tags` to the Molang walk.
-impl MolangFields for ShareableItem {
-    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
-        if let Some(item) = &mut self.item {
-            visitor.enter("item".into());
-            visit_item_tags(item, visitor);
-            visitor.leave();
-        }
-    }
-}

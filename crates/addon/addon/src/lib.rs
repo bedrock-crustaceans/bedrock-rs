@@ -57,9 +57,8 @@
 //! - `diagnostic`: findings as data (`Diagnostic`, `Diagnostics`, `DiagnosticCode`, `Severity`).
 //! - `document`: a loaded value with its provenance (`Document<T>`) and the collections
 //!   (`Registry`, `Files`, `Merged`).
-//! - `json`: the untyped JSON value (`Value`), the strict scalar wrappers many component
-//!   members are made of (`StrictInt`, `StrictFloat`, `StrictBool`, `StrictString`), the
-//!   nesting limit (`MAX_JSON_DEPTH`), the write style and the encode error.
+//! - `json`: the untyped JSON value (`Value`), the nesting limit (`MAX_JSON_DEPTH`), the write
+//!   style and the encode error.
 //! - `molang`: the Molang types pack content holds; with `molang`, the compile check.
 //! - `visual`: the description slots client entities and attachables share.
 //! - `shared`: value types several content modules use (descriptors, ranges, filters).

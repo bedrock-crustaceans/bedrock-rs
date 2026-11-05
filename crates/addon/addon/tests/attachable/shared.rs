@@ -451,7 +451,7 @@ fn l13_particle_emitters_kept() {
         let document = loaded(attachable(&ghost(version, members), &cx()));
         silent(document.diagnostics());
         let emitters = document.description.particle_emitters.as_ref().unwrap();
-        assert_eq!(emitters["smoke"].0, "demo:smoke");
+        assert_eq!(emitters["smoke"], "demo:smoke");
     }
 }
 
@@ -569,7 +569,7 @@ fn l19_queryable_geometry_1_8() {
     for version in ["1.10.0", "1.26.0"] {
         let document = loaded(attachable(&ghost(version, members), &cx()));
         assert_eq!(
-            document.description.queryable_geometry.as_ref().unwrap().0,
+            document.description.queryable_geometry.as_ref().unwrap(),
             "default"
         );
     }

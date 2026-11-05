@@ -43,7 +43,7 @@ impl Typed for ApplyKnockbackRules {
 }
 
 /// One preset of [`ApplyKnockbackRules`].
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct KnockbackPreset {
     /// `filter`: which targets the preset applies to; absent means all.
@@ -73,12 +73,6 @@ pub struct KnockbackPreset {
     /// `slowdown_scale`: how much the attacker slows down, 0 to 1; default 0.5.
     #[facet(default = 0.5_f32)]
     pub slowdown_scale: f32,
-}
-
-impl Default for KnockbackPreset {
-    fn default() -> Self {
-        Self::new(1.0, 0.4, 0.4, false)
-    }
 }
 
 impl KnockbackPreset {
@@ -182,7 +176,7 @@ impl Typed for PushableByEntity {
 }
 
 /// One preset of [`PushableByEntity`].
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct PushPreset {
     /// `filters`: which pushing entities the preset applies to; absent means all.
@@ -234,28 +228,6 @@ pub struct PushPreset {
     /// `true`.
     #[facet(default = true)]
     pub require_collision_overlap: bool,
-}
-
-impl Default for PushPreset {
-    fn default() -> Self {
-        Self {
-            filters: None,
-            push_mode: PushMode::Default,
-            strength_multiplier: 0.05,
-            min_distance: 0.01,
-            max_distance: f32::MAX,
-            push_scale_self: 1.0,
-            push_scale_other: 1.0,
-            kick_speed_scale: 2.0,
-            min_kick_speed: 0.0,
-            max_kick_speed: 0.5,
-            vertical_kick_multiplier: 0.3,
-            play_sound: false,
-            play_sound_cooldown_in_seconds: 0.2,
-            play_sound_impulse_threshold: 0.2,
-            require_collision_overlap: true,
-        }
-    }
 }
 
 impl PushPreset {
@@ -313,32 +285,3 @@ pub enum PushMode {
     #[facet(rename = "ball")]
     Ball,
 }
-
-crate::hand_fields!(KnockbackPreset {
-    "horizontal_power": f32,
-    "vertical_power": f32,
-    "vertical_velocity_cap": f32,
-    "check_if_target_is_immersed_in_water": bool,
-    "extra_knockback_approach": ExtraKnockbackApproach,
-    "knockback_mode": KnockbackMode,
-    "scale_with_damage": bool,
-    "slowdown_scale": f32,
-});
-bedrock_addon_core::impl_no_molang!(KnockbackPreset);
-crate::hand_fields!(PushPreset {
-    "push_mode": PushMode,
-    "strength_multiplier": f32,
-    "min_distance": f32,
-    "max_distance": f32,
-    "push_scale_self": f32,
-    "push_scale_other": f32,
-    "kick_speed_scale": f32,
-    "min_kick_speed": f32,
-    "max_kick_speed": f32,
-    "vertical_kick_multiplier": f32,
-    "play_sound": bool,
-    "play_sound_cooldown_in_seconds": f32,
-    "play_sound_impulse_threshold": f32,
-    "require_collision_overlap": bool,
-});
-bedrock_addon_core::impl_no_molang!(PushPreset);

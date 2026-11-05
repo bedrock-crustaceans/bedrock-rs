@@ -1716,7 +1716,8 @@ fn read_only_a_brarchive_layer_is_written_as_loose_files() {
 /// the decoder reads is written as JSON text, which its document type reads to the value
 /// the stack gave; one of no known layout has no text: the copy keeps its bytes, and the
 /// written pack says of it what the read one did (`UnsupportedFileFormat`).
-#[cfg(feature = "block")]
+// The baked shape is decoded and written again by the voxel shape family.
+#[cfg(all(feature = "block", feature = "voxel_shape"))]
 #[test]
 fn read_only_an_mcb_document_is_written_as_json_text_where_its_body_is_decoded() {
     let archive = std::fs::read(

@@ -8,7 +8,7 @@ use indexmap::IndexMap;
 
 use super::{ControllerUse, HeldItemScale, Scripts, SpawnEgg, scripts::script_source};
 use crate::id::{AnimationRef, GeometryId, MaterialId, ParticleId, SoundEventName, TexturePath};
-use crate::json::{StrictBool, StrictString, Value};
+use crate::json::Value;
 use crate::molang::Molang;
 use crate::version::{FormatVersion, SemVersion};
 
@@ -99,7 +99,7 @@ pub struct DescriptionSlots<'a> {
     /// `particle_effects`: replaced when the later document has it.
     pub particle_effects: &'a mut Option<IndexMap<String, ParticleId>>,
     /// `queryable_geometry`: replaced when the later document has it.
-    pub queryable_geometry: &'a mut Option<StrictString>,
+    pub queryable_geometry: &'a mut Option<String>,
     /// `render_controllers`: replaced when the later document has it.
     pub render_controllers: &'a mut Option<Vec<ControllerUse>>,
     /// `spawn_egg`: replaced whole when the later document has it.
@@ -107,13 +107,13 @@ pub struct DescriptionSlots<'a> {
     /// `scripts`: merged member by member ([`merge_slots`]).
     pub scripts: &'a mut Option<Scripts>,
     /// `enable_attachables`: replaced when the later document has it.
-    pub enable_attachables: &'a mut Option<StrictBool>,
+    pub enable_attachables: &'a mut Option<bool>,
     /// `held_item_ignores_lighting`: replaced when the later document has it.
-    pub held_item_ignores_lighting: &'a mut Option<StrictBool>,
+    pub held_item_ignores_lighting: &'a mut Option<bool>,
     /// `held_item_scale`: replaced when the later document has a value vanilla stores.
     pub held_item_scale: &'a mut Option<HeldItemScale>,
     /// `hide_armor`: replaced when the later document has it.
-    pub hide_armor: &'a mut Option<StrictBool>,
+    pub hide_armor: &'a mut Option<bool>,
 }
 
 /// A document the shared identifier map holds: a client entity or an attachable.
@@ -186,7 +186,7 @@ fn merge_scripts(earlier: &mut Scripts, later: Scripts) {
     ] {
         if later
             .as_ref()
-            .is_some_and(|parts| parts.iter().any(|part| !part.0.is_empty()))
+            .is_some_and(|parts| parts.iter().any(|part| !part.is_empty()))
         {
             *earlier = later;
         }

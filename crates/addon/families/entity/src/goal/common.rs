@@ -5,7 +5,7 @@ use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::{ScalarShape, Value, ValueExt};
 use bedrock_addon_core::molang::{JsonType, Molang};
-use bedrock_addon_core::schema;
+use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::shared::Filter;
 use facet::Facet;
 use facet_value::{VArray, VObject};
@@ -718,7 +718,7 @@ impl<'a> IntoIterator for &'a EntityTypes {
 
 /// One entry of `entity_types`: which mobs match (`filters`) and how the goal treats them.
 /// This is the game's mob descriptor.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct MobDescriptor {
     /// `check_if_outnumbered`: only flee when outnumbered; default `false`.
@@ -934,19 +934,11 @@ bedrock_addon_core::impl_schema_leaf!(
     Vec2,
     ParticleColor
 );
-bedrock_addon_core::impl_no_molang!(LiquidMaterial, MaterialType, SoundEvent, EntityTypes, Vec2);
-
-crate::hand_fields!(MobDescriptor {
-    "check_if_outnumbered": Option<bool>,
-    "cooldown": Option<i32>,
-    "max_dist": Option<f32>,
-    "max_flee": Option<f32>,
-    "max_height": Option<f32>,
-    "must_see": Option<bool>,
-    "must_see_forget_duration": Option<f32>,
-    "priority": Option<i32>,
-    "reevaluate_description": Option<bool>,
-    "sprint_speed_multiplier": Option<f32>,
-    "walk_speed_multiplier": Option<f32>,
-});
-bedrock_addon_core::impl_no_molang!(MobDescriptor);
+bedrock_addon_core::impl_no_molang!(
+    LiquidMaterial,
+    MaterialType,
+    SoundEvent,
+    EntityTypes,
+    Vec2,
+    ParticleColor
+);

@@ -2,7 +2,6 @@
 
 use indexmap::IndexMap;
 
-use crate::json::StrictString;
 use crate::molang::Molang;
 use crate::visual::AnimateEntry;
 
@@ -13,7 +12,7 @@ use crate::visual::AnimateEntry;
 pub struct Scripts {
     /// `variables`: `variable.<name>` → `"public"`.
     #[facet(default, skip_serializing_if = Option::is_none)]
-    pub variables: Option<IndexMap<String, StrictString>>,
+    pub variables: Option<IndexMap<String, String>>,
     /// `initialize`: each element a Molang value.
     #[facet(default, skip_serializing_if = Option::is_none)]
     pub initialize: Option<Vec<Molang>>,

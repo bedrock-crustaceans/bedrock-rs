@@ -11,7 +11,7 @@ use bedrock_addon_core::id::{
     AnimationRef, GeometryId, MaterialId, ParticleId, RenderControllerId, SoundEventName,
     TexturePath,
 };
-use bedrock_addon_core::json::{StrictBool, StrictString, Value};
+use bedrock_addon_core::json::Value;
 use bedrock_addon_core::molang::Molang;
 use bedrock_addon_core::version::{FormatVersion, SemVersion};
 use bedrock_addon_core::visual::{
@@ -33,9 +33,9 @@ fn sem(text: &str) -> SemVersion {
     SemVersion::parse(text).unwrap()
 }
 
-/// The texts of a `Vec<StrictString>` member.
-fn strings(list: Option<&Vec<StrictString>>) -> Vec<&str> {
-    list.map(|list| list.iter().map(|text| text.0.as_str()).collect())
+/// The texts of a `Vec<String>` member.
+fn strings(list: Option<&Vec<String>>) -> Vec<&str> {
+    list.map(|list| list.iter().map(String::as_str).collect())
         .unwrap_or_default()
 }
 
@@ -65,7 +65,7 @@ struct Description {
     #[facet(default)]
     particle_effects: Option<IndexMap<String, ParticleId>>,
     #[facet(default)]
-    queryable_geometry: Option<StrictString>,
+    queryable_geometry: Option<String>,
     #[facet(default)]
     render_controllers: Option<Vec<ControllerUse>>,
     #[facet(default)]
@@ -73,13 +73,13 @@ struct Description {
     #[facet(default)]
     scripts: Option<Scripts>,
     #[facet(default)]
-    enable_attachables: Option<StrictBool>,
+    enable_attachables: Option<bool>,
     #[facet(default)]
-    held_item_ignores_lighting: Option<StrictBool>,
+    held_item_ignores_lighting: Option<bool>,
     #[facet(default)]
     held_item_scale: Option<HeldItemScale>,
     #[facet(default)]
-    hide_armor: Option<StrictBool>,
+    hide_armor: Option<bool>,
 }
 
 impl SharedDescription for Description {
@@ -272,7 +272,7 @@ mod scripts {
             }"#,
         );
         assert_eq!(
-            scripts.variables.as_ref().unwrap()["variable.attack_time"].0,
+            scripts.variables.as_ref().unwrap()["variable.attack_time"],
             "public"
         );
         assert_eq!(
@@ -396,11 +396,7 @@ mod spawn_egg {
             Color::NIL,
             "no `#`: the default, silently"
         );
-        assert_eq!(
-            egg.overlay_color.as_ref().map(|color| color.0.as_str()),
-            Some("red"),
-            "kept as written"
-        );
+        assert_eq!(egg.overlay_color.as_deref(), Some("red"), "kept as written");
     }
 
     #[test]
@@ -980,7 +976,7 @@ mod resolver {
         let ghost = map.get("DEMO:GHOST").unwrap();
         assert_eq!(
             (ghost.hide_armor, ghost.enable_attachables),
-            (Some(StrictBool(true)), Some(StrictBool(true)))
+            (Some(true), Some(true))
         );
         assert_eq!(
             map.iter().map(|(key, _)| key).collect::<Vec<_>>(),
@@ -1001,20 +997,10 @@ mod resolver {
             r#"{ "identifier": "demo:ghost", "enable_attachables": false, "queryable_geometry": "geometry.b" }"#,
         );
         let ghost = map.get("demo:ghost").unwrap();
-        assert_eq!(ghost.enable_attachables, Some(StrictBool(false)));
-        assert_eq!(
-            ghost.hide_armor,
-            Some(StrictBool(true)),
-            "absent in the later document"
-        );
-        assert_eq!(ghost.held_item_ignores_lighting, Some(StrictBool(true)));
-        assert_eq!(
-            ghost
-                .queryable_geometry
-                .as_ref()
-                .map(|text| text.0.as_str()),
-            Some("geometry.b")
-        );
+        assert_eq!(ghost.enable_attachables, Some(false));
+        assert_eq!(ghost.hide_armor, Some(true), "absent in the later document");
+        assert_eq!(ghost.held_item_ignores_lighting, Some(true));
+        assert_eq!(ghost.queryable_geometry.as_deref(), Some("geometry.b"));
     }
 
     #[test]
@@ -1218,13 +1204,23 @@ mod round_trip {
 }
 
 mod strict_types {
-    use bedrock_addon_core::json::{Indent, WriteStyle, write_json};
+    use bedrock_addon_core::json::{
+        BeyondWidth, Indent, JsonSlice, ScalarRules, Scalars, WriteStyle, parse_with_rules,
+        write_json,
+    };
 
     use super::*;
 
     /// Vanilla's strict schema fails a member of the wrong JSON type ("unknown child schema
-    /// option type"); facet coerces `"3"` to 3 and `5` to `"5"`, so the members need
-    /// `core::json`'s strict wrappers.
+    /// option type"); facet alone coerces `"3"` to 3 and `5` to `"5"`, so the members are read
+    /// by the strict scalar rules the client entity and attachable slices read them by.
+    fn strict<T: facet::Facet<'static>>(json: &'static str) -> bool {
+        let rules = ScalarRules::PLAIN
+            .with_scalars(Scalars::Strict)
+            .with_beyond_width(BeyondWidth::Error);
+        parse_with_rules::<T>(JsonSlice::new(json), None, rules).is_err()
+    }
+
     #[test]
     fn wrong_json_types_are_rejected() {
         for json in [
@@ -1233,14 +1229,14 @@ mod strict_types {
             r#"{ "base_color": 5 }"#,
             r#"{ "texture": 5 }"#,
         ] {
-            assert!(facet_json::from_str::<SpawnEgg>(json).is_err(), "{json}");
+            assert!(strict::<SpawnEgg>(json), "{json}");
         }
         for json in [
             r#"{ "initialize": [5] }"#,
             r#"{ "pre_animation": [true] }"#,
             r#"{ "variables": { "variable.a": 1 } }"#,
         ] {
-            assert!(facet_json::from_str::<Scripts>(json).is_err(), "{json}");
+            assert!(strict::<Scripts>(json), "{json}");
         }
         // The description members the resolver borrows (`DescriptionSlots`).
         for json in [
@@ -1251,7 +1247,7 @@ mod strict_types {
             r#"{ "identifier": "demo:ghost", "held_item_scale": [1.0] }"#,
             r#"{ "identifier": "demo:ghost", "held_item_scale": { "expression": "1.0", "version": 13 } }"#,
         ] {
-            assert!(facet_json::from_str::<Description>(json).is_err(), "{json}");
+            assert!(strict::<Description>(json), "{json}");
         }
     }
 
