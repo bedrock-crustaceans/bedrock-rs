@@ -156,7 +156,7 @@ mod codec {
     use crate::value::Description;
     use crate::write::{self, Object, Written};
     use bedrock_addon_core::diagnostic::{
-        Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
+        Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase,
     };
     use bedrock_addon_core::document::Extra;
     use bedrock_addon_core::id::kind;
@@ -718,12 +718,11 @@ mod codec {
                     let mut at = write::payload(KEY);
                     at.push("waves");
                     at.push("sampleWidth");
-                    cx.diagnostics.push(Diagnostic::new(
-                        DiagnosticCode::DroppedField { text: None },
-                        Severity::Info,
-                        Phase::Upgrade,
-                        Location::new(None, None, at, None),
-                    ));
+                    cx.diagnostics.push(
+                        Diagnostic::info(DiagnosticCode::DroppedField { text: None })
+                            .at(at)
+                            .phase(Phase::Upgrade),
+                    );
                 }
                 newer(waves)
             });

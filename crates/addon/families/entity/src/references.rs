@@ -10,9 +10,7 @@
 
 use std::collections::HashSet;
 
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, JsonPath, Location, Phase, Severity,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, Phase};
 use bedrock_addon_core::document::{ComponentMap, ComponentRef};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::shared::Filter;
@@ -339,12 +337,11 @@ pub(crate) fn check(entity: &Entity, cx: &mut ValidateCx<'_>) {
 
 /// A reference of the entity to itself that names nothing, at `at`.
 fn unresolved(cx: &mut ValidateCx<'_>, at: JsonPath) {
-    cx.diagnostics.push(Diagnostic::new(
-        DiagnosticCode::UnresolvedReference { text: None },
-        Severity::Info,
-        Phase::Validate,
-        Location::new(None, None, at, None),
-    ));
+    cx.diagnostics.push(
+        Diagnostic::info(DiagnosticCode::UnresolvedReference { text: None })
+            .at(at)
+            .phase(Phase::Validate),
+    );
 }
 
 /// E8: each entry of `description.scripts.animate` names a key of `description.animations`;
@@ -538,17 +535,15 @@ fn older_members(filters: &Value, at: &JsonPath, cx: &mut ValidateCx<'_>) {
                 // The game logs this at the error level and the entity still loads: a kept
                 // error. Whether the trigger itself survives is not observable, so the
                 // document keeps it.
-                cx.diagnostics.push_kept_error(Diagnostic::new(
-                    DiagnosticCode::UnrecognizedField {
+                cx.diagnostics.push_kept_error(
+                    Diagnostic::error(DiagnosticCode::UnrecognizedField {
                         text: Some(VanillaText::Formatted {
                             template: INVALID_FILTER_MEMBER,
                             args: vec![key.to_owned()],
                         }),
-                    },
-                    Severity::Error,
-                    Phase::Parse,
-                    Location::new(None, None, child(&at, key), None),
-                ));
+                    })
+                    .at(child(&at, key)),
+                );
             }
         }
         pending.extend(groups.into_iter().rev());

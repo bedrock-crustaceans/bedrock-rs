@@ -2,7 +2,7 @@
 //! which both parsers apply where they read it (so a finding is at the member's path in the
 //! file as written), and `F::validate`: the rules on the loaded table.
 
-use super::texts::{NUM_TO_SELECT, WEIGHT_NO_EFFECT, child, element, finding, formatted};
+use super::texts::{NUM_TO_SELECT, WEIGHT_NO_EFFECT, child, element, formatted};
 use super::{ItemList, TradeTable};
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, JsonPath, Phase, Severity, VanillaText,
@@ -15,14 +15,11 @@ use bedrock_addon_core::versioning::ValidateCx;
 pub(crate) fn selects_too_many(selects: i32, trades: usize, at: &JsonPath) -> Option<Diagnostic> {
     let too_many = usize::try_from(selects).is_ok_and(|n| n > trades);
     too_many.then(|| {
-        finding(
-            DiagnosticCode::InvalidValue {
-                text: Some(formatted(NUM_TO_SELECT, &[&selects, &trades])),
-            },
-            Severity::Error,
-            Phase::Validate,
-            at.clone(),
-        )
+        Diagnostic::error(DiagnosticCode::InvalidValue {
+            text: Some(formatted(NUM_TO_SELECT, &[&selects, &trades])),
+        })
+        .at(at.clone())
+        .phase(Phase::Validate)
     })
 }
 
@@ -37,14 +34,12 @@ pub(crate) fn weight_without_effect(
     severity: Severity,
 ) -> Option<Diagnostic> {
     (selects == -1).then(|| {
-        finding(
-            DiagnosticCode::NoEffect {
-                text: Some(VanillaText::Fixed(WEIGHT_NO_EFFECT)),
-            },
-            severity,
-            Phase::Validate,
-            at.clone(),
-        )
+        Diagnostic::error(DiagnosticCode::NoEffect {
+            text: Some(VanillaText::Fixed(WEIGHT_NO_EFFECT)),
+        })
+        .severity(severity)
+        .at(at.clone())
+        .phase(Phase::Validate)
     })
 }
 
@@ -55,12 +50,11 @@ pub(crate) fn validate(table: &mut TradeTable, cx: &mut ValidateCx<'_>) {
     // envelope, a member of the document the legacy parser reads whole).
     let tiers_at = child(&JsonPath::new(), "tiers");
     if table.tiers.is_empty() {
-        cx.diagnostics.push(finding(
-            DiagnosticCode::InvalidValue { text: None },
-            Severity::Error,
-            Phase::Validate,
-            tiers_at.clone(),
-        ));
+        cx.diagnostics.push(
+            Diagnostic::error(DiagnosticCode::InvalidValue { text: None })
+                .at(tiers_at.clone())
+                .phase(Phase::Validate),
+        );
     }
     // Typed filters exist only in a document written at 1.21.30 or later, whose paths are the
     // loaded table's.

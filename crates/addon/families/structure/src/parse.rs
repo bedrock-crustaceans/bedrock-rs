@@ -9,9 +9,7 @@ use nbtx::{Compound, Named, Value, ValueList};
 use std::sync::Arc;
 
 use super::{BlockPositionData, Contents, Layout, Palette, Structure, TickQueueEntry, text};
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
 
 /// A step's result: the value, or the finding that ends the load (boxed: one per file).
 type Step<T> = Result<T, Box<Diagnostic>>;
@@ -412,12 +410,7 @@ fn entities(body: &Compound) -> Step<Vec<Compound>> {
 
 /// The error that ends the load, at `at`.
 fn fail(code: DiagnosticCode, at: &JsonPath) -> Box<Diagnostic> {
-    Box::new(Diagnostic::new(
-        code,
-        Severity::Error,
-        Phase::Parse,
-        Location::new(None, None, at.clone(), None),
-    ))
+    Box::new(Diagnostic::error(code).at(at.clone()))
 }
 
 /// The tag path of `segments`.

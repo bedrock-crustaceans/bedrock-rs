@@ -3,9 +3,7 @@
 
 use super::parse::child;
 use super::{CoordinateDistribution, CoordinateRange, FeatureRule, ScatterChance, ScatterParams};
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, JsonPath, Location, Phase, Severity, VanillaText,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, Phase, VanillaText};
 use bedrock_addon_core::molang::{Molang, MolangSource};
 use bedrock_addon_core::versioning::ValidateCx;
 use bedrock_addon_support::scatter::percent_in_range;
@@ -154,10 +152,9 @@ fn unknown_pass(rule: &FeatureRule, cx: &mut ValidateCx<'_>) {
 /// document. The game logs the unknown pass and goes on; it logs each scatter check the same
 /// way and goes on with the replaced value, and the rule is inserted.
 fn warn(cx: &mut ValidateCx<'_>, at: JsonPath, text: VanillaText) {
-    cx.diagnostics.push_kept_error(Diagnostic::new(
-        DiagnosticCode::InvalidValue { text: Some(text) },
-        Severity::Error,
-        Phase::Validate,
-        Location::new(None, None, at, None),
-    ));
+    cx.diagnostics.push_kept_error(
+        Diagnostic::error(DiagnosticCode::InvalidValue { text: Some(text) })
+            .at(at)
+            .phase(Phase::Validate),
+    );
 }

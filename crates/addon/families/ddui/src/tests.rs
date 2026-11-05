@@ -148,13 +148,7 @@ fn writing_a_long_children_array_is_linear() {
 
 fn origin(directory: &str, i: usize) -> Origin {
     let path = PackPath::new(&format!("ddui/{directory}/f{i}.json")).expect("a pack path");
-    Origin::new(
-        PackRef::app_data(),
-        PackSide::Resource,
-        path,
-        None,
-        Vec::new(),
-    )
+    Origin::file(PackRef::app_data(), PackSide::Resource, path)
 }
 
 /// The context of a pack the game ships: a composition may name an extension point there.

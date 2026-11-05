@@ -20,9 +20,7 @@ use super::texts::{
     OVERLAP, PRE_CAVES, SNOW_ACCUMULATION, SURFACE_BUILDER_UNRESOLVED, WEIGHTED_BIOME,
     WEIGHTED_CLIMATE, fixed, text,
 };
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, Phase};
 use bedrock_addon_core::document::ComponentMap;
 use bedrock_addon_core::id::BiomeId;
 use bedrock_addon_core::shared::{BlockSpecifier, RangeForm};
@@ -43,42 +41,6 @@ const NETHER_TYPES: [&str; 4] = [
     "minecraft:the_end",
 ];
 
-/// Where the findings go: the payload's path and the diagnostics.
-struct Report<'a> {
-    at: &'a JsonPath,
-    d: &'a mut Diagnostics,
-}
-
-impl Report<'_> {
-    fn push(&mut self, code: DiagnosticCode, severity: Severity, path: &[&str]) {
-        self.d.push(Diagnostic::new(
-            code,
-            severity,
-            Phase::Validate,
-            Location::new(None, None, child(self.at, path), None),
-        ));
-    }
-
-    fn error(&mut self, code: DiagnosticCode, path: &[&str]) {
-        self.push(code, Severity::Error, path);
-    }
-
-    /// A warning: the game's level-2 content-log line, after which validation continues.
-    fn warn(&mut self, code: DiagnosticCode, path: &[&str]) {
-        self.push(code, Severity::Warning, path);
-    }
-
-    /// A kept error: the game's level-3 line after which the biome still registers.
-    fn kept(&mut self, code: DiagnosticCode, path: &[&str]) {
-        self.d.push_kept_error(Diagnostic::new(
-            code,
-            Severity::Error,
-            Phase::Validate,
-            Location::new(None, None, child(self.at, path), None),
-        ));
-    }
-}
-
 /// An `InvalidValue` without text: a member constraint, whose message is the game's generic
 /// one rather than a fixed sentence.
 fn constraint() -> DiagnosticCode {
@@ -91,51 +53,41 @@ pub(crate) fn validate(
     components: &mut ComponentMap<BiomeComponent>,
     cx: &mut ValidateCx<'_>,
 ) {
-    let at = cx.at.clone();
     let base_game = cx.load.is_base_game_pack;
     let original = cx.original_version;
-    let mut report = Report {
-        at: &at,
-        d: &mut *cx.diagnostics,
-    };
-    check_identifier(identifier, &mut report);
+    check_identifier(identifier, cx);
     for entry in components.iter() {
         let bedrock_addon_core::document::ComponentRef::Typed { name, value, .. } = entry else {
             continue;
         };
         let base = ["components", name];
-        check_blocks(value, &base, &mut report);
+        check_blocks(value, &base, cx);
         match value {
-            BiomeComponent::Climate(c) => climate(c, &base, &mut report),
-            BiomeComponent::CreatureSpawnProbability(c) => spawn_probability(c, &base, &mut report),
-            BiomeComponent::OverworldHeight(c) => overworld_height(c, &base, &mut report),
+            BiomeComponent::Climate(c) => climate(c, &base, cx),
+            BiomeComponent::CreatureSpawnProbability(c) => spawn_probability(c, &base, cx),
+            BiomeComponent::OverworldHeight(c) => overworld_height(c, &base, cx),
             BiomeComponent::OverworldGenerationRules(c) => {
-                overworld_rules(c, &base, &mut report);
+                overworld_rules(c, &base, cx);
             }
             BiomeComponent::ReplaceBiomes(c) => {
-                replace_biomes(c, original < V1_26_0, &base, &mut report);
+                replace_biomes(c, original < V1_26_0, &base, cx);
             }
             BiomeComponent::SurfaceBuilder(SurfaceBuilder { builder, .. })
             | BiomeComponent::SubsurfaceBuilder(SubsurfaceBuilder { builder, .. }) => {
-                surface_builder(builder, base_game, &base, &mut report);
+                surface_builder(builder, base_game, &base, cx);
             }
             BiomeComponent::SurfaceMaterialAdjustments(c) => {
-                adjustments(c, &base, &mut report);
+                adjustments(c, &base, cx);
             }
             BiomeComponent::MultinoiseGenerationRules(MultinoiseGenerationRules { .. }) => {
-                multinoise(identifier, &mut report);
+                multinoise(identifier, cx);
             }
             _ => {}
         }
     }
     #[cfg(feature = "molang")]
-    molang_failures(
-        components,
-        &cx_failures(&cx.molang_failures),
-        cx.load,
-        &mut report,
-    );
-    nether(components, &mut report);
+    molang_failures(components, &cx_failures(&cx.molang_failures), cx.load, cx);
+    nether(components, cx);
 }
 
 /// The fields whose height-range expression failed to compile.
@@ -166,13 +118,14 @@ fn identifier_matches(identifier: &str) -> bool {
         .is_some_and(|(namespace, name)| part(namespace) && part(name))
 }
 
-fn check_identifier(identifier: &BiomeId, report: &mut Report<'_>) {
+fn check_identifier(identifier: &BiomeId, cx: &mut ValidateCx<'_>) {
     if !identifier_matches(identifier.as_str()) {
-        report.error(
-            DiagnosticCode::NamespaceRule {
+        cx.diagnostics.push(
+            Diagnostic::error(DiagnosticCode::NamespaceRule {
                 text: fixed(IDENTIFIER),
-            },
-            &["description", "identifier"],
+            })
+            .at(child(&cx.at, &["description", "identifier"]))
+            .phase(Phase::Validate),
         );
     }
 }
@@ -311,54 +264,60 @@ fn builder_blocks<'a>(builder: &'a Builder, out: &mut Vec<(JsonPath, &'a BlockSp
 }
 
 /// The unknown members of each block specifier (`BlockSpecifier::check`).
-fn check_blocks(component: &BiomeComponent, base: &[&str], report: &mut Report<'_>) {
+fn check_blocks(component: &BiomeComponent, base: &[&str], cx: &mut ValidateCx<'_>) {
     for (path, block) in blocks(component) {
-        let mut at = child(report.at, base);
+        let mut at = child(&cx.at, base);
         at.append(&path);
-        report.d.extend(block.check(&at));
+        cx.diagnostics.extend(block.check(&at));
     }
 }
 
 // ---- component checks and member constraints -----------------------------------------------
 
 /// `minecraft:climate`: the snow cover's minimum must not exceed its maximum.
-fn climate(c: &Climate, base: &[&str], report: &mut Report<'_>) {
+fn climate(c: &Climate, base: &[&str], cx: &mut ValidateCx<'_>) {
     if let Some([min, max]) = c.snow_accumulation
         && min.0 > max.0
     {
-        report.error(
-            DiagnosticCode::InvalidValue {
+        cx.diagnostics.push(
+            Diagnostic::error(DiagnosticCode::InvalidValue {
                 text: fixed(SNOW_ACCUMULATION),
-            },
-            &[base, &["snow_accumulation"]].concat(),
+            })
+            .at(child(&cx.at, &[base, &["snow_accumulation"]].concat()))
+            .phase(Phase::Validate),
         );
     }
 }
 
 /// `minecraft:creature_spawn_probability`: `[0.0, 0.75]`.
-fn spawn_probability(c: &CreatureSpawnProbability, base: &[&str], report: &mut Report<'_>) {
+fn spawn_probability(c: &CreatureSpawnProbability, base: &[&str], cx: &mut ValidateCx<'_>) {
     if let Some(p) = c.probability
         && !(0.0..=0.75).contains(&p.0)
     {
-        report.error(constraint(), &[base, &["probability"]].concat());
+        cx.diagnostics.push(
+            Diagnostic::error(constraint())
+                .at(child(&cx.at, &[base, &["probability"]].concat()))
+                .phase(Phase::Validate),
+        );
     }
 }
 
 /// `minecraft:overworld_height`: a preset or `[depth, scale]`, not both.
-fn overworld_height(c: &OverworldHeight, base: &[&str], report: &mut Report<'_>) {
+fn overworld_height(c: &OverworldHeight, base: &[&str], cx: &mut ValidateCx<'_>) {
     if c.noise_type.is_some() && c.noise_params.is_some() {
-        report.error(
-            DiagnosticCode::InvalidValue {
+        cx.diagnostics.push(
+            Diagnostic::error(DiagnosticCode::InvalidValue {
                 text: fixed(BOTH_NOISE),
-            },
-            base,
+            })
+            .at(child(&cx.at, base))
+            .phase(Phase::Validate),
         );
     }
 }
 
 /// `minecraft:overworld_generation_rules`: each two-element entry is a name and a weight (a
 /// category and a weight for the climates). The names are the link pass's.
-fn overworld_rules(c: &OverworldGenerationRules, base: &[&str], report: &mut Report<'_>) {
+fn overworld_rules(c: &OverworldGenerationRules, base: &[&str], cx: &mut ValidateCx<'_>) {
     for (key, transformation) in [
         ("hills_transformation", &c.hills_transformation),
         ("mutate_transformation", &c.mutate_transformation),
@@ -375,11 +334,12 @@ fn overworld_rules(c: &OverworldGenerationRules, base: &[&str], report: &mut Rep
                     | WeightedBiome::Pair([NameOrWeight::Name(_), NameOrWeight::Weight(_)])
             );
             if !ordered {
-                report.error(
-                    DiagnosticCode::InvalidValue {
+                cx.diagnostics.push(
+                    Diagnostic::error(DiagnosticCode::InvalidValue {
                         text: fixed(WEIGHTED_BIOME),
-                    },
-                    &[base, &[key, &index.to_string()]].concat(),
+                    })
+                    .at(child(&cx.at, &[base, &[key, &index.to_string()]].concat()))
+                    .phase(Phase::Validate),
                 );
             }
         }
@@ -389,11 +349,15 @@ fn overworld_rules(c: &OverworldGenerationRules, base: &[&str], report: &mut Rep
             climate.0,
             [CategoryOrWeight::Category(_), CategoryOrWeight::Weight(_)]
         ) {
-            report.error(
-                DiagnosticCode::InvalidValue {
+            cx.diagnostics.push(
+                Diagnostic::error(DiagnosticCode::InvalidValue {
                     text: fixed(WEIGHTED_CLIMATE),
-                },
-                &[base, &["generate_for_climates", &index.to_string()]].concat(),
+                })
+                .at(child(
+                    &cx.at,
+                    &[base, &["generate_for_climates", &index.to_string()]].concat(),
+                ))
+                .phase(Phase::Validate),
             );
         }
     }
@@ -402,7 +366,7 @@ fn overworld_rules(c: &OverworldGenerationRules, base: &[&str], report: &mut Rep
 /// `minecraft:replace_biomes`: the component constraint of the document's struct, the member
 /// constraints, and the multiple-dimension warning. The targets are the link pass's. A
 /// document older than 1.26.0 gets the older texts and does not accept the Nether.
-fn replace_biomes(c: &ReplaceBiomes, before_1_26_0: bool, base: &[&str], report: &mut Report<'_>) {
+fn replace_biomes(c: &ReplaceBiomes, before_1_26_0: bool, base: &[&str], cx: &mut ValidateCx<'_>) {
     let replacements = [base, &["replacements"]].concat();
     if c.replacements.is_empty() {
         let empty = if before_1_26_0 {
@@ -410,9 +374,10 @@ fn replace_biomes(c: &ReplaceBiomes, before_1_26_0: bool, base: &[&str], report:
         } else {
             EMPTY_REPLACEMENTS_1_26_0
         };
-        report.error(
-            DiagnosticCode::InvalidValue { text: fixed(empty) },
-            &replacements,
+        cx.diagnostics.push(
+            Diagnostic::error(DiagnosticCode::InvalidValue { text: fixed(empty) })
+                .at(child(&cx.at, &replacements))
+                .phase(Phase::Validate),
         );
         return;
     }
@@ -442,78 +407,117 @@ fn replace_biomes(c: &ReplaceBiomes, before_1_26_0: bool, base: &[&str], report:
             } else {
                 text(DIMENSION_1_26_0, &[OVERWORLD, NETHER, dimension])
             };
-            report.error(
-                DiagnosticCode::InvalidValue { text: message },
-                &at("dimension"),
+            cx.diagnostics.push(
+                Diagnostic::error(DiagnosticCode::InvalidValue { text: message })
+                    .at(child(&cx.at, &at("dimension")))
+                    .phase(Phase::Validate),
             );
         }
         for target in targets {
             if !pairs.insert((dimension, target.0.as_str())) {
-                report.error(
-                    DiagnosticCode::InvalidValue {
+                cx.diagnostics.push(
+                    Diagnostic::error(DiagnosticCode::InvalidValue {
                         text: text(DUPLICATE_PAIR, &[dimension, &target.0]),
-                    },
-                    &at("targets"),
+                    })
+                    .at(child(&cx.at, &at("targets")))
+                    .phase(Phase::Validate),
                 );
             }
         }
         if targets.is_empty() {
-            report.error(constraint(), &at("targets"));
+            cx.diagnostics.push(
+                Diagnostic::error(constraint())
+                    .at(child(&cx.at, &at("targets")))
+                    .phase(Phase::Validate),
+            );
         }
         if !(amount.0 > 0.0 && amount.0 <= 1.0) {
-            report.error(constraint(), &at("amount"));
+            cx.diagnostics.push(
+                Diagnostic::error(constraint())
+                    .at(child(&cx.at, &at("amount")))
+                    .phase(Phase::Validate),
+            );
         }
         if !(noise_frequency_scale.0 > 0.0 && noise_frequency_scale.0 <= 100.0) {
-            report.error(constraint(), &at("noise_frequency_scale"));
+            cx.diagnostics.push(
+                Diagnostic::error(constraint())
+                    .at(child(&cx.at, &at("noise_frequency_scale")))
+                    .phase(Phase::Validate),
+            );
         }
     }
     // Replacements in more than one dimension are a level-2 line in the game's content log:
     // validation continues.
     if dimensions.len() > 1 {
-        report.warn(
-            DiagnosticCode::InvalidValue {
+        cx.diagnostics.push(
+            Diagnostic::warn(DiagnosticCode::InvalidValue {
                 text: fixed(MULTIPLE_DIMENSIONS),
-            },
-            &replacements,
+            })
+            .at(child(&cx.at, &replacements))
+            .phase(Phase::Validate),
         );
     }
 }
 
 /// A builder: the depth bounds, the capped lists and the noise gradient's constraints.
-fn surface_builder(builder: &Builder, base_game: bool, base: &[&str], report: &mut Report<'_>) {
+fn surface_builder(builder: &Builder, base_game: bool, base: &[&str], cx: &mut ValidateCx<'_>) {
     let at = |member: &'static str| [base, &["builder", member]].concat();
     let depth = |value: i32| (0..=127).contains(&value);
     match builder {
         Builder::Overworld(s) | Builder::FrozenOcean(s) => {
             if !depth(s.sea_floor_depth.0) {
-                report.error(constraint(), &at("sea_floor_depth"));
+                cx.diagnostics.push(
+                    Diagnostic::error(constraint())
+                        .at(child(&cx.at, &at("sea_floor_depth")))
+                        .phase(Phase::Validate),
+                );
             }
         }
         Builder::Swamp(s) => {
             if !depth(s.sea_floor_depth.0) {
-                report.error(constraint(), &at("sea_floor_depth"));
+                cx.diagnostics.push(
+                    Diagnostic::error(constraint())
+                        .at(child(&cx.at, &at("sea_floor_depth")))
+                        .phase(Phase::Validate),
+                );
             }
             // The puddle depth has the same closed bounds, 0 to 127.
             if !depth(s.max_puddle_depth_below_sea_level.0) {
-                report.error(constraint(), &at("max_puddle_depth_below_sea_level"));
+                cx.diagnostics.push(
+                    Diagnostic::error(constraint())
+                        .at(child(&cx.at, &at("max_puddle_depth_below_sea_level")))
+                        .phase(Phase::Validate),
+                );
             }
         }
         Builder::Mesa(s) => {
             if !depth(s.sea_floor_depth.0) {
-                report.error(constraint(), &at("sea_floor_depth"));
+                cx.diagnostics.push(
+                    Diagnostic::error(constraint())
+                        .at(child(&cx.at, &at("sea_floor_depth")))
+                        .phase(Phase::Validate),
+                );
             }
         }
         Builder::Capped(s) => {
             if s.floor_materials.is_empty() {
-                report.error(constraint(), &at("floor_materials"));
+                cx.diagnostics.push(
+                    Diagnostic::error(constraint())
+                        .at(child(&cx.at, &at("floor_materials")))
+                        .phase(Phase::Validate),
+                );
             }
             if s.ceiling_materials.is_empty() {
-                report.error(constraint(), &at("ceiling_materials"));
+                cx.diagnostics.push(
+                    Diagnostic::error(constraint())
+                        .at(child(&cx.at, &at("ceiling_materials")))
+                        .phase(Phase::Validate),
+                );
             }
         }
         Builder::TheEnd(_) => {}
         Builder::NoiseGradient(s) => {
-            noise_gradient(s, base_game, &[base, &["builder"]].concat(), report);
+            noise_gradient(s, base_game, &[base, &["builder"]].concat(), cx);
         }
     }
 }
@@ -524,19 +528,27 @@ fn noise_gradient(
     s: &NoiseGradientSurface,
     base_game: bool,
     base: &[&str],
-    report: &mut Report<'_>,
+    cx: &mut ValidateCx<'_>,
 ) {
     let amplitudes = s.noise_descriptor.amplitudes.len();
     // At least 1 and at most 100 amplitudes.
     if !(1..=100).contains(&amplitudes) {
-        report.error(
-            constraint(),
-            &[base, &["noise_descriptor", "amplitudes"]].concat(),
+        cx.diagnostics.push(
+            Diagnostic::error(constraint())
+                .at(child(
+                    &cx.at,
+                    &[base, &["noise_descriptor", "amplitudes"]].concat(),
+                ))
+                .phase(Phase::Validate),
         );
     }
     // At least one specifier.
     if s.noise_block_specifiers.is_empty() {
-        report.error(constraint(), &[base, &["noise_block_specifiers"]].concat());
+        cx.diagnostics.push(
+            Diagnostic::error(constraint())
+                .at(child(&cx.at, &[base, &["noise_block_specifiers"]].concat()))
+                .phase(Phase::Validate),
+        );
         return;
     }
     let mut failed = false;
@@ -550,7 +562,11 @@ fn noise_gradient(
         if let Some(noise) = &specifier.noise
             && let Some(code) = noise_constraint(&noise.0, base_game)
         {
-            report.error(code, &at("noise"));
+            cx.diagnostics.push(
+                Diagnostic::error(code)
+                    .at(child(&cx.at, &at("noise")))
+                    .phase(Phase::Validate),
+            );
             failed = true;
         }
         if let Some(range) = &specifier.range {
@@ -558,12 +574,15 @@ fn noise_gradient(
             // ("expected an object") counts as an error under the strict mask every biome
             // slice uses, so the biome is refused.
             if range.form != RangeForm::MinMax {
-                report.error(DiagnosticCode::InvalidType { text: None }, &at("range"));
+                cx.diagnostics.push(
+                    Diagnostic::error(DiagnosticCode::InvalidType { text: None })
+                        .at(child(&cx.at, &at("range")))
+                        .phase(Phase::Validate),
+                );
                 failed = true;
             }
-            report
-                .d
-                .extend(range.check(&child(report.at, &at("range"))));
+            cx.diagnostics
+                .extend(range.check(&child(&cx.at, &at("range"))));
         }
     }
     if failed {
@@ -571,17 +590,19 @@ fn noise_gradient(
     }
     if overlapping(&s.noise_block_specifiers) {
         let at = [base, &["noise_block_specifiers"]].concat();
-        report.error(
-            DiagnosticCode::InvalidValue {
+        cx.diagnostics.push(
+            Diagnostic::error(DiagnosticCode::InvalidValue {
                 text: fixed(OVERLAP),
-            },
-            &at,
+            })
+            .at(child(&cx.at, &at))
+            .phase(Phase::Validate),
         );
-        report.error(
-            DiagnosticCode::InvalidValue {
+        cx.diagnostics.push(
+            Diagnostic::error(DiagnosticCode::InvalidValue {
                 text: fixed(SURFACE_BUILDER_UNRESOLVED),
-            },
-            &base[..base.len() - 1],
+            })
+            .at(child(&cx.at, &base[..base.len() - 1]))
+            .phase(Phase::Validate),
         );
     }
 }
@@ -631,7 +652,7 @@ fn noise_constraint(noise: &str, base_game: bool) -> Option<DiagnosticCode> {
 
 /// `minecraft:surface_material_adjustments`: constant `noise_range` and `height_range` bounds
 /// (the upper above the lower). Block names are the link pass's.
-fn adjustments(c: &SurfaceMaterialAdjustments, base: &[&str], report: &mut Report<'_>) {
+fn adjustments(c: &SurfaceMaterialAdjustments, base: &[&str], cx: &mut ValidateCx<'_>) {
     for (index, adjustment) in c.adjustments.iter().flatten().enumerate() {
         let i = index.to_string();
         let Adjustment {
@@ -642,22 +663,30 @@ fn adjustments(c: &SurfaceMaterialAdjustments, base: &[&str], report: &mut Repor
         if let Some([low, high]) = noise_range
             && high.0 <= low.0
         {
-            report.error(
-                DiagnosticCode::InvalidValue {
+            cx.diagnostics.push(
+                Diagnostic::error(DiagnosticCode::InvalidValue {
                     text: fixed(NOISE_RANGE_BOUNDS),
-                },
-                &[base, &["adjustments", &i, "noise_range"]].concat(),
+                })
+                .at(child(
+                    &cx.at,
+                    &[base, &["adjustments", &i, "noise_range"]].concat(),
+                ))
+                .phase(Phase::Validate),
             );
         }
         if let Some([low, high]) = height_range
             && let (Some(low), Some(high)) = (low.constant_value(), high.constant_value())
             && high <= low
         {
-            report.error(
-                DiagnosticCode::InvalidValue {
+            cx.diagnostics.push(
+                Diagnostic::error(DiagnosticCode::InvalidValue {
                     text: fixed(HEIGHT_RANGE_BOUNDS),
-                },
-                &[base, &["adjustments", &i, "height_range"]].concat(),
+                })
+                .at(child(
+                    &cx.at,
+                    &[base, &["adjustments", &i, "height_range"]].concat(),
+                ))
+                .phase(Phase::Validate),
             );
         }
     }
@@ -672,7 +701,7 @@ fn molang_failures(
     components: &ComponentMap<BiomeComponent>,
     failed: &[JsonPath],
     load: &bedrock_addon_core::load::LoadContext,
-    report: &mut Report<'_>,
+    cx: &mut ValidateCx<'_>,
 ) {
     use bedrock_addon_core::molang::{CompileFailure, MolangContext, Side};
     use bedrock_addon_core::version::FormatVersionInput;
@@ -701,7 +730,7 @@ fn molang_failures(
         for (slot, value) in values.iter().enumerate() {
             let s = slot.to_string();
             let path: Vec<&str> = [&base[..], &["adjustments", &i, "height_range", &s]].concat();
-            let full = child(report.at, &path);
+            let full = child(&cx.at, &path);
             let Some(source) = value.source() else {
                 folded[slot] = value.constant_value();
                 continue;
@@ -723,11 +752,12 @@ fn molang_failures(
                 )
             });
             if rejected || unresolvable {
-                report.error(
-                    DiagnosticCode::InvalidValue {
+                cx.diagnostics.push(
+                    Diagnostic::error(DiagnosticCode::InvalidValue {
                         text: text(EXPRESSION, &[source.as_str()]),
-                    },
-                    &path,
+                    })
+                    .at(child(&cx.at, &path))
+                    .phase(Phase::Validate),
                 );
             }
         }
@@ -738,11 +768,15 @@ fn molang_failures(
             && let [Some(low), Some(high)] = folded
             && high <= low
         {
-            report.error(
-                DiagnosticCode::InvalidValue {
+            cx.diagnostics.push(
+                Diagnostic::error(DiagnosticCode::InvalidValue {
                     text: fixed(HEIGHT_RANGE_BOUNDS),
-                },
-                &[&base[..], &["adjustments", &i, "height_range"]].concat(),
+                })
+                .at(child(
+                    &cx.at,
+                    &[&base[..], &["adjustments", &i, "height_range"]].concat(),
+                ))
+                .phase(Phase::Validate),
             );
         }
     }
@@ -751,23 +785,27 @@ fn molang_failures(
 /// `minecraft:multinoise_generation_rules` is applied only to `minecraft` biomes. For any
 /// other biome the game logs a level-3 line and skips the component while the biome is still
 /// registered: a kept error, with the component kept in the document.
-fn multinoise(identifier: &BiomeId, report: &mut Report<'_>) {
+fn multinoise(identifier: &BiomeId, cx: &mut ValidateCx<'_>) {
     if identifier.namespace() != Some("minecraft") {
-        report.kept(
-            DiagnosticCode::InvalidValue {
+        cx.diagnostics.push_kept_error(
+            Diagnostic::error(DiagnosticCode::InvalidValue {
                 text: text(
                     PRE_CAVES,
                     &[identifier.as_str(), "minecraft:multinoise_generation_rules"],
                 ),
-            },
-            &["components", "minecraft:multinoise_generation_rules"],
+            })
+            .at(child(
+                &cx.at,
+                &["components", "minecraft:multinoise_generation_rules"],
+            ))
+            .phase(Phase::Validate),
         );
     }
 }
 
 /// A biome that replaces Nether biomes needs a builder the Nether takes; a subsurface builder
 /// has no effect there. Without a surface builder the biome passes (the crate's own choice).
-fn nether(components: &ComponentMap<BiomeComponent>, report: &mut Report<'_>) {
+fn nether(components: &ComponentMap<BiomeComponent>, cx: &mut ValidateCx<'_>) {
     let replaces_nether = components
         .get::<ReplaceBiomes>()
         .is_some_and(|r| r.replacements.iter().any(|x| x.dimension.0 == NETHER));
@@ -777,20 +815,28 @@ fn nether(components: &ComponentMap<BiomeComponent>, report: &mut Report<'_>) {
     if let Some(surface) = components.get::<SurfaceBuilder>()
         && !NETHER_TYPES.contains(&surface.builder.type_name())
     {
-        report.error(
-            DiagnosticCode::InvalidValue {
+        cx.diagnostics.push(
+            Diagnostic::error(DiagnosticCode::InvalidValue {
                 text: fixed(NETHER_BUILDERS),
-            },
-            &["components", "minecraft:surface_builder", "builder", "type"],
+            })
+            .at(child(
+                &cx.at,
+                &["components", "minecraft:surface_builder", "builder", "type"],
+            ))
+            .phase(Phase::Validate),
         );
     }
     if components.contains::<SubsurfaceBuilder>() {
         // The game logs this at level 2, so it is a warning.
-        report.warn(
-            DiagnosticCode::NoEffect {
+        cx.diagnostics.push(
+            Diagnostic::warn(DiagnosticCode::NoEffect {
                 text: text(NO_EFFECT_IN_NETHER, &["minecraft:subsurface_builder"]),
-            },
-            &["components", "minecraft:subsurface_builder"],
+            })
+            .at(child(
+                &cx.at,
+                &["components", "minecraft:subsurface_builder"],
+            ))
+            .phase(Phase::Validate),
         );
     }
 }

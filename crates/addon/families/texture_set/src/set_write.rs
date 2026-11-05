@@ -5,9 +5,7 @@ use facet_value::{VArray, VObject};
 
 use super::set::{LayerKind, LayerValue, Rgb, Rgba, TextureName, TextureSet};
 use super::set_read::{PAYLOAD, Schema, V1_21_30, read_layers};
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value, WriteStyle, write_json};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{ParseCx, VersionStruct, Versioned};
@@ -38,13 +36,7 @@ pub(super) fn parse_layers(
     let read = read_lenient(payload.text.as_bytes()).ok();
     let Some(layers) = read.as_ref().and_then(|read| read.value.as_object()) else {
         let code = DiagnosticCode::InvalidType { text: None };
-        let location = Location::new(None, None, at.clone(), None);
-        d.push(Diagnostic::new(
-            code,
-            Severity::Error,
-            Phase::Parse,
-            location,
-        ));
+        d.push(Diagnostic::error(code).at(at.clone()));
         return None;
     };
     read_layers(layers, schema, at, d)

@@ -9,7 +9,7 @@ use super::event::EventNode;
 use super::read::{Era, Members, Node, Opt, Reader, Writer, req, walk};
 use super::{BasicRenderParameters, Description, ParticleEffect, texts};
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
 };
 use bedrock_addon_core::document::ComponentMap;
 use bedrock_addon_core::id::ParticleId;
@@ -143,15 +143,13 @@ pub(crate) fn json(text: JsonSlice<'_>, at: &JsonPath, d: &mut Diagnostics) -> O
     match value_of(text.text) {
         Ok(value) => Some(value),
         Err(error) => {
-            d.push(Diagnostic::new(
-                DiagnosticCode::MalformedInput {
+            d.push(
+                Diagnostic::error(DiagnosticCode::MalformedInput {
                     message: error.kind.to_string(),
                     text: None,
-                },
-                Severity::Error,
-                Phase::Parse,
-                Location::new(None, None, at.clone(), None),
-            ));
+                })
+                .at(at.clone()),
+            );
             None
         }
     }

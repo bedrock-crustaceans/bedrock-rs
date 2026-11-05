@@ -6,9 +6,7 @@
 //! fails the file; otherwise an object `fixed` is copied to `shelf` as it is.
 
 use super::super::schema::{SHELF_TOO_OLD, text};
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, JsonPath, Location, Phase, Severity,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, Phase};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{Upgrade, UpgradeCx, Versioned};
 
@@ -36,14 +34,13 @@ impl Upgrade for GeometryFile {
                     at.push_index(index);
                     at.push("item_display_transforms");
                     at.push("shelf");
-                    cx.diagnostics.push(Diagnostic::new(
-                        DiagnosticCode::InvalidValue {
+                    cx.diagnostics.push(
+                        Diagnostic::error(DiagnosticCode::InvalidValue {
                             text: text(SHELF_TOO_OLD, &[&geometry.description.identifier, "shelf"]),
-                        },
-                        Severity::Error,
-                        Phase::Upgrade,
-                        Location::new(None, None, at, None),
-                    ));
+                        })
+                        .at(at)
+                        .phase(Phase::Upgrade),
+                    );
                     break;
                 }
                 transforms.shelf.clone_from(&transforms.fixed);

@@ -2,8 +2,7 @@
 //! typed, with every unknown member, wrong type and failed constraint an error.
 
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, JsonPathSegment, Location, Phase, Severity,
-    VanillaText, code_for_deserialize_error_kind,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, JsonPathSegment, Severity, VanillaText,
 };
 use bedrock_addon_core::json::{
     ClampedText, EncodeError, JsonSlice, NullRule, Value, Width, clamp_text, parse_at,
@@ -115,21 +114,14 @@ impl VersionStruct for AtomicClientEntity {
                 if let Some(clamped) = &clamped {
                     error.span = clamped.written_span(error.span, payload.offset);
                 }
-                let code = code_for_deserialize_error_kind(
-                    &error.error.kind,
-                    !error.path.is_empty(),
-                    false,
-                );
                 // A wrong type is the declared value's, however deep the reader got into it.
-                let path = match code {
-                    DiagnosticCode::InvalidType { .. } => declared(&error.path),
-                    _ => error.path.clone(),
-                };
-                let mut at = cx.at.clone();
-                at.append(&path);
-                let mut found = finding(code, at);
-                found.location.span = Some(error.span);
-                d.push(found);
+                if matches!(
+                    error.code_with_path(error.has_path()),
+                    DiagnosticCode::InvalidType { .. }
+                ) {
+                    error.path = declared(&error.path);
+                }
+                d.push(error.into_diagnostic(&cx.at, |code, _| code));
                 return None;
             }
         };
@@ -154,18 +146,18 @@ impl VersionStruct for AtomicClientEntity {
                 } else {
                     DiagnosticCode::UnrecognizedField { text: None }
                 };
-                d.push(finding(code, at));
+                d.push(Diagnostic::error(code).at(at));
             }
         }
         let description_at = below(&cx.at, &["description"]);
         if !has_namespace(entity.description.identifier.as_str()) {
             // A namespace is required: the identifier matches `^(?:.)+:(?:.)+$`.
-            d.push(finding(
-                DiagnosticCode::InvalidValue {
+            d.push(
+                Diagnostic::error(DiagnosticCode::InvalidValue {
                     text: Some(VanillaText::Fixed(NAMESPACE_TEXT)),
-                },
-                below(&description_at, &["identifier"]),
-            ));
+                })
+                .at(below(&description_at, &["identifier"])),
+            );
         }
         let controllers = entity.description.render_controllers.iter().flatten();
         for (index, controller) in controllers.enumerate() {
@@ -173,18 +165,18 @@ impl VersionStruct for AtomicClientEntity {
                 // The list holds plain strings; the `{ name: condition }` form is no string.
                 let mut at = below(&description_at, &["render_controllers"]);
                 at.push_index(index);
-                d.push(finding(DiagnosticCode::InvalidType { text: None }, at));
+                d.push(Diagnostic::error(DiagnosticCode::InvalidType { text: None }).at(at));
             }
         }
         for (members, value) in not_negative(&entity) {
             // The minimum is 0.0, inclusive.
             if value < 0.0 {
-                d.push(finding(
-                    DiagnosticCode::InvalidValue {
+                d.push(
+                    Diagnostic::error(DiagnosticCode::InvalidValue {
                         text: Some(VanillaText::Fixed(NOT_NEGATIVE_TEXT)),
-                    },
-                    below(&cx.at, &members),
-                ));
+                    })
+                    .at(below(&cx.at, &members)),
+                );
             }
         }
         let errors = d
@@ -277,16 +269,6 @@ fn declared(path: &JsonPath) -> JsonPath {
 fn is_component(path: &JsonPath) -> bool {
     let mut segments = path.segments();
     segments.len() == 2 && segments.next() == Some(JsonPathSegment::Key("components"))
-}
-
-/// An error at `at`.
-fn finding(code: DiagnosticCode, at: JsonPath) -> Diagnostic {
-    Diagnostic::new(
-        code,
-        Severity::Error,
-        Phase::Parse,
-        Location::new(None, None, at, None),
-    )
 }
 
 /// `base` followed by `keys`.

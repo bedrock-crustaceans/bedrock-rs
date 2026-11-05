@@ -6,9 +6,9 @@ use indexmap::IndexMap;
 
 use super::fields::{Fields, Written};
 use super::{Emoticon, EmoticonList};
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, JsonPath, Severity};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
 use bedrock_addon_core::json::Value;
-use bedrock_addon_support::fixed_path::{Authored, array, finding, index, invalid, malformed};
+use bedrock_addon_support::fixed_path::{Authored, array, index, invalid, malformed};
 
 /// The game's assert for an emoticon file it cannot use.
 pub(super) const MALFORMED: &str = "Malformed JSON";
@@ -80,11 +80,9 @@ impl Authored for EmoticonList {
         let Some(elements) = root.as_array() else {
             // The game returns silently here, so the crate reports an information without the
             // "Malformed JSON" assert, which belongs to an empty file.
-            diagnostics.push(finding(
-                malformed("the root is not an array".to_owned(), None),
-                Severity::Info,
-                at,
-            ));
+            diagnostics.push(
+                Diagnostic::info(malformed("the root is not an array".to_owned(), None)).at(at),
+            );
             return Self::default();
         };
         let mut seen: HashSet<&str> = HashSet::new();
@@ -97,7 +95,7 @@ impl Authored for EmoticonList {
                 name.and_then(Value::as_string),
                 code.and_then(Value::as_string),
             ) else {
-                diagnostics.push(finding(invalid(), Severity::Info, at));
+                diagnostics.push(Diagnostic::info(invalid()).at(at));
                 continue;
             };
             let emoticon = Emoticon {
@@ -106,26 +104,23 @@ impl Authored for EmoticonList {
                 extra: fields.finish(diagnostics),
             };
             if emoticon.code_point().is_none() {
-                diagnostics.push(finding(
-                    invalid(),
-                    Severity::Info,
-                    bedrock_addon_support::fixed_path::key(&at, "code"),
-                ));
+                diagnostics.push(
+                    Diagnostic::info(invalid())
+                        .at(bedrock_addon_support::fixed_path::key(&at, "code")),
+                );
             } else if !seen.insert(name.as_str()) {
                 // The first entry of a name stands.
-                diagnostics.push(finding(
-                    DiagnosticCode::FontNameOverridden,
-                    Severity::Info,
-                    bedrock_addon_support::fixed_path::key(&at, "name"),
-                ));
+                diagnostics.push(
+                    Diagnostic::info(DiagnosticCode::FontNameOverridden)
+                        .at(bedrock_addon_support::fixed_path::key(&at, "name")),
+                );
             }
             if !matchable(&emoticon.name) {
                 // A name that can never be matched in text.
-                diagnostics.push(finding(
-                    invalid(),
-                    Severity::Info,
-                    bedrock_addon_support::fixed_path::key(&at, "name"),
-                ));
+                diagnostics.push(
+                    Diagnostic::info(invalid())
+                        .at(bedrock_addon_support::fixed_path::key(&at, "name")),
+                );
             }
             list.push(emoticon);
         }

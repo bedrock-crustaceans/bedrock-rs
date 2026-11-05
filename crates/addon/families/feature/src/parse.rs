@@ -5,8 +5,7 @@
 use facet::Facet;
 
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, Span,
-    VanillaText, code_for_deserialize_error_kind,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, VanillaText,
 };
 use bedrock_addon_core::json::{
     JsonSlice, NullRule, SliceError, Value, parse_at, parse_at_null_absent, unknown_members,
@@ -40,17 +39,6 @@ pub(crate) fn formatted(template: &'static str, args: &[&dyn std::fmt::Display])
     }
 }
 
-/// A finding at `at`.
-pub(crate) fn finding(
-    code: DiagnosticCode,
-    severity: Severity,
-    phase: Phase,
-    at: JsonPath,
-    span: Option<Span>,
-) -> Diagnostic {
-    Diagnostic::new(code, severity, phase, Location::new(None, None, at, span))
-}
-
 /// The last member name of `path` as the file has it (`"y"` for
 /// `minecraft:scatter_feature/distribution/y`); an element's number for a path that ends at
 /// an array element.
@@ -79,29 +67,19 @@ pub(crate) fn child(base: &JsonPath, key: &str) -> JsonPath {
 /// `UnrecognizedField` (error) with vanilla's text, for the member at `at`.
 pub(crate) fn not_valid_here(at: JsonPath) -> Diagnostic {
     let key = last_key(&at);
-    finding(
-        DiagnosticCode::UnrecognizedField {
-            text: Some(formatted(NOT_VALID_HERE, &[&key])),
-        },
-        Severity::Error,
-        Phase::Parse,
-        at,
-        None,
-    )
+    Diagnostic::error(DiagnosticCode::UnrecognizedField {
+        text: Some(formatted(NOT_VALID_HERE, &[&key])),
+    })
+    .at(at)
 }
 
 /// `MissingRequiredField` (error) with vanilla's text, for the member at `at`.
 pub(crate) fn required_child(at: JsonPath) -> Diagnostic {
     let key = last_key(&at);
-    finding(
-        DiagnosticCode::MissingRequiredField {
-            text: Some(formatted(REQUIRED_CHILD, &[&key])),
-        },
-        Severity::Error,
-        Phase::Parse,
-        at,
-        None,
-    )
+    Diagnostic::error(DiagnosticCode::MissingRequiredField {
+        text: Some(formatted(REQUIRED_CHILD, &[&key])),
+    })
+    .at(at)
 }
 
 /// Parses `T` from `payload` strictly: a failed typed parse is one error at the failing member
@@ -131,16 +109,20 @@ pub(crate) fn parse_strict_with<'a, T: Facet<'a>>(
     } else {
         parse_at::<T>(payload)
     };
-    if let Err(error) = &parsed {
-        let mut finding = slice_error(error, &cx.at, payload);
-        if let DiagnosticCode::InvalidValue { text } = &mut finding.code {
-            let key = last_key(&finding.location.json_path);
-            if let Some((_, message)) = texts.iter().find(|(k, _)| *k == key) {
-                *text = Some(VanillaText::Fixed(message));
+    let parsed = match parsed {
+        Ok(value) => Some(value),
+        Err(error) => {
+            let mut finding = slice_error(error, &cx.at);
+            if let DiagnosticCode::InvalidValue { text } = &mut finding.code {
+                let key = last_key(&finding.location.json_path);
+                if let Some((_, message)) = texts.iter().find(|(k, _)| *k == key) {
+                    *text = Some(VanillaText::Fixed(message));
+                }
             }
+            d.push(finding);
+            None
         }
-        d.push(finding);
-    }
+    };
     // Vanilla's validation reports every unknown member, also beside another failure.
     if let Ok(json) = bedrock_addon_core::json::from_str_jsonc::<Value>(payload.text) {
         if absent {
@@ -157,24 +139,23 @@ pub(crate) fn parse_strict_with<'a, T: Facet<'a>>(
             return None;
         }
     }
-    parsed.ok()
+    parsed
 }
 
 /// The finding of a failed typed parse of `slice`, at `base` followed by the failing member.
-fn slice_error(error: &SliceError, base: &JsonPath, slice: JsonSlice<'_>) -> Diagnostic {
-    let blank = slice.text.trim().is_empty();
-    let code = code_for_deserialize_error_kind(&error.error.kind, !error.path.is_empty(), blank);
-    let at = join(base, &error.path);
-    let code = match code {
-        // The client's enum members reject an unknown name as a value.
-        DiagnosticCode::InvalidEnumValue { .. } => DiagnosticCode::InvalidValue { text: None },
-        DiagnosticCode::MissingRequiredField { .. } => DiagnosticCode::MissingRequiredField {
-            text: Some(formatted(REQUIRED_CHILD, &[&last_key(&at)])),
-        },
-        DiagnosticCode::UnrecognizedField { .. } => DiagnosticCode::UnrecognizedField {
-            text: Some(formatted(NOT_VALID_HERE, &[&last_key(&at)])),
-        },
-        other => other,
-    };
-    finding(code, Severity::Error, Phase::Parse, at, Some(error.span))
+fn slice_error(error: SliceError, base: &JsonPath) -> Diagnostic {
+    error.into_diagnostic(base, |code, error| {
+        let at = || join(base, error.relative_path());
+        match code {
+            // The client's enum members reject an unknown name as a value.
+            DiagnosticCode::InvalidEnumValue { .. } => DiagnosticCode::InvalidValue { text: None },
+            DiagnosticCode::MissingRequiredField { .. } => DiagnosticCode::MissingRequiredField {
+                text: Some(formatted(REQUIRED_CHILD, &[&last_key(&at())])),
+            },
+            DiagnosticCode::UnrecognizedField { .. } => DiagnosticCode::UnrecognizedField {
+                text: Some(formatted(NOT_VALID_HERE, &[&last_key(&at())])),
+            },
+            other => other,
+        }
+    })
 }

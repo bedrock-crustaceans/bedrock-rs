@@ -5,10 +5,11 @@
 use facet::Facet;
 use facet_value::VObject;
 
-use super::{Checked, Report};
+use super::{Checked, child};
 use crate::color::{Color255Rgb, clamped_channels, is_rgb};
 use crate::texts::{COLOR, WATER_EMPTY, fixed};
 use bedrock_addon_core::diagnostic::DiagnosticCode;
+use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath};
 use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::json::{StrictBool, StrictFloat, Value};
 use bedrock_addon_core::molang::JsonType;
@@ -259,17 +260,20 @@ pub struct Precipitation {
 
 /// The member `key` of `json` as an RGB colour: another form is vanilla's error; an array
 /// channel outside `0..=255` is clamped, with an information of the crate's own.
-fn check_rgb(json: &Value, key: &'static str, report: &mut Report<'_>) {
+fn check_rgb(json: &Value, key: &'static str, d: &mut Diagnostics) {
     let Some(value) = json.as_object().and_then(|object| object.get(key)) else {
         return;
     };
-    check_rgb_value(value, &[key], report);
+    check_rgb_value(value, &[key], d);
 }
 
 /// [`check_rgb`] for a value at `at`.
-fn check_rgb_value(value: &Value, at: &[&str], report: &mut Report<'_>) {
+fn check_rgb_value(value: &Value, at: &[&str], d: &mut Diagnostics) {
     if !is_rgb(value) {
-        report.error(DiagnosticCode::InvalidType { text: fixed(COLOR) }, at);
+        d.push(
+            Diagnostic::error(DiagnosticCode::InvalidType { text: fixed(COLOR) })
+                .at(child(&JsonPath::new(), at)),
+        );
         return;
     }
     for index in clamped_channels(value) {
@@ -278,93 +282,88 @@ fn check_rgb_value(value: &Value, at: &[&str], report: &mut Report<'_>) {
         path.push(&index);
         // The game clamps the channel without a log line; the crate tells the user with an
         // information.
-        report.info(DiagnosticCode::InvalidValue { text: None }, &path);
+        d.push(
+            Diagnostic::info(DiagnosticCode::InvalidValue { text: None })
+                .at(child(&JsonPath::new(), &path)),
+        );
     }
 }
 
 /// The member `color` of `json`: a colour, or `{"color_map": <one of names>}`.
-fn check_color_or_map(json: &Value, known: fn(&str) -> bool, report: &mut Report<'_>) {
+fn check_color_or_map(json: &Value, known: fn(&str) -> bool, d: &mut Diagnostics) {
     let Some(value) = json.as_object().and_then(|object| object.get("color")) else {
         return;
     };
     let Some(object) = value.as_object() else {
-        check_rgb_value(value, &["color"], report);
+        check_rgb_value(value, &["color"], d);
         return;
     };
     match object.get(COLOR_MAP) {
-        None => report.error(
-            DiagnosticCode::MissingRequiredField { text: None },
-            &["color", COLOR_MAP],
+        None => d.push(
+            Diagnostic::error(DiagnosticCode::MissingRequiredField { text: None })
+                .at(child(&JsonPath::new(), &["color", COLOR_MAP])),
         ),
         Some(name) => match name.as_string() {
-            None => report.error(
-                DiagnosticCode::InvalidType { text: None },
-                &["color", COLOR_MAP],
+            None => d.push(
+                Diagnostic::error(DiagnosticCode::InvalidType { text: None })
+                    .at(child(&JsonPath::new(), &["color", COLOR_MAP])),
             ),
-            Some(name) if !known(name.as_str()) => report.error(
-                DiagnosticCode::InvalidEnumValue { text: None },
-                &["color", COLOR_MAP],
+            Some(name) if !known(name.as_str()) => d.push(
+                Diagnostic::error(DiagnosticCode::InvalidEnumValue { text: None })
+                    .at(child(&JsonPath::new(), &["color", COLOR_MAP])),
             ),
             Some(_) => {}
         },
     }
     for (key, _) in object {
         if key.as_str() != COLOR_MAP {
-            report.unknown_member(
-                DiagnosticCode::UnrecognizedField { text: None },
-                &["color", key.as_str()],
+            d.push(
+                Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None })
+                    .at(child(&JsonPath::new(), &["color", key.as_str()])),
             );
         }
     }
 }
 
 impl Checked for FoliageAppearance {
-    fn check(json: &Value, report: &mut Report<'_>) {
-        check_color_or_map(
-            json,
-            |name| FoliageColorMap::from_name(name).is_some(),
-            report,
-        );
+    fn check(json: &Value, d: &mut Diagnostics) {
+        check_color_or_map(json, |name| FoliageColorMap::from_name(name).is_some(), d);
     }
 }
 
 impl Checked for GrassAppearance {
-    fn check(json: &Value, report: &mut Report<'_>) {
-        check_color_or_map(
-            json,
-            |name| GrassColorMap::from_name(name).is_some(),
-            report,
-        );
+    fn check(json: &Value, d: &mut Diagnostics) {
+        check_color_or_map(json, |name| GrassColorMap::from_name(name).is_some(), d);
     }
 }
 
 impl Checked for DryFoliageColor {
-    fn check(json: &Value, report: &mut Report<'_>) {
-        check_rgb(json, "color", report);
+    fn check(json: &Value, d: &mut Diagnostics) {
+        check_rgb(json, "color", d);
     }
 }
 
 impl Checked for SkyColor {
-    fn check(json: &Value, report: &mut Report<'_>) {
-        check_rgb(json, "sky_color", report);
+    fn check(json: &Value, d: &mut Diagnostics) {
+        check_rgb(json, "sky_color", d);
     }
 }
 
 impl Checked for WaterAppearance {
     /// The constraint of every version that at least one member is present, then the colour.
-    fn check(json: &Value, report: &mut Report<'_>) {
+    fn check(json: &Value, d: &mut Diagnostics) {
         if let Some(object) = json.as_object()
             && object.get("surface_color").is_none()
             && object.get("surface_opacity").is_none()
         {
-            report.error(
-                DiagnosticCode::InvalidValue {
+            d.push(
+                Diagnostic::error(DiagnosticCode::InvalidValue {
                     text: fixed(WATER_EMPTY),
-                },
-                &[],
+                })
+                .at(child(&JsonPath::new(), &[])),
             );
         }
-        check_rgb(json, "surface_color", report);
+        check_rgb(json, "surface_color", d);
     }
 }
 

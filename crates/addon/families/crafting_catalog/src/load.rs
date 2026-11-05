@@ -8,7 +8,7 @@ use super::history::CatalogAny;
 use super::parse::parse_catalog;
 use super::{CraftingCatalog, PATH, V1_21_60, V1_26_50};
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
 };
 use bedrock_addon_core::document::{Content, Document, JsonContent, Origin, Placed, Rejected};
 use bedrock_addon_core::json::{
@@ -122,21 +122,16 @@ fn locate(diagnostics: &mut Diagnostics, origin: &Origin) {
     }
 }
 
-/// An error-level finding of the pre-parse checks, at the document root.
-fn rejection(code: DiagnosticCode) -> Diagnostic {
-    Diagnostic::new(code, Severity::Error, Phase::Parse, Location::default())
-}
-
 /// The error of a file without a valid `format_version`.
 fn no_valid_version() -> Diagnostic {
-    rejection(DiagnosticCode::MissingFormatVersion {
+    Diagnostic::error(DiagnosticCode::MissingFormatVersion {
         text: Some(VanillaText::Fixed(VERSION_TEXT)),
     })
 }
 
 /// The error of a `format_version` below 1.21.60: vanilla's same text.
 fn below_floor() -> Diagnostic {
-    rejection(DiagnosticCode::UnsupportedVersion {
+    Diagnostic::error(DiagnosticCode::UnsupportedVersion {
         text: Some(VanillaText::Fixed(VERSION_TEXT)),
     })
 }
@@ -180,7 +175,7 @@ fn vanilla_checks(diagnostics: &mut Diagnostics, document: JsonSlice<'_>) {
             } else if floor {
                 below_floor()
             } else {
-                rejection(DiagnosticCode::MissingRequiredField {
+                Diagnostic::error(DiagnosticCode::MissingRequiredField {
                     text: Some(VanillaText::Fixed(PAYLOAD_TEXT)),
                 })
             }),
@@ -216,13 +211,7 @@ impl CraftingCatalog {
         cx: &LoadContext,
     ) -> Result<Document<CatalogAny>, Rejected> {
         let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
-        let origin = Origin::new(
-            PackRef::app_data(),
-            PackSide::Behavior,
-            path.clone(),
-            None,
-            Vec::new(),
-        );
+        let origin = Origin::file(PackRef::app_data(), PackSide::Behavior, path.clone());
         let Some(text) = text(bytes) else {
             return Err(unreadable(origin));
         };
@@ -282,15 +271,10 @@ pub(crate) fn upgrade_document(
 /// vanilla either, so the version is cleared.
 fn unreadable(origin: Origin) -> Rejected {
     let mut diagnostics = Diagnostics::default();
-    diagnostics.push(Diagnostic::new(
-        DiagnosticCode::MalformedInput {
-            message: "not UTF-8 JSON within the nesting limit".to_owned(),
-            text: None,
-        },
-        Severity::Info,
-        Phase::Parse,
-        Location::default(),
-    ));
+    diagnostics.push(Diagnostic::info(DiagnosticCode::MalformedInput {
+        message: "not UTF-8 JSON within the nesting limit".to_owned(),
+        text: None,
+    }));
     diagnostics.push(no_valid_version());
     locate(&mut diagnostics, &origin);
     Rejected::new(origin, diagnostics)
@@ -305,7 +289,7 @@ pub(crate) fn parse_file(
     cx: &LoadContext,
 ) -> Result<Document<CraftingCatalog>, Rejected> {
     let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
-    let origin = Origin::new(pack, side, path.clone(), None, Vec::new());
+    let origin = Origin::file(pack, side, path.clone());
     let Some(text) = text(bytes) else {
         return Err(unreadable(origin));
     };

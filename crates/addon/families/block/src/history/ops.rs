@@ -2,8 +2,8 @@
 
 use indexmap::IndexMap;
 
-use super::legacy::{component_path, number, string, upgrade_finding};
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, Severity, VanillaText};
+use super::legacy::{component_path, number, string};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, Phase, VanillaText};
 use bedrock_addon_core::json::Value;
 
 /// A JSON integer.
@@ -44,11 +44,11 @@ pub(crate) fn clamp(
 ) -> f64 {
     let clamped = value.clamp(min, max);
     if (clamped - value).abs() > f64::EPSILON {
-        d.push(upgrade_finding(
-            DiagnosticCode::ClampedValue { text: None },
-            Severity::Info,
-            &component_path(section, name),
-        ));
+        d.push(
+            Diagnostic::info(DiagnosticCode::ClampedValue { text: None })
+                .at(component_path(section, name))
+                .phase(Phase::Upgrade),
+        );
     }
     clamped
 }
@@ -57,16 +57,16 @@ pub(crate) fn clamp(
 /// (`DroppedComponent`, a kept error: the game's fixer logs the line at the content log's error
 /// level, removes the component and goes on, so the block still loads).
 pub(crate) fn missing_field(section: Option<usize>, name: &str, field: &str, d: &mut Diagnostics) {
-    d.push_kept_error(upgrade_finding(
-        DiagnosticCode::DroppedComponent {
+    d.push_kept_error(
+        Diagnostic::error(DiagnosticCode::DroppedComponent {
             text: Some(VanillaText::Formatted {
                 template: "Component {} is missing required field {}, component will be discarded",
                 args: vec![name.to_owned(), field.to_owned()],
             }),
-        },
-        Severity::Error,
-        &component_path(section, name),
-    ));
+        })
+        .at(component_path(section, name))
+        .phase(Phase::Upgrade),
+    );
 }
 
 /// A member a step drops where the game's fixer drops it with no log (`DroppedField`, an
@@ -77,11 +77,11 @@ pub(crate) fn dropped_field(
     text: Option<VanillaText>,
     d: &mut Diagnostics,
 ) {
-    d.push(upgrade_finding(
-        DiagnosticCode::DroppedField { text },
-        Severity::Info,
-        path,
-    ));
+    d.push(
+        Diagnostic::info(DiagnosticCode::DroppedField { text })
+            .at(path.clone())
+            .phase(Phase::Upgrade),
+    );
 }
 
 /// The value of member `field` of an object, or the value itself when it is not an object:

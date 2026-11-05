@@ -2,10 +2,10 @@
 //! or kept as written when the typed field cannot say it, and every other member kept and
 //! reported.
 
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, JsonPath, Severity};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
 use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::json::Value;
-use bedrock_addon_support::fixed_path::{Object, as_int, as_real, finding, key, raw_member};
+use bedrock_addon_support::fixed_path::{Object, as_int, as_real, key, raw_member};
 
 /// What a member turned out to be.
 #[derive(Debug)]
@@ -120,11 +120,10 @@ impl<'v> Fields<'v> {
         if let Some(object) = self.object.as_object() {
             for (name, member) in object {
                 if !self.known.contains(&name.as_str()) {
-                    diagnostics.push(finding(
-                        DiagnosticCode::UnrecognizedField { text: None },
-                        Severity::Info,
-                        key(&self.at, name.as_str()),
-                    ));
+                    diagnostics.push(
+                        Diagnostic::info(DiagnosticCode::UnrecognizedField { text: None })
+                            .at(key(&self.at, name.as_str())),
+                    );
                     self.extra.insert(name.as_str().to_owned(), member.clone());
                 }
             }

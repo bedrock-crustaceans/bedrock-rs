@@ -6,7 +6,7 @@ use std::collections::HashMap;
 
 use super::{CatalogItem, CatalogKey, Category, CraftingCatalog, Group};
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Location, Phase, Severity,
+    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Phase, Severity,
     VanillaText,
 };
 use bedrock_addon_core::document::Merged;
@@ -106,17 +106,14 @@ impl<'m> Places<'m> {
                 written.get(key).cloned()
             })
             .unwrap_or_default();
-        Diagnostic::new(
-            code,
-            severity,
-            Phase::Link,
-            Location::new(
-                origin.map(|origin| origin.pack.clone()),
-                origin.map(|origin| origin.path.clone()),
-                at,
-                None,
-            ),
-        )
+        let finding = Diagnostic::error(code)
+            .severity(severity)
+            .at(at)
+            .phase(Phase::Link);
+        match origin {
+            Some(origin) => finding.in_file(origin),
+            None => finding,
+        }
     }
 }
 
@@ -228,13 +225,12 @@ pub fn link_group_names(
                 category: category.category_name,
                 name: name.to_owned(),
             };
-            let mut lint = places.finding(DiagnosticCode::UnresolvedLangKey, Severity::Info, &key);
-            lint.detail = Some(Box::new(DiagnosticDetail::Reference {
+            let lint = places.finding(DiagnosticCode::UnresolvedLangKey, Severity::Info, &key);
+            out.push(lint.detail(DiagnosticDetail::Reference {
                 kind: "lang key",
                 id: name.to_owned(),
                 hint: None,
             }));
-            out.push(lint);
         }
     }
     out

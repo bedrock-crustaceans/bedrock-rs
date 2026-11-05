@@ -4,10 +4,10 @@ use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::pack_identity::{PackPath, PackSide};
 
 use super::{UiTextureInfo, write};
-use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath, Severity};
+use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath};
 use bedrock_addon_core::document::{Content, Document, JsonContent, Origin, Rejected};
 use bedrock_addon_core::json::{EncodeError, Value, WriteStyle};
-use bedrock_addon_support::fixed_path::{document, finding, json_text, lone, malformed, reject};
+use bedrock_addon_support::fixed_path::{document, json_text, lone, malformed, reject};
 use bedrock_addon_support::jsoncpp::read;
 
 impl bedrock_addon_core::__private::Sealed for UiTextureInfo {}
@@ -16,10 +16,7 @@ impl bedrock_addon_core::__private::Sealed for UiTextureInfo {}
 fn root_object(origin: &Origin, bytes: &[u8]) -> Result<Value, Rejected> {
     let rejection = |message: String| {
         let code = malformed(message, None);
-        reject(
-            origin.clone(),
-            finding(code, Severity::Error, JsonPath::new()),
-        )
+        reject(origin.clone(), Diagnostic::error(code))
     };
     let root = read(bytes).map_err(|error| rejection(error.to_string()))?;
     if root.is_object() {

@@ -7,9 +7,7 @@ use super::texts::{
     BAD_BLOCKSHAPE, BAD_CARRIED_TEXTURES, BAD_TEXTURES, CUSTOM_BLOCKSHAPE, formatted,
 };
 use super::{ClientBlock, FaceBools3, FaceBools6, FaceTextures, Isotropic, block_shape_value};
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase};
 use bedrock_addon_core::json::Value;
 
 /// The six members the client reads; every other member of an entry is ignored.
@@ -74,12 +72,13 @@ pub(super) fn read(
             // The member's presence is the test, so `null` counts. The game logs this as an
             // error and loads the entry without a shape, so it is a kept error: the finding is
             // an error although the file still loads.
-            d.push_kept_error(kept(
-                DiagnosticCode::IgnoredMember {
+            d.push_kept_error(
+                Diagnostic::error(DiagnosticCode::IgnoredMember {
                     text: Some(formatted(CUSTOM_BLOCKSHAPE, &[block_name])),
-                },
-                at("blockshape"),
-            ));
+                })
+                .at(at("blockshape"))
+                .phase(Phase::Validate),
+            );
         }
     }
     if let Some(value) = object.get("ambient_occlusion_exponent") {
@@ -115,11 +114,11 @@ pub(super) fn unread_members(object: &VObject, key: &str, d: &mut Diagnostics) {
         let mut at = JsonPath::new();
         at.push(key);
         at.push(name);
-        d.push(finding(
-            DiagnosticCode::IgnoredMember { text: None },
-            Severity::Info,
-            at,
-        ));
+        d.push(
+            Diagnostic::info(DiagnosticCode::IgnoredMember { text: None })
+                .at(at)
+                .phase(Phase::Validate),
+        );
     }
 }
 
@@ -162,12 +161,13 @@ fn textures(
         _ => None,
     });
     if read.is_none() {
-        d.push(warning(
-            DiagnosticCode::InvalidType {
+        d.push(
+            Diagnostic::warn(DiagnosticCode::InvalidType {
                 text: Some(formatted(template, &[block_name])),
-            },
-            at.clone(),
-        ));
+            })
+            .at(at.clone())
+            .phase(Phase::Validate),
+        );
     }
     read
 }
@@ -185,7 +185,11 @@ fn isotropic(value: &Value, at: &JsonPath, d: &mut Diagnostics) -> Option<Isotro
         return Some(Isotropic::All(all));
     }
     let Some(object) = value.as_object() else {
-        d.push(info(DiagnosticCode::InvalidType { text: None }, at.clone()));
+        d.push(
+            Diagnostic::info(DiagnosticCode::InvalidType { text: None })
+                .at(at.clone())
+                .phase(Phase::Validate),
+        );
         return None;
     };
     let mut matched = 0;
@@ -214,10 +218,11 @@ fn isotropic(value: &Value, at: &JsonPath, d: &mut Diagnostics) -> Option<Isotro
         })
     };
     if matched != object.len() {
-        d.push(info(
-            DiagnosticCode::InvalidValue { text: None },
-            at.clone(),
-        ));
+        d.push(
+            Diagnostic::info(DiagnosticCode::InvalidValue { text: None })
+                .at(at.clone())
+                .phase(Phase::Validate),
+        );
     }
     Some(read)
 }
@@ -246,12 +251,11 @@ fn blockshape(
 
 /// The invalid-blockshape warning for `block_name` at `at`.
 pub(super) fn bad_blockshape(block_name: &str, at: JsonPath) -> Diagnostic {
-    warning(
-        DiagnosticCode::InvalidValue {
-            text: Some(formatted(BAD_BLOCKSHAPE, &[block_name])),
-        },
-        at,
-    )
+    Diagnostic::warn(DiagnosticCode::InvalidValue {
+        text: Some(formatted(BAD_BLOCKSHAPE, &[block_name])),
+    })
+    .at(at)
+    .phase(Phase::Validate)
 }
 
 /// `ambient_occlusion_exponent`: a number; a boolean is read as 1.0 or 0.0 and anything else is
@@ -262,11 +266,19 @@ fn ambient_occlusion(value: &Value, at: &JsonPath, d: &mut Diagnostics) -> Optio
         return None;
     }
     if let Some(flag) = value.as_bool() {
-        d.push(info(DiagnosticCode::InvalidType { text: None }, at.clone()));
+        d.push(
+            Diagnostic::info(DiagnosticCode::InvalidType { text: None })
+                .at(at.clone())
+                .phase(Phase::Validate),
+        );
         return Some(if flag { 1.0 } else { 0.0 });
     }
     let Some(number) = value.as_number() else {
-        d.push(info(DiagnosticCode::InvalidType { text: None }, at.clone()));
+        d.push(
+            Diagnostic::info(DiagnosticCode::InvalidType { text: None })
+                .at(at.clone())
+                .phase(Phase::Validate),
+        );
         return None;
     };
     let wide = number.to_f64_lossy();
@@ -278,10 +290,11 @@ fn ambient_occlusion(value: &Value, at: &JsonPath, d: &mut Diagnostics) -> Optio
     // Beyond `f32`: the largest finite float of that sign, never an infinity the writer would
     // refuse. A number beyond `f32` is clamped rather than refused so that one oversized value
     // does not cost the file its other values, and the written text reads back to the same value.
-    d.push(info(
-        DiagnosticCode::InvalidValue { text: None },
-        at.clone(),
-    ));
+    d.push(
+        Diagnostic::info(DiagnosticCode::InvalidValue { text: None })
+            .at(at.clone())
+            .phase(Phase::Validate),
+    );
     Some(if wide < 0.0 { f32::MIN } else { f32::MAX })
 }
 
@@ -295,39 +308,14 @@ fn sound(value: &Value, at: &JsonPath, d: &mut Diagnostics) -> Option<String> {
     if let Some(name) = value.as_string() {
         return Some(name.as_str().to_owned());
     }
-    d.push(info(DiagnosticCode::InvalidType { text: None }, at.clone()));
+    d.push(
+        Diagnostic::info(DiagnosticCode::InvalidType { text: None })
+            .at(at.clone())
+            .phase(Phase::Validate),
+    );
     Some(match value.as_bool() {
         Some(true) => "true".to_owned(),
         Some(false) => "false".to_owned(),
         None => String::new(),
     })
-}
-
-/// A warning at `at`: a line the game itself logs at warning level. Every caller is one of the
-/// `format_version` texts (missing, invalid, above the ceiling) or the invalid `textures`,
-/// `carried_textures` and `blockshape` texts, including a refused shape conversion; the entry
-/// and the file load on.
-pub(super) fn warning(code: DiagnosticCode, at: JsonPath) -> Diagnostic {
-    finding(code, Severity::Warning, at)
-}
-
-/// A lint of this crate's own: an information. The game says nothing about these.
-pub(super) fn info(code: DiagnosticCode, at: JsonPath) -> Diagnostic {
-    finding(code, Severity::Info, at)
-}
-
-/// A content-log error of the game's after which the file loads, for `push_kept_error`: the
-/// finding is an error although the entry or member it names is the only thing dropped.
-pub(super) fn kept(code: DiagnosticCode, at: JsonPath) -> Diagnostic {
-    finding(code, Severity::Error, at)
-}
-
-/// A finding of the validate phase at `at`.
-pub(super) fn finding(code: DiagnosticCode, severity: Severity, at: JsonPath) -> Diagnostic {
-    Diagnostic::new(
-        code,
-        severity,
-        Phase::Validate,
-        Location::new(None, None, at, None),
-    )
 }

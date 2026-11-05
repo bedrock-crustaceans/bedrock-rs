@@ -2,11 +2,11 @@
 //! takes on the pool.
 
 use super::{ConditionalSplashes, SplashClient, SplashRequires, Splashes};
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, JsonPath, Severity};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
 use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_support::fixed_path::{
-    Authored, Object, array, finding, index, invalid, iterated, key, others, raw_member, to_text,
+    Authored, Object, array, index, invalid, iterated, key, others, raw_member, to_text,
 };
 
 const ROOT_KEYS: [&str; 3] = ["canMerge", "splashes", "conditional"];
@@ -34,15 +34,12 @@ fn check_texts(list: Option<&Value>, at: &JsonPath, diagnostics: &mut Diagnostic
         return;
     };
     if !list.is_array() {
-        diagnostics.push(finding(
-            DiagnosticCode::InvalidType { text: None },
-            Severity::Info,
-            at.clone(),
-        ));
+        diagnostics
+            .push(Diagnostic::info(DiagnosticCode::InvalidType { text: None }).at(at.clone()));
     }
     for (at, element) in iterated(list, at) {
         if !element.is_string() {
-            diagnostics.push(finding(invalid(), Severity::Info, at));
+            diagnostics.push(Diagnostic::info(invalid()).at(at));
         }
     }
 }
@@ -67,7 +64,7 @@ impl Authored for Splashes {
         let at = JsonPath::new();
         if !root.is_object() {
             // The first member lookup turns the root into `{}`.
-            diagnostics.push(finding(invalid(), Severity::Info, at));
+            diagnostics.push(Diagnostic::info(invalid()).at(at));
             return Self::default();
         }
         let splashes = Self {
@@ -78,7 +75,7 @@ impl Authored for Splashes {
             written: None,
         };
         if splashes.can_merge.as_ref().is_some_and(|v| !v.is_bool()) {
-            diagnostics.push(finding(invalid(), Severity::Info, key(&at, "canMerge")));
+            diagnostics.push(Diagnostic::info(invalid()).at(key(&at, "canMerge")));
         }
         check_texts(
             splashes.splashes.as_ref(),
@@ -112,14 +109,14 @@ impl Splashes {
             return;
         };
         let Some(entries) = conditional.as_array() else {
-            diagnostics.push(finding(invalid(), Severity::Info, at.clone()));
+            diagnostics.push(Diagnostic::info(invalid()).at(at.clone()));
             return;
         };
         for (i, entry) in entries.iter().enumerate() {
             let at = index(at, i);
             let requires = raw_member(entry, "requires").filter(|v| v.is_object());
             let Some(requires) = requires else {
-                diagnostics.push(finding(invalid(), Severity::Info, at));
+                diagnostics.push(Diagnostic::info(invalid()).at(at));
                 continue;
             };
             check_texts(
@@ -134,7 +131,7 @@ impl Splashes {
                     .and_then(Value::as_array)
                     .is_some_and(|list| !list.is_empty() && !list.iter().any(Value::is_string));
                 if only_others {
-                    diagnostics.push(finding(invalid(), Severity::Info, key(&at, category)));
+                    diagnostics.push(Diagnostic::info(invalid()).at(key(&at, category)));
                 }
             }
             others(requires, &REQUIRES_KEYS, &at, diagnostics);

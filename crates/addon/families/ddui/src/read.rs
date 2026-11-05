@@ -15,8 +15,7 @@ use super::{
     Layout, RootAttribs, RootDescription, UiComposition, UiRoot,
 };
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, JsonPathSegment, Location, Phase, Severity,
-    Span, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, JsonPathSegment, Severity, Span, VanillaText,
 };
 use bedrock_addon_core::id::Id;
 use bedrock_addon_core::json::{JsonSlice, Value};
@@ -148,12 +147,12 @@ impl Reader<'_> {
     /// A finding at the reader's place.
     fn report(&mut self, code: DiagnosticCode, severity: Severity, slice: JsonSlice<'_>) {
         self.failed |= severity == Severity::Error;
-        self.d.push(Diagnostic::new(
-            code,
-            severity,
-            Phase::Parse,
-            Location::new(None, None, self.at.clone(), Some(span_of(slice))),
-        ));
+        self.d.push(
+            Diagnostic::error(code)
+                .severity(severity)
+                .at(self.at.clone())
+                .span(span_of(slice)),
+        );
     }
 
     /// An error at the reader's place.
@@ -343,14 +342,14 @@ impl Reader<'_> {
             at.append(&clamped.path);
             self.failed = true;
             too_big = true;
-            self.d.push(Diagnostic::new(
-                DiagnosticCode::InvalidValue {
-                    text: Some(VanillaText::Fixed(NUMBER_TOO_BIG)),
-                },
-                Severity::Error,
-                Phase::Parse,
-                Location::new(None, None, at, clamped.span),
-            ));
+            let finding = Diagnostic::error(DiagnosticCode::InvalidValue {
+                text: Some(VanillaText::Fixed(NUMBER_TOO_BIG)),
+            })
+            .at(at);
+            self.d.push(match clamped.span {
+                Some(span) => finding.span(span),
+                None => finding,
+            });
         }
         // A finite value whose exponent rapidjson refuses all the same (`0e999`).
         for range in exponent_too_big(slice.text) {

@@ -6,10 +6,7 @@
 use facet::Facet;
 
 use super::{PoiTag, PoiType};
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
-    code_for_deserialize_error_kind,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value, parse_at, unknown_members};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{ParseCx, VersionStruct, Versioned, write_payload};
@@ -22,16 +19,6 @@ fn join(base: &JsonPath, relative: &JsonPath) -> JsonPath {
     let mut path = base.clone();
     path.append(relative);
     path
-}
-
-/// A parse error at `path`.
-fn error(code: DiagnosticCode, path: JsonPath) -> Diagnostic {
-    Diagnostic::new(
-        code,
-        Severity::Error,
-        Phase::Parse,
-        Location::new(None, None, path, None),
-    )
 }
 
 /// `base` followed by the member `key`.
@@ -71,12 +58,12 @@ pub(crate) fn is_poi_name(text: &str) -> bool {
 fn name(value: &Value, at: JsonPath, d: &mut Diagnostics) -> bool {
     match value.as_string() {
         None => {
-            d.push(error(DiagnosticCode::InvalidType { text: None }, at));
+            d.push(Diagnostic::error(DiagnosticCode::InvalidType { text: None }).at(at));
             false
         }
         Some(text) => {
             if !is_poi_name(text.as_str()) {
-                d.push(error(DiagnosticCode::InvalidValue { text: None }, at));
+                d.push(Diagnostic::error(DiagnosticCode::InvalidValue { text: None }).at(at));
             }
             true
         }
@@ -100,7 +87,7 @@ fn names(object: &Value, key: &str, at: &JsonPath, d: &mut Diagnostics) -> bool 
     };
     let at = child(at, key);
     let Some(list) = value.as_array() else {
-        d.push(error(DiagnosticCode::InvalidType { text: None }, at));
+        d.push(Diagnostic::error(DiagnosticCode::InvalidType { text: None }).at(at));
         return false;
     };
     let mut typed = true;
@@ -126,7 +113,7 @@ fn byte(object: &Value, key: &str, at: &JsonPath, d: &mut Diagnostics) -> bool {
         Some(false) => DiagnosticCode::InvalidValue { text: None },
         None => DiagnosticCode::InvalidType { text: None },
     };
-    d.push(error(code, child(at, key)));
+    d.push(Diagnostic::error(code).at(child(at, key)));
     false
 }
 
@@ -147,15 +134,12 @@ fn parse_strict<'a, T: Facet<'a>>(
     if let Ok(json) = bedrock_addon_core::json::from_str_jsonc::<Value>(payload.text) {
         let typed = check(&json, &cx.at, d);
         for (path, _) in unknown_members(T::SHAPE, &json) {
-            d.push(Diagnostic::new(
-                DiagnosticCode::UnrecognizedField { text: None },
-                // The game's parser reports an unknown member as a warning; this slice reads
-                // strictly, so the framework lifts the finding to an error that refuses the
-                // file.
-                Severity::Warning,
-                Phase::Parse,
-                Location::new(None, None, join(&cx.at, &path), None),
-            ));
+            // The game's parser reports an unknown member as a warning; this slice reads
+            // strictly, so the framework lifts the finding to an error that refuses the file.
+            d.push(
+                Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None })
+                    .at(join(&cx.at, &path)),
+            );
         }
         if !typed {
             return None;
@@ -165,18 +149,7 @@ fn parse_strict<'a, T: Facet<'a>>(
     match parse_at::<T>(payload) {
         Ok(value) => (!failed).then_some(value),
         Err(failure) => {
-            let blank = payload.text.trim().is_empty();
-            let code = code_for_deserialize_error_kind(
-                &failure.error.kind,
-                !failure.path.is_empty(),
-                blank,
-            );
-            d.push(Diagnostic::new(
-                code,
-                Severity::Error,
-                Phase::Parse,
-                Location::new(None, None, join(&cx.at, &failure.path), Some(failure.span)),
-            ));
+            d.push(failure.into_diagnostic(&cx.at, |code, _| code));
             None
         }
     }

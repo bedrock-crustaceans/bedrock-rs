@@ -7,9 +7,7 @@
 // The member sets here are the typed Brain group. Where the game's schema does not fix a
 // member's type, the crate picks the type that reads the members the game's own packs write.
 
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, JsonPath, Location, Phase, Severity,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath};
 use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::json::{StrictFloat, StrictInt, StrictString, Value};
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor, Step};
@@ -1000,17 +998,13 @@ impl GenericGoal<'_> {
 /// finding. The game writes no content-log line for this, so the crate reports it as an
 /// information.
 pub(crate) fn suffix_missing(at: JsonPath) -> Diagnostic {
-    Diagnostic::new(
-        DiagnosticCode::GenericGoalSuffixMissing,
-        Severity::Info,
-        Phase::Parse,
-        Location::new(None, None, at, None),
-    )
+    Diagnostic::info(DiagnosticCode::GenericGoalSuffixMissing).at(at)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use bedrock_addon_core::diagnostic::Severity;
 
     /// `v06_generic_goal_suffix`: a missing suffix and a 33-character suffix are
     /// refused; a 32-character one is a named goal.

@@ -14,7 +14,7 @@ use super::read::{
     unwrap_copy,
 };
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, VanillaText,
 };
 use bedrock_addon_core::document::{
     Content, Document, Extra, Origin, Placed, Rejected, VersionInfo,
@@ -31,13 +31,7 @@ pub(super) const PARSE_ERROR: &str = "Error parsing {} :\n {}";
 
 /// The origin of a file read on its own.
 fn detached(path: &PackPath) -> Origin {
-    Origin::new(
-        PackRef::app_data(),
-        PackSide::Resource,
-        path.clone(),
-        None,
-        Vec::new(),
-    )
+    Origin::file(PackRef::app_data(), PackSide::Resource, path.clone())
 }
 
 /// Gives every finding the document's pack and file.
@@ -68,16 +62,6 @@ pub(super) fn rejected(origin: Origin, mut diagnostics: Diagnostics) -> Rejected
     Rejected::new(origin, diagnostics)
 }
 
-/// A finding at `path` of a file, its pack and file filled in later.
-pub(super) fn finding(
-    code: DiagnosticCode,
-    severity: Severity,
-    phase: Phase,
-    path: JsonPath,
-) -> Diagnostic {
-    Diagnostic::new(code, severity, phase, Location::new(None, None, path, None))
-}
-
 /// The finding for the copy at `path` that is no JSON.
 pub(super) fn parse_error(path: &PackPath, message: String) -> Diagnostic {
     let text = VanillaText::Formatted {
@@ -88,13 +72,13 @@ pub(super) fn parse_error(path: &PackPath, message: String) -> Diagnostic {
         message,
         text: Some(text),
     };
-    finding(code, Severity::Error, Phase::Parse, JsonPath::new())
+    Diagnostic::error(code)
 }
 
 /// The root of a copy that is no object, or of a list that is no array: nothing is read.
 pub(super) fn wrong_root() -> Diagnostic {
     let code = DiagnosticCode::InvalidType { text: None };
-    finding(code, Severity::Error, Phase::Parse, JsonPath::new())
+    Diagnostic::error(code)
 }
 
 /// The name of the file at `path` without its directory and its extension.

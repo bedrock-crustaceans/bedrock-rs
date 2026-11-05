@@ -4,11 +4,11 @@
 use facet::Facet;
 
 use super::Any;
-use crate::parse::{child, finding, parse_strict, parse_strict_with};
+use crate::parse::{child, parse_strict, parse_strict_with};
 use crate::scatter::walk_params;
 use crate::walk::{SCATTER_LEGACY, Walk, member};
 use crate::{self as latest, BlockList, Description, JsonInt, PlacesBlock};
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, Phase, Severity};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics};
 use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::id::FeatureId;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, StrictBool, Value};
@@ -179,13 +179,10 @@ impl VersionStruct for SingleBlockFeature {
             .and_then(|json| json.as_object()?.get("places_block").cloned())
             .is_some_and(|value| value.is_array());
         if array {
-            d.push(finding(
-                DiagnosticCode::InvalidType { text: None },
-                Severity::Error,
-                Phase::Parse,
-                child(&cx.at, "places_block"),
-                None,
-            ));
+            d.push(
+                Diagnostic::error(DiagnosticCode::InvalidType { text: None })
+                    .at(child(&cx.at, "places_block")),
+            );
             return None;
         }
         parse_strict(payload, cx, d)

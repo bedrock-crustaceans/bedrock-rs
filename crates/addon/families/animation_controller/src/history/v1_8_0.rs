@@ -11,9 +11,7 @@ use super::super::{
     ParticleEffect as LatestParticleEffect, State as LatestState, StateAnimation, StateVariable,
     Transition as LatestTransition,
 };
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::molang::{
     Molang, MolangFields, MolangSource, MolangVisitor, RawVersion, Step,
@@ -328,12 +326,7 @@ impl Upgrade for AnimationControllerFile {
 
 /// A finding of the `v1_10` schema the upgraded document fails, at `at`.
 fn schema_error(diagnostics: &mut Diagnostics, code: DiagnosticCode, at: &JsonPath) {
-    diagnostics.push(Diagnostic::new(
-        code,
-        Severity::Error,
-        Phase::Upgrade,
-        Location::new(None, None, at.clone(), None),
-    ));
+    diagnostics.push(Diagnostic::error(code).at(at.clone()).phase(Phase::Upgrade));
 }
 
 fn expression(text: String) -> Molang {
@@ -408,12 +401,11 @@ fn upgrade_state(
                         at.push_index(earlier);
                         at.push(&set.animation);
                         at.push_index(index);
-                        diagnostics.push(Diagnostic::new(
-                            DiagnosticCode::DroppedField { text: None },
-                            Severity::Info,
-                            Phase::Upgrade,
-                            Location::new(None, None, at, None),
-                        ));
+                        diagnostics.push(
+                            Diagnostic::info(DiagnosticCode::DroppedField { text: None })
+                                .at(at)
+                                .phase(Phase::Upgrade),
+                        );
                     }
                     variables.insert(name, variable);
                 }
@@ -432,12 +424,11 @@ fn upgrade_state(
             let mut at = at.clone();
             at.push(&parameters.key);
             at.push_index(index);
-            diagnostics.push(Diagnostic::new(
-                DiagnosticCode::DroppedField { text: None },
-                Severity::Info,
-                Phase::Upgrade,
-                Location::new(None, None, at, None),
-            ));
+            diagnostics.push(
+                Diagnostic::info(DiagnosticCode::DroppedField { text: None })
+                    .at(at)
+                    .phase(Phase::Upgrade),
+            );
         }
     }
     if let Some(parameters) = &state.parameters

@@ -6,7 +6,7 @@ use std::fmt;
 
 use super::parse::{Parsed, parse_document};
 use super::{Recipe, RecipeNamespace, Recipes};
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, Phase, Severity};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, Phase};
 use bedrock_addon_core::document::{
     CombineRule, Content, Contribution, Definition, Document, JsonContent, NoBeta, Origin, Placed,
     Registry, RegistryBuilder, Rejected, default_path,
@@ -78,7 +78,7 @@ pub(super) fn parse_file(
     bytes: &[u8],
     cx: &LoadContext,
 ) -> FileOutcome {
-    let origin = Origin::new(pack.clone(), side, path.clone(), None, Vec::new());
+    let origin = Origin::file(pack.clone(), side, path.clone());
     // A number no double holds is read as the largest finite one, with a warning, so the document can always be written back.
     let finite = bedrock_addon_core::document::FiniteText::of(bytes);
     let (parsed, value, version, diagnostics) = parse_document(finite.bytes(), path, cx);
@@ -189,19 +189,14 @@ fn combine(parsed: Vec<FileOutcome>, stack: &StackCx<'_>) -> Recipes {
                 }
                 Err(rejected) => (rejected.origin, rejected.diagnostics),
             };
-            let mut finding = Diagnostic::new(
-                DiagnosticCode::DuplicateIdentifier {
-                    text: super::parse::formatted(
-                        "JSON: {} has duplicate identifier in same pack: {}",
-                        [path.as_str().to_owned(), id.as_str().to_owned()],
-                    ),
-                },
-                Severity::Error,
-                Phase::Validate,
-                bedrock_addon_core::diagnostic::Location::default(),
-            );
-            finding.location.pack = Some(origin.pack.clone());
-            finding.location.path = Some(origin.path.clone());
+            let finding = Diagnostic::error(DiagnosticCode::DuplicateIdentifier {
+                text: super::parse::formatted(
+                    "JSON: {} has duplicate identifier in same pack: {}",
+                    [path.as_str().to_owned(), id.as_str().to_owned()],
+                ),
+            })
+            .phase(Phase::Validate)
+            .in_file(&origin);
             diagnostics.push(finding);
             builder.push(Contribution::Rejected(
                 Some(id),

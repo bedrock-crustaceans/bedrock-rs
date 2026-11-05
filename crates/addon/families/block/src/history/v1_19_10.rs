@@ -3,7 +3,7 @@
 
 use super::legacy::{Legacy, input_check_failed, number};
 use super::ops::{clamp, real};
-use bedrock_addon_core::diagnostic::JsonPath;
+use bedrock_addon_core::diagnostic::{Diagnostic, JsonPath, Phase};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::versioning::{Upgrade, UpgradeCx, Versioned};
 
@@ -62,13 +62,15 @@ impl Upgrade for Block {
                         let mut at =
                             super::legacy::component_path(section, "minecraft:creative_category");
                         at.push(key.as_str());
-                        d.push(super::legacy::upgrade_finding(
-                            bedrock_addon_core::diagnostic::DiagnosticCode::UnrecognizedField {
-                                text: None,
-                            },
-                            bedrock_addon_core::diagnostic::Severity::Info,
-                            &at,
-                        ));
+                        d.push(
+                            Diagnostic::info(
+                                bedrock_addon_core::diagnostic::DiagnosticCode::UnrecognizedField {
+                                    text: None,
+                                },
+                            )
+                            .at(at.clone())
+                            .phase(Phase::Upgrade),
+                        );
                     }
                 }
             }

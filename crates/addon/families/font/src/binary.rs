@@ -4,8 +4,8 @@
 use indexmap::IndexMap;
 
 use super::GlyphPage;
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, JsonPath, Severity};
-use bedrock_addon_support::fixed_path::{finding, index, invalid, malformed};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
+use bedrock_addon_support::fixed_path::{index, invalid, malformed};
 
 /// The size of a metrics file: the header and 256 advances.
 const FONTDATA_SIZE: usize = 4 + 256 * 4;
@@ -29,11 +29,7 @@ impl GlyphPage {
         if bytes.len() != FONTDATA_SIZE {
             // A file of the wrong size.
             let message = format!("{} bytes, not {FONTDATA_SIZE}", bytes.len());
-            diagnostics.push(finding(
-                malformed(message, None),
-                Severity::Info,
-                JsonPath::new(),
-            ));
+            diagnostics.push(Diagnostic::info(malformed(message, None)));
         }
         // A header the file does not hold whole is whatever the game's stack held: in practice
         // not 0.
@@ -44,11 +40,7 @@ impl GlyphPage {
                 Some(header) => format!("header {header}"),
                 None => "no header".to_owned(),
             };
-            diagnostics.push(finding(
-                malformed(message, Some(FONTDATA_VERSION)),
-                Severity::Info,
-                JsonPath::new(),
-            ));
+            diagnostics.push(Diagnostic::info(malformed(message, Some(FONTDATA_VERSION))));
             return Err(diagnostics);
         }
         let mut advances = [0.0_f32; 256];
@@ -60,11 +52,7 @@ impl GlyphPage {
             *slot = f32::from_le_bytes(*raw);
             // A NaN is neither positive nor 0, so it is reported as well.
             if *slot <= 0.0 {
-                diagnostics.push(finding(
-                    invalid(),
-                    Severity::Info,
-                    index(&JsonPath::new(), i),
-                ));
+                diagnostics.push(Diagnostic::info(invalid()).at(index(&JsonPath::new(), i)));
             }
         }
         Ok((Self { advances }, diagnostics))
@@ -119,14 +107,14 @@ impl GlyphRemapping {
             };
             if !seen.insert(entry.from) {
                 let code = malformed(format!("character {:#06X} mapped twice", entry.from), None);
-                diagnostics.push(finding(code, Severity::Info, index(&JsonPath::new(), i)));
+                diagnostics.push(Diagnostic::info(code).at(index(&JsonPath::new(), i)));
             }
             records.push(entry);
         }
         let rest = bytes.len() % 4;
         if rest != 0 {
             let code = malformed(format!("{rest} bytes after the last record"), None);
-            diagnostics.push(finding(code, Severity::Info, JsonPath::new()));
+            diagnostics.push(Diagnostic::info(code));
         }
         (Self(records), diagnostics)
     }
@@ -163,11 +151,7 @@ pub fn check_glyph_sheet(bytes: &[u8]) -> Diagnostics {
     if let Some((width, height)) = png_size(bytes)
         && (width != height || width % 16 != 0 || width == 0)
     {
-        diagnostics.push(finding(
-            DiagnosticCode::GlyphSheetShape,
-            Severity::Info,
-            JsonPath::new(),
-        ));
+        diagnostics.push(Diagnostic::info(DiagnosticCode::GlyphSheetShape));
     }
     diagnostics
 }

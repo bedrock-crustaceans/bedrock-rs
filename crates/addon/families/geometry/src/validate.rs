@@ -9,9 +9,7 @@ use super::schema::{
     NOT_QUADS, NOT_TRIANGLES, PARENT_IS_SELF, TRANSFORM_OUT_OF_BOUNDS, has_geometry_name, text,
 };
 use super::{Bone, CubeUv, Geometry, GeometryFile, ItemDisplayTransform, PolyMesh, Polys};
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase};
 use bedrock_addon_core::version::FormatVersion;
 
 /// From this file version the `embedded` transform is read.
@@ -38,21 +36,11 @@ impl Place {
 /// A content-log error of the game's after which the geometry loads: a kept error, an
 /// error-level finding after which the game keeps the document.
 fn kept(diagnostics: &mut Diagnostics, code: DiagnosticCode, at: &JsonPath) {
-    diagnostics.push_kept_error(Diagnostic::new(
-        code,
-        Severity::Error,
-        Phase::Validate,
-        Location::new(None, None, at.clone(), None),
-    ));
-}
-
-fn finding(diagnostics: &mut Diagnostics, code: DiagnosticCode, severity: Severity, at: &JsonPath) {
-    diagnostics.push(Diagnostic::new(
-        code,
-        severity,
-        Phase::Validate,
-        Location::new(None, None, at.clone(), None),
-    ));
+    diagnostics.push_kept_error(
+        Diagnostic::error(code)
+            .at(at.clone())
+            .phase(Phase::Validate),
+    );
 }
 
 /// The identifier rule of a file of 1.19.30 or later; the error's text when `identifier` breaks
@@ -93,13 +81,12 @@ pub(crate) fn first_bad_identifier(
         let mut at = geometry_path(index);
         at.push("description");
         at.push("identifier");
-        finding(
-            diagnostics,
-            DiagnosticCode::InvalidValue {
+        diagnostics.push(
+            Diagnostic::error(DiagnosticCode::InvalidValue {
                 text: text(template, &[&g.description.identifier]),
-            },
-            Severity::Error,
-            &at,
+            })
+            .at(at.clone())
+            .phase(Phase::Validate),
         );
         Some(index)
     })
@@ -169,16 +156,15 @@ fn clamp_bounds(
         if clamped.to_bits() != written.to_bits() {
             *value = Some(clamped);
             at.push(member);
-            finding(
-                diagnostics,
-                DiagnosticCode::ClampedValue {
+            diagnostics.push(
+                Diagnostic::info(DiagnosticCode::ClampedValue {
                     text: text(
                         BOUNDS_CLAMPED,
                         &[name, &format!("{written:.6}"), &format!("{clamped:.6}")],
                     ),
-                },
-                Severity::Info,
-                at,
+                })
+                .at(at.clone())
+                .phase(Phase::Validate),
             );
             at.pop();
         }
@@ -279,13 +265,12 @@ fn case_folded(
     diagnostics: &mut Diagnostics,
 ) {
     at.push(key);
-    finding(
-        diagnostics,
-        DiagnosticCode::InvalidValue {
+    diagnostics.push(
+        Diagnostic::info(DiagnosticCode::InvalidValue {
             text: text(BONE_LOWER_CASED, &[key, given, lower]),
-        },
-        Severity::Info,
-        at,
+        })
+        .at(at.clone())
+        .phase(Phase::Validate),
     );
     at.pop();
 }
@@ -333,22 +318,20 @@ fn bones(geometry: &mut Geometry, at: &mut JsonPath, diagnostics: &mut Diagnosti
         if let Some(first) = by_name.get(&bone.name) {
             // The game merges a lower-cased name into the bone it already has, without a
             // message; the crate's own information tells of it.
-            finding(
-                diagnostics,
-                DiagnosticCode::DuplicateBone,
-                Severity::Info,
-                at,
+            diagnostics.push(
+                Diagnostic::info(DiagnosticCode::DuplicateBone)
+                    .at(at.clone())
+                    .phase(Phase::Validate),
             );
             // The bone that is replaced is noted (an information of the crate's own; the game
             // merges without a word) where the file has it, so what it held is known to be gone.
             let replaced = std::mem::replace(&mut written_at[*first], index);
             at.pop();
             at.push_index(replaced);
-            finding(
-                diagnostics,
-                DiagnosticCode::DroppedField { text: None },
-                Severity::Info,
-                at,
+            diagnostics.push(
+                Diagnostic::info(DiagnosticCode::DroppedField { text: None })
+                    .at(at.clone())
+                    .phase(Phase::Validate),
             );
             at.pop();
             at.push_index(index);
@@ -419,13 +402,12 @@ fn parents(
                 at.pop();
                 continue;
             }
-            finding(
-                diagnostics,
-                DiagnosticCode::UnresolvedReference {
+            diagnostics.push(
+                Diagnostic::info(DiagnosticCode::UnresolvedReference {
                     text: text(BONE_PARENT_MISSING, &[&bone.name, parent, identifier]),
-                },
-                Severity::Info,
-                at,
+                })
+                .at(at.clone())
+                .phase(Phase::Validate),
             );
         } else if in_cycle[index] {
             // The self-parent text is a developer assertion the game raises when a model
@@ -434,11 +416,10 @@ fn parents(
             let text = (parent_of[index] == Some(index))
                 .then(|| text(PARENT_IS_SELF, &[]))
                 .flatten();
-            finding(
-                diagnostics,
-                DiagnosticCode::ReferenceCycle { text },
-                Severity::Info,
-                at,
+            diagnostics.push(
+                Diagnostic::info(DiagnosticCode::ReferenceCycle { text })
+                    .at(at.clone())
+                    .phase(Phase::Validate),
             );
         }
         at.pop();
@@ -496,9 +477,8 @@ pub(crate) fn missing_bone_parents(
         at.push("bones");
         at.push_index(*index);
         at.push("parent");
-        finding(
-            diagnostics,
-            DiagnosticCode::UnresolvedReference {
+        diagnostics.push(
+            Diagnostic::info(DiagnosticCode::UnresolvedReference {
                 text: text(
                     BONE_PARENT_MISSING,
                     &[
@@ -507,9 +487,9 @@ pub(crate) fn missing_bone_parents(
                         &geometry.description.identifier,
                     ],
                 ),
-            },
-            Severity::Info,
-            &at,
+            })
+            .at(at.clone())
+            .phase(Phase::Validate),
         );
     }
 }

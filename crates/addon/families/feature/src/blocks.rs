@@ -18,6 +18,7 @@ use bedrock_addon_core::json::{
 use bedrock_addon_core::molang::MolangVisitor;
 use bedrock_addon_core::shared::{BlockDescriptor, BlockSpecifier, IntRange};
 use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::versioning::ValidateCx;
 use bedrock_addon_core::versioning::{ParseCx, VersionStruct, Versioned, write_payload};
 
 // ---- ore --------------------------------------------------------------------------------------
@@ -722,7 +723,7 @@ impl super::walk::Refer for WeightedSpecifier {
 }
 
 impl Rules for OreFeature {
-    fn rules(&mut self, check: &mut Check<'_>) {
+    fn rules(&mut self, check: &mut ValidateCx<'_>) {
         check.int_min("count", Some(self.count), 1);
         check.check_float(
             "discard_chance_on_air_exposure",
@@ -748,7 +749,7 @@ impl Rules for OreFeature {
 }
 
 /// The attach-condition rules, at the current path.
-pub(super) fn attach_rules(check: &mut Check<'_>, conditions: &AttachConditions) {
+pub(super) fn attach_rules(check: &mut ValidateCx<'_>, conditions: &AttachConditions) {
     check.check_int(
         "min_sides_must_attach",
         conditions.min_sides_must_attach,
@@ -812,11 +813,11 @@ impl Rules for SingleBlockFeature {
         Some(older.write().map(|payload| (v1_13_0::VERSION, payload)))
     }
 
-    fn rules(&mut self, check: &mut Check<'_>) {
+    fn rules(&mut self, check: &mut ValidateCx<'_>) {
         match &self.places_block {
             Some(PlacesBlock::Specifier(specifier)) => {
                 let at = check.path("places_block");
-                check.d.extend(specifier.check(&at));
+                check.diagnostics.extend(specifier.check(&at));
             }
             Some(PlacesBlock::Descriptor(descriptor)) => {
                 check.descriptor("places_block", Some(descriptor));
@@ -824,7 +825,7 @@ impl Rules for SingleBlockFeature {
             Some(PlacesBlock::Weighted(entries)) => {
                 check.each("places_block", entries, |check, entry| {
                     let at = check.path("block");
-                    check.d.extend(entry.block.check(&at));
+                    check.diagnostics.extend(entry.block.check(&at));
                 });
             }
             None => {}
@@ -843,14 +844,14 @@ impl Rules for MultiBlockFeature {
     const SINCE_ENGINE: Option<FormatVersion> = Some(MULTI_BLOCK_FORMAT);
     const FLOOR: FormatVersion = MULTI_BLOCK_FORMAT;
 
-    fn rules(&mut self, check: &mut Check<'_>) {
+    fn rules(&mut self, check: &mut ValidateCx<'_>) {
         check.descriptor("places_block", Some(&self.places_block));
         check.descriptors("may_replace", self.may_replace.as_deref());
     }
 }
 
 impl Rules for MultifaceFeature {
-    fn rules(&mut self, check: &mut Check<'_>) {
+    fn rules(&mut self, check: &mut ValidateCx<'_>) {
         check.descriptor("places_block", Some(&self.places_block));
         check.check_int("search_range", Some(self.search_range), 1, 64);
         check.check_float(
@@ -870,13 +871,13 @@ impl Rules for MultifaceFeature {
 }
 
 impl Rules for FossilFeature {
-    fn rules(&mut self, check: &mut Check<'_>) {
+    fn rules(&mut self, check: &mut ValidateCx<'_>) {
         check.descriptor("ore_block", Some(&self.ore_block));
     }
 }
 
 impl Rules for GeodeFeature {
-    fn rules(&mut self, check: &mut Check<'_>) {
+    fn rules(&mut self, check: &mut ValidateCx<'_>) {
         for (key, descriptor) in [
             ("filler", &self.filler),
             ("inner_layer", &self.inner_layer),
@@ -940,7 +941,7 @@ impl Rules for GeodeFeature {
 }
 
 impl Rules for GrowingPlantFeature {
-    fn rules(&mut self, check: &mut Check<'_>) {
+    fn rules(&mut self, check: &mut ValidateCx<'_>) {
         check.check_len(
             "height_distribution",
             Some(self.height_distribution.len()),
@@ -952,7 +953,7 @@ impl Rules for GrowingPlantFeature {
             &self.height_distribution,
             |check, entry| {
                 let at = check.path("0");
-                check.d.extend(entry.height.check(&at));
+                check.diagnostics.extend(entry.height.check(&at));
             },
         );
         check.range("age", self.age.as_ref(), i32::MIN, i32::MAX);
@@ -969,7 +970,7 @@ impl Rules for GrowingPlantFeature {
 }
 
 impl Rules for PartiallyExposedBlobFeature {
-    fn rules(&mut self, check: &mut Check<'_>) {
+    fn rules(&mut self, check: &mut ValidateCx<'_>) {
         check.check_int(
             "placement_radius_around_floor",
             Some(self.placement_radius_around_floor),
@@ -989,7 +990,7 @@ impl Rules for PartiallyExposedBlobFeature {
 impl Rules for SculkPatchFeature {
     const INTERNAL: bool = true;
 
-    fn rules(&mut self, check: &mut Check<'_>) {
+    fn rules(&mut self, check: &mut ValidateCx<'_>) {
         check.descriptors(
             "can_place_sculk_patch_on",
             Some(&self.can_place_sculk_patch_on),
@@ -1020,7 +1021,7 @@ impl Rules for SculkPatchFeature {
 }
 
 impl Rules for VegetationPatchFeature {
-    fn rules(&mut self, check: &mut Check<'_>) {
+    fn rules(&mut self, check: &mut ValidateCx<'_>) {
         check.descriptors("replaceable_blocks", Some(&self.replaceable_blocks));
         check.descriptor("ground_block", Some(&self.ground_block));
         check.range("depth", Some(&self.depth), i32::MIN, i32::MAX);
@@ -1045,7 +1046,7 @@ const HORIZONTAL_TREE_DECORATION_ENGINE: FormatVersion = FormatVersion::new(1, 2
 impl Rules for HorizontalTreeDecorationFeature {
     const SINCE_ENGINE: Option<FormatVersion> = Some(HORIZONTAL_TREE_DECORATION_ENGINE);
 
-    fn rules(&mut self, check: &mut Check<'_>) {
+    fn rules(&mut self, check: &mut ValidateCx<'_>) {
         check.descriptor("places_block", Some(&self.places_block));
     }
 }
@@ -1055,7 +1056,7 @@ impl Rules for MultipartBlockColumnFeature {
     const SINCE_ENGINE: Option<FormatVersion> = Some(MULTI_BLOCK_FORMAT);
     const FLOOR: FormatVersion = MULTI_BLOCK_FORMAT;
 
-    fn rules(&mut self, check: &mut Check<'_>) {
+    fn rules(&mut self, check: &mut ValidateCx<'_>) {
         for (key, descriptor) in [
             ("tip_block", &self.tip_block),
             ("frustum_block", &self.frustum_block),

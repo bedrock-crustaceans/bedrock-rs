@@ -3,7 +3,7 @@
 
 use super::{FLOOR, VoxelShape, texts, validate};
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, Location, Phase, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, Phase, Severity, VanillaText,
 };
 use bedrock_addon_core::document::{
     CombineRule, Content, Contribution, Definition, Document, JsonContent, NoBeta, Notice, Origin,
@@ -112,15 +112,10 @@ fn text(bytes: &[u8]) -> Option<&str> {
 
 /// The finding of an unreadable file.
 fn malformed() -> Diagnostic {
-    Diagnostic::new(
-        DiagnosticCode::MalformedInput {
-            message: "not UTF-8 JSON within the nesting limit".to_owned(),
-            text: None,
-        },
-        Severity::Error,
-        Phase::Parse,
-        Location::default(),
-    )
+    Diagnostic::error(DiagnosticCode::MalformedInput {
+        message: "not UTF-8 JSON within the nesting limit".to_owned(),
+        text: None,
+    })
 }
 
 /// Gives every finding the document's pack and file.
@@ -162,14 +157,9 @@ fn failure_line(diagnostics: &mut Diagnostics, path: &PackPath) {
         .iter()
         .any(|finding| finding.severity >= Severity::Error && finding.phase == Phase::Parse);
     if rejected_by_schema {
-        diagnostics.push(Diagnostic::new(
-            DiagnosticCode::DocumentRejected {
-                text: Some(texts::failed_to_load(path.as_str())),
-            },
-            Severity::Error,
-            Phase::Parse,
-            Location::default(),
-        ));
+        diagnostics.push(Diagnostic::error(DiagnosticCode::DocumentRejected {
+            text: Some(texts::failed_to_load(path.as_str())),
+        }));
     }
 }
 
@@ -182,7 +172,7 @@ pub(crate) fn parse_file(
     cx: &LoadContext,
 ) -> Result<Document<VoxelShape>, Rejected> {
     let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
-    let origin = Origin::new(pack, side, path.clone(), None, Vec::new());
+    let origin = Origin::file(pack, side, path.clone());
     let Some(text) = text(bytes) else {
         let mut diagnostics = Diagnostics::default();
         diagnostics.push(malformed());

@@ -22,7 +22,7 @@ use super::read::{
     report_in_file, unwrap_copy,
 };
 use super::span;
-use super::write::{finding, locate, parse_error, rejected, stem_of, unversioned, wrong_root};
+use super::write::{locate, parse_error, rejected, stem_of, unversioned, wrong_root};
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity,
 };
@@ -96,13 +96,7 @@ const WALK: Walk = Walk {
 
 /// The origin of a walked file.
 fn origin_of(file: &WalkFile) -> Origin {
-    Origin::new(
-        file.pack.clone(),
-        PackSide::Resource,
-        file.path.clone(),
-        None,
-        Vec::new(),
-    )
+    Origin::file(file.pack.clone(), PackSide::Resource, file.path.clone())
 }
 
 /// One list file of the walk, and the index each of its entries has in the file.
@@ -252,14 +246,6 @@ impl Writers {
     }
 }
 
-/// A finding about the whole file `origin`.
-fn file_finding(code: DiagnosticCode, severity: Severity, origin: &Origin) -> Diagnostic {
-    let mut finding = finding(code, severity, Phase::Validate, JsonPath::new());
-    finding.location.pack = Some(origin.pack.clone());
-    finding.location.path = Some(origin.path.clone());
-    finding
-}
-
 /// Reports the keys `rekeyed` of the copy at `origin`, each of which takes over a lower key
 /// under another spelling. The finding is about the copy's key: one for it, however many
 /// lower keys of its name it takes over.
@@ -273,9 +259,10 @@ fn report_rekeyed(rekeyed: &[String], wrapped: bool, origin: &Origin, out: &mut 
         at.push(key);
         let at = path_in_file(&at, wrapped);
         let code = DiagnosticCode::ShadowedDefinition { text: None };
-        let mut finding = finding(code, Severity::Info, Phase::Validate, at);
-        finding.location.pack = Some(origin.pack.clone());
-        finding.location.path = Some(origin.path.clone());
+        let finding = Diagnostic::info(code)
+            .at(at)
+            .phase(Phase::Validate)
+            .in_file(origin);
         out.push(finding);
     }
 }
@@ -449,7 +436,11 @@ impl Loading<'_> {
         for source in &sources {
             if source.origin.path.as_str() != path {
                 let code = DiagnosticCode::ShadowedDefinition { text: None };
-                fallbacks.push(file_finding(code, Severity::Info, &source.origin));
+                fallbacks.push(
+                    Diagnostic::info(code)
+                        .phase(Phase::Validate)
+                        .in_file(&source.origin),
+                );
             }
         }
         let file = merge_file(&key, &sources, fallbacks);
@@ -489,10 +480,11 @@ impl Loading<'_> {
                     if let Some(member) = member {
                         at.push(member);
                     }
-                    let mut finding = finding(code, severity, Phase::Validate, at);
-                    finding.location.pack = Some(list.origin().pack.clone());
-                    finding.location.path = Some(list.origin().path.clone());
-                    finding
+                    Diagnostic::error(code)
+                        .severity(severity)
+                        .at(at)
+                        .phase(Phase::Validate)
+                        .in_file(list.origin())
                 };
                 let repeated = !here.insert(path);
                 if !loaded.insert(path) {
@@ -651,7 +643,11 @@ fn combine(parsed: Vec<MaterialParsed>, stack: &StackCx<'_>) -> Materials {
         let mut unread = Diagnostics::default();
         for copy in &own {
             let code = DiagnosticCode::IgnoredFile { text: None };
-            unread.push(file_finding(code, Severity::Info, &copy.origin));
+            unread.push(
+                Diagnostic::info(code)
+                    .phase(Phase::Validate)
+                    .in_file(&copy.origin),
+            );
         }
         if let Ok(key) = PackPath::new(&path) {
             let file = merge_file(&key, &own, unread);

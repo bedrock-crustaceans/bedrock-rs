@@ -112,12 +112,12 @@ fn apply_replaced_values(entity: &mut Entity, cx: &ValidateCx<'_>) {
 
 /// A finding at `at`.
 fn report(cx: &mut ValidateCx<'_>, code: DiagnosticCode, severity: Severity, at: JsonPath) {
-    cx.diagnostics.push(Diagnostic::new(
-        code,
-        severity,
-        Phase::Validate,
-        Location::new(None, None, at, None),
-    ));
+    cx.diagnostics.push(
+        Diagnostic::error(code)
+            .at(at)
+            .phase(Phase::Validate)
+            .severity(severity),
+    );
 }
 
 /// `namespace:name`; a `minecraft:` identifier only for a vanilla entity (any in
@@ -307,14 +307,13 @@ fn spawn_egg_interaction(entity: &Entity, cx: &mut ValidateCx<'_>) {
     // component is kept as the game keeps it.
     for (at, map) in sections {
         if has(map, INTERACTION) {
-            cx.diagnostics.push_kept_error(Diagnostic::new(
-                DiagnosticCode::MissingRequiredField {
+            cx.diagnostics.push_kept_error(
+                Diagnostic::error(DiagnosticCode::MissingRequiredField {
                     text: Some(VanillaText::Fixed(text)),
-                },
-                Severity::Error,
-                Phase::Validate,
-                Location::new(None, None, child(&at, INTERACTION), None),
-            ));
+                })
+                .at(child(&at, INTERACTION))
+                .phase(Phase::Validate),
+            );
         }
     }
 }
@@ -449,17 +448,16 @@ fn node(value: &mut Value, at: &JsonPath, groups: &HashSet<&str>, cx: &mut Valid
 /// No child of the response collection names `key`: the game logs a line at the error level and
 /// the entity still loads, so it is a kept error.
 fn unknown_response(key: &str, at: JsonPath, cx: &mut ValidateCx<'_>) {
-    cx.diagnostics.push_kept_error(Diagnostic::new(
-        DiagnosticCode::UnrecognizedField {
+    cx.diagnostics.push_kept_error(
+        Diagnostic::error(DiagnosticCode::UnrecognizedField {
             text: Some(VanillaText::Formatted {
                 template: "child '{}' not valid here.",
                 args: vec![key.to_owned()],
             }),
-        },
-        Severity::Error,
-        Phase::Validate,
-        Location::new(None, None, at, None),
-    ));
+        })
+        .at(at)
+        .phase(Phase::Validate),
+    );
 }
 
 /// A failed collection parses no response: the node's responses go, each with the crate's
@@ -626,14 +624,13 @@ fn drop_failed_properties(entity: &mut Entity, cx: &mut ValidateCx<'_>) {
         entity.description.properties = IndexMap::new();
         // The game logs this at the error level and the entity loads without the group: a
         // kept error.
-        cx.diagnostics.push_kept_error(Diagnostic::new(
-            DiagnosticCode::DroppedField {
+        cx.diagnostics.push_kept_error(
+            Diagnostic::error(DiagnosticCode::DroppedField {
                 text: Some(VanillaText::Fixed("Error loading Actor Properties")),
-            },
-            Severity::Error,
-            Phase::Validate,
-            Location::new(None, None, properties_at, None),
-        ));
+            })
+            .at(properties_at)
+            .phase(Phase::Validate),
+        );
     }
 }
 

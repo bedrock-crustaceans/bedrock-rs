@@ -6,8 +6,8 @@ use facet_json::RawJson;
 use indexmap::{IndexMap, IndexSet};
 
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, JsonPathSegment, Location, Phase, Severity,
-    Span, VanillaText, code_for_deserialize_error_kind,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, JsonPathSegment, Span, VanillaText,
+    code_for_deserialize_error_kind,
 };
 use bedrock_addon_core::json::{JsonSlice, Value, Width, clamp_text, parse_at, unknown_members};
 use bedrock_addon_core::molang::Molang;
@@ -45,16 +45,6 @@ pub(crate) fn text(template: &'static str, args: &[&str]) -> Option<VanillaText>
     })
 }
 
-/// A parse finding at `at`.
-pub(crate) fn finding(code: DiagnosticCode, severity: Severity, at: JsonPath) -> Diagnostic {
-    Diagnostic::new(
-        code,
-        severity,
-        Phase::Parse,
-        Location::new(None, None, at, None),
-    )
-}
-
 /// `base` followed by `keys`.
 pub(crate) fn below(base: &JsonPath, keys: &[&str]) -> JsonPath {
     let mut path = base.clone();
@@ -66,33 +56,25 @@ pub(crate) fn below(base: &JsonPath, keys: &[&str]) -> JsonPath {
 
 /// "child '<key>' not valid here." at `at` (the member itself).
 pub(crate) fn not_valid_here(key: &str, at: JsonPath) -> Diagnostic {
-    finding(
-        DiagnosticCode::UnrecognizedField {
-            text: text(CHILD_NOT_VALID, &[key]),
-        },
-        Severity::Error,
-        at,
-    )
+    Diagnostic::error(DiagnosticCode::UnrecognizedField {
+        text: text(CHILD_NOT_VALID, &[key]),
+    })
+    .at(at)
 }
 
 /// "Required child <child> not found" at `at` (the object that lacks it).
 pub(crate) fn required(child: &str, at: JsonPath) -> Diagnostic {
-    finding(
-        DiagnosticCode::MissingRequiredField {
-            text: text(REQUIRED_CHILD, &[child]),
-        },
-        Severity::Error,
-        at,
-    )
+    Diagnostic::error(DiagnosticCode::MissingRequiredField {
+        text: text(REQUIRED_CHILD, &[child]),
+    })
+    .at(at)
 }
 
 /// "unknown child schema option type.  Allowed types: <allowed>" at `at`.
 pub(crate) fn wrong_type(allowed: &str, at: JsonPath, span: Option<Span>) -> Diagnostic {
-    let mut found = finding(
-        bedrock_addon_core::diagnostic::cereal::unknown_child_option(allowed),
-        Severity::Error,
-        at,
-    );
+    let mut found =
+        Diagnostic::error(bedrock_addon_core::diagnostic::cereal::unknown_child_option(allowed))
+            .at(at);
     found.location.span = span;
     found
 }
@@ -208,24 +190,22 @@ pub(crate) fn describe<'a>(
     let Some(payload) = root.get(PAYLOAD).and_then(|raw| document.nested(raw)) else {
         // A document without the payload: vanilla has only a debug assertion here, so the
         // message is the crate's own.
-        d.push(finding(
-            DiagnosticCode::MissingRequiredField {
+        d.push(
+            Diagnostic::error(DiagnosticCode::MissingRequiredField {
                 text: Some(VanillaText::Fixed("No entity definition to parse")),
-            },
-            Severity::Error,
-            cx.at.clone(),
-        ));
+            })
+            .at(cx.at.clone()),
+        );
         return None;
     };
     if root.contains_key(ATTACHABLE) {
         // A file with both payloads loads the client entity alone and the game says nothing.
         // The crate notes the payload that is not loaded, and not written, with an information
         // at the member, whatever it holds.
-        d.push(finding(
-            DiagnosticCode::DroppedField { text: None },
-            Severity::Info,
-            below(&cx.at, &[ATTACHABLE]),
-        ));
+        d.push(
+            Diagnostic::info(DiagnosticCode::DroppedField { text: None })
+                .at(below(&cx.at, &[ATTACHABLE])),
+        );
     }
     let payload_json = root_json
         .and_then(|root| root.get(PAYLOAD))
@@ -361,7 +341,7 @@ pub(crate) fn typed<D: for<'x> Facet<'x>>(
                     wrong_type(allowed, at, Some(error.span))
                 }
                 code => {
-                    let mut found = finding(code, Severity::Error, at);
+                    let mut found = Diagnostic::error(code).at(at);
                     found.location.span = Some(error.span);
                     found
                 }
@@ -564,14 +544,11 @@ fn object<'a>(
     match parse_at::<IndexMap<String, RawJson<'a>>>(slice) {
         Ok(members) => Some(members),
         Err(error) => {
-            let mut found = finding(
-                DiagnosticCode::MalformedInput {
-                    message: error.error.kind.to_string(),
-                    text: None,
-                },
-                Severity::Error,
-                at.clone(),
-            );
+            let mut found = Diagnostic::error(DiagnosticCode::MalformedInput {
+                message: error.error.kind.to_string(),
+                text: None,
+            })
+            .at(at.clone());
             found.location.span = Some(error.span);
             d.push(found);
             None
@@ -622,11 +599,7 @@ pub(crate) fn check_condition<'m>(
     for key in ignored {
         // Members after the one the game reads get a `DroppedField` information of the crate's
         // own; the game drops them without a message.
-        d.push(finding(
-            DiagnosticCode::DroppedField { text: None },
-            Severity::Info,
-            below(at, &[key]),
-        ));
+        d.push(Diagnostic::info(DiagnosticCode::DroppedField { text: None }).at(below(at, &[key])));
     }
 }
 
@@ -646,13 +619,12 @@ pub(crate) fn check_variables(
         if !is_variable_key(key) {
             d.push(not_valid_here(key, member_at));
         } else if value.0 != "public" {
-            d.push(finding(
-                DiagnosticCode::InvalidValue {
+            d.push(
+                Diagnostic::error(DiagnosticCode::InvalidValue {
                     text: text(NOT_ALLOWED_REGEX, &[&value.0, "public"]),
-                },
-                Severity::Error,
-                member_at,
-            ));
+                })
+                .at(member_at),
+            );
         }
     }
     if variables.is_empty() {
@@ -663,13 +635,12 @@ pub(crate) fn check_variables(
 /// An identifier that is empty names nothing.
 pub(crate) fn check_identifier(identifier: &str, at: &JsonPath, d: &mut Diagnostics) {
     if identifier.is_empty() {
-        d.push(finding(
-            DiagnosticCode::InvalidValue {
+        d.push(
+            Diagnostic::error(DiagnosticCode::InvalidValue {
                 text: Some(VanillaText::Fixed("Missing or invalid identifier")),
-            },
-            Severity::Error,
-            below(at, &["identifier"]),
-        ));
+            })
+            .at(below(at, &["identifier"])),
+        );
     }
 }
 

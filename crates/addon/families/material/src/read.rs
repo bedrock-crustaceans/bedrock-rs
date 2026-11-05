@@ -17,9 +17,8 @@ use super::values::{
     STENCIL_OPS, TEXTURE_FILTERS, TEXTURE_FORMATS, TEXTURE_WRAPS, VARIANT_MISSPELLINGS,
     VERTEX_FIELDS, render_state_bit,
 };
-use super::write::finding;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
 };
 use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::json::{MAX_JSON_DEPTH, Value, check_depth, last_wins, strip_bom};
@@ -79,7 +78,7 @@ impl Layer {
         out.extend(self.trailing.clone());
         for at in &self.clamped {
             let code = DiagnosticCode::InvalidValue { text: None };
-            out.push(finding(code, Severity::Info, Phase::Parse, at.clone()));
+            out.push(Diagnostic::info(code).at(at.clone()));
         }
     }
 }
@@ -194,7 +193,7 @@ pub(super) fn unwrap_copy(root: VObject, out: &mut Diagnostics) -> Unwrapped {
     at.push(MATERIALS);
     at.push(VERSION);
     let code = DiagnosticCode::UnsupportedVersion { text: None };
-    out.push(finding(code, Severity::Info, Phase::Parse, at));
+    out.push(Diagnostic::info(code).at(at));
     Unwrapped {
         dropped: root.get(MATERIALS).cloned(),
         map: without(&root, MATERIALS),
@@ -229,7 +228,7 @@ pub(super) fn check_duplicates(map: &VObject, file: &str, out: &mut Diagnostics)
         let code = DiagnosticCode::DuplicateIdentifier { text: Some(text) };
         // The game logs this at the content log's error level and goes on with both keys: a kept
         // error.
-        out.push_kept_error(finding(code, Severity::Error, Phase::Parse, at));
+        out.push_kept_error(Diagnostic::error(code).at(at));
     }
 }
 
@@ -302,19 +301,18 @@ fn unprefixed(key: &str) -> Option<&str> {
 impl Reader<'_> {
     /// A finding at the current path.
     fn report(&mut self, code: DiagnosticCode, severity: Severity) {
-        self.out
-            .push(finding(code, severity, Phase::Parse, self.path.clone()));
+        self.out.push(
+            Diagnostic::error(code)
+                .severity(severity)
+                .at(self.path.clone()),
+        );
     }
 
     /// The game's content-log error at the current path after which the material loads: a
     /// kept error.
     fn report_kept(&mut self, code: DiagnosticCode) {
-        self.out.push_kept_error(finding(
-            code,
-            Severity::Error,
-            Phase::Parse,
-            self.path.clone(),
-        ));
+        self.out
+            .push_kept_error(Diagnostic::error(code).at(self.path.clone()));
     }
 
     /// A finding at member `key` of the current path.

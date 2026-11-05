@@ -3,7 +3,7 @@
 
 use super::{Language, LanguageNames, Languages};
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, VanillaText,
 };
 use bedrock_addon_core::json::{MAX_JSON_DEPTH, Value, check_depth, strip_bom};
 
@@ -83,32 +83,18 @@ impl LanguageNames {
     }
 }
 
-/// A finding of the JSON readers at `at`.
-fn finding(code: DiagnosticCode, severity: Severity, at: JsonPath) -> Diagnostic {
-    Diagnostic::new(
-        code,
-        severity,
-        Phase::Parse,
-        Location::new(None, None, at, None),
-    )
-}
-
 /// The root of a JSON text file; a file that does not parse is an error. Vanilla skips such a
 /// copy without a word (V6); the other packs' copies still count.
 // `Json::Reader::parse` fails → the copy is skipped. Comments are
 // accepted as jsoncpp accepts them.
 fn root(bytes: &[u8]) -> Result<Value, Box<Diagnostic>> {
     let malformed = |message: String| {
-        Box::new(finding(
-            DiagnosticCode::MalformedInput {
-                message,
-                text: None,
-            },
-            // vanilla skips such a copy without a word: ours, an information, the copy still
-            // refused
-            Severity::Info,
-            JsonPath::new(),
-        ))
+        // vanilla skips such a copy without a word: ours, an information, the copy still
+        // refused
+        Box::new(Diagnostic::info(DiagnosticCode::MalformedInput {
+            message,
+            text: None,
+        }))
     };
     let bytes = strip_bom(bytes);
     let text = check_depth(bytes, MAX_JSON_DEPTH)
@@ -137,11 +123,7 @@ fn elements<'v>(root: &'v Value, diagnostics: &mut Diagnostics) -> Vec<(JsonPath
             })
             .collect();
     }
-    diagnostics.push(finding(
-        DiagnosticCode::InvalidType { text: None },
-        Severity::Info,
-        JsonPath::new(),
-    ));
+    diagnostics.push(Diagnostic::info(DiagnosticCode::InvalidType { text: None }));
     let Some(object) = root.as_object() else {
         return Vec::new();
     };
@@ -190,11 +172,7 @@ pub(super) fn read_languages(bytes: &[u8]) -> Result<(Languages, Diagnostics), B
         // `vanilla = "asString(\"\"): … appended without an emptiness
         // check"`.
         let Some(code) = element.as_string() else {
-            diagnostics.push(finding(
-                DiagnosticCode::InvalidType { text: None },
-                Severity::Info,
-                at,
-            ));
+            diagnostics.push(Diagnostic::info(DiagnosticCode::InvalidType { text: None }).at(at));
             continue;
         };
         let code = Language::new(code.as_str());
@@ -203,11 +181,7 @@ pub(super) fn read_languages(bytes: &[u8]) -> Result<(Languages, Diagnostics), B
         }
         // `vanilla = "accepted, no check"`.
         if !code.is_valid_code() {
-            diagnostics.push(finding(
-                DiagnosticCode::InvalidValue { text: None },
-                Severity::Info,
-                at,
-            ));
+            diagnostics.push(Diagnostic::info(DiagnosticCode::InvalidValue { text: None }).at(at));
         }
         codes.push(code);
     }
@@ -234,11 +208,8 @@ pub(super) fn read_names(bytes: &[u8]) -> Result<(LanguageNames, Diagnostics), B
     for (at, element) in elements(&root, &mut diagnostics) {
         // `vanilla = "handleAssert only"`.
         let Some(pair) = element.as_array() else {
-            diagnostics.push(finding(
-                DiagnosticCode::InvalidType { text: shape() },
-                Severity::Info,
-                at,
-            ));
+            diagnostics
+                .push(Diagnostic::info(DiagnosticCode::InvalidType { text: shape() }).at(at));
             continue;
         };
         // Ours: an element that is no string is read as vanilla reads it (a bool
@@ -248,19 +219,13 @@ pub(super) fn read_names(bytes: &[u8]) -> Result<(LanguageNames, Diagnostics), B
             if !part.is_string() {
                 let mut at = at.clone();
                 at.push_index(index);
-                diagnostics.push(finding(
-                    DiagnosticCode::InvalidType { text: None },
-                    Severity::Info,
-                    at,
-                ));
+                diagnostics
+                    .push(Diagnostic::info(DiagnosticCode::InvalidType { text: None }).at(at));
             }
         }
         if pair.len() != 2 {
-            diagnostics.push(finding(
-                DiagnosticCode::InvalidValue { text: shape() },
-                Severity::Info,
-                at,
-            ));
+            diagnostics
+                .push(Diagnostic::info(DiagnosticCode::InvalidValue { text: shape() }).at(at));
         }
         entries.push((
             Language::new(as_string(pair.first())),

@@ -12,12 +12,10 @@ use super::history::{
 use super::{
     CameraEntity, CameraList, CameraPreset, CameraSpline, Cameras, Splines, stack, texts, validate,
 };
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, Phase, VanillaText};
 use bedrock_addon_core::document::{
-    CombineRule, Content, Contribution, Definition, Document, JsonContent, NoBeta, Notice, Origin,
-    Placed, RegistryBuilder, Rejected, default_path,
+    CombineRule, Content, Contribution, Definition, Document, JsonContent, NoBeta, Notice, Placed,
+    RegistryBuilder, Rejected, default_path,
 };
 use bedrock_addon_core::id::{CameraListId, CameraPresetId, Id, kind};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value, WriteStyle, write_json};
@@ -419,16 +417,6 @@ fn parse_walk_file(walked: &WalkFile, cx: &LoadContext) -> CameraFile {
     }
 }
 
-/// A location in the file of `origin`.
-pub(crate) fn at_origin(origin: &Origin, json_path: JsonPath) -> Location {
-    Location::new(
-        Some(origin.pack.clone()),
-        Some(origin.path.clone()),
-        json_path,
-        None,
-    )
-}
-
 /// A registry in which the later definition of an identifier replaces the earlier one whole,
 /// as vanilla assigns it in place; the replaced one is a `ShadowedDefinition` info.
 fn last_loaded_wins<T: Definition>(stack: &StackCx<'_>) -> RegistryBuilder<T> {
@@ -527,12 +515,11 @@ fn presets(
                     for finding in document.diagnostics().iter().cloned() {
                         builder.push_diagnostic(finding);
                     }
-                    builder.push_diagnostic(Diagnostic::new(
-                        DiagnosticCode::ShadowedDefinition { text: None },
-                        Severity::Info,
-                        Phase::Validate,
-                        at_origin(document.origin(), JsonPath::new()),
-                    ));
+                    builder.push_diagnostic(
+                        Diagnostic::info(DiagnosticCode::ShadowedDefinition { text: None })
+                            .phase(Phase::Validate)
+                            .in_file(document.origin()),
+                    );
                 }
             }
         }

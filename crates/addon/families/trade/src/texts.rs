@@ -1,8 +1,6 @@
 //! Vanilla's content-log texts of trade tables, and the findings built from them.
 
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, JsonPath, Location, Phase, Severity, VanillaText,
-};
+use bedrock_addon_core::diagnostic::{JsonPath, VanillaText};
 
 /// The document root is JSON `null`.
 pub(crate) const MUST_CONTAIN_TIERS: &str = "Trade table file must containt \"tiers\"";
@@ -40,16 +38,6 @@ pub(crate) fn formatted(template: &'static str, args: &[&dyn std::fmt::Display])
         template,
         args: args.iter().map(ToString::to_string).collect(),
     }
-}
-
-/// A finding at `at`.
-pub(crate) fn finding(
-    code: DiagnosticCode,
-    severity: Severity,
-    phase: Phase,
-    at: JsonPath,
-) -> Diagnostic {
-    Diagnostic::new(code, severity, phase, Location::new(None, None, at, None))
 }
 
 /// `base` followed by `key`.

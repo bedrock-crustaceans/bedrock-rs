@@ -6,7 +6,7 @@ use std::collections::{HashMap, HashSet};
 use facet_value::{VArray, VObject};
 use indexmap::IndexMap;
 
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, JsonPath, Severity};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
 use bedrock_addon_core::document::{
     Content, Document, Extra, JsonContent, Merge, Merged, Origin, Placed, RawLayer, Rejected,
 };
@@ -15,9 +15,7 @@ use bedrock_addon_core::json::{EncodeError, Value, WriteStyle, write_json};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::load::WalkFile;
 use bedrock_addon_core::pack_identity::{PackPath, PackSide};
-use bedrock_addon_support::texture::document::{
-    detached, file_finding, finding_at, origin_of, rejected, unversioned,
-};
+use bedrock_addon_support::texture::document::{detached, origin_of, rejected, unversioned};
 use bedrock_addon_support::texture::jsoncpp::{
     as_bool, as_int, int_is_coerced, non_null, read_lenient, to_text,
 };
@@ -260,7 +258,7 @@ fn check_file(root: &Value, origin: &Origin, out: &mut Diagnostics) -> bool {
     // All of these are the crate's own lints, informations: the game is silent, and the
     // `ticks_per_frame` clamp is silent too.
     let warn = |out: &mut Diagnostics, code: DiagnosticCode, at: JsonPath| {
-        out.push(finding_at(code, Severity::Info, origin, at));
+        out.push(Diagnostic::info(code).at(at).in_file(origin));
     };
     let invalid = || DiagnosticCode::InvalidValue { text: None };
     let Some(entries) = root.as_array() else {
@@ -324,7 +322,7 @@ fn check_file(root: &Value, origin: &Origin, out: &mut Diagnostics) -> bool {
         }
         if !seen.insert(raw_key(entry)) {
             let code = DiagnosticCode::DuplicateIdentifier { text: None };
-            out.push(finding_at(code, Severity::Info, origin, at));
+            out.push(Diagnostic::info(code).at(at).in_file(origin));
         }
     }
     true
@@ -355,7 +353,7 @@ pub(crate) fn parse_copy(file: &WalkFile) -> FlipbookCopy {
                 message: message.to_string(),
                 text: None,
             };
-            findings.push(file_finding(code, Severity::Error, &origin));
+            findings.push(Diagnostic::error(code).in_file(&origin));
             None
         }
     };
@@ -438,7 +436,7 @@ impl Content for Flipbooks {
                         message: message.to_string(),
                         text: None,
                     };
-                    diagnostics.push(file_finding(code, Severity::Error, &origin));
+                    diagnostics.push(Diagnostic::error(code).in_file(&origin));
                     return Err(rejected(origin, diagnostics));
                 }
             };

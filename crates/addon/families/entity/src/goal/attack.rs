@@ -1,7 +1,7 @@
 //! Attack goals: melee, ranged and special attacks.
 
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, VanillaText,
 };
 use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::json::{StrictBool, StrictFloat, StrictInt, StrictString, Value};
@@ -3825,12 +3825,7 @@ fn whole_ticks(object: &mut VObject, key: &str, at: JsonPath, d: &mut Diagnostic
     let ticked = ((seconds * 20.0) as i32) as f32 / 20.0;
     if ticked.to_bits() != seconds.to_bits() {
         object.insert(key, f32_value(ticked));
-        d.push(Diagnostic::new(
-            DiagnosticCode::ValueRewritten { text: None },
-            Severity::Info,
-            Phase::Parse,
-            Location::new(None, None, at, None),
-        ));
+        d.push(Diagnostic::info(DiagnosticCode::ValueRewritten { text: None }).at(at));
     }
 }
 
@@ -3838,14 +3833,10 @@ fn whole_ticks(object: &mut VObject, key: &str, at: JsonPath, d: &mut Diagnostic
 /// parser's activation-range lines (a negative minimum, a negative maximum, the swap) at the
 /// warning level.
 fn at_warning(at: JsonPath, text: &'static str) -> Diagnostic {
-    Diagnostic::new(
-        DiagnosticCode::InvalidValue {
-            text: Some(VanillaText::Fixed(text)),
-        },
-        Severity::Warning,
-        Phase::Parse,
-        Location::new(None, None, at, None),
-    )
+    Diagnostic::warn(DiagnosticCode::InvalidValue {
+        text: Some(VanillaText::Fixed(text)),
+    })
+    .at(at)
 }
 
 /// An `f32` as the JSON number that reads back to it.

@@ -9,8 +9,7 @@
 //! `UnrecognizedField` warning in both modes.
 
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, JsonPathSegment, Location, Phase, Severity,
-    Span, Told, VanillaText, code_for_deserialize_error_kind,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, JsonPathSegment, Severity, Told, VanillaText,
 };
 use bedrock_addon_core::json::{JsonSlice, SliceError, Value, parse_at, to_json};
 use bedrock_addon_core::load::LoadContext;
@@ -150,23 +149,15 @@ impl<'d> Check<'d> {
 
     /// A finding that does not depend on the mode (a vanilla warning; the value stays).
     pub(crate) fn push(&mut self, code: DiagnosticCode, severity: Severity, at: &JsonPath) {
-        self.out.push(Diagnostic::new(
-            code,
-            severity,
-            Phase::Parse,
-            Location::new(None, None, at.clone(), None),
-        ));
+        self.out
+            .push(Diagnostic::error(code).at(at.clone()).severity(severity));
     }
 
     /// A kept error at `at`: a level-3 line of the game after which the entity loads: the game logs
     /// this at the error level and keeps the document, a kept error.
     pub(crate) fn kept(&mut self, code: DiagnosticCode, at: &JsonPath) {
-        self.out.push_kept_error(Diagnostic::new(
-            code,
-            Severity::Error,
-            Phase::Parse,
-            Location::new(None, None, at.clone(), None),
-        ));
+        self.out
+            .push_kept_error(Diagnostic::error(code).at(at.clone()));
     }
 
     /// A cereal range member at `at`: at the typed version (the strict read) the range
@@ -403,11 +394,7 @@ fn read_shaped<T: Typed>(
         // The legacy parser reads any string as the component of defaults; vanilla's own
         // files write `""`. A string that says something is read the same, and told
         // (an information: the game does it without a word).
-        d.push(finding(
-            DiagnosticCode::InvalidType { text: None },
-            Severity::Info,
-            &JsonPath::new(),
-        ));
+        d.push(Diagnostic::info(DiagnosticCode::InvalidType { text: None }));
     }
     let Some(object) = shorthand.or_else(|| json.as_ref().and_then(Value::as_object).cloned())
     else {
@@ -416,22 +403,18 @@ fn read_shaped<T: Typed>(
             // crate's own (the game writes no content-log line for this): the legacy readers take
             // the members through const `Json::Value` access with defaults, and no line of the game
             // says it.
-            d.push(finding(
-                DiagnosticCode::InvalidValue { text: None },
-                Severity::Info,
-                &JsonPath::new(),
-            ));
+            d.push(Diagnostic::info(DiagnosticCode::InvalidValue {
+                text: None,
+            }));
             return None;
         }
         // Not an object (the typed read, strict): the typed read names the problem (a syntax
         // error, a wrong type).
         match parse_at::<T>(slice) {
-            Err(error) => d.push(slice_finding(&error, slice, true, Severity::Error)),
-            Ok(_) => d.push(finding(
-                DiagnosticCode::InvalidType { text: None },
-                Severity::Error,
-                &JsonPath::new(),
-            )),
+            Err(error) => d.push(slice_finding(&error, true, Severity::Error)),
+            Ok(_) => d.push(Diagnostic::error(DiagnosticCode::InvalidType {
+                text: None,
+            })),
         }
         return None;
     };
@@ -472,7 +455,7 @@ fn read_shaped<T: Typed>(
     ) {
         (Ok(value), _) => value,
         (Err(error), ConvertMode::Strict) => {
-            d.push(slice_finding(&error, at, !changed, Severity::Error));
+            d.push(slice_finding(&error, !changed, Severity::Error));
             return None;
         }
         (Err(_), ConvertMode::Lenient) => isolate::<T>(&mut object, d)?,
@@ -482,11 +465,7 @@ fn read_shaped<T: Typed>(
     for (path, _) in unknown {
         // The game logs an unknown member at level 2 (a warning) for the legacy slice; the
         // strict slice from 1.21.89 makes it an error.
-        d.push(finding(
-            DiagnosticCode::UnrecognizedField { text: None },
-            Severity::Warning,
-            &path,
-        ));
+        d.push(Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None }).at(path.clone()));
     }
     // A value of another JSON type: the typed read fails it and the entity is
     // refused; the legacy readers' `as*`
@@ -496,11 +475,11 @@ fn read_shaped<T: Typed>(
         ConvertMode::Lenient => Severity::Info,
     };
     for path in misread {
-        d.push(finding(
-            DiagnosticCode::InvalidType { text: None },
-            misread_severity,
-            &path,
-        ));
+        d.push(
+            Diagnostic::error(DiagnosticCode::InvalidType { text: None })
+                .at(path.clone())
+                .severity(misread_severity),
+        );
     }
     let mut check = Check::new(mode, cx, d);
     value.check(&mut check);
@@ -541,13 +520,12 @@ fn isolate<T: Typed>(object: &mut VObject, d: &mut Diagnostics) -> Option<T> {
                 && let Some((kept, removed)) = strip_nested::<T>(&alone)
             {
                 for at in removed {
-                    d.push(finding(
-                        DiagnosticCode::InvalidValue { text: None },
+                    d.push(
                         // The lenient isolation's notes are the crate's own (the game writes no
                         // content-log line for this): the legacy readers keep what they read in silence.
-                        Severity::Info,
-                        &at,
-                    ));
+                        Diagnostic::info(DiagnosticCode::InvalidValue { text: None })
+                            .at(at.clone()),
+                    );
                 }
                 if let Some(member) = kept.get(&key) {
                     object.insert(key.as_str(), member.clone());
@@ -560,21 +538,17 @@ fn isolate<T: Typed>(object: &mut VObject, d: &mut Diagnostics) -> Option<T> {
                 error.path
             };
             let nested = at.len() > 1;
-            d.push(finding(
-                DiagnosticCode::InvalidValue { text: None },
+            d.push(
                 // The crate's own, as above.
-                Severity::Info,
-                &at,
-            ));
+                Diagnostic::info(DiagnosticCode::InvalidValue { text: None }).at(at.clone()),
+            );
             if nested {
                 // The member goes whole for the value inside it: told at the member too, so
                 // what else it holds is known to be dropped (an information, the warning is
                 // the one above).
-                d.push(finding(
-                    DiagnosticCode::DroppedField { text: None },
-                    Severity::Info,
-                    &path(&[&key]),
-                ));
+                d.push(
+                    Diagnostic::info(DiagnosticCode::DroppedField { text: None }).at(path(&[&key])),
+                );
             }
             object.remove(&key);
         }
@@ -588,10 +562,6 @@ fn isolate<T: Typed>(object: &mut VObject, d: &mut Diagnostics) -> Option<T> {
         Err(error) => {
             d.push(slice_finding(
                 &error,
-                JsonSlice {
-                    text: &text,
-                    offset: 0,
-                },
                 false,
                 // The crate's own, as above.
                 Severity::Info,
@@ -673,18 +643,15 @@ fn isolate_elements<T: Typed>(object: &mut VObject, key: &str, d: &mut Diagnosti
                         JsonPathSegment::Index(number) => at.push_index(number),
                     }
                 }
-                told.push(finding(
-                    DiagnosticCode::InvalidValue { text: None },
+                told.push(
                     // The crate's own, as above.
-                    Severity::Info,
-                    &at,
-                ));
+                    Diagnostic::info(DiagnosticCode::InvalidValue { text: None }).at(at.clone()),
+                );
                 if inside {
-                    told.push(finding(
-                        DiagnosticCode::DroppedField { text: None },
-                        Severity::Info,
-                        &at_element,
-                    ));
+                    told.push(
+                        Diagnostic::info(DiagnosticCode::DroppedField { text: None })
+                            .at(at_element.clone()),
+                    );
                 }
             }
         }
@@ -713,12 +680,8 @@ fn element_finding(key: &str, place: usize, at: &JsonPath) -> Diagnostic {
             JsonPathSegment::Index(number) => here.push_index(number),
         }
     }
-    finding(
-        DiagnosticCode::InvalidValue { text: None },
-        // The crate's own, as above.
-        Severity::Info,
-        &here,
-    )
+    // The crate's own, as above.
+    Diagnostic::info(DiagnosticCode::InvalidValue { text: None }).at(here.clone())
 }
 
 /// [`strip_nested`] of the element `element` of the list `key`, read as the one element of its
@@ -804,41 +767,22 @@ fn written<T: Typed>(object: &VObject, mode: ConvertMode, d: &mut Diagnostics) -
             ConvertMode::Strict => Severity::Error,
             ConvertMode::Lenient => Severity::Info,
         };
-        d.push(finding(
-            DiagnosticCode::InvalidValue { text: None },
-            severity,
-            &JsonPath::new(),
-        ));
+        d.push(Diagnostic::error(DiagnosticCode::InvalidValue { text: None }).severity(severity));
     }
     text
 }
 
-/// A finding at `at` relative to the component, without a span.
-pub(crate) fn finding(code: DiagnosticCode, severity: Severity, at: &JsonPath) -> Diagnostic {
-    Diagnostic::new(
-        code,
-        severity,
-        Phase::Parse,
-        Location::new(None, None, at.clone(), None),
-    )
-}
-
-/// The finding of a failed typed read; the span only when the text is the file's.
-fn slice_finding(
-    error: &SliceError,
-    slice: JsonSlice<'_>,
-    as_written: bool,
-    severity: Severity,
-) -> Diagnostic {
-    let blank = slice.text.trim().is_empty();
-    let code = code_for_deserialize_error_kind(&error.error.kind, !error.path.is_empty(), blank);
-    let span: Option<Span> = as_written.then_some(error.span);
-    Diagnostic::new(
-        code,
-        severity,
-        Phase::Parse,
-        Location::new(None, None, error.path.clone(), span),
-    )
+/// The finding of a failed typed read (of the slice the error is of); the span only when the
+/// text is the file's.
+fn slice_finding(error: &SliceError, as_written: bool, severity: Severity) -> Diagnostic {
+    let finding = Diagnostic::error(error.code_with_path(error.has_path()))
+        .at(error.path.clone())
+        .severity(severity);
+    if as_written {
+        finding.span(error.span)
+    } else {
+        finding
+    }
 }
 
 #[cfg(test)]

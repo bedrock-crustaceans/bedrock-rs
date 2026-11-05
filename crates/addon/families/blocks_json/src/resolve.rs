@@ -4,7 +4,7 @@
 use facet_value::VObject;
 use indexmap::IndexMap;
 
-use super::entry::{self, ReadEntry, finding, info, warning};
+use super::entry::{self, ReadEntry};
 use super::legacy::{self, LegacyAlias};
 use super::texts::{
     BASE_GAME_BLOCKSHAPE, NOT_JSON, OLD_NAME, VERSION_ABOVE_CEILING, VERSION_INVALID,
@@ -12,7 +12,9 @@ use super::texts::{
 };
 use super::version::{self, BLOCKS_JSON_MAX_FORMAT_VERSION, Effective, Log};
 use super::{BlocksJson, ClientBlock};
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity};
+use bedrock_addon_core::diagnostic::{
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity,
+};
 use bedrock_addon_core::id::BlockId;
 use bedrock_addon_core::json::{
     JsonSlice, MAX_JSON_DEPTH, Value, check_depth, last_wins, strip_bom, trailing_content_finding,
@@ -58,14 +60,13 @@ pub(super) fn read(bytes: &[u8], base_game: bool) -> FileRead {
             let message = reason.to_string();
             // The client skips the file without a word, so the finding is an information of
             // this crate's own; the file is still refused.
-            diagnostics.push(finding(
-                DiagnosticCode::MalformedInput {
+            diagnostics.push(
+                Diagnostic::info(DiagnosticCode::MalformedInput {
                     text: Some(formatted(NOT_JSON, &[&message])),
                     message,
-                },
-                Severity::Info,
-                JsonPath::new(),
-            ));
+                })
+                .phase(Phase::Validate),
+            );
             return FileRead {
                 file: None,
                 effective: Effective::release(version::BLOCKS_JSON_DEFAULT_VERSION),
@@ -83,10 +84,11 @@ pub(super) fn read(bytes: &[u8], base_game: bool) -> FileRead {
         diagnostics.extend(trailing_content_finding(JsonSlice { text, offset }));
         for (key, count) in duplicate_keys(text) {
             for _ in 1..count {
-                diagnostics.push(info(
-                    DiagnosticCode::DuplicateIdentifier { text: None },
-                    path(&key),
-                ));
+                diagnostics.push(
+                    Diagnostic::info(DiagnosticCode::DuplicateIdentifier { text: None })
+                        .at(path(&key))
+                        .phase(Phase::Validate),
+                );
             }
         }
     }
@@ -101,7 +103,11 @@ pub(super) fn read(bytes: &[u8], base_game: bool) -> FileRead {
         for clamped in bedrock_addon_core::json::clamp_non_finite(&mut value, None) {
             let mut at = path(key.as_str());
             at.append(&clamped.path);
-            diagnostics.push(info(DiagnosticCode::ClampedValue { text: None }, at));
+            diagnostics.push(
+                Diagnostic::info(DiagnosticCode::ClampedValue { text: None })
+                    .at(at)
+                    .phase(Phase::Validate),
+            );
         }
         if key.as_str() == "format_version" {
             // Its place among the entries is kept for the writer, so the file writes back with
@@ -237,33 +243,39 @@ fn version_log(log: Option<&Log>, d: &mut Diagnostics) -> bool {
     let at = path("format_version");
     match log {
         None => return false,
-        Some(Log::NotGiven) => d.push(warning(
-            DiagnosticCode::MissingFormatVersion {
+        Some(Log::NotGiven) => d.push(
+            Diagnostic::warn(DiagnosticCode::MissingFormatVersion {
                 text: Some(formatted(VERSION_NOT_GIVEN, &[])),
-            },
-            JsonPath::new(),
-        )),
+            })
+            .phase(Phase::Validate),
+        ),
         Some(Log::Invalid { partial }) => {
-            d.push(warning(
-                DiagnosticCode::MalformedFormatVersion {
+            d.push(
+                Diagnostic::warn(DiagnosticCode::MalformedFormatVersion {
                     text: Some(formatted(VERSION_INVALID, &[])),
-                },
-                at.clone(),
-            ));
+                })
+                .at(at.clone())
+                .phase(Phase::Validate),
+            );
             if partial.is_some() {
                 // The client says it uses 1.1.0 and reads the partial version.
-                d.push(info(DiagnosticCode::UnusualFormatVersion, at));
+                d.push(
+                    Diagnostic::info(DiagnosticCode::UnusualFormatVersion)
+                        .at(at)
+                        .phase(Phase::Validate),
+                );
             }
         }
-        Some(Log::AboveCeiling(written)) => d.push(warning(
-            DiagnosticCode::UnsupportedVersion {
+        Some(Log::AboveCeiling(written)) => d.push(
+            Diagnostic::warn(DiagnosticCode::UnsupportedVersion {
                 text: Some(formatted(
                     VERSION_ABOVE_CEILING,
                     &[written, &BLOCKS_JSON_MAX_FORMAT_VERSION.to_string()],
                 )),
-            },
-            at,
-        )),
+            })
+            .at(at)
+            .phase(Phase::Validate),
+        ),
     }
     true
 }
@@ -296,7 +308,11 @@ fn resolve(cx: &KeyCx<'_>, value: &Value, d: &mut Diagnostics, applied: &mut Vec
     let at = path(key);
     // A member that is not an object is skipped.
     let Some(object) = value.as_object() else {
-        d.push(info(DiagnosticCode::InvalidType { text: None }, at));
+        d.push(
+            Diagnostic::info(DiagnosticCode::InvalidType { text: None })
+                .at(at)
+                .phase(Phase::Validate),
+        );
         return;
     };
     entry::unread_members(object, key, d);
@@ -304,13 +320,13 @@ fn resolve(cx: &KeyCx<'_>, value: &Value, d: &mut Diagnostics, applied: &mut Vec
     // (presence is the test, so `null` counts) is skipped whole.
     if cx.base_game && object.get("blockshape").is_some() {
         // The game logs this as an error, skips the entry and loads the file: a kept error.
-        d.push_kept_error(finding(
-            DiagnosticCode::InvalidValue {
+        d.push_kept_error(
+            Diagnostic::error(DiagnosticCode::InvalidValue {
                 text: Some(formatted(BASE_GAME_BLOCKSHAPE, &[key])),
-            },
-            Severity::Error,
-            at,
-        ));
+            })
+            .at(at)
+            .phase(Phase::Validate),
+        );
         return;
     }
     // The alias lookup is on `minecraft:` and the lower-cased key, so it is blind to a key that
@@ -321,22 +337,22 @@ fn resolve(cx: &KeyCx<'_>, value: &Value, d: &mut Diagnostics, applied: &mut Vec
         lower.as_str(),
         "brown_mushroom_block" | "red_mushroom_block"
     ) {
-        d.push(finding(
-            DiagnosticCode::ShadowedDefinition { text: None },
-            Severity::Info,
-            at,
-        ));
+        d.push(
+            Diagnostic::info(DiagnosticCode::ShadowedDefinition { text: None })
+                .at(at)
+                .phase(Phase::Validate),
+        );
         apply(cx, object, &lower, true, applied);
         apply(cx, object, "mushroom_stem", false, applied);
         return;
     }
     // `chalkboard` is ignored without a word.
     if lower == "chalkboard" {
-        d.push(finding(
-            DiagnosticCode::IgnoredMember { text: None },
-            Severity::Info,
-            at,
-        ));
+        d.push(
+            Diagnostic::info(DiagnosticCode::IgnoredMember { text: None })
+                .at(at)
+                .phase(Phase::Validate),
+        );
         return;
     }
     match legacy::alias(&lower) {
@@ -376,16 +392,15 @@ fn old_name(alias: &LegacyAlias, base_game: bool, at: JsonPath) -> Diagnostic {
     } else {
         Severity::Error
     };
-    finding(
-        DiagnosticCode::DeprecatedMember {
-            text: Some(formatted(
-                OLD_NAME,
-                &[&format!("{MINECRAFT}:{}", alias.name), &names],
-            )),
-        },
-        severity,
-        at,
-    )
+    Diagnostic::error(DiagnosticCode::DeprecatedMember {
+        text: Some(formatted(
+            OLD_NAME,
+            &[&format!("{MINECRAFT}:{}", alias.name), &names],
+        )),
+    })
+    .severity(severity)
+    .at(at)
+    .phase(Phase::Validate)
 }
 
 /// Splits a legacy name: a copy of the entry for every post-split block, its texture names given
@@ -400,16 +415,20 @@ fn split(
     let at = path(cx.key);
     if alias.removed {
         // `lava_cauldron` is dropped without a word.
-        d.push(finding(
-            DiagnosticCode::IgnoredMember { text: None },
-            Severity::Info,
-            at,
-        ));
+        d.push(
+            Diagnostic::info(DiagnosticCode::IgnoredMember { text: None })
+                .at(at)
+                .phase(Phase::Validate),
+        );
         return;
     }
     if cx.fell_back {
         // The author asked for another version and got the split.
-        d.push(info(DiagnosticCode::DeprecatedMember { text: None }, at));
+        d.push(
+            Diagnostic::info(DiagnosticCode::DeprecatedMember { text: None })
+                .at(at)
+                .phase(Phase::Validate),
+        );
     }
     for (index, (position, name)) in alias.post_split.iter().enumerate() {
         let variant = alias.start_variant + position;
@@ -465,11 +484,11 @@ fn ordinary(
         .flatten()
         .filter(|alias| !alias.removed && !alias.is_still_a_block());
     if let Some(alias) = aliased {
-        d.push(finding(
-            DiagnosticCode::IdentifierNamespaced,
-            Severity::Info,
-            path(cx.key),
-        ));
+        d.push(
+            Diagnostic::info(DiagnosticCode::IdentifierNamespaced)
+                .at(path(cx.key))
+                .phase(Phase::Validate),
+        );
         apply(cx, object, alias.aux0, true, applied);
         return;
     }

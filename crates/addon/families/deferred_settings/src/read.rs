@@ -9,7 +9,7 @@ use indexmap::IndexMap;
 
 use super::value::{Description, Keyframe, Keyframes, Rgb8, Rgba8, Vec3};
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, Span, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, Span, VanillaText,
 };
 use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::id::{Id, Kind};
@@ -99,12 +99,10 @@ impl<'a> Node<'a> {
 
     /// A finding about this value.
     pub(crate) fn finding(&self, code: DiagnosticCode, severity: Severity) -> Diagnostic {
-        Diagnostic::new(
-            code,
-            severity,
-            Phase::Parse,
-            Location::new(None, None, self.at.clone(), Some(self.span())),
-        )
+        Diagnostic::error(code)
+            .severity(severity)
+            .at(self.at.clone())
+            .span(self.span())
     }
 
     /// Reports an error about this value.
@@ -212,12 +210,11 @@ impl<'a> Members<'a> {
         if let Some(node) = self.take(key) {
             return read(&node, d);
         }
-        d.push(Diagnostic::new(
-            DiagnosticCode::MissingRequiredField { text: None },
-            Severity::Error,
-            Phase::Parse,
-            Location::new(None, None, self.path(key), Some(self.node.span())),
-        ));
+        d.push(
+            Diagnostic::error(DiagnosticCode::MissingRequiredField { text: None })
+                .at(self.path(key))
+                .span(self.node.span()),
+        );
         Err(Failed)
     }
 
@@ -288,12 +285,11 @@ fn kept(node: &Node<'_>, d: &mut Diagnostics) -> Option<Value> {
     for clamped in bedrock_addon_core::json::clamp_non_finite(&mut value, Some(node.slice)) {
         let mut at = node.at.clone();
         at.append(&clamped.path);
-        d.push(Diagnostic::new(
-            DiagnosticCode::InvalidValue { text: None },
-            Severity::Info,
-            Phase::Parse,
-            Location::new(None, None, at, clamped.span),
-        ));
+        let finding = Diagnostic::info(DiagnosticCode::InvalidValue { text: None }).at(at);
+        d.push(match clamped.span {
+            Some(span) => finding.span(span),
+            None => finding,
+        });
     }
     Some(value)
 }

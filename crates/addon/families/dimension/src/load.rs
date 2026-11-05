@@ -5,9 +5,7 @@
 use super::parse::{RootLatest, child, clouds_constraint, height_constraints, parse_root};
 use super::{Dimension, FLOOR, V1_26_50, validate};
 use crate::history::{Any, DimensionFamily};
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase};
 use bedrock_addon_core::document::{
     CombineRule, Content, Contribution, Definition, Document, JsonContent, NoBeta, Notice, Origin,
     Placed, Registry, RegistryBuilder, Rejected, default_path_flat,
@@ -182,13 +180,7 @@ impl Dimension {
         cx: &LoadContext,
     ) -> Result<Document<Any>, Rejected> {
         let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
-        let origin = Origin::new(
-            PackRef::app_data(),
-            PackSide::Behavior,
-            path.clone(),
-            None,
-            Vec::new(),
-        );
+        let origin = Origin::file(PackRef::app_data(), PackSide::Behavior, path.clone());
         let Some(text) = text(bytes) else {
             return Err(reject(origin));
         };
@@ -214,26 +206,19 @@ impl Dimension {
         for key in ["minecraft:dimension", "description", "identifier"] {
             at.push(key);
         }
-        Diagnostic::new(
-            DiagnosticCode::InvalidValue {
-                text: Some(bedrock_addon_core::diagnostic::VanillaText::Formatted {
-                    template: "Dimension '{}' from pack id '{}' was invalid and could not be created!",
-                    args: vec![
-                        document.description.identifier.as_str().to_owned(),
-                        origin.pack.id().uuid.to_string(),
-                    ],
-                }),
-            },
-            // The game logs this at the content log's warning level.
-            Severity::Warning,
-            Phase::Validate,
-            Location::new(
-                Some(origin.pack.clone()),
-                Some(origin.path.clone()),
-                at,
-                None,
-            ),
-        )
+        // The game logs this at the content log's warning level.
+        Diagnostic::warn(DiagnosticCode::InvalidValue {
+            text: Some(bedrock_addon_core::diagnostic::VanillaText::Formatted {
+                template: "Dimension '{}' from pack id '{}' was invalid and could not be created!",
+                args: vec![
+                    document.description.identifier.as_str().to_owned(),
+                    origin.pack.id().uuid.to_string(),
+                ],
+            }),
+        })
+        .at(at)
+        .phase(Phase::Validate)
+        .in_file(origin)
     }
 }
 
@@ -292,15 +277,10 @@ fn text(bytes: &[u8]) -> Option<&str> {
 /// The rejection of an unreadable file.
 fn reject(origin: Origin) -> Rejected {
     let mut diagnostics = Diagnostics::default();
-    diagnostics.push(Diagnostic::new(
-        DiagnosticCode::MalformedInput {
-            message: "not UTF-8 JSON within the nesting limit".to_owned(),
-            text: None,
-        },
-        Severity::Error,
-        Phase::Parse,
-        Location::default(),
-    ));
+    diagnostics.push(Diagnostic::error(DiagnosticCode::MalformedInput {
+        message: "not UTF-8 JSON within the nesting limit".to_owned(),
+        text: None,
+    }));
     locate(&mut diagnostics, &origin);
     Rejected::new(origin, diagnostics)
 }
@@ -324,7 +304,7 @@ pub(crate) fn parse_file(
     cx: &LoadContext,
 ) -> Result<Document<Dimension>, Rejected> {
     let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
-    let origin = Origin::new(pack, side, path.clone(), None, Vec::new());
+    let origin = Origin::file(pack, side, path.clone());
     let Some(text) = text(bytes) else {
         return Err(reject(origin));
     };
@@ -419,23 +399,16 @@ fn replaced_registration(id: &DimensionId, origin: &Origin) -> Diagnostic {
     for key in ["minecraft:dimension", "description", "identifier"] {
         at.push(key);
     }
-    Diagnostic::new(
-        DiagnosticCode::ShadowedDefinition {
-            text: Some(bedrock_addon_core::diagnostic::VanillaText::Formatted {
-                template: "Dimension definition identifier '{}' registered via scripting was replaced by the definition from pack id '{}'",
-                args: vec![id.as_str().to_owned(), origin.pack.id().uuid.to_string()],
-            }),
-        },
-        // The game logs this at the content log's warning level.
-        Severity::Warning,
-        Phase::Validate,
-        Location::new(
-            Some(origin.pack.clone()),
-            Some(origin.path.clone()),
-            at,
-            None,
-        ),
-    )
+    // The game logs this at the content log's warning level.
+    Diagnostic::warn(DiagnosticCode::ShadowedDefinition {
+        text: Some(bedrock_addon_core::diagnostic::VanillaText::Formatted {
+            template: "Dimension definition identifier '{}' registered via scripting was replaced by the definition from pack id '{}'",
+            args: vec![id.as_str().to_owned(), origin.pack.id().uuid.to_string()],
+        }),
+    })
+    .at(at)
+    .phase(Phase::Validate)
+    .in_file(origin)
 }
 
 /// The registry: the first file walked wins (an insert only when the identifier is absent), so

@@ -5,7 +5,7 @@ use super::{convert, read};
 use crate as latest;
 use crate::texts::{child, element};
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Location, Phase, Severity,
+    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Phase,
 };
 use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::id::ItemId;
@@ -218,12 +218,11 @@ fn upgrade_tier(index: usize, tier: Tier, at: &JsonPath, cx: &mut UpgradeCx<'_>)
 /// information.
 fn kept_trades(trades: Vec<Trade>, at: &JsonPath, cx: &mut UpgradeCx<'_>) -> Option<Vec<Trade>> {
     if trades.is_empty() {
-        cx.diagnostics.push(crate::texts::finding(
-            DiagnosticCode::InvalidValue { text: None },
-            Severity::Info,
-            Phase::Upgrade,
-            at.clone(),
-        ));
+        cx.diagnostics.push(
+            Diagnostic::info(DiagnosticCode::InvalidValue { text: None })
+                .at(at.clone())
+                .phase(Phase::Upgrade),
+        );
         // The group's other members go with it: told at the group. The flat form
         // has no group of the file's.
         let mut group = at.clone();
@@ -241,12 +240,11 @@ fn kept_trades(trades: Vec<Trade>, at: &JsonPath, cx: &mut UpgradeCx<'_>) -> Opt
         };
         if group.pop() && in_groups(&group) {
             // The game's upgrade says nothing here; the crate reports an information.
-            cx.diagnostics.push(crate::texts::finding(
-                DiagnosticCode::DroppedField { text: None },
-                Severity::Info,
-                Phase::Upgrade,
-                group,
-            ));
+            cx.diagnostics.push(
+                Diagnostic::info(DiagnosticCode::DroppedField { text: None })
+                    .at(group)
+                    .phase(Phase::Upgrade),
+            );
         }
         return None;
     }
@@ -397,14 +395,12 @@ fn upgrade_item(item: TradeItem, at: &JsonPath, cx: &mut UpgradeCx<'_>) -> Vec<l
             (from, WRITTEN_AS_FLTRS)
         });
     for (from, written_as) in functions.into_iter().chain(filters) {
-        let mut announcement = Diagnostic::new(
-            DiagnosticCode::ValueRewritten { text: None },
-            Severity::Info,
-            Phase::Upgrade,
-            Location::new(None, None, child(at, from), None),
+        cx.diagnostics.push(
+            Diagnostic::info(DiagnosticCode::ValueRewritten { text: None })
+                .at(child(at, from))
+                .phase(Phase::Upgrade)
+                .detail(DiagnosticDetail::Note(written_as)),
         );
-        announcement.detail = Some(Box::new(DiagnosticDetail::Note(written_as)));
-        cx.diagnostics.push(announcement);
     }
     items
 }

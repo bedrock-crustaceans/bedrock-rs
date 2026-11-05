@@ -11,6 +11,7 @@ use super::walk::{WORLD_GEN, Walk};
 use bedrock_addon_core::diagnostic::{DiagnosticCode, VanillaText};
 use bedrock_addon_core::molang::{Molang, MolangFields, MolangVisitor};
 use bedrock_addon_core::shared::BlockSpecifier;
+use bedrock_addon_core::versioning::ValidateCx;
 
 /// The client's text for a float range array of another length than two.
 const FLOAT_RANGE_ARRAY: &str =
@@ -79,15 +80,15 @@ macro_rules! carver {
         }
 
         impl Rules for $name {
-            fn rules(&mut self, check: &mut Check<'_>) {
+            fn rules(&mut self, check: &mut ValidateCx<'_>) {
                 if let Some(block) = &self.fill_with {
                     let at = check.path("fill_with");
-                    check.d.extend(block.check(&at));
+                    check.diagnostics.extend(block.check(&at));
                 }
                 $(
                     if let Some(block) = &self.$extra {
                         let at = check.path(stringify!($extra));
-                        check.d.extend(block.check(&at));
+                        check.diagnostics.extend(block.check(&at));
                     }
                 )*
                 check.int_min("skip_carve_chance", self.skip_carve_chance, 1);
@@ -107,11 +108,11 @@ macro_rules! carver {
 /// A carver float range: its own finding, or vanilla's text for an unparsed array. The array
 /// is an error that refuses the feature: the client logs "Float range array was not parsed",
 /// the range then fails its validation, and a failed member fails the whole schema.
-fn range_rules(check: &mut Check<'_>, key: &str, range: Option<&CarverRange>) {
+fn range_rules(check: &mut ValidateCx<'_>, key: &str, range: Option<&CarverRange>) {
     match range {
         Some(CarverRange::Range(range)) => {
             let at = check.path(key);
-            check.d.extend(range.check(&at));
+            check.diagnostics.extend(range.check(&at));
         }
         Some(CarverRange::Unparsed(_)) => check.error(
             key,

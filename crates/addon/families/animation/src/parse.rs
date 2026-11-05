@@ -7,9 +7,7 @@ use super::{
     Animation, AnimationFile, AxisElement, Bone, Channel, EventString, Keyframe, KeyframeParts,
     LerpMode, LoopMode, OneOrMany, RelativeTo,
 };
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, JsonPath, Location, Phase, Severity,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::pack_identity::PackType;
 use bedrock_addon_core::version::{ENGINE_VERSION, SemVersion};
@@ -65,25 +63,14 @@ pub(crate) fn parse_file(bytes: &[u8], cx: &LoadContext) -> Parsed<AnimationFile
         let mut at = JsonPath::new();
         at.push("format_version");
         let code = if cx.pack_type == PackType::Resource {
-            (
-                DiagnosticCode::FormatVersionAboveEngine {
-                    version: written.to_string(),
-                },
-                Severity::Info,
-            )
+            DiagnosticCode::FormatVersionAboveEngine {
+                version: written.to_string(),
+            }
         } else {
-            (
-                DiagnosticCode::UnsupportedVersion { text: None },
-                // The game loads the file silently, so this finding is the crate's own.
-                Severity::Info,
-            )
+            // The game loads the file silently, so this finding is the crate's own.
+            DiagnosticCode::UnsupportedVersion { text: None }
         };
-        diagnostics.push(Diagnostic::new(
-            code.0,
-            code.1,
-            Phase::Parse,
-            Location::new(None, None, at, None),
-        ));
+        diagnostics.push(Diagnostic::info(code).at(at));
     }
     super::validate::animation_findings(&file, cx, &mut diagnostics);
     let defaults = file

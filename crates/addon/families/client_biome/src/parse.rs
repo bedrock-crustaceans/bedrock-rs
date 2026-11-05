@@ -10,7 +10,7 @@ use super::component::{ClientBiomeComponent, child, write_component};
 use super::texts::{IDENTIFIER_NAMESPACE, IDENTIFIER_UPPER, INVALID_FILE, fixed};
 use super::{Description, EnvironmentAttributes};
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, VanillaText,
 };
 use bedrock_addon_core::document::{ComponentMap, ComponentSet, Extra};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, StrictString, Value};
@@ -153,15 +153,13 @@ pub(crate) fn strict<T>(
     let mut found = Diagnostics::default();
     let parsed = read(&mut found);
     if found.has_errors() {
-        found.push(Diagnostic::new(
-            DiagnosticCode::MalformedInput {
+        found.push(
+            Diagnostic::error(DiagnosticCode::MalformedInput {
                 message: INVALID_FILE.to_owned(),
                 text: Some(VanillaText::Fixed(INVALID_FILE)),
-            },
-            Severity::Error,
-            Phase::Parse,
-            Location::new(None, None, cx.at.clone(), None),
-        ));
+            })
+            .at(cx.at.clone()),
+        );
     }
     d.extend(found);
     // The chain drops the value of a parse that raised an error.
@@ -272,7 +270,7 @@ fn check_identifier(
             text: fixed(IDENTIFIER_NAMESPACE),
         }
     };
-    d.push(error(code, child(at, &["description", "identifier"])));
+    d.push(Diagnostic::error(code).at(child(at, &["description", "identifier"])));
 }
 
 /// The `components` object of a struct of `version`, in file order. A component the struct
@@ -304,18 +302,13 @@ fn components<C: ComponentEra>(
             // The strict mask's input, not a grade: core's `unknown_members_are_errors`
             // (`versioning/pipeline.rs`) turns this Parse-phase warning into the refusing error the
             // game gives for an unknown member.
-            d.push(Diagnostic::new(
-                DiagnosticCode::UnrecognizedComponent { text: None },
-                Severity::Warning,
-                Phase::Parse,
-                Location::new(None, None, path, None),
-            ));
+            d.push(Diagnostic::warn(DiagnosticCode::UnrecognizedComponent { text: None }).at(path));
             continue;
         };
         // Not core's `check_released`: that judges the typed entries of a finished map, and
         // a component the struct of `version` does not bind is never read into one.
         if let Some(released) = meta.released.filter(|released| version < *released) {
-            d.push(error(use_version("component", key, released), path));
+            d.push(Diagnostic::error(use_version("component", key, released)).at(path));
             continue;
         }
         if gated(key, &json, version, &path, d) {
@@ -380,10 +373,10 @@ fn gated(
             .and_then(Value::as_string)
             .is_some_and(|name| name.as_str() == "dry_foliage");
     if dry_foliage && version < DRY_FOLIAGE_MAP {
-        d.push(error(
-            DiagnosticCode::InvalidEnumValue { text: None },
-            child(at, &["color", "color_map"]),
-        ));
+        d.push(
+            Diagnostic::error(DiagnosticCode::InvalidEnumValue { text: None })
+                .at(child(at, &["color", "color_map"])),
+        );
         reported = true;
     }
     reported
@@ -398,14 +391,4 @@ fn use_version(what: &'static str, name: &str, version: FormatVersion) -> Diagno
             version,
         }),
     }
-}
-
-/// An error of the parse at `path`.
-fn error(code: DiagnosticCode, path: JsonPath) -> Diagnostic {
-    Diagnostic::new(
-        code,
-        Severity::Error,
-        Phase::Parse,
-        Location::new(None, None, path, None),
-    )
 }

@@ -9,8 +9,7 @@
 
 use super::DeferredSettings;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Location, Phase, Severity,
-    VanillaText,
+    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Phase, VanillaText,
 };
 use bedrock_addon_core::document::Origin;
 use bedrock_addon_core::id::BlockId;
@@ -53,24 +52,16 @@ fn kept_error(
     for key in path {
         at.push(key);
     }
-    let mut finding = Diagnostic::new(
-        code,
-        Severity::Error,
-        Phase::Link,
-        Location::new(
-            Some(origin.pack.clone()),
-            Some(origin.path.clone()),
-            at,
-            None,
-        ),
-    )
-    .into_kept();
-    finding.detail = Some(Box::new(DiagnosticDetail::Reference {
-        kind,
-        id: id.to_owned(),
-        hint: None,
-    }));
-    finding
+    Diagnostic::error(code)
+        .at(at)
+        .in_file(origin)
+        .phase(Phase::Link)
+        .into_kept()
+        .detail(DiagnosticDetail::Reference {
+            kind,
+            id: id.to_owned(),
+            hint: None,
+        })
 }
 
 /// The link findings of `settings`, local lights first (the order the entries merged in),

@@ -35,15 +35,15 @@ fn document(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Op
     )) {
         Ok(document) => Some(document),
         Err(error) => {
-            d.push(bedrock_addon_core::diagnostic::Diagnostic::new(
-                bedrock_addon_core::diagnostic::DiagnosticCode::MalformedInput {
-                    message: error.to_string(),
-                    text: None,
-                },
-                bedrock_addon_core::diagnostic::Severity::Error,
-                bedrock_addon_core::diagnostic::Phase::Parse,
-                bedrock_addon_core::diagnostic::Location::new(None, None, cx.at.clone(), None),
-            ));
+            d.push(
+                bedrock_addon_core::diagnostic::Diagnostic::error(
+                    bedrock_addon_core::diagnostic::DiagnosticCode::MalformedInput {
+                        message: error.to_string(),
+                        text: None,
+                    },
+                )
+                .at(cx.at.clone()),
+            );
             None
         }
     }

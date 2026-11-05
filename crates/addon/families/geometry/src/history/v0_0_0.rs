@@ -11,9 +11,7 @@ use super::super::read::{LocatorForm, read_locators, read_render_group_id};
 use super::super::schema::{Group, Hit, JsonKind, Node, Pattern, SchemaWalk};
 use super::super::{GeometryLegacy, Locator};
 use super::{settle, v1_8_0, walk_for};
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
 use bedrock_addon_core::version::FormatVersion;
@@ -283,12 +281,11 @@ impl VersionStruct for GeometryFile {
 fn removed(cx: &mut UpgradeCx<'_>, at: &JsonPath, member: &str) {
     let mut at = at.clone();
     at.push(member);
-    cx.diagnostics.push(Diagnostic::new(
-        DiagnosticCode::DroppedField { text: None },
-        Severity::Info,
-        Phase::Upgrade,
-        Location::new(None, None, at, None),
-    ));
+    cx.diagnostics.push(
+        Diagnostic::info(DiagnosticCode::DroppedField { text: None })
+            .at(at)
+            .phase(Phase::Upgrade),
+    );
 }
 
 /// Notes a `mirror` or `reset` written as a text that the step holds, and the file is written
@@ -296,12 +293,11 @@ fn removed(cx: &mut UpgradeCx<'_>, at: &JsonPath, member: &str) {
 fn rewritten(cx: &mut UpgradeCx<'_>, at: &JsonPath, member: &str) {
     let mut at = at.clone();
     at.push(member);
-    cx.diagnostics.push(Diagnostic::new(
-        DiagnosticCode::ValueRewritten { text: None },
-        Severity::Info,
-        Phase::Upgrade,
-        Location::new(None, None, at, None),
-    ));
+    cx.diagnostics.push(
+        Diagnostic::info(DiagnosticCode::ValueRewritten { text: None })
+            .at(at)
+            .phase(Phase::Upgrade),
+    );
 }
 
 /// The step on `mirror`: a bool stays; `"true"` and `"false"` become bools; any other
@@ -353,12 +349,11 @@ fn cubes(slots: Vec<CubeSlot>, cx: &mut UpgradeCx<'_>, at: &JsonPath) -> Vec<v1_
             let mut gone = at.clone();
             gone.push("cubes");
             gone.push_index(slots[index].0);
-            cx.diagnostics.push(Diagnostic::new(
-                DiagnosticCode::DroppedField { text: None },
-                Severity::Info,
-                Phase::Upgrade,
-                Location::new(None, None, gone, None),
-            ));
+            cx.diagnostics.push(
+                Diagnostic::info(DiagnosticCode::DroppedField { text: None })
+                    .at(gone)
+                    .phase(Phase::Upgrade),
+            );
             slots.swap_remove(index);
         } else {
             index += 1;

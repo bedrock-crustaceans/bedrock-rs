@@ -15,7 +15,7 @@ use super::{
     Keyframed, same_zero,
 };
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity, VanillaText,
 };
 use bedrock_addon_core::version::{FormatVersion, SemVersion};
 
@@ -31,14 +31,14 @@ fn below(at: &JsonPath, keys: &[&str]) -> JsonPath {
 }
 
 fn report(d: &mut Diagnostics, severity: Severity, text: &'static str, at: JsonPath) {
-    d.push(Diagnostic::new(
-        DiagnosticCode::InvalidValue {
+    d.push(
+        Diagnostic::error(DiagnosticCode::InvalidValue {
             text: Some(VanillaText::Fixed(text)),
-        },
-        severity,
-        Phase::Validate,
-        Location::new(None, None, at, None),
-    ));
+        })
+        .severity(severity)
+        .at(at)
+        .phase(Phase::Validate),
+    );
 }
 
 /// V14: the document's `format_version` text is a version. Unreachable from a file, whose
@@ -219,14 +219,13 @@ pub(crate) fn namespace(
 ) {
     let namespace = identifier.split(':').next().unwrap_or(identifier);
     if !is_base_game_pack && namespace.eq_ignore_ascii_case("minecraft") {
-        d.push(Diagnostic::new(
-            DiagnosticCode::NamespaceRule {
+        d.push(
+            Diagnostic::error(DiagnosticCode::NamespaceRule {
                 text: Some(VanillaText::Fixed(MINECRAFT_NAMESPACE)),
-            },
-            Severity::Error,
-            Phase::Validate,
-            Location::new(None, None, below(at, &["description", "identifier"]), None),
-        ));
+            })
+            .at(below(at, &["description", "identifier"]))
+            .phase(Phase::Validate),
+        );
     }
 }
 
@@ -342,11 +341,10 @@ pub(crate) fn keyframe_gate(
         .into_iter()
         .map(|(keys, _)| below(at, &keys));
     for path in keyed {
-        d.push(Diagnostic::new(
-            DiagnosticCode::UnsupportedValueForm,
-            Severity::Error,
-            Phase::Validate,
-            Location::new(None, None, path, None),
-        ));
+        d.push(
+            Diagnostic::error(DiagnosticCode::UnsupportedValueForm)
+                .at(path)
+                .phase(Phase::Validate),
+        );
     }
 }

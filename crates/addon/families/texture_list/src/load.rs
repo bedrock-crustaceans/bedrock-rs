@@ -210,13 +210,7 @@ fn combine(parsed: Vec<ListFileParsed>, stack: &StackCx<'_>) -> TextureLists {
             if *last && let TextureListMode::List { entries } = &mode {
                 lint.omitted(entries, &mut findings);
             }
-            let origin = Origin::new(
-                pack.pack.clone(),
-                PackSide::Resource,
-                path,
-                None,
-                Vec::new(),
-            );
+            let origin = Origin::file(pack.pack.clone(), PackSide::Resource, path);
             lists.push(unversioned(document, origin, findings));
         }
         modes.push(mode);

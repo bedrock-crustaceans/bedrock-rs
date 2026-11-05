@@ -3,8 +3,7 @@
 
 use super::v0::TradeItem;
 use crate::Quantity;
-use crate::texts::finding;
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, JsonPath, Phase, Severity};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase};
 use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::version::FormatVersion;
@@ -19,7 +18,11 @@ use facet_value::{VArray, VObject};
 pub(super) fn quantity(json: &Value, at: &JsonPath, d: &mut Diagnostics) -> Option<Quantity> {
     let Some(read) = parse_range(json) else {
         // Not taken, and said: the item is written without the member.
-        warn(d, DiagnosticCode::InvalidType { text: None }, at);
+        d.push(
+            Diagnostic::info(DiagnosticCode::InvalidType { text: None })
+                .at(at.clone())
+                .phase(Phase::Upgrade),
+        );
         return None;
     };
     let (min, max) = (read.min.max(1), read.max.max(read.min.max(1)));
@@ -29,14 +32,22 @@ pub(super) fn quantity(json: &Value, at: &JsonPath, d: &mut Diagnostics) -> Opti
     // no range (vanilla reads each in silence).
     let beyond = [min, max].iter().any(|n| u32::try_from(*n).is_err());
     if read.min < 1 || read.max < 1 || read.inexact || beyond {
-        warn(d, DiagnosticCode::InvalidValue { text: None }, at);
+        d.push(
+            Diagnostic::info(DiagnosticCode::InvalidValue { text: None })
+                .at(at.clone())
+                .phase(Phase::Upgrade),
+        );
     }
     // An object without `max` wrote no bound the raise changes: no warning.
     let wrote_max = !matches!(read.form, Form::Object { max: false, .. });
     // The order is judged on the bounds once each is at least 1 (a bound below 1 has its own
     // finding).
     if read.swapped || (read.max.max(1) < min && wrote_max) {
-        warn(d, DiagnosticCode::ClampedValue { text: None }, at);
+        d.push(
+            Diagnostic::info(DiagnosticCode::ClampedValue { text: None })
+                .at(at.clone())
+                .phase(Phase::Upgrade),
+        );
     }
     Some(match read.form {
         Form::Number => Quantity::Exact(bound(max)),
@@ -304,6 +315,9 @@ pub(super) fn tell_lost(item: &TradeItem, expanded: bool, at: &JsonPath, cx: &mu
         path
     };
     let dropped = DiagnosticCode::DroppedField { text: None };
+    // The game's legacy parser and slice upgrade read and drop these silently and log nothing
+    // of them, so the crate reports an information.
+    let note = |code, at| Diagnostic::info(code).at(at).phase(Phase::Upgrade);
     // The expansion reads the function's name alone: any other member of the entry goes
     // with it.
     if expanded {
@@ -323,24 +337,23 @@ pub(super) fn tell_lost(item: &TradeItem, expanded: bool, at: &JsonPath, cx: &mu
                 let mut path = member("functions");
                 path.push_index(index);
                 path.push(key.as_str());
-                warn(
-                    cx.diagnostics,
+                cx.diagnostics.push(note(
                     DiagnosticCode::UnrecognizedField { text: None },
-                    &path,
-                );
+                    path.clone(),
+                ));
             }
         }
     }
     let Some(biomes) = &item.biomes else {
         if expanded && item.filters.is_some() {
-            warn(cx.diagnostics, dropped, &member("filters"));
+            cx.diagnostics.push(note(dropped, member("filters")));
         }
         return;
     };
     if expanded || cx.original_version >= GENERIC_FILTERS {
-        warn(cx.diagnostics, dropped.clone(), &member("biomes"));
+        cx.diagnostics.push(note(dropped.clone(), member("biomes")));
         if expanded && item.filters.is_some() {
-            warn(cx.diagnostics, dropped, &member("filters"));
+            cx.diagnostics.push(note(dropped, member("filters")));
         }
         return;
     }
@@ -351,10 +364,8 @@ pub(super) fn tell_lost(item: &TradeItem, expanded: bool, at: &JsonPath, cx: &mu
         if list.is_empty() {
             // A list without a name makes no filter and goes with the member: noted (the
             // game makes none of it either).
-            cx.diagnostics.push(finding(
+            cx.diagnostics.push(note(
                 DiagnosticCode::DroppedField { text: None },
-                Severity::Info,
-                Phase::Upgrade,
                 at_biomes.clone(),
             ));
         }
@@ -363,44 +374,34 @@ pub(super) fn tell_lost(item: &TradeItem, expanded: bool, at: &JsonPath, cx: &mu
             at_element.push_index(index);
             match element.as_string() {
                 Some(name) if known(name.as_str()) => any = true,
-                Some(_) => warn(
-                    cx.diagnostics,
+                Some(_) => cx.diagnostics.push(note(
                     DiagnosticCode::InvalidValue { text: None },
-                    &at_element,
-                ),
-                None => warn(
-                    cx.diagnostics,
+                    at_element.clone(),
+                )),
+                None => cx.diagnostics.push(note(
                     DiagnosticCode::InvalidType { text: None },
-                    &at_element,
-                ),
+                    at_element.clone(),
+                )),
             }
         }
     } else if let Some(name) = biomes.as_string() {
         if known(name.as_str()) {
             any = true;
         } else {
-            warn(
-                cx.diagnostics,
+            cx.diagnostics.push(note(
                 DiagnosticCode::InvalidValue { text: None },
-                &at_biomes,
-            );
+                at_biomes.clone(),
+            ));
         }
     } else {
-        warn(
-            cx.diagnostics,
+        cx.diagnostics.push(note(
             DiagnosticCode::InvalidType { text: None },
-            &at_biomes,
-        );
+            at_biomes.clone(),
+        ));
     }
     if any && item.filters.is_some() {
-        warn(cx.diagnostics, dropped, &member("filters"));
+        cx.diagnostics.push(note(dropped, member("filters")));
     }
-}
-
-/// A note at `at`: the game's legacy parser and slice upgrade read and drop these silently and
-/// log nothing of them, so the crate reports an information.
-fn warn(d: &mut Diagnostics, code: DiagnosticCode, at: &JsonPath) {
-    d.push(finding(code, Severity::Info, Phase::Upgrade, at.clone()));
 }
 
 #[cfg(test)]

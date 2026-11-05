@@ -5,8 +5,7 @@
 //! the scripts are built member by member so a bad one is reported at its path.
 
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, Span, Told,
-    VanillaText, code_for_deserialize_error_kind,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity, Span, Told, VanillaText,
 };
 use bedrock_addon_core::document::{ComponentMap, ComponentSet, Extra};
 use bedrock_addon_core::id::EntityId;
@@ -155,37 +154,25 @@ impl Reader<'_, '_> {
         at: JsonPath,
         span: Option<Span>,
     ) {
-        let span = span.filter(|_| self.spans);
-        self.d.push(Diagnostic::new(
-            code,
-            severity,
-            Phase::Parse,
-            Location::new(None, None, at, span),
-        ));
+        let finding = Diagnostic::error(code).at(at).severity(severity);
+        self.d.push(match span.filter(|_| self.spans) {
+            Some(span) => finding.span(span),
+            None => finding,
+        });
     }
 
     /// A kept error: the game logs `code`'s line at the error level and loads the entity.
     fn report_kept(&mut self, code: DiagnosticCode, at: JsonPath, span: Option<Span>) {
-        let span = span.filter(|_| self.spans);
-        self.d.push_kept_error(Diagnostic::new(
-            code,
-            Severity::Error,
-            Phase::Parse,
-            Location::new(None, None, at, span),
-        ));
+        let finding = Diagnostic::error(code).at(at);
+        self.d.push_kept_error(match span.filter(|_| self.spans) {
+            Some(span) => finding.span(span),
+            None => finding,
+        });
     }
 
     /// A failed typed parse of a slice, at `base` followed by the failing member.
-    fn slice_error(
-        &mut self,
-        error: &SliceError,
-        base: &JsonPath,
-        slice: JsonSlice<'_>,
-        severity: Severity,
-    ) {
-        let blank = slice.text.trim().is_empty();
-        let code =
-            code_for_deserialize_error_kind(&error.error.kind, !error.path.is_empty(), blank);
+    fn slice_error(&mut self, error: &SliceError, base: &JsonPath, severity: Severity) {
+        let code = error.code_with_path(error.has_path());
         self.report(code, severity, append(base, &error.path), Some(error.span));
     }
 
@@ -217,7 +204,7 @@ impl Reader<'_, '_> {
         let mut value = match parse_at::<T>(slice) {
             Ok(value) => value,
             Err(error) => {
-                self.slice_error(&error, base, slice, severity);
+                self.slice_error(&error, base, severity);
                 return None;
             }
         };
@@ -346,12 +333,10 @@ pub(crate) fn payload_version_unread(
     if FormatVersionInput::from_json(version) == Some(cx.written) {
         return None;
     }
-    Some(Diagnostic::new(
-        DiagnosticCode::UnrecognizedField { text: None },
-        Severity::Info,
-        Phase::Parse,
-        Location::new(None, None, child(&cx.at, "format_version"), None),
-    ))
+    Some(
+        Diagnostic::info(DiagnosticCode::UnrecognizedField { text: None })
+            .at(child(&cx.at, "format_version")),
+    )
 }
 
 /// [`entity`] with an explicit reader: the newest struct from `payload`, findings below `at`.
@@ -693,14 +678,9 @@ pub(crate) fn read_components(
         if value.is_some() && found.is_empty() && slice.text.trim() == "null" {
             // A component that is `null` is read as the component of defaults (facet reads
             // `null` as a struct of defaults): kept so, and told.
-            found.push(Diagnostic::new(
-                DiagnosticCode::InvalidType { text: None },
-                // The game reads a `null` component as absent without a line, so the crate
-                // reports an information.
-                Severity::Info,
-                Phase::Parse,
-                Location::new(None, None, JsonPath::new(), None),
-            ));
+            // The game reads a `null` component as absent without a line, so the crate reports
+            // an information.
+            found.push(Diagnostic::info(DiagnosticCode::InvalidType { text: None }));
         }
         let unknown: Vec<JsonPath> = found
             .iter()
@@ -879,12 +859,7 @@ fn goal_ranges_read(
         return None;
     }
     for (at, code) in dropped {
-        found.push(Diagnostic::new(
-            code,
-            Severity::Info,
-            Phase::Parse,
-            Location::new(None, None, at, None),
-        ));
+        found.push(Diagnostic::info(code).at(at));
     }
     bedrock_addon_core::json::to_json(&json).ok()
 }

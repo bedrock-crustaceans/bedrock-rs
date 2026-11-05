@@ -6,7 +6,7 @@ use indexmap::IndexMap;
 
 use super::{FLOOR, FeatureRule, FeatureRules, PlacementPass, validate};
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, VanillaText,
 };
 use bedrock_addon_core::document::{
     CombineRule, Content, Contribution, Definition, Document, JsonContent, NoBeta, Notice, Origin,
@@ -115,15 +115,10 @@ fn text(bytes: &[u8]) -> Option<&str> {
 
 /// The finding of an unreadable file.
 fn malformed() -> Diagnostic {
-    Diagnostic::new(
-        DiagnosticCode::MalformedInput {
-            message: "not UTF-8 JSON within the nesting limit".to_owned(),
-            text: None,
-        },
-        Severity::Error,
-        Phase::Parse,
-        Location::default(),
-    )
+    Diagnostic::error(DiagnosticCode::MalformedInput {
+        message: "not UTF-8 JSON within the nesting limit".to_owned(),
+        text: None,
+    })
 }
 
 /// Gives every finding the document's pack and file.
@@ -157,14 +152,11 @@ fn identifier_checks(rule: &FeatureRule, path: &PackPath, d: &mut Diagnostics) {
         at.push(key);
     }
     let warn = |template, args: Vec<String>| {
-        Diagnostic::new(
-            DiagnosticCode::InvalidValue {
-                text: Some(VanillaText::Formatted { template, args }),
-            },
-            Severity::Error,
-            Phase::Validate,
-            Location::new(None, None, at.clone(), None),
-        )
+        Diagnostic::error(DiagnosticCode::InvalidValue {
+            text: Some(VanillaText::Formatted { template, args }),
+        })
+        .at(at.clone())
+        .phase(Phase::Validate)
         .into_kept()
     };
     match identifier.rfind(':') {
@@ -195,7 +187,7 @@ pub(crate) fn parse_file(
     // A leading byte-order mark is blanked, not cut, so every span is an offset into the file
     // as written.
     let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
-    let origin = Origin::new(pack, side, path.clone(), None, Vec::new());
+    let origin = Origin::file(pack, side, path.clone());
     let Some(text) = text(bytes) else {
         let mut diagnostics = Diagnostics::default();
         diagnostics.push(malformed());

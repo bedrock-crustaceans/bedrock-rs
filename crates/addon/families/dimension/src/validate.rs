@@ -5,9 +5,7 @@
 
 use super::parse::child;
 use super::{Dimension, DimensionHeight, V1_26_50};
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, JsonPath, Location, Phase, Severity, VanillaText,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, Phase, VanillaText};
 use bedrock_addon_core::versioning::ValidateCx;
 
 /// The validation error text of every identifier failure (part B).
@@ -43,24 +41,18 @@ fn generator_rule(dimension: &Dimension, at: &JsonPath, cx: &mut ValidateCx<'_>)
     if dimension.components.generation.generator().is_some() {
         return;
     }
-    cx.diagnostics.push_kept_error(Diagnostic::new(
-        DiagnosticCode::InvalidValue {
+    cx.diagnostics.push_kept_error(
+        Diagnostic::error(DiagnosticCode::InvalidValue {
             text: Some(VanillaText::Fixed(
                 "minecraft:generation: generator_type unsupported",
             )),
-        },
-        Severity::Error,
-        Phase::Validate,
-        Location::new(
-            None,
-            None,
-            child(
-                at,
-                &["components", "minecraft:generation", "generator_type"],
-            ),
-            None,
-        ),
-    ));
+        })
+        .at(child(
+            at,
+            &["components", "minecraft:generation", "generator_type"],
+        ))
+        .phase(Phase::Validate),
+    );
 }
 
 /// Part A: the nether and the end take no height but `{0, 0}`; any other
@@ -165,15 +157,14 @@ fn error(
     content_log: &'static str,
     validation: &'static str,
 ) {
-    cx.diagnostics.push(Diagnostic::new(
-        DiagnosticCode::InvalidValue {
+    cx.diagnostics.push(
+        Diagnostic::error(DiagnosticCode::InvalidValue {
             text: Some(VanillaText::Formatted {
                 template: "{}\n{}",
                 args: vec![content_log.to_owned(), validation.to_owned()],
             }),
-        },
-        Severity::Error,
-        Phase::Validate,
-        Location::new(None, None, at, None),
-    ));
+        })
+        .at(at)
+        .phase(Phase::Validate),
+    );
 }

@@ -12,9 +12,7 @@ use crate::{
     FogVolumetricMediaCoeffsSetting, FogWaterDistanceSetting, Keyframed,
 };
 use crate::{Era, float, object_with, read_document};
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase};
 use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::id::FogId;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
@@ -165,12 +163,11 @@ fn entry(
         for key in ["minecraft:fog_settings", "distance", name, "transition_fog"] {
             at.push(key);
         }
-        cx.diagnostics.push(Diagnostic::new(
-            DiagnosticCode::DroppedField { text: None },
-            Severity::Info,
-            Phase::Upgrade,
-            Location::new(None, None, at, None),
-        ));
+        cx.diagnostics.push(
+            Diagnostic::info(DiagnosticCode::DroppedField { text: None })
+                .at(at)
+                .phase(Phase::Upgrade),
+        );
     }
     Some(setting(&old))
 }

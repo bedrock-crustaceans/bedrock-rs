@@ -3,9 +3,7 @@
 
 use super::parse::{not_found, parse_function, parse_tick};
 use super::{Function, TickList};
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, Location, Phase, Severity,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics};
 use bedrock_addon_core::document::{
     CombineRule, Content, Contribution, Definition, Document, JsonContent, Merge, Merged, NoBeta,
     Origin, Placed, Registry, RegistryBuilder, Rejected, VersionInfo,
@@ -107,7 +105,7 @@ pub(super) fn function_name(path: &PackPath) -> Option<&str> {
 
 /// The origin of a file of `pack`.
 fn origin(pack: PackRef, side: PackSide, path: &PackPath) -> Origin {
-    Origin::new(pack, side, path.clone(), None, Vec::new())
+    Origin::file(pack, side, path.clone())
 }
 
 /// Gives every finding the file's pack and path.
@@ -138,12 +136,9 @@ fn parse_function_file(
     let origin = origin(pack, side, path);
     let Some(name) = function_name(key) else {
         let mut diagnostics = Diagnostics::default();
-        diagnostics.push(Diagnostic::new(
-            DiagnosticCode::IgnoredFile { text: None },
-            Severity::Error,
-            Phase::Parse,
-            Location::default(),
-        ));
+        diagnostics.push(Diagnostic::error(DiagnosticCode::IgnoredFile {
+            text: None,
+        }));
         locate(&mut diagnostics, &origin);
         return (None, Err(Rejected::new(origin, diagnostics)));
     };
@@ -334,10 +329,8 @@ fn combine_tick(parsed: Vec<TickWalkFile>, stack: &StackCx<'_>) -> Merged<TickLi
             }
             // The game's text is `Function listed in tick.json with name %s not found.`,
             // logged as a warning; the entry is skipped.
-            let mut warning = not_found(entry.function.as_str(), of_file.get(position).copied());
-            warning.location.pack = Some(cx.origin().pack.clone());
-            warning.location.path = Some(cx.origin().path.clone());
-            cx.push_diagnostic(warning);
+            let warning = not_found(entry.function.as_str(), of_file.get(position).copied());
+            cx.push_diagnostic(warning.in_file(cx.origin()));
         }
     })
 }

@@ -5,10 +5,7 @@ use facet::Facet;
 use facet_json::RawJson;
 
 use super::{Description, Shape, ShapeBox, VoxelShape, texts};
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, Span,
-    code_for_deserialize_error_kind,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Span};
 use bedrock_addon_core::json::{self, JsonSlice, Value, parse_at};
 use bedrock_addon_core::versioning::ParseCx;
 
@@ -43,13 +40,7 @@ pub(crate) fn parse_shape(
     let shell: Shell<'_> = match parse_at(payload) {
         Ok(shell) => shell,
         Err(failure) => {
-            let blank = payload.text.trim().is_empty();
-            let code = code_for_deserialize_error_kind(
-                &failure.error.kind,
-                !failure.path.is_empty(),
-                blank,
-            );
-            d.push(error(code, join(&cx.at, &failure.path), Some(failure.span)));
+            d.push(failure.into_diagnostic(&cx.at, |code, _| code));
             return None;
         }
     };
@@ -103,28 +94,25 @@ pub(crate) fn constraints(identifier: &str, boxes: usize, at: &JsonPath, d: &mut
     // The identifier constraint is a length cap and no pattern; the game's text for it is not
     // reproduced here.
     if identifier.len() > MAX_IDENTIFIER {
-        d.push(error(
-            DiagnosticCode::InvalidValue { text: None },
-            child(at, &["description", "identifier"]),
-            None,
-        ));
+        d.push(
+            Diagnostic::error(DiagnosticCode::InvalidValue { text: None })
+                .at(child(at, &["description", "identifier"])),
+        );
     }
     // A shape needs a box; the game's text for it is not reproduced here.
     if boxes < MIN_BOXES {
-        d.push(error(
-            DiagnosticCode::InvalidValue { text: None },
-            child(at, &["shape", "boxes"]),
-            None,
-        ));
+        d.push(
+            Diagnostic::error(DiagnosticCode::InvalidValue { text: None })
+                .at(child(at, &["shape", "boxes"])),
+        );
     }
     if boxes > MAX_BOXES {
-        d.push(error(
-            DiagnosticCode::InvalidValue {
+        d.push(
+            Diagnostic::error(DiagnosticCode::InvalidValue {
                 text: Some(texts::too_many_boxes()),
-            },
-            child(at, &["shape", "boxes"]),
-            None,
-        ));
+            })
+            .at(child(at, &["shape", "boxes"])),
+        );
     }
 }
 
@@ -163,21 +151,23 @@ fn corner(
     {
         return Some([x, y, z]);
     }
+    // A corner's own finding is at the corner's text, when the payload holds it.
+    let at_corner = |code: DiagnosticCode| {
+        let finding = Diagnostic::error(code).at(at.clone());
+        match span {
+            Some(span) => finding.span(span),
+            None => finding,
+        }
+    };
     let expected = |d: &mut Diagnostics| {
-        d.push(error(
-            DiagnosticCode::InvalidType {
-                text: Some(texts::expected_x_y_z()),
-            },
-            at.clone(),
-            span,
-        ));
+        d.push(at_corner(DiagnosticCode::InvalidType {
+            text: Some(texts::expected_x_y_z()),
+        }));
     };
     let Some(object) = json.and_then(Value::as_object) else {
         expected(d);
-        d.push(error(
+        d.push(at_corner(
             bedrock_addon_core::diagnostic::cereal::expected_object(),
-            at.clone(),
-            span,
         ));
         return None;
     };
@@ -201,11 +191,7 @@ fn corner(
         expected(d);
     }
     for key in &mistyped {
-        d.push(error(
-            DiagnosticCode::InvalidType { text: None },
-            child(at, &[key]),
-            None,
-        ));
+        d.push(Diagnostic::error(DiagnosticCode::InvalidType { text: None }).at(child(at, &[key])));
     }
     for key in &unbound {
         d.push(unknown(child(at, &[key])));
@@ -225,24 +211,10 @@ fn number(json: &Value) -> Option<f32> {
 /// A member the schema does not bind, at `at`: the marker `unknown_members_are_errors` turns
 /// into the error that refuses the document (every voxel-shape slice is strict).
 fn unknown(at: JsonPath) -> Diagnostic {
-    Diagnostic::new(
-        DiagnosticCode::UnrecognizedField {
-            text: Some(texts::not_in_schema()),
-        },
-        Severity::Warning,
-        Phase::Parse,
-        Location::new(None, None, at, None),
-    )
-}
-
-/// An error of the schema loader at `at`.
-fn error(code: DiagnosticCode, at: JsonPath, span: Option<Span>) -> Diagnostic {
-    Diagnostic::new(
-        code,
-        Severity::Error,
-        Phase::Parse,
-        Location::new(None, None, at, span),
-    )
+    Diagnostic::warn(DiagnosticCode::UnrecognizedField {
+        text: Some(texts::not_in_schema()),
+    })
+    .at(at)
 }
 
 /// `base` followed by the segments of `relative`.

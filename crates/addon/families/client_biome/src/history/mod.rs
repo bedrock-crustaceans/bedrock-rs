@@ -21,9 +21,7 @@ pub mod v1_21_90;
 use super::component::ClientBiomeComponent;
 use super::parse::PAYLOAD_KEY;
 use super::{Beta, ClientBiome};
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, JsonPath, Location, Phase, Severity,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, Phase};
 use bedrock_addon_core::document::{
     Component, ComponentMap, ComponentRef, ComponentSet, Document, Rejected,
 };
@@ -144,12 +142,8 @@ fn component_path(name: &str) -> JsonPath {
 
 /// An info finding of a step about the component `name` (vanilla is silent).
 fn note(cx: &mut UpgradeCx<'_>, code: DiagnosticCode, at: JsonPath) {
-    cx.diagnostics.push(Diagnostic::new(
-        code,
-        Severity::Info,
-        Phase::Upgrade,
-        Location::new(None, None, at, None),
-    ));
+    cx.diagnostics
+        .push(Diagnostic::info(code).at(at).phase(Phase::Upgrade));
 }
 
 /// The key of a map entry.

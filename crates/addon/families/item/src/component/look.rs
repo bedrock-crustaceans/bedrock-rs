@@ -10,9 +10,7 @@ use indexmap::IndexMap;
 
 use super::ItemComponent;
 use super::value::{ValueComponent, value_component};
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics};
 use bedrock_addon_core::document::Extra;
 
 /// `minecraft:display_name`: the item's name, or a localization key (JSON `{"value": text}`).
@@ -128,12 +126,9 @@ pub(crate) fn parse_interact_button(
     let value = bedrock_addon_core::json::from_str_jsonc::<Value>(slice.text).ok();
     let button = value.as_ref().and_then(InteractButton::from_value);
     if button.is_none() {
-        d.push(Diagnostic::new(
-            DiagnosticCode::InvalidType { text: None },
-            Severity::Error,
-            Phase::Parse,
-            Location::new(None, None, JsonPath::new(), None),
-        ));
+        d.push(Diagnostic::error(DiagnosticCode::InvalidType {
+            text: None,
+        }));
     }
     button.map(ItemComponent::InteractButton)
 }

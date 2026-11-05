@@ -8,12 +8,12 @@ use super::atlas::{
     TextureLayer, Tint, TintMapColor, VariationEntry,
 };
 use super::atlas_read::read_atlas;
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, Severity};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics};
 use bedrock_addon_core::document::{Content, Document, Extra, JsonContent, Placed, Rejected};
 use bedrock_addon_core::json::{EncodeError, Value, WriteStyle, write_json};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::pack_identity::{PackPath, PackSide};
-use bedrock_addon_support::texture::document::{detached, file_finding, rejected, unversioned};
+use bedrock_addon_support::texture::document::{detached, rejected, unversioned};
 use bedrock_addon_support::texture::jsoncpp::read_lenient;
 
 impl Content for TextureAtlas {
@@ -40,7 +40,7 @@ impl Content for TextureAtlas {
                         message: message.to_string(),
                         text: None,
                     };
-                    diagnostics.push(file_finding(code, Severity::Error, &origin));
+                    diagnostics.push(Diagnostic::error(code).in_file(&origin));
                     return Err(rejected(origin, diagnostics));
                 }
             };

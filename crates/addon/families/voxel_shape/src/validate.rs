@@ -4,7 +4,7 @@
 use super::parse::child;
 use super::{ShapeBox, VoxelShape, texts};
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, VanillaText,
 };
 
 /// Runs the namespace, box, bounds, overlap and width checks on `shape` as a file of a base-game
@@ -12,12 +12,11 @@ use bedrock_addon_core::diagnostic::{
 /// (the payload's).
 pub(crate) fn rules(shape: &VoxelShape, base_game: bool, at: &JsonPath, d: &mut Diagnostics) {
     if let Some((text, path)) = first_failure(shape, base_game, at) {
-        d.push(Diagnostic::new(
-            DiagnosticCode::InvalidValue { text: Some(text) },
-            Severity::Error,
-            Phase::Validate,
-            Location::new(None, None, path, None),
-        ));
+        d.push(
+            Diagnostic::error(DiagnosticCode::InvalidValue { text: Some(text) })
+                .at(path)
+                .phase(Phase::Validate),
+        );
     }
 }
 

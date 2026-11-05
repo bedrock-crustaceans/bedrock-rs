@@ -2,8 +2,9 @@
 
 use facet::Facet;
 
-use super::{Checked, Report};
+use super::{Checked, child};
 use bedrock_addon_core::diagnostic::DiagnosticCode;
+use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath};
 use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::id::{MusicDefinitionId, SoundEventName};
 use bedrock_addon_core::json::{StrictBool, StrictFloat, Value};
@@ -148,7 +149,7 @@ impl BiomeMusic {
 /// A [`SoundAddition`]'s constraints on the member `key`: `asset` is not empty and `chance`
 /// lies in `[0, 1]`. The findings carry no fixed text; the game's messages for these
 /// constraints are its generic ones.
-fn check_addition(json: &Value, key: &'static str, report: &mut Report<'_>) {
+fn check_addition(json: &Value, key: &'static str, d: &mut Diagnostics) {
     let Some(addition) = json
         .as_object()
         .and_then(|object| object.get(key))
@@ -158,24 +159,27 @@ fn check_addition(json: &Value, key: &'static str, report: &mut Report<'_>) {
     };
     let asset = addition.get("asset").and_then(Value::as_string);
     if asset.is_some_and(|asset| asset.as_str().is_empty()) {
-        report.error(DiagnosticCode::InvalidValue { text: None }, &[key, "asset"]);
+        d.push(
+            Diagnostic::error(DiagnosticCode::InvalidValue { text: None })
+                .at(child(&JsonPath::new(), &[key, "asset"])),
+        );
     }
     let chance = addition
         .get("chance")
         .and_then(Value::as_number)
         .map(facet_value::VNumber::to_f64_lossy);
     if chance.is_some_and(|chance| !(0.0..=1.0).contains(&chance)) {
-        report.error(
-            DiagnosticCode::InvalidValue { text: None },
-            &[key, "chance"],
+        d.push(
+            Diagnostic::error(DiagnosticCode::InvalidValue { text: None })
+                .at(child(&JsonPath::new(), &[key, "chance"])),
         );
     }
 }
 
 impl Checked for AmbientSounds {
-    fn check(json: &Value, report: &mut Report<'_>) {
-        check_addition(json, "addition", report);
-        check_addition(json, "underwater_addition", report);
+    fn check(json: &Value, d: &mut Diagnostics) {
+        check_addition(json, "addition", d);
+        check_addition(json, "underwater_addition", d);
     }
 }
 

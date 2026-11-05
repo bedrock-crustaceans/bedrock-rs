@@ -3,9 +3,7 @@
 //! the stack, so it belongs to the combine step (`load.rs`).
 
 use super::UiComposition;
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, JsonPath, Location, Phase, Severity, VanillaText,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Phase, VanillaText};
 use bedrock_addon_core::versioning::ValidateCx;
 
 /// The vanilla namespace, which the client looks for anywhere in the identifier: a substring
@@ -21,25 +19,6 @@ const EXTERNAL_TEXT: &str =
 /// The client's text for an extension point written by an external pack (vanilla's spelling).
 const OVERRIDEN_TEXT: &str = "extension_point cannot be overriden at external packs.";
 
-/// A finding of a validator at `members` below the payload.
-fn finding(
-    code: DiagnosticCode,
-    severity: Severity,
-    members: &[&str],
-    cx: &ValidateCx<'_>,
-) -> Diagnostic {
-    let mut at: JsonPath = cx.at.clone();
-    for member in members {
-        at.push(member);
-    }
-    Diagnostic::new(
-        code,
-        severity,
-        Phase::Validate,
-        Location::new(None, None, at, None),
-    )
-}
-
 /// A document of a pack the game ships has `minecraft` somewhere in its identifier, a
 /// document of any other pack has it nowhere. A slice pack counts as shipped in vanilla; the
 /// pack model has no slice flag, so only `is_base_game_pack` decides here.
@@ -51,14 +30,11 @@ pub(crate) fn namespace(identifier: &str, cx: &mut ValidateCx<'_>) {
     }
     let text = if builtin { BUILTIN_TEXT } else { EXTERNAL_TEXT };
     let at = ["description", "identifier"];
-    let error = finding(
-        DiagnosticCode::NamespaceRule {
-            text: Some(VanillaText::Fixed(text)),
-        },
-        Severity::Error,
-        &at,
-        cx,
-    );
+    let error = Diagnostic::error(DiagnosticCode::NamespaceRule {
+        text: Some(VanillaText::Fixed(text)),
+    })
+    .at(cx.at.with(&at))
+    .phase(Phase::Validate);
     cx.diagnostics.push(error);
     // An add-on identifier refused although its namespace is not `minecraft` (the test is a
     // substring test) gets a second, crate-own finding that says so by standing there.
@@ -66,12 +42,9 @@ pub(crate) fn namespace(identifier: &str, cx: &mut ValidateCx<'_>) {
         .split_once(':')
         .is_some_and(|(namespace, _)| namespace == VANILLA_NAMESPACE);
     if !builtin && !in_namespace {
-        let hint = finding(
-            DiagnosticCode::NamespaceRule { text: None },
-            Severity::Info,
-            &at,
-            cx,
-        );
+        let hint = Diagnostic::info(DiagnosticCode::NamespaceRule { text: None })
+            .at(cx.at.with(&at))
+            .phase(Phase::Validate);
         cx.diagnostics.push(hint);
     }
 }
@@ -82,13 +55,10 @@ pub(crate) fn external_extension_point(composition: &UiComposition, cx: &mut Val
     if composition.attribs.extension_point.is_none() || cx.load.is_base_game_pack {
         return;
     }
-    let error = finding(
-        DiagnosticCode::InvalidValue {
-            text: Some(VanillaText::Fixed(OVERRIDEN_TEXT)),
-        },
-        Severity::Error,
-        &["attribs", "extension_point"],
-        cx,
-    );
+    let error = Diagnostic::error(DiagnosticCode::InvalidValue {
+        text: Some(VanillaText::Fixed(OVERRIDEN_TEXT)),
+    })
+    .at(cx.at.with(&["attribs", "extension_point"]))
+    .phase(Phase::Validate);
     cx.diagnostics.push(error);
 }

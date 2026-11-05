@@ -2,7 +2,7 @@
 
 use super::{Skin, SkinPack};
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, VanillaText,
 };
 use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::json::Value;
@@ -24,23 +24,9 @@ const PATCH_KEYS: [&str; 4] = [
     "hide_armor",
 ];
 
-/// A finding at `at`.
-pub(super) fn finding(code: DiagnosticCode, severity: Severity, at: JsonPath) -> Diagnostic {
-    Diagnostic::new(
-        code,
-        severity,
-        Phase::Parse,
-        Location::new(None, None, at, None),
-    )
-}
-
 /// A finding of the crate's own, the game being silent about it.
 fn note(at: JsonPath) -> Diagnostic {
-    finding(
-        DiagnosticCode::InvalidValue { text: None },
-        Severity::Info,
-        at,
-    )
+    Diagnostic::info(DiagnosticCode::InvalidValue { text: None }).at(at)
 }
 
 fn key(at: &JsonPath, name: &str) -> JsonPath {
@@ -85,11 +71,10 @@ impl<'v> Fields<'v> {
     fn finish(mut self, read: &[&str], diagnostics: &mut Diagnostics) -> Extra {
         for (name, member) in self.object.into_iter().flatten() {
             if !read.contains(&name.as_str()) {
-                diagnostics.push(finding(
-                    DiagnosticCode::UnrecognizedField { text: None },
-                    Severity::Info,
-                    key(&self.at, name.as_str()),
-                ));
+                diagnostics.push(
+                    Diagnostic::info(DiagnosticCode::UnrecognizedField { text: None })
+                        .at(key(&self.at, name.as_str())),
+                );
                 self.extra.insert(name.as_str().to_owned(), member.clone());
             }
         }
@@ -226,26 +211,21 @@ impl SkinPack {
                     let code = DiagnosticCode::InvalidType {
                         text: Some(VanillaText::Fixed(ENTRY_NOT_OBJECT)),
                     };
-                    diagnostics.push(finding(code, Severity::Error, at).into_kept());
+                    diagnostics.push(Diagnostic::error(code).at(at).into_kept());
                 }
             }
             skins
         });
         // Creator tools want the two names equal; the game reads only one.
         if serialize_name.is_none() || serialize_name != localization_name {
-            diagnostics.push(finding(
-                DiagnosticCode::SkinPackNameMismatch,
-                Severity::Info,
-                key(&at, "serialize_name"),
-            ));
+            diagnostics.push(
+                Diagnostic::info(DiagnosticCode::SkinPackNameMismatch)
+                    .at(key(&at, "serialize_name")),
+            );
         }
         // A creator rule, not the game's.
         if skins.as_ref().is_some_and(|skins| skins.len() > MAX_SKINS) {
-            diagnostics.push(finding(
-                DiagnosticCode::SkinPackCreatorRule,
-                Severity::Info,
-                skins_at,
-            ));
+            diagnostics.push(Diagnostic::info(DiagnosticCode::SkinPackCreatorRule).at(skins_at));
         }
         let pack = Self {
             serialize_name,

@@ -43,9 +43,7 @@ pub use visual::{
 use bedrock_addon_derive::Components;
 
 use super::history::BlockFamily;
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::document::{ComponentMap, ComponentRef, CustomComponent};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::load::{Experiment, LoadContext, LoadRequirement};
@@ -321,12 +319,7 @@ where
     {
         // The same error as the typed read's: a wrong scalar type rejects the block under
         // both slices, since the game's component load fails the same way.
-        d.push(Diagnostic::new(
-            DiagnosticCode::InvalidType { text: None },
-            Severity::Error,
-            Phase::Parse,
-            Location::new(None, None, path, None),
-        ));
+        d.push(Diagnostic::error(DiagnosticCode::InvalidType { text: None }).at(path));
         return None;
     }
     parse_component::<T, BlockComponent>(slice, mode, cx, d)
@@ -483,16 +476,15 @@ fn keep_instances(
         }
         path.push(&instance);
         path.push(&member);
-        d.push(Diagnostic::new(
-            DiagnosticCode::UnrecognizedField { text: None },
-            if cereal {
-                Severity::Warning
-            } else {
-                Severity::Info
-            },
-            Phase::Parse,
-            Location::new(None, None, path, None),
-        ));
+        d.push(
+            Diagnostic::error(DiagnosticCode::UnrecognizedField { text: None })
+                .severity(if cereal {
+                    Severity::Warning
+                } else {
+                    Severity::Info
+                })
+                .at(path),
+        );
     }
 }
 

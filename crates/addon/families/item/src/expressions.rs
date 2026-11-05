@@ -10,7 +10,7 @@ use bedrock_addon_core::molang::{
 };
 
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
 };
 use bedrock_addon_core::json::Value;
 
@@ -174,16 +174,14 @@ impl Collector<'_> {
                 let mut at = self.at.clone();
                 append(&mut at, path);
                 at.push("sequence");
-                self.d.push(Diagnostic::new(
-                    DiagnosticCode::IgnoredMember {
+                self.d.push(
+                    Diagnostic::warn(DiagnosticCode::IgnoredMember {
                         text: Some(VanillaText::Fixed(
                             bedrock_addon_core::diagnostic::EVENT_BOTH_RANDOMIZE_AND_SEQUENCE,
                         )),
-                    },
-                    Severity::Warning,
-                    Phase::Parse,
-                    Location::new(None, None, at, None),
-                ));
+                    })
+                    .at(at),
+                );
             }
             for (key, member) in object {
                 if ignores_sequence && key.as_str() == "sequence" {
@@ -311,12 +309,9 @@ impl Collector<'_> {
         let mut at = self.at.clone();
         append(&mut at, path);
         let tell = |severity| {
-            Diagnostic::new(
-                DiagnosticCode::InvalidType { text: None },
-                severity,
-                Phase::Parse,
-                Location::new(None, None, at.clone(), None),
-            )
+            Diagnostic::error(DiagnosticCode::InvalidType { text: None })
+                .severity(severity)
+                .at(at.clone())
         };
         let told = tell(Severity::Error);
         match kind {

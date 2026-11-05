@@ -15,7 +15,7 @@ use super::{
     StructureSet, TemplatePool, validate,
 };
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity, VanillaText,
 };
 use bedrock_addon_core::document::{
     CombineRule, Content, Contribution, Definition, Document, FilesBuilder, FilesRule, JsonContent,
@@ -258,20 +258,15 @@ fn text(bytes: &[u8]) -> Option<&str> {
 
 /// The finding of an unreadable file.
 fn malformed() -> Diagnostic {
-    Diagnostic::new(
-        DiagnosticCode::MalformedInput {
-            message: "not UTF-8 JSON within the nesting limit".to_owned(),
-            text: None,
-        },
-        Severity::Error,
-        Phase::Parse,
-        Location::default(),
-    )
+    Diagnostic::error(DiagnosticCode::MalformedInput {
+        message: "not UTF-8 JSON within the nesting limit".to_owned(),
+        text: None,
+    })
 }
 
 /// The origin of a file of `pack`.
 fn origin(pack: PackRef, side: PackSide, path: &PackPath) -> Origin {
-    Origin::new(pack, side, path.clone(), None, Vec::new())
+    Origin::file(pack, side, path.clone())
 }
 
 /// Gives every finding the document's pack and file.
@@ -311,17 +306,12 @@ fn failure_line<F: JsonFamily>(diagnostics: &mut Diagnostics, path: &PackPath) {
         .iter()
         .any(|d| d.severity >= Severity::Error && d.phase == Phase::Parse);
     if parse_error {
-        diagnostics.push(Diagnostic::new(
-            DiagnosticCode::DocumentRejected {
-                text: Some(VanillaText::Formatted {
-                    template: F::FAILED,
-                    args: vec![path.as_str().to_owned()],
-                }),
-            },
-            Severity::Error,
-            Phase::Parse,
-            Location::default(),
-        ));
+        diagnostics.push(Diagnostic::error(DiagnosticCode::DocumentRejected {
+            text: Some(VanillaText::Formatted {
+                template: F::FAILED,
+                args: vec![path.as_str().to_owned()],
+            }),
+        }));
     }
 }
 
@@ -479,11 +469,6 @@ fn leading_string(bytes: &[u8]) -> Option<(&str, &[u8])> {
     Some((text, bytes.get(end..)?))
 }
 
-/// A metadata file's finding at the file.
-fn metadata_finding(code: DiagnosticCode, severity: Severity) -> Diagnostic {
-    Diagnostic::new(code, severity, Phase::Parse, Location::default())
-}
-
 /// Loads one `worldgen/metadata/*.dat` file: the leading version string checked as vanilla
 /// checks it, the body kept undecoded with a `SkippedCacheDocument` information (the crate's
 /// own).
@@ -507,12 +492,9 @@ pub(crate) fn parse_metadata(
     if written.is_empty() {
         return reject(
             diagnostics,
-            metadata_finding(
-                DiagnosticCode::MissingFormatVersion {
-                    text: Some(VanillaText::NoValidVersion),
-                },
-                Severity::Error,
-            ),
+            Diagnostic::error(DiagnosticCode::MissingFormatVersion {
+                text: Some(VanillaText::NoValidVersion),
+            }),
         );
     }
     let Some(input) = FormatVersionInput::parse(written) else {
@@ -521,14 +503,11 @@ pub(crate) fn parse_metadata(
     let Selection::Struct(index) = select::<MetadataFamily>(&input) else {
         return reject(
             diagnostics,
-            metadata_finding(
-                DiagnosticCode::UnsupportedVersion {
-                    text: Some(VanillaText::NoParserForVersion {
-                        version: written.to_owned(),
-                    }),
-                },
-                Severity::Error,
-            ),
+            Diagnostic::error(DiagnosticCode::UnsupportedVersion {
+                text: Some(VanillaText::NoParserForVersion {
+                    version: written.to_owned(),
+                }),
+            }),
         );
     };
     let effective = input.version.unwrap_or(V1_21_50);
@@ -537,10 +516,7 @@ pub(crate) fn parse_metadata(
             .get(index)
             .copied()
             .unwrap_or(effective);
-    diagnostics.push(metadata_finding(
-        DiagnosticCode::SkippedCacheDocument,
-        Severity::Info,
-    ));
+    diagnostics.push(Diagnostic::info(DiagnosticCode::SkippedCacheDocument));
     locate(&mut diagnostics, &origin);
     let value = JigsawMetadata {
         format_version: written.to_owned(),
@@ -552,15 +528,12 @@ pub(crate) fn parse_metadata(
 
 /// "Failed to parse format version string of file %s; it will be skipped."
 fn bad_leading_string(path: &PackPath) -> Diagnostic {
-    metadata_finding(
-        DiagnosticCode::MalformedFormatVersion {
-            text: Some(VanillaText::Formatted {
-                template: "Failed to parse format version string of file {}; it will be skipped.",
-                args: vec![path.as_str().to_owned()],
-            }),
-        },
-        Severity::Error,
-    )
+    Diagnostic::error(DiagnosticCode::MalformedFormatVersion {
+        text: Some(VanillaText::Formatted {
+            template: "Failed to parse format version string of file {}; it will be skipped.",
+            args: vec![path.as_str().to_owned()],
+        }),
+    })
 }
 
 impl bedrock_addon_core::__private::Sealed for JigsawMetadata {}
@@ -734,12 +707,11 @@ impl<T: Definition> FamilyRegistry<T> {
                 // A second definition in the same pack, or one below a document that was
                 // refused at registration: the registry's own rule reports neither.
                 if !self.seen.insert(key) || self.refused.contains(id) {
-                    self.builder.push_diagnostic(Diagnostic::new(
-                        DiagnosticCode::ShadowedDefinition { text: None },
-                        Severity::Info,
-                        Phase::Validate,
-                        at_document(document, JsonPath::new()),
-                    ));
+                    self.builder.push_diagnostic(
+                        Diagnostic::info(DiagnosticCode::ShadowedDefinition { text: None })
+                            .in_file(document.origin())
+                            .phase(Phase::Validate),
+                    );
                     return false;
                 }
                 let first = self.held.insert(id.clone());
@@ -761,17 +733,6 @@ impl<T: Definition> FamilyRegistry<T> {
             }
         }
     }
-}
-
-/// A location in `document`'s file.
-fn at_document<T>(document: &Document<T>, json_path: JsonPath) -> Location {
-    let origin = document.origin();
-    Location::new(
-        Some(origin.pack.clone()),
-        Some(origin.path.clone()),
-        json_path,
-        None,
-    )
 }
 
 /// The checks over every effective template pool.
@@ -799,19 +760,19 @@ impl PoolChecks {
             let mut path = at.clone();
             path.push("description");
             path.push("identifier");
-            found.push(Diagnostic::new(
-                DiagnosticCode::DuplicateIdentifier {
+            // The game only asserts here, with no content-log line, so the crate reports
+            // an information of its own.
+            found.push(
+                Diagnostic::info(DiagnosticCode::DuplicateIdentifier {
                     text: Some(VanillaText::Formatted {
                         template: "Jigsaw pool name `{}` already registered",
                         args: vec![name],
                     }),
-                },
-                // The game only asserts here, with no content-log line, so the crate reports
-                // an information of its own.
-                Severity::Info,
-                Phase::Validate,
-                at_document(pool, path),
-            ));
+                })
+                .at(path)
+                .phase(Phase::Validate)
+                .in_file(pool.origin()),
+            );
         }
         // One element per location; a different one is a redefinition. The game registers
         // only one element, silently, so the text "Redefinition of existing element with
@@ -841,18 +802,18 @@ impl PoolChecks {
                     path.push_index(i);
                     path.push("element");
                     path.push("location");
-                    found.push(Diagnostic::new(
-                        DiagnosticCode::InvalidValue {
+                    found.push(
+                        // A crate-own lint: Info.
+                        Diagnostic::info(DiagnosticCode::InvalidValue {
                             text: Some(VanillaText::Formatted {
                                 template: "Redefinition of existing element with location '{}'.",
                                 args: vec![location.as_str().to_owned()],
                             }),
-                        },
-                        // A crate-own lint: Info.
-                        Severity::Info,
-                        Phase::Validate,
-                        at_document(pool, path),
-                    ));
+                        })
+                        .at(path)
+                        .in_file(pool.origin())
+                        .phase(Phase::Validate),
+                    );
                 }
                 Some(_) => {}
                 None => {
@@ -876,17 +837,14 @@ const GAME_RECORDED_SET: &str = "minecraft:trial_chambers";
 /// text. The finding is placed at the pack's file.
 fn game_record_refused(document: &Document<StructureSet>) -> Option<Diagnostic> {
     (document.description.identifier.as_str() == GAME_RECORDED_SET).then(|| {
-        Diagnostic::new(
-            DiagnosticCode::DuplicateIdentifier {
-                text: Some(VanillaText::Formatted {
-                    template: "Structure set '{}' has already been registered",
-                    args: vec![GAME_RECORDED_SET.to_owned()],
-                }),
-            },
-            Severity::Error,
-            Phase::Validate,
-            at_document(document, JsonPath::new()),
-        )
+        Diagnostic::error(DiagnosticCode::DuplicateIdentifier {
+            text: Some(VanillaText::Formatted {
+                template: "Structure set '{}' has already been registered",
+                args: vec![GAME_RECORDED_SET.to_owned()],
+            }),
+        })
+        .in_file(document.origin())
+        .phase(Phase::Validate)
     })
 }
 

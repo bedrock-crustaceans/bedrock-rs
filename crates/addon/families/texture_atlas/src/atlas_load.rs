@@ -14,7 +14,7 @@ use bedrock_addon_core::document::{Extra, Merge, Merged, Origin, RawLayer};
 use bedrock_addon_core::id::AtlasKey;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::load::WalkFile;
-use bedrock_addon_support::texture::document::{file_finding, finding_at, origin_of};
+use bedrock_addon_support::texture::document::origin_of;
 use bedrock_addon_support::texture::files::{ATLAS_IMAGE, StackFiles};
 use bedrock_addon_support::texture::jsoncpp::read_lenient;
 
@@ -54,11 +54,11 @@ pub(crate) fn parse_copy(file: &WalkFile) -> AtlasCopy {
                     message: "content after the JSON value is ignored".to_owned(),
                     text: None,
                 };
-                findings.push(file_finding(code, Severity::Info, &origin));
+                findings.push(Diagnostic::info(code).in_file(&origin));
             }
             if !read.value.is_object() && !read.value.is_null() {
                 let code = DiagnosticCode::InvalidValue { text: None };
-                findings.push(file_finding(code, Severity::Info, &origin));
+                findings.push(Diagnostic::info(code).in_file(&origin));
             }
             Some(RawLayer::new(origin.clone(), read.value))
         }
@@ -69,7 +69,7 @@ pub(crate) fn parse_copy(file: &WalkFile) -> AtlasCopy {
                 message: message.to_string(),
                 text: None,
             };
-            findings.push(file_finding(code, Severity::Info, &origin));
+            findings.push(Diagnostic::info(code).in_file(&origin));
             None
         }
     };
@@ -265,7 +265,10 @@ fn check_images(
 
 /// A stack-stage finding.
 fn stage(code: DiagnosticCode, severity: Severity, origin: &Origin, at: JsonPath) -> Diagnostic {
-    let mut finding = finding_at(code, severity, origin, at);
+    let mut finding = Diagnostic::error(code)
+        .at(at)
+        .severity(severity)
+        .in_file(origin);
     finding.phase = Phase::Validate;
     finding
 }

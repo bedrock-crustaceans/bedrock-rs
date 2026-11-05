@@ -20,7 +20,7 @@ use super::parse::{CEREAL, NEWEST};
 use super::{Block, StateValues};
 use bedrock_addon_core::diagnostic::cereal::{self, NumericRange};
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity, VanillaText,
 };
 use bedrock_addon_core::document::{ComponentMap, ComponentRef};
 use bedrock_addon_core::json::{StrictBool, Value};
@@ -68,12 +68,11 @@ pub(crate) fn validate(block: &mut Block, cx: &mut ValidateCx<'_>) {
         let mut path = at.clone();
         path.push("permutations");
         path.push_index(*index);
-        cx.diagnostics.push(Diagnostic::new(
-            DiagnosticCode::DroppedField { text: None },
-            Severity::Info,
-            Phase::Validate,
-            Location::new(None, None, path, None),
-        ));
+        cx.diagnostics.push(
+            Diagnostic::info(DiagnosticCode::DroppedField { text: None })
+                .at(path)
+                .phase(Phase::Validate),
+        );
     }
     if kept.len() < before {
         // The permutations left are known by the index the file has them at: what is told
@@ -201,12 +200,12 @@ impl Report<'_> {
     /// A finding at `rel` below the payload.
     fn push(&mut self, code: DiagnosticCode, severity: Severity, rel: &[&str]) {
         let path = self.path(rel);
-        self.d.push(Diagnostic::new(
-            code,
-            severity,
-            Phase::Validate,
-            Location::new(None, None, path, None),
-        ));
+        self.d.push(
+            Diagnostic::error(code)
+                .severity(severity)
+                .at(path)
+                .phase(Phase::Validate),
+        );
     }
 
     /// An error: the block is not loaded.
@@ -1124,14 +1123,11 @@ fn component_rules(
             if !ok {
                 let path = report.path(&rel(&prefix, &["minecraft:selection_box"]));
                 report.d.push(
-                    Diagnostic::new(
-                        DiagnosticCode::InvalidValue {
-                            text: fixed(message),
-                        },
-                        Severity::Error,
-                        Phase::Validate,
-                        Location::new(None, None, path, None),
-                    )
+                    Diagnostic::error(DiagnosticCode::InvalidValue {
+                        text: fixed(message),
+                    })
+                    .at(path)
+                    .phase(Phase::Validate)
                     .into_kept(),
                 );
             }
@@ -1162,17 +1158,12 @@ fn component_rules(
     {
         let path = report.path(&rel(&prefix, &["minecraft:tick", "interval_range"]));
         report.d.push(
-            Diagnostic::new(
-                DiagnosticCode::InvalidValue {
+            Diagnostic::error(DiagnosticCode::InvalidValue {
                     text: text(
                         "{}: maximum ticks in interval range must be more than or equal to minimum ticks",
                         &["minecraft:tick"],
                     ),
-                },
-                Severity::Error,
-                Phase::Validate,
-                Location::new(None, None, path, None),
-            )
+                }).at(path).phase(Phase::Validate)
             .into_kept(),
         );
     } else if cereal
@@ -2374,7 +2365,7 @@ fn compiles_unrestricted(block: &Block, index: usize, cx: &LoadContext) -> bool 
         &spec,
         Side::Server,
         &molang,
-        &Location::default(),
+        &bedrock_addon_core::diagnostic::Location::default(),
         &mut scratch,
     ) == MolangOutcome::Ok
 }
@@ -2411,12 +2402,9 @@ fn dangling(d: &mut Diagnostics, at: &JsonPath, steps: &[Step<'_>], kind: &'stat
             Step::Index(index) => path.push_index(*index),
         }
     }
-    let mut finding = Diagnostic::new(
-        DiagnosticCode::UnresolvedReference { text: None },
-        Severity::Info,
-        Phase::Validate,
-        Location::new(None, None, path, None),
-    );
+    let mut finding = Diagnostic::info(DiagnosticCode::UnresolvedReference { text: None })
+        .at(path)
+        .phase(Phase::Validate);
     finding.detail = Some(Box::new(
         bedrock_addon_core::diagnostic::DiagnosticDetail::Reference {
             kind,
@@ -2565,16 +2553,15 @@ fn references(block: &Block, at: &JsonPath, d: &mut Diagnostics) {
                 }
             }
             warned.push("sequence");
-            d.push(Diagnostic::new(
-                DiagnosticCode::IgnoredMember {
+            d.push(
+                Diagnostic::warn(DiagnosticCode::IgnoredMember {
                     text: Some(VanillaText::Fixed(
                         bedrock_addon_core::diagnostic::EVENT_BOTH_RANDOMIZE_AND_SEQUENCE,
                     )),
-                },
-                Severity::Warning,
-                Phase::Validate,
-                Location::new(None, None, warned, None),
-            ));
+                })
+                .at(warned)
+                .phase(Phase::Validate),
+            );
         }
         if let Some(fired) = &event.trigger {
             let own = matches!(

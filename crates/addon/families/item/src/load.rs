@@ -26,7 +26,7 @@ use super::history::Any;
 use super::texts;
 use super::{Beta, Item};
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity, VanillaText,
 };
 use bedrock_addon_core::document::Origin;
 
@@ -147,12 +147,9 @@ impl Family for ItemFamily {
                 item.legacy.left_empty_by_the_load = true;
                 let mut at = cx.at.clone();
                 at.push("components");
-                let mut told = Diagnostic::new(
-                    DiagnosticCode::InvalidValue { text: None },
-                    Severity::Info,
-                    Phase::Validate,
-                    Location::new(None, None, at, None),
-                );
+                let mut told = Diagnostic::info(DiagnosticCode::InvalidValue { text: None })
+                    .at(at)
+                    .phase(Phase::Validate);
                 told.detail = Some(Box::new(
                     bedrock_addon_core::diagnostic::DiagnosticDetail::Note(
                         "no registered component is left, so the newest format reads the \
@@ -165,12 +162,9 @@ impl Family for ItemFamily {
                 // does not bind: the newest writer refuses the item there, and the load
                 // says so where it is (an information of the crate's own; the game reads the
                 // older file and says nothing).
-                let mut told = Diagnostic::new(
-                    DiagnosticCode::InvalidValue { text: None },
-                    Severity::Info,
-                    Phase::Validate,
-                    Location::new(None, None, at, None),
-                );
+                let mut told = Diagnostic::info(DiagnosticCode::InvalidValue { text: None })
+                    .at(at)
+                    .phase(Phase::Validate);
                 told.detail = Some(Box::new(
                     bedrock_addon_core::diagnostic::DiagnosticDetail::Note(
                         texts::NOT_IN_THE_NEWEST_FORMAT,
@@ -390,18 +384,13 @@ pub(crate) fn gate_with(
         && let Some(threshold) = threshold
         && original < threshold
     {
-        d.push(Diagnostic::new(
-            DiagnosticCode::MissingToggles {
-                text: Some(VanillaText::UseFormatVersion {
-                    what: "item",
-                    name: identifier.to_owned(),
-                    version: threshold,
-                }),
-            },
-            Severity::Error,
-            Phase::Parse,
-            Location::new(None, None, JsonPath::new(), None),
-        ));
+        d.push(Diagnostic::error(DiagnosticCode::MissingToggles {
+            text: Some(VanillaText::UseFormatVersion {
+                what: "item",
+                name: identifier.to_owned(),
+                version: threshold,
+            }),
+        }));
         return None;
     }
     let mut dropped = Vec::new();
@@ -432,12 +421,8 @@ pub(crate) fn gate_with(
             // member of the schema instead: that line is an error under every error mask, so
             // the item is refused (the game's own unit tests expect this text for a current
             // format version).
-            let finding = Diagnostic::new(
-                DiagnosticCode::DeprecatedMember { text: Some(text) },
-                Severity::Error,
-                Phase::Parse,
-                Location::new(None, None, path, None),
-            );
+            let finding =
+                Diagnostic::error(DiagnosticCode::DeprecatedMember { text: Some(text) }).at(path);
             if row.deprecated_message.is_some() {
                 d.push(finding);
             } else {
@@ -452,14 +437,12 @@ pub(crate) fn gate_with(
         }
         if let Some(failed) = row.requires.iter().find(|r| !r.satisfied(cx)) {
             rejected = true;
-            d.push(Diagnostic::new(
-                DiagnosticCode::MissingToggles {
+            d.push(
+                Diagnostic::error(DiagnosticCode::MissingToggles {
                     text: requirement_text(*failed, key, row.released),
-                },
-                Severity::Error,
-                Phase::Parse,
-                Location::new(None, None, path, None),
-            ));
+                })
+                .at(path),
+            );
         }
     }
     (!rejected).then_some(dropped)
@@ -507,16 +490,6 @@ fn requirement_text(
     })
 }
 
-/// An error-level parse finding at `path`.
-fn error(code: DiagnosticCode, path: JsonPath) -> Diagnostic {
-    Diagnostic::new(
-        code,
-        Severity::Error,
-        Phase::Parse,
-        Location::new(None, None, path, None),
-    )
-}
-
 /// What one item file loads to.
 pub(crate) struct ItemLoad {
     /// The outcome of the chain.
@@ -533,23 +506,17 @@ pub(crate) struct ItemLoad {
 fn prepare(bytes: &[u8]) -> Result<&str, Diagnostics> {
     let mut early = Diagnostics::default();
     let Ok(text) = std::str::from_utf8(strip_bom(bytes)) else {
-        early.push(error(
-            DiagnosticCode::MalformedInput {
-                message: "not UTF-8".to_owned(),
-                text: None,
-            },
-            JsonPath::new(),
-        ));
+        early.push(Diagnostic::error(DiagnosticCode::MalformedInput {
+            message: "not UTF-8".to_owned(),
+            text: None,
+        }));
         return Err(early);
     };
     if check_depth(text.as_bytes(), bedrock_addon_core::json::MAX_JSON_DEPTH).is_err() {
-        early.push(error(
-            DiagnosticCode::MalformedInput {
-                message: "nested too deeply".to_owned(),
-                text: None,
-            },
-            JsonPath::new(),
-        ));
+        early.push(Diagnostic::error(DiagnosticCode::MalformedInput {
+            message: "nested too deeply".to_owned(),
+            text: None,
+        }));
         return Err(early);
     }
     Ok(text)
@@ -575,14 +542,11 @@ pub(crate) fn load_item(bytes: &[u8], cx: &LoadContext) -> ItemLoad {
         && !parsed.version.beta
     {
         let mut diagnostics = parsed.diagnostics;
-        diagnostics.push(error(
-            DiagnosticCode::UnsupportedVersion {
-                text: Some(VanillaText::ItemInResourcePack {
-                    identifier: identifier.clone().unwrap_or_default(),
-                }),
-            },
-            JsonPath::new(),
-        ));
+        diagnostics.push(Diagnostic::error(DiagnosticCode::UnsupportedVersion {
+            text: Some(VanillaText::ItemInResourcePack {
+                identifier: identifier.clone().unwrap_or_default(),
+            }),
+        }));
         return ItemLoad {
             outcome: LoadOutcome {
                 value: None,
@@ -662,13 +626,10 @@ fn json_path_texts(d: &mut Diagnostics, text: &str, cx: &LoadContext) {
         }
     }
     if invalid_object {
-        d.push(error(
-            DiagnosticCode::MalformedInput {
-                message: "the item is not loaded".to_owned(),
-                text: fixed(texts::INVALID_JSON_OBJECT),
-            },
-            JsonPath::new(),
-        ));
+        d.push(Diagnostic::error(DiagnosticCode::MalformedInput {
+            message: "the item is not loaded".to_owned(),
+            text: fixed(texts::INVALID_JSON_OBJECT),
+        }));
     }
 }
 
@@ -681,12 +642,7 @@ fn numeric_version(text: &str) -> Option<Diagnostic> {
     version.as_number()?;
     let mut at = JsonPath::new();
     at.push("format_version");
-    let mut told = Diagnostic::new(
-        DiagnosticCode::ValueRewritten { text: None },
-        Severity::Info,
-        Phase::Parse,
-        Location::new(None, None, at, None),
-    );
+    let mut told = Diagnostic::info(DiagnosticCode::ValueRewritten { text: None }).at(at);
     told.detail = Some(Box::new(
         bedrock_addon_core::diagnostic::DiagnosticDetail::Note(texts::NUMERIC_VERSION),
     ));
@@ -742,7 +698,7 @@ pub(crate) fn contribution(
         outcome,
         identifier,
     } = load_item(bytes, cx);
-    let origin = Origin::new(pack.clone(), side, path.clone(), None, Vec::new());
+    let origin = Origin::file(pack.clone(), side, path.clone());
     let diagnostics = locate(outcome.diagnostics, pack, path);
     let id = identifier.map(ItemId::parse);
     match outcome.value {
@@ -830,22 +786,17 @@ fn combine(parsed: Vec<ParsedItem>, stack: &StackCx<'_>) -> Registry<Item> {
             path.push("minecraft:item");
             path.push("description");
             path.push("identifier");
-            builder.push_diagnostic(Diagnostic::new(
-                DiagnosticCode::ShadowedDefinition {
+            builder.push_diagnostic(
+                Diagnostic::warn(DiagnosticCode::ShadowedDefinition {
                     text: Some(VanillaText::Formatted {
                         template: texts::OVERRIDDEN_BY_A_HIGHER_PACK,
                         args: vec![id.as_str().to_owned()],
                     }),
-                },
-                Severity::Warning,
-                Phase::Validate,
-                Location::new(
-                    Some(origin.pack.clone()),
-                    Some(origin.path.clone()),
-                    path,
-                    None,
-                ),
-            ));
+                })
+                .at(path)
+                .phase(Phase::Validate)
+                .in_file(origin),
+            );
         }
         let contribution = match contribution {
             Contribution::Stable(id, document) => {
@@ -901,17 +852,12 @@ fn override_gate(
     path.push("minecraft:item");
     path.push("description");
     path.push("identifier");
-    diagnostics.push(Diagnostic::new(
-        DiagnosticCode::NamespaceRule { text: Some(text) },
-        Severity::Error,
-        Phase::Validate,
-        Location::new(
-            Some(origin.pack.clone()),
-            Some(origin.path.clone()),
-            path,
-            None,
-        ),
-    ));
+    diagnostics.push(
+        Diagnostic::error(DiagnosticCode::NamespaceRule { text: Some(text) })
+            .at(path)
+            .phase(Phase::Validate)
+            .in_file(&origin),
+    );
     Contribution::Rejected(Some(id), Rejected::new(origin, diagnostics))
 }
 
@@ -961,10 +907,9 @@ impl bedrock_addon_core::document::Content for Item {
             Contribution::Beta(_, document) => {
                 let origin = document.origin().clone();
                 let mut diagnostics = document.diagnostics().clone();
-                diagnostics.push(error(
-                    DiagnosticCode::UnsupportedVersion { text: None },
-                    JsonPath::new(),
-                ));
+                diagnostics.push(Diagnostic::error(DiagnosticCode::UnsupportedVersion {
+                    text: None,
+                }));
                 Err(Rejected::new(origin, diagnostics))
             }
             Contribution::Rejected(_, rejected) => Err(rejected),
@@ -988,10 +933,9 @@ impl bedrock_addon_core::document::Content for Beta {
             Contribution::Stable(_, document) => {
                 let origin = document.origin().clone();
                 let mut diagnostics = document.diagnostics().clone();
-                diagnostics.push(error(
-                    DiagnosticCode::UnsupportedVersion { text: None },
-                    JsonPath::new(),
-                ));
+                diagnostics.push(Diagnostic::error(DiagnosticCode::UnsupportedVersion {
+                    text: None,
+                }));
                 Err(Rejected::new(origin, diagnostics))
             }
             Contribution::Rejected(_, rejected) => Err(rejected),
@@ -1039,13 +983,7 @@ impl Item {
     ) -> Result<Document<Any>, Rejected> {
         // A leading byte-order mark is blanked, so spans are offsets into the file as written.
         let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
-        let origin = Origin::new(
-            PackRef::app_data(),
-            PackSide::Behavior,
-            path.clone(),
-            None,
-            Vec::new(),
-        );
+        let origin = Origin::file(PackRef::app_data(), PackSide::Behavior, path.clone());
         let text = match prepare(bytes) {
             Ok(text) => text,
             Err(early) => {

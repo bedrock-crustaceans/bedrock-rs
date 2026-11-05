@@ -261,7 +261,7 @@ mod codec {
     use crate::value::{Keyframes, Rgb8, Rgba8};
     use crate::write::{self, Object, Written};
     use bedrock_addon_core::diagnostic::{
-        Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
+        Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase,
     };
     use bedrock_addon_core::document::Extra;
     use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
@@ -690,12 +690,11 @@ mod codec {
         at.push("color");
         let mut dropped = |alpha: u8, at: JsonPath| {
             if alpha != u8::MAX {
-                cx.diagnostics.push(Diagnostic::new(
-                    DiagnosticCode::DroppedField { text: None },
-                    Severity::Info,
-                    Phase::Upgrade,
-                    Location::new(None, None, at, None),
-                ));
+                cx.diagnostics.push(
+                    Diagnostic::info(DiagnosticCode::DroppedField { text: None })
+                        .at(at)
+                        .phase(Phase::Upgrade),
+                );
             }
         };
         let color = light.color.map(|color| match color {

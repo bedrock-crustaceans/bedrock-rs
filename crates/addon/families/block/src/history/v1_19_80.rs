@@ -1,8 +1,8 @@
 //! Format 1.19.80: `transformation` replaces `rotation`; `geometry` takes the object form with
 //! `bone_visibility`.
 
-use super::legacy::{Legacy, component_path, text, upgrade_finding};
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
+use super::legacy::{Legacy, component_path, text};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Phase};
 use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
 
 /// A block document of `[1.19.80, 1.20.10)`.
@@ -42,16 +42,12 @@ impl Upgrade for Block {
             at.push(&bone);
             // The game logs this once per bone at the content log's error level and goes on:
             // a kept error.
-            cx.diagnostics.push_kept_error(upgrade_finding(
-                DiagnosticCode::DroppedField {
+            cx.diagnostics.push_kept_error(Diagnostic::error(DiagnosticCode::DroppedField {
                     text: text(
                         "bone_visibility | {}: Only boolean values are supported for bone visibilities in format versions before {}.",
                         &[&bone, "1.20.10"],
                     ),
-                },
-                Severity::Error,
-                &at,
-            ));
+                }).at(at.clone()).phase(Phase::Upgrade));
         }
         block
     }

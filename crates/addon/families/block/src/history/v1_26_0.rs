@@ -3,13 +3,13 @@
 
 use indexmap::IndexMap;
 
-use super::legacy::{Legacy, component_path, fixed, string, text, to_object, upgrade_finding};
+use super::legacy::{Legacy, component_path, fixed, string, text, to_object};
 use super::ops::{dropped_field, geometry_identifier, is_opaque};
 use super::v1_20_10::FULL_BLOCK;
 use crate::component::BlockComponent;
 use crate::parse::{child, parse_document};
 use bedrock_addon_core::diagnostic::{
-    DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity, VanillaText,
 };
 use bedrock_addon_core::document::ComponentRef;
 use bedrock_addon_core::id::BlockId;
@@ -103,13 +103,13 @@ impl Upgrade for Block {
             for (name, node) in events {
                 if !strings_where_expected(&node) {
                     // The game's event reader rejects a node that holds a non-string value.
-                    cx.diagnostics.push(upgrade_finding(
-                        DiagnosticCode::InvalidType {
+                    cx.diagnostics.push(
+                        Diagnostic::error(DiagnosticCode::InvalidType {
                             text: fixed("Invalid, nonstring Json "),
-                        },
-                        Severity::Error,
-                        &child(&JsonPath::new(), &["minecraft:block", "events", &name]),
-                    ));
+                        })
+                        .at(child(&JsonPath::new(), &["minecraft:block", "events", &name]).clone())
+                        .phase(Phase::Upgrade),
+                    );
                 }
                 // What the side-car's reader tells of the handler is told of the event the
                 // file has.
@@ -137,11 +137,11 @@ fn drop_crate_members(block: &mut Block, d: &mut Diagnostics) {
     let payload = child(&JsonPath::new(), &["minecraft:block"]);
     for key in ["deprecated", "deprecated_event_handlers"] {
         if block.extra.remove(key).is_some() {
-            d.push(upgrade_finding(
-                DiagnosticCode::UnrecognizedField { text: None },
-                Severity::Info,
-                &child(&payload, &[key]),
-            ));
+            d.push(
+                Diagnostic::info(DiagnosticCode::UnrecognizedField { text: None })
+                    .at(child(&payload, &[key]).clone())
+                    .phase(Phase::Upgrade),
+            );
         }
     }
     for (index, permutation) in block.permutations.iter_mut().enumerate() {
@@ -149,11 +149,11 @@ fn drop_crate_members(block: &mut Block, d: &mut Diagnostics) {
             let mut at = child(&payload, &["permutations"]);
             at.push_index(index);
             at.push("deprecated");
-            d.push(upgrade_finding(
-                DiagnosticCode::UnrecognizedField { text: None },
-                Severity::Info,
-                &at,
-            ));
+            d.push(
+                Diagnostic::info(DiagnosticCode::UnrecognizedField { text: None })
+                    .at(at.clone())
+                    .phase(Phase::Upgrade),
+            );
         }
     }
 }
@@ -213,27 +213,27 @@ fn gates(block: &mut Block, original: FormatVersion, d: &mut Diagnostics) {
             dropped_field(&description("states"), None, d);
         }
     } else if original < STATES_STRICT_FROM && has_states {
-        d.push(upgrade_finding(
-            DiagnosticCode::MissingToggles {
+        d.push(
+            Diagnostic::error(DiagnosticCode::MissingToggles {
                 text: fixed("To use custom block properties, use format version 1.19.70 or higher"),
-            },
-            Severity::Error,
-            &description("states"),
-        ));
+            })
+            .at(description("states").clone())
+            .phase(Phase::Upgrade),
+        );
     }
     if original == STATES_FROM && !block.permutations.is_empty() {
         block.permutations.clear();
         // The game logs this at the content log's error level and goes on with the
         // permutations skipped: a kept error.
-        d.push_kept_error(upgrade_finding(
-            DiagnosticCode::MissingToggles {
+        d.push_kept_error(
+            Diagnostic::error(DiagnosticCode::MissingToggles {
                 text: fixed(
                     "To use custom block permutations, use format verison 1.19.70 or higher.",
                 ),
-            },
-            Severity::Error,
-            &child(&JsonPath::new(), &["minecraft:block", "permutations"]),
-        ));
+            })
+            .at(child(&JsonPath::new(), &["minecraft:block", "permutations"]).clone())
+            .phase(Phase::Upgrade),
+        );
     }
     if block.events.take().is_some() {
         dropped_field(
@@ -252,11 +252,11 @@ fn gates(block: &mut Block, original: FormatVersion, d: &mut Diagnostics) {
         }
     }
     for (section, name) in unrecognized {
-        d.push(upgrade_finding(
-            DiagnosticCode::UnrecognizedComponent { text: None },
-            Severity::Info,
-            &component_path(section, &name),
-        ));
+        d.push(
+            Diagnostic::info(DiagnosticCode::UnrecognizedComponent { text: None })
+                .at(component_path(section, &name))
+                .phase(Phase::Upgrade),
+        );
     }
 }
 
@@ -278,16 +278,16 @@ fn deprecations(block: &mut Block, original: FormatVersion, d: &mut Diagnostics)
     // The game removes the component and logs this at the content log's error level; the
     // block is kept: a kept error.
     for (section, name, since) in removed {
-        d.push_kept_error(upgrade_finding(
-            DiagnosticCode::DeprecatedMember {
+        d.push_kept_error(
+            Diagnostic::error(DiagnosticCode::DeprecatedMember {
                 text: text(
                     "{} component is not valid from {} onward.",
                     &[name, &since.to_string()],
                 ),
-            },
-            Severity::Error,
-            &component_path(section, name),
-        ));
+            })
+            .at(component_path(section, name))
+            .phase(Phase::Upgrade),
+        );
     }
 }
 
@@ -341,27 +341,28 @@ fn side_car(
         };
         let at = component_path(section, &key);
         if !lcf {
-            d.push(upgrade_finding(
-                DiagnosticCode::MissingToggles { text: None },
-                if section.is_none() {
-                    Severity::Error
-                } else {
-                    Severity::Info
-                },
-                &at,
-            ));
+            d.push(
+                Diagnostic::error(DiagnosticCode::MissingToggles { text: None })
+                    .severity(if section.is_none() {
+                        Severity::Error
+                    } else {
+                        Severity::Info
+                    })
+                    .at(at.clone())
+                    .phase(Phase::Upgrade),
+            );
             return None;
         }
-        d.push(upgrade_finding(
-            DiagnosticCode::DeprecatedMember {
+        d.push(
+            Diagnostic::info(DiagnosticCode::DeprecatedMember {
                 text: Some(VanillaText::Deprecated {
                     member: key.clone(),
                     version: FormatVersion::new(1, 26, 20),
                 }),
-            },
-            Severity::Info,
-            &at,
-        ));
+            })
+            .at(at.clone())
+            .phase(Phase::Upgrade),
+        );
         let converted = match *name {
             "unit_cube" => Value::TRUE,
             "queued_ticking" => queued_ticking(&value, &at, d),
@@ -413,11 +414,11 @@ fn queued_ticking(value: &Value, at: &JsonPath, d: &mut Diagnostics) -> Value {
         for index in 2..range.len() {
             let mut element = child(at, &["interval_range"]);
             element.push_index(index);
-            d.push(upgrade_finding(
-                DiagnosticCode::UnrecognizedField { text: None },
-                Severity::Info,
-                &element,
-            ));
+            d.push(
+                Diagnostic::info(DiagnosticCode::UnrecognizedField { text: None })
+                    .at(element.clone())
+                    .phase(Phase::Upgrade),
+            );
         }
     }
     // `looping` and `on_tick`, and with them every member the conversion does not name:
@@ -454,11 +455,11 @@ fn convert_tags(map: &mut IndexMap<String, Value>, section: Option<usize>, d: &m
             .as_object()
             .is_some_and(facet_value::VObject::is_empty)
         {
-            d.push(upgrade_finding(
-                DiagnosticCode::InvalidType { text: None },
-                Severity::Info,
-                &component_path(section, key),
-            ));
+            d.push(
+                Diagnostic::info(DiagnosticCode::InvalidType { text: None })
+                    .at(component_path(section, key))
+                    .phase(Phase::Upgrade),
+            );
         }
     }
     map.retain(|k, _| !k.starts_with("tag:"));
@@ -519,13 +520,13 @@ fn conditions(block: &Block, d: &mut Diagnostics) {
             let mut at = child(&JsonPath::new(), &["minecraft:block", "permutations"]);
             at.push_index(index);
             at.push("condition");
-            d.push(upgrade_finding(
-                DiagnosticCode::InvalidType {
+            d.push(
+                Diagnostic::error(DiagnosticCode::InvalidType {
                     text: fixed("permutation condition must be a string value"),
-                },
-                Severity::Error,
-                &at,
-            ));
+                })
+                .at(at.clone())
+                .phase(Phase::Upgrade),
+            );
         }
     }
 }
@@ -679,11 +680,11 @@ fn convert(payload: &Value, legacy: &Block, cx: &mut UpgradeCx<'_>) -> super::v1
             if let bedrock_addon_core::json::EncodeError::NotRepresentable { at, .. } = &error {
                 place.append(at);
             }
-            cx.diagnostics.push(upgrade_finding(
-                DiagnosticCode::InvalidValue { text: None },
-                Severity::Error,
-                &place,
-            ));
+            cx.diagnostics.push(
+                Diagnostic::error(DiagnosticCode::InvalidValue { text: None })
+                    .at(place.clone())
+                    .phase(Phase::Upgrade),
+            );
             return empty(identifier);
         }
     };

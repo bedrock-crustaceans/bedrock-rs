@@ -5,10 +5,9 @@ use std::collections::{HashMap, HashSet};
 
 use indexmap::IndexMap;
 
-use super::load::at_origin;
 use super::{ALLOWED_MC_INHERIT, CameraList, CameraPreset, CameraSpline, VANILLA_CAMERAS, texts};
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, JsonPath, Phase, Severity,
+    Diagnostic, DiagnosticCode, DiagnosticDetail, JsonPath, Phase,
 };
 use bedrock_addon_core::document::Document;
 use bedrock_addon_core::id::{CameraPresetId, Kind, kind};
@@ -17,36 +16,13 @@ use bedrock_addon_core::load::StackCx;
 /// The namespace of vanilla's own presets.
 const VANILLA_NAMESPACE: &str = "minecraft";
 
-/// A stack-stage finding at `path` of `document`'s file.
-fn finding<T>(
-    code: DiagnosticCode,
-    severity: Severity,
-    document: &Document<T>,
-    path: &[&str],
-) -> Diagnostic {
-    let mut at = JsonPath::new();
-    for key in path {
-        at.push(key);
-    }
-    Diagnostic::new(
-        code,
-        severity,
-        Phase::Validate,
-        at_origin(document.origin(), at),
-    )
-}
-
 /// The detail of a reference to the camera preset `id`.
-#[allow(
-    clippy::unnecessary_wraps,
-    reason = "every caller fills a finding's optional detail"
-)]
-fn preset_reference(id: &str) -> Option<Box<DiagnosticDetail>> {
-    Some(Box::new(DiagnosticDetail::Reference {
+fn preset_reference(id: &str) -> DiagnosticDetail {
+    DiagnosticDetail::Reference {
         kind: <kind::CameraPreset as Kind>::NAME,
         id: id.to_owned(),
         hint: None,
-    }))
+    }
 }
 
 /// Where the chain of parents of a preset ends.
@@ -165,43 +141,41 @@ fn invalid(document: &Document<CameraPreset>, end: End<'_>) -> Option<Diagnostic
     let inherit_from = ["minecraft:camera_preset", "inherit_from"];
     // Illegal override: a vanilla camera's `radius` is the game's.
     if VANILLA_CAMERAS.contains(&name) && document.radius.is_some() {
-        return Some(finding(
-            DiagnosticCode::InvalidValue {
+        return Some(
+            Diagnostic::error(DiagnosticCode::InvalidValue {
                 text: texts::formatted(texts::ILLEGAL_OVERRIDE, &[name]),
-            },
-            Severity::Error,
-            document,
-            &["minecraft:camera_preset", "radius"],
-        ));
+            })
+            .at(JsonPath::of_keys(["minecraft:camera_preset", "radius"]))
+            .phase(Phase::Validate)
+            .in_file(document.origin()),
+        );
     }
     match end {
         End::Valid => None,
-        End::Illegal(parent) => Some(finding(
-            DiagnosticCode::InvalidReference {
+        End::Illegal(parent) => Some(
+            Diagnostic::error(DiagnosticCode::InvalidReference {
                 text: texts::formatted(texts::ILLEGAL_INHERITANCE, &[name, parent]),
-            },
-            Severity::Error,
-            document,
-            &inherit_from,
-        )),
-        End::Circular(repeated) => Some(finding(
-            DiagnosticCode::ReferenceCycle {
+            })
+            .at(JsonPath::of_keys(inherit_from))
+            .phase(Phase::Validate)
+            .in_file(document.origin()),
+        ),
+        End::Circular(repeated) => Some(
+            Diagnostic::error(DiagnosticCode::ReferenceCycle {
                 text: texts::formatted(texts::CIRCULAR, &[name, repeated]),
-            },
-            Severity::Error,
-            document,
-            &inherit_from,
-        )),
+            })
+            .at(JsonPath::of_keys(inherit_from))
+            .phase(Phase::Validate)
+            .in_file(document.origin()),
+        ),
         End::Unknown(parent) => {
-            let mut unknown = finding(
-                DiagnosticCode::UnresolvedReference {
-                    text: texts::formatted(texts::UNKNOWN_PARENT, &[name, parent]),
-                },
-                Severity::Error,
-                document,
-                &inherit_from,
-            );
-            unknown.detail = preset_reference(parent);
+            let unknown = Diagnostic::error(DiagnosticCode::UnresolvedReference {
+                text: texts::formatted(texts::UNKNOWN_PARENT, &[name, parent]),
+            })
+            .at(JsonPath::of_keys(inherit_from))
+            .phase(Phase::Validate)
+            .in_file(document.origin())
+            .detail(preset_reference(parent));
             Some(unknown)
         }
     }
@@ -220,37 +194,35 @@ pub(crate) fn check_list(
     let cameras = ["minecraft:camera_list", "cameras"];
     let known = |id: &CameraPresetId| known_preset(id, defined, stack);
     if let Some(unknown) = list.cameras.iter().find(|id| !known(id)) {
-        let mut finding = finding(
-            DiagnosticCode::UnresolvedReference {
-                text: texts::formatted(texts::LIST_UNKNOWN, &[name, unknown.as_str()]),
-            },
-            Severity::Error,
-            list,
-            &cameras,
-        );
-        finding.detail = preset_reference(unknown.as_str());
+        let finding = Diagnostic::error(DiagnosticCode::UnresolvedReference {
+            text: texts::formatted(texts::LIST_UNKNOWN, &[name, unknown.as_str()]),
+        })
+        .at(JsonPath::of_keys(cameras))
+        .phase(Phase::Validate)
+        .in_file(list.origin())
+        .detail(preset_reference(unknown.as_str()));
         return Some(finding);
     }
     if list.cameras.is_empty() {
-        return Some(finding(
-            DiagnosticCode::InvalidValue {
+        return Some(
+            Diagnostic::error(DiagnosticCode::InvalidValue {
                 text: texts::formatted(texts::LIST_EMPTY, &[name]),
-            },
-            Severity::Error,
-            list,
-            &cameras,
-        ));
+            })
+            .at(JsonPath::of_keys(cameras))
+            .phase(Phase::Validate)
+            .in_file(list.origin()),
+        );
     }
     let mut seen = HashSet::new();
     let twice = list.cameras.iter().find(|id| !seen.insert(id.as_str()))?;
-    Some(finding(
-        DiagnosticCode::DuplicateIdentifier {
+    Some(
+        Diagnostic::error(DiagnosticCode::DuplicateIdentifier {
             text: texts::formatted(texts::LIST_DUPLICATE, &[name, twice.as_str()]),
-        },
-        Severity::Error,
-        list,
-        &cameras,
-    ))
+        })
+        .at(JsonPath::of_keys(cameras))
+        .phase(Phase::Validate)
+        .in_file(list.origin()),
+    )
 }
 
 /// An information at each spline whose name an earlier spline has. The game gives no
@@ -261,12 +233,14 @@ pub(crate) fn duplicate_splines(files: &[Document<CameraSpline>]) -> Vec<Diagnos
     for file in files {
         for (i, spline) in file.splines.iter().enumerate() {
             if !seen.insert(spline.name.0.as_str()) {
-                let mut warning = finding(
-                    DiagnosticCode::DuplicateIdentifier { text: None },
-                    Severity::Info,
-                    file,
-                    &["minecraft:camera_custom_splines", "splines"],
-                );
+                let mut warning =
+                    Diagnostic::info(DiagnosticCode::DuplicateIdentifier { text: None })
+                        .at(JsonPath::of_keys([
+                            "minecraft:camera_custom_splines",
+                            "splines",
+                        ]))
+                        .phase(Phase::Validate)
+                        .in_file(file.origin());
                 warning.location.json_path.push_index(i);
                 warning.location.json_path.push("name");
                 found.push(warning);
@@ -308,14 +282,11 @@ fn validator_line<T>(document: &Document<T>, path: &JsonPath, name: &str) -> Dia
         0,
         name,
     );
-    let mut line = Diagnostic::new(
-        DiagnosticCode::UnresolvedReference { text: Some(text) },
-        Severity::Error,
-        Phase::Validate,
-        at_origin(document.origin(), path.clone()),
-    );
-    line.detail = preset_reference(name);
-    line
+    Diagnostic::error(DiagnosticCode::UnresolvedReference { text: Some(text) })
+        .at(path.clone())
+        .phase(Phase::Validate)
+        .in_file(document.origin())
+        .detail(preset_reference(name))
 }
 
 /// The validator's line of a preset whose parent is unknown.

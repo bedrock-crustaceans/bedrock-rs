@@ -18,8 +18,8 @@ use super::{
     DataDrivenUi, FORMAT_VERSION, UiComposition, UiRoot, UiStyle, read, style, validate, write,
 };
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Location, Phase, Severity,
-    Span, VanillaText,
+    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Phase, Severity, Span,
+    VanillaText,
 };
 use bedrock_addon_core::document::{
     CombineRule, Content, Contribution, Definition, Document, JsonContent, NoBeta, Notice, Origin,
@@ -279,21 +279,6 @@ fn text(bytes: &[u8]) -> Option<&str> {
     std::str::from_utf8(bytes).ok()
 }
 
-/// A finding of the envelope stage.
-fn finding(
-    code: DiagnosticCode,
-    severity: Severity,
-    at: JsonPath,
-    span: Option<Span>,
-) -> Diagnostic {
-    Diagnostic::new(
-        code,
-        severity,
-        Phase::Parse,
-        Location::new(None, None, at, span),
-    )
-}
-
 /// The path of the envelope's `format_version`.
 fn version_at() -> JsonPath {
     let mut at = JsonPath::new();
@@ -303,29 +288,19 @@ fn version_at() -> JsonPath {
 
 /// The loader's "Missing object" error for family `F`.
 fn missing_object<F: Family>() -> Diagnostic {
-    finding(
-        DiagnosticCode::MissingPayload {
-            text: Some(VanillaText::Formatted {
-                template: MISSING_OBJECT,
-                args: vec![F::PAYLOAD_KEY.to_owned()],
-            }),
-        },
-        Severity::Error,
-        JsonPath::new(),
-        None,
-    )
+    Diagnostic::error(DiagnosticCode::MissingPayload {
+        text: Some(VanillaText::Formatted {
+            template: MISSING_OBJECT,
+            args: vec![F::PAYLOAD_KEY.to_owned()],
+        }),
+    })
 }
 
 /// The loader's closing line.
 fn failed_to_load() -> Diagnostic {
-    finding(
-        DiagnosticCode::DocumentRejected {
-            text: Some(VanillaText::Fixed(FAILED_TO_LOAD)),
-        },
-        Severity::Error,
-        JsonPath::new(),
-        None,
-    )
+    Diagnostic::error(DiagnosticCode::DocumentRejected {
+        text: Some(VanillaText::Fixed(FAILED_TO_LOAD)),
+    })
 }
 
 /// A document the envelope stage refused, with its findings.
@@ -386,27 +361,20 @@ fn stage<F: UiFamily>(document: JsonSlice<'_>, cx: &LoadContext) -> Stage<F> {
     // text.
     let picked = FormatVersionInput::pick(document.text);
     let note = if envelope.member_count() != 2 {
-        Some(finding(
-            DiagnosticCode::MalformedInput {
-                message: format!(
-                    "{} root members, not \"format_version\" and a payload member",
-                    envelope.member_count()
-                ),
-                text: Some(VanillaText::DocumentMemberCount),
-            },
-            Severity::Info,
-            JsonPath::new(),
-            None,
-        ))
+        Some(Diagnostic::info(DiagnosticCode::MalformedInput {
+            message: format!(
+                "{} root members, not \"format_version\" and a payload member",
+                envelope.member_count()
+            ),
+            text: Some(VanillaText::DocumentMemberCount),
+        }))
     } else if picked == PickedVersion::Malformed {
-        Some(finding(
-            DiagnosticCode::MalformedFormatVersion {
+        Some(
+            Diagnostic::info(DiagnosticCode::MalformedFormatVersion {
                 text: Some(VanillaText::Fixed(MALFORMED_VERSION)),
-            },
-            Severity::Info,
-            version_at(),
-            None,
-        ))
+            })
+            .at(version_at()),
+        )
     } else {
         None
     };
@@ -428,14 +396,12 @@ fn stage<F: UiFamily>(document: JsonSlice<'_>, cx: &LoadContext) -> Stage<F> {
     }
     let PickedVersion::Version { input, written } = picked else {
         // No version in the input and none from the caller.
-        diagnostics.push(finding(
-            DiagnosticCode::UnsupportedVersion {
+        diagnostics.push(
+            Diagnostic::error(DiagnosticCode::UnsupportedVersion {
                 text: Some(VanillaText::NoValidVersion),
-            },
-            Severity::Error,
-            version_at(),
-            None,
-        ));
+            })
+            .at(version_at()),
+        );
         return Stage {
             parsed: refused(diagnostics),
             typed: true,
@@ -505,15 +471,10 @@ fn place(diagnostics: &mut Diagnostics, document: JsonSlice<'_>) {
 fn unreadable<F: UiFamily>() -> Diagnostics {
     let message = "not UTF-8 JSON within the nesting limit".to_owned();
     let mut diagnostics = Diagnostics::default();
-    diagnostics.push(finding(
-        DiagnosticCode::MalformedInput {
-            message: message.clone(),
-            text: Some(VanillaText::DocumentJson { message }),
-        },
-        Severity::Info,
-        JsonPath::new(),
-        None,
-    ));
+    diagnostics.push(Diagnostic::info(DiagnosticCode::MalformedInput {
+        message: message.clone(),
+        text: Some(VanillaText::DocumentJson { message }),
+    }));
     diagnostics.push(missing_object::<F>());
     diagnostics
 }
@@ -539,7 +500,7 @@ fn parse_file<F: UiFamily>(
     cx: &LoadContext,
 ) -> FileOutcome<F::Doc> {
     let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
-    let origin = Origin::new(pack, PackSide::Resource, path.clone(), None, Vec::new());
+    let origin = Origin::file(pack, PackSide::Resource, path.clone());
     let Some(text) = text(bytes) else {
         let mut diagnostics = unreadable::<F>();
         locate(&mut diagnostics, &origin);
@@ -597,13 +558,7 @@ fn as_written<F: UiFamily>(
     cx: &LoadContext,
 ) -> Result<Document<F::Any>, Rejected> {
     let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
-    let origin = Origin::new(
-        PackRef::app_data(),
-        PackSide::Resource,
-        path.clone(),
-        None,
-        Vec::new(),
-    );
+    let origin = Origin::file(PackRef::app_data(), PackSide::Resource, path.clone());
     let Some(text) = text(bytes) else {
         let mut diagnostics = unreadable::<F>();
         locate(&mut diagnostics, &origin);
@@ -818,17 +773,12 @@ fn ignored_files<T: Definition>(
             {
                 continue;
             }
-            registry.push_diagnostic(Diagnostic::new(
-                DiagnosticCode::IgnoredFile { text: None },
-                Severity::Info,
-                Phase::Validate,
-                Location::new(
-                    Some(pack.pack.clone()),
-                    Some(file.path.clone()),
-                    JsonPath::new(),
-                    None,
-                ),
-            ));
+            let ignored = Origin::file(pack.pack.clone(), PackSide::Resource, file.path.clone());
+            registry.push_diagnostic(
+                Diagnostic::info(DiagnosticCode::IgnoredFile { text: None })
+                    .phase(Phase::Validate)
+                    .in_file(&ignored),
+            );
         }
     }
 }
@@ -839,28 +789,24 @@ fn not_defined(origin: &Origin, name: &str, span: Option<Span>) -> Diagnostic {
     at.push(CompositionFamily::PAYLOAD_KEY);
     at.push("attribs");
     at.push("extension_point");
-    let mut finding = Diagnostic::new(
-        DiagnosticCode::UnresolvedReference {
-            text: Some(VanillaText::Formatted {
-                template: NOT_DEFINED,
-                args: vec![name.to_owned()],
-            }),
-        },
-        Severity::Error,
-        Phase::Validate,
-        Location::new(
-            Some(origin.pack.clone()),
-            Some(origin.path.clone()),
-            at,
-            span,
-        ),
-    );
-    finding.detail = Some(Box::new(DiagnosticDetail::Reference {
+    let finding = Diagnostic::error(DiagnosticCode::UnresolvedReference {
+        text: Some(VanillaText::Formatted {
+            template: NOT_DEFINED,
+            args: vec![name.to_owned()],
+        }),
+    })
+    .at(at)
+    .phase(Phase::Validate)
+    .in_file(origin)
+    .detail(DiagnosticDetail::Reference {
         kind: "extension point",
         id: name.to_owned(),
         hint: None,
-    }));
-    finding
+    });
+    match span {
+        Some(span) => finding.span(span),
+        None => finding,
+    }
 }
 
 /// `findings` with `finding` before the loader's closing line, which it adds when there is
@@ -879,9 +825,7 @@ fn before_closing_line(findings: &mut Diagnostics, finding: Diagnostic, origin: 
         .filter(|f| !closing(f))
         .collect();
     kept.push(finding);
-    let mut last = failed_to_load();
-    last.location.pack = Some(origin.pack.clone());
-    last.location.path = Some(origin.path.clone());
+    let last = failed_to_load().in_file(origin);
     kept.push(last);
     for finding in kept {
         findings.push(finding);

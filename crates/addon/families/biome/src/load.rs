@@ -12,7 +12,7 @@ use super::texts::{DUPLICATE, WORLD_GATE, fixed, text as formatted};
 use super::{Beta, Biome, validate};
 use bedrock_addon_core::__private::Sealed;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, VanillaText,
 };
 use bedrock_addon_core::document::{
     CombineRule, Content, Contribution, Definition, Document, JsonContent, NoBeta, Origin, Placed,
@@ -178,7 +178,7 @@ impl Content for Beta {
                     mut diagnostics,
                     ..
                 } = document;
-                diagnostics.push(file_error(DiagnosticCode::UnsupportedVersion {
+                diagnostics.push(Diagnostic::error(DiagnosticCode::UnsupportedVersion {
                     text: None,
                 }));
                 locate(&mut diagnostics, &origin);
@@ -272,13 +272,12 @@ pub(crate) fn upgrade_document(
             Ok(Document::new(biome, origin, outcome.version, diagnostics))
         }
         Some(Loaded::Beta(_)) => {
-            let mut finding = file_error(DiagnosticCode::UnsupportedVersion {
+            let finding = Diagnostic::error(DiagnosticCode::UnsupportedVersion {
                 text: Some(VanillaText::NoParserForVersion {
                     version: "beta".to_owned(),
                 }),
-            });
-            finding.location.pack = Some(origin.pack.clone());
-            finding.location.path = Some(origin.path.clone());
+            })
+            .in_file(&origin);
             diagnostics.push(finding);
             Err(Rejected::new(origin, diagnostics))
         }
@@ -315,7 +314,7 @@ fn text<'b>(bytes: &'b [u8], origin: &Origin) -> Result<&'b str, Rejected> {
     let malformed = |message: &str| {
         reject(
             origin.clone(),
-            file_error(DiagnosticCode::MalformedInput {
+            Diagnostic::error(DiagnosticCode::MalformedInput {
                 message: message.to_owned(),
                 text: None,
             }),
@@ -332,7 +331,7 @@ fn text<'b>(bytes: &'b [u8], origin: &Origin) -> Result<&'b str, Rejected> {
 fn world_gate(cx: &LoadContext) -> Option<Diagnostic> {
     (!cx.is_base_game_pack && !cx.world_base_game_version.includes(&WORLD_GATE_VERSION)).then(
         || {
-            file_error(DiagnosticCode::IgnoredFile {
+            Diagnostic::error(DiagnosticCode::IgnoredFile {
                 text: fixed(WORLD_GATE),
             })
         },
@@ -415,12 +414,7 @@ fn below_floor(parsed: &mut Parsed<BiomeFamily>, text: &str) {
             };
             found.push(diagnostic);
             if let Some(hint) = hint(text, written) {
-                found.push(Diagnostic::new(
-                    hint,
-                    Severity::Info,
-                    Phase::Parse,
-                    Location::new(None, None, JsonPath::new(), None),
-                ));
+                found.push(Diagnostic::info(hint));
             }
         } else {
             found.push(diagnostic);
@@ -479,25 +473,15 @@ fn beta_rejected(parts: Parts) -> Rejected {
         mut diagnostics,
         ..
     } = parts;
-    let mut finding = file_error(DiagnosticCode::UnsupportedVersion {
-        text: Some(VanillaText::NoParserForVersion {
-            version: "beta".to_owned(),
-        }),
-    });
-    finding.location.pack = Some(origin.pack.clone());
-    finding.location.path = Some(origin.path.clone());
-    diagnostics.push(finding);
+    diagnostics.push(
+        Diagnostic::error(DiagnosticCode::UnsupportedVersion {
+            text: Some(VanillaText::NoParserForVersion {
+                version: "beta".to_owned(),
+            }),
+        })
+        .in_file(&origin),
+    );
     Rejected::new(origin, diagnostics)
-}
-
-/// A file-level error.
-fn file_error(code: DiagnosticCode) -> Diagnostic {
-    Diagnostic::new(
-        code,
-        Severity::Error,
-        Phase::Parse,
-        Location::new(None, None, JsonPath::new(), None),
-    )
 }
 
 /// A rejection with one finding.
@@ -510,7 +494,7 @@ fn reject(origin: Origin, finding: Diagnostic) -> Rejected {
 
 /// The origin of a file of `pack`.
 fn origin(pack: PackRef, side: PackSide, path: &PackPath) -> Origin {
-    Origin::new(pack, side, path.clone(), None, Vec::new())
+    Origin::file(pack, side, path.clone())
 }
 
 /// Gives every finding the document's pack and file.
@@ -596,22 +580,17 @@ fn combine(parsed: Vec<Contribution<Biome>>, stack: &StackCx<'_>) -> Registry<Bi
         for (id, origin) in &loaded {
             let dropped = top.get(id).is_some_and(|&r| rank(&origin.pack) > r);
             if dropped && !is_base_game(stack, &origin.pack) {
-                duplicates.push(Diagnostic::new(
-                    DiagnosticCode::DuplicateIdentifier {
+                duplicates.push(
+                    Diagnostic::error(DiagnosticCode::DuplicateIdentifier {
                         text: formatted(DUPLICATE, &[id.as_str()]),
-                    },
-                    Severity::Error,
-                    Phase::Validate,
-                    Location::new(
-                        Some(origin.pack.clone()),
-                        Some(origin.path.clone()),
-                        child(
-                            &JsonPath::new(),
-                            &["minecraft:biome", "description", "identifier"],
-                        ),
-                        None,
-                    ),
-                ));
+                    })
+                    .at(child(
+                        &JsonPath::new(),
+                        &["minecraft:biome", "description", "identifier"],
+                    ))
+                    .phase(Phase::Validate)
+                    .in_file(origin),
+                );
             }
         }
     }

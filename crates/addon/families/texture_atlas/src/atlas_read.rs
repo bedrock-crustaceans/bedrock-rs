@@ -10,7 +10,7 @@ use super::atlas::{
 };
 use super::texts;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity, VanillaText,
 };
 use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::id::AtlasKey;
@@ -64,9 +64,12 @@ struct Reader<'a> {
 impl Reader<'_> {
     /// A finding at the current path.
     fn report(&mut self, code: DiagnosticCode, severity: Severity) {
-        let location = Location::new(None, None, self.path.clone(), None);
-        self.out
-            .push(Diagnostic::new(code, severity, Phase::Validate, location));
+        self.out.push(
+            Diagnostic::error(code)
+                .severity(severity)
+                .at(self.path.clone())
+                .phase(Phase::Validate),
+        );
     }
 
     /// A finding at member `key` of the current path.
@@ -78,13 +81,11 @@ impl Reader<'_> {
 
     /// The game's content-log error after which the atlas loads: a kept error.
     fn kept(&mut self, code: DiagnosticCode) {
-        let location = Location::new(None, None, self.path.clone(), None);
-        self.out.push_kept_error(Diagnostic::new(
-            code,
-            Severity::Error,
-            Phase::Validate,
-            location,
-        ));
+        self.out.push_kept_error(
+            Diagnostic::error(code)
+                .at(self.path.clone())
+                .phase(Phase::Validate),
+        );
     }
 
     /// A lint of the crate's own at member `key`: vanilla coerces or ignores the value silently, an

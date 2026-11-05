@@ -9,7 +9,7 @@ mod load;
 mod write;
 
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, VanillaText,
 };
 use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::json::Value;
@@ -124,28 +124,19 @@ impl UiTextureInfo {
     }
 }
 
-/// A finding at `path`: an information of the crate's own (the loader is silent) or the text of
-/// the game's debug assert.
-fn warn(d: &mut Diagnostics, code: DiagnosticCode, path: &[&str]) {
+/// An `InvalidValue` at `path`: an information of the crate's own (the loader is silent) or
+/// the text of the game's debug assert.
+fn invalid(d: &mut Diagnostics, text: Option<&'static str>, path: &[&str]) {
     let mut json_path = JsonPath::new();
     for segment in path {
         json_path.push(segment);
     }
-    d.push(Diagnostic::new(
-        code,
-        Severity::Info,
-        Phase::Validate,
-        Location::new(None, None, json_path, None),
-    ));
-}
-
-fn invalid(d: &mut Diagnostics, text: Option<&'static str>, path: &[&str]) {
-    warn(
-        d,
-        DiagnosticCode::InvalidValue {
+    d.push(
+        Diagnostic::info(DiagnosticCode::InvalidValue {
             text: text.map(VanillaText::Fixed),
-        },
-        path,
+        })
+        .at(json_path)
+        .phase(Phase::Validate),
     );
 }
 
@@ -406,6 +397,7 @@ pub(crate) fn extra_value(extra: &Extra) -> Value {
 )]
 mod tests {
     use super::*;
+    use bedrock_addon_core::diagnostic::Severity;
 
     fn read(text: &str) -> (UiTextureInfo, Diagnostics) {
         let root = bedrock_addon_support::jsoncpp::read(text.as_bytes()).unwrap();

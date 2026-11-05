@@ -1,9 +1,7 @@
 //! The crate's own checks of a loaded structure beyond vanilla's load rules.
 
 use super::Structure;
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase};
 
 /// An info for the first index of each layer outside `-1..len` of the `default` palette
 /// (the crate's own note; vanilla is silent:
@@ -25,12 +23,11 @@ pub(super) fn index_notes(structure: &Structure) -> Diagnostics {
             at.push("block_indices");
             at.push_index(layer);
             at.push_index(position);
-            notes.push(Diagnostic::new(
-                DiagnosticCode::InvalidValue { text: None },
-                Severity::Info,
-                Phase::Validate,
-                Location::new(None, None, at, None),
-            ));
+            notes.push(
+                Diagnostic::info(DiagnosticCode::InvalidValue { text: None })
+                    .at(at)
+                    .phase(Phase::Validate),
+            );
         }
     }
     notes

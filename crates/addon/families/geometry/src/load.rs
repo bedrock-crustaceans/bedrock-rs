@@ -16,7 +16,7 @@ use super::schema::{
 use super::validate::{Place, first_bad_identifier, missing_bone_parents, parse_time};
 use super::{Geometry, GeometryFile, Inherited};
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, JsonPathSegment, Location, Phase, Severity,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, JsonPathSegment, Phase, Severity,
     VanillaText,
 };
 use bedrock_addon_core::document::{
@@ -50,15 +50,6 @@ const ENTITY: &str = "models/entity";
 /// The file of the old built-in mob geometry.
 const MOBS: &str = "models/mobs.json";
 
-fn finding(code: DiagnosticCode, severity: Severity, at: JsonPath) -> Diagnostic {
-    Diagnostic::new(
-        code,
-        severity,
-        Phase::Parse,
-        Location::new(None, None, at, None),
-    )
-}
-
 fn member(name: &str) -> JsonPath {
     let mut at = JsonPath::new();
     at.push(name);
@@ -66,13 +57,9 @@ fn member(name: &str) -> JsonPath {
 }
 
 fn did_not_validate(diagnostics: &mut Diagnostics) {
-    diagnostics.push(finding(
-        DiagnosticCode::InvalidValue {
-            text: text(DID_NOT_VALIDATE, &[]),
-        },
-        Severity::Error,
-        JsonPath::new(),
-    ));
+    diagnostics.push(Diagnostic::error(DiagnosticCode::InvalidValue {
+        text: text(DID_NOT_VALIDATE, &[]),
+    }));
 }
 
 /// What the envelope of a file gave: the struct of its version, not upgraded.
@@ -99,14 +86,10 @@ enum Outcome<T> {
 /// The file's text after the BOM, the depth check and the JSON syntax check.
 fn text_of<'a>(bytes: &'a [u8], diagnostics: &mut Diagnostics) -> Outcome<Cow<'a, str>> {
     let mut malformed = |message: String| {
-        diagnostics.push(finding(
-            DiagnosticCode::MalformedInput {
-                text: text(PARSE_ERROR, &[&message]),
-                message,
-            },
-            Severity::Error,
-            JsonPath::new(),
-        ));
+        diagnostics.push(Diagnostic::error(DiagnosticCode::MalformedInput {
+            text: text(PARSE_ERROR, &[&message]),
+            message,
+        }));
         Outcome::Failed
     };
     let bytes = strip_bom(bytes);
@@ -144,12 +127,10 @@ fn read_version(
         .into_iter()
         .find_map(|(key, node)| (key == "format_version").then_some(node));
     let Some(node) = node else {
-        diagnostics.push(finding(
-            // The crate's own finding: the game has no text for a missing version here.
-            DiagnosticCode::MissingFormatVersion { text: None },
-            Severity::Info,
-            JsonPath::new(),
-        ));
+        // The crate's own finding: the game has no text for a missing version here.
+        diagnostics.push(Diagnostic::info(DiagnosticCode::MissingFormatVersion {
+            text: None,
+        }));
         return (None, DEFAULT_VERSION, "1.0".to_owned());
     };
     let as_written = if node.kind() == JsonKind::String {
@@ -166,14 +147,13 @@ fn read_version(
     if let Some(version) = version {
         return (Some(version), version, as_written);
     }
-    diagnostics.push(finding(
-        DiagnosticCode::MalformedFormatVersion {
+    // The crate's own information: the game has no text for this.
+    diagnostics.push(
+        Diagnostic::info(DiagnosticCode::MalformedFormatVersion {
             text: text(VERSION_NOT_VALID, &[&as_written]),
-        },
-        // The crate's own information: the game has no text for this.
-        Severity::Info,
-        member("format_version"),
-    ));
+        })
+        .at(member("format_version")),
+    );
     (None, DEFAULT_VERSION, as_written)
 }
 
@@ -202,39 +182,33 @@ fn read_written(
         JsonKind::Null => return Outcome::Empty,
         JsonKind::Object => {}
         _ => {
-            diagnostics.push(finding(
-                DiagnosticCode::MalformedInput {
-                    message: "the root is not an object".to_owned(),
-                    text: text_fixed(NOT_AN_OBJECT),
-                },
-                Severity::Error,
-                JsonPath::new(),
-            ));
+            diagnostics.push(Diagnostic::error(DiagnosticCode::MalformedInput {
+                message: "the root is not an object".to_owned(),
+                text: text_fixed(NOT_AN_OBJECT),
+            }));
             return Outcome::Failed;
         }
     }
     let (written, effective, as_written) = read_version(root, diagnostics);
     if effective > cx.engine_version {
-        diagnostics.push(finding(
-            DiagnosticCode::UnsupportedVersion {
+        diagnostics.push(
+            Diagnostic::error(DiagnosticCode::UnsupportedVersion {
                 text: text(
                     EXCEEDS_GAME_VERSION,
                     &[&as_written, &cx.engine_version.to_string()],
                 ),
-            },
-            Severity::Error,
-            member("format_version"),
-        ));
+            })
+            .at(member("format_version")),
+        );
         return Outcome::Failed;
     }
     if place_of(path, cx).requires_minecraft_namespace() && effective < V1_19_30 {
-        diagnostics.push(finding(
-            DiagnosticCode::UnsupportedVersion {
+        diagnostics.push(
+            Diagnostic::error(DiagnosticCode::UnsupportedVersion {
                 text: text(INTERNAL_BLOCKS_FLOOR, &[]),
-            },
-            Severity::Error,
-            member("format_version"),
-        ));
+            })
+            .at(member("format_version")),
+        );
         return Outcome::Failed;
     }
     // The keyed door: a file that states a version the keyed layout ended before is read by
@@ -370,11 +344,9 @@ fn load_as(path: &PackPath, bytes: &[u8], cx: &LoadContext, keyed: bool) -> Load
     match read_written(path, bytes, cx, keyed, &mut diagnostics) {
         Outcome::Empty => {
             // Vanilla skips the file without a message.
-            diagnostics.push(finding(
-                DiagnosticCode::EmptyDocument { text: None },
-                Severity::Info,
-                JsonPath::new(),
-            ));
+            diagnostics.push(Diagnostic::info(DiagnosticCode::EmptyDocument {
+                text: None,
+            }));
             Loaded {
                 finished: None,
                 version: unread,
@@ -432,13 +404,7 @@ fn locate(diagnostics: Diagnostics, origin: &Origin) -> Diagnostics {
 }
 
 fn detached_origin(path: &PackPath) -> Origin {
-    Origin::new(
-        PackRef::app_data(),
-        PackSide::Resource,
-        path.clone(),
-        None,
-        Vec::new(),
-    )
+    Origin::file(PackRef::app_data(), PackSide::Resource, path.clone())
 }
 
 /// Loads one geometry file as vanilla's `GeometryGroup` does: the version gates, the schema of
@@ -560,11 +526,9 @@ impl GeometryFile {
         let mut diagnostics = Diagnostics::default();
         let outcome = read_written(path, bytes, cx, false, &mut diagnostics);
         if matches!(outcome, Outcome::Empty) {
-            diagnostics.push(finding(
-                DiagnosticCode::EmptyDocument { text: None },
-                Severity::Info,
-                JsonPath::new(),
-            ));
+            diagnostics.push(Diagnostic::info(DiagnosticCode::EmptyDocument {
+                text: None,
+            }));
         }
         let diagnostics = locate(diagnostics, &origin);
         match outcome {
@@ -632,13 +596,7 @@ fn owner(finding: &Diagnostic, keys: &HashMap<String, usize>) -> Option<usize> {
 }
 
 fn parse_walked(file: &WalkFile, cx: &LoadContext) -> FileContribution {
-    let origin = Origin::new(
-        file.pack.clone(),
-        file.side,
-        file.path.clone(),
-        None,
-        Vec::new(),
-    );
+    let origin = Origin::file(file.pack.clone(), file.side, file.path.clone());
     let key = file.key.as_str();
     let rank = if key == MOBS {
         0
@@ -976,13 +934,11 @@ fn apply(
             not_built.insert(id.clone());
             let origin = document.origin().clone();
             let mut diagnostics = document.diagnostics().clone();
-            let at = Location::new(
-                Some(origin.pack.clone()),
-                Some(origin.path.clone()),
-                JsonPath::new(),
-                None,
+            diagnostics.push(
+                Diagnostic::error(code)
+                    .phase(Phase::Validate)
+                    .in_file(&origin),
             );
-            diagnostics.push(Diagnostic::new(code, Severity::Error, Phase::Validate, at));
             Contribution::Rejected(Some(id), Rejected::new(origin, diagnostics))
         });
     }
@@ -1003,17 +959,11 @@ fn shadow_for_good(files: &mut [FileContribution], not_built: &HashSet<GeometryI
             match contribution {
                 Contribution::Stable(id, document) if not_built.contains(&id) => {
                     let origin = document.origin();
-                    file.findings.push(Diagnostic::new(
-                        Notice::shadowed().code,
-                        Severity::Info,
-                        Phase::Validate,
-                        Location::new(
-                            Some(origin.pack.clone()),
-                            Some(origin.path.clone()),
-                            JsonPath::new(),
-                            None,
-                        ),
-                    ));
+                    file.findings.push(
+                        Diagnostic::info(Notice::shadowed().code)
+                            .phase(Phase::Validate)
+                            .in_file(origin),
+                    );
                 }
                 other => kept.push(other),
             }

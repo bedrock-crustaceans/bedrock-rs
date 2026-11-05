@@ -6,8 +6,8 @@ use facet_json::RawJson;
 use indexmap::{IndexMap, IndexSet};
 
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, JsonPathSegment, Location, Phase, Severity,
-    Span, VanillaText, code_for_deserialize_error_kind,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, JsonPathSegment, Span, VanillaText,
+    code_for_deserialize_error_kind,
 };
 use bedrock_addon_core::json::{
     ClampedText, JsonSlice, Value, Width, clamp_text, parse_at, unknown_members,
@@ -54,16 +54,6 @@ pub(crate) fn text(template: &'static str, args: &[&str]) -> Option<VanillaText>
     })
 }
 
-/// A parse finding at `at`.
-pub(crate) fn finding(code: DiagnosticCode, severity: Severity, at: JsonPath) -> Diagnostic {
-    Diagnostic::new(
-        code,
-        severity,
-        Phase::Parse,
-        Location::new(None, None, at, None),
-    )
-}
-
 /// `base` followed by `keys`.
 pub(crate) fn below(base: &JsonPath, keys: &[&str]) -> JsonPath {
     let mut path = base.clone();
@@ -75,35 +65,26 @@ pub(crate) fn below(base: &JsonPath, keys: &[&str]) -> JsonPath {
 
 /// "child '<key>' not valid here." at `at` (the member itself).
 pub(crate) fn not_valid_here(key: &str, at: JsonPath) -> Diagnostic {
-    finding(
-        DiagnosticCode::UnrecognizedField {
-            text: text(CHILD_NOT_VALID, &[key]),
-        },
-        Severity::Error,
-        at,
-    )
+    Diagnostic::error(DiagnosticCode::UnrecognizedField {
+        text: text(CHILD_NOT_VALID, &[key]),
+    })
+    .at(at)
 }
 
 /// "Required child <child> not found" at `at` (the object that lacks it).
 pub(crate) fn required(child: &str, at: JsonPath) -> Diagnostic {
-    finding(
-        DiagnosticCode::MissingRequiredField {
-            text: text(REQUIRED_CHILD, &[child]),
-        },
-        Severity::Error,
-        at,
-    )
+    Diagnostic::error(DiagnosticCode::MissingRequiredField {
+        text: text(REQUIRED_CHILD, &[child]),
+    })
+    .at(at)
 }
 
 /// "unknown child schema option type.  Allowed types: <allowed>" at `at`.
 pub(crate) fn wrong_type(allowed: &str, at: JsonPath, span: Option<Span>) -> Diagnostic {
-    let mut found = finding(
-        DiagnosticCode::InvalidType {
-            text: text(UNKNOWN_OPTION_TYPE, &[allowed]),
-        },
-        Severity::Error,
-        at,
-    );
+    let mut found = Diagnostic::error(DiagnosticCode::InvalidType {
+        text: text(UNKNOWN_OPTION_TYPE, &[allowed]),
+    })
+    .at(at);
     found.location.span = span;
     found
 }
@@ -218,13 +199,12 @@ pub(crate) fn describe<'a>(
     let payload_at = below(&cx.at, &[PAYLOAD]);
     let Some(payload) = root.get(PAYLOAD).and_then(|raw| document.nested(raw)) else {
         // A missing payload is the crate's own finding: vanilla has only a debug assertion.
-        d.push(finding(
-            DiagnosticCode::MissingRequiredField {
+        d.push(
+            Diagnostic::error(DiagnosticCode::MissingRequiredField {
                 text: Some(VanillaText::Fixed("No entity definition to parse")),
-            },
-            Severity::Error,
-            cx.at.clone(),
-        ));
+            })
+            .at(cx.at.clone()),
+        );
         return None;
     };
     let payload_json = root_json
@@ -355,7 +335,7 @@ pub(crate) fn typed<D: for<'x> Facet<'x>>(
                     wrong_type(allowed_at(&path, names_only), at, Some(error.span))
                 }
                 code => {
-                    let mut found = finding(code, Severity::Error, at);
+                    let mut found = Diagnostic::error(code).at(at);
                     found.location.span = Some(error.span);
                     found
                 }
@@ -492,13 +472,10 @@ fn item_type_error(described: &Described<'_>, span: Span) -> Diagnostic {
 
 /// An `item` that is neither a string nor an object.
 fn wrong_item(at: JsonPath, span: Option<Span>) -> Diagnostic {
-    let mut found = finding(
-        DiagnosticCode::InvalidValue {
-            text: text(UNKNOWN_OPTION_TYPE, &["string, object"]),
-        },
-        Severity::Error,
-        at,
-    );
+    let mut found = Diagnostic::error(DiagnosticCode::InvalidValue {
+        text: text(UNKNOWN_OPTION_TYPE, &["string, object"]),
+    })
+    .at(at);
     found.location.span = span;
     found
 }
@@ -530,11 +507,7 @@ pub(crate) fn check_item(
     let members = match item {
         ItemBinding::Item(written) => {
             if !is_condition_key(written) {
-                d.push(finding(
-                    DiagnosticCode::InvalidValue { text: None },
-                    Severity::Info,
-                    item_at,
-                ));
+                d.push(Diagnostic::info(DiagnosticCode::InvalidValue { text: None }).at(item_at));
             }
             return;
         }
@@ -550,22 +523,20 @@ pub(crate) fn check_item(
         d.push(required(ITEM_KEY, item_at.clone()));
     }
     for key in item.ignored() {
-        d.push(finding(
-            DiagnosticCode::DroppedField { text: None },
-            Severity::Info,
-            below(&item_at, &[key]),
-        ));
+        d.push(
+            Diagnostic::info(DiagnosticCode::DroppedField { text: None })
+                .at(below(&item_at, &[key])),
+        );
     }
     // `asString("")` of a number is the empty text.
     let bound = members
         .iter()
         .min_by(|a, b| a.0.as_bytes().cmp(b.0.as_bytes()));
     if let Some((key, Molang::Const(_))) = bound {
-        d.push(finding(
-            DiagnosticCode::InvalidValue { text: None },
-            Severity::Info,
-            below(&item_at, &[key]),
-        ));
+        d.push(
+            Diagnostic::info(DiagnosticCode::InvalidValue { text: None })
+                .at(below(&item_at, &[key])),
+        );
     }
 }
 
@@ -713,14 +684,11 @@ fn object<'a>(
     match parse_at::<IndexMap<String, RawJson<'a>>>(slice) {
         Ok(members) => Some(members),
         Err(error) => {
-            let mut found = finding(
-                DiagnosticCode::MalformedInput {
-                    message: error.error.kind.to_string(),
-                    text: None,
-                },
-                Severity::Error,
-                at.clone(),
-            );
+            let mut found = Diagnostic::error(DiagnosticCode::MalformedInput {
+                message: error.error.kind.to_string(),
+                text: None,
+            })
+            .at(at.clone());
             found.location.span = Some(error.span);
             d.push(found);
             None
@@ -771,11 +739,7 @@ pub(crate) fn check_condition<'m>(
     for key in ignored {
         // The members after the first are dropped; the game says nothing, the crate reports a
         // `DroppedField` information.
-        d.push(finding(
-            DiagnosticCode::DroppedField { text: None },
-            Severity::Info,
-            below(at, &[key]),
-        ));
+        d.push(Diagnostic::info(DiagnosticCode::DroppedField { text: None }).at(below(at, &[key])));
     }
 }
 
@@ -795,13 +759,12 @@ pub(crate) fn check_variables(
         if !is_variable_key(key) {
             d.push(not_valid_here(key, member_at));
         } else if value.0 != "public" {
-            d.push(finding(
-                DiagnosticCode::InvalidValue {
+            d.push(
+                Diagnostic::error(DiagnosticCode::InvalidValue {
                     text: text(NOT_ALLOWED_REGEX, &[&value.0, "public"]),
-                },
-                Severity::Error,
-                member_at,
-            ));
+                })
+                .at(member_at),
+            );
         }
     }
     if variables.is_empty() {
@@ -812,13 +775,12 @@ pub(crate) fn check_variables(
 /// An identifier that is empty names nothing.
 pub(crate) fn check_identifier(identifier: &str, at: &JsonPath, d: &mut Diagnostics) {
     if identifier.is_empty() {
-        d.push(finding(
-            DiagnosticCode::InvalidValue {
+        d.push(
+            Diagnostic::error(DiagnosticCode::InvalidValue {
                 text: Some(VanillaText::Fixed("Missing or invalid identifier")),
-            },
-            Severity::Error,
-            below(at, &["identifier"]),
-        ));
+            })
+            .at(below(at, &["identifier"])),
+        );
     }
 }
 

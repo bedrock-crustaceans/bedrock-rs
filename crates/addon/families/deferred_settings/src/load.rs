@@ -457,30 +457,13 @@ fn parse_walk_file(walked: &WalkFile, cx: &LoadContext) -> SettingsFile {
     }
 }
 
-/// A finding about the document at `origin`, raised while the stack is combined.
-fn combined(code: DiagnosticCode, severity: Severity, origin: &Origin, at: JsonPath) -> Diagnostic {
-    Diagnostic::new(
-        code,
-        severity,
-        Phase::Validate,
-        Location::new(
-            Some(origin.pack.clone()),
-            Some(origin.path.clone()),
-            at,
-            None,
-        ),
-    )
-}
-
 /// `ShadowedDefinition` at the information level: a definition a higher-priority pack hides.
 /// The game says nothing about it, so the finding is the crate's own.
 fn shadowed(origin: &Origin, at: JsonPath) -> Diagnostic {
-    combined(
-        DiagnosticCode::ShadowedDefinition { text: None },
-        Severity::Info,
-        origin,
-        at,
-    )
+    Diagnostic::info(DiagnosticCode::ShadowedDefinition { text: None })
+        .at(at)
+        .phase(Phase::Validate)
+        .in_file(origin)
 }
 
 /// The identifier map of one payload while it is built: per identifier the first pack of the
@@ -547,17 +530,17 @@ where
         if !self.in_pack.insert(id.clone()) {
             let origin = document.origin().clone();
             let mut diagnostics = document.diagnostics().clone();
-            diagnostics.push(combined(
-                DiagnosticCode::DuplicateIdentifier {
+            diagnostics.push(
+                Diagnostic::error(DiagnosticCode::DuplicateIdentifier {
                     text: Some(VanillaText::Formatted {
                         template: "Identifier {} already exists in resource pack",
                         args: vec![id.as_str().to_owned()],
                     }),
-                },
-                Severity::Error,
-                &origin,
-                JsonPath::new(),
-            ));
+                })
+                .at(JsonPath::new())
+                .phase(Phase::Validate)
+                .in_file(&origin),
+            );
             self.builder.push(Contribution::Rejected(
                 None,
                 Rejected::new(origin, diagnostics),
@@ -588,23 +571,19 @@ pub(crate) fn unresolved_default<T: Definition>(
     if registry.contains(id) {
         return None;
     }
-    let mut finding = Diagnostic::new(
-        DiagnosticCode::UnresolvedReference {
-            text: Some(VanillaText::Formatted {
-                template: "Could not find any matching settings for {} identifier '{}'",
-                args: vec![noun.to_owned(), id.as_str().to_owned()],
-            }),
-        },
-        Severity::Error,
-        Phase::Validate,
-        Location::default(),
-    )
-    .into_kept();
-    finding.detail = Some(Box::new(DiagnosticDetail::Reference {
+    let finding = Diagnostic::error(DiagnosticCode::UnresolvedReference {
+        text: Some(VanillaText::Formatted {
+            template: "Could not find any matching settings for {} identifier '{}'",
+            args: vec![noun.to_owned(), id.as_str().to_owned()],
+        }),
+    })
+    .phase(Phase::Validate)
+    .into_kept()
+    .detail(DiagnosticDetail::Reference {
         kind: <T::Kind as Kind>::NAME,
         id: id.as_str().to_owned(),
         hint: None,
-    }));
+    });
     Some(finding)
 }
 

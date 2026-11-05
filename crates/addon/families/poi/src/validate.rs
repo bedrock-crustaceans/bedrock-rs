@@ -3,7 +3,7 @@
 
 use super::{PoiTag, PoiType};
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, VanillaText,
 };
 use bedrock_addon_core::id::{BlockId, PoiTagId};
 
@@ -14,38 +14,28 @@ fn child(base: &JsonPath, key: &str) -> JsonPath {
     path
 }
 
-/// A validation finding at `path`.
-fn finding(code: DiagnosticCode, severity: Severity, path: JsonPath) -> Diagnostic {
-    Diagnostic::new(
-        code,
-        severity,
-        Phase::Validate,
-        Location::new(None, None, path, None),
-    )
-}
-
 /// The rules of a POI type, `at` its payload.
 pub(crate) fn poi_type(value: &mut PoiType, at: &JsonPath, d: &mut Diagnostics) {
     let blocks = child(at, "blocks");
     // A type without blocks never matches a placed block. Vanilla registers it silently, so
     // the crate's own note is an information.
     if value.blocks.is_empty() {
-        d.push(finding(
-            DiagnosticCode::PoiNoBlocks,
-            Severity::Info,
-            blocks.clone(),
-        ));
+        d.push(
+            Diagnostic::info(DiagnosticCode::PoiNoBlocks)
+                .at(blocks.clone())
+                .phase(Phase::Validate),
+        );
     }
     // Vanilla collects the blocks into a set, so a repeat changes nothing; the crate keeps the
     // first of each and reports every repeat where it was written.
     let mut kept: Vec<BlockId> = Vec::with_capacity(value.blocks.len());
     for (i, block) in std::mem::take(&mut value.blocks).into_iter().enumerate() {
         if kept.contains(&block) {
-            d.push(finding(
-                DiagnosticCode::NoEffect { text: None },
-                Severity::Info,
-                element(&blocks, i),
-            ));
+            d.push(
+                Diagnostic::info(DiagnosticCode::NoEffect { text: None })
+                    .at(element(&blocks, i))
+                    .phase(Phase::Validate),
+            );
         } else {
             kept.push(block);
         }
@@ -91,13 +81,12 @@ pub(crate) fn poi_tag(value: &mut PoiTag, at: &JsonPath, d: &mut Diagnostics) {
         list.retain(|tag| {
             let itself = *tag == own;
             if itself {
-                d.push(finding(
-                    part_of_a_cycle(&own),
-                    // The game logs no line for this, so the crate's own note is an
-                    // information.
-                    Severity::Info,
-                    element(&at, i),
-                ));
+                // The game logs no line for this, so the crate's own note is an information.
+                d.push(
+                    Diagnostic::info(part_of_a_cycle(&own))
+                        .at(element(&at, i))
+                        .phase(Phase::Validate),
+                );
             }
             i += 1;
             !itself

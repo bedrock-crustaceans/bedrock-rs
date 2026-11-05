@@ -5,9 +5,7 @@ use crate::{
     DimensionBounds, DimensionComponents, DimensionDescription, DimensionHeight, Generation,
 };
 use crate::{RootV1, bounds_constraints, child, parse_root, slice_null_rule};
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase};
 use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, StrictInt, Value};
 use bedrock_addon_core::version::FormatVersion;
@@ -155,20 +153,12 @@ impl Upgrade for Dimension {
 
 /// The note that the component `name` of the file is not carried into the written text.
 fn dropped(name: &str) -> Diagnostic {
-    Diagnostic::new(
-        DiagnosticCode::DroppedField { text: None },
-        Severity::Info,
-        Phase::Upgrade,
-        Location::new(
-            None,
-            None,
-            child(
-                &JsonPath::new(),
-                &["minecraft:dimension", "components", name],
-            ),
-            None,
-        ),
-    )
+    Diagnostic::info(DiagnosticCode::DroppedField { text: None })
+        .at(child(
+            &JsonPath::new(),
+            &["minecraft:dimension", "components", name],
+        ))
+        .phase(Phase::Upgrade)
 }
 
 /// The bounds as a height: `min_y = (i16)min`, `height_range = (i16)(max − min)`, for every

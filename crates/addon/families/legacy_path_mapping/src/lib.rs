@@ -4,12 +4,12 @@
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, Severity};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics};
 use bedrock_addon_core::document::{Content, Document, JsonContent, Placed, Rejected};
 use bedrock_addon_core::json::{EncodeError, Value, WriteStyle, write_json};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::pack_identity::{PackPath, PackSide};
-use bedrock_addon_support::texture::document::{detached, file_finding, rejected, unversioned};
+use bedrock_addon_support::texture::document::{detached, rejected, unversioned};
 use bedrock_addon_support::texture::jsoncpp::read_lenient;
 
 /// The file's path at the root of the app package.
@@ -49,7 +49,7 @@ impl Content for LegacyPathMapping {
                         message: message.to_string(),
                         text: None,
                     };
-                    diagnostics.push(file_finding(code, Severity::Error, &origin));
+                    diagnostics.push(Diagnostic::error(code).in_file(&origin));
                     Err(rejected(origin, diagnostics))
                 }
             }
@@ -73,6 +73,7 @@ impl Placed for LegacyPathMapping {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use bedrock_addon_core::diagnostic::Severity;
 
     fn parse(bytes: &[u8]) -> Result<Document<LegacyPathMapping>, Rejected> {
         let path = PackPath::from_static(PATH);

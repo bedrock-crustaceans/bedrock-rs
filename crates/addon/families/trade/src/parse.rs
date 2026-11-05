@@ -9,8 +9,7 @@ use facet_json::RawJson;
 
 use super::{Group, ItemList, Quantity, Tier, Trade, TradeItem, TradeTable};
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, JsonPathSegment, Location, Phase, Severity,
-    code_for_deserialize_error_kind,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, JsonPathSegment, Severity,
 };
 use bedrock_addon_core::id::ItemId;
 use bedrock_addon_core::json::{
@@ -113,12 +112,7 @@ struct Run<'d> {
 impl Run<'_> {
     /// An error at `at`: a cereal constraint the value breaks.
     fn error(&mut self, code: DiagnosticCode, at: JsonPath) {
-        self.d.push(Diagnostic::new(
-            code,
-            Severity::Error,
-            Phase::Parse,
-            Location::new(None, None, at, None),
-        ));
+        self.d.push(Diagnostic::error(code).at(at));
         self.failed = true;
     }
 
@@ -136,7 +130,7 @@ impl Run<'_> {
             }
             Ok(value) => Some(value),
             Err(error) => {
-                self.d.push(slice_error(&error, at, slice));
+                self.d.push(slice_error(error, at));
                 self.failed = true;
                 None
             }
@@ -161,12 +155,8 @@ pub(crate) fn parse_table(
         let mut unknown = Vec::new();
         unknown_tiers(&json, &cx.at, &mut unknown);
         for at in unknown {
-            run.d.push(Diagnostic::new(
-                DiagnosticCode::UnrecognizedField { text: None },
-                Severity::Error,
-                Phase::Parse,
-                Location::new(None, None, at, None),
-            ));
+            run.d
+                .push(Diagnostic::error(DiagnosticCode::UnrecognizedField { text: None }).at(at));
             run.failed = true;
         }
     }
@@ -510,33 +500,23 @@ pub(super) fn scalar_member(segments: &[JsonPathSegment<'_>]) -> Option<usize> {
     })
 }
 
-/// The finding of a failed typed parse of `slice`, at `base` followed by the failing member.
-fn slice_error(error: &SliceError, base: &JsonPath, slice: JsonSlice<'_>) -> Diagnostic {
-    let blank = slice.text.trim().is_empty();
-    let code = code_for_deserialize_error_kind(&error.error.kind, !error.path.is_empty(), blank);
-    // A slice is JSON the envelope probe has read, so a failure at its root is never a syntax
-    // error: the value has the wrong JSON type for its place (the `tiers` payload, a `wants` /
-    // `gives` entry, a `choice` element).
-    let code = match code {
-        DiagnosticCode::MalformedInput { .. } if error.path.is_empty() => {
-            DiagnosticCode::InvalidType { text: None }
-        }
-        other => other,
-    };
-    let mut at = base.clone();
-    at.append(&error.path);
+/// The finding of a failed typed parse of a slice, at `base` followed by the failing member.
+fn slice_error(error: SliceError, base: &JsonPath) -> Diagnostic {
     // An array or object given to a scalar member is reported at its first element; the
     // finding is the member's.
     let segments: Vec<JsonPathSegment<'_>> = error.path.segments().collect();
-    if let Some(member) = scalar_member(&segments) {
-        for _ in member + 1..segments.len() {
-            at.pop();
+    let below_member = scalar_member(&segments).map_or(0, |member| segments.len() - member - 1);
+    // A slice is JSON the envelope probe has read, so a failure at its root is never a syntax
+    // error: the value has the wrong JSON type for its place (the `tiers` payload, a `wants` /
+    // `gives` entry, a `choice` element).
+    let mut finding = error.into_diagnostic(base, |code, error| match code {
+        DiagnosticCode::MalformedInput { .. } if !error.has_path() => {
+            DiagnosticCode::InvalidType { text: None }
         }
+        other => other,
+    });
+    for _ in 0..below_member {
+        finding.location.json_path.pop();
     }
-    Diagnostic::new(
-        code,
-        Severity::Error,
-        Phase::Parse,
-        Location::new(None, None, at, Some(error.span)),
-    )
+    finding
 }

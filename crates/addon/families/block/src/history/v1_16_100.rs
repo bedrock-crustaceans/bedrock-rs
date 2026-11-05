@@ -1,9 +1,9 @@
 //! Format 1.16.100: the full legacy description (with `properties`) and every legacy
 //! component shape.
 
-use super::legacy::{Legacy, component_path, input_check_failed, misread, number, upgrade_finding};
+use super::legacy::{Legacy, component_path, input_check_failed, misread, number};
 use super::ops::{clamp, edit_object, int, number_member, whole};
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Phase};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::versioning::{Upgrade, UpgradeCx, Versioned};
 
@@ -72,11 +72,11 @@ impl Upgrade for Block {
         for section in sizes {
             let mut at = component_path(section, "minecraft:crafting_table");
             at.push("grid_size");
-            cx.diagnostics.push(upgrade_finding(
-                DiagnosticCode::DroppedField { text: None },
-                Severity::Info,
-                &at,
-            ));
+            cx.diagnostics.push(
+                Diagnostic::info(DiagnosticCode::DroppedField { text: None })
+                    .at(at.clone())
+                    .phase(Phase::Upgrade),
+            );
         }
         // `block_light_absorption` → `block_light_filter`: a number truncated and clamped to
         // 0..=15 (the object form's `filter_level` too); a bool is 1 / 0 (the crate's own reading of a bool).
@@ -97,11 +97,11 @@ impl Upgrade for Block {
             match level {
                 Some(level) if level.is_bool() => misread(&at, cx.diagnostics),
                 Some(level) if number(level).is_some_and(|n| n.fract() != 0.0) => {
-                    cx.diagnostics.push(upgrade_finding(
-                        DiagnosticCode::InvalidValue { text: None },
-                        Severity::Info,
-                        &at,
-                    ));
+                    cx.diagnostics.push(
+                        Diagnostic::info(DiagnosticCode::InvalidValue { text: None })
+                            .at(at.clone())
+                            .phase(Phase::Upgrade),
+                    );
                 }
                 _ => {}
             }

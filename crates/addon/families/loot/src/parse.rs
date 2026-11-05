@@ -15,9 +15,7 @@ use super::function::{
 };
 use super::texts;
 use super::{Entry, EntryKind, LootTable, Pool, RandomValueBounds, Tiers};
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
 use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::id::{EntityId, ItemId, LootTablePath};
 use bedrock_addon_core::json::{
@@ -55,8 +53,7 @@ pub(crate) fn parse_table(
                     text,
                 }
             };
-            walk.findings
-                .push(finding(code, Severity::Error, &JsonPath::new()));
+            walk.findings.push(Diagnostic::error(code));
             return (None, walk.findings);
         }
     };
@@ -144,16 +141,6 @@ fn compact(value: &Value) -> String {
     // A value read from JSON text always has a JSON form.
     let _ = write_json(value, &mut out, style);
     String::from_utf8(out).unwrap_or_default()
-}
-
-/// A finding of the walk at `at`; the loader sets the pack and the file.
-fn finding(code: DiagnosticCode, severity: Severity, at: &JsonPath) -> Diagnostic {
-    Diagnostic::new(
-        code,
-        severity,
-        Phase::Parse,
-        Location::new(None, None, at.clone(), None),
-    )
 }
 
 /// The function only the Upcoming Creator Features registry holds.
@@ -261,19 +248,19 @@ fn split_namespace(text: &str) -> (Option<String>, &str) {
 impl Walk<'_> {
     /// A warning at `at`: a warning-level line of the game's content log (each caller says which).
     fn warn(&mut self, code: DiagnosticCode, at: &JsonPath) {
-        self.findings.push(finding(code, Severity::Warning, at));
+        self.findings.push(Diagnostic::warn(code).at(at.clone()));
     }
 
     /// An information of the crate's own at `at`: the game reads on in silence.
     fn note(&mut self, code: DiagnosticCode, at: &JsonPath) {
-        self.findings.push(finding(code, Severity::Info, at));
+        self.findings.push(Diagnostic::info(code).at(at.clone()));
     }
 
     /// A content-log error of the game's after which it keeps the table (the element is dropped
     /// or defaulted and the loader goes on): a kept error.
     fn kept(&mut self, code: DiagnosticCode, at: &JsonPath) {
         self.findings
-            .push_kept_error(finding(code, Severity::Error, at));
+            .push_kept_error(Diagnostic::error(code).at(at.clone()));
     }
 
     /// A member of a JSON type its reader does not take: an `InvalidType` information of the
@@ -455,11 +442,10 @@ impl Walk<'_> {
         let mut extra = Extra::default();
         for (key, value) in m.rest() {
             if !silent.contains(&key) {
-                self.findings.push(finding(
-                    DiagnosticCode::UnrecognizedField { text: None },
-                    Severity::Info,
-                    &child(at, key),
-                ));
+                self.findings.push(
+                    Diagnostic::info(DiagnosticCode::UnrecognizedField { text: None })
+                        .at(child(at, key)),
+                );
             }
             extra.insert(key.to_owned(), value.clone());
         }
@@ -514,13 +500,12 @@ impl Walk<'_> {
         } else {
             // The game logs the text at the content log's error level and keeps the pool
             // with no entries; the loot reader keeps the table too: a kept error.
-            self.findings.push_kept_error(finding(
-                DiagnosticCode::MissingRequiredField {
+            self.findings.push_kept_error(
+                Diagnostic::error(DiagnosticCode::MissingRequiredField {
                     text: Some(texts::fixed(texts::ENTRIES_ARRAY)),
-                },
-                Severity::Error,
-                at,
-            ));
+                })
+                .at(at.clone()),
+            );
             None
         };
         let extra = self.rest(&m, at);
@@ -558,13 +543,12 @@ impl Walk<'_> {
         let Some(array) = value.as_array() else {
             // The same test and line as for a missing array: the game's error, the pool kept
             // with no entries and the table with it (a kept error).
-            self.findings.push_kept_error(finding(
-                DiagnosticCode::InvalidType {
+            self.findings.push_kept_error(
+                Diagnostic::error(DiagnosticCode::InvalidType {
                     text: Some(texts::fixed(texts::ENTRIES_ARRAY)),
-                },
-                Severity::Error,
-                at,
-            ));
+                })
+                .at(at.clone()),
+            );
             return None;
         };
         let mut entries = Vec::new();
@@ -1112,13 +1096,12 @@ impl Walk<'_> {
         let Some(kind) = self.condition_kind(&name, &mut m, at) else {
             // Vanilla skips it with a developer-log line, so the pool, entry or function is
             // not gated by it; the finding carries that line as an information.
-            self.findings.push(finding(
-                DiagnosticCode::UnrecognizedComponent {
+            self.findings.push(
+                Diagnostic::info(DiagnosticCode::UnrecognizedComponent {
                     text: Some(texts::formatted(texts::UNKNOWN_CONDITION, [&name])),
-                },
-                Severity::Info,
-                at,
-            ));
+                })
+                .at(at.clone()),
+            );
             return None;
         };
         let extra = self.rest(&m, at);

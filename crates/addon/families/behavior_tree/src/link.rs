@@ -8,9 +8,9 @@ use std::collections::HashMap;
 use super::parse::{PAYLOAD, ROOT, child, element_of};
 use super::{BehaviorTree, Node};
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Location, Phase, Severity,
+    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Phase,
 };
-use bedrock_addon_core::document::{Document, Registry};
+use bedrock_addon_core::document::Registry;
 use bedrock_addon_core::id::BehaviorTreeId;
 
 /// The `minecraft:subtree` nodes of `tree` in document order: each node's target and the
@@ -99,24 +99,6 @@ fn components(edges: &[Vec<usize>]) -> Vec<usize> {
     component
 }
 
-/// A link finding at `at` of `tree`'s file.
-fn finding(tree: &Document<BehaviorTree>, at: JsonPath, code: DiagnosticCode) -> Diagnostic {
-    let origin = tree.origin();
-    Diagnostic::new(
-        code,
-        // Nothing at load; "SubtreeNode: Could not get definition for
-        // tree id {}." is a run-time line.
-        Severity::Info,
-        Phase::Link,
-        Location::new(
-            Some(origin.pack.clone()),
-            Some(origin.path.clone()),
-            at,
-            None,
-        ),
-    )
-}
-
 /// The findings about the `minecraft:subtree` nodes of every effective tree of `trees`: a
 /// `subtree_id` that names no tree of the registry (a pack's or a built-in one) is an
 /// `UnresolvedReference` warning, and one through which the tree reaches itself a
@@ -154,13 +136,19 @@ pub fn link(trees: &Registry<BehaviorTree>) -> Diagnostics {
                 Some(_) => continue,
             };
             // Either finding names the tree the node names, as written.
-            let mut told = finding(tree, at, code);
-            told.detail = Some(Box::new(DiagnosticDetail::Reference {
-                kind: "behavior tree",
-                id: target.as_str().to_owned(),
-                hint: None,
-            }));
-            out.push(told);
+            // Nothing at load; "SubtreeNode: Could not get definition for
+            // tree id {}." is a run-time line.
+            out.push(
+                Diagnostic::info(code)
+                    .at(at)
+                    .phase(Phase::Link)
+                    .in_file(tree.origin())
+                    .detail(DiagnosticDetail::Reference {
+                        kind: "behavior tree",
+                        id: target.as_str().to_owned(),
+                        hint: None,
+                    }),
+            );
         }
     }
     out

@@ -7,9 +7,7 @@ use bedrock_addon_core::versioning::ConvertMode;
 use facet::Facet;
 
 use super::{ItemComponent, typed};
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, Diagnostics, JsonPath, Location, Phase, Severity, code_for_deserialize_error_kind,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath};
 use bedrock_addon_core::document::Extra;
 
 /// A component that also reads its bare value.
@@ -66,16 +64,10 @@ pub(crate) fn parse_value<T: ValueComponent + Into<ItemComponent>>(
             Some(T::from_scalar(value).into())
         }
         Err(error) => {
-            let blank = slice.text.trim().is_empty();
             // A scalar of another type is a type error that refuses the item; the one
             // context without `strict_components` is the write-back probe of `write.rs`,
             // which reads only the `Unrecognized*` codes.
-            d.push(Diagnostic::new(
-                code_for_deserialize_error_kind(&error.error.kind, false, blank),
-                Severity::Error,
-                Phase::Parse,
-                Location::new(None, None, JsonPath::new(), Some(error.span)),
-            ));
+            d.push(Diagnostic::error(error.code_with_path(false)).span(error.span));
             None
         }
     }

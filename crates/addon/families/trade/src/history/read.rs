@@ -6,11 +6,11 @@
 use super::v0::{Group, ItemList, Tier, Trade, TradeItem, TradeTable};
 use crate::texts::{
     GROUPS_ARRAY, INVALID_WEIGHT, MUST_CONTAIN_TIERS, NO_OFFERS, NO_RECEIVES, TIERS_ARRAY,
-    TRADES_ARRAY, child, element, finding, formatted,
+    TRADES_ARRAY, child, element, formatted,
 };
 use crate::validate as rules;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
 };
 use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::json::{JsonSlice, Value};
@@ -61,15 +61,13 @@ pub(super) fn read(
     d: &mut Diagnostics,
 ) -> Option<TradeTable> {
     let Ok(root) = bedrock_addon_core::json::from_str_jsonc::<Value>(payload.text) else {
-        d.push(finding(
-            DiagnosticCode::MalformedInput {
+        d.push(
+            Diagnostic::error(DiagnosticCode::MalformedInput {
                 message: "the document is not JSON".to_owned(),
                 text: None,
-            },
-            Severity::Error,
-            Phase::Parse,
-            at.clone(),
-        ));
+            })
+            .at(at.clone()),
+        );
         return None;
     };
     let mut reader = Reader { d, failed: false };
@@ -88,33 +86,27 @@ impl Reader<'_> {
 
     /// An error at `at`: the table is not loaded.
     fn error(&mut self, code: DiagnosticCode, at: JsonPath) {
-        self.push(finding(code, Severity::Error, Phase::Parse, at));
+        self.push(Diagnostic::error(code).at(at));
     }
 
     /// An information at `at`: the game's legacy parser reads on in silence, so the crate
     /// reports an information.
     fn warn(&mut self, code: DiagnosticCode, at: JsonPath) {
-        self.push(finding(code, Severity::Info, Phase::Parse, at));
+        self.push(Diagnostic::info(code).at(at));
     }
 
     /// A kept error at `at`: the game logs the line at the content log's error level, drops the
     /// trade or group and goes on with the table. The loader's validity check does not look at
     /// the logged errors, so the table loads.
     fn kept_error(&mut self, code: DiagnosticCode, at: JsonPath) {
-        self.d
-            .push_kept_error(finding(code, Severity::Error, Phase::Parse, at));
+        self.d.push_kept_error(Diagnostic::error(code).at(at));
     }
 
     /// The trade or group at `at` goes whole, as in the game, for what a line at one of its
     /// members says: noted at the trade or group itself, since the member's line does not
     /// say that the other members go with it.
     fn dropped(&mut self, at: &JsonPath) {
-        self.push(finding(
-            DiagnosticCode::DroppedField { text: None },
-            Severity::Info,
-            Phase::Parse,
-            at.clone(),
-        ));
+        self.push(Diagnostic::info(DiagnosticCode::DroppedField { text: None }).at(at.clone()));
     }
 
     /// The members of `object` not in `known`, each with an `UnrecognizedField` information:
@@ -482,12 +474,7 @@ impl Reader<'_> {
         let nearest = narrow(number.to_f64_lossy());
         if bedrock_addon_support::lossy::narrows(number.to_f64_lossy()) {
             // Held as a float, as in the game, and written so: noted.
-            self.push(finding(
-                DiagnosticCode::LossyConversion,
-                Severity::Info,
-                Phase::Parse,
-                at.clone(),
-            ));
+            self.push(Diagnostic::info(DiagnosticCode::LossyConversion).at(at.clone()));
         }
         if nearest.is_infinite() {
             self.push(bedrock_addon_core::molang::beyond_f32_warning(

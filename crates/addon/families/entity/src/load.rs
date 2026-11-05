@@ -3,7 +3,7 @@
 
 use bedrock_addon_core::__private::Sealed;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity, VanillaText,
 };
 use bedrock_addon_core::document::{
     CombineRule, Content, Contribution, Definition, Document, JsonContent, NoBeta, Origin, Placed,
@@ -164,12 +164,11 @@ impl MolangFields for Beta {
 fn decode<'a>(bytes: &'a [u8], origin: &Origin) -> Result<&'a str, Rejected> {
     let bytes = strip_bom(bytes);
     let malformed = |message: &str| {
-        let mut found = finding(DiagnosticCode::MalformedInput {
+        let found = Diagnostic::error(DiagnosticCode::MalformedInput {
             message: message.to_owned(),
             text: None,
-        });
-        found.location.pack = Some(origin.pack.clone());
-        found.location.path = Some(origin.path.clone());
+        })
+        .in_file(origin);
         Rejected::new(origin.clone(), [found].into_iter().collect())
     };
     let text = std::str::from_utf8(bytes).map_err(|_| malformed("the file is not UTF-8"))?;
@@ -257,7 +256,7 @@ fn close_refusal(found: &mut Diagnostics, bytes: &[u8]) {
         format!("{phase}{}: {}", member.join("/"), first.code)
     };
     let identifier = identifier_of(bytes).map_or_else(String::new, |id| id.as_str().to_owned());
-    let mut line = finding(DiagnosticCode::DocumentRejected {
+    let mut line = Diagnostic::error(DiagnosticCode::DocumentRejected {
         text: Some(VanillaText::Formatted {
             template: FAILED_TO_LOAD,
             args: vec![identifier, reason],
@@ -396,7 +395,7 @@ impl Entity {
                 Ok(Document::new(entity, origin, outcome.version, diagnostics))
             }
             Some(Loaded::Beta(_)) => {
-                diagnostics.push(finding(DiagnosticCode::UnsupportedVersion {
+                diagnostics.push(Diagnostic::error(DiagnosticCode::UnsupportedVersion {
                     text: Some(VanillaText::NoParserForVersion {
                         version: "beta".to_owned(),
                     }),
@@ -408,25 +407,9 @@ impl Entity {
     }
 }
 
-/// A file-level finding.
-fn finding(code: DiagnosticCode) -> Diagnostic {
-    Diagnostic::new(
-        code,
-        Severity::Error,
-        Phase::Parse,
-        Location::new(None, None, JsonPath::new(), None),
-    )
-}
-
 /// The origin of a file read outside a stack.
 fn detached_origin(path: &PackPath) -> Origin {
-    Origin::new(
-        PackRef::app_data(),
-        PackSide::Behavior,
-        path.clone(),
-        None,
-        Vec::new(),
-    )
+    Origin::file(PackRef::app_data(), PackSide::Behavior, path.clone())
 }
 
 impl Sealed for Entity {}
@@ -443,7 +426,7 @@ impl Content for Entity {
         match value {
             Loaded::Stable(entity) => Ok(Document::new(entity, origin, version, diagnostics)),
             Loaded::Beta(_) => {
-                diagnostics.push(finding(DiagnosticCode::UnsupportedVersion {
+                diagnostics.push(Diagnostic::error(DiagnosticCode::UnsupportedVersion {
                     text: Some(VanillaText::NoParserForVersion {
                         version: "beta".to_owned(),
                     }),
@@ -486,7 +469,9 @@ impl Content for Beta {
         match value {
             Loaded::Beta(beta) => Ok(Document::new(beta, origin, version, diagnostics)),
             Loaded::Stable(_) => {
-                diagnostics.push(finding(DiagnosticCode::UnsupportedVersion { text: None }));
+                diagnostics.push(Diagnostic::error(DiagnosticCode::UnsupportedVersion {
+                    text: None,
+                }));
                 Err(Rejected::new(origin, diagnostics))
             }
         }
@@ -524,13 +509,7 @@ fn accept(path: &PackPath) -> bool {
 
 /// One file's contribution to the registry.
 fn parse_file(file: &WalkFile, cx: &LoadContext) -> Contribution<Entity> {
-    let origin = Origin::new(
-        file.pack.clone(),
-        file.side,
-        file.path.clone(),
-        None,
-        Vec::new(),
-    );
+    let origin = Origin::file(file.pack.clone(), file.side, file.path.clone());
     match load_document(origin, &file.bytes, cx) {
         Ok((Loaded::Stable(entity), version, diagnostics, origin)) => {
             let id = entity.description.identifier.clone();
@@ -656,6 +635,7 @@ impl MolangFields for Entity {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use bedrock_addon_core::diagnostic::Location;
 
     /// The closing line of a refusal whose first error below the payload is of `phase`.
     fn closing_line_of(phase: Phase) -> String {

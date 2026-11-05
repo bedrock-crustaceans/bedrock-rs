@@ -3,8 +3,7 @@
 
 use super::Poi;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Location, Phase, Severity,
-    VanillaText,
+    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Phase, VanillaText,
 };
 use bedrock_addon_core::id::{BlockId, Kind, kind};
 
@@ -34,27 +33,20 @@ pub fn link(poi: &Poi, targets: &dyn Targets) -> Diagnostics {
             at.push("minecraft:poi_block");
             at.push("blocks");
             at.push_index(i);
-            let mut finding = Diagnostic::new(
-                DiagnosticCode::UnresolvedReference {
-                    text: Some(VanillaText::Formatted {
-                        template: "BlockTypeRegistry::lookupByName() failed to find block \"{}\"",
-                        args: vec![block.as_str().to_owned()],
-                    }),
-                },
-                Severity::Error,
-                Phase::Link,
-                Location::new(
-                    Some(origin.pack.clone()),
-                    Some(origin.path.clone()),
-                    at,
-                    None,
-                ),
-            );
-            finding.detail = Some(Box::new(DiagnosticDetail::Reference {
+            let finding = Diagnostic::error(DiagnosticCode::UnresolvedReference {
+                text: Some(VanillaText::Formatted {
+                    template: "BlockTypeRegistry::lookupByName() failed to find block \"{}\"",
+                    args: vec![block.as_str().to_owned()],
+                }),
+            })
+            .at(at)
+            .phase(Phase::Link)
+            .in_file(origin)
+            .detail(DiagnosticDetail::Reference {
                 kind: <kind::Block as Kind>::NAME,
                 id: block.as_str().to_owned(),
                 hint: None,
-            }));
+            });
             out.push(finding);
         }
     }

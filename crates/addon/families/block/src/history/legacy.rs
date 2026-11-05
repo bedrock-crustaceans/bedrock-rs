@@ -6,7 +6,7 @@
 use indexmap::IndexMap;
 
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, VanillaText,
 };
 use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
@@ -134,14 +134,14 @@ impl<const MAJOR: u16, const MINOR: u16, const PATCH: u16> Legacy<MAJOR, MINOR, 
         // The game logs this at the content log's error level when the rename removes the
         // component and goes on with the rename: a kept error.
         for index in duplicates {
-            d.push_kept_error(upgrade_finding(
-                DiagnosticCode::DuplicateComponentVersion {
+            d.push_kept_error(
+                Diagnostic::error(DiagnosticCode::DuplicateComponentVersion {
                     old: old.to_owned(),
                     new: new.to_owned(),
-                },
-                Severity::Error,
-                &component_path(index, new),
-            ));
+                })
+                .at(component_path(index, new))
+                .phase(Phase::Upgrade),
+            );
         }
         let mut moved = Vec::new();
         for (index, section) in self.sections_mut() {
@@ -182,11 +182,11 @@ impl<const MAJOR: u16, const MINOR: u16, const PATCH: u16> Legacy<MAJOR, MINOR, 
 /// A member of the file that a step replaces by what it makes of another, as the game's own
 /// fixer does without a word: `DroppedField`, severity INFO: the game says nothing, so the finding is the crate's own.
 pub(crate) fn replaced(at: &JsonPath, d: &mut Diagnostics) {
-    d.push(upgrade_finding(
-        DiagnosticCode::DroppedField { text: None },
-        Severity::Info,
-        at,
-    ));
+    d.push(
+        Diagnostic::info(DiagnosticCode::DroppedField { text: None })
+            .at(at.clone())
+            .phase(Phase::Upgrade),
+    );
 }
 
 /// Whether two JSON values are the same value: numbers by what they spell (`1` is `1.0`).
@@ -264,20 +264,6 @@ pub(crate) fn component_path(section: Option<usize>, name: &str) -> JsonPath {
     path
 }
 
-/// A finding of an upgrade step.
-pub(crate) fn upgrade_finding(
-    code: DiagnosticCode,
-    severity: Severity,
-    at: &JsonPath,
-) -> Diagnostic {
-    Diagnostic::new(
-        code,
-        severity,
-        Phase::Upgrade,
-        Location::new(None, None, at.clone(), None),
-    )
-}
-
 /// A vanilla text with arguments (`Some`, as the codes' `text` fields take it).
 #[allow(
     clippy::unnecessary_wraps,
@@ -311,36 +297,36 @@ pub(crate) fn input_check_failed(
 ) {
     let at = component_path(None, name);
     let (to, original) = (to.to_string(), original.to_string());
-    d.push(upgrade_finding(
-        DiagnosticCode::InvalidValue {
+    d.push(
+        Diagnostic::error(DiagnosticCode::InvalidValue {
             text: text(
                 " -> minecraft:block -> components -> {}:  invalid component",
                 &[name],
             ),
-        },
-        Severity::Error,
-        &at,
-    ));
-    d.push(upgrade_finding(
-        DiagnosticCode::DocumentRejected {
+        })
+        .at(at.clone())
+        .phase(Phase::Upgrade),
+    );
+    d.push(
+        Diagnostic::error(DiagnosticCode::DocumentRejected {
             text: text(
                 "Failed to upgrade to version '{}' from document version '{}'",
                 &[&to, &original],
             ),
-        },
-        Severity::Error,
-        &at,
-    ));
-    d.push(upgrade_finding(
-        DiagnosticCode::DocumentRejected {
+        })
+        .at(at.clone())
+        .phase(Phase::Upgrade),
+    );
+    d.push(
+        Diagnostic::error(DiagnosticCode::DocumentRejected {
             text: text(
                 "Final json version '{}' failed to upgrade from document version '{}'",
                 &[&to, &original],
             ),
-        },
-        Severity::Error,
-        &at,
-    ));
+        })
+        .at(at.clone())
+        .phase(Phase::Upgrade),
+    );
 }
 
 /// A number of a JSON value.
@@ -412,12 +398,7 @@ impl<const MAJOR: u16, const MINOR: u16, const PATCH: u16> VersionStruct
             let mut path = cx.at.clone();
             path.push(&key);
             // The legacy reader ignores it with no log, so the crate reports it as an information.
-            d.push(Diagnostic::new(
-                DiagnosticCode::UnrecognizedField { text: None },
-                Severity::Info,
-                Phase::Parse,
-                Location::new(None, None, path, None),
-            ));
+            d.push(Diagnostic::info(DiagnosticCode::UnrecognizedField { text: None }).at(path));
             if let Some(value) = read_value(raw) {
                 block.root_extra.insert(key, value);
             }
@@ -450,14 +431,12 @@ impl<const MAJOR: u16, const MINOR: u16, const PATCH: u16> Legacy<MAJOR, MINOR, 
             path
         };
         let structural = |d: &mut Diagnostics, message: &'static str, path: JsonPath| {
-            d.push(Diagnostic::new(
-                DiagnosticCode::InvalidType {
+            d.push(
+                Diagnostic::error(DiagnosticCode::InvalidType {
                     text: fixed(message),
-                },
-                Severity::Error,
-                Phase::Parse,
-                Location::new(None, None, path, None),
-            ));
+                })
+                .at(path),
+            );
         };
         let Some(members) = object_members(payload.text) else {
             structural(d, MISSING_REQUIRED_FIELD, at(None));
@@ -483,14 +462,12 @@ impl<const MAJOR: u16, const MINOR: u16, const PATCH: u16> Legacy<MAJOR, MINOR, 
                             .and_then(string)
                             .unwrap_or_default()
                             .to_owned();
-                        d.push(Diagnostic::new(
-                            DiagnosticCode::InvalidType {
+                        d.push(
+                            Diagnostic::error(DiagnosticCode::InvalidType {
                                 text: self::text("Failed to parse block '{}' ", &[&identifier]),
-                            },
-                            Severity::Error,
-                            Phase::Parse,
-                            Location::new(None, None, at(Some("description")), None),
-                        ));
+                            })
+                            .at(at(Some("description"))),
+                        );
                         return None;
                     }
                     block.description = description;
@@ -640,17 +617,15 @@ fn read_components(
             path.push(&key);
             // The game logs a duplicate component at the content log's error level and goes
             // on: a kept error.
-            d.push_kept_error(Diagnostic::new(
-                DiagnosticCode::DroppedComponent {
+            d.push_kept_error(
+                Diagnostic::error(DiagnosticCode::DroppedComponent {
                     text: text_owned(
                         "Duplicate component {} found. Please remove one of the duplicates.",
                         &key,
                     ),
-                },
-                Severity::Error,
-                Phase::Parse,
-                Location::new(None, None, path, None),
-            ));
+                })
+                .at(path),
+            );
             continue;
         }
         if let Some(value) = read_value(raw) {
@@ -675,11 +650,11 @@ fn read_value(text: &str) -> Option<Value> {
 /// is what it always was, and the member is told (`InvalidType`, an information of the
 /// upgrade and the crate's own: the game converts only the well-formed shapes).
 pub(crate) fn misread(at: &JsonPath, d: &mut Diagnostics) {
-    d.push(upgrade_finding(
-        DiagnosticCode::InvalidType { text: None },
-        Severity::Info,
-        at,
-    ));
+    d.push(
+        Diagnostic::info(DiagnosticCode::InvalidType { text: None })
+            .at(at.clone())
+            .phase(Phase::Upgrade),
+    );
 }
 
 /// The strings of the list at `at`: a value that is no array is the empty list, an element

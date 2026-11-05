@@ -12,7 +12,7 @@ use super::history::has_namespace;
 use super::legacy::ItemFormat;
 use super::{Item, texts};
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity, VanillaText,
 };
 use bedrock_addon_core::load::LoadContext;
 
@@ -28,12 +28,12 @@ fn push(
     for part in path {
         full.push(part);
     }
-    d.push(Diagnostic::new(
-        code,
-        severity,
-        Phase::Validate,
-        Location::new(None, None, full, None),
-    ));
+    d.push(
+        Diagnostic::error(code)
+            .severity(severity)
+            .at(full)
+            .phase(Phase::Validate),
+    );
 }
 
 /// A fixed text.
@@ -189,17 +189,16 @@ pub(crate) fn validate(
         let mut full = at.clone();
         full.push("components");
         full.push("minecraft:wearable");
-        d.push_kept_error(Diagnostic::new(
-            DiagnosticCode::InvalidValue {
+        d.push_kept_error(
+            Diagnostic::error(DiagnosticCode::InvalidValue {
                 text: Some(VanillaText::ItemWearableStackSize {
                     component: "minecraft:wearable",
                     slot: wearable.slot.name(),
                 }),
-            },
-            Severity::Error,
-            Phase::Validate,
-            Location::new(None, None, full, None),
-        ));
+            })
+            .at(full)
+            .phase(Phase::Validate),
+        );
     }
 }
 
@@ -298,12 +297,9 @@ fn triggers(item: &Item, at: &JsonPath, d: &mut Diagnostics) {
             full.push("event");
         }
         // The game has no line for this, so the information is the crate's own.
-        let mut finding = Diagnostic::new(
-            DiagnosticCode::UnresolvedReference { text: None },
-            Severity::Info,
-            Phase::Validate,
-            Location::new(None, None, full, None),
-        );
+        let mut finding = Diagnostic::info(DiagnosticCode::UnresolvedReference { text: None })
+            .at(full)
+            .phase(Phase::Validate);
         finding.detail = Some(Box::new(
             bedrock_addon_core::diagnostic::DiagnosticDetail::Reference {
                 kind: "event",

@@ -4,13 +4,12 @@ use super::{
     ConditionalMessage, LoadingMessage, LoadingMessages, MARKETPLACE_NOT_DISABLED, MessageList,
 };
 use bedrock_addon_core::diagnostic::{
-    DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, VanillaText,
 };
 use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_support::fixed_path::{
-    Authored, Object, array, finding, invalid, invalid_text, iterated, key, others, raw_member,
-    to_text,
+    Authored, Object, array, invalid, invalid_text, iterated, key, others, raw_member, to_text,
 };
 
 /// The member of the store's progress texts.
@@ -92,24 +91,21 @@ fn read_element(element: &Value, at: &JsonPath, diagnostics: &mut Diagnostics) -
         return LoadingMessage::Text(text.as_str().to_owned());
     }
     if !element.is_object() {
-        diagnostics.push(finding(invalid(), Severity::Info, at.clone()));
+        diagnostics.push(Diagnostic::info(invalid()).at(at.clone()));
         return LoadingMessage::Other(element.clone());
     }
     let Some(message) = raw_member(element, "message") else {
-        diagnostics.push(finding(
-            DiagnosticCode::MissingRequiredField { text: None },
-            Severity::Info,
-            key(at, "message"),
-        ));
+        diagnostics.push(
+            Diagnostic::info(DiagnosticCode::MissingRequiredField { text: None })
+                .at(key(at, "message")),
+        );
         return LoadingMessage::Other(element.clone());
     };
     let mut wrong_type = |member: &Value, name: &str| {
         if !member.is_string() {
-            diagnostics.push(finding(
-                DiagnosticCode::InvalidType { text: None },
-                Severity::Info,
-                key(at, name),
-            ));
+            diagnostics.push(
+                Diagnostic::info(DiagnosticCode::InvalidType { text: None }).at(key(at, name)),
+            );
         }
     };
     wrong_type(message, "message");
@@ -122,7 +118,7 @@ fn read_element(element: &Value, at: &JsonPath, diagnostics: &mut Diagnostics) -
         .is_some_and(|c| c != MARKETPLACE_NOT_DISABLED)
     {
         // An unknown condition is false; the message is never shown.
-        diagnostics.push(finding(invalid(), Severity::Info, key(at, "condition")));
+        diagnostics.push(Diagnostic::info(invalid()).at(key(at, "condition")));
     }
     let mut extra = Extra::default();
     if let Some(object) = element.as_object() {
@@ -147,11 +143,8 @@ fn iterate<'v>(
     diagnostics: &mut Diagnostics,
 ) -> Vec<(JsonPath, &'v Value)> {
     if !member.is_array() {
-        diagnostics.push(finding(
-            DiagnosticCode::InvalidType { text: None },
-            Severity::Info,
-            at.clone(),
-        ));
+        diagnostics
+            .push(Diagnostic::info(DiagnosticCode::InvalidType { text: None }).at(at.clone()));
     }
     iterated(member, at)
 }
@@ -161,11 +154,8 @@ impl Authored for LoadingMessages {
     fn read(root: &Value, diagnostics: &mut Diagnostics) -> Self {
         let at = JsonPath::new();
         if !root.is_object() {
-            diagnostics.push(finding(
-                DiagnosticCode::InvalidType { text: None },
-                Severity::Info,
-                at.clone(),
-            ));
+            diagnostics
+                .push(Diagnostic::info(DiagnosticCode::InvalidType { text: None }).at(at.clone()));
         }
         let mut messages = Self::default();
         for list in MessageList::ALL {
@@ -184,7 +174,7 @@ impl Authored for LoadingMessages {
             let mut tooltips = Vec::new();
             for (at, element) in iterate(member, &at, diagnostics) {
                 if !element.is_string() {
-                    diagnostics.push(finding(invalid(), Severity::Info, at));
+                    diagnostics.push(Diagnostic::info(invalid()).at(at));
                 }
                 tooltips.push(element.clone());
             }
@@ -229,18 +219,13 @@ impl LoadingMessages {
         let mut asked = Vec::new();
         if !legacy {
             match &self.beginner_loading_messages {
-                None => diagnostics.push(finding(
-                    DiagnosticCode::MissingRequiredField {
-                        text: Some(VanillaText::Fixed(BEGINNER_MISSING)),
-                    },
-                    Severity::Info,
-                    JsonPath::new(),
-                )),
-                Some(list) if list.is_empty() => diagnostics.push(finding(
-                    invalid_text(BEGINNER_EMPTY),
-                    Severity::Info,
-                    key(&JsonPath::new(), MessageList::Beginner.key()),
-                )),
+                None => diagnostics.push(Diagnostic::info(DiagnosticCode::MissingRequiredField {
+                    text: Some(VanillaText::Fixed(BEGINNER_MISSING)),
+                })),
+                Some(list) if list.is_empty() => diagnostics.push(
+                    Diagnostic::info(invalid_text(BEGINNER_EMPTY))
+                        .at(key(&JsonPath::new(), MessageList::Beginner.key())),
+                ),
                 Some(_) => {}
             }
             asked.extend([MessageList::MidGame, MessageList::LateGame]);
@@ -253,16 +238,12 @@ impl LoadingMessages {
         ]);
         for list in asked {
             if self.list(list).is_none() {
-                diagnostics.push(finding(
-                    DiagnosticCode::MissingRequiredField {
-                        text: Some(VanillaText::Formatted {
-                            template: LIST_MISSING,
-                            args: vec![list.key().to_owned()],
-                        }),
-                    },
-                    Severity::Info,
-                    JsonPath::new(),
-                ));
+                diagnostics.push(Diagnostic::info(DiagnosticCode::MissingRequiredField {
+                    text: Some(VanillaText::Formatted {
+                        template: LIST_MISSING,
+                        args: vec![list.key().to_owned()],
+                    }),
+                }));
             }
         }
     }

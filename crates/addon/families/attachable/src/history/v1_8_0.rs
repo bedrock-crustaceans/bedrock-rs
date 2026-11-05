@@ -233,7 +233,7 @@ pub(super) fn description_at() -> JsonPath {
 
 /// A finding of a step.
 pub(super) fn step_finding(code: DiagnosticCode, severity: Severity, at: JsonPath) -> Diagnostic {
-    let mut found = read::finding(code, severity, at);
+    let mut found = Diagnostic::error(code).severity(severity).at(at);
     found.phase = Phase::Upgrade;
     found
 }

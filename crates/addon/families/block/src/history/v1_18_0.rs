@@ -3,9 +3,9 @@
 
 use indexmap::IndexMap;
 
-use super::legacy::{Legacy, component_path, input_check_failed, number, upgrade_finding};
+use super::legacy::{Legacy, component_path, input_check_failed, number};
 use super::ops::{clamp, int, missing_field, number_member, real, unwrap, whole};
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, Severity, VanillaText};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, Phase, VanillaText};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::versioning::{Upgrade, UpgradeCx, Versioned};
 
@@ -71,11 +71,11 @@ impl Upgrade for Block {
         // The game's collision upgrades drop the members with no log (the text below is the
         // unwrap's): the crate reports it as an information.
         for (section, name) in collision {
-            d.push(upgrade_finding(
-                DiagnosticCode::DroppedField { text: None },
-                Severity::Info,
-                &component_path(section, name),
-            ));
+            d.push(
+                Diagnostic::info(DiagnosticCode::DroppedField { text: None })
+                    .at(component_path(section, name))
+                    .phase(Phase::Upgrade),
+            );
         }
         block.rename_component(
             "minecraft:block_collision",
@@ -186,16 +186,16 @@ impl Upgrade for Block {
 /// the content log's error level when the object has its value member and another, and goes
 /// on with the value: a kept error at the component.
 fn thrown_away(section: Option<usize>, name: &str, d: &mut Diagnostics) {
-    d.push_kept_error(upgrade_finding(
-        DiagnosticCode::DroppedField {
+    d.push_kept_error(
+        Diagnostic::error(DiagnosticCode::DroppedField {
             text: Some(VanillaText::Formatted {
                 template: "Members of component {} will be thrown away as part of the upgrade",
                 args: vec![name.to_owned()],
             }),
-        },
-        Severity::Error,
-        &component_path(section, name),
-    ));
+        })
+        .at(component_path(section, name))
+        .phase(Phase::Upgrade),
+    );
 }
 
 /// The `enabled` handling of the collision components.
@@ -348,17 +348,17 @@ fn convert_ticking(
         // the largest tick count, as one below 0 is bounded to 0, and told the same way.
         let ticks = (end.max(0.0) * 20.0).min(f64::from(u32::MAX));
         if end < 0.0 || (end * 20.0).round() > f64::from(u32::MAX) {
-            d.push(upgrade_finding(
-                DiagnosticCode::ClampedValue { text: None },
-                Severity::Info,
-                &at,
-            ));
+            d.push(
+                Diagnostic::info(DiagnosticCode::ClampedValue { text: None })
+                    .at(at.clone())
+                    .phase(Phase::Upgrade),
+            );
         } else if (ticks - ticks.round()).abs() > TICK_TOLERANCE {
-            d.push(upgrade_finding(
-                DiagnosticCode::InvalidValue { text: None },
-                Severity::Info,
-                &at,
-            ));
+            d.push(
+                Diagnostic::info(DiagnosticCode::InvalidValue { text: None })
+                    .at(at.clone())
+                    .phase(Phase::Upgrade),
+            );
         }
         ends.push((index, ticks.round()));
     }

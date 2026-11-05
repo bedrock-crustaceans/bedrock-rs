@@ -5,7 +5,7 @@ use super::read::{FLOOR, ReadFile, SceneOutcome, read};
 use super::texts::{DUPLICATE, formatted};
 use super::{DialogueFile, DialogueScene};
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity,
 };
 use bedrock_addon_core::document::{
     CombineRule, Content, Contribution, Definition, Document, JsonContent, NoBeta, Origin, Placed,
@@ -56,7 +56,6 @@ impl Content for DialogueFile {
                             &origin,
                             loaded.scene_tag.as_str(),
                             &scene.at,
-                            Severity::Error,
                         ));
                     } else {
                         scenes.push(loaded);
@@ -113,21 +112,14 @@ impl Placed for DialogueFile {
     }
 }
 
-/// Vanilla's "already exists" text for the scene `tag` at `at` of `file`.
-fn duplicate(file: &Origin, tag: &str, at: &JsonPath, severity: Severity) -> Diagnostic {
-    Diagnostic::new(
-        DiagnosticCode::DuplicateIdentifier {
-            text: formatted(DUPLICATE, &[&stem(&file.path), tag]),
-        },
-        severity,
-        Phase::Validate,
-        Location::new(
-            Some(file.pack.clone()),
-            Some(file.path.clone()),
-            at.clone(),
-            None,
-        ),
-    )
+/// Vanilla's "already exists" text for the scene `tag` at `at` of `file`: an error.
+fn duplicate(file: &Origin, tag: &str, at: &JsonPath) -> Diagnostic {
+    Diagnostic::error(DiagnosticCode::DuplicateIdentifier {
+        text: formatted(DUPLICATE, &[&stem(&file.path), tag]),
+    })
+    .at(at.clone())
+    .phase(Phase::Validate)
+    .in_file(file)
 }
 
 /// The version record of a file of `version`: written and effective as read, parsed by the
@@ -287,7 +279,7 @@ fn push_scene(
                 }
                 // A second scene of the pack that stored the tag: not loaded.
                 Some(first) if *first == file.pack => {
-                    diagnostics.push(duplicate(file, tag.as_str(), at, Severity::Error));
+                    diagnostics.push(duplicate(file, tag.as_str(), at));
                     builder.push(Contribution::Rejected(
                         Some(tag),
                         Rejected::new(origin, diagnostics),
@@ -297,7 +289,7 @@ fn push_scene(
                 // as shadowed (the crate's own `ShadowedDefinition`, raised by the combine
                 // rule).
                 Some(_) => {
-                    let error = duplicate(file, tag.as_str(), at, Severity::Error);
+                    let error = duplicate(file, tag.as_str(), at);
                     let document = Document::new(scene, origin, version.clone(), diagnostics);
                     builder.push(Contribution::Stable(tag, document));
                     builder.push_diagnostic(error);

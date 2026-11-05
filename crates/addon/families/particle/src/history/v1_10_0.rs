@@ -27,8 +27,10 @@ use crate::parse::{
 use crate::read::{Era, Fields, Members, Reader, Writer};
 use crate::write::{PAYLOAD_KEY, document, payload_of};
 use crate::{BasicRenderParameters, Curve, Description, EventNode, texts};
+#[cfg(feature = "molang")]
+use bedrock_addon_core::diagnostic::Location;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity, VanillaText,
 };
 use bedrock_addon_core::document::{Component as _, ComponentMap, Extra};
 use bedrock_addon_core::id::ParticleId;
@@ -427,12 +429,11 @@ impl ParticleEffect {
                     // The effect is held and written with the number: noted at the member,
                     // here, where the value is rewritten (a finding of the crate's own; a
                     // document written as it was read keeps its boolean and gets no note).
-                    d.push(Diagnostic::new(
-                        DiagnosticCode::ValueRewritten { text: None },
-                        Severity::Info,
-                        Phase::Upgrade,
-                        Location::new(None, None, field.path.clone(), None),
-                    ));
+                    d.push(
+                        Diagnostic::info(DiagnosticCode::ValueRewritten { text: None })
+                            .at(field.path.clone())
+                            .phase(Phase::Upgrade),
+                    );
                     Molang::Const(f32::from(u8::from(*b)))
                 }
                 Molang::Expr(source) if matches!(source.form(), SourceForm::String { .. }) => {
@@ -523,12 +524,11 @@ impl Upgrade for ParticleEffect {
                     for step in [PAYLOAD_KEY, "components", key.as_str()] {
                         at.push(step);
                     }
-                    cx.diagnostics.push(Diagnostic::new(
-                        DiagnosticCode::NoEffect { text: None },
-                        Severity::Info,
-                        Phase::Upgrade,
-                        Location::new(None, None, at, None),
-                    ));
+                    cx.diagnostics.push(
+                        Diagnostic::info(DiagnosticCode::NoEffect { text: None })
+                            .at(at)
+                            .phase(Phase::Upgrade),
+                    );
                 }
                 Component::Unknown(json) => components.insert_unknown(&key, json),
             }

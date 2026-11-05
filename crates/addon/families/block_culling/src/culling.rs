@@ -12,8 +12,7 @@ use super::texts::at_breadcrumb;
 use super::{Condition, Description, Facing, GeometryPart, Rule};
 use bedrock_addon_core::diagnostic::cereal;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, JsonPathSegment, Location, Phase, Severity,
-    Span, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, JsonPathSegment, Span, VanillaText,
 };
 use bedrock_addon_core::id::CullingRulesId;
 use bedrock_addon_core::json::{JsonSlice, Value};
@@ -195,12 +194,7 @@ impl Reader<'_> {
         self.failed = true;
         let mut path = self.base.clone();
         path.append(at);
-        self.d.push(Diagnostic::new(
-            code,
-            Severity::Error,
-            Phase::Parse,
-            Location::new(None, None, path, None),
-        ));
+        self.d.push(Diagnostic::error(code).at(path));
     }
 
     /// Vanilla's line for `text` at `at`: the breadcrumb, a colon and the text.

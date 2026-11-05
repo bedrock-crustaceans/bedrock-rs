@@ -13,6 +13,7 @@ use bedrock_addon_core::id::FeatureId;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, StrictBool, StrictInt, Value};
 use bedrock_addon_core::molang::{Molang, MolangFieldSpec, MolangFields, MolangVisitor, Step};
 use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::versioning::ValidateCx;
 use bedrock_addon_core::versioning::{ParseCx, VersionStruct, Versioned, write_payload};
 use bedrock_addon_support::scatter::{CoordinateRange, ScatterChance, ScatterParams};
 
@@ -205,14 +206,14 @@ const MUST_BE_PROVIDED: &str =
 /// each such line at level 3 and goes on with the replacement value (for the iterations, the
 /// percent and fraction chances, a missing coordinate, `step_size` and `grid_offset`), so the
 /// feature stays loaded.
-fn scatter_warning(check: &mut Check<'_>, key: &str, text: VanillaText) {
+fn scatter_warning(check: &mut ValidateCx<'_>, key: &str, text: VanillaText) {
     check.kept(key, DiagnosticCode::ScatterParamValue { text: Some(text) });
 }
 
 /// The client's checks on a scatter constant, and its replacement values, applied to the
 /// parameters at the current path; a schema minimum (`numerator`, `denominator`,
 /// `step_size`, `grid_offset`) fails the whole schema.
-pub(crate) fn scatter_rules(check: &mut Check<'_>, distribution: &mut ScatterParams) {
+pub(crate) fn scatter_rules(check: &mut ValidateCx<'_>, distribution: &mut ScatterParams) {
     if matches!(distribution.iterations, Molang::Const(c) if c < 0.0) {
         scatter_warning(
             check,
@@ -261,7 +262,7 @@ pub(crate) fn scatter_rules(check: &mut Check<'_>, distribution: &mut ScatterPar
 }
 
 /// The checks of one coordinate at `key`.
-fn coordinate_rules(check: &mut Check<'_>, key: &str, coordinate: Option<&CoordinateRange>) {
+fn coordinate_rules(check: &mut ValidateCx<'_>, key: &str, coordinate: Option<&CoordinateRange>) {
     let empty = match coordinate {
         None => true,
         Some(CoordinateRange::Single(Molang::Expr(source))) => source.is_empty(),
@@ -337,8 +338,8 @@ impl Rules for ScatterFeature {
     /// A file below 1.21.10 has the parameters at the root of the payload (the upgrade moves
     /// them into `distribution`): a rule names the member where the file has it, as the
     /// finding for a number beyond a float does.
-    fn rules(&mut self, check: &mut Check<'_>) {
-        if check.original < SCATTER_FORMAT {
+    fn rules(&mut self, check: &mut ValidateCx<'_>) {
+        if check.original_version < SCATTER_FORMAT {
             scatter_rules(check, &mut self.distribution);
         } else {
             check.nested("distribution", |check| {

@@ -9,9 +9,7 @@ use super::{
     Projection, RandomSpreadPlacement, SpreadType, StructureDescription, StructureSet,
     StructureSetDescription, TemplatePool, TemplatePoolElement, TerrainAdaptation,
 };
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, Phase};
 use bedrock_addon_core::document::{Content, Extra, Placed};
 use bedrock_addon_core::id::{JigsawStructureId, ProcessorListId, StructureSetId, TemplatePoolId};
 use bedrock_addon_core::json::StrictInt;
@@ -49,15 +47,13 @@ where
         },
         Err(error) => {
             let mut findings = Diagnostics::default();
-            findings.push(Diagnostic::new(
-                DiagnosticCode::MalformedInput {
+            findings.push(
+                Diagnostic::error(DiagnosticCode::MalformedInput {
                     message: error.to_string(),
                     text: None,
-                },
-                Severity::Error,
-                Phase::Validate,
-                Location::new(None, None, JsonPath::new(), None),
-            ));
+                })
+                .phase(Phase::Validate),
+            );
             findings
         }
     }
@@ -346,6 +342,7 @@ impl StructureDescription {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use bedrock_addon_core::diagnostic::Severity;
     use bedrock_addon_core::id::BlockId;
     use bedrock_addon_core::json::StrictFloat;
 

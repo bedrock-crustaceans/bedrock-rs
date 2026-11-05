@@ -14,7 +14,7 @@ use facet_json::RawJson;
 use indexmap::IndexMap;
 
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, Span, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, Span, VanillaText,
 };
 use bedrock_addon_core::json::{JsonSlice, parse_at};
 use bedrock_addon_core::molang::{
@@ -313,23 +313,19 @@ impl SchemaWalk {
         if severity == Severity::Error {
             self.errors += 1;
         }
-        self.diagnostics.push(Diagnostic::new(
-            code,
-            severity,
-            Phase::Parse,
-            Location::new(None, None, self.path.clone(), Some(span)),
-        ));
+        self.diagnostics.push(
+            Diagnostic::error(code)
+                .severity(severity)
+                .at(self.path.clone())
+                .span(span),
+        );
     }
 
     /// A content-log error of the game's after which the geometry loads: an error-level finding
     /// after which the game keeps the document (a kept error); it fails no validation.
     pub(crate) fn push_kept(&mut self, code: DiagnosticCode, span: Span) {
-        self.diagnostics.push_kept_error(Diagnostic::new(
-            code,
-            Severity::Error,
-            Phase::Parse,
-            Location::new(None, None, self.path.clone(), Some(span)),
-        ));
+        self.diagnostics
+            .push_kept_error(Diagnostic::error(code).at(self.path.clone()).span(span));
     }
 
     /// A schema error at the current path: the file does not validate in either mode.

@@ -6,14 +6,14 @@ use bedrock_addon_core::pack_identity::{PackPath, PackSide};
 use indexmap::IndexMap;
 
 use super::{SPLASHES_PATH, SplashClient, Splashes};
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, JsonPath, Severity};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::document::{
     Content, Document, JsonContent, Merge, Merged, Origin, Placed, Rejected,
 };
 use bedrock_addon_core::json::{EncodeError, WriteStyle};
 use bedrock_addon_support::fixed_path::{
-    Authored, FileCopy, document, file_finding, finding, json_text, lone, malformed, origin,
-    reject, root_file,
+    Authored, FileCopy, document, file_finding, json_text, lone, malformed, origin, reject,
+    root_file,
 };
 use bedrock_addon_support::jsoncpp::read;
 
@@ -32,10 +32,7 @@ fn read_splashes(origin: Origin, bytes: &[u8]) -> FileCopy<Splashes> {
         Ok(root) => root,
         Err(message) => {
             let code = malformed(message.to_string(), None);
-            return Err(reject(
-                origin,
-                finding(code, Severity::Error, JsonPath::new()),
-            ));
+            return Err(reject(origin, Diagnostic::error(code)));
         }
     };
     let mut diagnostics = Diagnostics::default();

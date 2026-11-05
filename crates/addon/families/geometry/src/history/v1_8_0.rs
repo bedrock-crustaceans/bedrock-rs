@@ -16,7 +16,7 @@ use super::super::{
 use super::v0_0_0::{SHARED_GEOMETRY_MEMBERS, read_root};
 use super::{settle, v1_12_0, walk_for};
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, Span,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Span,
 };
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
@@ -273,14 +273,13 @@ impl Upgrade for GeometryFile {
                     let mut at = JsonPath::new();
                     at.push(&key);
                     at.push("cape");
-                    cx.diagnostics.push(Diagnostic::new(
-                        DiagnosticCode::DroppedField {
+                    cx.diagnostics.push(
+                        Diagnostic::info(DiagnosticCode::DroppedField {
                             text: text(CAPE_DROPPED, &[]),
-                        },
-                        Severity::Info,
-                        Phase::Upgrade,
-                        Location::new(None, None, at, None),
-                    ));
+                        })
+                        .at(at)
+                        .phase(Phase::Upgrade),
+                    );
                 }
                 let (identifier, parent) = match key.rsplit_once(':') {
                     Some((identifier, parent)) => (identifier.to_owned(), Some(parent.to_owned())),

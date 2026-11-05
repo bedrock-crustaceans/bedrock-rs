@@ -5,9 +5,7 @@ use super::parse::parse_document;
 use super::{BehaviorTree, builtin};
 use std::collections::{HashMap, HashSet};
 
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, Phase};
 use bedrock_addon_core::document::{
     CombineRule, Content, Contribution, Definition, Document, EngineVersionDecision, JsonContent,
     NoBeta, Origin, Placed, Registry, RegistryBuilder, Rejected, VersionInfo, default_path,
@@ -89,7 +87,7 @@ fn parse_file(
     Option<BehaviorTreeId>,
     Result<Document<BehaviorTree>, Rejected>,
 ) {
-    let origin = Origin::new(pack, side, path.clone(), None, Vec::new());
+    let origin = Origin::file(pack, side, path.clone());
     // A number no double holds is read as the largest finite one, with a warning.
     let finite = bedrock_addon_core::document::FiniteText::of(bytes);
     let parsed = parse_document(finite.bytes());
@@ -174,19 +172,10 @@ fn built_ins() -> impl Iterator<Item = (BehaviorTreeId, Document<BehaviorTree>)>
     })
 }
 
-/// A combine-time finding about the file at `path` of `pack`.
-fn notice(code: DiagnosticCode, severity: Severity, pack: &PackRef, path: &PackPath) -> Diagnostic {
-    Diagnostic::new(
-        code,
-        severity,
-        Phase::Validate,
-        Location::new(
-            Some(pack.clone()),
-            Some(path.clone()),
-            JsonPath::new(),
-            None,
-        ),
-    )
+/// A combine-time information about the file at `path` of `pack`.
+fn notice(code: DiagnosticCode, pack: &PackRef, path: &PackPath) -> Diagnostic {
+    let file = Origin::file(pack.clone(), PackSide::Behavior, path.clone());
+    Diagnostic::info(code).phase(Phase::Validate).in_file(&file)
 }
 
 /// The file that holds a name while the walk goes on: its pack and path, and whether it
@@ -225,10 +214,10 @@ fn combine(parsed: Vec<FileOutcome>, stack: &StackCx<'_>) -> Registry<BehaviorTr
                 // says nothing (`AutomationBehaviorTreeGroup::addBehaviorTree`
                 // emplaces without a log): an information.
                 let code = DiagnosticCode::DuplicateIdentifier { text: None };
-                notice(code, Severity::Info, &earlier.pack, &earlier.path)
+                notice(code, &earlier.pack, &earlier.path)
             } else {
                 let code = DiagnosticCode::ShadowedDefinition { text: None };
-                notice(code, Severity::Info, &earlier.pack, &earlier.path)
+                notice(code, &earlier.pack, &earlier.path)
             }
         }));
     }
@@ -240,7 +229,7 @@ fn combine(parsed: Vec<FileOutcome>, stack: &StackCx<'_>) -> Registry<BehaviorTr
             let code = DiagnosticCode::ShadowedByBuiltin;
             // Ours: `addBehaviorTree` emplaces the built-in tree without a
             // line, like a duplicate within a pack.
-            notice(code, Severity::Info, &claim.pack, &claim.path)
+            notice(code, &claim.pack, &claim.path)
         })
         .collect();
     // The files that hold a name at the end of the walk. One that failed never reaches the
@@ -278,7 +267,6 @@ fn combine(parsed: Vec<FileOutcome>, stack: &StackCx<'_>) -> Registry<BehaviorTr
     for (pack, ignored) in bedrock_addon_core::load::unread_files(stack, DIRECTORY, is_json) {
         builder.push_diagnostic(notice(
             DiagnosticCode::IgnoredFile { text: None },
-            Severity::Info,
             &pack.pack,
             &ignored.path,
         ));

@@ -13,7 +13,7 @@ use facet::Facet;
 use facet_value::{VArray, VObject};
 use indexmap::IndexMap;
 
-use super::document::{Description, below, finding};
+use super::document::{Description, below};
 use crate::legacy::{
     ItemFormat, LegacyCamera, LegacyEffect, LegacyFood, LegacyFormatItem, LegacyItemData,
     LegacySeed, number, seed_warning,
@@ -21,7 +21,7 @@ use crate::legacy::{
 use crate::load::is_component_based;
 use crate::texts;
 use bedrock_addon_core::diagnostic::{
-    DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, VanillaText,
 };
 
 /// An item in the legacy item format (no `SemVersion`
@@ -66,11 +66,7 @@ impl VersionStruct for Item {
         );
         let mut shell = shell?;
         if let Err(reason) = is_component_based(payload, cx.written) {
-            d.push(finding(
-                DiagnosticCode::LegacyItemFormat { reason },
-                Severity::Info,
-                cx.at.clone(),
-            ));
+            d.push(Diagnostic::info(DiagnosticCode::LegacyItemFormat { reason }).at(cx.at.clone()));
         }
         if let Some(menu) = shell.description.menu_category.take()
             && let Ok(value) = write_payload(&menu)
@@ -85,13 +81,12 @@ impl VersionStruct for Item {
             None => LegacyFormatItem::default(),
             Some(value) => {
                 let Some(object) = value.as_object() else {
-                    d.push(finding(
-                        DiagnosticCode::InvalidType {
+                    d.push(
+                        Diagnostic::error(DiagnosticCode::InvalidType {
                             text: Some(VanillaText::Fixed(texts::COMPONENTS_NOT_OBJECT)),
-                        },
-                        Severity::Error,
-                        at,
-                    ));
+                        })
+                        .at(at),
+                    );
                     return None;
                 };
                 read_format_item(
@@ -136,7 +131,7 @@ impl MolangFields for Item {
 /// (the legacy readers take any JSON value, as `asInt`, `asFloat`, `asBool` do; what they
 /// make of it is said). The game is silent, so the finding is the crate's own information.
 fn told(code: DiagnosticCode, at: JsonPath, d: &mut Diagnostics) {
-    d.push(finding(code, Severity::Info, at));
+    d.push(Diagnostic::info(code).at(at));
 }
 
 /// A value of another JSON type than the member's: an `InvalidType` information at `at`.
@@ -318,17 +313,16 @@ fn read_food(
                     if !known_effect(&name, effects) {
                         // The game logs an unknown effect name at the content log's error
                         // level and adds the effect on: a kept error.
-                        d.push_kept_error(finding(
-                            DiagnosticCode::InvalidValue {
+                        d.push_kept_error(
+                            Diagnostic::error(DiagnosticCode::InvalidValue {
                                 text: Some(VanillaText::ItemLegacyEffectName {
                                     item: identifier.to_owned(),
                                     what: "effect",
                                     name: name.clone(),
                                 }),
-                            },
-                            Severity::Error,
-                            path.clone(),
-                        ));
+                            })
+                            .at(path.clone()),
+                        );
                     }
                     let chance = effect
                         .get("chance")
@@ -358,17 +352,16 @@ fn read_food(
                     if !known_effect(&name, effects) {
                         // The game logs an unknown name in `remove_effects` at the error
                         // level and the loop goes on: a kept error.
-                        d.push_kept_error(finding(
-                            DiagnosticCode::InvalidValue {
+                        d.push_kept_error(
+                            Diagnostic::error(DiagnosticCode::InvalidValue {
                                 text: Some(VanillaText::ItemLegacyEffectName {
                                     item: identifier.to_owned(),
                                     what: "remove_effect",
                                     name: name.clone(),
                                 }),
-                            },
-                            Severity::Error,
-                            path,
-                        ));
+                            })
+                            .at(path),
+                        );
                     }
                     food.remove_effects.push(name);
                 }
@@ -602,6 +595,7 @@ impl Upgrade for Item {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use bedrock_addon_core::diagnostic::Severity;
 
     /// an unknown `effects` or `remove_effects` name is a warning with vanilla's
     /// text, the effect kept.

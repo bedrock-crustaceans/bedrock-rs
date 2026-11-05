@@ -6,9 +6,7 @@ use indexmap::IndexMap;
 
 use super::read::{self, Parsed, group_by_controller};
 use super::{RenderController, RenderControllerFile};
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, Phase, Severity};
 use bedrock_addon_core::document::{
     CombineRule, Content, Contribution, Definition, Document, JsonContent, NoBeta, Notice, Origin,
     Placed, Registry, RegistryBuilder, Rejected, VersionInfo, default_path,
@@ -60,13 +58,7 @@ impl Content for RenderControllerFile {
     /// [`dropped`](RenderControllerFile::dropped) and its errors stay in the document's
     /// findings: the file itself loaded.
     fn parse(path: &PackPath, bytes: &[u8], cx: &LoadContext) -> Result<Document<Self>, Rejected> {
-        let origin = Origin::new(
-            PackRef::app_data(),
-            PackSide::Resource,
-            path.clone(),
-            None,
-            Vec::new(),
-        );
+        let origin = Origin::file(PackRef::app_data(), PackSide::Resource, path.clone());
         let Parsed {
             file,
             dropped,
@@ -165,13 +157,7 @@ const WALK: Walk = Walk {
 };
 
 fn parse_walk_file(file: &WalkFile, cx: &LoadContext) -> FileContribution {
-    let origin = Origin::new(
-        file.pack.clone(),
-        file.side,
-        file.path.clone(),
-        None,
-        Vec::new(),
-    );
+    let origin = Origin::file(file.pack.clone(), file.side, file.path.clone());
     let Parsed {
         file: parsed,
         dropped,
@@ -244,17 +230,9 @@ fn combine(parsed: Vec<FileContribution>, stack: &StackCx<'_>) -> Registry<Rende
         stack.options,
     );
     let shadowed = |origin: &Origin| {
-        Diagnostic::new(
-            DiagnosticCode::RenderControllerShadowed,
-            Severity::Info,
-            Phase::Validate,
-            Location::new(
-                Some(origin.pack.clone()),
-                Some(origin.path.clone()),
-                JsonPath::new(),
-                None,
-            ),
-        )
+        Diagnostic::info(DiagnosticCode::RenderControllerShadowed)
+            .phase(Phase::Validate)
+            .in_file(origin)
     };
     // Inside one pack the controller loaded last replaces the earlier ones of its name (the
     // walk gives a pack's files in path order): how many definitions each pack has of each
@@ -270,17 +248,10 @@ fn combine(parsed: Vec<FileContribution>, stack: &StackCx<'_>) -> Registry<Rende
     // A file of the directory that is no `.json` file, from the packs' file lists: the game
     // skips it without a word, so this is the crate's own information.
     for (pack, ignored) in bedrock_addon_core::load::unread_files(stack, DIRECTORY, is_json) {
-        builder.push_diagnostic(Diagnostic::new(
-            DiagnosticCode::IgnoredFile { text: None },
-            Severity::Info,
-            Phase::Parse,
-            Location::new(
-                Some(pack.pack.clone()),
-                Some(ignored.path.clone()),
-                JsonPath::new(),
-                None,
-            ),
-        ));
+        let file = Origin::file(pack.pack.clone(), PackSide::Resource, ignored.path.clone());
+        builder.push_diagnostic(
+            Diagnostic::info(DiagnosticCode::IgnoredFile { text: None }).in_file(&file),
+        );
     }
     // The effective definition of each name so far, to note the one a higher pack replaces.
     let mut effective: IndexMap<RenderControllerId, Origin> = IndexMap::new();

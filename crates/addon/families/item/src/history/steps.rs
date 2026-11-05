@@ -25,7 +25,7 @@ use crate::component::{
 use crate::legacy::ItemFormat;
 use crate::{Beta, Item, ItemDescription};
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, JsonPath, Location, Phase, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, JsonPath, Phase, Severity, VanillaText,
 };
 use bedrock_addon_core::id::SoundEventName;
 use bedrock_addon_core::json::Value;
@@ -73,12 +73,8 @@ fn report_kept(cx: &mut UpgradeCx<'_>, code: DiagnosticCode, path: &[&str]) {
     for part in path {
         at.push(part);
     }
-    cx.diagnostics.push_kept_error(Diagnostic::new(
-        code,
-        Severity::Error,
-        Phase::Upgrade,
-        Location::new(None, None, at, None),
-    ));
+    cx.diagnostics
+        .push_kept_error(Diagnostic::error(code).at(at).phase(Phase::Upgrade));
 }
 
 /// A finding of a step at `minecraft:item/<path>`.
@@ -88,12 +84,12 @@ fn report(cx: &mut UpgradeCx<'_>, code: DiagnosticCode, severity: Severity, path
     for part in path {
         at.push(part);
     }
-    cx.diagnostics.push(Diagnostic::new(
-        code,
-        severity,
-        Phase::Upgrade,
-        Location::new(None, None, at, None),
-    ));
+    cx.diagnostics.push(
+        Diagnostic::error(code)
+            .severity(severity)
+            .at(at)
+            .phase(Phase::Upgrade),
+    );
 }
 
 /// The entries of a legacy `repair_items` list (not the pre-1.18 name list) in the newest
@@ -115,12 +111,12 @@ fn repair_items(items: &Value, cx: &mut UpgradeCx<'_>) -> Vec<RepairItem> {
         at.push(key);
     }
     let tell = |cx: &mut UpgradeCx<'_>, at: JsonPath, severity: Severity| {
-        cx.diagnostics.push(Diagnostic::new(
-            DiagnosticCode::InvalidValue { text: None },
-            severity,
-            Phase::Upgrade,
-            Location::new(None, None, at, None),
-        ));
+        cx.diagnostics.push(
+            Diagnostic::error(DiagnosticCode::InvalidValue { text: None })
+                .severity(severity)
+                .at(at)
+                .phase(Phase::Upgrade),
+        );
     };
     let Some(entries) = items.as_array() else {
         tell(cx, at, Severity::Error);
@@ -729,12 +725,11 @@ fn digger_to_1_20_50(components: &mut Components, cx: &mut UpgradeCx<'_>) {
             at.push_index(index);
         }
         at.push("__deprecated_on_dig");
-        cx.diagnostics.push(Diagnostic::new(
-            DiagnosticCode::DroppedField { text: None },
-            Severity::Info,
-            Phase::Upgrade,
-            Location::new(None, None, at, None),
-        ));
+        cx.diagnostics.push(
+            Diagnostic::info(DiagnosticCode::DroppedField { text: None })
+                .at(at)
+                .phase(Phase::Upgrade),
+        );
     }
 }
 
@@ -1151,12 +1146,11 @@ pub(crate) fn custom_components_to_keyed(
         if !super::document::is_custom_key(&entry.name) {
             let mut at = member(&["components", "minecraft:custom_components"]);
             at.push_index(index);
-            cx.diagnostics.push(Diagnostic::new(
-                DiagnosticCode::DroppedField { text: None },
-                Severity::Info,
-                Phase::Upgrade,
-                Location::new(None, None, at, None),
-            ));
+            cx.diagnostics.push(
+                Diagnostic::info(DiagnosticCode::DroppedField { text: None })
+                    .at(at)
+                    .phase(Phase::Upgrade),
+            );
             continue;
         }
         let taken = map.iter().any(|e| match e {
@@ -1357,12 +1351,11 @@ fn canonical_sound(name: &mut SoundEventName, cx: &mut UpgradeCx<'_>, at: JsonPa
         && canonical != name.as_str()
     {
         *name = SoundEventName::parse(canonical);
-        cx.diagnostics.push(Diagnostic::new(
-            DiagnosticCode::ValueRewritten { text: None },
-            Severity::Info,
-            Phase::Upgrade,
-            Location::new(None, None, at, None),
-        ));
+        cx.diagnostics.push(
+            Diagnostic::info(DiagnosticCode::ValueRewritten { text: None })
+                .at(at)
+                .phase(Phase::Upgrade),
+        );
     }
 }
 

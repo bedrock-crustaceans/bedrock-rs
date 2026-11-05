@@ -3,7 +3,7 @@
 use super::legacy::{Legacy, string};
 use super::ops::dropped_field;
 use crate::parse::child;
-use bedrock_addon_core::diagnostic::JsonPath;
+use bedrock_addon_core::diagnostic::{Diagnostic, JsonPath, Phase};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
 
@@ -44,11 +44,13 @@ impl Upgrade for Block {
         // tells it (`item::history`, the 1.21.60 step): an information, since the game prefixes the
         // namespace without writing a log line.
         if namespaced_group {
-            cx.diagnostics.push(super::legacy::upgrade_finding(
-                bedrock_addon_core::diagnostic::DiagnosticCode::DeprecatedMember { text: None },
-                bedrock_addon_core::diagnostic::Severity::Info,
-                &at,
-            ));
+            cx.diagnostics.push(
+                Diagnostic::info(
+                    bedrock_addon_core::diagnostic::DiagnosticCode::DeprecatedMember { text: None },
+                )
+                .at(at.clone())
+                .phase(Phase::Upgrade),
+            );
         }
         block
     }

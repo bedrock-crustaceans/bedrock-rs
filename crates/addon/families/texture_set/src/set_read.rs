@@ -7,9 +7,7 @@ use facet_value::{VArray, VObject};
 use super::history::{Any, v1_16_100};
 use super::set::{LayerKind, LayerValue, Rgb, Rgba, TextureName, TextureSet};
 use super::texts;
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
 use bedrock_addon_core::json::{Value, strip_bom};
 use bedrock_addon_core::version::{FormatVersion, SemVersion};
 use bedrock_addon_support::texture::jsoncpp::read_lenient;
@@ -63,12 +61,6 @@ impl Schema {
     }
 }
 
-/// A finding at `path` of the document.
-fn finding(code: DiagnosticCode, severity: Severity, path: JsonPath) -> Diagnostic {
-    let location = Location::new(None, None, path, None);
-    Diagnostic::new(code, severity, Phase::Parse, location)
-}
-
 /// `at` with `key` below it.
 fn child(at: &JsonPath, key: &str) -> JsonPath {
     let mut path = at.clone();
@@ -93,7 +85,7 @@ fn read_root(bytes: &[u8], file: &str, d: &mut Diagnostics) -> Option<Value> {
         let code = DiagnosticCode::EmptyDocument {
             text: fixed(texts::SET_EMPTY),
         };
-        d.push(finding(code, Severity::Info, root_at));
+        d.push(Diagnostic::info(code).at(root_at));
         return None;
     }
     match read_lenient(bytes) {
@@ -105,7 +97,7 @@ fn read_root(bytes: &[u8], file: &str, d: &mut Diagnostics) -> Option<Value> {
                     message: "content after the JSON value is ignored".to_owned(),
                     text: None,
                 };
-                d.push(finding(code, Severity::Info, root_at));
+                d.push(Diagnostic::info(code).at(root_at));
             }
             Some(read.value)
         }
@@ -116,7 +108,7 @@ fn read_root(bytes: &[u8], file: &str, d: &mut Diagnostics) -> Option<Value> {
             };
             // The game logs this at the content log's warning level, then shows the image
             // alone: the loader's warning; the set is not loaded.
-            d.push(finding(code, Severity::Warning, root_at));
+            d.push(Diagnostic::warn(code).at(root_at));
             None
         }
     }
@@ -135,7 +127,7 @@ fn select_schema(written: Option<&Value>, file: &str, d: &mut Diagnostics) -> Op
             text: formatted(texts::SET_BAD_VERSION, [file.to_owned()]),
         };
         // The game logs this at the content log's warning level; the set is not loaded.
-        d.push(finding(code, Severity::Warning, version_at));
+        d.push(Diagnostic::warn(code).at(version_at));
         return None;
     };
     // Any version but the two.
@@ -148,7 +140,7 @@ fn select_schema(written: Option<&Value>, file: &str, d: &mut Diagnostics) -> Op
             ),
         };
         // The game logs this at the content log's warning level; the set is not loaded.
-        d.push(finding(code, Severity::Warning, version_at));
+        d.push(Diagnostic::warn(code).at(version_at));
     }
     schema
 }
@@ -193,7 +185,7 @@ pub(super) fn read(bytes: &[u8], file: &str, d: &mut Diagnostics) -> Read {
             let code = DiagnosticCode::MissingPayload {
                 text: formatted(texts::SET_REQUIRED_CHILD, [PAYLOAD.to_owned()]),
             };
-            d.push(finding(code, Severity::Error, root_at.clone()));
+            d.push(Diagnostic::error(code).at(root_at.clone()));
             None
         }
         Some((_, None)) => {
@@ -217,7 +209,7 @@ pub(super) fn read(bytes: &[u8], file: &str, d: &mut Diagnostics) -> Read {
         .map(|(key, value)| (key.as_str(), value.is_null()));
     if let Some(text) = post_validation(names) {
         let code = DiagnosticCode::InvalidValue { text: fixed(text) };
-        d.push(finding(code, Severity::Error, payload_at));
+        d.push(Diagnostic::error(code).at(payload_at));
         d.push(closing(texts::SET_POST_FAILED, root_at));
         return none(Some(schema));
     }
@@ -239,20 +231,20 @@ pub(super) fn read(bytes: &[u8], file: &str, d: &mut Diagnostics) -> Read {
 /// The line the client logs after a failed pass.
 fn closing(text: &'static str, at: JsonPath) -> Diagnostic {
     let code = DiagnosticCode::InvalidValue { text: fixed(text) };
-    finding(code, Severity::Error, at)
+    Diagnostic::error(code).at(at)
 }
 
 /// A member the schema has no child for. The client logs nothing of its own for it.
 fn unknown_member(at: JsonPath) -> Diagnostic {
     let code = DiagnosticCode::UnrecognizedField { text: None };
-    finding(code, Severity::Error, at)
+    Diagnostic::error(code).at(at)
 }
 
 /// A value none of the member's schema children takes; `allowed` is the list of their
 /// type names as the client prints it.
 fn unknown_option(allowed: &str, at: JsonPath) -> Diagnostic {
     let code = bedrock_addon_core::diagnostic::cereal::unknown_child_option(allowed);
-    finding(code, Severity::Error, at)
+    Diagnostic::error(code).at(at)
 }
 
 /// The first rule of the post-validation that `members` (each key of the payload, and whether
@@ -398,7 +390,7 @@ fn four_members(at: &JsonPath) -> Diagnostic {
     let code = DiagnosticCode::InvalidType {
         text: fixed(texts::BAD_COLOR),
     };
-    finding(code, Severity::Error, at.clone())
+    Diagnostic::error(code).at(at.clone())
 }
 
 /// A layer with a four-channel colour child and the name child (`color`,
@@ -411,7 +403,7 @@ fn rgba(value: &Value, at: &JsonPath, d: &mut Diagnostics) -> Option<LayerValue<
                 let code = DiagnosticCode::InvalidValue {
                     text: fixed(texts::SET_HEX_8),
                 };
-                d.push(finding(code, Severity::Error, at.clone()));
+                d.push(Diagnostic::error(code).at(at.clone()));
                 return None;
             };
             // `#AARRGGBB`.
@@ -452,7 +444,7 @@ fn rgb(value: &Value, at: &JsonPath, d: &mut Diagnostics) -> Option<LayerValue<R
                 let code = DiagnosticCode::InvalidValue {
                     text: fixed(texts::SET_HEX_6),
                 };
-                d.push(finding(code, Severity::Error, at.clone()));
+                d.push(Diagnostic::error(code).at(at.clone()));
                 return None;
             };
             Some(LayerValue::Hex(Rgb {
@@ -491,7 +483,7 @@ fn channels<const N: usize>(
         path.push_index(index);
         let Some(number) = element.as_number() else {
             let code = DiagnosticCode::InvalidType { text: None };
-            d.push(finding(code, Severity::Error, path));
+            d.push(Diagnostic::error(code).at(path));
             failed = true;
             continue;
         };
@@ -501,7 +493,7 @@ fn channels<const N: usize>(
             let code = DiagnosticCode::InvalidValue {
                 text: fixed(texts::NOT_INTEGRAL),
             };
-            d.push_kept_error(finding(code, Severity::Error, path));
+            d.push_kept_error(Diagnostic::error(code).at(path));
             *slot = 255.0;
             continue;
         }
@@ -510,7 +502,7 @@ fn channels<const N: usize>(
         let clamped = written.clamp(0, 255);
         if clamped != written {
             let code = DiagnosticCode::ClampedValue { text: None };
-            d.push(finding(code, Severity::Info, path));
+            d.push(Diagnostic::info(code).at(path));
         }
         *slot = f32::from(u8::try_from(clamped).unwrap_or(u8::MAX));
     }

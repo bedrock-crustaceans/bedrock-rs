@@ -5,10 +5,7 @@ use facet::Facet;
 use facet_json::RawJson;
 
 use super::{FeatureRule, FeatureRuleConditions, FeatureRuleDescription};
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
-    code_for_deserialize_error_kind,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
 use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::json::{
     JsonSlice, NullRule, Value, keep_unknown_members, parse_at, reject_nulls,
@@ -141,11 +138,7 @@ fn minimum(value: i32, min: i32, at: &JsonPath, d: &mut Diagnostics) -> bool {
     if value >= min {
         return true;
     }
-    d.push(finding(
-        DiagnosticCode::InvalidValue { text: None },
-        Severity::Error,
-        at.clone(),
-    ));
+    d.push(Diagnostic::error(DiagnosticCode::InvalidValue { text: None }).at(at.clone()));
     false
 }
 
@@ -213,24 +206,15 @@ fn typed<T: for<'f> Facet<'f>>(
                     full.append(&path);
                     // Under the slice's error mask an unknown member is a level-2 content-log
                     // line, a warning that does not stop the load.
-                    d.push(finding(
-                        DiagnosticCode::UnrecognizedField { text: None },
-                        Severity::Warning,
-                        full,
-                    ));
+                    d.push(
+                        Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None }).at(full),
+                    );
                 }
             }
             Some(value)
         }
         Err(error) => {
-            let mut full = at.clone();
-            full.append(&error.path);
-            let blank = slice.text.trim().is_empty();
-            let code =
-                code_for_deserialize_error_kind(&error.error.kind, !error.path.is_empty(), blank);
-            let mut diagnostic = finding(code, Severity::Error, full);
-            diagnostic.location.span = Some(error.span);
-            d.push(diagnostic);
+            d.push(error.into_diagnostic(at, |code, _| code));
             None
         }
     }
@@ -243,16 +227,6 @@ pub(crate) fn child(base: &JsonPath, keys: &[&str]) -> JsonPath {
         path.push(key);
     }
     path
-}
-
-/// A parse finding at `path`.
-fn finding(code: DiagnosticCode, severity: Severity, path: JsonPath) -> Diagnostic {
-    Diagnostic::new(
-        code,
-        severity,
-        Phase::Parse,
-        Location::new(None, None, path, None),
-    )
 }
 
 // ---- Molang ------------------------------------------------

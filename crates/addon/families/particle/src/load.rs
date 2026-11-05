@@ -7,7 +7,7 @@ use super::history::{Any, ParticleFamily};
 use super::parse::CEREAL;
 use super::write::PAYLOAD_KEY;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, VanillaText,
 };
 use bedrock_addon_core::document::{
     CombineRule, Content, Contribution, Definition, Document, NoBeta, Notice, Origin, Placed,
@@ -212,28 +212,22 @@ fn text(bytes: &[u8]) -> Option<&str> {
 
 /// The finding of an unreadable file.
 fn malformed() -> Diagnostic {
-    Diagnostic::new(
-        DiagnosticCode::MalformedInput {
-            message: "not UTF-8 JSON within the nesting limit".to_owned(),
-            text: None,
-        },
-        Severity::Error,
-        Phase::Parse,
-        Location::default(),
-    )
+    Diagnostic::error(DiagnosticCode::MalformedInput {
+        message: "not UTF-8 JSON within the nesting limit".to_owned(),
+        text: None,
+    })
 }
 
 /// A rejection with one finding.
 fn reject(origin: Origin, finding: Diagnostic) -> Rejected {
     let mut diagnostics = Diagnostics::default();
     diagnostics.push(finding);
-    locate(&mut diagnostics, &origin);
-    Rejected::new(origin, diagnostics)
+    Rejected::located(origin, diagnostics)
 }
 
 /// The origin of a file of `pack`.
 fn origin(pack: PackRef, side: PackSide, path: &PackPath) -> Origin {
-    Origin::new(pack, side, path.clone(), None, Vec::new())
+    Origin::file(pack, side, path.clone())
 }
 
 /// Gives every finding the document's pack and file.

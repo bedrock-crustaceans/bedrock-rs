@@ -16,7 +16,7 @@ use facet::Facet;
 use indexmap::IndexMap;
 
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity, VanillaText,
 };
 use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::id::SoundEventName;
@@ -222,18 +222,6 @@ impl Versioned for SoundMetadataFile {
     const VERSION: FormatVersion = V1_26_60;
 }
 
-/// A finding of the parse, at `path` below `base`.
-fn parse_error(code: DiagnosticCode, base: &JsonPath, path: &JsonPath) -> Diagnostic {
-    let mut at = base.clone();
-    at.append(path);
-    Diagnostic::new(
-        code,
-        Severity::Error,
-        Phase::Parse,
-        Location::new(None, None, at, None),
-    )
-}
-
 /// The tag values that are neither a string nor an array of strings.
 /// facet reads a number into the untagged string arm, so the JSON is checked first.
 fn mistyped_tags(payload: &Value) -> Vec<JsonPath> {
@@ -267,36 +255,23 @@ impl VersionStruct for SoundMetadataFile {
         let json = bedrock_addon_core::json::from_str_jsonc::<Value>(payload.text).ok();
         if json.as_ref().is_some_and(|json| !json.is_array()) {
             // The payload is the array itself.
-            d.push(parse_error(
-                DiagnosticCode::InvalidType { text: None },
-                &cx.at,
-                &JsonPath::new(),
-            ));
+            d.push(Diagnostic::error(DiagnosticCode::InvalidType { text: None }).at(cx.at.clone()));
             return None;
         }
         let mistyped = json.as_ref().map(mistyped_tags).unwrap_or_default();
         if !mistyped.is_empty() {
             for at in &mistyped {
-                d.push(parse_error(
-                    DiagnosticCode::InvalidType { text: None },
-                    &cx.at,
-                    at,
-                ));
+                d.push(
+                    Diagnostic::error(DiagnosticCode::InvalidType { text: None })
+                        .at(cx.at.join(at)),
+                );
             }
             return None;
         }
         let mut value: Self = match parse_at::<Self>(payload) {
             Ok(value) => value,
             Err(error) => {
-                let has_path = !error.path.is_empty();
-                let code = bedrock_addon_core::diagnostic::code_for_deserialize_error_kind(
-                    &error.error.kind,
-                    has_path,
-                    payload.text.trim().is_empty(),
-                );
-                let mut finding = parse_error(code, &cx.at, &error.path);
-                finding.location.span = Some(error.span);
-                d.push(finding);
+                d.push(error.into_diagnostic(&cx.at, |code, _| code));
                 return None;
             }
         };
@@ -311,11 +286,10 @@ impl VersionStruct for SoundMetadataFile {
             .map(|json| keep_unknown_members(&mut value, &json))
             .unwrap_or_default();
         for (path, _) in &unknown {
-            d.push(parse_error(
-                DiagnosticCode::UnrecognizedField { text: None },
-                &cx.at,
-                path,
-            ));
+            d.push(
+                Diagnostic::error(DiagnosticCode::UnrecognizedField { text: None })
+                    .at(cx.at.join(path)),
+            );
         }
         // An error-level finding rejects the document, so the value goes no further.
         Some(value)
@@ -396,12 +370,12 @@ fn validate(file: &SoundMetadataFile, cx: &mut ValidateCx<'_>) {
         for part in path {
             at.push(part);
         }
-        cx.diagnostics.push(Diagnostic::new(
-            code,
-            severity,
-            Phase::Validate,
-            Location::new(None, None, at, None),
-        ));
+        cx.diagnostics.push(
+            Diagnostic::error(code)
+                .at(at)
+                .severity(severity)
+                .phase(Phase::Validate),
+        );
     };
     let pattern = || bedrock_addon_core::diagnostic::cereal::string_mismatch(NO_WHITESPACE_REGEX);
     for (index, definition) in file.0.iter().enumerate() {

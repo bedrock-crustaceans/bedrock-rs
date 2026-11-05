@@ -23,9 +23,7 @@ use uuid::Uuid;
 use super::load::parse_file;
 use super::merge::{self, Items, Merger};
 use super::{CatalogKey, CraftingCatalog, PATH};
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, Location, Phase, Severity,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, DiagnosticDetail, Phase};
 use bedrock_addon_core::document::{Document, Merge, Merged, Rejected};
 use bedrock_addon_core::id::{BlockId, ItemId, Kind, kind};
 
@@ -129,18 +127,13 @@ fn pack_index(file: &CatalogFile) -> Option<usize> {
 /// has a debug assert here and no content-log line, so the crate reports an information.
 // vanilla = "debug assert; no catalog loaded"
 fn no_base() -> Diagnostic {
-    let mut warning = Diagnostic::new(
-        DiagnosticCode::UnresolvedReference { text: None },
-        Severity::Info,
-        Phase::Validate,
-        Location::default(),
-    );
-    warning.detail = Some(Box::new(DiagnosticDetail::Reference {
-        kind: "base crafting item catalog",
-        id: PATH.to_owned(),
-        hint: None,
-    }));
-    warning
+    Diagnostic::info(DiagnosticCode::UnresolvedReference { text: None })
+        .phase(Phase::Validate)
+        .detail(DiagnosticDetail::Reference {
+            kind: "base crafting item catalog",
+            id: PATH.to_owned(),
+            hint: None,
+        })
 }
 
 /// The stack's catalogue: the base file first, then the file of every pack above it, the top

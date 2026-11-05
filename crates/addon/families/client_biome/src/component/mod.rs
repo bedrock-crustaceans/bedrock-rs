@@ -23,10 +23,7 @@ use bedrock_addon_derive::Components;
 use facet::Facet;
 
 use super::history::ClientBiomeFamily;
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
-    code_for_deserialize_error_kind,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::json::{
     EncodeError, JsonSlice, Value, keep_unknown_members, parse_at, unknown_members,
 };
@@ -97,60 +94,10 @@ pub enum ClientBiomeComponent {
 /// The constraints vanilla's binding attaches to a component, checked on its JSON before the
 /// typed parse so that each failure carries its own code and vanilla's text.
 pub(crate) trait Checked {
-    /// Reports the component's constraint failures (paths below the component).
+    /// Reports the component's constraint failures (paths below the component); an error
+    /// among them rejects the component.
     #[allow(unused_variables)]
-    fn check(json: &Value, report: &mut Report<'_>) {}
-}
-
-/// Where a component's checks report, at paths below the component.
-pub(crate) struct Report<'a> {
-    diagnostics: &'a mut Diagnostics,
-    errors: usize,
-}
-
-impl<'a> Report<'a> {
-    /// A report into `diagnostics`.
-    pub(crate) fn new(diagnostics: &'a mut Diagnostics) -> Self {
-        Self {
-            diagnostics,
-            errors: 0,
-        }
-    }
-
-    /// An error at `steps` below the component: the document is not loaded.
-    pub(crate) fn error(&mut self, code: DiagnosticCode, steps: &[&str]) {
-        self.errors += 1;
-        self.push(code, Severity::Error, steps);
-    }
-
-    /// An information at `steps` below the component: a finding of the crate's own that the
-    /// game has no line for.
-    pub(crate) fn info(&mut self, code: DiagnosticCode, steps: &[&str]) {
-        self.push(code, Severity::Info, steps);
-    }
-
-    /// An unknown member at `steps` below the component. Not a grade the user sees: every
-    /// client-biome format version reads with the strict mask (`error_mask` in `load.rs`), and
-    /// core's `unknown_members_are_errors` (`versioning/pipeline.rs`) turns this Parse-phase
-    /// `UnrecognizedField` warning into the refusing error the game gives for an unknown
-    /// member; the `Warning` is that step's input.
-    pub(crate) fn unknown_member(&mut self, code: DiagnosticCode, steps: &[&str]) {
-        self.push(code, Severity::Warning, steps);
-    }
-
-    /// Whether an error was reported.
-    pub(crate) fn failed(&self) -> bool {
-        self.errors > 0
-    }
-
-    fn push(&mut self, code: DiagnosticCode, severity: Severity, steps: &[&str]) {
-        self.diagnostics.push(Diagnostic::new(
-            code,
-            severity,
-            Phase::Parse,
-            Location::new(None, None, child(&JsonPath::new(), steps), None),
-        ));
-    }
+    fn check(json: &Value, d: &mut Diagnostics) {}
 }
 
 /// One component read strictly from its slice: every slice of the client-biome loader parses
@@ -169,37 +116,26 @@ where
         // `unknown_members_are_errors` (`versioning/pipeline.rs`) turns a Parse-phase
         // `UnrecognizedField` / `UnrecognizedComponent` warning into the refusing error the game
         // gives for an unknown member. The `Warning` here is that step's input, not a grade.
-        Diagnostic::new(
-            DiagnosticCode::UnrecognizedField { text: None },
-            Severity::Warning,
-            Phase::Parse,
-            Location::new(None, None, path, None),
-        )
+        Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None }).at(path)
     };
     if let Some(json) = &json {
-        let mut report = Report::new(d);
         // A component is an object; facet's own finding for another value has no path.
         if !json.is_object() {
-            report.error(DiagnosticCode::InvalidType { text: None }, &[]);
+            d.push(Diagnostic::error(DiagnosticCode::InvalidType {
+                text: None,
+            }));
             return None;
         }
-        T::check(json, &mut report);
-        if report.failed() {
+        let start = d.len();
+        T::check(json, d);
+        if d.iter().skip(start).any(|f| f.severity == Severity::Error) {
             return None;
         }
     }
     let mut value = match parse_at::<T>(slice) {
         Ok(value) => value,
         Err(error) => {
-            let blank = slice.text.trim().is_empty();
-            let code =
-                code_for_deserialize_error_kind(&error.error.kind, !error.path.is_empty(), blank);
-            d.push(Diagnostic::new(
-                code,
-                Severity::Error,
-                Phase::Parse,
-                Location::new(None, None, error.path.clone(), Some(error.span)),
-            ));
+            d.push(error.into_diagnostic(&JsonPath::new(), |code, _| code));
             // The members no field takes are reported also when the component fails, so a
             // document of another era names what it has that the struct does not.
             for (path, _) in json.iter().flat_map(|json| unknown_members(T::SHAPE, json)) {

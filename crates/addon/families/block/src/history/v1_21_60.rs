@@ -1,7 +1,7 @@
 //! Format 1.21.60: `menu_category.group` is namespaced.
 
 use super::legacy::{Legacy, component_path, misread, strings_told};
-use bedrock_addon_core::diagnostic::Diagnostics;
+use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, Phase};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
 
@@ -59,11 +59,13 @@ fn convert(
             && !had.is_null()
             && !had.as_object().is_some_and(facet_value::VObject::is_empty)
         {
-            d.push(super::legacy::upgrade_finding(
-                bedrock_addon_core::diagnostic::DiagnosticCode::DroppedField { text: None },
-                bedrock_addon_core::diagnostic::Severity::Info,
-                &component_path(section, name),
-            ));
+            d.push(
+                Diagnostic::info(
+                    bedrock_addon_core::diagnostic::DiagnosticCode::DroppedField { text: None },
+                )
+                .at(component_path(section, name))
+                .phase(Phase::Upgrade),
+            );
         }
         let at = (index + offset).min(map.len());
         map.shift_insert(at, name.clone(), facet_value::VObject::new().into());

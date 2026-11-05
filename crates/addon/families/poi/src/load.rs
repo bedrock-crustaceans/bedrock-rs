@@ -9,7 +9,7 @@ use super::parse::V1_26_40;
 use super::resolve::{TagRecord, TypeRecord, resolve};
 use super::{Poi, PoiTag, PoiType, validate};
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, VanillaText,
 };
 use bedrock_addon_core::document::{
     CombineRule, Content, Contribution, Definition, Document, NoBeta, Notice, Origin, Placed,
@@ -224,15 +224,10 @@ fn text(bytes: &[u8]) -> Option<&str> {
 
 /// The finding of an unreadable file.
 fn malformed() -> Diagnostic {
-    Diagnostic::new(
-        DiagnosticCode::MalformedInput {
-            message: "not UTF-8 JSON within the nesting limit".to_owned(),
-            text: None,
-        },
-        Severity::Error,
-        Phase::Parse,
-        Location::default(),
-    )
+    Diagnostic::error(DiagnosticCode::MalformedInput {
+        message: "not UTF-8 JSON within the nesting limit".to_owned(),
+        text: None,
+    })
 }
 
 /// Whether the POI documents of a pack loaded with `cx` are read at all: vanilla builds the
@@ -245,17 +240,12 @@ fn enabled(cx: &LoadContext) -> bool {
 /// The finding of a file that is not read because the `poi` experiment is off
 /// (the crate's own note: vanilla says nothing).
 fn gate_closed() -> Diagnostic {
-    Diagnostic::new(
-        DiagnosticCode::MissingToggles { text: None },
-        Severity::Info,
-        Phase::Parse,
-        Location::default(),
-    )
+    Diagnostic::info(DiagnosticCode::MissingToggles { text: None })
 }
 
 /// The origin of a file of `pack`.
 fn origin(pack: PackRef, side: PackSide, path: &PackPath) -> Origin {
-    Origin::new(pack, side, path.clone(), None, Vec::new())
+    Origin::file(pack, side, path.clone())
 }
 
 /// Gives every finding the document's pack and file.
@@ -357,14 +347,9 @@ fn finish_file<F: PoiFamily>(
 /// tag loader log the one text "Failed to load POI Type", after the versioned loader's own log
 /// lines.
 fn failed_to_load() -> Diagnostic {
-    Diagnostic::new(
-        DiagnosticCode::DocumentRejected {
-            text: Some(VanillaText::Fixed("Failed to load POI Type")),
-        },
-        Severity::Error,
-        Phase::Parse,
-        Location::default(),
-    )
+    Diagnostic::error(DiagnosticCode::DocumentRejected {
+        text: Some(VanillaText::Fixed("Failed to load POI Type")),
+    })
 }
 
 /// The finding of a value that has no JSON form: an `InvalidValue` error at the member the
@@ -378,12 +363,9 @@ pub(crate) fn unwritable(error: &EncodeError, key: &str) -> Diagnostic {
     if let EncodeError::NotRepresentable { at: member, .. } = error {
         at.append(member);
     }
-    Diagnostic::new(
-        DiagnosticCode::InvalidValue { text: None },
-        Severity::Error,
-        Phase::Validate,
-        Location::new(None, None, at, None),
-    )
+    Diagnostic::error(DiagnosticCode::InvalidValue { text: None })
+        .at(at)
+        .phase(Phase::Validate)
 }
 
 /// `Root::validate` of family `F`: the findings of loading what the value writes.

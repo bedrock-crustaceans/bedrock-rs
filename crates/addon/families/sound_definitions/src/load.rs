@@ -8,7 +8,7 @@ use super::SoundDefinitions;
 use super::history;
 use super::upgrade::{self, definition_path};
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, JsonPathSegment, Severity,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, JsonPathSegment,
 };
 use bedrock_addon_core::document::{
     Content, Document, Merge, Merged, Origin, Placed, RawLayer, Rejected, VersionInfo,
@@ -21,8 +21,8 @@ use bedrock_addon_core::version::{ENGINE_VERSION, SemVersion};
 use bedrock_addon_core::versioning::Versioned;
 use bedrock_addon_support::sound::fork;
 use bedrock_addon_support::sound::merge::{
-    SoundCopy, detached_origin, layers, located, merge_finding, not_json, parse_copy, path_member,
-    read_json, readable, walk, write_document,
+    SoundCopy, detached_origin, layers, located, not_json, parse_copy, path_member, read_json,
+    readable, walk, write_document,
 };
 
 /// Where a pack keeps its sound definitions.
@@ -74,48 +74,36 @@ fn prepare_definitions(json: &Value, target: Option<&Value>, found: &mut Diagnos
     {
         let mut at = JsonPath::new();
         at.push("format_version");
-        found.push(merge_finding(
-            DiagnosticCode::FormatVersionAboveEngine {
+        found.push(
+            Diagnostic::info(DiagnosticCode::FormatVersionAboveEngine {
                 version: version.to_string(),
-            },
-            Severity::Info,
-            at,
-        ));
+            })
+            .at(at),
+        );
     }
     let report = upgrade::upgrade(&mut copy, found);
     if report.wrapper_lost {
-        found.push(merge_finding(
-            DiagnosticCode::SoundDefinitionsWrapperWithoutVersion,
-            Severity::Info,
-            definition_path("sound_definitions"),
-        ));
+        found.push(
+            Diagnostic::info(DiagnosticCode::SoundDefinitionsWrapperWithoutVersion)
+                .at(definition_path("sound_definitions")),
+        );
     }
     for name in &report.replaced {
-        found.push(merge_finding(
-            DiagnosticCode::InvalidValue { text: None },
-            Severity::Info,
-            definition_path(name),
-        ));
+        found.push(
+            Diagnostic::info(DiagnosticCode::InvalidValue { text: None }).at(definition_path(name)),
+        );
     }
     // The definition's own `__use_legacy_max_distance` the 1.14.0 step writes `"true"` over,
     // as the game's does: noted at the member.
     for name in &report.flag_replaced {
         let mut at = definition_path(name);
         at.push("__use_legacy_max_distance");
-        found.push(merge_finding(
-            DiagnosticCode::DroppedField { text: None },
-            Severity::Info,
-            at,
-        ));
+        found.push(Diagnostic::info(DiagnosticCode::DroppedField { text: None }).at(at));
     }
     for (name, member) in &report.zeroed {
         let mut at = definition_path(name);
         at.push(member);
-        found.push(merge_finding(
-            DiagnosticCode::DroppedField { text: None },
-            Severity::Info,
-            at,
-        ));
+        found.push(Diagnostic::info(DiagnosticCode::DroppedField { text: None }).at(at));
     }
     // The entry `pitch` the 1.14.0 step removes. The game gives no message; the crate notes it
     // at the member, so that nothing an author wrote goes without a word.
@@ -127,11 +115,7 @@ fn prepare_definitions(json: &Value, target: Option<&Value>, found: &mut Diagnos
             upgrade::EntryPlace::Key(key) => at.push(key),
         }
         at.push("pitch");
-        found.push(merge_finding(
-            DiagnosticCode::DroppedField { text: None },
-            Severity::Info,
-            at,
-        ));
+        found.push(Diagnostic::info(DiagnosticCode::DroppedField { text: None }).at(at));
     }
     let lower = target.map(|target| fork::member(target, "sound_definitions"));
     let Some(lower) = lower else {
@@ -140,11 +124,7 @@ fn prepare_definitions(json: &Value, target: Option<&Value>, found: &mut Diagnos
     if report.not_a_list && lower.as_object().is_some_and(|lower| !lower.is_empty()) {
         let mut at = JsonPath::new();
         at.push("sound_definitions");
-        found.push(merge_finding(
-            DiagnosticCode::SoundDefinitionsCleared,
-            Severity::Info,
-            at,
-        ));
+        found.push(Diagnostic::info(DiagnosticCode::SoundDefinitionsCleared).at(at));
     }
     let definitions = fork::member(&copy, "sound_definitions");
     if report.distances {
@@ -154,21 +134,19 @@ fn prepare_definitions(json: &Value, target: Option<&Value>, found: &mut Diagnos
                 fork::member(own, member).is_null() && fork::member(below, member).is_number()
             });
             if own.is_object() && resets {
-                found.push(merge_finding(
-                    DiagnosticCode::DistanceResetByLegacyOverlay,
-                    Severity::Info,
-                    definition_path(&name),
-                ));
+                found.push(
+                    Diagnostic::info(DiagnosticCode::DistanceResetByLegacyOverlay)
+                        .at(definition_path(&name)),
+                );
             }
         }
     }
     for name in &report.sounds_inserted {
         if !fork::member(fork::member(lower, name), "sounds").is_null() {
-            found.push(merge_finding(
-                DiagnosticCode::SoundsClearedByLegacyOverlay,
-                Severity::Info,
-                definition_path(name),
-            ));
+            found.push(
+                Diagnostic::info(DiagnosticCode::SoundsClearedByLegacyOverlay)
+                    .at(definition_path(name)),
+            );
         }
     }
     copy

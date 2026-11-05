@@ -13,9 +13,7 @@ use super::component::{
 };
 use super::parse::PAYLOAD_KEY;
 use super::texts::{NO_SOUND, OPACITY, PRECIPITATION, VOLUME, fixed};
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase};
 use bedrock_addon_core::document::{Component, ComponentMap};
 
 /// An error of a component check: vanilla's text at the component (or its member).
@@ -24,12 +22,11 @@ fn fail<T: Component>(text: &'static str, member: Option<&str>, d: &mut Diagnost
     if let Some(member) = member {
         path.push(member);
     }
-    d.push(Diagnostic::new(
-        DiagnosticCode::InvalidValue { text: fixed(text) },
-        Severity::Error,
-        Phase::Validate,
-        Location::new(None, None, path, None),
-    ));
+    d.push(
+        Diagnostic::error(DiagnosticCode::InvalidValue { text: fixed(text) })
+            .at(path)
+            .phase(Phase::Validate),
+    );
 }
 
 /// `value` lies in `[0, 1]`.

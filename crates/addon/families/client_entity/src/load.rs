@@ -4,7 +4,7 @@
 
 use bedrock_addon_core::__private::Sealed;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity, VanillaText,
 };
 use bedrock_addon_core::document::{
     CombineRule, Content, Contribution, Definition, Document, EngineVersionDecision, JsonContent,
@@ -207,17 +207,7 @@ pub(crate) fn refused_at(text: &[u8]) -> Option<JsonPath> {
 
 /// The origin of a file of `pack`.
 fn origin(pack: PackRef, side: PackSide, path: &PackPath) -> Origin {
-    Origin::new(pack, side, path.clone(), None, Vec::new())
-}
-
-/// A file-level error.
-fn error(code: DiagnosticCode, at: JsonPath) -> Diagnostic {
-    Diagnostic::new(
-        code,
-        Severity::Error,
-        Phase::Parse,
-        Location::new(None, None, at, None),
-    )
+    Origin::file(pack, side, path.clone())
 }
 
 /// A rejection with one finding.
@@ -260,13 +250,10 @@ fn admit<'b>(
     let malformed = |message: &str| {
         reject(
             origin,
-            error(
-                DiagnosticCode::MalformedInput {
-                    message: message.to_owned(),
-                    text: None,
-                },
-                JsonPath::new(),
-            ),
+            Diagnostic::error(DiagnosticCode::MalformedInput {
+                message: message.to_owned(),
+                text: None,
+            }),
         )
     };
     let text = std::str::from_utf8(bytes).map_err(|_| malformed("the file is not UTF-8"))?;
@@ -279,13 +266,10 @@ fn admit<'b>(
     let Some(root) = root.as_object().filter(|root| !root.is_empty()) else {
         return Err(reject(
             origin,
-            error(
-                DiagnosticCode::MalformedInput {
-                    message: NOTHING_TO_PARSE.to_owned(),
-                    text: Some(VanillaText::Fixed(NOTHING_TO_PARSE)),
-                },
-                JsonPath::new(),
-            ),
+            Diagnostic::error(DiagnosticCode::MalformedInput {
+                message: NOTHING_TO_PARSE.to_owned(),
+                text: Some(VanillaText::Fixed(NOTHING_TO_PARSE)),
+            }),
         ));
     };
     if let Some(version) = root.get("format_version")
@@ -293,7 +277,7 @@ fn admit<'b>(
     {
         return Err(reject(
             origin,
-            error(code, read::below(&JsonPath::new(), &["format_version"])),
+            Diagnostic::error(code).at(read::below(&JsonPath::new(), &["format_version"])),
         ));
     }
     Ok(text)
@@ -487,20 +471,14 @@ fn combine(parsed: Vec<FileOutcome>, stack: &StackCx<'_>) -> Registry<ClientEnti
             MergeStep::Merge => EngineVersionDecision::Merge,
             MergeStep::Ignore(reason) => {
                 let origin = incoming.origin();
-                d.push(Diagnostic::new(
-                    // The reason is in the finding's text.
-                    DiagnosticCode::ClientEntityShadowed {
+                // The reason is in the finding's text.
+                d.push(
+                    Diagnostic::info(DiagnosticCode::ClientEntityShadowed {
                         reason: Some(reason),
-                    },
-                    Severity::Info,
-                    Phase::Validate,
-                    Location::new(
-                        Some(origin.pack.clone()),
-                        Some(origin.path.clone()),
-                        JsonPath::new(),
-                        None,
-                    ),
-                ));
+                    })
+                    .phase(Phase::Validate)
+                    .in_file(origin),
+                );
                 EngineVersionDecision::Ignore
             }
             // `Create`, `Replace`, and any step a newer core adds.

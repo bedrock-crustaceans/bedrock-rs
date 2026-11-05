@@ -6,10 +6,7 @@ use facet::Facet;
 
 use super::{Clouds, DimensionBounds, DimensionComponents, DimensionDescription, DimensionHeight};
 use crate::history::v1_18_0::Components as ComponentsV1;
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
-    code_for_deserialize_error_kind,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
 use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::json::{
     JsonSlice, NullRule, Value, keep_unknown_members, parse_at, reject_nulls,
@@ -88,14 +85,7 @@ pub(crate) fn parse_root<R: for<'f> Facet<'f>>(
     let mut value = match parse_at::<R>(text) {
         Ok(value) => value,
         Err(error) => {
-            let mut at = cx.at.clone();
-            at.append(&error.path);
-            let blank = text.text.trim().is_empty();
-            let code =
-                code_for_deserialize_error_kind(&error.error.kind, !error.path.is_empty(), blank);
-            let mut finding = finding(code, Severity::Error, at);
-            finding.location.span = Some(error.span);
-            d.push(finding);
+            d.push(error.into_diagnostic(&cx.at, |code, _| code));
             return None;
         }
     };
@@ -112,16 +102,13 @@ pub(crate) fn parse_root<R: for<'f> Facet<'f>>(
             // From 1.21.60 the cereal slice reads leniently and logs an unknown member at the
             // content log's warning level. Below it the legacy parser reads only what it knows,
             // in silence, so the crate reports an information.
-            let severity = if cx.original_version >= CEREAL_FLOOR {
-                Severity::Warning
+            let code = DiagnosticCode::UnrecognizedField { text: None };
+            let finding = if cx.original_version >= CEREAL_FLOOR {
+                Diagnostic::warn(code)
             } else {
-                Severity::Info
+                Diagnostic::info(code)
             };
-            d.push(finding(
-                DiagnosticCode::UnrecognizedField { text: None },
-                severity,
-                at,
-            ));
+            d.push(finding.at(at));
         }
     }
     root_extra(&mut value).remove(FORMAT_VERSION);
@@ -135,16 +122,6 @@ pub(crate) fn child(base: &JsonPath, keys: &[&str]) -> JsonPath {
         path.push(key);
     }
     path
-}
-
-/// A finding at `path`.
-pub(crate) fn finding(code: DiagnosticCode, severity: Severity, path: JsonPath) -> Diagnostic {
-    Diagnostic::new(
-        code,
-        severity,
-        Phase::Parse,
-        Location::new(None, None, path, None),
-    )
 }
 
 /// A bind constraint: `value` in `[min, max]`, and a multiple of `multiple` when given; a
@@ -172,7 +149,7 @@ pub(crate) fn constraint(
     } else {
         return true;
     };
-    d.push(finding(code, Severity::Error, at));
+    d.push(Diagnostic::error(code).at(at));
     false
 }
 

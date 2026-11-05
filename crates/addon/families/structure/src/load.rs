@@ -9,11 +9,9 @@ use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use indexmap::IndexMap;
 
 use super::{Structure, parse, text};
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase};
 use bedrock_addon_core::document::{
-    Content, Document, Files, FilesBuilder, FilesRule, Origin, Rejected, VersionInfo,
+    Content, Document, Files, FilesBuilder, FilesRule, Origin, Rejected, VersionInfo, unversioned,
 };
 use bedrock_addon_core::id::StructureId;
 use bedrock_addon_core::json::{EncodeError, Unrepresentable, WriteStyle};
@@ -70,7 +68,7 @@ pub(crate) fn parse_file(
     bytes: &[u8],
     cx: &LoadContext,
 ) -> Result<Document<Structure>, Rejected> {
-    let origin = Origin::new(pack, side, path.clone(), None, Vec::new());
+    let origin = Origin::file(pack, side, path.clone());
     let (value, mut diagnostics) = parse::read(bytes, cx);
     locate(&mut diagnostics, &origin);
     match value {
@@ -140,14 +138,10 @@ impl Structure {
     ) -> Result<Option<&'a Document<Structure>>, Diagnostic> {
         // An identifier without a namespace is the error, before any lookup.
         let Some(namespace) = namespace(id) else {
-            return Err(Diagnostic::new(
-                DiagnosticCode::NamespaceRule {
-                    text: Some(text::not_namespaced(id.as_str())),
-                },
-                Severity::Error,
-                Phase::Link,
-                Location::default(),
-            ));
+            return Err(Diagnostic::error(DiagnosticCode::NamespaceRule {
+                text: Some(text::not_namespaced(id.as_str())),
+            })
+            .phase(Phase::Link));
         };
         let Some(primary) = Structure::path_of(id) else {
             return Ok(None);
@@ -263,17 +257,10 @@ fn read_in_pack(path: &PackPath, cx: &LoadContext) -> bool {
 /// pack it is an `IgnoredFile` info (the crate's own report; the game ignores the file).
 fn parse_walk_file(file: &WalkFile, cx: &LoadContext) -> Parsed {
     if !file.path.as_str().ends_with(EXTENSION) {
-        return Parsed::Ignored(Diagnostic::new(
-            DiagnosticCode::IgnoredFile { text: None },
-            Severity::Info,
-            Phase::Parse,
-            Location::new(
-                Some(file.pack.clone()),
-                Some(file.path.clone()),
-                JsonPath::new(),
-                None,
-            ),
-        ));
+        return Parsed::Ignored(
+            Diagnostic::info(DiagnosticCode::IgnoredFile { text: None })
+                .in_file(&unversioned::origin_of(file)),
+        );
     }
     Parsed::File(
         file.key.clone(),

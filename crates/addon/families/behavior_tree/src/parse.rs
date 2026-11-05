@@ -7,7 +7,7 @@ use facet_value::VObject;
 
 use super::{BehaviorTree, Node, Param};
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
 };
 use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::id::BehaviorTreeId;
@@ -110,22 +110,14 @@ impl Reader {
     }
 
     fn report(&mut self, at: &JsonPath, code: DiagnosticCode, severity: Severity) {
-        self.diagnostics.push(Diagnostic::new(
-            code,
-            severity,
-            Phase::Parse,
-            Location::new(None, None, at.clone(), None),
-        ));
+        self.diagnostics
+            .push(Diagnostic::error(code).severity(severity).at(at.clone()));
     }
 
     /// A kept error at `at`: the game logs `code`'s line at level 3 and loads the tree.
     fn kept_error(&mut self, at: &JsonPath, code: DiagnosticCode) {
-        self.diagnostics.push_kept_error(Diagnostic::new(
-            code,
-            Severity::Error,
-            Phase::Parse,
-            Location::new(None, None, at.clone(), None),
-        ));
+        self.diagnostics
+            .push_kept_error(Diagnostic::error(code).at(at.clone()));
     }
 
     fn document(&mut self, bytes: &[u8]) -> (Option<BehaviorTreeId>, Option<BehaviorTree>) {

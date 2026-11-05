@@ -43,7 +43,7 @@ use bedrock_addon_core::versioning::{ConvertMode, parse_component};
 use bedrock_addon_derive::Components;
 
 use crate::load::ItemFamily;
-use bedrock_addon_core::diagnostic::Diagnostics;
+use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics};
 
 /// `LegacyCreatorFeatures`: satisfied only by the ten vanilla pack UUIDs.
 const LCF: LoadRequirement = LoadRequirement::LegacyCreatorFeatures;
@@ -243,12 +243,13 @@ pub(crate) fn tell_range_members<T>(
         .collect();
     for (path, _) in keep_members_and_range_members(&mut ranged, &json).0 {
         if !known.contains(&path) {
-            d.push(bedrock_addon_core::diagnostic::Diagnostic::new(
-                bedrock_addon_core::diagnostic::DiagnosticCode::MemberNotKept { text: None },
-                severity,
-                bedrock_addon_core::diagnostic::Phase::Parse,
-                bedrock_addon_core::diagnostic::Location::new(None, None, path, None),
-            ));
+            d.push(
+                Diagnostic::error(
+                    bedrock_addon_core::diagnostic::DiagnosticCode::MemberNotKept { text: None },
+                )
+                .severity(severity)
+                .at(path),
+            );
         }
     }
 }

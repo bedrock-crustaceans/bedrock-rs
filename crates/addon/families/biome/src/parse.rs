@@ -8,9 +8,7 @@ use indexmap::IndexMap;
 
 use super::component::{BiomeComponent, Builder, SubsurfaceBuilder, SurfaceBuilder, child};
 use super::{Description, EnvironmentAttributes};
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
 use bedrock_addon_core::document::{ComponentMap, Extra};
 use bedrock_addon_core::json::JsonSlice;
 use bedrock_addon_core::load::LoadContext;
@@ -158,12 +156,10 @@ fn builder_bound(
         return;
     };
     if version < V1_26_30 && matches!(builder, Builder::NoiseGradient(_)) {
-        d.push(Diagnostic::new(
-            DiagnosticCode::InvalidEnumValue { text: None },
-            Severity::Error,
-            Phase::Parse,
-            Location::new(None, None, child(at, &["builder", "type"]), None),
-        ));
+        d.push(
+            Diagnostic::error(DiagnosticCode::InvalidEnumValue { text: None })
+                .at(child(at, &["builder", "type"])),
+        );
     }
 }
 
@@ -171,10 +167,5 @@ fn builder_bound(
 /// `unknown_members_are_errors` (`versioning/pipeline.rs`) turns this Parse-phase warning into the
 /// refusing error the game gives for an unknown member.
 fn unrecognized(path: JsonPath) -> Diagnostic {
-    Diagnostic::new(
-        DiagnosticCode::UnrecognizedComponent { text: None },
-        Severity::Warning,
-        Phase::Parse,
-        Location::new(None, None, path, None),
-    )
+    Diagnostic::warn(DiagnosticCode::UnrecognizedComponent { text: None }).at(path)
 }

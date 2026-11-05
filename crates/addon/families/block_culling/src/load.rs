@@ -5,7 +5,7 @@ use super::history::{Any, CullingFamily};
 use super::texts::{FAILED_INTERNAL, FAILED_TO_PARSE, MISSING_OBJECT, formatted};
 use super::{CullingRules, validate};
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, Location, Phase, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, Phase, Severity, VanillaText,
 };
 use bedrock_addon_core::document::{
     CombineRule, Content, Contribution, Definition, Document, JsonContent, NoBeta, Origin, Placed,
@@ -120,14 +120,10 @@ fn locate(diagnostics: &mut Diagnostics, origin: &Origin) {
 
 /// A closing line of vanilla's for a culling file that was skipped.
 fn closing(template: &'static str, path: &PackPath, phase: Phase) -> Diagnostic {
-    Diagnostic::new(
-        DiagnosticCode::DocumentRejected {
-            text: Some(formatted(template, &[path.as_str()])),
-        },
-        Severity::Error,
-        phase,
-        Location::default(),
-    )
+    Diagnostic::error(DiagnosticCode::DocumentRejected {
+        text: Some(formatted(template, &[path.as_str()])),
+    })
+    .phase(phase)
 }
 
 /// The `format_version` of a document as vanilla's "no parser available" text prints it:
@@ -214,7 +210,7 @@ pub(crate) fn parse_culling(
     bytes: &[u8],
     cx: &LoadContext,
 ) -> Result<Document<CullingRules>, Rejected> {
-    let origin = Origin::new(pack, side, path.clone(), None, Vec::new());
+    let origin = Origin::file(pack, side, path.clone());
     let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
     let bytes = strip_bom(bytes);
     let text = check_depth(bytes, MAX_JSON_DEPTH)
@@ -222,15 +218,10 @@ pub(crate) fn parse_culling(
         .and_then(|()| std::str::from_utf8(bytes).ok());
     let Some(text) = text else {
         let mut diagnostics = Diagnostics::default();
-        diagnostics.push(Diagnostic::new(
-            DiagnosticCode::MalformedInput {
-                message: "not UTF-8 JSON within the nesting limit".to_owned(),
-                text: None,
-            },
-            Severity::Error,
-            Phase::Parse,
-            Location::default(),
-        ));
+        diagnostics.push(Diagnostic::error(DiagnosticCode::MalformedInput {
+            message: "not UTF-8 JSON within the nesting limit".to_owned(),
+            text: None,
+        }));
         vanilla_lines(&mut diagnostics, None, path);
         locate(&mut diagnostics, &origin);
         return Err(Rejected::new(origin, diagnostics));

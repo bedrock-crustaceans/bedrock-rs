@@ -259,27 +259,25 @@ mod check {
                     .nth(2)
                     .is_some_and(|s| s == JsonPathSegment::Key("arrays"));
                 if in_array {
-                    diagnostics.push(Diagnostic::new(
-                        DiagnosticCode::InvalidMolang {
+                    diagnostics.push(
+                        Diagnostic::error(DiagnosticCode::InvalidMolang {
                             expression: format!("{ERROR_PARSING}{}", source.as_str()),
-                        },
-                        Severity::Error,
-                        Phase::Validate,
-                        location,
-                    ));
+                        })
+                        .at(field.path.clone())
+                        .phase(Phase::Validate),
+                    );
                 } else if !reached && !numeric {
                     // A rejection with only an info note (a written empty text below version
                     // 4) takes the member's severity. The empty text a `materials` number is
                     // read as keeps the note alone: the reader has
                     // told the number at the member already.
-                    diagnostics.push(Diagnostic::new(
-                        DiagnosticCode::InvalidMolang {
+                    diagnostics.push(
+                        Diagnostic::error(DiagnosticCode::InvalidMolang {
                             expression: source.as_str().to_owned(),
-                        },
-                        Severity::Error,
-                        Phase::Validate,
-                        location,
-                    ));
+                        })
+                        .at(field.path.clone())
+                        .phase(Phase::Validate),
+                    );
                 }
                 if schema_typed {
                     outcome.file_rejected = true;

@@ -255,12 +255,11 @@ pub(crate) fn check(entity: &mut Entity, cx: &mut ValidateCx<'_>) {
             let at = json_path(&cx.at, &section_path(section.as_deref(), &key));
             // The game keeps the component and writes no content-log line; the drop is the crate's own,
             // so it is reported as an information.
-            cx.diagnostics.push(Diagnostic::new(
-                DiagnosticCode::DroppedComponent { text: None },
-                Severity::Info,
-                Phase::Validate,
-                Location::new(None, None, at, None),
-            ));
+            cx.diagnostics.push(
+                Diagnostic::info(DiagnosticCode::DroppedComponent { text: None })
+                    .at(at)
+                    .phase(Phase::Validate),
+            );
         }
     }
 }
@@ -298,12 +297,11 @@ fn gather(entity: &Entity, cx: &mut ValidateCx<'_>, drop: &mut Vec<ComponentAt>)
                 // An information: the game writes no content-log line for a member of another
                 // JSON type in the legacy reader (the typed slice's type error belongs to the
                 // strict read).
-                cx.diagnostics.push(Diagnostic::new(
-                    DiagnosticCode::InvalidType { text: None },
-                    Severity::Info,
-                    Phase::Validate,
-                    Location::new(None, None, json_path(&cx.at, &path), None),
-                ));
+                cx.diagnostics.push(
+                    Diagnostic::info(DiagnosticCode::InvalidType { text: None })
+                        .at(json_path(&cx.at, &path))
+                        .phase(Phase::Validate),
+                );
                 drop.push(component);
             }
         }

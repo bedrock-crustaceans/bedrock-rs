@@ -13,6 +13,7 @@ use bedrock_addon_core::diagnostic::{DiagnosticCode, VanillaText};
 use bedrock_addon_core::id::FeatureId;
 use bedrock_addon_core::json::{StrictError, StrictFloat, Value};
 use bedrock_addon_core::molang::{Molang, MolangVisitor};
+use bedrock_addon_core::versioning::ValidateCx;
 
 /// `minecraft:aggregate_feature`: places every listed feature at the same position, until the
 /// early-out rule stops it.
@@ -306,19 +307,19 @@ impl Walk for ConditionalFeature {
 }
 
 impl Rules for AggregateFeature {
-    fn rules(&mut self, check: &mut Check<'_>) {
+    fn rules(&mut self, check: &mut ValidateCx<'_>) {
         check.check_len("features", Some(self.features.len()), 1, None);
     }
 }
 
 impl Rules for SequenceFeature {
-    fn rules(&mut self, check: &mut Check<'_>) {
+    fn rules(&mut self, check: &mut ValidateCx<'_>) {
         check.check_len("features", Some(self.features.len()), 1, None);
     }
 }
 
 impl Rules for WeightedRandomFeature {
-    fn rules(&mut self, check: &mut Check<'_>) {
+    fn rules(&mut self, check: &mut ValidateCx<'_>) {
         check.check_len("features", Some(self.features.len()), 1, None);
     }
 }
@@ -329,10 +330,10 @@ const EARLY_OUT_NONE_ENGINE: bedrock_addon_core::version::FormatVersion =
 
 // Any pack may use the type (it is not internal).
 impl Rules for ConditionalListFeature {
-    fn rules(&mut self, check: &mut Check<'_>) {
+    fn rules(&mut self, check: &mut ValidateCx<'_>) {
         // The enum has two values before engine 1.26.50; the 1.26.50 schema adds `none`.
         if self.early_out_scheme == Some(EarlyOutScheme::None)
-            && check.cx.engine_version < EARLY_OUT_NONE_ENGINE
+            && check.load.engine_version < EARLY_OUT_NONE_ENGINE
         {
             check.error(
                 "early_out_scheme",
@@ -345,7 +346,7 @@ impl Rules for ConditionalListFeature {
 impl Rules for RectLayoutFeature {
     const INTERNAL: bool = true;
 
-    fn rules(&mut self, check: &mut Check<'_>) {
+    fn rules(&mut self, check: &mut ValidateCx<'_>) {
         // The client logs this at level 3 and keeps the value: a kept error.
         if self.ratio_of_empty_space.is_some_and(|r| r.0 >= 1.0) {
             check.kept(
@@ -373,7 +374,7 @@ impl Rules for ScanSurfaceFeature {
 }
 
 impl Rules for SearchFeature {
-    fn rules(&mut self, check: &mut Check<'_>) {
+    fn rules(&mut self, check: &mut ValidateCx<'_>) {
         check.nested("search_volume", |check| {
             check.check_len("min", Some(self.search_volume.min.len()), 3, Some(3));
             check.check_len("max", Some(self.search_volume.max.len()), 3, Some(3));
@@ -392,7 +393,7 @@ impl Rules for HeightDifferenceFilterFeature {
     const SINCE_ENGINE: Option<bedrock_addon_core::version::FormatVersion> =
         Some(HEIGHT_DIFFERENCE_ENGINE);
 
-    fn rules(&mut self, check: &mut Check<'_>) {
+    fn rules(&mut self, check: &mut ValidateCx<'_>) {
         let diffs = [
             (
                 "min_required_upward_height_diff",

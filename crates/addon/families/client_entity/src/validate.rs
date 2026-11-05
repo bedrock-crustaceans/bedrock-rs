@@ -2,8 +2,10 @@
 //! Molang walk of [`ClientEntity`].
 
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Location, Phase, Severity,
+    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Phase,
 };
+#[cfg(feature = "molang")]
+use bedrock_addon_core::diagnostic::{Location, Severity};
 use bedrock_addon_core::json::StrictString;
 #[cfg(feature = "molang")]
 use bedrock_addon_core::molang::MolangSource;
@@ -232,12 +234,11 @@ fn empty_conditions(entity: &ClientEntity, at: &JsonPath, d: &mut Diagnostics) {
     let mut tell = |list: &[&str], index: usize| {
         let mut entry_at = below(at, list);
         entry_at.push_index(index);
-        d.push(Diagnostic::new(
-            DiagnosticCode::InvalidValue { text: None },
-            Severity::Info,
-            Phase::Validate,
-            Location::new(None, None, entry_at, None),
-        ));
+        d.push(
+            Diagnostic::info(DiagnosticCode::InvalidValue { text: None })
+                .at(entry_at)
+                .phase(Phase::Validate),
+        );
     };
     let description = &entity.description;
     for (index, entry) in description.render_controllers.iter().flatten().enumerate() {
@@ -263,14 +264,13 @@ fn held_item_scale(entity: &ClientEntity, at: &JsonPath, d: &mut Diagnostics) {
     if let Some(HeldItemScale::Number(scale)) = entity.description.held_item_scale
         && scale <= 0.0
     {
-        d.push_kept_error(Diagnostic::new(
-            DiagnosticCode::InvalidValue {
+        d.push_kept_error(
+            Diagnostic::error(DiagnosticCode::InvalidValue {
                 text: text(HELD_ITEM_SCALE_TEXT, &[FILE, &scale.to_string()]),
-            },
-            Severity::Error,
-            Phase::Validate,
-            Location::new(None, None, below(at, &["held_item_scale"]), None),
-        ));
+            })
+            .at(below(at, &["held_item_scale"]))
+            .phase(Phase::Validate),
+        );
     }
 }
 
@@ -306,14 +306,13 @@ fn loader_scripts(entity: &mut ClientEntity, at: &JsonPath, cx: &mut ValidateCx<
         if matches!(outcome, MolangOutcome::Failed(_)) {
             // "Failed to parse '{}'!" follows the parser's lines and the script is not stored.
             // The game logs it as an error and loads the file: a kept error.
-            cx.diagnostics.push_kept_error(Diagnostic::new(
-                DiagnosticCode::DroppedField {
+            cx.diagnostics.push_kept_error(
+                Diagnostic::error(DiagnosticCode::DroppedField {
                     text: text(FAILED_TO_PARSE, &[name]),
-                },
-                Severity::Error,
-                Phase::Validate,
-                location,
-            ));
+                })
+                .at(member_at)
+                .phase(Phase::Validate),
+            );
             *member = None;
         }
     }
@@ -351,12 +350,9 @@ fn animate_names(entity: &ClientEntity, at: &JsonPath, d: &mut Diagnostics) {
         }
         let mut entry_at = below(at, &["scripts", "animate"]);
         entry_at.push_index(index);
-        let mut found = Diagnostic::new(
-            DiagnosticCode::UnresolvedReference { text: None },
-            Severity::Info,
-            Phase::Validate,
-            Location::new(None, None, entry_at, None),
-        );
+        let mut found = Diagnostic::info(DiagnosticCode::UnresolvedReference { text: None })
+            .at(entry_at)
+            .phase(Phase::Validate);
         found.detail = Some(Box::new(DiagnosticDetail::Reference {
             kind: "animation",
             id: name.to_owned(),

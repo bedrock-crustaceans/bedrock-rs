@@ -3,7 +3,7 @@
 //! visit them, and the findings of a removal.
 
 use bedrock_addon_core::diagnostic::{
-    self, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
+    self, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity, VanillaText,
 };
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::vanilla::ActorType;
@@ -194,12 +194,7 @@ pub(crate) fn schema_conversions(payload: &mut Payload, to: FormatVersion, cx: &
             for (below, code) in crate::goal::legacy_ranges(&key, goal) {
                 let mut path = at.clone();
                 path.append(&below);
-                found.push(Diagnostic::new(
-                    code,
-                    Severity::Info,
-                    Phase::Upgrade,
-                    Location::new(None, None, path, None),
-                ));
+                found.push(Diagnostic::info(code).at(path).phase(Phase::Upgrade));
             }
         }
     }
@@ -285,12 +280,8 @@ pub(crate) fn kept(cx: &mut UpgradeCx<'_>, code: DiagnosticCode, at: &JsonPath) 
     let mut path = JsonPath::new();
     path.push(<Entity as Family>::PAYLOAD_KEY);
     path.append(at);
-    cx.diagnostics.push_kept_error(Diagnostic::new(
-        code,
-        Severity::Error,
-        Phase::Upgrade,
-        Location::new(None, None, path, None),
-    ));
+    cx.diagnostics
+        .push_kept_error(Diagnostic::error(code).at(path).phase(Phase::Upgrade));
 }
 
 /// A note of a step at `at` (below the payload): INFO, a value the game itself discards at
@@ -304,12 +295,12 @@ fn finding_of(cx: &mut UpgradeCx<'_>, code: DiagnosticCode, severity: Severity, 
     let mut path = JsonPath::new();
     path.push(<Entity as Family>::PAYLOAD_KEY);
     path.append(at);
-    cx.diagnostics.push(Diagnostic::new(
-        code,
-        severity,
-        Phase::Upgrade,
-        Location::new(None, None, path, None),
-    ));
+    cx.diagnostics.push(
+        Diagnostic::error(code)
+            .at(path)
+            .phase(Phase::Upgrade)
+            .severity(severity),
+    );
 }
 
 /// What a step has to tell, gathered while the payload is borrowed and reported after, in the order

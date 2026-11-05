@@ -20,7 +20,7 @@ mod table;
 use std::fmt::Write as _;
 
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, VanillaText,
 };
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::version::FormatVersion;
@@ -268,7 +268,7 @@ impl Outcome {
         let place = |below: &JsonPath| {
             let mut path = at.clone();
             path.append(below);
-            Location::new(None, None, path, None)
+            path
         };
         for problem in &self.problems {
             let (template, args) = problem.text();
@@ -280,39 +280,31 @@ impl Outcome {
                 Problem::Enum { .. } => DiagnosticCode::InvalidEnumValue { text },
                 Problem::Numeric { .. } => DiagnosticCode::InvalidValue { text },
             };
-            found.push_kept_error(Diagnostic::new(
-                code,
-                Severity::Error,
-                phase,
-                place(problem.at()),
-            ));
+            found.push_kept_error(Diagnostic::error(code).at(place(problem.at())).phase(phase));
         }
         if self.failed {
             // The crate's information at the component (the game writes no content-log line for
             // it): the write-back writes its defaults, so every member of the file it held is
             // rewritten there; and at each member, that it is not read.
-            found.push(Diagnostic::new(
-                DiagnosticCode::ValueRewritten { text: None },
-                Severity::Info,
-                phase,
-                place(&JsonPath::new()),
-            ));
+            found.push(
+                Diagnostic::info(DiagnosticCode::ValueRewritten { text: None })
+                    .at(place(&JsonPath::new()))
+                    .phase(phase),
+            );
             for below in &self.unread {
-                found.push(Diagnostic::new(
-                    DiagnosticCode::DroppedField { text: None },
-                    Severity::Info,
-                    phase,
-                    place(below),
-                ));
+                found.push(
+                    Diagnostic::info(DiagnosticCode::DroppedField { text: None })
+                        .at(place(below))
+                        .phase(phase),
+                );
             }
         }
         for below in &self.silent {
-            found.push(Diagnostic::new(
-                DiagnosticCode::UnrecognizedField { text: None },
-                Severity::Info,
-                phase,
-                place(below),
-            ));
+            found.push(
+                Diagnostic::info(DiagnosticCode::UnrecognizedField { text: None })
+                    .at(place(below))
+                    .phase(phase),
+            );
         }
         found
     }
@@ -611,6 +603,7 @@ fn in_class(class: &str, c: char) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use bedrock_addon_core::diagnostic::Severity;
 
     /// The version a migrated reader converts below is the crate's first typed version
     /// of the key (the conversion runs in the step that reaches it).

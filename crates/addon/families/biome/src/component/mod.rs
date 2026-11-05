@@ -29,10 +29,7 @@ use bedrock_addon_derive::Components;
 use facet::Facet;
 
 use super::history::BiomeFamily;
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
-    code_for_deserialize_error_kind,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::document::{ComponentMap, ComponentRef};
 use bedrock_addon_core::json::NullRule;
 use bedrock_addon_core::json::{
@@ -121,30 +118,17 @@ where
     let _ = mode;
     let json = bedrock_addon_core::json::from_str_jsonc::<Value>(slice.text).ok();
     let unrecognized = |path: JsonPath| {
-        Diagnostic::new(
-            DiagnosticCode::UnrecognizedField { text: None },
-            Severity::Warning,
-            Phase::Parse,
-            Location::new(None, None, path, None),
-        )
+        Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None }).at(path)
     };
     let mut value = match parse_at::<T>(slice) {
         Ok(value) => value,
         Err(error) => {
-            let blank = slice.text.trim().is_empty();
-            let code =
-                code_for_deserialize_error_kind(&error.error.kind, !error.path.is_empty(), blank);
-            d.push(Diagnostic::new(
-                code,
-                Severity::Error,
-                Phase::Parse,
-                Location::new(
-                    None,
-                    None,
-                    without_variant_index(&error.path),
-                    Some(error.span),
-                ),
-            ));
+            let code = error.code_with_path(error.has_path());
+            d.push(
+                Diagnostic::error(code)
+                    .at(without_variant_index(&error.path))
+                    .span(error.span),
+            );
             // The members no field takes are reported also when the component fails, so a
             // document of another era names what it has that the struct does not.
             for (path, _) in json.iter().flat_map(|json| unknown_members(T::SHAPE, json)) {

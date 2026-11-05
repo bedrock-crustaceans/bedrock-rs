@@ -197,12 +197,6 @@ fn scan(text: &str) -> Scanned {
     scanned
 }
 
-/// A finding of a list at `at`.
-fn lint(code: DiagnosticCode, severity: Severity, at: JsonPath) -> Diagnostic {
-    let location = Location::new(None, None, at, None);
-    Diagnostic::new(code, severity, Phase::Validate, location)
-}
-
 /// The path of element `index`.
 fn at_index(index: usize) -> JsonPath {
     let mut at = JsonPath::new();
@@ -255,16 +249,16 @@ impl TextureList {
                     .to_owned(),
                 text: None,
             };
-            out.push(lint(code, Severity::Info, JsonPath::new()));
+            out.push(Diagnostic::info(code).phase(Phase::Validate));
         }
         match list.root {
             // No preload and no scan.
             TextureListRoot::Scalar => {
-                out.push(lint(invalid(), Severity::Info, JsonPath::new()));
+                out.push(Diagnostic::info(invalid()).phase(Phase::Validate));
             }
             // The values are the list.
             TextureListRoot::Object if !scanned.elements.is_empty() => {
-                out.push(lint(invalid(), Severity::Info, JsonPath::new()));
+                out.push(Diagnostic::info(invalid()).phase(Phase::Validate));
             }
             _ => {}
         }
@@ -275,7 +269,11 @@ impl TextureList {
                     list.skipped_non_strings += 1;
                     // An element that is no string, for an array's own elements.
                     if list.root == TextureListRoot::Array {
-                        out.push(lint(invalid(), Severity::Info, at_index(index)));
+                        out.push(
+                            Diagnostic::info(invalid())
+                                .at(at_index(index))
+                                .phase(Phase::Validate),
+                        );
                     }
                 }
             }
@@ -298,12 +296,20 @@ impl TextureList {
                 continue;
             }
             if has_extension(entry) {
-                out.push(lint(invalid(), Severity::Info, at_index(index)));
+                out.push(
+                    Diagnostic::info(invalid())
+                        .at(at_index(index))
+                        .phase(Phase::Validate),
+                );
             }
             // An entry that is not normalised, or one outside `textures/`: one finding for both,
             // the crate's own.
             if unnormalised(entry) || !entry.starts_with(TEXTURES) {
-                out.push(lint(invalid(), Severity::Info, at_index(index)));
+                out.push(
+                    Diagnostic::info(invalid())
+                        .at(at_index(index))
+                        .phase(Phase::Validate),
+                );
             }
         }
         let mut seen = HashSet::new();
@@ -311,7 +317,11 @@ impl TextureList {
             // At the first of the equal entries.
             if seen.insert(entry.as_str()) && counts.get(entry.as_str()).is_some_and(|n| *n > 1) {
                 let code = DiagnosticCode::DuplicateIdentifier { text: None };
-                out.push(lint(code, Severity::Info, at_index(index)));
+                out.push(
+                    Diagnostic::info(code)
+                        .at(at_index(index))
+                        .phase(Phase::Validate),
+                );
             }
         }
     }
@@ -471,7 +481,11 @@ impl PackLint<'_> {
             if listed.insert(entry.as_str()) && !self.has(entry) {
                 // An information: vanilla validates nothing, and another pack may have it.
                 let code = DiagnosticCode::TextureNotFound { text: None };
-                out.push(lint(code, Severity::Info, at_index(index)));
+                out.push(
+                    Diagnostic::info(code)
+                        .at(at_index(index))
+                        .phase(Phase::Validate),
+                );
             }
         }
     }
@@ -485,7 +499,7 @@ impl PackLint<'_> {
             .into_iter()
             .any(|claim| !listed.contains(claim.as_str()));
         if omitted {
-            out.push(lint(invalid(), Severity::Info, JsonPath::new()));
+            out.push(Diagnostic::info(invalid()).phase(Phase::Validate));
         }
     }
 

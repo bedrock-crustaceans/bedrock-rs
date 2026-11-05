@@ -10,7 +10,7 @@ use uuid::Uuid;
 
 use super::piece::{EmoteAnimation, PersonaPiece, PieceAnimation, PieceGeometry};
 use super::read::{read_meta, read_root, read_store_info, written_in};
-use super::text::{self, finding, unresolved, vanilla};
+use super::text::{self, unresolved, vanilla};
 use super::{BUILTIN_PACK, PieceMetadata, PieceStoreInfo, PieceType, TESTING_PACK};
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Severity,
@@ -135,13 +135,7 @@ impl PersonaPieces {
 
 /// The origin of a file of a pack that is on no stack.
 fn origin_of(pack: &PackRef, path: &PackPath) -> Origin {
-    Origin::new(
-        pack.clone(),
-        PackSide::Resource,
-        path.clone(),
-        None,
-        Vec::new(),
-    )
+    Origin::file(pack.clone(), PackSide::Resource, path.clone())
 }
 
 /// `findings` as the diagnostics of the file at `origin`.
@@ -206,27 +200,19 @@ fn parse_file<T>(
 
 /// A meta file that is not JSON, or whose root is no object.
 fn meta_not_parsed(path: &PackPath, message: String) -> Diagnostic {
-    finding(
-        DiagnosticCode::MalformedInput {
-            message,
-            text: vanilla(text::META_NOT_PARSED, [path.as_str()]),
-        },
-        Severity::Error,
-        JsonPath::new(),
-    )
+    Diagnostic::error(DiagnosticCode::MalformedInput {
+        message,
+        text: vanilla(text::META_NOT_PARSED, [path.as_str()]),
+    })
 }
 
 /// A store-info file that is not JSON, or whose root is no object. The game ignores the
 /// file in silence.
 fn store_info_not_parsed(_: &PackPath, message: String) -> Diagnostic {
-    finding(
-        DiagnosticCode::MalformedInput {
-            message,
-            text: None,
-        },
-        Severity::Error,
-        JsonPath::new(),
-    )
+    Diagnostic::error(DiagnosticCode::MalformedInput {
+        message,
+        text: None,
+    })
 }
 
 impl Content for PieceMetadata {
@@ -443,7 +429,7 @@ fn shared_identities_and_unused_texts(
 
 /// A finding about the file (or folder) `path`.
 fn at_file(code: DiagnosticCode, severity: Severity, path: &PackPath) -> Diagnostic {
-    let mut found = finding(code, severity, JsonPath::new());
+    let mut found = Diagnostic::error(code).severity(severity);
     found.location.path = Some(path.clone());
     found
 }
@@ -561,14 +547,10 @@ impl<S: PieceSource> Load<'_, S> {
             Ok(bytes) => bytes,
             Err(kind) => {
                 // A meta file that cannot be read: the client skips the piece.
-                let found = finding(
-                    DiagnosticCode::ReadError {
-                        kind,
-                        text: vanilla(text::META_NOT_FOUND, [meta_path.as_str()]),
-                    },
-                    Severity::Error,
-                    JsonPath::new(),
-                );
+                let found = Diagnostic::error(DiagnosticCode::ReadError {
+                    kind,
+                    text: vanilla(text::META_NOT_FOUND, [meta_path.as_str()]),
+                });
                 return Err(Rejected::new(origin.clone(), located(vec![found], &origin)));
             }
         };
@@ -578,11 +560,8 @@ impl<S: PieceSource> Load<'_, S> {
             let Some(id) = meta.value().piece_uuid() else {
                 // The client drops a built-in piece without an id of its own.
                 let mut diagnostics = meta.diagnostics().clone();
-                let found = finding(
-                    DiagnosticCode::InvalidValue { text: None },
-                    Severity::Error,
-                    member("piece_id"),
-                );
+                let found = Diagnostic::error(DiagnosticCode::InvalidValue { text: None })
+                    .at(member("piece_id"));
                 diagnostics.extend(located(vec![found], &origin));
                 return Err(Rejected::new(origin, diagnostics));
             };
@@ -630,11 +609,7 @@ impl<S: PieceSource> Load<'_, S> {
         // The name the client shows needs a translation, or the piece's own offer title.
         let key = piece.name_key();
         if piece.offer_title.is_none() && !self.is_named(&key) {
-            let mut found = finding(
-                DiagnosticCode::UnresolvedLangKey,
-                Severity::Info,
-                JsonPath::new(),
-            );
+            let mut found = Diagnostic::info(DiagnosticCode::UnresolvedLangKey);
             found.detail = Some(Box::new(DiagnosticDetail::Reference {
                 kind: "translation",
                 id: key,
@@ -971,14 +946,11 @@ pub(super) fn kept_animations(
             _ if missing.is_some() => {
                 // The game's error-level line for a missing animation file; the piece is kept.
                 findings.push(
-                    finding(
-                        DiagnosticCode::ReadError {
-                            kind: missing.unwrap_or(std::io::ErrorKind::NotFound),
-                            text: vanilla(text::ANIMATION_FILE_MISSING, [id, &joined]),
-                        },
-                        Severity::Error,
-                        entry("animation_sources", index, "animationFile"),
-                    )
+                    Diagnostic::error(DiagnosticCode::ReadError {
+                        kind: missing.unwrap_or(std::io::ErrorKind::NotFound),
+                        text: vanilla(text::ANIMATION_FILE_MISSING, [id, &joined]),
+                    })
+                    .at(entry("animation_sources", index, "animationFile"))
                     .into_kept(),
                 );
             }
@@ -1007,7 +979,7 @@ pub(super) fn kept_animations(
         findings.extend(lost.into_iter().map(|at| {
             // The game's rename has no text for a bone it replaces, so the crate reports an
             // information.
-            let mut found = finding(DiagnosticCode::DuplicateBone, Severity::Info, at);
+            let mut found = Diagnostic::info(DiagnosticCode::DuplicateBone).at(at);
             found.location.path = Some(first.file.clone());
             found
         }));
@@ -1020,13 +992,10 @@ pub(super) fn kept_animations(
         // The game logs the invalid-definition line at the content log's error level and
         // stops reading the emote; the piece is kept: a kept error.
         findings.push(
-            finding(
-                DiagnosticCode::MissingRequiredField {
-                    text: vanilla(text::EMOTE_INVALID, [id]),
-                },
-                Severity::Error,
-                member("animation_sources"),
-            )
+            Diagnostic::error(DiagnosticCode::MissingRequiredField {
+                text: vanilla(text::EMOTE_INVALID, [id]),
+            })
+            .at(member("animation_sources"))
             .into_kept(),
         );
     }

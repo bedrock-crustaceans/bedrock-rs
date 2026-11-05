@@ -10,9 +10,7 @@ use facet_value::{VArray, VObject};
 use indexmap::IndexMap;
 
 use bedrock_addon_core::__private::Sealed;
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase};
 use bedrock_addon_core::document::{
     Content, Document, JsonContent, Merge, Merged, Origin, Placed, RawLayer, Rejected, VersionInfo,
 };
@@ -186,13 +184,7 @@ impl Content for LegacyClientBiomes {
     fn parse(path: &PackPath, bytes: &[u8], _: &LoadContext) -> Result<Document<Self>, Rejected> {
         // A number no double holds is read as the largest finite one, with a warning.
         bedrock_addon_core::document::FiniteText::load(bytes, |bytes| {
-            let origin = Origin::new(
-                PackRef::app_data(),
-                PackSide::Resource,
-                path.clone(),
-                None,
-                Vec::new(),
-            );
+            let origin = Origin::file(PackRef::app_data(), PackSide::Resource, path.clone());
             let layer = match read_copy(origin.clone(), bytes) {
                 BiomesCopy::Layer(layer, _) => layer,
                 BiomesCopy::Failed(diagnostics) | BiomesCopy::Skipped(diagnostics) => {
@@ -248,21 +240,6 @@ pub enum BiomesCopy {
     Failed(Diagnostics),
 }
 
-/// A finding at `at` of the file `origin`.
-fn finding(code: DiagnosticCode, severity: Severity, origin: &Origin, at: JsonPath) -> Diagnostic {
-    Diagnostic::new(
-        code,
-        severity,
-        Phase::Parse,
-        Location::new(
-            Some(origin.pack.clone()),
-            Some(origin.path.clone()),
-            at,
-            None,
-        ),
-    )
-}
-
 /// One finding as a list.
 fn only(diagnostic: Diagnostic) -> Diagnostics {
     let mut diagnostics = Diagnostics::default();
@@ -275,15 +252,13 @@ fn only(diagnostic: Diagnostic) -> Diagnostics {
 // silently; the crate says so with an information.
 fn read_copy(origin: Origin, bytes: &[u8]) -> BiomesCopy {
     let malformed = |message: String| {
-        BiomesCopy::Failed(only(finding(
-            DiagnosticCode::MalformedInput {
+        BiomesCopy::Failed(only(
+            Diagnostic::info(DiagnosticCode::MalformedInput {
                 message,
                 text: None,
-            },
-            Severity::Info,
-            &origin,
-            JsonPath::new(),
-        )))
+            })
+            .in_file(&origin),
+        ))
     };
     let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
     let bytes = strip_bom(bytes);
@@ -297,12 +272,9 @@ fn read_copy(origin: Origin, bytes: &[u8]) -> BiomesCopy {
         Ok(json) if json.is_object() => {
             BiomesCopy::Layer(RawLayer::new(origin, json), Diagnostics::default())
         }
-        Ok(_) => BiomesCopy::Failed(only(finding(
-            DiagnosticCode::InvalidType { text: None },
-            Severity::Info,
-            &origin,
-            JsonPath::new(),
-        ))),
+        Ok(_) => BiomesCopy::Failed(only(
+            Diagnostic::info(DiagnosticCode::InvalidType { text: None }).in_file(&origin),
+        )),
         Err(error) => malformed(error.kind.to_string()),
     }
 }
@@ -310,20 +282,9 @@ fn read_copy(origin: Origin, bytes: &[u8]) -> BiomesCopy {
 /// One pack's file. A base-game pack's file takes no part when the world's base-game version
 /// includes 1.21.40 (`*` and an absent version do; a never-compatible one does not).
 fn parse_walk_file(file: &WalkFile, cx: &LoadContext) -> BiomesCopy {
-    let origin = Origin::new(
-        file.pack.clone(),
-        file.side,
-        file.path.clone(),
-        None,
-        Vec::new(),
-    );
+    let origin = Origin::file(file.pack.clone(), file.side, file.path.clone());
     if cx.is_base_game_pack && cx.world_base_game_version.includes(&STOP_LOADING_VANILLA) {
-        let skipped = finding(
-            DiagnosticCode::VanillaBiomesClientSkipped,
-            Severity::Info,
-            &origin,
-            JsonPath::new(),
-        );
+        let skipped = Diagnostic::info(DiagnosticCode::VanillaBiomesClientSkipped).in_file(&origin);
         return BiomesCopy::Skipped(only(skipped));
     }
     // The copy is read with the numbers no double holds clamped, so neither its layer
@@ -367,12 +328,12 @@ impl Notes<'_> {
     /// information.
     fn warning(&mut self, code: DiagnosticCode, at: JsonPath) {
         self.diagnostics
-            .push(finding(code, Severity::Info, self.origin, at));
+            .push(Diagnostic::info(code).in_file(self.origin).at(at));
     }
 
     fn info(&mut self, code: DiagnosticCode, at: JsonPath) {
         self.diagnostics
-            .push(finding(code, Severity::Info, self.origin, at));
+            .push(Diagnostic::info(code).in_file(self.origin).at(at));
     }
 }
 
@@ -585,12 +546,10 @@ pub(crate) fn merge(copies: Vec<BiomesCopy>) -> Merged<LegacyClientBiomes, RawLa
             if cleared {
                 // every entry of the lower files is gone.
                 for lower in &layers {
-                    diagnostics.push(finding(
-                        DiagnosticCode::ShadowedDefinition { text: None },
-                        Severity::Info,
-                        &lower.origin,
-                        JsonPath::new(),
-                    ));
+                    diagnostics.push(
+                        Diagnostic::info(DiagnosticCode::ShadowedDefinition { text: None })
+                            .in_file(&lower.origin),
+                    );
                 }
                 origins.clear();
             }
@@ -739,12 +698,8 @@ fn read(
             }
         }
         // without `biomes` nothing is applied.
-        None if any => diagnostics.push(Diagnostic::new(
-            DiagnosticCode::NoEffect { text: None },
-            Severity::Info,
-            Phase::Validate,
-            Location::new(None, None, JsonPath::new(), None),
-        )),
+        None if any => diagnostics
+            .push(Diagnostic::info(DiagnosticCode::NoEffect { text: None }).phase(Phase::Validate)),
         None => {}
     }
     value.merged = merged.into();

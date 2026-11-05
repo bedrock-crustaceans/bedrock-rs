@@ -10,9 +10,7 @@ use super::texts::{
     formatted,
 };
 use super::{CullingRules, Facing, Rule};
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase};
 
 /// Why vanilla's `Util::validateIdentifier` refuses `identifier`: its messages, in order (none
 /// for an empty identifier, which fails without a reason). `Ok` when it passes.
@@ -107,33 +105,27 @@ pub(super) fn rules(rules: &[Rule]) -> Vec<RuleProblem> {
 /// Runs both checks on `document`, reporting below `at` (the payload). An identifier that
 /// fails skips the rule checks.
 pub(super) fn check(document: &CullingRules, base_game: bool, at: &JsonPath, d: &mut Diagnostics) {
-    let error = |code: DiagnosticCode, path: JsonPath| {
-        Diagnostic::new(
-            code,
-            Severity::Error,
-            Phase::Validate,
-            Location::new(None, None, path, None),
-        )
-    };
     let id = document.description.identifier.as_str();
     if let Err(reasons) = identifier(id, base_game) {
         let mut path = at.clone();
         path.push("description");
         path.push("identifier");
         for reason in reasons {
-            d.push(error(
-                DiagnosticCode::NamespaceRule {
+            d.push(
+                Diagnostic::error(DiagnosticCode::NamespaceRule {
                     text: Some(formatted(reason, &[])),
-                },
-                path.clone(),
-            ));
+                })
+                .at(path.clone())
+                .phase(Phase::Validate),
+            );
         }
-        d.push(error(
-            DiagnosticCode::MissingIdentifier {
+        d.push(
+            Diagnostic::error(DiagnosticCode::MissingIdentifier {
                 text: Some(formatted(IDENTIFIER_FAILED, &[id])),
-            },
-            path,
-        ));
+            })
+            .at(path)
+            .phase(Phase::Validate),
+        );
         return;
     }
     for problem in rules(&document.rules) {
@@ -152,6 +144,6 @@ pub(super) fn check(document: &CullingRules, base_game: bool, at: &JsonPath, d: 
         } else {
             DiagnosticCode::InvalidValue { text }
         };
-        d.push(error(code, path));
+        d.push(Diagnostic::error(code).at(path).phase(Phase::Validate));
     }
 }

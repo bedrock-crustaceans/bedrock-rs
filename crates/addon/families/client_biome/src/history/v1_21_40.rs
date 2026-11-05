@@ -8,11 +8,11 @@ use super::{has, insert, legacy_document, note_component, v1_21_70};
 use crate::color::Color255Rgb;
 use crate::component::{
     Checked, ClientBiomeComponent, DryFoliageColor, FoliageAppearance, FoliageColor,
-    FoliageColorMap, GrassAppearance, GrassColor, GrassColorMap, Report, parse_typed,
+    FoliageColorMap, GrassAppearance, GrassColor, GrassColorMap, child, parse_typed,
     write_component,
 };
 use crate::parse::ComponentEra;
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
 use bedrock_addon_core::document::{ComponentMap, ComponentSet, Extra};
 use bedrock_addon_core::id::SoundEventName;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
@@ -91,11 +91,14 @@ pub struct AmbientSounds {
 
 impl Checked for AmbientSounds {
     /// Each sound is a name: an `{asset, chance}` addition is the 1.21.120 struct's.
-    fn check(json: &Value, report: &mut Report<'_>) {
+    fn check(json: &Value, d: &mut Diagnostics) {
         for member in ["addition", "loop", "mood"] {
             let sound = json.as_object().and_then(|object| object.get(member));
             if sound.is_some_and(|sound| !sound.is_string()) {
-                report.error(DiagnosticCode::InvalidType { text: None }, &[member]);
+                d.push(
+                    Diagnostic::error(DiagnosticCode::InvalidType { text: None })
+                        .at(child(&JsonPath::new(), &[member])),
+                );
             }
         }
     }

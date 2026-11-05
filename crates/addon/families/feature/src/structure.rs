@@ -16,6 +16,7 @@ use bedrock_addon_core::json::{
 };
 use bedrock_addon_core::shared::BlockDescriptor;
 use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::versioning::ValidateCx;
 use bedrock_addon_core::versioning::{ParseCx, VersionStruct, Versioned, write_payload};
 
 /// The engine that adds `rotate_around_center` and `embed_in_surface`.
@@ -258,7 +259,7 @@ walk!(fields SnapToSurfaceFeature { "allowed_surface_blocks" => allowed_surface_
 });
 
 impl Rules for StructureTemplateFeature {
-    fn rules(&mut self, check: &mut Check<'_>) {
+    fn rules(&mut self, check: &mut ValidateCx<'_>) {
         check.check_int("adjustment_radius", self.adjustment_radius, 0, 16);
         check.since_engine(
             "rotate_around_center",
@@ -267,7 +268,7 @@ impl Rules for StructureTemplateFeature {
         );
         check.since_engine("ground_level", self.ground_level.is_some(), ENGINE_1_26_30);
         check.int_min("ground_level", self.ground_level, 0);
-        let engine = check.cx.engine_version;
+        let engine = check.load.engine_version;
         check.nested("constraints", |check| {
             let constraints = &self.constraints;
             check.since_engine("leveled", constraints.leveled.is_some(), ENGINE_1_26_30);
@@ -292,7 +293,7 @@ impl Rules for StructureTemplateFeature {
                         && intersection.block_whitelist.is_none()
                     {
                         let at = check.path("block_allowlist");
-                        check.d.push(super::parse::required_child(at));
+                        check.diagnostics.push(super::parse::required_child(at));
                     }
                     check.descriptors("block_allowlist", intersection.block_allowlist.as_deref());
                     check.descriptors("block_whitelist", intersection.block_whitelist.as_deref());
@@ -313,7 +314,7 @@ const RAGGED_ORDER: &str = "Ragged Factor min must be leess than max";
 impl Rules for BeardsAndShaversFeature {
     const INTERNAL: bool = true;
 
-    fn rules(&mut self, check: &mut Check<'_>) {
+    fn rules(&mut self, check: &mut ValidateCx<'_>) {
         check.check_len(
             "bounding_box_min",
             Some(self.bounding_box_min.len()),
@@ -357,7 +358,7 @@ fn setter(text: &'static str) -> DiagnosticCode {
 }
 
 impl Rules for SnapToSurfaceFeature {
-    fn rules(&mut self, check: &mut Check<'_>) {
+    fn rules(&mut self, check: &mut ValidateCx<'_>) {
         check.since_engine(
             "embed_in_surface",
             self.embed_in_surface.is_some(),

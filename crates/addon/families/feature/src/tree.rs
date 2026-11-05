@@ -10,11 +10,12 @@ use super::load::{Rules, V1_13_0, strict_struct};
 use super::validate::Check;
 use super::values::{BlockList, Chance, ChanceList, JsonInt, WeightedBlock};
 use super::walk::walk;
-use bedrock_addon_core::diagnostic::{DiagnosticCode, VanillaText};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, VanillaText};
 use bedrock_addon_core::id::FeatureId;
 use bedrock_addon_core::json::{JsonType, StrictBool, StrictError, StrictFloat, Value};
 use bedrock_addon_core::shared::{BlockDescriptor, IntRange};
 use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::versioning::ValidateCx;
 
 /// The engine that adds `decoration_blocks_sequence`.
 const ENGINE_1_26_10: FormatVersion = FormatVersion::new(1, 26, 10);
@@ -917,7 +918,7 @@ const CANOPY_OFFSET: &str = "'min' must be <= 'max'";
 
 /// A setter's message as an `InvalidValue` kept error: the client logs it at level 3 and keeps
 /// the value (for the trunk, the cherry start offset and each canopy offset).
-fn setter(check: &mut Check<'_>, key: &str, text: &'static str) {
+fn setter(check: &mut ValidateCx<'_>, key: &str, text: &'static str) {
     check.kept(
         key,
         DiagnosticCode::InvalidValue {
@@ -926,7 +927,7 @@ fn setter(check: &mut Check<'_>, key: &str, text: &'static str) {
     );
 }
 
-fn decoration(check: &mut Check<'_>, decoration: &Decoration) {
+fn decoration(check: &mut ValidateCx<'_>, decoration: &Decoration) {
     check.chance("decoration_chance", Some(&decoration.decoration_chance));
     check.since_engine(
         "decoration_blocks_sequence",
@@ -942,7 +943,7 @@ fn decoration(check: &mut Check<'_>, decoration: &Decoration) {
     check.descriptor("decoration_block", decoration.decoration_block.as_ref());
 }
 
-fn height_modifier(check: &mut Check<'_>, height: &IntRange, modifier: Option<&IntRange>) {
+fn height_modifier(check: &mut ValidateCx<'_>, height: &IntRange, modifier: Option<&IntRange>) {
     check.range("height_modifier", modifier, i32::MIN, i32::MAX);
     if let Some(modifier) = modifier
         && modifier.min < 0
@@ -952,30 +953,28 @@ fn height_modifier(check: &mut Check<'_>, height: &IntRange, modifier: Option<&I
     }
 }
 
-fn intervals(check: &mut Check<'_>, values: Option<&Vec<JsonInt>>) {
+fn intervals(check: &mut ValidateCx<'_>, values: Option<&Vec<JsonInt>>) {
     if let Some(values) = values {
         check.each("intervals", values, |check, value| {
             // The element's own path: `check.at` ends at its index.
             if value.0 < 1 {
                 let at = check.at.clone();
-                check.d.push(super::parse::finding(
-                    DiagnosticCode::InvalidValue {
+                check.diagnostics.push(
+                    Diagnostic::error(DiagnosticCode::InvalidValue {
                         text: Some(super::parse::formatted(
                             super::parse::INT_OUT_OF_RANGE,
                             &[&value.0, &1, &i32::MAX],
                         )),
-                    },
-                    bedrock_addon_core::diagnostic::Severity::Error,
-                    bedrock_addon_core::diagnostic::Phase::Validate,
-                    at,
-                    None,
-                ));
+                    })
+                    .at(at)
+                    .phase(bedrock_addon_core::diagnostic::Phase::Validate),
+                );
             }
         });
     }
 }
 
-fn simple_trunk(check: &mut Check<'_>, trunk: &SimpleTrunk) {
+fn simple_trunk(check: &mut ValidateCx<'_>, trunk: &SimpleTrunk) {
     check.range_min("trunk_height", Some(&trunk.trunk_height), 1);
     height_modifier(check, &trunk.trunk_height, trunk.height_modifier.as_ref());
     if let Some(Submerged::MaxDepth(depth)) = trunk.can_be_submerged {
@@ -991,7 +990,7 @@ fn simple_trunk(check: &mut Check<'_>, trunk: &SimpleTrunk) {
     );
 }
 
-fn fallen_trunk(check: &mut Check<'_>, trunk: &FallenTrunk) {
+fn fallen_trunk(check: &mut ValidateCx<'_>, trunk: &FallenTrunk) {
     check.range_min("log_length", Some(&trunk.log_length), 1);
     check.range_min("stump_height", trunk.stump_height.as_ref(), 1);
     height_modifier(check, &trunk.log_length, trunk.height_modifier.as_ref());
@@ -1003,7 +1002,7 @@ fn fallen_trunk(check: &mut Check<'_>, trunk: &FallenTrunk) {
     );
 }
 
-fn fancy_trunk(check: &mut Check<'_>, trunk: &FancyTrunk) {
+fn fancy_trunk(check: &mut ValidateCx<'_>, trunk: &FancyTrunk) {
     check.opt(
         "trunk_height",
         trunk.trunk_height.as_ref(),
@@ -1031,7 +1030,7 @@ fn fancy_trunk(check: &mut Check<'_>, trunk: &FancyTrunk) {
     );
 }
 
-fn mega_trunk(check: &mut Check<'_>, trunk: &MegaTrunk) {
+fn mega_trunk(check: &mut ValidateCx<'_>, trunk: &MegaTrunk) {
     check.nested("trunk_height", |check| {
         check.int_min("base", Some(trunk.trunk_height.base), 1);
         intervals(check, trunk.trunk_height.intervals.as_ref());
@@ -1058,7 +1057,7 @@ fn mega_trunk(check: &mut Check<'_>, trunk: &MegaTrunk) {
     });
 }
 
-fn acacia_trunk(check: &mut Check<'_>, trunk: &AcaciaTrunk) {
+fn acacia_trunk(check: &mut ValidateCx<'_>, trunk: &AcaciaTrunk) {
     check.nested("trunk_height", |check| {
         let height = &trunk.trunk_height;
         check.int_min("base", Some(height.base), 1);
@@ -1089,7 +1088,7 @@ fn acacia_trunk(check: &mut Check<'_>, trunk: &AcaciaTrunk) {
     );
 }
 
-fn cherry_trunk(check: &mut Check<'_>, trunk: &CherryTrunk) {
+fn cherry_trunk(check: &mut ValidateCx<'_>, trunk: &CherryTrunk) {
     check.descriptor("trunk_block", Some(&trunk.trunk_block));
     check.nested("trunk_height", |check| {
         check.int_min("base", Some(trunk.trunk_height.base), 2);
@@ -1134,7 +1133,7 @@ fn cherry_trunk(check: &mut Check<'_>, trunk: &CherryTrunk) {
     });
 }
 
-fn mangrove_trunk(check: &mut Check<'_>, trunk: &MangroveTrunk) {
+fn mangrove_trunk(check: &mut ValidateCx<'_>, trunk: &MangroveTrunk) {
     check.opt(
         "trunk_height",
         trunk.trunk_height.as_ref(),
@@ -1157,7 +1156,7 @@ fn mangrove_trunk(check: &mut Check<'_>, trunk: &MangroveTrunk) {
     );
 }
 
-fn poplar_trunk(check: &mut Check<'_>, trunk: &PoplarTrunk) {
+fn poplar_trunk(check: &mut ValidateCx<'_>, trunk: &PoplarTrunk) {
     check.range_min("trunk_height", Some(&trunk.trunk_height), 1);
     for (key, range) in [
         (
@@ -1179,7 +1178,7 @@ fn poplar_trunk(check: &mut Check<'_>, trunk: &PoplarTrunk) {
     );
 }
 
-fn branch_canopy(check: &mut Check<'_>, canopy: &BranchCanopy) {
+fn branch_canopy(check: &mut ValidateCx<'_>, canopy: &BranchCanopy) {
     check.opt("canopy", canopy.canopy.as_ref(), simple_canopy);
     check.opt(
         "acacia_canopy",
@@ -1216,7 +1215,7 @@ fn branch_canopy(check: &mut Check<'_>, canopy: &BranchCanopy) {
     );
 }
 
-fn simple_canopy(check: &mut Check<'_>, canopy: &SimpleCanopy) {
+fn simple_canopy(check: &mut ValidateCx<'_>, canopy: &SimpleCanopy) {
     if canopy.canopy_offset.min.0 > canopy.canopy_offset.max.0 {
         setter(check, "canopy_offset", CANOPY_OFFSET);
     }
@@ -1238,12 +1237,12 @@ fn simple_canopy(check: &mut Check<'_>, canopy: &SimpleCanopy) {
     );
 }
 
-fn acacia_canopy(check: &mut Check<'_>, canopy: &AcaciaCanopy) {
+fn acacia_canopy(check: &mut ValidateCx<'_>, canopy: &AcaciaCanopy) {
     check.int_min("canopy_size", Some(canopy.canopy_size), 1);
     check.descriptor("leaf_block", Some(&canopy.leaf_block));
 }
 
-fn cherry_canopy(check: &mut Check<'_>, canopy: &CherryCanopy) {
+fn cherry_canopy(check: &mut ValidateCx<'_>, canopy: &CherryCanopy) {
     check.descriptor("leaf_block", Some(&canopy.leaf_block));
     check.range_min("height", Some(&canopy.height), 4);
     check.range_min("radius", Some(&canopy.radius), 3);
@@ -1264,19 +1263,19 @@ fn cherry_canopy(check: &mut Check<'_>, canopy: &CherryCanopy) {
     }
 }
 
-fn fancy_canopy(check: &mut Check<'_>, canopy: &FancyCanopy) {
+fn fancy_canopy(check: &mut ValidateCx<'_>, canopy: &FancyCanopy) {
     check.int_min("height", Some(canopy.height), 1);
     check.int_min("radius", Some(canopy.radius), 0);
     check.descriptor("leaf_block", Some(&canopy.leaf_block));
 }
 
-fn weighted_blocks(check: &mut Check<'_>, key: &str, blocks: &[WeightedBlock]) {
+fn weighted_blocks(check: &mut ValidateCx<'_>, key: &str, blocks: &[WeightedBlock]) {
     check.each(key, blocks, |check, entry| {
         check.descriptor("0", Some(&entry.block));
     });
 }
 
-fn mangrove_canopy(check: &mut Check<'_>, canopy: &MangroveCanopy) {
+fn mangrove_canopy(check: &mut ValidateCx<'_>, canopy: &MangroveCanopy) {
     check.range_min("canopy_height", Some(&canopy.canopy_height), 1);
     check.range_min("canopy_radius", Some(&canopy.canopy_radius), 1);
     check.int_min(
@@ -1297,14 +1296,14 @@ fn mangrove_canopy(check: &mut Check<'_>, canopy: &MangroveCanopy) {
     );
 }
 
-fn mega_canopy(check: &mut Check<'_>, canopy: &MegaCanopy) {
+fn mega_canopy(check: &mut ValidateCx<'_>, canopy: &MegaCanopy) {
     check.range_min("canopy_height", Some(&canopy.canopy_height), 1);
     check.int_min("base_radius", Some(canopy.base_radius), 0);
     check.int_min("core_width", canopy.core_width, 1);
     check.descriptor("leaf_block", Some(&canopy.leaf_block));
 }
 
-fn mega_pine_canopy(check: &mut Check<'_>, canopy: &MegaPineCanopy) {
+fn mega_pine_canopy(check: &mut ValidateCx<'_>, canopy: &MegaPineCanopy) {
     check.range_min("canopy_height", Some(&canopy.canopy_height), 1);
     check.int_min("base_radius", Some(canopy.base_radius), 0);
     check.check_float(
@@ -1317,13 +1316,13 @@ fn mega_pine_canopy(check: &mut Check<'_>, canopy: &MegaPineCanopy) {
     check.descriptor("leaf_block", Some(&canopy.leaf_block));
 }
 
-fn pine_canopy(check: &mut Check<'_>, canopy: &PineCanopy) {
+fn pine_canopy(check: &mut ValidateCx<'_>, canopy: &PineCanopy) {
     check.range_min("canopy_height", Some(&canopy.canopy_height), 1);
     check.int_min("base_radius", Some(canopy.base_radius), 1);
     check.descriptor("leaf_block", Some(&canopy.leaf_block));
 }
 
-fn roofed_canopy(check: &mut Check<'_>, canopy: &RoofedCanopy) {
+fn roofed_canopy(check: &mut ValidateCx<'_>, canopy: &RoofedCanopy) {
     check.int_min("canopy_height", Some(canopy.canopy_height), 3);
     check.int_min("core_width", Some(canopy.core_width), 1);
     check.int_min("outer_radius", Some(canopy.outer_radius), 0);
@@ -1331,14 +1330,14 @@ fn roofed_canopy(check: &mut Check<'_>, canopy: &RoofedCanopy) {
     check.descriptor("leaf_block", Some(&canopy.leaf_block));
 }
 
-fn spruce_canopy(check: &mut Check<'_>, canopy: &SpruceCanopy) {
+fn spruce_canopy(check: &mut ValidateCx<'_>, canopy: &SpruceCanopy) {
     check.range_min("lower_offset", Some(&canopy.lower_offset), 1);
     check.range_min("upper_offset", Some(&canopy.upper_offset), 0);
     check.range_min("max_radius", Some(&canopy.max_radius), 1);
     check.descriptor("leaf_block", Some(&canopy.leaf_block));
 }
 
-fn random_spread_canopy(check: &mut Check<'_>, canopy: &RandomSpreadCanopy) {
+fn random_spread_canopy(check: &mut ValidateCx<'_>, canopy: &RandomSpreadCanopy) {
     check.range_min("canopy_height", Some(&canopy.canopy_height), 1);
     check.range_min("canopy_radius", Some(&canopy.canopy_radius), 1);
     check.int_min(
@@ -1349,7 +1348,7 @@ fn random_spread_canopy(check: &mut Check<'_>, canopy: &RandomSpreadCanopy) {
     weighted_blocks(check, "leaf_blocks", &canopy.leaf_blocks);
 }
 
-fn poplar_canopy(check: &mut Check<'_>, canopy: &PoplarCanopy) {
+fn poplar_canopy(check: &mut ValidateCx<'_>, canopy: &PoplarCanopy) {
     check.descriptor("leaf_block", Some(&canopy.leaf_block));
     check.descriptor("branch_block", Some(&canopy.branch_block));
     // The array's minimum length is one.
@@ -1359,7 +1358,7 @@ fn poplar_canopy(check: &mut Check<'_>, canopy: &PoplarCanopy) {
     check.int_min("trunk_width", canopy.trunk_width, 1);
 }
 
-fn mangrove_roots(check: &mut Check<'_>, roots: &MangroveRoots) {
+fn mangrove_roots(check: &mut ValidateCx<'_>, roots: &MangroveRoots) {
     check.int_min("max_root_width", Some(roots.max_root_width), 1);
     check.int_min("max_root_length", Some(roots.max_root_length), 1);
     check.descriptor("root_block", Some(&roots.root_block));
@@ -1382,7 +1381,7 @@ fn mangrove_roots(check: &mut Check<'_>, roots: &MangroveRoots) {
 }
 
 impl Rules for TreeFeature {
-    fn rules(&mut self, check: &mut Check<'_>) {
+    fn rules(&mut self, check: &mut ValidateCx<'_>) {
         check.list("base_block", self.base_block.as_ref());
         check.opt(
             "base_cluster",

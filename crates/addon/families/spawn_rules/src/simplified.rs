@@ -5,8 +5,7 @@ use facet::Facet;
 
 use super::texts;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
-    code_for_deserialize_error_kind,
+    DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
 };
 use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::id::{EntityId, SpawnRulesId};
@@ -191,18 +190,7 @@ impl VersionStruct for SimplifiedSpawnRules {
                         unknown(&path, d);
                     }
                 }
-                let blank = payload.text.trim().is_empty();
-                let code = code_for_deserialize_error_kind(
-                    &error.error.kind,
-                    !error.path.is_empty(),
-                    blank,
-                );
-                d.push(Diagnostic::new(
-                    code,
-                    Severity::Error,
-                    Phase::Parse,
-                    Location::new(None, None, join(&cx.at, &error.path), Some(error.span)),
-                ));
+                d.push(error.into_diagnostic(&cx.at, |code, _| code));
                 None
             }
         }

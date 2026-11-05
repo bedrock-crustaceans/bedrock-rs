@@ -39,13 +39,7 @@ impl Content for AnimationControllerFile {
     const SIDES: &'static [PackSide] = &[PackSide::Behavior, PackSide::Resource];
 
     fn parse(path: &PackPath, bytes: &[u8], cx: &LoadContext) -> Result<Document<Self>, Rejected> {
-        let origin = Origin::new(
-            PackRef::app_data(),
-            side_of(cx),
-            path.clone(),
-            None,
-            Vec::new(),
-        );
+        let origin = Origin::file(PackRef::app_data(), side_of(cx), path.clone());
         whole(parse::parse_file(bytes, cx), origin, controller_parsed_as)
     }
 
@@ -88,13 +82,7 @@ impl AnimationControllerFile {
         bytes: &[u8],
         cx: &LoadContext,
     ) -> Result<Document<Any>, Rejected> {
-        let origin = Origin::new(
-            PackRef::app_data(),
-            side_of(cx),
-            path.clone(),
-            None,
-            Vec::new(),
-        );
+        let origin = Origin::file(PackRef::app_data(), side_of(cx), path.clone());
         let (any, written, diagnostics) = parse::parse_as_written(bytes, cx);
         let diagnostics = locate(diagnostics, &origin);
         match (any, written) {

@@ -2,10 +2,10 @@
 
 use indexmap::IndexMap;
 
-use super::legacy::{Legacy, component_path, fixed, string, upgrade_finding};
+use super::legacy::{Legacy, component_path, fixed, string};
 use super::ops::{dropped_field, edit_object};
 use crate::parse::child;
-use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath, Severity};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, Phase};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
@@ -42,13 +42,13 @@ impl Upgrade for Block {
         // The game logs this at the content log's error level and goes on with the
         // full-block geometry: a kept error.
         for section in both {
-            cx.diagnostics.push_kept_error(upgrade_finding(
-                DiagnosticCode::InvalidValue {
+            cx.diagnostics.push_kept_error(
+                Diagnostic::error(DiagnosticCode::InvalidValue {
                     text: fixed("A block cannot have both a unit cube and a geometry component."),
-                },
-                Severity::Error,
-                &component_path(section, "minecraft:geometry"),
-            ));
+                })
+                .at(component_path(section, "minecraft:geometry"))
+                .phase(Phase::Upgrade),
+            );
         }
         // Op 2.
         if cx.original_version < PROPERTY_RENAME {

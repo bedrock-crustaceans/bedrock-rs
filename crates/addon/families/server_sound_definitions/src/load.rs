@@ -5,7 +5,7 @@ use indexmap::IndexMap;
 
 use super::{MetadataAny, MetadataFamily, SoundMetadata, SoundMetadataFile};
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, VanillaText,
 };
 use bedrock_addon_core::document::{
     CombineRule, Content, Contribution, Definition, Document, JsonContent, NoBeta, Origin, Placed,
@@ -73,7 +73,7 @@ fn parse_file(
     bytes: &[u8],
     cx: &LoadContext,
 ) -> Result<Document<SoundMetadataFile>, Rejected> {
-    let origin = Origin::new(pack, side, path.clone(), None, Vec::new());
+    let origin = Origin::file(pack, side, path.clone());
     // A leading byte-order mark is blanked, not cut, so every span is an offset into the file
     // as written.
     let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
@@ -83,15 +83,10 @@ fn parse_file(
         .and_then(|()| std::str::from_utf8(bytes).ok());
     let Some(text) = text else {
         let mut diagnostics = Diagnostics::default();
-        diagnostics.push(Diagnostic::new(
-            DiagnosticCode::MalformedInput {
-                message: "not UTF-8 JSON within the nesting limit".to_owned(),
-                text: None,
-            },
-            Severity::Error,
-            Phase::Parse,
-            Location::default(),
-        ));
+        diagnostics.push(Diagnostic::error(DiagnosticCode::MalformedInput {
+            message: "not UTF-8 JSON within the nesting limit".to_owned(),
+            text: None,
+        }));
         return Err(Rejected::new(origin.clone(), locate(diagnostics, &origin)));
     };
     let text = bedrock_addon_core::json::last_wins(text);
@@ -180,17 +175,15 @@ fn duplicate(file: &Origin, name: &str, index: usize) -> Diagnostic {
     let mut at = JsonPath::new();
     at.push(MetadataFamily::PAYLOAD_KEY);
     at.push_index(index);
-    Diagnostic::new(
-        DiagnosticCode::DuplicateIdentifier {
-            text: Some(VanillaText::Formatted {
-                template: DUPLICATE,
-                args: vec![name.to_owned()],
-            }),
-        },
-        Severity::Error,
-        Phase::Validate,
-        Location::new(Some(file.pack.clone()), Some(file.path.clone()), at, None),
-    )
+    Diagnostic::error(DiagnosticCode::DuplicateIdentifier {
+        text: Some(VanillaText::Formatted {
+            template: DUPLICATE,
+            args: vec![name.to_owned()],
+        }),
+    })
+    .at(at)
+    .phase(Phase::Validate)
+    .in_file(file)
 }
 
 /// Combines the files, lowest pack first: the first definition of a name is kept, compared

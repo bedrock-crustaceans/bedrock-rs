@@ -8,7 +8,7 @@ use super::{
     CatalogItem, CatalogKey, Category, CategoryName, CraftingCatalog, Group, GroupIdentifier,
 };
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, JsonPath, Location, Phase, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, DiagnosticDetail, JsonPath, Phase, VanillaText,
 };
 use bedrock_addon_core::document::{Document, Extra, MergeCx};
 use bedrock_addon_core::id::ItemId;
@@ -150,17 +150,17 @@ impl<'a> Merger<'a> {
     /// unknown name gives no item without a message (the crate reports a warning).
     fn resolves(&self, item: &CatalogItem, at: JsonPath, cx: &mut MergeCx<'_, CatalogKey>) -> bool {
         if has_bad_aux(&item.name) {
-            cx.push_diagnostic(finding(
-                DiagnosticCode::InvalidValue {
+            cx.push_diagnostic(
+                Diagnostic::error(DiagnosticCode::InvalidValue {
                     text: Some(VanillaText::Formatted {
                         template: "Invalid aux value in item ID \"{}\"",
                         args: vec![item.name.as_str().to_owned()],
                     }),
-                },
-                Severity::Error,
-                at,
-                cx,
-            ));
+                })
+                .at(at)
+                .phase(Phase::Validate)
+                .in_file(cx.origin()),
+            );
             return false;
         }
         if !self.items.is_registered(&item.name) {
@@ -173,18 +173,16 @@ impl<'a> Merger<'a> {
                 1,
                 item.name.as_str(),
             );
-            let mut unresolved = finding(
-                DiagnosticCode::UnresolvedReference { text: Some(text) },
-                Severity::Error,
-                at,
-                cx,
-            );
-            unresolved.detail = Some(Box::new(DiagnosticDetail::Reference {
+            let unresolved =
+                Diagnostic::error(DiagnosticCode::UnresolvedReference { text: Some(text) })
+                    .at(at)
+                    .phase(Phase::Validate)
+                    .in_file(cx.origin());
+            cx.push_diagnostic(unresolved.detail(DiagnosticDetail::Reference {
                 kind: "item",
                 id: item.name.as_str().to_owned(),
                 hint: None,
             }));
-            cx.push_diagnostic(unresolved);
             return false;
         }
         true
@@ -204,17 +202,12 @@ impl<'a> Merger<'a> {
         }
         let aux = item.name.aux().unwrap_or(0);
         if !self.used.insert((item.name.clone(), aux)) {
-            cx.push_diagnostic(finding(
-                DiagnosticCode::IdentifierCollision {
+            cx.push_diagnostic(Diagnostic::error(DiagnosticCode::IdentifierCollision {
                     text: Some(VanillaText::Formatted {
                         template: "You can only add an item to the crafting item catalog once. Found duplicate {}",
                         args: vec![item.name.as_str().to_owned()],
                     }),
-                },
-                Severity::Error,
-                at,
-                cx,
-            ));
+                }).at(at).phase(Phase::Validate).in_file(cx.origin()));
             return;
         }
         cx.claim(CatalogKey::Item {
@@ -223,28 +216,6 @@ impl<'a> Merger<'a> {
         });
         group.items.push(placed(item));
     }
-}
-
-/// A merge finding at `at` in the file being merged (vanilla scopes merge messages by the
-/// file's path).
-fn finding(
-    code: DiagnosticCode,
-    severity: Severity,
-    at: JsonPath,
-    cx: &MergeCx<'_, CatalogKey>,
-) -> Diagnostic {
-    let origin = cx.origin();
-    Diagnostic::new(
-        code,
-        severity,
-        Phase::Validate,
-        Location::new(
-            Some(origin.pack.clone()),
-            Some(origin.path.clone()),
-            at,
-            None,
-        ),
-    )
 }
 
 /// `item` as the merged catalogue holds it: its name, without the unknown members of its

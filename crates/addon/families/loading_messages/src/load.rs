@@ -6,13 +6,13 @@ use bedrock_addon_core::pack_identity::{PackPath, PackSide};
 use indexmap::IndexMap;
 
 use super::{LOADING_MESSAGES_PATH, LoadingMessages, MessageList};
-use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath, Severity};
+use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath};
 use bedrock_addon_core::document::{
     Content, Document, JsonContent, Merge, Merged, Origin, Placed, Rejected,
 };
 use bedrock_addon_core::json::{EncodeError, WriteStyle};
 use bedrock_addon_support::fixed_path::{
-    Authored, FileCopy, document, finding, json_text, lone, malformed, origin, reject, root_file,
+    Authored, FileCopy, document, json_text, lone, malformed, origin, reject, root_file,
 };
 use bedrock_addon_support::jsoncpp::read;
 
@@ -33,10 +33,7 @@ fn read_loading(origin: Origin, bytes: &[u8]) -> FileCopy<LoadingMessages> {
         Err(message) => {
             // No tips at all.
             let code = malformed(message.to_string(), Some(LOADING_NOT_JSON));
-            return Err(reject(
-                origin,
-                finding(code, Severity::Error, JsonPath::new()),
-            ));
+            return Err(reject(origin, Diagnostic::error(code)));
         }
     };
     let mut diagnostics = Diagnostics::default();

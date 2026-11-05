@@ -3,7 +3,7 @@
 
 use bedrock_addon_core::__private::Sealed;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, Severity, VanillaText,
 };
 use bedrock_addon_core::document::{
     CombineRule, Content, Contribution, Definition, Document, JsonContent, NoBeta, Notice, Origin,
@@ -119,16 +119,6 @@ impl Placed for AtomicClientEntity {
     }
 }
 
-/// A file-level error.
-fn error(code: DiagnosticCode, at: JsonPath) -> Diagnostic {
-    Diagnostic::new(
-        code,
-        Severity::Error,
-        Phase::Parse,
-        Location::new(None, None, at, None),
-    )
-}
-
 /// Gives every finding the document's pack and file, and the envelope's findings the game's
 /// texts: a missing payload its text, and a malformed version the "no valid version" line that
 /// follows it.
@@ -146,12 +136,9 @@ fn place(found: Diagnostics, origin: &Origin) -> Diagnostics {
         placed.push(finding);
         if malformed {
             // The game writes "Malformed format version", then the "no valid version" text.
-            let mut missing = error(
-                DiagnosticCode::MissingFormatVersion {
-                    text: Some(VanillaText::NoValidVersion),
-                },
-                JsonPath::new(),
-            );
+            let mut missing = Diagnostic::error(DiagnosticCode::MissingFormatVersion {
+                text: Some(VanillaText::NoValidVersion),
+            });
             missing.location = location;
             placed.push(missing);
         }
@@ -166,16 +153,13 @@ fn member_count(text: &str) -> Option<Diagnostic> {
     let root = bedrock_addon_core::json::from_str_jsonc::<Value>(&cleaned).ok()?;
     let root = root.as_object()?;
     (root.get("format_version").is_none() && root.len() != 2).then(|| {
-        error(
-            DiagnosticCode::MalformedInput {
-                message: format!(
-                    "{} root members, not \"format_version\" and a payload member",
-                    root.len()
-                ),
-                text: Some(VanillaText::DocumentMemberCount),
-            },
-            JsonPath::new(),
-        )
+        Diagnostic::error(DiagnosticCode::MalformedInput {
+            message: format!(
+                "{} root members, not \"format_version\" and a payload member",
+                root.len()
+            ),
+            text: Some(VanillaText::DocumentMemberCount),
+        })
     })
 }
 
@@ -190,19 +174,16 @@ fn parse_file(
     Option<AtomicClientEntityId>,
     Result<Document<AtomicClientEntity>, Rejected>,
 ) {
-    let origin = Origin::new(pack, side, path.clone(), None, Vec::new());
+    let origin = Origin::file(pack, side, path.clone());
     let reject = |found: Diagnostic| {
         let diagnostics: Diagnostics = [found].into_iter().collect();
         Rejected::new(origin.clone(), place(diagnostics, &origin))
     };
     let malformed = |message: &str| {
-        reject(error(
-            DiagnosticCode::MalformedInput {
-                message: message.to_owned(),
-                text: None,
-            },
-            JsonPath::new(),
-        ))
+        reject(Diagnostic::error(DiagnosticCode::MalformedInput {
+            message: message.to_owned(),
+            text: None,
+        }))
     };
     let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
     let bytes = strip_bom(bytes);

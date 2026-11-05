@@ -10,7 +10,7 @@ use super::texts::{
 use super::{FLOOR, FogSettings, LATEST, rules};
 use crate::history::{Any, FogFamily};
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, VanillaText,
 };
 use bedrock_addon_core::document::{
     CombineRule, Content, Contribution, Definition, Document, JsonContent, NoBeta, Notice, Origin,
@@ -64,12 +64,7 @@ fn payload_at() -> JsonPath {
 /// An error of the gates, at the document root.
 fn gate(code: DiagnosticCode) -> Diagnostics {
     let mut diagnostics = Diagnostics::default();
-    diagnostics.push(Diagnostic::new(
-        code,
-        Severity::Error,
-        Phase::Parse,
-        Location::default(),
-    ));
+    diagnostics.push(Diagnostic::error(code));
     diagnostics
 }
 
@@ -158,14 +153,9 @@ fn gates(bytes: &[u8]) -> Result<String, Diagnostics> {
 
 /// The closing line of a document either parser refused.
 fn failed_to_validate(diagnostics: &mut Diagnostics) {
-    diagnostics.push(Diagnostic::new(
-        DiagnosticCode::DocumentRejected {
-            text: Some(VanillaText::Fixed(FAILED_TO_VALIDATE)),
-        },
-        Severity::Error,
-        Phase::Parse,
-        Location::default(),
-    ));
+    diagnostics.push(Diagnostic::error(DiagnosticCode::DocumentRejected {
+        text: Some(VanillaText::Fixed(FAILED_TO_VALIDATE)),
+    }));
 }
 
 /// The upgrade walk, then what the game checks on the definition: the keyframe gate and, for a
@@ -232,7 +222,7 @@ pub(crate) fn parse_file(
     bytes: &[u8],
     cx: &LoadContext,
 ) -> Result<Document<FogSettings>, Rejected> {
-    let origin = Origin::new(pack, side, path.clone(), None, Vec::new());
+    let origin = Origin::file(pack, side, path.clone());
     let text = match gates(bytes) {
         Ok(text) => text,
         Err(diagnostics) => {
@@ -269,12 +259,9 @@ fn as_written(text: &str, cx: &LoadContext) -> Parsed<FogFamily> {
     let mut diagnostics = Diagnostics::default();
     let mut at = JsonPath::new();
     at.push("format_version");
-    diagnostics.push(Diagnostic::new(
-        DiagnosticCode::PrereleaseFormatVersion { version: written },
-        Severity::Info,
-        Phase::Parse,
-        Location::new(None, None, at, None),
-    ));
+    diagnostics.push(
+        Diagnostic::info(DiagnosticCode::PrereleaseFormatVersion { version: written }).at(at),
+    );
     let versions = <Any as VersionChain<FogFamily>>::VERSIONS;
     let parsed_as = versions.get(V1_21_90).copied().unwrap_or(FLOOR);
     let parse = ParseCx {
@@ -346,13 +333,7 @@ impl FogSettings {
         bytes: &[u8],
         cx: &LoadContext,
     ) -> Result<Document<Any>, Rejected> {
-        let origin = Origin::new(
-            PackRef::app_data(),
-            PackSide::Resource,
-            path.clone(),
-            None,
-            Vec::new(),
-        );
+        let origin = Origin::file(PackRef::app_data(), PackSide::Resource, path.clone());
         let text = match gates(bytes) {
             Ok(text) => text,
             Err(diagnostics) => {

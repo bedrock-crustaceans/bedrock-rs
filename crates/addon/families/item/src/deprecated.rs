@@ -3,9 +3,7 @@
 use bedrock_addon_core::shared::EventTrigger;
 use facet_value::VObject;
 
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
 use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::json::Value;
 
@@ -202,10 +200,5 @@ pub(crate) fn trigger_value(trigger: &EventTrigger) -> Value {
 /// refuses the item, so what is told of the members inside is the crate's own reading of a
 /// document the game does not load: an information, since the game says nothing about them.
 fn note(code: DiagnosticCode, path: JsonPath) -> Diagnostic {
-    Diagnostic::new(
-        code,
-        Severity::Info,
-        Phase::Parse,
-        Location::new(None, None, path, None),
-    )
+    Diagnostic::info(code).at(path)
 }

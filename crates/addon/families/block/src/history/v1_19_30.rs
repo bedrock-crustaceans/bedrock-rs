@@ -1,8 +1,8 @@
 //! Format 1.19.30: `display_name` is a literal or a localisation key.
 
-use super::legacy::{Legacy, string, text, upgrade_finding};
+use super::legacy::{Legacy, string, text};
 use crate::parse::child;
-use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath, Severity};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, Phase};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
 
@@ -58,16 +58,16 @@ impl Upgrade for Block {
                     "" => {
                         // The game logs this at the content log's error level and the value
                         // becomes `none`: a kept error.
-                        cx.diagnostics.push_kept_error(upgrade_finding(
-                            DiagnosticCode::InvalidValue {
+                        cx.diagnostics.push_kept_error(
+                            Diagnostic::error(DiagnosticCode::InvalidValue {
                                 text: text(
                                     "Block Menu Category should not have an empty value",
                                     &[],
                                 ),
-                            },
-                            Severity::Error,
-                            &at,
-                        ));
+                            })
+                            .at(at.clone())
+                            .phase(Phase::Upgrade),
+                        );
                         (Some("none".to_owned()), true)
                     }
                     "none" => (Some("none".to_owned()), true),
@@ -75,27 +75,27 @@ impl Upgrade for Block {
                         // The game's table: `commands` → `none`, shown to commands; `all` →
                         // `none`, hidden; each with no log. The game's own conversion of a
                         // category the format does not have any more: a note where the file has it.
-                        cx.diagnostics.push(upgrade_finding(
-                            DiagnosticCode::DeprecatedMember { text: None },
-                            Severity::Info,
-                            &at,
-                        ));
+                        cx.diagnostics.push(
+                            Diagnostic::info(DiagnosticCode::DeprecatedMember { text: None })
+                                .at(at.clone())
+                                .phase(Phase::Upgrade),
+                        );
                         (Some("none".to_owned()), lower == "all")
                     }
                     valid if VALID.contains(&valid) => (Some(written.to_owned()), false),
                     _ => {
                         // The game logs this at the content log's error level and the value
                         // becomes `none`: a kept error.
-                        cx.diagnostics.push_kept_error(upgrade_finding(
-                            DiagnosticCode::InvalidValue {
+                        cx.diagnostics.push_kept_error(
+                            Diagnostic::error(DiagnosticCode::InvalidValue {
                                 text: text(
                                     "Block Menu Category has an invalid value of {}",
                                     &[written],
                                 ),
-                            },
-                            Severity::Error,
-                            &at,
-                        ));
+                            })
+                            .at(at.clone())
+                            .phase(Phase::Upgrade),
+                        );
                         (Some("none".to_owned()), true)
                     }
                 }

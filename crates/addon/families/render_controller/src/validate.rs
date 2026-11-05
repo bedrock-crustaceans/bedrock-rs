@@ -7,7 +7,7 @@ use indexmap::{IndexMap, IndexSet};
 use super::RenderController;
 use super::read::controller_path;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, Location, Phase, Severity,
+    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, Phase,
 };
 use bedrock_addon_core::molang::MolangSource;
 
@@ -67,18 +67,16 @@ fn check<'s>(
             }
             // The game makes no load-time check; its "Error processing expression" is a draw-time
             // line, so the crate reports an information.
-            let mut finding = Diagnostic::new(
-                DiagnosticCode::UnresolvedReference { text: None },
-                Severity::Info,
-                Phase::Validate,
-                Location::new(None, None, controller_path(key, Some(member)), None),
+            diagnostics.push(
+                Diagnostic::info(DiagnosticCode::UnresolvedReference { text: None })
+                    .at(controller_path(key, Some(member)))
+                    .phase(Phase::Validate)
+                    .detail(DiagnosticDetail::Reference {
+                        kind: "array",
+                        id: name,
+                        hint: None,
+                    }),
             );
-            finding.detail = Some(Box::new(DiagnosticDetail::Reference {
-                kind: "array",
-                id: name,
-                hint: None,
-            }));
-            diagnostics.push(finding);
         }
     }
 }

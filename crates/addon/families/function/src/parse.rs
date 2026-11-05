@@ -10,8 +10,7 @@ use super::texts::{
 };
 use super::{Function, FunctionLine, TickFunction, TickList};
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Location, Phase, Severity,
-    Span,
+    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Phase, Severity, Span,
 };
 use bedrock_addon_core::id::FunctionPath;
 use bedrock_addon_core::json::{MAX_JSON_DEPTH, TooDeep, Value, check_depth, strip_bom};
@@ -104,30 +103,27 @@ pub(super) fn parse_function(
             // line parses is the command system's to say, so this never drops a line. The
             // game's load checks the first word only, so the note is an information.
             if has_wrong_arity(command, &line[word.len()..], version) {
-                let note = finding(DiagnosticCode::InvalidValue { text: None }, Severity::Info);
-                lints.push(at_line(note, span));
+                let note = Diagnostic::info(DiagnosticCode::InvalidValue { text: None })
+                    .phase(Phase::Validate);
+                lints.push(note.span(span));
             }
             function.commands.push(kept);
         } else if is_namespaced(word) {
-            lints.push(at_line(unchecked_command(word, "command"), span));
+            lints.push(unchecked_command(word, "command").span(span));
             function.commands.push(kept);
         } else if is_feature_gated(word) {
-            lints.push(at_line(
-                unchecked_command(word, "feature-gated command"),
-                span,
-            ));
+            lints.push(unchecked_command(word, "feature-gated command").span(span));
             function.commands.push(kept);
         } else {
-            let error = finding(
-                DiagnosticCode::UnresolvedReference {
-                    text: formatted(
-                        unknown_command_text(word),
-                        [number.to_string(), word.to_owned()],
-                    ),
-                },
-                severity,
-            );
-            errors.push(at_line(error, span));
+            let error = Diagnostic::error(DiagnosticCode::UnresolvedReference {
+                text: formatted(
+                    unknown_command_text(word),
+                    [number.to_string(), word.to_owned()],
+                ),
+            })
+            .phase(Phase::Validate)
+            .severity(severity);
+            errors.push(error.span(span));
             function.dropped.push(kept);
         }
     }
@@ -135,15 +131,10 @@ pub(super) fn parse_function(
     if lossy {
         // Vanilla keeps the bytes of a file that is not UTF-8; a `String` cannot. The game says
         // nothing, so the crate's own note is an information.
-        diagnostics.push(Diagnostic::new(
-            DiagnosticCode::MalformedInput {
-                message: "not UTF-8: each invalid sequence is read as U+FFFD".to_owned(),
-                text: None,
-            },
-            Severity::Info,
-            Phase::Parse,
-            Location::default(),
-        ));
+        diagnostics.push(Diagnostic::info(DiagnosticCode::MalformedInput {
+            message: "not UTF-8: each invalid sequence is read as U+FFFD".to_owned(),
+            text: None,
+        }));
     }
     if !errors.is_empty() {
         // The game logs the header, then one entry per error.
@@ -153,7 +144,11 @@ pub(super) fn parse_function(
         } else {
             DiagnosticCode::DroppedField { text }
         };
-        diagnostics.push(finding(header, severity));
+        diagnostics.push(
+            Diagnostic::error(header)
+                .phase(Phase::Validate)
+                .severity(severity),
+        );
         diagnostics.extend(errors);
     }
     diagnostics.extend(lints);
@@ -235,27 +230,13 @@ fn is_feature_gated(word: &str) -> bool {
 /// The command table holds vanilla's public commands only and the game has no line for such a
 /// word, so the crate's own note is an information.
 fn unchecked_command(word: &str, kind: &'static str) -> Diagnostic {
-    let mut note = finding(
-        DiagnosticCode::UnresolvedReference { text: None },
-        Severity::Info,
-    );
-    note.detail = Some(Box::new(DiagnosticDetail::Reference {
-        kind,
-        id: word.to_owned(),
-        hint: None,
-    }));
-    note
-}
-
-/// `finding`, located at the line that spans `span` of the file.
-fn at_line(mut finding: Diagnostic, span: Span) -> Diagnostic {
-    finding.location.span = Some(span);
-    finding
-}
-
-/// A finding of the line rules; the loader adds the pack and the file.
-fn finding(code: DiagnosticCode, severity: Severity) -> Diagnostic {
-    Diagnostic::new(code, severity, Phase::Validate, Location::default())
+    Diagnostic::info(DiagnosticCode::UnresolvedReference { text: None })
+        .phase(Phase::Validate)
+        .detail(DiagnosticDetail::Reference {
+            kind,
+            id: word.to_owned(),
+            hint: None,
+        })
 }
 
 /// A tick list as read from one file: the list, and for each of its entries the index the
@@ -283,15 +264,12 @@ pub(super) fn parse_tick(bytes: &[u8], command_version: u8) -> ParsedTick {
             // The game's text is `File %s failed to load with error(s) %s`, logged as an error:
             // the first `%s` is the literal `tick.json`, the second the reader's errors; the
             // pack's tick list is skipped.
-            parsed.diagnostics.push(Diagnostic::new(
-                DiagnosticCode::MalformedInput {
+            parsed
+                .diagnostics
+                .push(Diagnostic::error(DiagnosticCode::MalformedInput {
                     text: formatted(TICK_NOT_JSON, [TICK_FILE.to_owned(), message.clone()]),
                     message,
-                },
-                Severity::Error,
-                Phase::Parse,
-                Location::default(),
-            ));
+                }));
             return parsed;
         }
     };
@@ -356,12 +334,10 @@ fn at_values(code: DiagnosticCode, severity: Severity, index: Option<usize>) -> 
     if let Some(index) = index {
         at.push_index(index);
     }
-    Diagnostic::new(
-        code,
-        severity,
-        Phase::Validate,
-        Location::new(None, None, at, None),
-    )
+    Diagnostic::error(code)
+        .at(at)
+        .phase(Phase::Validate)
+        .severity(severity)
 }
 
 /// The warning for the tick entry at `index` of `values` whose name `name` no loaded function

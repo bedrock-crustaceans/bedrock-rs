@@ -6,7 +6,7 @@
 //! it once.
 
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity, VanillaText,
 };
 use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::json::{StrictFloat, Value};
@@ -22,12 +22,7 @@ use super::{EatAndReplaceBlockPair, EatBlock, RangedAttack};
 fn finding(code: DiagnosticCode, phase: Phase, name: &str) -> Diagnostic {
     let mut at = JsonPath::new();
     at.push(name);
-    Diagnostic::new(
-        code,
-        Severity::Info,
-        phase,
-        Location::new(None, None, at, None),
-    )
+    Diagnostic::info(code).at(at).phase(phase)
 }
 
 /// The path of the top-level member `name`.
@@ -40,12 +35,9 @@ fn member(name: &str) -> JsonPath {
 /// A note of a conversion at the top-level member `name`: an information about what the game
 /// itself does without a word.
 fn note(code: DiagnosticCode, name: &str) -> Diagnostic {
-    Diagnostic::new(
-        code,
-        Severity::Info,
-        Phase::Upgrade,
-        Location::new(None, None, member(name), None),
-    )
+    Diagnostic::info(code)
+        .at(member(name))
+        .phase(Phase::Upgrade)
 }
 
 /// The top-level member `name` as one half of a range a conversion builds, taken out: its
@@ -316,16 +308,15 @@ pub fn eat_block_pairs(goal: &mut EatBlock, is_block: impl Fn(&str) -> bool) -> 
             at.push_index(index);
             // The game looks the block up when it sets the goal up, in either reader, and logs
             // an error but keeps the entity: a kept error.
-            out.push_kept_error(Diagnostic::new(
-                DiagnosticCode::UnresolvedReference {
+            out.push_kept_error(
+                Diagnostic::error(DiagnosticCode::UnresolvedReference {
                     text: Some(VanillaText::EatBlockInvalidBlock {
                         block: block.clone(),
                     }),
-                },
-                Severity::Error,
-                Phase::Link,
-                Location::new(None, None, at, None),
-            ));
+                })
+                .at(at)
+                .phase(Phase::Link),
+            );
         }
         index += 1;
         unknown.is_none()

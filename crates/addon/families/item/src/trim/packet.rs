@@ -2,9 +2,7 @@
 //! decodes the packet: the caller converts the protocol crate's packet into these values.
 
 use super::{FormatCode, TrimData, TrimMaterial, TrimPattern, texts};
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, JsonPath, Location, Phase, Severity, VanillaText,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, VanillaText};
 use bedrock_addon_core::id::{ItemId, TrimMaterialId, TrimPatternId};
 
 /// One pattern of the payload's `TrimPattern List`.
@@ -35,17 +33,13 @@ fn duplicate_template(index: usize, item: &ItemId) -> Diagnostic {
     let mut at = JsonPath::new();
     at.push("patterns");
     at.push_index(index);
-    Diagnostic::new(
-        DiagnosticCode::DuplicateIdentifier {
-            text: Some(VanillaText::Formatted {
-                template: texts::DUPLICATE_TEMPLATE,
-                args: vec![item.as_str().to_owned()],
-            }),
-        },
-        Severity::Error,
-        Phase::Parse,
-        Location::new(None, None, at, None),
-    )
+    Diagnostic::error(DiagnosticCode::DuplicateIdentifier {
+        text: Some(VanillaText::Formatted {
+            template: texts::DUPLICATE_TEMPLATE,
+            args: vec![item.as_str().to_owned()],
+        }),
+    })
+    .at(at)
     .into_kept()
 }
 

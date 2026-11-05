@@ -228,15 +228,9 @@ pub(super) fn check_layer_images(sets: &mut PackSets, stack_index: usize, files:
                 let code = DiagnosticCode::TextureNotFound {
                     text: fixed(texts::SET_NO_IMAGE),
                 };
-                let location = Location::new(None, None, at, None);
                 // The game logs this at the content log's information level; the set is still
                 // replaced by the missing texture.
-                missing.push(Diagnostic::new(
-                    code,
-                    Severity::Info,
-                    Phase::Validate,
-                    location,
-                ));
+                missing.push(Diagnostic::info(code).at(at).phase(Phase::Validate));
             }
         }
         if missing.is_empty() {

@@ -16,7 +16,7 @@ use facet_value::{VArray, VObject};
 
 use super::texts;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
 };
 use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::json::{EncodeError, Unrepresentable, Value};
@@ -158,12 +158,11 @@ impl<'d> Reader<'d> {
     /// A finding at the current path.
     pub(crate) fn push(&mut self, code: DiagnosticCode, severity: Severity) {
         if self.muted == 0 {
-            self.d.push(Diagnostic::new(
-                code,
-                severity,
-                Phase::Parse,
-                Location::new(None, None, self.path.clone(), None),
-            ));
+            self.d.push(
+                Diagnostic::error(code)
+                    .severity(severity)
+                    .at(self.path.clone()),
+            );
         }
     }
 
@@ -247,26 +246,20 @@ impl<'d> Reader<'d> {
     /// parse returns and the effect loads: a kept error, which rejects nothing.
     pub(crate) fn content_error(&mut self, text: &'static str) {
         if self.muted == 0 {
-            self.d.push_kept_error(Diagnostic::new(
-                DiagnosticCode::InvalidValue {
+            self.d.push_kept_error(
+                Diagnostic::error(DiagnosticCode::InvalidValue {
                     text: Some(VanillaText::Fixed(text)),
-                },
-                Severity::Error,
-                Phase::Parse,
-                Location::new(None, None, self.path.clone(), None),
-            ));
+                })
+                .at(self.path.clone()),
+            );
         }
     }
 
     /// `code` as a kept error at the current path.
     pub(crate) fn push_kept(&mut self, code: DiagnosticCode) {
         if self.muted == 0 {
-            self.d.push_kept_error(Diagnostic::new(
-                code,
-                Severity::Error,
-                Phase::Parse,
-                Location::new(None, None, self.path.clone(), None),
-            ));
+            self.d
+                .push_kept_error(Diagnostic::error(code).at(self.path.clone()));
         }
     }
 

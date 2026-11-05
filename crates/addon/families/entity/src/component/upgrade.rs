@@ -6,7 +6,7 @@
 //! types.
 
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, VanillaText,
 };
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::versioning::write_payload;
@@ -19,12 +19,7 @@ use super::parse::path;
 /// library drops or reads as a default where the game says nothing (the game writes no content-log
 /// line for this).
 fn warning(code: DiagnosticCode, at: &JsonPath) -> Diagnostic {
-    Diagnostic::new(
-        code,
-        Severity::Info,
-        Phase::Parse,
-        Location::new(None, None, at.clone(), None),
-    )
+    Diagnostic::info(code).at(at.clone())
 }
 
 /// The interactions of an `interact` value: each element of `interactions` (or the single
@@ -170,17 +165,15 @@ pub fn projectile_1_26_40(value: &mut Value, d: &mut Diagnostics) {
     {
         // The game logs this at the error level and keeps the document with the default taken: a
         // kept error.
-        d.push_kept_error(Diagnostic::new(
-            DiagnosticCode::InvalidValue {
+        d.push_kept_error(
+            Diagnostic::error(DiagnosticCode::InvalidValue {
                 text: Some(VanillaText::NotAValidValue {
                     value: text.as_str().to_owned(),
                     member: "should_bounce",
                 }),
-            },
-            Severity::Error,
-            Phase::Parse,
-            Location::new(None, None, path(&["should_bounce"]), None),
-        ));
+            })
+            .at(path(&["should_bounce"])),
+        );
         object.insert("should_bounce", Value::from("no"));
     }
     let Some(damage) = impact_damage(value) else {
@@ -262,6 +255,7 @@ mod tests {
     #![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 
     use super::*;
+    use bedrock_addon_core::diagnostic::Severity;
 
     /// The cases of fixture `<name>.before.json` / `<name>.after.json`: `{case: component}`.
     fn cases(name: &str) -> Vec<(String, Value, Value)> {

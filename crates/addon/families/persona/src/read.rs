@@ -13,7 +13,7 @@
 //! finding is an information (the game says nothing).
 
 use super::names::{Named, Written};
-use super::text::{self, finding, vanilla};
+use super::text::{self, vanilla};
 use super::{
     AnimationSource, FaceFlag, GeometrySource, HexColor, PieceMetadata, PieceStoreInfo, PieceType,
     TextureSource, TintColor, TintColorOrString, Zones,
@@ -74,11 +74,8 @@ pub(super) fn read_root(bytes: &[u8], findings: &mut Vec<Diagnostic>) -> Result<
     // with an information of the crate's own (the game's reader holds the infinity in
     // silence).
     for clamped in bedrock_addon_core::json::clamp_non_finite(&mut root, None) {
-        findings.push(finding(
-            DiagnosticCode::InvalidValue { text: None },
-            Severity::Info,
-            clamped.path,
-        ));
+        findings
+            .push(Diagnostic::info(DiagnosticCode::InvalidValue { text: None }).at(clamped.path));
     }
     Ok(root)
 }
@@ -102,7 +99,11 @@ struct Reader<'f> {
 impl Reader<'_> {
     /// A finding at the place being read.
     fn report(&mut self, code: DiagnosticCode, severity: Severity) {
-        self.findings.push(finding(code, severity, self.at.clone()));
+        self.findings.push(
+            Diagnostic::error(code)
+                .severity(severity)
+                .at(self.at.clone()),
+        );
     }
 
     /// A finding at the member `key` of the object being read.
@@ -614,7 +615,7 @@ pub(super) fn read_meta(root: &Value, findings: &mut Vec<Diagnostic>) -> PieceMe
     let mut at_version = JsonPath::new();
     at_version.push("format_version");
     let refuse = |reader: &mut Reader<'_>, code: DiagnosticCode, at: JsonPath| {
-        reader.findings.push(finding(code, Severity::Error, at));
+        reader.findings.push(Diagnostic::error(code).at(at));
     };
     let Some(input) = FormatVersionInput::from_json(version) else {
         refuse(

@@ -7,9 +7,7 @@ use std::sync::OnceLock;
 use super::TrimData;
 use crate::Item;
 use crate::component::Tags;
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, Location, Phase, Severity,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, DiagnosticDetail, Phase};
 use bedrock_addon_core::document::Registry;
 use bedrock_addon_core::id::ItemId;
 use bedrock_addon_core::version::{BaseGameVersion, SemVersion};
@@ -97,12 +95,8 @@ impl TrimData {
 /// The finding for a pattern the filter leaves out: nothing of `kind` is named `item`. The
 /// crate reports it as an information; the game reports nothing for it.
 fn left_out(kind: &'static str, item: &ItemId) -> Diagnostic {
-    let mut finding = Diagnostic::new(
-        DiagnosticCode::UnresolvedReference { text: None },
-        Severity::Info,
-        Phase::Link,
-        Location::default(),
-    );
+    let mut finding =
+        Diagnostic::info(DiagnosticCode::UnresolvedReference { text: None }).phase(Phase::Link);
     finding.detail = Some(Box::new(DiagnosticDetail::Reference {
         kind,
         id: item.as_str().to_owned(),

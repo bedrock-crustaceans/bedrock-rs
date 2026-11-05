@@ -20,7 +20,7 @@ use super::{
     SmithingTrim, Tags, Unlock, UnlockContext, input_count_allowed, unlock_required,
 };
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
 };
 use bedrock_addon_core::document::{Extra, VersionInfo};
 use bedrock_addon_core::id::RecipeId;
@@ -174,23 +174,15 @@ impl<'c> Reader<'c> {
     }
 
     fn report(&mut self, at: &JsonPath, code: DiagnosticCode, severity: Severity) {
-        self.diagnostics.push(Diagnostic::new(
-            code,
-            severity,
-            Phase::Parse,
-            Location::new(None, None, at.clone(), None),
-        ));
+        self.diagnostics
+            .push(Diagnostic::error(code).severity(severity).at(at.clone()));
     }
 
     /// A kept error: a line the game logs at error level and then goes on, so the recipe still
     /// loads. It is an error finding that does not reject the document.
     fn report_kept(&mut self, at: &JsonPath, code: DiagnosticCode) {
-        self.diagnostics.push_kept_error(Diagnostic::new(
-            code,
-            Severity::Error,
-            Phase::Parse,
-            Location::new(None, None, at.clone(), None),
-        ));
+        self.diagnostics
+            .push_kept_error(Diagnostic::error(code).at(at.clone()));
     }
 
     /// An ingredient's own finding: kept or rejecting as `flags` says.
@@ -570,12 +562,9 @@ impl<'c> Reader<'c> {
                 "Type not convertible to Molang expression: {}",
                 [OBJECT_VALUE_TYPE.to_owned()],
             );
-            self.diagnostics.push_kept_error(Diagnostic::new(
-                DiagnosticCode::InvalidType { text },
-                Severity::Error,
-                Phase::Parse,
-                Location::new(None, None, child(at, "data"), None),
-            ));
+            self.diagnostics.push_kept_error(
+                Diagnostic::error(DiagnosticCode::InvalidType { text }).at(child(at, "data")),
+            );
         } else {
             self.report(
                 &child(at, "data"),
@@ -731,14 +720,12 @@ impl<'c> Reader<'c> {
             return;
         }
         for problem in parse_item(text).1 {
-            self.diagnostics.push_kept_error(Diagnostic::new(
-                DiagnosticCode::InvalidValue {
+            self.diagnostics.push_kept_error(
+                Diagnostic::error(DiagnosticCode::InvalidValue {
                     text: formatted(problem.template(), [text.to_owned()]),
-                },
-                Severity::Error,
-                Phase::Parse,
-                Location::new(None, None, at.clone(), None),
-            ));
+                })
+                .at(at.clone()),
+            );
         }
     }
 
@@ -754,7 +741,8 @@ impl<'c> Reader<'c> {
                 #[cfg(feature = "molang")]
                 if let Some(check) = self.cx.molang.clone() {
                     let mcx = self.molang_context();
-                    let location = Location::new(None, None, at.clone(), None);
+                    let location =
+                        bedrock_addon_core::diagnostic::Location::new(None, None, at.clone(), None);
                     let mut found = Diagnostics::default();
                     check.check_list(
                         data,
@@ -802,7 +790,8 @@ impl<'c> Reader<'c> {
         if let Some(check) = self.cx.molang.clone() {
             use bedrock_addon_core::molang::{MolangOutcome, ReportRules, Side};
             let mcx = self.molang_context();
-            let location = Location::new(None, None, at.clone(), None);
+            let location =
+                bedrock_addon_core::diagnostic::Location::new(None, None, at.clone(), None);
             let mut found = Diagnostics::default();
             let (outcome, checked) = check.check_source_with(
                 source,

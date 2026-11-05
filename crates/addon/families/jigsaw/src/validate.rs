@@ -7,7 +7,7 @@ use super::{
     StructureSet, TemplatePool,
 };
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity, VanillaText,
 };
 
 /// What a family's identifier failure says after the identifier check's own reason.
@@ -64,35 +64,27 @@ pub(crate) fn identifier_findings(
     let reasons = identifier_failure(id)?;
     let mut d = Diagnostics::default();
     for reason in reasons {
-        d.push(finding(
-            DiagnosticCode::InvalidValue {
+        d.push(
+            Diagnostic::error(DiagnosticCode::InvalidValue {
                 text: Some(VanillaText::Fixed(reason)),
-            },
-            severity,
-            at.clone(),
-        ));
+            })
+            .severity(severity)
+            .at(at.clone())
+            .phase(Phase::Validate),
+        );
     }
-    d.push(finding(
-        DiagnosticCode::InvalidValue {
+    d.push(
+        Diagnostic::error(DiagnosticCode::InvalidValue {
             text: Some(VanillaText::Formatted {
                 template: register,
                 args: vec![id.to_owned()],
             }),
-        },
-        severity,
-        at.clone(),
-    ));
+        })
+        .severity(severity)
+        .at(at.clone())
+        .phase(Phase::Validate),
+    );
     Some(d)
-}
-
-/// A registration finding at `path`.
-fn finding(code: DiagnosticCode, severity: Severity, path: JsonPath) -> Diagnostic {
-    Diagnostic::new(
-        code,
-        severity,
-        Phase::Validate,
-        Location::new(None, None, path, None),
-    )
 }
 
 /// Whether `diagnostics` are those of a document that parsed and failed a registration check
@@ -132,15 +124,11 @@ pub(crate) fn structure(value: &JigsawStructure, at: &JsonPath, d: &mut Diagnost
     // hard-coded structures, which the data path does not run, so the crate reports it as
     // an information of its own. The document stays loaded, as in the game.
     if value.start_pool.as_str().is_empty() {
-        d.push(finding(
-            DiagnosticCode::InvalidValue {
+        d.push(Diagnostic::info(DiagnosticCode::InvalidValue {
                 text: Some(VanillaText::Fixed(
                     "[Jigsaw Structure Builder] start_pool is empty. Fill it in with a valid template pool e.g. minecraft:example/structure",
                 )),
-            },
-            Severity::Info,
-            child(at, &["start_pool"]),
-        ));
+            }).at(child(at, &["start_pool"])).phase(Phase::Validate));
     }
 }
 
@@ -177,16 +165,12 @@ pub(crate) fn set(value: &mut StructureSet, at: &JsonPath, d: &mut Diagnostics) 
     // The spacing must be more than twice the separation.
     let placement = &value.placement;
     if u32::from(placement.spacing.0) <= 2 * u32::from(placement.separation.0) {
-        d.push(finding(
-            DiagnosticCode::InvalidValue {
+        d.push(Diagnostic::error(DiagnosticCode::InvalidValue {
                 text: Some(VanillaText::Formatted {
                     template: "Invalid spacing and separation combination for structure set '{}'. Value 'separation' must be less than half of 'spacing'.",
                     args: vec![id],
                 }),
-            },
-            Severity::Error,
-            child(at, &["placement"]),
-        ));
+            }).at(child(at, &["placement"])).phase(Phase::Validate));
     }
 }
 
@@ -227,13 +211,13 @@ fn empty_loot(rules: &mut [ProcessorRule], at: &JsonPath, d: &mut Diagnostics) {
             path.push("loot_table");
             // The game logs it at the content log's error level and carries on with the
             // modifier cleared: a kept error.
-            d.push_kept_error(finding(
-                DiagnosticCode::InvalidValue {
+            d.push_kept_error(
+                Diagnostic::error(DiagnosticCode::InvalidValue {
                     text: Some(VanillaText::Fixed("Empty loot table")),
-                },
-                Severity::Error,
-                path,
-            ));
+                })
+                .at(path)
+                .phase(Phase::Validate),
+            );
             rule.block_entity_modifier = None;
         }
     }

@@ -26,13 +26,7 @@ impl Content for AnimationFile {
     const SIDES: &'static [PackSide] = &[PackSide::Behavior, PackSide::Resource];
 
     fn parse(path: &PackPath, bytes: &[u8], cx: &LoadContext) -> Result<Document<Self>, Rejected> {
-        let origin = Origin::new(
-            PackRef::app_data(),
-            side_of(cx),
-            path.clone(),
-            None,
-            Vec::new(),
-        );
+        let origin = Origin::file(PackRef::app_data(), side_of(cx), path.clone());
         whole(parse::parse_file(bytes, cx), origin, |_| {
             (FormatVersion::new(1, 8, 0), false)
         })

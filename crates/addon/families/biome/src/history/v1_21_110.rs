@@ -10,9 +10,7 @@ use crate::component::{BiomeComponent, child};
 use crate::parse::payload;
 use crate::texts::INVALID_BIOME_FILE;
 use crate::write::object;
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, Location, Phase, Severity, VanillaText,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, VanillaText};
 use bedrock_addon_core::document::{ComponentMap, Extra};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, StrictString, Value};
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor, Step};
@@ -58,15 +56,13 @@ impl VersionStruct for Biome {
         // Any failure of the strict load is reported as vanilla's "Invalid Biome file", after
         // the finding that says where.
         if found.has_errors() {
-            found.push(Diagnostic::new(
-                DiagnosticCode::MalformedInput {
+            found.push(
+                Diagnostic::error(DiagnosticCode::MalformedInput {
                     message: INVALID_BIOME_FILE.to_owned(),
                     text: Some(VanillaText::Fixed(INVALID_BIOME_FILE)),
-                },
-                Severity::Error,
-                Phase::Parse,
-                Location::new(None, None, cx.at.clone(), None),
-            ));
+                })
+                .at(cx.at.clone()),
+            );
         }
         d.extend(found);
         parsed

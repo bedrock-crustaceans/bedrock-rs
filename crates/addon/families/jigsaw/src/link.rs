@@ -7,10 +7,10 @@ use super::{
     PoolElement, Processor, ProcessorRule,
 };
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Location, Phase, Severity,
+    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Phase, Severity,
     VanillaText,
 };
-use bedrock_addon_core::document::Document;
+use bedrock_addon_core::document::Origin;
 use bedrock_addon_core::id::{
     BlockId, FeatureId, JigsawStructureId, Kind, LootTablePath, ProcessorListId, StructureId,
     TemplatePoolId, kind,
@@ -57,109 +57,114 @@ const JIGSAW_STRUCTURE: &str = <kind::JigsawStructure as Kind>::NAME;
 /// The template pool every pool falls back to by default, built into the game.
 const EMPTY_POOL: &str = "minecraft:empty";
 
-/// One document's findings.
-struct Report<'a, T> {
-    document: &'a Document<T>,
-    out: &'a mut Diagnostics,
+/// An `UnresolvedReference` information at `at` with `text`, for the `kind` named `id`:
+/// the crate's own. The game writes the structure and feature texts only at generation
+/// time, never at load, so a miss here is not a content-log line of the game's.
+fn miss(
+    out: &mut Diagnostics,
+    origin: &Origin,
+    at: &JsonPath,
+    kind: &'static str,
+    id: &str,
+    text: VanillaText,
+) {
+    miss_at(out, origin, at, kind, id, text, Severity::Info);
 }
 
-/// Whether a missing reference's error is kept with the document.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum Kept {
-    /// The finding is reported as it is, not marked kept.
-    Dropped,
-    /// The error is marked kept: the document and its list stay despite it.
-    Kept,
+/// [`miss`] with `severity`.
+fn miss_at(
+    out: &mut Diagnostics,
+    origin: &Origin,
+    at: &JsonPath,
+    kind: &'static str,
+    id: &str,
+    text: VanillaText,
+    severity: Severity,
+) {
+    out.push(unresolved(origin, at, kind, id, text, severity));
 }
 
-impl<T> Report<'_, T> {
-    /// An `UnresolvedReference` information at `at` with `text`, for the `kind` named `id`:
-    /// the crate's own. The game writes the structure and feature texts only at generation
-    /// time, never at load, so a miss here is not a content-log line of the game's.
-    fn miss(&mut self, at: &JsonPath, kind: &'static str, id: &str, text: VanillaText) {
-        self.miss_at(at, kind, id, text, Severity::Info);
-    }
-
-    /// [`Self::miss`] with `severity`.
-    fn miss_at(
-        &mut self,
-        at: &JsonPath,
-        kind: &'static str,
-        id: &str,
-        text: VanillaText,
-        severity: Severity,
-    ) {
-        self.miss_kept(at, kind, id, text, severity, Kept::Dropped);
-    }
-
-    /// [`Self::miss_at`], a kept error when `kept` is [`Kept::Kept`].
-    fn miss_kept(
-        &mut self,
-        at: &JsonPath,
-        kind: &'static str,
-        id: &str,
-        text: VanillaText,
-        severity: Severity,
-        kept: Kept,
-    ) {
-        let origin = self.document.origin();
-        let mut finding = Diagnostic::new(
-            DiagnosticCode::UnresolvedReference { text: Some(text) },
-            severity,
-            Phase::Link,
-            Location::new(
-                Some(origin.pack.clone()),
-                Some(origin.path.clone()),
-                at.clone(),
-                None,
-            ),
-        );
-        finding.detail = Some(Box::new(DiagnosticDetail::Reference {
+/// An `UnresolvedReference` at `severity` in the file of `origin`, at `at` with `text`, for
+/// the `kind` named `id`.
+fn unresolved(
+    origin: &Origin,
+    at: &JsonPath,
+    kind: &'static str,
+    id: &str,
+    text: VanillaText,
+    severity: Severity,
+) -> Diagnostic {
+    Diagnostic::error(DiagnosticCode::UnresolvedReference { text: Some(text) })
+        .severity(severity)
+        .at(at.clone())
+        .phase(Phase::Link)
+        .in_file(origin)
+        .detail(DiagnosticDetail::Reference {
             kind,
             id: id.to_owned(),
             hint: None,
-        }));
-        if severity == Severity::Error && kept == Kept::Kept {
-            finding = finding.into_kept();
-        }
-        self.out.push(finding);
-    }
+        })
+}
 
-    /// The linked-asset validator's text: the member as vanilla writes the path
-    /// (`-> elements[0] -> element -> processors`), then the identifier.
-    fn missing_asset(&mut self, at: &JsonPath, payload: &JsonPath, kind: &'static str, id: &str) {
-        self.validator(at, payload, "{}:  Missing referenced asset {}", kind, id);
-    }
+/// The linked-asset validator's text: the member as vanilla writes the path
+/// (`-> elements[0] -> element -> processors`), then the identifier.
+fn missing_asset(
+    out: &mut Diagnostics,
+    origin: &Origin,
+    at: &JsonPath,
+    payload: &JsonPath,
+    kind: &'static str,
+    id: &str,
+) {
+    validator(
+        out,
+        origin,
+        at,
+        payload,
+        "{}:  Missing referenced asset {}",
+        kind,
+        id,
+    );
+}
 
-    /// The validator's `'{} Invalid asset path {}'` for a file
-    /// reference (a structure, a loot table) no pack holds.
-    fn invalid_asset_path(
-        &mut self,
-        at: &JsonPath,
-        payload: &JsonPath,
-        kind: &'static str,
-        id: &str,
-    ) {
-        self.validator(at, payload, "{}:  Invalid asset path {}", kind, id);
-    }
+/// The validator's `'{} Invalid asset path {}'` for a file
+/// reference (a structure, a loot table) no pack holds.
+fn invalid_asset_path(
+    out: &mut Diagnostics,
+    origin: &Origin,
+    at: &JsonPath,
+    payload: &JsonPath,
+    kind: &'static str,
+    id: &str,
+) {
+    validator(
+        out,
+        origin,
+        at,
+        payload,
+        "{}:  Invalid asset path {}",
+        kind,
+        id,
+    );
+}
 
-    /// The validator's line `template` for `id` at `at`.
-    fn validator(
-        &mut self,
-        at: &JsonPath,
-        payload: &JsonPath,
-        template: &'static str,
-        kind: &'static str,
-        id: &str,
-    ) {
-        let text = VanillaText::Formatted {
-            template,
-            args: vec![vanilla_path(at, payload), id.to_owned()],
-        };
-        // The game's validator writes the line to the content log at the error level and
-        // drops nothing.
-        self.miss_at(at, kind, id, text, Severity::Error);
-    }
+/// The validator's line `template` for `id` at `at`.
+fn validator(
+    out: &mut Diagnostics,
+    origin: &Origin,
+    at: &JsonPath,
+    payload: &JsonPath,
+    template: &'static str,
+    kind: &'static str,
+    id: &str,
+) {
+    let text = VanillaText::Formatted {
+        template,
+        args: vec![vanilla_path(at, payload), id.to_owned()],
+    };
+    // The game's validator writes the line to the content log at the error level and
+    // drops nothing.
+    miss_at(out, origin, at, kind, id, text, Severity::Error);
 }
 
 /// `at` below `payload`, as vanilla's validator writes it: `-> key` per member, `[i]` after
@@ -262,9 +267,11 @@ fn alias_pools<'a>(alias: &'a PoolAlias, at: &JsonPath) -> Vec<(JsonPath, &'a Te
 fn link_structures(jigsaw: &Jigsaw, targets: &dyn Targets, out: &mut Diagnostics) {
     for (_, document) in &jigsaw.structures {
         let at = payload("minecraft:jigsaw");
-        let mut report = Report { document, out };
+        let origin = document.origin();
         if !pool_defined(jigsaw, targets, &document.start_pool) {
-            report.missing_asset(
+            missing_asset(
+                out,
+                origin,
                 &child(&at, "start_pool"),
                 &at,
                 POOL,
@@ -275,7 +282,7 @@ fn link_structures(jigsaw: &Jigsaw, targets: &dyn Targets, out: &mut Diagnostics
         for (i, alias) in document.pool_aliases.iter().flatten().enumerate() {
             for (path, target) in alias_pools(alias, &item(&aliases, i)) {
                 if !pool_defined(jigsaw, targets, target) {
-                    report.missing_asset(&path, &at, POOL, target.as_str());
+                    missing_asset(out, origin, &path, &at, POOL, target.as_str());
                 }
             }
         }
@@ -286,11 +293,18 @@ fn link_structures(jigsaw: &Jigsaw, targets: &dyn Targets, out: &mut Diagnostics
 fn link_pools(jigsaw: &Jigsaw, targets: &dyn Targets, out: &mut Diagnostics) {
     for (id, document) in &jigsaw.pools {
         let at = payload("minecraft:template_pool");
-        let mut report = Report { document, out };
+        let origin = document.origin();
         if let Some(fallback) = &document.fallback
             && !pool_defined(jigsaw, targets, fallback)
         {
-            report.missing_asset(&child(&at, "fallback"), &at, POOL, fallback.as_str());
+            missing_asset(
+                out,
+                origin,
+                &child(&at, "fallback"),
+                &at,
+                POOL,
+                fallback.as_str(),
+            );
         }
         let elements = child(&at, "elements");
         for (i, entry) in document.elements.iter().enumerate() {
@@ -306,7 +320,9 @@ fn link_pools(jigsaw: &Jigsaw, targets: &dyn Targets, out: &mut Diagnostics) {
                     // finding's text, an information of the crate's own.
                     if !targets.structure(location) {
                         let at_location = child(&at_element, "location");
-                        report.miss(
+                        miss(
+                            out,
+                            origin,
                             &at_location,
                             STRUCTURE,
                             location.as_str(),
@@ -318,7 +334,9 @@ fn link_pools(jigsaw: &Jigsaw, targets: &dyn Targets, out: &mut Diagnostics) {
                         // The game's validator logs the file reference too, unless a pack
                         // holds the file.
                         if !targets.structure_file(location) {
-                            report.invalid_asset_path(
+                            invalid_asset_path(
+                                out,
+                                origin,
                                 &at_location,
                                 &at,
                                 STRUCTURE,
@@ -332,7 +350,9 @@ fn link_pools(jigsaw: &Jigsaw, targets: &dyn Targets, out: &mut Diagnostics) {
                         && !jigsaw.processors.contains(list)
                         && !targets.processor_list(list)
                     {
-                        report.missing_asset(
+                        missing_asset(
+                            out,
+                            origin,
                             &child(&at_element, "processors"),
                             &at,
                             PROCESSOR_LIST,
@@ -343,7 +363,9 @@ fn link_pools(jigsaw: &Jigsaw, targets: &dyn Targets, out: &mut Diagnostics) {
                 // The text is the game's line for a feature that does not resolve, written
                 // when the pool is generated; an information of the crate's own at link.
                 PoolElement::Feature { feature, .. } if !targets.feature(feature) => {
-                    report.miss(
+                    miss(
+                        out,
+                        origin,
                         &child(&at_element, "feature"),
                         FEATURE,
                         feature.as_str(),
@@ -364,13 +386,15 @@ fn link_pools(jigsaw: &Jigsaw, targets: &dyn Targets, out: &mut Diagnostics) {
 fn link_sets(jigsaw: &Jigsaw, targets: &dyn Targets, out: &mut Diagnostics) {
     for (_, document) in &jigsaw.structure_sets {
         let at = payload("minecraft:structure_set");
-        let mut report = Report { document, out };
+        let origin = document.origin();
         let structures = child(&at, "structures");
         for (i, entry) in document.structures.iter().enumerate() {
             if !jigsaw.structures.contains(&entry.structure)
                 && !targets.jigsaw_structure(&entry.structure)
             {
-                report.missing_asset(
+                missing_asset(
+                    out,
+                    origin,
                     &child(&item(&structures, i), "structure"),
                     &at,
                     JIGSAW_STRUCTURE,
@@ -385,7 +409,7 @@ fn link_sets(jigsaw: &Jigsaw, targets: &dyn Targets, out: &mut Diagnostics) {
 fn link_processors(jigsaw: &Jigsaw, targets: &dyn Targets, out: &mut Diagnostics) {
     for (_, document) in &jigsaw.processors {
         let at = payload("minecraft:processor_list");
-        let mut report = Report { document, out };
+        let origin = document.origin();
         let processors = child(&at, "processors");
         for (i, processor) in document.processors.iter().enumerate() {
             let at_processor = item(&processors, i);
@@ -400,7 +424,7 @@ fn link_processors(jigsaw: &Jigsaw, targets: &dyn Targets, out: &mut Diagnostics
                         Processor::Rule { .. } => child(&at_processor, "rules"),
                         _ => child(&at_delegate, "rules"),
                     };
-                    rules_references(rules, &at_rules, &at, targets, &mut report);
+                    rules_references(rules, &at_rules, &at, targets, out, origin);
                 }
                 Processor::BlockIgnore { blocks, .. }
                 | Processor::Capped {
@@ -411,7 +435,7 @@ fn link_processors(jigsaw: &Jigsaw, targets: &dyn Targets, out: &mut Diagnostics
                         Processor::BlockIgnore { .. } => child(&at_processor, "blocks"),
                         _ => child(&at_delegate, "blocks"),
                     };
-                    block_references(blocks, &at_blocks, targets, &mut report);
+                    block_references(blocks, &at_blocks, targets, out, origin);
                 }
                 _ => {}
             }
@@ -420,62 +444,69 @@ fn link_processors(jigsaw: &Jigsaw, targets: &dyn Targets, out: &mut Diagnostics
 }
 
 /// "Cannot find block '%s'", reported once per member.
-fn missing_block<T>(
+fn missing_block(
     id: &BlockId,
     at: &JsonPath,
     targets: &dyn Targets,
-    report: &mut Report<'_, T>,
+    out: &mut Diagnostics,
+    origin: &Origin,
 ) {
     if !targets.block(id) {
         // The game logs it at the content log's error level, skips the rule and goes on with
         // the rest; the list is kept: a kept error.
-        report.miss_kept(
-            at,
-            BLOCK,
-            id.as_str(),
-            VanillaText::Formatted {
-                template: "Cannot find block '{}'",
-                args: vec![id.as_str().to_owned()],
-            },
-            Severity::Error,
-            Kept::Kept,
+        out.push(
+            unresolved(
+                origin,
+                at,
+                BLOCK,
+                id.as_str(),
+                VanillaText::Formatted {
+                    template: "Cannot find block '{}'",
+                    args: vec![id.as_str().to_owned()],
+                },
+                Severity::Error,
+            )
+            .into_kept(),
         );
     }
 }
 
 /// The game's validator line for a rule's block, a second finding beside the block lookup's
 /// own (the block of a state object at its `name`, where the validator holds it).
-fn validator_block<T>(
+fn validator_block(
     id: &BlockId,
     at: &JsonPath,
     payload: &JsonPath,
     targets: &dyn Targets,
-    report: &mut Report<'_, T>,
+    out: &mut Diagnostics,
+    origin: &Origin,
 ) {
     if !targets.block(id) {
-        report.missing_asset(at, payload, BLOCK, id.as_str());
+        missing_asset(out, origin, at, payload, BLOCK, id.as_str());
     }
 }
 
 /// The blocks of a `block_ignore` processor.
-fn block_references<T>(
+fn block_references(
     blocks: &[BlockId],
     at: &JsonPath,
     targets: &dyn Targets,
-    report: &mut Report<'_, T>,
+    out: &mut Diagnostics,
+    origin: &Origin,
 ) {
     for (i, block) in blocks.iter().enumerate() {
-        missing_block(block, &item(at, i), targets, report);
+        missing_block(block, &item(at, i), targets, out, origin);
     }
 }
 
 /// The blocks and loot tables of a list of rules.
-fn rules_references<T>(
+fn rules_references(
     rules: &[ProcessorRule],
     at: &JsonPath,
     payload: &JsonPath,
     targets: &dyn Targets,
-    report: &mut Report<'_, T>,
+    out: &mut Diagnostics,
+    origin: &Origin,
 ) {
     for (i, rule) in rules.iter().enumerate() {
         let at_rule = item(at, i);
@@ -490,32 +521,41 @@ fn rules_references<T>(
                     | BlockPredicate::RandomBlockMatch { block, .. },
                 ) => {
                     let at_block = child(&at_predicate, "block");
-                    missing_block(block, &at_block, targets, report);
-                    validator_block(block, &at_block, payload, targets, report);
+                    missing_block(block, &at_block, targets, out, origin);
+                    validator_block(block, &at_block, payload, targets, out, origin);
                 }
                 Some(
                     BlockPredicate::BlockstateMatch { block_state, .. }
                     | BlockPredicate::RandomBlockstateMatch { block_state, .. },
                 ) => {
                     let at_state = child(&at_predicate, "block_state");
-                    missing_block(&block_state.name, &at_state, targets, report);
+                    missing_block(&block_state.name, &at_state, targets, out, origin);
                     let at_name = child(&at_state, "name");
-                    validator_block(&block_state.name, &at_name, payload, targets, report);
+                    validator_block(&block_state.name, &at_name, payload, targets, out, origin);
                 }
                 _ => {}
             }
         }
         let at_output = child(&at_rule, "output_state");
-        missing_block(&rule.output_state.name, &at_output, targets, report);
+        missing_block(&rule.output_state.name, &at_output, targets, out, origin);
         let at_name = child(&at_output, "name");
-        validator_block(&rule.output_state.name, &at_name, payload, targets, report);
+        validator_block(
+            &rule.output_state.name,
+            &at_name,
+            payload,
+            targets,
+            out,
+            origin,
+        );
         // An empty loot table was dropped at load, so only a named one is looked up.
         if let Some(BlockEntityModifier::AppendLoot { loot_table, .. }) =
             &rule.block_entity_modifier
             && !targets.loot_table(loot_table)
         {
             // A file reference: the validator's "Invalid asset path".
-            report.invalid_asset_path(
+            invalid_asset_path(
+                out,
+                origin,
                 &child(&child(&at_rule, "block_entity_modifier"), "loot_table"),
                 payload,
                 LOOT_TABLE,

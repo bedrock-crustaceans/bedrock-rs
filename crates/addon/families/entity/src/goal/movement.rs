@@ -1,7 +1,7 @@
 //! Movement goals: wandering, following, fleeing and moving to places.
 
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
 };
 use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::json::{StrictBool, StrictFloat, StrictInt, StrictString, Value};
@@ -4659,14 +4659,10 @@ impl MolangFields for Panic {
 pub(crate) fn legacy_warning(key: &str, text: &'static str) -> Diagnostic {
     let mut at = JsonPath::new();
     at.push(key);
-    Diagnostic::new(
-        DiagnosticCode::InvalidValue {
-            text: Some(VanillaText::Fixed(text)),
-        },
-        Severity::Warning,
-        Phase::Parse,
-        Location::new(None, None, at, None),
-    )
+    Diagnostic::warn(DiagnosticCode::InvalidValue {
+        text: Some(VanillaText::Fixed(text)),
+    })
+    .at(at)
 }
 
 /// The members of the game's shared tempt base, common to `tempt` and `float_tempt`: one

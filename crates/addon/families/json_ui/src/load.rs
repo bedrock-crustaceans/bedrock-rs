@@ -20,7 +20,7 @@ use super::{
     UiFile, UiPackError, UiPackErrorKind, UiPackReport, lint, write,
 };
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Location, Phase, Severity,
+    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Phase, Severity,
     VanillaText,
 };
 use bedrock_addon_core::document::{
@@ -79,13 +79,7 @@ impl UiFile {
 
 /// The origin of a file read on its own: no pack.
 fn lone(path: &PackPath) -> Origin {
-    Origin::new(
-        PackRef::app_data(),
-        PackSide::Resource,
-        path.clone(),
-        None,
-        Vec::new(),
-    )
+    Origin::file(PackRef::app_data(), PackSide::Resource, path.clone())
 }
 
 /// A document of this unversioned family: no file carries a `format_version`.
@@ -103,15 +97,10 @@ fn document<T>(value: T, origin: Origin, mut diagnostics: Diagnostics) -> Docume
 /// A rejection for a file that is not the JSON object it has to be.
 fn reject(origin: Origin, message: String) -> Rejected {
     let mut diagnostics = Diagnostics::default();
-    diagnostics.push(Diagnostic::new(
-        DiagnosticCode::MalformedInput {
-            message,
-            text: None,
-        },
-        Severity::Error,
-        Phase::Parse,
-        Location::default(),
-    ));
+    diagnostics.push(Diagnostic::error(DiagnosticCode::MalformedInput {
+        message,
+        text: None,
+    }));
     locate(&mut diagnostics, &origin);
     Rejected::new(origin, diagnostics)
 }
@@ -143,16 +132,6 @@ fn json_text(value: &Value, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), 
     write_json(value, out, style)
 }
 
-/// A lint of the crate's own about one file: an information, because the game says nothing about it.
-fn lint(code: DiagnosticCode, path: &[&str]) -> Diagnostic {
-    Diagnostic::new(
-        code,
-        Severity::Info,
-        Phase::Parse,
-        Location::new(None, None, json_path(path), None),
-    )
-}
-
 impl Content for UiFile {
     const NAME: &'static str = "ui file";
     const SIDES: &'static [PackSide] = &[PackSide::Resource];
@@ -174,10 +153,10 @@ impl Content for UiFile {
         if bad_namespace {
             // The game converts the value to a string; the crate puts the file in `_root`
             // instead and says so.
-            diagnostics.push(lint(
-                DiagnosticCode::InvalidType { text: None },
-                &["namespace"],
-            ));
+            diagnostics.push(
+                Diagnostic::info(DiagnosticCode::InvalidType { text: None })
+                    .at(json_path(&["namespace"])),
+            );
         }
         Ok(document(file, origin, diagnostics))
     }
@@ -218,10 +197,10 @@ impl Content for UiDefsList {
             list.ui_defs = write::read_ui_defs(value);
             if !value.is_array() {
                 // The game reads no path from a list that is not an array; the crate says so.
-                diagnostics.push(lint(
-                    DiagnosticCode::InvalidType { text: None },
-                    &["ui_defs"],
-                ));
+                diagnostics.push(
+                    Diagnostic::info(DiagnosticCode::InvalidType { text: None })
+                        .at(json_path(&["ui_defs"])),
+                );
             }
             // What the typed list cannot say (no array, an element that is no string, an
             // empty array against no member at all) is kept as written beside it.
@@ -350,13 +329,7 @@ fn has_ui_file(stack: &StackCx<'_>) -> bool {
 
 /// The `Parse` job: the file's JSON, or why it is none.
 fn parse(file: &WalkFile, _: &LoadContext) -> UiCopy {
-    let origin = Origin::new(
-        file.pack.clone(),
-        file.side,
-        file.path.clone(),
-        None,
-        Vec::new(),
-    );
+    let origin = Origin::file(file.pack.clone(), file.side, file.path.clone());
     // The copy is read with the numbers no double holds clamped, so no layer, file,
     // variable or control of the merge keeps an infinity; the warning names this pack's file.
     let finite = bedrock_addon_core::document::FiniteText::of(&file.bytes);
@@ -430,31 +403,30 @@ impl Report {
         path: &[&str],
         detail: Option<DiagnosticDetail>,
     ) {
-        let location = Location::new(
-            origin.map(|origin| origin.pack.clone()),
-            origin.map(|origin| origin.path.clone()),
-            json_path(path),
-            None,
-        );
         let phase = if matches!(code, DiagnosticCode::MalformedInput { .. }) {
             Phase::Parse
         } else {
             Phase::Validate
         };
-        let mut diagnostic = Diagnostic::new(code, severity, phase, location);
-        diagnostic.detail = detail.map(Box::new);
+        let mut diagnostic = Diagnostic::error(code)
+            .severity(severity)
+            .at(json_path(path))
+            .phase(phase);
+        if let Some(origin) = origin {
+            diagnostic = diagnostic.in_file(origin);
+        }
+        if let Some(detail) = detail {
+            diagnostic = diagnostic.detail(detail);
+        }
         self.diagnostics.push(diagnostic);
     }
 
     /// A content-log error after which the game goes on with the file: a kept error.
     fn push_kept(&mut self, code: DiagnosticCode, origin: Option<&Origin>) {
-        let location = Location::new(
-            origin.map(|origin| origin.pack.clone()),
-            origin.map(|origin| origin.path.clone()),
-            json_path(&[]),
-            None,
-        );
-        let diagnostic = Diagnostic::new(code, Severity::Error, Phase::Validate, location);
+        let mut diagnostic = Diagnostic::error(code).phase(Phase::Validate);
+        if let Some(origin) = origin {
+            diagnostic = diagnostic.in_file(origin);
+        }
         self.diagnostics.push_kept_error(diagnostic);
     }
 

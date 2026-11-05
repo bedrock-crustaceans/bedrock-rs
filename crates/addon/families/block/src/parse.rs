@@ -9,7 +9,7 @@ use super::component::{BlockComponent, DeprecatedComponents, DeprecatedDefinitio
 use super::history::BlockFamily;
 use super::{Block, Description, Permutation};
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
 };
 use bedrock_addon_core::document::{ComponentMap, Extra};
 use bedrock_addon_core::json::{
@@ -235,11 +235,10 @@ fn newest_members(
         // The marker `unknown_members_are_errors` turns into the error that refuses the block
         // (the strict slice rejects an unknown member): only reachable in
         // [1.26.20, 1.26.60), never a warning the load keeps.
-        d.push(finding(
-            DiagnosticCode::UnrecognizedField { text: None },
-            Severity::Warning,
-            child(at, &["minecraft:block_entity", "entity_storage"]),
-        ));
+        d.push(
+            Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None })
+                .at(child(at, &["minecraft:block_entity", "entity_storage"])),
+        );
         entity
             .extra
             .insert("entity_storage".to_owned(), Value::from(value.0));
@@ -260,16 +259,15 @@ fn tell_events(written: bool, events: Option<&Value>, cx: &ParseCx<'_>, d: &mut 
     {
         // The legacy event reader takes them with no deprecation line (the deprecation is the
         // cereal document's), so the crate reports them as an information.
-        d.push(finding(
-            DiagnosticCode::DeprecatedMember {
+        d.push(
+            Diagnostic::info(DiagnosticCode::DeprecatedMember {
                 text: Some(VanillaText::Deprecated {
                     member: "events".to_owned(),
                     version: cx.original_version,
                 }),
-            },
-            Severity::Info,
-            child(&cx.at, &["events"]),
-        ));
+            })
+            .at(child(&cx.at, &["events"])),
+        );
     }
 }
 
@@ -305,11 +303,10 @@ fn reject_crate_members(root: &Value, at: &JsonPath, d: &mut Diagnostics) {
             if object.contains_key(key) {
                 // The marker `unknown_members_are_errors` turns into the error that refuses
                 // the block (cereal documents alone reach here).
-                d.push(finding(
-                    DiagnosticCode::UnrecognizedField { text: None },
-                    Severity::Warning,
-                    child(&path, &[key]),
-                ));
+                d.push(
+                    Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None })
+                        .at(child(&path, &[key])),
+                );
             }
         }
         if object.contains_key("ordered_v1_custom_components") {
@@ -367,12 +364,11 @@ fn section(
             REJECTED_IN_BASE.contains(&key.as_str()) || extra.contains(&key.as_str())
         });
         if refused {
-            d.push(finding(
-                bedrock_addon_core::diagnostic::cereal::key_not_allowed(key),
+            d.push(
                 // The cereal document refuses these keys: an error that fails the block.
-                Severity::Error,
-                child(at, &[key]),
-            ));
+                Diagnostic::error(bedrock_addon_core::diagnostic::cereal::key_not_allowed(key))
+                    .at(child(at, &[key])),
+            );
         } else if rejected.is_none() && NOT_IN_LEGACY.contains(&key.as_str()) {
             unread.push((key.clone(), value.clone()));
         } else {
@@ -417,16 +413,15 @@ fn section(
         // The schema of the legacy document has no child for the key: the game logs "child
         // '%s' not valid here." at the content log's error level, validation fails and with
         // it the component load: the block is refused.
-        d.push(finding(
-            DiagnosticCode::UnrecognizedComponent {
+        d.push(
+            Diagnostic::error(DiagnosticCode::UnrecognizedComponent {
                 text: Some(VanillaText::Formatted {
                     template: CHILD_NOT_VALID,
                     args: vec![key.clone()],
                 }),
-            },
-            Severity::Error,
-            child(at, &[&key]),
-        ));
+            })
+            .at(child(at, &[&key])),
+        );
         let json =
             bedrock_addon_core::json::from_str_jsonc::<Value>(raw.as_str()).unwrap_or(Value::NULL);
         map.insert_unknown(&key, json);
@@ -464,11 +459,9 @@ fn parse_entry<T: for<'f> Facet<'f>>(
                 for (path, _) in keep_unknown_members(&mut value, &json) {
                     let mut full = at.clone();
                     full.append(&path);
-                    d.push(finding(
-                        DiagnosticCode::UnrecognizedField { text: None },
-                        Severity::Info,
-                        full,
-                    ));
+                    d.push(
+                        Diagnostic::info(DiagnosticCode::UnrecognizedField { text: None }).at(full),
+                    );
                 }
             }
             Some(value)
@@ -476,18 +469,12 @@ fn parse_entry<T: for<'f> Facet<'f>>(
         Err(error) => {
             let mut full = at.clone();
             full.append(&error.path);
-            d.push(finding(
-                DiagnosticCode::InvalidType { text: None },
-                Severity::Info,
-                full,
-            ));
+            d.push(Diagnostic::info(DiagnosticCode::InvalidType { text: None }).at(full));
             // The entry goes whole for one member: told at the entry too, unless the member's finding is at the entry itself.
             if !error.path.is_empty() {
-                d.push(finding(
-                    DiagnosticCode::DroppedField { text: None },
-                    Severity::Info,
-                    at.clone(),
-                ));
+                d.push(
+                    Diagnostic::info(DiagnosticCode::DroppedField { text: None }).at(at.clone()),
+                );
             }
             None
         }
@@ -501,16 +488,6 @@ pub(crate) fn child(base: &JsonPath, keys: &[&str]) -> JsonPath {
         path.push(key);
     }
     path
-}
-
-/// A parse finding at `path`.
-fn finding(code: DiagnosticCode, severity: Severity, path: JsonPath) -> Diagnostic {
-    Diagnostic::new(
-        code,
-        severity,
-        Phase::Parse,
-        Location::new(None, None, path, None),
-    )
 }
 
 // ---- Molang  -------------------

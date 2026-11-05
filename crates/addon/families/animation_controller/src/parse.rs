@@ -9,7 +9,7 @@ use super::{
     StateAnimation, StateVariable, Transition,
 };
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, Location, Phase, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, Severity, VanillaText,
 };
 use bedrock_addon_core::json::JsonSlice;
 use bedrock_addon_core::load::LoadContext;
@@ -220,12 +220,11 @@ pub(crate) fn parse_as_written(
 /// with an info of the crate's own.
 fn non_canonical(walk: &mut Walk) {
     for (at, span) in std::mem::take(&mut walk.non_canonical) {
-        walk.diagnostics.push(Diagnostic::new(
-            DiagnosticCode::NonCanonicalMemberCase,
-            Severity::Info,
-            Phase::Parse,
-            Location::new(None, None, at, Some(span)),
-        ));
+        walk.diagnostics.push(
+            Diagnostic::info(DiagnosticCode::NonCanonicalMemberCase)
+                .at(at)
+                .span(span),
+        );
     }
 }
 

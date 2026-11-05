@@ -5,9 +5,7 @@ use indexmap::IndexMap;
 
 pub use super::super::JigsawBlockMetadata;
 
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, JsonPath, Location, Phase, Severity,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, Phase};
 use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::json::{StrictBool, StrictInt};
 use bedrock_addon_core::version::FormatVersion;
@@ -59,12 +57,11 @@ impl Upgrade for MetadataRegistry {
                 at.push("metadata");
                 at.push(&key);
                 at.push("use_legacy_rotation");
-                cx.diagnostics.push(Diagnostic::new(
-                    DiagnosticCode::DroppedField { text: None },
-                    Severity::Info,
-                    Phase::Upgrade,
-                    Location::new(None, None, at, None),
-                ));
+                cx.diagnostics.push(
+                    Diagnostic::info(DiagnosticCode::DroppedField { text: None })
+                        .at(at)
+                        .phase(Phase::Upgrade),
+                );
             }
             metadata.insert(
                 key,

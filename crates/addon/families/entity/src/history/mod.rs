@@ -238,12 +238,7 @@ fn object_member(
     if let Some(object) = value.as_object() {
         return Ok(Some(members(object)));
     }
-    d.push(Diagnostic::new(
-        DiagnosticCode::InvalidType { text: None },
-        Severity::Error,
-        Phase::Parse,
-        Location::new(None, None, child(&cx.at, key), None),
-    ));
+    d.push(Diagnostic::error(DiagnosticCode::InvalidType { text: None }).at(child(&cx.at, key)));
     Err(Invalid)
 }
 
@@ -275,17 +270,12 @@ impl Payload {
             } else {
                 Severity::Error
             };
-            d.push(Diagnostic::new(
-                DiagnosticCode::MissingIdentifier { text: None },
-                severity,
-                Phase::Parse,
-                Location::new(
-                    None,
-                    None,
-                    child(&cx.at, "description"),
-                    Some(span_of(payload)),
-                ),
-            ));
+            d.push(
+                Diagnostic::error(DiagnosticCode::MissingIdentifier { text: None })
+                    .at(child(&cx.at, "description"))
+                    .span(span_of(payload))
+                    .severity(severity),
+            );
             return None;
         }
         let components = object_member(shell.components, "components", cx, d).ok()?;
@@ -302,12 +292,10 @@ impl Payload {
                 // the typed slice from 1.21.89 refuses the entity (cereal's
                 // "expected an object" is an error, and the entity's level-3 "failed to load" line
                 // follows): an error.
-                d.push(Diagnostic::new(
-                    DiagnosticCode::InvalidValue { text: None },
-                    Severity::Error,
-                    Phase::Parse,
-                    Location::new(None, None, child(&groups_at, name), None),
-                ));
+                d.push(
+                    Diagnostic::error(DiagnosticCode::InvalidValue { text: None })
+                        .at(child(&groups_at, name)),
+                );
                 false
             });
         }
@@ -324,12 +312,10 @@ impl Payload {
             // the key acts by its presence, "any value"; a value that is not
             // `true` skips the rewrites all the same, which is told (an information, the game
             // does not read the value).
-            d.push(Diagnostic::new(
-                DiagnosticCode::InvalidType { text: None },
-                Severity::Info,
-                Phase::Parse,
-                Location::new(None, None, child(&cx.at, "do_not_upgrade"), None),
-            ));
+            d.push(
+                Diagnostic::info(DiagnosticCode::InvalidType { text: None })
+                    .at(child(&cx.at, "do_not_upgrade")),
+            );
         }
         Some(Self {
             description,
@@ -389,12 +375,11 @@ pub(crate) fn into_latest(payload: &Payload, cx: &mut UpgradeCx<'_>) -> Entity {
     at.push(<Entity as Family>::PAYLOAD_KEY);
     let Ok(text) = bedrock_addon_core::json::to_json(&payload.write()) else {
         // A non-finite number cannot come from JSON text, so this is not reached.
-        cx.diagnostics.push(Diagnostic::new(
-            DiagnosticCode::InternalError,
-            Severity::Error,
-            Phase::Upgrade,
-            Location::new(None, None, at, None),
-        ));
+        cx.diagnostics.push(
+            Diagnostic::error(DiagnosticCode::InternalError)
+                .at(at)
+                .phase(Phase::Upgrade),
+        );
         return placeholder(payload);
     };
     let mut reader = Reader {

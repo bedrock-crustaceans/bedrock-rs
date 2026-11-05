@@ -4,7 +4,7 @@
 use std::convert::Infallible;
 
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, VanillaText,
 };
 use bedrock_addon_core::document::{Document, Origin, Rejected, VersionInfo};
 use bedrock_addon_core::json::{
@@ -54,15 +54,10 @@ fn locate(diagnostics: &mut Diagnostics, origin: &Origin) {
 /// The rejection of a file that is no text.
 fn unreadable(origin: Origin) -> Rejected {
     let mut diagnostics = Diagnostics::default();
-    diagnostics.push(Diagnostic::new(
-        DiagnosticCode::MalformedInput {
-            message: "not UTF-8 JSON within the nesting limit".to_owned(),
-            text: None,
-        },
-        Severity::Error,
-        Phase::Parse,
-        Location::default(),
-    ));
+    diagnostics.push(Diagnostic::error(DiagnosticCode::MalformedInput {
+        message: "not UTF-8 JSON within the nesting limit".to_owned(),
+        text: None,
+    }));
     locate(&mut diagnostics, &origin);
     Rejected::new(origin, diagnostics)
 }
@@ -75,16 +70,6 @@ const MALFORMED_VERSION: &str = "Malformed format version";
 /// a release build is silent, so the crate uses the text for that case.
 const PAYLOAD_KEY_MISMATCH: &str =
     "The payload key does not match the expected one. Expected: '{}'. Actual: '{}'.";
-
-/// An error-level parse finding at `at`.
-fn error(code: DiagnosticCode, at: JsonPath) -> Diagnostic {
-    Diagnostic::new(
-        code,
-        Severity::Error,
-        Phase::Parse,
-        Location::new(None, None, at, None),
-    )
-}
 
 /// The path of the root member `key`.
 fn member(key: &str) -> JsonPath {
@@ -232,12 +217,10 @@ fn envelope<F: Payload>(text: &str) -> Result<Envelope, Box<Diagnostic>> {
         return Ok(passed);
     };
     let malformed = || {
-        error(
-            DiagnosticCode::MalformedFormatVersion {
-                text: Some(VanillaText::Fixed(MALFORMED_VERSION)),
-            },
-            member(FORMAT_VERSION),
-        )
+        Diagnostic::error(DiagnosticCode::MalformedFormatVersion {
+            text: Some(VanillaText::Fixed(MALFORMED_VERSION)),
+        })
+        .at(member(FORMAT_VERSION))
     };
     let (written, array_version) = match &probe.format_version {
         EnvelopeVersion::Absent => (None, false),
@@ -273,22 +256,22 @@ fn envelope<F: Payload>(text: &str) -> Result<Envelope, Box<Diagnostic>> {
                 text: Some(VanillaText::DocumentMemberCount),
             }
         };
-        return Err(Box::new(error(code, JsonPath::new())));
+        return Err(Box::new(Diagnostic::error(code).at(JsonPath::new())));
     }
     if versions == 2 {
-        return Err(Box::new(error(
-            bedrock_addon_core::diagnostic::cereal::payload_missing(),
-            JsonPath::new(),
-        )));
+        return Err(Box::new(
+            Diagnostic::error(bedrock_addon_core::diagnostic::cereal::payload_missing())
+                .at(JsonPath::new()),
+        ));
     }
     let Some(written) = written.filter(|_| versions == 1) else {
         // Two members, neither the version.
-        return Err(Box::new(error(
-            DiagnosticCode::MissingFormatVersion {
+        return Err(Box::new(
+            Diagnostic::error(DiagnosticCode::MissingFormatVersion {
                 text: Some(VanillaText::NoValidVersion),
-            },
-            JsonPath::new(),
-        )));
+            })
+            .at(JsonPath::new()),
+        ));
     };
     // A version without a pre-release tag is printed in full; any other text as written.
     let shown = match (&probe.format_version, written.version) {
@@ -325,15 +308,13 @@ fn foreign_payload<F: Payload>(
     actual: &str,
 ) -> Diagnostic {
     let mismatch = || {
-        error(
-            DiagnosticCode::MissingPayload {
-                text: Some(VanillaText::Formatted {
-                    template: PAYLOAD_KEY_MISMATCH,
-                    args: vec![F::PAYLOAD_KEY.to_owned(), actual.to_owned()],
-                }),
-            },
-            JsonPath::new(),
-        )
+        Diagnostic::error(DiagnosticCode::MissingPayload {
+            text: Some(VanillaText::Formatted {
+                template: PAYLOAD_KEY_MISMATCH,
+                args: vec![F::PAYLOAD_KEY.to_owned(), actual.to_owned()],
+            }),
+        })
+        .at(JsonPath::new())
     };
     if written.beta_literal {
         return mismatch();
@@ -346,22 +327,18 @@ fn foreign_payload<F: Payload>(
                 .zip(F::PAYLOAD_REQUIRED)
                 .is_some_and(|(version, from)| *version >= from);
             if required {
-                error(
-                    DiagnosticCode::MissingRequiredField { text: None },
-                    member(F::PAYLOAD_KEY),
-                )
+                Diagnostic::error(DiagnosticCode::MissingRequiredField { text: None })
+                    .at(member(F::PAYLOAD_KEY))
             } else {
                 mismatch()
             }
         }
-        _ => error(
-            DiagnosticCode::UnsupportedVersion {
-                text: Some(VanillaText::NoParserForVersion {
-                    version: shown.unwrap_or_default().to_owned(),
-                }),
-            },
-            member(FORMAT_VERSION),
-        ),
+        _ => Diagnostic::error(DiagnosticCode::UnsupportedVersion {
+            text: Some(VanillaText::NoParserForVersion {
+                version: shown.unwrap_or_default().to_owned(),
+            }),
+        })
+        .at(member(FORMAT_VERSION)),
     }
 }
 
@@ -433,10 +410,10 @@ fn parse_stage<F: Payload>(document: JsonSlice<'_>, cx: &LoadContext) -> Parsed<
     if envelope.array_version && parsed.value.is_some() {
         // The envelope reads `[1, 21, 40]`; the struct's own `format_version` member is a
         // string.
-        parsed.diagnostics.push(error(
-            DiagnosticCode::InvalidType { text: None },
-            member(FORMAT_VERSION),
-        ));
+        parsed.diagnostics.push(
+            Diagnostic::error(DiagnosticCode::InvalidType { text: None })
+                .at(member(FORMAT_VERSION)),
+        );
         parsed.value = None;
     }
     parsed
@@ -450,7 +427,7 @@ pub(crate) fn parse_file<F: Payload>(
     cx: &LoadContext,
 ) -> Result<Document<F::Latest>, Rejected> {
     let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
-    let origin = Origin::new(pack, PackSide::Resource, path.clone(), None, Vec::new());
+    let origin = Origin::file(pack, PackSide::Resource, path.clone());
     let Some(text) = text(bytes) else {
         return Err(unreadable(origin));
     };
@@ -482,13 +459,7 @@ pub(crate) fn as_written<F: Payload>(
     cx: &LoadContext,
 ) -> Result<Document<F::Any>, Rejected> {
     let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
-    let origin = Origin::new(
-        PackRef::app_data(),
-        PackSide::Resource,
-        path.clone(),
-        None,
-        Vec::new(),
-    );
+    let origin = Origin::file(PackRef::app_data(), PackSide::Resource, path.clone());
     let Some(text) = text(bytes) else {
         return Err(unreadable(origin));
     };
@@ -558,11 +529,10 @@ pub(crate) fn unnamed<F: Payload>(
     cx: &mut bedrock_addon_core::versioning::ValidateCx<'_>,
 ) {
     if F::NAMED && named::<F>(value).is_none() {
-        cx.diagnostics.push(Diagnostic::new(
-            DiagnosticCode::MissingIdentifier { text: None },
-            Severity::Info,
-            Phase::Validate,
-            Location::new(None, None, cx.at.clone(), None),
-        ));
+        cx.diagnostics.push(
+            Diagnostic::info(DiagnosticCode::MissingIdentifier { text: None })
+                .at(cx.at.clone())
+                .phase(Phase::Validate),
+        );
     }
 }

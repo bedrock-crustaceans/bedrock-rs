@@ -33,12 +33,10 @@ fn the_block_merge_is_linear_in_the_entries() {
         let text = shaped_entries(count);
         (0..2)
             .map(|_| ParsedBlocks {
-                origin: Origin::new(
+                origin: Origin::file(
                     PackRef::app_data(),
                     PackSide::Resource,
                     PackPath::from_static("blocks.json"),
-                    None,
-                    Vec::new(),
                 ),
                 read: resolve::read(text.as_bytes(), false),
             })

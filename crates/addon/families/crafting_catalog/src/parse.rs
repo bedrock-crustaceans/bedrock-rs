@@ -9,8 +9,7 @@ use indexmap::IndexMap;
 
 use super::{CatalogItem, Category, CategoryName, CraftingCatalog, Group, GroupIdentifier};
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, Span,
-    VanillaText, code_for_deserialize_error_kind,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Span, VanillaText,
 };
 use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::id::ItemId;
@@ -125,12 +124,11 @@ struct Reader<'d> {
 impl Reader<'_> {
     /// An error-level finding at `at`.
     fn error(&mut self, code: DiagnosticCode, at: JsonPath, slice: Option<JsonSlice<'_>>) {
-        self.d.push(Diagnostic::new(
-            code,
-            Severity::Error,
-            Phase::Parse,
-            Location::new(None, None, at, slice.map(span)),
-        ));
+        let finding = Diagnostic::error(code).at(at);
+        self.d.push(match slice {
+            Some(slice) => finding.span(span(slice)),
+            None => finding,
+        });
     }
 
     /// Requires `slice` to hold a value of type `expected` (a wrong JSON
@@ -156,16 +154,10 @@ impl Reader<'_> {
         match parse_at::<T>(slice) {
             Ok(value) => Some(value),
             Err(error) => {
-                let mut path = at.clone();
-                path.append(&error.path);
-                let code =
-                    code_for_deserialize_error_kind(&error.error.kind, !path.is_empty(), false);
-                self.d.push(Diagnostic::new(
-                    code,
-                    Severity::Error,
-                    Phase::Parse,
-                    Location::new(None, None, path, Some(error.span)),
-                ));
+                // An entry is graded as at a member whenever its full path is not the root.
+                let at_member = !at.is_empty() || error.has_path();
+                self.d
+                    .push(error.into_diagnostic(at, |_, error| error.code_with_path(at_member)));
                 None
             }
         }
@@ -227,12 +219,11 @@ impl Reader<'_> {
             if known.contains(&key.as_str()) {
                 continue;
             }
-            self.d.push(Diagnostic::new(
-                DiagnosticCode::UnrecognizedField { text: None },
-                Severity::Warning,
-                Phase::Parse,
-                Location::new(None, None, member(at, key), Some(span(*slice))),
-            ));
+            self.d.push(
+                Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None })
+                    .at(member(at, key))
+                    .span(span(*slice)),
+            );
         }
         Extra::default()
     }

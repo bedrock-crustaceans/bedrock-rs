@@ -47,7 +47,7 @@ pub(crate) fn parse_file(
     bytes: &[u8],
     cx: &LoadContext,
 ) -> Result<Document<LootTable>, Rejected> {
-    let origin = Origin::new(pack, side, path.clone(), None, Vec::new());
+    let origin = Origin::file(pack, side, path.clone());
     // A number no double holds is read as the largest finite one, with a warning.
     let finite = FiniteText::of(bytes);
     let (table, mut diagnostics) = parse_table(path, finite.bytes(), cx);

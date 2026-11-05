@@ -3,9 +3,7 @@
 use bedrock_addon_core::load::LoadContext;
 
 use super::{Contents, Layout, Structure, parse};
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, Location, Phase, Severity,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, Phase};
 
 impl Structure {
     /// The most positions [`Structure::new`] fills: 64 × 384 × 64, the largest box
@@ -49,15 +47,13 @@ impl Structure {
             Ok(bytes) => parse::read(&bytes, cx).1,
             Err(error) => {
                 let mut findings = Diagnostics::default();
-                findings.push(Diagnostic::new(
-                    DiagnosticCode::MalformedInput {
+                findings.push(
+                    Diagnostic::error(DiagnosticCode::MalformedInput {
                         message: error.to_string(),
                         text: None,
-                    },
-                    Severity::Error,
-                    Phase::Validate,
-                    Location::default(),
-                ));
+                    })
+                    .phase(Phase::Validate),
+                );
                 findings
             }
         }

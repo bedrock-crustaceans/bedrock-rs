@@ -5,9 +5,7 @@ use super::component::BlockComponent;
 use super::history::{Any, BlockFamily};
 use super::parse::CEREAL;
 use super::{Block, validate};
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
 use bedrock_addon_core::document::{
     CombineRule, Content, Contribution, Definition, Document, JsonContent, NoBeta, Origin, Placed,
     Registry, RegistryBuilder, Rejected, default_path,
@@ -253,28 +251,22 @@ fn text<'b>(bytes: &'b [u8], _: &Origin) -> Option<&'b str> {
 
 /// The finding of an unreadable file.
 fn malformed() -> Diagnostic {
-    Diagnostic::new(
-        DiagnosticCode::MalformedInput {
-            message: "not UTF-8 JSON within the nesting limit".to_owned(),
-            text: None,
-        },
-        Severity::Error,
-        Phase::Parse,
-        bedrock_addon_core::diagnostic::Location::default(),
-    )
+    Diagnostic::error(DiagnosticCode::MalformedInput {
+        message: "not UTF-8 JSON within the nesting limit".to_owned(),
+        text: None,
+    })
 }
 
 /// A rejection with one finding.
 fn reject(origin: Origin, finding: Diagnostic) -> Rejected {
     let mut diagnostics = Diagnostics::default();
     diagnostics.push(finding);
-    locate(&mut diagnostics, &origin);
-    Rejected::new(origin, diagnostics)
+    Rejected::located(origin, diagnostics)
 }
 
 /// The origin of a file of `pack`.
 fn origin(pack: PackRef, side: PackSide, path: &PackPath) -> Origin {
-    Origin::new(pack, side, path.clone(), None, Vec::new())
+    Origin::file(pack, side, path.clone())
 }
 
 /// Gives every finding the document's pack and file.

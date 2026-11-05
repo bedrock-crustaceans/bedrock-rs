@@ -10,9 +10,7 @@ use super::texts::{
     SCENE_COMMAND_TYPE, URL_TYPE, formatted,
 };
 use super::{Button, DialogueScene, DialogueText, StoredCommand};
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
 use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::id::DialogueSceneTag;
 use bedrock_addon_core::json::{MAX_JSON_DEPTH, Value, check_depth, strip_bom};
@@ -91,16 +89,6 @@ pub(crate) fn read(stem: &str, bytes: &[u8], cx: &LoadContext) -> Result<ReadFil
     file.ok_or(reader.diagnostics)
 }
 
-/// A finding at `at`, without pack and file.
-pub(crate) fn finding(code: DiagnosticCode, severity: Severity, at: JsonPath) -> Diagnostic {
-    Diagnostic::new(
-        code,
-        severity,
-        Phase::Parse,
-        Location::new(None, None, at, None),
-    )
-}
-
 /// The member `key` of `value`, as jsoncpp's const `operator[]` and `isNull` see it: `None` when
 /// `value` is not an object, the member is absent, or it is `null`.
 fn member<'v>(value: &'v Value, key: &str) -> Option<&'v Value> {
@@ -119,11 +107,10 @@ fn unknown(value: &Value, known: &[&str], at: &JsonPath, diagnostics: &mut Diagn
         if known.contains(&key.as_str()) {
             continue;
         }
-        diagnostics.push(finding(
-            DiagnosticCode::UnrecognizedField { text: None },
-            Severity::Info,
-            child(at, key.as_str()),
-        ));
+        diagnostics.push(
+            Diagnostic::info(DiagnosticCode::UnrecognizedField { text: None })
+                .at(child(at, key.as_str())),
+        );
         extra.insert(key.as_str().to_owned(), member.clone());
     }
     extra
@@ -284,11 +271,8 @@ impl Reader<'_> {
         {
             // The literal `beta` is read as the sentinel 9999.9999.9999-beta. The game writes no
             // content-log line for it, so the crate reports it as an information.
-            self.diagnostics.push(finding(
-                DiagnosticCode::InvalidValue { text: None },
-                Severity::Info,
-                at.clone(),
-            ));
+            self.diagnostics
+                .push(Diagnostic::info(DiagnosticCode::InvalidValue { text: None }).at(at.clone()));
         }
         // A plain `<` against the floor: 1.14.0 itself loads.
         if version < SemVersion::from(FLOOR) {
@@ -306,7 +290,7 @@ impl Reader<'_> {
 
     /// A file-level error.
     fn error(&mut self, code: DiagnosticCode, at: JsonPath) {
-        self.diagnostics.push(finding(code, Severity::Error, at));
+        self.diagnostics.push(Diagnostic::error(code).at(at));
     }
 
     /// One scene element.
@@ -354,11 +338,10 @@ impl Reader<'_> {
             Some(value) => text(value).unwrap_or_else(|| {
                 // The game reads these without a content-log line, so the crate reports the
                 // coercion as an information.
-                diagnostics.push(finding(
-                    DiagnosticCode::InvalidType { text: None },
-                    Severity::Info,
-                    child(at, "text"),
-                ));
+                diagnostics.push(
+                    Diagnostic::info(DiagnosticCode::InvalidType { text: None })
+                        .at(child(at, "text")),
+                );
                 DialogueText::Plain(
                     match value.as_bool() {
                         Some(true) => "true",
@@ -426,7 +409,7 @@ impl Reader<'_> {
         diagnostics: &mut Diagnostics,
     ) -> Option<Button> {
         let mut warn = |code: DiagnosticCode, at: JsonPath| {
-            diagnostics.push_kept_error(finding(code, Severity::Error, at));
+            diagnostics.push_kept_error(Diagnostic::error(code).at(at));
         };
         // An absent or null name and one that is neither a string nor an object share one text.
         let Some(name) = member(button, "name") else {
@@ -495,11 +478,9 @@ impl Reader<'_> {
         if button.label_is_cut() {
             // The label is cut, not the name; the game says nothing, so the crate reports an
             // information.
-            diagnostics.push(finding(
-                DiagnosticCode::ClampedValue { text: None },
-                Severity::Info,
-                child(at, "name"),
-            ));
+            diagnostics.push(
+                Diagnostic::info(DiagnosticCode::ClampedValue { text: None }).at(child(at, "name")),
+            );
         }
         Some(button)
     }
@@ -524,13 +505,12 @@ impl Reader<'_> {
                 Some(raw) => kept.extend(self.command(raw.as_str())),
                 // The game logs it at the content log's error level and skips the command, so
                 // the finding is a kept error.
-                None => diagnostics.push_kept_error(finding(
-                    DiagnosticCode::InvalidType {
+                None => diagnostics.push_kept_error(
+                    Diagnostic::error(DiagnosticCode::InvalidType {
                         text: formatted(SCENE_COMMAND_TYPE, &[self.stem, name]),
-                    },
-                    Severity::Error,
-                    element(&list_at, index),
-                )),
+                    })
+                    .at(element(&list_at, index)),
+                ),
             }
         }
         Some(kept)
@@ -585,6 +565,6 @@ fn dropped(
     code: DiagnosticCode,
     at: JsonPath,
 ) -> SceneOutcome {
-    diagnostics.push(finding(code, Severity::Error, at));
+    diagnostics.push(Diagnostic::error(code).at(at));
     SceneOutcome::Dropped(tag, diagnostics)
 }

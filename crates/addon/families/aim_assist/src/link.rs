@@ -7,7 +7,7 @@ use std::collections::{HashMap, HashSet};
 
 use super::AimAssist;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Location, Phase, Severity,
+    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Phase,
 };
 use bedrock_addon_core::document::{Document, Origin};
 use bedrock_addon_core::id::AimAssistPresetId;
@@ -63,60 +63,43 @@ enum Step<'a> {
 
 use Step::{Index, Key};
 
-/// One document's findings.
-struct Report<'a> {
-    origin: &'a Origin,
-    /// The payload's path.
-    base: &'static str,
-    out: &'a mut Diagnostics,
-}
-
-impl Report<'_> {
-    /// An `UnresolvedReference` information for the `kind` named `id` at `path` below the
-    /// payload. `link()` makes the references the game's linked-asset validator holds errors
-    /// with its line (`with_validator_line`), and a preset's `aim_assist.preset` is checked by
-    /// neither folder.
-    fn miss(&mut self, path: &[Step<'_>], kind: &'static str, id: &str) {
-        let mut at = JsonPath::new();
-        at.push(self.base);
-        for step in path {
-            match *step {
-                Index(index) => at.push_index(index),
-                Key(key) => at.push(key),
-            }
+/// An `UnresolvedReference` information in the file of `origin` for the `kind` named `id` at
+/// `path` below the payload `base`. `link()` makes the references the game's linked-asset
+/// validator holds errors with its line (`with_validator_line`), and a preset's
+/// `aim_assist.preset` is checked by neither folder.
+fn miss(
+    out: &mut Diagnostics,
+    origin: &Origin,
+    base: &str,
+    path: &[Step<'_>],
+    kind: &'static str,
+    id: &str,
+) {
+    let mut at = JsonPath::new();
+    at.push(base);
+    for step in path {
+        match *step {
+            Index(index) => at.push_index(index),
+            Key(key) => at.push(key),
         }
-        let mut finding = Diagnostic::new(
-            DiagnosticCode::UnresolvedReference { text: None },
-            Severity::Info,
-            Phase::Link,
-            Location::new(
-                Some(self.origin.pack.clone()),
-                Some(self.origin.path.clone()),
-                at,
-                None,
-            ),
-        );
-        finding.detail = Some(Box::new(DiagnosticDetail::Reference {
-            kind,
-            id: id.to_owned(),
-            hint: None,
-        }));
-        self.out.push(finding);
     }
+    out.push(
+        Diagnostic::info(DiagnosticCode::UnresolvedReference { text: None })
+            .at(at)
+            .phase(Phase::Link)
+            .in_file(origin)
+            .detail(DiagnosticDetail::Reference {
+                kind,
+                id: id.to_owned(),
+                hint: None,
+            }),
+    );
 }
 
-/// The report of `document`, whose payload is under `base`.
-fn report<'a, T>(
-    document: &'a Document<T>,
-    base: &'static str,
-    out: &'a mut Diagnostics,
-) -> Report<'a> {
-    Report {
-        origin: document.origin(),
-        base,
-        out,
-    }
-}
+/// The payload of a categories file.
+const CATEGORIES: &str = "minecraft:aim_assist_categories";
+/// The payload of a preset file.
+const PRESET: &str = "minecraft:aim_assist_preset";
 
 const BLOCK: &str = <kind::Block as Kind>::NAME;
 const ENTITY: &str = <kind::Entity as Kind>::NAME;
@@ -150,7 +133,6 @@ pub fn link(group: &AimAssist, targets: &dyn Targets) -> Diagnostics {
             .or_insert(0);
         let position = *next;
         *next += 1;
-        let mut report = report(document, "minecraft:aim_assist_categories", &mut out);
         let priorities = &document.priorities;
         for key in priorities.entities.iter().flat_map(|map| map.keys()) {
             if !targets.entity(&entity_key(key)) {
@@ -161,7 +143,7 @@ pub fn link(group: &AimAssist, targets: &dyn Targets) -> Diagnostics {
                     Key("entities"),
                     Key(key),
                 ];
-                report.miss(&path, ENTITY, key);
+                miss(&mut out, origin, CATEGORIES, &path, ENTITY, key);
             }
         }
         for key in priorities.blocks.iter().flat_map(|map| map.keys()) {
@@ -173,38 +155,41 @@ pub fn link(group: &AimAssist, targets: &dyn Targets) -> Diagnostics {
                     Key("blocks"),
                     Key(key),
                 ];
-                report.miss(&path, BLOCK, key);
+                miss(&mut out, origin, CATEGORIES, &path, BLOCK, key);
             }
         }
     }
 
     for (_, document) in &group.presets {
-        let mut report = report(document, "minecraft:aim_assist_preset", &mut out);
+        let origin = document.origin();
         if let Some(settings) = &document.exclusion_settings {
             for (i, id) in settings.blocks.iter().flatten().enumerate() {
                 if !targets.block(&id.as_str().to_lowercase()) {
                     let path = [Key("exclusion_settings"), Key("blocks"), Index(i)];
-                    report.miss(&path, BLOCK, id.as_str());
+                    miss(&mut out, origin, PRESET, &path, BLOCK, id.as_str());
                 }
             }
             for (i, id) in settings.entities.iter().flatten().enumerate() {
                 if !targets.entity(&entity_key(id.as_str())) {
                     let path = [Key("exclusion_settings"), Key("entities"), Index(i)];
-                    report.miss(&path, ENTITY, id.as_str());
+                    miss(&mut out, origin, PRESET, &path, ENTITY, id.as_str());
                 }
             }
         }
         for (i, id) in document.liquid_targeting_list.iter().flatten().enumerate() {
             if !targets.item(&item_key(id.as_str())) {
-                report.miss(&[Key("liquid_targeting_list"), Index(i)], ITEM, id.as_str());
+                let path = [Key("liquid_targeting_list"), Index(i)];
+                miss(&mut out, origin, PRESET, &path, ITEM, id.as_str());
             }
         }
         for (item, id) in document.item_settings.iter().flatten() {
             if !targets.item(&item_key(item)) {
-                report.miss(&[Key("item_settings"), Key(item)], ITEM, item);
+                let path = [Key("item_settings"), Key(item)];
+                miss(&mut out, origin, PRESET, &path, ITEM, item);
             }
             if !category(id.as_str()) {
-                report.miss(&[Key("item_settings"), Key(item)], CATEGORY, id.as_str());
+                let path = [Key("item_settings"), Key(item)];
+                miss(&mut out, origin, PRESET, &path, CATEGORY, id.as_str());
             }
         }
         // An absent member is the game's `minecraft:default` / `minecraft:empty_hand` at run
@@ -214,7 +199,7 @@ pub fn link(group: &AimAssist, targets: &dyn Targets) -> Diagnostics {
             ("hand_settings", &document.hand_settings),
         ] {
             if let Some(id) = id.as_ref().filter(|id| !category(id.as_str())) {
-                report.miss(&[Key(key)], CATEGORY, id.as_str());
+                miss(&mut out, origin, PRESET, &[Key(key)], CATEGORY, id.as_str());
             }
         }
     }
@@ -243,7 +228,10 @@ pub fn link_camera_presets<'a, T: 'a>(
     for (document, id) in references {
         let key = id.as_str().to_lowercase();
         if !presets.contains(&key) && !targets.preset(&key) {
-            report(document, "minecraft:camera_preset", &mut out).miss(
+            miss(
+                &mut out,
+                document.origin(),
+                "minecraft:camera_preset",
                 &[Key("aim_assist"), Key("preset")],
                 <kind::AimAssistPreset as Kind>::NAME,
                 id.as_str(),

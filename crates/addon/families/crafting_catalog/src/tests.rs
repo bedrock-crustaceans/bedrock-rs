@@ -83,7 +83,7 @@ fn group(name: Option<&str>, items: &[&str]) -> Group {
 /// A merged catalogue with `groups` in `category`, every entry placed by `pack1`.
 fn merged(category: CategoryName, groups: Vec<Group>) -> Merged<CraftingCatalog> {
     let mut value = super::merge::empty();
-    let origin = Origin::new(
+    let origin = Origin::file(
         PackRef::new(
             0,
             PackIdVersion::new(
@@ -95,8 +95,6 @@ fn merged(category: CategoryName, groups: Vec<Group>) -> Merged<CraftingCatalog>
         ),
         PackSide::Behavior,
         PackPath::from_static(PATH),
-        None,
-        Vec::new(),
     );
     let mut origins = IndexMap::new();
     for group in &groups {
@@ -446,7 +444,7 @@ fn located(found: &Diagnostics) -> Vec<(String, String)> {
 #[test]
 fn link_findings_are_read_from_the_layer_that_placed_the_entry() {
     let origin_of = |index: usize, name: &str| {
-        Origin::new(
+        Origin::file(
             PackRef::new(
                 index,
                 PackIdVersion::new(
@@ -458,8 +456,6 @@ fn link_findings_are_read_from_the_layer_that_placed_the_entry() {
             ),
             PackSide::Behavior,
             PackPath::from_static(PATH),
-            None,
-            Vec::new(),
         )
     };
     let file = |groups: Vec<Group>| CraftingCatalog {

@@ -14,7 +14,7 @@ use super::{
     metadata,
 };
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, JsonPathSegment, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, JsonPathSegment, VanillaText,
 };
 use bedrock_addon_core::document::{
     Content, Document, JsonContent, Merge, Merged, Origin, Placed, Rejected,
@@ -22,7 +22,7 @@ use bedrock_addon_core::document::{
 use bedrock_addon_core::json::{EncodeError, WriteStyle};
 use bedrock_addon_core::load::Reported;
 use bedrock_addon_support::fixed_path::{
-    Authored, FileCopy, document, finding, json_text, lone, malformed, origin, reject,
+    Authored, FileCopy, document, json_text, lone, malformed, origin, reject,
 };
 use bedrock_addon_support::jsoncpp::read;
 
@@ -47,10 +47,7 @@ fn read_metadata(origin: Origin, bytes: &[u8]) -> FileCopy<FontMetadata> {
             // The game keeps its default fonts and writes its line to the developer log, not the
             // content log: an information with its text, the file still refused.
             let code = malformed(message.to_string(), Some(metadata::NOT_JSON));
-            return Err(reject(
-                origin,
-                finding(code, Severity::Info, JsonPath::new()),
-            ));
+            return Err(reject(origin, Diagnostic::info(code)));
         }
     };
     if !FontMetadata::version_is_supported(&root) {
@@ -61,7 +58,7 @@ fn read_metadata(origin: Origin, bytes: &[u8]) -> FileCopy<FontMetadata> {
         };
         let mut at = JsonPath::new();
         at.push("version");
-        return Err(reject(origin, finding(code, Severity::Info, at)));
+        return Err(reject(origin, Diagnostic::info(code).at(at)));
     }
     let mut diagnostics = Diagnostics::default();
     // A number no double holds is read as the largest finite one, with a warning.
@@ -102,10 +99,7 @@ fn read_emoticons(origin: Origin, bytes: &[u8]) -> FileCopy<EmoticonList> {
             // No emoticons; the game's "Malformed JSON" is a developer assert: an information
             // with its text, the file still refused.
             let code = malformed(message.to_string(), Some(emoticons::MALFORMED));
-            return Err(reject(
-                origin,
-                finding(code, Severity::Info, JsonPath::new()),
-            ));
+            return Err(reject(origin, Diagnostic::info(code)));
         }
     };
     let mut diagnostics = Diagnostics::default();

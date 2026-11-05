@@ -5,7 +5,7 @@
 use std::collections::HashMap;
 
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, JsonPath, Location, Phase, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, DiagnosticDetail, JsonPath, VanillaText,
 };
 
 pub(super) const META_NOT_FOUND: &str = "Could not find expected metafile json file {}";
@@ -50,16 +50,6 @@ pub(super) fn vanilla<const N: usize>(
     })
 }
 
-/// A finding at `at` of the file being read.
-pub(super) fn finding(code: DiagnosticCode, severity: Severity, at: JsonPath) -> Diagnostic {
-    Diagnostic::new(
-        code,
-        severity,
-        Phase::Parse,
-        Location::new(None, None, at, None),
-    )
-}
-
 /// `finding` with the name a reference could not be resolved to.
 pub(super) fn unresolved(
     kind: &'static str,
@@ -67,20 +57,15 @@ pub(super) fn unresolved(
     text: Option<VanillaText>,
     at: JsonPath,
 ) -> Diagnostic {
-    let mut found = finding(
-        DiagnosticCode::UnresolvedReference { text },
-        // Every caller sets the severity it means (an information of the crate's own, or an
-        // error the game logs for a missing geometry name or animation); the helper's own is
-        // the least.
-        Severity::Info,
-        at,
-    );
-    found.detail = Some(Box::new(DiagnosticDetail::Reference {
-        kind,
-        id: name.to_owned(),
-        hint: None,
-    }));
-    found
+    // Every caller sets the severity it means (an information of the crate's own, or an error
+    // the game logs for a missing geometry name or animation); the helper's own is the least.
+    Diagnostic::info(DiagnosticCode::UnresolvedReference { text })
+        .at(at)
+        .detail(DiagnosticDetail::Reference {
+            kind,
+            id: name.to_owned(),
+            hint: None,
+        })
 }
 
 /// The translation key the game shows a piece by: `persona.` + `name` + `.title`, the prefix

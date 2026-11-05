@@ -11,11 +11,10 @@ use facet_value::VObject;
 use indexmap::IndexMap;
 
 use super::history;
-use super::parse::{finding, formatted};
-use super::validate::Check;
+use super::parse::formatted;
 use super::{Feature, blocks, carver, placement, scatter, structure, tree};
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity, VanillaText,
 };
 use bedrock_addon_core::document::{
     CombineRule, Content, Contribution, Definition, Document, JsonContent, NoBeta, Origin, Placed,
@@ -81,7 +80,7 @@ pub(crate) trait Rules {
     const FLOOR: FormatVersion = V1_13_0;
     /// The type's schema rules on the loaded value, at the payload's path.
     #[allow(unused_variables)]
-    fn rules(&mut self, check: &mut Check<'_>) {}
+    fn rules(&mut self, check: &mut ValidateCx<'_>) {}
     /// The value in an older struct's layout and that struct's version, when the newest
     /// struct's schema would reject it (an upgraded document the newest layout cannot hold, for
     /// example a single block feature whose `places_block` is a `{tags}` descriptor, which has
@@ -136,8 +135,7 @@ impl<T: FeatureType> Family for Fam<T> {
 
     fn validate(v: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {
         if let Loaded::Stable(value) = v {
-            let mut check = Check::new(cx.at.clone(), cx.load, cx.original_version, cx.diagnostics);
-            value.rules(&mut check);
+            value.rules(cx);
         }
     }
 }
@@ -412,11 +410,6 @@ const INTERNAL_TYPE: &str = "The feature uses the feature type '{}', which is co
 /// later).
 const DUPLICATE: &str = "Feature with identifier '{}' already exists";
 
-/// An error of the loader stage at the document root.
-fn loader_error(code: DiagnosticCode, at: JsonPath) -> Diagnostic {
-    finding(code, Severity::Error, Phase::Parse, at, None)
-}
-
 /// The text of a file, after the BOM and the depth check; `None` when it is not UTF-8 or too
 /// deep.
 fn text_of(bytes: &[u8]) -> Option<&str> {
@@ -452,7 +445,7 @@ fn payload_key(root: &Value) -> String {
 
 /// The origin of a file of `pack`.
 fn origin(pack: PackRef, side: PackSide, path: &PackPath) -> Origin {
-    Origin::new(pack, side, path.clone(), None, Vec::new())
+    Origin::file(pack, side, path.clone())
 }
 
 /// Gives every finding the document's pack and file.
@@ -486,23 +479,23 @@ fn type_checks<T: FeatureType>(stage: &Stage<'_>) -> Result<(), Diagnostics> {
     let mut at = JsonPath::new();
     if T::SINCE_ENGINE.is_some_and(|since| stage.cx.engine_version < since) {
         // The engine has not registered the type.
-        d.push(loader_error(
-            DiagnosticCode::UnknownPayloadKey {
+        d.push(
+            Diagnostic::error(DiagnosticCode::UnknownPayloadKey {
                 name: stage.key.to_owned(),
-            },
-            at,
-        ));
+            })
+            .at(at),
+        );
         return Err(d);
     }
     if T::INTERNAL && !stage.cx.is_base_game_pack {
         // An internal type is for the game's own packs.
         at.push(T::KEY);
-        d.push(loader_error(
-            DiagnosticCode::MissingToggles {
+        d.push(
+            Diagnostic::error(DiagnosticCode::MissingToggles {
                 text: Some(formatted(INTERNAL_TYPE, &[&stage.key])),
-            },
-            at,
-        ));
+            })
+            .at(at),
+        );
         return Err(d);
     }
     let version = file_version(JsonSlice::new(stage.text));
@@ -513,12 +506,12 @@ fn type_checks<T: FeatureType>(stage: &Stage<'_>) -> Result<(), Diagnostics> {
         && let Some(version) = version
         && version < T::FLOOR
     {
-        d.push(loader_error(
-            DiagnosticCode::UnknownPayloadKey {
+        d.push(
+            Diagnostic::error(DiagnosticCode::UnknownPayloadKey {
                 name: stage.key.to_owned(),
-            },
-            at,
-        ));
+            })
+            .at(at),
+        );
         return Err(d);
     }
     // Below the floor no parser's range matches: the client's "no parser available".
@@ -526,14 +519,14 @@ fn type_checks<T: FeatureType>(stage: &Stage<'_>) -> Result<(), Diagnostics> {
         && version < T::FLOOR
     {
         at.push("format_version");
-        d.push(loader_error(
-            DiagnosticCode::UnsupportedVersion {
+        d.push(
+            Diagnostic::error(DiagnosticCode::UnsupportedVersion {
                 text: Some(VanillaText::NoParserForVersion {
                     version: version.to_string(),
                 }),
-            },
-            at,
-        ));
+            })
+            .at(at),
+        );
         return Err(d);
     }
     Ok(())
@@ -634,13 +627,10 @@ fn identify<'b>(
     let file = path.to_string();
     let invalid = |message: String| {
         let mut d = Diagnostics::default();
-        d.push(loader_error(
-            DiagnosticCode::MalformedInput {
-                message,
-                text: Some(formatted(INVALID_JSON, &[&file])),
-            },
-            JsonPath::new(),
-        ));
+        d.push(Diagnostic::error(DiagnosticCode::MalformedInput {
+            message,
+            text: Some(formatted(INVALID_JSON, &[&file])),
+        }));
         d
     };
     let text = text_of(bytes)
@@ -653,7 +643,7 @@ fn identify<'b>(
     .map_err(|e| invalid(e.to_string()))?;
     let one = |code: DiagnosticCode| {
         let mut d = Diagnostics::default();
-        d.push(loader_error(code, JsonPath::new()));
+        d.push(Diagnostic::error(code));
         d
     };
     let Some(identifier) = identifier_in(&root) else {
@@ -703,10 +693,9 @@ pub(crate) fn parse_file(
     };
     let Some((value, version, mut diagnostics)) = with_type(&key, LoadType(stage)) else {
         let mut d = Diagnostics::default();
-        d.push(loader_error(
-            DiagnosticCode::UnknownPayloadKey { name: key.clone() },
-            JsonPath::new(),
-        ));
+        d.push(Diagnostic::error(DiagnosticCode::UnknownPayloadKey {
+            name: key.clone(),
+        }));
         return (Some(identifier), Err(reject(&origin, d)));
     };
     locate(&mut diagnostics, &origin);
@@ -737,10 +726,9 @@ pub(crate) fn parse_file_as_written(
     };
     let Some((value, version, mut diagnostics)) = with_type(&key, ParseType(stage)) else {
         let mut d = Diagnostics::default();
-        d.push(loader_error(
-            DiagnosticCode::UnknownPayloadKey { name: key.clone() },
-            JsonPath::new(),
-        ));
+        d.push(Diagnostic::error(DiagnosticCode::UnknownPayloadKey {
+            name: key.clone(),
+        }));
         return Err(reject(&origin, d));
     };
     locate(&mut diagnostics, &origin);
@@ -989,17 +977,10 @@ fn duplicate(origin: &Origin, id: &FeatureId, text: DuplicateText) -> Diagnostic
         Severity::Info
     };
     let text = text.then(|| formatted(DUPLICATE, &[&id.as_str()]));
-    Diagnostic::new(
-        DiagnosticCode::DuplicateIdentifier { text },
-        severity,
-        Phase::Validate,
-        Location::new(
-            Some(origin.pack.clone()),
-            Some(origin.path.clone()),
-            JsonPath::new(),
-            None,
-        ),
-    )
+    Diagnostic::error(DiagnosticCode::DuplicateIdentifier { text })
+        .severity(severity)
+        .phase(Phase::Validate)
+        .in_file(origin)
 }
 
 /// The registry: the first definition of an identifier in walk order (the highest-priority

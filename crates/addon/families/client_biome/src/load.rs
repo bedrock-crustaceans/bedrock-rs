@@ -14,7 +14,7 @@ use super::texts::{
 use super::{Beta, ClientBiome, validate};
 use bedrock_addon_core::__private::Sealed;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity, VanillaText,
 };
 use bedrock_addon_core::document::{
     CombineRule, ComponentMap, Content, Contribution, Definition, Document, JsonContent, NoBeta,
@@ -294,9 +294,7 @@ impl Parts {
             mut diagnostics,
             ..
         } = self;
-        let mut finding = file_error(no_parser(version));
-        finding.location.pack = Some(origin.pack.clone());
-        finding.location.path = Some(origin.path.clone());
+        let finding = Diagnostic::error(no_parser(version)).in_file(&origin);
         diagnostics.push(finding);
         Rejected::new(origin, diagnostics)
     }
@@ -315,7 +313,7 @@ fn no_parser(version: &str) -> DiagnosticCode {
 fn text<'b>(bytes: &'b [u8], origin: &Origin) -> Result<&'b str, Rejected> {
     let malformed = |message: &str| {
         let mut diagnostics = Diagnostics::default();
-        diagnostics.push(file_error(DiagnosticCode::MalformedInput {
+        diagnostics.push(Diagnostic::error(DiagnosticCode::MalformedInput {
             message: message.to_owned(),
             text: None,
         }));
@@ -404,7 +402,7 @@ fn reword(parsed: &mut Parsed<ClientBiomeFamily>, text: &str, path: &str) {
                 text: Some(VanillaText::Fixed(INVALID_FILE)),
                 ..
             } => {
-                after = Some(file_error(DiagnosticCode::MalformedInput {
+                after = Some(Diagnostic::error(DiagnosticCode::MalformedInput {
                     message: "the document was not loaded".to_owned(),
                     text: formatted(FAILED_TO_LOAD, &[path]),
                 }));
@@ -425,12 +423,7 @@ fn reword(parsed: &mut Parsed<ClientBiomeFamily>, text: &str, path: &str) {
     {
         let mut at = JsonPath::new();
         at.push("format_version");
-        found.push(Diagnostic::new(
-            DiagnosticCode::UnusualFormatVersion,
-            Severity::Info,
-            Phase::Parse,
-            Location::new(None, None, at, None),
-        ));
+        found.push(Diagnostic::info(DiagnosticCode::UnusualFormatVersion).at(at));
     }
     parsed.diagnostics = found;
 }
@@ -468,19 +461,9 @@ fn load(
     }
 }
 
-/// A file-level error.
-fn file_error(code: DiagnosticCode) -> Diagnostic {
-    Diagnostic::new(
-        code,
-        Severity::Error,
-        Phase::Parse,
-        Location::new(None, None, JsonPath::new(), None),
-    )
-}
-
 /// The origin of a resource-pack file of `pack`.
 fn origin(pack: PackRef, path: &PackPath) -> Origin {
-    Origin::new(pack, PackSide::Resource, path.clone(), None, Vec::new())
+    Origin::file(pack, PackSide::Resource, path.clone())
 }
 
 /// Gives every finding the document's pack and file.
@@ -529,13 +512,7 @@ const WALK: Walk = Walk {
 
 /// One file's contribution.
 fn parse_walk_file(file: &WalkFile, cx: &LoadContext) -> Contribution<ClientBiome> {
-    let origin = Origin::new(
-        file.pack.clone(),
-        file.side,
-        file.path.clone(),
-        None,
-        Vec::new(),
-    );
+    let origin = Origin::file(file.pack.clone(), file.side, file.path.clone());
     match load(origin, &file.bytes, cx) {
         Ok((Loaded::Stable(biome), parts)) => {
             let id = biome.description.identifier.clone();
@@ -588,17 +565,11 @@ fn findings_of(contribution: &Contribution<ClientBiome>) -> Diagnostics {
 
 /// A combine-time finding at a document.
 fn notice(code: DiagnosticCode, severity: Severity, origin: &Origin) -> Diagnostic {
-    Diagnostic::new(
-        code,
-        severity,
-        Phase::Validate,
-        Location::new(
-            Some(origin.pack.clone()),
-            Some(origin.path.clone()),
-            identifier_path(),
-            None,
-        ),
-    )
+    Diagnostic::error(code)
+        .severity(severity)
+        .at(identifier_path())
+        .phase(Phase::Validate)
+        .in_file(origin)
 }
 
 /// The client's component checks on the document that claims an identifier: a document they

@@ -6,10 +6,9 @@ use std::fmt::Write as _;
 
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 
-use super::read::finding;
 use super::{GEOMETRY_PATH, SKINS_PATH, SkinPack};
 use bedrock_addon_core::diagnostic::{
-    DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, VanillaText,
 };
 use bedrock_addon_core::document::{
     Content, Document, JsonContent, Origin, Placed, Rejected, VersionInfo,
@@ -35,13 +34,7 @@ impl bedrock_addon_core::__private::Sealed for SkinPack {}
 
 fn lone(path: &PackPath) -> Origin {
     // A skin pack is on neither stack; the resource side is the nearer of the two.
-    Origin::new(
-        PackRef::app_data(),
-        PackSide::Resource,
-        path.clone(),
-        None,
-        Vec::new(),
-    )
+    Origin::file(PackRef::app_data(), PackSide::Resource, path.clone())
 }
 
 fn located(mut diagnostics: Diagnostics, origin: &Origin) -> Diagnostics {
@@ -55,7 +48,7 @@ fn located(mut diagnostics: Diagnostics, origin: &Origin) -> Diagnostics {
 
 fn refuse(origin: &Origin, code: DiagnosticCode) -> Rejected {
     let mut diagnostics = Diagnostics::default();
-    diagnostics.push(finding(code, Severity::Error, JsonPath::new()));
+    diagnostics.push(Diagnostic::error(code));
     Rejected::new(origin.clone(), located(diagnostics, origin))
 }
 
@@ -223,14 +216,14 @@ impl SkinPack {
                     };
                     // The game logs the line at the content log's error level and loads the next
                     // skin: the skin is dropped while the pack is kept, a kept error.
-                    found.push(finding(code, Severity::Error, at).into_kept());
+                    found.push(Diagnostic::error(code).at(at).into_kept());
                     continue;
                 }
                 if !skin.uses_built_in_geometry() && !has_model(&skin.geometry_name()) {
                     // The game falls back without a line, so the crate reports an information.
                     at.push("geometry");
                     let code = DiagnosticCode::InvalidValue { text: None };
-                    found.push(finding(code, Severity::Info, at));
+                    found.push(Diagnostic::info(code).at(at));
                 }
                 drop(name);
                 kept.push(skin);
@@ -246,7 +239,7 @@ impl SkinPack {
             // The game reads the geometry file and tests the parse result only for null, with no
             // content-log line and no assert, so the game is silent and the crate reports an
             // information.
-            let mut broken = finding(code, Severity::Info, JsonPath::new());
+            let mut broken = Diagnostic::info(code);
             broken.location.path = Some(PackPath::from_static(GEOMETRY_PATH));
             diagnostics.push(broken);
         }
@@ -257,11 +250,7 @@ impl SkinPack {
 fn creator_rule(bytes: &[u8], sizes: &[(u32, u32)]) -> Diagnostics {
     let mut diagnostics = Diagnostics::default();
     if bedrock_addon_core::shared::png_size(bytes).is_some_and(|size| !sizes.contains(&size)) {
-        diagnostics.push(finding(
-            DiagnosticCode::SkinPackCreatorRule,
-            Severity::Info,
-            JsonPath::new(),
-        ));
+        diagnostics.push(Diagnostic::info(DiagnosticCode::SkinPackCreatorRule));
     }
     diagnostics
 }

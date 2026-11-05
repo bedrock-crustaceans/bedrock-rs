@@ -5,7 +5,7 @@ use indexmap::{IndexMap, IndexSet};
 
 use super::validate::part_of_a_cycle;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Location, Phase, Severity,
+    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Phase,
 };
 use bedrock_addon_core::document::Origin;
 use bedrock_addon_core::id::{BlockId, Kind, PoiTagId, PoiTypeId, kind};
@@ -67,25 +67,17 @@ fn finding<K: Kind>(
     path: JsonPath,
     id: &bedrock_addon_core::id::Id<K>,
 ) -> Diagnostic {
-    let mut finding = Diagnostic::new(
-        code,
-        // The crate's own notes are informations: the game's release build ignores a tag that
-        // names no tag in silence, and its registry overwrites a block's type without a word.
-        Severity::Info,
-        Phase::Validate,
-        Location::new(
-            Some(origin.pack.clone()),
-            Some(origin.path.clone()),
-            path,
-            None,
-        ),
-    );
-    finding.detail = Some(Box::new(DiagnosticDetail::Reference {
-        kind: K::NAME,
-        id: id.as_str().to_owned(),
-        hint: None,
-    }));
-    finding
+    // The crate's own notes are informations: the game's release build ignores a tag that
+    // names no tag in silence, and its registry overwrites a block's type without a word.
+    Diagnostic::info(code)
+        .at(path)
+        .phase(Phase::Validate)
+        .in_file(origin)
+        .detail(DiagnosticDetail::Reference {
+            kind: K::NAME,
+            id: id.as_str().to_owned(),
+            hint: None,
+        })
 }
 
 /// The path of element `index` of the member `key` of the payload `payload`.
@@ -200,29 +192,17 @@ fn without_cycles(
         .zip(in_cycle)
         .filter(|(_, in_cycle)| *in_cycle)
     {
-        let location =
-            tags.iter()
-                .find(|record| record.id == *tag)
-                .map_or_else(Location::default, |record| {
-                    let mut path = JsonPath::new();
-                    path.push("minecraft:poi_tag");
-                    path.push("description");
-                    path.push("identifier");
-                    Location::new(
-                        Some(record.origin.pack.clone()),
-                        Some(record.origin.path.clone()),
-                        path,
-                        None,
-                    )
-                });
-        findings.push(Diagnostic::new(
-            part_of_a_cycle(tag),
-            // The text is the game's unit test's; vanilla itself has only a development
-            // assert, so the crate's own note is an information.
-            Severity::Info,
-            Phase::Validate,
-            location,
-        ));
+        // The text is the game's unit test's; vanilla itself has only a development assert,
+        // so the crate's own note is an information.
+        let mut finding = Diagnostic::info(part_of_a_cycle(tag)).phase(Phase::Validate);
+        if let Some(record) = tags.iter().find(|record| record.id == *tag) {
+            let mut path = JsonPath::new();
+            path.push("minecraft:poi_tag");
+            path.push("description");
+            path.push("identifier");
+            finding = finding.at(path).in_file(&record.origin);
+        }
+        findings.push(finding);
     }
     kept
 }

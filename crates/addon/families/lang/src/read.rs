@@ -5,8 +5,7 @@ use std::collections::HashMap;
 
 use super::{KeyFilter, LangFile, LangLayout, Language, Line, Translations};
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Location, Phase, Severity,
-    Span, VanillaText,
+    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Span, VanillaText,
 };
 use bedrock_addon_support::text::lang_scan::{BOM, End, Kind, scan};
 
@@ -19,18 +18,6 @@ fn text(bytes: &[u8]) -> String {
 // `c - 'A' < 26` → `c | 0x20`.
 fn stored_key(key: &str) -> String {
     key.to_ascii_lowercase()
-}
-
-/// A finding of ours about the entry `key` on the line at `span`.
-fn finding(code: DiagnosticCode, severity: Severity, key: &str, span: Span) -> Diagnostic {
-    let mut at = JsonPath::new();
-    at.push(key);
-    Diagnostic::new(
-        code,
-        severity,
-        Phase::Parse,
-        Location::new(None, None, at, Some(span)),
-    )
 }
 
 /// Vanilla's two warnings for a line that ends while its key is read (V1, V2): the 1-based
@@ -47,36 +34,29 @@ fn no_equals(line: usize, key: &str, end: End, span: Span) -> Diagnostic {
             "Line: {} - Invalid lang file format. Null character was found while parsing key: '{}'."
         }
     };
-    finding(
-        DiagnosticCode::MalformedInput {
-            message: "a line without `=`".to_owned(),
-            text: Some(VanillaText::Formatted {
-                template,
-                args: vec![line.to_string(), key.to_owned()],
-            }),
-        },
-        Severity::Warning,
-        key,
-        span,
-    )
+    Diagnostic::warn(DiagnosticCode::MalformedInput {
+        message: "a line without `=`".to_owned(),
+        text: Some(VanillaText::Formatted {
+            template,
+            args: vec![line.to_string(), key.to_owned()],
+        }),
+    })
+    .at(JsonPath::new().child(key))
+    .span(span)
 }
 
 /// L13: the key was defined on line `earlier` already. The last definition wins, as in
 /// vanilla, which says nothing.
 // `vanilla = "silent, last wins"`: `try_emplace` then an assign
 fn duplicate(key: &str, earlier: usize, span: Span) -> Diagnostic {
-    let mut finding = finding(
-        DiagnosticCode::DuplicateIdentifier { text: None },
-        Severity::Info,
-        key,
-        span,
-    );
-    finding.detail = Some(Box::new(DiagnosticDetail::Reference {
-        kind: "line",
-        id: earlier.to_string(),
-        hint: None,
-    }));
-    finding
+    Diagnostic::info(DiagnosticCode::DuplicateIdentifier { text: None })
+        .at(JsonPath::new().child(key))
+        .span(span)
+        .detail(DiagnosticDetail::Reference {
+            kind: "line",
+            id: earlier.to_string(),
+            hint: None,
+        })
 }
 
 /// L4: a tab ended the value and something other than a comment follows it. Vanilla ignores
@@ -147,26 +127,24 @@ impl LangFile {
                     // holds text, so an invalid sequence is read as U+FFFD.
                     // `vanilla = "bytes copied, no decoding"`.
                     if !decoded {
-                        diagnostics.push(finding(
-                            DiagnosticCode::MalformedInput {
+                        diagnostics.push(
+                            Diagnostic::info(DiagnosticCode::MalformedInput {
                                 message: "a key or value that is not UTF-8".to_owned(),
                                 text: None,
-                            },
-                            Severity::Info,
-                            &stored,
-                            segment.span,
-                        ));
+                            })
+                            .at(JsonPath::new().child(&stored))
+                            .span(segment.span),
+                        );
                     }
                     // L3: `=` as the first byte of the line is a key character in vanilla
                     // (`=a=b` is the key `=a`), which is rarely what was meant.
                     // `vanilla = "silent; '=' becomes a key character"`
                     if key.starts_with('=') {
-                        diagnostics.push(finding(
-                            DiagnosticCode::InvalidValue { text: None },
-                            Severity::Info,
-                            &stored,
-                            segment.span,
-                        ));
+                        diagnostics.push(
+                            Diagnostic::info(DiagnosticCode::InvalidValue { text: None })
+                                .at(JsonPath::new().child(&stored))
+                                .span(segment.span),
+                        );
                     }
                     // L2: nothing is trimmed, so `key = value` is the key `"key "`.
                     // `vanilla = "silent; key stored with the trailing
@@ -174,31 +152,28 @@ impl LangFile {
                     // the newline and NUL ones: the lint is ours, an
                     // information.
                     if key.ends_with(' ') || value.starts_with(b" ") {
-                        diagnostics.push(finding(
-                            DiagnosticCode::LangKeyTrailingSpace,
-                            Severity::Info,
-                            &stored,
-                            segment.span,
-                        ));
+                        diagnostics.push(
+                            Diagnostic::info(DiagnosticCode::LangKeyTrailingSpace)
+                                .at(JsonPath::new().child(&stored))
+                                .span(segment.span),
+                        );
                     }
                     if let Some(earlier) = defined.insert(stored.clone(), segment.line) {
                         diagnostics.push(duplicate(&stored, earlier, segment.span));
                     }
                     if tab_cuts_text(&trailing) {
-                        diagnostics.push(finding(
-                            DiagnosticCode::IgnoredMember { text: None },
-                            Severity::Info,
-                            &stored,
-                            segment.span,
-                        ));
+                        diagnostics.push(
+                            Diagnostic::info(DiagnosticCode::IgnoredMember { text: None })
+                                .at(JsonPath::new().child(&stored))
+                                .span(segment.span),
+                        );
                     }
                     if odd_placeholder(&value) {
-                        diagnostics.push(finding(
-                            DiagnosticCode::InvalidValue { text: None },
-                            Severity::Info,
-                            &stored,
-                            segment.span,
-                        ));
+                        diagnostics.push(
+                            Diagnostic::info(DiagnosticCode::InvalidValue { text: None })
+                                .at(JsonPath::new().child(&stored))
+                                .span(segment.span),
+                        );
                     }
                     lines.push(Line::Entry {
                         key,

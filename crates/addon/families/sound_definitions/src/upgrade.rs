@@ -2,7 +2,7 @@
 //! runs on every pack's copy before the merge and once more on the merged root.
 
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, VanillaText,
 };
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::version::{FormatVersion, SemVersion};
@@ -76,16 +76,6 @@ pub(crate) struct Upgraded {
     pub(crate) not_a_list: bool,
     /// The 1.26.50 step ran.
     pub(crate) streaming: bool,
-}
-
-/// A finding of a step, at `path`.
-fn finding(code: DiagnosticCode, severity: Severity, path: JsonPath) -> Diagnostic {
-    Diagnostic::new(
-        code,
-        severity,
-        Phase::Upgrade,
-        Location::new(None, None, path, None),
-    )
 }
 
 /// The path of the definition `name`.
@@ -164,13 +154,13 @@ pub(crate) fn reset_integer_distances(
         path.push("sound_definitions");
         // The game writes an error line to the content log; the file is still the stack's copy
         // and loads: a kept error.
-        diagnostics.push_kept_error(finding(
-            DiagnosticCode::InvalidValue {
+        diagnostics.push_kept_error(
+            Diagnostic::error(DiagnosticCode::InvalidValue {
                 text: Some(VanillaText::Fixed(NOT_A_LIST)),
-            },
-            Severity::Error,
-            path,
-        ));
+            })
+            .at(path)
+            .phase(Phase::Upgrade),
+        );
         return;
     }
     for name in fork::member_names(definitions) {
@@ -178,16 +168,16 @@ pub(crate) fn reset_integer_distances(
         if !definition.is_object() {
             // The game writes an error line to the content log and the step goes on: a kept
             // error.
-            diagnostics.push_kept_error(finding(
-                DiagnosticCode::InvalidValue {
+            diagnostics.push_kept_error(
+                Diagnostic::error(DiagnosticCode::InvalidValue {
                     text: Some(VanillaText::Formatted {
                         template: MALFORMED_SOUND,
                         args: vec![name.clone()],
                     }),
-                },
-                Severity::Error,
-                definition_path(&name),
-            ));
+                })
+                .at(definition_path(&name))
+                .phase(Phase::Upgrade),
+            );
             continue;
         }
         for member in ["max_distance", "min_distance"] {

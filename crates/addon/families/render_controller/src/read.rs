@@ -13,8 +13,8 @@ use super::{
     Rgba, UvAnim,
 };
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, JsonPathSegment, Location, Phase, Severity,
-    Span, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, JsonPathSegment, Phase, Severity, Span,
+    VanillaText,
 };
 use bedrock_addon_core::json::{
     JsonSlice, MAX_JSON_DEPTH, Value, check_depth, last_wins, parse_at,
@@ -176,15 +176,10 @@ fn as_spelled<'v>(
 fn parse_folded(path: &PackPath, bytes: &[u8], cx: &LoadContext) -> Parsed {
     let malformed = |message: String| {
         let mut diagnostics = Diagnostics::default();
-        diagnostics.push(Diagnostic::new(
-            DiagnosticCode::MalformedInput {
-                text: text(ERROR_PARSING, &[path.as_str(), &message]),
-                message,
-            },
-            Severity::Error,
-            Phase::Parse,
-            Location::default(),
-        ));
+        diagnostics.push(Diagnostic::error(DiagnosticCode::MalformedInput {
+            text: text(ERROR_PARSING, &[path.as_str(), &message]),
+            message,
+        }));
         Parsed::failed(diagnostics, None)
     };
     if check_depth(bytes, MAX_JSON_DEPTH).is_err() {
@@ -216,32 +211,24 @@ fn parse_folded(path: &PackPath, bytes: &[u8], cx: &LoadContext) -> Parsed {
         return Parsed::failed(diagnostics, None);
     };
 
-    let at_version = || {
-        let mut at = JsonPath::new();
-        at.push("format_version");
-        Location::new(None, None, at, None)
-    };
+    let at_version = || JsonPath::of_keys(["format_version"]);
     unresolvable_names(marked, &folded, original, &mut diagnostics);
     if written.is_pre_release() {
-        diagnostics.push(Diagnostic::new(
-            DiagnosticCode::PrereleaseFormatVersion {
+        diagnostics.push(
+            Diagnostic::info(DiagnosticCode::PrereleaseFormatVersion {
                 version: written.to_string(),
-            },
-            Severity::Info,
-            Phase::Parse,
-            at_version(),
-        ));
+            })
+            .at(at_version()),
+        );
     }
     if written.format_version() > cx.engine_version {
         // The game compares the version with nothing but the schema's bounds.
-        diagnostics.push(Diagnostic::new(
-            DiagnosticCode::FormatVersionAboveEngine {
+        diagnostics.push(
+            Diagnostic::info(DiagnosticCode::FormatVersionAboveEngine {
                 version: written.to_string(),
-            },
-            Severity::Info,
-            Phase::Parse,
-            at_version(),
-        ));
+            })
+            .at(at_version()),
+        );
     }
 
     let mut file = RenderControllerFile {
@@ -270,14 +257,12 @@ fn parse_folded(path: &PackPath, bytes: &[u8], cx: &LoadContext) -> Parsed {
     // The controller stage: `RenderController::parse` returned an error for these.
     let mut failed: IndexSet<String> = outcome.dropped;
     for key in drafts.without_textures {
-        diagnostics.push(Diagnostic::new(
-            DiagnosticCode::MissingRequiredField {
+        diagnostics.push(
+            Diagnostic::error(DiagnosticCode::MissingRequiredField {
                 text: Some(VanillaText::Fixed(MUST_CONTAIN_TEXTURES)),
-            },
-            Severity::Error,
-            Phase::Parse,
-            Location::new(None, None, controller_path(&key, Some("textures")), None),
-        ));
+            })
+            .at(controller_path(&key, Some("textures"))),
+        );
         failed.insert(key);
     }
     for (key, controller) in &file.render_controllers {
@@ -493,16 +478,15 @@ fn unresolvable_names(
             let offset = u32::try_from(quote).unwrap_or(u32::MAX);
             Span { offset, len: 1 }.line_col(original).0
         });
-        diagnostics.push(Diagnostic::new(
-            DiagnosticCode::CaseFoldingDisabled {
+        // The game says nothing, so this is an information.
+        diagnostics.push(
+            Diagnostic::info(DiagnosticCode::CaseFoldingDisabled {
                 line,
                 unresolvable: true,
-            },
-            // The game says nothing, so this is an information.
-            Severity::Info,
-            Phase::Parse,
-            Location::new(None, None, at, Some(span)),
-        ));
+            })
+            .at(at)
+            .span(span),
+        );
     }
 }
 

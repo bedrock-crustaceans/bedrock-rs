@@ -10,11 +10,11 @@ use super::{
     PageSpec,
 };
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, VanillaText,
 };
 use bedrock_addon_core::json::Value;
 use bedrock_addon_support::fixed_path::{
-    Authored, array, as_int, as_real, finding, invalid, invalid_text, iterated, key,
+    Authored, array, as_int, as_real, invalid, invalid_text, iterated, key,
 };
 
 // The reader's texts, as the game writes them.
@@ -43,18 +43,14 @@ fn missing(text: &'static str, at: JsonPath) -> Diagnostic {
     let code = DiagnosticCode::MissingRequiredField {
         text: Some(VanillaText::Fixed(text)),
     };
-    finding(code, Severity::Info, at)
+    Diagnostic::info(code).at(at)
 }
 
 fn wrong_type(text: &'static str, at: JsonPath) -> Diagnostic {
     let code = DiagnosticCode::InvalidType {
         text: Some(VanillaText::Fixed(text)),
     };
-    finding(code, Severity::Info, at)
-}
-
-fn warn(at: JsonPath) -> Diagnostic {
-    finding(invalid(), Severity::Info, at)
+    Diagnostic::info(code).at(at)
 }
 
 /// The game ignores a scale that is no JSON real (only a number written as a decimal counts)
@@ -62,16 +58,12 @@ fn warn(at: JsonPath) -> Diagnostic {
 /// "Could not find font alias {}" goes to the developer display at run time), so the crate
 /// reports these as informations.
 fn silent(at: JsonPath) -> Diagnostic {
-    finding(invalid(), Severity::Info, at)
+    Diagnostic::info(invalid()).at(at)
 }
 
 /// The warning of a scale beyond a float, which is held as the largest finite float.
 pub(super) fn clamp_warning(at: JsonPath) -> Diagnostic {
-    finding(
-        DiagnosticCode::ClampedValue { text: None },
-        Severity::Info,
-        at,
-    )
+    Diagnostic::info(DiagnosticCode::ClampedValue { text: None }).at(at)
 }
 
 impl FontFormat {
@@ -197,17 +189,18 @@ impl FontEntry {
         };
         let format = FontFormat::from_name(&font_format);
         if format.is_none() {
-            diagnostics.push(warn(fields.path("font_format")));
+            diagnostics.push(Diagnostic::info(invalid()).at(fields.path("font_format")));
         }
         let low = fields.get("lowPerformanceCompatible", Value::as_bool);
         if low.is_other(true) {
-            diagnostics.push(warn(fields.path("lowPerformanceCompatible")));
+            diagnostics
+                .push(Diagnostic::info(invalid()).at(fields.path("lowPerformanceCompatible")));
         }
         let mut path = |fields: &mut Fields<'_>, name: &'static str| {
             let text = fields.string(name).into_typed()?;
             if text.len() > MAX_PATH {
                 // The game leaves the path empty.
-                diagnostics.push(warn(fields.path(name)));
+                diagnostics.push(Diagnostic::info(invalid()).at(fields.path(name)));
                 fields.keep(name);
                 return None;
             }
@@ -233,14 +226,17 @@ impl FontEntry {
         let true_type = matches!(format, Some(FontFormat::Ttf | FontFormat::TtfMsdf));
         let version = fields.int("version");
         if true_type && version.is_other(true) {
-            diagnostics.push(warn(fields.path("version")));
+            diagnostics.push(Diagnostic::info(invalid()).at(fields.path("version")));
         }
         let size = fields.int("target_font_render_size");
         if format == Some(FontFormat::Ttf) {
             match &size {
-                Got::Other(_) => diagnostics.push(warn(fields.path("target_font_render_size"))),
+                Got::Other(_) => diagnostics
+                    .push(Diagnostic::info(invalid()).at(fields.path("target_font_render_size"))),
                 Got::Typed(size) if !(1..=255).contains(size) => {
-                    diagnostics.push(warn(fields.path("target_font_render_size")));
+                    diagnostics.push(
+                        Diagnostic::info(invalid()).at(fields.path("target_font_render_size")),
+                    );
                 }
                 _ => {}
             }
@@ -322,7 +318,7 @@ fn read_pages(fields: &mut Fields<'_>, diagnostics: &mut Diagnostics) -> Option<
     });
     if pages.is_other(true) {
         // The whole member is ignored.
-        diagnostics.push(warn(at));
+        diagnostics.push(Diagnostic::info(invalid()).at(at));
     }
     pages.into_typed()
 }
@@ -332,7 +328,7 @@ fn read_page(element: &Value, at: JsonPath, diagnostics: &mut Diagnostics) -> Pa
         return PageSpec::Page(page);
     }
     if !element.is_object() {
-        diagnostics.push(finding(invalid_text(PAGES_FORMAT), Severity::Info, at));
+        diagnostics.push(Diagnostic::info(invalid_text(PAGES_FORMAT)).at(at));
         return PageSpec::Other(element.clone());
     }
     let bound = |name: &str| element.as_object()?.get(name).and_then(as_int);
@@ -341,7 +337,7 @@ fn read_page(element: &Value, at: JsonPath, diagnostics: &mut Diagnostics) -> Pa
         (Some(first_page), Some(last_page)) if only_bounds => {
             if first_page > last_page {
                 // The range holds no page.
-                diagnostics.push(warn(at));
+                diagnostics.push(Diagnostic::info(invalid()).at(at));
             }
             PageSpec::Range {
                 first_page,
@@ -351,13 +347,13 @@ fn read_page(element: &Value, at: JsonPath, diagnostics: &mut Diagnostics) -> Pa
         (Some(first_page), Some(last_page)) => {
             // A range with other members is kept as written; it reads as the range.
             if first_page > last_page {
-                diagnostics.push(warn(at));
+                diagnostics.push(Diagnostic::info(invalid()).at(at));
             }
             PageSpec::Other(element.clone())
         }
         _ => {
             // A bound that is no integer.
-            diagnostics.push(warn(at));
+            diagnostics.push(Diagnostic::info(invalid()).at(at));
             PageSpec::Other(element.clone())
         }
     }
@@ -464,7 +460,7 @@ impl FontAlias {
             return None;
         };
         if elements.is_empty() {
-            diagnostics.push(warn(fonts_at));
+            diagnostics.push(Diagnostic::info(invalid()).at(fonts_at));
             return None;
         }
         let mut fonts = Vec::with_capacity(elements.len());
@@ -540,11 +536,9 @@ impl Authored for FontMetadata {
         for (at, font) in fonts.iter().flatten() {
             if !names.insert(font.font_name.clone()) {
                 // A repeated font name, reported at the entry's place in the file.
-                diagnostics.push(finding(
-                    DiagnosticCode::FontNameOverridden,
-                    Severity::Info,
-                    key(at, "font_name"),
-                ));
+                diagnostics.push(
+                    Diagnostic::info(DiagnosticCode::FontNameOverridden).at(key(at, "font_name")),
+                );
             }
         }
         let metadata = Self {
@@ -566,11 +560,9 @@ impl Authored for FontMetadata {
                     }
                 }
                 if !names.insert(alias.alias.clone()) {
-                    diagnostics.push(finding(
-                        DiagnosticCode::FontNameOverridden,
-                        Severity::Info,
-                        key(at, "alias"),
-                    ));
+                    diagnostics.push(
+                        Diagnostic::info(DiagnosticCode::FontNameOverridden).at(key(at, "alias")),
+                    );
                 }
             }
             aliases = read.iter().map(|(_, alias)| alias.clone()).collect();

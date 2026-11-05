@@ -44,13 +44,7 @@ impl Content for BlocksJson {
     /// The file as held, with the findings of reading it as a pack of `cx` would. A file the
     /// client skips (not a JSON object) is rejected with an error: nothing else is refused.
     fn parse(path: &PackPath, bytes: &[u8], cx: &LoadContext) -> Result<Document<Self>, Rejected> {
-        let origin = Origin::new(
-            PackRef::app_data(),
-            PackSide::Resource,
-            path.clone(),
-            None,
-            Vec::new(),
-        );
+        let origin = Origin::file(PackRef::app_data(), PackSide::Resource, path.clone());
         let FileRead {
             file,
             effective,
@@ -141,13 +135,7 @@ pub struct ParsedBlocks {
 /// Reads one walked file.
 fn parse_blocks_file(file: &WalkFile, cx: &LoadContext) -> ParsedBlocks {
     ParsedBlocks {
-        origin: Origin::new(
-            file.pack.clone(),
-            file.side,
-            file.path.clone(),
-            None,
-            Vec::new(),
-        ),
+        origin: Origin::file(file.pack.clone(), file.side, file.path.clone()),
         read: resolve::read(&file.bytes, cx.is_base_game_pack),
     }
 }

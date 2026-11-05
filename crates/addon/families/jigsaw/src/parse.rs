@@ -14,10 +14,7 @@ use super::{
     JigsawStructure, MaxDistanceFromCenter, MetadataRegistry, PoolElement, PositionPredicate,
     Processor, ProcessorList, ProcessorRule, StructureSet, TemplatePool,
 };
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
-    code_for_deserialize_error_kind,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
 use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::json::{
     EncodeError, JsonSlice, NullRule, StrictFloat, Value, keep_unknown_members, parse_at,
@@ -69,30 +66,24 @@ fn parse_typed<'a, T: Facet<'a>>(
             if let Some(json) = &json {
                 for (path, _) in keep_unknown_members(&mut value, json) {
                     // The game logs an unknown member at the content log's warning level and goes on.
-                    d.push(finding(
-                        DiagnosticCode::UnrecognizedField { text: None },
-                        Severity::Warning,
-                        join(&cx.at, &path),
-                    ));
+                    d.push(
+                        Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None })
+                            .at(join(&cx.at, &path)),
+                    );
                 }
             }
             Some(value)
         }
         Err(error) => {
-            let blank = payload.text.trim().is_empty();
-            let kind = &error.error.kind;
-            let mut code = code_for_deserialize_error_kind(kind, !error.path.is_empty(), blank);
-            if matches!(code, DiagnosticCode::InvalidType { .. })
-                && kind.to_string().contains(UNKNOWN_TAG)
-            {
-                code = DiagnosticCode::InvalidEnumValue { text: None };
-            }
-            d.push(Diagnostic::new(
-                code,
-                Severity::Error,
-                Phase::Parse,
-                Location::new(None, None, join(&cx.at, &error.path), Some(error.span)),
-            ));
+            d.push(error.into_diagnostic(&cx.at, |code, error| {
+                if matches!(code, DiagnosticCode::InvalidType { .. })
+                    && error.describes(UNKNOWN_TAG)
+                {
+                    DiagnosticCode::InvalidEnumValue { text: None }
+                } else {
+                    code
+                }
+            }));
             None
         }
     }
@@ -119,23 +110,9 @@ fn index(base: &JsonPath, index: usize) -> JsonPath {
     path
 }
 
-/// A parse finding at `path`.
-fn finding(code: DiagnosticCode, severity: Severity, path: JsonPath) -> Diagnostic {
-    Diagnostic::new(
-        code,
-        severity,
-        Phase::Parse,
-        Location::new(None, None, path, None),
-    )
-}
-
 /// A bind constraint that failed: a member outside its bound, which fails the file as the game's parse does.
 fn violation(path: JsonPath, d: &mut Diagnostics) {
-    d.push(finding(
-        DiagnosticCode::InvalidValue { text: None },
-        Severity::Error,
-        path,
-    ));
+    d.push(Diagnostic::error(DiagnosticCode::InvalidValue { text: None }).at(path));
 }
 
 /// The member `key` of an object.
@@ -155,11 +132,7 @@ fn integer_or_object(value: Option<&Value>, at: JsonPath, d: &mut Diagnostics) -
     if integer || value.is_object() {
         return true;
     }
-    d.push(finding(
-        DiagnosticCode::InvalidType { text: None },
-        Severity::Error,
-        at,
-    ));
+    d.push(Diagnostic::error(DiagnosticCode::InvalidType { text: None }).at(at));
     false
 }
 
@@ -360,11 +333,10 @@ fn check_limit(limit: &IntProvider, at: &JsonPath, d: &mut Diagnostics) {
         IntProvider::Value(_) => false,
     };
     if mismatch {
-        d.push(finding(
-            DiagnosticCode::InvalidEnumValue { text: None },
-            Severity::Error,
-            child(at, "type"),
-        ));
+        d.push(
+            Diagnostic::error(DiagnosticCode::InvalidEnumValue { text: None })
+                .at(child(at, "type")),
+        );
     }
 }
 
