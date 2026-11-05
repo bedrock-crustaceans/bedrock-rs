@@ -10,7 +10,7 @@ use indexmap::IndexMap;
 
 use super::Item;
 use super::history::Any;
-use super::load::{GateRow, ItemFamily, gate_with, load_registry, release_threshold};
+use super::load::{GateRow, ItemFamily, LOADER, gate_with, release_threshold};
 use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
 use bedrock_addon_core::json::Value;
 
@@ -186,7 +186,7 @@ fn file(pack: &PackRef, path: &str, json: &str, base_game: bool) -> super::load:
         key: path,
         bytes: bytes::Bytes::copy_from_slice(json.as_bytes()),
     };
-    (load_registry().parse)(&walk, &cx)
+    (LOADER.parse)(&walk, &cx)
 }
 
 fn doc(version: &str, id: &str, components: &str) -> String {
@@ -252,7 +252,7 @@ fn v15_the_vanilla_override_gates() {
         ),
     ];
     let options = LoadOptions::default();
-    let registry = (load_registry().combine)(parsed, &StackCx::new(&options, &[]));
+    let registry = (LOADER.combine)(parsed, &StackCx::new(&options, &[]));
     let texts: Vec<String> = registry
         .rejected()
         .iter()
@@ -312,7 +312,7 @@ fn v15_the_override_gates_compare_the_version_not_the_format() {
         ),
     ];
     let options = LoadOptions::default();
-    let registry = (load_registry().combine)(parsed, &StackCx::new(&options, &[]));
+    let registry = (LOADER.combine)(parsed, &StackCx::new(&options, &[]));
     let texts: Vec<String> = registry
         .rejected()
         .iter()
@@ -348,7 +348,7 @@ fn v1_an_item_a_higher_pack_overrides_is_told() {
         file(&high, "items/x.json", &text, false),
     ];
     let options = LoadOptions::default();
-    let registry = (load_registry().combine)(parsed, &StackCx::new(&options, &[]));
+    let registry = (LOADER.combine)(parsed, &StackCx::new(&options, &[]));
     let told: Vec<(
         String,
         Option<String>,

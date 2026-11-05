@@ -174,15 +174,13 @@ fn accepts(path: &PackPath) -> bool {
 
 /// The loader of `rp.sounds_json()`: every resource pack's copy of the file, merged as JSON and
 /// read once.
-pub const fn load_bindings() -> CollectionLoader<Merged<SoundBindings, RawLayer>, SoundCopy> {
-    CollectionLoader {
-        walk: walk(accepts),
-        parse: parse_copy,
-        combine: merge_bindings,
-        needs: &[],
-        then: None,
-    }
-}
+pub const LOADER: CollectionLoader<Merged<SoundBindings, RawLayer>, SoundCopy> = CollectionLoader {
+    walk: walk(accepts),
+    parse: parse_copy,
+    combine: merge_bindings,
+    needs: &[],
+    then: None,
+};
 
 impl Content for SoundBindings {
     const NAME: &'static str = "sound bindings";

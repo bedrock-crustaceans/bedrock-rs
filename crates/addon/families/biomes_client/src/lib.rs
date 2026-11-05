@@ -716,15 +716,14 @@ fn combine(copies: Vec<BiomesCopy>, _: &StackCx<'_>) -> Merged<LegacyClientBiome
 
 /// The loader of `rp.legacy_client_biomes()`.
 #[doc(hidden)]
-pub const fn load_legacy() -> CollectionLoader<Merged<LegacyClientBiomes, RawLayer>, BiomesCopy> {
+pub const LOADER: CollectionLoader<Merged<LegacyClientBiomes, RawLayer>, BiomesCopy> =
     CollectionLoader {
         walk: WALK,
         parse: parse_walk_file,
         combine,
         needs: &[],
         then: None,
-    }
-}
+    };
 
 #[cfg(test)]
 mod copy_tests {

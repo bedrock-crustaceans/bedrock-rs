@@ -24,7 +24,7 @@ use bedrock_addon_core::id::FunctionPath;
 
 pub use grammar::{GrammarRange, grammar_ranges};
 #[doc(hidden)]
-pub use load::{load_registry, load_tick};
+pub use load::{LOADER, TICK_LOADER};
 
 /// A function: the command lines of one `.mcfunction` file and the command version they are
 /// parsed under.

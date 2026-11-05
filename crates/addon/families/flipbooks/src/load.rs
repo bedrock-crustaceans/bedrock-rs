@@ -25,12 +25,10 @@ fn combine(copies: Vec<FlipbookCopy>, _: &StackCx<'_>) -> Merged<Flipbooks, RawL
 
 /// The loader of `rp.flipbooks()`: every pack's `textures/flipbook_textures.json`, merged
 /// entry by entry from the lowest pack up.
-pub const fn load_flipbooks() -> CollectionLoader<Merged<Flipbooks, RawLayer>, FlipbookCopy> {
-    CollectionLoader {
-        walk: walk(accepts, None),
-        parse,
-        combine,
-        needs: &[],
-        then: None,
-    }
-}
+pub const LOADER: CollectionLoader<Merged<Flipbooks, RawLayer>, FlipbookCopy> = CollectionLoader {
+    walk: walk(accepts, None),
+    parse,
+    combine,
+    needs: &[],
+    then: None,
+};

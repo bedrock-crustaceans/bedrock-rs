@@ -120,12 +120,10 @@ fn parse_group_file(file: &WalkFile, cx: &LoadContext) -> Parsed<SpawnGroup> {
 /// The loader of `bp.spawn_groups()`: only the app data's `definitions/spawn_groups/*.json`
 /// (not recursive, extension exactly `json`), in file-name order, a later file with the same
 /// identifier replacing the earlier one with a `DuplicateIdentifier` warning; no pack is read.
-pub const fn load_groups() -> CollectionLoader<Registry<SpawnGroup>, Parsed<SpawnGroup>> {
-    CollectionLoader {
-        walk: Walk::json_children_in(&[]).app_data(&[GROUPS_DIRECTORY], AppDataPlace::After),
-        parse: parse_group_file,
-        combine,
-        needs: &[],
-        then: None,
-    }
-}
+pub const LOADER: CollectionLoader<Registry<SpawnGroup>, Parsed<SpawnGroup>> = CollectionLoader {
+    walk: Walk::json_children_in(&[]).app_data(&[GROUPS_DIRECTORY], AppDataPlace::After),
+    parse: parse_group_file,
+    combine,
+    needs: &[],
+    then: None,
+};

@@ -270,16 +270,14 @@ fn combine_culling(
 
 /// The loader of `rp.block_culling()`: `block_culling/**/*.json` of every resource pack, the
 /// highest pack's document winning per identifier.
-pub const fn load_culling_rules()
--> CollectionLoader<Registry<CullingRules>, Contribution<CullingRules>> {
+pub const LOADER: CollectionLoader<Registry<CullingRules>, Contribution<CullingRules>> =
     CollectionLoader {
         walk: CULLING_WALK,
         parse: parse_culling_file,
         combine: combine_culling,
         needs: &[],
         then: None,
-    }
-}
+    };
 
 #[cfg(test)]
 mod tests {

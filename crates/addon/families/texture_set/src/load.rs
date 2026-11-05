@@ -93,15 +93,13 @@ fn combine(parsed: Vec<SetFileParsed>, stack: &StackCx<'_>) -> TextureSets {
 
 /// The loader of `rp.texture_sets()`: every texture set of every resource pack, held to the
 /// rules of the stack.
-pub const fn load_sets() -> CollectionLoader<TextureSets, SetFileParsed> {
-    CollectionLoader {
-        walk: walk(is_read, None),
-        parse: parse_walk_file,
-        combine,
-        needs: &[],
-        then: None,
-    }
-}
+pub const LOADER: CollectionLoader<TextureSets, SetFileParsed> = CollectionLoader {
+    walk: walk(is_read, None),
+    parse: parse_walk_file,
+    combine,
+    needs: &[],
+    then: None,
+};
 
 impl bedrock_addon_core::load::Reported for TextureSets {
     fn reported(

@@ -24,7 +24,7 @@ mod schema;
 mod validate;
 mod write;
 #[doc(hidden)]
-pub use load::load_registry;
+pub use load::LOADER;
 #[cfg(feature = "nbt")]
 #[cfg_attr(docsrs, doc(cfg(feature = "nbt")))]
 pub use network::actor_identifiers;

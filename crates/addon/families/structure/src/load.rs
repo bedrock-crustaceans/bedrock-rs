@@ -334,12 +334,10 @@ fn root_of(primary: &PackPath) -> Option<PackPath> {
 }
 
 /// The loader of `bp.structures()`.
-pub const fn load_files() -> CollectionLoader<Files<Structure>, Parsed> {
-    CollectionLoader {
-        walk: WALK,
-        parse: parse_walk_file,
-        combine,
-        needs: &[],
-        then: None,
-    }
-}
+pub const LOADER: CollectionLoader<Files<Structure>, Parsed> = CollectionLoader {
+    walk: WALK,
+    parse: parse_walk_file,
+    combine,
+    needs: &[],
+    then: None,
+};

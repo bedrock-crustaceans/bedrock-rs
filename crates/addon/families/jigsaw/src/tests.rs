@@ -2,7 +2,7 @@
 //! leading string, the walk's file filter and the link checker.
 
 use super::link::{Targets, link};
-use super::load::load_group;
+use super::load::LOADER;
 use super::validate::identifier_failure;
 use super::{Jigsaw, JigsawMetadata};
 use bedrock_addon_core::diagnostic::{Diagnostic, Severity};
@@ -85,7 +85,7 @@ fn a_long_version_string_round_trips_through_a_two_byte_length() {
 
 #[test]
 fn the_walk_reads_json_below_the_four_directories_and_dat_directly_in_metadata() {
-    let walk = load_group().walk;
+    let walk = LOADER.walk;
     let reads = |path: &str| walk.matches(&PackPath::new(path).unwrap());
     assert_eq!(reads("worldgen/structures/a.json"), Some(0));
     assert_eq!(reads("worldgen/template_pools/x/y/a.json"), Some(1));
@@ -125,7 +125,7 @@ impl Targets for Known {
 /// The group of `files`, loaded through the group's own loader (walk filter, parse, combine)
 /// as the app-data layer.
 fn group(files: &[(&str, &str)]) -> Jigsaw {
-    let loader = load_group();
+    let loader = LOADER;
     let cx = LoadContext::detached();
     let parsed = files
         .iter()

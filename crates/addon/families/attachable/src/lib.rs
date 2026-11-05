@@ -14,7 +14,7 @@ mod validate;
 mod write;
 pub use binding::{Condition, ItemBinding, ItemBindingEntry, ItemBindings};
 #[doc(hidden)]
-pub use load::load_registry;
+pub use load::LOADER;
 
 use bedrock_addon_core::id::{
     AnimationRef, AttachableId, GeometryId, ItemId, MaterialId, ParticleId, SoundEventName,

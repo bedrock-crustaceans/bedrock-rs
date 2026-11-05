@@ -123,17 +123,14 @@ fn combine_translations(parsed: Vec<LangLayer>, _: &StackCx<'_>) -> Merged<Trans
     Merged::new(value, origins, layers, diagnostics)
 }
 
-/// The loader of `translations(&language)` on the stack of `side`: `texts/*.lang`, which the
+/// The loader of `translations(&language)`, on either stack: `texts/*.lang`, which the
 /// accessor splits by language ([`language_of`]).
-pub fn load_translations(side: PackSide) -> CollectionLoader<Merged<Translations>, LangLayer> {
-    let _ = side;
-    CollectionLoader {
-        // A `.lang` file, by the extension vanilla builds the path with (`getLangFilePath`
-        // appends `.lang` as written).
-        walk: Walk::json_children_in(&[TEXTS]).accept(Accept::Ext("lang")),
-        parse: parse_lang,
-        combine: combine_translations,
-        needs: &[],
-        then: None,
-    }
-}
+pub const LOADER: CollectionLoader<Merged<Translations>, LangLayer> = CollectionLoader {
+    // A `.lang` file, by the extension vanilla builds the path with (`getLangFilePath`
+    // appends `.lang` as written).
+    walk: Walk::json_children_in(&[TEXTS]).accept(Accept::Ext("lang")),
+    parse: parse_lang,
+    combine: combine_translations,
+    needs: &[],
+    then: None,
+};

@@ -62,15 +62,13 @@ fn combine(parsed: Vec<AtlasFileParsed>, stack: &StackCx<'_>) -> TextureAtlases 
 
 /// The loader of `rp.texture_atlases()`: the terrain and item atlases of every resource pack,
 /// each merged over the stack.
-pub const fn load_atlases() -> CollectionLoader<TextureAtlases, AtlasFileParsed> {
-    CollectionLoader {
-        walk: walk(accepts, None),
-        parse: parse_walk_file,
-        combine,
-        needs: &[],
-        then: None,
-    }
-}
+pub const LOADER: CollectionLoader<TextureAtlases, AtlasFileParsed> = CollectionLoader {
+    walk: walk(accepts, None),
+    parse: parse_walk_file,
+    combine,
+    needs: &[],
+    then: None,
+};
 
 impl Reported for TextureAtlases {
     fn reported(&self) -> Box<dyn Iterator<Item = &Diagnostic> + '_> {

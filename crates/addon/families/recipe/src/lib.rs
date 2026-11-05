@@ -22,7 +22,7 @@ use bedrock_addon_core::molang::MolangList;
 use bedrock_addon_core::version::{FormatVersion, MinEngineVersion, SemVersion};
 
 #[doc(hidden)]
-pub use load::load_recipes;
+pub use load::LOADER;
 
 /// The `format_version` from which a shaped or shapeless recipe must have `unlock`: the game
 /// requires unlock data from 1.20.10 on.

@@ -25,7 +25,7 @@ use bedrock_addon_core::json::Value;
 use bedrock_addon_core::shared::Filter;
 
 #[doc(hidden)]
-pub use load::load_files;
+pub use load::LOADER;
 
 /// A villager trade table (`trading/**/*.json`), at the newest format version (1.21.30).
 ///

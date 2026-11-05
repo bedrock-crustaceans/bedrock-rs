@@ -36,7 +36,7 @@ use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::json::Value;
 
 #[doc(hidden)]
-pub use load::load;
+pub use load::LOADER;
 
 /// The path of the list of UI files, in every pack.
 pub const UI_DEFS_PATH: &str = "ui/_ui_defs.json";

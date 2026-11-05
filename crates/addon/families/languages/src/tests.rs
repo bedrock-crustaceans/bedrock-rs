@@ -321,34 +321,31 @@ fn a_field_that_names_the_other_keyword_is_resolved_by_that_keyword() {
 #[test]
 fn the_languages_walk_reads_the_two_lists_and_the_lang_files_only() {
     use bedrock_addon_core::load::WalkOrder;
-    use bedrock_addon_core::pack_identity::PackSide;
 
-    for side in [PackSide::Behavior, PackSide::Resource] {
-        let walk = super::stack::load_languages(side).walk;
-        let reads = |path: &str| walk.matches(&PackPath::new(path).unwrap()).is_some();
-        for path in [
-            "texts/languages.json",
-            "texts/language_names.json",
-            "texts/en_US.lang",
-        ] {
-            assert!(reads(path), "{path}");
-        }
-        // every other file below `texts/` and `Texts/` counts by its path alone (the
-        // packs' file lists); before it the walk read them all.
-        for path in [
-            "texts/ja_JP/font/glyph_30.png",
-            "texts/ja_JP/en_US.lang",
-            "texts/notes.txt",
-            "Texts/en_US.lang",
-            "font/glyph_30.png",
-            "manifest.json",
-            "textures/texts/a.png",
-            "TEXTS/en_US.lang",
-            "texts",
-        ] {
-            assert!(!reads(path), "{path}");
-        }
-        assert_eq!(walk.order, WalkOrder::BottomUp);
-        assert!(walk.app_data.is_empty());
+    let walk = super::stack::LOADER.walk;
+    let reads = |path: &str| walk.matches(&PackPath::new(path).unwrap()).is_some();
+    for path in [
+        "texts/languages.json",
+        "texts/language_names.json",
+        "texts/en_US.lang",
+    ] {
+        assert!(reads(path), "{path}");
     }
+    // every other file below `texts/` and `Texts/` counts by its path alone (the
+    // packs' file lists); before it the walk read them all.
+    for path in [
+        "texts/ja_JP/font/glyph_30.png",
+        "texts/ja_JP/en_US.lang",
+        "texts/notes.txt",
+        "Texts/en_US.lang",
+        "font/glyph_30.png",
+        "manifest.json",
+        "textures/texts/a.png",
+        "TEXTS/en_US.lang",
+        "texts",
+    ] {
+        assert!(!reads(path), "{path}");
+    }
+    assert_eq!(walk.order, WalkOrder::BottomUp);
+    assert!(walk.app_data.is_empty());
 }

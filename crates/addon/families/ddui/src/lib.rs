@@ -36,7 +36,7 @@ use bedrock_addon_core::json::Value;
 use bedrock_addon_core::version::{FormatVersion, known};
 
 #[doc(hidden)]
-pub use load::load_group;
+pub use load::LOADER;
 
 /// The one `format_version` roots and compositions are read at.
 pub const FORMAT_VERSION: FormatVersion = known::V1_21_130;

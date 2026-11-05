@@ -159,17 +159,15 @@ fn combine_controllers(
     )
 }
 
-/// The loader of `animation_controllers()` on the stack of `side`:
-/// `animation_controllers/*.json`, combined per identifier, the higher pack winning.
-pub fn load_controllers(
-    side: PackSide,
-) -> CollectionLoader<Registry<AnimationController>, FileContribution<AnimationController>> {
-    let _ = side;
-    CollectionLoader {
-        walk: CONTROLLER_WALK,
-        parse: parse_controller_file,
-        combine: combine_controllers,
-        needs: &[],
-        then: None,
-    }
-}
+/// The loader of `animation_controllers()`, on either stack: `animation_controllers/*.json`,
+/// combined per identifier, the higher pack winning.
+pub const LOADER: CollectionLoader<
+    Registry<AnimationController>,
+    FileContribution<AnimationController>,
+> = CollectionLoader {
+    walk: CONTROLLER_WALK,
+    parse: parse_controller_file,
+    combine: combine_controllers,
+    needs: &[],
+    then: None,
+};

@@ -21,7 +21,7 @@ use bedrock_addon_core::id::CullingRulesId;
 use bedrock_addon_core::version::FormatVersion;
 
 #[doc(hidden)]
-pub use load::load_culling_rules;
+pub use load::LOADER;
 
 /// The culling rules of a block model (`minecraft:block_culling_rules`), at the newest format
 /// version: which parts of the model are hidden against which neighbour.

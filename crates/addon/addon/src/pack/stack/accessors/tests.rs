@@ -43,26 +43,24 @@ mod toy {
         }
     }
 
-    pub(super) const fn load() -> CollectionLoader<Toys, (String, PackSide, bool)> {
-        CollectionLoader {
-            walk: Walk {
-                directories: &["features"],
-                depth: ListDepth::Recursive,
-                accept: Accept::Fn(is_json),
-                order: WalkOrder::BottomUp,
-                directory_major: false,
-                app_data: &["definitions/features"],
-                app_data_place: AppDataPlace::After,
-                in_pack: None,
-                shadowed: None,
-                read_error: None,
-            },
-            parse,
-            combine,
-            needs: &[],
-            then: None,
-        }
-    }
+    pub(super) const LOADER: CollectionLoader<Toys, (String, PackSide, bool)> = CollectionLoader {
+        walk: Walk {
+            directories: &["features"],
+            depth: ListDepth::Recursive,
+            accept: Accept::Fn(is_json),
+            order: WalkOrder::BottomUp,
+            directory_major: false,
+            app_data: &["definitions/features"],
+            app_data_place: AppDataPlace::After,
+            in_pack: None,
+            shadowed: None,
+            read_error: None,
+        },
+        parse,
+        combine,
+        needs: &[],
+        then: None,
+    };
 }
 
 /// A host with its own caches around a stack, as `PackStack` is its own host.
@@ -80,7 +78,7 @@ impl<S: Side> ToyHost<S> {
 accessors! {
     @host ToyCaches for ToyHost;
     /// The toy collection.
-    toys: Toys = toy::load, collection = Toys, side = Behavior;
+    toys: Toys = toy::LOADER, collection = Toys, side = Behavior;
 }
 
 #[test]
@@ -154,4 +152,32 @@ fn providers_name_their_loader_s_accessor() {
         assert!(entry.needs().is_empty(), "{variant:?}");
     }
     assert_eq!(super::provider_walks().len(), super::PROVIDERS.len());
+}
+
+/// What every `side = Both` line of the list does today: its two entries walk the same files,
+/// need the same collections and run the same `then` on either stack, so its loader does not
+/// depend on the side; the side of a file is the stack the walk runs on.
+#[test]
+fn a_both_sides_line_loads_the_same_way_on_both_sides() {
+    for collection in super::Collection::ALL {
+        let entries: Vec<_> = super::ENTRIES
+            .iter()
+            .filter(|entry| entry.collection() == Some(*collection))
+            .collect();
+        let [behavior, resource] = entries[..] else {
+            continue;
+        };
+        assert_eq!(
+            (behavior.side(), resource.side()),
+            (PackSide::Behavior, PackSide::Resource),
+            "{collection:?}"
+        );
+        assert_eq!(
+            format!("{:?}", behavior.walk()),
+            format!("{:?}", resource.walk()),
+            "{collection:?} walks the same on both sides"
+        );
+        assert_eq!(behavior.needs(), resource.needs(), "{collection:?}");
+        assert_eq!(behavior.has_then(), resource.has_then(), "{collection:?}");
+    }
 }

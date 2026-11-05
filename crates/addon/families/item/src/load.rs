@@ -848,15 +848,13 @@ fn is_json(path: &PackPath) -> bool {
 }
 
 /// The `bp.items()` loader: every `.json` below `items/`, bottom-up.
-pub const fn load_registry() -> CollectionLoader<Registry<Item>, ParsedItem> {
-    CollectionLoader {
-        walk: Walk::json_tree_in(ItemFamily::DIRECTORIES).accept(Accept::Fn(is_json)),
-        parse: parse_file,
-        combine,
-        needs: &[],
-        then: None,
-    }
-}
+pub const LOADER: CollectionLoader<Registry<Item>, ParsedItem> = CollectionLoader {
+    walk: Walk::json_tree_in(ItemFamily::DIRECTORIES).accept(Accept::Fn(is_json)),
+    parse: parse_file,
+    combine,
+    needs: &[],
+    then: None,
+};
 
 impl bedrock_addon_core::__private::Sealed for Item {}
 impl bedrock_addon_core::__private::Sealed for Beta {}
@@ -1048,7 +1046,7 @@ mod tests {
     /// `PackPath::is_json`. Pinned, not decided: no vanilla sample says which the game does.
     #[test]
     fn the_walk_takes_json_in_any_case() {
-        let walk = load_registry().walk;
+        let walk = LOADER.walk;
         for path in ["items/sword.json", "items/Sword.JSON", "items/a/b.Json"] {
             let path = PackPath::new(path).unwrap();
             assert!(is_json(&path), "{path}");

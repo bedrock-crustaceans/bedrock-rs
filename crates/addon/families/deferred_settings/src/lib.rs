@@ -65,7 +65,7 @@ mod write;
 mod tests;
 
 #[doc(hidden)]
-pub use load::load_group;
+pub use load::LOADER;
 // The checker of the references the link pass resolves, for its rules.
 #[doc(hidden)]
 pub use link::{Targets, Texture, check as check_links};

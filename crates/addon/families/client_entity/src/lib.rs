@@ -12,7 +12,7 @@ mod read;
 mod validate;
 mod write;
 #[doc(hidden)]
-pub use load::load_registry;
+pub use load::LOADER;
 
 use bedrock_addon_core::id::{
     AnimationRef, EntityId, GeometryId, MaterialId, ParticleId, SoundEventName, TexturePath,

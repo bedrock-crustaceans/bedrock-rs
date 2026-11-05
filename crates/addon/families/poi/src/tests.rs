@@ -2,7 +2,7 @@
 //! text's arity, the graph helpers and the link checker.
 
 use super::link::{Targets, link};
-use super::load::load_group;
+use super::load::LOADER;
 use super::parse::is_poi_name;
 use super::resolve::{TagNode, collect_members, components};
 use super::validate::{PART_OF_A_CYCLE, part_of_a_cycle};
@@ -43,7 +43,7 @@ fn group(files: &[(&str, String)]) -> Poi {
         None,
         false,
     );
-    let loader = load_group();
+    let loader = LOADER;
     let parsed = files
         .iter()
         .map(|(path, text)| {
@@ -93,7 +93,7 @@ fn a_poi_name_is_word_colon_word() {
 
 #[test]
 fn the_walk_takes_json_files_directly_in_poi_blocks_and_poi_tags() {
-    let walk = load_group().walk;
+    let walk = LOADER.walk;
     let reads = |path: &str| walk.matches(&PackPath::new(path).unwrap()).is_some();
     for path in [
         "poi/blocks/a.json",

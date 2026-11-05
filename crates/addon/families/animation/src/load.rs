@@ -72,17 +72,13 @@ fn combine_animations(
     combine(parsed, stack, Notice::shadowed())
 }
 
-/// The loader of `animations()` on the stack of `side`: `animations/**/*.json`, combined per
+/// The loader of `animations()`, on either stack: `animations/**/*.json`, combined per
 /// identifier, the higher pack winning.
-pub fn load_animations(
-    side: PackSide,
-) -> CollectionLoader<Registry<Animation>, FileContribution<Animation>> {
-    let _ = side;
+pub const LOADER: CollectionLoader<Registry<Animation>, FileContribution<Animation>> =
     CollectionLoader {
         walk: ANIMATION_WALK,
         parse: parse_animation_file,
         combine: combine_animations,
         needs: &[],
         then: None,
-    }
-}
+    };

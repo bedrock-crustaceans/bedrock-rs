@@ -8,7 +8,7 @@ mod load;
 mod read;
 
 #[doc(hidden)]
-pub use load::load_registry;
+pub use load::LOADER;
 
 use bedrock_addon_core::id::{
     AnimationRef, AtomicClientEntityId, GeometryId, MaterialId, ParticleId, SoundEventName,

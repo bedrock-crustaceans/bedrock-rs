@@ -192,13 +192,13 @@ fn combine(
 }
 
 /// The loader of `bp.server_sound_definitions()`.
-pub const fn load_registry()
--> CollectionLoader<Registry<SoundMetadata>, Result<Document<SoundMetadataFile>, Rejected>> {
-    CollectionLoader {
-        walk: WALK,
-        parse: parse_walk_file,
-        combine,
-        needs: &[],
-        then: None,
-    }
-}
+pub const LOADER: CollectionLoader<
+    Registry<SoundMetadata>,
+    Result<Document<SoundMetadataFile>, Rejected>,
+> = CollectionLoader {
+    walk: WALK,
+    parse: parse_walk_file,
+    combine,
+    needs: &[],
+    then: None,
+};

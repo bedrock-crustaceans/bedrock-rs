@@ -22,7 +22,7 @@ use bedrock_addon_core::molang::{Molang, MolangSource};
 use bedrock_addon_core::version::FormatVersion;
 
 #[doc(hidden)]
-pub use load::load_registry;
+pub use load::LOADER;
 
 pub use fold::fold_case;
 pub use new::{ON_FIRE_ALPHA, ON_FIRE_GREEN};

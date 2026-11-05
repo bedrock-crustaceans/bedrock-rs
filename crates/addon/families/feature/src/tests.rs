@@ -155,7 +155,7 @@ fn same_pack_duplicates(
     let options = LoadOptions::default();
     let packs = [StackPack::new(pack.clone(), PackOrigin::World, cx.clone())];
     let stack = StackCx::new(&options, &packs);
-    let registry = (super::load::load_registry().combine)(
+    let registry = (super::load::LOADER.combine)(
         vec![file("features/a.json", 2), file("features/b.json", 3)],
         &stack,
     );

@@ -311,16 +311,14 @@ fn combine(
 
 /// The loader of `rp.particles()`: `particles/**/*.json` of every resource pack, the effect
 /// loaded last winning per identifier.
-pub const fn load_registry()
--> CollectionLoader<Registry<ParticleEffect>, Contribution<ParticleEffect>> {
+pub const LOADER: CollectionLoader<Registry<ParticleEffect>, Contribution<ParticleEffect>> =
     CollectionLoader {
         walk: WALK,
         parse: parse_walk_file,
         combine,
         needs: &[],
         then: None,
-    }
-}
+    };
 
 #[cfg(test)]
 mod tests {

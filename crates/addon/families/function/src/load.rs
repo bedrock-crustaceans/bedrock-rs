@@ -216,15 +216,13 @@ fn combine(parsed: Vec<Contribution<Function>>, stack: &StackCx<'_>) -> Registry
 
 /// The loader of `bp.functions()`: `functions/**/*.mcfunction` of every behaviour pack, by
 /// name.
-pub const fn load_registry() -> CollectionLoader<Registry<Function>, Contribution<Function>> {
-    CollectionLoader {
-        walk: WALK,
-        parse: parse_walk_file,
-        combine,
-        needs: &[],
-        then: None,
-    }
-}
+pub const LOADER: CollectionLoader<Registry<Function>, Contribution<Function>> = CollectionLoader {
+    walk: WALK,
+    parse: parse_walk_file,
+    combine,
+    needs: &[],
+    then: None,
+};
 
 /// One file of the tick walk: a pack's `functions/tick.json`. The tick walk reads
 /// `functions/tick.json` alone and asks the stack's function registry (`StackCx::registered`)
@@ -290,12 +288,10 @@ fn combine_tick(parsed: Vec<TickWalkFile>, stack: &StackCx<'_>) -> Merged<TickLi
 }
 
 /// The loader of `bp.tick_functions()`: every behaviour pack's `functions/tick.json`, merged.
-pub const fn load_tick() -> CollectionLoader<Merged<TickList>, TickWalkFile> {
-    CollectionLoader {
-        walk: TICK_WALK,
-        parse: parse_tick_walk_file,
-        combine: combine_tick,
-        needs: &[<kind::Function as Kind>::NAME],
-        then: None,
-    }
-}
+pub const TICK_LOADER: CollectionLoader<Merged<TickList>, TickWalkFile> = CollectionLoader {
+    walk: TICK_WALK,
+    parse: parse_tick_walk_file,
+    combine: combine_tick,
+    needs: &[<kind::Function as Kind>::NAME],
+    then: None,
+};

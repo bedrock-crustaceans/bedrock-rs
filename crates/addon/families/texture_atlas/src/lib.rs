@@ -26,7 +26,7 @@ pub use atlas::{
 };
 
 #[doc(hidden)]
-pub use load::load_atlases;
+pub use load::LOADER;
 
 /// The atlases of a resource stack (`rp.texture_atlases()`).
 #[derive(Debug)]

@@ -16,7 +16,7 @@ use bedrock_addon_core::version::SemVersion;
 fn registry(trees: &[(&str, &str)]) -> Registry<BehaviorTree> {
     let id = PackIdVersion::new(Uuid::nil(), SemVersion::new(1, 0, 0), PackType::Behavior);
     let pack = PackRef::new(0, id, "p");
-    let loader = load::load_registry();
+    let loader = load::LOADER;
     let cx = LoadContext::detached();
     let parsed = trees
         .iter()

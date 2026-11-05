@@ -663,15 +663,13 @@ fn combine(parsed: Vec<MaterialParsed>, stack: &StackCx<'_>) -> Materials {
 
 /// The loader of `rp.materials()`: the list files and every material file of every resource
 /// pack, combined into the group.
-pub const fn load_group() -> CollectionLoader<Materials, MaterialParsed> {
-    CollectionLoader {
-        walk: WALK,
-        parse: parse_walk_file,
-        combine,
-        needs: &[],
-        then: None,
-    }
-}
+pub const LOADER: CollectionLoader<Materials, MaterialParsed> = CollectionLoader {
+    walk: WALK,
+    parse: parse_walk_file,
+    combine,
+    needs: &[],
+    then: None,
+};
 
 impl Reported for Materials {
     fn reported(&self) -> Box<dyn Iterator<Item = &Diagnostic> + '_> {

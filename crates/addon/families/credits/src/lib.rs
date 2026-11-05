@@ -10,7 +10,7 @@ use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::json::Value;
 
 #[doc(hidden)]
-pub use load::load_credits;
+pub use load::LOADER;
 pub use read::check_starter_seeds;
 
 /// The path of the credits, in the game's own data (never in a pack).

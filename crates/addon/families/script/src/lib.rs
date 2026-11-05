@@ -21,7 +21,7 @@ pub use module::{
 mod bundle;
 
 #[doc(hidden)]
-pub use bundle::load_bundles;
+pub use bundle::LOADER;
 pub use bundle::{
     EngineCrash, EntryRef, ImportGraph, ImportKind, ImportSite, InvalidUtf8, NativeModuleAccess,
     Resolution, ScanOptions, ScriptBundle, ScriptContent, ScriptFile, ScriptHost, ScriptPath,

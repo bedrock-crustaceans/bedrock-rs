@@ -17,15 +17,13 @@ fn combine(_: Vec<()>, cx: &StackCx<'_>) -> SoundFiles {
 
 /// The loader of `rp.sound_files()`: the audio under `sounds/` of every resource pack, from
 /// the packs' listings.
-pub const fn load_files() -> CollectionLoader<SoundFiles, ()> {
-    CollectionLoader {
-        walk: Walk::none(),
-        parse,
-        combine,
-        needs: &[],
-        then: None,
-    }
-}
+pub const LOADER: CollectionLoader<SoundFiles, ()> = CollectionLoader {
+    walk: Walk::none(),
+    parse,
+    combine,
+    needs: &[],
+    then: None,
+};
 
 impl Reported for SoundFiles {
     fn reported(&self) -> Box<dyn Iterator<Item = &Diagnostic> + '_> {

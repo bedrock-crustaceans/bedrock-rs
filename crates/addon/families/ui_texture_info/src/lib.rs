@@ -16,7 +16,7 @@ use bedrock_addon_core::json::Value;
 use bedrock_addon_support::jsoncpp::{member, number};
 
 #[doc(hidden)]
-pub use load::load_texture_infos;
+pub use load::LOADER;
 
 /// The side file of a UI image.
 ///

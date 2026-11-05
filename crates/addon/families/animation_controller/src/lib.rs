@@ -23,7 +23,7 @@ use bedrock_addon_core::version::FormatVersion;
 
 pub use bedrock_addon_support::animation::{EventString, ParticleEffect, SoundEffect};
 #[doc(hidden)]
-pub use load::load_controllers;
+pub use load::LOADER;
 
 /// An animation controller file (`animation_controllers/*.json`): `{"format_version",
 /// "animation_controllers": {"controller.animation.<name>": {…}}}`, at the newest format

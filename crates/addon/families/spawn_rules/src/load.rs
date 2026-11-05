@@ -181,12 +181,10 @@ fn parse_rules_file(file: &WalkFile, cx: &LoadContext) -> Parsed<SpawnRules> {
 /// The loader of `bp.spawn_rules()`: `spawn_rules/**/*.json` of every behaviour pack, packs
 /// bottom-up, the higher pack's rules for an entity replacing the lower's (a later document with
 /// the same identifier replaces the earlier one).
-pub const fn load_rules() -> CollectionLoader<Registry<SpawnRules>, Parsed<SpawnRules>> {
-    CollectionLoader {
-        walk: Walk::json_tree_in(&[RULES_DIRECTORY]),
-        parse: parse_rules_file,
-        combine,
-        needs: &[],
-        then: None,
-    }
-}
+pub const LOADER: CollectionLoader<Registry<SpawnRules>, Parsed<SpawnRules>> = CollectionLoader {
+    walk: Walk::json_tree_in(&[RULES_DIRECTORY]),
+    parse: parse_rules_file,
+    combine,
+    needs: &[],
+    then: None,
+};

@@ -24,7 +24,7 @@ use bedrock_addon_core::document::{Document, Rejected};
 pub use set::{LayerKind, LayerValue, Rgb, Rgba, TextureName, TextureSet};
 
 #[doc(hidden)]
-pub use load::load_sets;
+pub use load::LOADER;
 #[doc(hidden)]
 pub use set_load::{PackSets, SetCopy, layer_path, payload_at};
 

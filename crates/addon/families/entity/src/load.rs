@@ -523,18 +523,16 @@ fn combine(parsed: Vec<Contribution<Entity>>, cx: &StackCx<'_>) -> Registry<Enti
 }
 
 /// The loader of `bp.entities()`.
-pub const fn load_registry() -> CollectionLoader<Registry<Entity>, Contribution<Entity>> {
-    CollectionLoader {
-        // Every `.json` file below `entities/` (vanilla's directory walk matches `.json` as
-        // written), packs bottom-up so a higher pack's definition of an identifier replaces a
-        // lower one's.
-        walk: Walk::json_tree_in(&[DIRECTORY]),
-        parse: parse_file,
-        combine,
-        needs: &[],
-        then: None,
-    }
-}
+pub const LOADER: CollectionLoader<Registry<Entity>, Contribution<Entity>> = CollectionLoader {
+    // Every `.json` file below `entities/` (vanilla's directory walk matches `.json` as
+    // written), packs bottom-up so a higher pack's definition of an identifier replaces a
+    // lower one's.
+    walk: Walk::json_tree_in(&[DIRECTORY]),
+    parse: parse_file,
+    combine,
+    needs: &[],
+    then: None,
+};
 
 /// `description.scripts.animate[].<name>`: a Molang string at the pack's version; a rejected
 /// expression is kept and evaluates to 0.

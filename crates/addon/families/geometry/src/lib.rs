@@ -29,7 +29,7 @@ use bedrock_addon_core::molang::Molang;
 use bedrock_addon_core::version::FormatVersion;
 
 #[doc(hidden)]
-pub use load::load_geometries;
+pub use load::LOADER;
 pub use load::{load_file, load_keyed_file};
 pub use new::ItemDisplayTransformsIter;
 

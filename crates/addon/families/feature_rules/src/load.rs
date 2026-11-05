@@ -275,13 +275,11 @@ impl bedrock_addon_core::load::Reported for FeatureRules {
 }
 
 /// The loader of `bp.feature_rules()`.
-pub const fn load_feature_rules() -> CollectionLoader<FeatureRules, Contribution<FeatureRule>> {
-    CollectionLoader {
-        walk: WALK,
-        parse: parse_walk_file,
-        combine,
-        // The combine asks the stack about no other collection and names no extra files.
-        needs: &[],
-        then: None,
-    }
-}
+pub const LOADER: CollectionLoader<FeatureRules, Contribution<FeatureRule>> = CollectionLoader {
+    walk: WALK,
+    parse: parse_walk_file,
+    combine,
+    // The combine asks the stack about no other collection and names no extra files.
+    needs: &[],
+    then: None,
+};

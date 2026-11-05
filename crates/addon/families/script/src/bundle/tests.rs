@@ -1033,7 +1033,7 @@ fn bundles_on_engine(
             key: path.clone(),
         }),
     );
-    let loader = super::load_bundles(PackSide::Behavior);
+    let loader = super::LOADER;
     let file = |path: &PackPath, bytes: &'static [u8]| WalkFile {
         pack: pack.clone(),
         side: PackSide::Behavior,
@@ -1090,7 +1090,7 @@ fn a_plugin_whose_script_files_the_walk_left_unread_is_told_once() {
                 key: path.clone(),
             }),
         );
-        let loader = super::load_bundles(PackSide::Behavior);
+        let loader = super::LOADER;
         let file = |path: &PackPath, bytes: &'static [u8]| WalkFile {
             pack: pack.clone(),
             side: PackSide::Behavior,

@@ -300,15 +300,13 @@ fn combine(parsed: Vec<AimAssistFile>, stack: &StackCx<'_>) -> AimAssist {
 
 /// The loader of `bp.aim_assist()`: the two directories of every behaviour pack, combined into
 /// the group.
-pub const fn load_group() -> CollectionLoader<AimAssist, AimAssistFile> {
-    CollectionLoader {
-        walk: WALK,
-        parse: parse_walk_file,
-        combine,
-        needs: &[],
-        then: None,
-    }
-}
+pub const LOADER: CollectionLoader<AimAssist, AimAssistFile> = CollectionLoader {
+    walk: WALK,
+    parse: parse_walk_file,
+    combine,
+    needs: &[],
+    then: None,
+};
 
 impl Reported for AimAssist {
     fn reported(&self) -> Box<dyn Iterator<Item = &Diagnostic> + '_> {

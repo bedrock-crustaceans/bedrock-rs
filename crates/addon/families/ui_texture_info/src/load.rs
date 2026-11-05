@@ -94,15 +94,13 @@ fn combine(parsed: Vec<SideFileCopy>, cx: &StackCx<'_>) -> Files<UiTextureInfo> 
 
 /// The loader of `rp.ui_texture_infos()`: every `.json` file below `textures/ui/` of every
 /// resource pack. The images are known from each pack's listing; none is read.
-pub const fn load_texture_infos() -> CollectionLoader<Files<UiTextureInfo>, SideFileCopy> {
-    CollectionLoader {
-        walk: Walk::json_tree_in(&[DIRECTORY]),
-        parse,
-        combine,
-        needs: &[],
-        then: None,
-    }
-}
+pub const LOADER: CollectionLoader<Files<UiTextureInfo>, SideFileCopy> = CollectionLoader {
+    walk: Walk::json_tree_in(&[DIRECTORY]),
+    parse,
+    combine,
+    needs: &[],
+    then: None,
+};
 
 #[cfg(test)]
 mod tests {

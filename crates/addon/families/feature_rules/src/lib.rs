@@ -25,7 +25,7 @@ pub use bedrock_addon_support::scatter::{
 };
 
 #[doc(hidden)]
-pub use load::load_feature_rules;
+pub use load::LOADER;
 
 /// The first `format_version` vanilla reads feature rules at: 1.12.0, the first schema.
 pub(crate) const FLOOR: FormatVersion = FormatVersion::new(1, 12, 0);

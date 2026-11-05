@@ -200,15 +200,13 @@ fn combine(parsed: Vec<FileOutcome>, stack: &StackCx<'_>) -> Recipes {
 
 /// The loader of `bp.recipes()`: `recipes/**/*.json` of every behaviour pack, one registry per
 /// namespace.
-pub const fn load_recipes() -> CollectionLoader<Recipes, FileOutcome> {
-    CollectionLoader {
-        walk: WALK,
-        parse: parse_walk_file,
-        combine,
-        needs: &[],
-        then: None,
-    }
-}
+pub const LOADER: CollectionLoader<Recipes, FileOutcome> = CollectionLoader {
+    walk: WALK,
+    parse: parse_walk_file,
+    combine,
+    needs: &[],
+    then: None,
+};
 
 impl bedrock_addon_core::load::Reported for Recipes {
     fn reported(&self) -> Box<dyn Iterator<Item = &Diagnostic> + '_> {

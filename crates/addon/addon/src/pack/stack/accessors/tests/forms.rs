@@ -14,12 +14,11 @@ use crate::pack::stack::{WalkSource, prepare, walk_items};
 use crate::pack::tests::pack_from;
 use crate::pack::{Behavior, Pack, PackStack, Resource, Side};
 
-/// What a toy collection holds: the side its loader was given and each file's path and text, in
-/// combine order.
+/// What a toy collection holds: each file's path, the side of the stack it was read on and its
+/// text, in combine order.
 #[derive(Debug, PartialEq)]
 struct Files {
-    side: PackSide,
-    files: Vec<(String, String)>,
+    files: Vec<(String, PackSide, String)>,
 }
 
 impl Reported for Files {
@@ -54,7 +53,7 @@ impl Reported for Bundle {
 mod toy {
     use super::*;
 
-    fn walk(directories: &'static [&'static str], accept: fn(&PackPath) -> bool) -> Walk {
+    const fn walk(directories: &'static [&'static str], accept: fn(&PackPath) -> bool) -> Walk {
         Walk {
             directories,
             depth: ListDepth::Children,
@@ -73,66 +72,46 @@ mod toy {
         true
     }
 
-    fn text(file: &WalkFile, _: &LoadContext) -> (String, String) {
+    fn text(file: &WalkFile, _: &LoadContext) -> (String, PackSide, String) {
         (
             file.path.to_string(),
+            file.side,
             String::from_utf8_lossy(&file.bytes).into_owned(),
         )
     }
 
-    fn behavior_files(files: Vec<(String, String)>, _: &StackCx<'_>) -> Files {
-        Files {
-            side: PackSide::Behavior,
-            files,
-        }
-    }
-
-    fn resource_files(files: Vec<(String, String)>, _: &StackCx<'_>) -> Files {
-        Files {
-            side: PackSide::Resource,
-            files,
-        }
+    fn collect(files: Vec<(String, PackSide, String)>, _: &StackCx<'_>) -> Files {
+        Files { files }
     }
 
     /// A one-side line: `plain/` of behaviour packs.
-    pub(super) fn plain() -> CollectionLoader<Files, (String, String)> {
+    pub(super) const PLAIN: CollectionLoader<Files, (String, PackSide, String)> =
         CollectionLoader {
             walk: walk(&["plain"], any),
             parse: text,
-            combine: behavior_files,
+            combine: collect,
             needs: &[],
             then: None,
-        }
-    }
+        };
 
-    /// A both-sides line whose walk and combine depend on the side it is given: `behavior/`
-    /// on the behaviour stack, `resource/` on the resource stack.
-    pub(super) fn shared(side: PackSide) -> CollectionLoader<Files, (String, String)> {
-        match side {
-            PackSide::Behavior => CollectionLoader {
-                walk: walk(&["behavior"], any),
-                parse: text,
-                combine: behavior_files,
-                needs: &[],
-                then: None,
-            },
-            PackSide::Resource => CollectionLoader {
-                walk: walk(&["resource"], any),
-                parse: text,
-                combine: resource_files,
-                needs: &[],
-                then: None,
-            },
-        }
-    }
+    /// A both-sides line: `shared/` of the packs of either stack, each file read on the side
+    /// of the stack the walk runs on.
+    pub(super) const SHARED: CollectionLoader<Files, (String, PackSide, String)> =
+        CollectionLoader {
+            walk: walk(&["shared"], any),
+            parse: text,
+            combine: collect,
+            needs: &[],
+            then: None,
+        };
 
     fn is_language_list(path: &PackPath) -> bool {
         path.as_str() == "texts/languages.json"
     }
 
-    fn codes(texts: Vec<(String, String)>, _: &StackCx<'_>) -> Languages {
+    fn codes(texts: Vec<(String, PackSide, String)>, _: &StackCx<'_>) -> Languages {
         let mut codes: Vec<String> = Vec::new();
-        for (_, text) in texts {
+        for (_, _, text) in texts {
             for code in text.split_whitespace() {
                 if !codes.iter().any(|known| known == code) {
                     codes.push(code.to_owned());
@@ -143,27 +122,25 @@ mod toy {
     }
 
     /// `texts/languages.json` on either side.
-    pub(super) fn languages(_: PackSide) -> CollectionLoader<Languages, (String, String)> {
+    pub(super) const LANGUAGES: CollectionLoader<Languages, (String, PackSide, String)> =
         CollectionLoader {
             walk: walk(&["texts"], is_language_list),
             parse: text,
             combine: codes,
             needs: &[],
             then: None,
-        }
-    }
+        };
 
     fn is_lang(path: &PackPath) -> bool {
         path.as_str().to_ascii_lowercase().ends_with(".lang")
     }
 
     /// Every `texts/*.lang` file; the keyed line splits them by language.
-    pub(super) fn translations(side: PackSide) -> CollectionLoader<Files, (String, String)> {
+    pub(super) const TRANSLATIONS: CollectionLoader<Files, (String, PackSide, String)> =
         CollectionLoader {
             walk: walk(&["texts"], is_lang),
-            ..shared(side)
-        }
-    }
+            ..SHARED
+        };
 
     /// The language of `texts/<code>.lang`.
     pub(super) fn language_of(path: &PackPath) -> Option<String> {
@@ -193,15 +170,13 @@ mod toy {
     }
 
     /// The slice line: one bundle per script.
-    pub(super) fn scripts(_: PackSide) -> CollectionLoader<Vec<Bundle>, Bundle> {
-        CollectionLoader {
-            walk: walk(&["scripts"], is_script),
-            parse: bundle,
-            combine: bundles,
-            needs: &[],
-            then: None,
-        }
-    }
+    pub(super) const SCRIPTS: CollectionLoader<Vec<Bundle>, Bundle> = CollectionLoader {
+        walk: walk(&["scripts"], is_script),
+        parse: bundle,
+        combine: bundles,
+        needs: &[],
+        then: None,
+    };
 }
 
 /// A host with its own caches around a stack, as `PackStack` is its own host.
@@ -219,16 +194,16 @@ impl<S: Side> FormHost<S> {
 accessors! {
     @list FormCaches for FormHost;
     /// A behaviour-only collection.
-    plain: Files = toy::plain, collection = Plain, side = Behavior;
+    plain: Files = toy::PLAIN, collection = Plain, side = Behavior;
     /// One collection per side.
-    shared: Files = toy::shared, collection = Shared, side = Both;
+    shared: Files = toy::SHARED, collection = Shared, side = Both;
     /// The listed languages.
-    languages: Languages = toy::languages, collection = Languages, side = Both;
+    languages: Languages = toy::LANGUAGES, collection = Languages, side = Both;
     /// The files of one listed language.
-    translations[language: String]: Files = toy::translations, keys = toy::listed,
+    translations[language: String]: Files = toy::TRANSLATIONS, keys = toy::listed,
         key_of = toy::language_of, collection = Translations, side = Both;
     /// The script bundles.
-    scripts: [Bundle] = toy::scripts, collection = Scripts, side = Both;
+    scripts: [Bundle] = toy::SCRIPTS, collection = Scripts, side = Both;
 }
 
 /// A format-2 manifest with UUID `n` and one module of `kind`.
@@ -248,8 +223,7 @@ fn behavior_pack() -> Pack {
         &manifest(1, "data"),
         &[
             ("plain/a.json", Some(b"a")),
-            ("behavior/b.json", Some(b"b")),
-            ("resource/ignored.json", Some(b"-")),
+            ("shared/b.json", Some(b"b")),
             ("texts/languages.json", Some(b"en_US fr_FR")),
             ("texts/en_US.lang", Some(b"bp hello")),
             ("texts/de_DE.lang", Some(b"bp hallo")),
@@ -264,8 +238,7 @@ fn resource_pack() -> Pack {
     pack_from(
         &manifest(2, "resources"),
         &[
-            ("behavior/ignored.json", Some(b"-")),
-            ("resource/r.json", Some(b"r")),
+            ("shared/r.json", Some(b"r")),
             ("texts/languages.json", Some(b"en_US")),
             ("texts/en_US.lang", Some(b"rp hello")),
             ("scripts/client.js", Some(b"")),
@@ -289,12 +262,12 @@ fn resource_host() -> FormHost<Resource> {
     host(resource_pack())
 }
 
+/// The files `files` (path and text), read on `side`.
 fn files(side: PackSide, files: &[(&str, &str)]) -> Files {
     Files {
-        side,
         files: files
             .iter()
-            .map(|(path, text)| ((*path).to_owned(), (*text).to_owned()))
+            .map(|(path, text)| ((*path).to_owned(), side, (*text).to_owned()))
             .collect(),
     }
 }
@@ -323,15 +296,15 @@ fn a_one_side_line_reads_its_side() {
 }
 
 #[test]
-fn a_both_sides_line_is_one_generic_accessor_whose_loader_gets_the_side() {
+fn a_both_sides_line_is_one_generic_accessor_over_each_stack_s_files() {
     let (bp, rp) = (behavior_host(), resource_host());
     assert_eq!(
         *shared_of(&bp),
-        files(PackSide::Behavior, &[("behavior/b.json", "b")])
+        files(PackSide::Behavior, &[("shared/b.json", "b")])
     );
     assert_eq!(
         *shared_of(&rp),
-        files(PackSide::Resource, &[("resource/r.json", "r")])
+        files(PackSide::Resource, &[("shared/r.json", "r")])
     );
     assert!(
         std::ptr::eq(bp.shared(), bp.shared()),

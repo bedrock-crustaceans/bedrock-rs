@@ -36,7 +36,7 @@ pub use legacy::{
 };
 
 #[doc(hidden)]
-pub use load::load_registry;
+pub use load::LOADER;
 #[allow(unused_imports, reason = "the link pass reads it")]
 #[doc(hidden)]
 pub use load::loaded_identifier;

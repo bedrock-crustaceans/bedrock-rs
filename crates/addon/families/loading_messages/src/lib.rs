@@ -11,7 +11,7 @@ use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::json::Value;
 
 #[doc(hidden)]
-pub use load::load_loading_messages;
+pub use load::LOADER;
 
 /// The path of the loading-screen tips, in every resource pack.
 pub const LOADING_MESSAGES_PATH: &str = "loading_messages.json";

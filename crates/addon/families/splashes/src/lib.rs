@@ -11,7 +11,7 @@ use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::json::Value;
 
 #[doc(hidden)]
-pub use load::load_splashes;
+pub use load::LOADER;
 pub use load::splash_pool;
 
 /// The path of the splash texts, in every resource pack.

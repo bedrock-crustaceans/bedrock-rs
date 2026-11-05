@@ -28,7 +28,7 @@ use bedrock_addon_core::id::BiomeId;
 use component::BiomeComponent;
 
 #[doc(hidden)]
-pub use load::load_registry;
+pub use load::LOADER;
 // Every block a component names, for the link pass.
 #[doc(hidden)]
 pub use validate::blocks as block_references;

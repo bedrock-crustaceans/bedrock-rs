@@ -225,15 +225,14 @@ fn accepts(path: &PackPath) -> bool {
 
 /// The loader of `rp.sound_definitions()`: every resource pack's copy of the file, merged as
 /// JSON and read once.
-pub const fn load_definitions() -> CollectionLoader<Merged<SoundDefinitions, RawLayer>, SoundCopy> {
+pub const LOADER: CollectionLoader<Merged<SoundDefinitions, RawLayer>, SoundCopy> =
     CollectionLoader {
         walk: walk(accepts),
         parse: parse_copy,
         combine: merge_definitions,
         needs: &[],
         then: None,
-    }
-}
+    };
 
 impl Content for SoundDefinitions {
     const NAME: &'static str = "sound definitions";

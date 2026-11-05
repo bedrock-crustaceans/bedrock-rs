@@ -179,12 +179,11 @@ fn combine(parsed: Vec<Contribution<VoxelShape>>, stack: &StackCx<'_>) -> Regist
 
 /// The loader of `bp.voxel_shapes()`: `shapes/**/*.json` of every behaviour pack, the shape
 /// loaded last winning per identifier.
-pub const fn load_registry() -> CollectionLoader<Registry<VoxelShape>, Contribution<VoxelShape>> {
+pub const LOADER: CollectionLoader<Registry<VoxelShape>, Contribution<VoxelShape>> =
     CollectionLoader {
         walk: WALK,
         parse: parse_walk_file,
         combine,
         needs: &[],
         then: None,
-    }
-}
+    };

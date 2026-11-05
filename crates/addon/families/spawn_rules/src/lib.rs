@@ -21,7 +21,7 @@ pub use bedrock_addon_support::spawn::{
     RangeFilter, VillageFilter, Weight, WorldAgeFilter,
 };
 #[doc(hidden)]
-pub use load::load_rules;
+pub use load::LOADER;
 pub use simplified::{
     BiomeConditions, PermuteType, Placement, SimplifiedDescription, SimplifiedHerd,
     SimplifiedSpawnRules,

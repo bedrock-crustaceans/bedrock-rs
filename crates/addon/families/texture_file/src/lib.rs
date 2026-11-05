@@ -14,7 +14,7 @@ use bedrock_addon_support::texture::files::{StackFiles, TEXTURE_SET, VERBATIM_OR
 pub use bedrock_addon_support::texture::image::{ImageFormat, ImageInfo};
 
 #[doc(hidden)]
-pub use load::load_files;
+pub use load::LOADER;
 
 /// The file the client loads for a texture path.
 #[derive(Clone, Debug, PartialEq, Eq)]

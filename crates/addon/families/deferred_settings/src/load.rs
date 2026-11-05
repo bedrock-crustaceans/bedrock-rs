@@ -815,15 +815,13 @@ fn combine(parsed: Vec<SettingsFile>, stack: &StackCx<'_>) -> DeferredSettings {
 
 /// The loader of `rp.deferred_settings()`: the eight folders of every resource pack, combined
 /// into the group.
-pub const fn load_group() -> CollectionLoader<DeferredSettings, SettingsFile> {
-    CollectionLoader {
-        walk: WALK,
-        parse: parse_walk_file,
-        combine,
-        needs: &[],
-        then: None,
-    }
-}
+pub const LOADER: CollectionLoader<DeferredSettings, SettingsFile> = CollectionLoader {
+    walk: WALK,
+    parse: parse_walk_file,
+    combine,
+    needs: &[],
+    then: None,
+};
 
 impl Reported for DeferredSettings {
     fn reported(&self) -> Box<dyn Iterator<Item = &Diagnostic> + '_> {

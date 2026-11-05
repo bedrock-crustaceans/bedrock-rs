@@ -21,7 +21,7 @@ use bedrock_addon_core::document::Document;
 pub use list::{TextureClaim, TextureList, TextureListMode, TextureListRoot, scan_claims};
 
 #[doc(hidden)]
-pub use load::load_lists;
+pub use load::LOADER;
 
 /// The texture lists of a resource stack (`rp.texture_lists()`).
 #[derive(Debug)]

@@ -473,9 +473,8 @@ mod checker {
 
     use super::{check, flipbook_images};
     use crate::diagnostic::Severity::{self, Error, Info, Warning};
-    use crate::families::flipbooks::load_flipbooks;
-    use crate::families::texture_atlas::load_atlases;
-    use crate::families::texture_file::{ImageFormat, ImageInfo, load_files};
+    use crate::families::texture_file::{ImageFormat, ImageInfo};
+    use crate::families::{flipbooks, texture_atlas, texture_file};
     use crate::support::texture::image::png_header;
 
     const FLIPBOOKS: &str = "textures/flipbook_textures.json";
@@ -537,9 +536,9 @@ mod checker {
 
     /// The findings of the link stage of a stack of in-line packs.
     fn linked(packs: &[&[(&str, &[u8])]]) -> Vec<Found> {
-        let atlases = load(load_atlases(), packs);
-        let flipbooks = load(load_flipbooks(), packs);
-        let files = load(load_files(), packs);
+        let atlases = load(texture_atlas::LOADER, packs);
+        let flipbooks = load(flipbooks::LOADER, packs);
+        let files = load(texture_file::LOADER, packs);
         // Loading alone reports none of them.
         let loaded: Vec<_> = atlases
             .diagnostics()

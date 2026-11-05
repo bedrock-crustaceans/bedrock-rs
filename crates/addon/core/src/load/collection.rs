@@ -1,9 +1,9 @@
 //! The per-collection loader signature the stack-accessor macro calls (its shape is
 //! fixed): what a collection reads, how one file parses, and how the parsed files combine.
 //!
-//! An accessor line `blocks: Registry<Block> = block::load_registry, feature = "block",
-//! side = Behavior;` names a function `fn() -> CollectionLoader<Registry<Block>, P>` (usually a
-//! `const fn`). The loaders read the files its [`Walk`] matches, run `parse` once per file (a
+//! An accessor line `blocks: Registry<Block> = block::LOADER, feature = "block",
+//! side = Behavior;` names a constant `LOADER: CollectionLoader<Registry<Block>, P>`. The
+//! loaders read the files its [`Walk`] matches, run `parse` once per file (a
 //! `Parse` job) and `combine` once per collection, over every parsed file in walk order (the
 //! `Combine` job), which also sees the whole stack ([`StackCx`]); the lazy accessor does the
 //! same on the calling thread. Hidden: the family modules of `bedrock_addon` provide these,

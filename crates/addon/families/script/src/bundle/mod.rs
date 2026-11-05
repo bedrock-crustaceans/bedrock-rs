@@ -22,7 +22,7 @@ use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, NotFoundHint};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use indexmap::IndexMap;
 
-pub use load::load_bundles;
+pub use load::LOADER;
 pub use normalize::{EngineCrash, normalize};
 
 /// The folder a pack's script files live in: `scripts/`, for a `script` module of a behaviour

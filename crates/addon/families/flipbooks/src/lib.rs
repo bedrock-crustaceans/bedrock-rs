@@ -18,4 +18,4 @@ pub mod texts;
 pub use flipbook::{Flipbook, FlipbookKey, Flipbooks};
 
 #[doc(hidden)]
-pub use load::load_flipbooks;
+pub use load::LOADER;

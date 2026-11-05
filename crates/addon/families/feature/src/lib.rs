@@ -55,7 +55,7 @@ mod walk;
 #[cfg(test)]
 mod tests;
 
-pub use load::load_registry;
+pub use load::LOADER;
 
 use bedrock_addon_core::id::FeatureId;
 

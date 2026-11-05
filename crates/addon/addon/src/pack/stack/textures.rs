@@ -189,8 +189,7 @@ mod tests {
     use bedrock_addon_core::version::SemVersion;
 
     use super::resolve;
-    use crate::families::texture_file::load_files;
-    use crate::families::texture_set::load_sets;
+    use crate::families::{texture_file, texture_set};
     use crate::id::TexturePath;
 
     #[test]
@@ -214,7 +213,7 @@ mod tests {
             [StackPack::new(pack, PackOrigin::User, LoadContext::detached()).with_files(listed)];
         let options = LoadOptions::default();
         let cx = StackCx::new(&options, &stack);
-        let (files, sets) = (load_files(), load_sets());
+        let (files, sets) = (texture_file::LOADER, texture_set::LOADER);
         let files = (files.combine)(Vec::new(), &cx);
         let sets = (sets.combine)(Vec::new(), &cx);
         assert_eq!(files.packs_with("textures/a.png").count(), 1);

@@ -21,4 +21,4 @@ pub use bindings::{
 #[doc(hidden)]
 pub use events::is_level_sound_event;
 #[doc(hidden)]
-pub use load::load_bindings;
+pub use load::LOADER;

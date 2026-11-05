@@ -5,7 +5,7 @@
 use bedrock_addon_core::load::{
     Accept, CollectionLoader, ListedFile, LoadContext, StackCx, Walk, WalkFile,
 };
-use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
+use bedrock_addon_core::pack_identity::{PackPath, PackRef};
 use indexmap::IndexMap;
 
 use super::read::{read_languages, read_names};
@@ -343,17 +343,13 @@ fn other_file_findings(
     }
 }
 
-/// The loader of `languages()` on the stack of `side`: every file below `texts/` and
-/// `Texts/`. The two lists are read; the other files are looked at for what they are, which
-/// the lints need.
-pub fn load_languages(side: PackSide) -> CollectionLoader<Merged<Languages>, TextsFile> {
-    let _ = side;
-    CollectionLoader {
-        // Lowest pack first: `loadAllVersionsOf` returns every pack's copy, lowest priority first.
-        walk: Walk::json_tree_in(&[TEXTS]).accept(Accept::Fn(is_read)),
-        parse: parse_texts,
-        combine: combine_languages,
-        needs: &[],
-        then: None,
-    }
-}
+/// The loader of `languages()`, on either stack: every file below `texts/` and `Texts/`. The
+/// two lists are read; the other files are looked at for what they are, which the lints need.
+pub const LOADER: CollectionLoader<Merged<Languages>, TextsFile> = CollectionLoader {
+    // Lowest pack first: `loadAllVersionsOf` returns every pack's copy, lowest priority first.
+    walk: Walk::json_tree_in(&[TEXTS]).accept(Accept::Fn(is_read)),
+    parse: parse_texts,
+    combine: combine_languages,
+    needs: &[],
+    then: None,
+};

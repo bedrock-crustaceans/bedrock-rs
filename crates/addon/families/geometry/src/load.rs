@@ -1010,13 +1010,11 @@ fn combine(mut parsed: Vec<FileContribution>, stack: &StackCx<'_>) -> Registry<G
 
 /// The loader of `geometries()`: `models/mobs.json`, `models/entity/**/*.json` and
 /// `models/blocks/**/*.json`, combined per identifier, the last definition of the walk winning.
-pub const fn load_geometries() -> CollectionLoader<Registry<Geometry>, FileContribution> {
-    CollectionLoader {
-        walk: GEOMETRY_WALK,
-        parse: parse_walked,
-        combine,
-        // The combine asks the stack about no other collection and names no extra files.
-        needs: &[],
-        then: None,
-    }
-}
+pub const LOADER: CollectionLoader<Registry<Geometry>, FileContribution> = CollectionLoader {
+    walk: GEOMETRY_WALK,
+    parse: parse_walked,
+    combine,
+    // The combine asks the stack about no other collection and names no extra files.
+    needs: &[],
+    then: None,
+};

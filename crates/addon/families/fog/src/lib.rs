@@ -26,7 +26,7 @@ use bedrock_addon_core::version::known;
 
 pub(crate) use jsonutil::{Era, read_document};
 #[doc(hidden)]
-pub use load::{load_registry, upgrade_document};
+pub use load::{LOADER, upgrade_document};
 pub(crate) use write::{color_ju, float, norm_ju, object_with};
 
 pub use command::{FOG_STACK_LIMIT, FogCommandError, FogStack, is_valid_fog_identifier};

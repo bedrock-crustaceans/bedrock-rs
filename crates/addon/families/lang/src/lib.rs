@@ -32,7 +32,7 @@ pub use bedrock_addon_support::text::language::Language;
 pub use bedrock_addon_support::text::language::language_of;
 
 #[doc(hidden)]
-pub use load::load_translations;
+pub use load::LOADER;
 
 /// One `.lang` file, line by line as written (`texts/<code>.lang`).
 ///

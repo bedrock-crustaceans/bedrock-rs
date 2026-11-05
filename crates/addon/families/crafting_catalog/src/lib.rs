@@ -31,7 +31,7 @@ use bedrock_addon_core::version::FormatVersion;
 #[doc(hidden)]
 pub use link::{Definitions, link_group_names, link_placements};
 #[doc(hidden)]
-pub use stack::load;
+pub use stack::LOADER;
 
 /// The first struct version (`v1_21_60::CraftingCatalogDocument::VERSION`), which is also the
 /// oldest `format_version` vanilla reads.

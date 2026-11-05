@@ -22,7 +22,7 @@ use bedrock_addon_core::json::Value;
 
 pub use binary::{GlyphRemapping, RemapEntry, check_glyph_sheet, png_size};
 #[doc(hidden)]
-pub use load::load_fonts;
+pub use load::LOADER;
 pub use stack::{FontFile, MsdfPage, SMOOTH_PREFIX, remapping_path};
 
 /// The path of the font list, in every resource pack.

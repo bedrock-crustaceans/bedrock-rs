@@ -10,7 +10,7 @@
 mod load;
 
 #[doc(hidden)]
-pub use load::load_registry;
+pub use load::LOADER;
 
 use facet::Facet;
 use indexmap::IndexMap;

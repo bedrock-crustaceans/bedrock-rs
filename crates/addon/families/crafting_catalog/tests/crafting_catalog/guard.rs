@@ -57,7 +57,7 @@ fn group_members(group: &str) -> Vec<&str> {
 /// What `source` contains that reaches, or could reach, another content module.
 fn forbidden_in(source: &str, others: &[String]) -> Vec<String> {
     let mut found = Vec::new();
-    for text in ["super::super::super", "block::load", "crate as"] {
+    for text in ["super::super::super", "block::LOADER", "crate as"] {
         if source.contains(text) {
             found.push(text.to_owned());
         }
@@ -114,11 +114,11 @@ fn the_catalogue_reaches_no_other_content_module() {
 fn the_guard_sees_every_spelling() {
     let others = other_families();
     let forbidden_in = |source: &str| forbidden_in(source, &others);
-    let relative = "use super::super::super::super::block::{Block, load_registry};";
+    let relative = "use super::super::super::super::block::{Block, LOADER};";
     assert_eq!(forbidden_in(relative), ["super::super::super"]);
     assert_eq!(
-        forbidden_in("crate::families::block::load_registry()"),
-        ["block::load"]
+        forbidden_in("crate::families::block::LOADER"),
+        ["block::LOADER"]
     );
     assert_eq!(
         forbidden_in("use crate::{document::Merged, block::Block, id::{ItemId, kind}};"),

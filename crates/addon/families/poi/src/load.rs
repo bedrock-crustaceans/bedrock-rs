@@ -613,15 +613,13 @@ impl TagDocuments {
 
 /// The loader of `bp.poi()`: the POI directories of every behaviour pack, combined into the
 /// group.
-pub const fn load_group() -> CollectionLoader<Poi, PoiFile> {
-    CollectionLoader {
-        walk: WALK,
-        parse: parse_walk_file,
-        combine,
-        needs: &[],
-        then: None,
-    }
-}
+pub const LOADER: CollectionLoader<Poi, PoiFile> = CollectionLoader {
+    walk: WALK,
+    parse: parse_walk_file,
+    combine,
+    needs: &[],
+    then: None,
+};
 
 impl Reported for Poi {
     fn reported(&self) -> Box<dyn Iterator<Item = &Diagnostic> + '_> {

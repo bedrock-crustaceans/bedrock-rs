@@ -34,7 +34,7 @@ use component::ParticleComponent;
 use read::{Opt, object};
 
 #[doc(hidden)]
-pub use load::load_registry;
+pub use load::LOADER;
 
 /// A particle effect (`particle_effect`), at the newest format version.
 ///

@@ -327,15 +327,13 @@ fn parse(file: &WalkFile, _: &LoadContext) -> UiCopy {
 /// pack first, then the files the lists name (the second walk stage). A file below
 /// `ui/` that no list names is never asked for.
 // The game hands the merge the copies of a file lowest priority first.
-pub const fn load() -> CollectionLoader<Merged<UiDefinitions, RawLayer>, UiCopy> {
-    CollectionLoader {
-        walk: Walk::json_tree_in(&[UI]).accept(Accept::Fn(fixed_file)),
-        parse,
-        combine,
-        needs: &[],
-        then: Some(listed_files),
-    }
-}
+pub const LOADER: CollectionLoader<Merged<UiDefinitions, RawLayer>, UiCopy> = CollectionLoader {
+    walk: Walk::json_tree_in(&[UI]).accept(Accept::Fn(fixed_file)),
+    parse,
+    combine,
+    needs: &[],
+    then: Some(listed_files),
+};
 
 fn json_path(segments: &[&str]) -> JsonPath {
     let mut path = JsonPath::new();
@@ -861,7 +859,7 @@ mod tests {
     /// file is asked for only when a list names it.
     #[test]
     fn the_walk_asks_for_the_fixed_files_and_the_lists_name_the_rest() {
-        let loader = load();
+        let loader = LOADER;
         let asked =
             |path: &'static str| loader.walk.matches(&PackPath::from_static(path)).is_some();
         assert!(asked(UI_DEFS_PATH));

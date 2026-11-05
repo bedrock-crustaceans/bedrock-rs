@@ -849,15 +849,13 @@ fn combine(parsed: Vec<JigsawFile>, stack: &StackCx<'_>) -> Jigsaw {
 
 /// The loader of `bp.jigsaw()`: the five directories of every behaviour pack, combined into
 /// the group.
-pub const fn load_group() -> CollectionLoader<Jigsaw, JigsawFile> {
-    CollectionLoader {
-        walk: WALK,
-        parse: parse_walk_file,
-        combine,
-        needs: &[],
-        then: None,
-    }
-}
+pub const LOADER: CollectionLoader<Jigsaw, JigsawFile> = CollectionLoader {
+    walk: WALK,
+    parse: parse_walk_file,
+    combine,
+    needs: &[],
+    then: None,
+};
 
 impl Reported for Jigsaw {
     fn reported(&self) -> Box<dyn Iterator<Item = &Diagnostic> + '_> {

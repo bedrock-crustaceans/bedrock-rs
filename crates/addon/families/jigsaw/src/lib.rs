@@ -42,7 +42,7 @@ mod validate;
 mod tests;
 
 #[doc(hidden)]
-pub use load::load_group;
+pub use load::LOADER;
 
 use bedrock_addon_core::document::{Files, Registry};
 

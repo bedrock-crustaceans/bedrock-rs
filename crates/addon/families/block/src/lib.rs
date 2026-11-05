@@ -36,7 +36,7 @@ use bedrock_addon_core::version::FormatVersion;
 use component::{BlockComponent, DeprecatedComponents, DeprecatedDefinitionEvent};
 
 #[doc(hidden)]
-pub use load::load_registry;
+pub use load::LOADER;
 
 /// A custom block (`minecraft:block`), at the newest format version.
 ///

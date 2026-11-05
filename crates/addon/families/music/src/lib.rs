@@ -232,4 +232,4 @@ fn read_definition(value: &Value, report: &mut Reporter<'_>) -> MusicDefinition 
 }
 
 #[doc(hidden)]
-pub use load::load_music;
+pub use load::LOADER;

@@ -27,4 +27,4 @@ pub use definitions::{
 };
 
 #[doc(hidden)]
-pub use load::load_definitions;
+pub use load::LOADER;

@@ -15,25 +15,22 @@ fn lang(code: &str) -> Language {
 #[test]
 fn the_translations_walk_reads_the_lang_files_directly_in_texts() {
     use bedrock_addon_core::load::WalkOrder;
-    use bedrock_addon_core::pack_identity::PackSide;
 
-    for side in [PackSide::Behavior, PackSide::Resource] {
-        let walk = super::load::load_translations(side).walk;
-        let reads = |path: &str| walk.matches(&PackPath::new(path).unwrap()).is_some();
-        assert!(reads("texts/en_US.lang"));
-        for path in [
-            "texts/en_US.LANG",
-            "texts/ja_JP/texts/en_US.lang",
-            "texts/languages.json",
-            "Texts/en_US.lang",
-            "en_US.lang",
-        ] {
-            assert!(!reads(path), "{path}");
-        }
-        // lowest pack first, as `loadAllVersionsOf` returns the copies
-        assert_eq!(walk.order, WalkOrder::BottomUp);
-        assert!(walk.app_data.is_empty());
+    let walk = super::load::LOADER.walk;
+    let reads = |path: &str| walk.matches(&PackPath::new(path).unwrap()).is_some();
+    assert!(reads("texts/en_US.lang"));
+    for path in [
+        "texts/en_US.LANG",
+        "texts/ja_JP/texts/en_US.lang",
+        "texts/languages.json",
+        "Texts/en_US.lang",
+        "en_US.lang",
+    ] {
+        assert!(!reads(path), "{path}");
     }
+    // lowest pack first, as `loadAllVersionsOf` returns the copies
+    assert_eq!(walk.order, WalkOrder::BottomUp);
+    assert!(walk.app_data.is_empty());
 }
 
 // ---- the keyword-only scan ------------------------------------------------

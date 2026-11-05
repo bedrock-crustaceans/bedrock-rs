@@ -26,7 +26,7 @@ use bedrock_addon_core::json::Value;
 use bedrock_addon_core::version::SemVersion;
 
 #[doc(hidden)]
-pub use load::load_registry;
+pub use load::LOADER;
 
 /// One dialogue file (`dialogue/**/*.json`): the scenes it defines.
 ///

@@ -22,7 +22,7 @@ mod validate;
 mod tests;
 
 #[doc(hidden)]
-pub use load::load_group;
+pub use load::LOADER;
 
 use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics};
 use bedrock_addon_core::document::{Registry, Rejected};

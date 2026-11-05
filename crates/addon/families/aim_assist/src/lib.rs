@@ -24,7 +24,7 @@ mod texts;
 mod tests;
 
 #[doc(hidden)]
-pub use load::load_group;
+pub use load::LOADER;
 
 use bedrock_addon_core::diagnostic::Diagnostic;
 use bedrock_addon_core::document::Registry;

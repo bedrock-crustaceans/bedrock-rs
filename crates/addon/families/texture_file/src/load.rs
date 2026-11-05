@@ -18,15 +18,13 @@ fn combine(_: Vec<()>, cx: &StackCx<'_>) -> TextureFiles {
 
 /// The loader of `rp.texture_files()`: every texture file of every resource pack, from the
 /// packs' listings.
-pub const fn load_files() -> CollectionLoader<TextureFiles, ()> {
-    CollectionLoader {
-        walk: Walk::none(),
-        parse,
-        combine,
-        needs: &[],
-        then: None,
-    }
-}
+pub const LOADER: CollectionLoader<TextureFiles, ()> = CollectionLoader {
+    walk: Walk::none(),
+    parse,
+    combine,
+    needs: &[],
+    then: None,
+};
 
 impl Reported for TextureFiles {
     fn reported(&self) -> Box<dyn Iterator<Item = &Diagnostic> + '_> {

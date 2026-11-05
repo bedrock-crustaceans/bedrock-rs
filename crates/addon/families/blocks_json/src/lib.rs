@@ -29,7 +29,7 @@ use bedrock_addon_core::document::Extra;
 #[doc(hidden)]
 pub use link::{entry_members, entry_settings};
 #[doc(hidden)]
-pub use load::load_client_blocks;
+pub use load::LOADER;
 
 pub use history::v1_1_0::BlocksJson;
 pub use shape::{BLOCK_SHAPES, block_shape_value, default_block_shape};

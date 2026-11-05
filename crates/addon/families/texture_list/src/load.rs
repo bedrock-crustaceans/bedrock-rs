@@ -221,15 +221,13 @@ fn combine(parsed: Vec<ListFileParsed>, stack: &StackCx<'_>) -> TextureLists {
 
 /// The loader of `rp.texture_lists()`: every pack's `textures/textures_list.json`, with what
 /// the client's scan of each pack's `textures/` claims.
-pub const fn load_lists() -> CollectionLoader<TextureLists, ListFileParsed> {
-    CollectionLoader {
-        walk: walk(is_read, Some(is_list)),
-        parse: parse_walk_file,
-        combine,
-        needs: &[],
-        then: None,
-    }
-}
+pub const LOADER: CollectionLoader<TextureLists, ListFileParsed> = CollectionLoader {
+    walk: walk(is_read, Some(is_list)),
+    parse: parse_walk_file,
+    combine,
+    needs: &[],
+    then: None,
+};
 
 impl bedrock_addon_core::load::Reported for TextureLists {
     fn reported(

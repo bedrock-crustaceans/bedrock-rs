@@ -397,12 +397,11 @@ fn combine(parsed: Vec<Contribution<Dimension>>, stack: &StackCx<'_>) -> Registr
 }
 
 /// The loader of `bp.dimensions()`.
-pub const fn load_dimensions() -> CollectionLoader<Registry<Dimension>, Contribution<Dimension>> {
+pub const LOADER: CollectionLoader<Registry<Dimension>, Contribution<Dimension>> =
     CollectionLoader {
         walk: WALK,
         parse: parse_walk_file,
         combine,
         needs: &[],
         then: None,
-    }
-}
+    };

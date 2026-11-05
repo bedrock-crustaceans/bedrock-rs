@@ -280,12 +280,10 @@ fn push_scene(
 
 /// The loader of `bp.dialogue()`: `dialogue/**/*.json` of every behaviour pack, the
 /// lowest-priority pack's scene winning.
-pub const fn load_registry() -> CollectionLoader<Registry<DialogueScene>, Parsed> {
-    CollectionLoader {
-        walk: WALK,
-        parse: parse_walk_file,
-        combine,
-        needs: &[], // combining reads no other collection
-        then: None, // every file is named by the walk itself; there is no second stage
-    }
-}
+pub const LOADER: CollectionLoader<Registry<DialogueScene>, Parsed> = CollectionLoader {
+    walk: WALK,
+    parse: parse_walk_file,
+    combine,
+    needs: &[], // combining reads no other collection
+    then: None, // every file is named by the walk itself; there is no second stage
+};

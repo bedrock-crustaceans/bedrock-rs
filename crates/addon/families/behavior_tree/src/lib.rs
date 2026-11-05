@@ -24,7 +24,7 @@ use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::id::BehaviorTreeId;
 
 #[doc(hidden)]
-pub use load::load_registry;
+pub use load::LOADER;
 
 /// A block position literal: `[x, y, z]` of integers.
 pub type BlockPos = [i32; 3];

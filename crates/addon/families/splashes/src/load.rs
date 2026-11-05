@@ -142,15 +142,13 @@ fn combine_splashes(parsed: Vec<FileCopy<Splashes>>, _: &StackCx<'_>) -> Merged<
 }
 
 /// The loader of `rp.splashes()`: `splashes.json` of every resource pack, lowest pack first.
-pub const fn load_splashes() -> CollectionLoader<Merged<Splashes>, FileCopy<Splashes>> {
-    CollectionLoader {
-        walk: root_file(is_splashes),
-        parse: parse_splashes,
-        combine: combine_splashes,
-        needs: &[],
-        then: None,
-    }
-}
+pub const LOADER: CollectionLoader<Merged<Splashes>, FileCopy<Splashes>> = CollectionLoader {
+    walk: root_file(is_splashes),
+    parse: parse_splashes,
+    combine: combine_splashes,
+    needs: &[],
+    then: None,
+};
 
 #[cfg(test)]
 mod tests {

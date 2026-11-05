@@ -18,7 +18,7 @@ use bedrock_addon_core::json::{StrictInt, StrictString};
 use bedrock_addon_core::version::FormatVersion;
 
 #[doc(hidden)]
-pub use load::load_dimensions;
+pub use load::LOADER;
 pub(crate) use parse::{RootV1, bounds_constraints, parse_root, slice_null_rule};
 
 /// The first format version vanilla reads.

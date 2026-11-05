@@ -19,7 +19,7 @@ mod tests;
 pub use bedrock_addon_support::text::language::Language;
 
 #[doc(hidden)]
-pub use stack::load_languages;
+pub use stack::LOADER;
 
 /// The languages of a pack or a stack: the codes of `texts/languages.json` and the display
 /// names of `texts/language_names.json`.

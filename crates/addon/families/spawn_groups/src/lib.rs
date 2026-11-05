@@ -17,7 +17,7 @@ pub use bedrock_addon_support::spawn::{
     RangeFilter, VillageFilter, Weight, WorldAgeFilter,
 };
 #[doc(hidden)]
-pub use load::load_groups;
+pub use load::LOADER;
 
 use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::id::SpawnGroupId;

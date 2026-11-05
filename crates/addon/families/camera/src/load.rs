@@ -575,15 +575,13 @@ fn combine(parsed: Vec<CameraFile>, stack: &StackCx<'_>) -> Cameras {
 
 /// The loader of `bp.cameras()`: the three directories of every behaviour pack, combined into
 /// the group.
-pub const fn load_group() -> CollectionLoader<Cameras, CameraFile> {
-    CollectionLoader {
-        walk: WALK,
-        parse: parse_walk_file,
-        combine,
-        needs: &[],
-        then: None,
-    }
-}
+pub const LOADER: CollectionLoader<Cameras, CameraFile> = CollectionLoader {
+    walk: WALK,
+    parse: parse_walk_file,
+    combine,
+    needs: &[],
+    then: None,
+};
 
 impl Reported for Cameras {
     fn reported(&self) -> Box<dyn Iterator<Item = &Diagnostic> + '_> {

@@ -13,7 +13,7 @@ mod validate;
 mod write;
 
 #[doc(hidden)]
-pub use load::load_files;
+pub use load::LOADER;
 
 use std::collections::BTreeMap;
 

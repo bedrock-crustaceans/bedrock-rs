@@ -25,9 +25,9 @@ pub use environment::{
 };
 
 #[doc(hidden)]
-pub use load::identifier_in;
+pub use load::LOADER;
 #[doc(hidden)]
-pub use load::load_registry;
+pub use load::identifier_in;
 
 use bedrock_addon_core::document::{ComponentMap, Extra};
 use bedrock_addon_core::id::BiomeId;

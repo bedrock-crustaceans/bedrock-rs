@@ -119,13 +119,11 @@ fn combine_loading(
 }
 
 /// The loader of `rp.loading_messages()`: `loading_messages.json` of every resource pack.
-pub const fn load_loading_messages()
--> CollectionLoader<Merged<LoadingMessages>, FileCopy<LoadingMessages>> {
+pub const LOADER: CollectionLoader<Merged<LoadingMessages>, FileCopy<LoadingMessages>> =
     CollectionLoader {
         walk: root_file(is_loading),
         parse: parse_loading,
         combine: combine_loading,
         needs: &[],
         then: None,
-    }
-}
+    };

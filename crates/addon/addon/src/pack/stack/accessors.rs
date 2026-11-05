@@ -3,9 +3,9 @@
 //! `PackStack`, the `load::Collection` enum and the table the `StackLoader` drives.
 //!
 //! An accessor line reads
-//! `blocks: Registry<Block> = block::load_registry, collection = Blocks, feature = "block", side = Behavior;`:
-//! the method name and the collection it returns, the module's loader function (a
-//! `fn() -> load::CollectionLoader<C, P>`, the per-collection loader signature), the
+//! `blocks: Registry<Block> = block::LOADER, collection = Blocks, feature = "block", side = Behavior;`:
+//! the method name and the collection it returns, the module's loader (a
+//! `const LOADER: load::CollectionLoader<C, P>`, the per-collection loader), the
 //! line's `Collection` variant, the content feature that gates it and the stack
 //! side it exists on. The method drives the loader on first call (walk, parse per file,
 //! combine with the stack's `StackCx`) and caches the collection; later calls return the same
@@ -14,11 +14,11 @@
 //! Three more forms, each also written with any of the two sides:
 //!
 //! - **Both sides**: `side = Both` gives one generic accessor in `impl<S: Side> PackStack<S>`
-//!   (`animations`, `languages`), backed by one cache per side. Its loader takes the side,
-//!   `fn(PackSide) -> CollectionLoader<C, P>`, and is called with `S::SIDE`, so the family walks
-//!   the directories of that side. The line has one `Collection` variant, shared by the two
+//!   (`animations`, `languages`), backed by one cache per side. Its loader is the same on both
+//!   sides; each walk runs over the packs of its own stack, and a file carries the side it was
+//!   read on (`WalkFile::side`). The line has one `Collection` variant, shared by the two
 //!   entries of the table (one per side): selecting it loads the collection on both stacks.
-//! - **Keyed**: `translations[language: Language]: Merged<Translations> = lang::load,
+//! - **Keyed**: `translations[language: Language]: Merged<Translations> = lang::LOADER,
 //!   keys = listed_languages, key_of = lang::language_of, collection = Translations,
 //!   side = Both;` gives `fn translations(&self, language: &Language) ->
 //!   Option<&Merged<Translations>>`. `keys` (`fn(&PackStack<S>) -> impl IntoIterator<Item = K>`,
@@ -28,7 +28,7 @@
 //!   parse, combine) into its own `OnceLock`. A full load (`StackLoader`, `load_all`) parses
 //!   every walked file with a key, listed or not, and combines each key's files; the accessor
 //!   then answers a listed key from it, and still `None` for the others.
-//! - **Slice**: `scripts: [ScriptBundle] = script::load_bundles, …;` caches the loader's
+//! - **Slice**: `scripts: [ScriptBundle] = script::LOADER, …;` caches the loader's
 //!   `Vec<ScriptBundle>` and returns `&[ScriptBundle]`.
 //!
 //! The list is expanded one line at a time (a recursive macro), so each line costs one level of
@@ -45,6 +45,17 @@ use indexmap::IndexMap;
 
 use super::{PackStack, Side, read_item, walk_items};
 use crate::load::{Erased, Loaded, Reported};
+// What the accessor lines name: the document collections and the family modules, which
+// are whichever families the features compile in.
+#[allow(
+    unused_imports,
+    clippy::wildcard_imports,
+    reason = "the lines name every family compiled in, and none of a family compiled out"
+)]
+use crate::{
+    document::{Files, Merged, RawLayer, Registry},
+    families::*,
+};
 
 /// The cache of a line on the side it is read from: a one-side cache is itself, a both-sides
 /// cache ([`BothSides`]) holds one per side.
@@ -403,88 +414,57 @@ macro_rules! accessors {
         $(#[doc = $doc:literal])*
         $name:ident [$param:ident : $key:ty] : $collection:ty = $loader:path,
             keys = $keys:path, key_of = $key_of:path, collection = $variant:ident
-            $(, feature = $feature:literal)?, side = Both;
-        $($rest:tt)*
-    ) => {
-        accessors! { @munch $mode [$($done)* {
-            $name, [$(#[doc = $doc])*], $variant, ($($feature)?), Both,
-            [($variant, Behavior, ($($feature)?)) ($variant, Resource, ($($feature)?))],
-            $loader,
-            ($crate::pack::stack::accessors::Keyed<$key, $collection>),
-            (keyed $param, $key, $keys, $key_of, $collection)
-        }] $($rest)* }
-    };
-    (@munch $mode:tt [$($done:tt)*]
-        $(#[doc = $doc:literal])*
-        $name:ident [$param:ident : $key:ty] : $collection:ty = $loader:path,
-            keys = $keys:path, key_of = $key_of:path, collection = $variant:ident
             $(, feature = $feature:literal)?, side = $side:ident;
         $($rest:tt)*
     ) => {
-        accessors! { @munch $mode [$($done)* {
-            $name, [$(#[doc = $doc])*], $variant, ($($feature)?), $side,
-            [($variant, $side, ($($feature)?))],
-            $loader,
+        accessors! { @line $mode [$($done)*] $side {
+            $name, [$(#[doc = $doc])*], $variant, ($($feature)?), $loader,
             ($crate::pack::stack::accessors::Keyed<$key, $collection>),
             (keyed $param, $key, $keys, $key_of, $collection)
-        }] $($rest)* }
+        } $($rest)* }
     };
     // Slice.
     (@munch $mode:tt [$($done:tt)*]
         $(#[doc = $doc:literal])*
         $name:ident : [$element:ty] = $loader:path, collection = $variant:ident
-            $(, feature = $feature:literal)?, side = Both;
-        $($rest:tt)*
-    ) => {
-        accessors! { @munch $mode [$($done)* {
-            $name, [$(#[doc = $doc])*], $variant, ($($feature)?), Both,
-            [($variant, Behavior, ($($feature)?)) ($variant, Resource, ($($feature)?))],
-            $loader,
-            (::std::sync::OnceLock<$crate::load::Loaded<::std::vec::Vec<$element>>>),
-            (slice $element)
-        }] $($rest)* }
-    };
-    (@munch $mode:tt [$($done:tt)*]
-        $(#[doc = $doc:literal])*
-        $name:ident : [$element:ty] = $loader:path, collection = $variant:ident
             $(, feature = $feature:literal)?, side = $side:ident;
         $($rest:tt)*
     ) => {
-        accessors! { @munch $mode [$($done)* {
-            $name, [$(#[doc = $doc])*], $variant, ($($feature)?), $side,
-            [($variant, $side, ($($feature)?))],
-            $loader,
+        accessors! { @line $mode [$($done)*] $side {
+            $name, [$(#[doc = $doc])*], $variant, ($($feature)?), $loader,
             (::std::sync::OnceLock<$crate::load::Loaded<::std::vec::Vec<$element>>>),
             (slice $element)
-        }] $($rest)* }
+        } $($rest)* }
     };
     // One collection.
     (@munch $mode:tt [$($done:tt)*]
         $(#[doc = $doc:literal])*
         $name:ident : $collection:ty = $loader:path, collection = $variant:ident
-            $(, feature = $feature:literal)?, side = Both;
-        $($rest:tt)*
-    ) => {
-        accessors! { @munch $mode [$($done)* {
-            $name, [$(#[doc = $doc])*], $variant, ($($feature)?), Both,
-            [($variant, Behavior, ($($feature)?)) ($variant, Resource, ($($feature)?))],
-            $loader,
-            (::std::sync::OnceLock<$crate::load::Loaded<$collection>>),
-            (plain $collection)
-        }] $($rest)* }
-    };
-    (@munch $mode:tt [$($done:tt)*]
-        $(#[doc = $doc:literal])*
-        $name:ident : $collection:ty = $loader:path, collection = $variant:ident
             $(, feature = $feature:literal)?, side = $side:ident;
         $($rest:tt)*
     ) => {
-        accessors! { @munch $mode [$($done)* {
-            $name, [$(#[doc = $doc])*], $variant, ($($feature)?), $side,
-            [($variant, $side, ($($feature)?))],
-            $loader,
+        accessors! { @line $mode [$($done)*] $side {
+            $name, [$(#[doc = $doc])*], $variant, ($($feature)?), $loader,
             (::std::sync::OnceLock<$crate::load::Loaded<$collection>>),
             (plain $collection)
+        } $($rest)* }
+    };
+    // A parsed line into the shape, with its entries: two for `side = Both`, else one.
+    (@line $mode:tt [$($done:tt)*] Both {
+        $name:ident, $docs:tt, $variant:ident, $feature:tt, $loader:path, $cache:tt, $form:tt
+    } $($rest:tt)*) => {
+        accessors! { @munch $mode [$($done)* {
+            $name, $docs, $variant, $feature, Both,
+            [($variant, Behavior, $feature) ($variant, Resource, $feature)],
+            $loader, $cache, $form
+        }] $($rest)* }
+    };
+    (@line $mode:tt [$($done:tt)*] $side:ident {
+        $name:ident, $docs:tt, $variant:ident, $feature:tt, $loader:path, $cache:tt, $form:tt
+    } $($rest:tt)*) => {
+        accessors! { @munch $mode [$($done)* {
+            $name, $docs, $variant, $feature, $side, [($variant, $side, $feature)],
+            $loader, $cache, $form
         }] $($rest)* }
     };
 
@@ -539,7 +519,7 @@ macro_rules! accessors {
                     $param,
                     || $keys(self),
                     $key_of,
-                    accessors!(@loader $side, $loader),
+                    $loader,
                     self.as_stack(),
                 )
             }
@@ -556,7 +536,7 @@ macro_rules! accessors {
                 let side = <accessors!(@type $side) as $crate::pack::Side>::SIDE;
                 $crate::pack::stack::accessors::load_once(
                     $crate::pack::stack::accessors::Sided::of(&self.caches.$name, side),
-                    accessors!(@loader $side, $loader),
+                    $loader,
                     self.as_stack(),
                 )
                 .as_slice()
@@ -574,7 +554,7 @@ macro_rules! accessors {
                 let side = <accessors!(@type $side) as $crate::pack::Side>::SIDE;
                 $crate::pack::stack::accessors::load_once(
                     $crate::pack::stack::accessors::Sided::of(&self.caches.$name, side),
-                    accessors!(@loader $side, $loader),
+                    $loader,
                     self.as_stack(),
                 )
             }
@@ -583,13 +563,6 @@ macro_rules! accessors {
     // The side type of a line, as `@method` and `@entry` give it: `(S)` for both sides.
     (@type ($($side:tt)*)) => {
         $($side)*
-    };
-    // The loader of a line on a side: a both-sides loader gets the side.
-    (@loader (S), $loader:path) => {
-        $loader(<S as $crate::pack::Side>::SIDE)
-    };
-    (@loader $side:tt, $loader:path) => {
-        $loader()
     };
 
     // ---- `Collection`, the entries and `ENTRIES` ----
@@ -687,10 +660,10 @@ macro_rules! accessors {
                 <accessors!(@type $side) as $crate::pack::Side>::SIDE
             }
             fn walk(&self) -> ::bedrock_addon_core::load::Walk {
-                accessors!(@loader $side, $loader).walk
+                $loader.walk
             }
             fn needs(&self) -> &'static [&'static str] {
-                accessors!(@loader $side, $loader).needs
+                $loader.needs
             }
             fn parse(
                 &self,
@@ -698,7 +671,7 @@ macro_rules! accessors {
                 cx: &::bedrock_addon_core::load::LoadContext,
             ) -> $crate::load::Erased {
                 $crate::pack::stack::accessors::erased_keyed_parse(
-                    accessors!(@loader $side, $loader),
+                    $loader,
                     $key_of,
                     file,
                     cx,
@@ -710,7 +683,7 @@ macro_rules! accessors {
                 cx: &::bedrock_addon_core::load::StackCx<'_>,
             ) -> $crate::load::Erased {
                 $crate::pack::stack::accessors::erased_keyed_combine(
-                    accessors!(@loader $side, $loader),
+                    $loader,
                     $key_of,
                     parsed,
                     cx,
@@ -736,7 +709,7 @@ macro_rules! accessors {
             fn load(&self, stack: &dyn ::std::any::Any) {
                 if let Some(stack) = stack.downcast_ref::<$host<accessors!(@type $side)>>() {
                     $crate::pack::stack::accessors::Sided::of(&stack.caches.$name, self.side())
-                        .load_all($key_of, accessors!(@loader $side, $loader), stack.as_stack());
+                        .load_all($key_of, $loader, stack.as_stack());
                 }
             }
             fn report<'a>(
@@ -771,10 +744,10 @@ macro_rules! accessors {
                 <accessors!(@type $side) as $crate::pack::Side>::SIDE
             }
             fn walk(&self) -> ::bedrock_addon_core::load::Walk {
-                accessors!(@loader $side, $loader).walk
+                $loader.walk
             }
             fn needs(&self) -> &'static [&'static str] {
-                accessors!(@loader $side, $loader).needs
+                $loader.needs
             }
             fn registered(
                 &self,
@@ -788,27 +761,27 @@ macro_rules! accessors {
                 $crate::load::Reported::registered(&loaded.value)
             }
             fn has_then(&self) -> bool {
-                accessors!(@loader $side, $loader).then.is_some()
+                $loader.then.is_some()
             }
             fn then(
                 &self,
                 parsed: &[$crate::load::Erased],
             ) -> Vec<::bedrock_addon_core::pack_identity::PackPath> {
-                $crate::load::erased_then(accessors!(@loader $side, $loader), parsed)
+                $crate::load::erased_then($loader, parsed)
             }
             fn parse(
                 &self,
                 file: &::bedrock_addon_core::load::WalkFile,
                 cx: &::bedrock_addon_core::load::LoadContext,
             ) -> $crate::load::Erased {
-                $crate::load::erased_parse(accessors!(@loader $side, $loader), file, cx)
+                $crate::load::erased_parse($loader, file, cx)
             }
             fn combine(
                 &self,
                 parsed: Vec<$crate::load::Erased>,
                 cx: &::bedrock_addon_core::load::StackCx<'_>,
             ) -> $crate::load::Erased {
-                $crate::load::erased_combine(accessors!(@loader $side, $loader), parsed, cx)
+                $crate::load::erased_combine($loader, parsed, cx)
             }
             fn install(
                 &self,
@@ -869,239 +842,239 @@ macro_rules! accessors {
 accessors! {
     /// The custom blocks of the behaviour packs (`blocks/**/*.json`), the higher pack's
     /// definition winning.
-    blocks: crate::document::Registry<crate::families::block::Block> = crate::families::block::load_registry, collection = Blocks, feature = "block", side = Behavior;
+    blocks: Registry<block::Block> = block::LOADER, collection = Blocks, feature = "block", side = Behavior;
 
     /// The items of the behaviour packs (`items/`), by identifier, the higher pack's
     /// definition winning.
-    items: crate::document::Registry<crate::families::item::Item> = crate::families::item::load_registry, collection = Items, feature = "item", side = Behavior;
+    items: Registry<item::Item> = item::LOADER, collection = Items, feature = "item", side = Behavior;
 
     /// The crafting item catalogue of the behaviour stack
     /// (`item_catalog/crafting_item_catalog.json`): the topmost vanilla behaviour pack's file
     /// and every file above it, merged bottom-up into the four creative categories.
-    crafting_catalog: crate::document::Merged<crate::families::crafting_catalog::CraftingCatalog> = crate::families::crafting_catalog::load, collection = CraftingCatalog, feature = "crafting_catalog", side = Behavior;
+    crafting_catalog: Merged<crafting_catalog::CraftingCatalog> = crafting_catalog::LOADER, collection = CraftingCatalog, feature = "crafting_catalog", side = Behavior;
 
     /// The entity definitions of the behaviour packs (`entities/`), by identifier, the higher
     /// pack's definition winning.
-    entities: crate::document::Registry<crate::families::entity::Entity> = crate::families::entity::load_registry, collection = Entities, feature = "entity", side = Behavior;
+    entities: Registry<entity::Entity> = entity::LOADER, collection = Entities, feature = "entity", side = Behavior;
 
     /// The server biomes of the behaviour packs (`biomes/`), by identifier, the higher pack's
     /// definition winning; beta documents are in its `beta()` registry.
-    biomes: crate::document::Registry<crate::families::biome::Biome> = crate::families::biome::load_registry, collection = Biomes, feature = "biome", side = Behavior;
+    biomes: Registry<biome::Biome> = biome::LOADER, collection = Biomes, feature = "biome", side = Behavior;
 
     /// The client biomes of the resource packs (`biomes/**/*.json`), by biome: the highest
     /// pack's document claims its identifier; beta documents are in its `beta()` registry.
-    client_biomes: crate::document::Registry<crate::families::client_biome::ClientBiome> = crate::families::client_biome::load_registry, collection = ClientBiomes, feature = "client_biome", side = Resource;
+    client_biomes: Registry<client_biome::ClientBiome> = client_biome::LOADER, collection = ClientBiomes, feature = "client_biome", side = Resource;
 
     /// The legacy client-biome settings (`biomes_client.json` of every resource pack that
     /// takes part), merged lowest pack first; base-game packs take no part from world
     /// base-game version 1.21.40.
-    legacy_client_biomes: crate::document::Merged<crate::families::biomes_client::LegacyClientBiomes, crate::document::RawLayer> = crate::families::biomes_client::load_legacy, collection = LegacyClientBiomes, feature = "biomes_client", side = Resource;
+    legacy_client_biomes: Merged<biomes_client::LegacyClientBiomes, RawLayer> = biomes_client::LOADER, collection = LegacyClientBiomes, feature = "biomes_client", side = Resource;
     /// The spawn rules of the behaviour packs (`spawn_rules/**/*.json`), by entity, the higher
     /// pack's definition winning.
-    spawn_rules: crate::document::Registry<crate::families::spawn_rules::SpawnRules> = crate::families::spawn_rules::load_rules, collection = SpawnRules, feature = "spawn_rules", side = Behavior;
+    spawn_rules: Registry<spawn_rules::SpawnRules> = spawn_rules::LOADER, collection = SpawnRules, feature = "spawn_rules", side = Behavior;
 
     /// The raid spawn groups of the app data (`definitions/spawn_groups/*.json`; never from a
     /// pack), by identifier.
-    spawn_groups: crate::document::Registry<crate::families::spawn_groups::SpawnGroup> = crate::families::spawn_groups::load_groups, collection = SpawnGroups, feature = "spawn_groups", side = Behavior;
+    spawn_groups: Registry<spawn_groups::SpawnGroup> = spawn_groups::LOADER, collection = SpawnGroups, feature = "spawn_groups", side = Behavior;
 
     /// The features of the behaviour stack (`features/**/*.json` and the app's
     /// `definitions/features`), by identifier, the highest-priority definition winning.
-    features: crate::document::Registry<crate::families::feature::Feature> = crate::families::feature::load_registry, collection = Features, feature = "feature", side = Behavior;
+    features: Registry<feature::Feature> = feature::LOADER, collection = Features, feature = "feature", side = Behavior;
 
     /// The jigsaw documents of the behaviour packs (`worldgen/{structures, template_pools,
     /// structure_sets, processors}/**/*.json` and `worldgen/metadata/*.dat`), by identifier
     /// (metadata by path), the higher pack's definition winning.
-    jigsaw: crate::families::jigsaw::Jigsaw = crate::families::jigsaw::load_group, collection = Jigsaw, feature = "jigsaw", side = Behavior;
+    jigsaw: jigsaw::Jigsaw = jigsaw::LOADER, collection = Jigsaw, feature = "jigsaw", side = Behavior;
 
     /// The recipes of the behaviour packs (`recipes/**/*.json`): one registry per recipe
     /// namespace, the higher pack's valid recipe winning.
-    recipes: crate::families::recipe::Recipes = crate::families::recipe::load_recipes, collection = Recipes, feature = "recipe", side = Behavior;
+    recipes: recipe::Recipes = recipe::LOADER, collection = Recipes, feature = "recipe", side = Behavior;
 
     /// The animations of the stack's packs (`animations/**/*.json`), by identifier
     /// (`animation.<name>`, lower-cased), the higher pack's animation winning.
-    animations: crate::document::Registry<crate::families::animation::Animation> = crate::families::animation::load_animations, collection = Animations, feature = "animation", side = Both;
+    animations: Registry<animation::Animation> = animation::LOADER, collection = Animations, feature = "animation", side = Both;
 
     /// The animation controllers of the stack's packs (`animation_controllers/*.json`), by
     /// identifier (`controller.animation.<name>`, lower-cased), the higher pack's controller
     /// winning.
-    animation_controllers: crate::document::Registry<crate::families::animation_controller::AnimationController> = crate::families::animation_controller::load_controllers, collection = AnimationControllers, feature = "animation_controller", side = Both;
+    animation_controllers: Registry<animation_controller::AnimationController> = animation_controller::LOADER, collection = AnimationControllers, feature = "animation_controller", side = Both;
     /// The feature rules of the behaviour packs (`feature_rules/`) and of the app data, one
     /// registry per placement pass, the higher pack's rule winning per pass and identifier.
-    feature_rules: crate::families::feature_rules::FeatureRules = crate::families::feature_rules::load_feature_rules, collection = FeatureRules, feature = "feature_rules", side = Behavior;
+    feature_rules: feature_rules::FeatureRules = feature_rules::LOADER, collection = FeatureRules, feature = "feature_rules", side = Behavior;
 
     /// The dimension documents of the behaviour packs (`dimensions/*.json`), by identifier, the
     /// lowest pack's definition winning (vanilla keeps the first file it walks).
-    dimensions: crate::document::Registry<crate::families::dimension::Dimension> = crate::families::dimension::load_dimensions, collection = Dimensions, feature = "dimension", side = Behavior;
+    dimensions: Registry<dimension::Dimension> = dimension::LOADER, collection = Dimensions, feature = "dimension", side = Behavior;
 
     /// The points of interest of the behaviour packs (`poi/**/*.json`, with the `poi`
     /// experiment): the POI types, the definition loaded last winning, and the tag documents,
     /// unioned per identifier.
-    poi: crate::families::poi::Poi = crate::families::poi::load_group, collection = Poi, feature = "poi", side = Behavior;
+    poi: poi::Poi = poi::LOADER, collection = Poi, feature = "poi", side = Behavior;
     /// The NPC dialogue scenes of the behaviour packs (`dialogue/**/*.json`), by scene tag, the
     /// lowest-priority pack's scene winning.
-    dialogue: crate::document::Registry<crate::families::dialogue::DialogueScene> = crate::families::dialogue::load_registry, collection = Dialogue, feature = "dialogue", side = Behavior;
+    dialogue: Registry<dialogue::DialogueScene> = dialogue::LOADER, collection = Dialogue, feature = "dialogue", side = Behavior;
     /// The trade tables of the behaviour packs (`trading/**/*.json`), by path, the top pack's
     /// copy winning.
-    trade_tables: crate::document::Files<crate::families::trade::TradeTable> = crate::families::trade::load_files, collection = TradeTables, feature = "trade", side = Behavior;
+    trade_tables: Files<trade::TradeTable> = trade::LOADER, collection = TradeTables, feature = "trade", side = Behavior;
     /// The structure files of the behaviour packs (`structures/**/*.mcstructure`), by path
     /// (`Structure::find` looks one up by identifier); a copy that fails to load falls through
     /// to the next pack's.
-    structures: crate::document::Files<crate::families::structure::Structure> = crate::families::structure::load_files, collection = Structures, feature = "structure", side = Behavior;
+    structures: Files<structure::Structure> = structure::LOADER, collection = Structures, feature = "structure", side = Behavior;
 
     /// The loot tables of the behaviour packs (`loot_tables/**/*.json`), by path, the top
     /// pack's copy winning.
-    loot_tables: crate::document::Files<crate::families::loot::LootTable> = crate::families::loot::load_files, collection = LootTables, feature = "loot", side = Behavior;
+    loot_tables: Files<loot::LootTable> = loot::LOADER, collection = LootTables, feature = "loot", side = Behavior;
 
     /// The functions of the behaviour packs (`functions/**/*.mcfunction`), by name, the higher
     /// pack's function winning.
-    functions: crate::document::Registry<crate::families::function::Function> = crate::families::function::load_registry, collection = Functions, feature = "function", side = Behavior;
+    functions: Registry<function::Function> = function::LOADER, collection = Functions, feature = "function", side = Behavior;
 
     /// The functions that run every tick (`functions/tick.json` of every behaviour pack), in
     /// run order: the lowest-priority pack's entries first.
-    tick_functions: crate::document::Merged<crate::families::function::TickList> = crate::families::function::load_tick, collection = TickFunctions, feature = "function", side = Behavior;
+    tick_functions: Merged<function::TickList> = function::TICK_LOADER, collection = TickFunctions, feature = "function", side = Behavior;
 
     /// The languages of the stack's packs (`texts/languages.json`, `texts/language_names.json`):
     /// the union of the listed codes, lowest pack first, and the highest pack's name per code.
-    languages: crate::document::Merged<crate::families::languages::Languages> = crate::families::languages::load_languages, collection = Languages, feature = "languages", side = Both;
+    languages: Merged<languages::Languages> = languages::LOADER, collection = Languages, feature = "languages", side = Both;
 
     /// The translations of one listed language (`texts/<code>.lang` of every pack), the
     /// highest pack's value winning per key; `None` for a code no `languages.json` lists.
-    translations[language: crate::families::lang::Language]: crate::document::Merged<crate::families::lang::Translations> = crate::families::lang::load_translations, keys = listed_languages, key_of = crate::families::lang::language_of, collection = Translations, feature = "lang", side = Both;
+    translations[language: lang::Language]: Merged<lang::Translations> = lang::LOADER, keys = listed_languages, key_of = lang::language_of, collection = Translations, feature = "lang", side = Both;
 
     /// The script files of the stack's packs (`scripts/**/*.js`), one bundle per pack that has
     /// a script module (`script` in a behaviour pack, `client_script` in a resource pack) or
     /// any file below `scripts/`, the highest pack first. A bundle is its pack's alone: no
     /// import crosses packs.
-    scripts: [crate::families::script::ScriptBundle] = crate::families::script::load_bundles, collection = Scripts, feature = "script", side = Both;
+    scripts: [script::ScriptBundle] = script::LOADER, collection = Scripts, feature = "script", side = Both;
 
     /// The automation behavior trees of the behaviour packs (`behavior_trees/**/*.json`) and
     /// the nine trees built into the game, by `minecraft:name`: the higher pack's tree wins,
     /// and a built-in tree replaces a pack tree of its name.
-    behavior_trees: crate::document::Registry<crate::families::behavior_tree::BehaviorTree> = crate::families::behavior_tree::load_registry, collection = BehaviorTrees, feature = "behavior_tree", side = Behavior;
+    behavior_trees: Registry<behavior_tree::BehaviorTree> = behavior_tree::LOADER, collection = BehaviorTrees, feature = "behavior_tree", side = Behavior;
     /// The voxel shapes of the behaviour packs (`shapes/**/*.json`), by identifier, the higher
     /// pack's shape winning (vanilla binds an identifier to the shape it loads last).
-    voxel_shapes: crate::document::Registry<crate::families::voxel_shape::VoxelShape> = crate::families::voxel_shape::load_registry, collection = VoxelShapes, feature = "voxel_shape", side = Behavior;
+    voxel_shapes: Registry<voxel_shape::VoxelShape> = voxel_shape::LOADER, collection = VoxelShapes, feature = "voxel_shape", side = Behavior;
 
     /// The geometries of the resource packs (`models/mobs.json`, `models/entity/**/*.json`,
     /// `models/blocks/**/*.json`), by identifier (`geometry.<name>`, compared without case),
     /// the higher pack's geometry winning.
-    geometries: crate::document::Registry<crate::families::geometry::Geometry> = crate::families::geometry::load_geometries, collection = Geometries, feature = "geometry", side = Resource;
+    geometries: Registry<geometry::Geometry> = geometry::LOADER, collection = Geometries, feature = "geometry", side = Resource;
     /// The camera documents of the behaviour packs (`cameras/{presets, lists, splines}/`):
     /// presets and lists by identifier, the higher pack's winning, and every spline file.
-    cameras: crate::families::camera::Cameras = crate::families::camera::load_group, collection = Cameras, feature = "camera", side = Behavior;
+    cameras: camera::Cameras = camera::LOADER, collection = Cameras, feature = "camera", side = Behavior;
 
     /// The aim-assist documents of the behaviour packs (`aim_assist/{presets, categories}/`):
     /// presets by identifier and categories by name, the higher pack's winning.
-    aim_assist: crate::families::aim_assist::AimAssist = crate::families::aim_assist::load_group, collection = AimAssist, feature = "aim_assist", side = Behavior;
+    aim_assist: aim_assist::AimAssist = aim_assist::LOADER, collection = AimAssist, feature = "aim_assist", side = Behavior;
     /// The sound definitions of the resource packs (`sounds/sound_definitions.json`): the sound
     /// events and the audio each plays, merged across the stack as JSON.
-    sound_definitions: crate::document::Merged<crate::families::sound_definitions::SoundDefinitions, crate::document::RawLayer> = crate::families::sound_definitions::load_definitions, collection = SoundDefinitions, feature = "sound_definitions", side = Resource;
+    sound_definitions: Merged<sound_definitions::SoundDefinitions, RawLayer> = sound_definitions::LOADER, collection = SoundDefinitions, feature = "sound_definitions", side = Resource;
 
     /// The event bindings of the resource packs (`sounds.json`): which sound event each game
     /// event plays, merged across the stack as JSON.
-    sounds_json: crate::document::Merged<crate::families::sounds_json::SoundBindings, crate::document::RawLayer> = crate::families::sounds_json::load_bindings, collection = SoundsJson, feature = "sounds_json", side = Resource;
+    sounds_json: Merged<sounds_json::SoundBindings, RawLayer> = sounds_json::LOADER, collection = SoundsJson, feature = "sounds_json", side = Resource;
 
     /// The music of the resource packs (`sounds/music_definitions.json`): the music of each
     /// situation, merged across the stack as JSON.
-    music: crate::document::Merged<crate::families::music::MusicDefinitions, crate::document::RawLayer> = crate::families::music::load_music, collection = Music, feature = "music", side = Resource;
+    music: Merged<music::MusicDefinitions, RawLayer> = music::LOADER, collection = Music, feature = "music", side = Resource;
 
     /// The audio files under `sounds/` of the resource packs, as sound names resolve to them.
-    sound_files: crate::families::sound_file::SoundFiles = crate::families::sound_file::load_files, collection = SoundFiles, feature = "sound_file", side = Resource;
+    sound_files: sound_file::SoundFiles = sound_file::LOADER, collection = SoundFiles, feature = "sound_file", side = Resource;
 
     /// The server's definitions of the sound events the behaviour packs declare
     /// (`sounds/sound_definitions.json`, beta), by sound event name; the lowest pack's
     /// definition of a name is the one kept.
-    server_sound_definitions: crate::document::Registry<crate::families::server_sound_definitions::SoundMetadata> = crate::families::server_sound_definitions::load_registry, collection = ServerSoundDefinitions, feature = "server_sound_definitions", side = Behavior;
+    server_sound_definitions: Registry<server_sound_definitions::SoundMetadata> = server_sound_definitions::LOADER, collection = ServerSoundDefinitions, feature = "server_sound_definitions", side = Behavior;
 
     /// The deferred renderer's settings of the resource packs (`lighting/`, `atmospherics/`,
     /// `water/`, `color_grading/`, `cubemaps/`, `shadows/global.json`, `pbr/global.json`,
     /// `local_lighting/local_lighting.json`): the identifier maps, the two single files and
     /// the merged local lights, the higher pack's winning.
-    deferred_settings: crate::families::deferred_settings::DeferredSettings = crate::families::deferred_settings::load_group, collection = DeferredSettings, feature = "deferred_settings", side = Resource;
+    deferred_settings: deferred_settings::DeferredSettings = deferred_settings::LOADER, collection = DeferredSettings, feature = "deferred_settings", side = Resource;
 
     /// The JSON UI of the resource packs: the files every pack's `ui/_ui_defs.json` lists,
     /// each merged from the lowest pack up, the definitions they resolve to, and
     /// `ui/_global_variables.json`.
-    ui: crate::document::Merged<crate::families::json_ui::UiDefinitions, crate::document::RawLayer> = crate::families::json_ui::load, collection = Ui, feature = "json_ui", side = Resource;
+    ui: Merged<json_ui::UiDefinitions, RawLayer> = json_ui::LOADER, collection = Ui, feature = "json_ui", side = Resource;
 
     /// What the client draws and plays for each block (`blocks.json` of every resource pack),
     /// by block: the packs' entries merged field by field, a higher pack's field replacing a
     /// lower pack's. A bare key is a vanilla block's name (`stone` is `minecraft:stone`).
-    client_blocks: crate::document::Registry<crate::families::blocks_json::ClientBlock> = crate::families::blocks_json::load_client_blocks, collection = ClientBlocks, feature = "blocks_json", side = Resource;
+    client_blocks: Registry<blocks_json::ClientBlock> = blocks_json::LOADER, collection = ClientBlocks, feature = "blocks_json", side = Resource;
 
     /// The culling rules of the resource packs (`block_culling/**/*.json`), by identifier, the
     /// higher pack's document winning.
-    block_culling: crate::document::Registry<crate::families::block_culling::CullingRules> = crate::families::block_culling::load_culling_rules, collection = BlockCulling, feature = "block_culling", side = Resource;
+    block_culling: Registry<block_culling::CullingRules> = block_culling::LOADER, collection = BlockCulling, feature = "block_culling", side = Resource;
     /// The data-driven UI of the resource packs (`ddui/{root, composition}/`): roots and
     /// compositions by identifier, the lowest pack's definition of an identifier winning.
-    data_driven_ui: crate::families::ddui::DataDrivenUi = crate::families::ddui::load_group, collection = DataDrivenUi, feature = "ddui", side = Resource;
+    data_driven_ui: ddui::DataDrivenUi = ddui::LOADER, collection = DataDrivenUi, feature = "ddui", side = Resource;
     /// The terrain and item atlases of the resource packs (`textures/terrain_texture.json` and
     /// `textures/item_texture.json`), each merged across the stack.
-    texture_atlases: crate::families::texture_atlas::TextureAtlases = crate::families::texture_atlas::load_atlases, collection = TextureAtlases, feature = "texture_atlas", side = Resource;
+    texture_atlases: texture_atlas::TextureAtlases = texture_atlas::LOADER, collection = TextureAtlases, feature = "texture_atlas", side = Resource;
 
     /// The flipbooks of the resource packs (`textures/flipbook_textures.json`), merged entry
     /// by entry from the lowest pack up.
-    flipbooks: crate::document::Merged<crate::families::flipbooks::Flipbooks, crate::document::RawLayer> = crate::families::flipbooks::load_flipbooks, collection = Flipbooks, feature = "flipbooks", side = Resource;
+    flipbooks: Merged<flipbooks::Flipbooks, RawLayer> = flipbooks::LOADER, collection = Flipbooks, feature = "flipbooks", side = Resource;
 
     /// The texture lists of the resource packs (`textures/textures_list.json`): each pack's
     /// list, what the client does with it and the paths the packs claim for preloading.
-    texture_lists: crate::families::texture_list::TextureLists = crate::families::texture_list::load_lists, collection = TextureLists, feature = "texture_list", side = Resource;
+    texture_lists: texture_list::TextureLists = texture_list::LOADER, collection = TextureLists, feature = "texture_list", side = Resource;
 
     /// The texture sets of the resource packs (`*.texture_set.json`), by the texture each sits
     /// beside.
-    texture_sets: crate::families::texture_set::TextureSets = crate::families::texture_set::load_sets, collection = TextureSets, feature = "texture_set", side = Resource;
+    texture_sets: texture_set::TextureSets = texture_set::LOADER, collection = TextureSets, feature = "texture_set", side = Resource;
 
     /// The texture files of the resource packs: which pack has which image or texture set, as
     /// the packs list them.
-    texture_files: crate::families::texture_file::TextureFiles = crate::families::texture_file::load_files, collection = TextureFiles, feature = "texture_file", side = Resource;
+    texture_files: texture_file::TextureFiles = texture_file::LOADER, collection = TextureFiles, feature = "texture_file", side = Resource;
     /// The splash texts of the resource packs (`splashes.json` of every pack, lowest first):
     /// the pool the full game picks from, a copy without `canMerge: true` replacing the lower
     /// packs' splashes.
-    splashes: crate::document::Merged<crate::families::splashes::Splashes> = crate::families::splashes::load_splashes, collection = Splashes, feature = "splashes", side = Resource;
+    splashes: Merged<splashes::Splashes> = splashes::LOADER, collection = Splashes, feature = "splashes", side = Resource;
     /// The loading-screen tips of the resource packs (`loading_messages.json`): the highest
     /// pack's file, whole.
-    loading_messages: crate::document::Merged<crate::families::loading_messages::LoadingMessages> = crate::families::loading_messages::load_loading_messages, collection = LoadingMessages, feature = "loading_messages", side = Resource;
+    loading_messages: Merged<loading_messages::LoadingMessages> = loading_messages::LOADER, collection = LoadingMessages, feature = "loading_messages", side = Resource;
     /// The credits: the game's own `credits/credits.json` when the app data holds it, else
     /// none. No pack's copy is read; a pack that carries one, another file only the game's
     /// own data supplies, or a `persona/` folder is named in the stack's report.
-    credits: crate::document::Merged<crate::families::credits::Credits> = crate::families::credits::load_credits, collection = Credits, feature = "credits", side = Resource;
+    credits: Merged<credits::Credits> = credits::LOADER, collection = Credits, feature = "credits", side = Resource;
     /// The fonts of the resource packs: `font/font_metadata.json` and `font/emoticons.json`,
     /// each the highest pack's file, whole, and the pack that supplies each font file.
-    fonts: crate::families::font::Fonts = crate::families::font::load_fonts, collection = Fonts, feature = "font", side = Resource;
+    fonts: font::Fonts = font::LOADER, collection = Fonts, feature = "font", side = Resource;
     /// The side files of the UI images of the resource packs (`textures/ui/**/*.json`: a
     /// nine-slice description or an Aseprite sheet), by path: the highest pack's copy,
     /// whichever pack supplies the image.
-    ui_texture_infos: crate::document::Files<crate::families::ui_texture_info::UiTextureInfo> = crate::families::ui_texture_info::load_texture_infos, collection = UiTextureInfos, feature = "ui_texture_info", side = Resource;
+    ui_texture_infos: Files<ui_texture_info::UiTextureInfo> = ui_texture_info::LOADER, collection = UiTextureInfos, feature = "ui_texture_info", side = Resource;
 
     /// The render controllers of the resource packs (`render_controllers/**/*.json`) by name,
     /// the highest pack's winning; a controller that failed leaves the lower one in place.
-    render_controllers: crate::document::Registry<crate::families::render_controller::RenderController> = crate::families::render_controller::load_registry, collection = RenderControllers, feature = "render_controller", side = Resource;
+    render_controllers: Registry<render_controller::RenderController> = render_controller::LOADER, collection = RenderControllers, feature = "render_controller", side = Resource;
 
     /// The fog settings of the resource packs (`fogs/*.json`) by identifier, the highest
     /// pack's winning.
-    fogs: crate::document::Registry<crate::families::fog::FogSettings> = crate::families::fog::load_registry, collection = Fogs, feature = "fog", side = Resource;
+    fogs: Registry<fog::FogSettings> = fog::LOADER, collection = Fogs, feature = "fog", side = Resource;
 
     /// The client entities of the resource packs (`entity/**/*.json`), by identifier in lower
     /// case: across packs the definition with the highest `description.min_engine_version`
     /// wins, and definitions with the same one are merged, the higher pack's members last.
-    client_entities: crate::document::Registry<crate::families::client_entity::ClientEntity> = crate::families::client_entity::load_registry, collection = ClientEntities, feature = "client_entity", side = Resource;
+    client_entities: Registry<client_entity::ClientEntity> = client_entity::LOADER, collection = ClientEntities, feature = "client_entity", side = Resource;
     /// The atomic client entities of the resource packs (`atomic_client_entities/**/*.json`),
     /// by their own identifiers, the higher pack's definition replacing the lower one whole.
-    atomic_client_entities: crate::document::Registry<crate::families::atomic_client_entity::AtomicClientEntity> = crate::families::atomic_client_entity::load_registry, collection = AtomicClientEntities, feature = "atomic_client_entity", side = Resource;
+    atomic_client_entities: Registry<atomic_client_entity::AtomicClientEntity> = atomic_client_entity::LOADER, collection = AtomicClientEntities, feature = "atomic_client_entity", side = Resource;
     /// The attachables of the resource packs (`attachables/**/*.json`), by identifier in lower
     /// case: across packs the definition with the highest `description.min_engine_version`
     /// wins, and definitions with the same one are merged, the higher pack's members last.
-    attachables: crate::document::Registry<crate::families::attachable::Attachable> = crate::families::attachable::load_registry, collection = Attachables, feature = "attachable", side = Resource;
+    attachables: Registry<attachable::Attachable> = attachable::LOADER, collection = Attachables, feature = "attachable", side = Resource;
 
     /// The materials of the resource packs: the list files (`materials/common.json`,
     /// `fancy.json`, `sad.json`), every `.material` file merged over the stack, and the names
     /// each list creates.
-    materials: crate::families::material::Materials = crate::families::material::load_group, collection = Materials, feature = "material", side = Resource;
+    materials: material::Materials = material::LOADER, collection = Materials, feature = "material", side = Resource;
 
     /// The particle effects of the resource packs (`particles/**/*.json`), by identifier, the
     /// higher pack's effect winning (vanilla binds an identifier to the effect it loads
     /// last); a file that fails to load leaves a lower pack's effect in place.
-    particles: crate::document::Registry<crate::families::particle::ParticleEffect> = crate::families::particle::load_registry, collection = Particles, feature = "particle", side = Resource;
+    particles: Registry<particle::ParticleEffect> = particle::LOADER, collection = Particles, feature = "particle", side = Resource;
 }
 
 /// The collection that registers each identifier kind another collection's `combine` may ask
@@ -1119,7 +1092,7 @@ macro_rules! providers {
         pub(crate) const PROVIDERS: &[(&str, Collection)] = &[
             $(
                 #[cfg(feature = $feature)]
-                (registered_kind($loader()), Collection::$variant),
+                (registered_kind($loader), Collection::$variant),
             )*
         ];
         /// Each line's loader, by its variant, for the test that ties the two.
@@ -1127,13 +1100,13 @@ macro_rules! providers {
         pub(crate) fn provider_walks() -> Vec<(Collection, Walk)> {
             vec![$(
                 #[cfg(feature = $feature)]
-                (Collection::$variant, $loader().walk),
+                (Collection::$variant, $loader.walk),
             )*]
         }
         $(
             #[cfg(feature = $feature)]
             const _: () = assert!(
-                $loader().needs.is_empty(),
+                $loader.needs.is_empty(),
                 "a collection that registers a kind for others needs none itself"
             );
         )*
@@ -1149,9 +1122,9 @@ const fn registered_kind<T: crate::document::Definition, P>(
 }
 
 providers! {
-    "block": Blocks = crate::families::block::load_registry;
-    "item": Items = crate::families::item::load_registry;
-    "function": Functions = crate::families::function::load_registry;
+    "block": Blocks = block::LOADER;
+    "item": Items = item::LOADER;
+    "function": Functions = function::LOADER;
 }
 
 /// The line of `entries` on `side` that registers the identifiers of `kind`, by [`PROVIDERS`].

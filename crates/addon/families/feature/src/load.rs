@@ -996,12 +996,10 @@ fn combine(parsed: Vec<Contribution<Feature>>, stack: &StackCx<'_>) -> Registry<
 /// The loader of `bp.features()`: `features/**/*.json` of every behaviour pack and the app's
 /// `definitions/features`, the first definition of an identifier winning.
 #[doc(hidden)]
-pub const fn load_registry() -> CollectionLoader<Registry<Feature>, Contribution<Feature>> {
-    CollectionLoader {
-        walk: WALK,
-        parse: parse_walk_file,
-        combine,
-        needs: &[],
-        then: None,
-    }
-}
+pub const LOADER: CollectionLoader<Registry<Feature>, Contribution<Feature>> = CollectionLoader {
+    walk: WALK,
+    parse: parse_walk_file,
+    combine,
+    needs: &[],
+    then: None,
+};

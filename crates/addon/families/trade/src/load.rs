@@ -306,12 +306,10 @@ fn combine(parsed: Vec<FileCopy>, stack: &StackCx<'_>) -> Files<TradeTable> {
 
 /// The loader of `bp.trade_tables()`: `trading/**/*.json` of every behaviour pack, keyed by
 /// path, the top pack's copy winning.
-pub const fn load_files() -> CollectionLoader<Files<TradeTable>, FileCopy> {
-    CollectionLoader {
-        walk: WALK,
-        parse: parse_walk_file,
-        combine,
-        needs: &[],
-        then: None,
-    }
-}
+pub const LOADER: CollectionLoader<Files<TradeTable>, FileCopy> = CollectionLoader {
+    walk: WALK,
+    parse: parse_walk_file,
+    combine,
+    needs: &[],
+    then: None,
+};

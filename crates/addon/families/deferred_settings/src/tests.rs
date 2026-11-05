@@ -14,7 +14,7 @@ use bedrock_addon_core::pack_identity::{PackRef, PackSide};
 
 /// A group from `(path, text)` files of one pack, through the loader's own parse and combine.
 fn group(files: &[(&str, &str)]) -> DeferredSettings {
-    let loader = load::load_group();
+    let loader = load::LOADER;
     let cx = LoadContext::detached();
     let parsed = files
         .iter()
@@ -659,7 +659,7 @@ fn stack_files(
     use bedrock_addon_core::load::{ListedFile, StackPack};
     use bedrock_addon_core::pack_identity::{PackIdVersion, PackOrigin, PackType};
     use bedrock_addon_core::version::SemVersion;
-    let loader = load::load_group();
+    let loader = load::LOADER;
     let cx = LoadContext::detached();
     let lights = local_light_text(n, "test");
     let mut packs = Vec::new();
@@ -716,7 +716,7 @@ fn stack_files(
 
 #[test]
 fn the_files_of_a_stack_are_combined_in_near_linear_time() {
-    let loader = load::load_group();
+    let loader = load::LOADER;
     near_linear("combine", 1_600, stack_files, |(packs, parsed), n| {
         let options = LoadOptions::default();
         let settings = (loader.combine)(parsed, &StackCx::new(&options, &packs));

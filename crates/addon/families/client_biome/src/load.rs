@@ -641,12 +641,11 @@ fn combine(parsed: Vec<Contribution<ClientBiome>>, stack: &StackCx<'_>) -> Regis
 
 /// The loader of `rp.client_biomes()`: `biomes/**/*.json` of every resource pack, the highest
 /// pack's document claiming its identifier.
-pub const fn load_registry() -> CollectionLoader<Registry<ClientBiome>, Contribution<ClientBiome>> {
+pub const LOADER: CollectionLoader<Registry<ClientBiome>, Contribution<ClientBiome>> =
     CollectionLoader {
         walk: WALK,
         parse: parse_walk_file,
         combine,
         needs: &[],
         then: None,
-    }
-}
+    };

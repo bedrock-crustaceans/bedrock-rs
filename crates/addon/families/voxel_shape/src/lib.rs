@@ -18,7 +18,7 @@ use bedrock_addon_core::id::VoxelShapeId;
 use bedrock_addon_core::version::FormatVersion;
 
 #[doc(hidden)]
-pub use load::load_registry;
+pub use load::LOADER;
 
 /// The first and only `format_version` vanilla has a voxel-shape parser for
 /// (1.21.110); it reads every version from it up to the engine's.

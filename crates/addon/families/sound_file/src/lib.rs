@@ -10,4 +10,4 @@ mod load;
 pub use files::{AudioContainer, AudioExt, SOUND_FILE_KIND, SoundAsset, SoundFiles};
 
 #[doc(hidden)]
-pub use load::load_files;
+pub use load::LOADER;
