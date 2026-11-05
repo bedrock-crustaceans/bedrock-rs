@@ -4,7 +4,7 @@
 use super::super::{AudioListener, ControlScheme, PresetAimAssist};
 use super::SourceVersion;
 use bedrock_addon_core::id::CameraPresetId;
-use bedrock_addon_core::json::{StrictBool, StrictFloat};
+use bedrock_addon_core::schema::Schema;
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{Upgrade, UpgradeCx, Versioned};
 
@@ -13,48 +13,48 @@ use bedrock_addon_core::versioning::{Upgrade, UpgradeCx, Versioned};
 ///
 /// No member is gated by the format version inside the range: a 1.19.50 document may use
 /// `control_scheme` or `aim_assist`.
-#[derive(Clone, Debug, PartialEq, facet::Facet)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
 pub struct CameraPreset {
     /// JSON `identifier`.
     pub identifier: CameraPresetId,
     /// JSON `inherit_from`.
     pub inherit_from: Option<CameraPresetId>,
     /// JSON `pos_x`.
-    pub pos_x: Option<StrictFloat<f32>>,
+    pub pos_x: Option<f32>,
     /// JSON `pos_y`.
-    pub pos_y: Option<StrictFloat<f32>>,
+    pub pos_y: Option<f32>,
     /// JSON `pos_z`.
-    pub pos_z: Option<StrictFloat<f32>>,
+    pub pos_z: Option<f32>,
     /// JSON `rot_x`.
-    pub rot_x: Option<StrictFloat<f32>>,
+    pub rot_x: Option<f32>,
     /// JSON `rot_y`.
-    pub rot_y: Option<StrictFloat<f32>>,
+    pub rot_y: Option<f32>,
     /// JSON `rotation_speed`.
-    pub rotation_speed: Option<StrictFloat<f32>>,
+    pub rotation_speed: Option<f32>,
     /// JSON `snap_to_target`.
-    pub snap_to_target: Option<StrictBool>,
+    pub snap_to_target: Option<bool>,
     /// JSON `horizontal_rotation_limit`.
-    pub horizontal_rotation_limit: Option<[StrictFloat<f32>; 2]>,
+    pub horizontal_rotation_limit: Option<[f32; 2]>,
     /// JSON `vertical_rotation_limit`.
-    pub vertical_rotation_limit: Option<[StrictFloat<f32>; 2]>,
+    pub vertical_rotation_limit: Option<[f32; 2]>,
     /// JSON `continue_targeting`.
-    pub continue_targeting: Option<StrictBool>,
+    pub continue_targeting: Option<bool>,
     /// JSON `tracking_radius`.
-    pub tracking_radius: Option<StrictFloat<f32>>,
+    pub tracking_radius: Option<f32>,
     /// JSON `view_offset`.
-    pub view_offset: Option<[StrictFloat<f32>; 2]>,
+    pub view_offset: Option<[f32; 2]>,
     /// JSON `entity_offset`.
-    pub entity_offset: Option<[StrictFloat<f32>; 3]>,
+    pub entity_offset: Option<[f32; 3]>,
     /// JSON `radius`.
-    pub radius: Option<StrictFloat<f32>>,
+    pub radius: Option<f32>,
     /// JSON `yaw_limits_min`.
-    pub yaw_limits_min: Option<StrictFloat<f32>>,
+    pub yaw_limits_min: Option<f32>,
     /// JSON `yaw_limits_max`.
-    pub yaw_limits_max: Option<StrictFloat<f32>>,
+    pub yaw_limits_max: Option<f32>,
     /// JSON `listener`.
     pub listener: Option<AudioListener>,
     /// JSON `player_effects`.
-    pub player_effects: Option<StrictBool>,
+    pub player_effects: Option<bool>,
     /// JSON `aim_assist`.
     pub aim_assist: Option<PresetAimAssist>,
     /// JSON `control_scheme`.

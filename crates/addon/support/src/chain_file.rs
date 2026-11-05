@@ -11,12 +11,22 @@ use bedrock_addon_core::diagnostic::{
     code_for_deserialize_error_kind,
 };
 use bedrock_addon_core::document::{Document, Rejected};
-use bedrock_addon_core::json::{JsonSlice, Value, parse_at, probe_envelope};
+use bedrock_addon_core::json::{JsonSlice, ScalarFailure, Value, parse_with_rules, probe_envelope};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::version::FormatVersionInput;
 use bedrock_addon_core::versioning::{
-    Family, Identity, Loaded, ParseCx, Parsed, beta_refused, finish,
+    BeyondWidth, Family, Identity, Loaded, ParseCx, Parsed, Reading, Scalars, beta_refused, finish,
 };
+
+/// `reading` with the scalars of vanilla's strict cereal readers, which read every document of
+/// these families: a member takes only a token of its own type (an integer member no real), and
+/// a number beyond its float's width is a type error. [`typed`] reads by it.
+#[must_use]
+pub const fn strict(reading: Reading) -> Reading {
+    reading
+        .with_scalars(Scalars::Strict)
+        .with_beyond_width(BeyondWidth::Error)
+}
 
 /// The closing line `text` of a failed file.
 pub fn closing_line(diagnostics: &mut Diagnostics, text: &'static str) {
@@ -178,13 +188,28 @@ fn typed_as<'a, T: for<'f> Facet<'f>>(
         };
         Some(bedrock_addon_core::json::to_json(payload).ok()?)
     };
+    // The scalars are read by the slice's scalar rules (`LoadContext::scalar_rules`): the
+    // strict cereal readers' rule for every family read here.
+    let rules = cx.load.scalar_rules;
     let read = match &rewritten {
-        Some(text) => parse_at::<T>(JsonSlice::new(text)),
-        None => parse_at::<T>(slice),
+        Some(text) => parse_with_rules::<T>(JsonSlice::new(text), None, rules),
+        None => parse_with_rules::<T>(slice, None, rules),
     };
     let failure = match read {
-        Ok(value) => return Some(value),
-        Err(failure) => failure,
+        Ok(read) => {
+            for told in &read.told {
+                d.push(told.finding(&at));
+            }
+            return Some(read.value);
+        }
+        Err(ScalarFailure::Read(failure)) => failure,
+        // A scalar no arm of an untagged enum takes: a type error at the enum.
+        Err(ScalarFailure::Refused(misread)) => {
+            let mut finding = misread.finding(&at);
+            finding.location.span = Some(span_in(slice, &misread.path));
+            d.push(finding);
+            return None;
+        }
     };
     // The text is core's, in which a member written twice has its last value only
     // (`versioning::parse_as_written` blanks the earlier copies), so the one read decides. No

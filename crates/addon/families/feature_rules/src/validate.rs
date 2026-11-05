@@ -36,9 +36,7 @@ fn scatter_checks(params: &ScatterParams, at: &JsonPath, cx: &mut ValidateCx<'_>
                 "Bad value for scatter_chance - should be between 0 and 100 (exclusive)",
             ),
         ),
-        Some(ScatterChance::Fraction(fraction))
-            if fraction.denominator.0 <= fraction.numerator.0 =>
-        {
+        Some(ScatterChance::Fraction(fraction)) if fraction.denominator <= fraction.numerator => {
             warn(
                 cx,
                 at.child("scatter_chance"),
@@ -140,7 +138,7 @@ fn unknown_pass(rule: &FeatureRule, cx: &mut ValidateCx<'_>) {
             template: "Feature rule identifier '{}' specifies unknown pass '{}'.",
             args: vec![
                 rule.description.identifier.as_str().to_owned(),
-                rule.conditions.placement_pass.0.clone(),
+                rule.conditions.placement_pass.clone(),
             ],
         },
     );

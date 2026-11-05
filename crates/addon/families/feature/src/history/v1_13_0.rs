@@ -10,7 +10,7 @@ use crate::scatter::walk_params;
 use crate::{self as latest, BlockList, Description, JsonInt, PlacesBlock};
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics};
 use bedrock_addon_core::id::FeatureId;
-use bedrock_addon_core::json::{EncodeError, JsonSlice, StrictBool, Value};
+use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::molang::{Molang, MolangFields, MolangVisitor};
 use bedrock_addon_core::shared::BlockDescriptor;
 use bedrock_addon_core::version::FormatVersion;
@@ -35,24 +35,18 @@ pub struct ScatterFeature {
     /// JSON `places_feature`.
     pub places_feature: FeatureId,
     /// JSON `project_input_to_floor`.
-    #[facet(default)]
-    pub project_input_to_floor: Option<StrictBool>,
+    pub project_input_to_floor: Option<bool>,
     /// JSON `iterations` (required).
     pub iterations: Molang,
     /// JSON `scatter_chance`.
-    #[facet(default)]
     pub scatter_chance: Option<ScatterChance>,
     /// JSON `coordinate_eval_order`.
-    #[facet(default)]
     pub coordinate_eval_order: Option<CoordinateEvalOrder>,
     /// JSON `x` (not required by this schema).
-    #[facet(default)]
     pub x: Option<CoordinateRange>,
     /// JSON `y`.
-    #[facet(default)]
     pub y: Option<CoordinateRange>,
     /// JSON `z`.
-    #[facet(default)]
     pub z: Option<CoordinateRange>,
 }
 
@@ -102,7 +96,6 @@ impl Upgrade for ScatterFeature {
                 x: self.x,
                 y: self.y,
                 z: self.z,
-                extra: bedrock_addon_core::document::Extra::default(),
             },
         }
     }
@@ -116,17 +109,14 @@ pub struct SingleBlockFeature {
     /// JSON `description`.
     pub description: Description,
     /// The block to place, a descriptor (JSON `places_block`).
-    #[facet(default)]
     pub places_block: Option<BlockDescriptor>,
     /// JSON `enforce_placement_rules`.
-    pub enforce_placement_rules: StrictBool,
+    pub enforce_placement_rules: bool,
     /// JSON `enforce_survivability_rules`.
-    pub enforce_survivability_rules: StrictBool,
+    pub enforce_survivability_rules: bool,
     /// JSON `may_attach_to`.
-    #[facet(default)]
     pub may_attach_to: Option<AttachConditions>,
     /// JSON `may_replace`.
-    #[facet(default)]
     pub may_replace: Option<Vec<BlockDescriptor>>,
 }
 
@@ -134,34 +124,24 @@ pub struct SingleBlockFeature {
 #[derive(Clone, Debug, Default, PartialEq, Facet)]
 pub struct AttachConditions {
     /// JSON `min_sides_must_attach`.
-    #[facet(default)]
     pub min_sides_must_attach: Option<JsonInt>,
     /// JSON `auto_rotate`.
-    #[facet(default)]
-    pub auto_rotate: Option<StrictBool>,
+    pub auto_rotate: Option<bool>,
     /// JSON `top`.
-    #[facet(default)]
     pub top: Option<BlockList>,
     /// JSON `bottom`.
-    #[facet(default)]
     pub bottom: Option<BlockList>,
     /// JSON `north`.
-    #[facet(default)]
     pub north: Option<BlockList>,
     /// JSON `east`.
-    #[facet(default)]
     pub east: Option<BlockList>,
     /// JSON `south`.
-    #[facet(default)]
     pub south: Option<BlockList>,
     /// JSON `west`.
-    #[facet(default)]
     pub west: Option<BlockList>,
     /// JSON `all`.
-    #[facet(default)]
     pub all: Option<BlockList>,
     /// JSON `sides`.
-    #[facet(default)]
     pub sides: Option<BlockList>,
 }
 
@@ -263,23 +243,17 @@ pub struct SnapToSurfaceFeature {
     /// How far it searches for the surface (JSON `vertical_search_range`).
     pub vertical_search_range: JsonInt,
     /// JSON `surface`.
-    #[facet(default)]
     pub surface: Option<latest::Surface>,
     /// JSON `allow_air_placement`.
-    #[facet(default)]
-    pub allow_air_placement: Option<StrictBool>,
+    pub allow_air_placement: Option<bool>,
     /// JSON `allow_non_air_placement`.
-    #[facet(default)]
-    pub allow_non_air_placement: Option<StrictBool>,
+    pub allow_non_air_placement: Option<bool>,
     /// JSON `allow_underwater_placement`.
-    #[facet(default)]
-    pub allow_underwater_placement: Option<StrictBool>,
+    pub allow_underwater_placement: Option<bool>,
     /// JSON `allowed_surface_blocks`.
-    #[facet(default)]
     pub allowed_surface_blocks: Option<Vec<BlockDescriptor>>,
     /// JSON `embed_in_surface` (engine 1.26.20).
-    #[facet(default)]
-    pub embed_in_surface: Option<StrictBool>,
+    pub embed_in_surface: Option<bool>,
 }
 
 impl Versioned for SnapToSurfaceFeature {

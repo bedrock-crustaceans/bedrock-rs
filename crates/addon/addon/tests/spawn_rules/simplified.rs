@@ -4,7 +4,6 @@
 
 use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
 use bedrock_addon::families::spawn_rules::{Placement, SpawnRules};
-use bedrock_addon::json::StrictString;
 use bedrock_addon::version::ENGINE_VERSION;
 
 use super::common::{
@@ -93,17 +92,11 @@ fn s03_spawn_simplified_placement() {
         );
         let condition = &rules.conditions.as_ref().unwrap()[0];
         let herds = condition.herds.as_ref().unwrap();
-        assert_eq!((herds[0].min_size(), herds[0].max_size()), (1, 4));
-        assert_eq!((herds[1].min_size(), herds[1].max_size()), (1, 1));
+        assert_eq!((herds[0].min(), herds[0].max()), (1, 4));
+        assert_eq!((herds[1].min(), herds[1].max()), (1, 1));
         let permute = &condition.permute_types.as_ref().unwrap()[0];
-        assert_eq!(
-            (permute.weight.0, permute.min_guaranteed.map(|n| n.0)),
-            (2, Some(1))
-        );
-        assert_eq!(
-            condition.mob_event_filter,
-            Some(StrictString("x:event".into()))
-        );
+        assert_eq!((permute.weight, permute.min_guaranteed), (2, Some(1)));
+        assert_eq!(condition.mob_event_filter, Some("x:event".to_owned()));
     }
     // An unknown type is a warning; the document loads.
     let unknown = loads(
@@ -184,7 +177,7 @@ fn s12_simplified_defaults() {
     let rules = simplified(&document);
     assert!(rules.placement.is_none());
     let condition = &rules.conditions.as_ref().unwrap()[0];
-    assert_eq!(condition.weight.0, 99);
+    assert_eq!(condition.weight, 99);
     assert!(condition.herds.is_none() && condition.permute_types.is_none());
     assert!(condition.mob_event_filter.is_none() && condition.biome_filter.is_none());
     // Written back without inventing members.
@@ -211,7 +204,7 @@ fn s13_simplified_multiple_conditions() {
         .herds
         .clone()
         .unwrap();
-    assert_eq!((herds[1].min_size(), herds[1].max_size()), (1, 6));
+    assert_eq!((herds[1].min(), herds[1].max()), (1, 6));
     round_trip(document.value(), "spawn_rules/x.json", &experiment());
 }
 

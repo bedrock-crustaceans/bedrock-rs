@@ -5,7 +5,7 @@ use super::history::v1_19_50;
 use super::{CameraPreset, texts};
 use super::{V1_19_50, V1_26_50};
 use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
-use bedrock_addon_core::json::{EncodeError, JsonSlice, StrictFloat, Value};
+use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::versioning::{ParseCx, VersionStruct, Versioned, write_payload};
 use bedrock_addon_support::chain_file::{self as file, document};
 use bedrock_addon_support::shape::{
@@ -73,15 +73,15 @@ fn preset_v1_19_50() -> &'static [Member] {
 struct Constrained<'a> {
     identifier: &'a str,
     inherit_from: Option<&'a str>,
-    rot_x: Option<StrictFloat<f32>>,
-    rotation_speed: Option<StrictFloat<f32>>,
-    horizontal_rotation_limit: Option<[StrictFloat<f32>; 2]>,
-    vertical_rotation_limit: Option<[StrictFloat<f32>; 2]>,
-    view_offset: Option<[StrictFloat<f32>; 2]>,
-    entity_offset: Option<[StrictFloat<f32>; 3]>,
-    radius: Option<StrictFloat<f32>>,
-    yaw_limits_min: Option<StrictFloat<f32>>,
-    yaw_limits_max: Option<StrictFloat<f32>>,
+    rot_x: Option<f32>,
+    rotation_speed: Option<f32>,
+    horizontal_rotation_limit: Option<[f32; 2]>,
+    vertical_rotation_limit: Option<[f32; 2]>,
+    view_offset: Option<[f32; 2]>,
+    entity_offset: Option<[f32; 3]>,
+    radius: Option<f32>,
+    yaw_limits_min: Option<f32>,
+    yaw_limits_max: Option<f32>,
 }
 
 /// The constrained members of a preset struct.
@@ -105,17 +105,17 @@ macro_rules! constrained {
 
 /// `value` in `[min, max]`, when it is set.
 pub(crate) fn ranged(
-    value: Option<StrictFloat<f32>>,
+    value: Option<f32>,
     (min, max): (f64, f64),
     at: JsonPath,
     d: &mut Diagnostics,
 ) -> bool {
-    value.is_none_or(|value| in_range(f64::from(value.0), min, max, at, d))
+    value.is_none_or(|value| in_range(f64::from(value), min, max, at, d))
 }
 
 /// Each element of `values` in `[min, max]`: the first one outside is reported.
 pub(crate) fn each_ranged(
-    values: &[StrictFloat<f32>],
+    values: &[f32],
     (min, max): (f64, f64),
     at: &JsonPath,
     d: &mut Diagnostics,
@@ -123,7 +123,7 @@ pub(crate) fn each_ranged(
     values
         .iter()
         .enumerate()
-        .all(|(i, value)| in_range(f64::from(value.0), min, max, element(at, i), d))
+        .all(|(i, value)| in_range(f64::from(*value), min, max, element(at, i), d))
 }
 
 impl Constrained<'_> {
@@ -185,11 +185,11 @@ impl Constrained<'_> {
 
 /// Each component in `[0, 360]` and the sum at most 360. The constraints are checked in bind
 /// order and the first one that fails is the one reported; each rejects the preset either way.
-fn horizontal_limit(limit: [StrictFloat<f32>; 2], at: &JsonPath, d: &mut Diagnostics) -> bool {
+fn horizontal_limit(limit: [f32; 2], at: &JsonPath, d: &mut Diagnostics) -> bool {
     if !each_ranged(&limit, (0.0, 360.0), at, d) {
         return false;
     }
-    if limit[0].0 + limit[1].0 > 360.0 {
+    if limit[0] + limit[1] > 360.0 {
         violation(texts::VECTOR_TOTAL, at.clone(), d);
         return false;
     }
@@ -198,8 +198,8 @@ fn horizontal_limit(limit: [StrictFloat<f32>; 2], at: &JsonPath, d: &mut Diagnos
 
 /// The components differ, `x` is below `y`, and each is in `[0, 180]`; there is no sum
 /// constraint. As for the horizontal limit, the first failing constraint is the one reported.
-fn vertical_limit(limit: [StrictFloat<f32>; 2], at: &JsonPath, d: &mut Diagnostics) -> bool {
-    let [x, y] = [limit[0].0, limit[1].0];
+fn vertical_limit(limit: [f32; 2], at: &JsonPath, d: &mut Diagnostics) -> bool {
+    let [x, y] = limit;
     #[allow(
         clippy::float_cmp,
         reason = "vanilla compares the two components for equality"

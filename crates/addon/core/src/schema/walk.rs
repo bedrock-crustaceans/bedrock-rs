@@ -44,8 +44,8 @@ pub trait Schema {
 
 /// The walk of a derived `check` and trigger list into a field's type: every `Schema` type, the
 /// leaf types (numbers, `bool`, `char`, `String`, `json::Value`, the Molang values; what a family names with
-/// `impl_schema_leaf!`), `EventTrigger` (a trigger at its own path), and `Option`, `Vec` and
-/// `IndexMap<String, _>` of them.
+/// `impl_schema_leaf!`), identifiers (`Id<K>`), `EventTrigger` (a trigger at its own path), and
+/// `Option`, `Vec`, fixed-length arrays and `IndexMap<String, _>` of them.
 #[doc(hidden)]
 pub trait SchemaFields {
     /// `Schema::check`, or nothing for a leaf.
@@ -89,6 +89,38 @@ impl<T: SchemaFields> SchemaFields for Vec<T> {
     fn trigger_members(prefix: &str, out: &mut Vec<String>) {
         T::trigger_members(&format!("{prefix}[]"), out);
     }
+}
+
+/// A fixed-length array (`[x, y, z]`) walks its elements as a list does.
+impl<T: SchemaFields, const N: usize> SchemaFields for [T; N] {
+    fn check_fields(&mut self, cx: &mut SchemaCx<'_>) {
+        for (index, inner) in self.iter_mut().enumerate() {
+            cx.enter_index(index);
+            inner.check_fields(cx);
+            cx.leave();
+        }
+    }
+
+    fn trigger_members(prefix: &str, out: &mut Vec<String>) {
+        T::trigger_members(&format!("{prefix}[]"), out);
+    }
+}
+
+/// An identifier is a leaf: its syntax is the identifier's own read, and it holds no trigger.
+impl<K: crate::id::Kind> SchemaFields for crate::id::Id<K> {
+    fn check_fields(&mut self, _: &mut SchemaCx<'_>) {}
+
+    fn trigger_members(_: &str, _: &mut Vec<String>) {}
+}
+
+// The shared value types a document holds whole: a filter, a block descriptor and a range read
+// their own syntax and hold no bound the derive checks and no trigger.
+crate::impl_schema_leaf!(crate::shared::Filter, crate::shared::BlockDescriptor);
+
+impl<T: crate::shared::RangeEnd> SchemaFields for crate::shared::Range<T> {
+    fn check_fields(&mut self, _: &mut SchemaCx<'_>) {}
+
+    fn trigger_members(_: &str, _: &mut Vec<String>) {}
 }
 
 /// A boxed `Schema` type is that type (a recursive struct holds itself in a `Box`). `Box` is

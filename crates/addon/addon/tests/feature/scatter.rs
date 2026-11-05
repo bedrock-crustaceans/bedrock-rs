@@ -2,13 +2,12 @@
 //! the runtime scatter checks (fixtures f01–f03).
 
 use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
-use bedrock_addon::document::{Content, Extra};
+use bedrock_addon::document::Content;
 use bedrock_addon::families::feature::{Feature, ScatterFeature};
 use bedrock_addon::families::feature_rules::{
     CoordinateEvalOrder, CoordinateRange, FeatureRule, RandomDistribution, ScatterChance,
     ScatterFraction,
 };
-use bedrock_addon::json::StrictInt;
 use bedrock_addon::load::LoadContext;
 use bedrock_addon::molang::Molang;
 use bedrock_addon::storage::PackPath;
@@ -27,9 +26,8 @@ fn scatter(json: &str) -> ScatterFeature {
 /// The fraction form of `scatter_chance`.
 fn fraction(numerator: i32, denominator: i32) -> ScatterChance {
     ScatterChance::Fraction(ScatterFraction {
-        numerator: StrictInt(numerator),
-        denominator: StrictInt(denominator),
-        extra: Extra::default(),
+        numerator,
+        denominator,
     })
 }
 
@@ -99,7 +97,7 @@ fn f01_scatter_1_13_0_moves_the_root_parameters_into_distribution() {
         panic!("not a scatter feature");
     };
     assert_eq!(feature.places_feature.as_str(), "demo:flower");
-    assert_eq!(feature.project_input_to_floor.map(|b| b.0), Some(true));
+    assert_eq!(feature.project_input_to_floor, Some(true));
     let distribution = &feature.distribution;
     assert_eq!(expression(&distribution.iterations), "math.random(1, 3)");
     assert_eq!(distribution.scatter_chance, Some(fraction(1, 4)));

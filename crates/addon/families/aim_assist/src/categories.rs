@@ -4,10 +4,7 @@
 use indexmap::IndexMap;
 
 use bedrock_addon_core::id::AimAssistCategoryId;
-use bedrock_addon_core::json::StrictInt;
-
-/// The priority of a target without an entry and without a written default.
-const DEFAULT_PRIORITY: i32 = 1;
+use bedrock_addon_core::schema::{self, Schema};
 
 /// An aim-assist categories file (`minecraft:aim_assist_categories`, in
 /// `aim_assist/categories/`), format 1.21.50.
@@ -15,7 +12,7 @@ const DEFAULT_PRIORITY: i32 = 1;
 /// JSON: `{"format_version": "1.21.50", "minecraft:aim_assist_categories": {"categories":
 /// [{"name": "ns:name", "priorities": {…}}, …]}}`. The file loads all of its categories or
 /// none: one name without a namespace rejects every category of the file.
-#[derive(Clone, Debug, Default, PartialEq, facet::Facet)]
+#[derive(Clone, Debug, Default, PartialEq, facet::Facet, Schema)]
 #[doc(alias = "minecraft:aim_assist_categories")]
 #[doc(alias = "aim_assist_categories")]
 pub struct AimAssistCategories {
@@ -25,7 +22,7 @@ pub struct AimAssistCategories {
 
 /// One aim-assist category: the targeting
 /// priorities a preset's item setting selects by name.
-#[derive(Clone, Debug, PartialEq, facet::Facet)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
 pub struct AimAssistCategory {
     /// The category's name, `namespace:name` (JSON `name`).
     pub name: AimAssistCategoryId,
@@ -34,39 +31,25 @@ pub struct AimAssistCategory {
 }
 
 /// The targeting priorities of a category (`priorities`): larger numbers win; each is 0 to 100.
-#[derive(Clone, Debug, Default, PartialEq, facet::Facet)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
 pub struct Priorities {
     /// The priority of each entity, by identifier (JSON `entities`).
-    pub entities: Option<IndexMap<String, StrictInt<i32>>>,
+    pub entities: Option<IndexMap<String, i32>>,
     /// The priority of each block, by identifier (JSON `blocks`).
-    pub blocks: Option<IndexMap<String, StrictInt<i32>>>,
+    pub blocks: Option<IndexMap<String, i32>>,
     /// The priority of each block tag (JSON `block_tags`).
-    pub block_tags: Option<IndexMap<String, StrictInt<i32>>>,
+    pub block_tags: Option<IndexMap<String, i32>>,
     /// The priority of each entity type family (JSON `entity_type_families`).
-    pub entity_type_families: Option<IndexMap<String, StrictInt<i32>>>,
+    pub entity_type_families: Option<IndexMap<String, i32>>,
     /// The priority of an entity without an entry (JSON `entity_default`; see
-    /// [`Priorities::entity_default`]).
-    pub entity_default: Option<StrictInt<i32>>,
+    /// [`Priorities::entity_default`], 1 when the document leaves it out, what the game uses at
+    /// run time).
+    #[facet(schema::fallback = 1)]
+    pub entity_default: Option<i32>,
     /// The priority of a block without an entry (JSON `block_default`; see
-    /// [`Priorities::block_default`]).
-    pub block_default: Option<StrictInt<i32>>,
-}
-
-impl Priorities {
-    /// [`entity_default`](Self::entity_default), 1 when the document leaves it out (what the
-    /// game uses at run time).
-    #[must_use]
-    pub fn entity_default(&self) -> i32 {
-        self.entity_default
-            .map_or(DEFAULT_PRIORITY, |value| value.0)
-    }
-
-    /// [`block_default`](Self::block_default), 1 when the document leaves it out (what the
-    /// game uses at run time).
-    #[must_use]
-    pub fn block_default(&self) -> i32 {
-        self.block_default.map_or(DEFAULT_PRIORITY, |value| value.0)
-    }
+    /// [`Priorities::block_default`], 1 when the document leaves it out).
+    #[facet(schema::fallback = 1)]
+    pub block_default: Option<i32>,
 }
 
 impl AimAssistCategory {

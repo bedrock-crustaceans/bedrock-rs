@@ -3,7 +3,6 @@
 
 use bedrock_addon::families::aim_assist::{AimAssistPreset, ExclusionSettings};
 use bedrock_addon::id::{AimAssistCategoryId, AimAssistPresetId, BlockId, EntityId, ItemId};
-use bedrock_addon::json::StrictString;
 use bedrock_addon::version::FormatVersion;
 
 use super::common::*;
@@ -19,11 +18,8 @@ fn at_category(path: &str) -> String {
     format!("minecraft:aim_assist_categories/categories/{path}")
 }
 
-fn strings(values: &[&str]) -> Vec<StrictString> {
-    values
-        .iter()
-        .map(|v| StrictString((*v).to_owned()))
-        .collect()
+fn strings(values: &[&str]) -> Vec<String> {
+    values.iter().map(|v| (*v).to_owned()).collect()
 }
 
 #[test]
@@ -331,8 +327,12 @@ fn aa06_categories_load_unchanged_and_default_to_priority_1() {
     );
     let full = &document.categories[0];
     assert_eq!(full.name.as_str(), "test:full");
-    let pairs = |map: &Option<indexmap::IndexMap<String, bedrock_addon::json::StrictInt<i32>>>| -> Vec<(String, i32)> {
-        map.as_ref().unwrap().iter().map(|(k, v)| (k.clone(), v.0)).collect()
+    let pairs = |map: &Option<indexmap::IndexMap<String, i32>>| -> Vec<(String, i32)> {
+        map.as_ref()
+            .unwrap()
+            .iter()
+            .map(|(k, v)| (k.clone(), *v))
+            .collect()
     };
     assert_eq!(
         pairs(&full.priorities.entities),
@@ -893,7 +893,6 @@ fn aa17_a_1_21_50_preset_without_exclusion_list_gets_four_empty_lists() {
 #[test]
 fn every_member_of_both_documents_reads_into_its_field() {
     use bedrock_addon::families::aim_assist::{AimAssistCategories, AimAssistCategory, Priorities};
-    use bedrock_addon::json::StrictInt;
 
     // The member tables and the structs agree key for key: a document with every member equals
     // the value built by hand.
@@ -928,7 +927,7 @@ fn every_member_of_both_documents_reads_into_its_field() {
 
     let map = |key: &str, value: i32| {
         Some(
-            [(key.to_owned(), StrictInt(value))]
+            [(key.to_owned(), value)]
                 .into_iter()
                 .collect::<indexmap::IndexMap<_, _>>(),
         )
@@ -952,8 +951,8 @@ fn every_member_of_both_documents_reads_into_its_field() {
                     blocks: map("minecraft:stone", 50),
                     block_tags: map("wood", 40),
                     entity_type_families: map("monster", 30),
-                    entity_default: Some(StrictInt(20)),
-                    block_default: Some(StrictInt(10)),
+                    entity_default: Some(20),
+                    block_default: Some(10),
                 }
             )],
         }
@@ -1097,16 +1096,8 @@ fn a_bad_first_value_only_the_typed_parse_refuses_is_replaced_by_a_good_last_one
             document.diagnostics()
         );
         let priorities = &document.categories[0].priorities;
-        assert_eq!(
-            priorities.entity_default.map(|v| v.0),
-            entity_default,
-            "{members}"
-        );
-        assert_eq!(
-            priorities.block_default.map(|v| v.0),
-            block_default,
-            "{members}"
-        );
+        assert_eq!(priorities.entity_default, entity_default, "{members}");
+        assert_eq!(priorities.block_default, block_default, "{members}");
     }
 }
 

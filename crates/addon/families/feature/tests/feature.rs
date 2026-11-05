@@ -27,6 +27,9 @@ mod round_trip;
 #[path = "feature/rules.rs"]
 mod rules;
 
+#[path = "feature/scalars.rs"]
+mod scalars;
+
 #[path = "feature/drop4.rs"]
 mod drop4;
 

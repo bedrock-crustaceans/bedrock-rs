@@ -299,203 +299,203 @@ mod reading_table {
             missing version: rejected: NoValidVersion
             below floor: UseFormatVersion
             empty document: Error
-            1.13.0..=1.13.0 (0..=0): json Absent/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse
+            1.13.0..=1.13.0 (0..=0): json Absent/Strict/Error/Warn/reports/lenient/Refuse, mcb Own/Strict/Error/Warn/reports/lenient/Refuse
             minecraft:beards_and_shavers
             text: Root, clamps beyond a double: true, duplicates kept in: []
             envelope: Always
             missing version: rejected: NoValidVersion
             below floor: UseFormatVersion
             empty document: Error
-            1.13.0..=1.13.0 (0..=0): json Absent/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse
+            1.13.0..=1.13.0 (0..=0): json Absent/Strict/Error/Warn/reports/lenient/Refuse, mcb Own/Strict/Error/Warn/reports/lenient/Refuse
             minecraft:cave_carver_feature
             text: Root, clamps beyond a double: true, duplicates kept in: []
             envelope: Always
             missing version: rejected: NoValidVersion
             below floor: UseFormatVersion
             empty document: Error
-            1.13.0..=1.13.0 (0..=0): json Absent/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse
+            1.13.0..=1.13.0 (0..=0): json Absent/Strict/Error/Warn/reports/lenient/Refuse, mcb Own/Strict/Error/Warn/reports/lenient/Refuse
             minecraft:conditional_list
             text: Root, clamps beyond a double: true, duplicates kept in: []
             envelope: Always
             missing version: rejected: NoValidVersion
             below floor: UseFormatVersion
             empty document: Error
-            1.13.0..=1.13.0 (0..=0): json Absent/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse
+            1.13.0..=1.13.0 (0..=0): json Absent/Strict/Error/Warn/reports/lenient/Refuse, mcb Own/Strict/Error/Warn/reports/lenient/Refuse
             minecraft:fossil_feature
             text: Root, clamps beyond a double: true, duplicates kept in: []
             envelope: Always
             missing version: rejected: NoValidVersion
             below floor: UseFormatVersion
             empty document: Error
-            1.13.0..=1.13.0 (0..=0): json Absent/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse
+            1.13.0..=1.13.0 (0..=0): json Absent/Strict/Error/Warn/reports/lenient/Refuse, mcb Own/Strict/Error/Warn/reports/lenient/Refuse
             minecraft:geode_feature
             text: Root, clamps beyond a double: true, duplicates kept in: []
             envelope: Always
             missing version: rejected: NoValidVersion
             below floor: UseFormatVersion
             empty document: Error
-            1.13.0..=1.13.0 (0..=0): json Absent/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse
+            1.13.0..=1.13.0 (0..=0): json Absent/Strict/Error/Warn/reports/lenient/Refuse, mcb Own/Strict/Error/Warn/reports/lenient/Refuse
             minecraft:growing_plant_feature
             text: Root, clamps beyond a double: true, duplicates kept in: []
             envelope: Always
             missing version: rejected: NoValidVersion
             below floor: UseFormatVersion
             empty document: Error
-            1.13.0..=1.13.0 (0..=0): json Absent/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse
+            1.13.0..=1.13.0 (0..=0): json Absent/Strict/Error/Warn/reports/lenient/Refuse, mcb Own/Strict/Error/Warn/reports/lenient/Refuse
             minecraft:height_difference_filter_feature
             text: Root, clamps beyond a double: true, duplicates kept in: []
             envelope: Always
             missing version: rejected: NoValidVersion
             below floor: UseFormatVersion
             empty document: Error
-            1.13.0..=1.13.0 (0..=0): json Absent/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse
+            1.13.0..=1.13.0 (0..=0): json Absent/Strict/Error/Warn/reports/lenient/Refuse, mcb Own/Strict/Error/Warn/reports/lenient/Refuse
             minecraft:horizontal_tree_decoration_feature
             text: Root, clamps beyond a double: true, duplicates kept in: []
             envelope: Always
             missing version: rejected: NoValidVersion
             below floor: UseFormatVersion
             empty document: Error
-            1.13.0..=1.13.0 (0..=0): json Absent/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse
+            1.13.0..=1.13.0 (0..=0): json Absent/Strict/Error/Warn/reports/lenient/Refuse, mcb Own/Strict/Error/Warn/reports/lenient/Refuse
             minecraft:multi_block_feature
             text: Root, clamps beyond a double: true, duplicates kept in: []
             envelope: Always
             missing version: rejected: NoValidVersion
             below floor: UseFormatVersion
             empty document: Error
-            1.26.40..=1.26.40 (0..=0): json Absent/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse
+            1.26.40..=1.26.40 (0..=0): json Absent/Strict/Error/Warn/reports/lenient/Refuse, mcb Own/Strict/Error/Warn/reports/lenient/Refuse
             minecraft:multiface_feature
             text: Root, clamps beyond a double: true, duplicates kept in: []
             envelope: Always
             missing version: rejected: NoValidVersion
             below floor: UseFormatVersion
             empty document: Error
-            1.13.0..=1.13.0 (0..=0): json Absent/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse
+            1.13.0..=1.13.0 (0..=0): json Absent/Strict/Error/Warn/reports/lenient/Refuse, mcb Own/Strict/Error/Warn/reports/lenient/Refuse
             minecraft:multipart_block_column_feature
             text: Root, clamps beyond a double: true, duplicates kept in: []
             envelope: Always
             missing version: rejected: NoValidVersion
             below floor: UseFormatVersion
             empty document: Error
-            1.26.40..=1.26.40 (0..=0): json Absent/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse
+            1.26.40..=1.26.40 (0..=0): json Absent/Strict/Error/Warn/reports/lenient/Refuse, mcb Own/Strict/Error/Warn/reports/lenient/Refuse
             minecraft:nether_cave_carver_feature
             text: Root, clamps beyond a double: true, duplicates kept in: []
             envelope: Always
             missing version: rejected: NoValidVersion
             below floor: UseFormatVersion
             empty document: Error
-            1.13.0..=1.13.0 (0..=0): json Absent/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse
+            1.13.0..=1.13.0 (0..=0): json Absent/Strict/Error/Warn/reports/lenient/Refuse, mcb Own/Strict/Error/Warn/reports/lenient/Refuse
             minecraft:ore_feature
             text: Root, clamps beyond a double: true, duplicates kept in: []
             envelope: Always
             missing version: rejected: NoValidVersion
             below floor: UseFormatVersion
             empty document: Error
-            1.13.0..=1.13.0 (0..=0): json Absent/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse
+            1.13.0..=1.13.0 (0..=0): json Absent/Strict/Error/Warn/reports/lenient/Refuse, mcb Own/Strict/Error/Warn/reports/lenient/Refuse
             minecraft:partially_exposed_blob_feature
             text: Root, clamps beyond a double: true, duplicates kept in: []
             envelope: Always
             missing version: rejected: NoValidVersion
             below floor: UseFormatVersion
             empty document: Error
-            1.13.0..=1.13.0 (0..=0): json Absent/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse
+            1.13.0..=1.13.0 (0..=0): json Absent/Strict/Error/Warn/reports/lenient/Refuse, mcb Own/Strict/Error/Warn/reports/lenient/Refuse
             minecraft:rect_layout
             text: Root, clamps beyond a double: true, duplicates kept in: []
             envelope: Always
             missing version: rejected: NoValidVersion
             below floor: UseFormatVersion
             empty document: Error
-            1.13.0..=1.13.0 (0..=0): json Absent/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse
+            1.13.0..=1.13.0 (0..=0): json Absent/Strict/Error/Warn/reports/lenient/Refuse, mcb Own/Strict/Error/Warn/reports/lenient/Refuse
             minecraft:scan_surface
             text: Root, clamps beyond a double: true, duplicates kept in: []
             envelope: Always
             missing version: rejected: NoValidVersion
             below floor: UseFormatVersion
             empty document: Error
-            1.13.0..=1.13.0 (0..=0): json Absent/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse
+            1.13.0..=1.13.0 (0..=0): json Absent/Strict/Error/Warn/reports/lenient/Refuse, mcb Own/Strict/Error/Warn/reports/lenient/Refuse
             minecraft:scatter_feature
             text: Root, clamps beyond a double: true, duplicates kept in: []
             envelope: Always
             missing version: rejected: NoValidVersion
             below floor: UseFormatVersion
             empty document: Error
-            1.13.0..=1.21.10 (0..=1): json Absent/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse
+            1.13.0..=1.21.10 (0..=1): json Absent/Strict/Error/Warn/reports/lenient/Refuse, mcb Own/Strict/Error/Warn/reports/lenient/Refuse
             minecraft:sculk_patch_feature
             text: Root, clamps beyond a double: true, duplicates kept in: []
             envelope: Always
             missing version: rejected: NoValidVersion
             below floor: UseFormatVersion
             empty document: Error
-            1.13.0..=1.13.0 (0..=0): json Absent/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse
+            1.13.0..=1.13.0 (0..=0): json Absent/Strict/Error/Warn/reports/lenient/Refuse, mcb Own/Strict/Error/Warn/reports/lenient/Refuse
             minecraft:search_feature
             text: Root, clamps beyond a double: true, duplicates kept in: []
             envelope: Always
             missing version: rejected: NoValidVersion
             below floor: UseFormatVersion
             empty document: Error
-            1.13.0..=1.13.0 (0..=0): json Absent/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse
+            1.13.0..=1.13.0 (0..=0): json Absent/Strict/Error/Warn/reports/lenient/Refuse, mcb Own/Strict/Error/Warn/reports/lenient/Refuse
             minecraft:sequence_feature
             text: Root, clamps beyond a double: true, duplicates kept in: []
             envelope: Always
             missing version: rejected: NoValidVersion
             below floor: UseFormatVersion
             empty document: Error
-            1.13.0..=1.13.0 (0..=0): json Absent/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse
+            1.13.0..=1.13.0 (0..=0): json Absent/Strict/Error/Warn/reports/lenient/Refuse, mcb Own/Strict/Error/Warn/reports/lenient/Refuse
             minecraft:single_block_feature
             text: Root, clamps beyond a double: true, duplicates kept in: []
             envelope: Always
             missing version: rejected: NoValidVersion
             below floor: UseFormatVersion
             empty document: Error
-            1.13.0..=1.21.40 (0..=1): json Absent/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse
+            1.13.0..=1.21.40 (0..=1): json Absent/Strict/Error/Warn/reports/lenient/Refuse, mcb Own/Strict/Error/Warn/reports/lenient/Refuse
             minecraft:snap_to_surface_feature
             text: Root, clamps beyond a double: true, duplicates kept in: []
             envelope: Always
             missing version: rejected: NoValidVersion
             below floor: UseFormatVersion
             empty document: Error
-            1.13.0..=1.26.50 (0..=1): json Absent/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse
+            1.13.0..=1.26.50 (0..=1): json Absent/Strict/Error/Warn/reports/lenient/Refuse, mcb Own/Strict/Error/Warn/reports/lenient/Refuse
             minecraft:structure_template_feature
             text: Root, clamps beyond a double: true, duplicates kept in: []
             envelope: Always
             missing version: rejected: NoValidVersion
             below floor: UseFormatVersion
             empty document: Error
-            1.13.0..=1.13.0 (0..=0): json Absent/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse
+            1.13.0..=1.13.0 (0..=0): json Absent/Strict/Error/Warn/reports/lenient/Refuse, mcb Own/Strict/Error/Warn/reports/lenient/Refuse
             minecraft:surface_relative_threshold_feature
             text: Root, clamps beyond a double: true, duplicates kept in: []
             envelope: Always
             missing version: rejected: NoValidVersion
             below floor: UseFormatVersion
             empty document: Error
-            1.13.0..=1.13.0 (0..=0): json Absent/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse
+            1.13.0..=1.13.0 (0..=0): json Absent/Strict/Error/Warn/reports/lenient/Refuse, mcb Own/Strict/Error/Warn/reports/lenient/Refuse
             minecraft:tree_feature
             text: Root, clamps beyond a double: true, duplicates kept in: []
             envelope: Always
             missing version: rejected: NoValidVersion
             below floor: UseFormatVersion
             empty document: Error
-            1.13.0..=1.13.0 (0..=0): json Absent/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse
+            1.13.0..=1.13.0 (0..=0): json Absent/Strict/Error/Warn/reports/lenient/Refuse, mcb Own/Strict/Error/Warn/reports/lenient/Refuse
             minecraft:underwater_cave_carver_feature
             text: Root, clamps beyond a double: true, duplicates kept in: []
             envelope: Always
             missing version: rejected: NoValidVersion
             below floor: UseFormatVersion
             empty document: Error
-            1.13.0..=1.13.0 (0..=0): json Absent/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse
+            1.13.0..=1.13.0 (0..=0): json Absent/Strict/Error/Warn/reports/lenient/Refuse, mcb Own/Strict/Error/Warn/reports/lenient/Refuse
             minecraft:vegetation_patch_feature
             text: Root, clamps beyond a double: true, duplicates kept in: []
             envelope: Always
             missing version: rejected: NoValidVersion
             below floor: UseFormatVersion
             empty document: Error
-            1.13.0..=1.13.0 (0..=0): json Absent/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse
+            1.13.0..=1.13.0 (0..=0): json Absent/Strict/Error/Warn/reports/lenient/Refuse, mcb Own/Strict/Error/Warn/reports/lenient/Refuse
             minecraft:weighted_random_feature
             text: Root, clamps beyond a double: true, duplicates kept in: []
             envelope: Always
             missing version: rejected: NoValidVersion
             below floor: UseFormatVersion
             empty document: Error
-            1.13.0..=1.13.0 (0..=0): json Absent/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse
+            1.13.0..=1.13.0 (0..=0): json Absent/Strict/Error/Warn/reports/lenient/Refuse, mcb Own/Strict/Error/Warn/reports/lenient/Refuse
         ";
 
     #[test]

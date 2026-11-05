@@ -6,7 +6,6 @@ use crate as latest;
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Phase,
 };
-use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::id::ItemId;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::version::FormatVersion;
@@ -27,10 +26,6 @@ pub struct TradeTable {
     pub format_version: Option<String>,
     /// The tiers (JSON `tiers`).
     pub tiers: Vec<Tier>,
-    /// The members the legacy parser does not read, kept for writing the document back in its
-    /// own shape. The upgraded table cannot carry them.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// A legacy tier: groups, or one flat list of trades that are all offered.
@@ -42,10 +37,6 @@ pub struct Tier {
     pub groups: Option<Vec<Group>>,
     /// JSON `trades`: one group that offers every trade.
     pub trades: Option<Vec<Trade>>,
-    /// The members the legacy parser does not read, kept for writing the document back in its
-    /// own shape. The upgraded table cannot carry them.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// A legacy group.
@@ -55,10 +46,6 @@ pub struct Group {
     pub num_to_select: Option<i32>,
     /// JSON `trades`.
     pub trades: Vec<Trade>,
-    /// The members the legacy parser does not read, kept for writing the document back in its
-    /// own shape. The upgraded table cannot carry them.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// A legacy trade; the defaults are the newest ones.
@@ -76,10 +63,6 @@ pub struct Trade {
     pub reward_exp: Option<bool>,
     /// JSON `weight` (default 1).
     pub weight: Option<i32>,
-    /// The members the legacy parser does not read, kept for writing the document back in its
-    /// own shape. The upgraded table cannot carry them.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// A legacy `wants` / `gives` entry.
@@ -95,9 +78,6 @@ pub enum ItemList {
     Choice {
         /// JSON `choice`.
         choice: Vec<TradeItem>,
-        /// The other members of the entry, which the legacy parser does not read.
-        #[facet(skip, rename = "\u{0}extra")]
-        extra: Extra,
     },
     /// A bare item.
     Item(TradeItem),
@@ -118,10 +98,6 @@ pub struct TradeItem {
     pub filters: Option<Value>,
     /// JSON `biomes`: a biome name or a list of them, read only by the documents below 1.20.30.
     pub biomes: Option<Value>,
-    /// The members the legacy parser does not read, kept for writing the document back in its
-    /// own shape. The upgraded table cannot carry them.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 impl Versioned for TradeTable {
@@ -444,7 +420,6 @@ pub(crate) fn legacy_form(table: &latest::TradeTable) -> Result<Option<TradeTabl
             functions: item.legacy_functions.clone(),
             filters: item.legacy_filters.clone(),
             biomes: None,
-            extra: Extra::default(),
         })
     };
     let lists = |lists: &[latest::ItemList]| -> Result<Vec<ItemList>, EncodeError> {
@@ -454,7 +429,6 @@ pub(crate) fn legacy_form(table: &latest::TradeTable) -> Result<Option<TradeTabl
                 Ok(match list {
                     latest::ItemList::Choice { choice } => ItemList::Choice {
                         choice: choice.iter().map(item).collect::<Result<_, _>>()?,
-                        extra: Extra::default(),
                     },
                     latest::ItemList::Item(one) => ItemList::Item(item(one)?),
                 })
@@ -474,26 +448,22 @@ pub(crate) fn legacy_form(table: &latest::TradeTable) -> Result<Option<TradeTabl
                     max_uses: trade.max_uses,
                     reward_exp: trade.reward_exp,
                     weight: trade.weight,
-                    extra: Extra::default(),
                 });
             }
             groups.push(Group {
                 // Absent is -1 in the legacy parser and 0 in the newest format.
                 num_to_select: Some(group.num_to_select()),
                 trades,
-                extra: Extra::default(),
             });
         }
         tiers.push(Tier {
             total_exp_required: Some(tier.total_exp_required),
             groups: Some(groups),
             trades: None,
-            extra: Extra::default(),
         });
     }
     Ok(Some(TradeTable {
         format_version: Some(convert::GENERIC_FILTERS.to_string()),
         tiers,
-        extra: Extra::default(),
     }))
 }

@@ -26,33 +26,24 @@ macro_rules! carver {
             /// JSON `description`.
             pub description: Description,
             /// The block the carved space is filled with (JSON `fill_with`).
-            #[facet(default)]
             pub fill_with: Option<BlockSpecifier>,
             /// A Molang expression over the `world_gen` queries scaling the tunnel width (JSON
             /// `width_modifier`).
-            #[facet(default)]
             pub width_modifier: Option<Molang>,
             /// One in how many chunks is skipped, at least 1 (JSON `skip_carve_chance`).
-            #[facet(default)]
             pub skip_carve_chance: Option<JsonInt>,
             /// JSON `height_limit`.
-            #[facet(default)]
             pub height_limit: Option<JsonInt>,
             /// JSON `y_scale`.
-            #[facet(default)]
             pub y_scale: Option<CarverRange>,
             /// JSON `horizontal_radius_multiplier`.
-            #[facet(default)]
             pub horizontal_radius_multiplier: Option<CarverRange>,
             /// JSON `vertical_radius_multiplier`.
-            #[facet(default)]
             pub vertical_radius_multiplier: Option<CarverRange>,
             /// JSON `floor_level`.
-            #[facet(default)]
             pub floor_level: Option<CarverRange>,
             $(
                 $(#[$extra_meta])*
-                #[facet(default)]
                 pub $extra: Option<BlockSpecifier>,
             )*
         }

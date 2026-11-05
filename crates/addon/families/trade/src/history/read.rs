@@ -12,7 +12,6 @@ use crate::validate as rules;
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
 };
-use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::json::{JsonSlice, Value};
 
 /// The members the legacy parser reads, per object.
@@ -113,7 +112,7 @@ impl Reader<'_> {
     /// the legacy parser reads only the members it knows and ignores the rest. They are kept
     /// for the document's own shape, in the document's table; the upgraded table does not have
     /// them.
-    fn unknown(&mut self, object: &facet_value::VObject, known: &[&str], at: &JsonPath) -> Extra {
+    fn unknown(&mut self, object: &facet_value::VObject, known: &[&str], at: &JsonPath) {
         for (key, value) in object {
             if !known.contains(&key.as_str()) {
                 self.warn(
@@ -123,7 +122,6 @@ impl Reader<'_> {
                 self.d.unknown_mut().put(at, key.as_str(), value.clone());
             }
         }
-        Extra::default()
     }
 
     /// The root. A message of the table parser itself rejects the table (vanilla returns an
@@ -140,7 +138,7 @@ impl Reader<'_> {
             self.error(code, at.clone());
             return None;
         };
-        let extra = self.unknown(object, ROOT_MEMBERS, at);
+        self.unknown(object, ROOT_MEMBERS, at);
         // `format_version` is read only when it is a string.
         let format_version = object
             .get("format_version")
@@ -176,7 +174,6 @@ impl Reader<'_> {
         let mut table = TradeTable {
             format_version,
             tiers: Vec::with_capacity(tiers.len()),
-            extra,
         };
         for (i, tier) in tiers.iter().enumerate() {
             let tier = self.tier(tier, &tiers_at.index(i))?;
@@ -192,7 +189,7 @@ impl Reader<'_> {
             self.error(DiagnosticCode::InvalidType { text: None }, at.clone());
             return None;
         };
-        let extra = self.unknown(object, TIER_MEMBERS, at);
+        self.unknown(object, TIER_MEMBERS, at);
         let total_exp_required = self.uint(
             object.get("total_exp_required"),
             &at.child("total_exp_required"),
@@ -201,7 +198,6 @@ impl Reader<'_> {
             total_exp_required,
             groups: None,
             trades: None,
-            extra,
         };
         match present(object.get("groups")) {
             Some(groups) => {
@@ -246,7 +242,7 @@ impl Reader<'_> {
     fn group(&mut self, json: &Value, at: &JsonPath) -> Option<Read<Group>> {
         let empty = facet_value::VObject::new();
         let object = json.as_object().unwrap_or(&empty);
-        let extra = self.unknown(object, GROUP_MEMBERS, at);
+        self.unknown(object, GROUP_MEMBERS, at);
         let select_at = at.child("num_to_select");
         let num_to_select = self.int(object.get("num_to_select"), &select_at);
         // A missing or unreadable count selects -1, every trade.
@@ -264,7 +260,6 @@ impl Reader<'_> {
         Some(Read::Kept(Group {
             num_to_select,
             trades,
-            extra,
         }))
     }
 
@@ -298,7 +293,7 @@ impl Reader<'_> {
     fn trade(&mut self, json: &Value, at: &JsonPath, selects: i32) -> Option<Trade> {
         let empty = facet_value::VObject::new();
         let object = json.as_object().unwrap_or(&empty);
-        let extra = self.unknown(object, TRADE_MEMBERS, at);
+        self.unknown(object, TRADE_MEMBERS, at);
         // `{}` is the trade as styled JSON text; a number no double holds is shown as the
         // largest finite one, as it is read.
         let styled = || {
@@ -349,7 +344,6 @@ impl Reader<'_> {
             max_uses,
             reward_exp,
             weight,
-            extra,
         })
     }
 
@@ -381,10 +375,9 @@ impl Reader<'_> {
                     }
                     self.d.left_out(&choice_at, &item_places);
                     // Only `choice` is read of such an entry.
-                    let extra = entry
-                        .as_object()
-                        .map(|object| self.unknown(object, &["choice"], &entry_at))
-                        .unwrap_or_default();
+                    if let Some(object) = entry.as_object() {
+                        self.unknown(object, &["choice"], &entry_at);
+                    }
                     // An entry whose `choice` is empty is dropped. The crate tells the empty
                     // list where other entries stay (an element that is no item has said so
                     // itself).
@@ -392,10 +385,7 @@ impl Reader<'_> {
                         empty.push(choice_at.clone());
                     }
                     if !items.is_empty() {
-                        kept.push(ItemList::Choice {
-                            choice: items,
-                            extra,
-                        });
+                        kept.push(ItemList::Choice { choice: items });
                         places.push(i);
                     }
                 }
@@ -424,7 +414,7 @@ impl Reader<'_> {
             self.warn(DiagnosticCode::InvalidType { text: None }, at.clone());
             return None;
         };
-        let extra = self.unknown(object, ITEM_MEMBERS, at);
+        self.unknown(object, ITEM_MEMBERS, at);
         // The object form of a quantity is read for `min` and `max` only; the quantity is kept
         // as written, its other members with it.
         if let Some(range) = object.get("quantity").and_then(Value::as_object) {
@@ -441,7 +431,6 @@ impl Reader<'_> {
             functions: self.kept(object.get("functions"), &at.child("functions")),
             filters: self.kept(object.get("filters"), &at.child("filters")),
             biomes: self.kept(object.get("biomes"), &at.child("biomes")),
-            extra,
         })
     }
 

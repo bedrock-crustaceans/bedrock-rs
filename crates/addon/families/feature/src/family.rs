@@ -1,17 +1,19 @@
-//! The feature types: the [`FeatureType`] of each payload key, its family and chain, the
-//! dispatch by payload key and `Feature`'s per-type accessors ([`feature_types!`]), and the
-//! [`strict_struct!`] the types' structs are declared with.
+//! The feature types: one row per type declares [`Feature`]'s variant, the [`FeatureType`] of
+//! its payload key, its family and chain, the dispatch by payload key and `Feature`'s per-type
+//! accessors ([`feature_types!`]); and the [`strict_struct!`] the types' structs are declared
+//! with.
 
 use std::convert::Infallible;
 use std::marker::PhantomData;
 
-use crate::{Feature, blocks, carver, history, placement, scatter, structure, tree};
+use crate::{blocks, carver, history, placement, scatter, structure, tree};
 use bedrock_addon_core::id::FeatureId;
 use bedrock_addon_core::json::{EncodeError, Value};
+use bedrock_addon_core::load::DocumentSource;
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
-    Envelope, Family, InputKind, Loaded, MissingVersion, NoComponents, ValidateCx, VersionChain,
-    VersionStruct,
+    BeyondWidth, Envelope, Family, InputKind, Loaded, MissingVersion, NoComponents, Reading,
+    Scalars, StructIndex, ValidateCx, VersionChain, VersionStruct,
 };
 
 /// Format 1.13.0, the initial release (`[1.13.0, 1.21.10)`) and the floor of every feature
@@ -20,6 +22,15 @@ use bedrock_addon_core::versioning::{
 /// changes are 1.13.0, 1.21.10 (scatter), 1.21.40 (single block), 1.26.40 (multi block) and
 /// 1.26.50 (snap to surface), the last one running to the current version.
 pub(crate) const V1_13_0: FormatVersion = FormatVersion::new(1, 13, 0);
+
+/// The reading of every slice of every feature type, which the payload's reader takes
+/// (`read::parse_strict_with`): the jsoncpp input's profile (rule N1, unknown members warned,
+/// lenient), with the strict scalars the types' members are read by: a member takes only a
+/// token of its own type and a number beyond its float's width is a type error.
+pub(crate) const READING: Reading = InputKind::JsonCpp
+    .profile()
+    .with_scalars(Scalars::Strict)
+    .with_beyond_width(BeyondWidth::Error);
 
 /// `impl Versioned + VersionStruct` for a struct that parses strictly and writes plainly.
 macro_rules! strict_struct {
@@ -49,14 +60,8 @@ macro_rules! strict_struct {
 
 pub(crate) use strict_struct;
 
-/// What a feature type's newest struct says about itself, and its rules on a loaded value.
+/// A feature type's rules on a loaded value.
 pub(crate) trait Rules {
-    /// Only base-game packs may use the type.
-    const INTERNAL: bool = false;
-    /// The engine release that registers the type; below it the payload key is unknown.
-    const SINCE_ENGINE: Option<FormatVersion> = None;
-    /// The type's lowest format version.
-    const FLOOR: FormatVersion = V1_13_0;
     /// The type's schema rules on the loaded value, at the payload's path.
     #[allow(unused_variables)]
     fn rules(&mut self, check: &mut ValidateCx<'_>) {}
@@ -70,10 +75,18 @@ pub(crate) trait Rules {
     }
 }
 
-/// A feature type: its payload key, its chain and its place in [`Feature`].
+/// A feature type: its payload key, what its row says about it, its chain and its place in
+/// [`Feature`].
 pub(crate) trait FeatureType: Rules + VersionStruct + Send + Sync + 'static {
     /// The payload key, `minecraft:ore_feature`.
     const KEY: &'static str;
+    /// Only base-game packs may use the type (the row's `internal`).
+    const INTERNAL: bool;
+    /// The engine release that registers the type; below it the payload key is unknown (the
+    /// row's `since_engine`).
+    const SINCE_ENGINE: Option<FormatVersion>;
+    /// The type's lowest format version (the row's `floor`, 1.13.0 when it names none).
+    const FLOOR: FormatVersion;
     /// The type's chain of version structs.
     type Chain: VersionChain<Fam<Self>>;
     /// The feature of this type.
@@ -113,6 +126,10 @@ impl<T: FeatureType> Family for Fam<T> {
         missing: MissingVersion::REJECT,
         ..Envelope::DEFAULT
     };
+
+    fn reading(_: StructIndex, _: DocumentSource) -> Reading {
+        READING
+    }
 
     fn validate(v: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {
         if let Loaded::Stable(value) = v {
@@ -161,10 +178,38 @@ pub(crate) trait FeatureFn<R> {
     fn call<T: FeatureType>(self, value: &T) -> R;
 }
 
-/// Declares the chain of each feature type, its `FeatureType` impl, the dispatch by payload key
-/// and `Feature`'s per-type accessors.
+/// Declares [`Feature`] and, from one row per feature type, its variant, its chain, its
+/// `FeatureType` impl (key, `internal`, `since_engine`, `floor`), the `VersionStruct` of its
+/// newest struct where it parses strictly (`strict = version`, by [`strict_struct!`]), the
+/// dispatch by payload key and `Feature`'s per-type accessors. A row is
+/// `Variant(Type) = "key", Chain [Version(Struct), …]` and its keys in that order; a variant
+/// that holds its type boxed says so, `Variant(Type => Box<Type>)`.
 macro_rules! feature_types {
-    ($( $variant:ident($ty:ty) = $key:literal, $chain:ident [ $($v:ident($t:ty)),+ ]; )*) => {
+    (@or $value:expr ; $default:expr) => { $value };
+    (@or ; $default:expr) => { $default };
+    (@held $ty:ty) => { $ty };
+    (@held $ty:ty, $held:ty) => { $held };
+    (
+        $(#[$enum_meta:meta])*
+        pub enum Feature;
+        $(
+            $(#[$doc:meta])*
+            $variant:ident($ty:ty $(=> $held:ty)?) = $key:literal,
+                $chain:ident [ $($v:ident($t:ty)),+ ]
+                $(, strict = $strict:expr)?
+                $(, internal = $internal:literal)?
+                $(, since_engine = $since:expr)?
+                $(, floor = $floor:expr)?;
+        )*
+    ) => {
+        $(#[$enum_meta])*
+        pub enum Feature {
+            $(
+                $(#[$doc])*
+                $variant(feature_types!(@held $ty $(, $held)?)),
+            )*
+        }
+
         $(
             bedrock_addon_core::version_chain! {
                 family = Fam<$ty>;
@@ -178,8 +223,14 @@ macro_rules! feature_types {
                 }
             }
 
+            $( strict_struct!($ty, $strict); )?
+
             impl FeatureType for $ty {
                 const KEY: &'static str = $key;
+                const INTERNAL: bool = feature_types!(@or $($internal)? ; false);
+                const SINCE_ENGINE: Option<FormatVersion> =
+                    feature_types!(@or $(Some($since))? ; None);
+                const FLOOR: FormatVersion = feature_types!(@or $($floor)? ; V1_13_0);
                 type Chain = $chain;
 
                 fn into_feature(self) -> Feature {
@@ -220,7 +271,6 @@ macro_rules! feature_types {
                 }
             }
         )*
-
         /// Runs `f` for the feature type of the payload key `key`; `None` for a key vanilla
         /// does not register.
         ///
@@ -295,78 +345,130 @@ impl Feature {
 }
 
 feature_types! {
+    /// A feature: one placement rule of world generation, of one of vanilla's feature types, at the
+    /// newest format version of its type.
+    ///
+    /// JSON: `{"format_version": "…", "minecraft:<type>_feature": {"description": {"identifier"},
+    /// …}}`; the payload key names the type. A document of an older format version is upgraded
+    /// when it loads (`history` has the older shapes); a document that breaks its type's schema in
+    /// any way is not loaded, as vanilla's strict schema rejects it.
+    #[derive(Clone, Debug, PartialEq)]
+    #[non_exhaustive]
+    #[doc(alias = "features")]
+    #[allow(
+        clippy::large_enum_variant,
+        reason = "the variants are the types callers match on; the one far larger than the rest is boxed"
+    )]
+    pub enum Feature;
+
+    /// `minecraft:aggregate_feature`.
     Aggregate(placement::AggregateFeature) = "minecraft:aggregate_feature",
-        AggregateChain [V1_13_0(placement::AggregateFeature)];
+        AggregateChain [V1_13_0(placement::AggregateFeature)],
+        strict = V1_13_0;
+    /// `minecraft:beards_and_shavers` (base-game packs only).
     BeardsAndShavers(structure::BeardsAndShaversFeature) = "minecraft:beards_and_shavers",
-        BeardsAndShaversChain [V1_13_0(structure::BeardsAndShaversFeature)];
+        BeardsAndShaversChain [V1_13_0(structure::BeardsAndShaversFeature)],
+        strict = V1_13_0, internal = true;
+    /// `minecraft:cave_carver_feature`.
     CaveCarver(carver::CaveCarverFeature) = "minecraft:cave_carver_feature",
         CaveCarverChain [V1_13_0(carver::CaveCarverFeature)];
+    /// `minecraft:conditional_list`.
     ConditionalList(placement::ConditionalListFeature) = "minecraft:conditional_list",
-        ConditionalListChain [V1_13_0(placement::ConditionalListFeature)];
+        ConditionalListChain [V1_13_0(placement::ConditionalListFeature)],
+        strict = V1_13_0;
+    /// `minecraft:fossil_feature`.
     Fossil(blocks::FossilFeature) = "minecraft:fossil_feature",
-        FossilChain [V1_13_0(blocks::FossilFeature)];
+        FossilChain [V1_13_0(blocks::FossilFeature)],
+        strict = V1_13_0;
+    /// `minecraft:geode_feature`.
     Geode(blocks::GeodeFeature) = "minecraft:geode_feature",
-        GeodeChain [V1_13_0(blocks::GeodeFeature)];
+        GeodeChain [V1_13_0(blocks::GeodeFeature)],
+        strict = V1_13_0;
+    /// `minecraft:growing_plant_feature`.
     GrowingPlant(blocks::GrowingPlantFeature) = "minecraft:growing_plant_feature",
         GrowingPlantChain [V1_13_0(blocks::GrowingPlantFeature)];
-    HeightDifferenceFilter(placement::HeightDifferenceFilterFeature)
-        = "minecraft:height_difference_filter_feature",
-        HeightDifferenceFilterChain [V1_13_0(placement::HeightDifferenceFilterFeature)];
-    HorizontalTreeDecoration(blocks::HorizontalTreeDecorationFeature)
-        = "minecraft:horizontal_tree_decoration_feature",
-        HorizontalTreeDecorationChain [V1_13_0(blocks::HorizontalTreeDecorationFeature)];
+    /// `minecraft:height_difference_filter_feature` (engine 1.26.30).
+    HeightDifferenceFilter(placement::HeightDifferenceFilterFeature) = "minecraft:height_difference_filter_feature",
+        HeightDifferenceFilterChain [V1_13_0(placement::HeightDifferenceFilterFeature)],
+        strict = V1_13_0, since_engine = placement::HEIGHT_DIFFERENCE_ENGINE;
+    /// `minecraft:horizontal_tree_decoration_feature` (engine 1.26.40).
+    HorizontalTreeDecoration(blocks::HorizontalTreeDecorationFeature) = "minecraft:horizontal_tree_decoration_feature",
+        HorizontalTreeDecorationChain [V1_13_0(blocks::HorizontalTreeDecorationFeature)],
+        strict = V1_13_0, since_engine = blocks::HORIZONTAL_TREE_DECORATION_ENGINE;
+    /// `minecraft:multi_block_feature` (engine 1.26.40).
     MultiBlock(blocks::MultiBlockFeature) = "minecraft:multi_block_feature",
-        MultiBlockChain [V1_26_40(blocks::MultiBlockFeature)];
+        MultiBlockChain [V1_26_40(blocks::MultiBlockFeature)],
+        strict = blocks::MULTI_BLOCK_FORMAT, since_engine = blocks::MULTI_BLOCK_FORMAT, floor = blocks::MULTI_BLOCK_FORMAT;
+    /// `minecraft:multiface_feature`.
     Multiface(blocks::MultifaceFeature) = "minecraft:multiface_feature",
-        MultifaceChain [V1_13_0(blocks::MultifaceFeature)];
-    MultipartBlockColumn(blocks::MultipartBlockColumnFeature)
-        = "minecraft:multipart_block_column_feature",
-        MultipartBlockColumnChain [V1_26_40(blocks::MultipartBlockColumnFeature)];
+        MultifaceChain [V1_13_0(blocks::MultifaceFeature)],
+        strict = V1_13_0;
+    /// `minecraft:multipart_block_column_feature` (format 1.26.40).
+    MultipartBlockColumn(blocks::MultipartBlockColumnFeature) = "minecraft:multipart_block_column_feature",
+        MultipartBlockColumnChain [V1_26_40(blocks::MultipartBlockColumnFeature)],
+        strict = blocks::MULTI_BLOCK_FORMAT, since_engine = blocks::MULTI_BLOCK_FORMAT, floor = blocks::MULTI_BLOCK_FORMAT;
+    /// `minecraft:nether_cave_carver_feature`.
     NetherCaveCarver(carver::NetherCaveCarverFeature) = "minecraft:nether_cave_carver_feature",
         NetherCaveCarverChain [V1_13_0(carver::NetherCaveCarverFeature)];
+    /// `minecraft:ore_feature`.
     Ore(blocks::OreFeature) = "minecraft:ore_feature",
-        OreChain [V1_13_0(blocks::OreFeature)];
-    PartiallyExposedBlob(blocks::PartiallyExposedBlobFeature)
-        = "minecraft:partially_exposed_blob_feature",
+        OreChain [V1_13_0(blocks::OreFeature)],
+        strict = V1_13_0;
+    /// `minecraft:partially_exposed_blob_feature`.
+    PartiallyExposedBlob(blocks::PartiallyExposedBlobFeature) = "minecraft:partially_exposed_blob_feature",
         PartiallyExposedBlobChain [V1_13_0(blocks::PartiallyExposedBlobFeature)];
+    /// `minecraft:rect_layout` (base-game packs only).
     RectLayout(placement::RectLayoutFeature) = "minecraft:rect_layout",
-        RectLayoutChain [V1_13_0(placement::RectLayoutFeature)];
+        RectLayoutChain [V1_13_0(placement::RectLayoutFeature)],
+        strict = V1_13_0, internal = true;
+    /// `minecraft:scan_surface` (base-game packs only).
     ScanSurface(placement::ScanSurfaceFeature) = "minecraft:scan_surface",
-        ScanSurfaceChain [V1_13_0(placement::ScanSurfaceFeature)];
+        ScanSurfaceChain [V1_13_0(placement::ScanSurfaceFeature)],
+        strict = V1_13_0, internal = true;
+    /// `minecraft:scatter_feature`.
     Scatter(scatter::ScatterFeature) = "minecraft:scatter_feature",
-        ScatterChain [
-            V1_13_0(history::v1_13_0::ScatterFeature),
-            V1_21_10(scatter::ScatterFeature)
-        ];
+        ScatterChain [V1_13_0(history::v1_13_0::ScatterFeature), V1_21_10(scatter::ScatterFeature)];
+    /// `minecraft:sculk_patch_feature` (base-game packs only).
     SculkPatch(blocks::SculkPatchFeature) = "minecraft:sculk_patch_feature",
-        SculkPatchChain [V1_13_0(blocks::SculkPatchFeature)];
+        SculkPatchChain [V1_13_0(blocks::SculkPatchFeature)],
+        strict = V1_13_0, internal = true;
+    /// `minecraft:search_feature`.
     Search(placement::SearchFeature) = "minecraft:search_feature",
-        SearchChain [V1_13_0(placement::SearchFeature)];
+        SearchChain [V1_13_0(placement::SearchFeature)],
+        strict = V1_13_0;
+    /// `minecraft:sequence_feature`.
     Sequence(placement::SequenceFeature) = "minecraft:sequence_feature",
-        SequenceChain [V1_13_0(placement::SequenceFeature)];
+        SequenceChain [V1_13_0(placement::SequenceFeature)],
+        strict = V1_13_0;
+    /// `minecraft:single_block_feature`.
     SingleBlock(blocks::SingleBlockFeature) = "minecraft:single_block_feature",
-        SingleBlockChain [
-            V1_13_0(history::v1_13_0::SingleBlockFeature),
-            V1_21_40(blocks::SingleBlockFeature)
-        ];
+        SingleBlockChain [V1_13_0(history::v1_13_0::SingleBlockFeature), V1_21_40(blocks::SingleBlockFeature)];
+    /// `minecraft:snap_to_surface_feature`.
     SnapToSurface(structure::SnapToSurfaceFeature) = "minecraft:snap_to_surface_feature",
-        SnapToSurfaceChain [
-            V1_13_0(history::v1_13_0::SnapToSurfaceFeature),
-            V1_26_50(structure::SnapToSurfaceFeature)
-        ];
-    StructureTemplate(structure::StructureTemplateFeature)
-        = "minecraft:structure_template_feature",
-        StructureTemplateChain [V1_13_0(structure::StructureTemplateFeature)];
-    SurfaceRelativeThreshold(placement::SurfaceRelativeThresholdFeature)
-        = "minecraft:surface_relative_threshold_feature",
-        SurfaceRelativeThresholdChain [V1_13_0(placement::SurfaceRelativeThresholdFeature)];
-    Tree(tree::TreeFeature) = "minecraft:tree_feature",
-        TreeChain [V1_13_0(tree::TreeFeature)];
-    UnderwaterCaveCarver(carver::UnderwaterCaveCarverFeature)
-        = "minecraft:underwater_cave_carver_feature",
+        SnapToSurfaceChain [V1_13_0(history::v1_13_0::SnapToSurfaceFeature), V1_26_50(structure::SnapToSurfaceFeature)];
+    /// `minecraft:structure_template_feature`.
+    StructureTemplate(structure::StructureTemplateFeature) = "minecraft:structure_template_feature",
+        StructureTemplateChain [V1_13_0(structure::StructureTemplateFeature)],
+        strict = V1_13_0;
+    /// `minecraft:surface_relative_threshold_feature`.
+    SurfaceRelativeThreshold(placement::SurfaceRelativeThresholdFeature) = "minecraft:surface_relative_threshold_feature",
+        SurfaceRelativeThresholdChain [V1_13_0(placement::SurfaceRelativeThresholdFeature)],
+        strict = V1_13_0;
+    /// `minecraft:tree_feature`. Boxed: a `TreeFeature` holds every trunk and canopy shape
+    /// inline (some 17 KB, four times the next type), and an unoptimised build keeps a copy of
+    /// a `Feature` in each frame that moves one; held inline it took a 1 MiB thread past its
+    /// stack on the base game's load.
+    Tree(tree::TreeFeature => Box<tree::TreeFeature>) = "minecraft:tree_feature",
+        TreeChain [V1_13_0(tree::TreeFeature)],
+        strict = V1_13_0;
+    /// `minecraft:underwater_cave_carver_feature`.
+    UnderwaterCaveCarver(carver::UnderwaterCaveCarverFeature) = "minecraft:underwater_cave_carver_feature",
         UnderwaterCaveCarverChain [V1_13_0(carver::UnderwaterCaveCarverFeature)];
+    /// `minecraft:vegetation_patch_feature`.
     VegetationPatch(blocks::VegetationPatchFeature) = "minecraft:vegetation_patch_feature",
         VegetationPatchChain [V1_13_0(blocks::VegetationPatchFeature)];
+    /// `minecraft:weighted_random_feature`.
     WeightedRandom(placement::WeightedRandomFeature) = "minecraft:weighted_random_feature",
-        WeightedRandomChain [V1_13_0(placement::WeightedRandomFeature)];
+        WeightedRandomChain [V1_13_0(placement::WeightedRandomFeature)],
+        strict = V1_13_0;
 }

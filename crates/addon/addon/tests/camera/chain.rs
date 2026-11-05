@@ -9,7 +9,7 @@ use bedrock_addon::families::camera::{
     ALLOWED_MC_INHERIT, CameraList, CameraPreset, CameraSpline, VANILLA_CAMERAS,
 };
 use bedrock_addon::id::{CameraListId, CameraPresetId};
-use bedrock_addon::json::{StrictBool, StrictFloat, Value};
+use bedrock_addon::json::Value;
 use bedrock_addon::load::LoadContext;
 use bedrock_addon::storage::PackPath;
 use bedrock_addon::version::{ENGINE_VERSION, FormatVersion, FormatVersionInput};
@@ -294,9 +294,9 @@ fn the_1_26_60_vanilla_presets_load_upgraded_and_round_trip() {
 fn hand_built_documents_write_what_they_hold_and_nothing_else() {
     let mut preset = CameraPreset::new(CameraPresetId::parse("ex:built"));
     preset.inherit_from = Some(CameraPresetId::parse("minecraft:free"));
-    preset.radius = Some(StrictFloat(0.1));
-    preset.player_effects = Some(StrictBool(false));
-    preset.starting_rot = Some([StrictFloat(1.5), StrictFloat(-2.0)]);
+    preset.radius = Some(0.1);
+    preset.player_effects = Some(false);
+    preset.starting_rot = Some([1.5, -2.0]);
     let written = rewritten("cameras/presets/test.json", &preset);
     assert_eq!(
         written,
@@ -415,7 +415,7 @@ fn an_upgraded_preset_is_written_where_its_flag_reads_back() {
     // With a starting rotation the 1.26.50 form is written; the flag reads back `false`, which
     // the client treats the same when `starting_rot` is set.
     let mut rotated = document.value().clone();
-    rotated.starting_rot = Some([StrictFloat(10.0), StrictFloat(20.0)]);
+    rotated.starting_rot = Some([10.0, 20.0]);
     let written = rotated.to_json().unwrap();
     assert!(
         written.contains(r#""format_version": "1.26.50""#),

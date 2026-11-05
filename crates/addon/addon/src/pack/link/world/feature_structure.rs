@@ -30,7 +30,7 @@ pub(super) fn feature_template(cx: &LinkCx<'_>, out: &mut Findings, document: &D
     let Feature::StructureTemplate(feature) = document.value() else {
         return;
     };
-    let name = feature.structure_name.0.as_str();
+    let name = feature.structure_name.as_str();
     let origin = document.origin();
     match cx.structure(&StructureId::parse(name)) {
         Target::Missing(hint) => {

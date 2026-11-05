@@ -239,7 +239,7 @@ pub(crate) fn duplicate_splines(files: &[Document<CameraSpline>]) -> Vec<Diagnos
     let mut found = Vec::new();
     for file in files {
         for (i, spline) in file.splines.iter().enumerate() {
-            if !seen.insert(spline.name.0.as_str()) {
+            if !seen.insert(spline.name.as_str()) {
                 let mut warning =
                     Diagnostic::info(DiagnosticCode::DuplicateIdentifier { text: None })
                         .at(JsonPath::of_keys([

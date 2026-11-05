@@ -9,12 +9,10 @@ use super::molang::{Walk, walk};
 use super::read::parse_strict_with;
 use super::validate::Check;
 use super::values::{BlockList, JsonInt, WeightedBlock, pair, weight_of, weight_value};
-use super::{Rules, V1_13_0, strict_struct};
+use super::{Rules, V1_13_0};
 use bedrock_addon_core::diagnostic::Diagnostics;
 use bedrock_addon_core::id::FeatureId;
-use bedrock_addon_core::json::{
-    EncodeError, JsonSlice, JsonType, StrictBool, StrictError, StrictFloat, StrictString, Value,
-};
+use bedrock_addon_core::json::{EncodeError, JsonSlice, JsonType, StrictError, Value};
 use bedrock_addon_core::molang::MolangVisitor;
 use bedrock_addon_core::shared::{BlockDescriptor, BlockSpecifier, IntRange};
 use bedrock_addon_core::version::{FormatVersion, known};
@@ -32,10 +30,8 @@ pub struct OreFeature {
     pub count: JsonInt,
     /// The chance, in `[0, 1]`, that a block exposed to air is not placed (JSON
     /// `discard_chance_on_air_exposure`); absent is 0.
-    #[facet(default)]
-    pub discard_chance_on_air_exposure: Option<StrictFloat<f32>>,
+    pub discard_chance_on_air_exposure: Option<f32>,
     /// Which block replaces which; at least one rule (JSON `replace_rules`).
-    #[facet(default)]
     pub replace_rules: Option<Vec<ReplaceRule>>,
 }
 
@@ -46,7 +42,6 @@ pub struct ReplaceRule {
     pub places_block: BlockDescriptor,
     /// The blocks it may replace, at least one; absent replaces any block (JSON
     /// `may_replace`).
-    #[facet(default)]
     pub may_replace: Option<Vec<BlockDescriptor>>,
 }
 
@@ -58,24 +53,19 @@ pub struct SingleBlockFeature {
     /// JSON `description`.
     pub description: Description,
     /// The block, or blocks with weights, to place (JSON `places_block`).
-    #[facet(default)]
     pub places_block: Option<PlacesBlock>,
     /// Whether the block's own placement rules apply (JSON `enforce_placement_rules`).
-    pub enforce_placement_rules: StrictBool,
+    pub enforce_placement_rules: bool,
     /// Whether the block's survival rules apply (JSON `enforce_survivability_rules`).
-    pub enforce_survivability_rules: StrictBool,
+    pub enforce_survivability_rules: bool,
     /// Whether the block is placed in a random rotation (JSON `randomize_rotation`); absent is
     /// `false`.
-    #[facet(default)]
-    pub randomize_rotation: Option<StrictBool>,
+    pub randomize_rotation: Option<bool>,
     /// The blocks it may attach to (JSON `may_attach_to`).
-    #[facet(default)]
     pub may_attach_to: Option<AttachConditions>,
     /// The blocks it may not attach to (JSON `may_not_attach_to`).
-    #[facet(default)]
     pub may_not_attach_to: Option<AttachConditions>,
     /// The blocks it may replace (JSON `may_replace`).
-    #[facet(default)]
     pub may_replace: Option<Vec<BlockDescriptor>>,
 }
 
@@ -169,38 +159,27 @@ impl From<&PlacesBlock> for Value {
 #[derive(Clone, Debug, Default, PartialEq, Facet)]
 pub struct AttachConditions {
     /// How many sides must attach, 1 to 4 (JSON `min_sides_must_attach`); absent is 4.
-    #[facet(default)]
     pub min_sides_must_attach: Option<JsonInt>,
     /// Whether the block turns to face what it attaches to (JSON `auto_rotate`); absent is
     /// `true`.
-    #[facet(default)]
-    pub auto_rotate: Option<StrictBool>,
+    pub auto_rotate: Option<bool>,
     /// JSON `top`.
-    #[facet(default)]
     pub top: Option<BlockList>,
     /// JSON `bottom`.
-    #[facet(default)]
     pub bottom: Option<BlockList>,
     /// JSON `north`.
-    #[facet(default)]
     pub north: Option<BlockList>,
     /// JSON `east`.
-    #[facet(default)]
     pub east: Option<BlockList>,
     /// JSON `south`.
-    #[facet(default)]
     pub south: Option<BlockList>,
     /// JSON `west`.
-    #[facet(default)]
     pub west: Option<BlockList>,
     /// Every side (JSON `all`).
-    #[facet(default)]
     pub all: Option<BlockList>,
     /// The four horizontal sides (JSON `sides`).
-    #[facet(default)]
     pub sides: Option<BlockList>,
     /// The diagonal neighbours (JSON `diagonal`, format 1.21.40); absent is none.
-    #[facet(default)]
     pub diagonal: Option<BlockList>,
 }
 
@@ -212,14 +191,14 @@ impl AttachConditions {
 
     /// Whether the block auto-rotates: `auto_rotate`, or `true`.
     pub fn rotates(&self) -> bool {
-        self.auto_rotate.is_none_or(|b| b.0)
+        self.auto_rotate.unwrap_or(true)
     }
 }
 
 impl SingleBlockFeature {
     /// Whether the block is placed in a random rotation: `randomize_rotation`, or `false`.
     pub fn randomizes_rotation(&self) -> bool {
-        self.randomize_rotation.is_some_and(|b| b.0)
+        self.randomize_rotation.unwrap_or(false)
     }
 }
 
@@ -234,15 +213,12 @@ pub struct MultiBlockFeature {
     /// The multi-block's starting part (JSON `places_block`).
     pub places_block: BlockDescriptor,
     /// Whether the block's placement rules apply (JSON `enforce_placement_rules`).
-    #[facet(default)]
-    pub enforce_placement_rules: Option<StrictBool>,
+    pub enforce_placement_rules: Option<bool>,
     /// Whether the block is placed in a random rotation, which needs its
     /// `minecraft:cardinal_direction` state (JSON `randomize_rotation`).
-    #[facet(default)]
-    pub randomize_rotation: Option<StrictBool>,
+    pub randomize_rotation: Option<bool>,
     /// The blocks it may replace; absent is any block but another multi-block's part (JSON
     /// `may_replace`).
-    #[facet(default)]
     pub may_replace: Option<Vec<BlockDescriptor>>,
 }
 
@@ -258,15 +234,14 @@ pub struct MultifaceFeature {
     /// How far it searches, 1 to 64 (JSON `search_range`).
     pub search_range: JsonInt,
     /// JSON `can_place_on_floor`.
-    pub can_place_on_floor: StrictBool,
+    pub can_place_on_floor: bool,
     /// JSON `can_place_on_ceiling`.
-    pub can_place_on_ceiling: StrictBool,
+    pub can_place_on_ceiling: bool,
     /// JSON `can_place_on_wall`.
-    pub can_place_on_wall: StrictBool,
+    pub can_place_on_wall: bool,
     /// The chance, in `[0, 1]`, that it spreads (JSON `chance_of_spreading`).
-    pub chance_of_spreading: StrictFloat<f32>,
+    pub chance_of_spreading: f32,
     /// The blocks it may be placed on, at least one (JSON `can_place_on`).
-    #[facet(default)]
     pub can_place_on: Option<Vec<BlockDescriptor>>,
 }
 
@@ -297,7 +272,6 @@ pub struct GeodeFeature {
     /// JSON `outer_layer`.
     pub outer_layer: BlockDescriptor,
     /// The blocks placed on the inner layer, at least one (JSON `inner_placements`).
-    #[facet(default)]
     pub inner_placements: Option<Vec<BlockDescriptor>>,
     /// 1 to 10 (JSON `min_outer_wall_distance`).
     pub min_outer_wall_distance: JsonInt,
@@ -316,17 +290,17 @@ pub struct GeodeFeature {
     /// 0 to 10 (JSON `crack_point_offset`).
     pub crack_point_offset: JsonInt,
     /// In `[0, 1]` (JSON `generate_crack_chance`).
-    pub generate_crack_chance: StrictFloat<f32>,
+    pub generate_crack_chance: f32,
     /// In `[0, 5]` (JSON `base_crack_size`).
-    pub base_crack_size: StrictFloat<f32>,
+    pub base_crack_size: f32,
     /// JSON `noise_multiplier`.
-    pub noise_multiplier: StrictFloat<f32>,
+    pub noise_multiplier: f32,
     /// In `[0, 1]` (JSON `use_potential_placements_chance`).
-    pub use_potential_placements_chance: StrictFloat<f32>,
+    pub use_potential_placements_chance: f32,
     /// In `[0, 1]` (JSON `use_alternate_layer0_chance`).
-    pub use_alternate_layer0_chance: StrictFloat<f32>,
+    pub use_alternate_layer0_chance: f32,
     /// JSON `placements_require_layer0_alternate`.
-    pub placements_require_layer0_alternate: StrictBool,
+    pub placements_require_layer0_alternate: bool,
     /// JSON `invalid_blocks_threshold`.
     pub invalid_blocks_threshold: JsonInt,
 }
@@ -343,15 +317,13 @@ pub struct GrowingPlantFeature {
     /// Which way it grows (JSON `growth_direction`).
     pub growth_direction: GrowthDirection,
     /// The age state of the head block (JSON `age`).
-    #[facet(default)]
     pub age: Option<IntRange>,
     /// The body blocks and their weights, at least one (JSON `body_blocks`).
     pub body_blocks: Vec<WeightedBlock>,
     /// The head blocks and their weights, at least one (JSON `head_blocks`).
     pub head_blocks: Vec<WeightedBlock>,
     /// Whether it may grow in water (JSON `allow_water`); absent is `false`.
-    #[facet(default)]
-    pub allow_water: Option<StrictBool>,
+    pub allow_water: Option<bool>,
 }
 
 /// A height range with a weight: `[range, weight]`.
@@ -416,9 +388,8 @@ pub struct PartiallyExposedBlobFeature {
     /// 1 to 8 (JSON `placement_radius_around_floor`).
     pub placement_radius_around_floor: JsonInt,
     /// In `[0, 1]` (JSON `placement_probability_per_valid_position`).
-    pub placement_probability_per_valid_position: StrictFloat<f32>,
+    pub placement_probability_per_valid_position: f32,
     /// The exposed face (JSON `exposed_face`); absent is `up`.
-    #[facet(default)]
     pub exposed_face: Option<ExposedFace>,
     /// The block (JSON `places_block`).
     pub places_block: BlockDescriptor,
@@ -446,11 +417,9 @@ pub struct SculkPatchFeature {
     /// The blocks it may be placed on (JSON `can_place_sculk_patch_on`).
     pub can_place_sculk_patch_on: Vec<BlockDescriptor>,
     /// The block at the centre (JSON `central_block`).
-    #[facet(default)]
     pub central_block: Option<BlockDescriptor>,
     /// In `[0, 1]` (JSON `central_block_placement_chance`).
-    #[facet(default)]
-    pub central_block_placement_chance: Option<StrictFloat<f32>>,
+    pub central_block_placement_chance: Option<f32>,
     /// 0 to 32 (JSON `cursor_count`).
     pub cursor_count: JsonInt,
     /// 1 to 1000 (JSON `charge_amount`).
@@ -462,7 +431,6 @@ pub struct SculkPatchFeature {
     /// 0 to 8 (JSON `spread_rounds`).
     pub spread_rounds: JsonInt,
     /// JSON `extra_growth_chance`.
-    #[facet(default)]
     pub extra_growth_chance: Option<IntRange>,
 }
 
@@ -478,26 +446,21 @@ pub struct VegetationPatchFeature {
     /// The vegetation placed on the patch (JSON `vegetation_feature`).
     pub vegetation_feature: FeatureId,
     /// Floor or ceiling (JSON `surface`); absent is `floor`.
-    #[facet(default)]
     pub surface: Option<VegetationSurface>,
     /// JSON `depth`.
     pub depth: IntRange,
     /// JSON `extra_deep_block_chance`.
-    #[facet(default)]
-    pub extra_deep_block_chance: Option<StrictFloat<f32>>,
+    pub extra_deep_block_chance: Option<f32>,
     /// JSON `vertical_range`.
     pub vertical_range: JsonInt,
     /// JSON `vegetation_chance`.
-    #[facet(default)]
-    pub vegetation_chance: Option<StrictFloat<f32>>,
+    pub vegetation_chance: Option<f32>,
     /// JSON `horizontal_radius`.
     pub horizontal_radius: IntRange,
     /// At least 0 (JSON `extra_edge_column_chance`).
-    #[facet(default)]
-    pub extra_edge_column_chance: Option<StrictFloat<f32>>,
+    pub extra_edge_column_chance: Option<f32>,
     /// JSON `waterlogged`.
-    #[facet(default)]
-    pub waterlogged: Option<StrictBool>,
+    pub waterlogged: Option<bool>,
 }
 
 /// `vegetation_patch_feature.surface`.
@@ -524,11 +487,9 @@ pub struct HorizontalTreeDecorationFeature {
     /// The block (JSON `places_block`).
     pub places_block: BlockDescriptor,
     /// JSON `allow_adjacent`.
-    #[facet(default)]
-    pub allow_adjacent: Option<StrictBool>,
+    pub allow_adjacent: Option<bool>,
     /// JSON `bark_side_only`.
-    #[facet(default)]
-    pub bark_side_only: Option<StrictBool>,
+    pub bark_side_only: Option<bool>,
 }
 
 /// `minecraft:multipart_block_column_feature` (format 1.26.40): a column of tip, frustum, middle
@@ -546,19 +507,14 @@ pub struct MultipartBlockColumnFeature {
     /// JSON `base_block`.
     pub base_block: BlockDescriptor,
     /// JSON `height_range`.
-    #[facet(default)]
     pub height_range: Option<IntRange>,
     /// Heights and their weights (JSON `weighted_heights`).
-    #[facet(default)]
     pub weighted_heights: Option<Vec<WeightedHeight>>,
     /// The direction the column grows (JSON `direction`); absent is `UP`.
-    #[facet(default)]
-    pub direction: Option<StrictString>,
+    pub direction: Option<String>,
     /// The blocks it may be placed on (JSON `may_place_on`).
-    #[facet(default)]
     pub may_place_on: Option<Vec<BlockDescriptor>>,
     /// The blocks it may replace; absent is any block (JSON `may_replace`).
-    #[facet(default)]
     pub may_replace: Option<Vec<BlockDescriptor>>,
 }
 
@@ -567,23 +523,12 @@ pub struct MultipartBlockColumnFeature {
 #[derive(Clone, Debug, Default, PartialEq, Facet)]
 pub struct WeightedHeight {
     /// JSON `value`.
-    #[facet(default)]
     pub value: Option<JsonInt>,
     /// JSON `weight`.
-    #[facet(default)]
     pub weight: Option<JsonInt>,
 }
 
 // ---- version structs, Molang walk, rules -------------------------------------------------------
-
-strict_struct!(OreFeature, V1_13_0);
-strict_struct!(MultiBlockFeature, MULTI_BLOCK_FORMAT);
-strict_struct!(MultifaceFeature, V1_13_0);
-strict_struct!(FossilFeature, V1_13_0);
-strict_struct!(GeodeFeature, V1_13_0);
-strict_struct!(SculkPatchFeature, V1_13_0);
-strict_struct!(HorizontalTreeDecorationFeature, V1_13_0);
-strict_struct!(MultipartBlockColumnFeature, MULTI_BLOCK_FORMAT);
 
 /// The format of `single_block_feature`'s newest schema.
 pub(crate) const SINGLE_BLOCK_FORMAT: FormatVersion = FormatVersion::new(1, 21, 40);
@@ -841,9 +786,6 @@ impl Rules for SingleBlockFeature {
 }
 
 impl Rules for MultiBlockFeature {
-    const SINCE_ENGINE: Option<FormatVersion> = Some(MULTI_BLOCK_FORMAT);
-    const FLOOR: FormatVersion = MULTI_BLOCK_FORMAT;
-
     fn rules(&mut self, check: &mut ValidateCx<'_>) {
         check.descriptor("places_block", Some(&self.places_block));
         check.descriptors("may_replace", self.may_replace.as_deref());
@@ -988,8 +930,6 @@ impl Rules for PartiallyExposedBlobFeature {
 }
 
 impl Rules for SculkPatchFeature {
-    const INTERNAL: bool = true;
-
     fn rules(&mut self, check: &mut ValidateCx<'_>) {
         check.descriptors(
             "can_place_sculk_patch_on",
@@ -1041,11 +981,9 @@ impl Rules for VegetationPatchFeature {
 }
 
 /// The engine that adds `horizontal_tree_decoration_feature`.
-const HORIZONTAL_TREE_DECORATION_ENGINE: FormatVersion = known::V1_26_40;
+pub(crate) const HORIZONTAL_TREE_DECORATION_ENGINE: FormatVersion = known::V1_26_40;
 
 impl Rules for HorizontalTreeDecorationFeature {
-    const SINCE_ENGINE: Option<FormatVersion> = Some(HORIZONTAL_TREE_DECORATION_ENGINE);
-
     fn rules(&mut self, check: &mut ValidateCx<'_>) {
         check.descriptor("places_block", Some(&self.places_block));
     }
@@ -1053,9 +991,6 @@ impl Rules for HorizontalTreeDecorationFeature {
 
 // Registered together with `multi_block_feature`: format floor and engine 1.26.40.
 impl Rules for MultipartBlockColumnFeature {
-    const SINCE_ENGINE: Option<FormatVersion> = Some(MULTI_BLOCK_FORMAT);
-    const FLOOR: FormatVersion = MULTI_BLOCK_FORMAT;
-
     fn rules(&mut self, check: &mut ValidateCx<'_>) {
         for (key, descriptor) in [
             ("tip_block", &self.tip_block),

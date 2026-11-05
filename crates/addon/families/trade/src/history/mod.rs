@@ -31,8 +31,9 @@ bedrock_addon_core::version_chain! {
         /// Format 1.21.30 and later: the newest document.
         V1_21_30(TradeTable),
     }
-    molang = none;
 }
+
+bedrock_addon_core::impl_no_molang!(v0::TradeTable);
 
 /// Runs the remaining upgrade step of a document
 /// [`TradeTable::parse_as_written`](bedrock_addon_core::document::JsonDocument::parse_as_written)

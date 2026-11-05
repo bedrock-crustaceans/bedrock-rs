@@ -84,7 +84,8 @@ use texts::DUPLICATE;
 use family::{KEYS, TypeFn, with_type};
 pub(crate) use family::{Rules, V1_13_0, strict_struct};
 
-pub use types::{Description, Feature};
+pub use family::Feature;
+pub use types::Description;
 
 // ---- Content, writing --------------------------------------------------------------------------
 

@@ -6,9 +6,8 @@ use facet_json::RawJson;
 
 use super::{FeatureRule, FeatureRuleConditions, FeatureRuleDescription};
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
-use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::json::{
-    JsonSlice, NullRule, Value, keep_unknown_members, parse_at, reject_nulls,
+    JsonSlice, NullRule, ScalarFailure, Value, keep_unknown_members, parse_with_rules, reject_nulls,
 };
 use bedrock_addon_core::molang::{Molang, MolangFields, MolangVisitor};
 use bedrock_addon_core::versioning::{ParseCx, parse_payload};
@@ -23,25 +22,18 @@ use bedrock_addon_support::scatter::{
 struct Shell<'a> {
     description: FeatureRuleDescription,
     conditions: FeatureRuleConditions,
-    #[facet(default)]
     distribution: Option<DistributionShell<'a>>,
-    #[facet(skip, rename = "\u{0}extra")]
-    extra: Extra,
 }
 
 /// What `distribution` is read into.
 #[derive(Facet)]
 struct DistributionShell<'a> {
     iterations: Molang,
-    #[facet(default)]
     scatter_chance: Option<RawJson<'a>>,
-    #[facet(default)]
     coordinate_eval_order: Option<CoordinateEvalOrder>,
     x: RawJson<'a>,
     y: RawJson<'a>,
     z: RawJson<'a>,
-    #[facet(skip, rename = "\u{0}extra")]
-    extra: Extra,
 }
 
 /// Reads one `minecraft:feature_rules` payload; `None` (with an error in `d`) when vanilla's
@@ -95,17 +87,17 @@ fn scatter_params(
     let mut within = true;
     if let Some(ScatterChance::Fraction(fraction)) = &scatter_chance {
         let at = at.child("scatter_chance");
-        within &= minimum(fraction.numerator.0, 1, &at.child("numerator"), d);
-        within &= minimum(fraction.denominator.0, 1, &at.child("denominator"), d);
+        within &= minimum(fraction.numerator, 1, &at.child("numerator"), d);
+        within &= minimum(fraction.denominator, 1, &at.child("denominator"), d);
     }
     for (key, coordinate) in [("x", &x), ("y", &y), ("z", &z)] {
         if let Some(CoordinateRange::Object(range)) = coordinate {
             let at = at.child(key);
             if let Some(step) = range.step_size {
-                within &= minimum(step.0, 1, &at.child("step_size"), d);
+                within &= minimum(step, 1, &at.child("step_size"), d);
             }
             if let Some(offset) = range.grid_offset {
-                within &= minimum(offset.0, 0, &at.child("grid_offset"), d);
+                within &= minimum(offset, 0, &at.child("grid_offset"), d);
             }
         }
     }
@@ -119,7 +111,6 @@ fn scatter_params(
         x: Some(x?),
         y: Some(y?),
         z: Some(z?),
-        extra: shell.extra,
     })
 }
 
@@ -180,8 +171,8 @@ fn coordinate(
     typed::<Molang>(slice, at, rule, d).map(CoordinateRange::Single)
 }
 
-/// One member read from its own slice, its unknown members kept and warned; a failure is an
-/// error at the failing member (a slice that is itself `null` fails the typed read, `Molang`
+/// One member read from its own slice, by the slice's scalar rules ([`crate::READING`]), its
+/// unknown members kept and warned; a failure is an error at the failing member (a slice that is itself `null` fails the typed read, `Molang`
 /// refuses it: `InvalidType`). When the slice rejects nulls (`rule`) a `null` where the member
 /// reads a value inside it is an `InvalidType` error at it, and the result is `None`.
 fn typed<T: for<'f> Facet<'f>>(
@@ -190,7 +181,8 @@ fn typed<T: for<'f> Facet<'f>>(
     rule: Option<NullRule>,
     d: &mut Diagnostics,
 ) -> Option<T> {
-    match parse_at::<T>(slice) {
+    let read = parse_with_rules::<T>(slice, None, crate::READING.scalar_rules());
+    match read.map(|read| read.value) {
         Ok(value) if rule == Some(NullRule::Rejected) && reject_nulls(&value, slice, at, d) => None,
         Ok(value) => {
             if let Ok(json) = bedrock_addon_core::json::from_str_jsonc::<Value>(slice.text) {
@@ -209,8 +201,13 @@ fn typed<T: for<'f> Facet<'f>>(
             }
             Some(value)
         }
-        Err(error) => {
+        Err(ScalarFailure::Read(error)) => {
             d.push(error.into_diagnostic(at, |code, _| code));
+            None
+        }
+        // A scalar no arm of an untagged enum takes: a type error at the enum.
+        Err(ScalarFailure::Refused(misread)) => {
+            d.push(misread.finding(at));
             None
         }
     }

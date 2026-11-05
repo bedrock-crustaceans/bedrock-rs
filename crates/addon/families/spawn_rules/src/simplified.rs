@@ -7,12 +7,12 @@ use super::texts;
 use bedrock_addon_core::diagnostic::{
     DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
 };
-use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::id::{EntityId, SpawnRulesId};
 use bedrock_addon_core::json::{
-    EncodeError, JsonSlice, StrictInt, StrictString, Value, keep_unknown_members, parse_at,
+    EncodeError, JsonSlice, ScalarFailure, Value, keep_unknown_members, parse_with_rules,
     unknown_members,
 };
+use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::shared::Filter;
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{ParseCx, VersionStruct, Versioned, write_payload};
@@ -24,121 +24,94 @@ use bedrock_addon_support::spawn::read::finding;
 ///
 /// JSON: `{"format_version": "1.21.60", "minecraft:spawn_rules": {"description": {"identifier"},
 /// "placement"?, "conditions"?}}`.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 #[doc(alias = "spawn_simplified")]
 pub struct SimplifiedSpawnRules {
     /// What the rules are for (JSON `description`, required).
     pub description: SimplifiedDescription,
     /// Where the entity is placed; absent leaves every placement to the runtime (JSON
     /// `placement`).
-    #[facet(default)]
     pub placement: Option<Placement>,
     /// The conditions (JSON `conditions`).
-    #[facet(default)]
     pub conditions: Option<Vec<BiomeConditions>>,
-    /// Unknown members (each an `UnrecognizedField` warning).
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// `minecraft:spawn_rules/description` of simplified spawn rules.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct SimplifiedDescription {
     /// The entity the rules are for (JSON `identifier`, required).
     pub identifier: SpawnRulesId,
-    /// Unknown members (`population_control` is one in this shape).
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// `placement`: four names from the placement registries, each `""` or absent for the runtime
 /// default. An unregistered name is a warning and falls back to the same default.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct Placement {
     /// The placement type: `minecraft:on_ground`, `minecraft:in_water`, `minecraft:in_lava`,
     /// `minecraft:no_restrictions` (the default) (JSON `type`).
-    #[facet(default, rename = "type")]
-    pub r#type: Option<StrictString>,
+    #[facet(rename = "type")]
+    pub r#type: Option<String>,
     /// The heightmap: `minecraft:world_surface`, `minecraft:ocean_floor`,
     /// `minecraft:motion_blocking`, `minecraft:motion_blocking_no_leaves` (the default) (JSON
     /// `heightmap`).
-    #[facet(default)]
-    pub heightmap: Option<StrictString>,
+    pub heightmap: Option<String>,
     /// The entity spawn predicate, `minecraft:mob` by default (JSON `spawn_predicate`).
-    #[facet(default)]
-    pub spawn_predicate: Option<StrictString>,
+    pub spawn_predicate: Option<String>,
     /// The obstruction predicate, `minecraft:mob` by default (JSON
     /// `spawn_obstruction_predicate`).
-    #[facet(default)]
-    pub spawn_obstruction_predicate: Option<StrictString>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
+    pub spawn_obstruction_predicate: Option<String>,
 }
 
 /// One entry of `conditions` (vanilla `BiomeConditions`).
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct BiomeConditions {
     /// The spawn weight, at least 0 (JSON `weight`, required).
-    pub weight: StrictInt<i32>,
+    pub weight: i32,
     /// The herds; the runtime herd size is the first one's (JSON `herds`).
-    #[facet(default)]
     pub herds: Option<Vec<SimplifiedHerd>>,
     /// Entities spawned in the entity's place (JSON `permute_types`).
-    #[facet(default)]
     pub permute_types: Option<Vec<PermuteType>>,
     /// A mob event name that must be on (JSON `mob_event_filter`).
-    #[facet(default)]
-    pub mob_event_filter: Option<StrictString>,
+    pub mob_event_filter: Option<String>,
     /// The biomes the condition applies in; absent or empty = every biome (JSON `biome_filter`).
-    #[facet(default)]
     pub biome_filter: Option<Filter>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// One entry of `herds`. No `min ≤ max` check.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct SimplifiedHerd {
     /// The smallest herd, at least 0; absent = 1 (JSON `min`).
-    #[facet(default)]
-    pub min: Option<StrictInt<i32>>,
+    #[facet(schema::fallback = 1)]
+    pub min: Option<i32>,
     /// The largest herd, at least 0; absent = 1 (JSON `max`).
-    #[facet(default)]
-    pub max: Option<StrictInt<i32>>,
+    #[facet(schema::fallback = 1)]
+    pub max: Option<i32>,
     /// An entity event sent to the first members (JSON `initial_event`).
-    #[facet(default)]
-    pub initial_event: Option<StrictString>,
+    pub initial_event: Option<String>,
     /// How many members get `initial_event`; absent = 0 (JSON `initial_event_count`).
-    #[facet(default)]
-    pub initial_event_count: Option<StrictInt<i32>>,
+    pub initial_event_count: Option<i32>,
     /// An entity event sent to the herd's members (JSON `event`).
-    #[facet(default)]
-    pub event: Option<StrictString>,
+    pub event: Option<String>,
     /// How many members skip `event`; absent = 0 (JSON `event_skip_count`).
-    #[facet(default)]
-    pub event_skip_count: Option<StrictInt<i32>>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
+    pub event_skip_count: Option<i32>,
 }
 
 /// One entry of `permute_types` (vanilla `PermuteType`).
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct PermuteType {
     /// The weight in the pick, at least 0 (JSON `weight`, required).
-    pub weight: StrictInt<i32>,
+    pub weight: i32,
     /// How many are spawned regardless of the pick, at least 0; absent = 0 (JSON
     /// `min_guaranteed`).
-    #[facet(default)]
-    pub min_guaranteed: Option<StrictInt<i32>>,
+    pub min_guaranteed: Option<i32>,
     /// The entity (JSON `entity_type`).
-    #[facet(default)]
     pub entity_type: Option<EntityId>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// The one struct of `spawn_simplified` and its floor.
@@ -146,11 +119,6 @@ pub(crate) const V1_21_60: FormatVersion = FormatVersion::new(1, 21, 60);
 
 impl Versioned for SimplifiedSpawnRules {
     const VERSION: FormatVersion = V1_21_60;
-}
-
-impl bedrock_addon_core::molang::MolangFields for SimplifiedSpawnRules {
-    /// No Molang member.
-    fn visit_molang(&mut self, _: &mut bedrock_addon_core::molang::MolangVisitor<'_>) {}
 }
 
 impl VersionStruct for SimplifiedSpawnRules {
@@ -168,7 +136,10 @@ impl VersionStruct for SimplifiedSpawnRules {
                 d,
             );
         };
-        match parse_at::<Self>(payload) {
+        // The scalars are read by the slice's reading (`crate::SIMPLIFIED_READING`).
+        let read =
+            parse_with_rules::<Self>(payload, None, crate::SIMPLIFIED_READING.scalar_rules());
+        match read.map(|read| read.value) {
             Ok(value) => {
                 if let Some(json) = &json {
                     let mut kept = bedrock_addon_core::document::Unknown::new();
@@ -179,13 +150,17 @@ impl VersionStruct for SimplifiedSpawnRules {
                 }
                 Some(value)
             }
-            Err(error) => {
+            Err(failure) => {
                 if let Some(json) = &json {
                     for (path, _) in unknown_members(Self::SHAPE, json) {
                         unknown(&path, d);
                     }
                 }
-                d.push(error.into_diagnostic(&cx.at, |code, _| code));
+                d.push(match failure {
+                    ScalarFailure::Read(error) => error.into_diagnostic(&cx.at, |code, _| code),
+                    // A scalar no arm of an untagged enum takes: a type error at the enum.
+                    ScalarFailure::Refused(misread) => misread.finding(&cx.at),
+                });
                 None
             }
         }
@@ -306,22 +281,10 @@ impl Placement {
     }
 }
 
-fn resolved<'a>(written: Option<&'a StrictString>, names: &[&str], fallback: &'a str) -> &'a str {
+fn resolved<'a>(written: Option<&'a String>, names: &[&str], fallback: &'a str) -> &'a str {
     match written {
-        Some(name) if names.contains(&name.0.as_str()) => name.0.as_str(),
+        Some(name) if names.contains(&name.as_str()) => name.as_str(),
         _ => fallback,
-    }
-}
-
-impl SimplifiedHerd {
-    /// The smallest herd (1 when absent).
-    pub fn min_size(&self) -> i32 {
-        self.min.map_or(1, |n| n.0)
-    }
-
-    /// The largest herd (1 when absent).
-    pub fn max_size(&self) -> i32 {
-        self.max.map_or(1, |n| n.0)
     }
 }
 
@@ -341,23 +304,23 @@ pub(crate) fn validate(rules: &SimplifiedSpawnRules, at: &JsonPath, d: &mut Diag
     let conditions_at = at.child("conditions");
     for (i, condition) in rules.conditions.iter().flatten().enumerate() {
         let c_at = conditions_at.index(i);
-        if condition.weight.0 < 0 {
+        if condition.weight < 0 {
             negative(&c_at.child("weight"), d);
         }
         for (k, herd) in condition.herds.iter().flatten().enumerate() {
             let h_at = c_at.child("herds").index(k);
             for (key, value) in [("min", herd.min), ("max", herd.max)] {
-                if value.is_some_and(|n| n.0 < 0) {
+                if value.is_some_and(|n| n < 0) {
                     negative(&h_at.child(key), d);
                 }
             }
         }
         for (j, permute) in condition.permute_types.iter().flatten().enumerate() {
             let p_at = c_at.child("permute_types").index(j);
-            if permute.weight.0 < 0 {
+            if permute.weight < 0 {
                 negative(&p_at.child("weight"), d);
             }
-            if permute.min_guaranteed.is_some_and(|n| n.0 < 0) {
+            if permute.min_guaranteed.is_some_and(|n| n < 0) {
                 negative(&p_at.child("min_guaranteed"), d);
             }
         }
@@ -369,7 +332,7 @@ pub(crate) fn validate(rules: &SimplifiedSpawnRules, at: &JsonPath, d: &mut Diag
     };
     let identifier = rules.description.identifier.as_str();
     let placement_at = at.child("placement");
-    let checks: [(&str, Option<&StrictString>, &[&str], &'static str); 4] = [
+    let checks: [(&str, Option<&String>, &[&str], &'static str); 4] = [
         (
             "type",
             placement.r#type.as_ref(),
@@ -396,10 +359,10 @@ pub(crate) fn validate(rules: &SimplifiedSpawnRules, at: &JsonPath, d: &mut Diag
         ),
     ];
     for (key, written, names, template) in checks {
-        let Some(name) = written.filter(|n| !n.0.is_empty()) else {
+        let Some(name) = written.filter(|n| !n.is_empty()) else {
             continue;
         };
-        if !names.contains(&name.0.as_str()) {
+        if !names.contains(&name.as_str()) {
             let path = placement_at.child(key);
             // An `UnresolvedReference` warning with vanilla's text: the validator logs it at the
             // content log's warning level.

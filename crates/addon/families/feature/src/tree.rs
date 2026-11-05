@@ -5,14 +5,14 @@ use facet::Facet;
 use facet_value::VObject;
 
 use super::Description;
+use super::Rules;
 use super::blocks::WeightedHeight;
 use super::molang::walk;
 use super::validate::Check;
 use super::values::{BlockList, Chance, ChanceList, JsonInt, WeightedBlock};
-use super::{Rules, V1_13_0, strict_struct};
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, VanillaText};
 use bedrock_addon_core::id::FeatureId;
-use bedrock_addon_core::json::{JsonType, StrictBool, StrictError, StrictFloat, Value};
+use bedrock_addon_core::json::{JsonType, StrictError, Value};
 use bedrock_addon_core::shared::{BlockDescriptor, IntRange};
 use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::ValidateCx;
@@ -29,82 +29,56 @@ pub struct TreeFeature {
     /// JSON `description`.
     pub description: Description,
     /// The block(s) placed below the trunk (JSON `base_block`).
-    #[facet(default)]
     pub base_block: Option<BlockList>,
     /// Clusters of the base block around the trunk (JSON `base_cluster`).
-    #[facet(default)]
     pub base_cluster: Option<BaseCluster>,
     /// The blocks the tree may grow on (JSON `may_grow_on`).
-    #[facet(default)]
     pub may_grow_on: Option<Vec<BlockDescriptor>>,
     /// The blocks the tree may replace (JSON `may_replace`).
-    #[facet(default)]
     pub may_replace: Option<Vec<BlockDescriptor>>,
     /// The blocks the tree may grow through (JSON `may_grow_through`).
-    #[facet(default)]
     pub may_grow_through: Option<Vec<BlockDescriptor>>,
     /// JSON `trunk`.
-    #[facet(default)]
     pub trunk: Option<SimpleTrunk>,
     /// JSON `acacia_trunk`.
-    #[facet(default)]
     pub acacia_trunk: Option<AcaciaTrunk>,
     /// JSON `cherry_trunk`.
-    #[facet(default)]
     pub cherry_trunk: Option<CherryTrunk>,
     /// JSON `fallen_trunk`.
-    #[facet(default)]
     pub fallen_trunk: Option<FallenTrunk>,
     /// JSON `fancy_trunk`.
-    #[facet(default)]
     pub fancy_trunk: Option<FancyTrunk>,
     /// JSON `mangrove_trunk`.
-    #[facet(default)]
     pub mangrove_trunk: Option<MangroveTrunk>,
     /// JSON `mega_trunk`.
-    #[facet(default)]
     pub mega_trunk: Option<MegaTrunk>,
     /// JSON `poplar_trunk` (engine 1.26.40).
-    #[facet(default)]
     pub poplar_trunk: Option<PoplarTrunk>,
     /// JSON `canopy`.
-    #[facet(default)]
     pub canopy: Option<SimpleCanopy>,
     /// JSON `acacia_canopy`.
-    #[facet(default)]
     pub acacia_canopy: Option<AcaciaCanopy>,
     /// JSON `cherry_canopy`.
-    #[facet(default)]
     pub cherry_canopy: Option<CherryCanopy>,
     /// JSON `fancy_canopy`.
-    #[facet(default)]
     pub fancy_canopy: Option<FancyCanopy>,
     /// JSON `mangrove_canopy`.
-    #[facet(default)]
     pub mangrove_canopy: Option<MangroveCanopy>,
     /// JSON `mega_canopy`.
-    #[facet(default)]
     pub mega_canopy: Option<MegaCanopy>,
     /// JSON `mega_pine_canopy`.
-    #[facet(default)]
     pub mega_pine_canopy: Option<MegaPineCanopy>,
     /// JSON `pine_canopy`.
-    #[facet(default)]
     pub pine_canopy: Option<PineCanopy>,
     /// JSON `roofed_canopy`.
-    #[facet(default)]
     pub roofed_canopy: Option<RoofedCanopy>,
     /// JSON `spruce_canopy`.
-    #[facet(default)]
     pub spruce_canopy: Option<SpruceCanopy>,
     /// JSON `random_spread_canopy`.
-    #[facet(default)]
     pub random_spread_canopy: Option<RandomSpreadCanopy>,
     /// JSON `poplar_canopy` (engine 1.26.40).
-    #[facet(default)]
     pub poplar_canopy: Option<PoplarCanopy>,
     /// JSON `mangrove_roots`.
-    #[facet(default)]
     pub mangrove_roots: Option<MangroveRoots>,
 }
 
@@ -127,16 +101,12 @@ pub struct Decoration {
     pub decoration_chance: Chance,
     /// The blocks placed in sequence (JSON `decoration_blocks_sequence`, engine 1.26.10); when
     /// both are written it takes priority over `decoration_block`.
-    #[facet(default)]
     pub decoration_blocks_sequence: Option<Vec<DecorationBlock>>,
     /// The block placed (JSON `decoration_block`).
-    #[facet(default)]
     pub decoration_block: Option<BlockDescriptor>,
     /// How many blocks (JSON `num_steps`).
-    #[facet(default)]
     pub num_steps: Option<JsonInt>,
     /// Which way the steps go (JSON `step_direction`).
-    #[facet(default)]
     pub step_direction: Option<StepDirection>,
 }
 
@@ -146,7 +116,6 @@ pub struct DecorationBlock {
     /// JSON `block`.
     pub block: BlockDescriptor,
     /// How many of it (JSON `count`).
-    #[facet(default)]
     pub count: Option<IntRange>,
 }
 
@@ -174,15 +143,12 @@ pub struct SimpleTrunk {
     /// At least 1 (JSON `trunk_height`).
     pub trunk_height: IntRange,
     /// JSON `height_modifier`.
-    #[facet(default)]
     pub height_modifier: Option<IntRange>,
     /// Whether, or how deep, the trunk may be under water (JSON `can_be_submerged`).
-    #[facet(default)]
     pub can_be_submerged: Option<Submerged>,
     /// JSON `trunk_block`.
     pub trunk_block: BlockDescriptor,
     /// JSON `trunk_decoration`.
-    #[facet(default)]
     pub trunk_decoration: Option<Decoration>,
 }
 
@@ -242,18 +208,14 @@ pub struct FallenTrunk {
     /// At least 1 (JSON `log_length`).
     pub log_length: IntRange,
     /// At least 1 (JSON `stump_height`).
-    #[facet(default)]
     pub stump_height: Option<IntRange>,
     /// JSON `height_modifier`.
-    #[facet(default)]
     pub height_modifier: Option<IntRange>,
     /// JSON `trunk_block`.
     pub trunk_block: BlockDescriptor,
     /// The feature placed on the log (JSON `log_decoration_feature`).
-    #[facet(default)]
     pub log_decoration_feature: Option<FeatureId>,
     /// JSON `trunk_decoration`.
-    #[facet(default)]
     pub trunk_decoration: Option<Decoration>,
 }
 
@@ -261,19 +223,17 @@ pub struct FallenTrunk {
 #[derive(Clone, Debug, PartialEq, Facet)]
 pub struct FancyTrunk {
     /// JSON `trunk_height` (its members required when present).
-    #[facet(default)]
     pub trunk_height: Option<FancyTrunkHeight>,
     /// At least 1 (JSON `trunk_width`).
     pub trunk_width: JsonInt,
     /// JSON `branches` (its members required when present).
-    #[facet(default)]
     pub branches: Option<FancyBranches>,
     /// JSON `trunk_block`.
     pub trunk_block: BlockDescriptor,
     /// At least 0 (JSON `width_scale`).
-    pub width_scale: StrictFloat<f32>,
+    pub width_scale: f32,
     /// In `[0, 1]` (JSON `foliage_altitude_factor`).
-    pub foliage_altitude_factor: StrictFloat<f32>,
+    pub foliage_altitude_factor: f32,
 }
 
 /// `fancy_trunk.trunk_height`.
@@ -284,18 +244,18 @@ pub struct FancyTrunkHeight {
     /// At least 1 (JSON `variance`).
     pub variance: JsonInt,
     /// JSON `scale`.
-    pub scale: StrictFloat<f32>,
+    pub scale: f32,
 }
 
 /// `fancy_trunk.branches`.
 #[derive(Clone, Debug, PartialEq, Facet)]
 pub struct FancyBranches {
     /// JSON `slope`.
-    pub slope: StrictFloat<f32>,
+    pub slope: f32,
     /// JSON `density`.
-    pub density: StrictFloat<f32>,
+    pub density: f32,
     /// In `[0, 1]` (JSON `min_altitude_factor`).
-    pub min_altitude_factor: StrictFloat<f32>,
+    pub min_altitude_factor: f32,
 }
 
 /// `mega_trunk`: a wide trunk with branches.
@@ -308,10 +268,8 @@ pub struct MegaTrunk {
     /// JSON `trunk_block`.
     pub trunk_block: BlockDescriptor,
     /// JSON `trunk_decoration`.
-    #[facet(default)]
     pub trunk_decoration: Option<Decoration>,
     /// JSON `branches`.
-    #[facet(default)]
     pub branches: Option<MegaBranches>,
 }
 
@@ -321,7 +279,6 @@ pub struct MegaTrunkHeight {
     /// At least 1 (JSON `base`).
     pub base: JsonInt,
     /// Each at least 1 (JSON `intervals`).
-    #[facet(default)]
     pub intervals: Option<Vec<JsonInt>>,
 }
 
@@ -331,13 +288,12 @@ pub struct MegaBranches {
     /// At least 1 (JSON `branch_length`).
     pub branch_length: JsonInt,
     /// JSON `branch_slope`.
-    pub branch_slope: StrictFloat<f32>,
+    pub branch_slope: f32,
     /// At least 0 (JSON `branch_interval`).
     pub branch_interval: IntRange,
     /// JSON `branch_altitude_factor`.
     pub branch_altitude_factor: AltitudeFactor,
     /// JSON `branch_canopy`.
-    #[facet(default)]
     pub branch_canopy: Option<BranchCanopy>,
 }
 
@@ -345,9 +301,9 @@ pub struct MegaBranches {
 #[derive(Clone, Debug, PartialEq, Facet)]
 pub struct AltitudeFactor {
     /// In `[0, 1]` (JSON `min`).
-    pub min: StrictFloat<f32>,
+    pub min: f32,
     /// In `[0, 1]` (JSON `max`).
-    pub max: StrictFloat<f32>,
+    pub max: f32,
 }
 
 /// `acacia_trunk`: a leaning trunk with branches.
@@ -362,10 +318,8 @@ pub struct AcaciaTrunk {
     /// JSON `trunk_block`.
     pub trunk_block: BlockDescriptor,
     /// JSON `branches`.
-    #[facet(default)]
     pub branches: Option<AcaciaBranches>,
     /// JSON `trunk_decoration`.
-    #[facet(default)]
     pub trunk_decoration: Option<Decoration>,
 }
 
@@ -375,10 +329,8 @@ pub struct AcaciaTrunkHeight {
     /// At least 1 (JSON `base`).
     pub base: JsonInt,
     /// Each at least 1 (JSON `intervals`).
-    #[facet(default)]
     pub intervals: Option<Vec<JsonInt>>,
     /// At least 1 (JSON `min_height_for_canopy`).
-    #[facet(default)]
     pub min_height_for_canopy: Option<JsonInt>,
 }
 
@@ -386,13 +338,12 @@ pub struct AcaciaTrunkHeight {
 #[derive(Clone, Debug, PartialEq, Facet)]
 pub struct TrunkLean {
     /// JSON `allow_diagonal_growth`.
-    pub allow_diagonal_growth: StrictBool,
+    pub allow_diagonal_growth: bool,
     /// At least 0 (JSON `lean_height`).
     pub lean_height: IntRange,
     /// At least 0 (JSON `lean_steps`).
     pub lean_steps: IntRange,
     /// At least 0 (JSON `lean_length`).
-    #[facet(default)]
     pub lean_length: Option<IntRange>,
 }
 
@@ -406,7 +357,6 @@ pub struct AcaciaBranches {
     /// JSON `branch_chance`.
     pub branch_chance: Chance,
     /// JSON `branch_canopy`.
-    #[facet(default)]
     pub branch_canopy: Option<BranchCanopy>,
 }
 
@@ -427,7 +377,6 @@ pub struct CherryTrunkHeight {
     /// At least 2 (JSON `base`).
     pub base: JsonInt,
     /// Each at least 1 (JSON `intervals`).
-    #[facet(default)]
     pub intervals: Option<Vec<JsonInt>>,
 }
 
@@ -435,7 +384,6 @@ pub struct CherryTrunkHeight {
 #[derive(Clone, Debug, PartialEq, Facet)]
 pub struct CherryBranches {
     /// JSON `tree_type_weights`.
-    #[facet(default)]
     pub tree_type_weights: Option<TreeTypeWeights>,
     /// At least 2 (JSON `branch_horizontal_length`).
     pub branch_horizontal_length: IntRange,
@@ -444,7 +392,6 @@ pub struct CherryBranches {
     /// JSON `branch_end_offset_from_top`.
     pub branch_end_offset_from_top: IntRange,
     /// JSON `branch_canopy`.
-    #[facet(default)]
     pub branch_canopy: Option<BranchCanopy>,
 }
 
@@ -465,15 +412,12 @@ pub struct MangroveTrunk {
     /// JSON `trunk_width`.
     pub trunk_width: JsonInt,
     /// JSON `trunk_height` (its members required when present).
-    #[facet(default)]
     pub trunk_height: Option<MangroveTrunkHeight>,
     /// JSON `trunk_block`.
     pub trunk_block: BlockDescriptor,
     /// JSON `branches`.
-    #[facet(default)]
     pub branches: Option<MangroveBranches>,
     /// JSON `trunk_decoration`.
-    #[facet(default)]
     pub trunk_decoration: Option<Decoration>,
 }
 
@@ -505,18 +449,14 @@ pub struct PoplarTrunk {
     /// At least 1 (JSON `trunk_height`).
     pub trunk_height: IntRange,
     /// JSON `remaining_trunk_height_above_branches`.
-    #[facet(default)]
     pub remaining_trunk_height_above_branches: Option<IntRange>,
     /// JSON `amount_of_foliage_support_branches`.
-    #[facet(default)]
     pub amount_of_foliage_support_branches: Option<IntRange>,
     /// JSON `trunk_block`.
     pub trunk_block: BlockDescriptor,
     /// JSON `trunk_decoration`.
-    #[facet(default)]
     pub trunk_decoration: Option<Decoration>,
     /// JSON `log_decoration_feature`.
-    #[facet(default)]
     pub log_decoration_feature: Option<FeatureId>,
 }
 
@@ -527,34 +467,24 @@ pub struct PoplarTrunk {
 #[derive(Clone, Debug, Default, PartialEq, Facet)]
 pub struct BranchCanopy {
     /// JSON `canopy`.
-    #[facet(default)]
     pub canopy: Option<SimpleCanopy>,
     /// JSON `acacia_canopy`.
-    #[facet(default)]
     pub acacia_canopy: Option<AcaciaCanopy>,
     /// JSON `cherry_canopy`.
-    #[facet(default)]
     pub cherry_canopy: Option<CherryCanopy>,
     /// JSON `fancy_canopy`.
-    #[facet(default)]
     pub fancy_canopy: Option<FancyCanopy>,
     /// JSON `mangrove_canopy`.
-    #[facet(default)]
     pub mangrove_canopy: Option<MangroveCanopy>,
     /// JSON `mega_canopy`.
-    #[facet(default)]
     pub mega_canopy: Option<MegaCanopy>,
     /// JSON `mega_pine_canopy`.
-    #[facet(default)]
     pub mega_pine_canopy: Option<MegaPineCanopy>,
     /// JSON `pine_canopy`.
-    #[facet(default)]
     pub pine_canopy: Option<PineCanopy>,
     /// JSON `roofed_canopy`.
-    #[facet(default)]
     pub roofed_canopy: Option<RoofedCanopy>,
     /// JSON `spruce_canopy`.
-    #[facet(default)]
     pub spruce_canopy: Option<SpruceCanopy>,
 }
 
@@ -564,18 +494,14 @@ pub struct SimpleCanopy {
     /// JSON `canopy_offset`.
     pub canopy_offset: CanopyOffset,
     /// At least 0 (JSON `min_width`).
-    #[facet(default)]
     pub min_width: Option<JsonInt>,
     /// JSON `canopy_slope`.
-    #[facet(default)]
     pub canopy_slope: Option<CanopySlope>,
     /// JSON `variation_chance`.
-    #[facet(default)]
     pub variation_chance: Option<ChanceList>,
     /// JSON `leaf_block`.
     pub leaf_block: BlockDescriptor,
     /// JSON `canopy_decoration`.
-    #[facet(default)]
     pub canopy_decoration: Option<Decoration>,
 }
 
@@ -592,10 +518,8 @@ pub struct CanopyOffset {
 #[derive(Clone, Debug, PartialEq, Facet)]
 pub struct CanopySlope {
     /// JSON `rise`.
-    #[facet(default)]
     pub rise: Option<JsonInt>,
     /// JSON `run`.
-    #[facet(default)]
     pub run: Option<JsonInt>,
 }
 
@@ -607,8 +531,7 @@ pub struct AcaciaCanopy {
     /// JSON `leaf_block`.
     pub leaf_block: BlockDescriptor,
     /// JSON `simplify_canopy`.
-    #[facet(default)]
-    pub simplify_canopy: Option<StrictBool>,
+    pub simplify_canopy: Option<bool>,
 }
 
 /// `cherry_canopy`.
@@ -621,7 +544,6 @@ pub struct CherryCanopy {
     /// At least 3 (JSON `radius`).
     pub radius: IntRange,
     /// At least 1 (JSON `trunk_width`).
-    #[facet(default)]
     pub trunk_width: Option<JsonInt>,
     /// JSON `wide_bottom_layer_hole_chance`.
     pub wide_bottom_layer_hole_chance: Chance,
@@ -656,7 +578,6 @@ pub struct MangroveCanopy {
     /// JSON `leaf_blocks`.
     pub leaf_blocks: Vec<WeightedBlock>,
     /// JSON `canopy_decoration`.
-    #[facet(default)]
     pub canopy_decoration: Option<Decoration>,
     /// JSON `hanging_block`.
     pub hanging_block: BlockDescriptor,
@@ -672,11 +593,9 @@ pub struct MegaCanopy {
     /// At least 0 (JSON `base_radius`).
     pub base_radius: JsonInt,
     /// At least 1 (JSON `core_width`).
-    #[facet(default)]
     pub core_width: Option<JsonInt>,
     /// JSON `simplify_canopy`.
-    #[facet(default)]
-    pub simplify_canopy: Option<StrictBool>,
+    pub simplify_canopy: Option<bool>,
     /// JSON `leaf_block`.
     pub leaf_block: BlockDescriptor,
 }
@@ -689,9 +608,8 @@ pub struct MegaPineCanopy {
     /// At least 0 (JSON `base_radius`).
     pub base_radius: JsonInt,
     /// At least 0 (JSON `radius_step_modifier`).
-    pub radius_step_modifier: StrictFloat<f32>,
+    pub radius_step_modifier: f32,
     /// At least 1 (JSON `core_width`).
-    #[facet(default)]
     pub core_width: Option<JsonInt>,
     /// JSON `leaf_block`.
     pub leaf_block: BlockDescriptor,
@@ -761,10 +679,8 @@ pub struct PoplarCanopy {
     /// At least 4 (JSON `height`).
     pub height: IntRange,
     /// In `[0, 1]` (JSON `side_hole_chance`).
-    #[facet(default)]
-    pub side_hole_chance: Option<StrictFloat<f32>>,
+    pub side_hole_chance: Option<f32>,
     /// At least 1 (JSON `trunk_width`).
-    #[facet(default)]
     pub trunk_width: Option<JsonInt>,
 }
 
@@ -780,7 +696,6 @@ pub struct MangroveRoots {
     /// JSON `root_block`.
     pub root_block: BlockDescriptor,
     /// JSON `above_root`.
-    #[facet(default)]
     pub above_root: Option<AboveRoot>,
     /// JSON `muddy_root_block`.
     pub muddy_root_block: BlockDescriptor,
@@ -791,7 +706,6 @@ pub struct MangroveRoots {
     /// JSON `roots_may_grow_through`.
     pub roots_may_grow_through: Vec<BlockDescriptor>,
     /// JSON `root_decoration`.
-    #[facet(default)]
     pub root_decoration: Option<Decoration>,
 }
 
@@ -799,16 +713,12 @@ pub struct MangroveRoots {
 #[derive(Clone, Debug, PartialEq, Facet)]
 pub struct AboveRoot {
     /// JSON `above_root_chance`.
-    #[facet(default)]
     pub above_root_chance: Option<Chance>,
     /// JSON `above_root_block`.
-    #[facet(default)]
     pub above_root_block: Option<BlockDescriptor>,
 }
 
 // ---- version struct, Molang walk ---------------------------------------------------------------
-
-strict_struct!(TreeFeature, V1_13_0);
 
 walk!(fields TreeFeature {
     "base_block" => base_block,

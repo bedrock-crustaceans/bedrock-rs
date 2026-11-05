@@ -48,7 +48,7 @@ fn easing_as_str_follows_the_names_table() {
     ];
     assert_eq!(all.len(), super::Easing::NAMES.len());
     for (easing, name) in all.into_iter().zip(super::Easing::NAMES) {
-        assert_eq!(easing.as_str(), *name);
+        assert_eq!(easing.name(), *name);
     }
 }
 

@@ -10,7 +10,7 @@ use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, VanillaText,
 };
 use bedrock_addon_core::json::{
-    JsonSlice, NullRule, SliceError, Value, parse_at, parse_at_null_absent, unknown_members,
+    JsonSlice, NullRule, ScalarFailure, SliceError, Value, parse_with_rules, unknown_members,
 };
 use bedrock_addon_core::versioning::ParseCx;
 
@@ -108,14 +108,21 @@ pub(crate) fn parse_strict_with<'a, T: Facet<'a>>(
     // The null rule of the selected version, which the family declares (`ENVELOPE.input` is
     // `JsonCpp`): under rule N1 a member written as `null` is absent.
     let absent = cx.load.null_rule == Some(NullRule::Absent);
-    let parsed = if absent {
-        parse_at_null_absent::<T>(payload)
-    } else {
-        parse_at::<T>(payload)
-    };
-    let parsed = match parsed {
-        Ok(value) => Some(value),
-        Err(error) => {
+    // The scalars are read by the family's reading (`family::READING`), the strict rule.
+    let null = absent.then_some(NullRule::Absent);
+    let parsed = match parse_with_rules::<T>(payload, null, crate::family::READING.scalar_rules()) {
+        Ok(read) => {
+            for told in &read.told {
+                d.push(told.finding(&cx.at));
+            }
+            Some(read.value)
+        }
+        // A scalar no arm of an untagged enum takes: a type error at the enum.
+        Err(ScalarFailure::Refused(misread)) => {
+            d.push(misread.finding(&cx.at));
+            None
+        }
+        Err(ScalarFailure::Read(error)) => {
             let mut finding = slice_error(error, &cx.at);
             if let DiagnosticCode::InvalidValue { text } = &mut finding.code {
                 let key = last_key(&finding.location.json_path);

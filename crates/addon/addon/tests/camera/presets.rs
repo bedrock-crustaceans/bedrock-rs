@@ -6,19 +6,18 @@ use bedrock_addon::families::camera::{
     AudioListener, CameraPreset, ControlScheme, PresetAimAssist, TargetMode, VANILLA_CAMERAS,
 };
 use bedrock_addon::id::{AimAssistPresetId, CameraPresetId};
-use bedrock_addon::json::{StrictBool, StrictFloat};
 use bedrock_addon::version::FormatVersion;
 
 use super::common::*;
 
 const UNRECOGNIZED: &str = "Unrecognized field on camera preset!";
 
-fn f(value: f32) -> StrictFloat<f32> {
-    StrictFloat(value)
+fn f(value: f32) -> f32 {
+    value
 }
 
-fn pair(x: f32, y: f32) -> [StrictFloat<f32>; 2] {
-    [StrictFloat(x), StrictFloat(y)]
+fn pair(x: f32, y: f32) -> [f32; 2] {
+    [x, y]
 }
 
 /// The range text of `[min, max]`.
@@ -209,18 +208,18 @@ fn cam06_every_field_is_accepted_at_1_19_50() {
     expected.rot_x = Some(f(-45.0));
     expected.rot_y = Some(f(720.0));
     expected.rotation_speed = Some(f(180.0));
-    expected.snap_to_target = Some(StrictBool(true));
+    expected.snap_to_target = Some(true);
     expected.horizontal_rotation_limit = Some(pair(10.0, 20.0));
     expected.vertical_rotation_limit = Some(pair(30.0, 60.0));
-    expected.continue_targeting = Some(StrictBool(false));
+    expected.continue_targeting = Some(false);
     expected.tracking_radius = Some(f(25.0));
     expected.view_offset = Some(pair(1.0, -1.0));
-    expected.entity_offset = Some([StrictFloat(0.5), StrictFloat(1.5), StrictFloat(-2.0)]);
+    expected.entity_offset = Some([0.5, 1.5, -2.0]);
     expected.radius = Some(f(12.0));
     expected.yaw_limits_min = Some(f(-90.0));
     expected.yaw_limits_max = Some(f(90.0));
     expected.listener = Some(AudioListener::Player);
-    expected.player_effects = Some(StrictBool(true));
+    expected.player_effects = Some(true);
     expected.aim_assist = Some(PresetAimAssist {
         preset: Some(AimAssistPresetId::parse("ex:aa")),
         target_mode: Some(TargetMode::Distance),
@@ -404,9 +403,9 @@ fn c2_below_1_26_50_a_bool_takes_a_number_and_a_float_takes_a_bool() {
     ];
     for version in ["1.19.50", "1.21.60", "1.26.49"] {
         let document = loads(preset(&preset_with(version, members)));
-        assert_eq!(document.snap_to_target, Some(StrictBool(true)), "{version}");
-        assert_eq!(document.continue_targeting, Some(StrictBool(false)));
-        assert_eq!(document.player_effects, Some(StrictBool(true)));
+        assert_eq!(document.snap_to_target, Some(true), "{version}");
+        assert_eq!(document.continue_targeting, Some(false));
+        assert_eq!(document.player_effects, Some(true));
         assert_eq!(
             (document.pos_x, document.pos_y),
             (Some(f(1.0)), Some(f(0.0)))
@@ -415,10 +414,7 @@ fn c2_below_1_26_50_a_bool_takes_a_number_and_a_float_takes_a_bool() {
         assert_eq!(document.horizontal_rotation_limit, Some(pair(1.0, 0.0)));
         assert_eq!(document.vertical_rotation_limit, Some(pair(0.0, 1.0)));
         assert_eq!(document.view_offset, Some(pair(1.0, 2.0)));
-        assert_eq!(
-            document.entity_offset,
-            Some([StrictFloat(0.0), StrictFloat(1.0), StrictFloat(3.0)])
-        );
+        assert_eq!(document.entity_offset, Some([0.0, 1.0, 3.0]));
         let aim_assist = document.aim_assist.as_ref().unwrap();
         assert_eq!(
             (aim_assist.angle, aim_assist.distance),

@@ -1,7 +1,7 @@
 //! `minecraft:camera_preset`: a camera preset.
 
 use bedrock_addon_core::id::{AimAssistPresetId, CameraPresetId};
-use bedrock_addon_core::json::{StrictBool, StrictFloat};
+use bedrock_addon_core::schema::Schema;
 
 /// The vanilla presets another preset may inherit from (`ALLOWED_MC_INHERIT`); they count as
 /// known parents whether or not a pack of the stack defines them.
@@ -30,7 +30,7 @@ pub const VANILLA_CAMERAS: &[&str] = &[
 /// defaults: a member the document leaves out is taken from the `inherit_from` chain when the
 /// client sets the camera up, and is not written back. A member vanilla does not know rejects
 /// the preset at every format version.
-#[derive(Clone, Debug, PartialEq, facet::Facet)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
 #[doc(alias = "minecraft:camera_preset")]
 #[doc(alias = "camera_preset")]
 pub struct CameraPreset {
@@ -40,50 +40,50 @@ pub struct CameraPreset {
     /// or one of [`ALLOWED_MC_INHERIT`].
     pub inherit_from: Option<CameraPresetId>,
     /// The camera's x position (JSON `pos_x`).
-    pub pos_x: Option<StrictFloat<f32>>,
+    pub pos_x: Option<f32>,
     /// The camera's y position (JSON `pos_y`).
-    pub pos_y: Option<StrictFloat<f32>>,
+    pub pos_y: Option<f32>,
     /// The camera's z position (JSON `pos_z`).
-    pub pos_z: Option<StrictFloat<f32>>,
+    pub pos_z: Option<f32>,
     /// The pitch in degrees, -90 to 90 (JSON `rot_x`).
-    pub rot_x: Option<StrictFloat<f32>>,
+    pub rot_x: Option<f32>,
     /// The yaw in degrees (JSON `rot_y`).
-    pub rot_y: Option<StrictFloat<f32>>,
+    pub rot_y: Option<f32>,
     /// How fast the camera turns towards its target, in degrees per second, 0 to 360; 0 tracks
     /// perfectly (JSON `rotation_speed`).
-    pub rotation_speed: Option<StrictFloat<f32>>,
+    pub rotation_speed: Option<f32>,
     /// Whether the camera snaps to its target (JSON `snap_to_target`).
-    pub snap_to_target: Option<StrictBool>,
+    pub snap_to_target: Option<bool>,
     /// The horizontal rotation limits `[x, y]` in degrees, each 0 to 360 and together at most
     /// 360 (JSON `horizontal_rotation_limit`).
-    pub horizontal_rotation_limit: Option<[StrictFloat<f32>; 2]>,
+    pub horizontal_rotation_limit: Option<[f32; 2]>,
     /// The vertical rotation limits `[x, y]` in degrees, each 0 to 180, `x` below `y` (JSON
     /// `vertical_rotation_limit`).
-    pub vertical_rotation_limit: Option<[StrictFloat<f32>; 2]>,
+    pub vertical_rotation_limit: Option<[f32; 2]>,
     /// Whether the camera keeps targeting an entity that left the tracking radius (JSON
     /// `continue_targeting`).
-    pub continue_targeting: Option<StrictBool>,
+    pub continue_targeting: Option<bool>,
     /// The radius in blocks within which the camera tracks its target; the client uses 50 when
     /// no preset of the chain sets it (JSON `tracking_radius`).
-    pub tracking_radius: Option<StrictFloat<f32>>,
+    pub tracking_radius: Option<f32>,
     /// The over-the-shoulder offset `[x, y]`, each -64 to 64 (JSON `view_offset`).
-    pub view_offset: Option<[StrictFloat<f32>; 2]>,
+    pub view_offset: Option<[f32; 2]>,
     /// The offset `[x, y, z]` of the camera's pivot from the entity, each -64 to 64 (JSON
     /// `entity_offset`).
-    pub entity_offset: Option<[StrictFloat<f32>; 3]>,
+    pub entity_offset: Option<[f32; 3]>,
     /// The distance of the camera from the entity, 0.1 to 64 (JSON `radius`). A preset named
     /// like one of [`VANILLA_CAMERAS`] may not set it.
-    pub radius: Option<StrictFloat<f32>>,
+    pub radius: Option<f32>,
     /// The lowest yaw, -180 to 179.9 (JSON `yaw_limits_min`).
-    pub yaw_limits_min: Option<StrictFloat<f32>>,
+    pub yaw_limits_min: Option<f32>,
     /// The highest yaw, -179.9 to 180 (JSON `yaw_limits_max`).
-    pub yaw_limits_max: Option<StrictFloat<f32>>,
+    pub yaw_limits_max: Option<f32>,
     /// Where sound is heard from; the client uses the camera when no preset of the chain says
     /// (JSON `listener`).
     pub listener: Option<AudioListener>,
     /// Whether player effects (night vision, blindness, …) show through this camera; `false`
     /// when no preset of the chain says (JSON `player_effects`).
-    pub player_effects: Option<StrictBool>,
+    pub player_effects: Option<bool>,
     /// The aim assist the camera turns on (JSON `aim_assist`).
     pub aim_assist: Option<PresetAimAssist>,
     /// How movement input maps to the player under this camera (JSON `control_scheme`).
@@ -93,7 +93,7 @@ pub struct CameraPreset {
     /// inherits from a third person boom camera (such as `minecraft:follow_orbit`). When omitted,
     /// the inherited starting rotation is not applied and the player's current look direction
     /// is kept." No constraint.
-    pub starting_rot: Option<[StrictFloat<f32>; 2]>,
+    pub starting_rot: Option<[f32; 2]>,
     /// Whether the client applies the starting rotation of the inherited camera when the
     /// preset has no [`starting_rot`](Self::starting_rot). It is a member of the camera presets
     /// packet and of no JSON document (the key `apply_inherited_starting_rotation` is an unknown
@@ -113,7 +113,7 @@ impl CameraPreset {
 }
 
 /// Where sound is heard from under a camera (`listener`).
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, facet::Facet)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, facet::Facet, Schema)]
 #[facet(rename_all = "snake_case")]
 #[repr(u8)]
 #[non_exhaustive]
@@ -126,7 +126,7 @@ pub enum AudioListener {
 }
 
 /// How movement input maps to the player (`control_scheme`).
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, facet::Facet)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, facet::Facet, Schema)]
 #[facet(rename_all = "snake_case")]
 #[repr(u8)]
 #[non_exhaustive]
@@ -144,20 +144,20 @@ pub enum ControlScheme {
 }
 
 /// The aim assist a preset turns on (`aim_assist`); every member is optional.
-#[derive(Clone, Debug, Default, PartialEq, facet::Facet)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
 pub struct PresetAimAssist {
     /// The aim-assist preset to use (JSON `preset`).
     pub preset: Option<AimAssistPresetId>,
     /// How targets are picked (JSON `target_mode`).
     pub target_mode: Option<TargetMode>,
     /// The view angle `[x, y]` targets are picked in (JSON `angle`).
-    pub angle: Option<[StrictFloat<f32>; 2]>,
+    pub angle: Option<[f32; 2]>,
     /// The distance targets are picked in (JSON `distance`).
-    pub distance: Option<StrictFloat<f32>>,
+    pub distance: Option<f32>,
 }
 
 /// How aim assist picks its target (`target_mode`).
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, facet::Facet)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, facet::Facet, Schema)]
 #[facet(rename_all = "snake_case")]
 #[repr(u8)]
 #[non_exhaustive]

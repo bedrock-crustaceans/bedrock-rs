@@ -6,13 +6,13 @@ use facet::Facet;
 use facet_value::VArray;
 
 use super::Description;
+use super::Rules;
 use super::molang::{WORLD_GEN, Walk, walk};
 use super::validate::Check;
 use super::values::{JsonInt, pair, weight_of, weight_value};
-use super::{Rules, V1_13_0, strict_struct};
 use bedrock_addon_core::diagnostic::{DiagnosticCode, VanillaText};
 use bedrock_addon_core::id::FeatureId;
-use bedrock_addon_core::json::{StrictError, StrictFloat, Value};
+use bedrock_addon_core::json::{StrictError, Value};
 use bedrock_addon_core::molang::{Molang, MolangVisitor};
 use bedrock_addon_core::versioning::ValidateCx;
 
@@ -25,7 +25,6 @@ pub struct AggregateFeature {
     /// The features to place, in order; at least one (JSON `features`).
     pub features: Vec<FeatureId>,
     /// When to stop (JSON `early_out`); absent is `none`.
-    #[facet(default)]
     pub early_out: Option<EarlyOut>,
 }
 
@@ -110,7 +109,6 @@ pub struct ConditionalListFeature {
     pub conditional_features: Vec<ConditionalFeature>,
     /// What counts as the end of the list (JSON `early_out_scheme`); absent (or `null`) is
     /// `none`, the constructor's value (`EarlyOutScheme::default()`).
-    #[facet(default)]
     pub early_out_scheme: Option<EarlyOutScheme>,
 }
 
@@ -121,7 +119,6 @@ pub struct ConditionalFeature {
     pub places_feature: FeatureId,
     /// A Molang expression over the `world_gen` queries (JSON `condition`); absent always
     /// places (the schema's help text says "If omitted, always places.").
-    #[facet(default)]
     pub condition: Option<Molang>,
 }
 
@@ -147,8 +144,7 @@ pub struct RectLayoutFeature {
     /// JSON `description`.
     pub description: Description,
     /// The share of the area left empty, below 1 (JSON `ratio_of_empty_space`).
-    #[facet(default)]
-    pub ratio_of_empty_space: Option<StrictFloat<f32>>,
+    pub ratio_of_empty_space: Option<f32>,
     /// The features and their areas (JSON `feature_areas`).
     pub feature_areas: Vec<FeatureArea>,
 }
@@ -184,7 +180,6 @@ pub struct SearchFeature {
     pub search_axis: SearchAxis,
     /// How many placements must succeed, at least one (JSON `required_successes`); absent
     /// is 1.
-    #[facet(default)]
     pub required_successes: Option<JsonInt>,
 }
 
@@ -231,7 +226,6 @@ pub struct SurfaceRelativeThresholdFeature {
     pub feature_to_place: FeatureId,
     /// How far below the surface the position must be (JSON `minimum_distance_below_surface`);
     /// absent is 0.
-    #[facet(default)]
     pub minimum_distance_below_surface: Option<JsonInt>,
 }
 
@@ -244,30 +238,16 @@ pub struct HeightDifferenceFilterFeature {
     /// The feature to place (JSON `places_feature`).
     pub places_feature: FeatureId,
     /// JSON `min_required_upward_height_diff` (≥ 0).
-    #[facet(default)]
     pub min_required_upward_height_diff: Option<JsonInt>,
     /// JSON `min_required_downward_height_diff` (≥ 0).
-    #[facet(default)]
     pub min_required_downward_height_diff: Option<JsonInt>,
     /// JSON `max_allowed_upward_height_diff` (≥ 0).
-    #[facet(default)]
     pub max_allowed_upward_height_diff: Option<JsonInt>,
     /// JSON `max_allowed_downward_height_diff` (≥ 0).
-    #[facet(default)]
     pub max_allowed_downward_height_diff: Option<JsonInt>,
     /// The radius searched (JSON `search_radius`, ≥ 0).
     pub search_radius: JsonInt,
 }
-
-strict_struct!(AggregateFeature, V1_13_0);
-strict_struct!(SequenceFeature, V1_13_0);
-strict_struct!(WeightedRandomFeature, V1_13_0);
-strict_struct!(ConditionalListFeature, V1_13_0);
-strict_struct!(RectLayoutFeature, V1_13_0);
-strict_struct!(ScanSurfaceFeature, V1_13_0);
-strict_struct!(SearchFeature, V1_13_0);
-strict_struct!(SurfaceRelativeThresholdFeature, V1_13_0);
-strict_struct!(HeightDifferenceFilterFeature, V1_13_0);
 
 // The lists after `+`: the members that name a feature.
 walk!(fields AggregateFeature {} + { "features" => features });
@@ -344,11 +324,9 @@ impl Rules for ConditionalListFeature {
 }
 
 impl Rules for RectLayoutFeature {
-    const INTERNAL: bool = true;
-
     fn rules(&mut self, check: &mut ValidateCx<'_>) {
         // The client logs this at level 3 and keeps the value: a kept error.
-        if self.ratio_of_empty_space.is_some_and(|r| r.0 >= 1.0) {
+        if self.ratio_of_empty_space.is_some_and(|r| r >= 1.0) {
             check.kept(
                 "ratio_of_empty_space",
                 DiagnosticCode::InvalidValue {
@@ -369,9 +347,7 @@ impl Rules for RectLayoutFeature {
     }
 }
 
-impl Rules for ScanSurfaceFeature {
-    const INTERNAL: bool = true;
-}
+impl Rules for ScanSurfaceFeature {}
 
 impl Rules for SearchFeature {
     fn rules(&mut self, check: &mut ValidateCx<'_>) {
@@ -386,12 +362,10 @@ impl Rules for SearchFeature {
 impl Rules for SurfaceRelativeThresholdFeature {}
 
 /// The engine that adds `height_difference_filter_feature`.
-const HEIGHT_DIFFERENCE_ENGINE: bedrock_addon_core::version::FormatVersion = known::V1_26_30;
+pub(crate) const HEIGHT_DIFFERENCE_ENGINE: bedrock_addon_core::version::FormatVersion =
+    known::V1_26_30;
 
 impl Rules for HeightDifferenceFilterFeature {
-    const SINCE_ENGINE: Option<bedrock_addon_core::version::FormatVersion> =
-        Some(HEIGHT_DIFFERENCE_ENGINE);
-
     fn rules(&mut self, check: &mut ValidateCx<'_>) {
         let diffs = [
             (

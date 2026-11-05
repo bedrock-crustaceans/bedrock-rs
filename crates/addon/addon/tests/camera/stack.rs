@@ -103,7 +103,7 @@ fn cam07_a_later_preset_of_the_same_name_replaces_the_earlier_one() {
     let cameras = stack.cameras();
     assert_eq!(cameras.presets.len(), 1);
     let kept = cameras.presets.get(&id("ex:same")).unwrap();
-    assert_eq!(kept.pos_y.map(|v| v.0), Some(9.0));
+    assert_eq!(kept.pos_y, Some(9.0));
     assert_eq!(
         (kept.pos_x, kept.rot_y),
         (None, None),
@@ -139,7 +139,7 @@ fn rule_4_within_one_pack_the_later_file_replaces_the_earlier_one() {
         ),
     ]]);
     let kept = stack.cameras().presets.get(&id("ex:same")).unwrap();
-    assert_eq!(kept.pos_x.map(|v| v.0), Some(2.0));
+    assert_eq!(kept.pos_x, Some(2.0));
 }
 
 #[test]
@@ -505,13 +505,13 @@ fn cam22_two_files_defining_one_spline_name_both_stay_with_a_warning_deviation()
     let names: Vec<(&str, f32)> = cameras
         .splines
         .iter()
-        .map(|s| (s.name.0.as_str(), s.total_time.0))
+        .map(|s| (s.name.as_str(), s.total_time))
         .collect();
     // Load order: the lowest-priority pack first.
     assert_eq!(names, [("ex:s", 1.0), ("ex:t", 4.0), ("ex:s", 9.0)]);
     assert_eq!(cameras.splines.len(), 3);
     assert_eq!(cameras.splines.files().len(), 2);
-    assert_eq!(cameras.splines.get("ex:s").unwrap().total_time.0, 1.0);
+    assert_eq!(cameras.splines.get("ex:s").unwrap().total_time, 1.0);
     assert!(group(cameras, Severity::Error).is_empty());
     let warnings: Vec<(&str, String, String)> = cameras
         .splines

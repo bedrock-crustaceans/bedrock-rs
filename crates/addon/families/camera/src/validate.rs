@@ -30,7 +30,7 @@ pub(crate) fn preset(preset: &CameraPreset, cx: &mut ValidateCx<'_>) {
     // The client logs the line as an error when `min > max` (equal limits say nothing), skips
     // the limits and goes on with the preset: a kept error.
     if let (Some(min), Some(max)) = (preset.yaw_limits_min, preset.yaw_limits_max)
-        && min.0 > max.0
+        && min > max
     {
         let error = Diagnostic::error(DiagnosticCode::InvalidValue {
             text: texts::formatted(texts::YAW_ORDER, &[name]),

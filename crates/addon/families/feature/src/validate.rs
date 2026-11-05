@@ -7,7 +7,6 @@ use super::read::{
 };
 use super::values::{BlockList, Chance, ChanceList, JsonInt};
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, Phase};
-use bedrock_addon_core::json::StrictFloat;
 use bedrock_addon_core::shared::{BlockDescriptor, IntRange};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{FieldMeta, ValidateCx, check_fields_since_engine};
@@ -43,7 +42,7 @@ pub(crate) trait Check {
     fn int_min(&mut self, key: &str, value: Option<JsonInt>, min: i32);
 
     /// A float node with the range `[min, max]`.
-    fn check_float(&mut self, key: &str, value: Option<StrictFloat<f32>>, min: f32, max: f32);
+    fn check_float(&mut self, key: &str, value: Option<f32>, min: f32, max: f32);
 
     /// An `IntRange` node whose ends must lie in `[min, max]`; also the range's own finding.
     fn range(&mut self, key: &str, value: Option<&IntRange>, min: i32, max: i32);
@@ -137,8 +136,8 @@ impl Check for ValidateCx<'_> {
         self.check_int(key, value, min, i32::MAX);
     }
 
-    fn check_float(&mut self, key: &str, value: Option<StrictFloat<f32>>, min: f32, max: f32) {
-        if let Some(StrictFloat(v)) = value
+    fn check_float(&mut self, key: &str, value: Option<f32>, min: f32, max: f32) {
+        if let Some(v) = value
             && !(min..=max).contains(&v)
         {
             let text = formatted(FLOAT_OUT_OF_RANGE, &[&v, &min, &max]);

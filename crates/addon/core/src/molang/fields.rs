@@ -241,6 +241,26 @@ impl<T: MolangFields> MolangFields for Vec<T> {
     }
 }
 
+impl<T: MolangFields, const N: usize> MolangFields for [T; N] {
+    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
+        for (index, inner) in self.iter_mut().enumerate() {
+            visitor.nested(index, inner);
+        }
+    }
+}
+
+/// An identifier holds no Molang.
+impl<K: crate::id::Kind> MolangFields for crate::id::Id<K> {
+    fn visit_molang(&mut self, _: &mut MolangVisitor<'_>) {}
+}
+
+// A filter, a block descriptor and a range hold no Molang a document's walk visits.
+crate::impl_no_molang!(crate::shared::Filter, crate::shared::BlockDescriptor);
+
+impl<T: crate::shared::RangeEnd> MolangFields for crate::shared::Range<T> {
+    fn visit_molang(&mut self, _: &mut MolangVisitor<'_>) {}
+}
+
 impl<T: MolangFields> MolangFields for IndexMap<String, T> {
     fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
         for (key, inner) in self.iter_mut() {

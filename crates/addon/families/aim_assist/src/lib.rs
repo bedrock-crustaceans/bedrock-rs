@@ -32,13 +32,13 @@ use bedrock_addon_core::document::{
 };
 use bedrock_addon_core::id::{AimAssistPresetId, kind};
 use bedrock_addon_core::json::JsonSlice;
-use bedrock_addon_core::load::Reported;
 use bedrock_addon_core::load::{self, CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
+use bedrock_addon_core::load::{DocumentSource, Reported};
 use bedrock_addon_core::pack_identity::{PackPath, PackSide};
 use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::{
     BelowFloor, Envelope, EnvelopeCheck, Family, Identity, InputKind, Loaded, MissingVersion,
-    NoComponents, ValidateCx, Versioned, parse_document,
+    NoComponents, Reading, StructIndex, ValidateCx, Versioned, parse_document,
 };
 use bedrock_addon_support::chain_file as file;
 use history::{Any, CategoriesAny, CategoriesFamily, PresetFamily};
@@ -109,6 +109,10 @@ impl Family for PresetFamily {
             read::preset_namespaces(preset, cx);
         }
     }
+
+    fn reading(_: StructIndex, _: DocumentSource) -> Reading {
+        file::strict(Self::ENVELOPE.input.profile())
+    }
 }
 
 impl Family for CategoriesFamily {
@@ -138,6 +142,10 @@ impl Family for CategoriesFamily {
         if let Loaded::Stable(categories) = v {
             read::category_namespaces(categories, cx);
         }
+    }
+
+    fn reading(_: StructIndex, _: DocumentSource) -> Reading {
+        file::strict(Self::ENVELOPE.input.profile())
     }
 }
 
@@ -303,7 +311,7 @@ mod reading_table {
                 missing version: rejected: NoValidVersion
                 below floor: NoParser
                 empty document: Error
-                1.21.50..=1.21.120 (0..=1): json Rejected/ConvertAndTell/ClampAndTell/Error/reports/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Error/reports/fatal/Refuse
+                1.21.50..=1.21.120 (0..=1): json Rejected/Strict/Error/Error/reports/fatal/Refuse, mcb Own/Strict/Error/Error/reports/fatal/Refuse
             ",
         );
     }
@@ -319,7 +327,7 @@ mod reading_table {
                 missing version: rejected: NoValidVersion
                 below floor: NoParser
                 empty document: Error
-                1.21.50..=1.21.50 (0..=0): json Rejected/ConvertAndTell/ClampAndTell/Error/reports/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Error/reports/fatal/Refuse
+                1.21.50..=1.21.50 (0..=0): json Rejected/Strict/Error/Error/reports/fatal/Refuse, mcb Own/Strict/Error/Error/reports/fatal/Refuse
             ",
         );
     }

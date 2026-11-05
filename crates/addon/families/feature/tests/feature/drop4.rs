@@ -103,9 +103,9 @@ fn the_drop_4_snap_features_load_at_both_formats() {
     let Feature::SnapToSurface(snap) = ice.value() else {
         panic!("not a snap feature");
     };
-    assert_eq!(snap.allow_air_placement.map(|b| b.0), Some(true));
-    assert_eq!(snap.allow_underwater_placement.map(|b| b.0), Some(false));
-    assert_eq!(snap.embed_in_surface.map(|b| b.0), Some(false));
+    assert_eq!(snap.allow_air_placement, Some(true));
+    assert_eq!(snap.allow_underwater_placement, Some(false));
+    assert_eq!(snap.embed_in_surface, Some(false));
     assert_eq!(snap.allow_non_air_placement, None);
 }
 

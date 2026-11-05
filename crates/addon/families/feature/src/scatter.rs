@@ -10,7 +10,7 @@ use super::read::{formatted, parse_strict, required_child};
 use super::validate::Check;
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, JsonPath, VanillaText};
 use bedrock_addon_core::id::FeatureId;
-use bedrock_addon_core::json::{EncodeError, JsonSlice, StrictBool, StrictInt, Value};
+use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::molang::{Molang, MolangFieldSpec, MolangFields, MolangVisitor, Step};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::ValidateCx;
@@ -31,8 +31,7 @@ pub struct ScatterFeature {
     pub places_feature: FeatureId,
     /// Whether positions are moved down to the floor first (JSON `project_input_to_floor`);
     /// absent is `false`.
-    #[facet(default)]
-    pub project_input_to_floor: Option<StrictBool>,
+    pub project_input_to_floor: Option<bool>,
     /// The scatter parameters (JSON `distribution`).
     pub distribution: ScatterParams,
 }
@@ -235,7 +234,7 @@ pub(crate) fn scatter_rules(check: &mut ValidateCx<'_>, distribution: &mut Scatt
             *c = 100.0;
         }
         Some(ScatterChance::Fraction(ratio)) => {
-            let (numerator, denominator) = (ratio.numerator.0, ratio.denominator.0);
+            let (numerator, denominator) = (ratio.numerator, ratio.denominator);
             check.nested("scatter_chance", |check| {
                 check.check_int("numerator", Some(numerator.into()), 1, i32::MAX);
                 check.check_int("denominator", Some(denominator.into()), 1, i32::MAX);
@@ -248,7 +247,7 @@ pub(crate) fn scatter_rules(check: &mut ValidateCx<'_>, distribution: &mut Scatt
                         "Bad value for scatter_chance - denominator should be greater than the numerator",
                     ),
                 );
-                ratio.denominator = StrictInt(1);
+                ratio.denominator = 1;
             }
         }
         _ => {}
@@ -278,10 +277,10 @@ fn coordinate_rules(check: &mut ValidateCx<'_>, key: &str, coordinate: Option<&C
         return;
     };
     check.nested(key, |check| {
-        check.check_int("step_size", range.step_size.map(|step| step.0.into()), 1, i32::MAX);
+        check.check_int("step_size", range.step_size.map(crate::JsonInt::from), 1, i32::MAX);
         check.check_int(
             "grid_offset",
-            range.grid_offset.map(|offset| offset.0.into()),
+            range.grid_offset.map(crate::JsonInt::from),
             0,
             i32::MAX,
         );

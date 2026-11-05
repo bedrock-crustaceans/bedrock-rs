@@ -1,9 +1,9 @@
 //! The feature-rule types and the collection of a stack's rules.
 
 use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics};
-use bedrock_addon_core::document::{Document, Extra, Registry, Rejected};
+use bedrock_addon_core::document::{Document, Registry, Rejected};
 use bedrock_addon_core::id::{FeatureId, FeatureRuleId};
-use bedrock_addon_core::json::StrictString;
+use bedrock_addon_core::schema::Schema;
 use bedrock_addon_core::shared::Filter;
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_support::scatter::ScatterParams;
@@ -31,7 +31,7 @@ pub struct FeatureRule {
 }
 
 /// `minecraft:feature_rules/description`.
-#[derive(Clone, Debug, PartialEq, facet::Facet)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
 pub struct FeatureRuleDescription {
     /// The rule's name, `namespace:rule_name`, where `rule_name` is the file name (JSON
     /// `identifier`).
@@ -39,30 +39,24 @@ pub struct FeatureRuleDescription {
     /// The feature the rule places (JSON `places_feature`). A name no feature defines is
     /// reserved, not an error.
     pub places_feature: FeatureId,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// `minecraft:feature_rules/conditions`.
-#[derive(Clone, Debug, PartialEq, facet::Facet)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
 pub struct FeatureRuleConditions {
     /// The placement pass, as written (JSON `placement_pass`); [`PlacementPass`] lists the ones
     /// vanilla defines, and [`FeatureRuleConditions::pass`] reads it.
-    pub placement_pass: StrictString,
+    pub placement_pass: String,
     /// The biomes the rule attaches to (JSON `minecraft:biome_filter`); absent is every biome.
-    #[facet(rename = "minecraft:biome_filter", default)]
+    #[facet(rename = "minecraft:biome_filter")]
     pub biome_filter: Option<Filter>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 impl FeatureRuleConditions {
     /// The placement pass `placement_pass` names, or `None` when it names no pass vanilla
     /// defines.
     pub fn pass(&self) -> Option<PlacementPass> {
-        PlacementPass::from_name(&self.placement_pass.0)
+        PlacementPass::from_name(&self.placement_pass)
     }
 }
 

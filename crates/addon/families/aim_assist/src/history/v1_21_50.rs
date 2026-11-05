@@ -4,7 +4,7 @@ use indexmap::IndexMap;
 
 use super::super::ExclusionSettings;
 use bedrock_addon_core::id::{AimAssistCategoryId, AimAssistPresetId, BlockId, EntityId, ItemId};
-use bedrock_addon_core::json::StrictString;
+use bedrock_addon_core::schema::Schema;
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{Upgrade, UpgradeCx, Versioned};
 use bedrock_addon_support::chain_file::SourceVersion;
@@ -12,12 +12,12 @@ use bedrock_addon_support::chain_file::SourceVersion;
 /// An aim-assist preset as written below format 1.21.120:
 /// [`super::super::AimAssistPreset`] with one flat `exclusion_list` in place of
 /// `exclusion_settings`.
-#[derive(Clone, Debug, PartialEq, facet::Facet)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
 pub struct AimAssistPreset {
     /// JSON `identifier`.
     pub identifier: AimAssistPresetId,
     /// The block or entity identifiers aim assist never targets (JSON `exclusion_list`).
-    pub exclusion_list: Option<Vec<StrictString>>,
+    pub exclusion_list: Option<Vec<String>>,
     /// JSON `liquid_targeting_list`.
     pub liquid_targeting_list: Option<Vec<ItemId>>,
     /// JSON `item_settings`.
@@ -50,16 +50,8 @@ impl Upgrade for AimAssistPreset {
         super::super::AimAssistPreset {
             identifier: self.identifier,
             exclusion_settings: Some(ExclusionSettings {
-                blocks: Some(
-                    list.iter()
-                        .map(|id| BlockId::parse(id.0.as_str()))
-                        .collect(),
-                ),
-                entities: Some(
-                    list.iter()
-                        .map(|id| EntityId::parse(id.0.as_str()))
-                        .collect(),
-                ),
+                blocks: Some(list.iter().map(|id| BlockId::parse(id.as_str())).collect()),
+                entities: Some(list.iter().map(|id| EntityId::parse(id.as_str())).collect()),
                 block_tags: Some(Vec::new()),
                 entity_type_families: Some(Vec::new()),
             }),

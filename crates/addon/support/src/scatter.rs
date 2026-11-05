@@ -4,13 +4,13 @@
 use facet_value::{VArray, VObject};
 
 use bedrock_addon_core::diagnostic::{JsonPath, Severity};
-use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::json::EncodeError;
-use bedrock_addon_core::json::{JsonType, StrictError, StrictInt, Value};
+use bedrock_addon_core::json::{JsonType, StrictError, Value};
 use bedrock_addon_core::molang::{
     Admission, EmptyRule, Molang, MolangFailure, MolangFieldSpec, MolangFields,
     MolangVersionSource, MolangVisitor, OpsRule, RawVersion, ReadField, ReaderKind, Step,
 };
+use bedrock_addon_core::schema;
 
 /// `distribution`: the positions a rule scatters its feature to.
 ///
@@ -28,24 +28,16 @@ pub struct ScatterParams {
     pub iterations: Molang,
     /// The chance that the scatter happens at all, not per iteration (JSON `scatter_chance`);
     /// absent is always.
-    #[facet(default)]
     pub scatter_chance: Option<ScatterChance>,
     /// The order the coordinates are evaluated in (JSON `coordinate_eval_order`); absent is
     /// `xzy`.
-    #[facet(default)]
     pub coordinate_eval_order: Option<CoordinateEvalOrder>,
     /// The x offset (JSON `x`).
-    #[facet(default)]
     pub x: Option<CoordinateRange>,
     /// The y offset (JSON `y`).
-    #[facet(default)]
     pub y: Option<CoordinateRange>,
     /// The z offset (JSON `z`).
-    #[facet(default)]
     pub z: Option<CoordinateRange>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// `scatter_chance`: a fraction, or a percentage.
@@ -62,16 +54,15 @@ pub enum ScatterChance {
     Percent(Molang),
 }
 
-/// The object form of `scatter_chance`: the chance is `numerator / denominator`.
+/// The object form of `scatter_chance`: the chance is `numerator / denominator`. Its unknown
+/// members are kept where it is read typed (a feature rule's `distribution`).
 #[derive(Clone, Debug, PartialEq, facet::Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct ScatterFraction {
     /// JSON `numerator`, at least 1.
-    pub numerator: StrictInt<i32>,
+    pub numerator: i32,
     /// JSON `denominator`, at least 1; vanilla uses 1 when it is not above the numerator.
-    pub denominator: StrictInt<i32>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
+    pub denominator: i32,
 }
 
 /// One coordinate of the scatter parameters: a value drawn from a distribution, or an
@@ -89,8 +80,10 @@ pub enum CoordinateRange {
     Single(Molang),
 }
 
-/// The object form of a coordinate: a distribution over an extent.
+/// The object form of a coordinate: a distribution over an extent. Its unknown members are
+/// kept where it is read typed (a feature rule's `distribution`).
 #[derive(Clone, Debug, PartialEq, facet::Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct CoordinateDistribution {
     /// The distribution (JSON `distribution`).
     pub distribution: RandomDistribution,
@@ -99,15 +92,10 @@ pub struct CoordinateDistribution {
     pub extent: [Molang; 2],
     /// The distance between grid steps, at least 1; only for the grid distributions (JSON
     /// `step_size`); absent is 1.
-    #[facet(default)]
-    pub step_size: Option<StrictInt<i32>>,
+    pub step_size: Option<i32>,
     /// The grid offset, at least 0; only for the grid distributions (JSON `grid_offset`); absent
     /// is 0.
-    #[facet(default)]
-    pub grid_offset: Option<StrictInt<i32>>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
+    pub grid_offset: Option<i32>,
 }
 
 /// `distribution` of a coordinate.
@@ -208,10 +196,10 @@ impl ScatterParams {
             None => always,
             Some(ScatterChance::Percent(Molang::Const(c))) if !percent_in_range(*c) => always,
             Some(ScatterChance::Fraction(fraction))
-                if fraction.denominator.0 <= fraction.numerator.0 =>
+                if fraction.denominator <= fraction.numerator =>
             {
                 ScatterChance::Fraction(ScatterFraction {
-                    denominator: StrictInt(1),
+                    denominator: 1,
                     ..fraction.clone()
                 })
             }
@@ -229,7 +217,7 @@ impl CoordinateDistribution {
     /// The grid step vanilla uses: `step_size` for a grid distribution, else (or when absent) 1.
     pub fn effective_step_size(&self) -> i32 {
         match self.step_size {
-            Some(step) if self.distribution.is_grid() => step.0,
+            Some(step) if self.distribution.is_grid() => step,
             _ => 1,
         }
     }
@@ -238,7 +226,7 @@ impl CoordinateDistribution {
     /// absent) 0.
     pub fn effective_grid_offset(&self) -> i32 {
         match self.grid_offset {
-            Some(offset) if self.distribution.is_grid() => offset.0,
+            Some(offset) if self.distribution.is_grid() => offset,
             _ => 0,
         }
     }
@@ -287,13 +275,12 @@ fn molang_value(value: &Molang) -> Result<Value, StrictError> {
 }
 
 /// An integer member of a cereal object: an integer token.
-fn cereal_int(value: &Value) -> Result<StrictInt<i32>, StrictError> {
+fn cereal_int(value: &Value) -> Result<i32, StrictError> {
     value
         .as_number()
         .filter(|number| number.is_integer())
         .and_then(facet_value::VNumber::to_i64)
         .and_then(|i| i32::try_from(i).ok())
-        .map(StrictInt)
         .ok_or_else(|| mismatch("an integer"))
 }
 
@@ -327,7 +314,6 @@ impl TryFrom<Value> for ScatterChance {
         Ok(ScatterChance::Fraction(ScatterFraction {
             numerator: member("numerator")?,
             denominator: member("denominator")?,
-            extra: Extra::default(),
         }))
     }
 }
@@ -339,11 +325,8 @@ impl TryFrom<&ScatterChance> for Value {
         match chance {
             ScatterChance::Fraction(fraction) => {
                 let mut object = VObject::new();
-                object.insert("numerator", Value::from(i64::from(fraction.numerator.0)));
-                object.insert(
-                    "denominator",
-                    Value::from(i64::from(fraction.denominator.0)),
-                );
+                object.insert("numerator", Value::from(i64::from(fraction.numerator)));
+                object.insert("denominator", Value::from(i64::from(fraction.denominator)));
                 Ok(Value::from(object))
             }
             ScatterChance::Percent(value) => molang_value(value),
@@ -387,7 +370,6 @@ impl TryFrom<Value> for CoordinateRange {
             extent,
             step_size: optional("step_size")?,
             grid_offset: optional("grid_offset")?,
-            extra: Extra::default(),
         }))
     }
 }
@@ -408,10 +390,10 @@ impl TryFrom<&CoordinateRange> for Value {
                     .collect::<Result<VArray, _>>()?;
                 object.insert("extent", Value::from(extent));
                 if let Some(step) = range.step_size {
-                    object.insert("step_size", Value::from(i64::from(step.0)));
+                    object.insert("step_size", Value::from(i64::from(step)));
                 }
                 if let Some(offset) = range.grid_offset {
-                    object.insert("grid_offset", Value::from(i64::from(offset.0)));
+                    object.insert("grid_offset", Value::from(i64::from(offset)));
                 }
                 Ok(Value::from(object))
             }

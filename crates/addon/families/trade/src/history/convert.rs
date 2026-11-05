@@ -4,7 +4,6 @@
 use super::v0::TradeItem;
 use crate::Quantity;
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase};
-use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::UpgradeCx;
@@ -237,7 +236,6 @@ pub(super) fn material_choices(item: &TradeItem) -> Option<Vec<TradeItem>> {
                 functions: remaining.clone(),
                 filters: None,
                 biomes: Some(Value::from(names)),
-                extra: Extra::default(),
             }
         })
         .collect();

@@ -657,3 +657,37 @@ fn check_and_triggers_walk_into_boxes_and_std_maps() {
         .collect();
     assert_eq!(at, ["boxed/x", "hashed/h/x", "sorted/s/x"]);
 }
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+pub struct Placed {
+    pub block: bedrock_addon_core::id::BlockId,
+    pub corners: [Inner; 2],
+    pub offset: Option<[f32; 3]>,
+    pub filter: Option<bedrock_addon_core::shared::Filter>,
+    pub replaces: Option<Vec<bedrock_addon_core::shared::BlockDescriptor>>,
+    pub height: Option<bedrock_addon_core::shared::IntRange>,
+}
+
+#[test]
+fn check_and_triggers_walk_into_fixed_arrays_past_identifiers_and_shared_values() {
+    assert_eq!(Placed::triggers(), ["corners[].on_y"]);
+    let inner = |x| Inner {
+        x,
+        on_y: None,
+        on_spawn: None,
+    };
+    let mut placed = Placed {
+        block: bedrock_addon_core::id::BlockId::parse("minecraft:stone"),
+        corners: [inner(1), inner(12)],
+        offset: Some([0.0; 3]),
+        filter: None,
+        replaces: None,
+        height: None,
+    };
+    let (out, _) = check(&mut placed, MemberFailure::Refuse);
+    let at: Vec<String> = out
+        .iter()
+        .map(|d| d.location.json_path.to_string())
+        .collect();
+    assert_eq!(at, ["corners/1/x"]);
+}

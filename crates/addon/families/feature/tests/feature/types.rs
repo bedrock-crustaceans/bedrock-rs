@@ -228,8 +228,8 @@ fn f18_the_vanilla_shelf_mushroom_loads_from_engine_1_26_40() {
     else {
         panic!("not a horizontal tree decoration");
     };
-    assert_eq!(feature.bark_side_only.map(|b| b.0), Some(true));
-    assert_eq!(feature.allow_adjacent.map(|b| b.0), Some(false));
+    assert_eq!(feature.bark_side_only, Some(true));
+    assert_eq!(feature.allow_adjacent, Some(false));
     rejects(&json, &engine(1, 26, 30));
 }
 
@@ -241,7 +241,7 @@ fn f21_the_vanilla_orange_poplar_tree_loads_from_engine_1_26_40() {
     };
     let canopy = tree.poplar_canopy.as_ref().unwrap();
     assert_eq!(canopy.radius.len(), 4);
-    assert_eq!(canopy.side_hole_chance.map(|v| v.0), Some(0.15));
+    assert_eq!(canopy.side_hole_chance, Some(0.15));
     let trunk = tree.poplar_trunk.as_ref().unwrap();
     assert!(trunk.remaining_trunk_height_above_branches.is_some());
     assert_eq!(
@@ -371,7 +371,7 @@ fn allow_non_air_placement_and_wall_are_read_below_1_26_50() {
         panic!("not a snap feature");
     };
     assert_eq!(feature.surface, Some(Surface::Wall));
-    assert_eq!(feature.allow_non_air_placement.map(|b| b.0), Some(true));
+    assert_eq!(feature.allow_non_air_placement, Some(true));
     assert_eq!(feature.search_range.0, 12);
 }
 

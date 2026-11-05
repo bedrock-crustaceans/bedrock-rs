@@ -2,43 +2,7 @@
 //! seven cameras. Vanilla reads these only from base-game and slice resource packs (`cameras/<name>.json`); an add-on pack cannot add or replace one,
 //! so no stack accessor loads them. The types read vanilla's own files.
 
-use bedrock_addon_core::json::{StrictBool, StrictFloat, StrictString};
-
-/// A component struct: its members, and for each member with a constructor default an
-/// accessor of the member's name that gives the value or that default.
-macro_rules! component {
-    (
-        $(#[$meta:meta])*
-        $name:ident {
-            $(
-                $(#[$field_meta:meta])*
-                $field:ident: $ty:ty $(= $default:expr => $plain:ty)?
-            ),* $(,)?
-        }
-    ) => {
-        $(#[$meta])*
-        #[derive(Clone, Debug, Default, PartialEq, facet::Facet)]
-        pub struct $name {
-            $(
-                $(#[$field_meta])*
-                pub $field: Option<$ty>,
-            )*
-        }
-
-        impl $name {
-            $($(
-                #[doc = concat!(
-                    "[`", stringify!($field), "`](Self::", stringify!($field),
-                    "), `", stringify!($default), "` when the document leaves it out."
-                )]
-                #[must_use]
-                pub fn $field(&self) -> $plain {
-                    self.$field.map_or($default, |value| value.0)
-                }
-            )?)*
-        }
-    };
-}
+use bedrock_addon_core::schema::{self, Schema};
 
 /// A camera entity document (`minecraft:camera_entity`, vanilla resource pack
 /// `cameras/<name>.json`).
@@ -46,7 +10,7 @@ macro_rules! component {
 /// JSON: `{"format_version": "1.26.10", "minecraft:camera_entity": {"description":
 /// {"identifier": "minecraft:free"}, "components": {"minecraft:camera": {"field_of_view": 66},
 /// …}}}`. One struct reads every format version up to the engine's.
-#[derive(Clone, Debug, Default, PartialEq, facet::Facet)]
+#[derive(Clone, Debug, Default, PartialEq, facet::Facet, Schema)]
 #[doc(alias = "minecraft:camera_entity")]
 #[doc(alias = "CameraDocument")]
 pub struct CameraEntity {
@@ -57,19 +21,19 @@ pub struct CameraEntity {
 }
 
 /// `minecraft:camera_entity/description`.
-#[derive(Clone, Debug, Default, PartialEq, facet::Facet)]
+#[derive(Clone, Debug, Default, PartialEq, facet::Facet, Schema)]
 pub struct CameraEntityDescription {
     /// The camera's name, `namespace:name` (JSON `identifier`).
-    pub identifier: StrictString,
+    pub identifier: String,
 }
 
 /// A component without members: present or absent (JSON `{}`).
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, facet::Facet)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, facet::Facet, Schema)]
 pub struct Present {}
 
 /// The components of a camera entity (31 components); each is
 /// optional.
-#[derive(Clone, Debug, Default, PartialEq, facet::Facet)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
 #[doc(alias = "CameraDefinitions")]
 pub struct CameraComponents {
     /// The inside-cube renderer is used when the camera is inside a block (JSON
@@ -170,117 +134,129 @@ pub struct CameraComponents {
 }
 
 /// `minecraft:camera_attach_to_player`.
-#[derive(Clone, Debug, Default, PartialEq, facet::Facet)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
 pub struct AttachToPlayer {
     /// The locator the camera is attached to (JSON `locator`, default `""`).
-    pub locator: Option<StrictString>,
+    pub locator: Option<String>,
 }
 
-component! {
-    /// `minecraft:camera_avoidance`.
-    Avoidance {
-        /// The stiffness of the spring that answers obstructions, 0 or more; 0 adjusts at once
-        /// (JSON `relax_distance_smoothing_spring`, default 4).
-        relax_distance_smoothing_spring: StrictFloat<f32> = 4.0 => f32,
-        /// The least radial offset kept from the attachment point, 0 or more (JSON
-        /// `distance_constraint_min`, default 0).
-        distance_constraint_min: StrictFloat<f32> = 0.0 => f32,
-        /// The horizontal rays that detect objects (JSON `avoidance_rays_horizontal`).
-        avoidance_rays_horizontal: Vec<AvoidanceRay>,
-        /// The vertical rays that detect objects (JSON `avoidance_rays_vertical`).
-        avoidance_rays_vertical: Vec<AvoidanceRay>,
-    }
+/// `minecraft:camera_avoidance`.
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
+pub struct Avoidance {
+    /// The stiffness of the spring that answers obstructions, 0 or more; 0 adjusts at once
+    /// (JSON `relax_distance_smoothing_spring`, default 4).
+    #[facet(schema::fallback = 4.0)]
+    pub relax_distance_smoothing_spring: Option<f32>,
+    /// The least radial offset kept from the attachment point, 0 or more (JSON
+    /// `distance_constraint_min`, default 0).
+    #[facet(schema::fallback = 0.0)]
+    pub distance_constraint_min: Option<f32>,
+    /// The horizontal rays that detect objects (JSON `avoidance_rays_horizontal`).
+    pub avoidance_rays_horizontal: Option<Vec<AvoidanceRay>>,
+    /// The vertical rays that detect objects (JSON `avoidance_rays_vertical`).
+    pub avoidance_rays_vertical: Option<Vec<AvoidanceRay>>,
 }
 
-component! {
-    /// One avoidance ray.
-    AvoidanceRay {
-        /// The ray's angle in degrees (JSON `angle`, default 0).
-        angle: StrictFloat<f32> = 0.0 => f32,
-        /// The ray's weight (JSON `weight`, default 0).
-        weight: StrictFloat<f32> = 0.0 => f32,
-    }
+/// One avoidance ray.
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
+pub struct AvoidanceRay {
+    /// The ray's angle in degrees (JSON `angle`, default 0).
+    #[facet(schema::fallback = 0.0)]
+    pub angle: Option<f32>,
+    /// The ray's weight (JSON `weight`, default 0).
+    #[facet(schema::fallback = 0.0)]
+    pub weight: Option<f32>,
 }
 
-component! {
-    /// `minecraft:camera`: the projection.
-    Camera {
-        /// The field of view in degrees; required in a document (JSON `field_of_view`).
-        field_of_view: StrictFloat<f32>,
-        /// The distance to the near clipping plane (JSON `near_clipping_plane`, default 0.025).
-        near_clipping_plane: StrictFloat<f32> = 0.025 => f32,
-        /// The distance to the far clipping plane (JSON `far_clipping_plane`, default 2500).
-        far_clipping_plane: StrictFloat<f32> = 2500.0 => f32,
-    }
+/// `minecraft:camera`: the projection.
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
+pub struct Camera {
+    /// The field of view in degrees; required in a document (JSON `field_of_view`).
+    pub field_of_view: Option<f32>,
+    /// The distance to the near clipping plane (JSON `near_clipping_plane`, default 0.025).
+    #[facet(schema::fallback = 0.025)]
+    pub near_clipping_plane: Option<f32>,
+    /// The distance to the far clipping plane (JSON `far_clipping_plane`, default 2500).
+    #[facet(schema::fallback = 2500.0)]
+    pub far_clipping_plane: Option<f32>,
 }
 
-component! {
-    /// `minecraft:camera_direct_look`.
-    DirectLook {
-        /// The lowest pitch in degrees from horizontal (JSON `pitch_min`, default -90).
-        pitch_min: StrictFloat<f32> = -90.0 => f32,
-        /// The highest pitch in degrees from horizontal (JSON `pitch_max`, default 90).
-        pitch_max: StrictFloat<f32> = 90.0 => f32,
-    }
+/// `minecraft:camera_direct_look`.
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
+pub struct DirectLook {
+    /// The lowest pitch in degrees from horizontal (JSON `pitch_min`, default -90).
+    #[facet(schema::fallback = -90.0)]
+    pub pitch_min: Option<f32>,
+    /// The highest pitch in degrees from horizontal (JSON `pitch_max`, default 90).
+    #[facet(schema::fallback = 90.0)]
+    pub pitch_max: Option<f32>,
 }
 
-component! {
-    /// `minecraft:camera_fly_move`.
-    FlyMove {
-        /// The move speed in metres per second (JSON `speed`, default 1).
-        speed: StrictFloat<f32> = 1.0 => f32,
-        /// The move speed while sprinting; unset by default (JSON `sprint_speed`).
-        sprint_speed: StrictFloat<f32>,
-    }
+/// `minecraft:camera_fly_move`.
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
+pub struct FlyMove {
+    /// The move speed in metres per second (JSON `speed`, default 1).
+    #[facet(schema::fallback = 1.0)]
+    pub speed: Option<f32>,
+    /// The move speed while sprinting; unset by default (JSON `sprint_speed`).
+    pub sprint_speed: Option<f32>,
 }
 
-component! {
-    /// `minecraft:camera_offset`.
-    Offset {
-        /// The over-the-shoulder offset `[x, y]`, each -100 to 100 (JSON `view`, default
-        /// `[0, 0]`).
-        view: [StrictFloat<f32>; 2],
-        /// The offset `[x, y, z]` of the pivot, each -100 to 100 (JSON `entity`, default
-        /// `[0, 0, 0]`).
-        entity: [StrictFloat<f32>; 3],
-    }
+/// `minecraft:camera_offset`.
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
+pub struct Offset {
+    /// The over-the-shoulder offset `[x, y]`, each -100 to 100 (JSON `view`, default
+    /// `[0, 0]`).
+    pub view: Option<[f32; 2]>,
+    /// The offset `[x, y, z]` of the pivot, each -100 to 100 (JSON `entity`, default
+    /// `[0, 0, 0]`).
+    pub entity: Option<[f32; 3]>,
 }
 
-component! {
-    /// `minecraft:camera_orbit`.
-    Orbit {
-        /// The azimuth spring, 0 or more (JSON `azimuth_smoothing_spring`, default 4).
-        azimuth_smoothing_spring: StrictFloat<f32> = 4.0 => f32,
-        /// The polar-angle spring, 0 or more (JSON `polar_angle_smoothing_spring`, default 4).
-        polar_angle_smoothing_spring: StrictFloat<f32> = 4.0 => f32,
-        /// The distance spring, 0 or more (JSON `distance_smoothing_spring`, default 4).
-        distance_smoothing_spring: StrictFloat<f32> = 4.0 => f32,
-        /// The radius of the orbit, 0.1 to 64 (JSON `radius`, default 1).
-        radius: StrictFloat<f32> = 1.0 => f32,
-        /// The lowest polar angle in degrees, 0 to 180 (JSON `polar_angle_min`, default 5).
-        polar_angle_min: StrictFloat<f32> = 5.0 => f32,
-        /// The highest polar angle in degrees, 0 to 180 (JSON `polar_angle_max`, default 65).
-        polar_angle_max: StrictFloat<f32> = 65.0 => f32,
-        /// The lowest yaw in degrees, -180 to 180 (JSON `yaw_angle_min`, default -180).
-        yaw_angle_min: StrictFloat<f32> = -180.0 => f32,
-        /// The highest yaw in degrees, -180 to 180 (JSON `yaw_angle_max`, default 180).
-        yaw_angle_max: StrictFloat<f32> = 180.0 => f32,
-        /// Horizontal input is inverted (JSON `invert_x_input`, default `false`).
-        invert_x_input: StrictBool = false => bool,
-        /// Vertical input is inverted (JSON `invert_y_input`, default `false`).
-        invert_y_input: StrictBool = false => bool,
-    }
+/// `minecraft:camera_orbit`.
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
+pub struct Orbit {
+    /// The azimuth spring, 0 or more (JSON `azimuth_smoothing_spring`, default 4).
+    #[facet(schema::fallback = 4.0)]
+    pub azimuth_smoothing_spring: Option<f32>,
+    /// The polar-angle spring, 0 or more (JSON `polar_angle_smoothing_spring`, default 4).
+    #[facet(schema::fallback = 4.0)]
+    pub polar_angle_smoothing_spring: Option<f32>,
+    /// The distance spring, 0 or more (JSON `distance_smoothing_spring`, default 4).
+    #[facet(schema::fallback = 4.0)]
+    pub distance_smoothing_spring: Option<f32>,
+    /// The radius of the orbit, 0.1 to 64 (JSON `radius`, default 1).
+    #[facet(schema::fallback = 1.0)]
+    pub radius: Option<f32>,
+    /// The lowest polar angle in degrees, 0 to 180 (JSON `polar_angle_min`, default 5).
+    #[facet(schema::fallback = 5.0)]
+    pub polar_angle_min: Option<f32>,
+    /// The highest polar angle in degrees, 0 to 180 (JSON `polar_angle_max`, default 65).
+    #[facet(schema::fallback = 65.0)]
+    pub polar_angle_max: Option<f32>,
+    /// The lowest yaw in degrees, -180 to 180 (JSON `yaw_angle_min`, default -180).
+    #[facet(schema::fallback = -180.0)]
+    pub yaw_angle_min: Option<f32>,
+    /// The highest yaw in degrees, -180 to 180 (JSON `yaw_angle_max`, default 180).
+    #[facet(schema::fallback = 180.0)]
+    pub yaw_angle_max: Option<f32>,
+    /// Horizontal input is inverted (JSON `invert_x_input`, default `false`).
+    #[facet(schema::fallback = false)]
+    pub invert_x_input: Option<bool>,
+    /// Vertical input is inverted (JSON `invert_y_input`, default `false`).
+    #[facet(schema::fallback = false)]
+    pub invert_y_input: Option<bool>,
 }
 
 /// `minecraft:camera_perspective_option`.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, facet::Facet)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, facet::Facet, Schema)]
 pub struct PerspectiveOption {
     /// The perspective the camera stands for; required (JSON `view_mode`).
     pub view_mode: PlayerViewMode,
 }
 
 /// A perspective option (`view_mode`).
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, facet::Facet)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, facet::Facet, Schema)]
 #[facet(rename_all = "snake_case")]
 #[repr(u8)]
 #[non_exhaustive]
@@ -294,54 +270,59 @@ pub enum PlayerViewMode {
     ThirdPersonFront,
 }
 
-component! {
-    /// `minecraft:camera_shake`.
-    Shake {
-        /// JSON `frequency`, default 0.
-        frequency: StrictFloat<f32> = 0.0 => f32,
-        /// JSON `amplitude`, default 0.
-        amplitude: StrictFloat<f32> = 0.0 => f32,
-        /// JSON `noise_multiplier`, default 0.
-        noise_multiplier: StrictFloat<f32> = 0.0 => f32,
-    }
+/// `minecraft:camera_shake`.
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
+pub struct Shake {
+    /// JSON `frequency`, default 0.
+    #[facet(schema::fallback = 0.0)]
+    pub frequency: Option<f32>,
+    /// JSON `amplitude`, default 0.
+    #[facet(schema::fallback = 0.0)]
+    pub amplitude: Option<f32>,
+    /// JSON `noise_multiplier`, default 0.
+    #[facet(schema::fallback = 0.0)]
+    pub noise_multiplier: Option<f32>,
 }
 
-component! {
-    /// `minecraft:target`: how the camera follows a
-    /// target.
-    Target {
-        /// The rotation speed in degrees per second, 0 to 360 (JSON `rotation_speed`, default
-        /// 0).
-        rotation_speed: StrictFloat<f32> = 0.0 => f32,
-        /// The camera snaps to its target (JSON `snap_to_target`, default `false`).
-        snap_to_target: StrictBool = false => bool,
-        /// The horizontal limits `[x, y]`, each 0 to 360 and together at most 360; unset by
-        /// default (JSON `horizontal_rotation_limit`).
-        horizontal_rotation_limit: [StrictFloat<f32>; 2],
-        /// The vertical limits `[x, y]`, each 0 to 180; unset by default (JSON
-        /// `vertical_rotation_limit`).
-        vertical_rotation_limit: [StrictFloat<f32>; 2],
-        /// The camera keeps targeting outside the tracking radius (JSON `continue_targeting`,
-        /// default `false`).
-        continue_targeting: StrictBool = false => bool,
-        /// The tracking radius in blocks (JSON `tracking_radius`, default 50).
-        tracking_radius: StrictFloat<f32> = 50.0 => f32,
-    }
+/// `minecraft:target`: how the camera follows a
+/// target.
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
+pub struct Target {
+    /// The rotation speed in degrees per second, 0 to 360 (JSON `rotation_speed`, default
+    /// 0).
+    #[facet(schema::fallback = 0.0)]
+    pub rotation_speed: Option<f32>,
+    /// The camera snaps to its target (JSON `snap_to_target`, default `false`).
+    #[facet(schema::fallback = false)]
+    pub snap_to_target: Option<bool>,
+    /// The horizontal limits `[x, y]`, each 0 to 360 and together at most 360; unset by
+    /// default (JSON `horizontal_rotation_limit`).
+    pub horizontal_rotation_limit: Option<[f32; 2]>,
+    /// The vertical limits `[x, y]`, each 0 to 180; unset by default (JSON
+    /// `vertical_rotation_limit`).
+    pub vertical_rotation_limit: Option<[f32; 2]>,
+    /// The camera keeps targeting outside the tracking radius (JSON `continue_targeting`,
+    /// default `false`).
+    #[facet(schema::fallback = false)]
+    pub continue_targeting: Option<bool>,
+    /// The tracking radius in blocks (JSON `tracking_radius`, default 50).
+    #[facet(schema::fallback = 50.0)]
+    pub tracking_radius: Option<f32>,
 }
 
 /// `minecraft:camera_third_person_boom`.
-#[derive(Clone, Copy, Debug, Default, PartialEq, facet::Facet)]
+#[derive(Clone, Copy, Debug, PartialEq, facet::Facet, Schema)]
 pub struct ThirdPersonBoom {
     /// The starting distance to the target (JSON `starting_radius`, default 0).
-    pub starting_radius: Option<StrictFloat<f32>>,
+    pub starting_radius: Option<f32>,
     /// The starting orientation around the target (JSON `starting_rot`, default `[0, 0]`).
-    pub starting_rot: Option<[StrictFloat<f32>; 2]>,
+    pub starting_rot: Option<[f32; 2]>,
     /// The space `starting_rot` is in (JSON `rotation_space`, default `local`).
     pub rotation_space: Option<RotationSpace>,
 }
 
 /// The space of a boom's starting orientation (`rotation_space`).
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, facet::Facet)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, facet::Facet, Schema)]
 #[facet(rename_all = "snake_case")]
 #[repr(u8)]
 #[non_exhaustive]
@@ -354,23 +335,23 @@ pub enum RotationSpace {
 }
 
 /// `minecraft:stationary_camera`.
-#[derive(Clone, Copy, Debug, Default, PartialEq, facet::Facet)]
+#[derive(Clone, Copy, Debug, PartialEq, facet::Facet, Schema)]
 pub struct Stationary {
     /// The camera's world position (JSON `pos`, default `[0, 0, 0]`).
-    pub pos: Option<[StrictFloat<f32>; 3]>,
+    pub pos: Option<[f32; 3]>,
     /// The camera's rotation in degrees (JSON `rot`, default `[0, 0]`).
-    pub rot: Option<[StrictFloat<f32>; 2]>,
+    pub rot: Option<[f32; 2]>,
 }
 
 /// `minecraft:update_player_from_camera`.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, facet::Facet)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, facet::Facet, Schema)]
 pub struct UpdatePlayerFromCamera {
     /// Where the player looks (JSON `look_mode`, default `along_camera`).
     pub look_mode: Option<LookMode>,
 }
 
 /// Where a player turned by the camera looks (`look_mode`).
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, facet::Facet)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, facet::Facet, Schema)]
 #[facet(rename_all = "snake_case")]
 #[repr(u8)]
 #[non_exhaustive]

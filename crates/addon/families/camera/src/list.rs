@@ -1,6 +1,7 @@
 //! `minecraft:camera_list`: a named list of camera presets.
 
 use bedrock_addon_core::id::{CameraListId, CameraPresetId};
+use bedrock_addon_core::schema::Schema;
 
 /// A camera list (`minecraft:camera_list`, in `cameras/lists/`): the presets a player may
 /// switch between.
@@ -9,7 +10,7 @@ use bedrock_addon_core::id::{CameraListId, CameraPresetId};
 /// "cameras": ["ns:preset", …]}}`, every member required. The list must name at least one
 /// preset, each once, and every preset must be loaded: vanilla reads the lists after the presets
 /// of every pack, so a preset the stack discarded is unknown to a list.
-#[derive(Clone, Debug, PartialEq, facet::Facet)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
 #[doc(alias = "minecraft:camera_list")]
 #[doc(alias = "camera_list")]
 pub struct CameraList {

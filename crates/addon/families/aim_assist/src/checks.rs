@@ -7,26 +7,21 @@ use super::{AimAssistCategories, AimAssistPreset, texts};
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, VanillaText,
 };
-use bedrock_addon_core::json::StrictInt;
 use bedrock_addon_core::versioning::ValidateCx;
 use bedrock_addon_support::shape::{child, element, error, in_range, violation};
 
 /// One priority: a number in `[0, 100]`. A negative number is cereal's "invalid numeric
 /// value"; a number above 100 is a range violation.
-fn priority(value: StrictInt<i32>, at: JsonPath, d: &mut Diagnostics) -> bool {
-    if value.0 < 0 {
+fn priority(value: i32, at: JsonPath, d: &mut Diagnostics) -> bool {
+    if value < 0 {
         violation(texts::INVALID_NUMERIC, at, d);
         return false;
     }
-    in_range(f64::from(value.0), 0.0, 100.0, at, d)
+    in_range(f64::from(value), 0.0, 100.0, at, d)
 }
 
 /// Every priority of `map`.
-fn priority_map(
-    map: Option<&IndexMap<String, StrictInt<i32>>>,
-    at: &JsonPath,
-    d: &mut Diagnostics,
-) -> bool {
+fn priority_map(map: Option<&IndexMap<String, i32>>, at: &JsonPath, d: &mut Diagnostics) -> bool {
     let mut passed = true;
     for (key, value) in map.into_iter().flatten() {
         passed &= priority(*value, child(at, key), d);

@@ -4,16 +4,14 @@
 use facet::Facet;
 
 use super::Description;
+use super::Rules;
 use super::molang::walk;
 use super::read::parse_strict_with;
 use super::validate::Check;
 use super::values::JsonInt;
-use super::{Rules, V1_13_0, strict_struct};
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, VanillaText};
 use bedrock_addon_core::id::FeatureId;
-use bedrock_addon_core::json::{
-    EncodeError, JsonSlice, StrictBool, StrictFloat, StrictString, Value,
-};
+use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::shared::BlockDescriptor;
 use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::ValidateCx;
@@ -39,21 +37,17 @@ pub struct StructureTemplateFeature {
     /// JSON `description`.
     pub description: Description,
     /// The structure, by its name (JSON `structure_name`).
-    pub structure_name: StrictString,
+    pub structure_name: String,
     /// How far the position may move to satisfy the constraints, 0 to 16 (JSON
     /// `adjustment_radius`); absent is 0.
-    #[facet(default)]
     pub adjustment_radius: Option<JsonInt>,
     /// The structure's rotation (JSON `facing_direction`); absent is `random`.
-    #[facet(default)]
     pub facing_direction: Option<FacingDirection>,
     /// Whether the structure rotates around its centre (JSON `rotate_around_center`, engine
     /// 1.26.20); absent is `false`.
-    #[facet(default)]
-    pub rotate_around_center: Option<StrictBool>,
+    pub rotate_around_center: Option<bool>,
     /// The structure's layer that sits at the input position, at least 0 (JSON
     /// `ground_level`, engine 1.26.30); absent is 0.
-    #[facet(default)]
     pub ground_level: Option<JsonInt>,
     /// What must hold where the structure is placed (JSON `constraints`).
     pub constraints: StructureConstraints,
@@ -82,16 +76,12 @@ pub enum FacingDirection {
 #[derive(Clone, Debug, Default, PartialEq, Facet)]
 pub struct StructureConstraints {
     /// The structure must rest on the ground (JSON `grounded`, an empty object).
-    #[facet(default)]
     pub grounded: Option<EmptyConstraint>,
     /// The structure must not be buried (JSON `unburied`, an empty object).
-    #[facet(default)]
     pub unburied: Option<EmptyConstraint>,
     /// The structure may intersect only the listed blocks (JSON `block_intersection`).
-    #[facet(default)]
     pub block_intersection: Option<BlockIntersection>,
     /// The ground below must be level enough (JSON `leveled`, engine 1.26.30).
-    #[facet(default)]
     pub leveled: Option<LeveledConstraint>,
 }
 
@@ -104,16 +94,13 @@ pub struct EmptyConstraint {}
 pub struct BlockIntersection {
     /// The blocks the structure may intersect (JSON `block_allowlist`). One of this and
     /// `block_whitelist` is required.
-    #[facet(default)]
     pub block_allowlist: Option<Vec<BlockDescriptor>>,
     /// The older name of `block_allowlist`, kept under the key the author wrote (JSON
     /// `block_whitelist`).
-    #[facet(default)]
     pub block_whitelist: Option<Vec<BlockDescriptor>>,
     /// Whether only motion-blocking blocks count as intersecting (JSON
     /// `only_check_intersection_for_motion_blocking_blocks`, engine 1.26.30); absent is `true`.
-    #[facet(default)]
-    pub only_check_intersection_for_motion_blocking_blocks: Option<StrictBool>,
+    pub only_check_intersection_for_motion_blocking_blocks: Option<bool>,
 }
 
 /// `constraints.leveled` (engine 1.26.30).
@@ -121,7 +108,6 @@ pub struct BlockIntersection {
 pub struct LeveledConstraint {
     /// How steep the ground may be, 0 to 8 from engine 1.26.50 (JSON `max_steepness`); absent
     /// is 2.
-    #[facet(default)]
     pub max_steepness: Option<JsonInt>,
 }
 
@@ -136,21 +122,19 @@ pub struct BeardsAndShaversFeature {
     /// The feature placed (JSON `places_feature`).
     pub places_feature: FeatureId,
     /// `[x, y, z]` (JSON `bounding_box_min`).
-    pub bounding_box_min: Vec<StrictFloat<f32>>,
+    pub bounding_box_min: Vec<f32>,
     /// `[x, y, z]`, above the minimum (JSON `bounding_box_max`).
-    pub bounding_box_max: Vec<StrictFloat<f32>>,
+    pub bounding_box_max: Vec<f32>,
     /// JSON `y_delta`.
-    pub y_delta: StrictFloat<f32>,
+    pub y_delta: f32,
     /// JSON `surface_block_type`.
     pub surface_block_type: BlockDescriptor,
     /// JSON `subsurface_block_type`.
     pub subsurface_block_type: BlockDescriptor,
     /// In `[0, 1]`, below the maximum (JSON `beard_raggedness_min`).
-    #[facet(default)]
-    pub beard_raggedness_min: Option<StrictFloat<f32>>,
+    pub beard_raggedness_min: Option<f32>,
     /// In `[0, 1]` (JSON `beard_raggedness_max`).
-    #[facet(default)]
-    pub beard_raggedness_max: Option<StrictFloat<f32>>,
+    pub beard_raggedness_max: Option<f32>,
 }
 
 // ---- snap to surface ---------------------------------------------------------------------------
@@ -168,26 +152,20 @@ pub struct SnapToSurfaceFeature {
     /// How far it searches for the surface (JSON `search_range`).
     pub search_range: JsonInt,
     /// Which surface (JSON `surface`); absent is `floor`.
-    #[facet(default)]
     pub surface: Option<Surface>,
     /// Whether it may snap to air (JSON `allow_air_placement`); absent is `true`.
-    #[facet(default)]
-    pub allow_air_placement: Option<StrictBool>,
+    pub allow_air_placement: Option<bool>,
     /// Whether a snap started in a block other than air or water may place (JSON
     /// `allow_non_air_placement`); absent is `false`.
-    #[facet(default)]
-    pub allow_non_air_placement: Option<StrictBool>,
+    pub allow_non_air_placement: Option<bool>,
     /// Whether it may snap under water (JSON `allow_underwater_placement`); absent is `false`.
-    #[facet(default)]
-    pub allow_underwater_placement: Option<StrictBool>,
+    pub allow_underwater_placement: Option<bool>,
     /// The blocks it may snap to; absent or empty is any block that supports the face (JSON
     /// `allowed_surface_blocks`).
-    #[facet(default)]
     pub allowed_surface_blocks: Option<Vec<BlockDescriptor>>,
     /// Whether the feature is placed in the surface instead of on it (JSON `embed_in_surface`,
     /// engine 1.26.20); absent is `false`.
-    #[facet(default)]
-    pub embed_in_surface: Option<StrictBool>,
+    pub embed_in_surface: Option<bool>,
 }
 
 /// `snap_to_surface_feature.surface`.
@@ -215,9 +193,6 @@ pub(crate) const SNAP_SURFACE: (&str, &str) = (
 );
 
 // ---- version structs, Molang walk, rules -------------------------------------------------------
-
-strict_struct!(StructureTemplateFeature, V1_13_0);
-strict_struct!(BeardsAndShaversFeature, V1_13_0);
 
 impl Versioned for SnapToSurfaceFeature {
     const VERSION: FormatVersion = SNAP_FORMAT;
@@ -312,8 +287,6 @@ const RAGGED_RANGE: &str = "Ragged Factor values must be [0,1] and min must be l
 const RAGGED_ORDER: &str = "Ragged Factor min must be leess than max";
 
 impl Rules for BeardsAndShaversFeature {
-    const INTERNAL: bool = true;
-
     fn rules(&mut self, check: &mut ValidateCx<'_>) {
         check.check_len(
             "bounding_box_min",
@@ -334,16 +307,16 @@ impl Rules for BeardsAndShaversFeature {
             .bounding_box_min
             .iter()
             .zip(&self.bounding_box_max)
-            .any(|(min, max)| max.0 <= min.0);
+            .any(|(min, max)| max <= min);
         if below {
             check.kept("bounding_box_max", setter(BOUNDING_BOX));
         }
-        let unit = |v: Option<StrictFloat<f32>>| v.is_none_or(|v| (0.0..=1.0).contains(&v.0));
+        let unit = |v: Option<f32>| v.is_none_or(|v| (0.0..=1.0).contains(&v));
         if !unit(self.beard_raggedness_min) || !unit(self.beard_raggedness_max) {
             check.kept("beard_raggedness_min", setter(RAGGED_RANGE));
         } else if let (Some(min), Some(max)) =
             (self.beard_raggedness_min, self.beard_raggedness_max)
-            && min.0 >= max.0
+            && min >= max
         {
             check.kept("beard_raggedness_min", setter(RAGGED_ORDER));
         }

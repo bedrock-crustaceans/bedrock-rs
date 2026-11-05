@@ -34,7 +34,7 @@ fn cam23_the_seven_vanilla_camera_documents_parse_without_a_finding() {
             document.diagnostics()
         );
         assert!(
-            document.description.identifier.0.starts_with("minecraft:"),
+            document.description.identifier.starts_with("minecraft:"),
             "{name}"
         );
         // Written back and re-read, the document is the same, and so is the second writing.
@@ -81,21 +81,15 @@ fn cam23_absent_members_take_the_constructor_defaults() {
     assert_eq!(target.tracking_radius(), 50.0);
     assert_eq!(target.rotation_speed(), 0.0);
     assert!(!target.snap_to_target() && !target.continue_targeting());
-    assert_eq!(
-        target.horizontal_rotation_limit.map(|v| v.map(|c| c.0)),
-        Some([0.0, 360.0])
-    );
-    assert_eq!(
-        target.vertical_rotation_limit.map(|v| v.map(|c| c.0)),
-        Some([0.0, 180.0])
-    );
+    assert_eq!(target.horizontal_rotation_limit, Some([0.0, 360.0]));
+    assert_eq!(target.vertical_rotation_limit, Some([0.0, 180.0]));
     assert_eq!(free.components.stationary_camera.unwrap().pos, None);
     assert_eq!(free.components.extend_player_rendering, Some(Present {}));
     assert_eq!(free.components.camera_first_person, None);
 
     let first = loads(entity(&vanilla("first_person")));
     let camera = first.components.camera.as_ref().unwrap();
-    assert_eq!(camera.field_of_view.map(|v| v.0), Some(66.0));
+    assert_eq!(camera.field_of_view, Some(66.0));
     assert_eq!(camera.near_clipping_plane, None);
     assert_eq!(camera.near_clipping_plane(), 0.025);
     assert_eq!(camera.far_clipping_plane(), 2500.0);
@@ -183,8 +177,7 @@ fn cam23_every_default_is_the_schemas() {
             .unwrap()
             .locator
             .as_ref()
-            .unwrap()
-            .0,
+            .unwrap(),
         "head"
     );
     assert_eq!(

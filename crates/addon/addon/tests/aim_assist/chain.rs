@@ -191,7 +191,7 @@ fn the_history_path_writes_as_read_and_upgrades_to_the_same_preset() {
     let Any::V1_21_50(old) = written.value() else {
         panic!("v1_21_50")
     };
-    assert_eq!(old.exclusion_list.as_ref().unwrap()[0].0, "minecraft:stone");
+    assert_eq!(old.exclusion_list.as_ref().unwrap()[0], "minecraft:stone");
     // A history value is written at the version it was read at, and reads back the same.
     let later = preset_json(
         "1.21.100",

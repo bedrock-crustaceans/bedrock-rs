@@ -30,13 +30,15 @@ use bedrock_addon_core::document::{
 use bedrock_addon_core::id::SpawnRulesId;
 use bedrock_addon_core::id::kind;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, WriteStyle, write_json};
+use bedrock_addon_core::load::DocumentSource;
 use bedrock_addon_core::load::{CollectionLoader, Walk, WalkFile};
 use bedrock_addon_core::load::{Experiment, LoadContext};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
-    BelowFloor, Envelope, EnvelopeCheck, Family, Loaded, NoComponents, RangeModel, Single,
-    ValidateCx, VersionStruct, Versioned, file_version, write_envelope,
+    BelowFloor, BeyondWidth, Envelope, EnvelopeCheck, Family, InputKind, Loaded, NoComponents,
+    RangeModel, Reading, Scalars, Single, StructIndex, ValidateCx, VersionStruct, Versioned,
+    file_version, write_envelope,
 };
 use bedrock_addon_support::spawn::legacy::{RULES_KEY, V1_8_0};
 use bedrock_addon_support::spawn::load::{
@@ -196,12 +198,24 @@ impl Family for SimplifiedFamily {
     type Component = NoComponents;
     type Any = Single<Self>;
 
+    fn reading(_: StructIndex, _: DocumentSource) -> Reading {
+        SIMPLIFIED_READING
+    }
+
     fn validate(v: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {
         if let Loaded::Stable(rules) = v {
             validate::simplified(rules, cx);
         }
     }
 }
+
+/// The reading of the simplified slice, which its typed parse takes: the profile of a document
+/// without an input kind, with vanilla's strict cereal scalars (a member takes only a token of
+/// its own type, a number beyond its float's width is a type error).
+pub(crate) const SIMPLIFIED_READING: Reading = InputKind::FirstRun
+    .profile()
+    .with_scalars(Scalars::Strict)
+    .with_beyond_width(BeyondWidth::Error);
 
 /// Whether the simplified family takes a file of version `file`: the experiment is on and the
 /// file says 1.21.60 or newer. The standard family takes every other file.
@@ -338,7 +352,7 @@ mod reading_table {
                 missing version: at the floor, told at Info: None
                 below floor: NoParser
                 empty document: Error
-                1.21.60..=1.21.60 (0..=0): json Own/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse
+                1.21.60..=1.21.60 (0..=0): json Own/Strict/Error/Warn/reports/lenient/Refuse, mcb Own/Strict/Error/Warn/reports/lenient/Refuse
             ",
         );
     }

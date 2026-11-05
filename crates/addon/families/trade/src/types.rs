@@ -3,6 +3,7 @@
 
 use bedrock_addon_core::id::ItemId;
 use bedrock_addon_core::json::Value;
+use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::shared::Filter;
 
 /// A villager trade table (`trading/**/*.json`), at the newest format version (1.21.30).
@@ -10,7 +11,7 @@ use bedrock_addon_core::shared::Filter;
 /// JSON: `{"format_version": "1.21.30", "tiers": [tier, …]}`. A trader unlocks the tiers in
 /// order as its experience reaches each tier's `total_exp_required`; each tier offers trades
 /// picked from its groups. Tables are looked up by path, so the top pack's file at a path wins.
-#[derive(Clone, Debug, Default, PartialEq, facet::Facet)]
+#[derive(Clone, Debug, Default, PartialEq, facet::Facet, Schema)]
 #[doc(alias = "trade_table")]
 pub struct TradeTable {
     /// The tiers, lowest first (JSON `tiers`). Vanilla accepts an empty list; the crate reports it.
@@ -20,7 +21,7 @@ pub struct TradeTable {
 /// One tier of a trade table.
 ///
 /// JSON: `{"total_exp_required": n, "groups": [group, …]}`, both required.
-#[derive(Clone, Debug, Default, PartialEq, facet::Facet)]
+#[derive(Clone, Debug, Default, PartialEq, facet::Facet, Schema)]
 #[doc(alias = "TradeTier")]
 pub struct Tier {
     /// The groups whose trades the tier offers (JSON `groups`).
@@ -33,11 +34,12 @@ pub struct Tier {
 /// weight, or every one when `num_to_select` is -1.
 ///
 /// JSON: `{"num_to_select"?: n, "trades": [trade, …]}`; `trades` is required and not empty.
-#[derive(Clone, Debug, Default, PartialEq, facet::Facet)]
+#[derive(Clone, Debug, Default, PartialEq, facet::Facet, Schema)]
 #[doc(alias = "TradeGroup")]
 pub struct Group {
     /// How many trades are picked; -1 picks every one (JSON `num_to_select`, default 0, see
     /// [`Group::num_to_select`]). It must not exceed the number of trades.
+    #[facet(schema::fallback = 0)]
     pub num_to_select: Option<i32>,
     /// The trades (JSON `trades`).
     pub trades: Vec<Trade>,
@@ -48,20 +50,24 @@ pub struct Group {
 /// JSON: `{"wants": [list, …], "gives": [list, …], "trader_exp"?, "max_uses"?, "reward_exp"?,
 /// "weight"?}`; `wants` and `gives` are required and not empty. An absent member reads as its
 /// default through the accessor of the same name and is not written back.
-#[derive(Clone, Debug, Default, PartialEq, facet::Facet)]
+#[derive(Clone, Debug, Default, PartialEq, facet::Facet, Schema)]
 pub struct Trade {
     /// The items the player pays, each a list one item is picked from (JSON `wants`).
     pub wants: Vec<ItemList>,
     /// The items the player receives (JSON `gives`).
     pub gives: Vec<ItemList>,
     /// The experience the trader gains from the trade (JSON `trader_exp`, default 1).
+    #[facet(schema::fallback = 1)]
     pub trader_exp: Option<u32>,
     /// How often the trade can be used before it locks (JSON `max_uses`, default 7).
+    #[facet(schema::fallback = 7)]
     pub max_uses: Option<i32>,
     /// Whether the player gains experience from the trade (JSON `reward_exp`, default `true`).
+    #[facet(schema::fallback = true)]
     pub reward_exp: Option<bool>,
     /// The trade's weight when a group picks `num_to_select` trades (JSON `weight`, default 1,
     /// at least 1). It has no effect in a group that picks every trade.
+    #[facet(schema::fallback = 1)]
     pub weight: Option<i32>,
 }
 
@@ -93,7 +99,7 @@ pub enum ItemList {
 /// JSON: `{"item": "<id>", "quantity"?, "functions"?, "filters"?, "price_multiplier"?}`. The
 /// identifier may carry a legacy `:aux` suffix (`minecraft:wool:14`). An absent member reads as
 /// its default and is not written back.
-#[derive(Clone, Debug, PartialEq, facet::Facet)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
 pub struct TradeItem {
     /// How many of the item (JSON `quantity`, default 1, see [`TradeItem::quantity_range`]).
     pub quantity: Option<Quantity>,
@@ -104,6 +110,7 @@ pub struct TradeItem {
     /// The conditions under which the item is offered (JSON `filters`; default: always).
     pub filters: Option<Filter>,
     /// How much the price follows demand (JSON `price_multiplier`, default 0.0).
+    #[facet(schema::fallback = 0.0)]
     pub price_multiplier: Option<f32>,
     /// The functions of a document upgraded from before 1.21.30, which keep their legacy
     /// evaluation (JSON `__DEP_fnctns`, a deprecated name: written by an author it rejects the
@@ -139,34 +146,10 @@ pub enum Quantity {
     },
 }
 
-impl Group {
-    /// How many trades the group offers: `num_to_select`, 0 when absent; -1 = every trade.
-    pub fn num_to_select(&self) -> i32 {
-        self.num_to_select.unwrap_or(0)
-    }
-}
-
-impl Trade {
-    /// `trader_exp`, 1 when absent.
-    pub fn trader_exp(&self) -> u32 {
-        self.trader_exp.unwrap_or(1)
-    }
-
-    /// `max_uses`, 7 when absent.
-    pub fn max_uses(&self) -> i32 {
-        self.max_uses.unwrap_or(7)
-    }
-
-    /// `reward_exp`, `true` when absent.
-    pub fn reward_exp(&self) -> bool {
-        self.reward_exp.unwrap_or(true)
-    }
-
-    /// `weight`, 1 when absent.
-    pub fn weight(&self) -> i32 {
-        self.weight.unwrap_or(1)
-    }
-}
+// The two forms of an entry and of a quantity: leaves of the derived walks (an untagged enum
+// holds no derived bound, trigger or Molang member).
+bedrock_addon_core::impl_schema_leaf!(ItemList, Quantity);
+bedrock_addon_core::impl_no_molang!(ItemList, Quantity);
 
 impl ItemList {
     /// The items of the entry: the `choice` list, or the one bare item.
@@ -183,11 +166,6 @@ impl TradeItem {
     /// bound of the object form 1.
     pub fn quantity_range(&self) -> (u32, u32) {
         self.quantity.map_or((1, 1), Quantity::bounds)
-    }
-
-    /// `price_multiplier`, 0.0 when absent.
-    pub fn price_multiplier(&self) -> f32 {
-        self.price_multiplier.unwrap_or(0.0)
     }
 }
 

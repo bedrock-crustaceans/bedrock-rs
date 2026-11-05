@@ -65,14 +65,11 @@ fn cam11_spline_names_types_and_times_are_constrained() {
     ))));
     assert!(document.diagnostics().is_empty());
     let first = &document.splines[0];
-    assert_eq!(first.name.0, "Ex_1:S_2");
+    assert_eq!(first.name, "Ex_1:S_2");
     assert_eq!(first.spline_type, Some(SplineType::Linear));
-    assert_eq!(first.total_time.0, 0.0);
+    assert_eq!(first.total_time, 0.0);
     assert_eq!(first.control_points.len(), 2);
-    assert_eq!(
-        first.control_points[1].position.map(|v| v.0),
-        [1.0, 2.0, 3.0]
-    );
+    assert_eq!(first.control_points[1].position, [1.0, 2.0, 3.0]);
 }
 
 #[test]
@@ -188,14 +185,11 @@ fn cam25_easing_is_one_of_the_32_names() {
     let first = &document.splines[0];
     assert_eq!(first.progress_key_frames[0].easing, Some(Easing::InOutBack));
     assert_eq!(first.rotation_key_frames[0].easing, Some(Easing::Spring));
-    assert_eq!(
-        first.rotation_key_frames[0].rotation.map(|v| v.0),
-        [0.0, 90.0, 0.0]
-    );
+    assert_eq!(first.rotation_key_frames[0].rotation, [0.0, 90.0, 0.0]);
     // Without `spline_type` the spline is a Catmull-Rom curve; the member stays unwritten.
     assert_eq!(first.spline_type, None);
     assert_eq!(first.spline_type(), SplineType::Catmullrom);
-    assert_eq!(first.progress_key_frames[0].progress.0, 0.5);
+    assert_eq!(first.progress_key_frames[0].progress, 0.5);
 
     for (frames, path) in [
         (
@@ -239,11 +233,10 @@ fn every_member_of_a_spline_file_and_a_list_reads_into_its_field() {
         CameraList, CameraSpline, ControlPoint, ProgressKeyFrame, RotationKeyFrame, Spline,
     };
     use bedrock_addon::id::{CameraListId, CameraPresetId};
-    use bedrock_addon::json::{StrictFloat, StrictString};
 
     // The member table and the struct agree key for key: a document with every member equals
     // the value built by hand.
-    let f = StrictFloat::<f32>;
+    let f = |value: f32| value;
     let document = loads(spline(&splines_json(
         r#"{"name": "ex:all", "total_time": 6.5, "spline_type": "linear",
         "control_points": [{"position": [1, 2, 3]}, {"position": [-4, 5.5, 6]}],
@@ -254,7 +247,7 @@ fn every_member_of_a_spline_file_and_a_list_reads_into_its_field() {
         document.value(),
         &CameraSpline {
             splines: vec![Spline {
-                name: StrictString("ex:all".to_owned()),
+                name: "ex:all".to_owned(),
                 total_time: f(6.5),
                 spline_type: Some(SplineType::Linear),
                 control_points: vec![

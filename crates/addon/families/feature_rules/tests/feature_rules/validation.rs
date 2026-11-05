@@ -21,7 +21,7 @@ fn r04_an_unknown_placement_pass_is_logged_and_the_rule_still_loads() {
         "minecraft:feature_rules/conditions/placement_pass"
     );
     assert_eq!(document.conditions.pass(), None);
-    assert_eq!(document.conditions.placement_pass.0, "nowhere_pass");
+    assert_eq!(document.conditions.placement_pass, "nowhere_pass");
 }
 
 #[test]

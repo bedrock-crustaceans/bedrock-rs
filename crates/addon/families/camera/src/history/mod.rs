@@ -9,7 +9,7 @@
 
 pub mod v1_19_50;
 
-use super::{CameraEntity, CameraList, CameraPreset, CameraSpline};
+use super::CameraPreset;
 use bedrock_addon_core::document::{Document, Rejected};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::versioning::Single;
@@ -45,7 +45,6 @@ bedrock_addon_core::version_chain! {
         /// Format 1.26.50 and later: the newest preset.
         V1_26_50(CameraPreset),
     }
-    molang = none;
 }
 
 /// A camera list parsed by the struct its `format_version` selects: the one list struct
@@ -59,8 +58,6 @@ pub type SplineAny = Single<SplineFamily>;
 /// A camera entity document parsed by the struct its `format_version` selects: the one camera
 /// entity struct (every format version up to the engine's).
 pub type EntityAny = Single<EntityFamily>;
-
-bedrock_addon_core::impl_no_molang!(CameraList, CameraSpline, CameraEntity);
 
 /// Runs the remaining upgrade step of a preset [`CameraPreset::parse_as_written`] gave: the
 /// same result [`CameraPreset::parse`](bedrock_addon_core::document::Content::parse) gives for

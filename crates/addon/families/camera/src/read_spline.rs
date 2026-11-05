@@ -74,29 +74,29 @@ impl Spline {
     /// The bind constraints of one spline, in bind order. `false` when one failed.
     fn check(&self, at: &JsonPath, d: &mut Diagnostics) -> bool {
         let mut passed = true;
-        if !namespace_name(&self.name.0) {
+        if !namespace_name(&self.name) {
             violation(texts::SPLINE_NAME, child(at, "name"), d);
             passed = false;
         }
-        if self.total_time.0 < 0.0 {
+        if self.total_time < 0.0 {
             violation(texts::SPLINE_TOTAL_TIME, child(at, "total_time"), d);
             passed = false;
         }
         let frames = child(at, "progress_key_frames");
         for (i, frame) in self.progress_key_frames.iter().enumerate() {
             let at = element(&frames, i);
-            if !(0.0..=1.0).contains(&frame.progress.0) {
+            if !(0.0..=1.0).contains(&frame.progress) {
                 violation(texts::SPLINE_PROGRESS, child(&at, "progress"), d);
                 passed = false;
             }
-            if frame.time.0 < 0.0 {
+            if frame.time < 0.0 {
                 violation(texts::SPLINE_PROGRESS_TIME, child(&at, "time"), d);
                 passed = false;
             }
         }
         let frames = child(at, "rotation_key_frames");
         for (i, frame) in self.rotation_key_frames.iter().enumerate() {
-            if frame.time.0 < 0.0 {
+            if frame.time < 0.0 {
                 let at = child(&element(&frames, i), "time");
                 violation(texts::SPLINE_ROTATION_TIME, at, d);
                 passed = false;

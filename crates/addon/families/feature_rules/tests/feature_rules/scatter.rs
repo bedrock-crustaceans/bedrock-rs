@@ -65,7 +65,7 @@ fn r10_scatter_chance_forms_load_clean() {
     let Some(ScatterChance::Fraction(fraction)) = &params(&document).scatter_chance else {
         panic!("a fraction")
     };
-    assert_eq!((fraction.numerator.0, fraction.denominator.0), (1, 3));
+    assert_eq!((fraction.numerator, fraction.denominator), (1, 3));
 }
 
 #[test]
@@ -83,18 +83,18 @@ fn r10_a_denominator_not_above_the_numerator_is_logged_and_becomes_1() {
         panic!("a fraction")
     };
     assert_eq!(
-        fraction.denominator.0, 1,
+        fraction.denominator, 1,
         "the document keeps what was written"
     );
     let ScatterChance::Fraction(effective) = params(&document).effective_chance() else {
         panic!("a fraction")
     };
-    assert_eq!((effective.numerator.0, effective.denominator.0), (1, 1));
+    assert_eq!((effective.numerator, effective.denominator), (1, 1));
     let document = loads(&with_chance(r#"{"numerator": 3, "denominator": 2}"#));
     let ScatterChance::Fraction(effective) = params(&document).effective_chance() else {
         panic!("a fraction")
     };
-    assert_eq!((effective.numerator.0, effective.denominator.0), (3, 1));
+    assert_eq!((effective.numerator, effective.denominator), (3, 1));
 }
 
 #[test]
@@ -185,7 +185,7 @@ fn r11_a_grid_member_with_another_distribution_is_logged_and_ignored() {
     let Some(CoordinateRange::Object(x)) = &params(&document).x else {
         panic!("an object")
     };
-    assert_eq!(x.step_size.map(|s| s.0), Some(4), "kept as written");
+    assert_eq!(x.step_size, Some(4), "kept as written");
     assert_eq!((x.effective_step_size(), x.effective_grid_offset()), (1, 0));
 }
 

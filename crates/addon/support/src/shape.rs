@@ -26,7 +26,7 @@ pub const NOT_IN_SCHEMA: &str = bedrock_addon_core::diagnostic::cereal::MEMBER_N
 pub enum Shape {
     /// `true` or `false`.
     Bool,
-    /// A number. An integer member has this shape too: the typed parse (`StrictInt`) refuses a
+    /// A number. An integer member has this shape too: the typed parse (the strict scalar rule) refuses a
     /// real token with the same code at the same path.
     Float,
     /// A string. An enum member has this shape too: the typed parse refuses a name outside the

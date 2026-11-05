@@ -3,7 +3,7 @@
 use super::read::{VEC2, VEC3, each_ranged, ranged};
 use super::{CameraComponents, CameraEntity, texts};
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, JsonPath};
-use bedrock_addon_core::json::{EncodeError, JsonSlice, StrictFloat, Value};
+use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::versioning::{ParseCx, VersionStruct, write_payload};
 use bedrock_addon_support::chain_file as file;
 use bedrock_addon_support::shape::{
@@ -123,8 +123,8 @@ const DOCUMENT: &[Member] = &[
 
 /// A member with a lower bound only: 0 or more. The game's text for a one-sided range is not
 /// known, so the finding carries none.
-fn non_negative(value: Option<StrictFloat<f32>>, at: JsonPath, d: &mut Diagnostics) -> bool {
-    if value.is_some_and(|value| value.0 < 0.0) {
+fn non_negative(value: Option<f32>, at: JsonPath, d: &mut Diagnostics) -> bool {
+    if value.is_some_and(|value| value < 0.0) {
         d.push(error(DiagnosticCode::InvalidValue { text: None }, at));
         return false;
     }
@@ -190,7 +190,7 @@ impl CameraComponents {
             if let Some(limit) = &target.horizontal_rotation_limit {
                 // Each component is in [0, 360] and the sum is at most 360.
                 let at = child(&at, "horizontal_rotation_limit");
-                let [x, y] = [limit[0].0, limit[1].0];
+                let [x, y] = *limit;
                 if !(0.0..=360.0).contains(&x) || !(0.0..=360.0).contains(&y) {
                     violation(texts::TARGET_HORIZONTAL_RANGE, at, d);
                     passed = false;
@@ -222,7 +222,7 @@ impl VersionStruct for CameraEntity {
         )?;
         let mut passed = true;
         // The identifier must match `^\w+:\w+$`.
-        if !namespace_name(&entity.description.identifier.0) {
+        if !namespace_name(&entity.description.identifier) {
             let at = child(&child(&cx.at, "description"), "identifier");
             violation(texts::ENTITY_IDENTIFIER, at, d);
             passed = false;

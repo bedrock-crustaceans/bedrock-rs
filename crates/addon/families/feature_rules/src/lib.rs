@@ -30,9 +30,19 @@ use bedrock_addon_core::load::{
 use bedrock_addon_core::pack_identity::{PackPath, PackSide};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
-    BelowFloor, DocumentRead, Envelope, Family, InputKind, Loaded, MissingVersion, NoComponents,
-    Reading, Single, StructIndex, UnknownMask, ValidateCx, parse_document,
+    BelowFloor, BeyondWidth, DocumentRead, Envelope, Family, InputKind, Loaded, MissingVersion,
+    NoComponents, Reading, Scalars, Single, StructIndex, UnknownMask, ValidateCx, parse_document,
 };
+
+/// The reading of the one slice, which every reader of a rule's members takes: an unknown member
+/// is a warning, not an error (the unstrict error mask), and the scalars are vanilla's strict
+/// cereal reader's (a member takes only a token of its own type, a number beyond its float's
+/// width is a type error). Every struct of a rule keeps its unknown members for write-back.
+pub(crate) const READING: Reading = Reading::DOCUMENT
+    .with_unknown(UnknownMask::Warn)
+    .with_scalars(Scalars::Strict)
+    .with_beyond_width(BeyondWidth::Error)
+    .with_keeps_unknown(true);
 
 pub use bedrock_addon_support::scatter::{
     CoordinateDistribution, CoordinateEvalOrder, CoordinateRange, RandomDistribution,
@@ -72,9 +82,9 @@ impl Family for FeatureRuleFamily {
     };
 
     /// The one slice is registered with the unstrict error mask: an unknown member is a warning,
-    /// not an error.
+    /// not an error ([`READING`]).
     fn reading(_: StructIndex, _: DocumentSource) -> Reading {
-        Reading::DOCUMENT.with_unknown(UnknownMask::Warn)
+        READING
     }
     type Latest = FeatureRule;
     type Beta = NoBeta<kind::FeatureRule>;
@@ -213,7 +223,7 @@ fn combine(parsed: Vec<Contribution<FeatureRule>>, stack: &StackCx<'_>) -> Featu
     for contribution in parsed {
         match contribution {
             Contribution::Stable(id, document) => {
-                let pass = document.conditions.placement_pass.0.clone();
+                let pass = document.conditions.placement_pass.clone();
                 let target = match PlacementPass::from_name(&pass) {
                     Some(known) => &mut passes[known as usize],
                     None => unknown.entry(pass).or_insert_with(builder),
@@ -296,7 +306,7 @@ mod reading_table {
                 missing version: rejected: NoValidVersion
                 below floor: NoParser
                 empty document: Error
-                1.12.0..=1.12.0 (0..=0): json Rejected/ConvertAndTell/ClampAndTell/Warn/reports/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/reports/fatal/Refuse
+                1.12.0..=1.12.0 (0..=0): json Rejected/Strict/Error/Warn/keeps/fatal/Refuse, mcb Own/Strict/Error/Warn/keeps/fatal/Refuse
             ",
         );
     }
