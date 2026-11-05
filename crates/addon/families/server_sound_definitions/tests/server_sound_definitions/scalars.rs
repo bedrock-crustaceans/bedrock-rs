@@ -139,3 +139,34 @@ const EXPECTED: &str = r#"{"sound_event_name": "demo:x"} => loaded {"format_vers
 {"sound_event_name": "demo:x", "music_info": {"genres": [[]]}} => rejected [InvalidType Error minecraft:server_sound_definitions/0/music_info/genres/0/0 127+1]
 {"sound_event_name": "demo:x", "music_info": {"genres": [{}]}} => rejected [InvalidType Error minecraft:server_sound_definitions/0/music_info/genres/0 127+1]
 "#;
+
+/// Definitions with a struct member, or the definition itself, written `null`: what the null
+/// rule makes of it, told once.
+const NULL_STRUCTS: &[(&str, &str)] = &[
+    (
+        r#"{"sound_event_name": "demo:x", "music_info": {}}"#,
+        "null",
+    ),
+    (
+        r#"{"sound_event_name": "demo:x", "duration_info": {}}"#,
+        "null",
+    ),
+];
+
+#[test]
+fn a_null_struct_member_reads_as_pinned() {
+    let mut table = String::new();
+    for (place, value) in NULL_STRUCTS {
+        table.push_str(&line(place, value));
+        table.push('\n');
+    }
+    assert!(
+        table == NULL_STRUCTS_EXPECTED,
+        "--- actual ---\n{table}--- end ---"
+    );
+}
+
+/// The null struct table.
+const NULL_STRUCTS_EXPECTED: &str = r#"{"sound_event_name": "demo:x", "music_info": null} => rejected [InvalidType Error minecraft:server_sound_definitions/0/music_info 114+4]
+{"sound_event_name": "demo:x", "duration_info": null} => rejected [InvalidType Error minecraft:server_sound_definitions/0/duration_info 117+4]
+"#;

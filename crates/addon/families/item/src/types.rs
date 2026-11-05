@@ -15,8 +15,8 @@ use bedrock_addon_core::load::LoadContext;
 
 /// An item document of a modern format: the members the newest struct ([`Item`]), the beta
 /// struct ([`Beta`]) and the 1.26.30 struct ([`history::v1_26_30::Item`](crate::history::v1_26_30::Item))
-/// share, one struct per format version `V` ([`pack`](crate::history::pack)ed; [`BETA`] for the
-/// beta struct).
+/// share, one struct per format version `V` (packed as `major * 1_000_000 + minor * 1_000 +
+/// patch`; `u32::MAX` for the beta struct).
 ///
 /// JSON: `{"format_version": …, "minecraft:item": {"description": …, "components": {…},
 /// "__deprecated_components"?: …, "events"?: …}}`.

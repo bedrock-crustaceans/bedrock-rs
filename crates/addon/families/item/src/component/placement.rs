@@ -1,22 +1,21 @@
 //! Placing and digging: `block_placer`, `digger`, `entity_placer`.
 
 use bedrock_addon_core::id::EntityId;
-use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
 use bedrock_addon_core::shared::{BlockDescriptor, BlockSpecifier, EventTrigger};
 use facet::Facet;
 
-use super::visit_block_descriptor;
-use bedrock_addon_core::schema;
+use super::{visit_block_descriptor, visit_block_descriptors};
+use bedrock_addon_core::schema::{self, Schema};
 
 /// `minecraft:block_placer`: using the item places `block`.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct BlockPlacer {
     /// The block placed (JSON `block`, required).
     pub block: BlockSpecifier,
     /// The blocks it may be placed on; empty means any (JSON `use_on`; at most 256 distinct
     /// entries from 1.26.0).
-    #[facet(default, skip_serializing_if = Vec::is_empty)]
+    #[facet(default, skip_serializing_if = Vec::is_empty, schema::molang_with = visit_block_descriptors)]
     pub use_on: Vec<BlockDescriptor>,
     /// The item is the block's item: it replaces the block's own item (JSON
     /// `replace_block_item`, from 1.21.40; default false).
@@ -38,14 +37,8 @@ impl BlockPlacer {
     }
 }
 
-impl MolangFields for BlockPlacer {
-    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
-        visit_descriptors(visitor, "use_on", &mut self.use_on);
-    }
-}
-
 /// `minecraft:digger`: how fast the item breaks blocks.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct Digger {
     /// The speed per block (JSON `destroy_speeds`).
@@ -60,10 +53,11 @@ pub struct Digger {
 }
 
 /// One entry of a [`Digger`].
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct DestroySpeed {
     /// The blocks (JSON `block`, required).
+    #[facet(schema::molang_with = visit_block_descriptor)]
     pub block: BlockDescriptor,
     /// The speed (JSON `speed`, required).
     pub speed: i32,
@@ -86,48 +80,16 @@ impl Digger {
     }
 }
 
-impl MolangFields for Digger {
-    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
-        visitor.enter("destroy_speeds".into());
-        for (i, speed) in self.destroy_speeds.iter_mut().enumerate() {
-            visitor.enter(i.into());
-            visitor.enter("block".into());
-            visit_block_descriptor(&mut speed.block, visitor);
-            visitor.leave();
-            visitor.leave();
-        }
-        visitor.leave();
-    }
-}
-
 /// `minecraft:entity_placer`: using the item spawns `entity`.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct EntityPlacer {
     /// The entity spawned, with an optional `<event>` (JSON `entity`).
     pub entity: Option<EntityId>,
     /// The blocks it may be used on; empty means any (JSON `use_on`).
-    #[facet(default, skip_serializing_if = Vec::is_empty)]
+    #[facet(default, skip_serializing_if = Vec::is_empty, schema::molang_with = visit_block_descriptors)]
     pub use_on: Vec<BlockDescriptor>,
     /// The blocks a dispenser may place it on (JSON `dispense_on`).
-    #[facet(default, skip_serializing_if = Vec::is_empty)]
+    #[facet(default, skip_serializing_if = Vec::is_empty, schema::molang_with = visit_block_descriptors)]
     pub dispense_on: Vec<BlockDescriptor>,
-}
-
-impl MolangFields for EntityPlacer {
-    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
-        visit_descriptors(visitor, "use_on", &mut self.use_on);
-        visit_descriptors(visitor, "dispense_on", &mut self.dispense_on);
-    }
-}
-
-/// Visits the `tags` of every descriptor of the list `key`.
-fn visit_descriptors(visitor: &mut MolangVisitor<'_>, key: &str, list: &mut [BlockDescriptor]) {
-    visitor.enter(key.into());
-    for (i, descriptor) in list.iter_mut().enumerate() {
-        visitor.enter(i.into());
-        visit_block_descriptor(descriptor, visitor);
-        visitor.leave();
-    }
-    visitor.leave();
 }

@@ -127,9 +127,31 @@ fn typed<T>(slice: JsonSlice<'_>, cx: &LoadContext, d: &mut Diagnostics) -> Opti
 where
     T: for<'a> Facet<'a> + Into<Component>,
 {
+    read_typed::<T, Component>(slice, cx, d)
+}
+
+/// A one-value component of the newest format, from its object form or its bare value: the
+/// bare value is read by the shorthand of its row in [`ItemComponent`].
+fn value<T>(slice: JsonSlice<'_>, cx: &LoadContext, d: &mut Diagnostics) -> Option<Component>
+where
+    T: for<'a> Facet<'a>
+        + Into<ItemComponent>
+        + Into<Component>
+        + bedrock_addon_core::document::Component<Set = ItemComponent>,
+{
+    let component = read_typed::<T, ItemComponent>(slice, cx, d)?;
+    T::try_from_set(component).ok().map(Into::into)
+}
+
+/// [`typed`] into the component set `C`, whose `shorthand = scalar` rows read a bare value.
+fn read_typed<T, C>(slice: JsonSlice<'_>, cx: &LoadContext, d: &mut Diagnostics) -> Option<C>
+where
+    T: for<'a> Facet<'a> + Into<C>,
+    C: bedrock_addon_core::schema::ShorthandRows,
+{
     let mut strict = cx.clone();
     strict.strict_components = true;
-    let component = parse_component::<T, Component>(slice, ConvertMode::Strict, &strict, d);
+    let component = parse_component::<T, C>(slice, ConvertMode::Strict, &strict, d);
     if component.is_some() {
         // A range's extra member is a member the schema does not know: under this chain's
         // error mask the game writes it as a warning-level line while the item loads.
@@ -144,8 +166,10 @@ where
     component
 }
 
-/// A one-value component from its object form or its bare value.
-fn value<T>(slice: JsonSlice<'_>, cx: &LoadContext, d: &mut Diagnostics) -> Option<Component>
+/// A one-value component whose bare value is not its member as written (`icon`'s key is its
+/// `textures.default`), or that no row of [`ItemComponent`] reads (`use_duration` and the
+/// legacy `icon`): from its object form or its bare value.
+fn bare_value<T>(slice: JsonSlice<'_>, cx: &LoadContext, d: &mut Diagnostics) -> Option<Component>
 where
     T: ValueComponent + Into<Component>,
 {
@@ -321,7 +345,7 @@ fn legacy_map(version: FormatVersion, key: &str) -> Option<Parser> {
         "minecraft:on_use_on" => typed::<OnUseOn>,
         "minecraft:render_offsets" => render_offsets,
         "minecraft:weapon" => typed::<Weapon>,
-        "minecraft:use_duration" => value::<UseDuration>,
+        "minecraft:use_duration" => bare_value::<UseDuration>,
         "minecraft:food" => typed::<LegacyFoodComponent>,
         "minecraft:durability" if version < FormatVersion::new(1, 19, 83) => {
             typed::<LegacyDurability>
@@ -330,7 +354,7 @@ fn legacy_map(version: FormatVersion, key: &str) -> Option<Parser> {
             typed::<LegacyRepairable>
         }
         "minecraft:digger" => typed::<LegacyDigger>,
-        "minecraft:icon" => value::<LegacyIcon>,
+        "minecraft:icon" => bare_value::<LegacyIcon>,
         "minecraft:storage_item" => typed::<LegacyStorageItem>,
         "minecraft:use_modifiers" | "minecraft:custom_components" => return None,
         other => return common(V1_21_90, other),
@@ -356,7 +380,7 @@ fn common(version: FormatVersion, key: &str) -> Option<Parser> {
         "minecraft:glint" => value::<Glint>,
         "minecraft:hand_equipped" => value::<HandEquipped>,
         "minecraft:hover_text_color" => value::<HoverTextColor>,
-        "minecraft:icon" => value::<Icon>,
+        "minecraft:icon" => bare_value::<Icon>,
         "minecraft:interact_button" => interact_button,
         "minecraft:liquid_clipped" => value::<LiquidClipped>,
         "minecraft:max_stack_size" => value::<MaxStackSize>,
@@ -404,9 +428,9 @@ pub(crate) fn binding(version: FormatVersion, key: &str) -> Option<Parser> {
     let fixed_1_20_30 = |key: &str| -> Option<Parser> {
         Some(match key {
             "minecraft:chargeable" => typed::<Chargeable>,
-            "minecraft:use_duration" => value::<UseDuration>,
+            "minecraft:use_duration" => bare_value::<UseDuration>,
             "minecraft:digger" => typed::<LegacyDigger>,
-            "minecraft:icon" => value::<LegacyIcon>,
+            "minecraft:icon" => bare_value::<LegacyIcon>,
             "minecraft:on_use" if version < V1_20_40 => typed::<OnUse>,
             "minecraft:on_use_on" if version < V1_20_40 => typed::<OnUseOn>,
             "minecraft:render_offsets" if version < V1_20_40 => render_offsets,
@@ -444,7 +468,7 @@ pub(crate) fn binding(version: FormatVersion, key: &str) -> Option<Parser> {
         return fixed_1_20_30(key);
     }
     if version < V1_20_60 && key == "minecraft:icon" {
-        return Some(value::<LegacyIcon>);
+        return Some(bare_value::<LegacyIcon>);
     }
     common(version, key)
 }
@@ -1021,7 +1045,9 @@ fn unbind_members(
     }
 }
 
-/// Whether a typed component keeps unknown members (its struct has `extra`).
+/// Whether a typed component keeps the members this version's struct does not bind as
+/// unknown members of its object (in the document's `Unknown` table; each of these structs says
+/// `schema::unknown = "keep"`).
 fn keeps_unknown(component: &Component) -> bool {
     matches!(
         component,
@@ -1452,8 +1478,14 @@ pub(crate) fn write_component(component: &Component) -> Result<Value, EncodeErro
         Component::Unknown(v) => v.clone(),
         newest => match into_item(newest.clone()) {
             Ok(newest) => newest.write_component()?,
-            // (Every variant `into_item` gives back is matched above.)
-            Err(_) => Value::NULL,
+            // Every variant `into_item` gives back is matched above: one it did not would
+            // have no writer, not a `null`.
+            Err(_) => {
+                return Err(EncodeError::NotRepresentable {
+                    at: JsonPath::new(),
+                    what: bedrock_addon_core::json::Unrepresentable::Unsupported,
+                });
+            }
         },
     })
 }

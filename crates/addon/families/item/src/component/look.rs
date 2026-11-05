@@ -147,7 +147,7 @@ pub(crate) fn parse_interact_button(
 ///
 /// A member the document leaves out stays unset (and is not written); the game gives it the
 /// value [`effective_duration`](Self::effective_duration) and its siblings state.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct Record {
     /// The sound played (JSON `sound_event`): a level sound event's name in a stable

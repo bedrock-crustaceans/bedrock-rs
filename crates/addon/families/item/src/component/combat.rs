@@ -2,7 +2,6 @@
 //! `projectile`, `shooter`, `swing_duration`, `swing_sounds`, `throwable`.
 
 use bedrock_addon_core::id::{EntityId, SoundEventName};
-use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
 use bedrock_addon_core::shared::{FloatRange, ItemDescriptor};
 use facet::Facet;
 
@@ -62,7 +61,7 @@ value_component! {
 
 /// `minecraft:kinetic_weapon`: a charged attack that deals damage, knockback or dismounts by
 /// the attacker's speed (engine 1.21.130). No member is required.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct KineticWeapon {
     /// Ticks before the effects apply (JSON `delay`).
@@ -102,7 +101,7 @@ pub struct KineticCondition {
 
 /// `minecraft:piercing_weapon`: an attack that hits every entity along its reach (engine
 /// 1.21.130).
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct PiercingWeapon {
     /// The reach in blocks (JSON `reach`).
@@ -114,7 +113,7 @@ pub struct PiercingWeapon {
 }
 
 /// `minecraft:projectile`: the item can be shot as `projectile_entity`.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct Projectile {
     /// The power above which the shot is critical (JSON `minimum_critical_power`).
@@ -124,11 +123,11 @@ pub struct Projectile {
 }
 
 /// `minecraft:shooter`: the item shoots one of its `ammunition` items.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct Shooter {
     /// The ammunition, in order of preference (JSON `ammunition`).
-    #[facet(default, skip_serializing_if = Vec::is_empty)]
+    #[facet(default, skip_serializing_if = Vec::is_empty, schema::molang_with = visit_ammunition)]
     pub ammunition: Vec<ShooterAmmunition>,
     /// The longest draw in seconds (JSON `max_draw_duration`).
     pub max_draw_duration: Option<f32>,
@@ -139,10 +138,11 @@ pub struct Shooter {
 }
 
 /// One ammunition entry of a [`Shooter`].
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct ShooterAmmunition {
     /// The ammunition item (JSON `item`, required).
+    #[facet(schema::molang_with = visit_item_descriptor)]
     pub item: ItemDescriptor,
     /// Taken from the off hand (JSON `use_offhand`).
     pub use_offhand: Option<bool>,
@@ -152,21 +152,22 @@ pub struct ShooterAmmunition {
     pub use_in_creative: Option<bool>,
 }
 
-impl MolangFields for Shooter {
-    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
-        visitor.enter("ammunition".into());
-        for (i, ammunition) in self.ammunition.iter_mut().enumerate() {
-            visitor.enter(i.into());
-            visit_item_descriptor(&mut ammunition.item, visitor);
-            visitor.leave();
-        }
+/// Visits the `tags` of each ammunition entry's item, at the entry: the walk has always named
+/// the expression `ammunition/<i>/tags`, without the entry's `item` step.
+fn visit_ammunition(
+    ammunition: &mut [ShooterAmmunition],
+    visitor: &mut bedrock_addon_core::molang::MolangVisitor<'_>,
+) {
+    for (index, entry) in ammunition.iter_mut().enumerate() {
+        visitor.enter(index.into());
+        visit_item_descriptor(&mut entry.item, visitor);
         visitor.leave();
     }
 }
 
 /// `minecraft:swing_sounds`: the sounds of a swing (engine 1.21.130). At least one member must
 /// be set.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct SwingSounds {
     /// A swing that hits nothing (JSON `attack_miss`).

@@ -4,7 +4,7 @@
 use crate::{
     DimensionBounds, DimensionComponents, DimensionDescription, DimensionHeight, Generation,
 };
-use crate::{RootV1, bounds_constraints, parse_root, slice_null_rule};
+use crate::{RootV1, constraints, parse_root, slice_null_rule};
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::schema::{self, Schema};
@@ -60,14 +60,16 @@ impl VersionStruct for Dimension {
     fn parse(text: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
         let rule = slice_null_rule(cx);
         let root: RootV1 = parse_root(text, cx, rule, d)?;
-        let inner = root.dimension;
-        if let Some(bounds) = &inner.components.dimension_bounds {
+        let mut inner = root.dimension;
+        // `{-512, 512, multipleOf 16}` on both members, the same in every format that reads
+        // the bounds.
+        if let Some(bounds) = &mut inner.components.dimension_bounds {
             let at = cx.at.with(&[
                 "minecraft:dimension",
                 "components",
                 "minecraft:dimension_bounds",
             ]);
-            if !bounds_constraints(bounds, &at, d) {
+            if !constraints(bounds, &at, d) {
                 return None;
             }
         }

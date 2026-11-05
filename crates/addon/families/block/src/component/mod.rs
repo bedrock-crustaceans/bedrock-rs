@@ -401,3 +401,96 @@ pub(crate) const TRIGGER_CONDITION: MolangFieldSpec = MolangFieldSpec::KEPT
     .reader(ReaderKind::LenientVersioned)
     .version(MolangVersionSource::Constant(MolangVersion::V13))
     .empty(EmptyRule::BlockNoExpression);
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use bedrock_addon_core::diagnostic::JsonPath;
+    use bedrock_addon_core::molang::visit_fields;
+    use bedrock_addon_core::schema::misshapen_shorthand_rows;
+
+    /// The paths and specs the Molang walk of `value` visits.
+    fn walked<T: bedrock_addon_core::molang::MolangFields>(
+        value: &mut T,
+    ) -> Vec<(String, MolangFieldSpec)> {
+        let mut seen = Vec::new();
+        visit_fields(value, &JsonPath::new(), |field| {
+            seen.push((field.path.to_string(), *field.spec));
+        });
+        seen
+    }
+
+    fn from_json<T: for<'a> facet::Facet<'a>>(text: &str) -> T {
+        bedrock_addon_core::json::from_str(text).expect("the payload reads")
+    }
+
+    #[test]
+    fn the_faces_and_directions_keep_the_games_order_and_names() {
+        assert_eq!(
+            Direction::ALL,
+            [
+                Direction::North,
+                Direction::East,
+                Direction::South,
+                Direction::West
+            ]
+        );
+        assert_eq!(Direction::NAMES, ["north", "south", "east", "west"]);
+        assert_eq!(Facing::ALL[0], Facing::Down);
+        assert_eq!(Facing::parse_name("west"), Ok(Facing::West));
+    }
+
+    #[test]
+    fn an_absent_member_stands_for_the_games_default() {
+        let full = BoundingBox::default();
+        assert_eq!((full.origin(), full.size()), ([-8.0, 0.0, -8.0], [16.0; 3]));
+        let legacy = CollisionBoundingBox::default();
+        assert_eq!(
+            (legacy.origin(), legacy.size()),
+            ([-8.0, 0.0, -8.0], [16.0; 3])
+        );
+        assert_eq!(Leashable::default().offset(), [0.0, 0.25, 0.0]);
+        let tick: Tick = from_json(r#"{"interval_range": [1, 2]}"#);
+        assert!(tick.looping());
+    }
+
+    #[test]
+    fn every_shorthand_row_reads_a_bare_scalar() {
+        assert!(misshapen_shorthand_rows::<BlockComponent>().is_empty());
+    }
+
+    #[test]
+    fn the_untagged_payloads_walk_their_object_forms_molang_under_the_blocks_specs() {
+        let mut mining: DestructibleByMining = from_json(
+            r#"{"seconds_to_destroy": 1, "item_specific_speeds": [
+                {"item": "minecraft:stick", "destroy_speed": 1},
+                {"item": {"tags": "q.any_tag('a')"}, "destroy_speed": 2}]}"#,
+        );
+        assert_eq!(
+            walked(&mut mining),
+            [("item_specific_speeds/1/item/tags".to_owned(), ITEM_TAGS)]
+        );
+        assert!(walked(&mut DestructibleByMining::Enabled(true)).is_empty());
+
+        let mut geometry: Geometry = from_json(
+            r#"{"identifier": "geometry.a", "bone_visibility": {"b": "q.block_state('s')"}}"#,
+        );
+        assert_eq!(
+            walked(&mut geometry),
+            [("bone_visibility/b".to_owned(), BONE_VISIBILITY)]
+        );
+        assert!(walked(&mut Geometry::Identifier("geometry.a".to_owned())).is_empty());
+
+        let mut filter: PlacementFilter = from_json(
+            r#"{"conditions": [{"allowed_faces": ["up"], "block_filter": [
+                "minecraft:dirt", {"tags": "q.any_tag('stone')"}]}]}"#,
+        );
+        assert_eq!(
+            walked(&mut filter),
+            [(
+                "conditions/0/block_filter/1/tags".to_owned(),
+                DESCRIPTOR_TAGS
+            )]
+        );
+    }
+}

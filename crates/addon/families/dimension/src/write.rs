@@ -1,7 +1,7 @@
 //! Writing [`Dimension`]: the newest struct's `VersionStruct` (its parse reads the whole
 //! document with `read`), and the whole document it writes.
 
-use super::read::{RootLatest, clouds_constraint, height_constraints, parse_root};
+use super::read::{RootLatest, constraints, parse_root};
 use super::{Dimension, V1_26_50};
 use bedrock_addon_core::diagnostic::Diagnostics;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
@@ -17,18 +17,22 @@ impl VersionStruct for Dimension {
     fn parse(text: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
         let rule = cx.load.null_rule;
         let root: RootLatest = parse_root(text, cx, rule, d)?;
-        let inner = root.dimension;
+        let mut inner = root.dimension;
         let components = cx.at.with(&["minecraft:dimension", "components"]);
+        // The 1.26.50 schema constraints: `min_y` in `[-512, 512]`, `height_range` in
+        // `[16, 1024]` and a multiple of 16, the clouds' `height` in `[-512, 512]`.
         let height = inner
             .components
             .dimension_height
-            .as_ref()
+            .as_mut()
             .is_none_or(|height| {
-                height_constraints(height, &components.child("minecraft:dimension_height"), d)
+                constraints(height, &components.child("minecraft:dimension_height"), d)
             });
-        let clouds = inner.components.clouds.as_ref().is_none_or(|clouds| {
-            clouds_constraint(clouds, &components.child("minecraft:clouds"), d)
-        });
+        let clouds = inner
+            .components
+            .clouds
+            .as_mut()
+            .is_none_or(|clouds| constraints(clouds, &components.child("minecraft:clouds"), d));
         if !(height && clouds) {
             return None;
         }

@@ -6,14 +6,14 @@ use indexmap::IndexMap;
 
 use super::types::{BoundingBox, Bounds, Direction, Facing, Vec3};
 use super::{DESCRIPTOR_TAGS, ITEM_TAGS};
-use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
+use bedrock_addon_core::molang::MolangVisitor;
 use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::shared::{BlockDescriptor, ItemDescriptor};
 
 /// `minecraft:selection_box`: what the player's cursor hits.
 ///
 /// JSON: `true` / `false` or one box.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(untagged)]
 #[repr(u8)]
 pub enum SelectionBox {
@@ -26,7 +26,7 @@ pub enum SelectionBox {
 /// `minecraft:destructible_by_mining`: how long the block takes to mine.
 ///
 /// JSON: `false` (cannot be mined), `true`, or `{"seconds_to_destroy", "item_specific_speeds"?}`.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(untagged)]
 #[repr(u8)]
 pub enum DestructibleByMining {
@@ -60,41 +60,28 @@ pub struct MiningParams {
 }
 
 /// One entry of `item_specific_speeds`.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct ItemSpecificSpeed {
     /// The item (JSON `item`, required): a name or `{"tags": "<molang>"}`.
+    #[facet(schema::molang_with = item_tags)]
     pub item: ItemDescriptor,
     /// Seconds to mine with it (JSON `destroy_speed`, required; negative: cannot be mined).
     pub destroy_speed: f32,
 }
 
-impl MolangFields for DestructibleByMining {
-    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
-        if let DestructibleByMining::Params(params) = self {
-            params.visit_molang(visitor);
-        }
-    }
-}
-
-// An item-specific speed holds a core descriptor, which has no schema of its own: its members
-// have no bound, so its schema walk is empty.
-bedrock_addon_core::impl_schema_leaf!(ItemSpecificSpeed);
-
-impl MolangFields for ItemSpecificSpeed {
-    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
-        if let ItemDescriptor::Tags { tags, .. } = &mut self.item {
-            visitor.enter("item".into());
-            visitor.field("tags", &ITEM_TAGS, tags);
-            visitor.leave();
-        }
+/// An item-specific speed's descriptor `tags`, under the block's [`ITEM_TAGS`] rather than the
+/// walk's default spec.
+fn item_tags(item: &mut ItemDescriptor, visitor: &mut MolangVisitor<'_>) {
+    if let ItemDescriptor::Tags { tags, .. } = item {
+        visitor.field("tags", &ITEM_TAGS, tags);
     }
 }
 
 /// `minecraft:destructible_by_explosion`: how much the block resists explosions.
 ///
 /// JSON: `false` (immune), `true`, or `{"explosion_resistance"}`.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(untagged)]
 #[repr(u8)]
 pub enum DestructibleByExplosion {
@@ -153,7 +140,7 @@ pub struct Sound(pub String);
 ///
 /// JSON: `true` / `false`, or `{"catch_chance_modifier"?, "destroy_chance_modifier"?,
 /// "lava_flammable"?}`.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(untagged)]
 #[repr(u8)]
 pub enum Flammable {
@@ -271,20 +258,14 @@ pub enum SupportShape {
 }
 
 /// `minecraft:tick`: a scheduled tick that fires the block's custom components.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct Tick {
     /// The delay in ticks, `[min, max]` with `min <= max` (JSON `interval_range`, required).
     pub interval_range: [u32; 2],
     /// Tick again after each tick (JSON `looping`); `true` when absent.
+    #[facet(schema::fallback = true)]
     pub looping: Option<bool>,
-}
-
-impl Tick {
-    /// Whether it ticks again after each tick: `looping`, `true` when absent.
-    pub fn looping(&self) -> bool {
-        self.looping.is_none_or(|b| b)
-    }
 }
 
 /// `minecraft:entity_fall_on`: report falls onto the block to custom components.
@@ -296,19 +277,16 @@ pub struct EntityFallOn {
     pub min_fall_distance: Option<f32>,
 }
 
+/// Where a leash knot sits on a block whose `leashable` writes no `offset`.
+const KNOT_OFFSET: Vec3 = [0.0, 0.25, 0.0];
+
 /// `minecraft:leashable`: leads can be tied to the block.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct Leashable {
     /// Where the knot sits (JSON `offset`); `[0, 0.25, 0]` when absent.
+    #[facet(schema::fallback = KNOT_OFFSET)]
     pub offset: Option<Vec3>,
-}
-
-impl Leashable {
-    /// Where the knot sits: `offset`, `[0, 0.25, 0]` when absent.
-    pub fn offset(&self) -> Vec3 {
-        self.offset.unwrap_or(super::types::vec3(0.0, 0.25, 0.0))
-    }
 }
 
 /// `minecraft:chest_obstruction`: whether the block stops a chest below it opening.
@@ -397,7 +375,7 @@ impl CraftingTable {
 }
 
 /// `minecraft:placement_filter`: where the block may be placed or survive.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct PlacementFilter {
     /// JSON `conditions` (at most 64); any one passing allows the placement.
@@ -412,12 +390,13 @@ impl PlacementFilter {
 }
 
 /// One entry of `placement_filter.conditions`.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct PlacementCondition {
     /// The faces it may be placed against (JSON `allowed_faces`).
     pub allowed_faces: Option<Vec<PlacementFace>>,
     /// The blocks it may be placed on (JSON `block_filter`; at most 64).
+    #[facet(schema::molang_with = block_filter_tags)]
     pub block_filter: Option<Vec<BlockDescriptor>>,
 }
 
@@ -434,7 +413,7 @@ impl PlacementCondition {
 }
 
 /// `placement_filter.conditions[].allowed_faces`: a face, `side` or `all`.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Facet)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Facet, Schema)]
 #[facet(rename_all = "snake_case")]
 #[repr(u8)]
 #[non_exhaustive]
@@ -457,25 +436,16 @@ pub enum PlacementFace {
     All,
 }
 
-impl MolangFields for PlacementFilter {
-    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
-        visitor.enter("conditions".into());
-        for (index, condition) in self.conditions.iter_mut().flatten().enumerate() {
+/// The `tags` of a block filter's descriptors, under the block's [`DESCRIPTOR_TAGS`] rather
+/// than the walk's default spec.
+fn block_filter_tags(filter: &mut Option<Vec<BlockDescriptor>>, visitor: &mut MolangVisitor<'_>) {
+    for (index, descriptor) in filter.iter_mut().flatten().enumerate() {
+        if let BlockDescriptor::Tags { tags, .. } | BlockDescriptor::Mixed { tags, .. } = descriptor
+        {
             visitor.enter(index.into());
-            visitor.enter("block_filter".into());
-            for (i, descriptor) in condition.block_filter.iter_mut().flatten().enumerate() {
-                if let BlockDescriptor::Tags { tags, .. } | BlockDescriptor::Mixed { tags, .. } =
-                    descriptor
-                {
-                    visitor.enter(i.into());
-                    visitor.field("tags", &DESCRIPTOR_TAGS, tags);
-                    visitor.leave();
-                }
-            }
-            visitor.leave();
+            visitor.field("tags", &DESCRIPTOR_TAGS, tags);
             visitor.leave();
         }
-        visitor.leave();
     }
 }
 

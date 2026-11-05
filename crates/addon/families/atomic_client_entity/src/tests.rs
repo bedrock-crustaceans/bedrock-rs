@@ -211,3 +211,56 @@ scripts.initialize[0] 18446744073709551616 => rejected [InvalidType Error minecr
 scripts.initialize[0] [] => rejected [InvalidType Error minecraft:atomic_client_entity/description/scripts/initialize/0 133+1]
 scripts.initialize[0] {} => rejected [InvalidType Error minecraft:atomic_client_entity/description/scripts/initialize/0 133+1]
 "#;
+
+/// Documents with a struct member written `null`: what the slice's null rule makes of it,
+/// told once (rejected where the input rejects nulls, read as its defaults elsewhere).
+const NULL_STRUCTS: &[&str] = &[
+    r#"{"format_version": "beta", "minecraft:atomic_client_entity": {"description": {"identifier": "demo:wisp"}, "components": {"minecraft:aabb_dimensions": null}}}"#,
+    r#"{"format_version": "beta", "minecraft:atomic_client_entity": {"description": {"identifier": "demo:wisp"}, "components": {"minecraft:companion_block_clipping": {"reveal_boundary": null}}}}"#,
+];
+
+#[test]
+fn a_null_struct_member_reads_as_pinned() {
+    let mut table = String::new();
+    for text in NULL_STRUCTS {
+        let _ = writeln!(table, "{}", line(text));
+    }
+    assert!(
+        table == NULL_STRUCTS_EXPECTED,
+        "--- actual ---\n{table}--- end ---"
+    );
+}
+
+/// The null struct table.
+const NULL_STRUCTS_EXPECTED: &str = r"rejected [InvalidType Error minecraft:atomic_client_entity/components/minecraft:aabb_dimensions 150+4]
+rejected [InvalidType Error minecraft:atomic_client_entity/components/minecraft:companion_block_clipping/reveal_boundary 179+4]
+";
+
+/// The family compiles no Molang: its render controllers are plain names (the object form is
+/// refused on read) and its scripts plain strings, so the walk of even a hand-built entity
+/// with a condition visits nothing.
+#[test]
+fn the_molang_walk_visits_no_field() {
+    use bedrock_addon_core::diagnostic::JsonPath;
+    use bedrock_addon_core::id::AtomicClientEntityId;
+    use bedrock_addon_core::molang::{Molang, MolangFieldSpec, visit_fields_under};
+    use bedrock_addon_core::visual::ControllerUse;
+
+    let mut entity = AtomicClientEntity::new(AtomicClientEntityId::parse("demo:wisp"));
+    let mut condition = indexmap::IndexMap::new();
+    condition.insert("controller.render.wisp".to_owned(), Molang::Const(1.0));
+    entity.description.render_controllers = Some(vec![ControllerUse::Conditional(condition)]);
+    entity.description.scripts = Some(super::AtomicScripts {
+        initialize: Some(vec!["v.x = 1;".to_owned()]),
+        pre_animation: None,
+        animate: None,
+    });
+    let mut seen = Vec::new();
+    visit_fields_under(
+        &mut entity,
+        &JsonPath::new(),
+        &MolangFieldSpec::DEFAULT,
+        |field| seen.push(field.path.to_string()),
+    );
+    assert!(seen.is_empty(), "{seen:?}");
+}

@@ -17,7 +17,9 @@ use crate::component::{
     StorageWeightLimit, StorageWeightModifier, SwingDuration, SwingSounds, Tags, Throwable,
     UseAnimation, UseModifiers, Wearable,
 };
-use crate::component::{ValueComponent, visit_block_descriptor, visit_item_descriptor};
+use crate::component::{
+    ValueComponent, visit_block_descriptor, visit_item_descriptors, visit_optional_item_descriptor,
+};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::schema::{self, Schema};
 
@@ -174,7 +176,7 @@ impl ValueComponent for UseDuration {
 
 /// `minecraft:food` up to 1.20.20: an `on_consume` trigger, and (below 1.18.0) a named
 /// `saturation_modifier`.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct LegacyFoodComponent {
     /// JSON `nutrition`.
@@ -184,13 +186,14 @@ pub struct LegacyFoodComponent {
     /// JSON `can_always_eat`.
     pub can_always_eat: Option<bool>,
     /// JSON `using_converts_to`.
+    #[facet(schema::molang_with = visit_optional_item_descriptor)]
     pub using_converts_to: Option<ItemDescriptor>,
     /// JSON `on_consume`.
     pub on_consume: Option<EventTrigger>,
 }
 
 /// `minecraft:durability` of 1.16.100: `max_damage` before the 1.18 rename.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct LegacyDurability {
     /// JSON `max_damage` (below 1.18.0).
@@ -211,7 +214,7 @@ pub struct LegacyRepairable {
 }
 
 /// `minecraft:digger` up to 1.20.40: `on_dig` triggers.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct LegacyDigger {
     /// JSON `destroy_speeds`.
@@ -224,10 +227,11 @@ pub struct LegacyDigger {
 }
 
 /// One entry of a [`LegacyDigger`].
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct LegacyDestroySpeed {
     /// JSON `block` (required).
+    #[facet(schema::molang_with = visit_block_descriptor)]
     pub block: BlockDescriptor,
     /// JSON `speed` (required).
     pub speed: i32,
@@ -252,7 +256,7 @@ impl ValueComponent for LegacyIcon {
 }
 
 /// `minecraft:storage_item` of 1.21.30–1.21.50: the weight members before the 1.21.60 split.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct LegacyStorageItem {
     /// JSON `max_slots`.
@@ -262,10 +266,10 @@ pub struct LegacyStorageItem {
     #[facet(default = true)]
     pub allow_nested_storage_items: bool,
     /// JSON `banned_items`.
-    #[facet(default, skip_serializing_if = Vec::is_empty)]
+    #[facet(default, skip_serializing_if = Vec::is_empty, schema::molang_with = visit_item_descriptors)]
     pub banned_items: Vec<ItemDescriptor>,
     /// JSON `allowed_items`.
-    #[facet(default, skip_serializing_if = Vec::is_empty)]
+    #[facet(default, skip_serializing_if = Vec::is_empty, schema::molang_with = visit_item_descriptors)]
     pub allowed_items: Vec<ItemDescriptor>,
     /// JSON `max_weight_limit` (default 64).
     #[facet(default = 64)]
@@ -322,38 +326,9 @@ impl MolangFields for Component {
             Self::Repairable(c) => c.visit_molang(visitor),
             Self::Shooter(c) => c.visit_molang(visitor),
             Self::StorageItem(c) => c.visit_molang(visitor),
-            Self::LegacyFood(c) => {
-                if let Some(item) = &mut c.using_converts_to {
-                    visitor.enter("using_converts_to".into());
-                    visit_item_descriptor(item, visitor);
-                    visitor.leave();
-                }
-            }
-            Self::LegacyDigger(c) => {
-                visitor.enter("destroy_speeds".into());
-                for (i, speed) in c.destroy_speeds.iter_mut().enumerate() {
-                    visitor.enter(i.into());
-                    visitor.enter("block".into());
-                    visit_block_descriptor(&mut speed.block, visitor);
-                    visitor.leave();
-                    visitor.leave();
-                }
-                visitor.leave();
-            }
-            Self::LegacyStorageItem(c) => {
-                for (key, list) in [
-                    ("banned_items", &mut c.banned_items),
-                    ("allowed_items", &mut c.allowed_items),
-                ] {
-                    visitor.enter(key.into());
-                    for (i, item) in list.iter_mut().enumerate() {
-                        visitor.enter(i.into());
-                        visit_item_descriptor(item, visitor);
-                        visitor.leave();
-                    }
-                    visitor.leave();
-                }
-            }
+            Self::LegacyFood(c) => c.visit_molang(visitor),
+            Self::LegacyDigger(c) => c.visit_molang(visitor),
+            Self::LegacyStorageItem(c) => c.visit_molang(visitor),
             _ => {}
         }
     }

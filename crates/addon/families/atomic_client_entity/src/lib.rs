@@ -60,7 +60,7 @@ use indexmap::IndexMap;
 /// ```
 #[doc(alias = "minecraft:atomic_client_entity")]
 #[doc(alias = "atomic_client_entity")]
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct AtomicClientEntity {
     /// `description`: the identifier and what the client draws.
     pub description: AtomicDescription,
@@ -70,7 +70,7 @@ pub struct AtomicClientEntity {
 
 /// `description` of an atomic client entity: the description of a client entity cut down to
 /// the model. Names are kept as written; vanilla lower-cases nothing here.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct AtomicDescription {
     /// `identifier`: `namespace:name`; any namespace, `minecraft` included.
     pub identifier: AtomicClientEntityId,
@@ -92,7 +92,16 @@ pub struct AtomicDescription {
     /// `render_controllers`: the render controllers that draw the entity, in order. Names
     /// only: every entry is [`ControllerUse::Always`], and the `{ name: condition }` form is an
     /// error.
+    #[facet(schema::molang_with = no_conditions)]
     pub render_controllers: Option<Vec<ControllerUse>>,
+}
+
+/// The render controllers' walk: the list holds names only, so no condition is compiled, the
+/// object form a hand-built value may hold included.
+fn no_conditions(
+    _: &mut Option<Vec<ControllerUse>>,
+    _: &mut bedrock_addon_core::molang::MolangVisitor<'_>,
+) {
 }
 
 /// `scripts` of an atomic client entity: three lists of plain strings. The Molang statements

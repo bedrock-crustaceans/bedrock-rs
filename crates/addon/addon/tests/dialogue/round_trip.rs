@@ -304,3 +304,19 @@ fn a_known_member_among_the_unknown_ones_never_replaces_the_typed_one() {
         DialogueText::Plain("typed".to_owned())
     );
 }
+
+#[test]
+fn a_dropped_button_s_unknown_member_is_not_written_and_a_kept_one_s_is_at_its_new_index() {
+    let text = r#"{"format_version": "1.14.0", "minecraft:npc_dialogue": {"scenes": [{"scene_tag": "t", "text": "x", "buttons": [{"commands": [], "dropped": 1}, {"name": "kept", "commands": [], "kept": 2}]}]}}"#;
+    let document = loads(text);
+    let buttons = document.scenes[0].buttons.as_ref().expect("buttons");
+    assert_eq!(buttons.len(), 1);
+    assert_eq!(buttons[0].name, DialogueText::Plain("kept".to_owned()));
+    let written = document.to_json().expect("writes");
+    let compact: String = written.split_whitespace().collect();
+    assert!(
+        compact.contains(r#""buttons":[{"name":"kept","commands":[],"kept":2}]"#),
+        "{written}"
+    );
+    assert!(!written.contains("dropped"), "{written}");
+}

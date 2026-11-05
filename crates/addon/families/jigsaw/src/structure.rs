@@ -195,6 +195,8 @@ pub enum DimensionPadding {
     Both(u32),
     /// Separate padding (JSON `{"top"?, "bottom"?}`).
     #[facet(schema::unknown = "keep")]
+    // The `skip_serializing_if` pairs stay: core's
+    // `an_untagged_struct_variant_writes_a_none_field_as_null`.
     Range {
         /// Blocks kept free at the top (JSON `top`, default 0).
         #[facet(default, skip_serializing_if = Option::is_none)]
@@ -209,19 +211,22 @@ pub enum DimensionPadding {
 ///
 /// JSON: a number (the horizontal distance, 1 to 128) or `{"horizontal", "vertical"?}`
 /// (`vertical` 1 or more, default no limit).
-#[derive(Clone, Debug, PartialEq, facet::Facet)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
 #[facet(untagged)]
 #[repr(u8)]
 pub enum MaxDistanceFromCenter {
-    /// The horizontal distance only (JSON a number).
-    Horizontal(i32),
+    /// The horizontal distance only, 1 to 128 (JSON a number).
+    Horizontal(#[facet(schema::min = 1, schema::max = 128)] i32),
     /// Both distances (JSON an object).
     #[facet(schema::unknown = "keep")]
     Object {
         /// The distance on the horizontal plane, 1 to 128 (JSON `horizontal`).
+        #[facet(schema::min = 1, schema::max = 128)]
         horizontal: i32,
-        /// The distance on the vertical axis (JSON `vertical`, default no limit).
-        #[facet(default, skip_serializing_if = Option::is_none)]
+        /// The distance on the vertical axis, 1 or more (JSON `vertical`, default no limit).
+        // The writer spells a variant's `None` as `null` (core's
+        // `an_untagged_struct_variant_writes_a_none_field_as_null`), so the pair stays.
+        #[facet(skip_serializing_if = Option::is_none, schema::min = 1)]
         vertical: Option<i32>,
     },
 }
@@ -400,12 +405,13 @@ impl StructureDescription {
     }
 }
 
-// The data enums walk nothing: their bounds and members are checked by hand (`read.rs`).
+// The tagged data enums walk nothing (the derive takes no tagged enum with data): their
+// bounds and members are checked by hand (`read.rs`). The untagged ones without bounds
+// walk nothing either.
 bedrock_addon_core::impl_schema_leaf!(
     HeightProvider,
     VerticalAnchor,
     DimensionPadding,
-    MaxDistanceFromCenter,
     PoolAlias,
     GroupedPoolAlias
 );
@@ -413,7 +419,6 @@ bedrock_addon_core::impl_no_molang!(
     HeightProvider,
     VerticalAnchor,
     DimensionPadding,
-    MaxDistanceFromCenter,
     PoolAlias,
     GroupedPoolAlias
 );

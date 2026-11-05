@@ -1045,3 +1045,26 @@ fn a_failed_literal_beside_a_key_that_is_no_string_is_rewritten_as_the_literal_m
         assert_eq!(rewritten(rewritten_as), rewritten_as, "{node}");
     }
 }
+
+#[test]
+fn a_dropped_child_before_one_with_unknown_members_leaves_them_at_the_kept_index() {
+    let document = loaded(&tree_text(
+        "t",
+        r#"{"minecraft:sequence": {"children": [{"minecraft:nope": {}}, {"minecraft:consume_item": {"extra": 2}}]}}"#,
+    ));
+    let kept = root_body("minecraft:sequence")
+        .child("children")
+        .index(0)
+        .child("minecraft:consume_item");
+    let rows: Vec<String> = document
+        .unknown()
+        .iter()
+        .map(|(at, key, _)| format!("{at}/{key}"))
+        .collect();
+    assert_eq!(rows, [format!("{kept}/extra")]);
+    let text = compact_document(&document);
+    assert!(
+        text.contains(r#""children":[{"minecraft:consume_item":{"extra":2}}]"#),
+        "{text}"
+    );
+}

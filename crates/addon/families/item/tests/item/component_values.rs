@@ -24,18 +24,18 @@ const VALUES: &[(&str, &[&str])] = &[
     ),
     (
         "minecraft:can_destroy_in_creative",
-        &["false", "5", r#"{"value": false}"#],
+        &["false", "5", r#"{"value": false}"#, "null"],
     ),
     (
         "minecraft:hand_equipped",
-        &["true", "0.5", r#"{"value": true, "zz": 1}"#],
+        &["true", "0.5", r#"{"value": true, "zz": 1}"#, "null"],
     ),
-    ("minecraft:liquid_clipped", &["true", "[]"]),
+    ("minecraft:liquid_clipped", &["true", "[]", "null"]),
     (
         "minecraft:should_despawn",
-        &["false", r#"{"value": "false"}"#],
+        &["false", r#"{"value": "false"}"#, "1", "null"],
     ),
-    ("minecraft:stacked_by_data", &["true", "{}"]),
+    ("minecraft:stacked_by_data", &["true", "{}", "1", "null"]),
     (
         "minecraft:fire_resistant",
         &[r#"{"value": true}"#, "true", r#"{"value": 1}"#, "{}"],
@@ -55,6 +55,7 @@ const VALUES: &[(&str, &[&str])] = &[
             r#"{"value": 65}"#,
             r#"{"value": -1}"#,
             "{}",
+            "null",
         ],
     ),
     (
@@ -68,6 +69,8 @@ const VALUES: &[(&str, &[&str])] = &[
             r#"{"value": 5}"#,
             r#"{"value": -1}"#,
             "\"5\"",
+            "true",
+            "null",
         ],
     ),
     (
@@ -94,24 +97,37 @@ const VALUES: &[(&str, &[&str])] = &[
             r#"{"duration": 0.01}"#,
             "\"1\"",
             "{}",
+            "true",
+            "null",
         ],
     ),
     (
         "minecraft:use_animation",
-        &["\"eat\"", "\"x\"", "5", r#"{"value": "eat"}"#, "{}"],
+        &["\"eat\"", "\"x\"", "5", r#"{"value": "eat"}"#, "{}", "null"],
     ),
     (
         "minecraft:swing_duration",
-        &["0.5", "-1", r#"{"value": -1}"#, r#"{"value": 0}"#, "{}"],
+        &[
+            "0.5",
+            "-1",
+            r#"{"value": -1}"#,
+            r#"{"value": 0}"#,
+            "{}",
+            "true",
+            "null",
+        ],
     ),
-    ("minecraft:glint", &["true", "1", r#"{"value": false}"#]),
+    (
+        "minecraft:glint",
+        &["true", "1", r#"{"value": false}"#, "null"],
+    ),
     (
         "minecraft:hover_text_color",
-        &["\"red\"", "5", r#"{"value": "red"}"#],
+        &["\"red\"", "5", r#"{"value": "red"}"#, "null"],
     ),
     (
         "minecraft:rarity",
-        &["\"rare\"", "\"x\"", r#"{"value": "epic"}"#],
+        &["\"rare\"", "\"x\"", r#"{"value": "epic"}"#, "5", "null"],
     ),
     (
         "minecraft:durability",

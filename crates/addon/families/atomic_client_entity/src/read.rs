@@ -8,7 +8,6 @@ use bedrock_addon_core::json::{
     ClampedText, EncodeError, JsonSlice, NullRule, ScalarFailure, ScalarRead, Value, Width,
     clamp_text, parse_with_rules, reject_nulls, unknown_members,
 };
-use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
     BETA_VERSION, ParseCx, VersionStruct, Versioned, write_payload,
@@ -89,11 +88,6 @@ impl Versioned for AtomicClientEntity {
     const VERSION: FormatVersion = BETA_VERSION;
 }
 
-/// The three script lists are plain strings; nothing compiles them at load.
-impl MolangFields for AtomicClientEntity {
-    fn visit_molang(&mut self, _: &mut MolangVisitor<'_>) {}
-}
-
 impl VersionStruct for AtomicClientEntity {
     fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
         // The strict error mask applies: every cereal entry is fatal.
@@ -109,11 +103,17 @@ impl VersionStruct for AtomicClientEntity {
         });
         // The scalars are read by the slice's rules (`Family::reading`: strict, a number beyond
         // its float a type error).
-        let read = parse_with_rules::<Self>(payload, cx.load.null_rule, cx.load.scalar_rules);
+        // A `null` read as a struct is the null rule's: `reject_nulls` below tells it where the
+        // input rejects nulls, and elsewhere it reads as its defaults untold, so the pre-pass
+        // leaves it out.
+        let rules = cx.load.scalar_rules.with_tells_null_struct(false);
+        let read = parse_with_rules::<Self>(payload, cx.load.null_rule, rules);
         let entity = match read {
-            Ok(ScalarRead { value, .. }) => {
-                // What the pre-pass tells of a conversion is not pushed: under these rules it tells only
-                // a `null` read as a struct, which the typed read never reported (the null rule does).
+            Ok(ScalarRead { value, told, .. }) => {
+                // Under the strict rules the pre-pass refuses every conversion, so it tells nothing.
+                for misread in told {
+                    d.push(misread.finding(&cx.at));
+                }
                 value
             }
             Err(ScalarFailure::Refused(misread)) => {

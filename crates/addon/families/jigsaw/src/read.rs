@@ -11,9 +11,8 @@ use indexmap::IndexMap;
 use super::history::{MetadataAny, MetadataFamily, v1_21_50};
 use super::{
     BlockEntityModifier, BlockPredicate, CappedDelegate, IntProvider, IntProviderType,
-    JigsawMetadata, JigsawStructure, MaxDistanceFromCenter, MetadataRegistry, PoolElement,
-    PositionPredicate, Processor, ProcessorList, ProcessorRule, StructureSet, TemplatePool,
-    V1_21_50,
+    JigsawMetadata, JigsawStructure, MetadataRegistry, PoolElement, PositionPredicate, Processor,
+    ProcessorList, ProcessorRule, StructureSet, TemplatePool, V1_21_50,
 };
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, VanillaText,
@@ -62,7 +61,10 @@ fn parse_typed<'a, T: Facet<'a>>(
     }
     // The scalars are read by the slice's rules (`Family::reading`: strict, a number beyond
     // its type a type error).
-    match parse_with_rules::<T>(payload, cx.load.null_rule, cx.load.scalar_rules) {
+    // A `null` read as a struct is the null rule's: `reject_nulls` tells it where the input
+    // rejects nulls, and elsewhere it reads as its defaults untold.
+    let rules = cx.load.scalar_rules.with_tells_null_struct(false);
+    match parse_with_rules::<T>(payload, cx.load.null_rule, rules) {
         // A `null` where the struct reads a value is an
         // `InvalidType` error that rejects the document.
         Ok(ScalarRead { value, .. })
@@ -71,9 +73,11 @@ fn parse_typed<'a, T: Facet<'a>>(
         {
             None
         }
-        Ok(ScalarRead { value, .. }) => {
-            // What the pre-pass tells of a conversion is not pushed: under these rules it tells only
-            // a `null` read as a struct, which the typed read never reported (the null rule does).
+        Ok(ScalarRead { value, told, .. }) => {
+            // Under the strict rules the pre-pass refuses every conversion, so it tells nothing.
+            for misread in told {
+                d.push(misread.finding(&cx.at));
+            }
             if let Some(json) = &json {
                 let mut kept = Unknown::new();
                 for (path, _) in keep_unknown_members(&value, json, &mut kept) {
@@ -89,7 +93,9 @@ fn parse_typed<'a, T: Facet<'a>>(
         }
         // A scalar no arm of an untagged enum takes (`-1` for `dimension_padding`'s integer) is
         // reported as the typed read reports it, which is what the file was told before the
-        // pre-pass judged it.
+        // pre-pass judged it. The refusal's own `spanned_finding` is not that: an
+        // `InvalidType` at the scalar where facet tells an `InvalidValue` at the payload, over
+        // all of it (`structure.dimension_padding -1` in `tests/jigsaw/scalars.rs`).
         Err(ScalarFailure::Refused(misread)) => {
             match bedrock_addon_core::json::parse_at::<T>(payload) {
                 Err(error) => d.push(read_failure(error, cx)),
@@ -187,28 +193,9 @@ impl VersionStruct for JigsawStructure {
 impl JigsawStructure {
     /// The bind constraints and the filter's findings.
     fn check(&mut self, at: &JsonPath, d: &mut Diagnostics) {
-        // `max_depth` is bound to 0 to 20: the struct's own bounds.
+        // `max_depth` is bound to 0 to 20, and `max_distance_from_center`'s `horizontal` to 1
+        // to 128 and `vertical` to 1 or more: the struct's own bounds and its enum's.
         bounds(self, at, d);
-        // `horizontal` is bound to 1 to 128 and `vertical` to 1 or more.
-        let distance = at.child("max_distance_from_center");
-        match &self.max_distance_from_center {
-            Some(MaxDistanceFromCenter::Horizontal(h)) if !(1..=128).contains(h) => {
-                violation(distance, d);
-            }
-            Some(MaxDistanceFromCenter::Object {
-                horizontal,
-                vertical,
-                ..
-            }) => {
-                if !(1..=128).contains(horizontal) {
-                    violation(distance.child("horizontal"), d);
-                }
-                if vertical.is_some_and(|v| v < 1) {
-                    violation(distance.child("vertical"), d);
-                }
-            }
-            _ => {}
-        }
         if let Some(filter) = &self.biome_filters {
             d.extend(filter.check(&at.child("biome_filters")));
         }

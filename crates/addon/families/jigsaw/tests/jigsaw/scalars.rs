@@ -627,3 +627,65 @@ processors.capped.limit 18446744073709551616 => rejected [InvalidType Error mine
 processors.capped.limit [] => rejected [InvalidType Error minecraft:processor_list/processors/0/limit -; DocumentRejected Error  -]
 processors.capped.limit {} => rejected [MissingRequiredField Error minecraft:processor_list/processors/0/limit/provider_type 164+1; DocumentRejected Error  -]
 "#;
+
+/// Documents with a struct member written `null`: what the slice's null rule makes of it,
+/// told once (rejected where the input rejects nulls, read as its defaults elsewhere).
+const NULL_STRUCTS: &[&str] = &[
+    r#"{"format_version": "1.21.20", "minecraft:jigsaw": {"description": {"identifier": "demo:a"}, "step": "surface_structures", "start_pool": "demo:start", "max_depth": 1, "start_height": null}}"#,
+    r#"{"format_version": "1.21.20", "minecraft:jigsaw": {"description": {"identifier": "demo:a"}, "step": "surface_structures", "start_pool": "demo:start", "max_depth": 1, "start_height": {"type": "constant", "value": null}}}"#,
+    r#"{"format_version": "1.21.20", "minecraft:structure_set": {"description": {"identifier": "demo:s"}, "placement": null, "structures": [{"structure": "demo:a", "weight": 1}]}}"#,
+];
+
+#[test]
+fn a_null_struct_member_reads_as_pinned() {
+    let mut table = String::new();
+    for text in NULL_STRUCTS {
+        let _ = writeln!(table, "{}", line(text));
+    }
+    assert!(
+        table == NULL_STRUCTS_EXPECTED,
+        "--- actual ---\n{table}--- end ---"
+    );
+}
+
+/// The null struct table.
+const NULL_STRUCTS_EXPECTED: &str = r"rejected [InvalidType Error minecraft:jigsaw/start_height 182+4; DocumentRejected Error  -]
+rejected [InvalidEnumValue Error minecraft:jigsaw/start_height/value 203+7; DocumentRejected Error  -]
+rejected [InvalidType Error minecraft:structure_set/placement 112+4; DocumentRejected Error  -]
+";
+
+/// `max_distance_from_center` at the ends of its bounds, as a number and as an object.
+const DISTANCES: &[&str] = &[
+    "0",
+    "1",
+    "128",
+    "129",
+    r#"{"horizontal": 0}"#,
+    r#"{"horizontal": 129, "vertical": 0}"#,
+    r#"{"horizontal": 128, "vertical": 1}"#,
+];
+
+#[test]
+fn max_distance_from_center_reads_its_bounds_as_pinned() {
+    let mut table = String::new();
+    for distance in DISTANCES {
+        let text = format!(
+            r#"{{"format_version": "1.21.20", "minecraft:jigsaw": {{"description": {{"identifier": "demo:a"}}, "step": "surface_structures", "start_pool": "demo:start", "max_depth": 1, "start_height": {{"type": "constant", "value": {{"absolute": 0}}}}, "max_distance_from_center": {distance}}}}}"#
+        );
+        let _ = writeln!(table, "{distance} => {}", line(&text));
+    }
+    assert!(
+        table == DISTANCES_EXPECTED,
+        "--- actual ---\n{table}--- end ---"
+    );
+}
+
+/// The bounds table.
+const DISTANCES_EXPECTED: &str = r#"0 => rejected [InvalidValue Error minecraft:jigsaw/max_distance_from_center -; DocumentRejected Error  -]
+1 => loaded {"format_version": "1.21.20","minecraft:jigsaw": {"description": {"identifier": "demo:a"},"step": "surface_structures","start_pool": "demo:start","max_depth": 1,"start_height": {"type": "constant","value": {"absolute": 0}},"max_distance_from_center": 1}} []
+128 => loaded {"format_version": "1.21.20","minecraft:jigsaw": {"description": {"identifier": "demo:a"},"step": "surface_structures","start_pool": "demo:start","max_depth": 1,"start_height": {"type": "constant","value": {"absolute": 0}},"max_distance_from_center": 128}} []
+129 => rejected [InvalidValue Error minecraft:jigsaw/max_distance_from_center -; DocumentRejected Error  -]
+{"horizontal": 0} => rejected [InvalidValue Error minecraft:jigsaw/max_distance_from_center/horizontal -; DocumentRejected Error  -]
+{"horizontal": 129, "vertical": 0} => rejected [InvalidValue Error minecraft:jigsaw/max_distance_from_center/horizontal -; InvalidValue Error minecraft:jigsaw/max_distance_from_center/vertical -; DocumentRejected Error  -]
+{"horizontal": 128, "vertical": 1} => loaded {"format_version": "1.21.20","minecraft:jigsaw": {"description": {"identifier": "demo:a"},"step": "surface_structures","start_pool": "demo:start","max_depth": 1,"start_height": {"type": "constant","value": {"absolute": 0}},"max_distance_from_center": {"horizontal": 128,"vertical": 1}}} []
+"#;

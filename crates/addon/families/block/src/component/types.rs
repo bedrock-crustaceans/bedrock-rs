@@ -10,8 +10,8 @@ pub type Vec3 = [f32; 3];
 /// One of the six block faces as the game names them.
 ///
 /// JSON: `down`, `up`, `north`, `south`, `west`, `east`.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Facet)]
-#[facet(rename_all = "snake_case")]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Facet, Schema)]
+#[facet(rename_all = "snake_case", schema::order = "game")]
 #[repr(u8)]
 #[non_exhaustive]
 pub enum Facing {
@@ -44,8 +44,8 @@ impl Facing {
 /// A horizontal direction as the game names them.
 ///
 /// JSON: `north`, `south`, `east`, `west`.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Facet)]
-#[facet(rename_all = "snake_case")]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Facet, Schema)]
+#[facet(rename_all = "snake_case", schema::order = "game")]
 #[repr(u8)]
 #[non_exhaustive]
 pub enum Direction {
@@ -69,31 +69,27 @@ impl Direction {
     ];
 }
 
+/// A box's `origin` when absent: the full block's minimum corner.
+pub(crate) const FULL_ORIGIN: Vec3 = [-8.0, 0.0, -8.0];
+
+/// A box's `size` when absent: the full block's extent.
+pub(crate) const FULL_SIZE: Vec3 = [16.0, 16.0, 16.0];
+
 /// An axis-aligned box in sixteenths of a block.
 ///
 /// JSON: `{"origin": [x, y, z], "size": [x, y, z]}`; both optional. The origin is relative to the
 /// block's bottom centre, so a full block is `origin [-8, 0, -8]`, `size [16, 16, 16]`: the
 /// values of [`origin()`](Self::origin) and [`size()`](Self::size) for an absent member, so the
 /// default box (both `None`) is the full block.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct BoundingBox {
-    /// The minimum corner (JSON `origin`); each axis in `-8..=8`.
+    /// The minimum corner (JSON `origin`); each axis in `-8..=8`; `[-8, 0, -8]` when absent.
+    #[facet(schema::fallback = FULL_ORIGIN)]
     pub origin: Option<Vec3>,
-    /// The extent (JSON `size`); each axis in `-16..=16`.
+    /// The extent (JSON `size`); each axis in `-16..=16`; `[16, 16, 16]` when absent.
+    #[facet(schema::fallback = FULL_SIZE)]
     pub size: Option<Vec3>,
-}
-
-impl BoundingBox {
-    /// The minimum corner: `origin`, `[-8, 0, -8]` when absent.
-    pub fn origin(&self) -> Vec3 {
-        self.origin.unwrap_or(vec3(-8.0, 0.0, -8.0))
-    }
-
-    /// The extent: `size`, `[16, 16, 16]` when absent.
-    pub fn size(&self) -> Vec3 {
-        self.size.unwrap_or(vec3(16.0, 16.0, 16.0))
-    }
 }
 
 /// How a tinted texture takes its colour from the biome.
@@ -151,7 +147,7 @@ pub enum RenderMethod {
 }
 
 /// A map colour: `"#rrggbb"` or `[r, g, b]`.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(untagged)]
 #[repr(u8)]
 pub enum Color {
@@ -169,12 +165,6 @@ pub struct Bounds {
     /// JSON `max`.
     pub max: f32,
 }
-
-// The faces and directions keep their own `ALL` arrays (the direction's in the game's order), which
-// the string-enum derive would declare again, and a colour is a hex string or three channels:
-// leaves of the schema walk, with no bound and no Molang.
-bedrock_addon_core::impl_schema_leaf!(Facing, Direction, Color);
-bedrock_addon_core::impl_no_molang!(Facing, Direction, Color);
 
 /// `[x, y, z]` as a [`Vec3`].
 pub const fn vec3(x: f32, y: f32, z: f32) -> Vec3 {

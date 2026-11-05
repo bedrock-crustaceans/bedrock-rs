@@ -1,5 +1,7 @@
 //! Components that hold one value and also read the bare value: `{"value": x}`
-//! or `x`.
+//! or `x`. A one-value component's row says `shorthand = scalar`, and the door reads its bare
+//! value as the member (`versioning::parse_component`); [`ValueComponent`] is left for the
+//! components whose bare value is not their member as written.
 
 use bedrock_addon_core::json::{JsonSlice, ScalarFailure, parse_with_rules};
 use bedrock_addon_core::load::LoadContext;
@@ -10,7 +12,9 @@ use super::{ItemComponent, typed};
 use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath};
 use bedrock_addon_core::schema::{self, Schema};
 
-/// A component that also reads its bare value.
+/// A component whose bare value is not its one member as written, read by hand: `icon`, whose
+/// key is its `textures.default`, and the legacy chain's `use_duration` and `icon`, which no
+/// row of [`ItemComponent`] reads.
 pub(crate) trait ValueComponent: for<'a> Facet<'a> {
     /// The bare value's type.
     type Scalar: for<'a> Facet<'a>;
@@ -53,8 +57,9 @@ pub(crate) fn read_bare<S: for<'a> Facet<'a>>(
     Ok(read.value)
 }
 
-/// Parses a [`ValueComponent`] from its object form or its bare value. A bare value of the
-/// wrong type drops the component with one warning, as a failed object form does.
+/// Parses a [`ValueComponent`] from its object form or its bare value (`minecraft:icon`'s
+/// row). A bare value of the wrong type drops the component with one warning, as a failed
+/// object form does.
 pub(crate) fn parse_value<T: ValueComponent + Into<ItemComponent>>(
     slice: JsonSlice<'_>,
     mode: ConvertMode,
@@ -78,7 +83,7 @@ pub(crate) fn parse_value<T: ValueComponent + Into<ItemComponent>>(
 }
 
 /// Declares a one-value component: its value, its default (`= x`) and the bounds of the value
-/// (`[schema::min = x]`), and its bare form.
+/// (`[schema::min = x]`). Its row's `shorthand = scalar` reads the bare form.
 macro_rules! value_component {
     (
         $(#[$meta:meta])*
@@ -97,13 +102,6 @@ macro_rules! value_component {
             /// The component holding `value`.
             pub fn new(value: $ty) -> Self {
                 Self { value }
-            }
-        }
-
-        impl $crate::component::ValueComponent for $name {
-            type Scalar = $ty;
-            fn from_scalar(value: $ty) -> Self {
-                Self::new(value)
             }
         }
     };
@@ -163,13 +161,6 @@ impl MaxStackSize {
     /// A stack size of `value`.
     pub fn new(value: i32) -> Self {
         Self { value }
-    }
-}
-
-impl ValueComponent for MaxStackSize {
-    type Scalar = i32;
-    fn from_scalar(value: i32) -> Self {
-        Self::new(value)
     }
 }
 

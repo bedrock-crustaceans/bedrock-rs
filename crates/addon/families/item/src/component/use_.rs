@@ -1,12 +1,11 @@
 //! Using the item: `compostable`, `food`, `fuel`, `use_animation`, `use_modifiers`.
 
 use bedrock_addon_core::id::SoundEventName;
-use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
 use bedrock_addon_core::shared::ItemDescriptor;
 use facet::Facet;
 
-use super::value::{ValueComponent, value_component};
-use super::visit_item_descriptor;
+use super::value::value_component;
+use super::visit_optional_item_descriptor;
 use bedrock_addon_core::schema::{self, Schema};
 
 /// `minecraft:compostable`: a composter takes the item.
@@ -19,7 +18,7 @@ pub struct Compostable {
 }
 
 /// `minecraft:food`: the item can be eaten.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct Food {
     /// The hunger restored (JSON `nutrition`).
@@ -29,17 +28,8 @@ pub struct Food {
     /// It can be eaten when not hungry (JSON `can_always_eat`).
     pub can_always_eat: Option<bool>,
     /// The item left after eating (JSON `using_converts_to`).
+    #[facet(schema::molang_with = visit_optional_item_descriptor)]
     pub using_converts_to: Option<ItemDescriptor>,
-}
-
-impl MolangFields for Food {
-    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
-        if let Some(item) = &mut self.using_converts_to {
-            visitor.enter("using_converts_to".into());
-            visit_item_descriptor(item, visitor);
-            visitor.leave();
-        }
-    }
 }
 
 /// `minecraft:fuel`: the item burns in a furnace (JSON `{"duration": seconds}` or a bare
@@ -56,13 +46,6 @@ impl Fuel {
     /// A burn time of `duration` seconds.
     pub fn new(duration: f32) -> Self {
         Self { duration }
-    }
-}
-
-impl ValueComponent for Fuel {
-    type Scalar = f32;
-    fn from_scalar(value: f32) -> Self {
-        Self::new(value)
     }
 }
 
@@ -110,7 +93,7 @@ pub enum UseAnimationKind {
 }
 
 /// `minecraft:use_modifiers`: how using the item behaves.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct UseModifiers {
     /// How long a use lasts, in seconds, at least 0 (JSON `use_duration`).
@@ -142,14 +125,8 @@ impl UseModifiers {
     }
 }
 
-impl Default for UseModifiers {
-    fn default() -> Self {
-        Self::new(0.0)
-    }
-}
-
 /// When a held use of an item starts again ([`UseModifiers::start_using`]).
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Facet)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Facet, Schema)]
 #[repr(u8)]
 #[non_exhaustive]
 pub enum StartUsing {

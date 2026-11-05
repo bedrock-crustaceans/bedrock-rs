@@ -3,7 +3,6 @@
 //! whose `components` name no registered component).
 
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
-use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
 use bedrock_addon_core::schema;
 use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::{
@@ -110,9 +109,8 @@ impl VersionStruct for Item {
     }
 }
 
-impl MolangFields for Item {
-    fn visit_molang(&mut self, _: &mut MolangVisitor<'_>) {}
-}
+// The 1.10.0 item holds no Molang a document's walk visits.
+bedrock_addon_core::impl_no_molang!(Item);
 
 /// An information at `at`: the member reads its value as another one than the document writes
 /// (the legacy readers take any JSON value, as `asInt`, `asFloat`, `asBool` do; what they

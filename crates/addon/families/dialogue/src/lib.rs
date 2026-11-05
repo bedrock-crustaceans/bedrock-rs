@@ -27,12 +27,12 @@ use bedrock_addon_core::diagnostic::{
 };
 use bedrock_addon_core::document::{
     CombineRule, Content, Contribution, Definition, Document, JsonContent, NoBeta, Origin, Placed,
-    Registry, RegistryBuilder, Rejected, Unknown, VersionInfo,
+    Registry, RegistryBuilder, Rejected, VersionInfo,
 };
 use bedrock_addon_core::id::DialogueSceneTag;
 use bedrock_addon_core::id::kind;
 use bedrock_addon_core::json::Value;
-use bedrock_addon_core::json::{EncodeError, WriteStyle};
+use bedrock_addon_core::json::{EncodeError, Precedence, WriteStyle};
 use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::SemVersion;
@@ -163,6 +163,9 @@ impl JsonContent for DialogueFile {}
 impl Content for DialogueFile {
     const NAME: &'static str = "dialogue";
     const SIDES: &'static [PackSide] = &[PackSide::Behavior];
+    /// The writer writes every member it knows from the value, so a member of the same key in
+    /// the table is never written over it.
+    const UNKNOWN_PRECEDENCE: Precedence = Precedence::KnownWins;
 
     fn parse(path: &PackPath, bytes: &[u8], cx: &LoadContext) -> Result<Document<Self>, Rejected> {
         let origin = origin(PackRef::app_data(), PackSide::Behavior, path, None);
@@ -225,15 +228,6 @@ impl Content for DialogueFile {
 
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
         self.write_into(out, style)
-    }
-
-    fn write_json_with(
-        &self,
-        unknown: &Unknown,
-        out: &mut Vec<u8>,
-        style: WriteStyle,
-    ) -> Result<Vec<Diagnostic>, EncodeError> {
-        self.write_with_unknown(unknown, out, style)
     }
 }
 

@@ -62,8 +62,11 @@ impl VersionStruct for SoundMetadataFile {
         }
         // The scalars are read by the slice's rules (`Family::reading`: strict, a number beyond
         // its float a type error).
-        let ScalarRead { value, .. } =
-            match parse_with_rules::<Self>(payload, cx.load.null_rule, cx.load.scalar_rules) {
+        // A `null` read as a struct is the null rule's: `reject_nulls` below tells it where the
+        // input rejects nulls, and elsewhere it reads as its defaults untold.
+        let rules = cx.load.scalar_rules.with_tells_null_struct(false);
+        let ScalarRead { value, told, .. } =
+            match parse_with_rules::<Self>(payload, cx.load.null_rule, rules) {
                 Ok(read) => read,
                 Err(ScalarFailure::Read(error)) => {
                     d.push(error.into_diagnostic(&cx.at, |code, _| code));
@@ -74,8 +77,10 @@ impl VersionStruct for SoundMetadataFile {
                     return None;
                 }
             };
-        // What the pre-pass tells of a conversion is not pushed: under these rules it tells only
-        // a `null` read as a struct, which the typed read never reported (the null rule does).
+        // Under the strict rules the pre-pass refuses every conversion, so it tells nothing.
+        for misread in told {
+            d.push(misread.finding(&cx.at));
+        }
         // A member written as `null` is present and fails its type: the game reads the file
         // with null members rejected.
         if cx.load.null_rule == Some(NullRule::Rejected) && reject_nulls(&value, payload, &cx.at, d)

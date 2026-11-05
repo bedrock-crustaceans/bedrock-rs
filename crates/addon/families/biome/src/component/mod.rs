@@ -33,7 +33,7 @@ use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, Js
 use bedrock_addon_core::document::{ComponentMap, ComponentRef};
 use bedrock_addon_core::json::NullRule;
 use bedrock_addon_core::json::{
-    EncodeError, JsonSlice, Misreading, ScalarFailure, ScalarRead, Value, keep_members,
+    EncodeError, JsonSlice, ScalarFailure, ScalarRead, Value, keep_unknown_members,
     parse_with_rules, unknown_members,
 };
 use bedrock_addon_core::load::LoadContext;
@@ -123,12 +123,8 @@ where
     // The scalars are read by the family's rules (`crate::reading`: strict, a number beyond its
     // float a type error), in a versioned load and outside one alike.
     let read = parse_with_rules::<T>(slice, None, crate::reading().scalar_rules());
-    let value = match read {
-        Ok(ScalarRead { value, .. }) => {
-            // What the pre-pass tells of a conversion is not pushed: under these rules it tells only
-            // a `null` read as a struct, which the typed read never reported (the null rule does).
-            value
-        }
+    let (value, told) = match read {
+        Ok(ScalarRead { value, told, .. }) => (value, told),
         Err(ScalarFailure::Refused(misread)) => {
             d.push(misread.finding(&JsonPath::new()));
             for (path, _) in json.iter().flat_map(|json| unknown_members(T::SHAPE, json)) {
@@ -159,19 +155,16 @@ where
     }
     if let Some(json) = &json {
         let mut kept = bedrock_addon_core::document::Unknown::new();
-        let (unknown, misread) = keep_members(&value, json, &mut kept);
-        d.unknown_mut().absorb(&JsonPath::new(), kept);
-        for (path, _) in unknown {
+        for (path, _) in keep_unknown_members(&value, json, &mut kept) {
             d.push(unrecognized(path));
         }
-        // Without a null rule, a `null` read as a struct of defaults (the component itself, a
-        // struct inside it) is kept so and told where it is. A number beyond a float is the
-        // clamp's.
-        for misread in misread {
-            if matches!(misread.kind, Misreading::WrongType) {
-                d.push(misread.finding(&JsonPath::new()));
-            }
-        }
+        d.unknown_mut().absorb(&JsonPath::new(), kept);
+    }
+    // Without a null rule, a `null` read as a struct of defaults (the component itself, a
+    // struct inside it) is kept so and told where it is: under the strict rules it is all the
+    // pre-pass tells, after the unknown members as before.
+    for misread in told {
+        d.push(misread.finding(&JsonPath::new()));
     }
     Some(value.into())
 }

@@ -6,12 +6,12 @@ use facet::Facet;
 use facet_json::RawJson;
 
 use super::BlockComponent;
-use super::types::{Vec3, vec3};
+use super::types::{FULL_ORIGIN, FULL_SIZE, Vec3};
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
 };
 use bedrock_addon_core::document::ComponentMap;
-use bedrock_addon_core::schema;
+use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::version::{FormatVersion, known};
 
 /// `minecraft:collision_box`: what entities collide with.
@@ -20,7 +20,7 @@ use bedrock_addon_core::version::{FormatVersion, known};
 /// box as an object; the 1.26.20 → 1.26.60 step makes it an array of one, and a document of
 /// 1.26.60 or later may not: the 1.26.60 component is a `bool` or an array of boxes, with no
 /// single-object alternative.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(untagged)]
 #[repr(u8)]
 pub enum CollisionBox {
@@ -48,12 +48,16 @@ impl CollisionBox {
 /// and the two pairs exclusive. With neither pair the box is the full block. A box of a
 /// document below 1.26.60 is converted to `min`/`max` by the upgrade
 /// ([`CollisionBoundingBox::from_origin_size`]).
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct CollisionBoundingBox {
-    /// The corner nearest `[-8, 0, -8]` (JSON `origin`); x and z in `-8..=8`, y in `0..=24`.
+    /// The corner nearest `[-8, 0, -8]` (JSON `origin`); x and z in `-8..=8`, y in `0..=24`;
+    /// `[-8, 0, -8]` when absent, as 1.26.20 reads it.
+    #[facet(schema::fallback = FULL_ORIGIN)]
     pub origin: Option<Vec3>,
-    /// The extent (JSON `size`); x and z in `-16..=16`, y in `-24..=24`.
+    /// The extent (JSON `size`); x and z in `-16..=16`, y in `-24..=24`; `[16, 16, 16]` when
+    /// absent, as 1.26.20 reads it.
+    #[facet(schema::fallback = FULL_SIZE)]
     pub size: Option<Vec3>,
     /// The minimum corner (JSON `min`, 1.26.60); x and z in `0..=16`, y in `0..=24`.
     pub min: Option<Vec3>,
@@ -62,16 +66,6 @@ pub struct CollisionBoundingBox {
 }
 
 impl CollisionBoundingBox {
-    /// The minimum corner of the 1.26.20 reading: `origin`, `[-8, 0, -8]` when absent.
-    pub fn origin(&self) -> Vec3 {
-        self.origin.unwrap_or(vec3(-8.0, 0.0, -8.0))
-    }
-
-    /// The extent of the 1.26.20 reading: `size`, `[16, 16, 16]` when absent.
-    pub fn size(&self) -> Vec3 {
-        self.size.unwrap_or(vec3(16.0, 16.0, 16.0))
-    }
-
     /// Whether the box is written by `min`/`max` (either of them).
     pub fn has_min_max(&self) -> bool {
         self.min.is_some() || self.max.is_some()
@@ -314,6 +308,7 @@ fn legacy_aabb(origin: Vec3, size: Vec3) -> ([f32; 3], [f32; 3]) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::component::vec3;
 
     /// A legacy box of origin `(0, 0, 0)` and size `(8, 12, 8)` loads as the game's own tests
     /// expect: `min` is (0, 0, 8) and `max` is (8, 12, 16).

@@ -443,8 +443,9 @@ impl Content for BehaviorTree {
         self.write_into(out, style)
     }
 
-    /// The writer's own merge of the unknown members: one named like a member the writer
-    /// writes is left out, and the members' nesting counts against the reader's limit.
+    /// The writer's own merge of the unknown members (`Precedence::KnownWins`: one named like a
+    /// member the writer writes is left out), kept for its depth check: the members' nesting
+    /// counts against the reader's limit.
     fn write_json_with(
         &self,
         unknown: &Unknown,

@@ -229,3 +229,118 @@ const EXPECTED: &str = r#"1.26.50 min_y "x" => rejected [InvalidType Error minec
 1.18.0 generator_type [] => rejected [InvalidType Error minecraft:dimension/components/minecraft:generation/generator_type/0 207+1]
 1.18.0 generator_type {} => rejected [InvalidType Error minecraft:dimension/components/minecraft:generation/generator_type 207+1]
 "#;
+
+/// Documents with a struct member written `null`: what the slice's null rule makes of it,
+/// told once (rejected where the input rejects nulls, read as its defaults elsewhere).
+const NULL_STRUCTS: &[&str] = &[
+    r#"{"format_version": "1.26.50", "minecraft:dimension": {"description": {"identifier": "test:d"}, "components": {"minecraft:dimension_height": null, "minecraft:clouds": {"height": 128}, "minecraft:generation": {"generator_type": "void"}}}}"#,
+    r#"{"format_version": "1.21.60", "minecraft:dimension": {"description": {"identifier": "test:d"}, "components": {"minecraft:dimension_bounds": null, "minecraft:generation": {"generator_type": "void"}}}}"#,
+    r#"{"format_version": "1.18.0", "minecraft:dimension": {"description": {"identifier": "test:d"}, "components": {"minecraft:dimension_bounds": null, "minecraft:generation": {"generator_type": "void"}}}}"#,
+    r#"{"format_version": "1.18.0", "minecraft:dimension": {"description": {"identifier": "test:d"}, "components": {"minecraft:dimension_bounds": {"min": 0, "max": 256}, "minecraft:generation": null}}}"#,
+];
+
+#[test]
+fn a_null_struct_member_reads_as_pinned() {
+    let mut table = String::new();
+    for text in NULL_STRUCTS {
+        let _ = writeln!(table, "{}", line(text));
+    }
+    assert!(
+        table == NULL_STRUCTS_EXPECTED,
+        "--- actual ---\n{table}--- end ---"
+    );
+}
+
+/// The null struct table.
+const NULL_STRUCTS_EXPECTED: &str = r"rejected [InvalidType Error minecraft:dimension/components/minecraft:dimension_height 140+4]
+rejected [InvalidType Error minecraft:dimension/components/minecraft:dimension_bounds 140+4]
+rejected [InvalidValue Error minecraft:dimension/components/minecraft:dimension_bounds -]
+rejected [InvalidType Error minecraft:dimension/components/minecraft:generation 187+4]
+";
+
+/// The bind constraints at and past their ends, with the text of each finding: `@@` is the
+/// value of the member the row names.
+const CONSTRAINTS: &[(&str, &str, &[&str])] = &[
+    (
+        "1.26.50 min_y",
+        r#"{"format_version": "1.26.50", "minecraft:dimension": {"description": {"identifier": "test:d"}, "components": {"minecraft:dimension_height": {"min_y": @@, "height_range": 384}, "minecraft:generation": {"generator_type": "void"}}}}"#,
+        &["-512", "-513", "512", "513", "-8"],
+    ),
+    (
+        "1.26.50 height_range",
+        r#"{"format_version": "1.26.50", "minecraft:dimension": {"description": {"identifier": "test:d"}, "components": {"minecraft:dimension_height": {"min_y": 0, "height_range": @@}, "minecraft:generation": {"generator_type": "void"}}}}"#,
+        &["16", "0", "1024", "1040", "40", "1030"],
+    ),
+    (
+        "1.26.50 both",
+        r#"{"format_version": "1.26.50", "minecraft:dimension": {"description": {"identifier": "test:d"}, "components": {"minecraft:dimension_height": {"min_y": -600, "height_range": @@}, "minecraft:clouds": {"height": -600}, "minecraft:generation": {"generator_type": "void"}}}}"#,
+        &["40", "0"],
+    ),
+    (
+        "1.26.50 clouds.height",
+        r#"{"format_version": "1.26.50", "minecraft:dimension": {"description": {"identifier": "test:d"}, "components": {"minecraft:clouds": {"height": @@}, "minecraft:generation": {"generator_type": "void"}}}}"#,
+        &["-512", "-513", "512", "513", "7"],
+    ),
+    (
+        "1.21.60 bounds",
+        r#"{"format_version": "1.21.60", "minecraft:dimension": {"description": {"identifier": "test:d"}, "components": {"minecraft:dimension_bounds": {"min": @@, "max": @@}, "minecraft:generation": {"generator_type": "void"}}}}"#,
+        &["-512", "512", "-528", "528", "8", "-520"],
+    ),
+    (
+        "1.18.0 bounds",
+        r#"{"format_version": "1.18.0", "minecraft:dimension": {"description": {"identifier": "test:d"}, "components": {"minecraft:dimension_bounds": {"min": 0, "max": @@}, "minecraft:generation": {"generator_type": "void"}}}}"#,
+        &["512", "528", "24"],
+    ),
+];
+
+#[test]
+fn the_bind_constraints_read_as_pinned() {
+    let mut table = String::new();
+    for (name, place, values) in CONSTRAINTS {
+        for value in *values {
+            let diagnostics = match load(&place.replace("@@", value)) {
+                Ok(document) => document.diagnostics().clone(),
+                Err(rejected) => rejected.diagnostics,
+            };
+            let findings: Vec<String> = diagnostics
+                .iter()
+                .map(|d| format!("{:?} {:?} {}", d.code, d.severity, d.location.json_path))
+                .collect();
+            let _ = writeln!(table, "{name} {value} => [{}]", findings.join("; "));
+        }
+    }
+    assert!(
+        table == CONSTRAINTS_EXPECTED,
+        "--- actual ---\n{table}--- end ---"
+    );
+}
+
+/// The constraints table.
+const CONSTRAINTS_EXPECTED: &str = r#"1.26.50 min_y -512 => []
+1.26.50 min_y -513 => [InvalidValue { text: Some(Formatted { template: "{}", args: ["the input is outside of the accepted range [-512, 512]"] }) } Error minecraft:dimension/components/minecraft:dimension_height/min_y]
+1.26.50 min_y 512 => [InvalidValue { text: Some(Formatted { template: "{}\n{}", args: ["Dimension height range: min_y plus height_range must not exceed 512", "Invalid dimension height."] }) } Error minecraft:dimension/components/minecraft:dimension_height]
+1.26.50 min_y 513 => [InvalidValue { text: Some(Formatted { template: "{}", args: ["the input is outside of the accepted range [-512, 512]"] }) } Error minecraft:dimension/components/minecraft:dimension_height/min_y]
+1.26.50 min_y -8 => [InvalidValue { text: Some(Formatted { template: "{}\n{}", args: ["Dimension min y: min_y must be divisible by 16", "Invalid dimension height."] }) } Error minecraft:dimension/components/minecraft:dimension_height]
+1.26.50 height_range 16 => []
+1.26.50 height_range 0 => [InvalidValue { text: Some(Formatted { template: "{}", args: ["the input is outside of the accepted range [16, 1024]"] }) } Error minecraft:dimension/components/minecraft:dimension_height/height_range]
+1.26.50 height_range 1024 => [InvalidValue { text: Some(Formatted { template: "{}\n{}", args: ["Dimension height range: min_y plus height_range must not exceed 512", "Invalid dimension height."] }) } Error minecraft:dimension/components/minecraft:dimension_height]
+1.26.50 height_range 1040 => [InvalidValue { text: Some(Formatted { template: "{}", args: ["the input is outside of the accepted range [16, 1024]"] }) } Error minecraft:dimension/components/minecraft:dimension_height/height_range]
+1.26.50 height_range 40 => [InvalidValue { text: Some(Formatted { template: "{} is not multiple of {}", args: ["40", "16"] }) } Error minecraft:dimension/components/minecraft:dimension_height/height_range]
+1.26.50 height_range 1030 => [InvalidValue { text: Some(Formatted { template: "{}", args: ["the input is outside of the accepted range [16, 1024]"] }) } Error minecraft:dimension/components/minecraft:dimension_height/height_range]
+1.26.50 both 40 => [InvalidValue { text: Some(Formatted { template: "{}", args: ["the input is outside of the accepted range [-512, 512]"] }) } Error minecraft:dimension/components/minecraft:dimension_height/min_y; InvalidValue { text: Some(Formatted { template: "{} is not multiple of {}", args: ["40", "16"] }) } Error minecraft:dimension/components/minecraft:dimension_height/height_range; InvalidValue { text: Some(Formatted { template: "{}", args: ["the input is outside of the accepted range [-512, 512]"] }) } Error minecraft:dimension/components/minecraft:clouds/height]
+1.26.50 both 0 => [InvalidValue { text: Some(Formatted { template: "{}", args: ["the input is outside of the accepted range [-512, 512]"] }) } Error minecraft:dimension/components/minecraft:dimension_height/min_y; InvalidValue { text: Some(Formatted { template: "{}", args: ["the input is outside of the accepted range [16, 1024]"] }) } Error minecraft:dimension/components/minecraft:dimension_height/height_range; InvalidValue { text: Some(Formatted { template: "{}", args: ["the input is outside of the accepted range [-512, 512]"] }) } Error minecraft:dimension/components/minecraft:clouds/height]
+1.26.50 clouds.height -512 => []
+1.26.50 clouds.height -513 => [InvalidValue { text: Some(Formatted { template: "{}", args: ["the input is outside of the accepted range [-512, 512]"] }) } Error minecraft:dimension/components/minecraft:clouds/height]
+1.26.50 clouds.height 512 => []
+1.26.50 clouds.height 513 => [InvalidValue { text: Some(Formatted { template: "{}", args: ["the input is outside of the accepted range [-512, 512]"] }) } Error minecraft:dimension/components/minecraft:clouds/height]
+1.26.50 clouds.height 7 => []
+1.21.60 bounds -512 => [InvalidValue { text: Some(Formatted { template: "{}\n{}", args: ["Dimension height range: height_range must be greater than zero", "Invalid dimension height."] }) } Error minecraft:dimension/components/minecraft:dimension_bounds]
+1.21.60 bounds 512 => [InvalidValue { text: Some(Formatted { template: "{}\n{}", args: ["Dimension height range: height_range must be greater than zero", "Invalid dimension height."] }) } Error minecraft:dimension/components/minecraft:dimension_bounds]
+1.21.60 bounds -528 => [InvalidValue { text: Some(Formatted { template: "{}", args: ["the input is outside of the accepted range [-512, 512]"] }) } Error minecraft:dimension/components/minecraft:dimension_bounds/min; InvalidValue { text: Some(Formatted { template: "{}", args: ["the input is outside of the accepted range [-512, 512]"] }) } Error minecraft:dimension/components/minecraft:dimension_bounds/max]
+1.21.60 bounds 528 => [InvalidValue { text: Some(Formatted { template: "{}", args: ["the input is outside of the accepted range [-512, 512]"] }) } Error minecraft:dimension/components/minecraft:dimension_bounds/min; InvalidValue { text: Some(Formatted { template: "{}", args: ["the input is outside of the accepted range [-512, 512]"] }) } Error minecraft:dimension/components/minecraft:dimension_bounds/max]
+1.21.60 bounds 8 => [InvalidValue { text: Some(Formatted { template: "{} is not multiple of {}", args: ["8", "16"] }) } Error minecraft:dimension/components/minecraft:dimension_bounds/min; InvalidValue { text: Some(Formatted { template: "{} is not multiple of {}", args: ["8", "16"] }) } Error minecraft:dimension/components/minecraft:dimension_bounds/max]
+1.21.60 bounds -520 => [InvalidValue { text: Some(Formatted { template: "{}", args: ["the input is outside of the accepted range [-512, 512]"] }) } Error minecraft:dimension/components/minecraft:dimension_bounds/min; InvalidValue { text: Some(Formatted { template: "{}", args: ["the input is outside of the accepted range [-512, 512]"] }) } Error minecraft:dimension/components/minecraft:dimension_bounds/max]
+1.18.0 bounds 512 => []
+1.18.0 bounds 528 => [InvalidValue { text: Some(Formatted { template: "{}", args: ["the input is outside of the accepted range [-512, 512]"] }) } Error minecraft:dimension/components/minecraft:dimension_bounds/max]
+1.18.0 bounds 24 => [InvalidValue { text: Some(Formatted { template: "{} is not multiple of {}", args: ["24", "16"] }) } Error minecraft:dimension/components/minecraft:dimension_bounds/max]
+"#;

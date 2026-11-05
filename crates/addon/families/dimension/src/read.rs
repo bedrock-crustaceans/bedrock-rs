@@ -4,16 +4,16 @@
 
 use facet::Facet;
 
-use super::{Clouds, DimensionBounds, DimensionComponents, DimensionDescription, DimensionHeight};
+use super::{DimensionComponents, DimensionDescription};
 use crate::history::v1_18_0::Components as ComponentsV1;
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
 use bedrock_addon_core::json::{
     JsonSlice, NullRule, ScalarFailure, ScalarRead, Value, keep_unknown_members, parse_with_rules,
     reject_nulls,
 };
-use bedrock_addon_core::schema::{self, Schema};
+use bedrock_addon_core::schema::{self, Schema, SchemaCx};
 use bedrock_addon_core::version::FormatVersion;
-use bedrock_addon_core::versioning::ParseCx;
+use bedrock_addon_core::versioning::{ParseCx, Reading};
 
 /// The whole document of `[1.18.0, 1.26.50)` (vanilla `v1_21_60::DimensionDocument`).
 #[derive(Facet, Schema)]
@@ -76,7 +76,10 @@ pub(crate) fn parse_root<R: for<'f> Facet<'f>>(
 ) -> Option<R> {
     // The scalars are read by the slice's rules (`Family::reading`: strict, a number beyond
     // its integer a type error).
-    let ScalarRead { value, .. } = match parse_with_rules::<R>(text, rule, cx.load.scalar_rules) {
+    // A `null` read as a struct is the null rule's: `reject_nulls` below tells it from 1.21.60,
+    // and the legacy parser below it reads it as its defaults untold.
+    let rules = cx.load.scalar_rules.with_tells_null_struct(false);
+    let ScalarRead { value, told, .. } = match parse_with_rules::<R>(text, rule, rules) {
         Ok(read) => read,
         Err(ScalarFailure::Read(error)) => {
             d.push(error.into_diagnostic(&cx.at, |code, _| code));
@@ -87,8 +90,10 @@ pub(crate) fn parse_root<R: for<'f> Facet<'f>>(
             return None;
         }
     };
-    // What the pre-pass tells of a conversion is not pushed: under these rules it tells only
-    // a `null` read as a struct, which the typed read never reported (the null rule does).
+    // Under the strict rules the pre-pass refuses every conversion, so it tells nothing.
+    for misread in told {
+        d.push(misread.finding(&cx.at));
+    }
     if rule == Some(NullRule::Rejected) && reject_nulls(&value, text, &cx.at, d) {
         return None;
     }
@@ -119,78 +124,12 @@ pub(crate) fn parse_root<R: for<'f> Facet<'f>>(
     Some(value)
 }
 
-/// A bind constraint: `value` in `[min, max]`, and a multiple of `multiple` when given; a
-/// violation fails the file in vanilla, and is an `InvalidValue` error here with cereal's
-/// text. The range is checked first.
-pub(crate) fn constraint(
-    value: i32,
-    (min, max): (i32, i32),
-    multiple: Option<i32>,
-    at: JsonPath,
-    d: &mut Diagnostics,
-) -> bool {
-    // The shared texts: the range message names the bounds, not the value.
-    let code = if !(min..=max).contains(&value) {
-        bedrock_addon_core::diagnostic::cereal::NumericRange::inclusive(
-            f64::from(min),
-            f64::from(max),
-        )
-        .code()
-    } else if let Some(multiple) = multiple.filter(|m| value % m != 0) {
-        bedrock_addon_core::diagnostic::cereal::not_multiple_of(
-            f64::from(value),
-            f64::from(multiple),
-        )
-    } else {
-        return true;
-    };
-    d.push(Diagnostic::error(code).at(at));
-    false
-}
-
-/// The bind constraints of `minecraft:dimension_bounds` (`{-512, 512, multipleOf 16}` on both
-/// members), the same in every format that reads the bounds.
-pub(crate) fn bounds_constraints(
-    bounds: &DimensionBounds,
-    at: &JsonPath,
-    d: &mut Diagnostics,
-) -> bool {
-    let min = constraint(bounds.min, (-512, 512), Some(16), at.child("min"), d);
-    let max = constraint(bounds.max, (-512, 512), Some(16), at.child("max"), d);
-    min && max
-}
-
-/// The 1.26.50 schema constraints of `minecraft:dimension_height`: `min_y` in `[-512, 512]`,
-/// `height_range` in `[16, 1024]` and a multiple of 16.
-pub(crate) fn height_constraints(
-    height: &DimensionHeight,
-    at: &JsonPath,
-    d: &mut Diagnostics,
-) -> bool {
-    let min_y = constraint(
-        i32::from(height.min_y),
-        (-512, 512),
-        None,
-        at.child("min_y"),
-        d,
-    );
-    let range = constraint(
-        i32::from(height.height_range),
-        (16, 1024),
-        Some(16),
-        at.child("height_range"),
-        d,
-    );
-    min_y && range
-}
-
-/// The bind constraint of `minecraft:clouds`: `height` in `[-512, 512]`.
-pub(crate) fn clouds_constraint(clouds: &Clouds, at: &JsonPath, d: &mut Diagnostics) -> bool {
-    constraint(
-        i32::from(clouds.height),
-        (-512, 512),
-        None,
-        at.child("height"),
-        d,
-    )
+/// The bind constraints `value` states as its bounds and steps (`Schema::check`), at `at`:
+/// each member outside its range, or in it and off its step, is one `InvalidValue` error with
+/// cereal's text (the range first), which fails the file as vanilla's bind does. `false` when
+/// one broke.
+pub(crate) fn constraints<T: Schema>(value: &mut T, at: &JsonPath, d: &mut Diagnostics) -> bool {
+    let mut cx = SchemaCx::new(Reading::DOCUMENT, at.clone(), d).with_range_text(true);
+    value.check(&mut cx);
+    !cx.failed()
 }

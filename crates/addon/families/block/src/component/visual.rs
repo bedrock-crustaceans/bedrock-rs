@@ -9,7 +9,7 @@ use super::types::{Color, RenderMethod, TintMethod, Vec3};
 use bedrock_addon_core::diagnostic::JsonPath;
 use bedrock_addon_core::document::Unknown;
 use bedrock_addon_core::json::Value;
-use bedrock_addon_core::molang::{Molang, MolangFields, MolangVisitor};
+use bedrock_addon_core::molang::Molang;
 use bedrock_addon_core::schema::{self, Schema};
 
 /// `minecraft:geometry`: the block's model.
@@ -17,7 +17,7 @@ use bedrock_addon_core::schema::{self, Schema};
 /// JSON: a geometry identifier, or `{"identifier", "bone_visibility"?, "culling"?,
 /// "culling_shape"?, "culling_layer"?, "uv_lock"?, "n_way_visual_rotation"?}`. A geometry with
 /// `geometry` also needs `material_instances` (from 1.21.80).
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(untagged)]
 #[repr(u8)]
 #[allow(
@@ -72,7 +72,7 @@ impl GeometryParams {
 }
 
 /// `geometry.uv_lock`: all bones or a list of bone names.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(untagged)]
 #[repr(u8)]
 pub enum UvLock {
@@ -94,29 +94,16 @@ pub struct NWayVisualRotation {
     pub z: Option<String>,
 }
 
-impl MolangFields for Geometry {
-    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
-        if let Geometry::Params(params) = self {
-            params.visit_molang(visitor);
-        }
-    }
-}
-
-// A geometry and the material instances are untagged and map-valued: leaves of the schema walk,
-// whose bounds the family checks itself; the instances hold no Molang.
-bedrock_addon_core::impl_schema_leaf!(Geometry, UvLock, MaterialInstances);
-bedrock_addon_core::impl_no_molang!(UvLock, MaterialInstances);
-
 /// `minecraft:material_instances`: the textures and render settings per face or bone.
 ///
 /// JSON: an object of at most 64 instances keyed `*`, a face (`up`, `north`, …) or a name of
 /// the geometry; a string value names another instance of the map.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
 #[facet(transparent)]
 pub struct MaterialInstances(pub IndexMap<String, MaterialInstanceEntry>);
 
 /// One entry of [`MaterialInstances`].
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(untagged)]
 #[repr(u8)]
 pub enum MaterialInstanceEntry {
@@ -127,7 +114,7 @@ pub enum MaterialInstanceEntry {
 }
 
 /// A material instance; every member optional.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct MaterialInstance {
     /// The `terrain_texture.json` short name (JSON `texture`).
@@ -211,7 +198,7 @@ impl MaterialInstances {
 }
 
 /// `minecraft:transformation`: translation, scale and rotation of the model.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct Transformation {
     /// JSON `translation`.
@@ -263,7 +250,7 @@ pub struct DestructionParticles {
 /// `minecraft:map_color`: the colour on a map.
 ///
 /// JSON: a colour, or `{"color", "tint_method"?}`.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(untagged)]
 #[repr(u8)]
 pub enum MapColor {

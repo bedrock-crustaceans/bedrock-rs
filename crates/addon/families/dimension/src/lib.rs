@@ -31,7 +31,7 @@ use bedrock_addon_support::puv::shadowed;
 use history::{Any, DimensionFamily};
 use indexmap::IndexMap;
 
-pub(crate) use read::{RootV1, bounds_constraints, parse_root, slice_null_rule};
+pub(crate) use read::{RootV1, constraints, parse_root, slice_null_rule};
 pub use types::{
     Clouds, DefaultBiome, Dimension, DimensionBounds, DimensionComponents, DimensionDescription,
     DimensionHeight, Generation, GeneratorType,

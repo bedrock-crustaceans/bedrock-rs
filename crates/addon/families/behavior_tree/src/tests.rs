@@ -330,3 +330,20 @@ fn a_long_chain_and_a_long_cycle() {
         ]
     );
 }
+
+/// Each row of the node table: a tree whose root is the row's type with an empty body reads
+/// as a node of that type.
+#[test]
+fn every_kinds_row_reads_an_empty_body_as_its_own_type() {
+    use bedrock_addon_core::document::Content;
+    for row in super::kinds::KINDS {
+        let text = format!(
+            r#"{{"minecraft:behavior_tree": {{"minecraft:name": "t", "minecraft:root": {{"{}": {{}}}}}}}}"#,
+            row.name
+        );
+        let path = PackPath::new("behavior_trees/t.json").unwrap();
+        let document = BehaviorTree::parse(&path, text.as_bytes(), &LoadContext::detached())
+            .unwrap_or_else(|rejected| panic!("{}: {:?}", row.name, rejected.diagnostics));
+        assert_eq!(document.root.type_name(), row.name);
+    }
+}

@@ -278,3 +278,27 @@ beta float_attr.value 18446744073709551616 => loaded {"format_version": "beta","
 beta float_attr.value [] => rejected [InvalidType Error minecraft:client_biome/environment_attributes/minecraft:experimental_float_attr_1/value/0 190+1; MalformedInput Error minecraft:client_biome -; MalformedInput Error  -]
 beta float_attr.value {} => rejected [InvalidType Error minecraft:client_biome/environment_attributes/minecraft:experimental_float_attr_1/value 190+1; MalformedInput Error minecraft:client_biome -; MalformedInput Error  -]
 "#;
+
+/// Documents with a struct member written `null`: what the slice's null rule makes of it,
+/// told once (rejected where the input rejects nulls, read as its defaults elsewhere).
+const NULL_STRUCTS: &[&str] = &[
+    r#"{"format_version": "1.21.130", "minecraft:client_biome": {"description": {"identifier": "demo:a"}, "components": {"minecraft:water_appearance": null}}}"#,
+    r#"{"format_version": "1.21.110", "minecraft:client_biome": {"description": {"identifier": "demo:a"}, "components": {"minecraft:precipitation": null}}}"#,
+];
+
+#[test]
+fn a_null_struct_member_reads_as_pinned() {
+    let mut table = String::new();
+    for text in NULL_STRUCTS {
+        let _ = writeln!(table, "{}", line(text));
+    }
+    assert!(
+        table == NULL_STRUCTS_EXPECTED,
+        "--- actual ---\n{table}--- end ---"
+    );
+}
+
+/// The null struct table.
+const NULL_STRUCTS_EXPECTED: &str = r"rejected [InvalidType Error minecraft:client_biome/components/minecraft:water_appearance -; MalformedInput Error minecraft:client_biome -; MalformedInput Error  -]
+rejected [InvalidType Error minecraft:client_biome/components/minecraft:precipitation -; MalformedInput Error  -; MalformedInput Error  -]
+";

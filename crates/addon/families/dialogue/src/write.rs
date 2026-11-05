@@ -3,11 +3,7 @@
 use facet_value::{VArray, VObject};
 
 use super::{Button, DialogueFile, DialogueScene, DialogueText, StoredCommand};
-use bedrock_addon_core::diagnostic::{Diagnostic, JsonPath, JsonPathSegment};
-use bedrock_addon_core::document::Unknown;
-use bedrock_addon_core::json::{
-    EncodeError, Indent, Value, WriteStyle, write_json, write_json_with,
-};
+use bedrock_addon_core::json::{EncodeError, Indent, Value, WriteStyle, write_json};
 use bedrock_addon_core::version::SemVersion;
 
 impl DialogueFile {
@@ -19,25 +15,6 @@ impl DialogueFile {
         style: WriteStyle,
     ) -> Result<(), EncodeError> {
         write_json(&self.root(), out, style)
-    }
-
-    /// [`write_into`](Self::write_into) with the document's unknown members after each level's
-    /// known ones. A member the typed value writes is never replaced by an unknown one of the
-    /// same key.
-    pub(crate) fn write_with_unknown(
-        &self,
-        unknown: &Unknown,
-        out: &mut Vec<u8>,
-        style: WriteStyle,
-    ) -> Result<Vec<Diagnostic>, EncodeError> {
-        let root = self.root();
-        let mut kept = Unknown::new();
-        for (at, key, value) in unknown.iter() {
-            if !holds(&root, at, key) {
-                kept.put(at, key, value.clone());
-            }
-        }
-        write_json_with(&root, &kept, out, style)
     }
 
     /// The file's known members.
@@ -119,20 +96,6 @@ fn commands_json(commands: &[StoredCommand]) -> VArray {
         list.push(Value::from(command.raw.as_str()));
     }
     list
-}
-
-/// Whether the object at `at` of `root` holds the member `key`.
-fn holds(root: &Value, at: &JsonPath, key: &str) -> bool {
-    let mut value = Some(root);
-    for segment in at.segments() {
-        value = value.and_then(|value| match segment {
-            JsonPathSegment::Key(key) => value.as_object()?.get(key),
-            JsonPathSegment::Index(index) => value.as_array()?.get(index),
-        });
-    }
-    value
-        .and_then(Value::as_object)
-        .is_some_and(|object| object.contains_key(key))
 }
 
 /// `Json::FastWriter::write` of `value`: compact JSON and one newline. Object members come in

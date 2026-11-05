@@ -2,11 +2,11 @@
 //! `enchantable`, `repairable`, `wearable`.
 
 use bedrock_addon_core::id::SoundEventName;
-use bedrock_addon_core::molang::{Molang, MolangFields, MolangVisitor};
+use bedrock_addon_core::molang::Molang;
 use bedrock_addon_core::shared::{IntRange, ItemDescriptor};
 use facet::Facet;
 
-use super::{FORMAT_VERSION_MOLANG, visit_item_descriptor};
+use super::{FORMAT_VERSION_MOLANG, visit_item_descriptors};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::schema::{self, Schema};
 
@@ -20,7 +20,7 @@ pub struct DamageAbsorption {
 }
 
 /// `minecraft:durability`: how much use the item takes before it breaks.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct Durability {
     /// The durability, at least 0 (JSON `max_durability`, required).
@@ -42,7 +42,7 @@ impl Durability {
 
 /// `minecraft:durability_sensor`: particles and sounds when the durability falls to a
 /// threshold.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct DurabilitySensor {
     /// The thresholds (JSON `durability_thresholds`, required, at least one).
@@ -53,7 +53,7 @@ pub struct DurabilitySensor {
 ///
 /// A member the document leaves out stays unset (and is not written); the game gives it the
 /// value the constants and accessors below state.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct DurabilityThreshold {
     /// The durability at which it fires (JSON `durability`).
@@ -130,7 +130,7 @@ pub(crate) const ENCHANT_SLOTS: &[&str] = &[
 ];
 
 /// `minecraft:repairable`: the items that repair this one, and by how much.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct Repairable {
     /// The repair entries (JSON `repair_items`).
@@ -139,37 +139,16 @@ pub struct Repairable {
 }
 
 /// One entry of a [`Repairable`].
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct RepairItem {
     /// The items that repair (JSON `items`, required).
+    #[facet(schema::molang_with = visit_item_descriptors)]
     pub items: Vec<ItemDescriptor>,
     /// The durability restored (JSON `repair_amount`): a number, a Molang string or
     /// `{"expression", "version"}`, compiled at the item's version.
+    #[facet(schema::molang = FORMAT_VERSION_MOLANG)]
     pub repair_amount: Option<Molang>,
-}
-
-impl MolangFields for Repairable {
-    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
-        visitor.enter("repair_items".into());
-        for (i, entry) in self.repair_items.iter_mut().enumerate() {
-            visitor.enter(i.into());
-            visitor.enter("items".into());
-            for (j, item) in entry.items.iter_mut().enumerate() {
-                visitor.enter(j.into());
-                visit_item_descriptor(item, visitor);
-                visitor.leave();
-            }
-            visitor.leave();
-            visitor.field(
-                "repair_amount",
-                &FORMAT_VERSION_MOLANG,
-                &mut entry.repair_amount,
-            );
-            visitor.leave();
-        }
-        visitor.leave();
-    }
 }
 
 /// `minecraft:wearable`: the item is worn in `slot`.

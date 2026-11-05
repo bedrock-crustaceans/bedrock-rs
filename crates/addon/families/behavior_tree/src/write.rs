@@ -25,10 +25,11 @@ use super::read::{
     SHOULD_THROW, TARGET_BLOCK_POS, WAIT_DEFAULT_KEY, WAIT_DURATION,
 };
 use super::{BehaviorTree, Node, Param};
-use bedrock_addon_core::diagnostic::{Diagnostic, JsonPath, JsonPathSegment};
+use bedrock_addon_core::diagnostic::{Diagnostic, JsonPath};
 use bedrock_addon_core::document::Unknown;
 use bedrock_addon_core::json::{
-    EncodeError, MAX_JSON_DEPTH, Unrepresentable, Value, WriteStyle, merge_unknown, write_json,
+    EncodeError, MAX_JSON_DEPTH, Precedence, Unrepresentable, Value, WriteStyle,
+    merge_unknown_with, write_json,
 };
 
 impl BehaviorTree {
@@ -74,8 +75,8 @@ impl BehaviorTree {
         let mut root = VObject::new();
         root.insert(PAYLOAD, payload);
         let mut document = root.into_value();
-        let unknown = not_written(&document, unknown);
-        let told = merge_unknown(&mut document, &unknown);
+        // A member the writer writes is never written over by an unknown one of its key.
+        let told = merge_unknown_with(&mut document, unknown, Precedence::KnownWins);
         // And exactly, with what the members themselves add (an `[x, y, z]`, `data_items`, an
         // unknown member).
         if value_nesting(&document) > MAX_JSON_DEPTH {
@@ -106,31 +107,6 @@ impl BehaviorTree {
         }
         deepest
     }
-}
-
-/// The members of `unknown` to write into `document`: each but one named like a member its
-/// object already has.
-fn not_written(document: &Value, unknown: &Unknown) -> Unknown {
-    let mut kept = Unknown::new();
-    for (at, key, value) in unknown.iter() {
-        let written = object_at(document, at).is_some_and(|object| object.contains_key(key));
-        if !written {
-            kept.put(at, key, value.clone());
-        }
-    }
-    kept
-}
-
-/// The object at `at` in `document`, when there is one.
-fn object_at<'v>(document: &'v Value, at: &JsonPath) -> Option<&'v VObject> {
-    let mut value = document;
-    for segment in at.segments() {
-        value = match segment {
-            JsonPathSegment::Key(key) => value.as_object()?.get(key)?,
-            JsonPathSegment::Index(index) => value.as_array()?.get(index)?,
-        };
-    }
-    value.as_object()
 }
 
 /// The deepest level of arrays and objects in `value` (0 for a scalar), without recursion.

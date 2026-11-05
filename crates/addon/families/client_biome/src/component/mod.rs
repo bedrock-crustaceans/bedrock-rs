@@ -136,10 +136,17 @@ where
     }
     // The scalars are read by the family's rules (`crate::reading`: strict, a number beyond its
     // float a type error), in a versioned load and outside one alike.
-    let value = match parse_with_rules::<T>(slice, None, crate::reading().scalar_rules()) {
-        Ok(ScalarRead { value, .. }) => {
-            // What the pre-pass tells of a conversion is not pushed: under these rules it tells only
-            // a `null` read as a struct, which the typed read never reported (the null rule does).
+    // A `null` read as a struct is the null rule's: the row parser's `reject_nulls` tells it
+    // where the input rejects nulls, and elsewhere it reads as its defaults untold.
+    let rules = crate::reading()
+        .scalar_rules()
+        .with_tells_null_struct(false);
+    let value = match parse_with_rules::<T>(slice, None, rules) {
+        Ok(ScalarRead { value, told, .. }) => {
+            // Under the strict rules the pre-pass refuses every conversion, so it tells nothing.
+            for misread in told {
+                d.push(misread.finding(&JsonPath::new()));
+            }
             value
         }
         Err(ScalarFailure::Refused(misread)) => {

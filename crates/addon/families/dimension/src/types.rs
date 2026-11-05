@@ -58,8 +58,10 @@ pub struct DimensionComponents {
 #[facet(schema::unknown = "keep")]
 pub struct DimensionHeight {
     /// The lowest y (JSON `min_y`), in `[-512, 512]`.
+    #[facet(schema::min = -512, schema::max = 512)]
     pub min_y: i16,
     /// The height (JSON `height_range`), in `[16, 1024]` and a multiple of 16.
+    #[facet(schema::min = 16, schema::max = 1024, schema::multiple_of = 16)]
     pub height_range: i16,
 }
 
@@ -91,6 +93,7 @@ pub struct DefaultBiome {
 pub struct Clouds {
     /// "The Y coordinate at which clouds are rendered in the custom dimension. Defaults to 128
     /// if this component is omitted." (JSON `height`, required), in `[-512, 512]`.
+    #[facet(schema::min = -512, schema::max = 512)]
     pub height: i16,
 }
 
@@ -157,8 +160,10 @@ impl Generation {
 #[facet(schema::unknown = "keep")]
 pub struct DimensionBounds {
     /// JSON `min`, in `[-512, 512]` and a multiple of 16.
+    #[facet(schema::min = -512, schema::max = 512, schema::multiple_of = 16)]
     pub min: i32,
     /// JSON `max`, in `[-512, 512]` and a multiple of 16.
+    #[facet(schema::min = -512, schema::max = 512, schema::multiple_of = 16)]
     pub max: i32,
 }
 
