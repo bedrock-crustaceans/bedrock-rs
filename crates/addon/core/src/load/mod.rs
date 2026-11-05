@@ -96,8 +96,34 @@ impl fmt::Debug for LoadOptions {
     }
 }
 
-/// Identifiers that exist without a document. Chorus passes its vanilla palette.
+/// What the game has without a document: identifiers, and the values of its command and
+/// enchantment tables. Chorus passes its vanilla palette.
+///
+/// A host's provider is believed, yes or no, for what it answers. The value lookups default
+/// to the generated tables ([`GeneratedBuiltIns`](crate::vanilla::GeneratedBuiltIns)), so a
+/// host that answers only [`contains`](Self::contains) keeps the game's commands; `None` from
+/// a lookup the host implements means the game has no such value.
+///
+/// What the link pass asks a provider is not all it answers: it answers the code-registered
+/// features from addon's `CODE_FEATURES` (`addon/src/pack/link/lookup.rs`), so
+/// `contains("feature", ..)` of the generated tables is `false`, and it checks the legacy
+/// block and item names and the fileless entities itself before asking the host
+/// (`lookup.rs:722-728`). A host's [`command`](Self::command) is asked with the word as
+/// written; the generated tables fold ASCII case, as function's `find_command` does.
 pub trait BuiltIns: Send + Sync {
     /// Whether `id` of kind `kind` (`Kind::NAME`) is built in.
     fn contains(&self, kind: &'static str, id: &str) -> bool;
+    /// The command typed as `name`: its name or one of its aliases, without `/`. The default
+    /// compares without ASCII case.
+    fn command(&self, name: &str) -> Option<&crate::vanilla::Command> {
+        crate::vanilla::GeneratedBuiltIns.command(name)
+    }
+    /// The command enum called `name`, compared without ASCII case.
+    fn command_enum(&self, name: &str) -> Option<&crate::vanilla::CommandEnum> {
+        crate::vanilla::GeneratedBuiltIns.command_enum(name)
+    }
+    /// The enchantment an alias names (`minecraft:bow_infinity` → `minecraft:infinity`).
+    fn enchantment_alias(&self, alias: &str) -> Option<&str> {
+        crate::vanilla::GeneratedBuiltIns.enchantment_alias(alias)
+    }
 }

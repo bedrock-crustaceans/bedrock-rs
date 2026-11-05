@@ -1,11 +1,12 @@
 //! The per-pack load context: what the game's loaders know about the pack a document is in.
 
+use std::fmt;
 use std::sync::Arc;
 
 use indexmap::IndexMap;
 use uuid::Uuid;
 
-use super::{Experiment, Experiments, LoadOptions};
+use super::{BuiltIns, Experiment, Experiments, LoadOptions};
 use crate::id::{
     AtmosphereSettingsId, BiomeId, ColorGradingSettingsId, LightingSettingsId, WaterSettingsId,
 };
@@ -86,6 +87,19 @@ pub struct LoadContext {
     /// three quarters of it.
     /// Lowered only to test the refusal without a 128 MiB text.
     pub max_json_document_bytes: usize,
+    /// The host's provider, shared from `LoadOptions::built_ins`
+    /// ([`built_ins`](Self::built_ins), [`set_built_ins`](Self::set_built_ins)).
+    built_ins: Option<HostBuiltIns>,
+}
+
+/// A host's provider on the context: `Debug` without asking the provider to be.
+#[derive(Clone)]
+struct HostBuiltIns(Arc<dyn BuiltIns>);
+
+impl fmt::Debug for HostBuiltIns {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("present")
+    }
 }
 
 /// What a document's bytes were before the loader read them.
@@ -172,7 +186,30 @@ impl LoadContext {
             strict_components: false,
             source: DocumentSource::Json,
             max_json_document_bytes: super::MAX_JSON_DOCUMENT_BYTES,
+            built_ins: options.built_ins.clone().map(HostBuiltIns),
         }
+    }
+
+    /// What answers for the game's own content: the host's provider when the stack's
+    /// options gave one, else the generated tables
+    /// ([`GeneratedBuiltIns`](crate::vanilla::GeneratedBuiltIns)).
+    pub fn built_ins(&self) -> &dyn BuiltIns {
+        static TABLES: crate::vanilla::GeneratedBuiltIns = crate::vanilla::GeneratedBuiltIns;
+        match &self.built_ins {
+            Some(host) => host.0.as_ref(),
+            None => &TABLES,
+        }
+    }
+
+    /// The host's provider, `None` when the host gave none: for the decisions that depend on
+    /// whether a host answers at all (the link pass's views).
+    pub fn host_built_ins(&self) -> Option<&Arc<dyn BuiltIns>> {
+        self.built_ins.as_ref().map(|host| &host.0)
+    }
+
+    /// Gives the context a host's provider, or takes it away (a detached context has none).
+    pub fn set_built_ins(&mut self, built_ins: Option<Arc<dyn BuiltIns>>) {
+        self.built_ins = built_ins.map(HostBuiltIns);
     }
 }
 

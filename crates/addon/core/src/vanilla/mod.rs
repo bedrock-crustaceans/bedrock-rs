@@ -9,6 +9,9 @@ mod generated {
     pub(super) mod vanilla_ids;
 }
 
+mod built_ins;
+
+pub use built_ins::GeneratedBuiltIns;
 pub use generated::actor_type::ActorType;
 
 impl ActorType {

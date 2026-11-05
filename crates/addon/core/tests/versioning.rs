@@ -15,6 +15,8 @@ mod components;
 mod envelope;
 #[path = "versioning/ranges.rs"]
 mod ranges;
+#[path = "versioning/reading.rs"]
+mod reading;
 #[path = "versioning/stages.rs"]
 mod stages;
 #[path = "versioning/step_output.rs"]

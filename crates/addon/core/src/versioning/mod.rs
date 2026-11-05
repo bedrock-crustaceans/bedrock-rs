@@ -20,6 +20,7 @@ mod component;
 mod load;
 mod payload;
 mod range;
+mod reading;
 #[doc(hidden)]
 pub mod testing;
 
@@ -35,6 +36,7 @@ pub use load::{
 };
 pub use payload::{parse_payload, write_payload};
 pub use range::{ChainError, Selection, check_chain, ranges, select, select_versions};
+pub use reading::{MemberFailure, NullHandling, Reading, Scalars, TextReading, UnknownMask};
 
 use std::fmt;
 
@@ -486,6 +488,38 @@ pub trait Family: Sized + 'static {
     #[allow(unused_variables)]
     fn null_rule(index: StructIndex) -> Option<crate::json::NullRule> {
         Self::INPUT.null_rule()
+    }
+    /// What the family fixes for every file before a struct is selected: the version path
+    /// and the JSON size check, the clamp beyond a double and the members whose duplicates are
+    /// kept. Default built from [`INPUT`](Self::INPUT),
+    /// [`CLAMPS_BEYOND_DOUBLE`](Self::CLAMPS_BEYOND_DOUBLE) and
+    /// [`DUPLICATES_KEPT_IN`](Self::DUPLICATES_KEPT_IN). Not read by `load` yet.
+    const TEXT: TextReading = TextReading::from_knobs(
+        Self::INPUT,
+        Self::CLAMPS_BEYOND_DOUBLE,
+        Self::DUPLICATES_KEPT_IN,
+    );
+    /// How the slice `index` reads a document from `source`. Default built from
+    /// [`null_rule`](Self::null_rule), [`error_mask`](Self::error_mask) and the
+    /// `strict_components` derivation (`null_rule(index)` rejects `null`), with an MCB source
+    /// read under no null rule, which is what `load` does today. Not read by `load` yet.
+    ///
+    /// The default does not express four local overrides the families make today, outside
+    /// the knobs it is built from:
+    ///
+    /// - block's legacy slice forces strict components and reads scalars non-strictly
+    ///   (`families/block/src/parse.rs:388-400`);
+    /// - item's legacy slice forces strict components for the parse but grades its range
+    ///   members by the unforced flag (`families/item/src/history/document.rs:134-146`);
+    /// - camera preset's slice 0 coerces scalars through `typed_unstrict`;
+    /// - dimension filters its null rule by `original_version`
+    ///   (`families/dimension/src/parse.rs:68-75`).
+    ///
+    /// Each family states its override with the `with_*` builders when it migrates onto
+    /// `reading`; item goes first, and its range-member severity then reads
+    /// [`Reading::unknown`].
+    fn reading(index: StructIndex, source: crate::load::DocumentSource) -> Reading {
+        Reading::from_knobs(Self::null_rule(index), Self::error_mask(index), source)
     }
     /// The severity of `EmptyDocument` for an empty file (it is never loaded).
     const EMPTY_DOCUMENT: Severity = Severity::Error;
