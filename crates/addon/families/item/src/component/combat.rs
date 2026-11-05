@@ -127,7 +127,7 @@ pub struct Projectile {
 #[facet(schema::unknown = "keep")]
 pub struct Shooter {
     /// The ammunition, in order of preference (JSON `ammunition`).
-    #[facet(default, skip_serializing_if = Vec::is_empty, schema::molang_with = visit_ammunition)]
+    #[facet(default, skip_serializing_if = Vec::is_empty)]
     pub ammunition: Vec<ShooterAmmunition>,
     /// The longest draw in seconds (JSON `max_draw_duration`).
     pub max_draw_duration: Option<f32>,
@@ -150,19 +150,6 @@ pub struct ShooterAmmunition {
     pub search_inventory: Option<bool>,
     /// Needed in creative mode (JSON `use_in_creative`).
     pub use_in_creative: Option<bool>,
-}
-
-/// Visits the `tags` of each ammunition entry's item, at the entry: the walk has always named
-/// the expression `ammunition/<i>/tags`, without the entry's `item` step.
-fn visit_ammunition(
-    ammunition: &mut [ShooterAmmunition],
-    visitor: &mut bedrock_addon_core::molang::MolangVisitor<'_>,
-) {
-    for (index, entry) in ammunition.iter_mut().enumerate() {
-        visitor.enter(index.into());
-        visit_item_descriptor(&mut entry.item, visitor);
-        visitor.leave();
-    }
 }
 
 /// `minecraft:swing_sounds`: the sounds of a swing (engine 1.21.130). At least one member must

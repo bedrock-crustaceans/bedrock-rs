@@ -402,8 +402,8 @@ mod tests {
             walked::<Shooter>(&format!(
                 r#"{{"ammunition": [{{"item": "a:c"}}, {{"item": {i}}}]}}"#
             )),
-            // Today's walk visits an entry's descriptor at the entry, without its `item` step.
-            [at("ammunition/1/tags", ITEM_TAGS_MOLANG)]
+            // The walk names the entry's `item` step, as the link pass and validation do.
+            [at("ammunition/1/item/tags", ITEM_TAGS_MOLANG)]
         );
         assert_eq!(
             walked::<StorageItem>(&format!(
