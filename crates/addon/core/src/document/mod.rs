@@ -25,10 +25,13 @@ mod combine_moves;
 mod component;
 pub mod files;
 mod finite;
+mod json_document;
 pub mod layered;
 mod merged;
+mod no_beta;
 mod placed;
 pub mod registry;
+mod relocate;
 pub mod unversioned;
 
 #[doc(hidden)]
@@ -45,6 +48,7 @@ pub use combine::{
 pub use component::{Component, ComponentMap, ComponentRef, ComponentSet, CustomComponent};
 #[doc(hidden)]
 pub use finite::FiniteText;
+pub use json_document::{JsonDefinition, JsonDocument};
 #[doc(hidden)]
 pub use merged::{Layer, MergeCx};
 pub use merged::{Merged, RawLayer};

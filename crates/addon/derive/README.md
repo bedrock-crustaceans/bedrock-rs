@@ -75,7 +75,7 @@ use bedrock_addon_core::json::{JsonSlice, Value};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
-    ComponentTable, ConvertMode, Family, Loaded, UpgradeCx, VersionChain, Versioned,
+    ComponentTable, ConvertMode, Family, Loaded, NoStable, UpgradeCx, VersionChain,
 };
 use bedrock_addon_derive::Components;
 
@@ -100,12 +100,7 @@ fn parse_friction(
 }
 
 pub struct Block;
-pub struct BlockLatest;
 pub enum BlockAny {}
-
-impl Versioned for BlockLatest {
-    const VERSION: FormatVersion = FormatVersion { major: 1, minor: 21, patch: 0 };
-}
 
 impl VersionChain<Block> for BlockAny {
     const VERSIONS: &'static [FormatVersion] = &[];
@@ -122,7 +117,7 @@ impl Family for Block {
     const PAYLOAD_KEY: &'static str = "minecraft:block";
     const DIRECTORIES: &'static [&'static str] = &["blocks"];
     const FLOOR: FormatVersion = FormatVersion { major: 1, minor: 10, patch: 0 };
-    type Latest = BlockLatest;
+    type Latest = NoStable;
     type Beta = Infallible;
     type Component = BlockComponent;
     type Any = BlockAny;

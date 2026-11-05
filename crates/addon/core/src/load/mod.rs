@@ -9,6 +9,7 @@ use crate::version::BaseGameVersion;
 
 mod app_data;
 mod collection;
+mod constructors;
 mod context;
 mod experiment;
 mod limits;
@@ -22,6 +23,8 @@ pub use collection::{
     Accept, AppDataPlace, CollectionLoader, Registered, Registration, Reported, StackCx, StackPack,
     Walk, WalkFile, WalkOrder, unread_files,
 };
+#[doc(hidden)]
+pub use constructors::{FileCopy, files, merged, registry};
 pub use context::{BiomeRenderIdentifiers, DocumentSource, LoadContext};
 pub use experiment::{Experiment, Experiments, LoadRequirement, SaveName};
 pub use limits::{

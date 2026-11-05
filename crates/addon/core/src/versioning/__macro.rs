@@ -3,10 +3,8 @@
 use super::payload::span_of;
 use super::pipeline::{molang_context, unsupported};
 use super::range::{Selection, select};
-use super::{
-    BETA_VERSION, EnvelopeCheck, Family, ParseCx, StructIndex, Upgrade, UpgradeCx, VersionChain,
-    VersionStruct,
-};
+use super::write::raw_text;
+use super::{Family, ParseCx, StructIndex, Upgrade, UpgradeCx, VersionChain, VersionStruct};
 use crate::diagnostic::{Diagnostics, JsonPath, Location};
 use crate::json::{EncodeError, JsonSlice, Value};
 use crate::load::LoadContext;
@@ -59,6 +57,17 @@ pub fn parse_selected<F: Family>(
     cx: &LoadContext,
     d: &mut Diagnostics,
 ) -> Option<F::Any> {
+    parse_selected_as::<F, F::Any>(payload, v, cx, d)
+}
+
+/// [`parse_selected`] into the chain `C`, for a chain that is not written by the macro
+/// (`Single`), which cannot name itself as `F::Any`.
+pub fn parse_selected_as<F: Family, C: VersionChain<F>>(
+    payload: JsonSlice<'_>,
+    v: FormatVersion,
+    cx: &LoadContext,
+    d: &mut Diagnostics,
+) -> Option<C> {
     let written = FormatVersionInput {
         version: Some(v),
         beta_literal: false,
@@ -80,36 +89,20 @@ pub fn parse_selected<F: Family>(
         original_version: v,
         at,
     };
-    <F::Any as VersionChain<F>>::parse_struct(payload, StructIndex::Stable(i), &cx, d)
+    C::parse_struct(payload, StructIndex::Stable(i), &cx, d)
 }
 
 /// A whole document in the struct's own version: the envelope around `payload`
 /// (`"format_version"` first, `"beta"` for the beta struct), or `payload` itself where the
-/// family reads the root struct from the whole text.
+/// family reads the root struct from the whole text ([`write_document`](super::write_document)
+/// as text).
 pub fn document_json<F: Family>(
     version: FormatVersion,
     payload: &Value,
 ) -> Result<String, EncodeError> {
-    if raw_text::<F>(version) {
-        return crate::json::to_json(payload);
-    }
-    let written: Value = if version == BETA_VERSION {
-        "beta".into()
-    } else {
-        version.to_string().into()
-    };
-    let mut root = facet_value::VObject::new();
-    root.insert("format_version", written);
-    root.insert(F::PAYLOAD_KEY, payload.clone());
-    crate::json::to_json(&Value::from(root))
-}
-
-/// Whether a document of `version` is read on the raw-text path, where the payload is the
-/// whole document and no envelope is checked.
-fn raw_text<F: Family>(version: FormatVersion) -> bool {
-    match F::ENVELOPE {
-        EnvelopeCheck::Always | EnvelopeCheck::Uncounted => false,
-        EnvelopeCheck::Never => true,
-        EnvelopeCheck::From(minimum) => version < minimum,
-    }
+    crate::json::to_json(&super::write_document::<F>(
+        version,
+        payload.clone(),
+        &crate::document::Extra::default(),
+    ))
 }

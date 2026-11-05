@@ -1,0 +1,166 @@
+//! [`JsonDocument`] and [`JsonDefinition`]: the three or four items a versioned JSON file kind
+//! states, from which core supplies the mechanical quartet (`Sealed`, [`Content`],
+//! [`JsonContent`], [`Placed`], and [`Definition`] for a definition) by blanket impls.
+
+use super::{CombineRule, Content, Definition, Document, Extra, JsonContent, Placed, Rejected};
+use crate::__private::Sealed;
+use crate::id::{Id, Kind};
+use crate::json::{EncodeError, Value, WriteStyle};
+use crate::load::{LoadContext, StackCx};
+use crate::pack_identity::{PackPath, PackRef, PackSide};
+use crate::version::FormatVersion;
+use crate::versioning::{
+    Family, VersionStruct, Versioned, parse_document, parse_document_as_written, write_document,
+};
+
+use super::Origin;
+
+/// A versioned JSON file kind whose newest struct is `Self`: one document per file, read
+/// through its family's chain and written back with the family's envelope.
+///
+/// Core implements `Sealed`, [`Content`] (parse = [`parse_document`], write =
+/// [`write_document`]), [`JsonContent`] and [`Placed`] (`default_path` = [`place`](Self::place))
+/// for every `JsonDocument`, so a type that implements it implements none of those by hand: a
+/// family moving onto it deletes its own four impls in the same change (they would overlap).
+/// A file kind that is not this (lang, a multi-definition file read its own way, a beta struct
+/// whose family's `Latest` is another type) keeps its hand impls beside the blanket ones.
+///
+/// `NAME` and `SIDES` are also `Content`'s: where both traits are in scope, a concrete path names
+/// one (`<VoxelShape as Content>::NAME`).
+pub trait JsonDocument: VersionStruct + Send + Sync + 'static {
+    /// The chain the file kind reads and writes; its newest struct is this type.
+    type Family: Family<Latest = Self>;
+    /// The sides it is loaded from ([`Content::SIDES`]); the first is the side of a file read
+    /// on its own ([`Content::parse`]).
+    const SIDES: &'static [PackSide];
+    /// [`Content::NAME`]: the family's name unless the file kind is named otherwise in messages
+    /// (`"fog settings"` of the `"fog"` family).
+    const NAME: &'static str = <Self::Family as Family>::NAME;
+
+    /// Where `PackWriter::add` puts this value ([`Placed::default_path`]): one of
+    /// `document::{default_path, default_path_flat, default_path_flat_for_vanilla}` of the
+    /// identifier, or a fixed path.
+    fn place(&self) -> PackPath;
+
+    /// The `format_version` the value is written at. Default: the family's newest struct's,
+    /// this type's own. A family that writes the version the file was read at overrides it
+    /// (`source_format_version.max(FLOOR)`).
+    fn write_version(&self) -> FormatVersion {
+        <Self as Versioned>::VERSION
+    }
+
+    /// Adds the root members written after the payload (a document's `root_extra`); none by
+    /// default. Not written on the raw-text path, where the struct writes its own root.
+    #[allow(unused_variables)]
+    fn write_extras(&self, root: &mut Extra) {}
+
+    /// Refuses to write a value the game would not read back (fog's rules, block's Cereal
+    /// check), before anything is written. Default: every value is written.
+    ///
+    /// # Errors
+    ///
+    /// `EncodeError` when the value must not be written.
+    fn refuse_write(&self) -> Result<(), EncodeError> {
+        Ok(())
+    }
+
+    /// The struct the file's `format_version` selects, not upgraded, for the file `path` read on
+    /// its own: [`parse_document_as_written`] on the first of [`SIDES`](Self::SIDES). Kept by
+    /// name for the families' inherent `parse_as_written`, which this replaces.
+    ///
+    /// # Errors
+    ///
+    /// `Rejected` when the text is not readable JSON or the file does not parse into a value.
+    fn parse_as_written(
+        path: &PackPath,
+        bytes: &[u8],
+        cx: &LoadContext,
+    ) -> Result<Document<<Self::Family as Family>::Any>, Rejected> {
+        parse_document_as_written::<Self::Family>(first_side(Self::SIDES), path, bytes, cx)
+    }
+}
+
+/// A [`JsonDocument`] that is one definition of a registry, its file holding only it
+/// (`Definition::File = Self`): core implements [`Definition`] for it, its beta the family's
+/// `Beta` (`NoBeta<Kind>` for a family without one, which the bound on `Family` here requires
+/// to be of this kind).
+///
+/// A file of several definitions (animation, render controller, geometry, dialogue, server
+/// sound definitions, `blocks.json`) is a `JsonDocument` at most for the file; its entry type
+/// keeps a hand `Definition` with `File = <the file>`, and its loader takes the file's
+/// entries, `fn entries(&File) -> Vec<(Id<Kind>, Def)>`, which core does not generalise yet:
+/// how a file's findings and rejection are shared among its entries differs by family.
+pub trait JsonDefinition:
+    JsonDocument<Family: Family<Beta: Definition<Kind = <Self as JsonDefinition>::Kind>>>
+{
+    /// The identifier kind the registry is keyed by.
+    type Kind: Kind;
+
+    /// The definition's identifier (`description.identifier`, `identifier` or `name`, as the
+    /// family has it).
+    fn identifier(&self) -> &Id<<Self as JsonDefinition>::Kind>;
+
+    /// How the stable definitions of one identifier from several packs combine
+    /// (`load::registry`'s combine). Default `CombineRule::top_wins()`.
+    #[allow(unused_variables)]
+    fn combine_rule(stack: &StackCx<'_>) -> CombineRule<Self> {
+        CombineRule::top_wins()
+    }
+
+    /// How the beta definitions combine. Default `CombineRule::top_wins()`.
+    #[allow(unused_variables)]
+    fn beta_rule(stack: &StackCx<'_>) -> CombineRule<<Self::Family as Family>::Beta> {
+        CombineRule::top_wins()
+    }
+}
+
+/// The side of a file read on its own: the first the kind is loaded from.
+fn first_side(sides: &[PackSide]) -> PackSide {
+    sides.first().copied().unwrap_or(PackSide::Behavior)
+}
+
+/// The whole document of `value`, after its refusal check.
+fn document_of<T: JsonDocument>(value: &T) -> Result<Value, EncodeError> {
+    value.refuse_write()?;
+    let mut extras = Extra::default();
+    value.write_extras(&mut extras);
+    Ok(write_document::<T::Family>(
+        value.write_version(),
+        VersionStruct::write(value)?,
+        &extras,
+    ))
+}
+
+impl<T: JsonDocument> Sealed for T {}
+
+impl<T: JsonDocument> Content for T {
+    const NAME: &'static str = <T as JsonDocument>::NAME;
+    const SIDES: &'static [PackSide] = <T as JsonDocument>::SIDES;
+
+    fn parse(path: &PackPath, bytes: &[u8], cx: &LoadContext) -> Result<Document<Self>, Rejected> {
+        let origin = Origin::file(
+            PackRef::app_data(),
+            first_side(<T as JsonDocument>::SIDES),
+            path.clone(),
+        );
+        parse_document::<T::Family>(origin, bytes, cx).1
+    }
+
+    fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
+        crate::json::write_json(&document_of(self)?, out, style)
+    }
+}
+
+impl<T: JsonDocument> JsonContent for T {}
+
+impl<T: JsonDocument> Placed for T {
+    fn default_path(&self) -> PackPath {
+        self.place()
+    }
+}
+
+impl<T: JsonDefinition> Definition for T {
+    type Kind = <T as JsonDefinition>::Kind;
+    type File = T;
+    type Beta = <T::Family as Family>::Beta;
+}

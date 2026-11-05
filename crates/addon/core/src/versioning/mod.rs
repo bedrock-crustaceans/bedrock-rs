@@ -17,13 +17,17 @@
 
 mod chain;
 mod component;
+mod document;
 mod file;
+mod no_stable;
 mod payload;
 mod pipeline;
 mod range;
 mod reading;
+mod single;
 #[doc(hidden)]
 pub mod testing;
+mod write;
 
 #[doc(hidden)]
 pub mod __macro;
@@ -32,6 +36,7 @@ pub use component::{
     ComponentSection, check_experimental_fields, check_fields_released, check_fields_since_engine,
     check_released, parse_component, parse_component_map, validate_components,
 };
+pub use document::{parse_document, parse_document_as_written};
 pub use file::{BelowFloor, FileFamily};
 pub use payload::{parse_payload, write_payload};
 pub use pipeline::{
@@ -40,6 +45,8 @@ pub use pipeline::{
 };
 pub use range::{ChainError, Selection, check_chain, ranges, select, select_versions};
 pub use reading::{MemberFailure, NullHandling, Reading, Scalars, TextReading, UnknownMask};
+pub use single::Single;
+pub use write::write_document;
 
 use std::fmt;
 
@@ -395,7 +402,7 @@ pub trait Family: Sized + 'static {
     /// `None` = derived from `RANGE_MODEL`; explicit only for non-chain ceilings.
     const CEILING: Option<FormatVersion> = None;
     /// The newest stable struct; [`NoStable`] for beta-only families.
-    type Latest: Versioned;
+    type Latest: VersionStruct;
     /// The beta struct; `Infallible` when the family has no beta struct.
     type Beta;
     /// Who may load beta documents.

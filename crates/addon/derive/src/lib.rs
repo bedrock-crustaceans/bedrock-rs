@@ -118,7 +118,7 @@ use syn::{DeriveInput, parse_macro_input};
 /// # use bedrock_addon_core::load::LoadContext;
 /// # use bedrock_addon_core::version::FormatVersion;
 /// # use bedrock_addon_core::versioning::{
-/// #     ComponentTable, Family, Loaded, UpgradeCx, VersionChain, Versioned,
+/// #     ComponentTable, Family, Loaded, NoStable, UpgradeCx, VersionChain,
 /// # };
 /// use bedrock_addon_core::document::{Component, CustomComponent};
 /// use bedrock_addon_core::json::Value;
@@ -146,10 +146,6 @@ use syn::{DeriveInput, parse_macro_input};
 ///     Some(Glint(true).into())
 /// }
 /// # pub struct Item;
-/// # pub struct ItemLatest;
-/// # impl Versioned for ItemLatest {
-/// #     const VERSION: FormatVersion = FormatVersion { major: 1, minor: 21, patch: 0 };
-/// # }
 /// # pub enum ItemAny {}
 /// # impl VersionChain<Item> for ItemAny {
 /// #     const VERSIONS: &'static [FormatVersion] = &[];
@@ -162,7 +158,7 @@ use syn::{DeriveInput, parse_macro_input};
 /// #   const PAYLOAD_KEY: &'static str = "minecraft:item";
 /// #   const DIRECTORIES: &'static [&'static str] = &["items"];
 /// #   const FLOOR: FormatVersion = FormatVersion { major: 1, minor: 10, patch: 0 };
-/// #   type Latest = ItemLatest;
+/// #   type Latest = NoStable;
 /// #   type Beta = Infallible;
 ///     type Component = ItemComponent;
 /// #   type Any = ItemAny;

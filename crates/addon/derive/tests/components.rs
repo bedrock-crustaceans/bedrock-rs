@@ -12,8 +12,8 @@ use bedrock_addon_core::molang::{
 };
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
-    ComponentMeta, ComponentTable, ContextArea, ConvertMode, Family, FieldMeta, Loaded, UpgradeCx,
-    VersionChain, Versioned,
+    ComponentMeta, ComponentTable, ContextArea, ConvertMode, Family, FieldMeta, Loaded, NoStable,
+    UpgradeCx, VersionChain,
 };
 use bedrock_addon_derive::Components;
 
@@ -23,13 +23,6 @@ const REQUIREMENT: LoadRequirement =
 
 /// The toy family the component enum belongs to.
 struct Toy;
-
-/// The toy family's newest struct.
-struct ToyLatest;
-
-impl Versioned for ToyLatest {
-    const VERSION: FormatVersion = version(1, 21, 0);
-}
 
 /// The toy family's chain: uninhabited, the tests never load a document.
 enum ToyAny {}
@@ -56,7 +49,7 @@ impl Family for Toy {
     const PAYLOAD_KEY: &'static str = "minecraft:toy";
     const DIRECTORIES: &'static [&'static str] = &["toys"];
     const FLOOR: FormatVersion = version(1, 16, 0);
-    type Latest = ToyLatest;
+    type Latest = NoStable;
     type Beta = Infallible;
     type Component = ToyComponent;
     type Any = ToyAny;
@@ -481,7 +474,7 @@ impl Family for Lit {
     const PAYLOAD_KEY: &'static str = "minecraft:lit";
     const DIRECTORIES: &'static [&'static str] = &["lits"];
     const FLOOR: FormatVersion = version(1, 16, 0);
-    type Latest = ToyLatest;
+    type Latest = NoStable;
     type Beta = Infallible;
     type Component = LitComponent;
     type Any = LitAny;
