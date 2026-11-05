@@ -745,6 +745,7 @@ fn getters(ident: &Ident, infos: &[FieldInfo]) -> TokenStream {
             );
             Some(quote! {
                 #[doc = #doc]
+                #[must_use]
                 #[allow(clippy::clone_on_copy)]
                 #vis fn #name(&self) -> #inner {
                     match &self.#name {

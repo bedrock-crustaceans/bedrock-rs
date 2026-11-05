@@ -311,6 +311,15 @@ fn sound_definitions_write_the_typed_value_of_the_upgraded_document() {
             r#"{"format_version": "1.26.50", "sound_definitions": {"mob.pig.say": {"category": "neutral", "max_distance": 0.0, "sounds": [{"name": "a"}], "__use_legacy_max_distance": "true", "min_distance": null}}}"#
         )
     );
+    // ... and what it writes is that document's typed value: the `null` distance and the
+    // string flag as their readings.
+    let rewritten: Value = facet_json::from_str(&legacy.to_json().unwrap()).unwrap();
+    assert_eq!(
+        rewritten,
+        json(
+            r#"{"format_version": "1.26.50", "sound_definitions": {"mob.pig.say": {"category": "neutral", "min_distance": 0.0, "max_distance": 0.0, "__use_legacy_max_distance": true, "sounds": [{"name": "a"}]}}}"#
+        )
+    );
     assert_eq!(
         legacy.default_path().as_str(),
         "sounds/sound_definitions.json"
@@ -331,7 +340,7 @@ fn a_member_named_extra_or_json_is_an_unknown_member_like_any_other() {
 }
 
 #[test]
-fn a_single_newest_definitions_file_writes_back_as_read() {
+fn a_single_newest_definitions_file_keeps_the_json_it_read() {
     let cx = LoadContext::detached();
     // A 1.26.50 file runs no step: nothing is inserted (no `null` distance, no stamp).
     let newest = r#"{"format_version": [1, 26, 50], "sound_definitions": {"x": {"sounds": [{"name": "a", "stream": true}]}, "y": 5}}"#;
@@ -475,5 +484,37 @@ fn a_root_that_is_no_object_is_written_as_written() {
         "true",
     ] {
         assert_eq!(written_json(text), json(text), "{text}");
+    }
+}
+
+/// What a copy writes merges over a lower pack's copy as the copy it was read from: the client
+/// merges the copies as JSON, so a member written that was absent, or an object written as an
+/// array, would change the stack.
+#[test]
+fn a_written_copy_merges_over_a_lower_pack_as_the_copy_it_was_read_from() {
+    use super::common::{DEFINITIONS, copies};
+    const LOWER: &str = r#"{"format_version": "1.26.50", "sound_definitions": {"x": {"category": "neutral", "min_distance": 2.0, "max_distance": 16.0, "sounds": {"a": {"name": "a", "volume": 0.5}}}, "y": {"category": "ui", "sounds": ["b"]}}}"#;
+    for upper in [
+        r#"{"format_version": "1.26.50", "sound_definitions": {"x": {"max_distance": 8.0}}}"#,
+        r#"{"format_version": "1.26.50", "sound_definitions": {"x": {"sounds": {"b": "c"}}}}"#,
+        r#"{"format_version": "1.26.50", "sound_definitions": {"x": {"sounds": ["c", {"name": "d", "stream": true}]}}}"#,
+        r#"{"format_version": "1.26.50", "sound_definitions": {"y": {"min_distance": 0, "subtitle": "", "sounds": []}}}"#,
+        r#"{"format_version": "1.26.50", "sound_definitions": {"x": {"odd": 1, "min_distance": 1e39}, "z": 5}, "top": true}"#,
+        r#"{"sound_definitions": {"x": {"sounds": [{"name": "e", "pitch": 2}]}}}"#,
+        "[]",
+        "{}",
+    ] {
+        let cx = LoadContext::detached();
+        let written = SoundDefinitions::parse(&path(DEFINITIONS), upper.as_bytes(), &cx)
+            .expect("the copy loads")
+            .to_json()
+            .expect("written");
+        let read = copies(DEFINITIONS, &[LOWER, upper]);
+        let rewritten = copies(DEFINITIONS, &[LOWER, &written]);
+        assert_eq!(
+            read.sound_definitions().value(),
+            rewritten.sound_definitions().value(),
+            "{upper} written as {written}"
+        );
     }
 }

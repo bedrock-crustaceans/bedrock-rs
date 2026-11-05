@@ -7,7 +7,8 @@ use facet_json::RawJson;
 use super::{FeatureRule, FeatureRuleConditions, FeatureRuleDescription};
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
 use bedrock_addon_core::json::{
-    JsonSlice, NullRule, ScalarFailure, Value, keep_unknown_members, parse_with_rules, reject_nulls,
+    JsonSlice, NullRule, ScalarFailure, Value, keep_unknown_members_with, parse_with_rules,
+    reject_nulls,
 };
 use bedrock_addon_core::molang::{Molang, MolangFields, MolangVisitor};
 use bedrock_addon_core::versioning::{ParseCx, parse_payload};
@@ -187,7 +188,8 @@ fn typed<T: for<'f> Facet<'f>>(
         Ok(value) => {
             if let Ok(json) = bedrock_addon_core::json::from_str_jsonc::<Value>(slice.text) {
                 let mut kept = bedrock_addon_core::document::Unknown::new();
-                let found = keep_unknown_members(&value, &json, &mut kept);
+                let keeps = crate::READING.keeps_unknown;
+                let found = keep_unknown_members_with(&value, &json, keeps, &mut kept);
                 d.unknown_mut().absorb(at, kept);
                 for (path, _) in found {
                     let mut full = at.clone();
@@ -207,7 +209,9 @@ fn typed<T: for<'f> Facet<'f>>(
         }
         // A scalar no arm of an untagged enum takes: a type error at the enum.
         Err(ScalarFailure::Refused(misread)) => {
-            d.push(misread.finding(at));
+            d.push(bedrock_addon_support::chain_file::refusal(
+                slice, &misread, at,
+            ));
             None
         }
     }

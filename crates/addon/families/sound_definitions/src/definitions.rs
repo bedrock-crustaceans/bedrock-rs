@@ -757,3 +757,82 @@ fn legacy_flag(value: &Value, report: &mut Reporter<'_>) -> bool {
     }
     boolean(value, "__use_legacy_max_distance", false, report)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The keys of a written object, in order.
+    fn keys(value: &Value) -> Vec<&str> {
+        value
+            .as_object()
+            .expect("an object")
+            .iter()
+            .map(|(key, _)| key.as_str())
+            .collect()
+    }
+
+    /// The key lists name the members by their spelling in the writers: an object whose every
+    /// member is set writes exactly the keys of its list.
+    #[test]
+    fn every_key_the_reader_knows_is_a_member_the_writer_writes() {
+        let entry = SoundEntry {
+            form: SoundEntryForm::Object,
+            name: "a".to_owned(),
+            volume: 0.5,
+            pitch: 2.0,
+            weight: 3,
+            is_3d: false,
+            stream: true,
+            interruptible: false,
+            allow_concurrent_streaming: false,
+            extra: UnknownMembers::default(),
+            read: Present::default(),
+        };
+        let parameter = ExternalEventParameter {
+            parameter: "p".to_owned(),
+            value: 1.5,
+            extra: UnknownMembers::default(),
+            read: Present::default(),
+        };
+        let action = SoundAction {
+            action_type: 1,
+            name: "n".to_owned(),
+            target: "t".to_owned(),
+            enabled: true,
+            param: 0.5,
+            delay: 0.25,
+            extra: UnknownMembers::default(),
+            read: Present::default(),
+        };
+        let definition = SoundDefinition {
+            category: "neutral".to_owned(),
+            min_distance: 1.0,
+            max_distance: 2.0,
+            use_legacy_max_distance: true,
+            subtitle: "s".to_owned(),
+            sounds: vec![entry.clone()],
+            external_event_name: Some("e".to_owned()),
+            external_event_parameters: vec![parameter.clone()],
+            actions: vec![action.clone()],
+            ..SoundDefinition::default()
+        };
+        let mut definitions = IndexMap::new();
+        definitions.insert(SoundEventName::parse("x"), definition.clone());
+        let root = SoundDefinitions {
+            format_version: Some(SemVersion::new(1, 26, 50)),
+            sound_definitions: definitions,
+            not_definitions: UnknownMembers::default(),
+            extra: UnknownMembers::default(),
+            foreign_root: None,
+            read: Present::default(),
+            json: Written::default(),
+        };
+        let written = |value: Result<Value, EncodeError>| value.expect("written");
+        assert_eq!(keys(&written(root.to_value())), ROOT_KEYS);
+        assert_eq!(keys(&written(definition.to_value())), DEFINITION_KEYS);
+        assert_eq!(keys(&written(entry.to_value(&definition))), ENTRY_KEYS);
+        assert_eq!(keys(&written(parameter.to_value())), PARAMETER_KEYS);
+        assert_eq!(keys(&written(action.to_value())), ACTION_KEYS);
+    }
+}

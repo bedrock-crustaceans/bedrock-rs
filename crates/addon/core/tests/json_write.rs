@@ -539,3 +539,46 @@ fn the_signed_facet_text_keeps_a_negative_zero_and_nothing_else() {
         to_facet_json(&plain).unwrap()
     );
 }
+
+// --- facet writer gap: an untagged enum's struct variant -------------------------------------
+
+/// A plain struct's `Option` field.
+#[derive(Facet)]
+struct PlainBounds {
+    min: Option<u32>,
+    max: Option<u32>,
+}
+
+/// The same fields in a struct variant of an untagged enum (trade's `Quantity::Range`).
+#[derive(Facet)]
+#[facet(untagged)]
+#[repr(u8)]
+#[allow(dead_code, reason = "written, never matched")]
+enum Bounds {
+    Exact(u32),
+    Range { min: Option<u32>, max: Option<u32> },
+}
+
+/// The writer leaves out a `None` field of a struct, but writes a `None` field of an untagged
+/// enum's struct variant as `null`: a variant whose absent members must stay absent needs
+/// `skip_serializing_if = Option::is_none` on each (trade's `Quantity::Range` has two).
+// TODO(facet): open an upstream issue on facet-rs/facet, "facet-json: an untagged enum's struct
+// variant writes a `None` field as `null` where a struct leaves it out", and name it here; once
+// fixed this test fails and trade's two `skip_serializing_if` can go.
+#[test]
+fn an_untagged_struct_variant_writes_a_none_field_as_null() {
+    assert_eq!(
+        compact(&PlainBounds {
+            min: Some(1),
+            max: None
+        }),
+        r#"{"min":1}"#
+    );
+    assert_eq!(
+        compact(&Bounds::Range {
+            min: Some(1),
+            max: None
+        }),
+        r#"{"min":1,"max":null}"#
+    );
+}

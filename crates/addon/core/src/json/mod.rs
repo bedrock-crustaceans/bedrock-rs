@@ -92,7 +92,7 @@ pub(crate) use unknown::door_unknown_members;
 #[doc(hidden)]
 pub use unknown::{
     BEYOND_FLOAT_MEMBER, Misread, Misreading, keep_members, keep_members_and_range_members,
-    keep_unknown_members, too_deep_to_walk, unknown_members,
+    keep_unknown_members, keep_unknown_members_with, too_deep_to_walk, unknown_members,
 };
 #[doc(hidden)]
 pub use write::{

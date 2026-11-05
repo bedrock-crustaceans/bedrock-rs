@@ -10,7 +10,6 @@ use bedrock_addon_core::molang::{
     Admission, EmptyRule, Molang, MolangFailure, MolangFieldSpec, MolangFields,
     MolangVersionSource, MolangVisitor, OpsRule, RawVersion, ReadField, ReaderKind, Step,
 };
-use bedrock_addon_core::schema;
 
 /// `distribution`: the positions a rule scatters its feature to.
 ///
@@ -55,9 +54,9 @@ pub enum ScatterChance {
 }
 
 /// The object form of `scatter_chance`: the chance is `numerator / denominator`. Its unknown
-/// members are kept where it is read typed (a feature rule's `distribution`).
+/// members are kept where it is read typed under a reading that keeps them (a feature rule's
+/// `distribution`).
 #[derive(Clone, Debug, PartialEq, facet::Facet)]
-#[facet(schema::unknown = "keep")]
 pub struct ScatterFraction {
     /// JSON `numerator`, at least 1.
     pub numerator: i32,
@@ -81,9 +80,9 @@ pub enum CoordinateRange {
 }
 
 /// The object form of a coordinate: a distribution over an extent. Its unknown members are
-/// kept where it is read typed (a feature rule's `distribution`).
+/// kept where it is read typed under a reading that keeps them (a feature rule's
+/// `distribution`).
 #[derive(Clone, Debug, PartialEq, facet::Facet)]
-#[facet(schema::unknown = "keep")]
 pub struct CoordinateDistribution {
     /// The distribution (JSON `distribution`).
     pub distribution: RandomDistribution,

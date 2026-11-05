@@ -217,6 +217,11 @@ impl Family for PresetFamily {
     /// The legacy slice `[1.19.50, 1.26.50)` tolerates some errors the 1.26.50 slice does not.
     /// An unknown member drops the preset under both: the game scans the log of the parse for
     /// the unknown-member error, which the shape check reports as an error.
+    ///
+    /// Both slices' tables say `Strict`, but the legacy slice 0 is read by the game's
+    /// non-strict cereal reader: its parse (`file::typed_unstrict`) reads each scalar of the
+    /// other type as the bound one, with an information, before the shape check, so the strict
+    /// scalars of its reading never see one.
     fn reading(index: StructIndex, _: DocumentSource) -> Reading {
         file::strict(match index {
             StructIndex::Stable(0) => Reading::DOCUMENT.with_unknown(UnknownMask::Warn),

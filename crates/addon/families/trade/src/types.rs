@@ -136,6 +136,10 @@ pub enum Quantity {
     /// A whole number: exactly that many.
     Exact(u32),
     /// `{"min", "max"}`: between the two, inclusive.
+    // The writer writes a `None` field of an untagged enum's struct variant as `null`, which
+    // a struct leaves out (pinned in core's `json_write`,
+    // `an_untagged_struct_variant_writes_a_none_field_as_null`): the two skips keep an absent
+    // bound absent.
     Range {
         /// The least (JSON `min`, default 1).
         #[facet(skip_serializing_if = Option::is_none)]

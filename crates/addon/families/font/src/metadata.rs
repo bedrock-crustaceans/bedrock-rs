@@ -720,6 +720,25 @@ mod kept_root_tests {
     use super::*;
     use bedrock_addon_support::fixed_path::testing::{assert_kept_root_written_linearly, list};
 
+    /// The root kept beside the fields is left out of equality: a loaded value that kept one
+    /// equals the value built by hand with the same fields, and is still written as authored.
+    #[test]
+    fn a_kept_root_is_left_out_of_equality() {
+        let root = bedrock_addon_support::jsoncpp::read(
+            br#"{"version": 1, "fonts": [{"font_format": "ttf", "font_name": "t", "font_file": "font/t"}, 5]}"#,
+        )
+        .expect("JSON");
+        let loaded = FontMetadata::from_value(&root, &mut Diagnostics::default());
+        assert_eq!(*loaded.written, Some(root.clone()));
+        let built = FontMetadata {
+            written: bedrock_addon_core::json::kit::Written::default(),
+            ..loaded.clone()
+        };
+        assert_eq!(loaded, built);
+        assert_eq!(loaded.to_value(), root);
+        assert_ne!(built.to_value(), root);
+    }
+
     /// A write of a value that keeps its root is linear in its entries, with one entry the
     /// game skips.
     #[test]

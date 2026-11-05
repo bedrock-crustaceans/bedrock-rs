@@ -68,8 +68,22 @@ pub fn keep_unknown_members<'f, T: Facet<'f>>(
     json: &Value,
     kept: &mut Table,
 ) -> Vec<(JsonPath, Value)> {
+    keep_unknown_members_with(target, json, false, kept)
+}
+
+/// [`keep_unknown_members`] under a reading: when `keeps_unknown`
+/// (`Reading::keeps_unknown`), a struct that says nothing keeps its unknown members too, as the
+/// door decides for the slice (a struct's `extra` mark or its `schema::unknown` word decides
+/// first). For a hand reader that reads a member of its slice by facet outside the door: it
+/// keeps what its reading says, with no `schema::unknown = "keep"` on each struct.
+pub fn keep_unknown_members_with<'f, T: Facet<'f>>(
+    target: &T,
+    json: &Value,
+    keeps_unknown: bool,
+    kept: &mut Table,
+) -> Vec<(JsonPath, Value)> {
     // The misread scalars are not asked for: the walk does not look for them.
-    let (unknowns, _) = keep_walked(target, json, false, false, false, kept);
+    let (unknowns, _) = keep_walked(target, json, false, false, keeps_unknown, kept);
     unknowns.into_iter().map(|(path, _)| path).collect()
 }
 
@@ -1489,6 +1503,41 @@ mod tests {
                 "{mark} {word:?} {reading}"
             );
         }
+    }
+
+    /// A struct that says nothing keeps its unknown members under a reading that keeps them,
+    /// and one that says `report` does not.
+    #[test]
+    fn a_hand_reader_keeps_by_its_reading() {
+        use crate::schema;
+        #[derive(Debug, Facet)]
+        struct Silent {
+            #[facet(default)]
+            a: i32,
+            #[facet(default)]
+            told: Option<Told>,
+        }
+        #[derive(Debug, Facet)]
+        #[facet(schema::unknown = "report")]
+        struct Told {
+            #[facet(default)]
+            b: i32,
+        }
+        let json: Value =
+            crate::json::from_str_jsonc(r#"{"a": 1, "x": 2, "told": {"b": 3, "y": 4}}"#).unwrap();
+        let value: Silent = crate::json::from_str_jsonc(r#"{"a": 1, "told": {"b": 3}}"#).unwrap();
+        let root = JsonPath::new();
+        let mut kept = Table::new();
+        let found = keep_unknown_members_with(&value, &json, true, &mut kept);
+        assert_eq!(found.len(), 2);
+        assert_eq!(kept.get(&root, "x"), Some(&Value::from(2)));
+        assert_eq!(kept.get(&root.child("told"), "y"), None);
+        let mut kept = Table::new();
+        assert_eq!(
+            keep_unknown_members_with(&value, &json, false, &mut kept).len(),
+            2
+        );
+        assert!(kept.is_empty());
     }
 
     #[derive(Debug, Facet)]

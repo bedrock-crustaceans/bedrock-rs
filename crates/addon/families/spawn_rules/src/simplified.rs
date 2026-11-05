@@ -9,7 +9,7 @@ use bedrock_addon_core::diagnostic::{
 };
 use bedrock_addon_core::id::{EntityId, SpawnRulesId};
 use bedrock_addon_core::json::{
-    EncodeError, JsonSlice, ScalarFailure, Value, keep_unknown_members, parse_with_rules,
+    EncodeError, JsonSlice, ScalarFailure, Value, keep_unknown_members_with, parse_with_rules,
     unknown_members,
 };
 use bedrock_addon_core::schema::{self, Schema};
@@ -25,7 +25,6 @@ use bedrock_addon_support::spawn::read::finding;
 /// JSON: `{"format_version": "1.21.60", "minecraft:spawn_rules": {"description": {"identifier"},
 /// "placement"?, "conditions"?}}`.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 #[doc(alias = "spawn_simplified")]
 pub struct SimplifiedSpawnRules {
     /// What the rules are for (JSON `description`, required).
@@ -39,7 +38,6 @@ pub struct SimplifiedSpawnRules {
 
 /// `minecraft:spawn_rules/description` of simplified spawn rules.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct SimplifiedDescription {
     /// The entity the rules are for (JSON `identifier`, required).
     pub identifier: SpawnRulesId,
@@ -48,7 +46,6 @@ pub struct SimplifiedDescription {
 /// `placement`: four names from the placement registries, each `""` or absent for the runtime
 /// default. An unregistered name is a warning and falls back to the same default.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Placement {
     /// The placement type: `minecraft:on_ground`, `minecraft:in_water`, `minecraft:in_lava`,
     /// `minecraft:no_restrictions` (the default) (JSON `type`).
@@ -67,7 +64,6 @@ pub struct Placement {
 
 /// One entry of `conditions` (vanilla `BiomeConditions`).
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct BiomeConditions {
     /// The spawn weight, at least 0 (JSON `weight`, required).
     pub weight: i32,
@@ -83,7 +79,6 @@ pub struct BiomeConditions {
 
 /// One entry of `herds`. No `min ≤ max` check.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct SimplifiedHerd {
     /// The smallest herd, at least 0; absent = 1 (JSON `min`).
     #[facet(schema::fallback = 1)]
@@ -103,7 +98,6 @@ pub struct SimplifiedHerd {
 
 /// One entry of `permute_types` (vanilla `PermuteType`).
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct PermuteType {
     /// The weight in the pick, at least 0 (JSON `weight`, required).
     pub weight: i32,
@@ -143,7 +137,8 @@ impl VersionStruct for SimplifiedSpawnRules {
             Ok(value) => {
                 if let Some(json) = &json {
                     let mut kept = bedrock_addon_core::document::Unknown::new();
-                    for (path, _) in keep_unknown_members(&value, json, &mut kept) {
+                    let keeps = crate::SIMPLIFIED_READING.keeps_unknown;
+                    for (path, _) in keep_unknown_members_with(&value, json, keeps, &mut kept) {
                         unknown(&path, d);
                     }
                     d.unknown_mut().absorb(&cx.at, kept);
@@ -159,7 +154,9 @@ impl VersionStruct for SimplifiedSpawnRules {
                 d.push(match failure {
                     ScalarFailure::Read(error) => error.into_diagnostic(&cx.at, |code, _| code),
                     // A scalar no arm of an untagged enum takes: a type error at the enum.
-                    ScalarFailure::Refused(misread) => misread.finding(&cx.at),
+                    ScalarFailure::Refused(misread) => {
+                        bedrock_addon_support::chain_file::refusal(payload, &misread, &cx.at)
+                    }
                 });
                 None
             }

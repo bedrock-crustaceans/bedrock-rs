@@ -502,3 +502,45 @@ fn no_placement_is_the_runtime_default() {
     assert!(document.diagnostics().is_empty());
     assert!(load(&modern("1.21.60", ""), &experiment()).is_ok());
 }
+
+/// A scalar of another type than its member's is refused: an `InvalidType` error at the member,
+/// its span the member's key, and the file rejected.
+#[test]
+fn s16b_simplified_wrong_typed_scalars_are_refused_at_their_member() {
+    for (body, path, key) in [
+        (r#"{"weight": "2"}"#, "conditions/0/weight", r#""weight""#),
+        (r#"{"weight": 2.0}"#, "conditions/0/weight", r#""weight""#),
+        (r#"{"weight": true}"#, "conditions/0/weight", r#""weight""#),
+        (
+            r#"{"weight": 1, "herds": [{"min": 1.5}]}"#,
+            "conditions/0/herds/0/min",
+            r#""min""#,
+        ),
+        (
+            r#"{"weight": 1, "mob_event_filter": 5}"#,
+            "conditions/0/mob_event_filter",
+            r#""mob_event_filter""#,
+        ),
+    ] {
+        let text = modern("1.21.60", &format!(r#", "conditions": [{body}]"#));
+        let d = rejected(&text, &experiment());
+        let found: Vec<_> = d
+            .iter()
+            .filter(|f| matches!(f.code, DiagnosticCode::InvalidType { .. }))
+            .collect();
+        assert_eq!(found.len(), 1, "{body}: {d:#?}");
+        assert_eq!(found[0].severity, Severity::Error, "{body}");
+        assert_eq!(
+            found[0].location.json_path.to_string(),
+            format!("minecraft:spawn_rules/{path}"),
+            "{body}"
+        );
+        let at = text.find(key).expect("the key");
+        let span = found[0].location.span.expect("a span");
+        assert_eq!(
+            (span.offset as usize, span.len as usize),
+            (at, key.len()),
+            "{body}"
+        );
+    }
+}

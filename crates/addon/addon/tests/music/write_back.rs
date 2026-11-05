@@ -36,7 +36,7 @@ fn music_writes_back_what_it_reads() {
 }
 
 #[test]
-fn a_single_music_file_writes_back_as_read() {
+fn a_single_music_file_keeps_the_json_it_read() {
     let cx = LoadContext::detached();
     let music = r#"{"game": {"min_delay": 1}, "replace": true, "": {}}"#;
     let document = MusicDefinitions::parse(
@@ -108,5 +108,37 @@ fn an_object_form_override_interruptible_is_written_as_written() {
 fn a_root_that_is_no_object_is_written_as_written() {
     for text in ["[]", "[{\"game\": {}}]", "5", "\"music\"", "true"] {
         assert_eq!(written_json(text), json(text), "{text}");
+    }
+}
+
+/// What a copy writes merges over a lower pack's copy as the copy it was read from: the client
+/// merges the copies as JSON, so a member written that was absent, or an object written as an
+/// array, would change the stack.
+#[test]
+fn a_written_copy_merges_over_a_lower_pack_as_the_copy_it_was_read_from() {
+    use super::common::{MUSIC, copies};
+    const LOWER: &str = r#"{"game": {"event_name": "music.game", "min_delay": 60, "max_delay": 180, "override_interruptible": {"a": {"name": "hostile"}}}, "menu": {"event_name": "music.menu", "play_in_order": true}}"#;
+    for upper in [
+        r#"{"game": {"min_delay": 10}}"#,
+        r#"{"game": {"override_interruptible": {"b": {"name": "ui"}}}}"#,
+        r#"{"game": {"override_interruptible": [{"name": "ui"}]}}"#,
+        r#"{"game": {"min_delay": 0, "play_in_order": false, "event_name": ""}}"#,
+        r#"{"menu": {"replace": true, "event_name": "x"}}"#,
+        r#"{"game": {"odd": 1, "max_delay": 1e39}, "nether": 5, "": {}}"#,
+        "[]",
+        "{}",
+    ] {
+        let cx = LoadContext::detached();
+        let written = MusicDefinitions::parse(&path(MUSIC), upper.as_bytes(), &cx)
+            .expect("the copy loads")
+            .to_json()
+            .expect("written");
+        let read = copies(MUSIC, &[LOWER, upper]);
+        let rewritten = copies(MUSIC, &[LOWER, &written]);
+        assert_eq!(
+            read.music().value(),
+            rewritten.music().value(),
+            "{upper} written as {written}"
+        );
     }
 }

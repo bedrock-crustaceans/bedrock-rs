@@ -107,7 +107,7 @@ pub fn float(x: f32) -> Result<Value, EncodeError> {
 ///
 /// The error of `result`, at its path below `key`.
 pub fn in_member<T>(key: &str, result: Result<T, EncodeError>) -> Result<T, EncodeError> {
-    result.map_err(|error| below(JsonPath::new().child(key), error))
+    result.map_err(|error| below(&JsonPath::new().child(key), error))
 }
 
 /// `result`, with the path of its error put below the array element `index`.
@@ -116,11 +116,11 @@ pub fn in_member<T>(key: &str, result: Result<T, EncodeError>) -> Result<T, Enco
 ///
 /// The error of `result`, at its path below `index`.
 pub fn in_element<T>(index: usize, result: Result<T, EncodeError>) -> Result<T, EncodeError> {
-    result.map_err(|error| below(JsonPath::new().index(index), error))
+    result.map_err(|error| below(&JsonPath::new().index(index), error))
 }
 
 /// `error`, at its path below `at`.
-fn below(at: JsonPath, error: EncodeError) -> EncodeError {
+fn below(at: &JsonPath, error: EncodeError) -> EncodeError {
     match error {
         EncodeError::NotRepresentable { at: inner, what } => EncodeError::NotRepresentable {
             at: at.join(&inner),

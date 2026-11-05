@@ -4,6 +4,11 @@
 //! replaces what the lower packs had. The layers of the [`Merged`] are the packs' copies as
 //! written.
 //!
+//! Unlike music and sound definitions, a [`SoundBindings`] writes the document it read, not its
+//! typed members: the typed value is the resolved reading (a range is its two bounds in
+//! whichever form it was written, one no table sets [`SoundRange::UNSET`], a `base` chain worked
+//! out), which no longer says how the author wrote it.
+//!
 //! [`Merged`]: bedrock_addon_core::document::Merged
 
 #![cfg_attr(docsrs, feature(doc_cfg))]

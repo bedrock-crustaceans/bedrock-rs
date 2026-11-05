@@ -211,11 +211,13 @@ impl Family for SimplifiedFamily {
 
 /// The reading of the simplified slice, which its typed parse takes: the profile of a document
 /// without an input kind, with vanilla's strict cereal scalars (a member takes only a token of
-/// its own type, a number beyond its float's width is a type error).
+/// its own type, a number beyond its float's width is a type error). Every struct of the rules
+/// keeps its unknown members for write-back.
 pub(crate) const SIMPLIFIED_READING: Reading = InputKind::FirstRun
     .profile()
     .with_scalars(Scalars::Strict)
-    .with_beyond_width(BeyondWidth::Error);
+    .with_beyond_width(BeyondWidth::Error)
+    .with_keeps_unknown(true);
 
 /// Whether the simplified family takes a file of version `file`: the experiment is on and the
 /// file says 1.21.60 or newer. The standard family takes every other file.
@@ -352,7 +354,7 @@ mod reading_table {
                 missing version: at the floor, told at Info: None
                 below floor: NoParser
                 empty document: Error
-                1.21.60..=1.21.60 (0..=0): json Own/Strict/Error/Warn/reports/lenient/Refuse, mcb Own/Strict/Error/Warn/reports/lenient/Refuse
+                1.21.60..=1.21.60 (0..=0): json Own/Strict/Error/Warn/keeps/lenient/Refuse, mcb Own/Strict/Error/Warn/keeps/lenient/Refuse
             ",
         );
     }

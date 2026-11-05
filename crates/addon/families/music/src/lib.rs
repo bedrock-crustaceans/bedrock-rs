@@ -431,3 +431,37 @@ impl Placed for MusicDefinitions {
         PackPath::from_static(MUSIC_PATH)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The keys of a written object, in order.
+    fn keys(value: &Value) -> Vec<&str> {
+        value
+            .as_object()
+            .expect("an object")
+            .iter()
+            .map(|(key, _)| key.as_str())
+            .collect()
+    }
+
+    /// `DEFINITION_KEYS` names the members by their spelling in the writer: a definition whose
+    /// every member is set writes exactly those keys.
+    #[test]
+    fn every_key_the_reader_knows_is_a_member_the_writer_writes() {
+        let definition = MusicDefinition {
+            event_name: "music.game".to_owned(),
+            min_delay: 1.0,
+            max_delay: 2.0,
+            play_in_order: true,
+            override_interruptible: vec!["hostile".to_owned()],
+            replace: Some(Value::from(true)),
+            ..MusicDefinition::default()
+        };
+        assert_eq!(
+            keys(&definition.to_value().expect("written")),
+            DEFINITION_KEYS
+        );
+    }
+}

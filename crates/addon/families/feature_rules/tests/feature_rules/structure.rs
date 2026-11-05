@@ -307,3 +307,29 @@ fn rule_6_a_non_string_enum_member_is_an_invalid_enum_value() {
         assert_eq!(found[0].severity, Severity::Error);
     }
 }
+
+#[test]
+fn rule_6_a_numerator_of_another_type_is_refused_at_its_member() {
+    let text = rule(
+        "1.13.0",
+        "surface_pass",
+        Some(
+            r#"{"iterations": 1, "scatter_chance": {"numerator": "1", "denominator": 2}, "x": 0, "y": 0, "z": 0}"#,
+        ),
+    );
+    let d = rejects(&text);
+    let found = with_code(&d, "InvalidType");
+    assert_eq!(found.len(), 1, "{d:#?}");
+    assert_eq!(found[0].severity, Severity::Error);
+    assert_eq!(
+        found[0].location.json_path.to_string(),
+        "minecraft:feature_rules/distribution/scatter_chance/numerator"
+    );
+    // The span is the member's key, as the typed read has it.
+    let key = text.find(r#""numerator""#).expect("the key");
+    let span = found[0].location.span.expect("a span");
+    assert_eq!(
+        (span.offset as usize, span.len as usize),
+        (key, r#""numerator""#.len())
+    );
+}
