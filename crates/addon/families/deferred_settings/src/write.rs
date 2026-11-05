@@ -190,7 +190,8 @@ pub(crate) fn keyframes<T>(
     }
 }
 
-/// `[x, y, z]`, each component in `range`.
+/// `[x, y, z]`, each component in `range`, whatever the value's `form`; its `extra` is not
+/// written.
 pub(crate) fn vec3_in(range: Range, value: &Vec3, at: &JsonPath) -> Written {
     let mut array = VArray::new();
     for (index, component) in [value.x, value.y, value.z].into_iter().enumerate() {

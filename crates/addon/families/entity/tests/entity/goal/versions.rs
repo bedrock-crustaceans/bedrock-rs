@@ -319,6 +319,78 @@ fn vector_objects_keep_unknown_members() {
     assert!(range.extra.get("w").is_some());
 }
 
+/// A vector of the wrong shape is refused (`InvalidType` at the member, the reader's message
+/// not carried), and both forms write back as read: pins the findings across the move of
+/// `Vec3`/`Vec2` into shapes.
+#[test]
+fn vectors_of_the_wrong_shape_are_refused_and_both_forms_write_back() {
+    const KEY: &str = "minecraft:behavior.drop_item_for";
+    const LOOK: &str = "minecraft:memory_behavior.look_at_entity";
+    let told = |key: &str, json: &str| -> Vec<String> {
+        let (g, d) = strict(key, json);
+        assert!(g.is_none(), "{key} {json}: refused");
+        d.iter()
+            .map(|d| {
+                format!(
+                    "{:?} {} {:?} {:?}",
+                    d.severity, d.location.json_path, d.code, d.detail
+                )
+            })
+            .collect()
+    };
+    assert_eq!(
+        told(KEY, r#"{"target_range": [1, 2]}"#),
+        ["Error target_range InvalidType { text: None } None"]
+    );
+    assert_eq!(
+        told(KEY, r#"{"target_range": "far"}"#),
+        ["Error target_range InvalidType { text: None } None"]
+    );
+    assert_eq!(
+        told(KEY, r#"{"target_range": {"x": "a"}}"#),
+        ["Error target_range InvalidType { text: None } None"]
+    );
+    assert_eq!(
+        told(KEY, r#"{"target_range": [1, 2, 1e39]}"#),
+        ["Error target_range InvalidType { text: None } None"]
+    );
+    assert_eq!(
+        told(
+            LOOK,
+            r#"{"look_distance": 1, "look_angle": [1, 2, 3], "target_entity": "t"}"#
+        ),
+        ["Error look_angle InvalidType { text: None } None"]
+    );
+    assert_eq!(
+        written::<goal::DropItemFor>(KEY, r#"{"target_range": [1, 2.5, 3]}"#),
+        r#"{ "target_range": [ 1.0, 2.5, 3.0 ] }"#
+    );
+    assert_eq!(
+        written::<goal::DropItemFor>(KEY, r#"{"target_range": {"z": 0.1, "x": 2}}"#),
+        r#"{ "target_range": { "x": 2.0, "y": 0.0, "z": 0.1 } }"#
+    );
+    assert_eq!(
+        written::<goal::MemoryLookAtEntity>(
+            LOOK,
+            r#"{"look_distance": 1, "look_angle": {"y": 30}, "target_entity": "t"}"#
+        ),
+        r#"{ "look_distance": 1.0, "look_angle": { "x": 0.0, "y": 30.0 }, "target_entity": "t" }"#
+    );
+}
+
+/// The goal `T` read strictly from `json` under `key`, written back on one line.
+fn written<T>(key: &str, json: &str) -> String
+where
+    T: bedrock_addon_core::document::Component<
+            Set = bedrock_addon_family_entity::component::EntityComponent,
+        > + for<'a> facet::Facet<'a>,
+{
+    let (g, d) = goal::<T>(key, json, ConvertMode::Strict);
+    assert!(errors(&d).is_empty(), "{d:?}");
+    let text = bedrock_addon_core::json::to_json(&g.expect("kept")).expect("writes");
+    text.split_whitespace().collect::<Vec<_>>().join(" ")
+}
+
 /// `memory_sensor.game_event` `event_type` is the closed `GameEventType`, read in any case.
 #[test]
 fn game_event_type_is_a_closed_set() {

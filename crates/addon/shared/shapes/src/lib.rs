@@ -13,12 +13,14 @@
 //!   placement.
 //! - [`one_or_many`]: [`OneOrMany`], one value or an array of them, as written.
 //! - [`png`]: the PNG header ([`png::header`], [`png_size`]).
+//! - [`vec`](mod@vec): [`Vec3`] and [`Vec2`], a vector as an array or an object, as written.
 
 pub mod color;
 pub mod descriptor;
 pub mod menu;
 pub mod one_or_many;
 pub mod png;
+pub mod vec;
 
 pub use color::{Channels, HexOr};
 pub use descriptor::{
@@ -27,3 +29,4 @@ pub use descriptor::{
 pub use menu::{CreativeCategory, MenuCategory};
 pub use one_or_many::OneOrMany;
 pub use png::{PNG_SIGNATURE, PngHeader, png_size};
+pub use vec::{Coordinate, Vec2, Vec3, VecForm, VectorError};

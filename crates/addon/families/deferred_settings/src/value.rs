@@ -132,31 +132,14 @@ impl<T: Clone> Keyframes<T> {
 
 /// Three numbers, one per colour channel (the colour-grading controls).
 ///
-/// JSON: `[x, y, z]`, or `{"x": …, "y": …, "z": …}` in which a member left out is 0; written
-/// back as the array.
-#[derive(Clone, Copy, Debug, Default, PartialEq)]
-pub struct Vec3 {
-    /// The first component (red).
-    pub x: f32,
-    /// The second component (green).
-    pub y: f32,
-    /// The third component (blue).
-    pub z: f32,
-}
-
-impl Vec3 {
-    /// The triple of three numbers.
-    #[must_use]
-    pub const fn new(x: f32, y: f32, z: f32) -> Self {
-        Self { x, y, z }
-    }
-
-    /// The same number three times.
-    #[must_use]
-    pub const fn splat(value: f32) -> Self {
-        Self::new(value, value, value)
-    }
-}
+/// JSON: `[x, y, z]`, or `{"x": …, "y": …, "z": …}` in which a member left out is 0. This is
+/// shapes' type, but the settings read and write it with their own reader and writer, not with
+/// its facet proxy: the reader always gives the array form with no `extra` (an unknown member of
+/// the object is reported and dropped), and the writer always writes `[x, y, z]`, so a value
+/// built with `form: VecForm::Object` or with `extra` is written as the array and its `extra`
+/// is dropped without a finding. Entity goals read and write the same type through the proxy
+/// and keep both forms.
+pub use bedrock_addon_shared_shapes::Vec3;
 
 /// The `description` object of a settings file: the identifier client biomes name the settings
 /// by (JSON `{"identifier": "ns:name"}`; `identifier` is required inside it).

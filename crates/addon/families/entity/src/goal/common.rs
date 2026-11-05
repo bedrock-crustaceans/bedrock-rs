@@ -2,13 +2,12 @@
 //! type lists, vectors, sound events and the named-value enums the game's schema defines as constants.
 
 use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
-use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::{ScalarShape, Value, ValueExt};
 use bedrock_addon_core::molang::{JsonType, Molang};
 use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::shared::Filter;
 use facet::Facet;
-use facet_value::{VArray, VObject};
+use facet_value::VArray;
 
 use super::check::GoalCheck;
 
@@ -35,7 +34,8 @@ pub enum ValueError {
         /// The array's length.
         len: usize,
     },
-    /// A number with no `f32` value, or a value with no JSON form.
+    /// An integer that does not fit the member's type: a [`ParticleColor`] channel outside
+    /// `i32`, the one reader left that reports it.
     #[error("the number does not fit the member's type")]
     OutOfRange,
 }
@@ -463,216 +463,8 @@ impl From<&SoundEvent> for ScalarShape {
     }
 }
 
-/// The JSON form a [`Vec2`] or [`Vec3`] was read from.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
-#[non_exhaustive]
-pub enum VecForm {
-    /// `[x, y, z]`.
-    #[default]
-    Array,
-    /// `{"x": …, "y": …, "z": …}`; a missing coordinate is 0.
-    Object,
-}
-
-/// Reads the coordinates of a vector value: an array of exactly `N` numbers, or an object with
-/// the members `names` (each defaulting to 0; other members are returned).
-fn read_vector<const N: usize>(
-    value: &Value,
-    names: [&'static str; N],
-) -> Result<([f32; N], VecForm, UnknownMembers), ValueError> {
-    let number = |value: &Value| {
-        let x = value.as_number().ok_or(ValueError::WrongType {
-            expected: "a number",
-            found: value.json_type(),
-        })?;
-        #[allow(clippy::cast_possible_truncation)] // the nearest f32 is the reading
-        let x = x.to_f64_lossy() as f32;
-        if x.is_finite() {
-            Ok(x)
-        } else {
-            Err(ValueError::OutOfRange)
-        }
-    };
-    let mut out = [0.0; N];
-    if let Some(array) = value.as_array() {
-        if array.len() != N {
-            return Err(ValueError::ArrayLength {
-                expected: N,
-                len: array.len(),
-            });
-        }
-        for (slot, element) in out.iter_mut().zip(array.iter()) {
-            *slot = number(element)?;
-        }
-        Ok((out, VecForm::Array, UnknownMembers::default()))
-    } else if let Some(object) = value.as_object() {
-        let mut extra = UnknownMembers::default();
-        for (key, element) in object {
-            match names.iter().position(|n| *n == key.as_str()) {
-                Some(i) => out[i] = number(element)?,
-                None => {
-                    extra.insert(key.as_str().to_owned(), element.clone());
-                }
-            }
-        }
-        Ok((out, VecForm::Object, extra))
-    } else {
-        Err(ValueError::WrongType {
-            expected: "an array or an object",
-            found: value.json_type(),
-        })
-    }
-}
-
-/// An `f32` as a real JSON number in its shortest decimal form.
-fn float_value(x: f32) -> Result<Value, ValueError> {
-    if !x.is_finite() {
-        return Err(ValueError::OutOfRange);
-    }
-    let shortest: f64 = format!("{x:?}")
-        .parse()
-        .map_err(|_| ValueError::OutOfRange)?;
-    Ok(Value::from(shortest))
-}
-
-/// Writes a vector in `form`, the object form followed by its unknown members.
-fn write_vector<const N: usize>(
-    coordinates: [f32; N],
-    names: [&'static str; N],
-    form: VecForm,
-    extra: &UnknownMembers,
-) -> Result<Value, ValueError> {
-    match form {
-        VecForm::Array => {
-            let mut array = VArray::new();
-            for x in coordinates {
-                array.push(float_value(x)?);
-            }
-            Ok(Value::from(array))
-        }
-        VecForm::Object => {
-            let mut object = VObject::new();
-            for (name, x) in names.into_iter().zip(coordinates) {
-                object.insert(name, float_value(x)?);
-            }
-            for (key, value) in extra.iter() {
-                object.insert(key, value.clone());
-            }
-            Ok(Value::from(object))
-        }
-    }
-}
-
-/// A 3D vector member (`target_range`, `search_area`, …): `[x, y, z]` or `{x, y, z}`.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
-#[facet(opaque, proxy = Value)]
-pub struct Vec3 {
-    /// The x coordinate.
-    pub x: f32,
-    /// The y coordinate.
-    pub y: f32,
-    /// The z coordinate.
-    pub z: f32,
-    /// The form read; writing uses it.
-    pub form: VecForm,
-    /// Members of the object form the vector does not define, kept for write-back.
-    pub extra: UnknownMembers,
-}
-
-// A proxied leaf: no member is walked, nothing in it is Molang.
-bedrock_addon_core::impl_schema_leaf!(Vec3);
-bedrock_addon_core::impl_no_molang!(Vec3);
-
-impl Vec3 {
-    /// The vector `[x, y, z]`, written as an array.
-    pub fn new(x: f32, y: f32, z: f32) -> Self {
-        Self {
-            x,
-            y,
-            z,
-            form: VecForm::Array,
-            extra: UnknownMembers::default(),
-        }
-    }
-}
-
-impl From<[f32; 3]> for Vec3 {
-    fn from([x, y, z]: [f32; 3]) -> Self {
-        Self::new(x, y, z)
-    }
-}
-
-impl TryFrom<Value> for Vec3 {
-    type Error = ValueError;
-
-    fn try_from(value: Value) -> Result<Self, ValueError> {
-        let ([x, y, z], form, extra) = read_vector(&value, ["x", "y", "z"])?;
-        Ok(Self {
-            x,
-            y,
-            z,
-            form,
-            extra,
-        })
-    }
-}
-
-impl TryFrom<&Vec3> for Value {
-    type Error = ValueError;
-
-    fn try_from(v: &Vec3) -> Result<Self, ValueError> {
-        write_vector([v.x, v.y, v.z], ["x", "y", "z"], v.form, &v.extra)
-    }
-}
-
-/// A 2D vector member (`transport_items.search_distance`): `[x, y]` or `{x, y}`.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
-#[facet(opaque, proxy = Value)]
-pub struct Vec2 {
-    /// The x coordinate.
-    pub x: f32,
-    /// The y coordinate.
-    pub y: f32,
-    /// The form read; writing uses it.
-    pub form: VecForm,
-    /// Members of the object form the vector does not define, kept for write-back.
-    pub extra: UnknownMembers,
-}
-
-impl Vec2 {
-    /// The vector `[x, y]`, written as an array.
-    pub fn new(x: f32, y: f32) -> Self {
-        Self {
-            x,
-            y,
-            form: VecForm::Array,
-            extra: UnknownMembers::default(),
-        }
-    }
-}
-
-impl From<[f32; 2]> for Vec2 {
-    fn from([x, y]: [f32; 2]) -> Self {
-        Self::new(x, y)
-    }
-}
-
-impl TryFrom<Value> for Vec2 {
-    type Error = ValueError;
-
-    fn try_from(value: Value) -> Result<Self, ValueError> {
-        let ([x, y], form, extra) = read_vector(&value, ["x", "y"])?;
-        Ok(Self { x, y, form, extra })
-    }
-}
-
-impl TryFrom<&Vec2> for Value {
-    type Error = ValueError;
-
-    fn try_from(v: &Vec2) -> Result<Self, ValueError> {
-        write_vector([v.x, v.y], ["x", "y"], v.form, &v.extra)
-    }
-}
+/// The goal vectors are the shared shapes: `[x, y, z]` or `{x, y, z}`, kept in the form read.
+pub use bedrock_addon_shared_shapes::vec::{Vec2, Vec3, VecForm};
 
 /// `entity_types` of a goal: one [`MobDescriptor`] or a list of them.
 pub type EntityTypes = crate::EntityTypesOf<MobDescriptor>;
@@ -899,7 +691,6 @@ bedrock_addon_core::impl_schema_leaf!(
     MaterialType,
     SoundEvent,
     EntityTypes,
-    Vec2,
     ParticleColor
 );
 bedrock_addon_core::impl_no_molang!(
@@ -907,6 +698,5 @@ bedrock_addon_core::impl_no_molang!(
     MaterialType,
     SoundEvent,
     EntityTypes,
-    Vec2,
     ParticleColor
 );
