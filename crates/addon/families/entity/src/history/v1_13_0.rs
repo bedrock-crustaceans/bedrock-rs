@@ -2,14 +2,14 @@
 
 super::legacy_struct!(1, 13, 0);
 
-use bedrock_addon_core::diagnostic::{DiagnosticCode, VanillaText};
+use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath, VanillaText};
 use bedrock_addon_core::vanilla::ActorType;
 use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
 use facet_value::VObject;
 
 use super::ops::{
-    Members, Removed, Told, below, components, f32_value, finding, int_of, json, path, removed,
-    section_a, section_b, sections,
+    Members, Removed, Told, components, f32_value, finding, int_of, json, removed, section_a,
+    section_b, sections,
 };
 
 /// The step's version, for its findings.
@@ -47,8 +47,8 @@ impl Upgrade for Entity {
                         let mut wrapped = VObject::new();
                         wrapped.insert("entities", spawn.clone());
                         *spawn = wrapped.into();
-                        let at = below(&section.at, &["minecraft:spawn_entity"]);
-                        told.moved(at.clone(), below(&at, &["entities"]));
+                        let at = section.at.child("minecraft:spawn_entity");
+                        told.moved(at.clone(), at.child("entities"));
                     }
                 }
             }
@@ -67,7 +67,7 @@ fn remove_member(payload: &mut Payload, cx: &mut UpgradeCx<'_>, component: &str,
         if let Some(object) = section.members.object(component)
             && object.remove(member).is_some()
         {
-            gone.push(below(&section.at, &[component, member]));
+            gone.push(section.at.with(&[component, member]));
         }
     }
     for at in gone {
@@ -121,7 +121,7 @@ fn per_type(payload: &mut Payload, cx: &mut UpgradeCx<'_>) {
         if let Some(first) = first
             && first.remove("attack_interval").is_some()
         {
-            let mut at = super::ops::path(&[
+            let mut at = JsonPath::new().with(&[
                 "components",
                 "minecraft:behavior.nearest_attackable_target",
                 "entity_types",
@@ -143,7 +143,7 @@ fn per_type(payload: &mut Payload, cx: &mut UpgradeCx<'_>) {
             // no int is read as vanilla's `asInt` reads it, and told at the member.
             let mut told = Told::default();
             let n = told.read(int_of(interval), || {
-                path(&["components", "minecraft:behavior.swim_wander", "interval"])
+                JsonPath::new().with(&["components", "minecraft:behavior.swim_wander", "interval"])
             });
             #[allow(clippy::cast_precision_loss, reason = "vanilla's f32 division")]
             let chance = if n == 0 { 1.0 } else { 1.0 / n as f32 };
@@ -156,7 +156,7 @@ fn per_type(payload: &mut Payload, cx: &mut UpgradeCx<'_>) {
         let mut gone = Vec::new();
         for section in sections(payload) {
             if section.members.take("minecraft:damage_sensor").is_some() {
-                gone.push(below(&section.at, &["minecraft:damage_sensor"]));
+                gone.push(section.at.child("minecraft:damage_sensor"));
             }
         }
         // One finding at every location the component is removed from.
@@ -204,7 +204,9 @@ fn circle_around_anchor(payload: &mut Payload, cx: &mut UpgradeCx<'_>) {
         let Some(value) = value else {
             continue;
         };
-        let n = told.read(int_of(&value), || path(&["components", GOAL, old]));
+        let n = told.read(int_of(&value), || {
+            JsonPath::new().with(&["components", GOAL, old])
+        });
         #[allow(clippy::cast_precision_loss, reason = "vanilla's f32 division")]
         let chance = if n < 1 { 1.0 } else { 1.0 / n as f32 };
         if let Some(goal) = components(payload).object(GOAL) {
@@ -213,7 +215,7 @@ fn circle_around_anchor(payload: &mut Payload, cx: &mut UpgradeCx<'_>) {
                 .get(new)
                 .is_some_and(|had| !had.is_null() && *had != chance)
             {
-                told.dropped(path(&["components", GOAL, new]));
+                told.dropped(JsonPath::new().with(&["components", GOAL, new]));
             }
             goal.insert(new, chance);
         }
@@ -224,7 +226,7 @@ fn circle_around_anchor(payload: &mut Payload, cx: &mut UpgradeCx<'_>) {
                 && goal.remove(old).is_some()
                 && index > 0
             {
-                removed(cx, Removed::Field, &below(&at, &[GOAL, old]), old, V1_15_0);
+                removed(cx, Removed::Field, &at.with(&[GOAL, old]), old, V1_15_0);
             }
         }
     }

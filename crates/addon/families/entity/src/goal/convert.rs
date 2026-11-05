@@ -20,23 +20,15 @@ use super::{EatAndReplaceBlockPair, EatBlock, RangedAttack};
 /// A finding of a conversion at the top-level member `name`: an information. The game writes
 /// no content-log line for what its own upgrade does, so the crate reports it as an information.
 fn finding(code: DiagnosticCode, phase: Phase, name: &str) -> Diagnostic {
-    let mut at = JsonPath::new();
-    at.push(name);
+    let at = JsonPath::new().child(name);
     Diagnostic::info(code).at(at).phase(phase)
-}
-
-/// The path of the top-level member `name`.
-fn member(name: &str) -> JsonPath {
-    let mut at = JsonPath::new();
-    at.push(name);
-    at
 }
 
 /// A note of a conversion at the top-level member `name`: an information about what the game
 /// itself does without a word.
 fn note(code: DiagnosticCode, name: &str) -> Diagnostic {
     Diagnostic::info(code)
-        .at(member(name))
+        .at(JsonPath::new().child(name))
         .phase(Phase::Upgrade)
 }
 
@@ -74,7 +66,10 @@ fn half(json: &mut VObject, name: &str, d: &mut Diagnostics) -> Option<Value> {
 pub(crate) fn fold_on_kill(json: &mut VObject, d: &mut Diagnostics) {
     if let Some(on_kill) = json.remove("on_kill") {
         json.insert("on_attack", on_kill);
-        d.moved(member("on_kill"), member("on_attack"));
+        d.moved(
+            JsonPath::new().child("on_kill"),
+            JsonPath::new().child("on_attack"),
+        );
     }
 }
 
@@ -137,13 +132,16 @@ pub(crate) fn look_time(json: &mut VObject, d: &mut Diagnostics) {
         // What is told of the range as a whole is told at the first member of the pair
         // the file has; of a half, at its own member.
         if let Some((old, _, _)) = moved.iter().find(|(_, _, was)| *was) {
-            d.moved(member(old), member("look_time"));
+            d.moved(
+                JsonPath::new().child(old),
+                JsonPath::new().child("look_time"),
+            );
         }
         for (old, half, was) in moved {
             if was {
-                let mut to = member("look_time");
+                let mut to = JsonPath::new().child("look_time");
                 to.push(half);
-                d.moved(member(old), to);
+                d.moved(JsonPath::new().child(old), to);
             }
         }
     }
@@ -172,13 +170,16 @@ pub(crate) fn ranged_interval(json: &mut VObject, d: &mut Diagnostics) {
         range.insert("max", max.unwrap_or_else(|| Value::from(0)));
         json.insert("attack_interval", Value::from(range));
         if let Some((old, _, _)) = moved.iter().find(|(_, _, was)| *was) {
-            d.moved(member(old), member("attack_interval"));
+            d.moved(
+                JsonPath::new().child(old),
+                JsonPath::new().child("attack_interval"),
+            );
         }
         for (old, half, was) in moved {
             if was {
-                let mut to = member("attack_interval");
+                let mut to = JsonPath::new().child("attack_interval");
                 to.push(half);
-                d.moved(member(old), to);
+                d.moved(JsonPath::new().child(old), to);
             }
         }
     }
@@ -204,13 +205,16 @@ pub(crate) fn ranged_radius(json: &mut VObject, d: &mut Diagnostics) {
             range.insert("max", max.unwrap_or_else(|| Value::from(0)));
             json.insert("attack_range", Value::from(range));
             if let Some((old, _, _)) = moved.iter().find(|(_, _, was)| *was) {
-                d.moved(member(old), member("attack_range"));
+                d.moved(
+                    JsonPath::new().child(old),
+                    JsonPath::new().child("attack_range"),
+                );
             }
             for (old, half, was) in moved {
                 if was {
-                    let mut to = member("attack_range");
+                    let mut to = JsonPath::new().child("attack_range");
                     to.push(half);
-                    d.moved(member(old), to);
+                    d.moved(JsonPath::new().child(old), to);
                 }
             }
         }
@@ -303,9 +307,9 @@ pub fn eat_block_pairs(goal: &mut EatBlock, is_block: impl Fn(&str) -> bool) -> 
             .find(|name| !is_block(&name.0))
             .map(|name| name.0.clone());
         if let Some(block) = &unknown {
-            let mut at = JsonPath::new();
-            at.push("eat_and_replace_block_pairs");
-            at.push_index(index);
+            let at = JsonPath::new()
+                .child("eat_and_replace_block_pairs")
+                .index(index);
             // The game looks the block up when it sets the goal up, in either reader, and logs
             // an error but keeps the entity: a kept error.
             out.push_kept_error(

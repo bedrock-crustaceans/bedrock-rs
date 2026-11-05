@@ -48,12 +48,8 @@ fn kept_error(
     kind: &'static str,
     id: &str,
 ) -> Diagnostic {
-    let mut at = JsonPath::new();
-    for key in path {
-        at.push(key);
-    }
     Diagnostic::error(code)
-        .at(at)
+        .at(JsonPath::new().with(path))
         .in_file(origin)
         .phase(Phase::Link)
         .into_kept()

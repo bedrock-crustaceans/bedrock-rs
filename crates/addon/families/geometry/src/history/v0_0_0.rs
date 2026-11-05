@@ -279,8 +279,7 @@ impl VersionStruct for GeometryFile {
 
 /// Reports a `mirror` or `reset` value the step removes (the crate's own note; vanilla is silent).
 fn removed(cx: &mut UpgradeCx<'_>, at: &JsonPath, member: &str) {
-    let mut at = at.clone();
-    at.push(member);
+    let at = at.child(member);
     cx.diagnostics.push(
         Diagnostic::info(DiagnosticCode::DroppedField { text: None })
             .at(at)
@@ -291,8 +290,7 @@ fn removed(cx: &mut UpgradeCx<'_>, at: &JsonPath, member: &str) {
 /// Notes a `mirror` or `reset` written as a text that the step holds, and the file is written
 /// with, as the boolean it spells (the crate's own note; vanilla is silent).
 fn rewritten(cx: &mut UpgradeCx<'_>, at: &JsonPath, member: &str) {
-    let mut at = at.clone();
-    at.push(member);
+    let at = at.child(member);
     cx.diagnostics.push(
         Diagnostic::info(DiagnosticCode::ValueRewritten { text: None })
             .at(at)
@@ -346,9 +344,7 @@ fn cubes(slots: Vec<CubeSlot>, cx: &mut UpgradeCx<'_>, at: &JsonPath) -> Vec<v1_
         };
         if empty {
             // Noted at the index the file has the element at (the crate's own note; vanilla is silent).
-            let mut gone = at.clone();
-            gone.push("cubes");
-            gone.push_index(slots[index].0);
+            let gone = at.child("cubes").index(slots[index].0);
             cx.diagnostics.push(
                 Diagnostic::info(DiagnosticCode::DroppedField { text: None })
                     .at(gone)

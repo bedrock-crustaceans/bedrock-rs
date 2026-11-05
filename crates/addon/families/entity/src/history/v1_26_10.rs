@@ -2,10 +2,11 @@
 
 super::legacy_struct!(1, 26, 10);
 
+use bedrock_addon_core::diagnostic::JsonPath;
 use bedrock_addon_core::vanilla::ActorType;
 use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
 
-use super::ops::{Members, Told, components, json, path, rename, section_a, section_b, sections};
+use super::ops::{Members, Told, components, json, rename, section_a, section_b, sections};
 
 /// The format version of the game's iron-golem knockback upgrade flag: the iron golem's
 /// knockback constants changed.
@@ -41,7 +42,7 @@ impl Upgrade for Entity {
                     .is_some_and(|had| !had.is_null() && *had != rules)
                 {
                     let mut told = Told::default();
-                    told.dropped(path(&["components", RULES]));
+                    told.dropped(JsonPath::new().with(&["components", RULES]));
                     told.report(cx);
                 }
                 components.set(RULES, rules);

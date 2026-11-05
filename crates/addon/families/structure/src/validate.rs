@@ -18,11 +18,11 @@ pub(super) fn index_notes(structure: &Structure) -> Diagnostics {
             index < -1 || usize::try_from(index).is_ok_and(|index| index >= len)
         });
         if let Some(position) = outside {
-            let mut at = JsonPath::new();
-            at.push("structure");
-            at.push("block_indices");
-            at.push_index(layer);
-            at.push_index(position);
+            let at = JsonPath::new()
+                .child("structure")
+                .child("block_indices")
+                .index(layer)
+                .index(position);
             notes.push(
                 Diagnostic::info(DiagnosticCode::InvalidValue { text: None })
                     .at(at)

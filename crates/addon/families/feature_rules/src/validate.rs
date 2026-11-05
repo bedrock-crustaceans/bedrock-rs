@@ -1,7 +1,6 @@
 //! The family rules of feature rules that need the loaded rule only; the identifier and file-name checks are the loader's (they need the
 //! path).
 
-use super::parse::child;
 use super::{CoordinateDistribution, CoordinateRange, FeatureRule, ScatterChance, ScatterParams};
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, Phase, VanillaText};
 use bedrock_addon_core::molang::{Molang, MolangSource};
@@ -13,7 +12,7 @@ pub(crate) fn validate(rule: &mut FeatureRule, cx: &mut ValidateCx<'_>) {
     // Vanilla checks the pass, then fills the filter and the scatter parameters.
     unknown_pass(rule, cx);
     if let Some(params) = &rule.distribution {
-        let at = child(&cx.at, &["distribution"]);
+        let at = cx.at.child("distribution");
         scatter_checks(params, &at, cx);
     }
 }
@@ -25,14 +24,14 @@ fn scatter_checks(params: &ScatterParams, at: &JsonPath, cx: &mut ValidateCx<'_>
     if matches!(params.iterations, Molang::Const(c) if c < 0.0) {
         warn(
             cx,
-            child(at, &["iterations"]),
+            at.child("iterations"),
             VanillaText::Fixed("Bad value for iterations - should be >= 0"),
         );
     }
     match &params.scatter_chance {
         Some(ScatterChance::Percent(Molang::Const(c))) if !percent_in_range(*c) => warn(
             cx,
-            child(at, &["scatter_chance"]),
+            at.child("scatter_chance"),
             VanillaText::Fixed(
                 "Bad value for scatter_chance - should be between 0 and 100 (exclusive)",
             ),
@@ -42,7 +41,7 @@ fn scatter_checks(params: &ScatterParams, at: &JsonPath, cx: &mut ValidateCx<'_>
         {
             warn(
                 cx,
-                child(at, &["scatter_chance"]),
+                at.child("scatter_chance"),
                 VanillaText::Fixed(
                     "Bad value for scatter_chance - denominator should be greater than the numerator",
                 ),
@@ -51,7 +50,7 @@ fn scatter_checks(params: &ScatterParams, at: &JsonPath, cx: &mut ValidateCx<'_>
         _ => {}
     }
     for (key, coordinate) in [("x", &params.x), ("y", &params.y), ("z", &params.z)] {
-        let at = child(at, &[key]);
+        let at = at.child(key);
         match coordinate {
             Some(CoordinateRange::Object(range)) => coordinate_checks(range, &at, cx),
             Some(CoordinateRange::Single(value)) if usable(value, &at, cx) => {}
@@ -102,7 +101,7 @@ fn coordinate_checks(range: &CoordinateDistribution, at: &JsonPath, cx: &mut Val
         if range.step_size.is_some() {
             warn(
                 cx,
-                child(at, &["step_size"]),
+                at.child("step_size"),
                 VanillaText::Fixed(
                     "step_size is only valid when distribution is fixed_grid or jittered_grid",
                 ),
@@ -111,7 +110,7 @@ fn coordinate_checks(range: &CoordinateDistribution, at: &JsonPath, cx: &mut Val
         if range.grid_offset.is_some() {
             warn(
                 cx,
-                child(at, &["grid_offset"]),
+                at.child("grid_offset"),
                 VanillaText::Fixed(
                     "grid_offset is only valid when distribution is fixed_grid or jittered_grid",
                 ),
@@ -121,7 +120,7 @@ fn coordinate_checks(range: &CoordinateDistribution, at: &JsonPath, cx: &mut Val
     if range.extent_is_empty() {
         warn(
             cx,
-            child(at, &["extent"]),
+            at.child("extent"),
             VanillaText::Fixed("Bad value for extent - maximum must be greater than minimum"),
         );
     }
@@ -133,7 +132,7 @@ fn unknown_pass(rule: &FeatureRule, cx: &mut ValidateCx<'_>) {
     if rule.conditions.pass().is_some() {
         return;
     }
-    let at = child(&cx.at, &["conditions", "placement_pass"]);
+    let at = cx.at.with(&["conditions", "placement_pass"]);
     warn(
         cx,
         at,

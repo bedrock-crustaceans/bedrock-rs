@@ -62,9 +62,7 @@ const PAYLOAD_KEY_MISMATCH: &str =
 
 /// The path of the root member `key`.
 fn member(key: &str) -> JsonPath {
-    let mut at = JsonPath::new();
-    at.push(key);
-    at
+    JsonPath::new().child(key)
 }
 
 /// The names of the root members of `text` as written, a member written twice counted twice;
@@ -476,8 +474,7 @@ pub(crate) fn upgrade<F: Payload>(
         beta_literal: false,
         prerelease: false,
     };
-    let mut at = JsonPath::new();
-    at.push(F::PAYLOAD_KEY);
+    let at = JsonPath::new().child(F::PAYLOAD_KEY);
     let parsed = Parsed::<F>::new(
         Some(value),
         version,

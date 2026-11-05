@@ -109,9 +109,7 @@ fn legacy_boxes(components: Option<&mut Value>, at: &JsonPath) -> Result<(), Enc
         )
         .map_err(|_| {
             // The box the writer holds has no reading of its own: named where it is.
-            let mut at = at.clone();
-            at.push("minecraft:collision_box");
-            at.push_index(index);
+            let at = at.child("minecraft:collision_box").index(index);
             EncodeError::NotRepresentable {
                 at,
                 what: Unrepresentable::Unsupported,
@@ -183,8 +181,7 @@ impl Block {
     /// that text reads back as it was written ([`Block::at_own_version`]); otherwise it is
     /// `NotRepresentable` at the member the rule names, where the load gave its warning.
     pub(crate) fn document(&self) -> Result<Value, EncodeError> {
-        let mut at = JsonPath::new();
-        at.push("minecraft:block");
+        let at = JsonPath::new().child("minecraft:block");
         // The crate's own members that no format of the game has (`deprecated`,
         // `deprecated_event_handlers`) and the 1.26.20 document deprecates by name
         // (`ordered_v1_custom_components`) are never written into a cereal document, which the
@@ -261,8 +258,7 @@ impl Block {
     /// or a non-empty `ordered_v1_custom_components`.
     fn first_crate_member(&self) -> Option<JsonPath> {
         let at = |keys: &[&str], index: Option<usize>| {
-            let mut path = JsonPath::new();
-            path.push("minecraft:block");
+            let mut path = JsonPath::new().child("minecraft:block");
             if let Some(index) = index {
                 path.push("permutations");
                 path.push_index(index);

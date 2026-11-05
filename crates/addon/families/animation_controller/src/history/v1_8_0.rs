@@ -286,8 +286,7 @@ impl Upgrade for AnimationControllerFile {
     /// exactly `parameters` is removed.
     fn upgrade(self, cx: &mut UpgradeCx<'_>) -> Latest {
         let commands = command_version(cx.load.min_engine_version.as_ref());
-        let mut at = JsonPath::new();
-        at.push("animation_controllers");
+        let mut at = JsonPath::new().child("animation_controllers");
         let animation_controllers = self
             .animation_controllers
             .into_iter()
@@ -322,11 +321,6 @@ impl Upgrade for AnimationControllerFile {
             animation_controllers,
         }
     }
-}
-
-/// A finding of the `v1_10` schema the upgraded document fails, at `at`.
-fn schema_error(diagnostics: &mut Diagnostics, code: DiagnosticCode, at: &JsonPath) {
-    diagnostics.push(Diagnostic::error(code).at(at.clone()).phase(Phase::Upgrade));
 }
 
 fn expression(text: String) -> Molang {
@@ -366,16 +360,15 @@ fn upgrade_state(
                     } else {
                         // A `parameters` index past the end reads as null, which the 1.10
                         // `input` node refuses.
-                        let mut at = at.clone();
-                        at.push("variables");
-                        at.push(&name);
-                        at.push("input");
-                        schema_error(
-                            diagnostics,
-                            bedrock_addon_core::diagnostic::cereal::unknown_child_option(
-                                "ExpressionNode",
-                            ),
-                            &at,
+                        let at = at.child("variables").child(&name).child("input");
+                        diagnostics.push(
+                            Diagnostic::error(
+                                bedrock_addon_core::diagnostic::cereal::unknown_child_option(
+                                    "ExpressionNode",
+                                ),
+                            )
+                            .at(at.clone())
+                            .phase(Phase::Upgrade),
                         );
                         Molang::Const(0.0)
                     };
@@ -396,11 +389,11 @@ fn upgrade_state(
                             .get(&name)
                             .is_some_and(|had| had.remap_curve != variable.remap_curve)
                     {
-                        let mut at = at.clone();
-                        at.push("animations");
-                        at.push_index(earlier);
-                        at.push(&set.animation);
-                        at.push_index(index);
+                        let at = at
+                            .child("animations")
+                            .index(earlier)
+                            .child(&set.animation)
+                            .index(index);
                         diagnostics.push(
                             Diagnostic::info(DiagnosticCode::DroppedField { text: None })
                                 .at(at)
@@ -421,9 +414,7 @@ fn upgrade_state(
         && parameters.key == "parameters"
     {
         for index in read..parameters.inputs.len() {
-            let mut at = at.clone();
-            at.push(&parameters.key);
-            at.push_index(index);
+            let at = at.child(&parameters.key).index(index);
             diagnostics.push(
                 Diagnostic::info(DiagnosticCode::DroppedField { text: None })
                     .at(at)
@@ -436,14 +427,13 @@ fn upgrade_state(
     {
         // The step removes only the key spelled exactly `parameters`; any other casing stays and
         // fails the 1.10 schema.
-        let mut at = at.clone();
-        at.push(&parameters.key);
-        schema_error(
-            diagnostics,
-            DiagnosticCode::UnrecognizedField {
+        let at = at.child(&parameters.key);
+        diagnostics.push(
+            Diagnostic::error(DiagnosticCode::UnrecognizedField {
                 text: text(CHILD_NOT_VALID, &[&parameters.key]),
-            },
-            &at,
+            })
+            .at(at.clone())
+            .phase(Phase::Upgrade),
         );
     }
     let transitions = state.transitions.map(|list| {
@@ -454,14 +444,18 @@ fn upgrade_state(
                     Molang::Expr(source) => source,
                     other => {
                         // The v1_10 transition value is a string node.
-                        let mut at = at.clone();
-                        at.push("transitions");
-                        at.push_index(index);
-                        at.push(&transition.target);
-                        schema_error(
-                            diagnostics,
-                            bedrock_addon_core::diagnostic::cereal::unknown_child_option("string"),
-                            &at,
+                        let at = at
+                            .child("transitions")
+                            .index(index)
+                            .child(&transition.target);
+                        diagnostics.push(
+                            Diagnostic::error(
+                                bedrock_addon_core::diagnostic::cereal::unknown_child_option(
+                                    "string",
+                                ),
+                            )
+                            .at(at.clone())
+                            .phase(Phase::Upgrade),
                         );
                         MolangSource::string(format!("{other:?}"), RawVersion(-1))
                     }

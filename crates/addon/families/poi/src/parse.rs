@@ -14,27 +14,6 @@ use bedrock_addon_core::versioning::{ParseCx, VersionStruct, Versioned, write_pa
 /// The version of both documents' only struct: 1.26.40.
 pub(crate) const V1_26_40: FormatVersion = FormatVersion::new(1, 26, 40);
 
-/// `base` followed by `relative`.
-fn join(base: &JsonPath, relative: &JsonPath) -> JsonPath {
-    let mut path = base.clone();
-    path.append(relative);
-    path
-}
-
-/// `base` followed by the member `key`.
-fn child(base: &JsonPath, key: &str) -> JsonPath {
-    let mut path = base.clone();
-    path.push(key);
-    path
-}
-
-/// `base` followed by the element `index`.
-fn element(base: &JsonPath, index: usize) -> JsonPath {
-    let mut path = base.clone();
-    path.push_index(index);
-    path
-}
-
 /// The member `key` of an object.
 fn member<'v>(object: &'v Value, key: &str) -> Option<&'v Value> {
     object.as_object()?.get(key)
@@ -76,7 +55,7 @@ fn identifier(object: &Value, at: &JsonPath, d: &mut Diagnostics) -> bool {
     let Some(value) = member(object, "description").and_then(|d| member(d, "identifier")) else {
         return true;
     };
-    name(value, child(&child(at, "description"), "identifier"), d)
+    name(value, at.child("description").child("identifier"), d)
 }
 
 /// Checks the list of names `key` of the payload `object`, when it is there: an array, each
@@ -85,14 +64,14 @@ fn names(object: &Value, key: &str, at: &JsonPath, d: &mut Diagnostics) -> bool 
     let Some(value) = member(object, key) else {
         return true;
     };
-    let at = child(at, key);
+    let at = at.child(key);
     let Some(list) = value.as_array() else {
         d.push(Diagnostic::error(DiagnosticCode::InvalidType { text: None }).at(at));
         return false;
     };
     let mut typed = true;
     for (i, entry) in list.iter().enumerate() {
-        typed &= name(entry, element(&at, i), d);
+        typed &= name(entry, at.index(i), d);
     }
     typed
 }
@@ -113,7 +92,7 @@ fn byte(object: &Value, key: &str, at: &JsonPath, d: &mut Diagnostics) -> bool {
         Some(false) => DiagnosticCode::InvalidValue { text: None },
         None => DiagnosticCode::InvalidType { text: None },
     };
-    d.push(Diagnostic::error(code).at(child(at, key)));
+    d.push(Diagnostic::error(code).at(at.child(key)));
     false
 }
 
@@ -138,7 +117,7 @@ fn parse_strict<'a, T: Facet<'a>>(
             // strictly, so the framework lifts the finding to an error that refuses the file.
             d.push(
                 Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None })
-                    .at(join(&cx.at, &path)),
+                    .at(cx.at.join(&path)),
             );
         }
         if !typed {

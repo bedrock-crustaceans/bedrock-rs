@@ -5,7 +5,7 @@
 
 use std::collections::HashMap;
 
-use super::parse::{PAYLOAD, ROOT, child, element_of};
+use super::parse::{PAYLOAD, ROOT};
 use super::{BehaviorTree, Node};
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Phase,
@@ -16,26 +16,26 @@ use bedrock_addon_core::id::BehaviorTreeId;
 /// The `minecraft:subtree` nodes of `tree` in document order: each node's target and the
 /// path of its `subtree_id`.
 fn subtrees(tree: &BehaviorTree) -> Vec<(&BehaviorTreeId, JsonPath)> {
-    let root_at = child(&child(&JsonPath::new(), PAYLOAD), ROOT);
+    let root_at = JsonPath::of_keys([PAYLOAD, ROOT]);
     let mut found = Vec::new();
     // An explicit stack: a tree built in memory may nest deeper than a parsed one.
     let mut pending = vec![(&tree.root, root_at)];
     while let Some((node, at)) = pending.pop() {
-        let body_at = child(&at, node.type_name());
+        let body_at = at.child(node.type_name());
         match node {
             Node::Subtree { subtree_id, .. } => {
-                found.push((subtree_id, child(&body_at, "subtree_id")));
+                found.push((subtree_id, body_at.child("subtree_id")));
             }
             Node::Sequence { .. } | Node::Selector { .. } => {
-                let children_at = child(&body_at, "children");
+                let children_at = body_at.child("children");
                 // Pushed last to first, so the first child is visited first.
                 for (index, node) in node.nodes().iter().enumerate().rev() {
-                    pending.push((node, element_of(&children_at, index)));
+                    pending.push((node, children_at.index(index)));
                 }
             }
             _ => {
                 for node in node.nodes() {
-                    pending.push((node, child(&body_at, "child")));
+                    pending.push((node, body_at.child("child")));
                 }
             }
         }

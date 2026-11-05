@@ -353,9 +353,7 @@ impl ServerProperties {
         let mut out = String::new();
         for (index, entry) in self.entries.iter().enumerate() {
             let refuse = |member: &str| {
-                let mut at = JsonPath::new();
-                at.push_index(index);
-                at.push(member);
+                let at = JsonPath::new().index(index).child(member);
                 EncodeError::NotRepresentable {
                     at,
                     what: Unrepresentable::Unsupported,

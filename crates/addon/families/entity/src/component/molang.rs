@@ -28,7 +28,7 @@ use bedrock_addon_core::versioning::ConvertMode;
 use facet::Facet;
 use facet_value::VObject;
 
-use super::parse::{Check, Typed, drop_deprecated, index, join, path, read_prepared};
+use super::parse::{Check, Typed, drop_deprecated, read_prepared};
 use super::value::{one_element, tell_partial_vector};
 use crate::goal::Vec3;
 
@@ -178,7 +178,7 @@ impl Typed for ExperienceReward {
             ("on_death", &mut self.on_death),
         ] {
             if let Some(value) = scalar
-                && !lenient_value(value, &path(&[key]), cx)
+                && !lenient_value(value, &JsonPath::new().child(key), cx)
             {
                 *scalar = None;
             }
@@ -188,11 +188,11 @@ impl Typed for ExperienceReward {
             ("on_death_array", &mut self.on_death_array),
         ] {
             if let Some(list) = array {
-                let at = path(&[key]);
+                let at = JsonPath::new().child(key);
                 let mut i = 0;
                 let mut kept = Vec::with_capacity(list.len());
                 list.retain(|value| {
-                    let keep = lenient_value(value, &index(&at, i), cx);
+                    let keep = lenient_value(value, &at.index(i), cx);
                     if keep {
                         kept.push(i);
                     }
@@ -284,27 +284,27 @@ impl Typed for AngerLevel {
     fn check(&mut self, cx: &mut Check<'_>) {
         // The game's schema minimums.
         cx.at_least(
-            &path(&["default_annoyingness"]),
+            &JsonPath::new().child("default_annoyingness"),
             &mut self.default_annoyingness.0,
             0,
             0,
         );
         cx.at_least(
-            &path(&["default_projectile_annoyingness"]),
+            &JsonPath::new().child("default_projectile_annoyingness"),
             &mut self.default_projectile_annoyingness.0,
             0,
             0,
         );
         if let Some(filter) = &self.nuisance_filter {
-            cx.extend(filter.check(&path(&["nuisance_filter"])));
+            cx.extend(filter.check(&JsonPath::new().child("nuisance_filter")));
         }
         // A sound whose condition the lenient reader rejects has no condition to fall back to:
         // the entry is dropped.
-        let sounds = path(&["on_increase_sounds"]);
+        let sounds = JsonPath::new().child("on_increase_sounds");
         let mut i = 0;
         let mut kept = Vec::with_capacity(self.on_increase_sounds.len());
         self.on_increase_sounds.retain(|sound| {
-            let keep = lenient_value(&sound.condition, &join(&index(&sounds, i), "condition"), cx);
+            let keep = lenient_value(&sound.condition, &sounds.index(i).child("condition"), cx);
             if keep {
                 kept.push(i);
             }
@@ -473,10 +473,10 @@ impl Typed for Rideable {
             && json.get("seats").is_some_and(Value::is_object)
             && one_element(json, "seats", &JsonPath::new(), cx);
         if let Some(seats) = json.get("seats").and_then(Value::as_array) {
-            let list = path(&["seats"]);
+            let list = JsonPath::new().child("seats");
             for (i, seat) in seats.iter().enumerate() {
                 if let Some(seat) = seat.as_object() {
-                    tell_partial_vector(seat, "position", &index(&list, i), cx);
+                    tell_partial_vector(seat, "position", &list.index(i), cx);
                 }
             }
         }
@@ -484,12 +484,12 @@ impl Typed for Rideable {
     }
 
     fn check(&mut self, cx: &mut Check<'_>) {
-        let seats = path(&["seats"]);
+        let seats = JsonPath::new().child("seats");
         for (i, seat) in self.seats.iter_mut().enumerate() {
-            let at = index(&seats, i);
+            let at = seats.index(i);
             // The legacy schema reads the expression as the dynamic row did: a value it
             // rejects takes the default (0).
-            if !lenient_value(&seat.rotate_rider_by, &join(&at, "rotate_rider_by"), cx) {
+            if !lenient_value(&seat.rotate_rider_by, &at.child("rotate_rider_by"), cx) {
                 seat.rotate_rider_by = Molang::Const(0.0);
             }
             // The typed reader bounds the seat limits to a range; the legacy schema has none.
@@ -507,7 +507,7 @@ impl Typed for Rideable {
                     ),
                 ] {
                     if let Some(number) = value {
-                        cx.within(&join(&at, key), &mut number.0, bounds, bounds.0);
+                        cx.within(&at.child(key), &mut number.0, bounds, bounds.0);
                     }
                 }
             }

@@ -188,25 +188,9 @@ fn vanilla_path(at: &JsonPath, payload: &JsonPath) -> String {
     out.trim_start().to_owned()
 }
 
-/// `base` followed by `key`.
-fn child(base: &JsonPath, key: &str) -> JsonPath {
-    let mut path = base.clone();
-    path.push(key);
-    path
-}
-
-/// `base` followed by the element `i`.
-fn item(base: &JsonPath, i: usize) -> JsonPath {
-    let mut path = base.clone();
-    path.push_index(i);
-    path
-}
-
 /// The payload's path.
 fn payload(key: &str) -> JsonPath {
-    let mut path = JsonPath::new();
-    path.push(key);
-    path
+    JsonPath::new().child(key)
 }
 
 /// Every unresolved reference of the group, in collection order.
@@ -231,26 +215,21 @@ fn alias_pools<'a>(alias: &'a PoolAlias, at: &JsonPath) -> Vec<(JsonPath, &'a Te
         targets
             .iter()
             .enumerate()
-            .map(|(i, weighted)| {
-                (
-                    child(&item(&child(at, "targets"), i), "data"),
-                    &weighted.data,
-                )
-            })
+            .map(|(i, weighted)| (at.child("targets").index(i).child("data"), &weighted.data))
             .collect::<Vec<_>>()
     };
     match alias {
-        PoolAlias::Direct { target, .. } => vec![(child(at, "target"), target)],
+        PoolAlias::Direct { target, .. } => vec![(at.child("target"), target)],
         PoolAlias::Random { targets, .. } => random(targets, at),
         PoolAlias::RandomGroup { groups, .. } => {
             let mut found = Vec::new();
             for (j, group) in groups.iter().enumerate() {
-                let at_data = child(&item(&child(at, "groups"), j), "data");
+                let at_data = at.child("groups").index(j).child("data");
                 for (k, grouped) in group.data.iter().enumerate() {
-                    let at_grouped = item(&at_data, k);
+                    let at_grouped = at_data.index(k);
                     match grouped {
                         GroupedPoolAlias::Direct { target, .. } => {
-                            found.push((child(&at_grouped, "target"), target));
+                            found.push((at_grouped.child("target"), target));
                         }
                         GroupedPoolAlias::Random { targets, .. } => {
                             found.extend(random(targets, &at_grouped));
@@ -272,15 +251,15 @@ fn link_structures(jigsaw: &Jigsaw, targets: &dyn Targets, out: &mut Diagnostics
             missing_asset(
                 out,
                 origin,
-                &child(&at, "start_pool"),
+                &at.child("start_pool"),
                 &at,
                 POOL,
                 document.start_pool.as_str(),
             );
         }
-        let aliases = child(&at, "pool_aliases");
+        let aliases = at.child("pool_aliases");
         for (i, alias) in document.pool_aliases.iter().flatten().enumerate() {
-            for (path, target) in alias_pools(alias, &item(&aliases, i)) {
+            for (path, target) in alias_pools(alias, &aliases.index(i)) {
                 if !pool_defined(jigsaw, targets, target) {
                     missing_asset(out, origin, &path, &at, POOL, target.as_str());
                 }
@@ -300,15 +279,15 @@ fn link_pools(jigsaw: &Jigsaw, targets: &dyn Targets, out: &mut Diagnostics) {
             missing_asset(
                 out,
                 origin,
-                &child(&at, "fallback"),
+                &at.child("fallback"),
                 &at,
                 POOL,
                 fallback.as_str(),
             );
         }
-        let elements = child(&at, "elements");
+        let elements = at.child("elements");
         for (i, entry) in document.elements.iter().enumerate() {
-            let at_element = child(&item(&elements, i), "element");
+            let at_element = elements.index(i).child("element");
             match &entry.element {
                 PoolElement::Single {
                     location,
@@ -319,7 +298,7 @@ fn link_pools(jigsaw: &Jigsaw, targets: &dyn Targets, out: &mut Diagnostics) {
                     // written at generation time rather than at load; it is kept as the link
                     // finding's text, an information of the crate's own.
                     if !targets.structure(location) {
-                        let at_location = child(&at_element, "location");
+                        let at_location = at_element.child("location");
                         miss(
                             out,
                             origin,
@@ -353,7 +332,7 @@ fn link_pools(jigsaw: &Jigsaw, targets: &dyn Targets, out: &mut Diagnostics) {
                         missing_asset(
                             out,
                             origin,
-                            &child(&at_element, "processors"),
+                            &at_element.child("processors"),
                             &at,
                             PROCESSOR_LIST,
                             list.as_str(),
@@ -366,7 +345,7 @@ fn link_pools(jigsaw: &Jigsaw, targets: &dyn Targets, out: &mut Diagnostics) {
                     miss(
                         out,
                         origin,
-                        &child(&at_element, "feature"),
+                        &at_element.child("feature"),
                         FEATURE,
                         feature.as_str(),
                         VanillaText::Formatted {
@@ -387,7 +366,7 @@ fn link_sets(jigsaw: &Jigsaw, targets: &dyn Targets, out: &mut Diagnostics) {
     for (_, document) in &jigsaw.structure_sets {
         let at = payload("minecraft:structure_set");
         let origin = document.origin();
-        let structures = child(&at, "structures");
+        let structures = at.child("structures");
         for (i, entry) in document.structures.iter().enumerate() {
             if !jigsaw.structures.contains(&entry.structure)
                 && !targets.jigsaw_structure(&entry.structure)
@@ -395,7 +374,7 @@ fn link_sets(jigsaw: &Jigsaw, targets: &dyn Targets, out: &mut Diagnostics) {
                 missing_asset(
                     out,
                     origin,
-                    &child(&item(&structures, i), "structure"),
+                    &structures.index(i).child("structure"),
                     &at,
                     JIGSAW_STRUCTURE,
                     entry.structure.as_str(),
@@ -410,10 +389,10 @@ fn link_processors(jigsaw: &Jigsaw, targets: &dyn Targets, out: &mut Diagnostics
     for (_, document) in &jigsaw.processors {
         let at = payload("minecraft:processor_list");
         let origin = document.origin();
-        let processors = child(&at, "processors");
+        let processors = at.child("processors");
         for (i, processor) in document.processors.iter().enumerate() {
-            let at_processor = item(&processors, i);
-            let at_delegate = child(&at_processor, "delegate");
+            let at_processor = processors.index(i);
+            let at_delegate = at_processor.child("delegate");
             match processor {
                 Processor::Rule { rules, .. }
                 | Processor::Capped {
@@ -421,8 +400,8 @@ fn link_processors(jigsaw: &Jigsaw, targets: &dyn Targets, out: &mut Diagnostics
                     ..
                 } => {
                     let at_rules = match processor {
-                        Processor::Rule { .. } => child(&at_processor, "rules"),
-                        _ => child(&at_delegate, "rules"),
+                        Processor::Rule { .. } => at_processor.child("rules"),
+                        _ => at_delegate.child("rules"),
                     };
                     rules_references(rules, &at_rules, &at, targets, out, origin);
                 }
@@ -432,8 +411,8 @@ fn link_processors(jigsaw: &Jigsaw, targets: &dyn Targets, out: &mut Diagnostics
                     ..
                 } => {
                     let at_blocks = match processor {
-                        Processor::BlockIgnore { .. } => child(&at_processor, "blocks"),
-                        _ => child(&at_delegate, "blocks"),
+                        Processor::BlockIgnore { .. } => at_processor.child("blocks"),
+                        _ => at_delegate.child("blocks"),
                     };
                     block_references(blocks, &at_blocks, targets, out, origin);
                 }
@@ -495,7 +474,7 @@ fn block_references(
     origin: &Origin,
 ) {
     for (i, block) in blocks.iter().enumerate() {
-        missing_block(block, &item(at, i), targets, out, origin);
+        missing_block(block, &at.index(i), targets, out, origin);
     }
 }
 
@@ -509,18 +488,18 @@ fn rules_references(
     origin: &Origin,
 ) {
     for (i, rule) in rules.iter().enumerate() {
-        let at_rule = item(at, i);
+        let at_rule = at.index(i);
         for (key, predicate) in [
             ("input_predicate", &rule.input_predicate),
             ("location_predicate", &rule.location_predicate),
         ] {
-            let at_predicate = child(&at_rule, key);
+            let at_predicate = at_rule.child(key);
             match predicate {
                 Some(
                     BlockPredicate::BlockMatch { block, .. }
                     | BlockPredicate::RandomBlockMatch { block, .. },
                 ) => {
-                    let at_block = child(&at_predicate, "block");
+                    let at_block = at_predicate.child("block");
                     missing_block(block, &at_block, targets, out, origin);
                     validator_block(block, &at_block, payload, targets, out, origin);
                 }
@@ -528,17 +507,17 @@ fn rules_references(
                     BlockPredicate::BlockstateMatch { block_state, .. }
                     | BlockPredicate::RandomBlockstateMatch { block_state, .. },
                 ) => {
-                    let at_state = child(&at_predicate, "block_state");
+                    let at_state = at_predicate.child("block_state");
                     missing_block(&block_state.name, &at_state, targets, out, origin);
-                    let at_name = child(&at_state, "name");
+                    let at_name = at_state.child("name");
                     validator_block(&block_state.name, &at_name, payload, targets, out, origin);
                 }
                 _ => {}
             }
         }
-        let at_output = child(&at_rule, "output_state");
+        let at_output = at_rule.child("output_state");
         missing_block(&rule.output_state.name, &at_output, targets, out, origin);
-        let at_name = child(&at_output, "name");
+        let at_name = at_output.child("name");
         validator_block(
             &rule.output_state.name,
             &at_name,
@@ -556,7 +535,7 @@ fn rules_references(
             invalid_asset_path(
                 out,
                 origin,
-                &child(&child(&at_rule, "block_entity_modifier"), "loot_table"),
+                &at_rule.child("block_entity_modifier").child("loot_table"),
                 payload,
                 LOOT_TABLE,
                 loot_table.as_str(),

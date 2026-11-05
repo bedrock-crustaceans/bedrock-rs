@@ -50,20 +50,6 @@ pub(crate) fn last_key(path: &JsonPath) -> String {
     }
 }
 
-/// `base` followed by the segments of `relative`.
-pub(crate) fn join(base: &JsonPath, relative: &JsonPath) -> JsonPath {
-    let mut path = base.clone();
-    path.append(relative);
-    path
-}
-
-/// `base` followed by `key`.
-pub(crate) fn child(base: &JsonPath, key: &str) -> JsonPath {
-    let mut path = base.clone();
-    path.push(key);
-    path
-}
-
 /// `UnrecognizedField` (error) with vanilla's text, for the member at `at`.
 pub(crate) fn not_valid_here(at: JsonPath) -> Diagnostic {
     let key = last_key(&at);
@@ -133,7 +119,7 @@ pub(crate) fn parse_strict_with<'a, T: Facet<'a>>(
         }
         let unknown = unknown_members(T::SHAPE, &json);
         for (path, _) in &unknown {
-            d.push(not_valid_here(join(&cx.at, path)));
+            d.push(not_valid_here(cx.at.join(path)));
         }
         if !unknown.is_empty() {
             return None;
@@ -145,7 +131,7 @@ pub(crate) fn parse_strict_with<'a, T: Facet<'a>>(
 /// The finding of a failed typed parse of `slice`, at `base` followed by the failing member.
 fn slice_error(error: SliceError, base: &JsonPath) -> Diagnostic {
     error.into_diagnostic(base, |code, error| {
-        let at = || join(base, error.relative_path());
+        let at = || base.join(error.relative_path());
         match code {
             // The client's enum members reject an unknown name as a value.
             DiagnosticCode::InvalidEnumValue { .. } => DiagnosticCode::InvalidValue { text: None },

@@ -8,8 +8,8 @@ use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
 use facet_value::{VArray, VObject};
 
 use super::ops::{
-    Members, Removed, Told, below, components, element, f32_value, group, has_bits, is, json,
-    number_of, overwrite, removed, section_a, section_b, sections,
+    Members, Removed, Told, components, f32_value, group, has_bits, is, json, number_of, overwrite,
+    removed, section_a, section_b, sections,
 };
 use bedrock_addon_core::diagnostic::JsonPath;
 
@@ -137,7 +137,7 @@ fn section_a_113(payload: &mut Payload, cx: &mut UpgradeCx<'_>) {
         // The crate's own note: an `entity_types` that is no array is replaced by the list of
         // vanilla's one entry; told at the member.
         let mut told = Told::default();
-        told.wrong_type(super::ops::path(&[
+        told.wrong_type(JsonPath::new().with(&[
             "components",
             "minecraft:behavior.target_when_pushed",
             "entity_types",
@@ -366,7 +366,7 @@ fn flocking(components: &mut dyn Members, actor: ActorType) {
 /// The turtle's lightning trigger: `damage_sensor` normalised, then the first `lightning`
 /// trigger gets `damage_multiplier: 2000.0` (unless it deals no damage), or one is appended.
 fn turtle_lightning(components: &mut dyn Members, told: &mut Told) {
-    let at = super::ops::path(&["components", "minecraft:damage_sensor"]);
+    let at = JsonPath::new().with(&["components", "minecraft:damage_sensor"]);
     let Some(sensor) = components.get_mut("minecraft:damage_sensor") else {
         components.set(
             "minecraft:damage_sensor",
@@ -396,7 +396,7 @@ fn turtle_lightning(components: &mut dyn Members, told: &mut Told) {
             if deals != Some(false) {
                 // The multiplier the turtle's file has is the fixer's to replace;
                 // another value of the file's is noted.
-                let at = element(&below(&at, &["triggers"]), index);
+                let at = at.child("triggers").index(index);
                 overwrite(trigger, "damage_multiplier", 2000.0.into(), &at, told);
             }
         }
@@ -409,7 +409,7 @@ fn turtle_lightning(components: &mut dyn Members, told: &mut Told) {
 /// `damage_sensor` → `{triggers: [...]}`; every trigger with both
 /// `filters` and `event` gets them under `on_damage`.
 fn normalise_damage_sensor(sensor: &mut Value, at: &JsonPath, told: &mut Told) {
-    let triggers_at = below(at, &["triggers"]);
+    let triggers_at = at.child("triggers");
     let old = std::mem::replace(sensor, Value::NULL);
     let triggers = match old.as_object() {
         _ if old.is_array() => {
@@ -423,7 +423,7 @@ fn normalise_damage_sensor(sensor: &mut Value, at: &JsonPath, told: &mut Told) {
                 let mut out = object.clone();
                 out.insert("triggers", list);
                 *sensor = out.into();
-                told.moved(triggers_at.clone(), element(&triggers_at, 0));
+                told.moved(triggers_at.clone(), triggers_at.index(0));
                 wrap_on_damage(sensor, at, told);
                 return;
             }
@@ -435,7 +435,7 @@ fn normalise_damage_sensor(sensor: &mut Value, at: &JsonPath, told: &mut Told) {
             None => {
                 let mut list = VArray::new();
                 list.push(old.clone());
-                told.moved(at.clone(), element(&triggers_at, 0));
+                told.moved(at.clone(), triggers_at.index(0));
                 list.into()
             }
         },
@@ -460,14 +460,14 @@ fn wrap_on_damage(sensor: &mut Value, at: &JsonPath, told: &mut Told) {
     else {
         return;
     };
-    let list_at = below(at, &["triggers"]);
+    let list_at = at.child("triggers");
     for (index, trigger) in triggers.as_mut_slice().iter_mut().enumerate() {
         let Some(object) = trigger.as_object_mut() else {
             continue;
         };
         if object.contains_key("filters") && object.contains_key("event") {
-            let trigger_at = element(&list_at, index);
-            let on_damage_at = below(&trigger_at, &["on_damage"]);
+            let trigger_at = list_at.index(index);
+            let on_damage_at = trigger_at.child("on_damage");
             let mut on_damage = match object.remove("on_damage") {
                 Some(own) if own.is_object() => own.as_object().cloned().unwrap_or_default(),
                 Some(own) => {
@@ -482,7 +482,7 @@ fn wrap_on_damage(sensor: &mut Value, at: &JsonPath, told: &mut Told) {
             for key in ["filters", "event"] {
                 if let Some(value) = object.remove(key) {
                     overwrite(&mut on_damage, key, value, &on_damage_at, told);
-                    told.moved(below(&trigger_at, &[key]), below(&on_damage_at, &[key]));
+                    told.moved(trigger_at.child(key), on_damage_at.child(key));
                 }
             }
             let rest = object.clone();
@@ -606,7 +606,7 @@ fn pufferfish(payload: &mut Payload, told: &mut Told) {
                 .shift_remove(name)
                 .is_some_and(|had| holds_something(&had))
             {
-                told.dropped(super::ops::path(&["component_groups", name]));
+                told.dropped(JsonPath::new().with(&["component_groups", name]));
             }
         }
     }
@@ -620,7 +620,7 @@ fn pufferfish(payload: &mut Payload, told: &mut Told) {
                 .shift_remove(name)
                 .is_some_and(|had| holds_something(&had))
             {
-                told.dropped(super::ops::path(&["events", name]));
+                told.dropped(JsonPath::new().with(&["events", name]));
             }
         }
     }
@@ -637,7 +637,7 @@ fn pufferfish(payload: &mut Payload, told: &mut Told) {
                 .get(name.as_str())
                 .is_some_and(|had| !had.is_null() && had != group)
             {
-                told.dropped(super::ops::path(&["component_groups", name.as_str()]));
+                told.dropped(JsonPath::new().with(&["component_groups", name.as_str()]));
             }
             groups.insert(name.as_str().to_owned(), group.clone());
         }
@@ -649,7 +649,7 @@ fn pufferfish(payload: &mut Payload, told: &mut Told) {
                 .get(name.as_str())
                 .is_some_and(|had| !had.is_null() && had != event)
             {
-                told.dropped(super::ops::path(&["events", name.as_str()]));
+                told.dropped(JsonPath::new().with(&["events", name.as_str()]));
             }
             events.insert(name.as_str().to_owned(), event.clone());
         }
@@ -757,7 +757,7 @@ fn section_b_113(payload: &mut Payload, cx: &mut UpgradeCx<'_>) {
         let members = section.members;
         // The sensor's reshaping is recorded, so what is told of a trigger from here on is
         // told at the trigger as the file has it.
-        let sensor_at = below(&section.at, &["minecraft:damage_sensor"]);
+        let sensor_at = section.at.child("minecraft:damage_sensor");
         if let Some(sensor) = members.get_mut("minecraft:damage_sensor") {
             normalise_damage_sensor(sensor, &sensor_at, &mut told);
         }
@@ -768,7 +768,7 @@ fn section_b_113(payload: &mut Payload, cx: &mut UpgradeCx<'_>) {
                     .and_then(|o| o.get("value"))
                     .and_then(Value::as_bool)
                     == Some(true);
-            let at = below(&section.at, &["minecraft:hurt_when_wet"]);
+            let at = section.at.child("minecraft:hurt_when_wet");
             // The entry is made of `value` alone, and only a `damage_conditions` list of
             // the section takes it: a component that makes no entry is told as removed,
             // whatever it held, and a member beside the `value` of one that does is told
@@ -776,7 +776,7 @@ fn section_b_113(payload: &mut Payload, cx: &mut UpgradeCx<'_>) {
             if wet_true && append_condition(members, RAIN) {
                 for key in wet.as_object().into_iter().flat_map(VObject::keys) {
                     if key.as_str() != "value" {
-                        told.unknown(below(&at, &[key.as_str()]));
+                        told.unknown(at.child(key.as_str()));
                     }
                 }
             } else {
@@ -787,37 +787,39 @@ fn section_b_113(payload: &mut Payload, cx: &mut UpgradeCx<'_>) {
         if let Some(fall) = members.take("minecraft:fall_damage")
             && !fall.is_null()
         {
-            let at = below(&section.at, &["minecraft:fall_damage"]);
+            let at = section.at.child("minecraft:fall_damage");
             fall_damage(members, &fall, &at, &sensor_at, &mut told);
         }
         if let Some(sensor) = members.get_mut("minecraft:environment_sensor") {
-            let at = below(&section.at, &["minecraft:environment_sensor"]);
+            let at = section.at.child("minecraft:environment_sensor");
             environment_sensor(sensor, &at, &mut told);
         }
         if let Some(giveable) = members.get_mut("minecraft:giveable") {
-            let at = below(&section.at, &["minecraft:giveable"]);
+            let at = section.at.child("minecraft:giveable");
             let old = giveable.clone();
             let mut wrapped = VObject::new();
             wrapped.insert("triggers", old);
             *giveable = wrapped.into();
-            told.moved(at.clone(), below(&at, &["triggers"]));
+            told.moved(at.clone(), at.child("triggers"));
         }
         if let Some(interact) = members.get_mut("minecraft:interact") {
-            let at = below(&section.at, &["minecraft:interact"]);
+            let at = section.at.child("minecraft:interact");
             for (index, lost) in interact_113(interact, &at, &mut later) {
                 // At the member as the file has it: in the element of a list.
-                let at = index.map_or_else(|| at.clone(), |index| element(&at, index));
-                findings.push((Removed::Field, below(&at, &[lost]), lost));
+                let at = index.map_or_else(|| at.clone(), |index| at.index(index));
+                findings.push((Removed::Field, at.child(lost), lost));
             }
         }
         if let Some(scheduler) = members.object("minecraft:scheduler") {
-            let at = below(&section.at, &["minecraft:scheduler", "scheduled_events"]);
+            let at = section
+                .at
+                .with(&["minecraft:scheduler", "scheduled_events"]);
             for index in scheduler_113(scheduler, &at, &mut told, &mut later) {
-                findings.push((Removed::Field, element(&at, index), "scheduled_events"));
+                findings.push((Removed::Field, at.index(index), "scheduled_events"));
             }
         }
         if let Some(spawn) = members.get_mut("minecraft:spawn_entity") {
-            let at = below(&section.at, &["minecraft:spawn_entity"]);
+            let at = section.at.child("minecraft:spawn_entity");
             spawn_entity_113(spawn, &at, &mut told);
         }
     }
@@ -846,10 +848,10 @@ fn fall_damage(
             // is told.
             for key in object.keys().map(facet_value::VString::as_str) {
                 if key != "value" {
-                    told.unknown(below(at, &[key]));
+                    told.unknown(at.child(key));
                 }
             }
-            (object.get("value"), below(at, &["value"]))
+            (object.get("value"), at.child("value"))
         }
         None => (Some(fall), at.clone()),
     };
@@ -871,7 +873,7 @@ fn fall_damage(
     // A `null` one is an absent one.
     if !sensor.get("triggers").is_some_and(Value::is_array) {
         if sensor.remove("triggers").is_some_and(|old| !old.is_null()) {
-            told.wrong_type(below(sensor_at, &["triggers"]));
+            told.wrong_type(sensor_at.child("triggers"));
         }
         sensor.insert("triggers", VArray::new());
     }
@@ -894,7 +896,7 @@ fn fall_damage(
     // A member the `fall` trigger of the file has is written over, and noted when it held
     // another value (the trigger's path is the one it has now; the sensor's reshaping is
     // recorded, so the finding sits at the trigger of the file).
-    let trigger_at = element(&below(sensor_at, &["triggers"]), index);
+    let trigger_at = sensor_at.child("triggers").index(index);
     if value == 0.0 {
         overwrite(trigger, "deals_damage", false.into(), &trigger_at, told);
     } else {
@@ -906,13 +908,13 @@ fn fall_damage(
             &trigger_at,
             told,
         );
-        told.moved(member_at, below(&trigger_at, &["damage_multiplier"]));
+        told.moved(member_at, trigger_at.child("damage_multiplier"));
     }
     trigger.insert("cause", "fall");
 }
 /// `environment_sensor`: `on_environment` → `triggers`, anything else wrapped.
 fn environment_sensor(sensor: &mut Value, at: &JsonPath, told: &mut Told) {
-    let triggers_at = below(at, &["triggers"]);
+    let triggers_at = at.child("triggers");
     if let Some(object) = sensor.as_object_mut()
         && object.contains_key("on_environment")
     {
@@ -920,11 +922,11 @@ fn environment_sensor(sensor: &mut Value, at: &JsonPath, told: &mut Told) {
             if object.contains_key("triggers") {
                 // The `triggers` the file has beside it stays; the old member goes.
                 if !on.is_null() {
-                    told.dropped(below(at, &["on_environment"]));
+                    told.dropped(at.child("on_environment"));
                 }
             } else {
                 object.insert("triggers", on);
-                told.moved(below(at, &["on_environment"]), triggers_at);
+                told.moved(at.child("on_environment"), triggers_at);
             }
         }
         return;
@@ -940,11 +942,11 @@ fn environment_sensor(sensor: &mut Value, at: &JsonPath, told: &mut Told) {
                 // is told at the element the file has.
                 for key in item.as_object().into_iter().flat_map(VObject::keys) {
                     if key.as_str() != "on_environment" {
-                        told.unknown(below(&element(at, index), &[key.as_str()]));
+                        told.unknown(at.index(index).child(key.as_str()));
                     }
                 }
-                let from = below(&element(&triggers_at, index), &["on_environment"]);
-                told.moved(from, element(&triggers_at, index));
+                let from = triggers_at.index(index).child("on_environment");
+                told.moved(from, triggers_at.index(index));
             }
             list.push(on.cloned().unwrap_or_else(|| item.clone()));
         }
@@ -969,7 +971,7 @@ fn interact_113(
         if object.get("on_interact").is_some_and(Value::is_null) {
             object.remove("on_interact");
         }
-        let entry_at = index.map_or_else(|| at.clone(), |index| element(at, index));
+        let entry_at = index.map_or_else(|| at.clone(), |index| at.index(index));
         let has_on = object.contains_key("on_interact");
         let mut on = VObject::new();
         for key in ["event", "target", "filters"] {
@@ -978,10 +980,7 @@ fn interact_113(
                     lost.push((index, key));
                 } else {
                     on.insert(key, value);
-                    told.moved(
-                        below(&entry_at, &[key]),
-                        below(&entry_at, &["on_interact", key]),
-                    );
+                    told.moved(entry_at.child(key), entry_at.with(&["on_interact", key]));
                 }
             }
         }
@@ -1002,7 +1001,7 @@ fn interact_113(
     let mut wrapped = VObject::new();
     wrapped.insert("interactions", old);
     *interact = wrapped.into();
-    told.moved(at.clone(), below(at, &["interactions"]));
+    told.moved(at.clone(), at.child("interactions"));
     lost
 }
 /// `scheduler.scheduled_events[]`: each element replaced by its `scheduled_event`; an element
@@ -1031,12 +1030,12 @@ fn scheduler_113(
                 // is told at the element the file has.
                 for key in item.as_object().into_iter().flat_map(VObject::keys) {
                     if key.as_str() != "scheduled_event" {
-                        unread.unknown(below(&element(at, index), &[key.as_str()]));
+                        unread.unknown(at.index(index).child(key.as_str()));
                     }
                 }
                 moves.push((
-                    below(&element(at, index), &["scheduled_event"]),
-                    element(at, out.len()),
+                    at.index(index).child("scheduled_event"),
+                    at.index(out.len()),
                 ));
                 out.push(event.clone());
             }
@@ -1069,17 +1068,14 @@ fn spawn_entity_113(spawn: &mut Value, at: &JsonPath, told: &mut Told) {
             let mut group = VObject::new();
             group.insert("all_of", all);
             *filters = group.into();
-            let filters_at = below(&entry_at, &["filters"]);
-            told.moved(
-                filters_at.clone(),
-                element(&below(&filters_at, &["all_of"]), 0),
-            );
+            let filters_at = entry_at.child("filters");
+            told.moved(filters_at.clone(), filters_at.child("all_of").index(0));
         }
     };
     if let Some(items) = spawn.as_array_mut() {
         for (index, item) in items.as_mut_slice().iter_mut().enumerate() {
             if let Some(object) = item.as_object_mut() {
-                add(object, element(at, index));
+                add(object, at.index(index));
             }
         }
     } else if let Some(object) = spawn.as_object_mut() {

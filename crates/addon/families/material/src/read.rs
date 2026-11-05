@@ -43,12 +43,12 @@ pub(super) const MATERIALS: &str = "materials";
 /// The path `inner` of a material map as the file has it: below the wrapper's member when the
 /// map is `wrapped` in one. A finding names its place in the file that was written.
 pub(super) fn path_in_file(inner: &JsonPath, wrapped: bool) -> JsonPath {
-    let mut at = JsonPath::new();
-    if wrapped {
-        at.push(MATERIALS);
-    }
-    at.append(inner);
-    at
+    let at = if wrapped {
+        JsonPath::new().child(MATERIALS)
+    } else {
+        JsonPath::new()
+    };
+    at.join(inner)
 }
 
 /// Moves the findings `found` of a material map into `out`, each at its path in the file.
@@ -189,9 +189,7 @@ pub(super) fn unwrap_copy(root: VObject, out: &mut Diagnostics) -> Unwrapped {
             dropped: None,
         };
     }
-    let mut at = JsonPath::new();
-    at.push(MATERIALS);
-    at.push(VERSION);
+    let at = JsonPath::new().child(MATERIALS).child(VERSION);
     let code = DiagnosticCode::UnsupportedVersion { text: None };
     out.push(Diagnostic::info(code).at(at));
     Unwrapped {
@@ -223,8 +221,7 @@ pub(super) fn check_duplicates(map: &VObject, file: &str, out: &mut Diagnostics)
                 key.to_owned(),
             ],
         };
-        let mut at = JsonPath::new();
-        at.push(key);
+        let at = JsonPath::new().child(key);
         let code = DiagnosticCode::DuplicateIdentifier { text: Some(text) };
         // The game logs this at the content log's error level and goes on with both keys: a kept
         // error.

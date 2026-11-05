@@ -20,8 +20,7 @@ impl BlocksJson {
                 object.insert("format_version", version.clone());
             }
             if name == "format_version" {
-                let mut at = JsonPath::new();
-                at.push(name);
+                let at = JsonPath::new().child(name);
                 return Err(EncodeError::NotRepresentable {
                     at,
                     what: Unrepresentable::Unsupported,

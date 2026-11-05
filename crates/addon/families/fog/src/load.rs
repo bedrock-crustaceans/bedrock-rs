@@ -56,9 +56,7 @@ impl Family for FogFamily {
 
 /// The payload's path in the file.
 fn payload_at() -> JsonPath {
-    let mut at = JsonPath::new();
-    at.push(FogFamily::PAYLOAD_KEY);
-    at
+    JsonPath::new().child(FogFamily::PAYLOAD_KEY)
 }
 
 /// An error of the gates, at the document root.
@@ -246,8 +244,7 @@ fn as_written(text: &str, cx: &LoadContext) -> Parsed<FogFamily> {
         return parse_as_written::<FogFamily>(document, cx);
     };
     let mut diagnostics = Diagnostics::default();
-    let mut at = JsonPath::new();
-    at.push("format_version");
+    let at = JsonPath::new().child("format_version");
     diagnostics.push(
         Diagnostic::info(DiagnosticCode::PrereleaseFormatVersion { version: written }).at(at),
     );

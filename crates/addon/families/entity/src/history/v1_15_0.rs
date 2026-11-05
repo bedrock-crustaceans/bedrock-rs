@@ -6,7 +6,7 @@ use bedrock_addon_core::vanilla::ActorType;
 use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
 use facet_value::VObject;
 
-use super::ops::{Members, Told, below, components, has_bits, is, json, section_a, sections};
+use super::ops::{Members, Told, components, has_bits, is, json, section_a, sections};
 
 /// 1.15.0 → 1.16.0 (gate 1.16.0).
 impl Upgrade for Entity {
@@ -64,7 +64,7 @@ fn instant_despawn(payload: &mut Payload, told: &mut Told) {
         let instant = Value::from(instant);
         // An `instant_despawn` the file has beside the `despawn` is written over, and noted;
         // what is told of the new component is told of the old one.
-        let to = below(&section.at, &["minecraft:instant_despawn"]);
+        let to = section.at.child("minecraft:instant_despawn");
         if members
             .get("minecraft:instant_despawn")
             .is_some_and(|had| !had.is_null() && *had != instant)
@@ -72,7 +72,7 @@ fn instant_despawn(payload: &mut Payload, told: &mut Told) {
             told.dropped(to.clone());
         }
         members.set("minecraft:instant_despawn", instant);
-        told.moved(below(&section.at, &["minecraft:despawn"]), to);
+        told.moved(section.at.child("minecraft:despawn"), to);
     }
 }
 

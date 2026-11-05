@@ -5,7 +5,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use super::AimAssist;
+use super::{AimAssist, AimAssistPreset};
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Phase,
 };
@@ -52,37 +52,11 @@ pub(crate) fn entity_key(id: &str) -> String {
     }
 }
 
-/// One step of a finding's path below the payload.
-#[derive(Clone, Copy)]
-enum Step<'a> {
-    /// A member.
-    Key(&'a str),
-    /// An array element.
-    Index(usize),
-}
-
-use Step::{Index, Key};
-
 /// An `UnresolvedReference` information in the file of `origin` for the `kind` named `id` at
-/// `path` below the payload `base`. `link()` makes the references the game's linked-asset
+/// `at`. `link()` makes the references the game's linked-asset
 /// validator holds errors with its line (`with_validator_line`), and a preset's
 /// `aim_assist.preset` is checked by neither folder.
-fn miss(
-    out: &mut Diagnostics,
-    origin: &Origin,
-    base: &str,
-    path: &[Step<'_>],
-    kind: &'static str,
-    id: &str,
-) {
-    let mut at = JsonPath::new();
-    at.push(base);
-    for step in path {
-        match *step {
-            Index(index) => at.push_index(index),
-            Key(key) => at.push(key),
-        }
-    }
+fn miss(out: &mut Diagnostics, origin: &Origin, at: JsonPath, kind: &'static str, id: &str) {
     out.push(
         Diagnostic::info(DiagnosticCode::UnresolvedReference { text: None })
             .at(at)
@@ -134,76 +108,114 @@ pub fn link(group: &AimAssist, targets: &dyn Targets) -> Diagnostics {
         let position = *next;
         *next += 1;
         let priorities = &document.priorities;
+        let priorities_at = JsonPath::of_keys([CATEGORIES, "categories"])
+            .index(position)
+            .child("priorities");
         for key in priorities.entities.iter().flat_map(|map| map.keys()) {
             if !targets.entity(&entity_key(key)) {
-                let path = [
-                    Key("categories"),
-                    Index(position),
-                    Key("priorities"),
-                    Key("entities"),
-                    Key(key),
-                ];
-                miss(&mut out, origin, CATEGORIES, &path, ENTITY, key);
+                miss(
+                    &mut out,
+                    origin,
+                    priorities_at.with(&["entities", key]),
+                    ENTITY,
+                    key,
+                );
             }
         }
         for key in priorities.blocks.iter().flat_map(|map| map.keys()) {
             if !targets.block(&key.to_lowercase()) {
-                let path = [
-                    Key("categories"),
-                    Index(position),
-                    Key("priorities"),
-                    Key("blocks"),
-                    Key(key),
-                ];
-                miss(&mut out, origin, CATEGORIES, &path, BLOCK, key);
+                miss(
+                    &mut out,
+                    origin,
+                    priorities_at.with(&["blocks", key]),
+                    BLOCK,
+                    key,
+                );
             }
         }
     }
 
     for (_, document) in &group.presets {
-        let origin = document.origin();
-        if let Some(settings) = &document.exclusion_settings {
-            for (i, id) in settings.blocks.iter().flatten().enumerate() {
-                if !targets.block(&id.as_str().to_lowercase()) {
-                    let path = [Key("exclusion_settings"), Key("blocks"), Index(i)];
-                    miss(&mut out, origin, PRESET, &path, BLOCK, id.as_str());
-                }
-            }
-            for (i, id) in settings.entities.iter().flatten().enumerate() {
-                if !targets.entity(&entity_key(id.as_str())) {
-                    let path = [Key("exclusion_settings"), Key("entities"), Index(i)];
-                    miss(&mut out, origin, PRESET, &path, ENTITY, id.as_str());
-                }
-            }
-        }
-        for (i, id) in document.liquid_targeting_list.iter().flatten().enumerate() {
-            if !targets.item(&item_key(id.as_str())) {
-                let path = [Key("liquid_targeting_list"), Index(i)];
-                miss(&mut out, origin, PRESET, &path, ITEM, id.as_str());
-            }
-        }
-        for (item, id) in document.item_settings.iter().flatten() {
-            if !targets.item(&item_key(item)) {
-                let path = [Key("item_settings"), Key(item)];
-                miss(&mut out, origin, PRESET, &path, ITEM, item);
-            }
-            if !category(id.as_str()) {
-                let path = [Key("item_settings"), Key(item)];
-                miss(&mut out, origin, PRESET, &path, CATEGORY, id.as_str());
+        link_preset(document, targets, &category, &mut out);
+    }
+    out
+}
+
+/// The findings of one preset's exclusions, liquid items, item settings and category
+/// references; `category` says whether a category name resolves.
+fn link_preset(
+    document: &Document<AimAssistPreset>,
+    targets: &dyn Targets,
+    category: &dyn Fn(&str) -> bool,
+    out: &mut Diagnostics,
+) {
+    let origin = document.origin();
+    let preset = JsonPath::new().child(PRESET);
+    if let Some(settings) = &document.exclusion_settings {
+        for (i, id) in settings.blocks.iter().flatten().enumerate() {
+            if !targets.block(&id.as_str().to_lowercase()) {
+                miss(
+                    out,
+                    origin,
+                    preset.with(&["exclusion_settings", "blocks"]).index(i),
+                    BLOCK,
+                    id.as_str(),
+                );
             }
         }
-        // An absent member is the game's `minecraft:default` / `minecraft:empty_hand` at run
-        // time and no reference of the document.
-        for (key, id) in [
-            ("default_item_settings", &document.default_item_settings),
-            ("hand_settings", &document.hand_settings),
-        ] {
-            if let Some(id) = id.as_ref().filter(|id| !category(id.as_str())) {
-                miss(&mut out, origin, PRESET, &[Key(key)], CATEGORY, id.as_str());
+        for (i, id) in settings.entities.iter().flatten().enumerate() {
+            if !targets.entity(&entity_key(id.as_str())) {
+                miss(
+                    out,
+                    origin,
+                    preset.with(&["exclusion_settings", "entities"]).index(i),
+                    ENTITY,
+                    id.as_str(),
+                );
             }
         }
     }
-    out
+    for (i, id) in document.liquid_targeting_list.iter().flatten().enumerate() {
+        if !targets.item(&item_key(id.as_str())) {
+            miss(
+                out,
+                origin,
+                preset.child("liquid_targeting_list").index(i),
+                ITEM,
+                id.as_str(),
+            );
+        }
+    }
+    for (item, id) in document.item_settings.iter().flatten() {
+        if !targets.item(&item_key(item)) {
+            miss(
+                out,
+                origin,
+                preset.with(&["item_settings", item]),
+                ITEM,
+                item,
+            );
+        }
+        if !category(id.as_str()) {
+            miss(
+                out,
+                origin,
+                preset.with(&["item_settings", item]),
+                CATEGORY,
+                id.as_str(),
+            );
+        }
+    }
+    // An absent member is the game's `minecraft:default` / `minecraft:empty_hand` at run
+    // time and no reference of the document.
+    for (key, id) in [
+        ("default_item_settings", &document.default_item_settings),
+        ("hand_settings", &document.hand_settings),
+    ] {
+        if let Some(id) = id.as_ref().filter(|id| !category(id.as_str())) {
+            miss(out, origin, preset.child(key), CATEGORY, id.as_str());
+        }
+    }
 }
 
 /// The aim-assist preset a camera preset turns on (`aim_assist.preset`) must be an
@@ -231,8 +243,10 @@ pub fn link_camera_presets<'a, T: 'a>(
             miss(
                 &mut out,
                 document.origin(),
-                "minecraft:camera_preset",
-                &[Key("aim_assist"), Key("preset")],
+                JsonPath::new()
+                    .child("minecraft:camera_preset")
+                    .child("aim_assist")
+                    .child("preset"),
                 <kind::AimAssistPreset as Kind>::NAME,
                 id.as_str(),
             );

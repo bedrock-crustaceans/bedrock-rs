@@ -29,11 +29,11 @@ impl Upgrade for GeometryFile {
                     continue;
                 };
                 if transforms.shelf.is_some() {
-                    let mut at = JsonPath::new();
-                    at.push("minecraft:geometry");
-                    at.push_index(index);
-                    at.push("item_display_transforms");
-                    at.push("shelf");
+                    let at = JsonPath::new()
+                        .child("minecraft:geometry")
+                        .index(index)
+                        .child("item_display_transforms")
+                        .child("shelf");
                     cx.diagnostics.push(
                         Diagnostic::error(DiagnosticCode::InvalidValue {
                             text: text(SHELF_TOO_OLD, &[&geometry.description.identifier, "shelf"]),

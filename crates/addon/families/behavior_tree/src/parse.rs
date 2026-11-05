@@ -49,20 +49,6 @@ pub(super) fn parse_document(bytes: &[u8]) -> Parsed {
     }
 }
 
-/// `at` with member `key`.
-pub(super) fn child(at: &JsonPath, key: &str) -> JsonPath {
-    let mut path = at.clone();
-    path.push(key);
-    path
-}
-
-/// `at` with element `index`.
-pub(super) fn element_of(at: &JsonPath, index: usize) -> JsonPath {
-    let mut path = at.clone();
-    path.push_index(index);
-    path
-}
-
 /// The type and body of a node: the one member of an object with exactly one member.
 fn one_member(value: &Value) -> Option<(&str, &Value)> {
     let object = value.as_object().filter(|object| object.len() == 1)?;
@@ -189,19 +175,19 @@ impl Reader {
             .and_then(Value::as_string)
             .map(facet_value::VString::as_str)
             .filter(|name| !name.is_empty());
-        let payload_at = child(&JsonPath::new(), PAYLOAD);
+        let payload_at = JsonPath::of_keys([PAYLOAD]);
         let Some(name) = name else {
             // Null, not a string or empty, also when the root or the payload is not an
             // object: vanilla skips the file without a word.
             self.report(
-                &child(&payload_at, NAME),
+                &payload_at.child(NAME),
                 DiagnosticCode::MissingRequiredField { text: None },
                 Severity::Error,
             );
             return (None, None);
         };
         let name = BehaviorTreeId::parse(name);
-        let root_at = child(&payload_at, ROOT);
+        let root_at = payload_at.child(ROOT);
         let Some((kind, body)) = payload
             .and_then(|payload| payload.get(ROOT))
             .and_then(one_member)
@@ -234,7 +220,7 @@ impl Reader {
         // A body that is not an object reads as an empty one: vanilla's `operator[]` turns it
         // into one before the lookup.
         let empty = VObject::new();
-        let at = &child(at, kind);
+        let at = &at.child(kind);
         if !body.is_object() && !body.is_null() {
             // Read as an empty body, and said.
             self.wrong_type(at);
@@ -266,7 +252,7 @@ impl Reader {
                 subtree_id: BehaviorTreeId::parse(self.text(
                     m.take("subtree_id"),
                     "",
-                    &child(at, "subtree_id"),
+                    &at.child("subtree_id"),
                 )),
                 data_items: self.data_items(m, at),
                 extra: self.rest(m, at),
@@ -388,7 +374,7 @@ impl Reader {
         pair: &Pair,
         failed: T,
     ) -> Param<T> {
-        let literal_at = child(at, pair.literal);
+        let literal_at = at.child(pair.literal);
         let written = members.take(pair.literal).filter(|value| !value.is_null());
         let id = members.take(pair.id);
         if let Some(value) = written {
@@ -404,7 +390,7 @@ impl Reader {
         Param {
             literal: failed,
             key: self
-                .text(id, pair.default_key, &child(at, pair.id))
+                .text(id, pair.default_key, &at.child(pair.id))
                 .to_owned(),
         }
     }
@@ -418,7 +404,7 @@ impl Reader {
         let written = value.filter(|value| !value.is_null());
         if let Some(literal) = written.and_then(integral) {
             if written.is_some_and(Value::is_bool) {
-                self.wrong_type(&child(at, KEY));
+                self.wrong_type(&at.child(KEY));
             }
             return Param {
                 literal,
@@ -428,7 +414,7 @@ impl Reader {
         // A string is the documented key form; any other type is an ignored literal.
         if written.is_some_and(|value| !value.is_string()) {
             self.report(
-                &child(at, KEY),
+                &at.child(KEY),
                 DiagnosticCode::LiteralIgnored,
                 Severity::Info,
             );
@@ -450,7 +436,7 @@ impl Reader {
         if flying.0.is_some() && throw.0.is_some() {
             // The flying literal is overwritten by the throw literal.
             self.report(
-                &child(at, SHOULD_BE_FLYING.literal),
+                &at.child(SHOULD_BE_FLYING.literal),
                 DiagnosticCode::LiteralIgnored,
                 Severity::Info,
             );
@@ -471,7 +457,7 @@ impl Reader {
         at: &JsonPath,
         pair: &Pair,
     ) -> (Option<T>, String) {
-        let literal_at = child(at, pair.literal);
+        let literal_at = at.child(pair.literal);
         let written = members.take(pair.literal).filter(|value| !value.is_null());
         let id = members.take(pair.id);
         let literal = written.and_then(|value| T::read(self, value, &literal_at));
@@ -479,7 +465,7 @@ impl Reader {
             self.report(&literal_at, DiagnosticCode::LiteralIgnored, Severity::Info);
         }
         let key = self
-            .text(id, pair.default_key, &child(at, pair.id))
+            .text(id, pair.default_key, &at.child(pair.id))
             .to_owned();
         (literal, key)
     }
@@ -490,7 +476,7 @@ impl Reader {
     // `CompositeDefinition::_compositeLoadChildrenBehaviors`: all silent
     // but the unknown type, so the shape findings are informations.
     fn children(&mut self, members: &mut Members<'_>, at: &JsonPath) -> Option<Vec<Node>> {
-        let at = child(at, "children");
+        let at = at.child("children");
         let Some(array) = members.take("children").and_then(Value::as_array) else {
             self.report(
                 &at,
@@ -501,7 +487,7 @@ impl Reader {
         };
         let mut nodes = Vec::new();
         for (index, element) in array.iter().enumerate() {
-            let element_at = element_of(&at, index);
+            let element_at = at.index(index);
             let Some((kind, body)) = one_member(element) else {
                 self.report(&element_at, DiagnosticCode::InvalidNode, Severity::Info);
                 continue;
@@ -516,7 +502,7 @@ impl Reader {
     // `DecoratorDefinition::_decoratorLoadChildBehavior`: silent but the
     // unknown type, as `children`.
     fn child(&mut self, members: &mut Members<'_>, at: &JsonPath) -> Option<Box<Node>> {
-        let at = child(at, "child");
+        let at = at.child("child");
         let Some((kind, body)) = members.take("child").and_then(one_member) else {
             self.report(&at, DiagnosticCode::InvalidNode, Severity::Info);
             return None;
@@ -529,7 +515,7 @@ impl Reader {
     /// out.
     // `SubtreeDefinition::load` and its `$_0`.
     fn data_items(&mut self, members: &mut Members<'_>, at: &JsonPath) -> Vec<(String, String)> {
-        let at = child(at, "data_items");
+        let at = at.child("data_items");
         let Some(value) = members.take("data_items").filter(|value| !value.is_null()) else {
             return Vec::new();
         };
@@ -544,8 +530,8 @@ impl Reader {
                 .and_then(|object| Some((object.get("from")?, object.get("to")?)));
             match pair {
                 Some((from, to)) => items.push((
-                    reader.text(Some(from), "", &child(at, "from")).to_owned(),
-                    reader.text(Some(to), "", &child(at, "to")).to_owned(),
+                    reader.text(Some(from), "", &at.child("from")).to_owned(),
+                    reader.text(Some(to), "", &at.child("to")).to_owned(),
                 )),
                 // Left out in silence by vanilla: an information.
                 None => reader.report(
@@ -558,7 +544,7 @@ impl Reader {
         match value.as_array() {
             Some(array) => {
                 for (index, element) in array.iter().enumerate() {
-                    item(self, element, &element_of(&at, index));
+                    item(self, element, &at.index(index));
                 }
             }
             None => item(self, value, &at),
@@ -576,7 +562,7 @@ impl Reader {
                 continue;
             }
             self.report(
-                &child(at, key),
+                &at.child(key),
                 DiagnosticCode::UnrecognizedField { text: None },
                 Severity::Info,
             );
@@ -809,16 +795,16 @@ fn triple<T: Copy + Default>(
     for (index, (slot, written)) in out.iter_mut().zip(array.iter()).enumerate() {
         if written.is_null() {
             // Stays at the default, as vanilla leaves it; said.
-            reader.wrong_type(&element_of(at, index));
+            reader.wrong_type(&at.index(index));
             continue;
         }
         if written.is_bool() {
-            reader.wrong_type(&element_of(at, index));
+            reader.wrong_type(&at.index(index));
         }
         match element(written) {
             Some(read) => *slot = read,
             None => reader.kept_error(
-                &element_of(at, index),
+                &at.index(index),
                 DiagnosticCode::InvalidType {
                     text: Some(VanillaText::Fixed(text)),
                 },
@@ -838,7 +824,7 @@ impl Literal for [f32; 3] {
     fn read(reader: &mut Reader, value: &Value, at: &JsonPath) -> Option<Self> {
         let mut read = triple(reader, value, at, numeric, EXPECTED_NUMBER)?;
         for (index, slot) in read.iter_mut().enumerate() {
-            *slot = finite(reader, *slot, &element_of(at, index));
+            *slot = finite(reader, *slot, &at.index(index));
         }
         Some(read)
     }

@@ -23,13 +23,6 @@ pub(crate) fn refuse(at: &JsonPath) -> EncodeError {
     }
 }
 
-/// `at` followed by `key`.
-pub(crate) fn child(at: &JsonPath, key: &str) -> JsonPath {
-    let mut path = at.clone();
-    path.push(key);
-    path
-}
-
 /// A JSON object being written, at a path.
 pub(crate) struct Object {
     map: VObject,
@@ -47,7 +40,7 @@ impl Object {
 
     /// The path of the member `key`.
     pub(crate) fn path(&self, key: &str) -> JsonPath {
-        child(&self.at, key)
+        self.at.child(key)
     }
 
     /// Writes the member `key` when `value` holds one, by `write` (which gets the member's
@@ -187,7 +180,7 @@ pub(crate) fn keyframes<T>(
                 }
                 // `-0.0` is the time `0.0`.
                 let key = time_key(frame.time + 0.0);
-                let written = write(&frame.value, &child(at, &key))?;
+                let written = write(&frame.value, &at.child(&key))?;
                 if map.insert(key.as_str(), written).is_some() {
                     return Err(refuse(at));
                 }
@@ -201,8 +194,7 @@ pub(crate) fn keyframes<T>(
 pub(crate) fn vec3_in(range: Range, value: &Vec3, at: &JsonPath) -> Written {
     let mut array = VArray::new();
     for (index, component) in [value.x, value.y, value.z].into_iter().enumerate() {
-        let mut path = at.clone();
-        path.push_index(index);
+        let path = at.index(index);
         array.push(float_in(range, component, &path)?);
     }
     Ok(array.into())
@@ -241,5 +233,5 @@ pub(crate) fn description<K: Kind>(value: &Description<K>, at: &JsonPath) -> Wri
 
 /// The path of the payload member `key`, below which a struct's writer reports.
 pub(crate) fn payload(key: &str) -> JsonPath {
-    child(&JsonPath::new(), key)
+    JsonPath::new().child(key)
 }

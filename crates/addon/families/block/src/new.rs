@@ -36,8 +36,7 @@ impl Block {
     pub fn validate(&self, cx: &LoadContext) -> Diagnostics {
         let mut block = self.clone();
         let mut diagnostics = Diagnostics::default();
-        let mut at = JsonPath::new();
-        at.push("minecraft:block");
+        let at = JsonPath::new().child("minecraft:block");
         super::validate::validate_detached(&mut block, cx, &at, &mut diagnostics);
         diagnostics
     }

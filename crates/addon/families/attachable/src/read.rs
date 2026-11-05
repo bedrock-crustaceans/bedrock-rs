@@ -54,15 +54,6 @@ pub(crate) fn text(template: &'static str, args: &[&str]) -> Option<VanillaText>
     })
 }
 
-/// `base` followed by `keys`.
-pub(crate) fn below(base: &JsonPath, keys: &[&str]) -> JsonPath {
-    let mut path = base.clone();
-    for key in keys {
-        path.push(key);
-    }
-    path
-}
-
 /// "child '<key>' not valid here." at `at` (the member itself).
 pub(crate) fn not_valid_here(key: &str, at: JsonPath) -> Diagnostic {
     Diagnostic::error(DiagnosticCode::UnrecognizedField {
@@ -192,11 +183,11 @@ pub(crate) fn describe<'a>(
     let mut ok = true;
     for key in root.keys() {
         if !matches!(key.as_str(), "format_version" | PAYLOAD | CLIENT_ENTITY) {
-            d.push(not_valid_here(key, below(&cx.at, &[key])));
+            d.push(not_valid_here(key, cx.at.with(&[key])));
             ok = false;
         }
     }
-    let payload_at = below(&cx.at, &[PAYLOAD]);
+    let payload_at = cx.at.with(&[PAYLOAD]);
     let Some(payload) = root.get(PAYLOAD).and_then(|raw| document.nested(raw)) else {
         // A missing payload is the crate's own finding: vanilla has only a debug assertion.
         d.push(
@@ -213,7 +204,7 @@ pub(crate) fn describe<'a>(
     let payload_members = object(payload, payload_json.is_some(), &payload_at, d)?;
     for key in payload_members.keys() {
         if key != "description" {
-            d.push(not_valid_here(key, below(&payload_at, &[key])));
+            d.push(not_valid_here(key, payload_at.with(&[key])));
             ok = false;
         }
     }
@@ -224,7 +215,7 @@ pub(crate) fn describe<'a>(
         d.push(required("description", payload_at));
         return None;
     };
-    let at = below(&payload_at, &["description"]);
+    let at = payload_at.with(&["description"]);
     let is_object = payload_json
         .and_then(|payload| payload.get("description"))
         .is_some_and(|description| description.as_object().is_some());
@@ -454,7 +445,7 @@ fn allowed_at(path: &JsonPath, names_only: bool) -> &'static str {
 fn item_type_error(described: &Described<'_>, span: Span) -> Diagnostic {
     // `item` (object form): "null, array, object → unknown
     // child schema option type".
-    let item_at = below(&described.at, &["item"]);
+    let item_at = described.at.with(&["item"]);
     let item = described
         .json
         .as_object()
@@ -465,7 +456,7 @@ fn item_type_error(described: &Described<'_>, span: Span) -> Diagnostic {
         })
     });
     match not_molang {
-        Some((key, _)) => wrong_type("molang", below(&item_at, &[key.as_str()]), Some(span)),
+        Some((key, _)) => wrong_type("molang", item_at.with(&[key.as_str()]), Some(span)),
         None => wrong_item(item_at, Some(span)),
     }
 }
@@ -497,7 +488,7 @@ pub(crate) fn check_item(
     at: &JsonPath,
     d: &mut Diagnostics,
 ) {
-    let item_at = below(at, &["item"]);
+    let item_at = at.with(&["item"]);
     let Some(item) = item else {
         if json.as_object().is_some_and(|o| o.get("item").is_some()) {
             d.push(wrong_item(item_at, None));
@@ -516,7 +507,7 @@ pub(crate) fn check_item(
     // The pattern child is required and matched in full.
     for key in members.keys() {
         if !is_condition_key(key) {
-            d.push(not_valid_here(key, below(&item_at, &[key])));
+            d.push(not_valid_here(key, item_at.with(&[key])));
         }
     }
     if members.is_empty() {
@@ -524,8 +515,7 @@ pub(crate) fn check_item(
     }
     for key in item.ignored() {
         d.push(
-            Diagnostic::info(DiagnosticCode::DroppedField { text: None })
-                .at(below(&item_at, &[key])),
+            Diagnostic::info(DiagnosticCode::DroppedField { text: None }).at(item_at.with(&[key])),
         );
     }
     // `asString("")` of a number is the empty text.
@@ -534,8 +524,7 @@ pub(crate) fn check_item(
         .min_by(|a, b| a.0.as_bytes().cmp(b.0.as_bytes()));
     if let Some((key, Molang::Const(_))) = bound {
         d.push(
-            Diagnostic::info(DiagnosticCode::InvalidValue { text: None })
-                .at(below(&item_at, &[key])),
+            Diagnostic::info(DiagnosticCode::InvalidValue { text: None }).at(item_at.with(&[key])),
         );
     }
 }
@@ -710,10 +699,10 @@ pub(crate) fn check_map<V>(
     // Pattern keys match in full; an empty object whose only option is a required pattern
     // fails.
     let Some(map) = map else { return };
-    let map_at = below(at, &[name]);
+    let map_at = at.with(&[name]);
     for key in map.keys() {
         if !is_map_key(key) {
-            d.push(not_valid_here(key, below(&map_at, &[key])));
+            d.push(not_valid_here(key, map_at.with(&[key])));
         }
     }
     if required_child && map.is_empty() {
@@ -733,13 +722,13 @@ pub(crate) fn check_condition<'m>(
 ) {
     for key in members.keys() {
         if !is_condition_key(key) {
-            d.push(not_valid_here(key, below(at, &[key])));
+            d.push(not_valid_here(key, at.with(&[key])));
         }
     }
     for key in ignored {
         // The members after the first are dropped; the game says nothing, the crate reports a
         // `DroppedField` information.
-        d.push(Diagnostic::info(DiagnosticCode::DroppedField { text: None }).at(below(at, &[key])));
+        d.push(Diagnostic::info(DiagnosticCode::DroppedField { text: None }).at(at.with(&[key])));
     }
 }
 
@@ -753,9 +742,9 @@ pub(crate) fn check_variables(
 ) {
     // Every value is exactly `public`.
     let Some(variables) = variables else { return };
-    let map_at = below(at, &["variables"]);
+    let map_at = at.with(&["variables"]);
     for (key, value) in variables {
-        let member_at = below(&map_at, &[key]);
+        let member_at = map_at.with(&[key]);
         if !is_variable_key(key) {
             d.push(not_valid_here(key, member_at));
         } else if value.0 != "public" {
@@ -779,7 +768,7 @@ pub(crate) fn check_identifier(identifier: &str, at: &JsonPath, d: &mut Diagnost
             Diagnostic::error(DiagnosticCode::InvalidValue {
                 text: Some(VanillaText::Fixed("Missing or invalid identifier")),
             })
-            .at(below(at, &["identifier"])),
+            .at(at.with(&["identifier"])),
         );
     }
 }
@@ -792,7 +781,7 @@ pub(crate) fn check_controllers(
 ) {
     for (index, controller) in controllers.into_iter().flatten().enumerate() {
         if let ControllerUse::Conditional(members) = controller {
-            let mut element_at = below(at, &["render_controllers"]);
+            let mut element_at = at.with(&["render_controllers"]);
             element_at.push_index(index);
             check_condition(members, controller.ignored(), &element_at, d);
         }
@@ -803,7 +792,7 @@ pub(crate) fn check_controllers(
 pub(crate) fn check_animate(animate: Option<&[AnimateEntry]>, at: &JsonPath, d: &mut Diagnostics) {
     for (index, entry) in animate.into_iter().flatten().enumerate() {
         if let AnimateEntry::Conditional(members) = entry {
-            let mut element_at = below(at, &["animate"]);
+            let mut element_at = at.with(&["animate"]);
             element_at.push_index(index);
             check_condition(members, entry.ignored(), &element_at, d);
         }
@@ -820,7 +809,7 @@ pub(crate) fn check_min_engine_version(value: Option<&Value>, at: &JsonPath, d: 
     {
         d.push(wrong_type(
             "string, array",
-            below(at, &["min_engine_version"]),
+            at.with(&["min_engine_version"]),
             None,
         ));
     }

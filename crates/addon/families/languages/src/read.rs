@@ -117,8 +117,7 @@ fn elements<'v>(root: &'v Value, diagnostics: &mut Diagnostics) -> Vec<(JsonPath
             .iter()
             .enumerate()
             .map(|(index, element)| {
-                let mut at = JsonPath::new();
-                at.push_index(index);
+                let at = JsonPath::new().index(index);
                 (at, element)
             })
             .collect();
@@ -135,8 +134,7 @@ fn elements<'v>(root: &'v Value, diagnostics: &mut Diagnostics) -> Vec<(JsonPath
     members
         .into_iter()
         .map(|(key, value)| {
-            let mut at = JsonPath::new();
-            at.push(key);
+            let at = JsonPath::new().child(key);
             (at, value)
         })
         .collect()
@@ -217,8 +215,7 @@ pub(super) fn read_names(bytes: &[u8]) -> Result<(LanguageNames, Diagnostics), B
         // file is written with the text read.
         for (index, part) in pair.as_slice().iter().take(2).enumerate() {
             if !part.is_string() {
-                let mut at = at.clone();
-                at.push_index(index);
+                let at = at.index(index);
                 diagnostics
                     .push(Diagnostic::info(DiagnosticCode::InvalidType { text: None }).at(at));
             }

@@ -612,8 +612,7 @@ pub(super) fn read_meta(root: &Value, findings: &mut Vec<Diagnostic>) -> PieceMe
         reader.meta(members, &mut meta);
         return meta;
     };
-    let mut at_version = JsonPath::new();
-    at_version.push("format_version");
+    let at_version = JsonPath::new().child("format_version");
     let refuse = |reader: &mut Reader<'_>, code: DiagnosticCode, at: JsonPath| {
         reader.findings.push(Diagnostic::error(code).at(at));
     };

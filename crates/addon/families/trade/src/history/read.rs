@@ -6,7 +6,7 @@
 use super::v0::{Group, ItemList, Tier, Trade, TradeItem, TradeTable};
 use crate::texts::{
     GROUPS_ARRAY, INVALID_WEIGHT, MUST_CONTAIN_TIERS, NO_OFFERS, NO_RECEIVES, TIERS_ARRAY,
-    TRADES_ARRAY, child, element, formatted,
+    TRADES_ARRAY, formatted,
 };
 use crate::validate as rules;
 use bedrock_addon_core::diagnostic::{
@@ -118,7 +118,7 @@ impl Reader<'_> {
             if !known.contains(&key.as_str()) {
                 self.warn(
                     DiagnosticCode::UnrecognizedField { text: None },
-                    child(at, key.as_str()),
+                    at.child(key.as_str()),
                 );
                 extra.insert(key.as_str().to_owned(), value.clone());
             }
@@ -150,10 +150,10 @@ impl Reader<'_> {
             // Read as absent, and said.
             self.warn(
                 DiagnosticCode::InvalidType { text: None },
-                child(at, "format_version"),
+                at.child("format_version"),
             );
         }
-        let tiers_at = child(at, "tiers");
+        let tiers_at = at.child("tiers");
         // The tiers are missing or not an array.
         let Some(tiers) = object.get("tiers") else {
             self.error(
@@ -179,7 +179,7 @@ impl Reader<'_> {
             extra,
         };
         for (i, tier) in tiers.iter().enumerate() {
-            let tier = self.tier(tier, &element(&tiers_at, i))?;
+            let tier = self.tier(tier, &tiers_at.index(i))?;
             table.tiers.push(tier);
         }
         Some(table)
@@ -195,7 +195,7 @@ impl Reader<'_> {
         let extra = self.unknown(object, TIER_MEMBERS, at);
         let total_exp_required = self.uint(
             object.get("total_exp_required"),
-            &child(at, "total_exp_required"),
+            &at.child("total_exp_required"),
         );
         let mut tier = Tier {
             total_exp_required,
@@ -205,7 +205,7 @@ impl Reader<'_> {
         };
         match present(object.get("groups")) {
             Some(groups) => {
-                let groups_at = child(at, "groups");
+                let groups_at = at.child("groups");
                 // The groups are non-null and not an array.
                 let Some(groups) = groups.as_array() else {
                     self.error(
@@ -219,7 +219,7 @@ impl Reader<'_> {
                 let mut kept = Vec::with_capacity(groups.len());
                 let mut places = Vec::with_capacity(groups.len());
                 for (i, group) in groups.iter().enumerate() {
-                    if let Read::Kept(group) = self.group(group, &element(&groups_at, i))? {
+                    if let Read::Kept(group) = self.group(group, &groups_at.index(i))? {
                         kept.push(group);
                         places.push(i);
                     }
@@ -232,12 +232,12 @@ impl Reader<'_> {
                 if object.contains_key("trades") {
                     self.warn(
                         DiagnosticCode::DroppedField { text: None },
-                        child(at, "trades"),
+                        at.child("trades"),
                     );
                 }
             }
             // The flat form: every trade is offered (`num_to_select` -1).
-            None => tier.trades = self.trades(object.get("trades"), &child(at, "trades"), -1),
+            None => tier.trades = self.trades(object.get("trades"), &at.child("trades"), -1),
         }
         Some(tier)
     }
@@ -247,11 +247,11 @@ impl Reader<'_> {
         let empty = facet_value::VObject::new();
         let object = json.as_object().unwrap_or(&empty);
         let extra = self.unknown(object, GROUP_MEMBERS, at);
-        let select_at = child(at, "num_to_select");
+        let select_at = at.child("num_to_select");
         let num_to_select = self.int(object.get("num_to_select"), &select_at);
         // A missing or unreadable count selects -1, every trade.
         let selects = num_to_select.unwrap_or(-1);
-        let Some(trades) = self.trades(object.get("trades"), &child(at, "trades"), selects) else {
+        let Some(trades) = self.trades(object.get("trades"), &at.child("trades"), selects) else {
             self.dropped(at);
             return Some(Read::Dropped);
         };
@@ -284,7 +284,7 @@ impl Reader<'_> {
         let mut kept = Vec::with_capacity(trades.len());
         let mut places = Vec::with_capacity(trades.len());
         for (i, trade) in trades.iter().enumerate() {
-            if let Some(trade) = self.trade(trade, &element(at, i), selects) {
+            if let Some(trade) = self.trade(trade, &at.index(i), selects) {
                 kept.push(trade);
                 places.push(i);
             }
@@ -306,25 +306,25 @@ impl Reader<'_> {
             bedrock_addon_core::json::clamp_non_finite(&mut shown, None);
             bedrock_addon_core::json::to_json(&shown).unwrap_or_default()
         };
-        let wants = self.entries(object.get("wants"), &child(at, "wants"));
+        let wants = self.entries(object.get("wants"), &at.child("wants"));
         if wants.is_empty() {
             let text = Some(formatted(NO_OFFERS, &[&styled().trim()]));
-            self.kept_error(DiagnosticCode::InvalidValue { text }, child(at, "wants"));
+            self.kept_error(DiagnosticCode::InvalidValue { text }, at.child("wants"));
             self.dropped(at);
             return None;
         }
-        let gives = self.entries(object.get("gives"), &child(at, "gives"));
+        let gives = self.entries(object.get("gives"), &at.child("gives"));
         if gives.is_empty() {
             let text = Some(formatted(NO_RECEIVES, &[&styled().trim()]));
-            self.kept_error(DiagnosticCode::InvalidValue { text }, child(at, "gives"));
+            self.kept_error(DiagnosticCode::InvalidValue { text }, at.child("gives"));
             self.dropped(at);
             return None;
         }
-        let trader_exp = self.uint(object.get("trader_exp"), &child(at, "trader_exp"));
-        let max_uses = self.int(object.get("max_uses"), &child(at, "max_uses"));
+        let trader_exp = self.uint(object.get("trader_exp"), &at.child("trader_exp"));
+        let max_uses = self.int(object.get("max_uses"), &at.child("max_uses"));
         // `true` when null, else the member read as a boolean that defaults to `false`.
-        let reward_exp = self.boolean(object.get("reward_exp"), &child(at, "reward_exp"));
-        let weight_at = child(at, "weight");
+        let reward_exp = self.boolean(object.get("reward_exp"), &at.child("reward_exp"));
+        let weight_at = at.child("weight");
         let weight = self.int(object.get("weight"), &weight_at);
         if let Some(weight) = weight {
             if weight <= 0 {
@@ -363,18 +363,18 @@ impl Reader<'_> {
         let mut places = Vec::with_capacity(entries.len());
         let mut empty: Vec<JsonPath> = Vec::new();
         for (i, entry) in entries.iter().enumerate() {
-            let entry_at = element(at, i);
+            let entry_at = at.index(i);
             let choice = entry
                 .as_object()
                 .and_then(|object| object.get("choice"))
                 .and_then(Value::as_array);
             match choice {
                 Some(choice) => {
-                    let choice_at = child(&entry_at, "choice");
+                    let choice_at = entry_at.child("choice");
                     let mut items = Vec::with_capacity(choice.len());
                     let mut item_places = Vec::with_capacity(choice.len());
                     for (c, item) in choice.iter().enumerate() {
-                        if let Some(item) = self.item(item, &element(&choice_at, c)) {
+                        if let Some(item) = self.item(item, &choice_at.index(c)) {
                             items.push(item);
                             item_places.push(c);
                         }
@@ -428,19 +428,19 @@ impl Reader<'_> {
         // The object form of a quantity is read for `min` and `max` only; the quantity is kept
         // as written, its other members with it.
         if let Some(range) = object.get("quantity").and_then(Value::as_object) {
-            self.unknown(range, &["min", "max"], &child(at, "quantity"));
+            self.unknown(range, &["min", "max"], &at.child("quantity"));
         }
         let price_multiplier = self.float(
             object.get("price_multiplier"),
-            &child(at, "price_multiplier"),
+            &at.child("price_multiplier"),
         );
         Some(TradeItem {
-            quantity: self.kept(object.get("quantity"), &child(at, "quantity")),
+            quantity: self.kept(object.get("quantity"), &at.child("quantity")),
             price_multiplier,
-            item: self.string(object.get("item"), &child(at, "item")),
-            functions: self.kept(object.get("functions"), &child(at, "functions")),
-            filters: self.kept(object.get("filters"), &child(at, "filters")),
-            biomes: self.kept(object.get("biomes"), &child(at, "biomes")),
+            item: self.string(object.get("item"), &at.child("item")),
+            functions: self.kept(object.get("functions"), &at.child("functions")),
+            filters: self.kept(object.get("filters"), &at.child("filters")),
+            biomes: self.kept(object.get("biomes"), &at.child("biomes")),
             extra,
         })
     }

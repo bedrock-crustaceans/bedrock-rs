@@ -2,12 +2,13 @@
 //! Types and defaults follow the game's published knockback and push-preset schemas. The
 //! older shapes are in `older.rs`.
 
+use bedrock_addon_core::diagnostic::JsonPath;
 use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::json::{StrictBool, StrictFloat};
 use bedrock_addon_core::shared::Filter;
 use facet::Facet;
 
-use super::parse::{Check, Typed, index, join, path};
+use super::parse::{Check, Typed};
 
 /// `minecraft:apply_knockback_rules`: the knockback the entity deals, by preset; the first
 /// preset whose filter passes applies.
@@ -34,13 +35,13 @@ impl ApplyKnockbackRules {
 
 impl Typed for ApplyKnockbackRules {
     fn check(&mut self, cx: &mut Check<'_>) {
-        let at = path(&["presets"]);
+        let at = JsonPath::new().child("presets");
         if self.presets.is_empty() {
             // The game accepts an empty list; the crate's own check refuses it.
             cx.broken(&at, None);
         }
         for (i, preset) in self.presets.iter_mut().enumerate() {
-            preset.check(&index(&at, i), cx);
+            preset.check(&at.index(i), cx);
         }
     }
 }
@@ -112,11 +113,11 @@ impl KnockbackPreset {
     /// The preset's rule checks, under `at`.
     fn check(&mut self, at: &bedrock_addon_core::diagnostic::JsonPath, cx: &mut Check<'_>) {
         if let Some(filter) = &self.filter {
-            cx.extend(filter.check(&join(at, "filter")));
+            cx.extend(filter.check(&at.child("filter")));
         }
         // The game's schema: `slowdown_scale` minimum 0, maximum 1.
         cx.within(
-            &join(at, "slowdown_scale"),
+            &at.child("slowdown_scale"),
             &mut self.slowdown_scale.0,
             (0.0, 1.0),
             0.5,
@@ -180,9 +181,9 @@ impl PushableByEntity {
 
 impl Typed for PushableByEntity {
     fn check(&mut self, cx: &mut Check<'_>) {
-        let at = path(&["presets"]);
+        let at = JsonPath::new().child("presets");
         for (i, preset) in self.presets.iter_mut().enumerate() {
-            preset.check(&index(&at, i), cx);
+            preset.check(&at.index(i), cx);
         }
     }
 }
@@ -272,29 +273,29 @@ impl PushPreset {
     /// The preset's rule checks, under `at`.
     fn check(&mut self, at: &bedrock_addon_core::diagnostic::JsonPath, cx: &mut Check<'_>) {
         if let Some(filters) = &self.filters {
-            cx.extend(filters.check(&join(at, "filters")));
+            cx.extend(filters.check(&at.child("filters")));
         }
         // The game's schema minimums.
         cx.at_least(
-            &join(at, "min_distance"),
+            &at.child("min_distance"),
             &mut self.min_distance.0,
             0.0,
             0.01,
         );
         cx.at_least(
-            &join(at, "max_distance"),
+            &at.child("max_distance"),
             &mut self.max_distance.0,
             0.0,
             f32::MAX,
         );
         cx.at_least(
-            &join(at, "play_sound_cooldown_in_seconds"),
+            &at.child("play_sound_cooldown_in_seconds"),
             &mut self.play_sound_cooldown_in_seconds.0,
             0.0,
             0.2,
         );
         cx.at_least(
-            &join(at, "play_sound_impulse_threshold"),
+            &at.child("play_sound_impulse_threshold"),
             &mut self.play_sound_impulse_threshold.0,
             0.0,
             0.2,

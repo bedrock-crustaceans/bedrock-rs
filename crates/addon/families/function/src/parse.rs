@@ -329,8 +329,7 @@ pub(super) const VALUES: &str = "values";
 
 /// A finding at `values`, or at its entry `index`; the loader adds the pack and the file.
 fn at_values(code: DiagnosticCode, severity: Severity, index: Option<usize>) -> Diagnostic {
-    let mut at = JsonPath::new();
-    at.push(VALUES);
+    let mut at = JsonPath::new().child(VALUES);
     if let Some(index) = index {
         at.push_index(index);
     }

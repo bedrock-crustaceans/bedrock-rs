@@ -8,7 +8,7 @@ use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath, Severity};
 use bedrock_addon_core::json::{JsonSlice, Value};
 
 use super::SERVER_NET_MODULE;
-use super::read::{Kind, Sink, array, child, element, kind, object, raw_value, span, string};
+use super::read::{Kind, Sink, array, kind, object, raw_value, span, string};
 
 /// What `@minecraft/server-net` may reach for the packs of one folder.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -206,7 +206,7 @@ impl Load<'_, '_> {
             let Some(slice) = slice.nested(raw) else {
                 continue;
             };
-            let at = element(at, index);
+            let at = at.index(index);
             let Some(uri) = string(slice) else {
                 self.wrong_type(ALLOWED_URIS, at, slice);
                 failed = true;
@@ -254,7 +254,7 @@ impl Load<'_, '_> {
             if let Some(header) = string(slice) {
                 headers.insert(name.clone(), header);
             } else {
-                self.wrong_type(SESSION_HEADERS, child(at, name), slice);
+                self.wrong_type(SESSION_HEADERS, at.child(name), slice);
                 failed = true;
             }
         }
@@ -289,7 +289,7 @@ pub(super) fn read(
         let Some(slice) = entry.nested(raw) else {
             continue;
         };
-        let here = child(at, name);
+        let here = at.child(name);
         match name.as_str() {
             ALLOWED_URIS => config.allowed_uris = load.uris(&here, slice),
             FORCE_TLS if legacy => {}
@@ -348,7 +348,7 @@ pub(super) fn read(
         let slice = members.get(name).and_then(|raw| entry.nested(raw));
         load.sink.warn(
             DiagnosticCode::NoEffect { text: None },
-            child(at, name),
+            at.child(name),
             slice.and_then(span),
         );
     }

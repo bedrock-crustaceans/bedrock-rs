@@ -86,8 +86,7 @@ impl Family for ClientBiomeFamily {
     }
 
     fn component_sections(v: &mut ClientBiome) -> Vec<ComponentSection<'_, ClientBiomeComponent>> {
-        let mut at = JsonPath::new();
-        at.push("components");
+        let at = JsonPath::of_keys(["components"]);
         vec![ComponentSection::new(at, false, &mut v.components)]
     }
 }

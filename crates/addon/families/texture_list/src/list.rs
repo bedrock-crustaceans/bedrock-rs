@@ -199,9 +199,7 @@ fn scan(text: &str) -> Scanned {
 
 /// The path of element `index`.
 fn at_index(index: usize) -> JsonPath {
-    let mut at = JsonPath::new();
-    at.push_index(index);
-    at
+    JsonPath::new().index(index)
 }
 
 /// A finding of the crate's own about a value: vanilla reads it silently.

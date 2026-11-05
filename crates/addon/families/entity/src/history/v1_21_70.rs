@@ -5,7 +5,7 @@ super::legacy_struct!(1, 21, 70);
 use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
 use facet_value::{VArray, VObject};
 
-use super::ops::{Members, Told, below, section_b, sections};
+use super::ops::{Members, Told, section_b, sections};
 
 /// 1.21.70 → 1.21.80 (gate 1.21.80).
 impl Upgrade for Entity {
@@ -21,7 +21,7 @@ impl Upgrade for Entity {
                 {
                     // The crate's own note: a `presets` that is no array is replaced by the list
                     // of the one new preset; told at the member.
-                    misread.push(below(&section.at, &["minecraft:leashable", "presets"]));
+                    misread.push(section.at.with(&["minecraft:leashable", "presets"]));
                 }
             }
             let mut told = Told::default();

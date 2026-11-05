@@ -117,8 +117,7 @@ pub(crate) fn components(
             text: raw.as_str(),
             offset: within.offset,
         });
-        let mut path = at.clone();
-        path.push(key);
+        let path = at.child(key);
         let meta = table.get(key);
         let bound = meta.is_some_and(|m| m.released.is_some_and(|r| version >= r));
         match meta {

@@ -4,7 +4,6 @@ use indexmap::IndexMap;
 
 use super::legacy::{Legacy, component_path, fixed, string};
 use super::ops::{dropped_field, edit_object};
-use crate::parse::child;
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, Phase};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::version::FormatVersion;
@@ -54,10 +53,7 @@ impl Upgrade for Block {
         if cx.original_version < PROPERTY_RENAME {
             convert_properties(&mut block, cx.diagnostics);
         } else if block.description.shift_remove("properties").is_some() {
-            let at = child(
-                &JsonPath::new(),
-                &["minecraft:block", "description", "properties"],
-            );
+            let at = JsonPath::new().with(&["minecraft:block", "description", "properties"]);
             dropped_field(&at, None, cx.diagnostics);
         }
         block
@@ -73,21 +69,14 @@ fn convert_properties(
 ) {
     let properties = block.description.shift_remove("properties");
     if properties.as_ref().is_some_and(|value| !value.is_object()) {
-        let at = child(
-            &JsonPath::new(),
-            &["minecraft:block", "description", "properties"],
-        );
+        let at = JsonPath::new().with(&["minecraft:block", "description", "properties"]);
         super::legacy::misread(&at, d);
     }
     if let Some(properties) = properties
         && let Some(properties) = super::legacy::object(&properties)
     {
-        let description = |member: &str| {
-            child(
-                &JsonPath::new(),
-                &["minecraft:block", "description", member],
-            )
-        };
+        let description =
+            |member: &str| JsonPath::new().with(&["minecraft:block", "description", member]);
         let had_states = block
             .description
             .get("states")
@@ -149,7 +138,7 @@ fn convert_properties(
     if let Some(events) = &mut block.events {
         edit_object(events, |events| {
             for (name, event) in events.iter_mut() {
-                let at = child(&JsonPath::new(), &["minecraft:block", "events", name]);
+                let at = JsonPath::new().with(&["minecraft:block", "events", name]);
                 rename_set_block_property(event, &at, d);
             }
         });
@@ -170,7 +159,7 @@ fn rename_set_block_property(
             && let Some(array) = sequence.as_array_mut()
         {
             for (index, entry) in array.iter_mut().enumerate() {
-                let mut at = child(at, &["sequence"]);
+                let mut at = at.with(&["sequence"]);
                 at.push_index(index);
                 edit_object(entry, |entry| rename(entry, &at, d));
             }
@@ -195,8 +184,8 @@ fn rename(
         .get(NEW)
         .is_some_and(|had| !super::legacy::same(had, value))
     {
-        super::legacy::replaced(&child(at, &[NEW]), d);
+        super::legacy::replaced(&at.with(&[NEW]), d);
     }
     super::legacy::rename_key(object, OLD, NEW, &mut |v| v);
-    d.moved(child(at, &[OLD]), child(at, &[NEW]));
+    d.moved(at.with(&[OLD]), at.with(&[NEW]));
 }

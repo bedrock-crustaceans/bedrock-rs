@@ -12,7 +12,7 @@ use bedrock_addon_core::versioning::ConvertMode;
 use facet::Facet;
 use facet_value::{VArray, VObject};
 
-use super::parse::{Check, Typed, index, join, path};
+use super::parse::{Check, Typed};
 use super::value::one_element;
 
 /// `minecraft:instant_despawn`: the entity despawns at once.
@@ -63,12 +63,17 @@ impl Typed for TickWorld {
     // The game's schema: `distance_to_players` minimum 128, `radius` 2 ..= 6.
     fn check(&mut self, cx: &mut Check<'_>) {
         cx.at_least(
-            &path(&["distance_to_players"]),
+            &JsonPath::new().child("distance_to_players"),
             &mut self.distance_to_players.0,
             128.0,
             128.0,
         );
-        cx.within(&path(&["radius"]), &mut self.radius.0, (2, 6), 2);
+        cx.within(
+            &JsonPath::new().child("radius"),
+            &mut self.radius.0,
+            (2, 6),
+            2,
+        );
     }
 }
 
@@ -118,11 +123,11 @@ impl Default for SpawnOnDeath {
 impl Typed for SpawnOnDeath {
     fn check(&mut self, cx: &mut Check<'_>) {
         cx.range(
-            &path(&["additional_spawn_range"]),
+            &JsonPath::new().child("additional_spawn_range"),
             &mut self.additional_spawn_range,
         );
         if let Some(filters) = &self.filters {
-            cx.extend(filters.check(&path(&["filters"])));
+            cx.extend(filters.check(&JsonPath::new().child("filters")));
         }
     }
 }
@@ -189,7 +194,7 @@ impl Typed for Addrider {
                     cx.push(
                         DiagnosticCode::DroppedField { text: None },
                         Severity::Info,
-                        &path(&[key]),
+                        &JsonPath::new().child(key),
                     );
                     changed = true;
                 }
@@ -198,13 +203,13 @@ impl Typed for Addrider {
         }
         // The rider is the component's root in the file: what is told of `riders/0` is told
         // there.
-        let element = index(&path(&["riders"]), 0);
-        cx.moved(path(&[]), element.clone());
+        let element = JsonPath::new().child("riders").index(0);
+        cx.moved(JsonPath::new(), element.clone());
         let mut rider = VObject::new();
         for key in ["entity_type", "spawn_event"] {
             if let Some(value) = json.remove(key) {
                 rider.insert(key, value);
-                cx.moved(path(&[key]), join(&element, key));
+                cx.moved(JsonPath::new().child(key), element.child(key));
             }
         }
         let mut riders = VArray::new();
@@ -368,7 +373,7 @@ impl Typed for Transformation {
                 DiagnosticCode::InvalidValue {
                     text: Some(VanillaText::Fixed("Expected Number or Object.")),
                 },
-                &path(&["delay"]),
+                &JsonPath::new().child("delay"),
             );
             return true;
         }
@@ -381,7 +386,10 @@ impl Typed for Transformation {
         let mut delay = VObject::new();
         delay.insert("value", number.clone());
         json.insert("delay", Value::from(delay));
-        cx.moved(path(&["delay"]), path(&["delay", "value"]));
+        cx.moved(
+            JsonPath::new().child("delay"),
+            JsonPath::new().with(&["delay", "value"]),
+        );
         true
     }
 
@@ -393,7 +401,7 @@ impl Typed for Transformation {
             return;
         }
         let delay = &mut self.delay;
-        let at = |key: &str| path(&["delay", key]);
+        let at = |key: &str| JsonPath::new().with(&["delay", key]);
         cx.at_least(&at("value"), &mut delay.value.0, 0.0, 0.0);
         cx.at_least(&at("block_radius"), &mut delay.block_radius.0, 0, 0);
         cx.at_least(&at("block_max"), &mut delay.block_max.0, 0, 0);
@@ -480,10 +488,10 @@ impl Typed for Timer {
 
     fn check(&mut self, cx: &mut Check<'_>) {
         if let Some(time) = &mut self.time {
-            cx.range(&path(&["time"]), time);
+            cx.range(&JsonPath::new().child("time"), time);
         }
         if let Some(trigger) = &self.time_down_event {
-            cx.extend(trigger.check(&path(&["time_down_event"])));
+            cx.extend(trigger.check(&JsonPath::new().child("time_down_event")));
         }
     }
 }

@@ -105,9 +105,7 @@ impl Check for ValidateCx<'_> {
     }
 
     fn path(&self, key: &str) -> JsonPath {
-        let mut path = self.at.clone();
-        path.push(key);
-        path
+        self.at.child(key)
     }
 
     fn error(&mut self, key: &str, code: DiagnosticCode) {

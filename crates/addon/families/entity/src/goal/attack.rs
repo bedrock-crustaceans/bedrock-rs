@@ -3745,13 +3745,7 @@ impl Goal for SendEvent {
             let Some(choice) = choice.as_object_mut() else {
                 continue;
             };
-            let at = |key: &str| {
-                let mut at = JsonPath::new();
-                at.push("event_choices");
-                at.push_index(i);
-                at.push(key);
-                at
-            };
+            let at = |key: &str| JsonPath::new().child("event_choices").index(i).child(key);
             settle_activation_range(choice, &at, d);
             for key in ["cooldown_time", "cast_duration"] {
                 whole_ticks(choice, key, at(key), d);

@@ -216,9 +216,7 @@ pub(super) fn combine_blocks(
                 });
                 if is_refused(*current, requested) {
                     // The conversion is refused: the block keeps its shape.
-                    let mut at = JsonPath::new();
-                    at.push(&key);
-                    at.push("blockshape");
+                    let at = JsonPath::new().child(&key).child("blockshape");
                     diagnostics.push(entry::bad_blockshape(id.as_str(), at));
                 } else {
                     *current = requested;

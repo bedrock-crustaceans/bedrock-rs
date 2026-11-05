@@ -233,8 +233,7 @@ impl<'d> Reader<'d> {
     /// never reads (it returned before it); then tells that it is left out, a line of the
     /// crate's own: an information.
     pub(crate) fn unread(&mut self, key: &str) {
-        let mut at = self.path.clone();
-        at.push(key);
+        let at = self.path.child(key);
         self.d
             .retain(|finding| !finding.location.json_path.starts_with(&at));
         self.key(key, |r| {

@@ -137,10 +137,7 @@ fn identifier_checks(rule: &FeatureRule, path: &PackPath, d: &mut Diagnostics) {
     if identifier == stem {
         return;
     }
-    let mut at = JsonPath::new();
-    for key in ["minecraft:feature_rules", "description", "identifier"] {
-        at.push(key);
-    }
+    let at = JsonPath::new().with(&["minecraft:feature_rules", "description", "identifier"]);
     let warn = |template, args: Vec<String>| {
         Diagnostic::error(DiagnosticCode::InvalidValue {
             text: Some(VanillaText::Formatted { template, args }),

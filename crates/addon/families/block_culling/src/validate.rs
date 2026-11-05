@@ -107,9 +107,7 @@ pub(super) fn rules(rules: &[Rule]) -> Vec<RuleProblem> {
 pub(super) fn check(document: &CullingRules, base_game: bool, at: &JsonPath, d: &mut Diagnostics) {
     let id = document.description.identifier.as_str();
     if let Err(reasons) = identifier(id, base_game) {
-        let mut path = at.clone();
-        path.push("description");
-        path.push("identifier");
+        let path = at.child("description").child("identifier");
         for reason in reasons {
             d.push(
                 Diagnostic::error(DiagnosticCode::NamespaceRule {
@@ -129,10 +127,10 @@ pub(super) fn check(document: &CullingRules, base_game: bool, at: &JsonPath, d: 
         return;
     }
     for problem in rules(&document.rules) {
-        let mut path = at.clone();
-        path.push("rules");
-        path.push_index(problem.index);
-        path.push("geometry_part");
+        let mut path = at
+            .child("rules")
+            .index(problem.index)
+            .child("geometry_part");
         if let Some(member) = problem.member {
             path.push(member);
         }

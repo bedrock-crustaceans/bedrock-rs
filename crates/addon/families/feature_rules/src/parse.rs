@@ -53,13 +53,13 @@ pub(crate) fn parse_rule(
 ) -> Option<FeatureRule> {
     let shell: Shell<'_> = parse_payload(payload, cx, d)?;
     if let Some(filter) = &shell.conditions.biome_filter {
-        let at = child(&cx.at, &["conditions", "minecraft:biome_filter"]);
+        let at = cx.at.with(&["conditions", "minecraft:biome_filter"]);
         d.extend(filter.check(&at));
     }
     let distribution = match shell.distribution {
         None => None,
         Some(distribution) => {
-            let at = child(&cx.at, &["distribution"]);
+            let at = cx.at.child("distribution");
             Some(scatter_params(
                 payload,
                 distribution,
@@ -88,31 +88,25 @@ fn scatter_params(
 ) -> Option<ScatterParams> {
     let scatter_chance = match &shell.scatter_chance {
         None => None,
-        Some(raw) => Some(chance(
-            payload,
-            raw,
-            &child(at, &["scatter_chance"]),
-            rule,
-            d,
-        )?),
+        Some(raw) => Some(chance(payload, raw, &at.child("scatter_chance"), rule, d)?),
     };
-    let x = coordinate(payload, &shell.x, &child(at, &["x"]), rule, d);
-    let y = coordinate(payload, &shell.y, &child(at, &["y"]), rule, d);
-    let z = coordinate(payload, &shell.z, &child(at, &["z"]), rule, d);
+    let x = coordinate(payload, &shell.x, &at.child("x"), rule, d);
+    let y = coordinate(payload, &shell.y, &at.child("y"), rule, d);
+    let z = coordinate(payload, &shell.z, &at.child("z"), rule, d);
     let mut within = true;
     if let Some(ScatterChance::Fraction(fraction)) = &scatter_chance {
-        let at = child(at, &["scatter_chance"]);
-        within &= minimum(fraction.numerator.0, 1, &child(&at, &["numerator"]), d);
-        within &= minimum(fraction.denominator.0, 1, &child(&at, &["denominator"]), d);
+        let at = at.child("scatter_chance");
+        within &= minimum(fraction.numerator.0, 1, &at.child("numerator"), d);
+        within &= minimum(fraction.denominator.0, 1, &at.child("denominator"), d);
     }
     for (key, coordinate) in [("x", &x), ("y", &y), ("z", &z)] {
         if let Some(CoordinateRange::Object(range)) = coordinate {
-            let at = child(at, &[key]);
+            let at = at.child(key);
             if let Some(step) = range.step_size {
-                within &= minimum(step.0, 1, &child(&at, &["step_size"]), d);
+                within &= minimum(step.0, 1, &at.child("step_size"), d);
             }
             if let Some(offset) = range.grid_offset {
-                within &= minimum(offset.0, 0, &child(&at, &["grid_offset"]), d);
+                within &= minimum(offset.0, 0, &at.child("grid_offset"), d);
             }
         }
     }
@@ -218,15 +212,6 @@ fn typed<T: for<'f> Facet<'f>>(
             None
         }
     }
-}
-
-/// `base` followed by `keys`.
-pub(crate) fn child(base: &JsonPath, keys: &[&str]) -> JsonPath {
-    let mut path = base.clone();
-    for key in keys {
-        path.push(key);
-    }
-    path
 }
 
 // ---- Molang ------------------------------------------------

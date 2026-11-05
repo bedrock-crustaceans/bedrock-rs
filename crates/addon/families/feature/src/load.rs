@@ -756,8 +756,7 @@ impl
         let Ok(chain) = T::from_history(self.any) else {
             return Err(self.diagnostics);
         };
-        let mut at = JsonPath::new();
-        at.push(T::KEY);
+        let at = JsonPath::new().child(T::KEY);
         let written = FormatVersionInput {
             version: Some(self.version.effective),
             beta_literal: false,

@@ -5,7 +5,7 @@ super::legacy_struct!(1, 26, 20);
 use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
 use facet_value::VArray;
 
-use super::ops::{Members, below, note, sections};
+use super::ops::{Members, note, sections};
 use bedrock_addon_core::diagnostic::DiagnosticCode;
 
 /// The member of `behavior.pickup_items` the step adds.
@@ -31,7 +31,9 @@ impl Upgrade for Entity {
                 // and the reader holds its finding of a `false` back as the step's
                 // (`read::step_inserted_member`), so it is told here; an information,
                 // as the reader's unknown member of the hand-written legacy reader.
-                let at = below(&section.at, &["minecraft:behavior.pickup_items", MEMBER]);
+                let at = section
+                    .at
+                    .with(&["minecraft:behavior.pickup_items", MEMBER]);
                 note(cx, DiagnosticCode::UnrecognizedField { text: None }, &at);
             }
             if let Some(pushable) = members.object("minecraft:pushable_by_entity") {

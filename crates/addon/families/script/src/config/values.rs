@@ -6,7 +6,7 @@ use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath, VanillaText};
 use bedrock_addon_core::json::Value;
 
 use super::SecretString;
-use super::read::{Sink, Twice, child, object, span, string, value, with_root};
+use super::read::{Sink, Twice, object, span, string, value, with_root};
 
 /// The server's text for a secret that is not a string, which it logs as a warning.
 pub(super) const SECRET_NOT_A_STRING: &str =
@@ -28,7 +28,7 @@ pub(super) fn variables(bytes: &[u8], sink: &mut Sink<'_>) -> IndexMap<String, V
             let Some(slice) = root.nested(raw) else {
                 continue;
             };
-            if let Some(value) = value(slice, &child(&at, name), sink) {
+            if let Some(value) = value(slice, &at.child(name), sink) {
                 variables.insert(name.clone(), value);
             }
         }
@@ -67,7 +67,7 @@ pub(super) fn secrets(bytes: &[u8], sink: &mut Sink<'_>) -> IndexMap<String, Sec
                 template: SECRET_NOT_A_STRING,
                 args: vec![name.to_owned(), sink.name.clone()],
             });
-            sink.warn_logged(DiagnosticCode::InvalidType { text }, child(&at, name), span);
+            sink.warn_logged(DiagnosticCode::InvalidType { text }, at.child(name), span);
         }
     });
     secrets

@@ -127,15 +127,11 @@ impl UiTextureInfo {
 /// An `InvalidValue` at `path`: an information of the crate's own (the loader is silent) or
 /// the text of the game's debug assert.
 fn invalid(d: &mut Diagnostics, text: Option<&'static str>, path: &[&str]) {
-    let mut json_path = JsonPath::new();
-    for segment in path {
-        json_path.push(segment);
-    }
     d.push(
         Diagnostic::info(DiagnosticCode::InvalidValue {
             text: text.map(VanillaText::Fixed),
         })
-        .at(json_path)
+        .at(JsonPath::new().with(path))
         .phase(Phase::Validate),
     );
 }

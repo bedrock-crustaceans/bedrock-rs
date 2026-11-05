@@ -5,7 +5,7 @@ use facet::Facet;
 
 use super::Description;
 use super::load::Rules;
-use super::parse::{child, formatted, parse_strict, required_child};
+use super::parse::{formatted, parse_strict, required_child};
 use super::validate::Check;
 use super::walk::{SCATTER, Walk};
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, JsonPath, VanillaText};
@@ -123,7 +123,7 @@ impl VersionStruct for ScatterFeature {
         let feature: Self = parse_strict(payload, cx, d)?;
         beyond_f32_findings(payload, &["distribution"], &cx.at, d);
         // The three coordinates are required.
-        let at = child(&cx.at, "distribution");
+        let at = cx.at.child("distribution");
         let mut complete = true;
         for (key, coordinate) in [
             ("x", &feature.distribution.x),
@@ -131,7 +131,7 @@ impl VersionStruct for ScatterFeature {
             ("z", &feature.distribution.z),
         ] {
             if coordinate.is_none() {
-                d.push(required_child(child(&at, key)));
+                d.push(required_child(at.child(key)));
                 complete = false;
             }
         }

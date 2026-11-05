@@ -133,11 +133,7 @@ pub(crate) use legacy_document;
 
 /// The path of the component `name` in a client-biome file.
 fn component_path(name: &str) -> JsonPath {
-    let mut path = JsonPath::new();
-    path.push(PAYLOAD_KEY);
-    path.push("components");
-    path.push(name);
-    path
+    JsonPath::of_keys([PAYLOAD_KEY, "components", name])
 }
 
 /// An info finding of a step about the component `name` (vanilla is silent).
@@ -210,11 +206,7 @@ pub(crate) fn change<T>(
 
 /// The description's identifier path.
 pub(crate) fn identifier_path() -> JsonPath {
-    let mut path = JsonPath::new();
-    path.push(PAYLOAD_KEY);
-    path.push("description");
-    path.push("identifier");
-    path
+    JsonPath::of_keys([PAYLOAD_KEY, "description", "identifier"])
 }
 
 /// An info finding about the document's identifier.

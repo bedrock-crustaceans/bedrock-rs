@@ -2,7 +2,7 @@
 //! which both parsers apply where they read it (so a finding is at the member's path in the
 //! file as written), and `F::validate`: the rules on the loaded table.
 
-use super::texts::{NUM_TO_SELECT, WEIGHT_NO_EFFECT, child, element, formatted};
+use super::texts::{NUM_TO_SELECT, WEIGHT_NO_EFFECT, formatted};
 use super::{ItemList, TradeTable};
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, JsonPath, Phase, Severity, VanillaText,
@@ -48,7 +48,7 @@ pub(crate) fn weight_without_effect(
 pub(crate) fn validate(table: &mut TradeTable, cx: &mut ValidateCx<'_>) {
     // `tiers` is a root member in both forms of the document (the payload key of a checked
     // envelope, a member of the document the legacy parser reads whole).
-    let tiers_at = child(&JsonPath::new(), "tiers");
+    let tiers_at = JsonPath::of_keys(["tiers"]);
     if table.tiers.is_empty() {
         cx.diagnostics.push(
             Diagnostic::error(DiagnosticCode::InvalidValue { text: None })
@@ -59,15 +59,15 @@ pub(crate) fn validate(table: &mut TradeTable, cx: &mut ValidateCx<'_>) {
     // Typed filters exist only in a document written at 1.21.30 or later, whose paths are the
     // loaded table's.
     for (t, tier) in table.tiers.iter().enumerate() {
-        let groups_at = child(&element(&tiers_at, t), "groups");
+        let groups_at = tiers_at.index(t).child("groups");
         for (g, group) in tier.groups.iter().enumerate() {
-            let list_at = child(&element(&groups_at, g), "trades");
+            let list_at = groups_at.index(g).child("trades");
             for (i, trade) in group.trades.iter().enumerate() {
-                let trade_at = element(&list_at, i);
+                let trade_at = list_at.index(i);
                 for (key, lists) in [("wants", &trade.wants), ("gives", &trade.gives)] {
-                    let side_at = child(&trade_at, key);
+                    let side_at = trade_at.child(key);
                     for (e, list) in lists.iter().enumerate() {
-                        check_filters(list, &element(&side_at, e), cx);
+                        check_filters(list, &side_at.index(e), cx);
                     }
                 }
             }
@@ -79,16 +79,16 @@ pub(crate) fn validate(table: &mut TradeTable, cx: &mut ValidateCx<'_>) {
 fn check_filters(list: &ItemList, at: &JsonPath, cx: &mut ValidateCx<'_>) {
     let mut check = |filters: Option<&bedrock_addon_core::shared::Filter>, item_at: &JsonPath| {
         if let Some(filters) = filters {
-            for finding in filters.check(&child(item_at, "filters")) {
+            for finding in filters.check(&item_at.child("filters")) {
                 cx.diagnostics.push(finding);
             }
         }
     };
     match list {
         ItemList::Choice { choice } => {
-            let choice_at = child(at, "choice");
+            let choice_at = at.child("choice");
             for (c, item) in choice.iter().enumerate() {
-                check(item.filters.as_ref(), &element(&choice_at, c));
+                check(item.filters.as_ref(), &choice_at.index(c));
             }
         }
         ItemList::Item(item) => check(item.filters.as_ref(), at),

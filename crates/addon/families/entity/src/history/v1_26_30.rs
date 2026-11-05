@@ -6,9 +6,8 @@ use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath, VanillaText};
 use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
 use facet_value::VObject;
 
-use super::ops::{Members, Removed, Told, below, finding, kept, note, removed, sections};
+use super::ops::{Members, Removed, Told, finding, kept, note, removed, sections};
 use crate::component::name_projectile_aliases;
-use crate::read::append;
 
 /// The step's version, for its findings.
 const V1_26_40: FormatVersion = FormatVersion::new(1, 26, 40);
@@ -49,35 +48,32 @@ impl Upgrade for Entity {
                         .get("on_attack")
                         .is_some_and(|had| !had.is_null() && *had != on_kill)
                     {
-                        found.push((Found::Replaced, below(at, &[goal, "on_attack"])));
+                        found.push((Found::Replaced, at.with(&[goal, "on_attack"])));
                     }
                     object.insert("on_attack", on_kill);
-                    told.moved(
-                        below(at, &[goal, "on_kill"]),
-                        below(at, &[goal, "on_attack"]),
-                    );
+                    told.moved(at.with(&[goal, "on_kill"]), at.with(&[goal, "on_attack"]));
                 }
             }
             if let Some(pushable) = members.object("minecraft:pushable_by_entity") {
                 pushable_overlap(pushable);
             }
             if let Some(projectile) = members.object("minecraft:projectile") {
-                let projectile_at = below(at, &["minecraft:projectile"]);
+                let projectile_at = at.child("minecraft:projectile");
                 // The legacy reader's aliases are the members: what this step converts
                 // under a member it converts under its alias.
                 name_projectile_aliases(projectile, &mut |from, to| {
-                    aliases.moved(append(&projectile_at, &from), append(&projectile_at, &to));
+                    aliases.moved(projectile_at.join(&from), projectile_at.join(&to));
                 });
                 old_flag_alias(projectile, &projectile_at, &mut aliases);
                 projectile_1_26_40(projectile, &projectile_at, &mut found);
             }
-            let ranged_at = below(at, &["minecraft:behavior.ranged_attack"]);
+            let ranged_at = at.child("minecraft:behavior.ranged_attack");
             if let Some(goal) = members.object("minecraft:behavior.ranged_attack")
                 && interval_range(goal, &ranged_at, &mut told)
             {
                 found.push((
                     Found::Dropped("attack_interval"),
-                    below(at, &["minecraft:behavior.ranged_attack", "attack_interval"]),
+                    at.with(&["minecraft:behavior.ranged_attack", "attack_interval"]),
                 ));
             }
             if let Some(goal) = members.object("minecraft:behavior.beg") {
@@ -162,8 +158,8 @@ fn old_flag_alias(projectile: &mut VObject, at: &JsonPath, aliases: &mut Told) {
         && let Some(flag) = damage.remove(ALIAS)
     {
         damage.insert(MEMBER, flag);
-        let damage_at = below(at, &["on_hit", "impact_damage"]);
-        aliases.moved(below(&damage_at, &[ALIAS]), below(&damage_at, &[MEMBER]));
+        let damage_at = at.with(&["on_hit", "impact_damage"]);
+        aliases.moved(damage_at.child(ALIAS), damage_at.child(MEMBER));
     }
 }
 
@@ -178,7 +174,7 @@ fn projectile_1_26_40(projectile: &mut VObject, at: &JsonPath, found: &mut Vec<(
                 other => {
                     found.push((
                         Found::Invalid("should_bounce", other.to_owned()),
-                        below(at, &["should_bounce"]),
+                        at.child("should_bounce"),
                     ));
                     "no"
                 }
@@ -203,14 +199,14 @@ fn projectile_1_26_40(projectile: &mut VObject, at: &JsonPath, found: &mut Vec<(
         if damage.contains_key("difficulty_randomization") {
             found.push((
                 Found::Dropped("semi_random_diff_damage"),
-                below(at, &["on_hit", "impact_damage", "semi_random_diff_damage"]),
+                at.with(&["on_hit", "impact_damage", "semi_random_diff_damage"]),
             ));
         } else {
             // The crate's own note: a value that is no bool is read as `false`, and told.
             if !semi.is_bool() {
                 found.push((
                     Found::Misread,
-                    below(at, &["on_hit", "impact_damage", "semi_random_diff_damage"]),
+                    at.with(&["on_hit", "impact_damage", "semi_random_diff_damage"]),
                 ));
             }
             let additive = semi.as_bool().unwrap_or(false);
@@ -242,7 +238,7 @@ fn interval_range(goal: &mut VObject, at: &JsonPath, told: &mut Told) -> bool {
         ("attack_interval_max", "max", &max),
     ] {
         if half.is_some() {
-            told.moved(below(at, &[old]), below(at, &["attack_interval", new]));
+            told.moved(at.child(old), at.with(&["attack_interval", new]));
         }
     }
     range.insert("min", min.unwrap_or_else(|| 0.into()));

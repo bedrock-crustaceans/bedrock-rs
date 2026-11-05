@@ -78,9 +78,9 @@ pub(crate) fn first_bad_identifier(
     }
     file.geometries.iter().enumerate().find_map(|(index, g)| {
         let (template, _) = identifier_error(&g.description.identifier, place)?;
-        let mut at = geometry_path(index);
-        at.push("description");
-        at.push("identifier");
+        let at = geometry_path(index)
+            .child("description")
+            .child("identifier");
         diagnostics.push(
             Diagnostic::error(DiagnosticCode::InvalidValue {
                 text: text(template, &[&g.description.identifier]),
@@ -93,10 +93,7 @@ pub(crate) fn first_bad_identifier(
 }
 
 fn geometry_path(index: usize) -> JsonPath {
-    let mut at = JsonPath::new();
-    at.push("minecraft:geometry");
-    at.push_index(index);
-    at
+    JsonPath::new().child("minecraft:geometry").index(index)
 }
 
 /// `Geometry::parse` over every geometry of the file: clamps, truncation, the transform gates
@@ -473,10 +470,10 @@ pub(crate) fn missing_bone_parents(
             continue;
         };
         // The path the file stage gives the same rule.
-        let mut at = geometry_path(index_in_file);
-        at.push("bones");
-        at.push_index(*index);
-        at.push("parent");
+        let at = geometry_path(index_in_file)
+            .child("bones")
+            .index(*index)
+            .child("parent");
         diagnostics.push(
             Diagnostic::info(DiagnosticCode::UnresolvedReference {
                 text: text(

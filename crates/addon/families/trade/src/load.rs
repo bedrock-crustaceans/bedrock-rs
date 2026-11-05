@@ -155,9 +155,7 @@ pub(crate) fn upgrade_document(
 
 /// The path of the payload in a checked envelope.
 fn payload_at() -> JsonPath {
-    let mut at = JsonPath::new();
-    at.push(<TradeFamily as Family>::PAYLOAD_KEY);
-    at
+    JsonPath::of_keys([<TradeFamily as Family>::PAYLOAD_KEY])
 }
 
 /// The text of a file, after the BOM and the depth check; `None` when it is not UTF-8 or too

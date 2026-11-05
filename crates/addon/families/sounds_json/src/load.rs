@@ -31,9 +31,7 @@ impl Merge for SoundBindings {
 fn cleared_tables(json: &Value, target: &Value, found: &mut Diagnostics) {
     let own = fork::member(fork::member(json, "entity_sounds"), "entities");
     let lower = fork::member(fork::member(target, "entity_sounds"), "entities");
-    let mut at = JsonPath::new();
-    at.push("entity_sounds");
-    at.push("entities");
+    let at = JsonPath::new().child("entity_sounds").child("entities");
     // A copy without the section inserts nothing.
     if fork::has_member(json, "entity_sounds") && own.is_null() && !lower.is_null() {
         found.push(Diagnostic::info(DiagnosticCode::SoundsJsonTableCleared).at(at));
@@ -44,10 +42,7 @@ fn cleared_tables(json: &Value, target: &Value, found: &mut Diagnostics) {
         let key = fork::member(fork::member(entity, "variants"), "key");
         let lower_key = fork::member(fork::member(fork::member(lower, &name), "variants"), "key");
         if fork::has_member(entity, "variants") && key.is_null() && !lower_key.is_null() {
-            let mut at = at.clone();
-            at.push(&name);
-            at.push("variants");
-            at.push("key");
+            let at = at.child(&name).child("variants").child("key");
             found.push(Diagnostic::info(DiagnosticCode::SoundsJsonTableCleared).at(at));
         }
     }

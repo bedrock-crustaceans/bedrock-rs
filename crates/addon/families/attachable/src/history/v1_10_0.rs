@@ -1,6 +1,8 @@
 //! Format versions 1.10.0 up to 1.26.0, and the step to 1.26.0.
 
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, JsonPath, Severity};
+use bedrock_addon_core::diagnostic::{
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity,
+};
 use bedrock_addon_core::id::{
     AnimationRef, AttachableId, GeometryId, MaterialId, ParticleId, SoundEventName, TexturePath,
 };
@@ -14,10 +16,10 @@ use facet::Facet;
 use indexmap::IndexMap;
 
 use super::super::ItemBinding;
-use super::super::read::{self, below};
+use super::super::read;
 use super::super::validate::{self, CONDITION, NAMED_SCRIPT};
 use super::super::write;
-use super::v1_8_0::{description_at, step_finding};
+use super::v1_8_0::description_at;
 
 /// The version from which vanilla no longer lower-cases the named scripts
 /// (the 1.18.20 schema).
@@ -126,7 +128,7 @@ impl VersionStruct for Attachable {
         read::check_controllers(de.render_controllers.as_deref(), at, d);
         read::check_item(de.item.as_ref(), &described.json, at, d);
         if let Some(scripts) = &de.scripts {
-            let scripts_at = below(at, &["scripts"]);
+            let scripts_at = at.with(&["scripts"]);
             read::check_variables(scripts.variables.as_ref(), &scripts_at, d);
             read::check_animate(scripts.animate.as_deref(), &scripts_at, d);
         }
@@ -200,7 +202,7 @@ impl Upgrade for Attachable {
         // The named scripts are lower-cased before 1.18.20 and their array form is joined.
         let d = self.description;
         let fold = cx.original_version < NO_LOWER_CASING;
-        let at = below(&description_at(), &["scripts"]);
+        let at = description_at().with(&["scripts"]);
         let scripts = d.scripts.map(|s| bedrock_addon_core::visual::Scripts {
             variables: s.variables,
             initialize: elements(s.initialize, "initialize", fold, &at, cx),
@@ -259,7 +261,7 @@ fn elements(
     let list = list?;
     let mut strings = Vec::with_capacity(list.len());
     for (index, element) in list.into_iter().enumerate() {
-        let mut element_at = below(at, &[name]);
+        let mut element_at = at.with(&[name]);
         element_at.push_index(index);
         if let Molang::Expr(source) = element {
             // The schema's expression type parses each element as written.
@@ -267,11 +269,11 @@ fn elements(
             strings.push(StrictString(folded(source.as_str(), fold)));
         } else {
             // "array → the string elements concatenated, non-string elements skipped".
-            cx.diagnostics.push(step_finding(
-                DiagnosticCode::DroppedField { text: None },
-                Severity::Info,
-                element_at,
-            ));
+            cx.diagnostics.push(
+                Diagnostic::info(DiagnosticCode::DroppedField { text: None })
+                    .at(element_at)
+                    .phase(Phase::Upgrade),
+            );
         }
     }
     Some(strings)

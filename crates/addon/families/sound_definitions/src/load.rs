@@ -72,8 +72,7 @@ fn prepare_definitions(json: &Value, target: Option<&Value>, found: &mut Diagnos
     if let Some(version) = upgrade::version_member(&copy)
         && version > SemVersion::from(ENGINE_VERSION)
     {
-        let mut at = JsonPath::new();
-        at.push("format_version");
+        let at = JsonPath::new().child("format_version");
         found.push(
             Diagnostic::info(DiagnosticCode::FormatVersionAboveEngine {
                 version: version.to_string(),
@@ -96,13 +95,11 @@ fn prepare_definitions(json: &Value, target: Option<&Value>, found: &mut Diagnos
     // The definition's own `__use_legacy_max_distance` the 1.14.0 step writes `"true"` over,
     // as the game's does: noted at the member.
     for name in &report.flag_replaced {
-        let mut at = definition_path(name);
-        at.push("__use_legacy_max_distance");
+        let at = definition_path(name).child("__use_legacy_max_distance");
         found.push(Diagnostic::info(DiagnosticCode::DroppedField { text: None }).at(at));
     }
     for (name, member) in &report.zeroed {
-        let mut at = definition_path(name);
-        at.push(member);
+        let at = definition_path(name).child(member);
         found.push(Diagnostic::info(DiagnosticCode::DroppedField { text: None }).at(at));
     }
     // The entry `pitch` the 1.14.0 step removes. The game gives no message; the crate notes it
@@ -122,8 +119,7 @@ fn prepare_definitions(json: &Value, target: Option<&Value>, found: &mut Diagnos
         return copy;
     };
     if report.not_a_list && lower.as_object().is_some_and(|lower| !lower.is_empty()) {
-        let mut at = JsonPath::new();
-        at.push("sound_definitions");
+        let at = JsonPath::new().child("sound_definitions");
         found.push(Diagnostic::info(DiagnosticCode::SoundDefinitionsCleared).at(at));
     }
     let definitions = fork::member(&copy, "sound_definitions");

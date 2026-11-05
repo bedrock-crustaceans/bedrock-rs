@@ -77,8 +77,7 @@ impl Family for ParticleFamily {
     }
 
     fn component_sections(v: &mut ParticleEffect) -> Vec<ComponentSection<'_, ParticleComponent>> {
-        let mut at = JsonPath::new();
-        at.push("components");
+        let at = JsonPath::new().child("components");
         vec![ComponentSection::new(at, false, &mut v.components)]
     }
 }
@@ -170,8 +169,7 @@ pub(crate) fn upgrade_document(
         Any::V1_20_80(effect) => &effect.description.identifier,
     };
     // What is found on the upgraded value is below the payload key in both cases.
-    let mut at = JsonPath::new();
-    at.push(PAYLOAD_KEY);
+    let at = JsonPath::new().child(PAYLOAD_KEY);
     let identity = Identity {
         identifier: Some(identifier.as_str().to_owned()),
         runtime_identifier: None,

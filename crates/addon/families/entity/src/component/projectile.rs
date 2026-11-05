@@ -17,7 +17,7 @@ use facet::Facet;
 use facet_value::VObject;
 use indexmap::IndexMap;
 
-use super::parse::{Check, Typed, index, join, path};
+use super::parse::{Check, Typed};
 
 /// `minecraft:projectile`: the entity is a projectile.
 #[doc(alias = "minecraft:projectile")]
@@ -918,13 +918,18 @@ const ON_HIT_ALIASES: [(&str, &[(&str, &str)]); 4] = [
 pub(crate) fn name_aliases(json: &mut VObject, moved: &mut dyn FnMut(JsonPath, JsonPath)) -> bool {
     let mut changed = map_aliases(json, &ALIASES, &JsonPath::new(), moved);
     if let Some(damage) = impact_damage(json) {
-        let at = path(&["on_hit", "impact_damage"]);
+        let at = JsonPath::new().with(&["on_hit", "impact_damage"]);
         changed |= map_aliases(damage, &IMPACT_DAMAGE_ALIASES, &at, moved);
     }
     if let Some(on_hit) = json.get_mut("on_hit").and_then(Value::as_object_mut) {
         for (key, aliases) in ON_HIT_ALIASES {
             if let Some(subcomponent) = on_hit.get_mut(key).and_then(Value::as_object_mut) {
-                changed |= map_aliases(subcomponent, aliases, &path(&["on_hit", key]), moved);
+                changed |= map_aliases(
+                    subcomponent,
+                    aliases,
+                    &JsonPath::new().with(&["on_hit", key]),
+                    moved,
+                );
             }
         }
     }
@@ -945,7 +950,7 @@ fn map_aliases(
             && let Some(value) = json.remove(alias)
         {
             json.insert(*member, value);
-            moved(join(at, alias), join(at, member));
+            moved(at.child(alias), at.child(member));
             changed = true;
         }
     }
@@ -1000,7 +1005,7 @@ impl Typed for Projectile {
                     cx.push(
                         DiagnosticCode::InvalidValue { text: None },
                         Severity::Info,
-                        &path(&["anchor"]),
+                        &JsonPath::new().child("anchor"),
                     );
                 }
                 json.insert("anchor", Value::from(name.unwrap_or("origin")));
@@ -1014,7 +1019,7 @@ impl Typed for Projectile {
             "should_bounce",
             &["no", "if_invulnerable", "if_no_damage_dealt"],
             "no",
-            &path(&["should_bounce"]),
+            &JsonPath::new().child("should_bounce"),
             cx,
         );
         if let Some(damage) = impact_damage(json) {
@@ -1023,7 +1028,7 @@ impl Typed for Projectile {
                 "difficulty_randomization",
                 &["none", "additive", "multiplicative"],
                 "none",
-                &path(&["on_hit", "impact_damage", "difficulty_randomization"]),
+                &JsonPath::new().with(&["on_hit", "impact_damage", "difficulty_randomization"]),
                 cx,
             );
         }
@@ -1034,11 +1039,11 @@ impl Typed for Projectile {
         if let ProjectileOffset::Array(list) = &self.offset
             && list.len() != 3
         {
-            let at = path(&["offset"]);
+            let at = JsonPath::new().child("offset");
             cx.invalid(&at, &mut self.offset, ProjectileOffset::default(), None);
         }
         if let Some(on_hit) = &mut self.on_hit {
-            on_hit.check(&path(&["on_hit"]), cx);
+            on_hit.check(&JsonPath::new().child("on_hit"), cx);
         }
     }
 }
@@ -1057,20 +1062,28 @@ fn legacy_on_hit(json: &mut VObject, cx: &mut Check<'_>) -> bool {
         .get_mut("spawn_chance")
         .and_then(Value::as_object_mut)
     {
-        changed |= legacy_spawn_chances(spawn, &path(&["on_hit", "spawn_chance"]), cx);
+        changed |= legacy_spawn_chances(
+            spawn,
+            &JsonPath::new().with(&["on_hit", "spawn_chance"]),
+            cx,
+        );
     }
     // The game's mob-effect reader takes `effects` as an array or a single object.
     if let Some(effect) = on_hit.get_mut("mob_effect").and_then(Value::as_object_mut)
         && effect.get("effects").is_some_and(Value::is_object)
     {
-        changed |=
-            super::value::one_element(effect, "effects", &path(&["on_hit", "mob_effect"]), cx);
+        changed |= super::value::one_element(
+            effect,
+            "effects",
+            &JsonPath::new().with(&["on_hit", "mob_effect"]),
+            cx,
+        );
     }
     if let Some(effect) = on_hit.get_mut("mob_effect").and_then(Value::as_object_mut)
         && !effect.contains_key("effects")
     {
-        let effect_at = path(&["on_hit", "mob_effect"]);
-        let element = index(&join(&effect_at, "effects"), 0);
+        let effect_at = JsonPath::new().with(&["on_hit", "mob_effect"]);
+        let element = effect_at.child("effects").index(0);
         let mut single = VObject::new();
         let mut moves = Vec::new();
         for key in [
@@ -1082,7 +1095,7 @@ fn legacy_on_hit(json: &mut VObject, cx: &mut Check<'_>) -> bool {
         ] {
             if let Some(value) = effect.remove(key) {
                 single.insert(key, value);
-                moves.push((join(&effect_at, key), join(&element, key)));
+                moves.push((effect_at.child(key), element.child(key)));
             }
         }
         if !single.is_empty() {
@@ -1145,7 +1158,7 @@ fn legacy_spawn_chances(spawn: &mut VObject, at: &JsonPath, cx: &mut Check<'_>) 
                 cx.push(
                     DiagnosticCode::ValueRewritten { text: None },
                     Severity::Info,
-                    &join(at, name),
+                    &at.child(name),
                 );
             }
         };
@@ -1245,60 +1258,60 @@ impl OnHit {
         if let Some(event) = &self.definition_event
             && let Some(trigger) = &event.event_trigger
         {
-            let mut here = join(at, "definition_event");
+            let mut here = at.child("definition_event");
             here.push("event_trigger");
             cx.extend(trigger.check(&here));
         }
         if let Some(damage) = &mut self.impact_damage {
-            let mut here = join(at, "impact_damage");
+            let mut here = at.child("impact_damage");
             here.push("damage");
             cx.range(&here, &mut damage.damage);
         }
         if let Some(effects) = &mut self.mob_effect {
-            let list = join(&join(at, "mob_effect"), "effects");
+            let list = at.child("mob_effect").child("effects");
             for (i, effect) in effects.effects.iter_mut().enumerate() {
-                let here = index(&list, i);
+                let here = list.index(i);
                 for (key, duration) in [
                     ("durationeasy", &mut effect.durationeasy),
                     ("durationhard", &mut effect.durationhard),
                     ("durationnormal", &mut effect.durationnormal),
                 ] {
                     if let Some(EffectDuration::Ticks(ticks)) = duration {
-                        cx.at_least(&join(&here, key), &mut ticks.0, 0, 0);
+                        cx.at_least(&here.child(key), &mut ticks.0, 0, 0);
                     }
                 }
             }
         }
         if let Some(particles) = &self.particle_on_hit {
-            let names = join(&join(at, "particle_on_hit"), "particle_item_name");
+            let names = at.child("particle_on_hit").child("particle_item_name");
             for (name, filter) in &particles.particle_item_name {
-                cx.extend(filter.check(&join(&names, name)));
+                cx.extend(filter.check(&names.child(name)));
             }
         }
         if let Some(cloud) = &mut self.spawn_aoe_cloud
             && let EffectDuration::Ticks(ticks) = &mut cloud.duration
         {
-            let here = join(&join(at, "spawn_aoe_cloud"), "duration");
+            let here = at.child("spawn_aoe_cloud").child("duration");
             cx.at_least(&here, &mut ticks.0, 0, 0);
         }
         if let Some(spawn) = &mut self.spawn_chance {
             // The game's 1.26.50 schema bounds both chances to 0 ..= 1.
-            let here = join(at, "spawn_chance");
+            let here = at.child("spawn_chance");
             cx.within(
-                &join(&here, "first_spawn_chance"),
+                &here.child("first_spawn_chance"),
                 &mut spawn.first_spawn_chance.0,
                 (0.0, 1.0),
                 0.0,
             );
             cx.within(
-                &join(&here, "second_spawn_chance"),
+                &here.child("second_spawn_chance"),
                 &mut spawn.second_spawn_chance.0,
                 (0.0, 1.0),
                 0.0,
             );
-            let triggers = join(&here, "on_spawn");
+            let triggers = here.child("on_spawn");
             for (i, trigger) in spawn.on_spawn.iter().enumerate() {
-                cx.extend(trigger.check(&index(&triggers, i)));
+                cx.extend(trigger.check(&triggers.index(i)));
             }
         }
     }

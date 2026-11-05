@@ -295,9 +295,7 @@ struct KeyCx<'a> {
 
 /// The path of the root member `key`.
 fn path(key: &str) -> JsonPath {
-    let mut path = JsonPath::new();
-    path.push(key);
-    path
+    JsonPath::new().child(key)
 }
 
 /// Resolves the member `key: value`, in the order the client tests it: a member that is not an

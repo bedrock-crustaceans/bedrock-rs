@@ -791,10 +791,7 @@ fn has_image(files: &HashSet<&str>, name: &str) -> bool {
 
 /// The place of the member `key` of entry `index` of the list `list`.
 fn entry(list: &str, index: usize, key: &str) -> JsonPath {
-    let mut at = member(list);
-    at.push_index(index);
-    at.push(key);
-    at
+    member(list).index(index).child(key)
 }
 
 /// Reports every image the piece in `directory` names that is not one of `files`, in its
@@ -1100,10 +1097,10 @@ fn waist(animation: &Value, name: &str, lost: &mut Vec<JsonPath>) -> Value {
             if bone == "waist"
                 && let Some(earlier) = written.replace(as_written)
             {
-                let mut at = member("animations");
-                at.push(name);
-                at.push("bones");
-                at.push(earlier);
+                let at = member("animations")
+                    .child(name)
+                    .child("bones")
+                    .child(earlier);
                 lost.push(at);
             }
             named.insert(bone, channels.clone());
@@ -1115,7 +1112,5 @@ fn waist(animation: &Value, name: &str, lost: &mut Vec<JsonPath>) -> Value {
 
 /// The path of a root member.
 fn member(key: &str) -> JsonPath {
-    let mut at = JsonPath::new();
-    at.push(key);
-    at
+    JsonPath::new().child(key)
 }

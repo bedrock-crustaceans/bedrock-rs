@@ -281,9 +281,7 @@ fn text(bytes: &[u8]) -> Option<&str> {
 
 /// The path of the envelope's `format_version`.
 fn version_at() -> JsonPath {
-    let mut at = JsonPath::new();
-    at.push("format_version");
-    at
+    JsonPath::of_keys(["format_version"])
 }
 
 /// The loader's "Missing object" error for family `F`.
@@ -773,8 +771,7 @@ fn ignored_files<T: Definition>(
 
 /// The error of a composition whose extension point no stored root declares.
 fn not_defined(origin: &Origin, name: &str, span: Option<Span>) -> Diagnostic {
-    let mut at = JsonPath::new();
-    at.push(CompositionFamily::PAYLOAD_KEY);
+    let mut at = JsonPath::of_keys([CompositionFamily::PAYLOAD_KEY]);
     at.push("attribs");
     at.push("extension_point");
     let finding = Diagnostic::error(DiagnosticCode::UnresolvedReference {

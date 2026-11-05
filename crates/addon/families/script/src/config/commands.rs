@@ -6,7 +6,7 @@ use bedrock_addon_core::diagnostic::{
 };
 use bedrock_addon_core::json::JsonSlice;
 
-use super::read::{Sink, Twice, child, object, span, string, value, with_root};
+use super::read::{Sink, Twice, object, span, string, value, with_root};
 use super::{COMMANDS_FILE, CommandPermissionLevel, CommandsConfig, UnreadableFile};
 
 /// The two lines the server prints for a syntax error; `{}` is the file.
@@ -53,7 +53,7 @@ pub(super) fn read(
             let Some(slice) = root.nested(raw) else {
                 continue;
             };
-            let here = child(&at, name);
+            let here = at.child(name);
             match name.as_str() {
                 DEFAULT_PERMISSION_LEVEL => match level(slice, here, true, sink) {
                     Some(level) => config.default_permission_level = Some(level),
@@ -114,11 +114,11 @@ fn levels(
         let Some(slice) = slice.nested(raw) else {
             continue;
         };
-        match level(slice, child(at, command), false, sink) {
+        match level(slice, at.child(command), false, sink) {
             Some(level) => {
                 // A name as typed, without `/`: a command's own or one of its aliases.
                 if bedrock_addon_core::vanilla::command(command).is_none() {
-                    unknown.push((command.clone(), child(at, command), span(slice)));
+                    unknown.push((command.clone(), at.child(command), span(slice)));
                 }
                 config.permission_levels.insert(command.clone(), level);
             }

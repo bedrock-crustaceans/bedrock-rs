@@ -29,10 +29,10 @@ pub fn link(poi: &Poi, targets: &dyn Targets) -> Diagnostics {
             if targets.block(block) {
                 continue;
             }
-            let mut at = JsonPath::new();
-            at.push("minecraft:poi_block");
-            at.push("blocks");
-            at.push_index(i);
+            let at = JsonPath::new()
+                .child("minecraft:poi_block")
+                .child("blocks")
+                .index(i);
             let finding = Diagnostic::error(DiagnosticCode::UnresolvedReference {
                 text: Some(VanillaText::Formatted {
                     template: "BlockTypeRegistry::lookupByName() failed to find block \"{}\"",

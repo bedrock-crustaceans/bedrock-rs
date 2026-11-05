@@ -309,11 +309,7 @@ pub(super) fn biomes_to_filters(item: &mut TradeItem) {
 ///   that is no name (`InvalidType` at the element), a name the gate does not know
 ///   (`InvalidValue` at the name): each adds nothing.
 pub(super) fn tell_lost(item: &TradeItem, expanded: bool, at: &JsonPath, cx: &mut UpgradeCx<'_>) {
-    let member = |key: &str| {
-        let mut path = at.clone();
-        path.push(key);
-        path
-    };
+    let member = |key: &str| at.child(key);
     let dropped = DiagnosticCode::DroppedField { text: None };
     // The game's legacy parser and slice upgrade read and drop these silently and log nothing
     // of them, so the crate reports an information.
@@ -334,13 +330,9 @@ pub(super) fn tell_lost(item: &TradeItem, expanded: bool, at: &JsonPath, cx: &mu
                 .keys()
                 .filter(|key| material && key.as_str() != "function")
             {
-                let mut path = member("functions");
-                path.push_index(index);
-                path.push(key.as_str());
-                cx.diagnostics.push(note(
-                    DiagnosticCode::UnrecognizedField { text: None },
-                    path.clone(),
-                ));
+                let path = member("functions").index(index).child(key.as_str());
+                cx.diagnostics
+                    .push(note(DiagnosticCode::UnrecognizedField { text: None }, path));
             }
         }
     }
@@ -370,8 +362,7 @@ pub(super) fn tell_lost(item: &TradeItem, expanded: bool, at: &JsonPath, cx: &mu
             ));
         }
         for (index, element) in list.iter().enumerate() {
-            let mut at_element = at_biomes.clone();
-            at_element.push_index(index);
+            let at_element = at_biomes.index(index);
             match element.as_string() {
                 Some(name) if known(name.as_str()) => any = true,
                 Some(_) => cx.diagnostics.push(note(

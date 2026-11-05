@@ -273,7 +273,7 @@ fn admit<'b>(
     {
         return Err(reject(
             origin,
-            Diagnostic::error(code).at(read::below(&JsonPath::new(), &["format_version"])),
+            Diagnostic::error(code).at(JsonPath::of_keys(["format_version"])),
         ));
     }
     Ok(text)

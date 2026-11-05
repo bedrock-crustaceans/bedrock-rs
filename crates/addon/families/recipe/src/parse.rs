@@ -205,7 +205,7 @@ impl<'c> Reader<'c> {
             }
             if !members.quiet.contains(key) {
                 self.report(
-                    &child(at, key),
+                    &at.child(key),
                     DiagnosticCode::UnrecognizedField { text: None },
                     Severity::Info,
                 );
@@ -287,7 +287,7 @@ impl<'c> Reader<'c> {
             if object.contains_key(key) && payload.is_none_or(|(chosen, _)| chosen != *kind) {
                 root_members.keep(key);
                 self.report(
-                    &child(&root_path, key),
+                    &root_path.child(key),
                     DiagnosticCode::IgnoredPayload,
                     Severity::Info,
                 );
@@ -301,7 +301,7 @@ impl<'c> Reader<'c> {
         };
         root_members.take(kind.payload_key());
         parsed.kind = Some(kind);
-        let at = child(&root_path, kind.payload_key());
+        let at = root_path.child(kind.payload_key());
         let Some(payload) = payload.as_object() else {
             self.no_identifier(&at);
             return (parsed, None, written);
@@ -381,7 +381,7 @@ impl<'c> Reader<'c> {
     /// is 1.0.0 with `Missing version tag` (a kept error: the game logs an error and the recipe
     /// still loads). Above the engine version: an info, there is no ceiling.
     fn format_version(&mut self, root: &mut Members<'_>) -> Option<FormatVersion> {
-        let at = child(&JsonPath::new(), "format_version");
+        let at = JsonPath::of_keys(["format_version"]);
         let value = root.take("format_version");
         let version = value
             .and_then(SemVersion::from_json)
@@ -420,7 +420,7 @@ impl<'c> Reader<'c> {
         if identifier.is_empty() {
             return None;
         }
-        let at = child(at, "description");
+        let at = at.child("description");
         let mut members = Members::new(object);
         members.take("identifier");
         let extra = self.rest(&members, &at);
@@ -433,7 +433,7 @@ impl<'c> Reader<'c> {
     /// `tags`: a string or a list of strings (other entries skipped); any other value counts as
     /// none.
     fn tags(&mut self, payload: &mut Members<'_>, at: &JsonPath, kind: RecipeKind) -> Option<Tags> {
-        let path = child(at, "tags");
+        let path = at.child("tags");
         let tags = match payload.take("tags") {
             None => None,
             Some(value) => {
@@ -450,7 +450,7 @@ impl<'c> Reader<'c> {
                                 kept.push(index);
                             }
                             None => self.report(
-                                &index_of(&path, index),
+                                &path.index(index),
                                 DiagnosticCode::InvalidType { text: None },
                                 Severity::Info,
                             ),
@@ -547,8 +547,8 @@ impl<'c> Reader<'c> {
             members.keep("data");
             return;
         }
-        if let Ok(list) = self.data_list(data, &mut child(at, "data")) {
-            ingredient.data_value = self.evaluate(&list, &child(at, "data"));
+        if let Ok(list) = self.data_list(data, &mut at.child("data")) {
+            ingredient.data_value = self.evaluate(&list, &at.child("data"));
             ingredient.data = Some(list);
             return;
         }
@@ -563,11 +563,11 @@ impl<'c> Reader<'c> {
                 [OBJECT_VALUE_TYPE.to_owned()],
             );
             self.diagnostics.push_kept_error(
-                Diagnostic::error(DiagnosticCode::InvalidType { text }).at(child(at, "data")),
+                Diagnostic::error(DiagnosticCode::InvalidType { text }).at(at.child("data")),
             );
         } else {
             self.report(
-                &child(at, "data"),
+                &at.child("data"),
                 DiagnosticCode::InvalidType { text: None },
                 Severity::Info,
             );
@@ -623,7 +623,7 @@ impl<'c> Reader<'c> {
         }
         if !flags.count {
             self.report_ingredient(
-                &child(at, "count"),
+                &at.child("count"),
                 DiagnosticCode::InvalidValue {
                     text: fixed(
                         "Recipe ingredient is invalid: Cannot specify an item count for input items",
@@ -638,7 +638,7 @@ impl<'c> Reader<'c> {
         } else {
             members.keep("count");
             self.report(
-                &child(at, "count"),
+                &at.child("count"),
                 DiagnosticCode::InvalidType { text: None },
                 Severity::Info,
             );
@@ -656,7 +656,7 @@ impl<'c> Reader<'c> {
     ) -> Option<()> {
         let item = members.take("item");
         if let Some(text) = item.and_then(Value::as_string) {
-            self.item_text(text.as_str(), &child(at, "item"));
+            self.item_text(text.as_str(), &at.child("item"));
             ingredient.item = Some(text.as_str().to_owned());
             // `tag` beside a string `item` is not read; kept as written.
             if let Some(tag) = members.take("tag") {
@@ -842,7 +842,7 @@ impl<'c> Reader<'c> {
             // The file's index of each entry held, for the link pass.
             let mut kept = Vec::new();
             for (index, entry) in entries.iter().enumerate() {
-                let entry_at = index_of(at, index);
+                let entry_at = at.index(index);
                 if entry.is_null() {
                     self.report(
                         &entry_at,
@@ -874,7 +874,7 @@ impl<'c> Reader<'c> {
 
     /// `result` of shaped and shapeless recipes: count allowed, tags not.
     fn result(&mut self, payload: &mut Members<'_>, at: &JsonPath) -> Output {
-        let at = child(at, "result");
+        let at = at.child("result");
         match self.output(payload.take("result"), &at, Flags::new(true, false)) {
             None => {
                 self.result_malformed(&at);
@@ -897,7 +897,7 @@ impl<'c> Reader<'c> {
     /// `unlock`: the malformed forms are logged and give the requirement `{None, []}`; only a value that is neither a list nor an object with a string
     /// `context` counts as absent.
     fn unlock(&mut self, payload: &mut Members<'_>, at: &JsonPath) -> Option<Unlock> {
-        let at = child(at, "unlock");
+        let at = at.child("unlock");
         let value = payload.take("unlock")?;
         if value.is_null() {
             payload.keep("unlock");
@@ -924,7 +924,7 @@ impl<'c> Reader<'c> {
             };
             let mut ingredients = Vec::new();
             for (index, entry) in entries.iter().enumerate() {
-                match self.ingredient(Some(entry), &index_of(&at, index), flags) {
+                match self.ingredient(Some(entry), &at.index(index), flags) {
                     Some(ingredient) => ingredients.push(ingredient),
                     None => {
                         // The game logs an error, zeroes the requirement and loads the
@@ -969,7 +969,7 @@ impl<'c> Reader<'c> {
         let Some(context) = UnlockContext::from_name(name) else {
             // The game logs an error and goes on loading: a kept error.
             self.report_kept(
-                &child(&at, "context"),
+                &at.child("context"),
                 DiagnosticCode::InvalidValue {
                     text: formatted(
                         "Recipe: {} has a malformed unlocking context",
@@ -1005,7 +1005,7 @@ impl<'c> Reader<'c> {
         payload.keep("priority");
         if !is_empty(value) {
             self.report(
-                &child(at, "priority"),
+                &at.child("priority"),
                 DiagnosticCode::InvalidType { text: None },
                 Severity::Info,
             );
@@ -1033,7 +1033,7 @@ impl<'c> Reader<'c> {
                     // A non-bool is ignored (the default is `true`).
                     payload.keep("assume_symmetry");
                     self.report(
-                        &child(at, "assume_symmetry"),
+                        &at.child("assume_symmetry"),
                         DiagnosticCode::InvalidType { text: None },
                         Severity::Info,
                     );
@@ -1064,7 +1064,7 @@ impl<'c> Reader<'c> {
     /// `pattern`: 1 to 3 rows of 1 to 3 symbols; vanilla drops a missing, empty or mistyped one
     /// silently, so the crate's errors for them carry no game text.
     fn pattern(&mut self, payload: &mut Members<'_>, at: &JsonPath) -> Option<Vec<String>> {
-        let at = child(at, "pattern");
+        let at = at.child("pattern");
         let Some(value) = payload.take("pattern") else {
             self.report(
                 &at,
@@ -1095,7 +1095,7 @@ impl<'c> Reader<'c> {
                 Some(row) => pattern.push(row.as_str().to_owned()),
                 None => {
                     self.report(
-                        &index_of(&at, index),
+                        &at.index(index),
                         DiagnosticCode::InvalidType { text: None },
                         Severity::Error,
                     );
@@ -1128,7 +1128,7 @@ impl<'c> Reader<'c> {
         payload: &mut Members<'_>,
         at: &JsonPath,
     ) -> Option<indexmap::IndexMap<String, Ingredient>> {
-        let at = child(at, "key");
+        let at = at.child("key");
         let Some(value) = payload.take("key") else {
             self.report(
                 &at,
@@ -1157,7 +1157,7 @@ impl<'c> Reader<'c> {
         let mut key = indexmap::IndexMap::new();
         for (name, value) in object {
             let name = name.as_str();
-            let entry_at = child(&at, name);
+            let entry_at = at.child(name);
             if name.is_empty() {
                 self.report(
                     &entry_at,
@@ -1204,7 +1204,7 @@ impl<'c> Reader<'c> {
             .flat_map(|row| row.bytes())
             .filter(|b| *b != b' ')
             .collect();
-        let at = child(at, "pattern");
+        let at = at.child("pattern");
         if used.is_empty() {
             self.report(
                 &at,
@@ -1235,7 +1235,7 @@ impl<'c> Reader<'c> {
         {
             // The game logs an error and loads the recipe with the first entry: a kept error.
             self.report_kept(
-                &child(at, "result"),
+                &at.child("result"),
                 DiagnosticCode::IgnoredMember {
                     text: fixed("unsupported multiple output types for result list in shapeless"),
                 },
@@ -1243,7 +1243,7 @@ impl<'c> Reader<'c> {
         }
         let unlock = self.unlock(payload, at);
         self.unlock_gate(unlock.as_ref(), at);
-        let ingredients_at = child(at, "ingredients");
+        let ingredients_at = at.child("ingredients");
         let mut ingredients = Vec::new();
         match payload.take("ingredients") {
             None => self.report(
@@ -1259,7 +1259,7 @@ impl<'c> Reader<'c> {
                 ),
                 Some(entries) => {
                     for (index, entry) in entries.iter().enumerate() {
-                        let entry_at = index_of(&ingredients_at, index);
+                        let entry_at = ingredients_at.index(index);
                         match self.ingredient(Some(entry), &entry_at, Flags::new(true, true)) {
                             Some(ingredient) => ingredients.push(ingredient),
                             None => {
@@ -1374,7 +1374,7 @@ impl<'c> Reader<'c> {
             Flags::new(self.input_count(), true),
             PartText::Site("Material Reduction Recipe: {} has an invalid input item"),
         );
-        let output_at = child(at, "output");
+        let output_at = at.child("output");
         let output = match payload.take("output") {
             None => None,
             Some(value) if value.is_object() => self
@@ -1396,7 +1396,7 @@ impl<'c> Reader<'c> {
                     }
                     let mut items = Vec::new();
                     for (index, entry) in entries.iter().enumerate() {
-                        match self.reduction_output(Some(entry), &index_of(&output_at, index)) {
+                        match self.reduction_output(Some(entry), &output_at.index(index)) {
                             Some(item) => items.push(item),
                             None => break,
                         }
@@ -1447,7 +1447,7 @@ impl<'c> Reader<'c> {
         let list = tags.map_or(&[][..], Tags::as_slice);
         if list.len() != 1 || list[0] != SMITHING_TABLE {
             self.report(
-                &child(at, "tags"),
+                &at.child("tags"),
                 DiagnosticCode::DocumentRejected {
                     text: formatted(template, [self.id.clone(), SMITHING_TABLE.to_owned()]),
                 },
@@ -1481,14 +1481,14 @@ impl<'c> Reader<'c> {
                 let _ = value;
                 payload.keep("template");
                 self.report(
-                    &child(at, "template"),
+                    &at.child("template"),
                     DiagnosticCode::IgnoredMember { text: None },
                     Severity::Info,
                 );
                 None
             }
             Some(value) if !value.is_null() => {
-                let template = self.ingredient(Some(value), &child(at, "template"), flags);
+                let template = self.ingredient(Some(value), &at.child("template"), flags);
                 if template.is_none() {
                     self.smithing_part(
                         "Smithing Transform Recipe: {} has an invalid template item.",
@@ -1572,7 +1572,7 @@ impl<'c> Reader<'c> {
 
     fn smithing_part(&mut self, template: &'static str, at: &JsonPath, key: &str) {
         self.report(
-            &child(at, key),
+            &at.child(key),
             DiagnosticCode::DocumentRejected {
                 text: formatted(template, [self.id.clone()]),
             },
@@ -1590,7 +1590,7 @@ impl<'c> Reader<'c> {
         flags: Flags,
         text: PartText,
     ) -> Ingredient {
-        let part_at = child(at, key);
+        let part_at = at.child(key);
         if let Some(ingredient) = self.ingredient(payload.take(key), &part_at, flags) {
             return ingredient;
         }
@@ -1644,18 +1644,4 @@ fn is_empty(value: &Value) -> bool {
 fn integer(value: &Value) -> Option<i32> {
     let number = value.as_number().filter(|number| number.is_integer())?;
     i32::try_from(number.to_i64()?).ok()
-}
-
-/// `at` with member `key`.
-fn child(at: &JsonPath, key: &str) -> JsonPath {
-    let mut path = at.clone();
-    path.push(key);
-    path
-}
-
-/// `at` with element `index`.
-fn index_of(at: &JsonPath, index: usize) -> JsonPath {
-    let mut path = at.clone();
-    path.push_index(index);
-    path
 }

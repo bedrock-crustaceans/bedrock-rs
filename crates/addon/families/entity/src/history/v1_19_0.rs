@@ -6,7 +6,7 @@ use bedrock_addon_core::vanilla::ActorType;
 use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
 use facet_value::VArray;
 
-use super::ops::{Members, Told, below, components, group, json, section_a, section_b, sections};
+use super::ops::{Members, Told, components, group, json, section_a, section_b, sections};
 use bedrock_addon_core::diagnostic::JsonPath;
 
 /// 1.19.0 → 1.19.50 (gate 1.19.50).
@@ -43,7 +43,7 @@ impl Upgrade for Entity {
                         append_all_of(
                             object,
                             &[r#"{"test": "is_daytime", "value": true}"#],
-                            &below(&section.at, &[goal]),
+                            &section.at.child(goal),
                             &mut told,
                         );
                     }
@@ -70,12 +70,12 @@ pub(super) fn append_all_of(
 ) {
     object.insert_absent("filters", json("{}"));
     let Some(filters) = object.get_mut("filters").and_then(|f| f.as_object_mut()) else {
-        told.wrong_type(below(at, &["filters"]));
+        told.wrong_type(at.child("filters"));
         return;
     };
     if !filters.get("all_of").is_some_and(Value::is_array) {
         if filters.remove("all_of").is_some_and(|old| !old.is_null()) {
-            told.wrong_type(below(at, &["filters", "all_of"]));
+            told.wrong_type(at.with(&["filters", "all_of"]));
         }
         filters.insert("all_of", VArray::new());
     }
@@ -141,10 +141,11 @@ fn input_ground_controlled(payload: &mut Payload, cx: &mut UpgradeCx<'_>) {
                 let kept = step.insert_absent("controlled_value", base.clone());
                 let same = base.as_number().map(facet_value::VNumber::to_f64_lossy) == Some(0.5625);
                 if !kept && !base.is_null() && !same {
-                    told.dropped(below(
-                        &section.at,
-                        &["minecraft:variable_max_auto_step", "base_value"],
-                    ));
+                    told.dropped(
+                        section
+                            .at
+                            .with(&["minecraft:variable_max_auto_step", "base_value"]),
+                    );
                 }
             }
             step.insert("base_value", 0.5625);

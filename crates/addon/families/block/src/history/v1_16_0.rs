@@ -3,7 +3,6 @@
 
 use super::legacy::Legacy;
 use super::ops::dropped_field;
-use crate::parse::child;
 use bedrock_addon_core::diagnostic::JsonPath;
 use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
 
@@ -19,7 +18,7 @@ impl Upgrade for Block {
         let mut block: Self::Next = self.retag();
         for flag in ["is_experimental", "register_to_creative_menu"] {
             if block.description.shift_remove(flag).is_some() {
-                let at = child(&JsonPath::new(), &["minecraft:block", "description", flag]);
+                let at = JsonPath::new().with(&["minecraft:block", "description", flag]);
                 dropped_field(&at, None, cx.diagnostics);
             }
         }

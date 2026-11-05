@@ -104,14 +104,11 @@ impl ItemDeprecatedData {
                             .flat_map(|object| object.iter())
                             .filter(|(other, _)| other.as_str() != inner)
                         {
-                            let mut path = at.clone();
-                            path.push(key);
-                            path.push(other.as_str());
+                            let path = at.child(key).child(other.as_str());
                             d.push(note(DiagnosticCode::MemberNotKept { text: None }, path));
                         }
                     } else {
-                        let mut path = at.clone();
-                        path.push(key);
+                        let path = at.child(key);
                         d.push(note(DiagnosticCode::InvalidType { text: None }, path));
                         out.extra.insert(key.to_owned(), member.clone());
                     }
@@ -148,8 +145,7 @@ impl ItemDeprecatedData {
                     }
                 }
                 _ => {
-                    let mut path = at.clone();
-                    path.push(key);
+                    let path = at.child(key);
                     d.push(note(DiagnosticCode::UnrecognizedField { text: None }, path));
                     out.extra.insert(key.to_owned(), member.clone());
                 }

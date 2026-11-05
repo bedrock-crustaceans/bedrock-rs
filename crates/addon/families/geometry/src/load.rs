@@ -51,9 +51,7 @@ const ENTITY: &str = "models/entity";
 const MOBS: &str = "models/mobs.json";
 
 fn member(name: &str) -> JsonPath {
-    let mut at = JsonPath::new();
-    at.push(name);
-    at
+    JsonPath::new().child(name)
 }
 
 fn did_not_validate(diagnostics: &mut Diagnostics) {

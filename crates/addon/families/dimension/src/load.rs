@@ -2,7 +2,7 @@
 //! `Content` / `Definition`, the walk of `dimensions/` and the combine rule (the first file
 //! walked wins, packs bottom-up).
 
-use super::parse::{RootLatest, child, clouds_constraint, height_constraints, parse_root};
+use super::parse::{RootLatest, clouds_constraint, height_constraints, parse_root};
 use super::{Dimension, FLOOR, V1_26_50, validate};
 use crate::history::{Any, DimensionFamily};
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase};
@@ -75,20 +75,16 @@ impl VersionStruct for Dimension {
         let root: RootLatest =
             parse_root(text, cx, rule, |root: &mut RootLatest| &mut root.extra, d)?;
         let inner = root.dimension;
-        let components = child(&cx.at, &["minecraft:dimension", "components"]);
+        let components = cx.at.with(&["minecraft:dimension", "components"]);
         let height = inner
             .components
             .dimension_height
             .as_ref()
             .is_none_or(|height| {
-                height_constraints(
-                    height,
-                    &child(&components, &["minecraft:dimension_height"]),
-                    d,
-                )
+                height_constraints(height, &components.child("minecraft:dimension_height"), d)
             });
         let clouds = inner.components.clouds.as_ref().is_none_or(|clouds| {
-            clouds_constraint(clouds, &child(&components, &["minecraft:clouds"]), d)
+            clouds_constraint(clouds, &components.child("minecraft:clouds"), d)
         });
         if !(height && clouds) {
             return None;
@@ -202,10 +198,7 @@ impl Dimension {
     /// rule predicts; a host that creates dimensions reports it with this.
     pub fn creation_failed(document: &Document<Dimension>) -> Diagnostic {
         let origin = document.origin();
-        let mut at = JsonPath::new();
-        for key in ["minecraft:dimension", "description", "identifier"] {
-            at.push(key);
-        }
+        let at = JsonPath::new().with(&["minecraft:dimension", "description", "identifier"]);
         // The game logs this at the content log's warning level.
         Diagnostic::warn(DiagnosticCode::InvalidValue {
             text: Some(bedrock_addon_core::diagnostic::VanillaText::Formatted {
@@ -384,10 +377,7 @@ fn registered_from_script(id: &DimensionId, stack: &StackCx<'_>) -> bool {
 /// pack id as arguments, at the document's identifier. The game logs it at the content log's
 /// warning level.
 fn replaced_registration(id: &DimensionId, origin: &Origin) -> Diagnostic {
-    let mut at = JsonPath::new();
-    for key in ["minecraft:dimension", "description", "identifier"] {
-        at.push(key);
-    }
+    let at = JsonPath::new().with(&["minecraft:dimension", "description", "identifier"]);
     // The game logs this at the content log's warning level.
     Diagnostic::warn(DiagnosticCode::ShadowedDefinition {
         text: Some(bedrock_addon_core::diagnostic::VanillaText::Formatted {

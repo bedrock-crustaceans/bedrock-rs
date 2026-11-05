@@ -2,10 +2,11 @@
 
 super::legacy_struct!(1, 19, 50);
 
+use bedrock_addon_core::diagnostic::JsonPath;
 use bedrock_addon_core::vanilla::ActorType;
 use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
 
-use super::ops::{Members, Told, below, components, json, path, section_a, section_b, sections};
+use super::ops::{Members, Told, components, json, section_a, section_b, sections};
 use super::v1_19_0::append_all_of;
 
 /// 1.19.50 → 1.19.60 (gate 1.19.60).
@@ -29,7 +30,7 @@ impl Upgrade for Entity {
                     .get(key)
                     .is_some_and(|had| !had.is_null() && *had != fragment)
                 {
-                    told.dropped(path(&["components", key]));
+                    told.dropped(JsonPath::new().with(&["components", key]));
                 }
                 components.set(key, fragment);
             }
@@ -48,7 +49,7 @@ impl Upgrade for Entity {
                             r#"{"test": "in_water", "value": false}"#,
                             r#"{"any_of": [{"test": "on_ground", "value": true}, {"test": "is_sleeping", "value": true}]}"#,
                         ],
-                        &below(&section.at, &["minecraft:behavior.trade_with_player"]),
+                        &section.at.child("minecraft:behavior.trade_with_player"),
                         &mut told,
                     );
                 }

@@ -149,22 +149,21 @@ impl VersionStruct for AtomicClientEntity {
                 d.push(Diagnostic::error(code).at(at));
             }
         }
-        let description_at = below(&cx.at, &["description"]);
+        let description_at = cx.at.child("description");
         if !has_namespace(entity.description.identifier.as_str()) {
             // A namespace is required: the identifier matches `^(?:.)+:(?:.)+$`.
             d.push(
                 Diagnostic::error(DiagnosticCode::InvalidValue {
                     text: Some(VanillaText::Fixed(NAMESPACE_TEXT)),
                 })
-                .at(below(&description_at, &["identifier"])),
+                .at(description_at.child("identifier")),
             );
         }
         let controllers = entity.description.render_controllers.iter().flatten();
         for (index, controller) in controllers.enumerate() {
             if matches!(controller, ControllerUse::Conditional(_)) {
                 // The list holds plain strings; the `{ name: condition }` form is no string.
-                let mut at = below(&description_at, &["render_controllers"]);
-                at.push_index(index);
+                let at = description_at.child("render_controllers").index(index);
                 d.push(Diagnostic::error(DiagnosticCode::InvalidType { text: None }).at(at));
             }
         }
@@ -175,7 +174,7 @@ impl VersionStruct for AtomicClientEntity {
                     Diagnostic::error(DiagnosticCode::InvalidValue {
                         text: Some(VanillaText::Fixed(NOT_NEGATIVE_TEXT)),
                     })
-                    .at(below(&cx.at, &members)),
+                    .at(cx.at.with(&members)),
                 );
             }
         }
@@ -269,15 +268,6 @@ fn declared(path: &JsonPath) -> JsonPath {
 fn is_component(path: &JsonPath) -> bool {
     let mut segments = path.segments();
     segments.len() == 2 && segments.next() == Some(JsonPathSegment::Key("components"))
-}
-
-/// `base` followed by `keys`.
-fn below(base: &JsonPath, keys: &[&str]) -> JsonPath {
-    let mut path = base.clone();
-    for key in keys {
-        path.push(key);
-    }
-    path
 }
 
 #[cfg(test)]

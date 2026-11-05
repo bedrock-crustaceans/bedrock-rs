@@ -49,31 +49,23 @@ impl<'m> Places<'m> {
         let mut written = HashMap::new();
         for (category_index, category) in file.categories.iter().enumerate() {
             for (group_index, group) in category.groups.iter().enumerate() {
-                let mut at = JsonPath::new();
-                at.push("minecraft:crafting_items_catalog");
-                at.push("categories");
-                at.push_index(category_index);
-                at.push("groups");
-                at.push_index(group_index);
+                let at = JsonPath::of_keys(["minecraft:crafting_items_catalog", "categories"])
+                    .index(category_index)
+                    .child("groups")
+                    .index(group_index);
                 if let Some(name) = group.name() {
                     let key = CatalogKey::Group {
                         category: category.category_name,
                         name: name.to_owned(),
                     };
-                    written.entry(key).or_insert_with(|| {
-                        let mut at = at.clone();
-                        at.push("group_identifier");
-                        at.push("name");
-                        at
-                    });
+                    written
+                        .entry(key)
+                        .or_insert_with(|| at.child("group_identifier").child("name"));
                 }
                 for (index, item) in group.items.iter().enumerate() {
-                    written.entry(item_key(item)).or_insert_with(|| {
-                        let mut at = at.clone();
-                        at.push("items");
-                        at.push_index(index);
-                        at
-                    });
+                    written
+                        .entry(item_key(item))
+                        .or_insert_with(|| at.child("items").index(index));
                 }
             }
         }

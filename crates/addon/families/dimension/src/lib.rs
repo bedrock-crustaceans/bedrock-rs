@@ -19,7 +19,7 @@ use bedrock_addon_core::version::FormatVersion;
 
 #[doc(hidden)]
 pub use load::load_dimensions;
-pub(crate) use parse::{RootV1, bounds_constraints, child, parse_root, slice_null_rule};
+pub(crate) use parse::{RootV1, bounds_constraints, parse_root, slice_null_rule};
 
 /// The first format version vanilla reads.
 pub(crate) const FLOOR: FormatVersion = FormatVersion::new(1, 18, 0);

@@ -4,7 +4,7 @@
 use facet::Facet;
 
 use super::Any;
-use crate::parse::{child, parse_strict, parse_strict_with};
+use crate::parse::{parse_strict, parse_strict_with};
 use crate::scatter::walk_params;
 use crate::walk::{SCATTER_LEGACY, Walk, member};
 use crate::{self as latest, BlockList, Description, JsonInt, PlacesBlock};
@@ -181,7 +181,7 @@ impl VersionStruct for SingleBlockFeature {
         if array {
             d.push(
                 Diagnostic::error(DiagnosticCode::InvalidType { text: None })
-                    .at(child(&cx.at, "places_block")),
+                    .at(cx.at.child("places_block")),
             );
             return None;
         }

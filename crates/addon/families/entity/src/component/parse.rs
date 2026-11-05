@@ -178,8 +178,7 @@ impl<'d> Check<'d> {
                     ("range_max", range.missing_max),
                 ] {
                     if !missing {
-                        let mut here = at.clone();
-                        here.push(end);
+                        let here = at.child(end);
                         self.refuse(DiagnosticCode::UnrecognizedField { text: None }, &here);
                     }
                 }
@@ -218,8 +217,10 @@ pub(crate) fn drop_deprecated(json: &mut VObject, names: &[&str], cx: &mut Check
     for name in names {
         if json.remove(name).is_some() {
             changed = true;
-            cx.out
-                .push(Diagnostic::deprecated_member(name, path(&[name])));
+            cx.out.push(Diagnostic::deprecated_member(
+                name,
+                JsonPath::new().child(name),
+            ));
         }
     }
     changed
@@ -243,34 +244,11 @@ pub(crate) fn legacy_spellings(
             && let Some(value) = json.remove(alias)
         {
             json.insert(*member, value);
-            cx.moved(join(at, alias), join(at, member));
+            cx.moved(at.child(alias), at.child(member));
             changed = true;
         }
     }
     changed
-}
-
-/// `keys` as a path relative to the component.
-pub(crate) fn path(keys: &[&str]) -> JsonPath {
-    let mut at = JsonPath::new();
-    for key in keys {
-        at.push(key);
-    }
-    at
-}
-
-/// `base` followed by `key`.
-pub(crate) fn join(base: &JsonPath, key: &str) -> JsonPath {
-    let mut at = base.clone();
-    at.push(key);
-    at
-}
-
-/// `base` followed by the element `index`.
-pub(crate) fn index(base: &JsonPath, index: usize) -> JsonPath {
-    let mut at = base.clone();
-    at.push_index(index);
-    at
 }
 
 /// Reads component `T` from its slice (the `parse` of `T`'s row): strictly, or with the lenient
@@ -533,7 +511,7 @@ fn isolate<T: Typed>(object: &mut VObject, d: &mut Diagnostics) -> Option<T> {
                 continue;
             }
             let at = if error.path.is_empty() {
-                path(&[&key])
+                JsonPath::new().child(&key)
             } else {
                 error.path
             };
@@ -547,7 +525,8 @@ fn isolate<T: Typed>(object: &mut VObject, d: &mut Diagnostics) -> Option<T> {
                 // what else it holds is known to be dropped (an information, the warning is
                 // the one above).
                 d.push(
-                    Diagnostic::info(DiagnosticCode::DroppedField { text: None }).at(path(&[&key])),
+                    Diagnostic::info(DiagnosticCode::DroppedField { text: None })
+                        .at(JsonPath::new().child(&key)),
                 );
             }
             object.remove(&key);
@@ -598,12 +577,12 @@ fn isolate_elements<T: Typed>(object: &mut VObject, key: &str, d: &mut Diagnosti
     for (place, element) in list.iter().enumerate() {
         let mut one = VArray::new();
         one.push(element.clone());
-        let at_element = index(&path(&[key]), place);
+        let at_element = JsonPath::new().child(key).index(place);
         match reads(one) {
             None => return false,
             Some(Ok(())) => {
                 if kept.len() != place {
-                    moves.push((at_element, index(&path(&[key]), kept.len())));
+                    moves.push((at_element, JsonPath::new().child(key).index(kept.len())));
                 }
                 kept.push(element.clone());
             }
@@ -613,7 +592,7 @@ fn isolate_elements<T: Typed>(object: &mut VObject, key: &str, d: &mut Diagnosti
                 };
                 told.extend(removed.iter().map(|at| element_finding(key, place, at)));
                 if kept.len() != place {
-                    moves.push((at_element, index(&path(&[key]), kept.len())));
+                    moves.push((at_element, JsonPath::new().child(key).index(kept.len())));
                 }
                 kept.push(salvaged);
             }
@@ -672,7 +651,7 @@ fn isolate_elements<T: Typed>(object: &mut VObject, key: &str, d: &mut Diagnosti
 /// The `InvalidValue` warning at `at`, a path that names the element `place` of the list `key`
 /// as the first of its list of one, at the element the file has.
 fn element_finding(key: &str, place: usize, at: &JsonPath) -> Diagnostic {
-    let mut here = path(&[key]);
+    let mut here = JsonPath::new().child(key);
     here.push_index(place);
     for segment in at.segments().skip(2) {
         match segment {

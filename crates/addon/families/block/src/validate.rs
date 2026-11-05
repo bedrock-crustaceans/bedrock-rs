@@ -65,9 +65,7 @@ pub(crate) fn validate(block: &mut Block, cx: &mut ValidateCx<'_>) {
     // the file has it (an information: the game skips it, and the gate's own finding is at
     // the component).
     for index in &skipped {
-        let mut path = at.clone();
-        path.push("permutations");
-        path.push_index(*index);
+        let path = at.child("permutations").index(*index);
         cx.diagnostics.push(
             Diagnostic::info(DiagnosticCode::DroppedField { text: None })
                 .at(path)
@@ -77,8 +75,7 @@ pub(crate) fn validate(block: &mut Block, cx: &mut ValidateCx<'_>) {
     if kept.len() < before {
         // The permutations left are known by the index the file has them at: what is told
         // of one from here on, and what the link pass finds in one, is told there.
-        let mut list = at.clone();
-        list.push("permutations");
+        let list = at.child("permutations");
         cx.diagnostics.left_out(&list, &kept);
         // Where the file has the members the rules of 1.26.20 refuse, for the write's
         // refusal: the last step recorded them by the permutations as they were.
@@ -110,9 +107,7 @@ pub(crate) fn validate(block: &mut Block, cx: &mut ValidateCx<'_>) {
 /// of the chain at the `minecraft:creative_category` component the file has: a
 /// finding of the upgrade with its code at that member of such a component.
 fn told_at_the_component(finding: &Diagnostic, at: &JsonPath, found: &Diagnostics) -> bool {
-    let mut menu = at.clone();
-    menu.push("description");
-    menu.push("menu_category");
+    let menu = at.child("description").child("menu_category");
     let Some(member) = finding
         .location
         .json_path
@@ -2544,8 +2539,7 @@ fn references(block: &Block, at: &JsonPath, d: &mut Diagnostics) {
         let ignores_sequence = !event.randomize.is_empty() && !event.sequence.is_empty();
         if ignores_sequence {
             // (the findings of a block's handlers say `events`, the file's name)
-            let mut warned = at.clone();
-            warned.push("events");
+            let mut warned = at.child("events");
             for step in &path[1..] {
                 match step {
                     Key(key) => warned.push(key),

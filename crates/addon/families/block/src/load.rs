@@ -76,14 +76,13 @@ impl Family for BlockFamily {
 
     fn component_sections(v: &mut Block) -> Vec<ComponentSection<'_, BlockComponent>> {
         let mut sections = Vec::with_capacity(1 + v.permutations.len());
-        let mut at = JsonPath::new();
-        at.push("components");
+        let at = JsonPath::new().child("components");
         sections.push(ComponentSection::new(at, false, &mut v.components));
         for (index, permutation) in v.permutations.iter_mut().enumerate() {
-            let mut at = JsonPath::new();
-            at.push("permutations");
-            at.push_index(index);
-            at.push("components");
+            let at = JsonPath::new()
+                .child("permutations")
+                .index(index)
+                .child("components");
             sections.push(ComponentSection::new(at, true, &mut permutation.components));
         }
         sections
@@ -180,8 +179,7 @@ pub(crate) fn upgrade_document(
         identifier: Some(identifier_of(&value)),
         runtime_identifier: None,
     };
-    let mut at = JsonPath::new();
-    at.push(BlockFamily::PAYLOAD_KEY);
+    let at = JsonPath::new().child(BlockFamily::PAYLOAD_KEY);
     let written = FormatVersionInput {
         version: Some(version.effective),
         beta_literal: false,

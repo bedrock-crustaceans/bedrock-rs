@@ -270,9 +270,7 @@ impl Upgrade for GeometryFile {
             .into_iter()
             .map(|(key, g)| {
                 if g.cape.is_some() {
-                    let mut at = JsonPath::new();
-                    at.push(&key);
-                    at.push("cape");
+                    let at = JsonPath::new().child(&key).child("cape");
                     cx.diagnostics.push(
                         Diagnostic::info(DiagnosticCode::DroppedField {
                             text: text(CAPE_DROPPED, &[]),

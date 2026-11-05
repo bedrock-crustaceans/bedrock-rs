@@ -297,9 +297,7 @@ fn parse_folded(path: &PackPath, bytes: &[u8], cx: &LoadContext) -> Parsed {
 
 /// `render_controllers/<key>[/<member>]`.
 pub(crate) fn controller_path(key: &str, member: Option<&str>) -> JsonPath {
-    let mut at = JsonPath::new();
-    at.push("render_controllers");
-    at.push(key);
+    let mut at = JsonPath::of_keys(["render_controllers", key]);
     if let Some(member) = member {
         at.push(member);
     }

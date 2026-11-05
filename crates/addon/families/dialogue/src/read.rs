@@ -109,25 +109,11 @@ fn unknown(value: &Value, known: &[&str], at: &JsonPath, diagnostics: &mut Diagn
         }
         diagnostics.push(
             Diagnostic::info(DiagnosticCode::UnrecognizedField { text: None })
-                .at(child(at, key.as_str())),
+                .at(at.child(key.as_str())),
         );
         extra.insert(key.as_str().to_owned(), member.clone());
     }
     extra
-}
-
-/// `base` followed by `key`.
-fn child(base: &JsonPath, key: &str) -> JsonPath {
-    let mut at = base.clone();
-    at.push(key);
-    at
-}
-
-/// `base` followed by `index`.
-fn element(base: &JsonPath, index: usize) -> JsonPath {
-    let mut at = base.clone();
-    at.push_index(index);
-    at
 }
 
 /// The state of reading one file.
@@ -145,7 +131,7 @@ impl Reader<'_> {
     fn file(&mut self, bytes: &[u8]) -> Option<ReadFile> {
         let root = self.json(bytes)?;
         let format_version = self.version(&root)?;
-        let payload_at = child(&JsonPath::new(), PAYLOAD);
+        let payload_at = JsonPath::new().child(PAYLOAD);
         // Only a null check: the payload's type is not looked at.
         let Some(payload) = member(&root, PAYLOAD) else {
             self.error(
@@ -156,7 +142,7 @@ impl Reader<'_> {
             );
             return None;
         };
-        let scenes_at = child(&payload_at, "scenes");
+        let scenes_at = payload_at.child("scenes");
         // One text for both an absent and a non-array `scenes`; a payload that is not an object
         // reads `scenes` as null.
         let text = formatted(NO_SCENES, &[self.stem]);
@@ -172,7 +158,7 @@ impl Reader<'_> {
             .iter()
             .enumerate()
             .map(|(index, scene)| {
-                let at = element(&scenes_at, index);
+                let at = scenes_at.index(index);
                 let outcome = self.scene(scene, &at);
                 ReadScene { at, outcome }
             })
@@ -237,7 +223,7 @@ impl Reader<'_> {
 
     /// `format_version`, at 1.14.0 or above, with no maximum (`NPC_DIALOGUE_V1_14`).
     fn version(&mut self, root: &Value) -> Option<SemVersion> {
-        let at = child(&JsonPath::new(), "format_version");
+        let at = JsonPath::new().child("format_version");
         let Some(written) = member(root, "format_version") else {
             self.error(
                 DiagnosticCode::MissingFormatVersion {
@@ -307,7 +293,7 @@ impl Reader<'_> {
                     let code = DiagnosticCode::InvalidType {
                         text: formatted(NPC_NAME, &[self.stem]),
                     };
-                    return dropped(None, diagnostics, code, child(at, "npc_name"));
+                    return dropped(None, diagnostics, code, at.child("npc_name"));
                 };
                 Some(name)
             }
@@ -317,13 +303,13 @@ impl Reader<'_> {
             let code = DiagnosticCode::MissingRequiredField {
                 text: formatted(NO_SCENE_TAG, &[self.stem]),
             };
-            return dropped(None, diagnostics, code, child(at, "scene_tag"));
+            return dropped(None, diagnostics, code, at.child("scene_tag"));
         };
         let Some(tag) = tag.as_string() else {
             let code = DiagnosticCode::InvalidType {
                 text: formatted(NO_SCENE_TAG, &[self.stem]),
             };
-            return dropped(None, diagnostics, code, child(at, "scene_tag"));
+            return dropped(None, diagnostics, code, at.child("scene_tag"));
         };
         let tag = tag.as_str().to_owned();
         // An object is kept as its JSON text and anything else is read as a string with the empty
@@ -333,14 +319,14 @@ impl Reader<'_> {
                 let code = DiagnosticCode::MissingRequiredField {
                     text: formatted(NO_TEXT, &[self.stem]),
                 };
-                return dropped(Some(tag), diagnostics, code, child(at, "text"));
+                return dropped(Some(tag), diagnostics, code, at.child("text"));
             }
             Some(value) => text(value).unwrap_or_else(|| {
                 // The game reads these without a content-log line, so the crate reports the
                 // coercion as an information.
                 diagnostics.push(
                     Diagnostic::info(DiagnosticCode::InvalidType { text: None })
-                        .at(child(at, "text")),
+                        .at(at.child("text")),
                 );
                 DialogueText::Plain(
                     match value.as_bool() {
@@ -353,7 +339,7 @@ impl Reader<'_> {
             }),
         };
         // Anything but an array is ignored.
-        let buttons_at = child(at, "buttons");
+        let buttons_at = at.child("buttons");
         let buttons: Option<Vec<Button>> =
             member(scene, "buttons")
                 .and_then(Value::as_array)
@@ -362,7 +348,7 @@ impl Reader<'_> {
                         .iter()
                         .enumerate()
                         .filter_map(|(index, button)| {
-                            self.button(button, &element(&buttons_at, index), &mut diagnostics)
+                            self.button(button, &buttons_at.index(index), &mut diagnostics)
                         })
                         .collect()
                 });
@@ -416,13 +402,13 @@ impl Reader<'_> {
             let text = formatted(NO_BUTTON_NAME, &[self.stem]);
             warn(
                 DiagnosticCode::MissingRequiredField { text },
-                child(at, "name"),
+                at.child("name"),
             );
             return None;
         };
         let Some(name) = text(name) else {
             let text = formatted(NO_BUTTON_NAME, &[self.stem]);
-            warn(DiagnosticCode::InvalidType { text }, child(at, "name"));
+            warn(DiagnosticCode::InvalidType { text }, at.child("name"));
             return None;
         };
         // Both present and non-null, checked before either type is looked at.
@@ -437,14 +423,14 @@ impl Reader<'_> {
         let commands = match commands.and_then(Value::as_array) {
             None => None,
             Some(list) => {
-                let commands_at = child(at, "commands");
+                let commands_at = at.child("commands");
                 let mut kept = Vec::new();
                 for (index, command) in list.iter().enumerate() {
                     let Some(raw) = command.as_string() else {
                         let text = formatted(COMMAND_TYPE, &[self.stem]);
                         warn(
                             DiagnosticCode::InvalidType { text },
-                            element(&commands_at, index),
+                            commands_at.index(index),
                         );
                         return None;
                     };
@@ -459,7 +445,7 @@ impl Reader<'_> {
             Some(url) => {
                 let Some(url) = url.as_string() else {
                     let text = formatted(URL_TYPE, &[self.stem]);
-                    warn(DiagnosticCode::InvalidType { text }, child(at, "url"));
+                    warn(DiagnosticCode::InvalidType { text }, at.child("url"));
                     return None;
                 };
                 Some(url.as_str().to_owned())
@@ -479,7 +465,7 @@ impl Reader<'_> {
             // The label is cut, not the name; the game says nothing, so the crate reports an
             // information.
             diagnostics.push(
-                Diagnostic::info(DiagnosticCode::ClampedValue { text: None }).at(child(at, "name")),
+                Diagnostic::info(DiagnosticCode::ClampedValue { text: None }).at(at.child("name")),
             );
         }
         Some(button)
@@ -496,7 +482,7 @@ impl Reader<'_> {
         diagnostics: &mut Diagnostics,
     ) -> Option<Vec<StoredCommand>> {
         let list = member(scene, key)?.as_array()?;
-        let list_at = child(at, key);
+        let list_at = at.child(key);
         // The game's text names the list in the singular: `on_open_command`, `on_close_command`.
         let name = key.strip_suffix('s').unwrap_or(key);
         let mut kept = Vec::new();
@@ -509,7 +495,7 @@ impl Reader<'_> {
                     Diagnostic::error(DiagnosticCode::InvalidType {
                         text: formatted(SCENE_COMMAND_TYPE, &[self.stem, name]),
                     })
-                    .at(element(&list_at, index)),
+                    .at(list_at.index(index)),
                 ),
             }
         }

@@ -113,9 +113,7 @@ fn version_info(schema: Schema) -> VersionInfo {
 
 /// The path of the payload in the document.
 pub fn payload_at() -> JsonPath {
-    let mut at = JsonPath::new();
-    at.push(PAYLOAD);
-    at
+    JsonPath::new().child(PAYLOAD)
 }
 
 /// The chain's parse stage of a value already read at `version`.
@@ -223,8 +221,7 @@ pub(super) fn check_layer_images(sets: &mut PackSets, stack_index: usize, files:
                 .in_pack(stack_index, &path, &VERBATIM_OR_IMAGE)
                 .is_none()
             {
-                let mut at = payload_at();
-                at.push(layer.key());
+                let at = payload_at().child(layer.key());
                 let code = DiagnosticCode::TextureNotFound {
                     text: fixed(texts::SET_NO_IMAGE),
                 };

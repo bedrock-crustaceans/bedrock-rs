@@ -76,27 +76,21 @@ impl CullingRules {
     /// The whole document at format 1.21.80, the only version that reads every member; a
     /// value the loader would refuse to read back (a cube index below 0) is not written.
     fn document(&self) -> Result<Value, EncodeError> {
-        let payload_at = || {
-            let mut at = JsonPath::new();
-            at.push("minecraft:block_culling_rules");
-            at
-        };
+        let payload_at = || JsonPath::new().child("minecraft:block_culling_rules");
         // An identifier or a rule the loader refuses (in every pack: the `minecraft` namespace
         // is a base-game pack's to use, so it is written).
         if super::validate::identifier(self.description.identifier.as_str(), true).is_err() {
-            let mut at = payload_at();
-            at.push("description");
-            at.push("identifier");
+            let at = payload_at().child("description").child("identifier");
             return Err(EncodeError::NotRepresentable {
                 at,
                 what: Unrepresentable::Unsupported,
             });
         }
         if let Some(problem) = super::validate::rules(&self.rules).first() {
-            let mut at = payload_at();
-            at.push("rules");
-            at.push_index(problem.index);
-            at.push("geometry_part");
+            let at = payload_at()
+                .child("rules")
+                .index(problem.index)
+                .child("geometry_part");
             return Err(EncodeError::NotRepresentable {
                 at,
                 what: Unrepresentable::Unsupported,
@@ -104,12 +98,12 @@ impl CullingRules {
         }
         for (index, rule) in self.rules.iter().enumerate() {
             if rule.geometry_part.cube.is_some_and(|cube| cube < 0) {
-                let mut at = JsonPath::new();
-                at.push("minecraft:block_culling_rules");
-                at.push("rules");
-                at.push_index(index);
-                at.push("geometry_part");
-                at.push("cube");
+                let at = JsonPath::new()
+                    .child("minecraft:block_culling_rules")
+                    .child("rules")
+                    .index(index)
+                    .child("geometry_part")
+                    .child("cube");
                 return Err(EncodeError::NotRepresentable {
                     at,
                     what: Unrepresentable::Unsupported,

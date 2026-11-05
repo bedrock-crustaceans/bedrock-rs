@@ -75,7 +75,7 @@ use facet::Facet;
 use indexmap::IndexMap;
 
 use super::{Beta, Entity};
-use crate::read::{Reader, child, read_entity, span_of};
+use crate::read::{Reader, read_entity, span_of};
 
 bedrock_addon_core::version_chain! {
     family = Entity;
@@ -238,7 +238,7 @@ fn object_member(
     if let Some(object) = value.as_object() {
         return Ok(Some(members(object)));
     }
-    d.push(Diagnostic::error(DiagnosticCode::InvalidType { text: None }).at(child(&cx.at, key)));
+    d.push(Diagnostic::error(DiagnosticCode::InvalidType { text: None }).at(cx.at.child(key)));
     Err(Invalid)
 }
 
@@ -272,7 +272,7 @@ impl Payload {
             };
             d.push(
                 Diagnostic::error(DiagnosticCode::MissingIdentifier { text: None })
-                    .at(child(&cx.at, "description"))
+                    .at(cx.at.child("description"))
                     .span(span_of(payload))
                     .severity(severity),
             );
@@ -284,7 +284,7 @@ impl Payload {
         if version >= GROUPS_CORRECTED
             && let Some(groups) = &mut component_groups
         {
-            let groups_at = child(&cx.at, "component_groups");
+            let groups_at = cx.at.child("component_groups");
             groups.retain(|name, group| {
                 if group.is_object() {
                     return true;
@@ -294,7 +294,7 @@ impl Payload {
                 // follows): an error.
                 d.push(
                     Diagnostic::error(DiagnosticCode::InvalidValue { text: None })
-                        .at(child(&groups_at, name)),
+                        .at(groups_at.child(name)),
                 );
                 false
             });
@@ -314,7 +314,7 @@ impl Payload {
             // does not read the value).
             d.push(
                 Diagnostic::info(DiagnosticCode::InvalidType { text: None })
-                    .at(child(&cx.at, "do_not_upgrade")),
+                    .at(cx.at.child("do_not_upgrade")),
             );
         }
         Some(Self {
@@ -371,8 +371,7 @@ impl Payload {
 /// as a parse would give them. The findings are placed below the payload key, without spans (the
 /// text is the steps' output, not the file).
 pub(crate) fn into_latest(payload: &Payload, cx: &mut UpgradeCx<'_>) -> Entity {
-    let mut at = JsonPath::new();
-    at.push(<Entity as Family>::PAYLOAD_KEY);
+    let at = JsonPath::new().child(<Entity as Family>::PAYLOAD_KEY);
     let Ok(text) = bedrock_addon_core::json::to_json(&payload.write()) else {
         // A non-finite number cannot come from JSON text, so this is not reached.
         cx.diagnostics.push(

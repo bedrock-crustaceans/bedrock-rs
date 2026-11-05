@@ -5,7 +5,7 @@ use indexmap::IndexMap;
 
 use super::GlyphPage;
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
-use bedrock_addon_support::fixed_path::{index, invalid, malformed};
+use bedrock_addon_support::fixed_path::{invalid, malformed};
 
 /// The size of a metrics file: the header and 256 advances.
 const FONTDATA_SIZE: usize = 4 + 256 * 4;
@@ -52,7 +52,7 @@ impl GlyphPage {
             *slot = f32::from_le_bytes(*raw);
             // A NaN is neither positive nor 0, so it is reported as well.
             if *slot <= 0.0 {
-                diagnostics.push(Diagnostic::info(invalid()).at(index(&JsonPath::new(), i)));
+                diagnostics.push(Diagnostic::info(invalid()).at(JsonPath::new().index(i)));
             }
         }
         Ok((Self { advances }, diagnostics))
@@ -107,7 +107,7 @@ impl GlyphRemapping {
             };
             if !seen.insert(entry.from) {
                 let code = malformed(format!("character {:#06X} mapped twice", entry.from), None);
-                diagnostics.push(Diagnostic::info(code).at(index(&JsonPath::new(), i)));
+                diagnostics.push(Diagnostic::info(code).at(JsonPath::new().index(i)));
             }
             records.push(entry);
         }

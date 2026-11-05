@@ -9,7 +9,7 @@ use bedrock_addon_core::diagnostic::{
 use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_support::fixed_path::{
-    Authored, Object, array, invalid, invalid_text, iterated, key, others, raw_member, to_text,
+    Authored, Object, array, invalid, invalid_text, iterated, others, raw_member, to_text,
 };
 
 /// The member of the store's progress texts.
@@ -97,14 +97,14 @@ fn read_element(element: &Value, at: &JsonPath, diagnostics: &mut Diagnostics) -
     let Some(message) = raw_member(element, "message") else {
         diagnostics.push(
             Diagnostic::info(DiagnosticCode::MissingRequiredField { text: None })
-                .at(key(at, "message")),
+                .at(at.child("message")),
         );
         return LoadingMessage::Other(element.clone());
     };
     let mut wrong_type = |member: &Value, name: &str| {
         if !member.is_string() {
             diagnostics.push(
-                Diagnostic::info(DiagnosticCode::InvalidType { text: None }).at(key(at, name)),
+                Diagnostic::info(DiagnosticCode::InvalidType { text: None }).at(at.child(name)),
             );
         }
     };
@@ -118,7 +118,7 @@ fn read_element(element: &Value, at: &JsonPath, diagnostics: &mut Diagnostics) -
         .is_some_and(|c| c != MARKETPLACE_NOT_DISABLED)
     {
         // An unknown condition is false; the message is never shown.
-        diagnostics.push(Diagnostic::info(invalid()).at(key(at, "condition")));
+        diagnostics.push(Diagnostic::info(invalid()).at(at.child("condition")));
     }
     let mut extra = Extra::default();
     if let Some(object) = element.as_object() {
@@ -162,7 +162,7 @@ impl Authored for LoadingMessages {
             let Some(member) = raw_member(root, list.key()) else {
                 continue;
             };
-            let at = key(&at, list.key());
+            let at = at.child(list.key());
             let elements = iterate(member, &at, diagnostics)
                 .into_iter()
                 .map(|(at, element)| read_element(element, &at, diagnostics))
@@ -170,7 +170,7 @@ impl Authored for LoadingMessages {
             *messages.slot(list) = Some(elements);
         }
         if let Some(member) = raw_member(root, TOOLTIPS) {
-            let at = key(&at, TOOLTIPS);
+            let at = at.child(TOOLTIPS);
             let mut tooltips = Vec::new();
             for (at, element) in iterate(member, &at, diagnostics) {
                 if !element.is_string() {
@@ -224,7 +224,7 @@ impl LoadingMessages {
                 })),
                 Some(list) if list.is_empty() => diagnostics.push(
                     Diagnostic::info(invalid_text(BEGINNER_EMPTY))
-                        .at(key(&JsonPath::new(), MessageList::Beginner.key())),
+                        .at(JsonPath::new().child(MessageList::Beginner.key())),
                 ),
                 Some(_) => {}
             }

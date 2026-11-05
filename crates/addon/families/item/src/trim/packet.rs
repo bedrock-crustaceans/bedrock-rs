@@ -30,9 +30,7 @@ pub struct MaterialEntry {
 /// The game logs it at the content log's error level and goes on to the next entry, so the
 /// finding is a kept error: an error that rejects nothing.
 fn duplicate_template(index: usize, item: &ItemId) -> Diagnostic {
-    let mut at = JsonPath::new();
-    at.push("patterns");
-    at.push_index(index);
+    let at = JsonPath::new().child("patterns").index(index);
     Diagnostic::error(DiagnosticCode::DuplicateIdentifier {
         text: Some(VanillaText::Formatted {
             template: texts::DUPLICATE_TEMPLATE,

@@ -13,7 +13,7 @@ use facet::Facet;
 use facet_value::{VArray, VObject};
 use indexmap::IndexMap;
 
-use super::document::{Description, below};
+use super::document::Description;
 use crate::legacy::{
     ItemFormat, LegacyCamera, LegacyEffect, LegacyFood, LegacyFormatItem, LegacyItemData,
     LegacySeed, number, seed_warning,
@@ -76,7 +76,7 @@ impl VersionStruct for Item {
                 .extra
                 .insert("menu_category".to_owned(), value);
         }
-        let at = below(&cx.at, "components");
+        let at = cx.at.child("components");
         let components = match &shell.components {
             None => LegacyFormatItem::default(),
             Some(value) => {
@@ -224,27 +224,27 @@ pub(crate) fn read_format_item(
         let key = key.as_str();
         match key {
             "minecraft:max_damage" => {
-                item.max_damage = as_int(value, below(at, key), d).unwrap_or_default();
+                item.max_damage = as_int(value, at.child(key), d).unwrap_or_default();
             }
             "minecraft:hand_equipped" => {
-                item.hand_equipped = as_bool(value, below(at, key), d).unwrap_or_default();
+                item.hand_equipped = as_bool(value, at.child(key), d).unwrap_or_default();
             }
             "minecraft:stacked_by_data" => {
-                item.stacked_by_data = as_bool(value, below(at, key), d).unwrap_or_default();
+                item.stacked_by_data = as_bool(value, at.child(key), d).unwrap_or_default();
             }
-            "minecraft:foil" => item.foil = as_bool(value, below(at, key), d).unwrap_or_default(),
-            "minecraft:block" => item.block = as_string(value, below(at, key), d),
+            "minecraft:foil" => item.foil = as_bool(value, at.child(key), d).unwrap_or_default(),
+            "minecraft:block" => item.block = as_string(value, at.child(key), d),
             "minecraft:use_duration" => {
-                item.use_duration = as_int(value, below(at, key), d).unwrap_or_default();
+                item.use_duration = as_int(value, at.child(key), d).unwrap_or_default();
             }
             "minecraft:max_stack_size" => {
-                item.max_stack_size = as_int(value, below(at, key), d).unwrap_or(64);
+                item.max_stack_size = as_int(value, at.child(key), d).unwrap_or(64);
             }
             "minecraft:food" => {
-                item.food = Some(read_food(value, identifier, effects, &below(at, key), d));
+                item.food = Some(read_food(value, identifier, effects, &at.child(key), d));
             }
-            "minecraft:seed" => item.seed = Some(read_seed(value, &below(at, key), d)),
-            "minecraft:camera" => item.camera = Some(read_camera(value, &below(at, key), d)),
+            "minecraft:seed" => item.seed = Some(read_seed(value, &at.child(key), d)),
+            "minecraft:camera" => item.camera = Some(read_camera(value, &at.child(key), d)),
             other if CLIENT_KEYS.contains(&other) => {
                 item.client.insert(other.to_owned(), value.clone());
             }
@@ -282,24 +282,24 @@ fn read_food(
     for (key, member) in object {
         let key = key.as_str();
         match key {
-            "nutrition" => food.nutrition = as_int(member, below(at, key), d).unwrap_or_default(),
+            "nutrition" => food.nutrition = as_int(member, at.child(key), d).unwrap_or_default(),
             "saturation_modifier" => food.saturation_modifier = Some(member.clone()),
-            "using_converts_to" => food.using_converts_to = as_string(member, below(at, key), d),
-            "on_use_action" => food.on_use_action = as_string(member, below(at, key), d),
+            "using_converts_to" => food.using_converts_to = as_string(member, at.child(key), d),
+            "on_use_action" => food.on_use_action = as_string(member, at.child(key), d),
             "on_use_range" => food.on_use_range = Some(member.clone()),
-            "cooldown_type" => food.cooldown_type = as_string(member, below(at, key), d),
+            "cooldown_type" => food.cooldown_type = as_string(member, at.child(key), d),
             "cooldown_time" => {
-                food.cooldown_time = as_int(member, below(at, key), d).unwrap_or_default();
+                food.cooldown_time = as_int(member, at.child(key), d).unwrap_or_default();
             }
             "can_always_eat" => {
-                food.can_always_eat = as_bool(member, below(at, key), d).unwrap_or_default();
+                food.can_always_eat = as_bool(member, at.child(key), d).unwrap_or_default();
             }
             "effects" => {
                 if !member.is_array() {
-                    wrong_type(below(at, key), d);
+                    wrong_type(at.child(key), d);
                 }
                 for (i, effect) in member.as_array().into_iter().flatten().enumerate() {
-                    let mut path = below(at, "effects");
+                    let mut path = at.child("effects");
                     path.push_index(i);
                     let Some(effect) = effect.as_object() else {
                         wrong_type(path, d);
@@ -308,7 +308,7 @@ fn read_food(
                     // A member of the effect, read by `read` when it is written.
                     let name = effect
                         .get("name")
-                        .and_then(|name| as_string(name, below(&path, "name"), d))
+                        .and_then(|name| as_string(name, path.child("name"), d))
                         .unwrap_or_default();
                     if !known_effect(&name, effects) {
                         // The game logs an unknown effect name at the content log's error
@@ -326,13 +326,13 @@ fn read_food(
                     }
                     let chance = effect
                         .get("chance")
-                        .and_then(|chance| as_float(chance, below(&path, "chance"), d));
+                        .and_then(|chance| as_float(chance, path.child("chance"), d));
                     let duration = effect
                         .get("duration")
-                        .and_then(|duration| as_int(duration, below(&path, "duration"), d));
+                        .and_then(|duration| as_int(duration, path.child("duration"), d));
                     let amplifier = effect
                         .get("amplifier")
-                        .and_then(|amplifier| as_int(amplifier, below(&path, "amplifier"), d));
+                        .and_then(|amplifier| as_int(amplifier, path.child("amplifier"), d));
                     food.effects.push(LegacyEffect {
                         name,
                         chance: chance.unwrap_or(1.0),
@@ -343,10 +343,10 @@ fn read_food(
             }
             "remove_effects" => {
                 if !member.is_array() {
-                    wrong_type(below(at, key), d);
+                    wrong_type(at.child(key), d);
                 }
                 for (i, name) in member.as_array().into_iter().flatten().enumerate() {
-                    let mut path = below(at, "remove_effects");
+                    let mut path = at.child("remove_effects");
                     path.push_index(i);
                     let name = as_string(name, path.clone(), d).unwrap_or_default();
                     if !known_effect(&name, effects) {
@@ -383,13 +383,13 @@ fn read_seed(value: &Value, at: &JsonPath, d: &mut Diagnostics) -> LegacySeed {
     for (key, member) in value.as_object().into_iter().flat_map(VObject::iter) {
         let key = key.as_str();
         match key {
-            "crop_result" => seed.crop_result = as_string(member, below(at, key), d),
+            "crop_result" => seed.crop_result = as_string(member, at.child(key), d),
             "plant_at" => seed.plant_at = Some(member.clone()),
             "plant_at_any_solid_surface" => {
                 seed.plant_at_any_solid_surface =
-                    as_bool(member, below(at, key), d).unwrap_or_default();
+                    as_bool(member, at.child(key), d).unwrap_or_default();
             }
-            "plant_at_face" => seed.plant_at_face = as_string(member, below(at, key), d),
+            "plant_at_face" => seed.plant_at_face = as_string(member, at.child(key), d),
             other => {
                 seed.extra.insert(other.to_owned(), member.clone());
             }
@@ -415,7 +415,7 @@ fn read_camera(value: &Value, at: &JsonPath, d: &mut Diagnostics) -> LegacyCamer
                 | "picture_duration"
                 | "slide_away_duration"
         ) {
-            as_float(member, below(at, key), d).unwrap_or_default()
+            as_float(member, at.child(key), d).unwrap_or_default()
         } else {
             0.0
         };

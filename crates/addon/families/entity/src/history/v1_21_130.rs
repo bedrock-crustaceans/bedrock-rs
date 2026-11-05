@@ -7,9 +7,7 @@ use std::collections::HashMap;
 
 use facet_value::VObject;
 
-use super::ops::{
-    Members, Removed, Told, below, element, half, json, overwrite, removed, section_b, sections,
-};
+use super::ops::{Members, Removed, Told, half, json, overwrite, removed, section_b, sections};
 use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath};
 
 /// The step's version, for its findings.
@@ -35,7 +33,7 @@ impl Upgrade for Entity {
                     removed(
                         cx,
                         Removed::Field,
-                        &below(&at, &[goal, member]),
+                        &at.with(&[goal, member]),
                         member,
                         V1_26_0,
                     );
@@ -55,9 +53,9 @@ impl Upgrade for Entity {
             {
                 const GOAL: &str = "minecraft:behavior.aquatic_charge_attack";
                 let lost = !speed.is_null();
-                let from = below(&section.at, &[GOAL, "charge_speed_multiplier"]);
+                let from = section.at.with(&[GOAL, "charge_speed_multiplier"]);
                 if goal.insert_absent("charge_speed", speed) {
-                    told.moved(from, below(&section.at, &[GOAL, "charge_speed"]));
+                    told.moved(from, section.at.with(&[GOAL, "charge_speed"]));
                 } else if lost {
                     told.dropped(from);
                 }
@@ -97,7 +95,7 @@ fn section_b_1260(members: &mut dyn Members, at: &JsonPath, told: &mut Told) -> 
         "minecraft:behavior.look_at_entity",
         "minecraft:behavior.look_at_trading_player",
     ] {
-        let goal_at = below(at, &[goal]);
+        let goal_at = at.child(goal);
         if let Some(object) = members.object(goal)
             && look_time(object, &goal_at, told)
         {
@@ -107,7 +105,7 @@ fn section_b_1260(members: &mut dyn Members, at: &JsonPath, told: &mut Told) -> 
     breedable_split(members, at, told);
     if let Some(jump) = members.object("minecraft:jump.dynamic") {
         // Written whatever the document has; a member that held another value is told.
-        let at = below(at, &["minecraft:jump.dynamic"]);
+        let at = at.child("minecraft:jump.dynamic");
         overwrite(
             jump,
             "regular_skip_data",
@@ -151,11 +149,11 @@ fn look_time(goal: &mut VObject, at: &JsonPath, told: &mut Told) -> bool {
     // What is told of the range as a whole is told at the first member of the pair the
     // file has; of a half, at its own member.
     if let Some((old, _, _)) = moved.iter().find(|(_, _, was)| *was) {
-        told.moved(below(at, &[old]), below(at, &["look_time"]));
+        told.moved(at.child(old), at.child("look_time"));
     }
     for (old, half, was) in moved {
         if was {
-            told.moved(below(at, &[old]), below(at, &["look_time", half]));
+            told.moved(at.child(old), at.with(&["look_time", half]));
         }
     }
     dropped
@@ -190,21 +188,21 @@ fn breedable_split(members: &mut dyn Members, at: &JsonPath, told: &mut Told) {
     let Some(breedable) = members.object("minecraft:breedable") else {
         return;
     };
-    let breedable_at = below(at, &["minecraft:breedable"]);
-    let offspring_at = below(at, &["minecraft:offspring"]);
+    let breedable_at = at.child("minecraft:breedable");
+    let offspring_at = at.child("minecraft:offspring");
     let mut moves = Vec::new();
     let mut offspring = VObject::new();
     for key in MOVED {
         if let Some(value) = breedable.remove(key) {
             offspring.insert(key, value);
-            moves.push((below(&breedable_at, &[key]), below(&offspring_at, &[key])));
+            moves.push((breedable_at.child(key), offspring_at.child(key)));
         }
     }
     if breedable.get("breeds_with").is_some_and(Value::is_null) {
         breedable.remove("breeds_with");
     }
     if let Some(with) = breedable.get_mut("breeds_with") {
-        let with_at = below(at, &["minecraft:breedable", "breeds_with"]);
+        let with_at = at.with(&["minecraft:breedable", "breeds_with"]);
         let listed = with.is_array();
         let entries: Vec<Value> = match with.as_array() {
             Some(list) => list.iter().cloned().collect(),
@@ -218,7 +216,7 @@ fn breedable_split(members: &mut dyn Members, at: &JsonPath, told: &mut Told) {
         let mut gave_baby: HashMap<String, JsonPath> = HashMap::new();
         for (index, entry) in entries.iter().enumerate() {
             let entry_at = if listed {
-                element(&with_at, index)
+                with_at.index(index)
             } else {
                 with_at.clone()
             };
@@ -229,7 +227,7 @@ fn breedable_split(members: &mut dyn Members, at: &JsonPath, told: &mut Told) {
             let Some(mate) = entry.get("mate_type").and_then(Value::as_string) else {
                 match entry.get("mate_type") {
                     Some(mate) if !mate.is_null() => {
-                        told.wrong_type(below(&entry_at, &["mate_type"]));
+                        told.wrong_type(entry_at.child("mate_type"));
                         // The entry goes with what else it holds: told at the entry
                         // as the file has it.
                         if entry.len() > 1 {
@@ -246,14 +244,14 @@ fn breedable_split(members: &mut dyn Members, at: &JsonPath, told: &mut Told) {
             };
             for key in entry.keys().map(facet_value::VString::as_str) {
                 if !READ.contains(&key) {
-                    told.unknown(below(&entry_at, &[key]));
+                    told.unknown(entry_at.child(key));
                 }
             }
             let event = entry
                 .get("breed_event")
                 .cloned()
                 .unwrap_or_else(|| json("{}"));
-            let event_at = below(&entry_at, &["breed_event"]);
+            let event_at = entry_at.child("breed_event");
             if events.get(mate.as_str()).is_some_and(|had| *had != event)
                 && let Some(earlier) = gave_event.get(mate.as_str())
             {
@@ -261,18 +259,15 @@ fn breedable_split(members: &mut dyn Members, at: &JsonPath, told: &mut Told) {
             }
             if entry.contains_key("breed_event") {
                 gave_event.insert(mate.as_str().to_owned(), event_at.clone());
-                moves.push((event_at, below(&with_at, &[mate.as_str()])));
+                moves.push((event_at, with_at.child(mate.as_str())));
             } else {
                 gave_event.remove(mate.as_str());
                 // The mate's key is the entry's `mate_type`.
-                moves.push((
-                    below(&entry_at, &["mate_type"]),
-                    below(&with_at, &[mate.as_str()]),
-                ));
+                moves.push((entry_at.child("mate_type"), with_at.child(mate.as_str())));
             }
             events.insert(mate.as_str(), event);
             if let Some(baby) = entry.get("baby_type") {
-                let baby_at = below(&entry_at, &["baby_type"]);
+                let baby_at = entry_at.child("baby_type");
                 if pairs.get(mate.as_str()).is_some_and(|had| had != baby)
                     && let Some(earlier) = gave_baby.get(mate.as_str())
                 {
@@ -281,7 +276,7 @@ fn breedable_split(members: &mut dyn Members, at: &JsonPath, told: &mut Told) {
                 gave_baby.insert(mate.as_str().to_owned(), baby_at.clone());
                 moves.push((
                     baby_at,
-                    below(&offspring_at, &["offspring_pairs", mate.as_str()]),
+                    offspring_at.with(&["offspring_pairs", mate.as_str()]),
                 ));
                 pairs.insert(mate.as_str(), baby.clone());
             }

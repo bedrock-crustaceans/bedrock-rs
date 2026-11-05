@@ -56,8 +56,7 @@ fn read_metadata(origin: Origin, bytes: &[u8]) -> FileCopy<FontMetadata> {
         let code = DiagnosticCode::UnsupportedVersion {
             text: Some(VanillaText::Fixed(metadata::VERSION)),
         };
-        let mut at = JsonPath::new();
-        at.push("version");
+        let at = JsonPath::new().child("version");
         return Err(reject(origin, Diagnostic::info(code).at(at)));
     }
     let mut diagnostics = Diagnostics::default();

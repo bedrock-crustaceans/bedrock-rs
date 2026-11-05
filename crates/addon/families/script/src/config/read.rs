@@ -253,20 +253,6 @@ pub(super) fn value(slice: JsonSlice<'_>, at: &JsonPath, sink: &mut Sink<'_>) ->
     Some(value)
 }
 
-/// `path` with `key` appended.
-pub(super) fn child(path: &JsonPath, key: &str) -> JsonPath {
-    let mut path = path.clone();
-    path.push(key);
-    path
-}
-
-/// `path` with `index` appended.
-pub(super) fn element(path: &JsonPath, index: usize) -> JsonPath {
-    let mut path = path.clone();
-    path.push_index(index);
-    path
-}
-
 /// How a file treats a member written twice.
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(super) enum Twice {

@@ -20,7 +20,6 @@ use bedrock_addon_core::versioning::ValidateCx;
 use indexmap::IndexMap;
 
 use super::component::EntityComponent;
-use super::read::child;
 use super::schema;
 use super::{Entity, MemoryType, PropertyType};
 
@@ -40,9 +39,9 @@ pub(crate) fn validate(entity: &mut Entity, cx: &mut ValidateCx<'_>) {
     super::dynamic::check(entity, cx);
     validate_function(entity, cx);
     let groups = group_names(entity.component_groups.keys());
-    let events_at = child(&cx.at, "events");
+    let events_at = cx.at.child("events");
     for (name, event) in &mut entity.events {
-        let at = child(&events_at, name);
+        let at = events_at.child(name);
         if cx.original_version < ROOT_LEVEL_FILTERS
             && let Some(object) = event.node.as_object_mut()
             && object.remove("filters").is_some()
@@ -53,14 +52,14 @@ pub(crate) fn validate(entity: &mut Entity, cx: &mut ValidateCx<'_>) {
                 // member without a content-log line, so the crate reports an information.
                 DiagnosticCode::DroppedField { text: None },
                 Severity::Info,
-                child(&at, "filters"),
+                at.child("filters"),
             );
         }
         node(&mut event.node, &at, &groups, cx);
     }
-    let upgrades_at = child(&cx.at, "upgrades");
+    let upgrades_at = cx.at.child("upgrades");
     for (name, handler) in &mut entity.upgrades {
-        let at = child(&upgrades_at, name);
+        let at = upgrades_at.child(name);
         node(handler, &at, &groups, cx);
     }
     super::references::check(entity, cx);
@@ -94,15 +93,15 @@ fn apply_replaced_values(entity: &mut Entity, cx: &ValidateCx<'_>) {
     if replaced.is_empty() {
         return;
     }
-    let field = |section: &JsonPath| child(&child(section, KEY), "success_chance");
-    if replaced.contains(&field(&child(&cx.at, "components")))
+    let field = |section: &JsonPath| section.child(KEY).child("success_chance");
+    if replaced.contains(&field(&cx.at.child("components")))
         && let Some(goal) = entity.components.get_mut::<EatBlock>()
     {
         goal.success_chance = None;
     }
-    let groups_at = child(&cx.at, "component_groups");
+    let groups_at = cx.at.child("component_groups");
     for (name, group) in &mut entity.component_groups {
-        if replaced.contains(&field(&child(&groups_at, name)))
+        if replaced.contains(&field(&groups_at.child(name)))
             && let Some(goal) = group.components.get_mut::<EatBlock>()
         {
             goal.success_chance = None;
@@ -123,7 +122,7 @@ fn report(cx: &mut ValidateCx<'_>, code: DiagnosticCode, severity: Severity, at:
 /// `namespace:name`; a `minecraft:` identifier only for a vanilla entity (any in
 /// a base-game pack); from 1.20.30 no name starting with a digit.
 fn identifier(entity: &Entity, cx: &mut ValidateCx<'_>) {
-    let at = child(&child(&cx.at, "description"), "identifier");
+    let at = cx.at.child("description").child("identifier");
     let text = entity.description.identifier.as_str();
     let Some((namespace, name)) = text.split_once(':') else {
         report(
@@ -183,7 +182,7 @@ fn property_memory_mapping(entity: &mut Entity, cx: &mut ValidateCx<'_>) {
         return;
     }
     entity.description.property_memory_mapping = None;
-    let at = child(&child(&cx.at, "description"), "property_memory_mapping");
+    let at = cx.at.child("description").child("property_memory_mapping");
     report(
         cx,
         DiagnosticCode::MissingToggles {
@@ -205,7 +204,7 @@ fn brain(entity: &mut Entity, cx: &mut ValidateCx<'_>) {
     let Some(brain) = &mut entity.brain else {
         return;
     };
-    let at = child(&cx.at, "brain");
+    let at = cx.at.child("brain");
     if !cx.load.experiments.contains(Experiment::BrainPrototype) {
         report(
             cx,
@@ -221,7 +220,7 @@ fn brain(entity: &mut Entity, cx: &mut ValidateCx<'_>) {
         );
         return;
     }
-    let memories_at = child(&at, "memories");
+    let memories_at = at.child("memories");
     let mut seen = Vec::new();
     let mut index = 0;
     let mut dropped = Vec::new();
@@ -241,8 +240,7 @@ fn brain(entity: &mut Entity, cx: &mut ValidateCx<'_>) {
         keep
     });
     for index in dropped {
-        let mut path = memories_at.clone();
-        path.push_index(index);
+        let path = memories_at.index(index);
         // The later entry is dropped and the entity loads. The game constrains `memories` only
         // by a minimum size, with no uniqueness rule, and writes no line for a duplicate name,
         // so the crate reports an information.
@@ -265,10 +263,9 @@ fn brain(entity: &mut Entity, cx: &mut ValidateCx<'_>) {
             .iter()
             .any(|m| m.name == name && m.kind == MemoryType::Bool);
         if !is_bool {
-            let path = child(
-                &child(&at, "internal_memory_access_mappings"),
-                "beehive_has_nectar",
-            );
+            let path = at
+                .child("internal_memory_access_mappings")
+                .child("beehive_has_nectar");
             report(
                 cx,
                 DiagnosticCode::UnresolvedReference { text: None },
@@ -297,10 +294,10 @@ fn spawn_egg_interaction(entity: &Entity, cx: &mut ValidateCx<'_>) {
     }
     let text = "\"minecraft:spawn_egg_interact\" requires \"minecraft:offspring\" to be present on the same entity definition.";
     let mut sections: Vec<(JsonPath, &ComponentMap<EntityComponent>)> =
-        vec![(child(&cx.at, "components"), &entity.components)];
-    let groups_at = child(&cx.at, "component_groups");
+        vec![(cx.at.child("components"), &entity.components)];
+    let groups_at = cx.at.child("component_groups");
     for (group, value) in &entity.component_groups {
-        sections.push((child(&groups_at, group), &value.components));
+        sections.push((groups_at.child(group), &value.components));
     }
     // The game logs the text at the error level when it initialises the definition and
     // removes nothing: the definition stays. So this is a kept error at the component, and the
@@ -311,7 +308,7 @@ fn spawn_egg_interaction(entity: &Entity, cx: &mut ValidateCx<'_>) {
                 Diagnostic::error(DiagnosticCode::MissingRequiredField {
                     text: Some(VanillaText::Fixed(text)),
                 })
-                .at(child(&at, INTERACTION))
+                .at(at.child(INTERACTION))
                 .phase(Phase::Validate),
             );
         }
@@ -347,7 +344,7 @@ fn node(value: &mut Value, at: &JsonPath, groups: &HashSet<&str>, cx: &mut Valid
             // The game logs the item loader's string for an event node with both members at the
             // warning level.
             Severity::Warning,
-            child(at, "sequence"),
+            at.child("sequence"),
         );
     }
     // A node with a collection returns before the response validation; the others'
@@ -361,7 +358,7 @@ fn node(value: &mut Value, at: &JsonPath, groups: &HashSet<&str>, cx: &mut Valid
     let mut failed = false;
     for key in &keys {
         let key = key.clone();
-        let member_at = child(at, &key);
+        let member_at = at.child(&key);
         let Some(member) = object.get_mut(&key) else {
             continue;
         };
@@ -373,8 +370,7 @@ fn node(value: &mut Value, at: &JsonPath, groups: &HashSet<&str>, cx: &mut Valid
             "sequence" | "first_valid" | "randomize" => {
                 if let Some(nodes) = member.as_array_mut() {
                     for (index, child_node) in nodes.as_mut_slice().iter_mut().enumerate() {
-                        let mut child_at = member_at.clone();
-                        child_at.push_index(index);
+                        let child_at = member_at.index(index);
                         node(child_node, &child_at, groups, cx);
                     }
                 }
@@ -478,7 +474,7 @@ fn drop_responses(
                 cx,
                 DiagnosticCode::DroppedField { text: None },
                 Severity::Info,
-                child(at, key),
+                at.child(key),
             );
         }
     }
@@ -540,14 +536,13 @@ fn group_references(value: &Value, at: &JsonPath, groups: &HashSet<&str>, cx: &m
     else {
         return;
     };
-    let list_at = child(at, "component_groups");
+    let list_at = at.child("component_groups");
     for (index, name) in names.iter().enumerate() {
         let Some(name) = name.as_string() else {
             continue;
         };
         if !groups.contains(name.as_str()) {
-            let mut path = list_at.clone();
-            path.push_index(index);
+            let path = list_at.index(index);
             // The game stores the names and says nothing at load: the crate reports an
             // information.
             report(
@@ -615,7 +610,7 @@ fn placed(found: Diagnostics) -> Diagnostics {
 #[cfg(feature = "molang")]
 fn drop_failed_properties(entity: &mut Entity, cx: &mut ValidateCx<'_>) {
     use bedrock_addon_core::molang::{MolangFailure, MolangOutcome};
-    let properties_at = child(&child(&cx.at, "description"), "properties");
+    let properties_at = cx.at.child("description").child("properties");
     let failed = cx.molang_failures.iter().any(|failure| {
         failure.outcome == MolangOutcome::Failed(MolangFailure::DropEntry)
             && failure.path.starts_with(&properties_at)
@@ -916,10 +911,10 @@ const DUPLICATE_PATH_BLOCK: &str = "Duplicate block descriptors in two costing g
 /// The game's component validation of the final document, `components` and then each group:
 /// the preferred path's duplicate blocks (an error) and the timer's two times (a warning).
 fn validate_function(entity: &Entity, cx: &mut ValidateCx<'_>) {
-    let groups_at = child(&cx.at, "component_groups");
-    let mut sections = vec![(child(&cx.at, "components"), &entity.components)];
+    let groups_at = cx.at.child("component_groups");
+    let mut sections = vec![(cx.at.child("components"), &entity.components)];
     for (name, group) in &entity.component_groups {
-        sections.push((child(&groups_at, name), &group.components));
+        sections.push((groups_at.child(name), &group.components));
     }
     for (at, map) in sections {
         preferred_path(map, &at, cx);
@@ -941,7 +936,7 @@ fn timer(map: &ComponentMap<EntityComponent>, at: &JsonPath, cx: &mut ValidateCx
             },
             // The game logs this at the warning level.
             Severity::Warning,
-            child(at, KEY),
+            at.child(KEY),
         );
     }
 }
@@ -962,7 +957,7 @@ fn preferred_path(map: &ComponentMap<EntityComponent>, at: &JsonPath, cx: &mut V
                 .any(|set| set.blocks.iter().any(|other| same_block(other, block)));
             let name = block_name(block);
             if earlier && !told.contains(&name) {
-                let mut place = child(&child(at, KEY), "preferred_path_blocks");
+                let mut place = at.child(KEY).child("preferred_path_blocks");
                 place.push_index(j);
                 report(
                     cx,

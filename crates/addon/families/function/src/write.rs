@@ -23,9 +23,7 @@ impl Function {
             !reads_back(line) || (index == 0 && line.raw.starts_with('\u{feff}'))
         });
         if let Some(index) = unwritable {
-            let mut at = JsonPath::new();
-            at.push("commands");
-            at.push_index(index);
+            let at = JsonPath::new().child("commands").index(index);
             return Err(EncodeError::NotRepresentable {
                 at,
                 what: Unrepresentable::Unsupported,

@@ -3,6 +3,7 @@
 //! Types and defaults follow the game's 1.26.50 `InteractionData.json` schema and its
 //! sub-schemas. Below 1.26.50 the key is `Dynamic`, read by the game's untyped interact reader.
 
+use bedrock_addon_core::diagnostic::JsonPath;
 use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::json::{StrictBool, StrictFloat, StrictInt, StrictString, Value};
 use bedrock_addon_core::shared::EventTrigger;
@@ -10,7 +11,7 @@ use bedrock_addon_core::versioning::ConvertMode;
 use facet::Facet;
 use facet_value::VObject;
 
-use super::parse::{Check, Typed, index, join, path};
+use super::parse::{Check, Typed};
 use super::upgrade::one_or_many;
 
 /// `minecraft:interact`: the interactions a player can have with the entity; the first whose
@@ -302,10 +303,10 @@ impl Typed for Interact {
     }
 
     fn check(&mut self, cx: &mut Check<'_>) {
-        let at = path(&["interactions"]);
+        let at = JsonPath::new().child("interactions");
         for (i, interaction) in self.interactions.iter().enumerate() {
             if let Some(trigger) = &interaction.on_interact {
-                cx.extend(trigger.check(&join(&index(&at, i), "on_interact")));
+                cx.extend(trigger.check(&at.index(i).child("on_interact")));
             }
         }
     }

@@ -5,7 +5,7 @@ super::legacy_struct!(1, 21, 120);
 use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
 use facet_value::{VArray, VObject};
 
-use super::ops::{Told, below, element, half, overwrite, section_b, sections, single_to_array};
+use super::ops::{Told, half, overwrite, section_b, sections, single_to_array};
 use bedrock_addon_core::diagnostic::JsonPath;
 
 /// 1.21.120 → 1.21.130.
@@ -23,7 +23,7 @@ impl Upgrade for Entity {
             for section in sections(&mut payload) {
                 let members = section.members;
                 if let Some(ageable) = members.object("minecraft:ageable") {
-                    let at = below(&section.at, &["minecraft:ageable"]);
+                    let at = section.at.child("minecraft:ageable");
                     with_result_item(ageable, "feed_items", &at, &mut told);
                 }
                 if let Some(breedable) = members.object("minecraft:breedable") {
@@ -31,14 +31,13 @@ impl Upgrade for Entity {
                     // one entry.
                     let listed = breedable.get("breed_items").is_some_and(Value::is_array);
                     single_to_array(breedable, "breed_items");
-                    let at = below(&section.at, &["minecraft:breedable"]);
+                    let at = section.at.child("minecraft:breedable");
                     with_result_item_of(breedable, "breed_items", listed, &at, &mut told);
                 }
                 if let Some(goal) = members.object("minecraft:behavior.nearest_attackable_target") {
-                    let at = below(
-                        &section.at,
-                        &["minecraft:behavior.nearest_attackable_target"],
-                    );
+                    let at = section
+                        .at
+                        .child("minecraft:behavior.nearest_attackable_target");
                     interval_range(goal, &at, &mut told);
                 }
             }
@@ -79,7 +78,7 @@ fn with_result_item_of(
             // No entry takes it: the member goes. A note (an information): the step is the
             // game's, and nothing shows that the game keeps the value where `items` is one
             // string (vanilla's own axolotl has it so) or is not there at all.
-            told.dropped(below(at, &["transform_to_item"]));
+            told.dropped(at.child("transform_to_item"));
         }
         return;
     };
@@ -91,9 +90,9 @@ fn with_result_item_of(
             object
         });
         if let Some(result) = &result {
-            let items_at = below(at, &[items]);
+            let items_at = at.child(items);
             let entry_at = if listed {
-                element(&items_at, index)
+                items_at.index(index)
             } else {
                 items_at
             };
@@ -123,11 +122,11 @@ fn interval_range(goal: &mut VObject, at: &JsonPath, told: &mut Told) {
     range.insert("range_max", max);
     goal.insert("attack_interval", range);
     told.moved(
-        below(at, &["attack_interval"]),
-        below(at, &["attack_interval", "range_max"]),
+        at.child("attack_interval"),
+        at.with(&["attack_interval", "range_max"]),
     );
     told.moved(
-        below(at, &["attack_interval_min"]),
-        below(at, &["attack_interval", "range_min"]),
+        at.child("attack_interval_min"),
+        at.with(&["attack_interval", "range_min"]),
     );
 }

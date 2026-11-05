@@ -1,6 +1,8 @@
 //! Format versions 1.10.0 up to 1.26.0, and the step to 1.26.0.
 
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity};
+use bedrock_addon_core::diagnostic::{
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity,
+};
 use bedrock_addon_core::id::{
     AnimationRef, EntityId, GeometryId, MaterialId, ParticleId, SoundEventName, TexturePath,
 };
@@ -13,10 +15,10 @@ use bedrock_addon_core::visual::{ControllerUse, SpawnEgg};
 use facet::Facet;
 use indexmap::IndexMap;
 
-use super::super::read::{self, below};
+use super::super::read;
 use super::super::validate::{self, CONDITION, NAMED_SCRIPT};
 use super::super::write;
-use super::v1_8_0::{description_at, step_finding};
+use super::v1_8_0::description_at;
 
 /// The version from which vanilla stops lower-casing the named scripts: a document written
 /// below it has them lower-cased when it loads.
@@ -121,7 +123,7 @@ impl VersionStruct for ClientEntity {
         read::check_map(de.sound_effects.as_ref(), "sound_effects", false, at, d);
         read::check_controllers(de.render_controllers.as_deref(), at, d);
         if let Some(scripts) = &de.scripts {
-            let scripts_at = below(at, &["scripts"]);
+            let scripts_at = at.with(&["scripts"]);
             read::check_variables(scripts.variables.as_ref(), &scripts_at, d);
             read::check_animate(scripts.animate.as_deref(), &scripts_at, d);
         }
@@ -194,7 +196,7 @@ impl Upgrade for ClientEntity {
         // Named scripts are lower-cased below 1.18.20, as the game does when it loads them.
         let d = self.description;
         let fold = cx.original_version < NO_LOWER_CASING;
-        let at = below(&description_at(), &["scripts"]);
+        let at = description_at().with(&["scripts"]);
         let scripts = d.scripts.map(|s| bedrock_addon_core::visual::Scripts {
             variables: s.variables,
             initialize: elements(s.initialize, "initialize", fold, &at, cx),
@@ -260,7 +262,7 @@ fn elements(
     let list = list?;
     let mut strings = Vec::with_capacity(list.len());
     for (index, element) in list.into_iter().enumerate() {
-        let mut element_at = below(at, &[name]);
+        let mut element_at = at.with(&[name]);
         element_at.push_index(index);
         if let Molang::Expr(source) = element {
             // The schema's `ExpressionNode` parses each element as written.
@@ -271,11 +273,11 @@ fn elements(
             strings.push(StrictString(folded(source.as_str(), fold)));
         } else {
             // The game joins the string elements and skips the ones that are not strings.
-            cx.diagnostics.push(step_finding(
-                DiagnosticCode::DroppedField { text: None },
-                Severity::Info,
-                element_at,
-            ));
+            cx.diagnostics.push(
+                Diagnostic::info(DiagnosticCode::DroppedField { text: None })
+                    .at(element_at)
+                    .phase(Phase::Upgrade),
+            );
         }
     }
     Some(strings)
@@ -297,7 +299,7 @@ fn named(
                 return Some(Molang::Expr(source));
             }
             if has_cased_literal(source.as_str()) {
-                cx.diagnostics.push(literal_folded(below(at, &[name])));
+                cx.diagnostics.push(literal_folded(at.with(&[name])));
             }
             Some(Molang::Expr(match source.raw_version() {
                 Some(version) => MolangSource::string(lower, version),
@@ -321,11 +323,9 @@ fn has_cased_literal(text: &str) -> bool {
 /// the file's: the game's own lower-casing, reported as an information because the game
 /// discards the original case itself.
 fn literal_folded(at: JsonPath) -> Diagnostic {
-    step_finding(
-        DiagnosticCode::ValueRewritten { text: None },
-        Severity::Info,
-        at,
-    )
+    Diagnostic::info(DiagnosticCode::ValueRewritten { text: None })
+        .at(at)
+        .phase(Phase::Upgrade)
 }
 
 /// The whole text lower-cased, quoted literals included, as the game does it.

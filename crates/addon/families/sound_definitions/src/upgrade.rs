@@ -80,10 +80,7 @@ pub(crate) struct Upgraded {
 
 /// The path of the definition `name`.
 pub(crate) fn definition_path(name: &str) -> JsonPath {
-    let mut path = JsonPath::new();
-    path.push("sound_definitions");
-    path.push(name);
-    path
+    JsonPath::new().child("sound_definitions").child(name)
 }
 
 /// The 1.14.0 step on an object root: the root becomes `sound_definitions` of a new root
@@ -150,8 +147,7 @@ pub(crate) fn reset_integer_distances(
     let definitions = fork::index_mut(root, "sound_definitions");
     if !definitions.is_object() {
         report.not_a_list = true;
-        let mut path = JsonPath::new();
-        path.push("sound_definitions");
+        let path = JsonPath::new().child("sound_definitions");
         // The game writes an error line to the content log; the file is still the stack's copy
         // and loads: a kept error.
         diagnostics.push_kept_error(

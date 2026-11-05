@@ -5,7 +5,7 @@ super::legacy_struct!(1, 26, 0);
 use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
 use facet_value::VObject;
 
-use super::ops::{Told, below, finding, json, overwrite, same, section_b, sections};
+use super::ops::{Told, finding, json, overwrite, same, section_b, sections};
 use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath};
 
 /// 1.26.0 → 1.26.10.
@@ -32,35 +32,32 @@ impl Upgrade for Entity {
                     && let Some(waves) = buoyant.remove("simulate_waves")
                 {
                     if !waves.is_bool() {
-                        misread.push(below(&section.at, &["minecraft:buoyant", "simulate_waves"]));
+                        misread.push(section.at.with(&["minecraft:buoyant", "simulate_waves"]));
                     }
                     let waves = waves.as_bool().unwrap_or(false);
                     // A `movement_type` of the file is written over, as the game's step
                     // writes it.
-                    let at = below(&section.at, &["minecraft:buoyant"]);
+                    let at = section.at.child("minecraft:buoyant");
                     let value = Value::from(if waves { "waves" } else { "none" });
                     overwrite(buoyant, "movement_type", value, &at, &mut told);
-                    told.moved(
-                        below(&at, &["simulate_waves"]),
-                        below(&at, &["movement_type"]),
-                    );
+                    told.moved(at.child("simulate_waves"), at.child("movement_type"));
                 }
                 // The `pushable` split: each member (default `true`) that holds gives its
                 // component.
                 if let Some(pushable) = members.take("minecraft:pushable") {
                     if !pushable.is_object() {
-                        misread.push(below(&section.at, &["minecraft:pushable"]));
+                        misread.push(section.at.child("minecraft:pushable"));
                     }
                     for key in pushable.as_object().into_iter().flat_map(VObject::keys) {
                         let key = key.as_str();
                         if !["is_pushable", "is_pushable_by_piston"].contains(&key) {
-                            told.unknown(below(&section.at, &["minecraft:pushable", key]));
+                            told.unknown(section.at.with(&["minecraft:pushable", key]));
                         }
                     }
                     let mut holds = |key: &str| {
                         let member = pushable.as_object().and_then(|p| p.get(key));
                         if member.is_some_and(|member| !member.is_bool()) {
-                            misread.push(below(&section.at, &["minecraft:pushable", key]));
+                            misread.push(section.at.with(&["minecraft:pushable", key]));
                         }
                         member.and_then(Value::as_bool).unwrap_or(true)
                     };
@@ -78,7 +75,7 @@ impl Upgrade for Entity {
                             .get(component)
                             .is_some_and(|had| !had.is_null() && !same(had, &empty))
                         {
-                            told.dropped(below(&section.at, &[component]));
+                            told.dropped(section.at.child(component));
                         }
                         members.set(component, empty);
                     }

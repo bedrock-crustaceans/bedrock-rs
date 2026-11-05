@@ -2,10 +2,11 @@
 
 super::legacy_struct!(1, 18, 0);
 
+use bedrock_addon_core::diagnostic::JsonPath;
 use bedrock_addon_core::vanilla::ActorType;
 use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
 
-use super::ops::{Members, Told, group, json, path, same, section_a};
+use super::ops::{Members, Told, group, json, same, section_a};
 
 /// 1.18.0 → 1.18.10 (gate 1.18.10).
 impl Upgrade for Entity {
@@ -46,7 +47,7 @@ fn ocelot(payload: &mut Payload, told: &mut Told) {
             .get("minecraft:spawn_entity")
             .is_some_and(|had| !had.is_null() && !same(had, &constant))
         {
-            told.dropped(path(&[
+            told.dropped(JsonPath::new().with(&[
                 "component_groups",
                 "minecraft:wild_child_ocelot_spawn",
                 "minecraft:spawn_entity",

@@ -13,7 +13,7 @@ use bedrock_addon_core::versioning::ConvertMode;
 use facet::Facet;
 use facet_value::VObject;
 
-use super::parse::{Check, Typed, index, join, path};
+use super::parse::{Check, Typed};
 use super::value::{EffectSeconds, EquipmentSlot, SecondsOrText, one_element, visit_item_tags};
 
 /// `minecraft:boss`: the boss bar shown to players near the entity.
@@ -219,7 +219,7 @@ impl Typed for Insomnia {
                         ],
                     }),
                 },
-                &path(&[MEMBER]),
+                &JsonPath::new().child(MEMBER),
             );
         }
         false
@@ -242,7 +242,7 @@ pub struct IgnoreCannotBeAttacked {
 impl Typed for IgnoreCannotBeAttacked {
     fn check(&mut self, cx: &mut Check<'_>) {
         if let Some(filters) = &self.filters {
-            cx.extend(filters.check(&path(&["filters"])));
+            cx.extend(filters.check(&JsonPath::new().child("filters")));
         }
     }
 }
@@ -277,7 +277,7 @@ impl Typed for Attack {
     }
 
     fn check(&mut self, cx: &mut Check<'_>) {
-        cx.range(&path(&["damage"]), &mut self.damage);
+        cx.range(&JsonPath::new().child("damage"), &mut self.damage);
     }
 }
 
@@ -479,16 +479,16 @@ impl Typed for Healable {
         let Some(items) = json.get_mut("items").and_then(Value::as_array_mut) else {
             return false;
         };
-        let list = path(&["items"]);
+        let list = JsonPath::new().child("items");
         let mut changed = false;
         for (i, item) in items.iter_mut().enumerate() {
-            let at = index(&list, i);
+            let at = list.index(i);
             if item.is_string() {
                 let name = std::mem::replace(item, Value::NULL);
                 let mut object = VObject::new();
                 object.insert("item", name);
                 *item = object.into();
-                cx.moved(at.clone(), join(&at, "item"));
+                cx.moved(at.clone(), at.child("item"));
                 changed = true;
             }
             if let Some(object) = item.as_object_mut()
@@ -501,17 +501,17 @@ impl Typed for Healable {
     }
 
     fn check(&mut self, cx: &mut Check<'_>) {
-        let list = path(&["items"]);
+        let list = JsonPath::new().child("items");
         for (i, item) in self.items.iter().enumerate() {
-            let at = index(&list, i);
+            let at = list.index(i);
             for (key, descriptor) in [("item", &item.item), ("result_item", &item.result_item)] {
                 if let Some(descriptor) = descriptor {
-                    cx.extend(descriptor.check(&join(&at, key)));
+                    cx.extend(descriptor.check(&at.child(key)));
                 }
             }
         }
         if let Some(filters) = &self.filters {
-            cx.extend(filters.check(&path(&["filters"])));
+            cx.extend(filters.check(&JsonPath::new().child("filters")));
         }
     }
 }

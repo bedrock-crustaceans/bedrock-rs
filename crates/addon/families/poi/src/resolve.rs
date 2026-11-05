@@ -82,11 +82,7 @@ fn finding<K: Kind>(
 
 /// The path of element `index` of the member `key` of the payload `payload`.
 fn entry(payload: &str, key: &str, index: usize) -> JsonPath {
-    let mut path = JsonPath::new();
-    path.push(payload);
-    path.push(key);
-    path.push_index(index);
-    path
+    JsonPath::new().child(payload).child(key).index(index)
 }
 
 /// Resolves the effective types, given in the order they were loaded, and every loaded tag
@@ -196,10 +192,7 @@ fn without_cycles(
         // so the crate's own note is an information.
         let mut finding = Diagnostic::info(part_of_a_cycle(tag)).phase(Phase::Validate);
         if let Some(record) = tags.iter().find(|record| record.id == *tag) {
-            let mut path = JsonPath::new();
-            path.push("minecraft:poi_tag");
-            path.push("description");
-            path.push("identifier");
+            let path = JsonPath::new().with(&["minecraft:poi_tag", "description", "identifier"]);
             finding = finding.at(path).in_file(&record.origin);
         }
         findings.push(finding);

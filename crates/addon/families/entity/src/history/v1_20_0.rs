@@ -5,7 +5,7 @@ super::legacy_struct!(1, 20, 0);
 use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
 use facet_value::{VArray, VObject};
 
-use super::ops::{Told, below, element, section_b, sections};
+use super::ops::{Told, section_b, sections};
 use bedrock_addon_core::diagnostic::JsonPath;
 
 /// 1.20.0 → 1.20.60 (gate 1.20.60).
@@ -17,7 +17,7 @@ impl Upgrade for Entity {
         if section_b(&payload, cx) {
             let mut told = Told::default();
             for section in sections(&mut payload) {
-                let at = below(&section.at, &["minecraft:entity_sensor"]);
+                let at = section.at.child("minecraft:entity_sensor");
                 if let Some(sensor) = section.members.object("minecraft:entity_sensor") {
                     subsensors(sensor, &at, &mut told);
                 }
@@ -50,12 +50,12 @@ fn subsensors(sensor: &mut VObject, at: &JsonPath, told: &mut Told) {
     if subsensor.is_empty() {
         return;
     }
-    let list_at = below(at, &["subsensors"]);
+    let list_at = at.child("subsensors");
     if let Some(list) = sensor.get_mut("subsensors").and_then(|s| s.as_array_mut()) {
         // The file's own subsensors move one place on: the last first, so that the move
         // undone for a finding is the one of its own element.
         for index in (0..list.len()).rev() {
-            told.moved(element(&list_at, index), element(&list_at, index + 1));
+            told.moved(list_at.index(index), list_at.index(index + 1));
         }
         list.insert(0, subsensor);
     } else {
@@ -68,8 +68,8 @@ fn subsensors(sensor: &mut VObject, at: &JsonPath, told: &mut Told) {
         list.push(subsensor);
         sensor.insert("subsensors", list);
     }
-    let first = element(&list_at, 0);
+    let first = list_at.index(0);
     for (old, new) in moved {
-        told.moved(below(at, &[old]), below(&first, &[new]));
+        told.moved(at.child(old), first.child(new));
     }
 }

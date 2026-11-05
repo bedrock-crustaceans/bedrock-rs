@@ -647,9 +647,7 @@ fn resolving_many_tagged_requests_is_linear() {
 }
 
 fn script_module(dependencies: Vec<NativeDependency>) -> ScriptModule {
-    let mut path = JsonPath::new();
-    path.push("modules");
-    path.push_index(0);
+    let path = JsonPath::new().child("modules").index(0);
     ScriptModule {
         pack_name: "pack".to_owned(),
         pack_uuid: Uuid::from_u128(9),
@@ -669,9 +667,7 @@ fn script_module(dependencies: Vec<NativeDependency>) -> ScriptModule {
 }
 
 fn dependency_on(module: &str, version: ScriptVersion, index: usize) -> NativeDependency {
-    let mut path = JsonPath::new();
-    path.push("dependencies");
-    path.push_index(index);
+    let path = JsonPath::new().child("dependencies").index(index);
     let mut sem = SemVersion::new(version.major, version.minor, version.patch);
     sem.pre_release = version.pre;
     NativeDependency {

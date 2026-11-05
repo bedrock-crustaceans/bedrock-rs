@@ -781,8 +781,7 @@ impl MobDescriptor {
     /// The findings of the descriptor's filter, located under `at`.
     pub(crate) fn check(&self, at: &JsonPath, out: &mut Diagnostics) {
         if let Some(filters) = &self.filters {
-            let mut path = at.clone();
-            path.push("filters");
+            let path = at.child("filters");
             out.extend(filters.check(&path));
         }
     }

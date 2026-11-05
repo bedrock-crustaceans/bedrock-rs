@@ -360,8 +360,7 @@ impl FogSettings {
         out: &mut Vec<u8>,
         style: WriteStyle,
     ) -> Result<(), EncodeError> {
-        let mut at = JsonPath::new();
-        at.push("minecraft:fog_settings");
+        let at = JsonPath::new().child("minecraft:fog_settings");
         let mut found = Diagnostics::default();
         super::rules::cereal_rules(self, &at, &mut found);
         if let Some(broken) = found.first_error() {

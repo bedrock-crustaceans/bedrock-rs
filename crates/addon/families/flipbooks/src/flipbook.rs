@@ -257,30 +257,26 @@ fn read_entries(root: &VArray) -> Vec<Flipbook> {
 fn check_file(root: &Value, origin: &Origin, out: &mut Diagnostics) -> bool {
     // All of these are the crate's own lints, informations: the game is silent, and the
     // `ticks_per_frame` clamp is silent too.
-    let warn = |out: &mut Diagnostics, code: DiagnosticCode, at: JsonPath| {
-        out.push(Diagnostic::info(code).at(at).in_file(origin));
-    };
     let invalid = || DiagnosticCode::InvalidValue { text: None };
     let Some(entries) = root.as_array() else {
-        warn(out, invalid(), JsonPath::new());
+        out.push(
+            Diagnostic::info(invalid())
+                .at(JsonPath::new())
+                .in_file(origin),
+        );
         return false;
     };
     let mut seen: HashSet<FlipbookKey> = HashSet::new();
     for (index, entry) in entries.as_slice().iter().enumerate() {
-        let mut at = JsonPath::new();
-        at.push_index(index);
+        let at = JsonPath::new().index(index);
         let Some(entry) = entry.as_object() else {
-            warn(out, invalid(), at);
+            out.push(Diagnostic::info(invalid()).at(at).in_file(origin));
             continue;
         };
-        let member = |key: &str| {
-            let mut at = at.clone();
-            at.push(key);
-            at
-        };
+        let member = |key: &str| at.child(key);
         for key in ["flipbook_texture", "atlas_tile"] {
             if non_null(entry.get(key)).is_some_and(|value| !value.is_string()) {
-                warn(out, invalid(), member(key));
+                out.push(Diagnostic::info(invalid()).at(member(key)).in_file(origin));
             }
         }
         for key in [
@@ -290,11 +286,15 @@ fn check_file(root: &Value, origin: &Origin, out: &mut Diagnostics) -> bool {
             "replicate",
         ] {
             if entry.get(key).is_some_and(int_is_coerced) {
-                warn(out, invalid(), member(key));
+                out.push(Diagnostic::info(invalid()).at(member(key)).in_file(origin));
             }
         }
         if non_null(entry.get("blend_frames")).is_some_and(|value| !value.is_bool()) {
-            warn(out, invalid(), member("blend_frames"));
+            out.push(
+                Diagnostic::info(invalid())
+                    .at(member("blend_frames"))
+                    .in_file(origin),
+            );
         }
         if let Some(frames) = non_null(entry.get("frames")) {
             if let Some(frames) = frames.as_array() {
@@ -302,23 +302,35 @@ fn check_file(root: &Value, origin: &Origin, out: &mut Diagnostics) -> bool {
                     if value.is_null() || int_is_coerced(value) {
                         let mut at = member("frames");
                         at.push_index(frame);
-                        warn(out, invalid(), at);
+                        out.push(Diagnostic::info(invalid()).at(at).in_file(origin));
                     }
                 }
             } else {
                 // Vanilla reads `frames` only when it is an array.
-                warn(out, invalid(), member("frames"));
+                out.push(
+                    Diagnostic::info(invalid())
+                        .at(member("frames"))
+                        .in_file(origin),
+                );
             }
         }
         for (key, _) in entry {
             if !KNOWN.contains(&key.as_str()) {
                 let code = DiagnosticCode::UnrecognizedField { text: None };
-                warn(out, code, member(key.as_str()));
+                out.push(
+                    Diagnostic::info(code)
+                        .at(member(key.as_str()))
+                        .in_file(origin),
+                );
             }
         }
         if as_int(entry.get("ticks_per_frame"), 1) < 1 {
             let code = DiagnosticCode::ClampedValue { text: None };
-            warn(out, code, member("ticks_per_frame"));
+            out.push(
+                Diagnostic::info(code)
+                    .at(member("ticks_per_frame"))
+                    .in_file(origin),
+            );
         }
         if !seen.insert(raw_key(entry)) {
             let code = DiagnosticCode::DuplicateIdentifier { text: None };

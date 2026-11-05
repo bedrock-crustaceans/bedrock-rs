@@ -1,7 +1,6 @@
 //! The checks the game runs on a shape its schema accepted, in its order, stopping at the
 //! first failure: the file is not loaded and one line says why.
 
-use super::parse::child;
 use super::{ShapeBox, VoxelShape, texts};
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, VanillaText,
@@ -32,22 +31,21 @@ fn first_failure(
     if base_game && !is_vanilla_namespace(identifier) {
         return Some((
             texts::namespace_required(identifier),
-            child(at, &["description", "identifier"]),
+            at.with(&["description", "identifier"]),
         ));
     }
     if !base_game && is_vanilla_namespace(identifier) {
         return Some((
             texts::namespace_not_valid(identifier),
-            child(at, &["description", "identifier"]),
+            at.with(&["description", "identifier"]),
         ));
     }
     let boxes = &shape.shape.boxes;
-    let all = child(at, &["shape", "boxes"]);
+    let all = at.with(&["shape", "boxes"]);
     // Each box in order, at the first bad box: the corners must be ordered, then inside the
     // bounds.
     for (index, one) in boxes.iter().enumerate() {
-        let mut here = all.clone();
-        here.push_index(index);
+        let here = all.index(index);
         if one.is_inverted() {
             return Some((texts::box_invalid(index, identifier), here));
         }

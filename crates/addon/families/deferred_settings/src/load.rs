@@ -658,9 +658,9 @@ fn merge_local_lights(files: Vec<Walked<LocalLightSettings>>) -> Merged<LocalLig
         |merged, layer: &Document<LocalLightSettings>, cx| {
             for (block, light) in &layer.lights {
                 if merged.lights.contains_key(block) {
-                    let mut at = JsonPath::new();
-                    at.push(history::local_lighting::Family::PAYLOAD_KEY);
-                    at.push(block.as_str());
+                    let at = JsonPath::new()
+                        .child(history::local_lighting::Family::PAYLOAD_KEY)
+                        .child(block.as_str());
                     let finding = shadowed(cx.origin(), at);
                     cx.push_diagnostic(finding);
                 } else {

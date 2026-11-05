@@ -174,9 +174,7 @@ pub(crate) fn members<'a>(node: &Node<'a>, d: &mut Diagnostics) -> Read<Members<
 impl<'a> Members<'a> {
     /// The path of the member `key`.
     fn path(&self, key: &str) -> JsonPath {
-        let mut at = self.node.at.clone();
-        at.push(key);
-        at
+        self.node.at.child(key)
     }
 
     /// Takes the member `key` out; `None` when it is absent or `null`.
@@ -222,8 +220,7 @@ impl<'a> Members<'a> {
     pub(crate) fn rest(self) -> impl Iterator<Item = (String, Node<'a>)> {
         let Members { node, map } = self;
         map.into_iter().filter_map(move |(key, raw)| {
-            let mut at = node.at.clone();
-            at.push(&key);
+            let at = node.at.child(&key);
             let child = node.child(&raw, at)?;
             Some((key, child))
         })
@@ -455,8 +452,7 @@ fn channels<const N: usize>(
             }
             let mut failed = false;
             for (i, (raw, channel)) in elements.iter().zip(out.iter_mut()).enumerate() {
-                let mut at = node.at.clone();
-                at.push_index(i);
+                let at = node.at.index(i);
                 let Some(element) = node.child(raw, at) else {
                     return Err(wrong(node, d));
                 };
@@ -788,8 +784,7 @@ pub(crate) fn vec3_in(range: Range, node: &Node<'_>, d: &mut Diagnostics) -> Rea
             let mut out = [0.0_f32; 3];
             let mut failed = false;
             for (i, (raw, component)) in elements.iter().zip(out.iter_mut()).enumerate() {
-                let mut at = node.at.clone();
-                at.push_index(i);
+                let at = node.at.index(i);
                 let Some(element) = node.child(raw, at) else {
                     return Err(wrong(d));
                 };

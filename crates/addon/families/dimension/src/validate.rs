@@ -3,7 +3,6 @@
 //! file is skipped; the crate's finding is one `InvalidValue` error carrying both texts, one per
 //! line.
 
-use super::parse::child;
 use super::{Dimension, DimensionHeight, V1_26_50};
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, Phase, VanillaText};
 use bedrock_addon_core::versioning::ValidateCx;
@@ -27,7 +26,7 @@ const DIMENSION_HEIGHT_MAX: i32 = 512;
 /// its first failure ends it), the identifier (part B), then the generator (part C); each part
 /// runs whatever the one before found.
 pub(crate) fn validate(dimension: &mut Dimension, cx: &mut ValidateCx<'_>) {
-    let at = child(&cx.at, &["minecraft:dimension"]);
+    let at = cx.at.child("minecraft:dimension");
     height_rules(dimension, &at, cx);
     identifier_rules(dimension, &at, cx);
     generator_rule(dimension, &at, cx);
@@ -47,10 +46,7 @@ fn generator_rule(dimension: &Dimension, at: &JsonPath, cx: &mut ValidateCx<'_>)
                 "minecraft:generation: generator_type unsupported",
             )),
         })
-        .at(child(
-            at,
-            &["components", "minecraft:generation", "generator_type"],
-        ))
+        .at(at.with(&["components", "minecraft:generation", "generator_type"]))
         .phase(Phase::Validate),
     );
 }
@@ -65,7 +61,7 @@ fn height_rules(dimension: &Dimension, at: &JsonPath, cx: &mut ValidateCx<'_>) {
     } else {
         "minecraft:dimension_height"
     };
-    let at = child(at, &["components", component]);
+    let at = at.with(&["components", component]);
     let height = dimension.components.dimension_height.as_ref();
     let failure = match dimension.description.identifier.as_str() {
         "minecraft:nether" | "minecraft:the_end" => height
@@ -128,9 +124,9 @@ fn identifier_rules(dimension: &Dimension, at: &JsonPath, cx: &mut ValidateCx<'_
     };
     if let Some((member, text)) = failure {
         let path = if member == "identifier" {
-            child(at, &["description", "identifier"])
+            at.with(&["description", "identifier"])
         } else {
-            child(at, &["components", member])
+            at.with(&["components", member])
         };
         error(cx, path, text, INVALID_CUSTOM);
     }

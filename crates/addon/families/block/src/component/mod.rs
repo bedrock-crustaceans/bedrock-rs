@@ -349,8 +349,7 @@ fn is_scalar(json: &Value) -> bool {
 /// `inner` below the member `key`.
 fn below(key: &str, inner: Option<JsonPath>) -> Option<JsonPath> {
     inner.map(|inner| {
-        let mut path = JsonPath::new();
-        path.push(key);
+        let mut path = JsonPath::new().child(key);
         path.append(&inner);
         path
     })

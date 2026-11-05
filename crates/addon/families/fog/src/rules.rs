@@ -22,14 +22,6 @@ use bedrock_addon_core::version::{FormatVersion, SemVersion};
 /// The first engine that reads the keyframe forms of the volumetric members.
 pub(crate) const KEYFRAMES_SINCE: FormatVersion = FormatVersion::new(1, 26, 30);
 
-fn below(at: &JsonPath, keys: &[&str]) -> JsonPath {
-    let mut path = at.clone();
-    for key in keys {
-        path.push(key);
-    }
-    path
-}
-
 fn report(d: &mut Diagnostics, severity: Severity, text: &'static str, at: JsonPath) {
     d.push(
         Diagnostic::error(DiagnosticCode::InvalidValue {
@@ -49,7 +41,7 @@ pub(crate) fn format_version(written: &str, at: &JsonPath, d: &mut Diagnostics) 
             d,
             Severity::Error,
             BAD_FORMAT_VERSION,
-            below(at, &["format_version"]),
+            at.with(&["format_version"]),
         );
     }
 }
@@ -155,13 +147,13 @@ pub(crate) fn cereal_rules(settings: &FogSettings, at: &JsonPath, d: &mut Diagno
                     entry.fog_start,
                     entry.fog_end,
                     entry.render_distance_type,
-                    &below(at, &["distance", name]),
+                    &at.with(&["distance", name]),
                     d,
                 );
             }
         }
         if let Some(water) = &distance.water {
-            let water_at = below(at, &["distance", "water"]);
+            let water_at = at.with(&["distance", "water"]);
             distance_entry(
                 water.fog_start,
                 water.fog_end,
@@ -170,13 +162,13 @@ pub(crate) fn cereal_rules(settings: &FogSettings, at: &JsonPath, d: &mut Diagno
                 d,
             );
             if let Some(transition) = &water.transition_fog {
-                let transition_at = below(&water_at, &["transition_fog"]);
+                let transition_at = water_at.with(&["transition_fog"]);
                 if let Some(init) = &transition.init_fog {
                     distance_entry(
                         init.fog_start,
                         init.fog_end,
                         init.render_distance_type,
-                        &below(&transition_at, &["init_fog"]),
+                        &transition_at.with(&["init_fog"]),
                         d,
                     );
                 }
@@ -203,7 +195,7 @@ pub(crate) fn cereal_rules(settings: &FogSettings, at: &JsonPath, d: &mut Diagno
             ("lava_resistance", &density.lava_resistance),
         ] {
             if let Some(entry) = entry {
-                density_entry(entry, &below(at, &["volumetric", "density", name]), d);
+                density_entry(entry, &at.with(&["volumetric", "density", name]), d);
             }
         }
     }
@@ -223,7 +215,7 @@ pub(crate) fn namespace(
             Diagnostic::error(DiagnosticCode::NamespaceRule {
                 text: Some(VanillaText::Fixed(MINECRAFT_NAMESPACE)),
             })
-            .at(below(at, &["description", "identifier"]))
+            .at(at.with(&["description", "identifier"]))
             .phase(Phase::Validate),
         );
     }
@@ -314,7 +306,7 @@ pub(crate) fn repeated_time(settings: &FogSettings, at: &JsonPath) -> Option<Jso
         let mut seen = std::collections::HashSet::new();
         for time in times {
             if !seen.insert(super::same_zero(time).to_bits()) {
-                let mut path = below(at, &keys);
+                let mut path = at.with(&keys);
                 path.push(&time.to_string());
                 return Some(path);
             }
@@ -339,7 +331,7 @@ pub(crate) fn keyframe_gate(
     };
     let keyed = keyed_members(volumetric)
         .into_iter()
-        .map(|(keys, _)| below(at, &keys));
+        .map(|(keys, _)| at.with(&keys));
     for path in keyed {
         d.push(
             Diagnostic::error(DiagnosticCode::UnsupportedValueForm)

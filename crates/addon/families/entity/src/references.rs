@@ -17,7 +17,6 @@ use bedrock_addon_core::shared::Filter;
 use bedrock_addon_core::versioning::ValidateCx;
 
 use super::component::EntityComponent;
-use super::read::child;
 use super::{AnimateEntry, Entity};
 
 /// The members of the components that are a trigger on the entity itself: the component's key
@@ -315,23 +314,18 @@ fn rows(key: &str) -> &'static [(&'static str, &'static str)] {
 pub(crate) fn check(entity: &Entity, cx: &mut ValidateCx<'_>) {
     let events: HashSet<&str> = entity.events.keys().map(String::as_str).collect();
     animate(entity, cx);
-    let events_at = child(&cx.at, "events");
+    let events_at = cx.at.child("events");
     for (name, event) in &entity.events {
-        nodes(&event.node, child(&events_at, name), entity, &events, cx);
+        nodes(&event.node, events_at.child(name), entity, &events, cx);
     }
-    let upgrades_at = child(&cx.at, "upgrades");
+    let upgrades_at = cx.at.child("upgrades");
     for (name, node) in &entity.upgrades {
-        nodes(node, child(&upgrades_at, name), entity, &events, cx);
+        nodes(node, upgrades_at.child(name), entity, &events, cx);
     }
-    components(
-        &entity.components,
-        &child(&cx.at, "components"),
-        &events,
-        cx,
-    );
-    let groups_at = child(&cx.at, "component_groups");
+    components(&entity.components, &cx.at.child("components"), &events, cx);
+    let groups_at = cx.at.child("component_groups");
     for (name, group) in &entity.component_groups {
-        components(&group.components, &child(&groups_at, name), &events, cx);
+        components(&group.components, &groups_at.child(name), &events, cx);
     }
 }
 
@@ -352,10 +346,9 @@ fn animate(entity: &Entity, cx: &mut ValidateCx<'_>) {
         return;
     };
     let animations = &entity.description.animations;
-    let at = child(&child(&child(&cx.at, "description"), "scripts"), "animate");
+    let at = cx.at.child("description").child("scripts").child("animate");
     for (index, entry) in scripts.animate.iter().enumerate() {
-        let mut entry_at = at.clone();
-        entry_at.push_index(scripts.place(index));
+        let entry_at = at.index(scripts.place(index));
         match entry {
             AnimateEntry::Always(name) => {
                 if !animations.contains_key(&name.to_lowercase()) {
@@ -365,7 +358,7 @@ fn animate(entity: &Entity, cx: &mut ValidateCx<'_>) {
             AnimateEntry::Conditional(conditions) => {
                 for name in conditions.keys() {
                     if !animations.contains_key(name) {
-                        unresolved(cx, child(&entry_at, name));
+                        unresolved(cx, entry_at.child(name));
                     }
                 }
             }
@@ -388,13 +381,13 @@ fn nodes(
             continue;
         };
         if let Some(trigger) = object.get("trigger") {
-            own_event(trigger, child(&at, "trigger"), events, cx);
+            own_event(trigger, at.child("trigger"), events, cx);
         }
         if let Some(properties) = object.get("set_property").and_then(Value::as_object) {
-            let set_at = child(&at, "set_property");
+            let set_at = at.child("set_property");
             for (name, _) in properties {
                 if !entity.description.properties.contains_key(name.as_str()) {
-                    unresolved(cx, child(&set_at, name.as_str()));
+                    unresolved(cx, set_at.child(name.as_str()));
                 }
             }
         }
@@ -403,10 +396,9 @@ fn nodes(
             let Some(list) = object.get(key).and_then(Value::as_array) else {
                 continue;
             };
-            let list_at = child(&at, key);
+            let list_at = at.child(key);
             for (index, node) in list.iter().enumerate() {
-                let mut node_at = list_at.clone();
-                node_at.push_index(index);
+                let node_at = list_at.index(index);
                 nested.push((node_at, node));
             }
         }
@@ -437,7 +429,7 @@ fn own_event(trigger: &Value, at: JsonPath, events: &HashSet<&str>, cx: &mut Val
             .is_some_and(|target| target.as_str() == "self"),
     };
     if on_self && !event.as_str().is_empty() && !events.contains(event.as_str()) {
-        unresolved(cx, child(&at, "event"));
+        unresolved(cx, at.child("event"));
     }
 }
 
@@ -474,15 +466,15 @@ fn components(
             (None, Some(json)) => (json, true),
             (None, None) => continue,
         };
-        let at = child(section, key);
+        let at = section.child(key);
         for (_, pattern) in rows {
             members(value, pattern, &at, &mut |trigger_at, trigger| {
                 if dynamic
                     && let Some(filters) = trigger.as_object().and_then(|o| o.get("filters"))
                     && let Ok(filter) = Filter::try_from(filters.clone())
                 {
-                    older_members(filters, &child(&trigger_at, "filters"), cx);
-                    let found = filter.check(&child(&trigger_at, "filters"));
+                    older_members(filters, &trigger_at.child("filters"), cx);
+                    let found = filter.check(&trigger_at.child("filters"));
                     // Of the shared check the unknown test names alone: the game's own
                     // files write members of the older filter form here, which it maps to
                     // tests and which `older_members` holds to the game's list. Told in the
@@ -513,8 +505,7 @@ fn older_members(filters: &Value, at: &JsonPath, cx: &mut ValidateCx<'_>) {
         if let Some(list) = filter.as_array() {
             let mut elements = Vec::with_capacity(list.len());
             for (index, element) in list.iter().enumerate() {
-                let mut element_at = at.clone();
-                element_at.push_index(index);
+                let element_at = at.index(index);
                 elements.push((element_at, element));
             }
             pending.extend(elements.into_iter().rev());
@@ -530,7 +521,7 @@ fn older_members(filters: &Value, at: &JsonPath, cx: &mut ValidateCx<'_>) {
         for (key, member) in object {
             let key = key.as_str();
             if FILTER_GROUP_KEYS.contains(&key) {
-                groups.push((child(&at, key), member));
+                groups.push((at.child(key), member));
             } else if OLDER_FILTER_MEMBERS.binary_search(&key).is_err() {
                 // The game logs this at the error level and the entity still loads: a kept
                 // error. Whether the trigger itself survives is not observable, so the
@@ -542,7 +533,7 @@ fn older_members(filters: &Value, at: &JsonPath, cx: &mut ValidateCx<'_>) {
                             args: vec![key.to_owned()],
                         }),
                     })
-                    .at(child(&at, key)),
+                    .at(at.child(key)),
                 );
             }
         }
@@ -562,7 +553,7 @@ fn members(value: &Value, pattern: &str, at: &JsonPath, found: &mut dyn FnMut(Js
         // Each member that is an object: the values of a map.
         for (key, member) in value.as_object().into_iter().flatten() {
             if member.as_object().is_some() {
-                members(member, rest, &child(at, key.as_str()), found);
+                members(member, rest, &at.child(key.as_str()), found);
             }
         }
         return;
@@ -574,12 +565,11 @@ fn members(value: &Value, pattern: &str, at: &JsonPath, found: &mut dyn FnMut(Js
     let Some(member) = value.as_object().and_then(|object| object.get(key)) else {
         return;
     };
-    let member_at = child(at, key);
+    let member_at = at.child(key);
     match member.as_array() {
         Some(elements) if list => {
             for (index, element) in elements.iter().enumerate() {
-                let mut element_at = member_at.clone();
-                element_at.push_index(index);
+                let element_at = member_at.index(index);
                 members(element, rest, &element_at, found);
             }
         }

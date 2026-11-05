@@ -226,11 +226,7 @@ pub(crate) fn read_legacy(
     let Some(components) = components else {
         return data;
     };
-    let path = |key: &str| {
-        let mut path = at.clone();
-        path.push(key);
-        path
-    };
+    let path = |key: &str| at.child(key);
     // The game writes a deprecation line for `foil`, `mining_speed`, `tag:` and
     // `creative_category` at the content log's error level, and the item loads on: each is a
     // kept error.
@@ -313,8 +309,7 @@ pub(crate) fn read_legacy(
                         .iter()
                         .filter(|(member, _)| member.as_str() != "value")
                     {
-                        let mut at = path(key);
-                        at.push(member.as_str());
+                        let at = path(key).child(member.as_str());
                         misread(d, DiagnosticCode::UnrecognizedField { text: None }, at);
                     }
                 }
@@ -406,8 +401,7 @@ pub(crate) fn read_legacy(
 /// The `minecraft:seed` warning of a document above 1.16.100: the game logs it at the content
 /// log's warning level and keeps the key.
 pub(crate) fn seed_warning(at: &JsonPath, d: &mut Diagnostics) {
-    let mut path = at.clone();
-    path.push("minecraft:seed");
+    let path = at.child("minecraft:seed");
     d.push(
         Diagnostic::warn(DiagnosticCode::DeprecatedMember {
             text: Some(VanillaText::Fixed(texts::SEED_DEPRECATED)),

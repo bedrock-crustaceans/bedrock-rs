@@ -68,7 +68,7 @@ fn parse_typed<'a, T: Facet<'a>>(
                     // The game logs an unknown member at the content log's warning level and goes on.
                     d.push(
                         Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None })
-                            .at(join(&cx.at, &path)),
+                            .at(cx.at.join(&path)),
                     );
                 }
             }
@@ -87,27 +87,6 @@ fn parse_typed<'a, T: Facet<'a>>(
             None
         }
     }
-}
-
-/// `base` followed by `relative`.
-fn join(base: &JsonPath, relative: &JsonPath) -> JsonPath {
-    let mut path = base.clone();
-    path.append(relative);
-    path
-}
-
-/// `base` followed by the member `key`.
-fn child(base: &JsonPath, key: &str) -> JsonPath {
-    let mut path = base.clone();
-    path.push(key);
-    path
-}
-
-/// `base` followed by the element `index`.
-fn index(base: &JsonPath, index: usize) -> JsonPath {
-    let mut path = base.clone();
-    path.push_index(index);
-    path
 }
 
 /// A bind constraint that failed: a member outside its bound, which fails the file as the game's parse does.
@@ -152,12 +131,12 @@ impl VersionStruct for JigsawStructure {
         let structure: Self = parse_typed(payload, cx, d, |json, d| {
             let padding = integer_or_object(
                 member(json, "dimension_padding"),
-                child(&cx.at, "dimension_padding"),
+                cx.at.child("dimension_padding"),
                 d,
             );
             let distance = integer_or_object(
                 member(json, "max_distance_from_center"),
-                child(&cx.at, "max_distance_from_center"),
+                cx.at.child("max_distance_from_center"),
                 d,
             );
             padding && distance
@@ -176,10 +155,10 @@ impl JigsawStructure {
     fn check(&self, at: &JsonPath, d: &mut Diagnostics) {
         // `max_depth` is bound to 0 to 20.
         if self.max_depth.0 > 20 {
-            violation(child(at, "max_depth"), d);
+            violation(at.child("max_depth"), d);
         }
         // `horizontal` is bound to 1 to 128 and `vertical` to 1 or more.
-        let distance = child(at, "max_distance_from_center");
+        let distance = at.child("max_distance_from_center");
         match &self.max_distance_from_center {
             Some(MaxDistanceFromCenter::Horizontal(h)) if !(1..=128).contains(h) => {
                 violation(distance, d);
@@ -190,16 +169,16 @@ impl JigsawStructure {
                 ..
             }) => {
                 if !(1..=128).contains(&horizontal.0) {
-                    violation(child(&distance, "horizontal"), d);
+                    violation(distance.child("horizontal"), d);
                 }
                 if vertical.is_some_and(|v| v.0 < 1) {
-                    violation(child(&distance, "vertical"), d);
+                    violation(distance.child("vertical"), d);
                 }
             }
             _ => {}
         }
         if let Some(filter) = &self.biome_filters {
-            d.extend(filter.check(&child(at, "biome_filters")));
+            d.extend(filter.check(&at.child("biome_filters")));
         }
     }
 }
@@ -225,17 +204,17 @@ impl VersionStruct for TemplatePool {
 impl TemplatePool {
     /// The bind constraints.
     fn check(&self, at: &JsonPath, d: &mut Diagnostics) {
-        let elements = child(at, "elements");
+        let elements = at.child("elements");
         for (i, entry) in self.elements.iter().enumerate() {
-            let at = index(&elements, i);
+            let at = elements.index(i);
             // `weight` is bound to 1 to 200.
             if entry.weight.is_some_and(|w| !(1..=200).contains(&w.0)) {
-                violation(child(&at, "weight"), d);
+                violation(at.child("weight"), d);
             }
             if let PoolElement::Single { location, .. } = &entry.element
                 && location.as_str().len() > MAX_FILE_REFERENCE
             {
-                violation(child(&child(&at, "element"), "location"), d);
+                violation(at.child("element").child("location"), d);
             }
         }
     }
@@ -264,12 +243,12 @@ impl StructureSet {
     fn check(&self, at: &JsonPath, d: &mut Diagnostics) {
         // `spacing` is bound to 1 or more.
         if self.placement.spacing.0 < 1 {
-            violation(child(&child(at, "placement"), "spacing"), d);
+            violation(at.child("placement").child("spacing"), d);
         }
-        let structures = child(at, "structures");
+        let structures = at.child("structures");
         for (i, entry) in self.structures.iter().enumerate() {
             if !(1..=200).contains(&entry.weight.0) {
-                violation(child(&index(&structures, i), "weight"), d);
+                violation(structures.index(i).child("weight"), d);
             }
         }
     }
@@ -287,7 +266,7 @@ impl VersionStruct for ProcessorList {
             let mut ok = true;
             let processors = member(json, "processors").and_then(Value::as_array);
             for (i, processor) in processors.into_iter().flatten().enumerate() {
-                let at = child(&index(&child(&cx.at, "processors"), i), "limit");
+                let at = cx.at.child("processors").index(i).child("limit");
                 ok &= integer_or_object(member(processor, "limit"), at, d);
             }
             ok
@@ -304,17 +283,17 @@ impl VersionStruct for ProcessorList {
 impl ProcessorList {
     /// The bind constraints of every rule, and the block specifiers' findings.
     fn check(&self, at: &JsonPath, d: &mut Diagnostics) {
-        let processors = child(at, "processors");
+        let processors = at.child("processors");
         for (i, processor) in self.processors.iter().enumerate() {
-            let at = index(&processors, i);
+            let at = processors.index(i);
             match processor {
-                Processor::Rule { rules, .. } => check_rules(rules, &child(&at, "rules"), d),
+                Processor::Rule { rules, .. } => check_rules(rules, &at.child("rules"), d),
                 Processor::Capped {
                     delegate, limit, ..
                 } => {
-                    check_limit(limit, &child(&at, "limit"), d);
+                    check_limit(limit, &at.child("limit"), d);
                     if let CappedDelegate::Rule { rules, .. } = delegate {
-                        check_rules(rules, &child(&child(&at, "delegate"), "rules"), d);
+                        check_rules(rules, &at.child("delegate").child("rules"), d);
                     }
                 }
                 _ => {}
@@ -334,8 +313,7 @@ fn check_limit(limit: &IntProvider, at: &JsonPath, d: &mut Diagnostics) {
     };
     if mismatch {
         d.push(
-            Diagnostic::error(DiagnosticCode::InvalidEnumValue { text: None })
-                .at(child(at, "type")),
+            Diagnostic::error(DiagnosticCode::InvalidEnumValue { text: None }).at(at.child("type")),
         );
     }
 }
@@ -343,13 +321,13 @@ fn check_limit(limit: &IntProvider, at: &JsonPath, d: &mut Diagnostics) {
 /// The constraints of each rule of a `minecraft:rule` processor at `at`.
 fn check_rules(rules: &[ProcessorRule], at: &JsonPath, d: &mut Diagnostics) {
     for (i, rule) in rules.iter().enumerate() {
-        let at = index(at, i);
+        let at = at.index(i);
         for (key, predicate) in [
             ("input_predicate", &rule.input_predicate),
             ("location_predicate", &rule.location_predicate),
         ] {
             if let Some(predicate) = predicate {
-                check_block_predicate(predicate, &child(&at, key), d);
+                check_block_predicate(predicate, &at.child(key), d);
             }
         }
         if let Some(PositionPredicate::AxisAlignedLinearPos {
@@ -360,16 +338,16 @@ fn check_rules(rules: &[ProcessorRule], at: &JsonPath, d: &mut Diagnostics) {
             ..
         }) = &rule.position_predicate
         {
-            let at = child(&at, "position_predicate");
+            let at = at.child("position_predicate");
             // The chances are bound to `[0, 1)` and the distances to 0 or more.
             for (key, chance) in [("min_chance", min_chance), ("max_chance", max_chance)] {
                 if chance.is_some_and(|c| !(0.0..1.0).contains(&c.0)) {
-                    violation(child(&at, key), d);
+                    violation(at.child(key), d);
                 }
             }
             for (key, distance) in [("min_dist", min_dist), ("max_dist", max_dist)] {
                 if distance.is_some_and(|v| v.0 < 0) {
-                    violation(child(&at, key), d);
+                    violation(at.child(key), d);
                 }
             }
         }
@@ -377,9 +355,9 @@ fn check_rules(rules: &[ProcessorRule], at: &JsonPath, d: &mut Diagnostics) {
             &rule.block_entity_modifier
             && loot_table.as_str().len() > MAX_FILE_REFERENCE
         {
-            violation(child(&child(&at, "block_entity_modifier"), "loot_table"), d);
+            violation(at.child("block_entity_modifier").child("loot_table"), d);
         }
-        d.extend(rule.output_state.check(&child(&at, "output_state")));
+        d.extend(rule.output_state.check(&at.child("output_state")));
     }
 }
 
@@ -388,13 +366,13 @@ fn check_block_predicate(predicate: &BlockPredicate, at: &JsonPath, d: &mut Diag
     let probability = |p: &StrictFloat<f32>, d: &mut Diagnostics| {
         // The probability is bound to `[0, 1]`.
         if !within(f64::from(p.0), 0.0, 1.0) {
-            violation(child(at, "probability"), d);
+            violation(at.child("probability"), d);
         }
     };
     match predicate {
         BlockPredicate::RandomBlockMatch { probability: p, .. } => probability(p, d),
         BlockPredicate::BlockstateMatch { block_state, .. } => {
-            d.extend(block_state.check(&child(at, "block_state")));
+            d.extend(block_state.check(&at.child("block_state")));
         }
         BlockPredicate::RandomBlockstateMatch {
             block_state,
@@ -402,7 +380,7 @@ fn check_block_predicate(predicate: &BlockPredicate, at: &JsonPath, d: &mut Diag
             ..
         } => {
             probability(p, d);
-            d.extend(block_state.check(&child(at, "block_state")));
+            d.extend(block_state.check(&at.child("block_state")));
         }
         _ => {}
     }
@@ -430,7 +408,7 @@ fn parse_registry<T: for<'f> Facet<'f>>(
     for (key, raw) in &shell.metadata {
         let slice = payload.nested(raw)?;
         let entry_cx = ParseCx {
-            at: child(&child(&cx.at, "metadata"), key),
+            at: cx.at.child("metadata").child(key),
             ..cx.clone()
         };
         let entry: T = parse_typed(slice, &entry_cx, d, |_, _| true)?;

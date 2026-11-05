@@ -16,8 +16,7 @@ const ABOVE_MARKUP: usize = 3;
 
 /// The refusal of the member at `members` below `key`.
 fn refusal(key: &str, members: &[&str]) -> EncodeError {
-    let mut at = JsonPath::new();
-    at.push(key);
+    let mut at = JsonPath::of_keys([key]);
     for member in members {
         at.push(member);
     }
@@ -66,9 +65,7 @@ struct Frame<'a> {
 
 /// The path below the payload key of `member` of the control the walk is at.
 fn member_path(frames: &[Frame<'_>], member: &str) -> JsonPath {
-    let mut at = JsonPath::new();
-    at.push("layout");
-    at.push("markup");
+    let mut at = JsonPath::of_keys(["layout", "markup"]);
     for (index, frame) in frames.iter().enumerate() {
         if index > 0 {
             at.push("children");
@@ -164,8 +161,7 @@ fn check_tree(key: &str, layout: &Layout, set: ChildSet) -> Result<(), EncodeErr
             Some(at) => newest = newest.or(Some(at)),
         }
     }
-    let mut at = JsonPath::new();
-    at.push(key);
+    let mut at = JsonPath::of_keys([key]);
     if let Some(below) = newest {
         at.append(&below);
     }

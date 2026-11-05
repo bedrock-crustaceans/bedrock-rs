@@ -253,8 +253,7 @@ pub(crate) fn rename_key(
 
 /// The JSON path of component `name` in section `section` (`None`: the base).
 pub(crate) fn component_path(section: Option<usize>, name: &str) -> JsonPath {
-    let mut path = JsonPath::new();
-    path.push("minecraft:block");
+    let mut path = JsonPath::new().child("minecraft:block");
     if let Some(index) = section {
         path.push("permutations");
         path.push_index(index);
@@ -388,15 +387,13 @@ impl<const MAJOR: u16, const MINOR: u16, const PATCH: u16> VersionStruct
         else {
             return Self::parse_payload(text.text, &cx.at, d);
         };
-        let mut at = cx.at.clone();
-        at.push("minecraft:block");
+        let at = cx.at.child("minecraft:block");
         let mut block = Self::parse_payload(payload, &at, d)?;
         for (key, raw) in root {
             if key == "minecraft:block" || key == "format_version" {
                 continue;
             }
-            let mut path = cx.at.clone();
-            path.push(&key);
+            let path = cx.at.child(&key);
             // The legacy reader ignores it with no log, so the crate reports it as an information.
             d.push(Diagnostic::info(DiagnosticCode::UnrecognizedField { text: None }).at(path));
             if let Some(value) = read_value(raw) {
@@ -582,14 +579,12 @@ fn read_permutation(text: &str, at: &JsonPath, d: &mut Diagnostics) -> Option<Le
         match key.as_str() {
             "condition" => permutation.condition = read_value(raw),
             "components" => {
-                let mut path = at.clone();
-                path.push("components");
+                let path = at.child("components");
                 permutation.components = read_components(raw, &path, d)?;
                 has_components = true;
             }
             "ordered_v1_custom_components" => {
-                let mut path = at.clone();
-                path.push("ordered_v1_custom_components");
+                let path = at.child("ordered_v1_custom_components");
                 permutation.ordered_v1_custom_components = read_strings(raw, &path, d);
             }
             _ => {
@@ -613,8 +608,7 @@ fn read_components(
     let mut components = IndexMap::new();
     for (key, raw) in object_members(text)? {
         if components.contains_key(&key) {
-            let mut path = at.clone();
-            path.push(&key);
+            let path = at.child(&key);
             // The game logs a duplicate component at the content log's error level and goes
             // on: a kept error.
             d.push_kept_error(
@@ -680,8 +674,7 @@ pub(crate) fn strings_told(
         if let Some(text) = string(element) {
             strings.push(text.to_owned());
         } else {
-            let mut at = at.clone();
-            at.push_index(index);
+            let at = at.index(index);
             misread(&at, d);
         }
     }

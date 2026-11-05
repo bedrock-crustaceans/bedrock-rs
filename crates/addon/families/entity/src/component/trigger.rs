@@ -4,12 +4,13 @@
 //! The ten `on_*` components have `event`, `filters` and `target` (1.26.40); and
 //! `on_equipment_changed` has `slots` (1.26.20).
 
+use bedrock_addon_core::diagnostic::JsonPath;
 use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::json::StrictString;
 use bedrock_addon_core::shared::{Filter, FilterSubject};
 use facet::Facet;
 
-use super::parse::{Check, Typed, path};
+use super::parse::{Check, Typed};
 use super::value::EquipmentSlot;
 
 /// Declares one trigger component struct per line: `event`, `filters`, `target`.
@@ -47,7 +48,7 @@ macro_rules! triggers {
         impl Typed for $name {
             fn check(&mut self, cx: &mut Check<'_>) {
                 if let Some(filters) = &self.filters {
-                    cx.extend(filters.check(&path(&["filters"])));
+                    cx.extend(filters.check(&JsonPath::new().child("filters")));
                 }
             }
         }

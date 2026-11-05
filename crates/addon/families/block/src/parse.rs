@@ -141,7 +141,7 @@ pub(crate) fn parse_document(
     let mut components = section(
         &shell.components,
         payload,
-        &child(&cx.at, &["components"]),
+        &cx.at.with(&["components"]),
         cereal.then_some(&[][..]),
         cx,
         d,
@@ -149,7 +149,7 @@ pub(crate) fn parse_document(
     if super::component::read_collision_box(
         &mut components,
         shell.components.get(COLLISION_BOX),
-        &child(&cx.at, &["components", COLLISION_BOX]),
+        &cx.at.with(&["components", COLLISION_BOX]),
         cx.original_version,
         d,
     ) {
@@ -157,13 +157,13 @@ pub(crate) fn parse_document(
     }
     newest_members(
         &mut components,
-        &child(&cx.at, &["components"]),
+        &cx.at.with(&["components"]),
         cx.original_version,
         d,
     );
     let mut permutations = Vec::with_capacity(shell.permutations.len());
     for (index, p) in shell.permutations.iter().enumerate() {
-        let mut at = child(&cx.at, &["permutations"]);
+        let mut at = cx.at.with(&["permutations"]);
         at.push_index(index);
         at.push("components");
         let mut components = section(
@@ -177,7 +177,7 @@ pub(crate) fn parse_document(
         if super::component::read_collision_box(
             &mut components,
             p.components.get(COLLISION_BOX),
-            &child(&at, &[COLLISION_BOX]),
+            &at.with(&[COLLISION_BOX]),
             cx.original_version,
             d,
         ) {
@@ -193,7 +193,7 @@ pub(crate) fn parse_document(
     }
     let mut deprecated_event_handlers = IndexMap::new();
     for (name, raw) in &shell.deprecated_event_handlers {
-        let at = child(&cx.at, &["deprecated_event_handlers", name]);
+        let at = cx.at.with(&["deprecated_event_handlers", name]);
         if let Some(event) = parse_entry::<DeprecatedDefinitionEvent>(payload, raw, &at, d) {
             deprecated_event_handlers.insert(name.clone(), event);
         }
@@ -237,7 +237,7 @@ fn newest_members(
         // [1.26.20, 1.26.60), never a warning the load keeps.
         d.push(
             Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None })
-                .at(child(at, &["minecraft:block_entity", "entity_storage"])),
+                .at(at.with(&["minecraft:block_entity", "entity_storage"])),
         );
         entity
             .extra
@@ -251,7 +251,7 @@ fn tell_events(written: bool, events: Option<&Value>, cx: &ParseCx<'_>, d: &mut 
     if written {
         d.push(Diagnostic::deprecated_member(
             "events",
-            child(&cx.at, &["events"]),
+            cx.at.with(&["events"]),
         ));
     } else if events
         .and_then(Value::as_object)
@@ -266,7 +266,7 @@ fn tell_events(written: bool, events: Option<&Value>, cx: &ParseCx<'_>, d: &mut 
                     version: cx.original_version,
                 }),
             })
-            .at(child(&cx.at, &["events"])),
+            .at(cx.at.with(&["events"])),
         );
     }
 }
@@ -286,7 +286,7 @@ fn reject_crate_members(root: &Value, at: &JsonPath, d: &mut Diagnostics) {
         .flatten()
         .enumerate()
     {
-        let mut path = child(at, &["permutations"]);
+        let mut path = at.with(&["permutations"]);
         path.push_index(index);
         sections.push((permutation, path));
     }
@@ -305,14 +305,14 @@ fn reject_crate_members(root: &Value, at: &JsonPath, d: &mut Diagnostics) {
                 // the block (cereal documents alone reach here).
                 d.push(
                     Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None })
-                        .at(child(&path, &[key])),
+                        .at(path.with(&[key])),
                 );
             }
         }
         if object.contains_key("ordered_v1_custom_components") {
             d.push(Diagnostic::deprecated_member(
                 "ordered_v1_custom_components",
-                child(&path, &["ordered_v1_custom_components"]),
+                path.with(&["ordered_v1_custom_components"]),
             ));
         }
     }
@@ -323,7 +323,7 @@ fn reject_crate_members(root: &Value, at: &JsonPath, d: &mut Diagnostics) {
 /// the walk's `UnrecognizedField` at `description/traits/<name>` of a cereal document is that
 /// finding, told once (the rule of `validate` never runs on a block the strict slice rejects).
 fn unknown_traits(d: &mut Diagnostics, start: usize, at: &JsonPath) {
-    let traits = child(at, &["description", "traits"]);
+    let traits = at.with(&["description", "traits"]);
     for finding in d.iter_mut().skip(start) {
         if !matches!(finding.code, DiagnosticCode::UnrecognizedField { .. }) {
             continue;
@@ -367,7 +367,7 @@ fn section(
             d.push(
                 // The cereal document refuses these keys: an error that fails the block.
                 Diagnostic::error(bedrock_addon_core::diagnostic::cereal::key_not_allowed(key))
-                    .at(child(at, &[key])),
+                    .at(at.with(&[key])),
             );
         } else if rejected.is_none() && NOT_IN_LEGACY.contains(&key.as_str()) {
             unread.push((key.clone(), value.clone()));
@@ -420,7 +420,7 @@ fn section(
                     args: vec![key.clone()],
                 }),
             })
-            .at(child(at, &[&key])),
+            .at(at.with(&[&key])),
         );
         let json =
             bedrock_addon_core::json::from_str_jsonc::<Value>(raw.as_str()).unwrap_or(Value::NULL);
@@ -479,15 +479,6 @@ fn parse_entry<T: for<'f> Facet<'f>>(
             None
         }
     }
-}
-
-/// `base` followed by `keys`.
-pub(crate) fn child(base: &JsonPath, keys: &[&str]) -> JsonPath {
-    let mut path = base.clone();
-    for key in keys {
-        path.push(key);
-    }
-    path
 }
 
 // ---- Molang  -------------------

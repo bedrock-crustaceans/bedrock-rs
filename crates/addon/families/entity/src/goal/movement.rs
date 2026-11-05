@@ -4657,8 +4657,7 @@ impl MolangFields for Panic {
 /// loads the goal): the game's warning level for `all` beside others; the caller makes
 /// the error-level empty list a kept error.
 pub(crate) fn legacy_warning(key: &str, text: &'static str) -> Diagnostic {
-    let mut at = JsonPath::new();
-    at.push(key);
+    let at = JsonPath::new().child(key);
     Diagnostic::warn(DiagnosticCode::InvalidValue {
         text: Some(VanillaText::Fixed(text)),
     })

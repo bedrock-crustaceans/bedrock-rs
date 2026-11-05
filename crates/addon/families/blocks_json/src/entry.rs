@@ -42,12 +42,7 @@ pub(super) fn read(
     vanilla: bool,
     d: &mut Diagnostics,
 ) -> ReadEntry {
-    let at = |member: &str| {
-        let mut path = JsonPath::new();
-        path.push(key);
-        path.push(member);
-        path
-    };
+    let at = |member: &str| JsonPath::new().child(key).child(member);
     let mut block = ClientBlock::default();
     let mut requested_shape = None;
     if let Some(value) = object.get("textures") {
@@ -111,9 +106,7 @@ pub(super) fn unread_members(object: &VObject, key: &str, d: &mut Diagnostics) {
         if READ.contains(&name) {
             continue;
         }
-        let mut at = JsonPath::new();
-        at.push(key);
-        at.push(name);
+        let at = JsonPath::new().child(key).child(name);
         d.push(
             Diagnostic::info(DiagnosticCode::IgnoredMember { text: None })
                 .at(at)

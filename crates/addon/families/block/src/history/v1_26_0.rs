@@ -7,7 +7,7 @@ use super::legacy::{Legacy, component_path, fixed, string, text, to_object};
 use super::ops::{dropped_field, geometry_identifier, is_opaque};
 use super::v1_20_10::FULL_BLOCK;
 use crate::component::BlockComponent;
-use crate::parse::{child, parse_document};
+use crate::parse::parse_document;
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity, VanillaText,
 };
@@ -94,7 +94,7 @@ impl Upgrade for Block {
             .is_some_and(|events| !events.is_object())
         {
             super::legacy::misread(
-                &child(&JsonPath::new(), &["minecraft:block", "events"]),
+                &JsonPath::new().with(&["minecraft:block", "events"]),
                 cx.diagnostics,
             );
         }
@@ -107,17 +107,17 @@ impl Upgrade for Block {
                         Diagnostic::error(DiagnosticCode::InvalidType {
                             text: fixed("Invalid, nonstring Json "),
                         })
-                        .at(child(&JsonPath::new(), &["minecraft:block", "events", &name]).clone())
+                        .at(JsonPath::new()
+                            .with(&["minecraft:block", "events", &name])
+                            .clone())
                         .phase(Phase::Upgrade),
                     );
                 }
                 // What the side-car's reader tells of the handler is told of the event the
                 // file has.
-                let from = child(&JsonPath::new(), &["minecraft:block", "events", &name]);
-                let to = child(
-                    &JsonPath::new(),
-                    &["minecraft:block", "deprecated_event_handlers", &name],
-                );
+                let from = JsonPath::new().with(&["minecraft:block", "events", &name]);
+                let to =
+                    JsonPath::new().with(&["minecraft:block", "deprecated_event_handlers", &name]);
                 cx.diagnostics.moved(from.clone(), to.clone());
                 let handler = event_node(&node, &from, &to, cx.diagnostics);
                 handlers.insert(name, handler);
@@ -134,19 +134,19 @@ impl Upgrade for Block {
 /// taken out, so that it is not read in the place of the file's own components and events,
 /// and told as the unknown member it is.
 fn drop_crate_members(block: &mut Block, d: &mut Diagnostics) {
-    let payload = child(&JsonPath::new(), &["minecraft:block"]);
+    let payload = JsonPath::new().with(&["minecraft:block"]);
     for key in ["deprecated", "deprecated_event_handlers"] {
         if block.extra.remove(key).is_some() {
             d.push(
                 Diagnostic::info(DiagnosticCode::UnrecognizedField { text: None })
-                    .at(child(&payload, &[key]).clone())
+                    .at(payload.with(&[key]).clone())
                     .phase(Phase::Upgrade),
             );
         }
     }
     for (index, permutation) in block.permutations.iter_mut().enumerate() {
         if permutation.extra.remove("deprecated").is_some() {
-            let mut at = child(&payload, &["permutations"]);
+            let mut at = payload.with(&["permutations"]);
             at.push_index(index);
             at.push("deprecated");
             d.push(
@@ -176,7 +176,7 @@ fn drop_skipped(
         .filter(|index| !skipped.contains(index))
         .collect();
     d.left_out(
-        &child(&JsonPath::new(), &["minecraft:block", "permutations"]),
+        &JsonPath::new().with(&["minecraft:block", "permutations"]),
         &kept,
     );
     let mut index = 0;
@@ -203,7 +203,7 @@ fn drop_skipped(
 /// `[1.19.60, 1.19.70)` reject the block, permutations at 1.19.60 skipped, legacy events
 /// cleared, legacy triggers unrecognized.
 fn gates(block: &mut Block, original: FormatVersion, d: &mut Diagnostics) {
-    let description = |key: &str| child(&JsonPath::new(), &["minecraft:block", "description", key]);
+    let description = |key: &str| JsonPath::new().with(&["minecraft:block", "description", key]);
     let has_states = block
         .description
         .get("states")
@@ -231,13 +231,15 @@ fn gates(block: &mut Block, original: FormatVersion, d: &mut Diagnostics) {
                     "To use custom block permutations, use format verison 1.19.70 or higher.",
                 ),
             })
-            .at(child(&JsonPath::new(), &["minecraft:block", "permutations"]).clone())
+            .at(JsonPath::new()
+                .with(&["minecraft:block", "permutations"])
+                .clone())
             .phase(Phase::Upgrade),
         );
     }
     if block.events.take().is_some() {
         dropped_field(
-            &child(&JsonPath::new(), &["minecraft:block", "events"]),
+            &JsonPath::new().with(&["minecraft:block", "events"]),
             None,
             d,
         );
@@ -370,8 +372,7 @@ fn side_car(
         };
         sidecar.insert((*name).to_owned(), converted);
         // What is told of the side-car's member is told of the component the file has.
-        let mut to = JsonPath::new();
-        to.push("minecraft:block");
+        let mut to = JsonPath::new().child("minecraft:block");
         if let Some(index) = section {
             to.push("permutations");
             to.push_index(index);
@@ -382,9 +383,9 @@ fn side_car(
         if *name == "queued_ticking" {
             // The two tick counts are the two ends of the file's `interval_range`.
             for (index, member) in ["min_ticks", "max_ticks"].into_iter().enumerate() {
-                let mut end = child(&at, &["interval_range"]);
+                let mut end = at.with(&["interval_range"]);
                 end.push_index(index);
-                d.moved(end, child(&to, &[member]));
+                d.moved(end, to.with(&[member]));
             }
         }
     }
@@ -401,7 +402,7 @@ fn queued_ticking(value: &Value, at: &JsonPath, d: &mut Diagnostics) -> Value {
     let mut out = facet_value::VObject::new();
     let range = object.get("interval_range");
     if range.is_some_and(|range| !range.is_array()) {
-        super::legacy::misread(&child(at, &["interval_range"]), d);
+        super::legacy::misread(&at.with(&["interval_range"]), d);
     }
     if let Some(range) = range.and_then(Value::as_array) {
         if let Some(min) = range.get(0) {
@@ -412,7 +413,7 @@ fn queued_ticking(value: &Value, at: &JsonPath, d: &mut Diagnostics) -> Value {
         }
         // The two ends are read; an element behind them is not, and told where it is.
         for index in 2..range.len() {
-            let mut element = child(at, &["interval_range"]);
+            let mut element = at.with(&["interval_range"]);
             element.push_index(index);
             d.push(
                 Diagnostic::info(DiagnosticCode::UnrecognizedField { text: None })
@@ -517,7 +518,7 @@ fn conditions(block: &Block, d: &mut Diagnostics) {
             .as_ref()
             .is_some_and(|c| !c.is_string())
         {
-            let mut at = child(&JsonPath::new(), &["minecraft:block", "permutations"]);
+            let mut at = JsonPath::new().with(&["minecraft:block", "permutations"]);
             at.push_index(index);
             at.push("condition");
             d.push(
@@ -567,7 +568,7 @@ fn event_node(node: &Value, from: &JsonPath, to: &JsonPath, d: &mut Diagnostics)
                     let mut trigger = facet_value::VObject::new();
                     trigger.insert("event", event);
                     out.insert("trigger", trigger);
-                    d.moved(child(from, &[key]), child(to, &[key, "event"]));
+                    d.moved(from.with(&[key]), to.with(&[key, "event"]));
                 }
                 None => {
                     out.insert("trigger", value.clone());
@@ -575,12 +576,12 @@ fn event_node(node: &Value, from: &JsonPath, to: &JsonPath, d: &mut Diagnostics)
             },
             "weight" => {
                 out.insert("probability", value.clone());
-                d.moved(child(from, &[key]), child(to, &["probability"]));
+                d.moved(from.with(&[key]), to.with(&["probability"]));
             }
             "sequence" | "randomize" => {
                 let mut children = facet_value::VArray::new();
                 for (index, node) in value.as_array().into_iter().flatten().enumerate() {
-                    let (mut from, mut to) = (child(from, &[key]), child(to, &[key]));
+                    let (mut from, mut to) = (from.with(&[key]), to.with(&[key]));
                     from.push_index(index);
                     to.push_index(index);
                     children.push(event_node(node, &from, &to, d));
@@ -588,10 +589,10 @@ fn event_node(node: &Value, from: &JsonPath, to: &JsonPath, d: &mut Diagnostics)
                 out.insert(key, children);
             }
             _ => {
-                let mut place = child(to, &["responses"]);
+                let mut place = to.with(&["responses"]);
                 place.push_index(responses.len());
                 place.push(key);
-                d.moved(child(from, &[key]), place);
+                d.moved(from.with(&[key]), place);
                 let mut response = facet_value::VObject::new();
                 response.insert(key, value.clone());
                 responses.push(response);
@@ -675,7 +676,7 @@ fn convert(payload: &Value, legacy: &Block, cx: &mut UpgradeCx<'_>) -> super::v1
         // read as an empty block in silence: the refusal is an error where the writer
         // stopped, and the file is rejected with it.
         Err(error) => {
-            let mut place = child(&JsonPath::new(), &["minecraft:block"]);
+            let mut place = JsonPath::new().with(&["minecraft:block"]);
             // Any other refusal the writer may come to have is said at the payload.
             if let bedrock_addon_core::json::EncodeError::NotRepresentable { at, .. } = &error {
                 place.append(at);
@@ -696,7 +697,7 @@ fn convert(payload: &Value, legacy: &Block, cx: &mut UpgradeCx<'_>) -> super::v1
             prerelease: false,
         },
         original_version: cx.original_version,
-        at: child(&JsonPath::new(), &["minecraft:block"]),
+        at: JsonPath::new().with(&["minecraft:block"]),
     };
     let mut found = Diagnostics::default();
     let parsed = parse_document(JsonSlice::new(&text), &parse, &mut found);
@@ -716,7 +717,7 @@ fn convert(payload: &Value, legacy: &Block, cx: &mut UpgradeCx<'_>) -> super::v1
     // file has; `validate` then leaves that finding to this one.
     // Where the file has the members the rules of 1.26.20 refuse, for the write's refusal:
     // the moves of the chain are all recorded here, at its last step.
-    let payload_at = child(&JsonPath::new(), &["minecraft:block"]);
+    let payload_at = JsonPath::new().with(&["minecraft:block"]);
     for finding in crate::validate::refused_by_newest(&block, &payload_at) {
         let of_block = finding.location.json_path;
         let of_file = cx.diagnostics.source_of(&of_block);
@@ -725,8 +726,8 @@ fn convert(payload: &Value, legacy: &Block, cx: &mut UpgradeCx<'_>) -> super::v1
         }
     }
     if let Some(section) = legacy.category_from {
-        let payload = child(&JsonPath::new(), &["minecraft:block"]);
-        let menu = child(&payload, &["description", "menu_category"]);
+        let payload = JsonPath::new().with(&["minecraft:block"]);
+        let menu = payload.with(&["description", "menu_category"]);
         for mut finding in crate::validate::refused_by_newest(&block, &payload) {
             // The members of a menu category are keys (`category`, `group`).
             let Some(member) = finding

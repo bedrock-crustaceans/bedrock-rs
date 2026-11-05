@@ -7,7 +7,7 @@ use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
 use facet_value::VObject;
 
 use super::ops::{
-    Members, Removed, Told, below, components, is, json, removed, rename, rename_member, section_a,
+    Members, Removed, Told, components, is, json, removed, rename, rename_member, section_a,
     section_b, sections,
 };
 use bedrock_addon_core::diagnostic::JsonPath;
@@ -55,15 +55,12 @@ impl Upgrade for Entity {
                         home.insert("restriction_type", "random_movement");
                     }
                 }
-                let lookat_at = below(&section.at, &["minecraft:lookat"]);
+                let lookat_at = section.at.child("minecraft:lookat");
                 if let Some(lookat) = members.object("minecraft:lookat")
                     && looked_at(lookat, &lookat_at, &mut told)
                 {
                     // At the member as the file has it: under `lookat`.
-                    lost.push(below(
-                        &section.at,
-                        &["minecraft:lookat", "allow_invulnerable"],
-                    ));
+                    lost.push(section.at.with(&["minecraft:lookat", "allow_invulnerable"]));
                 }
                 rename(
                     members,

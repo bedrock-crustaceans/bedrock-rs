@@ -16,17 +16,13 @@ pub(crate) fn animation_findings(
 ) {
     let mut any_event = false;
     for (key, animation) in &file.animations {
-        let mut base = JsonPath::new();
-        base.push("animations");
-        base.push(key);
+        let base = JsonPath::new().child("animations").child(key);
         if let Some(bones) = &animation.bones {
             let mut seen = Vec::new();
             for name in bones.keys() {
                 let lower = name.to_ascii_lowercase();
                 if seen.contains(&lower) {
-                    let mut at = base.clone();
-                    at.push("bones");
-                    at.push(name);
+                    let at = base.child("bones").child(name);
                     push(
                         diagnostics,
                         DiagnosticCode::DuplicateBone,
@@ -41,16 +37,12 @@ pub(crate) fn animation_findings(
         if let Some(timeline) = &animation.timeline {
             let mut list = Vec::new();
             for (time, entries) in timeline {
-                let mut at = base.clone();
-                at.push("timeline");
-                at.push(time);
+                let at = base.child("timeline").child(time);
                 match entries {
                     OneOrMany::One(e) => list.push((at, e)),
                     OneOrMany::Many(many) => {
                         for (index, e) in many.iter().enumerate() {
-                            let mut at = at.clone();
-                            at.push_index(index);
-                            list.push((at, e));
+                            list.push((at.index(index), e));
                         }
                     }
                 }

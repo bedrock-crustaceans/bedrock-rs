@@ -29,12 +29,6 @@ fn note(at: JsonPath) -> Diagnostic {
     Diagnostic::info(DiagnosticCode::InvalidValue { text: None }).at(at)
 }
 
-fn key(at: &JsonPath, name: &str) -> JsonPath {
-    let mut path = at.clone();
-    path.push(name);
-    path
-}
-
 /// The members of one object: a string member as its typed reading, a member of another
 /// type kept as written, every member not read kept and reported.
 struct Fields<'v> {
@@ -73,7 +67,7 @@ impl<'v> Fields<'v> {
             if !read.contains(&name.as_str()) {
                 diagnostics.push(
                     Diagnostic::info(DiagnosticCode::UnrecognizedField { text: None })
-                        .at(key(&self.at, name.as_str())),
+                        .at(self.at.child(name.as_str())),
                 );
                 self.extra.insert(name.as_str().to_owned(), member.clone());
             }
@@ -101,13 +95,13 @@ impl Skin {
         // assert, no content-log line, so the crate reports an information.
         for (name, path) in [("texture", &skin.texture), ("cape", &skin.cape)] {
             if path.as_ref().is_some_and(|path| path.len() > MAX_PATH) {
-                diagnostics.push(note(key(at, name)));
+                diagnostics.push(note(at.child(name)));
             }
         }
         // The game compares the type with nothing and logs nothing; creators mean `free` or
         // `paid`, so the crate reports an information.
         if fields.raw("type").is_some() && !matches!(skin.type_.as_deref(), Some("free" | "paid")) {
-            diagnostics.push(note(key(at, "type")));
+            diagnostics.push(note(at.child("type")));
         }
         let read: Vec<&str> = STRING_KEYS.into_iter().chain(PATCH_KEYS).collect();
         skin.extra = fields.finish(&read, diagnostics);
@@ -171,7 +165,7 @@ impl SkinPack {
         let mut fields = Fields::new(root, at.clone());
         let serialize_name = fields.string("serialize_name");
         let localization_name = fields.string("localization_name");
-        let skins_at = key(&at, "skins");
+        let skins_at = at.child("skins");
         let mut places = Vec::new();
         let skins = fields.raw("skins").map(|member| {
             // The game sizes the pack by an array and then iterates whatever is there: an
@@ -179,8 +173,7 @@ impl SkinPack {
             let mut entries: Vec<(JsonPath, &Value)> = Vec::new();
             if let Some(elements) = member.as_array() {
                 for (i, element) in elements.iter().enumerate() {
-                    let mut at = skins_at.clone();
-                    at.push_index(i);
+                    let at = skins_at.index(i);
                     entries.push((at, element));
                 }
             } else {
@@ -197,7 +190,7 @@ impl SkinPack {
                 entries.extend(
                     members
                         .into_iter()
-                        .map(|(name, value)| (key(&skins_at, name), value)),
+                        .map(|(name, value)| (skins_at.child(name), value)),
                 );
             }
             let mut skins = Vec::with_capacity(entries.len());
@@ -220,7 +213,7 @@ impl SkinPack {
         if serialize_name.is_none() || serialize_name != localization_name {
             diagnostics.push(
                 Diagnostic::info(DiagnosticCode::SkinPackNameMismatch)
-                    .at(key(&at, "serialize_name")),
+                    .at(at.child("serialize_name")),
             );
         }
         // A creator rule, not the game's.

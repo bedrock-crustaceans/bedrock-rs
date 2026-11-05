@@ -18,7 +18,7 @@ use bedrock_addon_core::visual::{AnimateEntry, ControllerUse, HeldItemScale, Scr
 use indexmap::IndexMap;
 
 use super::ClientEntity;
-use super::read::{self, below, text};
+use super::read::{self, text};
 
 /// A named script as the schema types it (`ExpressionNode`): a number, a boolean or a string
 /// at the pack's version. A string the parser rejects fails the schema, so the document is refused
@@ -217,7 +217,7 @@ fn molang_context(
 /// - a `scripts.animate` entry that names no `animations` key is noted;
 /// - an empty object in `render_controllers` or `scripts.animate` is noted (an information) and held.
 pub(crate) fn validate(entity: &mut ClientEntity, cx: &mut ValidateCx<'_>) {
-    let at = below(&cx.at, &[read::PAYLOAD, "description"]);
+    let at = cx.at.with(&[read::PAYLOAD, "description"]);
     held_item_scale(entity, &at, cx.diagnostics);
     #[cfg(feature = "molang")]
     loader_scripts(entity, &at, cx);
@@ -232,7 +232,7 @@ pub(crate) fn validate(entity: &mut ClientEntity, cx: &mut ValidateCx<'_>) {
 fn empty_conditions(entity: &ClientEntity, at: &JsonPath, d: &mut Diagnostics) {
     // The crate's own information: the game says nothing here.
     let mut tell = |list: &[&str], index: usize| {
-        let mut entry_at = below(at, list);
+        let mut entry_at = at.with(list);
         entry_at.push_index(index);
         d.push(
             Diagnostic::info(DiagnosticCode::InvalidValue { text: None })
@@ -268,7 +268,7 @@ fn held_item_scale(entity: &ClientEntity, at: &JsonPath, d: &mut Diagnostics) {
             Diagnostic::error(DiagnosticCode::InvalidValue {
                 text: text(HELD_ITEM_SCALE_TEXT, &[FILE, &scale.to_string()]),
             })
-            .at(below(at, &["held_item_scale"]))
+            .at(at.with(&["held_item_scale"]))
             .phase(Phase::Validate),
         );
     }
@@ -292,7 +292,7 @@ fn loader_scripts(entity: &mut ClientEntity, at: &JsonPath, cx: &mut ValidateCx<
         let Some(joined) = joined(member.as_deref()) else {
             continue;
         };
-        let member_at = below(at, &["scripts", name]);
+        let member_at = at.with(&["scripts", name]);
         let location = Location::new(None, None, member_at.clone(), None);
         let source = MolangSource::string(joined, cx.load.molang_version);
         let outcome = check.check_source(
@@ -348,16 +348,17 @@ fn animate_names(entity: &ClientEntity, at: &JsonPath, d: &mut Diagnostics) {
         if resolved {
             continue;
         }
-        let mut entry_at = below(at, &["scripts", "animate"]);
+        let mut entry_at = at.with(&["scripts", "animate"]);
         entry_at.push_index(index);
-        let mut found = Diagnostic::info(DiagnosticCode::UnresolvedReference { text: None })
-            .at(entry_at)
-            .phase(Phase::Validate);
-        found.detail = Some(Box::new(DiagnosticDetail::Reference {
-            kind: "animation",
-            id: name.to_owned(),
-            hint: None,
-        }));
-        d.push(found);
+        d.push(
+            Diagnostic::info(DiagnosticCode::UnresolvedReference { text: None })
+                .at(entry_at)
+                .phase(Phase::Validate)
+                .detail(DiagnosticDetail::Reference {
+                    kind: "animation",
+                    id: name.to_owned(),
+                    hint: None,
+                }),
+        );
     }
 }

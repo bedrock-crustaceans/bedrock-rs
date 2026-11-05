@@ -4,7 +4,7 @@ super::legacy_struct!(1, 17, 20);
 
 use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
 
-use super::ops::{Removed, below, removed, section_a, sections};
+use super::ops::{Removed, removed, section_a, sections};
 
 /// 1.17.20 → 1.18.0 (gate 1.18.0).
 impl Upgrade for Entity {
@@ -20,10 +20,7 @@ impl Upgrade for Entity {
                 if let Some(rideable) = section.members.object("minecraft:rideable")
                     && rideable.remove("controlling_seat").is_some()
                 {
-                    gone.push(below(
-                        &section.at,
-                        &["minecraft:rideable", "controlling_seat"],
-                    ));
+                    gone.push(section.at.with(&["minecraft:rideable", "controlling_seat"]));
                 }
             }
             for at in gone {

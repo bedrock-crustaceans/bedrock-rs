@@ -158,8 +158,7 @@ impl RenderControllerFile {
         all.sort_by(|a, b| a.0.as_bytes().cmp(b.0.as_bytes()));
         if all.is_empty() {
             // The schema requires a controller: `"render_controllers": {}` fails the file.
-            let mut at = JsonPath::new();
-            at.push("render_controllers");
+            let at = JsonPath::of_keys(["render_controllers"]);
             return Err(EncodeError::NotRepresentable {
                 at,
                 what: bedrock_addon_core::json::Unrepresentable::Unsupported,
@@ -168,9 +167,7 @@ impl RenderControllerFile {
         // One key in both maps (a file built by hand): the object has the key once, so one of
         // the two controllers would be lost.
         if let Some(twice) = all.windows(2).find(|pair| pair[0].0 == pair[1].0) {
-            let mut at = JsonPath::new();
-            at.push("render_controllers");
-            at.push(twice[0].0.as_str());
+            let at = JsonPath::of_keys(["render_controllers", twice[0].0.as_str()]);
             return Err(EncodeError::NotRepresentable {
                 at,
                 what: bedrock_addon_core::json::Unrepresentable::Unsupported,

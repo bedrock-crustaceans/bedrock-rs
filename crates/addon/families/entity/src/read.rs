@@ -173,7 +173,7 @@ impl Reader<'_, '_> {
     /// A failed typed parse of a slice, at `base` followed by the failing member.
     fn slice_error(&mut self, error: &SliceError, base: &JsonPath, severity: Severity) {
         let code = error.code_with_path(error.has_path());
-        self.report(code, severity, append(base, &error.path), Some(error.span));
+        self.report(code, severity, base.join(&error.path), Some(error.span));
     }
 
     /// [`Self::typed`] with a failure that is a kept error: the game logs it at the error level
@@ -216,7 +216,7 @@ impl Reader<'_, '_> {
                 self.report(
                     DiagnosticCode::UnrecognizedField { text: None },
                     Severity::Warning,
-                    append(base, &path),
+                    base.join(&path),
                     None,
                 );
             }
@@ -226,7 +226,7 @@ impl Reader<'_, '_> {
                 self.report(
                     DiagnosticCode::InvalidType { text: None },
                     Severity::Info,
-                    append(base, &path),
+                    base.join(&path),
                     None,
                 );
             }
@@ -254,17 +254,6 @@ pub(crate) fn keep_unknown<'f, T: Facet<'f>>(
         .collect();
     (unknown, misread)
 }
-
-/// `base` followed by `relative`.
-pub(crate) fn append(base: &JsonPath, relative: &JsonPath) -> JsonPath {
-    let mut path = base.clone();
-    path.append(relative);
-    path
-}
-
-/// `base` followed by `key`: the one function behind the component readers' `join` and this
-/// reader's `child`.
-pub(crate) use crate::component::parse::join as child;
 
 /// The root span of a slice.
 pub(crate) fn span_of(slice: JsonSlice<'_>) -> Span {
@@ -335,7 +324,7 @@ pub(crate) fn payload_version_unread(
     }
     Some(
         Diagnostic::info(DiagnosticCode::UnrecognizedField { text: None })
-            .at(child(&cx.at, "format_version")),
+            .at(cx.at.child("format_version")),
     )
 }
 
@@ -351,7 +340,7 @@ pub(crate) fn read_entity(
         // `entity_version` is checked by hand (its "Error loading 'entity_version' …" texts),
         // not read by the slice's types: a member inside it that its checks do not read is no
         // unknown member of the slice (the entity-version check tells it); the member itself, below 1.26.20, is.
-        let hand_checked = child(&child(at, "description"), "entity_version");
+        let hand_checked = at.child("description").child("entity_version");
         unknown_members_are_errors(r.d, start, &hand_checked);
     }
     entity
@@ -420,16 +409,16 @@ fn read_entity_members(
         r.report(
             DiagnosticCode::MissingRequiredField { text: None },
             severity,
-            child(at, "description"),
+            at.child("description"),
             Some(span_of(payload)),
         );
         return None;
     };
-    let description_at = child(at, "description");
+    let description_at = at.child("description");
     let read = read_description(r, nested(payload, &description), &description_at)?;
     let mut description = read.description;
     let components = match shell.components {
-        Some(entries) => read_components(r, &entries, payload, &child(at, "components")),
+        Some(entries) => read_components(r, &entries, payload, &at.child("components")),
         None => ComponentMap::new(),
     };
     let component_groups = read_groups(r, shell.component_groups, payload, at);
@@ -457,12 +446,12 @@ fn read_entity_members(
                 // The game logs this at the warning level for a document below 1.21.89 and lifts it
                 // to an error from that version on.
                 Severity::Warning,
-                child(at, "brain"),
+                at.child("brain"),
                 Some(span_of(slice)),
             );
             return None;
         }
-        r.typed::<Option<Brain>>(slice, &child(at, "brain"), Severity::Error)
+        r.typed::<Option<Brain>>(slice, &at.child("brain"), Severity::Error)
             .flatten()
     });
     let mut deprecated = shell.deprecated.map(|shell| DeprecatedData {
@@ -488,7 +477,7 @@ fn read_entity_members(
         r.report(
             DiagnosticCode::DroppedField { text: None },
             Severity::Info,
-            child(at, "do_not_upgrade"),
+            at.child("do_not_upgrade"),
             None,
         );
     }
@@ -513,10 +502,10 @@ fn read_groups(
     at: &JsonPath,
 ) -> IndexMap<String, ComponentGroup> {
     let mut out = IndexMap::new();
-    let all_groups_at = child(at, "component_groups");
+    let all_groups_at = at.child("component_groups");
     for (name, raw) in groups.unwrap_or_default() {
         let slice = nested(payload, &raw);
-        let group_at = child(&all_groups_at, &name);
+        let group_at = all_groups_at.child(&name);
         match bedrock_addon_core::json::from_str_borrowed_jsonc::<
             Option<IndexMap<String, RawJson<'_>>>,
         >(slice.text)
@@ -571,7 +560,7 @@ pub(crate) fn read_components(
     let mut map = ComponentMap::new();
     for (key, raw) in entries {
         let slice = nested(within, raw);
-        let path = child(at, key);
+        let path = at.child(key);
         let generic = goal::generic_goal(key);
         if r.original_version >= GENERIC_GOALS_SINCE
             && let Some(mut finding) = generic.finding(path.clone())
@@ -718,7 +707,7 @@ pub(crate) fn read_components(
                 // A member the lenient read moved before reading it: what is told of it
                 // from here on is told at the member the file has.
                 Told::Moved { from, to } => {
-                    r.d.moved(append(&path, &from), append(&path, &to));
+                    r.d.moved(path.join(&from), path.join(&to));
                     continue;
                 }
             };
@@ -745,7 +734,7 @@ pub(crate) fn read_components(
                 // value it cannot use, so the crate reports an information.
                 finding.severity = Severity::Info;
             }
-            finding.location.json_path = append(&path, &finding.location.json_path);
+            finding.location.json_path = path.join(&finding.location.json_path);
             if !r.spans || respanned {
                 finding.location.span = None;
             }
@@ -951,7 +940,7 @@ fn settle_aliases(
     deprecated: &mut Option<DeprecatedData>,
     description_at: &JsonPath,
 ) {
-    let path = child(description_at, "aliases");
+    let path = description_at.child("aliases");
     if r.original_version < ALIASES_DEPRECATED {
         r.report(
             DiagnosticCode::DeprecatedMember { text: None },
@@ -1002,7 +991,7 @@ fn read_description(
     let mut properties = IndexMap::new();
     let mut failed = false;
     for (name, raw) in shell.properties.unwrap_or_default() {
-        let path = child(&child(at, "properties"), &name);
+        let path = at.child("properties").child(&name);
         match read_property(r, nested(slice, &raw), &path) {
             Some(property) => {
                 properties.insert(name, property);
@@ -1018,13 +1007,13 @@ fn read_description(
             DiagnosticCode::DroppedField {
                 text: Some(VanillaText::Fixed("Error loading Actor Properties")),
             },
-            child(at, "properties"),
+            at.child("properties"),
             None,
         );
     }
     let scripts = shell
         .scripts
-        .and_then(|raw| read_scripts(r, nested(slice, &raw), &child(at, "scripts")));
+        .and_then(|raw| read_scripts(r, nested(slice, &raw), &at.child("scripts")));
     let spawn_category = shell.spawn_category.and_then(|value| {
         let category = value
             .as_string()
@@ -1036,7 +1025,7 @@ fn read_description(
                 // The game writes no content-log line for a bad `spawn_category`, so the crate
                 // reports an information.
                 Severity::Info,
-                child(at, "spawn_category"),
+                at.child("spawn_category"),
                 None,
             );
         }
@@ -1076,7 +1065,7 @@ fn read_property(r: &mut Reader<'_, '_>, slice: JsonSlice<'_>, at: &JsonPath) ->
         _ => {
             r.report_kept(
                 DiagnosticCode::InvalidValue { text: None },
-                child(at, "type"),
+                at.child("type"),
                 None,
             );
             return None;
@@ -1087,7 +1076,7 @@ fn read_property(r: &mut Reader<'_, '_>, slice: JsonSlice<'_>, at: &JsonPath) ->
         None => None,
         Some(raw) => {
             let default_slice = nested(slice, &raw);
-            let default_at = child(at, "default");
+            let default_at = at.child("default");
             let json = json_of(default_slice);
             if let Some(b) = json.as_bool() {
                 Some(PropertyDefault::Bool(b))
@@ -1134,7 +1123,7 @@ fn read_property(r: &mut Reader<'_, '_>, slice: JsonSlice<'_>, at: &JsonPath) ->
             _ => {
                 r.report_kept(
                     DiagnosticCode::InvalidValue { text: None },
-                    child(at, "range"),
+                    at.child("range"),
                     None,
                 );
                 return None;
@@ -1161,11 +1150,10 @@ fn read_scripts(r: &mut Reader<'_, '_>, slice: JsonSlice<'_>, at: &JsonPath) -> 
     let mut animate = Vec::new();
     // The file's index of each entry held: a finding told later is at the file's element.
     let mut places = Vec::new();
-    let animate_at = child(at, "animate");
+    let animate_at = at.child("animate");
     for (index, raw) in shell.animate.unwrap_or_default().iter().enumerate() {
         let entry_slice = nested(slice, raw);
-        let mut entry_at = animate_at.clone();
-        entry_at.push_index(index);
+        let entry_at = animate_at.index(index);
         if let Some(name) = json_of(entry_slice)
             .as_string()
             .map(|s| s.as_str().to_owned())
@@ -1203,7 +1191,7 @@ fn read_scripts(r: &mut Reader<'_, '_>, slice: JsonSlice<'_>, at: &JsonPath) -> 
         let mut valid = true;
         for (name, raw) in &members {
             let value_slice = nested(entry_slice, raw);
-            let value_at = child(&entry_at, name);
+            let value_at = entry_at.child(name);
             if !json_of(value_slice).is_string() {
                 r.report(
                     DiagnosticCode::InvalidType { text: None },
@@ -1251,8 +1239,8 @@ fn settle_entity_version(
     extra: &mut Extra,
     at: &JsonPath,
 ) -> IndexMap<String, Value> {
-    let description_at = child(at, "description");
-    let version_at = child(&description_at, "entity_version");
+    let description_at = at.child("description");
+    let version_at = description_at.child("entity_version");
     if r.original_version < ENTITY_VERSION_SINCE {
         if let Some(value) = entity_version {
             r.report(
@@ -1272,7 +1260,7 @@ fn settle_entity_version(
                 // The game logs this at the warning level for a document below 1.21.89 and lifts it
                 // to an error from that version on.
                 Severity::Warning,
-                child(at, "upgrades"),
+                at.child("upgrades"),
                 None,
             );
             // Told, not kept.
@@ -1290,7 +1278,7 @@ fn settle_entity_version(
         let (name, gated) = if entity_version.is_some() {
             ("entity_version", version_at.clone())
         } else {
-            ("upgrades", child(at, "upgrades"))
+            ("upgrades", at.child("upgrades"))
         };
         r.report(
             DiagnosticCode::MissingToggles {
@@ -1323,7 +1311,7 @@ fn settle_entity_version(
                     // The game reads only the members it knows and logs no line for another, so
                     // the crate reports an information.
                     Severity::Info,
-                    append(&version_at, &unread),
+                    version_at.join(&unread),
                     None,
                 );
             }
@@ -1331,7 +1319,7 @@ fn settle_entity_version(
             upgrades
         }
         Err((text, path)) => {
-            let invalid_at = append(&version_at, &path);
+            let invalid_at = version_at.join(&path);
             if matches!(text, VanillaText::UpgradeHandlerUndefined { .. }) {
                 // The handler lookup's text is the crate's own (the game has no such line): an
                 // information.
@@ -1373,7 +1361,7 @@ fn upgrades_dropped(r: &mut Reader<'_, '_>, at: &JsonPath) {
     r.report(
         DiagnosticCode::DroppedField { text: None },
         Severity::Info,
-        child(at, "upgrades"),
+        at.child("upgrades"),
         None,
     );
 }
@@ -1387,18 +1375,17 @@ fn unread_version_members(value: &Value) -> Vec<JsonPath> {
     };
     for key in object.keys().map(facet_value::VString::as_str) {
         if key != "upgrades" {
-            out.push(child(&JsonPath::new(), key));
+            out.push(JsonPath::new().child(key));
         }
     }
-    let list_at = child(&JsonPath::new(), "upgrades");
+    let list_at = JsonPath::new().child("upgrades");
     let entries = object.get("upgrades").and_then(Value::as_array);
     for (index, entry) in entries.into_iter().flatten().enumerate() {
-        let mut entry_at = list_at.clone();
-        entry_at.push_index(index);
+        let entry_at = list_at.index(index);
         let keys = entry.as_object().into_iter().flat_map(|entry| entry.keys());
         for key in keys.map(facet_value::VString::as_str) {
             if key != "upgrade_to" && key != "name" {
-                out.push(child(&entry_at, key));
+                out.push(entry_at.child(key));
             }
         }
     }
@@ -1413,7 +1400,7 @@ fn entity_version_of(
 ) -> Result<EntityVersion, (VanillaText, JsonPath)> {
     let fixed = VanillaText::Fixed;
     let root = JsonPath::new();
-    let list_at = child(&root, "upgrades");
+    let list_at = root.child("upgrades");
     let object = value.as_object().ok_or_else(|| {
         (
             fixed("Error loading 'entity_version' as it is not a JSON object."),
@@ -1431,8 +1418,7 @@ fn entity_version_of(
         })?;
     let mut out: Vec<UpgradeEntry> = Vec::new();
     for (index, entry) in entries.iter().enumerate() {
-        let mut entry_at = list_at.clone();
-        entry_at.push_index(index);
+        let entry_at = list_at.index(index);
         out.push(upgrade_entry(entry, &entry_at)?);
     }
     let mut versions: Vec<u32> = out.iter().map(|e| e.upgrade_to).collect();
@@ -1463,13 +1449,12 @@ fn entity_version_of(
     }
     for (index, entry) in out.iter().enumerate() {
         if !upgrades.contains_key(&entry.name) {
-            let mut entry_at = list_at.clone();
-            entry_at.push_index(index);
+            let entry_at = list_at.index(index);
             return Err((
                 VanillaText::UpgradeHandlerUndefined {
                     name: entry.name.clone(),
                 },
-                child(&entry_at, "name"),
+                entry_at.child("name"),
             ));
         }
     }
@@ -1500,7 +1485,7 @@ fn upgrade_entry(
                 fixed(
                     "Error loading 'entity_version' as an upgrade entry does not contain an integer 'upgrade_to'.",
                 ),
-                child(entry_at, "upgrade_to"),
+                entry_at.child("upgrade_to"),
             )
         })?;
     let name = entry
@@ -1512,13 +1497,13 @@ fn upgrade_entry(
                 fixed(
                     "Error loading 'entity_version' as an upgrade entry does not contain a string 'name'.",
                 ),
-                child(entry_at, "name"),
+                entry_at.child("name"),
             )
         })?;
     if name.is_empty() {
         return Err((
             fixed("Error loading 'entity_version' as an upgrade entry's 'name' is empty."),
-            child(entry_at, "name"),
+            entry_at.child("name"),
         ));
     }
     if upgrade_to == 0 {
@@ -1526,7 +1511,7 @@ fn upgrade_entry(
             fixed(
                 "Error loading 'entity_version' as an upgrade entry 'upgrade_to' version is 0, which is reserved for versionless entities.",
             ),
-            child(entry_at, "upgrade_to"),
+            entry_at.child("upgrade_to"),
         ));
     }
     Ok(UpgradeEntry { upgrade_to, name })

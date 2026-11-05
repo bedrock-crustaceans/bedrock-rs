@@ -3,7 +3,6 @@
 
 use super::{convert, read};
 use crate as latest;
-use crate::texts::{child, element};
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Phase,
 };
@@ -150,12 +149,12 @@ impl Upgrade for TradeTable {
 
     fn upgrade(self, cx: &mut UpgradeCx<'_>) -> latest::TradeTable {
         let root = JsonPath::new();
-        let tiers_at = child(&root, "tiers");
+        let tiers_at = root.child("tiers");
         let tiers = self
             .tiers
             .into_iter()
             .enumerate()
-            .map(|(index, tier)| upgrade_tier(index, tier, &element(&tiers_at, index), cx))
+            .map(|(index, tier)| upgrade_tier(index, tier, &tiers_at.index(index), cx))
             .collect();
         latest::TradeTable { tiers }
     }
@@ -167,11 +166,11 @@ fn upgrade_tier(index: usize, tier: Tier, at: &JsonPath, cx: &mut UpgradeCx<'_>)
         // A group without `num_to_select` gets the legacy default -1 written; the newest
         // default is 0.
         (Some(groups), _) => {
-            let groups_at = child(at, "groups");
+            let groups_at = at.child("groups");
             let mut kept = Vec::with_capacity(groups.len());
             let mut places = Vec::with_capacity(groups.len());
             for (g, group) in groups.into_iter().enumerate() {
-                let trades_at = child(&element(&groups_at, g), "trades");
+                let trades_at = groups_at.index(g).child("trades");
                 let Some(trades) = kept_trades(group.trades, &trades_at, cx) else {
                     continue;
                 };
@@ -187,14 +186,14 @@ fn upgrade_tier(index: usize, tier: Tier, at: &JsonPath, cx: &mut UpgradeCx<'_>)
         }
         // Flat `trades` become one group that offers every trade.
         (None, Some(trades)) => {
-            let trades_at = child(at, "trades");
+            let trades_at = at.child("trades");
             let group = kept_trades(trades, &trades_at, cx).map(|trades| latest::Group {
                 num_to_select: Some(-1),
                 trades: upgrade_trades(trades, &trades_at, cx),
             });
             if group.is_some() {
                 // The one group's trades are the tier's own list in the file.
-                let made = child(&element(&child(at, "groups"), 0), "trades");
+                let made = at.child("groups").index(0).child("trades");
                 cx.diagnostics.moved(trades_at, made);
             }
             group.into_iter().collect()
@@ -257,10 +256,10 @@ fn upgrade_trades(trades: Vec<Trade>, at: &JsonPath, cx: &mut UpgradeCx<'_>) -> 
         .into_iter()
         .enumerate()
         .map(|(i, trade)| {
-            let trade_at = element(at, i);
+            let trade_at = at.index(i);
             latest::Trade {
-                wants: upgrade_lists(trade.wants, &child(&trade_at, "wants"), cx),
-                gives: upgrade_lists(trade.gives, &child(&trade_at, "gives"), cx),
+                wants: upgrade_lists(trade.wants, &trade_at.child("wants"), cx),
+                gives: upgrade_lists(trade.gives, &trade_at.child("gives"), cx),
                 trader_exp: trade.trader_exp,
                 max_uses: trade.max_uses,
                 reward_exp: trade.reward_exp,
@@ -280,17 +279,17 @@ fn upgrade_lists(
         .into_iter()
         .enumerate()
         .map(|(e, list)| {
-            let entry_at = element(at, e);
+            let entry_at = at.index(e);
             match list {
                 // The entry's unknown members stay behind with the legacy struct.
                 ItemList::Choice { choice, .. } => {
-                    let choice_at = child(&entry_at, "choice");
+                    let choice_at = entry_at.child("choice");
                     let mut items = Vec::with_capacity(choice.len());
                     // The index of the file's element each item is made from.
                     let mut made_from = Vec::with_capacity(choice.len());
                     for (c, item) in choice.into_iter().enumerate() {
                         // The expansions of `choice` elements are flattened into the choice.
-                        let made = upgrade_item(item, &element(&choice_at, c), cx);
+                        let made = upgrade_item(item, &choice_at.index(c), cx);
                         made_from.extend(std::iter::repeat_n(c, made.len()));
                         items.extend(made);
                     }
@@ -298,7 +297,7 @@ fn upgrade_lists(
                     // last first: an item's place is never one an earlier move filled.
                     for (now, was) in made_from.into_iter().enumerate().rev() {
                         cx.diagnostics
-                            .moved(element(&choice_at, was), element(&choice_at, now));
+                            .moved(choice_at.index(was), choice_at.index(now));
                     }
                     latest::ItemList::Choice { choice: items }
                 }
@@ -310,10 +309,9 @@ fn upgrade_lists(
                         last => {
                             items.extend(last);
                             // Each of them is the one item the file has at the entry.
-                            let choice_at = child(&entry_at, "choice");
+                            let choice_at = entry_at.child("choice");
                             for now in 0..items.len() {
-                                cx.diagnostics
-                                    .moved(entry_at.clone(), element(&choice_at, now));
+                                cx.diagnostics.moved(entry_at.clone(), choice_at.index(now));
                             }
                             latest::ItemList::Choice { choice: items }
                         }
@@ -339,7 +337,7 @@ fn upgrade_item(item: TradeItem, at: &JsonPath, cx: &mut UpgradeCx<'_>) -> Vec<l
     let quantity = item
         .quantity
         .as_ref()
-        .and_then(|json| convert::quantity(json, &child(at, "quantity"), cx.diagnostics));
+        .and_then(|json| convert::quantity(json, &at.child("quantity"), cx.diagnostics));
     // Below 1.18.20 an item with a `trader_material_type` expands into several items.
     let expansion = (cx.original_version < convert::BIOME_FILTERS)
         .then(|| convert::material_choices(&item))
@@ -397,7 +395,7 @@ fn upgrade_item(item: TradeItem, at: &JsonPath, cx: &mut UpgradeCx<'_>) -> Vec<l
     for (from, written_as) in functions.into_iter().chain(filters) {
         cx.diagnostics.push(
             Diagnostic::info(DiagnosticCode::ValueRewritten { text: None })
-                .at(child(at, from))
+                .at(at.child(from))
                 .phase(Phase::Upgrade)
                 .detail(DiagnosticDetail::Note(written_as)),
         );

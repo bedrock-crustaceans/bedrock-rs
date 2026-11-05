@@ -14,7 +14,7 @@ use bedrock_addon_core::diagnostic::{
 };
 use bedrock_addon_core::json::Value;
 use bedrock_addon_support::fixed_path::{
-    Authored, array, as_int, as_real, invalid, invalid_text, iterated, key,
+    Authored, array, as_int, as_real, invalid, invalid_text, iterated,
 };
 
 // The reader's texts, as the game writes them.
@@ -310,7 +310,7 @@ fn read_pages(fields: &mut Fields<'_>, diagnostics: &mut Diagnostics) -> Option<
                 .iter()
                 .enumerate()
                 .map(|(i, element)| {
-                    let at = bedrock_addon_support::fixed_path::index(&at, i);
+                    let at = at.index(i);
                     read_page(element, at, diagnostics)
                 })
                 .collect::<Vec<_>>()
@@ -378,7 +378,7 @@ impl FontAliasRef {
                 if let (Some(first), Some(last)) = (bound("first"), bound("last")) {
                     ranges.push(FontRange { first, last });
                 } else {
-                    let at = bedrock_addon_support::fixed_path::index(&ranges_at, i);
+                    let at = ranges_at.index(i);
                     diagnostics.push(wrong_type(RANGE_BOUNDS, at));
                     bad_bound = true;
                 }
@@ -465,7 +465,7 @@ impl FontAlias {
         }
         let mut fonts = Vec::with_capacity(elements.len());
         for (i, element) in elements.iter().enumerate() {
-            let at = bedrock_addon_support::fixed_path::index(&fonts_at, i);
+            let at = fonts_at.index(i);
             fonts.push(FontAliasRef::read(element, &at, diagnostics)?);
         }
         let (scale, clamped) = fields.real("font_scale_factor_override");
@@ -515,7 +515,7 @@ impl Authored for FontMetadata {
         // Both lists are iterated without a type test: an object gives its member values.
         // Each entry held with its place in the file.
         let fonts = fields.raw("fonts").map(|member| {
-            iterated(member, &key(&fields.at, "fonts"))
+            iterated(member, &fields.at.child("fonts"))
                 .into_iter()
                 .filter_map(|(at, element)| {
                     let font = FontEntry::read(element, &at, diagnostics)?;
@@ -524,7 +524,7 @@ impl Authored for FontMetadata {
                 .collect::<Vec<_>>()
         });
         let font_aliases = fields.raw("font_aliases").map(|member| {
-            iterated(member, &key(&fields.at, "font_aliases"))
+            iterated(member, &fields.at.child("font_aliases"))
                 .into_iter()
                 .filter_map(|(at, element)| {
                     let alias = FontAlias::read(element, &at, diagnostics)?;
@@ -537,7 +537,7 @@ impl Authored for FontMetadata {
             if !names.insert(font.font_name.clone()) {
                 // A repeated font name, reported at the entry's place in the file.
                 diagnostics.push(
-                    Diagnostic::info(DiagnosticCode::FontNameOverridden).at(key(at, "font_name")),
+                    Diagnostic::info(DiagnosticCode::FontNameOverridden).at(at.child("font_name")),
                 );
             }
         }
@@ -555,13 +555,13 @@ impl Authored for FontMetadata {
                     let name = font.font_reference.as_str();
                     if !names.contains(name) && !BUILT_IN_FONTS.contains(&name) {
                         // The reference resolves to no font.
-                        let at = bedrock_addon_support::fixed_path::index(&key(at, "fonts"), i);
-                        diagnostics.push(silent(key(&at, "font_reference")));
+                        let at = at.child("fonts").index(i);
+                        diagnostics.push(silent(at.child("font_reference")));
                     }
                 }
                 if !names.insert(alias.alias.clone()) {
                     diagnostics.push(
-                        Diagnostic::info(DiagnosticCode::FontNameOverridden).at(key(at, "alias")),
+                        Diagnostic::info(DiagnosticCode::FontNameOverridden).at(at.child("alias")),
                     );
                 }
             }

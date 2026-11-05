@@ -518,13 +518,6 @@ impl<'a> Run<'a> {
         ));
     }
 
-    /// `at` with `key` appended.
-    fn member(at: &JsonPath, key: &str) -> JsonPath {
-        let mut path = at.clone();
-        path.push(key);
-        path
-    }
-
     /// The versions the catalog serves of `module`; none for a module it does not know.
     fn supported(&mut self, module: &'a str) -> &[ScriptVersion] {
         let catalog = self.catalog;
@@ -552,7 +545,7 @@ impl<'a> Run<'a> {
                     }),
                 },
                 Severity::Error,
-                &Self::member(&module.path, "language"),
+                &module.path.child("language"),
             );
             return None;
         };
@@ -573,7 +566,7 @@ impl<'a> Run<'a> {
                 Some(_) => self.finding(
                     Code::InvalidValue { text },
                     Severity::Error,
-                    &Self::member(&module.path, "entry"),
+                    &module.path.child("entry"),
                 ),
             }
             return None;
@@ -620,7 +613,7 @@ impl<'a> Run<'a> {
                     }),
                 },
                 Severity::Error,
-                &Self::member(&module.path, "entry"),
+                &module.path.child("entry"),
             );
         }
         Some(Checked {

@@ -19,7 +19,7 @@ use bedrock_addon_core::shared::Filter;
 use bedrock_addon_core::versioning::ConvertMode;
 use facet::Facet;
 
-use super::parse::{Check, Typed, index, join, path, read};
+use super::parse::{Check, Typed, read};
 use super::push::{
     ApplyKnockbackRules, ExtraKnockbackApproach, KnockbackMode, KnockbackPreset, PushMode,
     PushPreset, PushableByEntity,
@@ -91,10 +91,10 @@ impl ApplyKnockbackRulesV1_8_0 {
 impl Typed for ApplyKnockbackRulesV1_8_0 {
     fn check(&mut self, cx: &mut Check<'_>) {
         // No minimum on `presets` here: vanilla's floor bind has no container constraint.
-        let at = path(&["presets"]);
+        let at = JsonPath::new().child("presets");
         for (i, preset) in self.presets.iter().enumerate() {
             if let Some(filter) = &preset.filter {
-                cx.extend(filter.check(&join(&index(&at, i), "filter")));
+                cx.extend(filter.check(&at.index(i).child("filter")));
             }
         }
     }
@@ -264,10 +264,10 @@ impl PushableByEntityV1_26_30 {
 
 impl Typed for PushableByEntityV1_26_30 {
     fn check(&mut self, cx: &mut Check<'_>) {
-        let at = path(&["presets"]);
+        let at = JsonPath::new().child("presets");
         for (i, preset) in self.presets.iter().enumerate() {
             if let Some(filters) = &preset.filters {
-                let at: JsonPath = join(&index(&at, i), "filters");
+                let at: JsonPath = at.index(i).child("filters");
                 cx.extend(filters.check(&at));
             }
         }

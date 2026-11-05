@@ -250,8 +250,7 @@ fn newest_constraint(boxes: &[CollisionBoundingBox], at: &JsonPath, d: &mut Diag
     // game logs a combined box and goes on without it.
     let mut union = Vec::with_capacity(boxes.len());
     for (index, b) in boxes.iter().enumerate() {
-        let mut path = at.clone();
-        path.push_index(index);
+        let path = at.index(index);
         for (name, value, ranges) in [
             ("origin", b.origin, ORIGIN_RANGES),
             ("size", b.size, SIZE_RANGES),
@@ -259,8 +258,7 @@ fn newest_constraint(boxes: &[CollisionBoundingBox], at: &JsonPath, d: &mut Diag
             ("max", b.max, MIN_MAX_RANGES),
         ] {
             if !in_ranges(value, ranges) {
-                let mut member = path.clone();
-                member.push(name);
+                let member = path.child(name);
                 d.push(Diagnostic::error(DiagnosticCode::InvalidValue { text: None }).at(member));
             }
         }

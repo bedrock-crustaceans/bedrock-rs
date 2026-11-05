@@ -11,8 +11,7 @@ use facet_value::VObject;
 use bedrock_addon_core::vanilla::ActorType;
 
 use super::ops::{
-    Members, Told, below, components, finding, group, is, json, path, section_a, section_b,
-    sections,
+    Members, Told, components, finding, group, is, json, section_a, section_b, sections,
 };
 
 /// The version from which `using_door_annotation` is written `true`.
@@ -33,7 +32,7 @@ impl Upgrade for Entity {
             {
                 invalid.push((
                     written,
-                    below(&section.at, &["minecraft:projectile", "anchor"]),
+                    section.at.with(&["minecraft:projectile", "anchor"]),
                 ));
             }
         }
@@ -104,7 +103,7 @@ fn door_annotation(payload: &mut Payload, cx: &mut UpgradeCx<'_>) {
                 .get("using_door_annotation")
                 .is_some_and(|had| !had.is_null() && had.as_bool() != Some(supported))
             {
-                told.dropped(path(&["components", key, "using_door_annotation"]));
+                told.dropped(JsonPath::new().with(&["components", key, "using_door_annotation"]));
             }
             navigation.insert("using_door_annotation", supported);
         }
@@ -167,7 +166,7 @@ fn after_1_26_50(payload: &mut Payload, cx: &mut UpgradeCx<'_>) {
         && had.as_object().is_none_or(|members| !members.is_empty())
         && !had.is_null()
     {
-        told.dropped(path(&["components", USES_LEGACY_AMBIENT_SOUNDS]));
+        told.dropped(JsonPath::new().with(&["components", USES_LEGACY_AMBIENT_SOUNDS]));
     }
     components.set(USES_LEGACY_AMBIENT_SOUNDS, VObject::new().into());
     if identifier == "minecraft:spider" || identifier == "minecraft:cave_spider" {

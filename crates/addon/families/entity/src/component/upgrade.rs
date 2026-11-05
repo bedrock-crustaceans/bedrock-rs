@@ -13,7 +13,6 @@ use bedrock_addon_core::versioning::write_payload;
 use facet_value::{VArray, VObject};
 
 use super::movement::JumpDynamic;
-use super::parse::path;
 
 /// An information of the crate's own at `at`, relative to the component: a member a step of this
 /// library drops or reads as a default where the game says nothing (the game writes no content-log
@@ -50,8 +49,7 @@ pub fn interact_1_13_0(value: &mut Value, d: &mut Diagnostics) {
         for key in ["event", "target", "filters"] {
             if let Some(member) = object.remove(key) {
                 if had_on_interact {
-                    let mut here = at.clone();
-                    here.push(key);
+                    let here = at.child(key);
                     d.push(warning(DiagnosticCode::DroppedField { text: None }, &here));
                 } else {
                     trigger.insert(key, member);
@@ -67,8 +65,7 @@ pub fn interact_1_13_0(value: &mut Value, d: &mut Diagnostics) {
     } else if let Some(array) = value.as_array_mut() {
         for (i, element) in array.iter_mut().enumerate() {
             if let Some(object) = element.as_object_mut() {
-                let mut at = JsonPath::new();
-                at.push_index(i);
+                let at = JsonPath::new().index(i);
                 move_trigger(object, &at);
             }
         }
@@ -172,7 +169,7 @@ pub fn projectile_1_26_40(value: &mut Value, d: &mut Diagnostics) {
                     member: "should_bounce",
                 }),
             })
-            .at(path(&["should_bounce"])),
+            .at(JsonPath::new().child("should_bounce")),
         );
         object.insert("should_bounce", Value::from("no"));
     }
@@ -184,14 +181,14 @@ pub fn projectile_1_26_40(value: &mut Value, d: &mut Diagnostics) {
             damage.remove("semi_random_diff_damage");
             d.push(warning(
                 DiagnosticCode::DroppedField { text: None },
-                &path(&["on_hit", "impact_damage", "semi_random_diff_damage"]),
+                &JsonPath::new().with(&["on_hit", "impact_damage", "semi_random_diff_damage"]),
             ));
         } else {
             if old.as_bool().is_none() {
                 // The crate's own: not a bool, so `false` (`none`) is used, with a finding.
                 d.push(warning(
                     DiagnosticCode::InvalidValue { text: None },
-                    &path(&["on_hit", "impact_damage", "semi_random_diff_damage"]),
+                    &JsonPath::new().with(&["on_hit", "impact_damage", "semi_random_diff_damage"]),
                 ));
             }
             let name = if old.as_bool() == Some(true) {

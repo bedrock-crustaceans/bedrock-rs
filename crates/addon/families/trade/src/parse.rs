@@ -20,7 +20,6 @@ use bedrock_addon_core::shared::Filter;
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::ParseCx;
 
-use super::texts::{child, element};
 use super::validate as rules;
 
 /// The cereal slice's version (`v1_21_30::TradeTableData::VERSION`).
@@ -163,11 +162,11 @@ pub(crate) fn parse_table(
     let tiers: Vec<TierWire<'_>> = run.typed(payload, &cx.at)?;
     let mut table = TradeTable::default();
     for (t, tier) in tiers.into_iter().enumerate() {
-        let tier_at = element(&cx.at, t);
+        let tier_at = cx.at.index(t);
         let mut groups = Vec::with_capacity(tier.groups.len());
         for (g, group) in tier.groups.into_iter().enumerate() {
-            let group_at = element(&child(&tier_at, "groups"), g);
-            let list_at = child(&group_at, "trades");
+            let group_at = tier_at.child("groups").index(g);
+            let list_at = group_at.child("trades");
             let num_to_select = group.num_to_select.map(|n| n.0);
             // The schema default is 0.
             let selects = num_to_select.unwrap_or(0);
@@ -178,14 +177,14 @@ pub(crate) fn parse_table(
             if let Some(finding) = rules::selects_too_many(
                 selects,
                 group.trades.len(),
-                &child(&group_at, "num_to_select"),
+                &group_at.child("num_to_select"),
             ) {
                 run.d.push(finding);
                 run.failed = true;
             }
             let mut trades = Vec::with_capacity(group.trades.len());
             for (i, trade) in group.trades.into_iter().enumerate() {
-                let trade_at = element(&list_at, i);
+                let trade_at = list_at.index(i);
                 trades.push(parse_trade(&mut run, payload, &trade, &trade_at, selects));
             }
             groups.push(Group {
@@ -236,7 +235,7 @@ fn elements(json: Option<&Value>, at: JsonPath) -> impl Iterator<Item = (&Value,
     json.and_then(Value::as_array)
         .into_iter()
         .flat_map(|array| array.iter().enumerate())
-        .map(move |(i, value)| (value, element(&at, i)))
+        .map(move |(i, value)| (value, at.index(i)))
 }
 
 /// The members of the object `json` not in `known`, pushed to `out`; the members that are.
@@ -249,7 +248,7 @@ fn members<'v>(
     let object = json.as_object()?;
     for (key, _) in object {
         if !known.contains(&key.as_str()) {
-            out.push(child(at, key.as_str()));
+            out.push(at.child(key.as_str()));
         }
     }
     Some(object)
@@ -263,16 +262,16 @@ fn unknown_tiers(json: &Value, at: &JsonPath, out: &mut Vec<JsonPath>) {
         let Some(tier) = members(tier, &tier_at, TIER_MEMBERS, out) else {
             continue;
         };
-        for (group, group_at) in elements(tier.get("groups"), child(&tier_at, "groups")) {
+        for (group, group_at) in elements(tier.get("groups"), tier_at.child("groups")) {
             let Some(group) = members(group, &group_at, GROUP_MEMBERS, out) else {
                 continue;
             };
-            for (trade, trade_at) in elements(group.get("trades"), child(&group_at, "trades")) {
+            for (trade, trade_at) in elements(group.get("trades"), group_at.child("trades")) {
                 let Some(trade) = members(trade, &trade_at, TRADE_MEMBERS, out) else {
                     continue;
                 };
                 for key in ["wants", "gives"] {
-                    for (entry, entry_at) in elements(trade.get(key), child(&trade_at, key)) {
+                    for (entry, entry_at) in elements(trade.get(key), trade_at.child(key)) {
                         unknown_entry(entry, &entry_at, out);
                     }
                 }
@@ -288,7 +287,7 @@ fn unknown_entry(json: &Value, at: &JsonPath, out: &mut Vec<JsonPath>) {
     };
     if object.contains_key("choice") {
         members(json, at, CHOICE_MEMBERS, out);
-        for (item, item_at) in elements(object.get("choice"), child(at, "choice")) {
+        for (item, item_at) in elements(object.get("choice"), at.child("choice")) {
             unknown_item(item, &item_at, out);
         }
     } else {
@@ -302,7 +301,7 @@ fn unknown_item(json: &Value, at: &JsonPath, out: &mut Vec<JsonPath>) {
         return;
     };
     if let Some(quantity) = item.get("quantity") {
-        members(quantity, &child(at, "quantity"), RANGE_MEMBERS, out);
+        members(quantity, &at.child("quantity"), RANGE_MEMBERS, out);
     }
 }
 
@@ -317,11 +316,11 @@ fn parse_trade<'a>(
     // `wants` and `gives` must hold at least one element.
     for (entries, key) in [(&trade.wants, "wants"), (&trade.gives, "gives")] {
         if entries.is_empty() {
-            run.error(DiagnosticCode::InvalidValue { text: None }, child(at, key));
+            run.error(DiagnosticCode::InvalidValue { text: None }, at.child(key));
         }
     }
     if let Some(weight) = trade.weight {
-        let weight_at = child(at, "weight");
+        let weight_at = at.child("weight");
         // A number must be at least 1.
         if weight.0 < 1 {
             run.error(DiagnosticCode::InvalidValue { text: None }, weight_at);
@@ -333,13 +332,13 @@ fn parse_trade<'a>(
         }
     }
     let mut lists = |entries: &[RawJson<'a>], key: &str| -> Vec<ItemList> {
-        let list_at = child(at, key);
+        let list_at = at.child(key);
         entries
             .iter()
             .enumerate()
             .filter_map(|(e, raw)| {
                 let slice = payload.nested(raw)?;
-                parse_list(run, slice, &element(&list_at, e))
+                parse_list(run, slice, &list_at.index(e))
             })
             .collect()
     };
@@ -360,14 +359,14 @@ fn parse_trade<'a>(
 fn parse_list(run: &mut Run<'_>, slice: JsonSlice<'_>, at: &JsonPath) -> Option<ItemList> {
     if has_member(slice, "choice") {
         let wire: ChoiceWire<'_> = run.typed(slice, at)?;
-        let choice_at = child(at, "choice");
+        let choice_at = at.child("choice");
         let choice = wire
             .choice
             .iter()
             .enumerate()
             .filter_map(|(c, raw)| {
                 let item = slice.nested(raw)?;
-                parse_item(run, item, &element(&choice_at, c))
+                parse_item(run, item, &choice_at.index(c))
             })
             .collect();
         Some(ItemList::Choice { choice })
@@ -382,7 +381,7 @@ fn parse_item(run: &mut Run<'_>, slice: JsonSlice<'_>, at: &JsonPath) -> Option<
     let quantity = match &wire.quantity {
         Some(raw) => {
             let quantity = slice.nested(raw)?;
-            Some(parse_quantity(run, quantity, &child(at, "quantity"))?)
+            Some(parse_quantity(run, quantity, &at.child("quantity"))?)
         }
         None => None,
     };
@@ -394,7 +393,7 @@ fn parse_item(run: &mut Run<'_>, slice: JsonSlice<'_>, at: &JsonPath) -> Option<
         (wire.legacy_filters.is_some(), "__DEP_fltrs"),
     ] {
         if written {
-            let mut finding = Diagnostic::deprecated_member(member, child(at, member));
+            let mut finding = Diagnostic::deprecated_member(member, at.child(member));
             if run.cereal {
                 run.failed = true;
             } else {
@@ -424,7 +423,7 @@ fn parse_quantity(run: &mut Run<'_>, slice: JsonSlice<'_>, at: &JsonPath) -> Opt
     let wire: RangeWire<'_> = run.typed(slice, at)?;
     let mut bound = |raw: &Option<RawJson<'_>>, key: &str| match raw {
         None => Some(None),
-        Some(raw) => quantity_int(run, slice.nested(raw)?, &child(at, key)).map(Some),
+        Some(raw) => quantity_int(run, slice.nested(raw)?, &at.child(key)).map(Some),
     };
     let min = bound(&wire.min, "min");
     let max = bound(&wire.max, "max");

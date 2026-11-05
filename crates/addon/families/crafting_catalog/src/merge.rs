@@ -67,25 +67,20 @@ impl<'a> Merger<'a> {
         layer: &Document<CraftingCatalog>,
         cx: &mut MergeCx<'_, CatalogKey>,
     ) {
-        let mut at = JsonPath::new();
-        at.push(PAYLOAD_KEY);
+        let mut at = JsonPath::of_keys([PAYLOAD_KEY]);
         at.push("categories");
         for (index, category) in layer.categories.iter().enumerate() {
             // Every entry, repeated or not, goes to the one category its name selects.
             let Some(bucket) = merged.categories.get_mut(category.category_name as usize) else {
                 continue;
             };
-            let mut at = at.clone();
-            at.push_index(index);
-            at.push("groups");
+            let at = at.index(index).child("groups");
             for (index, group) in category.groups.iter().enumerate() {
-                let mut at = at.clone();
-                at.push_index(index);
+                let mut at = at.index(index);
                 let target = self.target(bucket, group, &at, cx);
                 at.push("items");
                 for (index, item) in group.items.iter().enumerate() {
-                    let mut at = at.clone();
-                    at.push_index(index);
+                    let at = at.index(index);
                     self.item(&mut bucket.groups[target], item, at, cx);
                 }
             }
@@ -122,9 +117,7 @@ impl<'a> Merger<'a> {
                     category: bucket.category_name,
                     name: identifier.name.clone(),
                 });
-                let mut at = at.clone();
-                at.push("group_identifier");
-                at.push("icon");
+                let at = at.child("group_identifier").child("icon");
                 Some(GroupIdentifier {
                     name: identifier.name.clone(),
                     icon: identifier

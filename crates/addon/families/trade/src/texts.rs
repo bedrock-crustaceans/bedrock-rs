@@ -1,6 +1,6 @@
 //! Vanilla's content-log texts of trade tables, and the findings built from them.
 
-use bedrock_addon_core::diagnostic::{JsonPath, VanillaText};
+use bedrock_addon_core::diagnostic::VanillaText;
 
 /// The document root is JSON `null`.
 pub(crate) const MUST_CONTAIN_TIERS: &str = "Trade table file must containt \"tiers\"";
@@ -38,18 +38,4 @@ pub(crate) fn formatted(template: &'static str, args: &[&dyn std::fmt::Display])
         template,
         args: args.iter().map(ToString::to_string).collect(),
     }
-}
-
-/// `base` followed by `key`.
-pub(crate) fn child(base: &JsonPath, key: &str) -> JsonPath {
-    let mut path = base.clone();
-    path.push(key);
-    path
-}
-
-/// `base` followed by `index`.
-pub(crate) fn element(base: &JsonPath, index: usize) -> JsonPath {
-    let mut path = base.clone();
-    path.push_index(index);
-    path
 }

@@ -394,8 +394,7 @@ fn upgrade<F: JsonFamily>(
     let version = document.version().clone();
     let diagnostics = document.diagnostics().clone();
     let value = document.into_value();
-    let mut at = JsonPath::new();
-    at.push(F::PAYLOAD_KEY);
+    let at = JsonPath::new().child(F::PAYLOAD_KEY);
     let written = FormatVersionInput {
         version: Some(version.effective),
         beta_literal: false,
@@ -733,8 +732,7 @@ impl PoolChecks {
     /// The findings of one pool, registered after the ones seen so far.
     fn check(&mut self, pool: &Document<TemplatePool>, stack: &StackCx<'_>) -> Vec<Diagnostic> {
         let mut found = Vec::new();
-        let mut at = JsonPath::new();
-        at.push("minecraft:template_pool");
+        let at = JsonPath::new().child("minecraft:template_pool");
         // The game lowercases a pool name when it registers it; release builds keep the first.
         let name = pool.description.identifier.as_str().to_lowercase();
         let built_in =
@@ -742,9 +740,7 @@ impl PoolChecks {
                 built_ins.contains(<kind::TemplatePool as Kind>::NAME, &name)
             });
         if !self.names.insert(name.clone()) || built_in {
-            let mut path = at.clone();
-            path.push("description");
-            path.push("identifier");
+            let path = at.child("description").child("identifier");
             // The game only asserts here, with no content-log line, so the crate reports
             // an information of its own.
             found.push(
@@ -782,11 +778,11 @@ impl PoolChecks {
             );
             match self.elements.get(location.as_str()) {
                 Some(existing) if *existing != contents => {
-                    let mut path = at.clone();
-                    path.push("elements");
-                    path.push_index(i);
-                    path.push("element");
-                    path.push("location");
+                    let path = at
+                        .child("elements")
+                        .index(i)
+                        .child("element")
+                        .child("location");
                     found.push(
                         // A crate-own lint: Info.
                         Diagnostic::info(DiagnosticCode::InvalidValue {

@@ -145,8 +145,7 @@ impl Family for ItemFamily {
                 && !super::write::is_component_based_as_written(item)
             {
                 item.legacy.left_empty_by_the_load = true;
-                let mut at = cx.at.clone();
-                at.push("components");
+                let at = cx.at.child("components");
                 let mut told = Diagnostic::info(DiagnosticCode::InvalidValue { text: None })
                     .at(at)
                     .phase(Phase::Validate);
@@ -403,8 +402,7 @@ pub(crate) fn gate_with(
         if key == "minecraft:armor" && original < FormatVersion::new(1, 20, 20) {
             continue;
         }
-        let mut path = at.clone();
-        path.push(key);
+        let path = at.child(key);
         if let Some(since) = row.deprecated_since
             && original >= since
         {
@@ -583,8 +581,7 @@ fn json_path_texts(d: &mut Diagnostics, text: &str, cx: &LoadContext) {
         .and_then(Value::as_object)
         .and_then(|root| root.get(ItemFamily::PAYLOAD_KEY))
         .is_some_and(|payload| !payload.is_object());
-    let mut payload_at = JsonPath::new();
-    payload_at.push(ItemFamily::PAYLOAD_KEY);
+    let payload_at = JsonPath::new().child(ItemFamily::PAYLOAD_KEY);
     let mut invalid_object = false;
     for finding in d.iter_mut() {
         if finding.severity < Severity::Error {
@@ -640,8 +637,7 @@ fn numeric_version(text: &str) -> Option<Diagnostic> {
     let root = bedrock_addon_core::json::from_str_jsonc::<Value>(text).ok()?;
     let version = root.as_object()?.get("format_version")?;
     version.as_number()?;
-    let mut at = JsonPath::new();
-    at.push("format_version");
+    let at = JsonPath::new().child("format_version");
     let mut told = Diagnostic::info(DiagnosticCode::ValueRewritten { text: None }).at(at);
     told.detail = Some(Box::new(
         bedrock_addon_core::diagnostic::DiagnosticDetail::Note(texts::NUMERIC_VERSION),
@@ -772,10 +768,7 @@ fn combine(parsed: Vec<ParsedItem>, stack: &StackCx<'_>) -> Registry<Item> {
             && let Some((id, rank, origin)) = loaded_of(&contribution)
             && highest.get(id).is_some_and(|top| *top < rank)
         {
-            let mut path = JsonPath::new();
-            path.push("minecraft:item");
-            path.push("description");
-            path.push("identifier");
+            let path = JsonPath::new().with(&["minecraft:item", "description", "identifier"]);
             builder.push_diagnostic(
                 Diagnostic::warn(DiagnosticCode::ShadowedDefinition {
                     text: Some(VanillaText::Formatted {
@@ -838,10 +831,7 @@ fn override_gate(
     };
     let origin = document.origin().clone();
     let mut diagnostics = document.diagnostics().clone();
-    let mut path = JsonPath::new();
-    path.push("minecraft:item");
-    path.push("description");
-    path.push("identifier");
+    let path = JsonPath::new().with(&["minecraft:item", "description", "identifier"]);
     diagnostics.push(
         Diagnostic::error(DiagnosticCode::NamespaceRule { text: Some(text) })
             .at(path)
@@ -1016,8 +1006,7 @@ impl Any {
             beta_literal: version.beta,
             prerelease: false,
         };
-        let mut at = JsonPath::new();
-        at.push(ItemFamily::PAYLOAD_KEY);
+        let at = JsonPath::new().child(ItemFamily::PAYLOAD_KEY);
         let parsed = versioning::Parsed::<ItemFamily>::new(
             Some(any),
             version,

@@ -265,11 +265,7 @@ impl Outcome {
     /// information (the game writes no content-log line for it).
     pub(crate) fn findings(&self, at: &JsonPath, phase: Phase) -> Diagnostics {
         let mut found = Diagnostics::default();
-        let place = |below: &JsonPath| {
-            let mut path = at.clone();
-            path.append(below);
-            path
-        };
+        let place = |below: &JsonPath| at.join(below);
         for problem in &self.problems {
             let (template, args) = problem.text();
             let text = Some(VanillaText::Formatted { template, args });
@@ -313,8 +309,7 @@ impl Outcome {
     /// validation's own findings, which name elements as written).
     pub(crate) fn tell_left_out(&self, at: &JsonPath, found: &mut Diagnostics) {
         for (list, kept) in &self.left_out {
-            let mut path = at.clone();
-            path.append(list);
+            let path = at.join(list);
             found.left_out(&path, kept);
         }
     }
@@ -364,12 +359,10 @@ pub(crate) fn validate(members: &'static [Member], json: &Value, strict: bool) -
     let mut unread = Vec::new();
     if !ok && let Some(object) = json.as_object() {
         for (key, value) in object {
-            let mut at = JsonPath::new();
-            at.push(key.as_str());
+            let at = JsonPath::new().child(key.as_str());
             unread.push(at.clone());
             for entry in value.as_object().into_iter().flat_map(|o| o.keys()) {
-                let mut entry_at = at.clone();
-                entry_at.push(entry.as_str());
+                let entry_at = at.child(entry.as_str());
                 unread.push(entry_at);
             }
         }
@@ -399,8 +392,7 @@ impl Cx {
         if let Some(object) = json.as_object_mut() {
             let names: Vec<String> = object.keys().map(|k| k.as_str().to_owned()).collect();
             for name in names {
-                let mut here = at.clone();
-                here.push(&name);
+                let here = at.child(&name);
                 let Some(value) = object.get_mut(&name) else {
                     continue;
                 };
@@ -511,8 +503,7 @@ impl Cx {
             let mut place = 0;
             let mut kept = Vec::new();
             while index < list.len() {
-                let mut here = at.clone();
-                here.push_index(place);
+                let here = at.index(place);
                 let element = &mut list.as_mut_slice()[index];
                 match self.option(node.elements, element, &here) {
                     Some(child) => {

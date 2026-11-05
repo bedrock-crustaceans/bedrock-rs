@@ -255,8 +255,7 @@ fn report_rekeyed(rekeyed: &[String], wrapped: bool, origin: &Origin, out: &mut 
         if !reported.insert(key.as_str()) {
             continue;
         }
-        let mut at = JsonPath::new();
-        at.push(key);
+        let at = JsonPath::new().child(key);
         let at = path_in_file(&at, wrapped);
         let code = DiagnosticCode::ShadowedDefinition { text: None };
         let finding = Diagnostic::info(code)

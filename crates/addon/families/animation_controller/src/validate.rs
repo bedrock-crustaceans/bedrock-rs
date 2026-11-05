@@ -3,10 +3,10 @@
 
 use super::parse::V1_17_30;
 use super::{AnimationControllerFile, State};
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, JsonPath, Severity};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::version::SemVersion;
-use bedrock_addon_support::animation::validate::{command_version_unset, events, push};
+use bedrock_addon_support::animation::validate::{command_version_unset, events};
 use bedrock_addon_support::animation::walk::{atof, text};
 
 /// `Error: state %s not found - defaulting to using state %d`.
@@ -31,9 +31,7 @@ pub(crate) fn controller_findings(
 ) {
     let mut any_event = false;
     for (key, controller) in &file.animation_controllers {
-        let mut base = JsonPath::new();
-        base.push("animation_controllers");
-        base.push(key);
+        let base = JsonPath::new().child("animation_controllers").child(key);
         let names: Vec<String> = controller
             .states
             .keys()
@@ -45,27 +43,27 @@ pub(crate) fn controller_findings(
         match &controller.initial_state {
             // Compared as written with the lower-cased names.
             Some(initial) if !names.iter().any(|n| n == initial) => {
-                let mut at = base.clone();
-                at.push("initial_state");
+                let at = base.child("initial_state");
                 // The game substitutes state 0 and keeps the controller. Its "Error: state %s
                 // not found - defaulting to using state %d" fires when an entity binds the
                 // controller, not at pack load, so the finding is an information with the text.
-                push(diagnostics, not_found(initial), Severity::Info, at);
+                diagnostics.push(
+                    Diagnostic::info(not_found(initial))
+                        .at(at)
+                        .phase(Phase::Validate),
+                );
             }
             None if !names.iter().any(|n| n == "default") => {
-                push(
-                    diagnostics,
-                    DiagnosticCode::ImplicitInitialState,
-                    Severity::Info,
-                    base.clone(),
+                diagnostics.push(
+                    Diagnostic::info(DiagnosticCode::ImplicitInitialState)
+                        .at(base.clone())
+                        .phase(Phase::Validate),
                 );
             }
             Some(_) | None => {}
         }
         for (name, state) in &controller.states {
-            let mut at = base.clone();
-            at.push("states");
-            at.push(name);
+            let at = base.child("states").child(name);
             any_event |= state_findings(state, &at, &names, written, diagnostics);
         }
     }
@@ -80,27 +78,25 @@ fn state_findings(
     diagnostics: &mut Diagnostics,
 ) -> bool {
     for (index, transition) in state.transitions.iter().flatten().enumerate() {
-        let mut at = base.clone();
-        at.push("transitions");
-        at.push_index(index);
-        at.push(&transition.target);
+        let at = base
+            .child("transitions")
+            .index(index)
+            .child(&transition.target);
         let target = transition.target.to_ascii_lowercase();
         if !names.contains(&target) {
-            push(
-                diagnostics,
-                DiagnosticCode::UnresolvedReference {
+            diagnostics.push(
+                Diagnostic::info(DiagnosticCode::UnresolvedReference {
                     text: text(STATE_NOT_FOUND, &[&target, "0"]),
-                },
-                Severity::Info,
-                at.clone(),
+                })
+                .at(at.clone())
+                .phase(Phase::Validate),
             );
         }
         if *written < V1_17_30 && has_cased_literal(transition.condition.as_str()) {
-            push(
-                diagnostics,
-                DiagnosticCode::CaseFoldedTransition,
-                Severity::Info,
-                at,
+            diagnostics.push(
+                Diagnostic::info(DiagnosticCode::CaseFoldedTransition)
+                    .at(at)
+                    .phase(Phase::Validate),
             );
         }
     }
@@ -113,24 +109,18 @@ fn state_findings(
         keys.sort();
         let ordered = keys.windows(2).all(|w| atof(w[0]) <= atof(w[1]));
         if !ordered {
-            let mut at = base.clone();
-            at.push("variables");
-            at.push(name);
-            at.push("remap_curve");
-            push(
-                diagnostics,
-                DiagnosticCode::UnorderedRemapCurve,
-                Severity::Info,
-                at,
+            let at = base.child("variables").child(name).child("remap_curve");
+            diagnostics.push(
+                Diagnostic::info(DiagnosticCode::UnorderedRemapCurve)
+                    .at(at)
+                    .phase(Phase::Validate),
             );
         }
     }
     let mut list = Vec::new();
     for (member, entries) in [("on_entry", &state.on_entry), ("on_exit", &state.on_exit)] {
         for (index, e) in entries.iter().flatten().enumerate() {
-            let mut at = base.clone();
-            at.push(member);
-            at.push_index(index);
+            let at = base.child(member).index(index);
             list.push((at, e));
         }
     }

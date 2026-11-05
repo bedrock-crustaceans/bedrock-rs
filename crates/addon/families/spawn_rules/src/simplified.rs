@@ -153,13 +153,6 @@ impl bedrock_addon_core::molang::MolangFields for SimplifiedSpawnRules {
     fn visit_molang(&mut self, _: &mut bedrock_addon_core::molang::MolangVisitor<'_>) {}
 }
 
-/// `at` followed by `relative`.
-fn join(at: &JsonPath, relative: &JsonPath) -> JsonPath {
-    let mut path = at.clone();
-    path.append(relative);
-    path
-}
-
 impl VersionStruct for SimplifiedSpawnRules {
     /// The typed parse; unknown members are `UnrecognizedField` warnings, reported also when the
     /// typed parse fails (vanilla's cereal parser logs both).
@@ -171,7 +164,7 @@ impl VersionStruct for SimplifiedSpawnRules {
             finding(
                 DiagnosticCode::UnrecognizedField { text: None },
                 Severity::Warning,
-                &join(&cx.at, path),
+                &cx.at.join(path),
                 d,
             );
         };
@@ -343,36 +336,27 @@ pub(crate) fn validate(rules: &SimplifiedSpawnRules, at: &JsonPath, d: &mut Diag
             d,
         );
     };
-    let mut conditions_at = at.clone();
-    conditions_at.push("conditions");
+    let conditions_at = at.child("conditions");
     for (i, condition) in rules.conditions.iter().flatten().enumerate() {
-        let mut c_at = conditions_at.clone();
-        c_at.push_index(i);
-        let member = |base: &JsonPath, key: &str| {
-            let mut path = base.clone();
-            path.push(key);
-            path
-        };
+        let c_at = conditions_at.index(i);
         if condition.weight.0 < 0 {
-            negative(&member(&c_at, "weight"), d);
+            negative(&c_at.child("weight"), d);
         }
         for (k, herd) in condition.herds.iter().flatten().enumerate() {
-            let mut h_at = member(&c_at, "herds");
-            h_at.push_index(k);
+            let h_at = c_at.child("herds").index(k);
             for (key, value) in [("min", herd.min), ("max", herd.max)] {
                 if value.is_some_and(|n| n.0 < 0) {
-                    negative(&member(&h_at, key), d);
+                    negative(&h_at.child(key), d);
                 }
             }
         }
         for (j, permute) in condition.permute_types.iter().flatten().enumerate() {
-            let mut p_at = member(&c_at, "permute_types");
-            p_at.push_index(j);
+            let p_at = c_at.child("permute_types").index(j);
             if permute.weight.0 < 0 {
-                negative(&member(&p_at, "weight"), d);
+                negative(&p_at.child("weight"), d);
             }
             if permute.min_guaranteed.is_some_and(|n| n.0 < 0) {
-                negative(&member(&p_at, "min_guaranteed"), d);
+                negative(&p_at.child("min_guaranteed"), d);
             }
         }
     }
@@ -382,8 +366,7 @@ pub(crate) fn validate(rules: &SimplifiedSpawnRules, at: &JsonPath, d: &mut Diag
         return;
     };
     let identifier = rules.description.identifier.as_str();
-    let mut placement_at = at.clone();
-    placement_at.push("placement");
+    let placement_at = at.child("placement");
     let checks: [(&str, Option<&StrictString>, &[&str], &'static str); 4] = [
         (
             "type",
@@ -415,8 +398,7 @@ pub(crate) fn validate(rules: &SimplifiedSpawnRules, at: &JsonPath, d: &mut Diag
             continue;
         };
         if !names.contains(&name.0.as_str()) {
-            let mut path = placement_at.clone();
-            path.push(key);
+            let path = placement_at.child(key);
             // An `UnresolvedReference` warning with vanilla's text: the validator logs it at the
             // content log's warning level.
             finding(

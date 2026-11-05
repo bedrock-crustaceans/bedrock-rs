@@ -10,7 +10,7 @@ use bedrock_addon_core::versioning::{ParseCx, VersionStruct, Versioned, write_pa
 use bedrock_addon_core::visual::HeldItemScale;
 use facet::Facet;
 
-use super::read::{self, below};
+use super::read;
 use super::{ClientEntity, Description};
 
 /// The engine version that first declares `scripts.hide_held_items` and reads
@@ -78,14 +78,14 @@ impl VersionStruct for ClientEntity {
         read::check_controllers(de.render_controllers.as_deref(), at, d);
         let engine = cx.load.engine_version;
         if let Some(scripts) = &de.scripts {
-            let scripts_at = below(at, &["scripts"]);
+            let scripts_at = at.with(&["scripts"]);
             read::check_variables(scripts.variables.as_ref(), &scripts_at, d);
             read::check_animate(scripts.animate.as_deref(), &scripts_at, d);
             if scripts.hide_held_items.is_some() && engine < ENGINE_1_26_30 {
                 // Undeclared before 1.26.30: "child 'hide_held_items' not valid here.".
                 d.push(read::not_valid_here(
                     "hide_held_items",
-                    below(&scripts_at, &["hide_held_items"]),
+                    scripts_at.with(&["hide_held_items"]),
                 ));
             }
         }
@@ -93,7 +93,7 @@ impl VersionStruct for ClientEntity {
             // Before engine 1.26.30 the schema declares `held_item_scale` as a float only.
             d.push(read::wrong_type(
                 "float",
-                below(at, &["held_item_scale"]),
+                at.with(&["held_item_scale"]),
                 None,
             ));
         }

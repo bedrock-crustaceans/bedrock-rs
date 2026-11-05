@@ -95,18 +95,9 @@ pub(crate) fn failed_registration(diagnostics: &Diagnostics) -> bool {
         .any(|d| d.severity == Severity::Error && d.phase == Phase::Validate)
 }
 
-/// `base` followed by `keys`.
-fn child(base: &JsonPath, keys: &[&str]) -> JsonPath {
-    let mut path = base.clone();
-    for key in keys {
-        path.push(key);
-    }
-    path
-}
-
 /// Checks the document's own identifier; an error, the document is not registered.
 fn check_identifier(id: &str, register: &'static str, at: &JsonPath, d: &mut Diagnostics) {
-    let at = child(at, &["description", "identifier"]);
+    let at = at.with(&["description", "identifier"]);
     if let Some(found) = identifier_findings(id, register, Severity::Error, &at) {
         d.extend(found);
     }
@@ -128,7 +119,7 @@ pub(crate) fn structure(value: &JigsawStructure, at: &JsonPath, d: &mut Diagnost
                 text: Some(VanillaText::Fixed(
                     "[Jigsaw Structure Builder] start_pool is empty. Fill it in with a valid template pool e.g. minecraft:example/structure",
                 )),
-            }).at(child(at, &["start_pool"])).phase(Phase::Validate));
+            }).at(at.with(&["start_pool"])).phase(Phase::Validate));
     }
 }
 
@@ -148,7 +139,7 @@ pub(crate) fn set(value: &mut StructureSet, at: &JsonPath, d: &mut Diagnostics) 
         .into_iter()
         .enumerate()
     {
-        let mut path = child(at, &["structures"]);
+        let mut path = at.with(&["structures"]);
         path.push_index(i);
         path.push("structure");
         match identifier_findings(
@@ -170,7 +161,7 @@ pub(crate) fn set(value: &mut StructureSet, at: &JsonPath, d: &mut Diagnostics) 
                     template: "Invalid spacing and separation combination for structure set '{}'. Value 'separation' must be less than half of 'spacing'.",
                     args: vec![id],
                 }),
-            }).at(child(at, &["placement"])).phase(Phase::Validate));
+            }).at(at.with(&["placement"])).phase(Phase::Validate));
     }
 }
 
@@ -184,14 +175,14 @@ pub(crate) fn processors(value: &mut ProcessorList, at: &JsonPath, d: &mut Diagn
         d,
     );
     for (i, processor) in value.processors.iter_mut().enumerate() {
-        let mut path = child(at, &["processors"]);
+        let mut path = at.with(&["processors"]);
         path.push_index(i);
         match processor {
-            Processor::Rule { rules, .. } => empty_loot(rules, &child(&path, &["rules"]), d),
+            Processor::Rule { rules, .. } => empty_loot(rules, &path.with(&["rules"]), d),
             Processor::Capped {
                 delegate: CappedDelegate::Rule { rules, .. },
                 ..
-            } => empty_loot(rules, &child(&path, &["delegate", "rules"]), d),
+            } => empty_loot(rules, &path.with(&["delegate", "rules"]), d),
             _ => {}
         }
     }
@@ -205,10 +196,10 @@ fn empty_loot(rules: &mut [ProcessorRule], at: &JsonPath, d: &mut Diagnostics) {
             Some(BlockEntityModifier::AppendLoot { loot_table, .. }) if loot_table.as_str().is_empty()
         );
         if empty {
-            let mut path = at.clone();
-            path.push_index(i);
-            path.push("block_entity_modifier");
-            path.push("loot_table");
+            let path = at
+                .index(i)
+                .child("block_entity_modifier")
+                .child("loot_table");
             // The game logs it at the content log's error level and carries on with the
             // modifier cleared: a kept error.
             d.push_kept_error(

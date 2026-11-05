@@ -52,11 +52,11 @@ impl Upgrade for MetadataRegistry {
         let mut metadata = IndexMap::with_capacity(self.metadata.len());
         for (key, entry) in self.metadata {
             if entry.use_legacy_rotation.is_some() {
-                let mut at = JsonPath::new();
-                at.push("minecraft:jigsaw_structure_metadata");
-                at.push("metadata");
-                at.push(&key);
-                at.push("use_legacy_rotation");
+                let at = JsonPath::new()
+                    .child("minecraft:jigsaw_structure_metadata")
+                    .child("metadata")
+                    .child(&key)
+                    .child("use_legacy_rotation");
                 cx.diagnostics.push(
                     Diagnostic::info(DiagnosticCode::DroppedField { text: None })
                         .at(at)

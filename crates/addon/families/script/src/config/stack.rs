@@ -232,10 +232,10 @@ impl ScriptConfig {
             if net.max_websocket_payload_size.is_none() {
                 continue;
             }
-            let mut at = JsonPath::new();
-            at.push("module_permissions");
-            at.push(SERVER_NET_MODULE);
-            at.push(MAX_WEBSOCKET_PAYLOAD_SIZE);
+            let at = JsonPath::new()
+                .child("module_permissions")
+                .child(SERVER_NET_MODULE)
+                .child(MAX_WEBSOCKET_PAYLOAD_SIZE);
             findings.push(Diagnostic::new(
                 DiagnosticCode::FieldSinceEngine {
                     since: PAYLOAD_SIZE_SINCE,

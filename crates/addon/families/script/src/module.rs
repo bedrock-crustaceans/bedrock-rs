@@ -257,10 +257,10 @@ impl ScriptModule {
         let mut added = Diagnostics::default();
         let mut refused = false;
         let mut finding = |code, severity, index: usize, key: &str| {
-            let mut at = JsonPath::new();
-            at.push("dependencies");
-            at.push_index(index);
-            at.push(key);
+            let at = JsonPath::new()
+                .child("dependencies")
+                .index(index)
+                .child(key);
             added.push(Diagnostic::new(
                 code,
                 severity,
@@ -354,12 +354,7 @@ impl ScriptModule {
             at.push_index(index);
             at
         };
-        let dependency_path = |index: usize| {
-            let mut at = JsonPath::new();
-            at.push("dependencies");
-            at.push_index(index);
-            at
-        };
+        let dependency_path = |index: usize| JsonPath::new().child("dependencies").index(index);
         let mut scripts = manifest
             .modules
             .iter()

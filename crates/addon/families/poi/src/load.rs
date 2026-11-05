@@ -429,8 +429,7 @@ fn upgrade<F: PoiFamily>(
     let version = document.version().clone();
     let diagnostics = document.diagnostics().clone();
     let value = document.into_value();
-    let mut at = JsonPath::new();
-    at.push(F::PAYLOAD_KEY);
+    let at = JsonPath::new().child(F::PAYLOAD_KEY);
     let written = FormatVersionInput {
         version: Some(version.effective),
         beta_literal: false,

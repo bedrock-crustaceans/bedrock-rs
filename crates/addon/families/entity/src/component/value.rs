@@ -11,7 +11,7 @@ use bedrock_addon_core::shared::{BlockDescriptor, ItemDescriptor};
 use facet::Facet;
 use facet_value::{VArray, VObject};
 
-use super::parse::{Check, index, join};
+use super::parse::Check;
 
 /// A block or item descriptor's `tags` in a typed component: read at the fixed Molang version
 /// 13, only the tag queries resolve. The game logs a rejected expression and loads
@@ -183,8 +183,8 @@ pub(crate) fn one_element(
     let mut list = VArray::new();
     list.push(single);
     *member = list.into();
-    let at_member = join(at, key);
-    cx.moved(at_member.clone(), index(&at_member, 0));
+    let at_member = at.child(key);
+    cx.moved(at_member.clone(), at_member.index(0));
     true
 }
 
@@ -201,7 +201,7 @@ pub(crate) fn tell_partial_vector(json: &VObject, key: &str, at: &JsonPath, cx: 
         cx.push(
             DiagnosticCode::ValueRewritten { text: None },
             Severity::Info,
-            &join(at, key),
+            &at.child(key),
         );
     }
 }

@@ -21,7 +21,7 @@ use super::parse::{
     ANCHOR_BLOCK_POS, BLOCK_NAME, BLOCK_POS, DIRECTION, DISTANCE_EPSILON, ENTITY_NAME,
     FACING_STRING, MAX_ATTEMPTS, MAX_NUMBER_OF_TICKS, MAX_SEARCH_DISTANCE, NAME, NUM_OF_SHOTS,
     NUM_OF_TICKS, PAYLOAD, Pair, ROOT, SEARCH_RADIUS, SECOND_DIRECTION, SHOULD_BE_FLYING,
-    SHOULD_THROW, TARGET_BLOCK_POS, WAIT_DEFAULT_KEY, WAIT_DURATION, child, element_of,
+    SHOULD_THROW, TARGET_BLOCK_POS, WAIT_DEFAULT_KEY, WAIT_DURATION,
 };
 use super::{BehaviorTree, Node, Param};
 use bedrock_addon_core::diagnostic::JsonPath;
@@ -43,8 +43,8 @@ impl BehaviorTree {
     /// The document as a JSON value. A tree whose text would nest past the reader's limit is
     /// not written: the reader would reject it.
     fn to_value(&self) -> Result<Value, EncodeError> {
-        let payload_at = child(&JsonPath::new(), PAYLOAD);
-        let root_at = child(&payload_at, ROOT);
+        let payload_at = JsonPath::of_keys([PAYLOAD]);
+        let root_at = payload_at.child(ROOT);
         let too_deep = || EncodeError::NotRepresentable {
             at: root_at.clone(),
             what: Unrepresentable::Unsupported,
@@ -176,7 +176,7 @@ impl<T: Written + Copy> Written for [T; 3] {
         let elements = self
             .iter()
             .enumerate()
-            .map(|(index, element)| element.value(&element_of(at, index)))
+            .map(|(index, element)| element.value(&at.index(index)))
             .collect::<Result<Vec<Value>, EncodeError>>()?;
         Ok(VArray::from(elements).into())
     }
@@ -202,7 +202,7 @@ fn put<T: Written>(
         return Ok(());
     }
     if read || built_literal {
-        body.insert(pair.literal, param.literal.value(&child(at, pair.literal))?);
+        body.insert(pair.literal, param.literal.value(&at.child(pair.literal))?);
     } else if param.key != pair.default_key {
         body.insert(pair.id, param.key.as_str());
     }
@@ -213,17 +213,17 @@ fn put<T: Written>(
 #[allow(clippy::too_many_lines, reason = "one arm per node type")]
 fn node_value(node: &Node, at: &JsonPath) -> Result<Value, EncodeError> {
     let kind = node.type_name();
-    let at = &child(at, kind);
+    let at = &at.child(kind);
     let mut body = VObject::new();
     let b = &mut body;
     let extra = match node {
         Node::Sequence { children, extra } | Node::Selector { children, extra } => {
             if let Some(children) = children {
-                let children_at = child(at, "children");
+                let children_at = at.child("children");
                 let nodes = children
                     .iter()
                     .enumerate()
-                    .map(|(index, node)| node_value(node, &element_of(&children_at, index)))
+                    .map(|(index, node)| node_value(node, &children_at.index(index)))
                     .collect::<Result<Vec<Value>, EncodeError>>()?;
                 b.insert("children", VArray::from(nodes));
             }
@@ -377,7 +377,7 @@ fn node_value(node: &Node, at: &JsonPath) -> Result<Value, EncodeError> {
 /// `child` of a decorator, when it has one.
 fn put_child(body: &mut VObject, at: &JsonPath, node: Option<&Node>) -> Result<(), EncodeError> {
     if let Some(node) = node {
-        body.insert("child", node_value(node, &child(at, "child"))?);
+        body.insert("child", node_value(node, &at.child("child"))?);
     }
     Ok(())
 }

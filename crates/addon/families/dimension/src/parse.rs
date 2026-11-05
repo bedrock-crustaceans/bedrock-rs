@@ -115,15 +115,6 @@ pub(crate) fn parse_root<R: for<'f> Facet<'f>>(
     Some(value)
 }
 
-/// `base` followed by `keys`.
-pub(crate) fn child(base: &JsonPath, keys: &[&str]) -> JsonPath {
-    let mut path = base.clone();
-    for key in keys {
-        path.push(key);
-    }
-    path
-}
-
 /// A bind constraint: `value` in `[min, max]`, and a multiple of `multiple` when given; a
 /// violation fails the file in vanilla, and is an `InvalidValue` error here with cereal's
 /// text. The range is checked first.
@@ -160,8 +151,8 @@ pub(crate) fn bounds_constraints(
     at: &JsonPath,
     d: &mut Diagnostics,
 ) -> bool {
-    let min = constraint(bounds.min.0, (-512, 512), Some(16), child(at, &["min"]), d);
-    let max = constraint(bounds.max.0, (-512, 512), Some(16), child(at, &["max"]), d);
+    let min = constraint(bounds.min.0, (-512, 512), Some(16), at.child("min"), d);
+    let max = constraint(bounds.max.0, (-512, 512), Some(16), at.child("max"), d);
     min && max
 }
 
@@ -176,14 +167,14 @@ pub(crate) fn height_constraints(
         i32::from(height.min_y.0),
         (-512, 512),
         None,
-        child(at, &["min_y"]),
+        at.child("min_y"),
         d,
     );
     let range = constraint(
         i32::from(height.height_range.0),
         (16, 1024),
         Some(16),
-        child(at, &["height_range"]),
+        at.child("height_range"),
         d,
     );
     min_y && range
@@ -195,7 +186,7 @@ pub(crate) fn clouds_constraint(clouds: &Clouds, at: &JsonPath, d: &mut Diagnost
         i32::from(clouds.height.0),
         (-512, 512),
         None,
-        child(at, &["height"]),
+        at.child("height"),
         d,
     )
 }

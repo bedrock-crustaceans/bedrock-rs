@@ -4,7 +4,7 @@
 use crate::{
     DimensionBounds, DimensionComponents, DimensionDescription, DimensionHeight, Generation,
 };
-use crate::{RootV1, bounds_constraints, child, parse_root, slice_null_rule};
+use crate::{RootV1, bounds_constraints, parse_root, slice_null_rule};
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase};
 use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, StrictInt, Value};
@@ -68,14 +68,11 @@ impl VersionStruct for Dimension {
         let root: RootV1 = parse_root(text, cx, rule, |root: &mut RootV1| &mut root.extra, d)?;
         let inner = root.dimension;
         if let Some(bounds) = &inner.components.dimension_bounds {
-            let at = child(
-                &cx.at,
-                &[
-                    "minecraft:dimension",
-                    "components",
-                    "minecraft:dimension_bounds",
-                ],
-            );
+            let at = cx.at.with(&[
+                "minecraft:dimension",
+                "components",
+                "minecraft:dimension_bounds",
+            ]);
             if !bounds_constraints(bounds, &at, d) {
                 return None;
             }
@@ -154,10 +151,7 @@ impl Upgrade for Dimension {
 /// The note that the component `name` of the file is not carried into the written text.
 fn dropped(name: &str) -> Diagnostic {
     Diagnostic::info(DiagnosticCode::DroppedField { text: None })
-        .at(child(
-            &JsonPath::new(),
-            &["minecraft:dimension", "components", name],
-        ))
+        .at(JsonPath::new().with(&["minecraft:dimension", "components", name]))
         .phase(Phase::Upgrade)
 }
 

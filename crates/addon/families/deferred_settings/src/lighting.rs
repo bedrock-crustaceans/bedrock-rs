@@ -706,10 +706,7 @@ mod codec {
                 frames
                     .into_iter()
                     .map(|frame| {
-                        dropped(
-                            frame.value.alpha,
-                            write::child(&at, &write::time_key(frame.time)),
-                        );
+                        dropped(frame.value.alpha, at.child(&write::time_key(frame.time)));
                         crate::value::Keyframe {
                             time: frame.time,
                             value: frame.value.rgb(),

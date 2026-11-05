@@ -5,7 +5,7 @@
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
 use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::json::Value;
-use bedrock_addon_support::fixed_path::{Object, as_int, as_real, key, raw_member};
+use bedrock_addon_support::fixed_path::{Object, as_int, as_real, raw_member};
 
 /// What a member turned out to be.
 #[derive(Debug)]
@@ -111,7 +111,7 @@ impl<'v> Fields<'v> {
 
     /// The path of the member `name`.
     pub(super) fn path(&self, name: &str) -> JsonPath {
-        key(&self.at, name)
+        self.at.child(name)
     }
 
     /// The members kept as written, then every member not read, each of those with an
@@ -122,7 +122,7 @@ impl<'v> Fields<'v> {
                 if !self.known.contains(&name.as_str()) {
                     diagnostics.push(
                         Diagnostic::info(DiagnosticCode::UnrecognizedField { text: None })
-                            .at(key(&self.at, name.as_str())),
+                            .at(self.at.child(name.as_str())),
                     );
                     self.extra.insert(name.as_str().to_owned(), member.clone());
                 }

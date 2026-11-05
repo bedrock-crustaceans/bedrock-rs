@@ -126,8 +126,7 @@ fn repair_items(items: &Value, cx: &mut UpgradeCx<'_>) -> Vec<RepairItem> {
     // The file's index of each entry kept.
     let mut places = Vec::with_capacity(entries.len());
     for (index, entry) in entries.iter().enumerate() {
-        let mut entry_at = at.clone();
-        entry_at.push_index(index);
+        let entry_at = at.index(index);
         let mut entry = entry.clone();
         // The amount is a Molang member, which refuses a constant no float holds.
         if let Some(amount) = entry
@@ -141,8 +140,7 @@ fn repair_items(items: &Value, cx: &mut UpgradeCx<'_>) -> Vec<RepairItem> {
                 *amount = Value::from(facet_value::VNumber::from_f64(f64::from(
                     f32::MAX.copysign(nearest),
                 )));
-                let mut amount_at = entry_at.clone();
-                amount_at.push("repair_amount");
+                let amount_at = entry_at.child("repair_amount");
                 // A number no double holds was clamped where the file was read, with its
                 // warning at this path: the number is told once.
                 let said = cx.diagnostics.iter().any(|finding| {
@@ -327,12 +325,7 @@ fn replaced(cx: &mut UpgradeCx<'_>, path: &[&str]) {
 
 /// `minecraft:item/<path>`.
 fn member(path: &[&str]) -> JsonPath {
-    let mut at = JsonPath::new();
-    at.push("minecraft:item");
-    for part in path {
-        at.push(part);
-    }
-    at
+    JsonPath::new().child("minecraft:item").with(path)
 }
 
 /// Replaces the component at `key` in place (keeping its position).
@@ -1144,8 +1137,7 @@ pub(crate) fn custom_components_to_keyed(
         // such a key as an unknown component and refuses it. It stays in the list the
         // side-car holds.
         if !super::document::is_custom_key(&entry.name) {
-            let mut at = member(&["components", "minecraft:custom_components"]);
-            at.push_index(index);
+            let at = member(&["components", "minecraft:custom_components"]).index(index);
             cx.diagnostics.push(
                 Diagnostic::info(DiagnosticCode::DroppedField { text: None })
                     .at(at)
@@ -1322,13 +1314,13 @@ impl Upgrade for v1_26_30::Item {
         if let Some(sensor) = components.get_mut::<DurabilitySensor>() {
             for (index, threshold) in sensor.durability_thresholds.iter_mut().enumerate() {
                 if let Some(name) = threshold.sound_event.as_mut() {
-                    let mut at = member(&[
+                    let at = member(&[
                         "components",
                         "minecraft:durability_sensor",
                         "durability_thresholds",
-                    ]);
-                    at.push_index(index);
-                    at.push("sound_event");
+                    ])
+                    .index(index)
+                    .child("sound_event");
                     canonical_sound(name, cx, at);
                 }
             }

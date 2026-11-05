@@ -49,8 +49,7 @@ fn list(count: usize, control: impl Fn(usize) -> String) -> String {
 
 /// Reads `text` as a root payload: the value, the findings and the time the read took.
 fn read_root(text: &str) -> (Option<UiRoot>, Diagnostics, Duration) {
-    let mut at = JsonPath::new();
-    at.push("minecraft:ui-root");
+    let at = JsonPath::of_keys(["minecraft:ui-root"]);
     let mut diagnostics = Diagnostics::default();
     let (root, took) = timed(|| read::root(JsonSlice::new(text), ENGINE, &at, &mut diagnostics));
     (root, diagnostics, took)

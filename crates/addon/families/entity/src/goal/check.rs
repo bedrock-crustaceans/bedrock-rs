@@ -204,7 +204,7 @@ fn read<T: Goal>(slice: JsonSlice<'_>, mode: Mode, d: &mut Diagnostics) -> Optio
                     // The game logs an unrecognised member of a legacy-format goal as a
                     // warning; from 1.21.89 it refuses the document.
                     Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None })
-                        .at(member_path(name)),
+                        .at(JsonPath::new().child(name)),
                 );
             }
         }
@@ -281,13 +281,6 @@ fn lenient_severity(text: Option<&VanillaText>) -> Severity {
     Severity::Info
 }
 
-/// The path of a top-level member.
-fn member_path(name: &str) -> JsonPath {
-    let mut at = JsonPath::new();
-    at.push(name);
-    at
-}
-
 /// The lenient parse: the value is read from its JSON again, each round giving up the innermost
 /// member (or array element) a failure names, which then takes its default. A failure that
 /// names no member gives the goal's defaults. Returns the value and the JSON it was read from.
@@ -316,7 +309,7 @@ fn lenient<T: Goal>(slice: JsonSlice<'_>, d: &mut Diagnostics) -> Option<(T, Val
                 // The lenient conversion: the legacy reader reads only what it knows, in
                 // silence, so the crate reports an information.
                 Diagnostic::info(DiagnosticCode::UnrecognizedField { text: None })
-                    .at(member_path(name)),
+                    .at(JsonPath::new().child(name)),
             );
         }
     }
@@ -338,7 +331,7 @@ fn lenient<T: Goal>(slice: JsonSlice<'_>, d: &mut Diagnostics) -> Option<(T, Val
                     for unread in value.legacy_member_failed(name) {
                         d.push(
                             Diagnostic::info(DiagnosticCode::DroppedField { text: None })
-                                .at(member_path(unread)),
+                                .at(JsonPath::new().child(unread)),
                         );
                     }
                 }
@@ -398,7 +391,7 @@ pub(crate) fn legacy_ranges(key: &str, goal: &mut VObject) -> Vec<(JsonPath, Dia
         range.insert("max", Value::from(i64::from(max)));
         goal.insert("look_time", Value::from(range));
         dropped.push((
-            member_path("look_time"),
+            JsonPath::new().child("look_time"),
             DiagnosticCode::ValueRewritten { text: None },
         ));
     }
@@ -419,7 +412,7 @@ pub(crate) fn legacy_ranges(key: &str, goal: &mut VObject) -> Vec<(JsonPath, Dia
         }
         for end in unread {
             if range.remove(end).is_some() {
-                let mut at = member_path(&name);
+                let mut at = JsonPath::new().child(&name);
                 at.push(end);
                 dropped.push((at, DiagnosticCode::DroppedField { text: None }));
             }
@@ -751,9 +744,7 @@ impl<'d> Check<'d> {
 
     /// The path of member `key`.
     pub(crate) fn path(&self, key: &str) -> JsonPath {
-        let mut at = self.at.clone();
-        at.push(key);
-        at
+        self.at.child(key)
     }
 
     /// Adds findings made elsewhere (a shared type's `check`).

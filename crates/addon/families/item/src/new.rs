@@ -63,8 +63,7 @@ impl Item {
     /// pack with `cx`: the component gates, the identifier rule and the validators.
     pub fn validate(&self, cx: &LoadContext) -> Diagnostics {
         let version = FormatVersion::new(1, 26, 50);
-        let mut at = JsonPath::new();
-        at.push("minecraft:item");
+        let at = JsonPath::new().child("minecraft:item");
         let mut d = Diagnostics::default();
         let mut components = IndexMap::new();
         for (name, component) in super::history::from_component_map(&self.components) {
@@ -72,8 +71,7 @@ impl Item {
                 components.insert(name, json);
             }
         }
-        let mut path = at.clone();
-        path.push("components");
+        let path = at.child("components");
         let _ = gate(
             &components,
             self.description.identifier.as_str(),

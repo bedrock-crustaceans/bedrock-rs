@@ -186,9 +186,7 @@ pub(crate) fn validate(
     {
         // The game logs this at the content log's error level and the item loads: a kept
         // error.
-        let mut full = at.clone();
-        full.push("components");
-        full.push("minecraft:wearable");
+        let full = at.child("components").child("minecraft:wearable");
         d.push_kept_error(
             Diagnostic::error(DiagnosticCode::InvalidValue {
                 text: Some(VanillaText::ItemWearableStackSize {

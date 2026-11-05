@@ -82,7 +82,7 @@ fn structure(root: &Compound, cx: &LoadContext) -> Step<Structure> {
             DiagnosticCode::MissingRequiredField {
                 text: Some(text::required("structure")),
             },
-            &path(&["structure"]),
+            &JsonPath::new().with(&["structure"]),
         ));
     };
     let structure = contents(body, size)?;
@@ -119,7 +119,7 @@ fn format_version(root: &Compound) -> Step<i32> {
                 DiagnosticCode::MissingRequiredField {
                     text: Some(text::required(FIELD)),
                 },
-                &path(&[FIELD]),
+                &JsonPath::new().with(&[FIELD]),
             ));
         }
         v if v > current => text::larger_version(FIELD, current, v),
@@ -128,7 +128,7 @@ fn format_version(root: &Compound) -> Step<i32> {
     };
     Err(fail(
         DiagnosticCode::UnsupportedVersion { text: Some(text) },
-        &path(&[FIELD]),
+        &JsonPath::new().with(&[FIELD]),
     ))
 }
 
@@ -149,7 +149,7 @@ fn neighbor_aware_version(root: &Compound, cx: &LoadContext) -> Step<Option<i32>
     };
     Err(fail(
         DiagnosticCode::InvalidValue { text: Some(text) },
-        &path(&[FIELD]),
+        &JsonPath::new().with(&[FIELD]),
     ))
 }
 
@@ -168,7 +168,7 @@ fn size(root: &Compound) -> Step<[i32; 3]> {
             DiagnosticCode::InvalidValue {
                 text: Some(text::negative(FIELD)),
             },
-            &path(&[FIELD]),
+            &JsonPath::new().with(&[FIELD]),
         ));
     }
     Ok(size)
@@ -195,7 +195,7 @@ fn block_indices(body: &Compound) -> Step<[Vec<i32>; 2]> {
     let invalid = |text| {
         fail(
             DiagnosticCode::InvalidValue { text: Some(text) },
-            &path(&["structure", FIELD]),
+            &JsonPath::new().with(&["structure", FIELD]),
         )
     };
     let Some(Value::List(layers)) = body.get(key(FIELD)) else {
@@ -203,7 +203,7 @@ fn block_indices(body: &Compound) -> Step<[Vec<i32>; 2]> {
             DiagnosticCode::MissingRequiredField {
                 text: Some(text::required(FIELD)),
             },
-            &path(&["structure", FIELD]),
+            &JsonPath::new().with(&["structure", FIELD]),
         ));
     };
     if layers.len() != 2 {
@@ -231,7 +231,7 @@ fn check_volume(layers: &[Vec<i32>; 2], [x, y, z]: [i32; 3]) -> Step<()> {
             DiagnosticCode::InvalidValue {
                 text: Some(text::volume("block_indices", "size")),
             },
-            &path(&["structure", "block_indices"]),
+            &JsonPath::new().with(&["structure", "block_indices"]),
         ));
     }
     Ok(())
@@ -247,13 +247,13 @@ fn palettes(body: &Compound) -> Step<IndexMap<String, Palette>> {
             DiagnosticCode::MissingRequiredField {
                 text: Some(text::required(FIELD)),
             },
-            &path(&["structure", FIELD]),
+            &JsonPath::new().with(&["structure", FIELD]),
         ));
     };
     let mut read = IndexMap::new();
     for (name, value) in sorted(palettes) {
         let name = text_of(name);
-        let at = path(&["structure", FIELD, &name]);
+        let at = JsonPath::new().with(&["structure", FIELD, &name]);
         let Value::Compound(value) = value else {
             return Err(fail(
                 DiagnosticCode::InvalidValue {
@@ -285,7 +285,7 @@ fn palette(palette: &Compound, at: &JsonPath) -> Step<Palette> {
 /// A block palette: a list of compounds, cloned unchecked.
 fn block_palette(palette: &Compound, at: &JsonPath) -> Step<Vec<Compound>> {
     const FIELD: &str = "block_palette";
-    let at = child(at, FIELD);
+    let at = at.child(FIELD);
     let Some(Value::List(list)) = palette.get(key(FIELD)) else {
         return Err(fail(
             DiagnosticCode::MissingRequiredField {
@@ -299,7 +299,7 @@ fn block_palette(palette: &Compound, at: &JsonPath) -> Step<Vec<Compound>> {
             DiagnosticCode::InvalidValue {
                 text: Some(text::invalid_block(0)),
             },
-            &index(&at, 0),
+            &at.index(0),
         )
     })
 }
@@ -311,7 +311,7 @@ fn block_position_data(
     at: &JsonPath,
 ) -> Step<BTreeMap<i32, BlockPositionData>> {
     const FIELD: &str = "block_position_data";
-    let at = child(at, FIELD);
+    let at = at.child(FIELD);
     let Some(positions) = compound(palette, FIELD) else {
         return Err(fail(
             DiagnosticCode::MissingRequiredField {
@@ -323,7 +323,7 @@ fn block_position_data(
     let mut read = BTreeMap::new();
     for (name, value) in sorted(positions) {
         let name = text_of(name);
-        let at = child(&at, &name);
+        let at = at.child(&name);
         // The whole key is read as a decimal i32.
         let Ok(index) = name.parse::<i32>() else {
             return Err(fail(
@@ -355,17 +355,17 @@ fn position(entry: &Compound, at: &JsonPath) -> Step<BlockPositionData> {
     let block_entity_data = match entry.get(key(ENTITY)) {
         None => None,
         Some(Value::Compound(data)) => Some(data.clone()),
-        Some(_) => return Err(invalid(text::compound_field(ENTITY), &child(at, ENTITY))),
+        Some(_) => return Err(invalid(text::compound_field(ENTITY), &at.child(ENTITY))),
     };
     let tick_queue_data = match entry.get(key(TICKS)) {
         None => None,
         Some(Value::List(list)) => {
-            let at = child(at, TICKS);
+            let at = at.child(TICKS);
             let ticks = compounds(list)
-                .ok_or_else(|| invalid(text::compound_at(0, TICKS), &index(&at, 0)))?;
+                .ok_or_else(|| invalid(text::compound_at(0, TICKS), &at.index(0)))?;
             Some(ticks.iter().map(tick).collect())
         }
-        Some(_) => return Err(invalid(text::list_field(TICKS), &child(at, TICKS))),
+        Some(_) => return Err(invalid(text::list_field(TICKS), &at.child(TICKS))),
     };
     Ok(BlockPositionData {
         block_entity_data,
@@ -389,7 +389,7 @@ fn tick(tick: &Compound) -> TickQueueEntry {
 /// element fails the file.
 fn entities(body: &Compound) -> Step<Vec<Compound>> {
     const FIELD: &str = "entities";
-    let at = path(&["structure", FIELD]);
+    let at = JsonPath::new().with(&["structure", FIELD]);
     let Some(Value::List(list)) = body.get(key(FIELD)) else {
         return Err(fail(
             DiagnosticCode::MissingRequiredField {
@@ -403,7 +403,7 @@ fn entities(body: &Compound) -> Step<Vec<Compound>> {
             DiagnosticCode::InvalidValue {
                 text: Some(text::invalid_entity(0)),
             },
-            &index(&at, 0),
+            &at.index(0),
         )
     })
 }
@@ -411,29 +411,6 @@ fn entities(body: &Compound) -> Step<Vec<Compound>> {
 /// The error that ends the load, at `at`.
 fn fail(code: DiagnosticCode, at: &JsonPath) -> Box<Diagnostic> {
     Box::new(Diagnostic::error(code).at(at.clone()))
-}
-
-/// The tag path of `segments`.
-fn path(segments: &[&str]) -> JsonPath {
-    let mut at = JsonPath::new();
-    for segment in segments {
-        at.push(segment);
-    }
-    at
-}
-
-/// `at` followed by the tag `name`.
-fn child(at: &JsonPath, name: &str) -> JsonPath {
-    let mut at = at.clone();
-    at.push(name);
-    at
-}
-
-/// `at` followed by the list index `i`.
-fn index(at: &JsonPath, i: usize) -> JsonPath {
-    let mut at = at.clone();
-    at.push_index(i);
-    at
 }
 
 // ---- vanilla's tag reads ----------------------------------------------------------------
@@ -481,7 +458,7 @@ fn triple(compound: &Compound, name: &str) -> Step<[i32; 3]> {
             DiagnosticCode::MissingRequiredField {
                 text: Some(text::required(name)),
             },
-            &path(&[name]),
+            &JsonPath::new().with(&[name]),
         ));
     };
     ints(list).try_into().map_err(|_| {
@@ -489,7 +466,7 @@ fn triple(compound: &Compound, name: &str) -> Step<[i32; 3]> {
             DiagnosticCode::InvalidValue {
                 text: Some(text::three_elements(name)),
             },
-            &path(&[name]),
+            &JsonPath::new().with(&[name]),
         )
     })
 }

@@ -286,7 +286,7 @@ fn admit<'b>(
     {
         return Err(reject(
             origin,
-            Diagnostic::error(code).at(read::below(&JsonPath::new(), &["format_version"])),
+            Diagnostic::error(code).at(JsonPath::of_keys(["format_version"])),
         ));
     }
     Ok(text)
@@ -429,7 +429,7 @@ fn ignored_payload(
     Some(
         Diagnostic::error(DiagnosticCode::IgnoredPayload)
             .severity(severity)
-            .at(read::below(&JsonPath::new(), &[key]))
+            .at(JsonPath::of_keys([key]))
             .in_file(origin),
     )
 }
@@ -633,10 +633,7 @@ impl Bindings {
         let note = |code: DiagnosticCode, entry: &ItemBindingEntry| {
             let file = Origin::file(entry.pack.clone(), PackSide::Resource, entry.file.clone());
             Diagnostic::info(code)
-                .at(read::below(
-                    &JsonPath::new(),
-                    &[read::PAYLOAD, "description", "item"],
-                ))
+                .at(JsonPath::of_keys([read::PAYLOAD, "description", "item"]))
                 .phase(Phase::Validate)
                 .in_file(&file)
         };

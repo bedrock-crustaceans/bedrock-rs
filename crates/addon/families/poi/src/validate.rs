@@ -7,16 +7,9 @@ use bedrock_addon_core::diagnostic::{
 };
 use bedrock_addon_core::id::{BlockId, PoiTagId};
 
-/// `base` followed by the member `key`.
-fn child(base: &JsonPath, key: &str) -> JsonPath {
-    let mut path = base.clone();
-    path.push(key);
-    path
-}
-
 /// The rules of a POI type, `at` its payload.
 pub(crate) fn poi_type(value: &mut PoiType, at: &JsonPath, d: &mut Diagnostics) {
-    let blocks = child(at, "blocks");
+    let blocks = at.child("blocks");
     // A type without blocks never matches a placed block. Vanilla registers it silently, so
     // the crate's own note is an information.
     if value.blocks.is_empty() {
@@ -33,7 +26,7 @@ pub(crate) fn poi_type(value: &mut PoiType, at: &JsonPath, d: &mut Diagnostics) 
         if kept.contains(&block) {
             d.push(
                 Diagnostic::info(DiagnosticCode::NoEffect { text: None })
-                    .at(element(&blocks, i))
+                    .at(blocks.index(i))
                     .phase(Phase::Validate),
             );
         } else {
@@ -41,13 +34,6 @@ pub(crate) fn poi_type(value: &mut PoiType, at: &JsonPath, d: &mut Diagnostics) 
         }
     }
     value.blocks = kept;
-}
-
-/// `base` followed by the element `index`.
-fn element(base: &JsonPath, index: usize) -> JsonPath {
-    let mut path = base.clone();
-    path.push_index(index);
-    path
 }
 
 /// What a tag of a cycle is told, with the tag's name: the phrasing of the game's own unit
@@ -76,7 +62,7 @@ pub(crate) fn poi_tag(value: &mut PoiTag, at: &JsonPath, d: &mut Diagnostics) {
         let Some(list) = list else {
             continue;
         };
-        let at = child(at, key);
+        let at = at.child(key);
         let mut i = 0;
         list.retain(|tag| {
             let itself = *tag == own;
@@ -84,7 +70,7 @@ pub(crate) fn poi_tag(value: &mut PoiTag, at: &JsonPath, d: &mut Diagnostics) {
                 // The game logs no line for this, so the crate's own note is an information.
                 d.push(
                     Diagnostic::info(part_of_a_cycle(&own))
-                        .at(element(&at, i))
+                        .at(at.index(i))
                         .phase(Phase::Validate),
                 );
             }

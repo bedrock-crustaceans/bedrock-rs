@@ -109,8 +109,7 @@ pub(super) fn keyword_findings(facts: &KeywordFacts<'_>) -> Vec<Diagnostic> {
             if listed(file) && uses(keyword) != Some(false) {
                 continue;
             }
-            let mut at = JsonPath::new();
-            at.push(keyword);
+            let at = JsonPath::new().child(keyword);
             found.push(finding(
                 DiagnosticCode::IgnoredMember { text: None },
                 Severity::Info,
@@ -136,9 +135,7 @@ pub(super) fn keyword_findings(facts: &KeywordFacts<'_>) -> Vec<Diagnostic> {
         {
             continue;
         }
-        let mut at = JsonPath::new();
-        at.push("header");
-        at.push(field);
+        let at = JsonPath::new().child("header").child(field);
         found.push(finding(
             DiagnosticCode::UnresolvedLangKey,
             Severity::Info,

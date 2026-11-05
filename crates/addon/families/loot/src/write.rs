@@ -145,8 +145,7 @@ impl<'a> Object<'a> {
         write: impl FnOnce(&T, &JsonPath) -> Written,
     ) -> Result<(), EncodeError> {
         if let Some(value) = value {
-            let mut path = self.at.clone();
-            path.push(key);
+            let path = self.at.child(key);
             let written = write(value, &path)?;
             self.object.insert(key, written);
         }
@@ -163,8 +162,7 @@ impl<'a> Object<'a> {
         self.opt(key, list, |list, at| {
             let mut array = VArray::new();
             for (index, element) in list.iter().enumerate() {
-                let mut path = at.clone();
-                path.push_index(index);
+                let path = at.index(index);
                 array.push(write(element, &path)?);
             }
             Ok(array.into())

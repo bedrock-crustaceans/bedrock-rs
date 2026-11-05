@@ -60,10 +60,9 @@ pub(crate) fn parse_shape(
         .iter()
         .enumerate()
         .map(|(index, shell)| {
-            let mut at = child(&cx.at, &["shape", "boxes"]);
-            at.push_index(index);
-            let min = corner(payload, &shell.min, &child(&at, &["min"]), d);
-            let max = corner(payload, &shell.max, &child(&at, &["max"]), d);
+            let at = cx.at.with(&["shape", "boxes"]).index(index);
+            let min = corner(payload, &shell.min, &at.child("min"), d);
+            let max = corner(payload, &shell.max, &at.child("max"), d);
             Some(ShapeBox {
                 min: min?,
                 max: max?,
@@ -96,14 +95,14 @@ pub(crate) fn constraints(identifier: &str, boxes: usize, at: &JsonPath, d: &mut
     if identifier.len() > MAX_IDENTIFIER {
         d.push(
             Diagnostic::error(DiagnosticCode::InvalidValue { text: None })
-                .at(child(at, &["description", "identifier"])),
+                .at(at.with(&["description", "identifier"])),
         );
     }
     // A shape needs a box; the game's text for it is not reproduced here.
     if boxes < MIN_BOXES {
         d.push(
             Diagnostic::error(DiagnosticCode::InvalidValue { text: None })
-                .at(child(at, &["shape", "boxes"])),
+                .at(at.with(&["shape", "boxes"])),
         );
     }
     if boxes > MAX_BOXES {
@@ -111,7 +110,7 @@ pub(crate) fn constraints(identifier: &str, boxes: usize, at: &JsonPath, d: &mut
             Diagnostic::error(DiagnosticCode::InvalidValue {
                 text: Some(texts::too_many_boxes()),
             })
-            .at(child(at, &["shape", "boxes"])),
+            .at(at.with(&["shape", "boxes"])),
         );
     }
 }
@@ -124,7 +123,7 @@ fn unknown_members(payload: JsonSlice<'_>, at: &JsonPath, d: &mut Diagnostics) {
         return;
     };
     for (path, _) in &json::unknown_members(<Shell<'_> as Facet>::SHAPE, &json) {
-        d.push(unknown(join(at, path)));
+        d.push(unknown(at.join(path)));
     }
 }
 
@@ -191,10 +190,10 @@ fn corner(
         expected(d);
     }
     for key in &mistyped {
-        d.push(Diagnostic::error(DiagnosticCode::InvalidType { text: None }).at(child(at, &[key])));
+        d.push(Diagnostic::error(DiagnosticCode::InvalidType { text: None }).at(at.child(key)));
     }
     for key in &unbound {
-        d.push(unknown(child(at, &[key])));
+        d.push(unknown(at.child(key)));
     }
     // With a finding above the value is not used: an error in `d` rejects the document.
     Some(read)
@@ -215,20 +214,4 @@ fn unknown(at: JsonPath) -> Diagnostic {
         text: Some(texts::not_in_schema()),
     })
     .at(at)
-}
-
-/// `base` followed by the segments of `relative`.
-fn join(base: &JsonPath, relative: &JsonPath) -> JsonPath {
-    let mut path = base.clone();
-    path.append(relative);
-    path
-}
-
-/// `base` followed by `keys`.
-pub(crate) fn child(base: &JsonPath, keys: &[&str]) -> JsonPath {
-    let mut path = base.clone();
-    for key in keys {
-        path.push(key);
-    }
-    path
 }

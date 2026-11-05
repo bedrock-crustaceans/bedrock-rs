@@ -100,13 +100,6 @@ fn four_places(value: f32) -> String {
     format!("{:.4}", f64::from(value))
 }
 
-/// The path of a member of the goal.
-fn member_path(name: &str) -> JsonPath {
-    let mut at = JsonPath::new();
-    at.push(name);
-    at
-}
-
 /// Runs the numeric checks of `goal` over `json` (the goal's value as its reader parses it, after
 /// a validation that did not fail): the lines the game logs, in the table's order, and the JSON
 /// with each failed member at its default (`None` when no member failed).
@@ -159,7 +152,7 @@ pub(crate) fn check(goal: &str, json: &Value) -> (Vec<Problem>, Option<Value>) {
             object.insert(row.member, default_value(row));
             changed = true;
             problems.push(Problem::Numeric {
-                at: member_path(row.member),
+                at: JsonPath::new().child(row.member),
                 template: row.template,
                 value: shown,
             });
@@ -190,7 +183,7 @@ pub(crate) fn check(goal: &str, json: &Value) -> (Vec<Problem>, Option<Value>) {
             object.insert(row.member, lower_value);
             changed = true;
             problems.push(Problem::Numeric {
-                at: member_path(row.member),
+                at: JsonPath::new().child(row.member),
                 template: row.template,
                 value: four_places(lower),
             });

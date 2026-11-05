@@ -199,20 +199,6 @@ impl<'v> Members<'v> {
     }
 }
 
-/// `at/key`.
-fn child(at: &JsonPath, key: &str) -> JsonPath {
-    let mut path = at.clone();
-    path.push(key);
-    path
-}
-
-/// `at/index`.
-fn item_at(at: &JsonPath, index: usize) -> JsonPath {
-    let mut path = at.clone();
-    path.push_index(index);
-    path
-}
-
 /// The values vanilla iterates for an array member: the elements of an array, the member values
 /// of an object (jsoncpp iterates both); `None` for a scalar, which gives nothing.
 fn elements(value: &Value) -> Option<Vec<&Value>> {
@@ -231,7 +217,7 @@ fn one_or_many<'v>(value: &'v Value, at: &JsonPath) -> Vec<(&'v Value, JsonPath)
             .as_slice()
             .iter()
             .enumerate()
-            .map(|(index, element)| (element, item_at(at, index)))
+            .map(|(index, element)| (element, at.index(index)))
             .collect(),
         None => vec![(value, at.clone())],
     }
@@ -375,7 +361,7 @@ impl Walk<'_> {
         read: impl FnOnce(&mut Self, &Value, &JsonPath) -> Option<T>,
     ) -> Option<T> {
         let value = m.get(key)?;
-        read(self, value, &child(at, key))
+        read(self, value, &at.child(key))
     }
 
     /// A `RandomValueBounds`: a number sets both bounds; an object gives `min` and `max`.
@@ -423,7 +409,7 @@ impl Walk<'_> {
         };
         let mut out = Vec::new();
         for (index, element) in array.as_slice().iter().enumerate() {
-            if let Some(text) = self.string(element, &item_at(at, index)) {
+            if let Some(text) = self.string(element, &at.index(index)) {
                 out.push(text);
             }
         }
@@ -444,7 +430,7 @@ impl Walk<'_> {
             if !silent.contains(&key) {
                 self.findings.push(
                     Diagnostic::info(DiagnosticCode::UnrecognizedField { text: None })
-                        .at(child(at, key)),
+                        .at(at.child(key)),
                 );
             }
             extra.insert(key.to_owned(), value.clone());
@@ -475,7 +461,7 @@ impl Walk<'_> {
         let mut pools = Vec::new();
         let mut kept = Vec::new();
         for (index, element) in values.into_iter().enumerate() {
-            let at = item_at(at, index);
+            let at = at.index(index);
             match element.as_object() {
                 Some(object) => {
                     pools.push(self.pool(object, &at));
@@ -496,7 +482,7 @@ impl Walk<'_> {
         let conditions = self.member(&mut m, "conditions", at, Self::conditions);
         let tiers = self.member(&mut m, "tiers", at, Self::tiers);
         let entries = if let Some(value) = m.get("entries") {
-            self.entries(value, &child(at, "entries"))
+            self.entries(value, &at.child("entries"))
         } else {
             // The game logs the text at the content log's error level and keeps the pool
             // with no entries; the loot reader keeps the table too: a kept error.
@@ -554,7 +540,7 @@ impl Walk<'_> {
         let mut entries = Vec::new();
         let mut kept = Vec::new();
         for (index, element) in array.as_slice().iter().enumerate() {
-            let at = item_at(at, index);
+            let at = at.index(index);
             let Some(object) = element.as_object() else {
                 // The element is skipped, the table kept.
                 self.kept(
@@ -632,7 +618,7 @@ impl Walk<'_> {
         let mut out = Vec::new();
         let mut kept = Vec::new();
         for (index, element) in values.into_iter().enumerate() {
-            let at = item_at(at, index);
+            let at = at.index(index);
             let Some(object) = element.as_object() else {
                 // The element is skipped, the table kept.
                 self.kept(
@@ -825,7 +811,7 @@ impl Walk<'_> {
         };
         let mut out = Vec::new();
         for (index, element) in array.as_slice().iter().enumerate() {
-            let at = item_at(at, index);
+            let at = at.index(index);
             let empty = VObject::new();
             let object = element.as_object().unwrap_or(&empty);
             let mut m = Members::new(object);
@@ -872,7 +858,7 @@ impl Walk<'_> {
                     DiagnosticCode::InvalidValue {
                         text: Some(texts::formatted(texts::BANNER_TYPE, [&styled(value)])),
                     },
-                    &child(at, "type"),
+                    &at.child("type"),
                 );
             }
             read
@@ -885,13 +871,13 @@ impl Walk<'_> {
                     DiagnosticCode::InvalidValue {
                         text: Some(texts::formatted(texts::BANNER_BASE_COLOR, [&styled(value)])),
                     },
-                    &child(at, "base_color"),
+                    &at.child("base_color"),
                 );
             }
             read
         });
         let patterns = m.get("patterns").and_then(|value| {
-            let at = child(at, "patterns");
+            let at = at.child("patterns");
             if banner_type.unwrap_or_default() != BannerType::Default {
                 // A banner that is not a default one takes no patterns: they are ignored.
                 self.kept(
@@ -946,7 +932,7 @@ impl Walk<'_> {
         let pattern = match name.map(|v| (v, v.as_string())) {
             Some((_, Some(text))) if !text.is_empty() => text.as_str().to_owned(),
             Some((value, None)) if !value.is_null() => {
-                self.wrong_type(&child(at, "pattern"));
+                self.wrong_type(&at.child("pattern"));
                 return None;
             }
             _ => {
@@ -973,7 +959,7 @@ impl Walk<'_> {
                             [&styled(value)],
                         )),
                     },
-                    &child(at, "color"),
+                    &at.child("color"),
                 );
             }
             read
@@ -1000,7 +986,7 @@ impl Walk<'_> {
                 let mut m = Members::new(object);
                 let written = m.get("id");
                 if written.is_some_and(|id| !id.is_string()) {
-                    self.wrong_type(&child(&at, "id"));
+                    self.wrong_type(&at.child("id"));
                     continue;
                 }
                 // Without an `id` the name is empty, which names no enchantment.
@@ -1052,7 +1038,7 @@ impl Walk<'_> {
         let mut out = Vec::new();
         let mut kept = Vec::new();
         for (index, element) in values.into_iter().enumerate() {
-            let at = item_at(at, index);
+            let at = at.index(index);
             let Some(object) = element.as_object() else {
                 // The element is skipped, the table kept.
                 self.kept(
@@ -1212,7 +1198,7 @@ impl Walk<'_> {
         };
         let mut out = Vec::new();
         for (index, element) in array.as_slice().iter().enumerate() {
-            let at = item_at(at, index);
+            let at = at.index(index);
             let Some(object) = element.as_object() else {
                 self.wrong_type(&at);
                 continue;

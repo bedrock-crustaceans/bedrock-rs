@@ -9,9 +9,7 @@ use crate::meta;
 use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath};
 use bedrock_addon_core::json::JsonSlice;
 
-use super::read::{
-    Sink, Twice, array, child, element, object, raw_value, span, string, value, with_root,
-};
+use super::read::{Sink, Twice, array, object, raw_value, span, string, value, with_root};
 use super::{
     CommandPermissionLevel, PackPermissions, SERVER_NET_MODULE, ServerNet, WILDCARD_MODULE, net,
 };
@@ -43,7 +41,7 @@ pub(super) fn read(bytes: &[u8], sink: &mut Sink<'_>) -> Read {
             let Some(slice) = root.nested(raw) else {
                 continue;
             };
-            let at = child(&at, name);
+            let at = at.child(name);
             match name.as_str() {
                 ALLOWED_MODULES => {
                     written = true;
@@ -89,7 +87,7 @@ fn allowed_modules(slice: JsonSlice<'_>, at: &JsonPath, sink: &mut Sink<'_>) -> 
         let Some(slice) = slice.nested(raw) else {
             continue;
         };
-        let at = element(at, index);
+        let at = at.index(index);
         let Some(module) = string(slice) else {
             // The string elements still apply.
             sink.warn(DiagnosticCode::InvalidType { text: None }, at, span(slice));
@@ -144,7 +142,7 @@ fn module_permissions(
         let Some(slice) = slice.nested(raw) else {
             continue;
         };
-        let at = child(at, module);
+        let at = at.child(module);
         let is_net = module == SERVER_NET_MODULE;
         let Some(settings) = object(slice) else {
             // The module has no settings; silent on the server. A
@@ -191,7 +189,7 @@ fn values_of(
                 bedrock_addon_core::json::clamp_non_finite(&mut value, None);
                 value
             } else {
-                value(slice, &child(at, key), sink)?
+                value(slice, &at.child(key), sink)?
             };
             Some((key.clone(), value))
         })

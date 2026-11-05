@@ -1,7 +1,6 @@
 //! Format 1.19.30: `display_name` is a literal or a localisation key.
 
 use super::legacy::{Legacy, string, text};
-use crate::parse::child;
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, Phase};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
@@ -36,19 +35,14 @@ impl Upgrade for Block {
         // component of the base or of a permutation: the finding is at the member the file
         // has.
         let at = match category_from {
-            Some(section) => child(
-                &super::legacy::component_path(section, "minecraft:creative_category"),
-                &["category"],
-            ),
-            None => child(
-                &JsonPath::new(),
-                &[
-                    "minecraft:block",
-                    "description",
-                    "menu_category",
-                    "category",
-                ],
-            ),
+            Some(section) => super::legacy::component_path(section, "minecraft:creative_category")
+                .with(&["category"]),
+            None => JsonPath::new().with(&[
+                "minecraft:block",
+                "description",
+                "menu_category",
+                "category",
+            ]),
         };
         let (category, hidden) = match object.get("category").and_then(string) {
             None => (None, false),
@@ -112,15 +106,12 @@ impl Upgrade for Block {
             .is_some_and(|had| !had.is_null() && *had != hidden)
         {
             super::legacy::replaced(
-                &child(
-                    &JsonPath::new(),
-                    &[
-                        "minecraft:block",
-                        "description",
-                        "menu_category",
-                        "is_hidden_in_commands",
-                    ],
-                ),
+                &JsonPath::new().with(&[
+                    "minecraft:block",
+                    "description",
+                    "menu_category",
+                    "is_hidden_in_commands",
+                ]),
                 cx.diagnostics,
             );
         }

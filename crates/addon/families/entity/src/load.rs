@@ -104,13 +104,10 @@ impl Family for Entity {
 
     fn component_sections(v: &mut Entity) -> Vec<ComponentSection<'_, EntityComponent>> {
         let mut sections = Vec::with_capacity(1 + v.component_groups.len());
-        let mut at = JsonPath::new();
-        at.push("components");
+        let at = JsonPath::new().child("components");
         sections.push(ComponentSection::new(at, false, &mut v.components));
         for (name, group) in &mut v.component_groups {
-            let mut at = JsonPath::new();
-            at.push("component_groups");
-            at.push(name);
+            let at = JsonPath::new().child("component_groups").child(name);
             sections.push(ComponentSection::new(at, false, &mut group.components));
         }
         sections
@@ -203,8 +200,7 @@ const FAILED_TO_LOAD: &str = "ERROR: Entity '{}' failed to load from JSON: {}";
 /// or the beta permission is no load of the definition and gets none.
 fn close_refusal(found: &mut Diagnostics, bytes: &[u8]) {
     let payload = <Entity as Family>::PAYLOAD_KEY;
-    let mut under = JsonPath::new();
-    under.push(payload);
+    let under = JsonPath::new().child(payload);
     let logged = |finding: &&Diagnostic| {
         finding.severity >= Severity::Warning && finding.location.json_path.starts_with(&under)
     };
@@ -352,11 +348,7 @@ impl Entity {
         let found = written.diagnostics().clone();
         let any = written.into_value();
         let (identity, skip_upgrades) = history::identity(&any);
-        let at = {
-            let mut at = JsonPath::new();
-            at.push(<Entity as Family>::PAYLOAD_KEY);
-            at
-        };
+        let at = { JsonPath::new().child(<Entity as Family>::PAYLOAD_KEY) };
         let input = FormatVersionInput {
             version: if version.beta {
                 None

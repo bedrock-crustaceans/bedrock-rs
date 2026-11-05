@@ -13,7 +13,7 @@ use bedrock_addon_core::versioning::ConvertMode;
 use facet::Facet;
 use facet_value::VObject;
 
-use super::parse::{Check, Typed, index, join, path};
+use super::parse::{Check, Typed};
 use super::value::visit_item_tags;
 
 /// `minecraft:admire_item`: the entity admires a held item for a while, ignoring targets.
@@ -203,7 +203,7 @@ impl Typed for Tamemount {
         if let Some(items) = json.get_mut("feed_items").and_then(|v| v.as_array_mut()) {
             for (i, item) in items.as_mut_slice().iter_mut().enumerate() {
                 if let Some(item) = item.as_object_mut() {
-                    let at = index(&path(&["feed_items"]), i);
+                    let at = JsonPath::new().child("feed_items").index(i);
                     changed |= super::parse::legacy_spellings(
                         item,
                         &at,
@@ -217,24 +217,24 @@ impl Typed for Tamemount {
     }
 
     fn check(&mut self, cx: &mut Check<'_>) {
-        let feed = path(&["feed_items"]);
+        let feed = JsonPath::new().child("feed_items");
         for (i, entry) in self.feed_items.iter().enumerate() {
-            let mut at = index(&feed, i);
+            let mut at = feed.index(i);
             at.push("item");
             if let Some(item) = &entry.item {
                 cx.extend(item.check(&at));
             }
         }
-        let reject = path(&["auto_reject_items"]);
+        let reject = JsonPath::new().child("auto_reject_items");
         for (i, entry) in self.auto_reject_items.iter().enumerate() {
-            let mut at = index(&reject, i);
+            let mut at = reject.index(i);
             at.push("item");
             if let Some(item) = &entry.item {
                 cx.extend(item.check(&at));
             }
         }
         if let Some(event) = &self.tame_event {
-            cx.extend(event.check(&path(&["tame_event"])));
+            cx.extend(event.check(&JsonPath::new().child("tame_event")));
         }
     }
 }
@@ -426,10 +426,10 @@ impl Typed for Shareables {
     // read; from 1.15.0 it defaults the whole component.
 
     fn check(&mut self, cx: &mut Check<'_>) {
-        let list = path(&["items"]);
+        let list = JsonPath::new().child("items");
         for (i, entry) in self.items.iter().enumerate() {
             if let Some(item) = &entry.item {
-                cx.extend(item.check(&join(&index(&list, i), "item")));
+                cx.extend(item.check(&list.index(i).child("item")));
             }
         }
     }
@@ -537,8 +537,14 @@ impl Typed for EconomyTradeTable {
     }
 
     fn check(&mut self, cx: &mut Check<'_>) {
-        cx.range(&path(&["cured_discount"]), &mut self.cured_discount);
-        cx.range(&path(&["max_cured_discount"]), &mut self.max_cured_discount);
+        cx.range(
+            &JsonPath::new().child("cured_discount"),
+            &mut self.cured_discount,
+        );
+        cx.range(
+            &JsonPath::new().child("max_cured_discount"),
+            &mut self.max_cured_discount,
+        );
     }
 }
 

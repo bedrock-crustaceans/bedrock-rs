@@ -41,8 +41,7 @@ impl LangFile {
         let last = self.lines.len().saturating_sub(1);
         for (index, line) in self.lines.iter().enumerate() {
             if !write_line(line, &mut text) {
-                let mut at = JsonPath::new();
-                at.push_index(index);
+                let mut at = JsonPath::new().index(index);
                 if let Line::Entry { key, .. } = line {
                     at.push(key);
                 }

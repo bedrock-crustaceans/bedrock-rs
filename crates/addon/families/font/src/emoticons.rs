@@ -8,7 +8,7 @@ use super::fields::{Fields, Written};
 use super::{Emoticon, EmoticonList};
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
 use bedrock_addon_core::json::Value;
-use bedrock_addon_support::fixed_path::{Authored, array, index, invalid, malformed};
+use bedrock_addon_support::fixed_path::{Authored, array, invalid, malformed};
 
 /// The game's assert for an emoticon file it cannot use.
 pub(super) const MALFORMED: &str = "Malformed JSON";
@@ -88,7 +88,7 @@ impl Authored for EmoticonList {
         let mut seen: HashSet<&str> = HashSet::new();
         let mut list = Vec::new();
         for (i, element) in elements.iter().enumerate() {
-            let at = index(&at, i);
+            let at = at.index(i);
             let mut fields = Fields::new(element, at.clone());
             let (name, code) = (fields.raw("name"), fields.raw("code"));
             let (Some(name), Some(code)) = (
@@ -104,23 +104,16 @@ impl Authored for EmoticonList {
                 extra: fields.finish(diagnostics),
             };
             if emoticon.code_point().is_none() {
-                diagnostics.push(
-                    Diagnostic::info(invalid())
-                        .at(bedrock_addon_support::fixed_path::key(&at, "code")),
-                );
+                diagnostics.push(Diagnostic::info(invalid()).at(at.child("code")));
             } else if !seen.insert(name.as_str()) {
                 // The first entry of a name stands.
                 diagnostics.push(
-                    Diagnostic::info(DiagnosticCode::FontNameOverridden)
-                        .at(bedrock_addon_support::fixed_path::key(&at, "name")),
+                    Diagnostic::info(DiagnosticCode::FontNameOverridden).at(at.child("name")),
                 );
             }
             if !matchable(&emoticon.name) {
                 // A name that can never be matched in text.
-                diagnostics.push(
-                    Diagnostic::info(invalid())
-                        .at(bedrock_addon_support::fixed_path::key(&at, "name")),
-                );
+                diagnostics.push(Diagnostic::info(invalid()).at(at.child("name")));
             }
             list.push(emoticon);
         }

@@ -2,13 +2,14 @@
 
 super::legacy_struct!(1, 16, 0);
 
+use bedrock_addon_core::diagnostic::JsonPath;
 use bedrock_addon_core::vanilla::ActorType;
 use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
 use facet_value::VArray;
 
 use super::ops::{
-    Members, Removed, Told, below, components, f32_value, float_of, json, overwrite, path, removed,
-    rename, section_a, section_b, sections,
+    Members, Removed, Told, components, f32_value, float_of, json, overwrite, removed, rename,
+    section_a, section_b, sections,
 };
 
 /// The step's version, for its findings.
@@ -60,7 +61,7 @@ fn restriction_split(payload: &mut Payload, cx: &mut UpgradeCx<'_>) {
             members.insert_absent("minecraft:home", json(r#"{"restriction_radius": 16}"#));
         } else {
             members.take(OLD);
-            gone.push(below(&section.at, &[OLD]));
+            gone.push(section.at.child(OLD));
         }
     }
     for at in gone {
@@ -97,7 +98,7 @@ fn boat(payload: &mut Payload, told: &mut Told) {
                 .get(name.as_str())
                 .is_some_and(|had| !had.is_null() && had != group)
             {
-                told.dropped(path(&["component_groups", name.as_str()]));
+                told.dropped(JsonPath::new().with(&["component_groups", name.as_str()]));
             }
             groups.insert(name.as_str().to_owned(), group.clone());
         }
@@ -115,7 +116,7 @@ fn boat(payload: &mut Payload, told: &mut Told) {
                 .get(name.as_str())
                 .is_some_and(|had| !had.is_null() && had != event)
             {
-                told.dropped(path(&["events", name.as_str()]));
+                told.dropped(JsonPath::new().with(&["events", name.as_str()]));
             }
             events.insert(name.as_str().to_owned(), event.clone());
         }
@@ -126,7 +127,7 @@ fn boat(payload: &mut Payload, told: &mut Told) {
             if Members::get(components, name.as_str())
                 .is_some_and(|had| !had.is_null() && had != component)
             {
-                told.dropped(path(&["components", name.as_str()]));
+                told.dropped(JsonPath::new().with(&["components", name.as_str()]));
             }
             components.set(name.as_str(), component.clone());
         }
@@ -181,13 +182,13 @@ fn rewrites(payload: &mut Payload, cx: &mut UpgradeCx<'_>) {
             && let Some(distance) = goal.remove("max_dist")
         {
             const GOAL: &str = "minecraft:behavior.drop_item_for";
-            let at = below(&section.at, &[GOAL]);
+            let at = section.at.child(GOAL);
             let mut range = VArray::new();
             for _ in 0..3 {
                 range.push(distance.clone());
             }
             overwrite(goal, "target_range", range.into(), &at, &mut told);
-            told.moved(below(&at, &["max_dist"]), below(&at, &["target_range"]));
+            told.moved(at.child("max_dist"), at.child("target_range"));
         }
         // A `null` member is an absent one. The crate's own note: a `wait_time` that is no number
         // is read as 0, one beyond a float as the largest float, and told at the member.
@@ -196,8 +197,8 @@ fn rewrites(payload: &mut Payload, cx: &mut UpgradeCx<'_>) {
             && !wait.is_null()
         {
             const GOAL: &str = "minecraft:behavior.explore_outskirts";
-            let at = below(&section.at, &[GOAL]);
-            let ticks = told.read(float_of(&wait), || below(&at, &["wait_time"]));
+            let at = section.at.child(GOAL);
+            let ticks = told.read(float_of(&wait), || at.child("wait_time"));
             overwrite(
                 goal,
                 "max_wait_time",
@@ -205,13 +206,13 @@ fn rewrites(payload: &mut Payload, cx: &mut UpgradeCx<'_>) {
                 &at,
                 &mut told,
             );
-            told.moved(below(&at, &["wait_time"]), below(&at, &["max_wait_time"]));
+            told.moved(at.child("wait_time"), at.child("max_wait_time"));
         }
         if let Some(table) = members.object("minecraft:economy_trade_table") {
             table.insert_absent("use_legacy_price_formula", true.into());
         }
         if members.take("minecraft:foot_size").is_some() {
-            gone.push(below(&section.at, &["minecraft:foot_size"]));
+            gone.push(section.at.child("minecraft:foot_size"));
         }
     }
     for at in gone {

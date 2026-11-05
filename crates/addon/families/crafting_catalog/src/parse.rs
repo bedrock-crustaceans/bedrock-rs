@@ -90,20 +90,6 @@ fn is_namespaced(text: &str) -> bool {
             .any(|(index, b)| *b == b':' && index > 0 && index + 1 < bytes.len())
 }
 
-/// `base` followed by the member `key`.
-fn member(base: &JsonPath, key: &str) -> JsonPath {
-    let mut path = base.clone();
-    path.push(key);
-    path
-}
-
-/// `base` followed by the array index `index`.
-fn element(base: &JsonPath, index: usize) -> JsonPath {
-    let mut path = base.clone();
-    path.push_index(index);
-    path
-}
-
 /// The whole of `slice` as a span of the file.
 fn span(slice: JsonSlice<'_>) -> Span {
     let to_u32 = |n: usize| u32::try_from(n).unwrap_or(u32::MAX);
@@ -221,7 +207,7 @@ impl Reader<'_> {
             }
             self.d.push(
                 Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None })
-                    .at(member(at, key))
+                    .at(at.child(key))
                     .span(span(*slice)),
             );
         }
@@ -236,7 +222,7 @@ impl Reader<'_> {
         key: &str,
         at: &JsonPath,
     ) -> Option<(JsonSlice<'a>, JsonPath)> {
-        let path = member(at, key);
+        let path = at.child(key);
         if let Some(slice) = members.get(key) {
             return Some((*slice, path));
         }
@@ -262,7 +248,7 @@ impl Reader<'_> {
         let read: Vec<Option<T>> = elements
             .into_iter()
             .enumerate()
-            .map(|(index, slice)| each(self, slice, &element(&path, index)))
+            .map(|(index, slice)| each(self, slice, &path.index(index)))
             .collect();
         read.into_iter().collect()
     }
@@ -310,7 +296,7 @@ impl Reader<'_> {
         let extra = self.unknown(&members, &["group_identifier", "items"], at);
         let group_identifier = members
             .get("group_identifier")
-            .map(|slice| self.group_identifier(*slice, &member(at, "group_identifier")));
+            .map(|slice| self.group_identifier(*slice, &at.child("group_identifier")));
         let items = self.list(&members, "items", at, Self::item);
         Some(Group {
             group_identifier: match group_identifier {
@@ -332,7 +318,7 @@ impl Reader<'_> {
         };
         let icon = members
             .get("icon")
-            .map(|slice| self.item(*slice, &member(at, "icon")));
+            .map(|slice| self.item(*slice, &at.child("icon")));
         Some(GroupIdentifier {
             name: name?,
             icon: match icon {

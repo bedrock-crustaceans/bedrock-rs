@@ -174,10 +174,10 @@ fn read_value(
         });
     let rules = match object.get("rules") {
         None => {
-            reader.missing(&child(&root, "rules"));
+            reader.missing(&root.child("rules"));
             None
         }
-        Some(rules) => reader.rules(rules, slice, &child(&root, "rules")),
+        Some(rules) => reader.rules(rules, slice, &root.child("rules")),
     };
     if reader.failed {
         return None;
@@ -192,8 +192,7 @@ impl Reader<'_> {
     /// Raises an error at `at` (relative to the payload).
     fn fail(&mut self, code: DiagnosticCode, at: &JsonPath) {
         self.failed = true;
-        let mut path = self.base.clone();
-        path.append(at);
+        let path = self.base.join(at);
         self.d.push(Diagnostic::error(code).at(path));
     }
 
@@ -241,7 +240,7 @@ impl Reader<'_> {
             if known.contains(&name.as_str()) {
                 continue;
             }
-            let at = child(at, name.as_str());
+            let at = at.child(name.as_str());
             self.cereal(cereal::member_not_in_schema(), &at);
         }
     }
@@ -253,7 +252,7 @@ impl Reader<'_> {
         name: &str,
         at: &JsonPath,
     ) -> Option<(&'v VObject, JsonPath)> {
-        let at = child(at, name);
+        let at = at.child(name);
         let Some(value) = object.get(name) else {
             self.missing(&at);
             return None;
@@ -267,7 +266,7 @@ impl Reader<'_> {
 
     /// The required string member `name` of `object`.
     fn required_string(&mut self, object: &VObject, name: &str, at: &JsonPath) -> Option<String> {
-        let at = child(at, name);
+        let at = at.child(name);
         let Some(value) = object.get(name) else {
             self.missing(&at);
             return None;
@@ -315,8 +314,7 @@ impl Reader<'_> {
             .iter()
             .enumerate()
             .map(|(index, rule)| {
-                let mut at = at.clone();
-                at.push_index(index);
+                let at = at.index(index);
                 self.rule(rule, slice, &at)
             })
             .collect();
@@ -350,7 +348,7 @@ impl Reader<'_> {
                     CONDITION,
                     &names,
                     Condition::from_name,
-                    &child(at, "condition"),
+                    &at.child("condition"),
                 );
                 failed |= read.is_none();
                 read
@@ -364,7 +362,7 @@ impl Reader<'_> {
             Some(value) => {
                 let read = value.as_bool();
                 if read.is_none() {
-                    let at = child(at, "cull_against_full_and_opaque");
+                    let at = at.child("cull_against_full_and_opaque");
                     self.cereal(cereal::invalid_numeric_value(), &at);
                     failed = true;
                 }
@@ -376,10 +374,10 @@ impl Reader<'_> {
             .and_then(|(part, at)| self.geometry_part(part, &at));
         let direction = match object.get("direction") {
             None => {
-                self.missing(&child(at, "direction"));
+                self.missing(&at.child("direction"));
                 None
             }
-            Some(value) => self.facing(value, &child(at, "direction")),
+            Some(value) => self.facing(value, &at.child("direction")),
         };
         if failed {
             return None;
@@ -400,7 +398,7 @@ impl Reader<'_> {
         let cube = match object.get("cube") {
             None => None,
             Some(value) => {
-                let read = self.cube(value, &child(at, "cube"));
+                let read = self.cube(value, &at.child("cube"));
                 failed |= read.is_none();
                 read
             }
@@ -408,7 +406,7 @@ impl Reader<'_> {
         let face = match object.get("face") {
             None => None,
             Some(value) => {
-                let read = self.facing(value, &child(at, "face"));
+                let read = self.facing(value, &at.child("face"));
                 failed |= read.is_none();
                 read
             }
@@ -445,13 +443,6 @@ impl Reader<'_> {
         }
         Some(index)
     }
-}
-
-/// `at` with the member `name`.
-fn child(at: &JsonPath, name: &str) -> JsonPath {
-    let mut path = at.clone();
-    path.push(name);
-    path
 }
 
 /// Vanilla's breadcrumb of a path below the payload: `-> rules[0] -> direction`.

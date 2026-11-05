@@ -4,7 +4,7 @@ super::legacy_struct!(1, 21, 90);
 
 use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
 
-use super::ops::{Told, below, json, overwrite, rename, section_b, sections};
+use super::ops::{Told, json, overwrite, rename, section_b, sections};
 
 /// 1.21.90 → 1.21.100.
 impl Upgrade for Entity {
@@ -29,7 +29,7 @@ impl Upgrade for Entity {
                     &mut told,
                 );
                 if let Some(goal) = members.object("minecraft:behavior.enderman_leave_block") {
-                    let at = below(&section.at, &["minecraft:behavior.enderman_leave_block"]);
+                    let at = section.at.child("minecraft:behavior.enderman_leave_block");
                     overwrite(goal, "xz_range", json("[-1, 1]"), &at, &mut told);
                     overwrite(goal, "y_range", json("[0, 2]"), &at, &mut told);
                     overwrite(goal, "chance", 0.0005.into(), &at, &mut told);
@@ -42,7 +42,7 @@ impl Upgrade for Entity {
                     &mut told,
                 );
                 if let Some(goal) = members.object("minecraft:behavior.enderman_take_block") {
-                    let at = below(&section.at, &["minecraft:behavior.enderman_take_block"]);
+                    let at = section.at.child("minecraft:behavior.enderman_take_block");
                     overwrite(goal, "xz_range", json("[-1, 1]"), &at, &mut told);
                     overwrite(goal, "y_range", json("[0, 3]"), &at, &mut told);
                     overwrite(goal, "chance", 0.05.into(), &at, &mut told);

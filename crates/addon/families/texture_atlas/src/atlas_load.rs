@@ -7,9 +7,7 @@ use indexmap::IndexMap;
 use super::atlas::{AtlasItem, AtlasKind, TextureAtlas, TextureElement, VariationEntry};
 use super::atlas_read::read_atlas;
 use super::patch::patch_json;
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase};
 use bedrock_addon_core::document::{Extra, Merge, Merged, Origin, RawLayer};
 use bedrock_addon_core::id::AtlasKey;
 use bedrock_addon_core::json::Value;
@@ -225,17 +223,22 @@ fn check_images(
 ) {
     let many = matches!(item.textures, super::atlas::AtlasTextures::Many(_));
     for (index, element) in item.elements().iter().enumerate() {
-        let mut at = JsonPath::new();
-        at.push("texture_data");
-        at.push(key);
-        at.push("textures");
+        let mut at = JsonPath::new()
+            .child("texture_data")
+            .child(key)
+            .child("textures");
         if many {
             at.push_index(index);
         }
         let missing = |path: Option<&str>, at: &JsonPath, out: &mut Diagnostics| {
             if path.is_some() && stack_index(path, files).is_none() {
                 let code = DiagnosticCode::TextureNotFound { text: None };
-                out.push(stage(code, Severity::Info, origin, at.clone()));
+                out.push(
+                    Diagnostic::info(code)
+                        .at(at.clone())
+                        .in_file(origin)
+                        .phase(Phase::Validate),
+                );
             }
         };
         match element {
@@ -249,11 +252,15 @@ fn check_images(
                 let paths = variation_paths(variations);
                 let kept = kept_variations(&paths, files);
                 for (entry, (path, kept)) in paths.iter().zip(kept).enumerate() {
-                    let mut at = at.clone();
-                    at.push_index(entry);
+                    let at = at.index(entry);
                     if !kept {
                         let code = DiagnosticCode::DroppedField { text: None };
-                        out.push(stage(code, Severity::Info, origin, at.clone()));
+                        out.push(
+                            Diagnostic::info(code)
+                                .at(at.clone())
+                                .in_file(origin)
+                                .phase(Phase::Validate),
+                        );
                     }
                     missing(*path, &at, out);
                 }
@@ -261,14 +268,4 @@ fn check_images(
             TextureElement::Invalid(_) => {}
         }
     }
-}
-
-/// A stack-stage finding.
-fn stage(code: DiagnosticCode, severity: Severity, origin: &Origin, at: JsonPath) -> Diagnostic {
-    let mut finding = Diagnostic::error(code)
-        .at(at)
-        .severity(severity)
-        .in_file(origin);
-    finding.phase = Phase::Validate;
-    finding
 }

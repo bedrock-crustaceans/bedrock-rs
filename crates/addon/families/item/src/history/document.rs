@@ -236,8 +236,7 @@ fn custom_list(slice: JsonSlice<'_>, _: &LoadContext, d: &mut Diagnostics) -> Op
                 .enumerate()
             {
                 if !element.is_string() {
-                    let mut path = JsonPath::new();
-                    path.push_index(index);
+                    let path = JsonPath::new().index(index);
                     d.push(Diagnostic::info(DiagnosticCode::InvalidType { text: None }).at(path));
                 }
             }
@@ -296,9 +295,7 @@ fn custom_entries(slice: JsonSlice<'_>, _: &LoadContext, d: &mut Diagnostics) ->
                     .iter()
                     .filter(|(member, _)| !["name", "data"].contains(&member.as_str()))
                 {
-                    let mut path = JsonPath::new();
-                    path.push_index(i);
-                    path.push(member.as_str());
+                    let path = JsonPath::new().index(i).child(member.as_str());
                     d.push(Diagnostic::warn(DiagnosticCode::MemberNotKept { text: None }).at(path));
                 }
                 Some(CustomComponentEntry { name, data })
@@ -309,8 +306,7 @@ fn custom_entries(slice: JsonSlice<'_>, _: &LoadContext, d: &mut Diagnostics) ->
             kept.push(i);
         } else {
             // Neither shape: a type error, the item refused.
-            let mut path = JsonPath::new();
-            path.push_index(i);
+            let path = JsonPath::new().index(i);
             d.push(Diagnostic::error(DiagnosticCode::InvalidType { text: None }).at(path));
         }
     }
@@ -460,13 +456,6 @@ pub(crate) fn binding(version: FormatVersion, key: &str) -> Option<Parser> {
     common(version, key)
 }
 
-/// `base` followed by `key`.
-pub(crate) fn below(base: &JsonPath, key: &str) -> JsonPath {
-    let mut path = base.clone();
-    path.push(key);
-    path
-}
-
 /// What the parse shell reads of an item object.
 #[derive(Facet)]
 struct Shell<'a> {
@@ -517,7 +506,7 @@ pub(crate) fn parse_parts(
     };
     let mut extra = shell.extra;
     let mut description = shell.description;
-    let at_components = below(&cx.at, "components");
+    let at_components = cx.at.child("components");
     if version >= V1_26_30 {
         // The modern documents bind `components` as required, with at least one entry. A
         // stable document without a registered component is routed to the legacy format
@@ -549,7 +538,7 @@ pub(crate) fn parse_parts(
             for key in raw.keys().filter(|key| is_null(&raw[*key])) {
                 found.push(
                     Diagnostic::error(DiagnosticCode::InvalidType { text: None })
-                        .at(below(&at_components, key)),
+                        .at(at_components.child(key)),
                 );
             }
             raw.retain(|_, json| !is_null(json));
@@ -582,7 +571,7 @@ pub(crate) fn parse_parts(
         if dropped.contains(key) {
             continue;
         }
-        let path = below(&at_components, key);
+        let path = at_components.child(key);
         let slice = payload.nested(json).unwrap_or(JsonSlice {
             text: json.as_str(),
             offset: payload.offset,
@@ -708,7 +697,7 @@ pub(crate) fn parse_parts(
         // `unknown_members_are_errors` raises to the error.
         found.push(
             Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None })
-                .at(below(&cx.at, "events")),
+                .at(cx.at.child("events")),
         );
     }
     let deprecated = side_car(
@@ -724,7 +713,7 @@ pub(crate) fn parse_parts(
         &mut description,
         version,
         original,
-        &below(&cx.at, "description"),
+        &cx.at.child("description"),
         &mut found,
     );
     if !strict {
@@ -834,7 +823,7 @@ fn side_car(
             extra.insert("__deprecated_components".to_owned(), value);
             d.push(
                 Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None })
-                    .at(below(at, "__deprecated_components")),
+                    .at(at.child("__deprecated_components")),
             );
         }
         for (key, value, text) in [
@@ -852,7 +841,7 @@ fn side_car(
                     Diagnostic::error(DiagnosticCode::DeprecatedMember {
                         text: Some(VanillaText::Fixed(text)),
                     })
-                    .at(below(at, key)),
+                    .at(at.child(key)),
                 );
             }
         }
@@ -868,12 +857,12 @@ fn side_car(
             extra.insert(key.to_owned(), value);
             d.push(
                 Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None })
-                    .at(below(at, key)),
+                    .at(at.child(key)),
             );
         }
     }
     if let Some(value) = written {
-        let path = below(at, "__deprecated_components");
+        let path = at.child("__deprecated_components");
         if version >= V1_20_30 {
             // The 1.20.30–1.26.0 roots bind the member as deprecated: the game logs
             // "member \"{}\" is deprecated" when the member is in a JSON input. That
@@ -911,7 +900,7 @@ fn description_era(
     // from 1.26.30 the marker `unknown_members_are_errors` raises it.
     let unknown = |d: &mut Diagnostics, key: &str| {
         d.push(
-            Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None }).at(below(at, key)),
+            Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None }).at(at.child(key)),
         );
     };
     if version < V1_20_20 {
@@ -947,7 +936,7 @@ fn description_era(
                     Diagnostic::error(DiagnosticCode::InvalidValue {
                         text: Some(VanillaText::Fixed(texts::GROUP_LENGTH)),
                     })
-                    .at(below(&below(at, "menu_category"), "group")),
+                    .at(at.child("menu_category").child("group")),
                 );
             } else if version >= V1_21_60 && !has_namespace(group) {
                 // A group without a namespace fails to load from 1.21.60.
@@ -955,7 +944,7 @@ fn description_era(
                     Diagnostic::error(DiagnosticCode::NamespaceRule {
                         text: Some(VanillaText::Fixed(texts::GROUP_NAMESPACE)),
                     })
-                    .at(below(&below(at, "menu_category"), "group")),
+                    .at(at.child("menu_category").child("group")),
                 );
             }
         }
@@ -1040,8 +1029,7 @@ fn unbind_members(
         } else {
             DiagnosticCode::UnrecognizedField { text: None }
         };
-        let mut path = JsonPath::new();
-        path.push(member);
+        let path = JsonPath::new().child(member);
         // A member the struct of this version does not bind is a member the schema does not
         // know: a warning-level line in the content log while the item loads.
         // `FieldSinceEngine` is a gate on the engine version, not an unknown member: the
@@ -1133,8 +1121,7 @@ fn check_component(
                 // name the regex takes and the slot parser does not know; the text is kept as
                 // the finding's (the game's own constraint text is not known).
                 let slot = std::mem::replace(&mut c.slot, "none".to_owned());
-                let mut path = JsonPath::new();
-                path.push("slot");
+                let path = JsonPath::new().child("slot");
                 d.push(
                     Diagnostic::error(DiagnosticCode::InvalidValue {
                         text: Some(VanillaText::ItemEnchantSlot { slot }),
@@ -1238,14 +1225,12 @@ fn check_component(
                 // The 1.18 slices bind `max_durability` alone: `max_damage` is a member the
                 // schema does not know, a warning-level line in the content log, and the
                 // item loads.
-                let mut path = JsonPath::new();
-                path.push("max_damage");
+                let path = JsonPath::new().child("max_damage");
                 d.push(Diagnostic::warn(DiagnosticCode::InvalidValue { text: None }).at(path));
             }
             if c.max_durability.is_none() {
                 // Required: a missing required member, the item refused.
-                let mut path = JsonPath::new();
-                path.push("max_durability");
+                let path = JsonPath::new().child("max_durability");
                 d.push(
                     Diagnostic::error(DiagnosticCode::MissingRequiredField { text: None }).at(path),
                 );
@@ -1259,8 +1244,7 @@ fn check_component(
                 // drops the list and tells it as an information of its own (whether to keep
                 // it instead is open).
                 c.repair_items = None;
-                let mut path = JsonPath::new();
-                path.push("repair_items");
+                let path = JsonPath::new().child("repair_items");
                 d.push(Diagnostic::info(DiagnosticCode::InvalidValue { text: None }).at(path));
             }
             true
@@ -1424,8 +1408,7 @@ fn drop_minecraft_names<T>(list: &mut Vec<T>, name: fn(&T) -> &str, d: &mut Diag
     list.retain(|entry| {
         let keep = !name(entry).starts_with("minecraft:");
         if !keep {
-            let mut held = JsonPath::new();
-            held.push_index(index);
+            let held = JsonPath::new().index(index);
             // The moves of the reader are still pending on the component's own list, and
             // go no further than it: the finding is told at the file's index here.
             let path = d.source_of(&held);
@@ -1566,9 +1549,7 @@ pub(crate) fn write_parts(
     // it: one object has one member of a name. (Only a caller can build it: a file's member
     // is read as the side-car or as the unknown member, never both.)
     if side_car.is_some() && extra.get("__deprecated_components").is_some() {
-        let mut at = JsonPath::new();
-        at.push("minecraft:item");
-        at.push("__deprecated_components");
+        let at = JsonPath::new().with(&["minecraft:item", "__deprecated_components"]);
         return Err(EncodeError::NotRepresentable {
             at,
             what: bedrock_addon_core::json::Unrepresentable::Unsupported,

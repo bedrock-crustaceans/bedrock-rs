@@ -5,9 +5,7 @@ super::legacy_struct!(1, 21, 110);
 use bedrock_addon_core::vanilla::ActorType;
 use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
 
-use super::ops::{
-    Members, Told, below, components, json, overwrite, section_a, section_b, sections,
-};
+use super::ops::{Members, Told, components, json, overwrite, section_a, section_b, sections};
 
 /// 1.21.110 → 1.21.120.
 impl Upgrade for Entity {
@@ -29,10 +27,9 @@ impl Upgrade for Entity {
             // A flag of the file is written over, as the game writes it.
             let mut told = Told::default();
             for section in sections(&mut payload) {
-                let at = below(
-                    &section.at,
-                    &["minecraft:projectile", "on_hit", "impact_damage"],
-                );
+                let at = section
+                    .at
+                    .with(&["minecraft:projectile", "on_hit", "impact_damage"]);
                 if let Some(damage) = section
                     .members
                     .object("minecraft:projectile")

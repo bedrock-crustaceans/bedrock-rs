@@ -158,9 +158,9 @@ fn parse_walk_file(
 
 /// The duplicate finding of the definition at `index` of `file`.
 fn duplicate(file: &Origin, name: &str, index: usize) -> Diagnostic {
-    let mut at = JsonPath::new();
-    at.push(MetadataFamily::PAYLOAD_KEY);
-    at.push_index(index);
+    let at = JsonPath::new()
+        .child(MetadataFamily::PAYLOAD_KEY)
+        .index(index);
     Diagnostic::error(DiagnosticCode::DuplicateIdentifier {
         text: Some(VanillaText::Formatted {
             template: DUPLICATE,

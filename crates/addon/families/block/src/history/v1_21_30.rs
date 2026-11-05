@@ -2,7 +2,6 @@
 
 use super::legacy::{Legacy, string};
 use super::ops::dropped_field;
-use crate::parse::child;
 use bedrock_addon_core::diagnostic::{Diagnostic, JsonPath, Phase};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
@@ -33,10 +32,8 @@ impl Upgrade for Block {
                 dropped = true;
             }
         });
-        let at = child(
-            &JsonPath::new(),
-            &["minecraft:block", "description", "menu_category", "group"],
-        );
+        let at =
+            JsonPath::new().with(&["minecraft:block", "description", "menu_category", "group"]);
         if dropped {
             dropped_field(&at, None, cx.diagnostics);
         }

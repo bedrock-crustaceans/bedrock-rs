@@ -6,7 +6,7 @@ use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, Js
 use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_support::fixed_path::{
-    Authored, Object, array, index, invalid, iterated, key, others, raw_member, to_text,
+    Authored, Object, array, invalid, iterated, others, raw_member, to_text,
 };
 
 const ROOT_KEYS: [&str; 3] = ["canMerge", "splashes", "conditional"];
@@ -75,15 +75,15 @@ impl Authored for Splashes {
             written: None,
         };
         if splashes.can_merge.as_ref().is_some_and(|v| !v.is_bool()) {
-            diagnostics.push(Diagnostic::info(invalid()).at(key(&at, "canMerge")));
+            diagnostics.push(Diagnostic::info(invalid()).at(at.child("canMerge")));
         }
         check_texts(
             splashes.splashes.as_ref(),
-            &key(&at, "splashes"),
+            &at.child("splashes"),
             diagnostics,
         );
         let extra = others(root, &ROOT_KEYS, &at, diagnostics);
-        splashes.check_conditional(&key(&at, "conditional"), diagnostics);
+        splashes.check_conditional(&at.child("conditional"), diagnostics);
         Self { extra, ..splashes }
     }
 
@@ -113,7 +113,7 @@ impl Splashes {
             return;
         };
         for (i, entry) in entries.iter().enumerate() {
-            let at = index(at, i);
+            let at = at.index(i);
             let requires = raw_member(entry, "requires").filter(|v| v.is_object());
             let Some(requires) = requires else {
                 diagnostics.push(Diagnostic::info(invalid()).at(at));
@@ -121,17 +121,17 @@ impl Splashes {
             };
             check_texts(
                 raw_member(entry, "splashes"),
-                &key(&at, "splashes"),
+                &at.child("splashes"),
                 diagnostics,
             );
             others(entry, &ENTRY_KEYS, &at, diagnostics);
-            let at = key(&at, "requires");
+            let at = at.child("requires");
             for category in CATEGORIES {
                 let only_others = raw_member(requires, category)
                     .and_then(Value::as_array)
                     .is_some_and(|list| !list.is_empty() && !list.iter().any(Value::is_string));
                 if only_others {
-                    diagnostics.push(Diagnostic::info(invalid()).at(key(&at, category)));
+                    diagnostics.push(Diagnostic::info(invalid()).at(at.child(category)));
                 }
             }
             others(requires, &REQUIRES_KEYS, &at, diagnostics);

@@ -5,13 +5,14 @@
 //! name; every name of the target goal is deprecated and `entity_types` is bound again. Types and
 //! defaults follow the game's 1.26.30 schema and the 1.21.120 mob descriptor.
 
+use bedrock_addon_core::diagnostic::JsonPath;
 use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::json::{StrictBool, StrictFloat, StrictInt};
 use bedrock_addon_core::shared::Filter;
 use facet::Facet;
 use facet_value::VObject;
 
-use super::parse::{Check, Typed, drop_deprecated, index, join, path};
+use super::parse::{Check, Typed, drop_deprecated};
 
 /// `minecraft:wither_target_highest_damage`: the wither targets the entity that dealt it the
 /// most damage.
@@ -48,8 +49,14 @@ impl Typed for WitherTargetHighestDamage {
     }
 
     fn check(&mut self, cx: &mut Check<'_>) {
-        cx.at_least(&path(&["priority"]), &mut self.priority.0, 0, 0);
-        self.entity_types.check(&path(&["entity_types"]), cx);
+        cx.at_least(
+            &JsonPath::new().child("priority"),
+            &mut self.priority.0,
+            0,
+            0,
+        );
+        self.entity_types
+            .check(&JsonPath::new().child("entity_types"), cx);
     }
 }
 
@@ -104,7 +111,7 @@ impl EntityTypes {
         match self {
             Self::Many(list) => {
                 for (i, one) in list.iter().enumerate() {
-                    one.check(&index(at, i), cx);
+                    one.check(&at.index(i), cx);
                 }
             }
             Self::One(one) => one.check(at, cx),
@@ -181,7 +188,7 @@ impl MobDescriptor {
     /// The findings of the descriptor's filters, under `at`.
     fn check(&self, at: &bedrock_addon_core::diagnostic::JsonPath, cx: &mut Check<'_>) {
         if let Some(filters) = &self.filters {
-            cx.extend(filters.check(&join(at, "filters")));
+            cx.extend(filters.check(&at.child("filters")));
         }
     }
 }

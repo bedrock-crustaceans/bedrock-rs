@@ -239,11 +239,12 @@ fn mistyped_tags(payload: &Value) -> Vec<JsonPath> {
                     .as_array()
                     .is_some_and(|values| values.as_slice().iter().all(strings));
             if !fits {
-                let mut at = JsonPath::new();
-                at.push_index(index);
-                at.push("tags");
-                at.push(key.as_str());
-                out.push(at);
+                out.push(
+                    JsonPath::new()
+                        .index(index)
+                        .child("tags")
+                        .child(key.as_str()),
+                );
             }
         }
     }
@@ -365,11 +366,7 @@ fn namespace_text(name: &str) -> Option<VanillaText> {
 fn validate(file: &SoundMetadataFile, cx: &mut ValidateCx<'_>) {
     let base = cx.at.clone();
     let mut push = |code: DiagnosticCode, severity: Severity, index: usize, path: &[&str]| {
-        let mut at = base.clone();
-        at.push_index(index);
-        for part in path {
-            at.push(part);
-        }
+        let at = base.index(index).with(path);
         cx.diagnostics.push(
             Diagnostic::error(code)
                 .at(at)

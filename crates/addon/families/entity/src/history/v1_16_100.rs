@@ -4,7 +4,7 @@ super::legacy_struct!(1, 16, 100);
 
 use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
 
-use super::ops::{Members, Told, below, section_a, sections};
+use super::ops::{Members, Told, section_a, sections};
 
 /// 1.16.100 → 1.16.200 (gate 1.16.200, carried by vanilla's 1.17.20 fixer).
 impl Upgrade for Entity {
@@ -29,7 +29,7 @@ impl Upgrade for Entity {
 pub(super) fn knockback_roar(payload: &mut Payload, vertical_one: bool, told: &mut Told) {
     const GOAL: &str = "minecraft:behavior.knockback_roar";
     for section in sections(payload) {
-        let at = below(&section.at, &[GOAL]);
+        let at = section.at.child(GOAL);
         let Some(goal) = section.members.object(GOAL) else {
             continue;
         };
@@ -48,16 +48,16 @@ pub(super) fn knockback_roar(payload: &mut Payload, vertical_one: bool, told: &m
         } else {
             strength.clone()
         };
-        let old = below(&at, &["knockback_strength"]);
+        let old = at.child("knockback_strength");
         if goal.insert_absent("knockback_horizontal_strength", strength) {
-            told.moved(old.clone(), below(&at, &["knockback_horizontal_strength"]));
+            told.moved(old.clone(), at.child("knockback_horizontal_strength"));
         } else {
             // The file has the new member beside the old one: the old one goes, as in the
             // game, and is noted.
             told.dropped(old.clone());
         }
         if goal.insert_absent("knockback_vertical_strength", vertical) && !vertical_one {
-            told.moved(old, below(&at, &["knockback_vertical_strength"]));
+            told.moved(old, at.child("knockback_vertical_strength"));
         }
     }
 }

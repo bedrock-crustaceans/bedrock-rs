@@ -23,8 +23,7 @@ impl VoxelShape {
     /// game stops there). An error means the game would not load the shape.
     pub fn validate(&self, cx: &LoadContext) -> Diagnostics {
         let mut diagnostics = Diagnostics::default();
-        let mut at = JsonPath::new();
-        at.push("minecraft:voxel_shape");
+        let at = JsonPath::new().child("minecraft:voxel_shape");
         constraints(
             self.description.identifier.as_str(),
             self.shape.boxes.len(),

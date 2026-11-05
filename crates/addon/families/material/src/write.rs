@@ -344,8 +344,7 @@ fn float_json(at: &JsonPath, key: &str, value: f32) -> Result<Value, EncodeError
         None
     };
     if let Some(what) = what {
-        let mut at = at.clone();
-        at.push(key);
+        let at = at.child(key);
         return Err(refuse(&at, what));
     }
     if value == 0.0 && value.is_sign_negative() {
@@ -374,8 +373,7 @@ fn number_json(at: &JsonPath, key: &str, value: f64) -> Result<Value, EncodeErro
         None
     };
     if let Some(what) = what {
-        let mut at = at.clone();
-        at.push(key);
+        let at = at.child(key);
         return Err(refuse(&at, what));
     }
     if value == 0.0 && value.is_sign_negative() {
@@ -558,8 +556,7 @@ fn file_json(file: &MaterialFile) -> Result<Value, EncodeError> {
     match &file.form {
         MaterialFileForm::Wrapped { version } => {
             writer.path.push(MATERIALS);
-            let mut at = writer.path.clone();
-            at.push("version");
+            let at = writer.path.child("version");
             // The wrapper's own member cannot be a material's key.
             let clash = file.materials.contains_key(&MaterialKey::new("version"));
             if !passes_gate(version) || clash {

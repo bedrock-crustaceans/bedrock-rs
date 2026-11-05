@@ -11,7 +11,7 @@ use super::{FontEntry, FontFormat, FontMetadata, Fonts};
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Severity,
 };
-use bedrock_addon_support::fixed_path::{file_finding, index, key};
+use bedrock_addon_support::fixed_path::file_finding;
 
 /// The page prefix of the game's built-in MSDF fonts (`SmoothFontLatin`, `SmoothSmall`).
 pub const SMOOTH_PREFIX: &str = "font/smooth/smooth_";
@@ -230,7 +230,7 @@ impl Index {
 
     /// Finds every TrueType font whose file no pack has under any extension the game tries.
     fn check_true_type(&mut self, metadata: &FontMetadata, file: &FontFile) {
-        let fonts_at = key(&JsonPath::new(), "fonts");
+        let fonts_at = JsonPath::new().child("fonts");
         for (i, font) in metadata.fonts.iter().flatten().enumerate() {
             let (Some(format), Some(font_file)) = (font.format(), &font.font_file) else {
                 continue;
@@ -253,7 +253,7 @@ impl Index {
                     &file.pack,
                     &file.path,
                 );
-                finding.location.json_path = key(&index(&fonts_at, i), "font_file");
+                finding.location.json_path = fonts_at.index(i).child("font_file");
                 let paths = extensions.iter().map(|e| format!("{font_file}{e}"));
                 finding.detail = Some(Box::new(tried(paths)));
                 self.diagnostics.push(finding);

@@ -1,8 +1,6 @@
 //! Format versions 1.8.0 up to 1.10.0, and the step to 1.10.0.
 
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity,
-};
+use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath, Phase};
 use bedrock_addon_core::id::{
     AnimationRef, AttachableId, GeometryId, MaterialId, ParticleId, RenderControllerId,
     SoundEventName, TexturePath,
@@ -16,7 +14,7 @@ use bedrock_addon_core::visual::{ControllerUse, SpawnEgg};
 use facet::Facet;
 use indexmap::IndexMap;
 
-use super::super::read::{self, below, is_map_key, not_valid_here};
+use super::super::read::{self, is_map_key, not_valid_here};
 use super::super::validate::NAMED_SCRIPT;
 use super::super::write;
 
@@ -119,10 +117,10 @@ impl VersionStruct for Attachable {
         read::check_map(de.sound_effects.as_ref(), "sound_effects", false, at, d);
         // Element members match `[a-zA-Z0-9_.-]+` in full.
         for (index, element) in de.animation_controllers.iter().flatten().enumerate() {
-            let mut element_at = below(at, &["animation_controllers"]);
+            let mut element_at = at.with(&["animation_controllers"]);
             element_at.push_index(index);
             for key in element.keys().filter(|key| !is_map_key(key)) {
-                d.push(not_valid_here(key, below(&element_at, &[key])));
+                d.push(not_valid_here(key, element_at.with(&[key])));
             }
         }
         (d.len() == before).then_some(Self {
@@ -173,11 +171,11 @@ impl Upgrade for Attachable {
             // The converter that moves the list into `animations` and `scripts.animate`
             // visits `minecraft:client_entity` only; the list stays, and
             // the v1_10 schema that runs next does not declare it.
-            let mut found = not_valid_here(
+            let found = not_valid_here(
                 "animation_controllers",
-                below(&description_at(), &["animation_controllers"]),
-            );
-            found.phase = Phase::Upgrade;
+                description_at().with(&["animation_controllers"]),
+            )
+            .phase(Phase::Upgrade);
             cx.diagnostics.push(found);
         }
         let scripts = d.scripts.map(|scripts| v1_10_0::Scripts {
@@ -228,12 +226,5 @@ impl Upgrade for Attachable {
 
 /// `minecraft:attachable/description`.
 pub(super) fn description_at() -> JsonPath {
-    below(&JsonPath::new(), &[read::PAYLOAD, "description"])
-}
-
-/// A finding of a step.
-pub(super) fn step_finding(code: DiagnosticCode, severity: Severity, at: JsonPath) -> Diagnostic {
-    let mut found = Diagnostic::error(code).severity(severity).at(at);
-    found.phase = Phase::Upgrade;
-    found
+    JsonPath::of_keys([read::PAYLOAD, "description"])
 }

@@ -61,13 +61,6 @@ impl Schema {
     }
 }
 
-/// `at` with `key` below it.
-fn child(at: &JsonPath, key: &str) -> JsonPath {
-    let mut path = at.clone();
-    path.push(key);
-    path
-}
-
 /// What reading a file gave: the struct its version selects, when every rule passed.
 pub(super) struct Read {
     /// The layers as written, by the struct of the file's version.
@@ -116,7 +109,7 @@ fn read_root(bytes: &[u8], file: &str, d: &mut Diagnostics) -> Option<Value> {
 
 /// The schema the `format_version` member `written` selects.
 fn select_schema(written: Option<&Value>, file: &str, d: &mut Diagnostics) -> Option<Schema> {
-    let version_at = child(&JsonPath::new(), FORMAT_VERSION);
+    let version_at = (JsonPath::new()).child(FORMAT_VERSION);
     // The version is absent, or neither a version string nor three numbers.
     let version = written.and_then(|written| match written.as_array() {
         Some(array) => SemVersion::from_json_array(array.as_slice()),
@@ -160,7 +153,7 @@ pub(super) fn read(bytes: &[u8], file: &str, d: &mut Diagnostics) -> Read {
     let Some(schema) = select_schema(written, file, d) else {
         return none(None);
     };
-    let version_at = child(&root_at, FORMAT_VERSION);
+    let version_at = root_at.child(FORMAT_VERSION);
     let Some(members) = members else {
         return none(Some(schema));
     };
@@ -176,10 +169,10 @@ pub(super) fn read(bytes: &[u8], file: &str, d: &mut Diagnostics) -> Read {
         match key.as_str() {
             FORMAT_VERSION => {}
             PAYLOAD => payload = Some(value),
-            other => d.push(unknown_member(child(&root_at, other))),
+            other => d.push(unknown_member(root_at.child(other))),
         }
     }
-    let payload_at = child(&root_at, PAYLOAD);
+    let payload_at = root_at.child(PAYLOAD);
     let layers = match payload.map(|payload| (payload, payload.as_object())) {
         None => {
             let code = DiagnosticCode::MissingPayload {
@@ -288,7 +281,7 @@ pub(super) fn read_layers(
     let mut set = TextureSet::default();
     let mut failed = false;
     for (key, value) in layers {
-        let path = child(at, key.as_str());
+        let path = at.child(key.as_str());
         let layer = LayerKind::ALL
             .into_iter()
             .find(|layer| layer.key() == key.as_str() && schema.has(*layer));
@@ -479,8 +472,7 @@ fn channels<const N: usize>(
     let mut out = [0.0; N];
     let mut failed = false;
     for (index, (element, slot)) in array.iter().zip(&mut out).enumerate() {
-        let mut path = at.clone();
-        path.push_index(index);
+        let path = at.index(index);
         let Some(number) = element.as_number() else {
             let code = DiagnosticCode::InvalidType { text: None };
             d.push(Diagnostic::error(code).at(path));

@@ -292,9 +292,7 @@ fn validator_line<T>(document: &Document<T>, path: &JsonPath, name: &str) -> Dia
 /// The validator's line of a preset whose parent is unknown.
 pub(crate) fn unknown_parent_line(document: &Document<CameraPreset>) -> Option<Diagnostic> {
     let parent = parent(document.value())?;
-    let mut path = JsonPath::new();
-    path.push("minecraft:camera_preset");
-    path.push("inherit_from");
+    let path = JsonPath::of_keys(["minecraft:camera_preset", "inherit_from"]);
     Some(validator_line(document, &path, parent))
 }
 
@@ -311,10 +309,10 @@ pub(crate) fn unknown_camera_lines(
         // (as for a direct parent).
         .filter(|(_, id)| !defined.contains_key(*id) && !known_preset(id, defined, stack))
         .map(|(index, id)| {
-            let mut path = JsonPath::new();
-            path.push("minecraft:camera_list");
-            path.push("cameras");
-            path.push_index(index);
+            let path = JsonPath::new()
+                .child("minecraft:camera_list")
+                .child("cameras")
+                .index(index);
             validator_line(list, &path, id.as_str())
         })
         .collect()

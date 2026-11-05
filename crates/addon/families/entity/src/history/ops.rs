@@ -128,7 +128,7 @@ pub(crate) fn sections(payload: &mut Payload) -> Vec<PayloadSection<'_>> {
     let mut out = Vec::new();
     if let Some(components) = &mut payload.components {
         out.push(PayloadSection {
-            at: path(&["components"]),
+            at: JsonPath::new().child("components"),
             members: components,
         });
     }
@@ -136,7 +136,7 @@ pub(crate) fn sections(payload: &mut Payload) -> Vec<PayloadSection<'_>> {
         for (name, group) in groups {
             if let Some(object) = group.as_object_mut() {
                 out.push(PayloadSection {
-                    at: path(&["component_groups", name]),
+                    at: JsonPath::new().with(&["component_groups", name]),
                     members: object,
                 });
             }
@@ -168,10 +168,10 @@ pub(crate) fn schema_conversions(payload: &mut Payload, to: FormatVersion, cx: &
             };
             let mut outcome = schema::validate(owner.members, value, strict);
             outcome.check_numbers(owner.name, value);
-            let mut at = JsonPath::new();
-            at.push(<Entity as Family>::PAYLOAD_KEY);
-            at.append(&section.at);
-            at.push(&key);
+            let at = JsonPath::new()
+                .child(<Entity as Family>::PAYLOAD_KEY)
+                .join(&section.at)
+                .child(&key);
             found.extend(outcome.findings(&at, Phase::Upgrade));
             outcome.tell_left_out(&at, &mut found);
             if let Some(replacement) = outcome.replacement() {
@@ -187,13 +187,12 @@ pub(crate) fn schema_conversions(payload: &mut Payload, to: FormatVersion, cx: &
             let Some(goal) = section.members.get_mut(&key).and_then(Value::as_object_mut) else {
                 continue;
             };
-            let mut at = JsonPath::new();
-            at.push(<Entity as Family>::PAYLOAD_KEY);
-            at.append(&section.at);
-            at.push(&key);
+            let at = JsonPath::new()
+                .child(<Entity as Family>::PAYLOAD_KEY)
+                .join(&section.at)
+                .child(&key);
             for (below, code) in crate::goal::legacy_ranges(&key, goal) {
-                let mut path = at.clone();
-                path.append(&below);
+                let path = at.join(&below);
                 found.push(Diagnostic::info(code).at(path).phase(Phase::Upgrade));
             }
         }
@@ -218,24 +217,6 @@ pub(crate) fn group<'a>(payload: &'a mut Payload, name: &str) -> Option<&'a mut 
         .as_mut()?
         .get_mut(name)?
         .as_object_mut()
-}
-
-/// A path below the payload from its keys.
-pub(crate) fn path(keys: &[&str]) -> JsonPath {
-    let mut at = JsonPath::new();
-    for key in keys {
-        at.push(key);
-    }
-    at
-}
-
-/// `at` below `base`, followed by `keys`.
-pub(crate) fn below(base: &JsonPath, keys: &[&str]) -> JsonPath {
-    let mut at = base.clone();
-    for key in keys {
-        at.push(key);
-    }
-    at
 }
 
 /// What a removal removed.
@@ -277,9 +258,9 @@ pub(crate) fn finding(cx: &mut UpgradeCx<'_>, code: DiagnosticCode, at: &JsonPat
 /// A kept error of a step at `at` (below the payload): a level-3 line of the game after which
 /// the entity loads: a kept error.
 pub(crate) fn kept(cx: &mut UpgradeCx<'_>, code: DiagnosticCode, at: &JsonPath) {
-    let mut path = JsonPath::new();
-    path.push(<Entity as Family>::PAYLOAD_KEY);
-    path.append(at);
+    let path = JsonPath::new()
+        .child(<Entity as Family>::PAYLOAD_KEY)
+        .join(at);
     cx.diagnostics
         .push_kept_error(Diagnostic::error(code).at(path).phase(Phase::Upgrade));
 }
@@ -292,9 +273,9 @@ pub(crate) fn note(cx: &mut UpgradeCx<'_>, code: DiagnosticCode, at: &JsonPath) 
 
 /// A finding of a step at `at` (below the payload).
 fn finding_of(cx: &mut UpgradeCx<'_>, code: DiagnosticCode, severity: Severity, at: &JsonPath) {
-    let mut path = JsonPath::new();
-    path.push(<Entity as Family>::PAYLOAD_KEY);
-    path.append(at);
+    let path = JsonPath::new()
+        .child(<Entity as Family>::PAYLOAD_KEY)
+        .join(at);
     cx.diagnostics.push(
         Diagnostic::error(code)
             .at(path)
@@ -369,10 +350,9 @@ impl Told {
     /// Reports the findings and records the moves, in their order.
     pub(crate) fn report(self, cx: &mut UpgradeCx<'_>) {
         let rooted = |at: &JsonPath| {
-            let mut path = JsonPath::new();
-            path.push(<Entity as Family>::PAYLOAD_KEY);
-            path.append(at);
-            path
+            JsonPath::new()
+                .child(<Entity as Family>::PAYLOAD_KEY)
+                .join(at)
         };
         for event in self.0 {
             match event {
@@ -401,7 +381,7 @@ pub(crate) fn rename(
     let Some(value) = members.get(old) else {
         return;
     };
-    let to = below(section, &[new]);
+    let to = section.child(new);
     if members
         .get(new)
         .is_some_and(|had| !had.is_null() && !same(had, value))
@@ -409,7 +389,7 @@ pub(crate) fn rename(
         told.dropped(to.clone());
     }
     members.rename(old, new);
-    told.moved(below(section, &[old]), to);
+    told.moved(section.child(old), to);
 }
 
 /// Moves the member `old` of `object` (at `at`) to `new`, whatever the object has there: a
@@ -426,7 +406,7 @@ pub(crate) fn rename_member(
         return false;
     };
     overwrite(object, new, value, at, told);
-    told.moved(below(at, &[old]), below(at, &[new]));
+    told.moved(at.child(old), at.child(new));
     true
 }
 
@@ -495,19 +475,13 @@ pub(crate) fn half(
 ) -> Option<Value> {
     let value = object.remove(name).filter(|value| !value.is_null())?;
     let Some(number) = value.as_number() else {
-        told.deviation(
-            DiagnosticCode::InvalidType { text: None },
-            below(at, &[name]),
-        );
+        told.deviation(DiagnosticCode::InvalidType { text: None }, at.child(name));
         return None;
     };
     #[allow(clippy::cast_possible_truncation, reason = "the range's f32")]
     let float = number.to_f64_lossy() as f32;
     if float.is_infinite() {
-        told.deviation(
-            DiagnosticCode::InvalidValue { text: None },
-            below(at, &[name]),
-        );
+        told.deviation(DiagnosticCode::InvalidValue { text: None }, at.child(name));
         return Some(f32_value(f32::MAX.copysign(float)));
     }
     Some(value)
@@ -536,16 +510,9 @@ pub(crate) fn overwrite(
         .get(key)
         .is_some_and(|had| !had.is_null() && !same(had, &value))
     {
-        told.dropped(below(at, &[key]));
+        told.dropped(at.child(key));
     }
     object.insert(key, value);
-}
-
-/// `at` followed by the element `index`.
-pub(crate) fn element(at: &JsonPath, index: usize) -> JsonPath {
-    let mut at = at.clone();
-    at.push_index(index);
-    at
 }
 
 /// A constant fragment written as JSON text in the step.
@@ -593,8 +560,8 @@ pub(crate) fn section_b(payload: &Payload, cx: &UpgradeCx<'_>) -> bool {
 /// what is told of the one element is told of the member the file has.
 pub(crate) fn single_to_array_at(object: &mut VObject, key: &str, at: &JsonPath, told: &mut Told) {
     if object.get(key).is_some_and(|member| !member.is_array()) {
-        let member = below(at, &[key]);
-        told.moved(member.clone(), element(&member, 0));
+        let member = at.child(key);
+        told.moved(member.clone(), member.index(0));
     }
     single_to_array(object, key);
 }

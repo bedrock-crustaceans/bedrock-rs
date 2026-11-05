@@ -15,7 +15,7 @@ use bedrock_addon_core::versioning::ConvertMode;
 use facet::Facet;
 use facet_value::VObject;
 
-use super::parse::{Check, Typed, index, join, path};
+use super::parse::{Check, Typed};
 use super::value::{tell_partial_vector, visit_block_tags};
 use crate::goal::Vec3;
 
@@ -172,11 +172,11 @@ pub struct BlockSet {
 
 impl Typed for PreferredPath {
     fn check(&mut self, cx: &mut Check<'_>) {
-        let sets = path(&["preferred_path_blocks"]);
+        let sets = JsonPath::new().child("preferred_path_blocks");
         for (i, set) in self.preferred_path_blocks.iter().enumerate() {
-            let blocks = join(&index(&sets, i), "blocks");
+            let blocks = sets.index(i).child("blocks");
             for (j, block) in set.blocks.iter().enumerate() {
-                cx.extend(block.check(&index(&blocks, j)));
+                cx.extend(block.check(&blocks.index(j)));
             }
         }
     }
@@ -423,8 +423,18 @@ impl Typed for CollisionBox {
     // The game's schema bounds both members to −100000000 ..= 100000000.
     fn check(&mut self, cx: &mut Check<'_>) {
         const BOUND: (f32, f32) = (-100_000_000.0, 100_000_000.0);
-        cx.within(&path(&["height"]), &mut self.height.0, BOUND, 1.8);
-        cx.within(&path(&["width"]), &mut self.width.0, BOUND, 0.6);
+        cx.within(
+            &JsonPath::new().child("height"),
+            &mut self.height.0,
+            BOUND,
+            1.8,
+        );
+        cx.within(
+            &JsonPath::new().child("width"),
+            &mut self.width.0,
+            BOUND,
+            0.6,
+        );
     }
 }
 
@@ -443,9 +453,9 @@ pub struct BlockMovementSlowdownImmunity {
 
 impl Typed for BlockMovementSlowdownImmunity {
     fn check(&mut self, cx: &mut Check<'_>) {
-        let at = path(&["blocks"]);
+        let at = JsonPath::new().child("blocks");
         for (i, block) in self.blocks.iter().enumerate() {
-            cx.extend(block.check(&index(&at, i)));
+            cx.extend(block.check(&at.index(i)));
         }
     }
 }
@@ -609,7 +619,7 @@ impl Typed for MovementJump {
     }
 
     fn check(&mut self, cx: &mut Check<'_>) {
-        cx.range(&path(&["jump_delay"]), &mut self.jump_delay);
+        cx.range(&JsonPath::new().child("jump_delay"), &mut self.jump_delay);
     }
 }
 
@@ -633,14 +643,14 @@ pub(crate) fn legacy_range(
     let Some(range) = json.get_mut(key).and_then(Value::as_object_mut) else {
         return false;
     };
-    let member = join(at, key);
+    let member = at.child(key);
     let mut changed = false;
     for typed in ["min", "max"] {
         if range.remove(typed).is_some() {
             cx.push(
                 DiagnosticCode::DroppedField { text: None },
                 Severity::Info,
-                &join(&member, typed),
+                &member.child(typed),
             );
             changed = true;
         }
@@ -673,13 +683,13 @@ pub(crate) fn legacy_range(
             )
         };
         range.insert(bound, read);
-        cx.push(code, Severity::Info, &join(&member, bound));
+        cx.push(code, Severity::Info, &member.child(bound));
         changed = true;
     }
     for (legacy, typed) in [("range_min", "min"), ("range_max", "max")] {
         if let Some(value) = range.remove(legacy) {
             range.insert(typed, value);
-            cx.moved(join(&member, legacy), join(&member, typed));
+            cx.moved(member.child(legacy), member.child(typed));
             changed = true;
         }
     }
@@ -817,9 +827,9 @@ impl Default for Buoyant {
 
 impl Typed for Buoyant {
     fn check(&mut self, cx: &mut Check<'_>) {
-        let blocks = path(&["liquid_blocks"]);
+        let blocks = JsonPath::new().child("liquid_blocks");
         for (i, block) in self.liquid_blocks.iter().enumerate() {
-            cx.extend(block.check(&index(&blocks, i)));
+            cx.extend(block.check(&blocks.index(i)));
         }
     }
 }
@@ -928,7 +938,7 @@ impl Typed for Teleport {
 
     fn check(&mut self, cx: &mut Check<'_>) {
         if let Some(filter) = &self.projectile_filter {
-            cx.extend(filter.check(&path(&["projectile_filter"])));
+            cx.extend(filter.check(&JsonPath::new().child("projectile_filter")));
         }
     }
 }
@@ -1001,7 +1011,7 @@ impl Typed for Trail {
                 cx.push(
                     DiagnosticCode::DroppedField { text: None },
                     Severity::Info,
-                    &path(&[member]),
+                    &JsonPath::new().child(member),
                 );
                 changed = true;
             }
@@ -1011,15 +1021,20 @@ impl Typed for Trail {
 
     fn check(&mut self, cx: &mut Check<'_>) {
         if let Some(filter) = &self.spawn_filter {
-            cx.extend(filter.check(&path(&["spawn_filter"])));
+            cx.extend(filter.check(&JsonPath::new().child("spawn_filter")));
         }
-        cx.extend(self.block_type.check(&path(&["block_type"])));
-        let blocks = path(&["replaceable_blocks"]);
+        cx.extend(self.block_type.check(&JsonPath::new().child("block_type")));
+        let blocks = JsonPath::new().child("replaceable_blocks");
         for (i, block) in self.replaceable_blocks.iter().enumerate() {
-            cx.extend(block.check(&index(&blocks, i)));
+            cx.extend(block.check(&blocks.index(i)));
         }
         // The typed reader bounds `radius` to -1 ..= 16.
-        cx.within(&path(&["radius"]), &mut self.radius.0, (-1, 16), -1);
+        cx.within(
+            &JsonPath::new().child("radius"),
+            &mut self.radius.0,
+            (-1, 16),
+            -1,
+        );
     }
 }
 

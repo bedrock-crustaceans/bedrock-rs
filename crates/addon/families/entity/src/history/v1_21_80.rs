@@ -2,10 +2,10 @@
 
 super::legacy_struct!(1, 21, 80);
 
-use bedrock_addon_core::diagnostic::{DiagnosticCode, VanillaText};
+use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath, VanillaText};
 use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
 
-use super::ops::{finding, path};
+use super::ops::finding;
 
 /// 1.21.80 → 1.21.89.
 impl Upgrade for Entity {
@@ -30,7 +30,7 @@ impl Upgrade for Entity {
                             group: name.clone(),
                         }),
                     },
-                    &path(&["component_groups", &name]),
+                    &JsonPath::new().with(&["component_groups", &name]),
                 );
             }
         }

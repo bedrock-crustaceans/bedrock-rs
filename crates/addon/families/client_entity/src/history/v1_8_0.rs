@@ -1,8 +1,6 @@
 //! Format versions 1.8.0 up to 1.10.0, and the step to 1.10.0.
 
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase};
 use bedrock_addon_core::id::{
     AnimationRef, EntityId, GeometryId, MaterialId, ParticleId, RenderControllerId, SoundEventName,
     TexturePath,
@@ -16,7 +14,7 @@ use bedrock_addon_core::visual::{AnimateEntry, ControllerUse, SpawnEgg};
 use facet::Facet;
 use indexmap::IndexMap;
 
-use super::super::read::{self, below, is_map_key, not_valid_here};
+use super::super::read::{self, is_map_key, not_valid_here};
 use super::super::validate::NAMED_SCRIPT;
 use super::super::write;
 
@@ -119,10 +117,10 @@ impl VersionStruct for ClientEntity {
         read::check_map(de.sound_effects.as_ref(), "sound_effects", false, at, d);
         // Element members must match `[a-zA-Z0-9_.-]+` in full.
         for (index, element) in de.animation_controllers.iter().flatten().enumerate() {
-            let mut element_at = below(at, &["animation_controllers"]);
+            let mut element_at = at.with(&["animation_controllers"]);
             element_at.push_index(index);
             for key in element.keys().filter(|key| !is_map_key(key)) {
-                d.push(not_valid_here(key, below(&element_at, &[key])));
+                d.push(not_valid_here(key, element_at.with(&[key])));
             }
         }
         (d.len() == before).then_some(Self {
@@ -206,11 +204,11 @@ impl Upgrade for ClientEntity {
                         continue;
                     };
                     for key in element.keys().filter(|key| *key != first) {
-                        cx.diagnostics.push(step_finding(
-                            DiagnosticCode::DroppedField { text: None },
-                            Severity::Info,
-                            controller_at(&at, index, key),
-                        ));
+                        cx.diagnostics.push(
+                            Diagnostic::info(DiagnosticCode::DroppedField { text: None })
+                                .at(controller_at(&at, index, key))
+                                .phase(Phase::Upgrade),
+                        );
                     }
                     let name = format!("controller__{first}");
                     let entry = animate.len();
@@ -242,11 +240,9 @@ impl Upgrade for ClientEntity {
             }
             (None, Some(_)) => {
                 // The v1_10 schema that runs next does not declare the member.
-                let mut found = not_valid_here(
-                    "animation_controllers",
-                    below(&at, &["animation_controllers"]),
-                );
-                found.phase = Phase::Upgrade;
+                let found =
+                    not_valid_here("animation_controllers", at.with(&["animation_controllers"]))
+                        .phase(Phase::Upgrade);
                 cx.diagnostics.push(found);
             }
             (_, None) => {}
@@ -284,10 +280,10 @@ impl Upgrade for ClientEntity {
 /// the controller at `from` (`at` is the description): what is told of them from here on is
 /// told at the controller.
 fn made_of(cx: &mut UpgradeCx<'_>, at: &JsonPath, from: JsonPath, name: &str, entry: usize) {
-    let mut entry_at = below(at, &["scripts", "animate"]);
+    let mut entry_at = at.with(&["scripts", "animate"]);
     entry_at.push_index(entry);
     cx.diagnostics
-        .moved(from.clone(), below(at, &["animations", name]));
+        .moved(from.clone(), at.with(&["animations", name]));
     cx.diagnostics.moved(from, entry_at);
 }
 
@@ -296,14 +292,12 @@ fn made_of(cx: &mut UpgradeCx<'_>, at: &JsonPath, from: JsonPath, name: &str, en
 /// or `animations` (`at` is the description).
 fn written_over(at: &JsonPath, name: &str, made: Option<&(usize, String)>) -> Diagnostic {
     let replaced = made.map_or_else(
-        || below(at, &["animations", name]),
+        || at.with(&["animations", name]),
         |(earlier, key)| controller_at(at, *earlier, key),
     );
-    step_finding(
-        DiagnosticCode::DroppedField { text: None },
-        Severity::Info,
-        replaced,
-    )
+    Diagnostic::info(DiagnosticCode::DroppedField { text: None })
+        .at(replaced)
+        .phase(Phase::Upgrade)
 }
 
 /// The member `key` of the element `index` of `animation_controllers` (`at` is the
@@ -311,32 +305,20 @@ fn written_over(at: &JsonPath, name: &str, made: Option<&(usize, String)>) -> Di
 /// The note of an `animation_controllers` element without a member: it moves nothing and
 /// goes with the list (the crate's own note; the game is silent).
 fn empty_element(at: &JsonPath, index: usize) -> Diagnostic {
-    let mut element_at = below(at, &["animation_controllers"]);
+    let mut element_at = at.with(&["animation_controllers"]);
     element_at.push_index(index);
-    step_finding(
-        DiagnosticCode::DroppedField { text: None },
-        Severity::Info,
-        element_at,
-    )
+    Diagnostic::info(DiagnosticCode::DroppedField { text: None })
+        .at(element_at)
+        .phase(Phase::Upgrade)
 }
 
 fn controller_at(at: &JsonPath, index: usize, key: &str) -> JsonPath {
-    let mut path = below(at, &["animation_controllers"]);
-    path.push_index(index);
-    path.push(key);
-    path
+    at.child("animation_controllers").index(index).child(key)
 }
 
 /// `minecraft:client_entity/description`.
 pub(super) fn description_at() -> JsonPath {
-    below(&JsonPath::new(), &[read::PAYLOAD, "description"])
-}
-
-/// A finding of a step.
-pub(super) fn step_finding(code: DiagnosticCode, severity: Severity, at: JsonPath) -> Diagnostic {
-    let mut found = Diagnostic::error(code).severity(severity).at(at);
-    found.phase = Phase::Upgrade;
-    found
+    JsonPath::of_keys([read::PAYLOAD, "description"])
 }
 
 #[cfg(test)]
@@ -372,12 +354,12 @@ mod tests {
     /// Where the file has the member the upgraded document has at `at` (below the
     /// description).
     fn in_the_file(told: &Diagnostics, at: &[&str]) -> String {
-        told.source_of(&below(&description_at(), at)).to_string()
+        told.source_of(&description_at().with(at)).to_string()
     }
 
     /// [`in_the_file`] for the entry `index` of `scripts.animate`.
     fn animate_in_the_file(told: &Diagnostics, index: usize) -> String {
-        let mut at = below(&description_at(), &["scripts", "animate"]);
+        let mut at = description_at().with(&["scripts", "animate"]);
         at.push_index(index);
         told.source_of(&at).to_string()
     }
