@@ -105,16 +105,29 @@ impl fmt::Debug for LoadOptions {
 /// enchantment tables. Chorus passes its vanilla palette.
 ///
 /// A host's provider is believed, yes or no, for what it answers. The value lookups default
-/// to the generated tables ([`GeneratedBuiltIns`](crate::vanilla::GeneratedBuiltIns)), so a
-/// host that answers only [`contains`](Self::contains) keeps the game's commands; `None` from
-/// a lookup the host implements means the game has no such value.
+/// to the tables ([`GeneratedBuiltIns`](crate::vanilla::GeneratedBuiltIns), over the
+/// `bedrock_addon_vanilla` data crate), so a host that answers only
+/// [`contains`](Self::contains) keeps the game's commands, potions, enchantments, effects and
+/// level sound events; `None` (or `false`) from a lookup the host implements means the game
+/// has no such value, and the caller reports it as it reports a name the tables lack, never
+/// skips it. A host's [`command`](Self::command) is asked with the word as written; the tables
+/// fold ASCII case, as function's `find_command` does.
 ///
-/// What the link pass asks a provider is not all it answers: it answers the code-registered
-/// features from addon's `CODE_FEATURES` (`addon/src/pack/link/lookup.rs`), so
-/// `contains("feature", ..)` of the generated tables is `false`, and it checks the legacy
-/// block and item names and the fileless entities itself before asking the host
-/// (`lookup.rs:722-728`). A host's [`command`](Self::command) is asked with the word as
-/// written; the generated tables fold ASCII case, as function's `find_command` does.
+/// Which table a host may override:
+///
+/// | Table | Asked through | A host |
+/// | --- | --- | --- |
+/// | blocks, items, entities, biomes, dimensions, camera presets, jigsaw structures, effects, enchantments, potion effects and types, cooldown categories | `contains` | replaces it |
+/// | code features (`feature`), level sound events, aim-assist categories and presets | `contains` | replaces it |
+/// | commands, command enums, enchantment aliases | `command`, `command_enum`, `enchantment_alias` | replaces it |
+/// | potions, enchantment names, effect names, level sound event spelling (parse and upgrade time) | `potion`, `is_enchantment`, `effect`, `level_sound_event` | replaces it |
+/// | legacy item and block names, fileless entities (`names::LEGACY_*`, `FILELESS_ENTITIES`) | the link pass, before the provider | adds to it (`contains` of the kind), never removes |
+/// | item tags, crafting station tags (`names::VANILLA_ITEM_TAGS`, `CRAFTING_STATION_TAGS`) | the link pass, or else `contains("item tag" / "crafting tag")` | adds to it, never removes |
+/// | loot-entry-only and entity-file-only items, spawn-rule identifiers, particle types, languages | the link pass | cannot: the game's constants |
+///
+/// Some readers keep the tables whatever the host: `sounds.json` parsing and entity goal
+/// sounds check `sound_events` directly (they have no context), and so do the context-free
+/// `ItemName::parse` and script's exact `permission_levels` command check.
 pub trait BuiltIns: Send + Sync {
     /// Whether `id` of kind `kind` (`Kind::NAME`) is built in.
     fn contains(&self, kind: &'static str, id: &str) -> bool;
@@ -130,5 +143,29 @@ pub trait BuiltIns: Send + Sync {
     /// The enchantment an alias names (`minecraft:bow_infinity` → `minecraft:infinity`).
     fn enchantment_alias(&self, alias: &str) -> Option<&str> {
         crate::vanilla::GeneratedBuiltIns.enchantment_alias(alias)
+    }
+    /// The spelling of the level sound event `name` (lower case), compared without ASCII
+    /// case; `None` when `name` is no level sound event. Asked at parse and upgrade time
+    /// (item's sound members are rewritten to this spelling), so it is not routed through
+    /// [`contains`](Self::contains): a host that answers only `contains` keeps the game's
+    /// events here.
+    fn level_sound_event(&self, name: &str) -> Option<&str> {
+        crate::vanilla::GeneratedBuiltIns.level_sound_event(name)
+    }
+    /// The identifier of the potion `name` names (`Awkward` → `minecraft:awkward`), as
+    /// recipe's reader asks it of a `minecraft:potion_type:<name>` ingredient at parse time;
+    /// `None` makes the text an ordinary item name.
+    fn potion(&self, name: &str) -> Option<&str> {
+        crate::vanilla::GeneratedBuiltIns.potion(name)
+    }
+    /// Whether `name`, the bare name of loot's `enchant_*` functions (`sharpness`), names an
+    /// enchantment of the game, an alias or an alias's target.
+    fn is_enchantment(&self, name: &str) -> bool {
+        crate::vanilla::GeneratedBuiltIns.is_enchantment(name)
+    }
+    /// Whether `name`, a bare effect name as the 1.10 item format writes it (`speed`), names
+    /// an effect of the game, compared without ASCII case.
+    fn effect(&self, name: &str) -> bool {
+        crate::vanilla::GeneratedBuiltIns.effect(name)
     }
 }

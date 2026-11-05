@@ -19,15 +19,14 @@
 //!    name of their own for the kind (`crafting tag` in `content/recipe_block.rs`). The
 //!    stacks of a `StackSet` share their options; the behaviour stack's are read, the
 //!    resource stack's when it has none.
-//! 2. Without a host, the identifier lists the crate was generated with
-//!    (`bedrock_addon_core::vanilla::ids()`) answer in its place for the kinds that have one:
-//!    `block`, `item`, `entity`, `biome`, `dimension`, `camera preset`, and `jigsaw structure`
-//!    (the structure features of the game); for `feature` the frame's list of the features
-//!    the game registers in code answers
-//!    ([`aliases::CODE_FEATURES`](super::aliases::CODE_FEATURES)). The aim-assist categories
-//!    and preset of the game's behaviour pack (`world/camera.rs`) and the level sound events
-//!    the crate knows ([`LinkCx::level_sound_event`]) answer the same way, in a host's
-//!    place.
+//! 2. Without a host, the game's tables answer in its place
+//!    ([`GeneratedBuiltIns`], over the vanilla data crate) for the lookups marked `[game]`:
+//!    `block`, `item`, `entity`, `biome`, `dimension`, `camera preset`, `jigsaw structure`
+//!    (the structure features of the game) and `feature` (the features the game registers
+//!    in code, [`names::CODE_FEATURES`](crate::vanilla::names::CODE_FEATURES)). The
+//!    aim-assist categories and preset of the game's behaviour pack (`world/aim_assist.rs`)
+//!    and the level sound events ([`LinkCx::level_sound_event`]) answer from the same
+//!    provider, in a host's place.
 //! 3. Some names are the game's whatever a host says. The names a [`Names`] holds as legacy
 //!    are tested before the host is asked ([`LinkCx::built_in`]): the block names of older
 //!    versions and the entities no file defines; the item names of older versions are
@@ -35,7 +34,7 @@
 //!    it ([`LinkCx::item_tag`]). Rules hold more such names: the crafting tags of the game's
 //!    stations, its particle types, the two voxel shapes and the three block geometries it
 //!    has in code, the default cubemap, and three lists of names the game's own files
-//!    write that name nothing ([`aliases`](super::aliases)). The nine behavior trees of the
+//!    write that name nothing ([`names`](crate::vanilla::names)). The nine behavior trees of the
 //!    game are documents of the stack's registry.
 //!
 //! # Which kinds need a host
@@ -75,7 +74,7 @@
 
 use std::borrow::Cow;
 use std::cell::OnceCell;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::marker::PhantomData;
 
 use bedrock_addon_core::diagnostic::ReferenceHint;
@@ -85,9 +84,11 @@ use bedrock_addon_core::document::{Definition, Origin, Registry};
     reason = "`kind` is unused when no content module is enabled"
 )]
 use bedrock_addon_core::id::{Id, Kind, Syntax, kind};
+use bedrock_addon_core::load::BuiltIns;
 #[cfg(feature = "material")]
 use bedrock_addon_core::pack_identity::PackPath;
 use bedrock_addon_core::pack_identity::{PackRef, PackSide};
+use bedrock_addon_core::vanilla::{GeneratedBuiltIns, names};
 use indexmap::IndexMap;
 use uuid::Uuid;
 
@@ -280,12 +281,11 @@ pub(crate) fn canonical<K: Kind>(id: &Id<K>) -> Cow<'_, str> {
 /// that kind compares against. Built once per pass, on the first lookup of the kind.
 pub(crate) struct Names<'a, K: Kind> {
     defined: IndexMap<Id<K>, &'a Origin>,
-    /// The game's own names of the kind, where the crate has a list.
-    vanilla: Option<&'static [&'static str]>,
+    /// Whether the game's tables (`GeneratedBuiltIns`) answer for the kind without a host.
+    vanilla: bool,
     /// The names of the kind the game answers to beyond its lists
-    /// ([`aliases`](super::aliases)): they stand with any host.
+    /// ([`names`](crate::vanilla::names)): they stand with any host.
     legacy: Option<fn(&str) -> bool>,
-    vanilla_set: OnceCell<HashSet<&'static str>>,
     /// What a missing name is compared with for its near miss; built on the first miss.
     near: OnceCell<Near>,
 }
@@ -304,7 +304,7 @@ impl<K: Kind> std::fmt::Debug for Names<'_, K> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Names")
             .field("defined", &self.defined.len())
-            .field("vanilla", &self.vanilla.map(<[_]>::len))
+            .field("vanilla", &self.vanilla)
             .field("legacy", &self.legacy.is_some())
             .field("near", &self.near)
             .finish_non_exhaustive()
@@ -320,16 +320,16 @@ impl<'a, K: Kind> Names<'a, K> {
         }
         Self {
             defined: names,
-            vanilla: None,
+            vanilla: false,
             legacy: None,
-            vanilla_set: OnceCell::new(),
             near: OnceCell::new(),
         }
     }
 
-    /// The same names, with `vanilla` the game's own names of the kind.
-    pub(crate) fn with_vanilla(mut self, vanilla: &'static [&'static str]) -> Self {
-        self.vanilla = Some(vanilla);
+    /// The same names, with the game's tables answering for the kind (`K::NAME`) without a
+    /// host.
+    pub(crate) fn with_vanilla(mut self) -> Self {
+        self.vanilla = true;
         self
     }
 
@@ -365,13 +365,10 @@ impl<'a, K: Kind> Names<'a, K> {
         self.defined.is_empty()
     }
 
-    /// Whether the crate's own list of the game's names has `name` (canonical form).
+    /// Whether the game's tables have `name` (canonical form) of the kind, when they answer
+    /// for it.
     pub(crate) fn is_vanilla(&self, name: &str) -> bool {
-        self.vanilla.is_some_and(|list| {
-            self.vanilla_set
-                .get_or_init(|| list.iter().copied().collect())
-                .contains(name)
-        })
+        self.vanilla && GeneratedBuiltIns.contains(K::NAME, name)
     }
 
     /// The near miss of a name the stack does not define: a defined name that differs only in
@@ -427,7 +424,7 @@ macro_rules! lookups {
     ($(
         $(#[doc = $doc:literal])+
         #[cfg($cfg:meta)]
-        $name:ident, $names:ident: $kind:ident $([$($list:tt)+])? $(+ $legacy:ident)? = |$set:ident| $build:expr;
+        $name:ident, $names:ident: $kind:ident $([$game:ident])? $(+ $legacy:ident)? = |$set:ident| $build:expr;
     )*) => {
         /// The names of each kind, each built on its first lookup.
         #[derive(Debug, Default)]
@@ -452,25 +449,24 @@ macro_rules! lookups {
                 pub(crate) fn $names(&self) -> &Names<'a, kind::$kind> {
                     self.caches.$name.get_or_init(|| {
                         let $set = self.set();
-                        Names::new($build)
-                            $(.with_vanilla(lookups!(@list $($list)+)))?
-                            $(.with_legacy(super::aliases::$legacy))?
+                        let names = Names::new($build);
+                        $(let names = lookups!(@game names, $game);)?
+                        names $(.with_legacy(names::$legacy))?
                     })
                 }
             )*
         }
     };
-    (@list $list:ident) => { bedrock_addon_core::vanilla::ids().$list };
-    // A list of the frame's own (`aliases`), for a kind core has none for.
-    (@list own $list:ident) => { &super::aliases::$list };
+    // `[game]`: the game's tables answer for the kind without a host.
+    (@game $names:ident, game) => { $names.with_vanilla() };
 }
 
 lookups! {
     /// A block: a custom block of the behaviour stack, one of the game's, or a name of an
     /// older version the game still answers to
-    /// ([`LEGACY_BLOCK_NAMES`](super::aliases::LEGACY_BLOCK_NAMES), with any host).
+    /// ([`LEGACY_BLOCK_NAMES`](crate::vanilla::names::LEGACY_BLOCK_NAMES), with any host).
     #[cfg(feature = "block")]
-    block, block_names: Block [blocks] + is_legacy_block_name = |set| registered(set.behavior.blocks());
+    block, block_names: Block [game] + is_legacy_block_name = |set| registered(set.behavior.blocks());
 
     /// The `blocks.json` entry of a block, on the resource stack.
     #[cfg(feature = "blocks_json")]
@@ -487,17 +483,17 @@ lookups! {
     /// An item a behaviour pack defines or one of the game's, by the definitions alone: no
     /// block item and no legacy name (the rules ask [`LinkCx::item`]).
     #[cfg(feature = "item")]
-    item_definition, item_names: Item [items] = |set| registered(set.behavior.items());
+    item_definition, item_names: Item [game] = |set| registered(set.behavior.items());
 
     /// An entity of the behaviour stack, one of the game's, or one of the game's that no
-    /// file defines ([`FILELESS_ENTITIES`](super::aliases::FILELESS_ENTITIES), with any
+    /// file defines ([`FILELESS_ENTITIES`](crate::vanilla::names::FILELESS_ENTITIES), with any
     /// host); an `<event>` suffix is not part of the name.
     #[cfg(feature = "entity")]
-    entity, entity_names: Entity [entities] + is_fileless_entity = |set| registered(set.behavior.entities());
+    entity, entity_names: Entity [game] + is_fileless_entity = |set| registered(set.behavior.entities());
 
     /// The client entity of an entity, on the resource stack.
     #[cfg(feature = "client_entity")]
-    client_entity, client_entity_names: Entity [entities] = |set| registered(set.resource.client_entities());
+    client_entity, client_entity_names: Entity [game] = |set| registered(set.resource.client_entities());
 
     /// The spawn rules of an entity.
     #[cfg(feature = "spawn_rules")]
@@ -505,13 +501,13 @@ lookups! {
 
     /// A biome of the behaviour stack or one of the game's.
     #[cfg(feature = "biome")]
-    biome, biome_names: Biome [biomes] = |set| registered(set.behavior.biomes());
+    biome, biome_names: Biome [game] = |set| registered(set.behavior.biomes());
 
     /// A world-generation feature: one of the behaviour stack (its packs' and the app
     /// data's), or one the game registers in code
-    /// ([`CODE_FEATURES`](super::aliases::CODE_FEATURES)).
+    /// ([`CODE_FEATURES`](crate::vanilla::names::CODE_FEATURES)).
     #[cfg(feature = "feature")]
-    feature, feature_names: Feature [own CODE_FEATURES] = |set| registered(set.behavior.features());
+    feature, feature_names: Feature [game] = |set| registered(set.behavior.features());
 
     /// A jigsaw template pool.
     #[cfg(feature = "jigsaw")]
@@ -523,7 +519,7 @@ lookups! {
 
     /// A jigsaw structure of the stack or a structure feature of the game.
     #[cfg(feature = "jigsaw")]
-    jigsaw_structure, jigsaw_structure_names: JigsawStructure [features] = |set| registered(&set.behavior.jigsaw().structures);
+    jigsaw_structure, jigsaw_structure_names: JigsawStructure [game] = |set| registered(&set.behavior.jigsaw().structures);
 
     /// A jigsaw structure set.
     #[cfg(feature = "jigsaw")]
@@ -531,7 +527,7 @@ lookups! {
 
     /// A dimension of the stack or one of the game's.
     #[cfg(feature = "dimension")]
-    dimension, dimension_names: Dimension [dimensions] = |set| registered(set.behavior.dimensions());
+    dimension, dimension_names: Dimension [game] = |set| registered(set.behavior.dimensions());
 
     /// A structure, as `/structure load` names it: `structures/<namespace>/<name>.mcstructure`,
     /// a file directly in `structures/` being `mystructure:<name>`.
@@ -552,7 +548,7 @@ lookups! {
 
     /// A camera preset of the stack or one of the game's.
     #[cfg(feature = "camera")]
-    camera_preset, camera_preset_names: CameraPreset [camera_presets] = |set| registered(&set.behavior.cameras().presets);
+    camera_preset, camera_preset_names: CameraPreset [game] = |set| registered(&set.behavior.cameras().presets);
 
     /// An aim-assist preset.
     #[cfg(feature = "aim_assist")]
@@ -700,7 +696,7 @@ struct UnlistedLanguages {
 #[derive(Debug, Default)]
 struct GeometryParts<'a> {
     bones: HashMap<String, &'a crate::families::geometry::Bone>,
-    locators: HashSet<String>,
+    locators: std::collections::HashSet<String>,
 }
 
 impl<'a> LinkCx<'a> {
@@ -723,7 +719,7 @@ impl<'a> LinkCx<'a> {
         if names.is_legacy(&name) {
             return true;
         }
-        match self.built_ins() {
+        match self.host_built_ins() {
             Some(host) => host.contains(K::NAME, &name),
             None => names.is_vanilla(&name),
         }
@@ -731,13 +727,13 @@ impl<'a> LinkCx<'a> {
 
     /// Whether the host says the game has `name` of `kind`; `false` without a host.
     pub(crate) fn host_has(&self, kind: &'static str, name: &str) -> bool {
-        self.built_ins()
+        self.host_built_ins()
             .is_some_and(|host| host.contains(kind, name))
     }
 
     /// An item: one a behaviour pack defines, the item of a block of the stack (every block
     /// has an item of its name), one of the game's, or a legacy name the game's own files
-    /// still use ([`LEGACY_ITEM_NAMES`](super::aliases::LEGACY_ITEM_NAMES): compared without
+    /// still use ([`LEGACY_ITEM_NAMES`](crate::vanilla::names::LEGACY_ITEM_NAMES): compared without
     /// ASCII case, with any host). An `:aux` suffix is not part of the name.
     ///
     /// Without the `block` feature a pack's blocks cannot be known: a name outside the
@@ -763,7 +759,7 @@ impl<'a> LinkCx<'a> {
         {
             return Target::Defined(document.origin());
         }
-        if self.built_in(names, id) || super::aliases::is_legacy_item_name(&name) {
+        if self.built_in(names, id) || names::is_legacy_item_name(&name) {
             return Target::BuiltIn;
         }
         #[cfg(not(feature = "block"))]
@@ -775,7 +771,7 @@ impl<'a> LinkCx<'a> {
 
     /// An item tag: a tag an item of the behaviour stack carries (`minecraft:tags`), one the
     /// game's own recipes take an ingredient by
-    /// ([`VANILLA_ITEM_TAGS`](super::aliases::VANILLA_ITEM_TAGS), with any host), or one the
+    /// ([`VANILLA_ITEM_TAGS`](crate::vanilla::names::VANILLA_ITEM_TAGS), with any host), or one the
     /// host says the game's items carry. Compared as written.
     #[cfg(feature = "item")]
     pub(crate) fn item_tag(&self, tag: &str) -> Target<'a> {
@@ -794,9 +790,7 @@ impl<'a> LinkCx<'a> {
         });
         match tags.get(tag) {
             Some(origin) => Target::Defined(origin),
-            None if super::aliases::is_vanilla_item_tag(tag)
-                || self.host_has(kinds::ITEM_TAG, tag) =>
-            {
+            None if names::is_vanilla_item_tag(tag) || self.host_has(kinds::ITEM_TAG, tag) => {
                 Target::BuiltIn
             }
             None => Target::Missing(None),
@@ -1041,7 +1035,7 @@ impl<'a> LinkCx<'a> {
     pub(crate) fn material_view(&self, out: &mut Findings) -> View {
         use crate::families::material::MaterialGroupKind;
         *self.caches.special.views[0].get_or_init(|| {
-            if self.built_ins().is_some() {
+            if self.host_built_ins().is_some() {
                 return View::Whole;
             }
             let materials = self.set().resource.materials();
@@ -1068,7 +1062,7 @@ impl<'a> LinkCx<'a> {
                         .any(|layer| self.is_game_pack(&layer.origin.pack))
                 })
             };
-            let mut files = HashSet::new();
+            let mut files = std::collections::HashSet::new();
             let by_game = groups().any(|group| {
                 group
                     .iter()
@@ -1155,7 +1149,7 @@ impl<'a> LinkCx<'a> {
         built: bool,
         out: &mut Findings,
     ) -> View {
-        if self.built_ins().is_some() {
+        if self.host_built_ins().is_some() {
             return View::Whole;
         }
         let (mut own, mut game_read) = (false, false);
@@ -1274,12 +1268,12 @@ impl<'a> LinkCx<'a> {
     }
 
     /// A level sound event of the game (`LevelSoundEvent`), by its name as written in lower
-    /// case: the host's answer, or without a host the names the crate knows.
+    /// case: the host's answer, or without a host the game's tables.
     #[cfg(any(feature = "sounds_json", feature = "entity"))]
     pub(crate) fn level_sound_event(&self, name: &str) -> Target<'a> {
-        let known = match self.built_ins() {
+        let known = match self.host_built_ins() {
             Some(host) => host.contains(kinds::LEVEL_SOUND_EVENT, name),
-            None => is_level_sound_event(name),
+            None => GeneratedBuiltIns.contains(kinds::LEVEL_SOUND_EVENT, name),
         };
         if known {
             Target::BuiltIn
@@ -1294,7 +1288,7 @@ impl<'a> LinkCx<'a> {
     ///
     /// The game loads the languages that some `texts/languages.json` of the stack lists, each
     /// from every pack. Its own packs, which are on every stack the game builds, list its 29
-    /// languages ([`VANILLA_LANGUAGES`](super::aliases::VANILLA_LANGUAGES)): so the
+    /// languages ([`VANILLA_LANGUAGES`](crate::vanilla::names::VANILLA_LANGUAGES)): so the
     /// `texts/<code>.lang` files of those codes count too when no pack of the stack lists the
     /// code (the usual add-on has `texts/en_US.lang` and no `languages.json`). A `.lang` file
     /// of any other code that no pack lists is never loaded, and its keys are no keys.
@@ -1355,7 +1349,7 @@ impl<'a> LinkCx<'a> {
             use crate::families::lang::{LangFile, Language};
             use crate::storage::{PackPath, StorageError};
             let listed = &stack.languages().value().codes;
-            for code in super::aliases::VANILLA_LANGUAGES {
+            for code in names::VANILLA_LANGUAGES {
                 if listed.iter().any(|language| language.as_str() == code) {
                     continue;
                 }
@@ -1384,7 +1378,7 @@ impl<'a> LinkCx<'a> {
                         // Every language starts from the base language and falls back to
                         // it: only its unread file leaves a key unknown.
                         Err(StorageError::NotResident) => {
-                            into.unread |= code == super::aliases::VANILLA_LANGUAGES[0];
+                            into.unread |= code == names::VANILLA_LANGUAGES[0];
                         }
                         Err(_) => {}
                     }
@@ -1405,7 +1399,7 @@ impl<'a> LinkCx<'a> {
     /// game compares it.
     #[allow(clippy::unused_self, reason = "a lookup like the others")]
     pub(crate) fn particle_type(&self, name: &str) -> Target<'a> {
-        if super::aliases::is_particle_type(name) {
+        if names::is_particle_type(name) {
             Target::BuiltIn
         } else {
             Target::Missing(None)
@@ -1442,22 +1436,4 @@ impl<'a> LinkCx<'a> {
             .chain(set.resource.packs())
             .find(|pack| pack.id().uuid == uuid)
     }
-}
-
-/// Whether `name` is a level sound event the crate knows: the list `sounds.json` is checked
-/// against, or the entity goals' copy of the game's table.
-#[cfg(feature = "sounds_json")]
-fn is_level_sound_event(name: &str) -> bool {
-    #[cfg(feature = "entity")]
-    if crate::families::entity::goal::SoundEvent::new(name).is_known() {
-        return true;
-    }
-    crate::families::sounds_json::is_level_sound_event(name)
-}
-
-/// Whether `name` is a level sound event the crate knows: the list `sounds.json` is checked
-/// against, or without the `sounds_json` feature the one the entity goals are.
-#[cfg(all(feature = "entity", not(feature = "sounds_json")))]
-fn is_level_sound_event(name: &str) -> bool {
-    crate::families::entity::goal::SoundEvent::new(name).is_known()
 }

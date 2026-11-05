@@ -32,7 +32,7 @@ const TEMPLATES: &[(&str, usize)] = &[
 
 /// A `blocks.json` key names a block: a block of the behaviour stack, one of the game's, or a
 /// name the client still resolves to one of the game's
-/// ([`LEGACY_BLOCK_NAMES`](super::super::aliases::LEGACY_BLOCK_NAMES), with any host). Any other key is an
+/// ([`LEGACY_BLOCK_NAMES`](crate::vanilla::names::LEGACY_BLOCK_NAMES), with any host). Any other key is an
 /// `UnresolvedReference` warning with vanilla's text, at the key: the client skips the entry.
 ///
 /// The key was normalised when the file was read: a bare key is `minecraft:` and the key in
@@ -484,8 +484,8 @@ mod tests {
     fn the_legacy_block_names_are_exactly_what_the_vanilla_files_need() {
         use std::collections::BTreeSet;
 
-        use super::super::super::aliases::LEGACY_BLOCK_NAMES;
         use super::super::super::tests::support::{vanilla_behavior_text, written_in};
+        use crate::vanilla::names::LEGACY_BLOCK_NAMES;
 
         let Some(game_files) = std::env::var_os("BEDROCK_ADDON_CORPUS").filter(|v| !v.is_empty())
         else {

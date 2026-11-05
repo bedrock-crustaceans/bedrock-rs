@@ -74,7 +74,7 @@ pub(super) fn run(cx: &LinkCx<'_>, out: &mut Findings) {
 /// Whether `name` is one of the identifiers the game's patrol spawn rules write where an
 /// entity is named: no actor, let through in the rules' identifier and a delay's alone.
 fn patrol(name: &EntityId) -> bool {
-    super::super::aliases::is_spawn_rule_identifier(&super::super::canonical(name))
+    crate::vanilla::names::is_spawn_rule_identifier(&super::super::canonical(name))
 }
 
 /// `name` is an entity; an absent or empty name names none (an empty delay identifier is the

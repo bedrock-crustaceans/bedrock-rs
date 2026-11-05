@@ -68,7 +68,6 @@ mod script;
 mod visual;
 mod world;
 
-mod aliases;
 mod cx;
 mod finding;
 /// A unit test of the frame written where a rule group's own unit tests are: one level

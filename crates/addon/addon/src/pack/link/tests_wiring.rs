@@ -1764,7 +1764,7 @@ fn the_languages_of_the_game_are_the_vanilla_resource_packs_list() {
     ] {
         let text = std::fs::read_to_string(game_files.join(file)).expect(file);
         let codes: Vec<String> = crate::json::from_str_jsonc(&text).expect(file);
-        assert_eq!(codes, super::super::aliases::VANILLA_LANGUAGES, "{file}");
+        assert_eq!(codes, crate::vanilla::names::VANILLA_LANGUAGES, "{file}");
     }
 }
 

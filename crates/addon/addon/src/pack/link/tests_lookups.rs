@@ -83,16 +83,19 @@ fn the_names_of_a_kind_keep_the_first_definition_and_the_load_order() {
         Some("a.json")
     );
     assert_eq!(names.get(&id("demo:c")), None);
-    assert!(!names.is_vanilla("minecraft:stone"), "no list was given");
+    assert!(
+        !names.is_vanilla("minecraft:stone"),
+        "the tables were not asked for"
+    );
 }
 
 #[test]
-fn names_with_a_vanilla_list_know_the_games_names() {
-    static VANILLA: [&str; 1] = ["minecraft:stone"];
+fn names_with_the_games_tables_know_the_games_names() {
     let place = origin("a.json");
-    let names: Names<'_, kind::Block> = Names::new([(id("demo:a"), &place)]).with_vanilla(&VANILLA);
+    let names: Names<'_, kind::Block> = Names::new([(id("demo:a"), &place)]).with_vanilla();
     assert!(names.is_vanilla("minecraft:stone"));
-    assert!(!names.is_vanilla("minecraft:dirt"));
+    assert!(!names.is_vanilla("minecraft:no_such_block"));
+    assert!(!names.is_vanilla("demo:a"), "defined is not the game's");
 }
 
 #[test]
@@ -180,7 +183,7 @@ fn a_host_is_asked_first_and_believed_yes_or_no() {
     ]);
     let set = set_with(&[("blocks/lamp.json", &lamp)], &[], &options);
     let cx = LinkCx::new(&set, ALL);
-    assert!(cx.built_ins().is_some());
+    assert!(cx.host_built_ins().is_some());
     // Yes: a name only the host has, bare or not, by the kind's name.
     assert_eq!(cx.block(&id("minecraft:moon_rock")), Target::BuiltIn);
     assert_eq!(cx.block(&id("moon_rock")), Target::BuiltIn);
@@ -202,7 +205,7 @@ fn a_host_is_asked_first_and_believed_yes_or_no() {
 fn without_a_host_a_kind_without_a_list_misses() {
     let set = empty_set();
     let cx = LinkCx::new(&set, ALL);
-    assert!(cx.built_ins().is_none());
+    assert!(cx.host_built_ins().is_none());
     #[cfg(feature = "voxel_shape")]
     assert_eq!(cx.voxel_shape(&id("minecraft:unit_cube")), MISSING);
     #[cfg(feature = "block_culling")]
@@ -592,6 +595,25 @@ fn a_pack_is_found_by_its_header_uuid_on_either_stack() {
     assert_eq!(cx.options(), ALL);
 }
 
+/// Only the lookups that name the game's tables ask them without a host: the `blocks.json`
+/// entry of a block and an aim-assist preset document have no list of the game's, so the
+/// game's block and preset are missing there (the rules that know better say so themselves).
+#[cfg(any(feature = "blocks_json", feature = "aim_assist"))]
+#[test]
+fn a_lookup_without_a_list_of_the_games_does_not_ask_the_tables() {
+    let set = empty_set();
+    let cx = LinkCx::new(&set, ALL);
+    #[cfg(feature = "blocks_json")]
+    assert_eq!(cx.client_block(&id("minecraft:stone")), MISSING);
+    #[cfg(feature = "aim_assist")]
+    assert_eq!(
+        cx.aim_assist_preset(&id("minecraft:aim_assist_default")),
+        MISSING
+    );
+    #[cfg(feature = "block")]
+    assert_eq!(cx.block(&id("minecraft:stone")), Target::BuiltIn);
+}
+
 #[cfg(any(feature = "sounds_json", feature = "entity"))]
 #[test]
 fn a_level_sound_event_is_the_hosts_or_one_the_crate_knows() {
@@ -819,8 +841,8 @@ fn n_lookups_among_n_definitions_cost_n() {
         20_000,
         input,
         |(defined, references): &Input| {
-            let names = Names::new(defined.iter().map(|(id, origin)| (id.clone(), origin)))
-                .with_vanilla(bedrock_addon_core::vanilla::ids().blocks);
+            let names =
+                Names::new(defined.iter().map(|(id, origin)| (id.clone(), origin))).with_vanilla();
             let mut missing = 0usize;
             for reference in references {
                 missing += usize::from(cx.resolve(&names, reference).is_missing());
@@ -908,7 +930,7 @@ fn every_item_name_of_the_vanilla_loot_tables_is_an_item() {
     let unknown: Vec<&String> = names
         .iter()
         .filter(|name| cx.item(&id(name)).is_missing())
-        .filter(|name| !super::super::aliases::is_loot_entry_only_item(name))
+        .filter(|name| !crate::vanilla::names::is_loot_entry_only_item(name))
         .collect();
     assert!(unknown.is_empty(), "no item to the lookup: {unknown:?}");
 }
@@ -932,7 +954,7 @@ fn every_legacy_item_name_is_one_a_vanilla_file_writes() {
         &["loot_tables", "recipes", "trading", "items", "entities"],
     );
     let items = bedrock_addon_core::vanilla::ids().items;
-    for legacy in super::super::aliases::LEGACY_ITEM_NAMES {
+    for legacy in crate::vanilla::names::LEGACY_ITEM_NAMES {
         assert!(
             super::support::written_in(&text, legacy),
             "{legacy} is in no file"

@@ -90,7 +90,7 @@ impl<'a> LinkCx<'a> {
     }
 
     /// The host's answer for the game's own content, when the stacks were built with one.
-    pub(crate) fn built_ins(&self) -> Option<&'a dyn BuiltIns> {
+    pub(crate) fn host_built_ins(&self) -> Option<&'a dyn BuiltIns> {
         self.built_ins
     }
 

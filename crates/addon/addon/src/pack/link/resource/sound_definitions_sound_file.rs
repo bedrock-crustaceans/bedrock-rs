@@ -35,7 +35,7 @@ pub(super) fn run(cx: &LinkCx<'_>, out: &mut Findings) {
     }
     let definitions = cx.resource().sound_definitions();
     let files = cx.resource().sound_files();
-    let built_ins = cx.built_ins();
+    let built_ins = cx.host_built_ins();
     let folded: IndexMap<String, &SoundAsset> = files
         .by_name
         .iter()

@@ -8,8 +8,9 @@ use super::super::{Findings, LinkCx, Validator, kinds, validator_text};
 use crate::diagnostic::{Diagnostic, DiagnosticDetail, JsonPath, JsonPathSegment};
 use crate::document::Origin;
 use crate::families::aim_assist::{self, Targets};
-use crate::vanilla::names::{AIM_ASSIST_CATEGORIES, AIM_ASSIST_PRESETS};
+use crate::vanilla::GeneratedBuiltIns;
 use crate::version::FormatVersion;
+use bedrock_addon_core::load::BuiltIns;
 
 /// The lookups of the pass, for the family's checkers. Every name arrives in the form the
 /// game registers it in: lower-cased, an item without its auxiliary value, an entity without
@@ -19,11 +20,12 @@ struct World<'c, 'a>(&'c LinkCx<'a>);
 
 impl World<'_, '_> {
     /// Whether the game has `key` of `kind` outside the stack: the host's word, or without a
-    /// host the crate's own `list`.
-    fn game_has(&self, kind: &'static str, key: &str, list: &[&str]) -> bool {
-        match self.0.built_ins() {
+    /// host the game's tables (the categories and preset of its `vanilla` behaviour pack,
+    /// `names::AIM_ASSIST_CATEGORIES` and `AIM_ASSIST_PRESETS`).
+    fn game_has(&self, kind: &'static str, key: &str) -> bool {
+        match self.0.host_built_ins() {
             Some(host) => host.contains(kind, key),
-            None => list.contains(&key),
+            None => GeneratedBuiltIns.contains(kind, key),
         }
     }
 }
@@ -70,12 +72,12 @@ impl Targets for World<'_, '_> {
 
     fn category(&self, key: &str) -> bool {
         // The checker has looked among the categories of the stack.
-        self.game_has(kinds::AIM_ASSIST_CATEGORY, key, &AIM_ASSIST_CATEGORIES)
+        self.game_has(kinds::AIM_ASSIST_CATEGORY, key)
     }
 
     fn preset(&self, key: &str) -> bool {
         // The checker has looked among the aim-assist presets of the stack.
-        self.game_has(kinds::AIM_ASSIST_PRESET, key, &AIM_ASSIST_PRESETS)
+        self.game_has(kinds::AIM_ASSIST_PRESET, key)
     }
 }
 

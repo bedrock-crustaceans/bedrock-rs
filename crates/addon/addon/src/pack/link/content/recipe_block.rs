@@ -39,9 +39,9 @@ pub(super) fn run(cx: &LinkCx<'_>, out: &mut Findings) {
         for (index, tag) in tags.as_slice().iter().enumerate() {
             // The stations are the engine's: they stand with any host, which can add to them.
             let known = offered.contains(tag.as_str())
-                || super::super::aliases::is_crafting_station_tag(tag.as_str())
+                || crate::vanilla::names::is_crafting_station_tag(tag.as_str())
                 || cx
-                    .built_ins()
+                    .host_built_ins()
                     .is_some_and(|host| host.contains(CRAFTING_TAG, tag));
             if known {
                 continue;

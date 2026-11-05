@@ -26,7 +26,7 @@ pub(super) fn check(cx: &LinkCx<'_>, out: &mut Findings, user: &User<'_>) {
         }
         // A texture of the game's own, when a host answers for them.
         if cx
-            .built_ins()
+            .host_built_ins()
             .is_some_and(|host| host.contains(kinds::TEXTURE, value.as_str()))
         {
             continue;

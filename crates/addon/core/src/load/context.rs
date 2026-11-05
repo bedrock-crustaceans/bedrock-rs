@@ -247,6 +247,14 @@ impl LoadContext {
         }
     }
 
+    /// The level sound event `name` names, in the provider's spelling (the tables': lower
+    /// case), compared without ASCII case; `None` when it names none.
+    pub fn level_sound_event(&self, name: &str) -> Option<crate::id::LevelSoundEventName> {
+        self.built_ins()
+            .level_sound_event(name)
+            .map(crate::id::LevelSoundEventName::parse)
+    }
+
     /// The host's provider, `None` when the host gave none: for the decisions that depend on
     /// whether a host answers at all (the link pass's views).
     pub fn host_built_ins(&self) -> Option<&Arc<dyn BuiltIns>> {

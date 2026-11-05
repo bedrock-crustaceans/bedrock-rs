@@ -40,7 +40,7 @@ pub(super) fn run(cx: &LinkCx<'_>, out: &mut Findings, entities: &Entities<'_>) 
         };
         // A name the game's own entity files write here and the game does not have: let
         // through in these rows alone.
-        if super::super::aliases::is_entity_file_only_item(&super::super::canonical(&looked_up)) {
+        if crate::vanilla::names::is_entity_file_only_item(&super::super::canonical(&looked_up)) {
             return;
         }
         if (component.key, *form) == SHAREABLE {

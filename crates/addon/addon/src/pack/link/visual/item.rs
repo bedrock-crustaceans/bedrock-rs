@@ -62,7 +62,7 @@ pub(super) fn run(cx: &LinkCx<'_>, out: &mut Findings) {
     bindings.sort_by_key(|binding| binding.sequence);
     let known = Known::of(cx);
     // The game's own items: the host's answer, else the crate's list.
-    let of_the_game = |name: &str| match cx.built_ins() {
+    let of_the_game = |name: &str| match cx.host_built_ins() {
         Some(host) => host.contains(kinds::ITEM, name),
         None => cx.item_names().is_vanilla(name),
     };

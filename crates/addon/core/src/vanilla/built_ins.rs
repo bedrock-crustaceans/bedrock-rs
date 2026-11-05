@@ -6,26 +6,23 @@ use std::sync::OnceLock;
 use super::{Command, CommandEnum, command_enums, commands, ids};
 use crate::load::BuiltIns;
 
-/// The identifier lists, commands and enchantment aliases the crate was generated with, as a
-/// [`BuiltIns`] provider: what answers when the host gives none
-/// (`LoadContext::built_ins`). Every lookup is a hash lookup, built once.
+/// The identifier lists, commands and enchantment aliases the crate was generated with, and
+/// the hand-kept lists of `bedrock_addon_vanilla`, as a [`BuiltIns`] provider: what answers
+/// when the host gives none (`LoadContext::built_ins`). Every lookup is a hash lookup, built
+/// once.
 ///
 /// [`contains`](BuiltIns::contains) answers for the kinds with a list: `block`, `item`,
-/// `entity`, `biome`, `dimension`, `camera preset` and `jigsaw structure` (the game's
-/// structure features), each a `Kind::NAME`, and for the lists with no identifier kind under
-/// the names `effect`, `enchantment`, `potion effect`, `potion type` and `cooldown category`.
-/// Any other kind is not built in.
+/// `entity`, `biome`, `dimension`, `camera preset`, `jigsaw structure` (the game's
+/// structure features), `feature` (the features the game registers in code,
+/// [`names::CODE_FEATURES`](super::names::CODE_FEATURES)), `level sound event`,
+/// `aim assist category` and `aim assist preset`, each a `Kind::NAME`, and for the lists with
+/// no identifier kind under the names `effect`, `enchantment`, `potion effect`, `potion type`
+/// and `cooldown category`. Any other kind is not built in.
 ///
-/// Where it differs from what the link pass answers today:
-///
-/// - `contains("feature", ..)` is `false` for every id: the link pass answers the features the
-///   game registers in code from addon's `CODE_FEATURES` (`addon/src/pack/link/lookup.rs`),
-///   not from a provider.
-/// - The legacy block and item names and the entities with no file are checked by the link
-///   pass before it asks a provider (`LinkCx::built_in`, `lookup.rs:722-728`), so they are not
-///   in these lists.
-/// - [`command`](Self::command) compares without ASCII case, like function's `find_command`;
-///   the plain [`super::command`] compares exactly.
+/// The legacy block and item names and the entities with no file are not in these lists: the
+/// link pass checks them before it asks a provider (`LinkCx::built_in`), so a host adds to
+/// them and never removes one. [`command`](Self::command) compares without ASCII case, like
+/// function's `find_command`; the plain [`super::command`] compares exactly.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct GeneratedBuiltIns;
 
@@ -39,6 +36,12 @@ struct Index {
     command_enums: HashMap<Box<str>, &'static CommandEnum>,
     /// Every enchantment alias; the first in table order wins.
     enchantment_aliases: HashMap<&'static str, &'static str>,
+    /// Every `minecraft:` potion effect by its name without the namespace.
+    potions: HashMap<&'static str, &'static str>,
+    /// The names without `minecraft:` of every enchantment, alias and alias target.
+    enchantments: HashSet<&'static str>,
+    /// Every effect by its ASCII-lower-cased name without `minecraft:`.
+    effects: HashMap<Box<str>, &'static str>,
 }
 
 fn index() -> &'static Index {
@@ -58,6 +61,10 @@ fn index() -> &'static Index {
             ("potion effect", ids.potion_effects),
             ("potion type", ids.potion_types),
             ("cooldown category", ids.cooldown_categories),
+            ("feature", &super::names::CODE_FEATURES),
+            ("level sound event", super::sound_events::LEVEL_SOUND_EVENTS),
+            ("aim assist category", &super::names::AIM_ASSIST_CATEGORIES),
+            ("aim assist preset", &super::names::AIM_ASSIST_PRESETS),
         ]
         .into_iter()
         .map(|(kind, list)| (kind, list.iter().copied().collect()))
@@ -80,11 +87,36 @@ fn index() -> &'static Index {
         for (alias, target) in ids.enchantment_aliases {
             aliases.entry(*alias).or_insert(*target);
         }
+        let potions = ids
+            .potion_effects
+            .iter()
+            .filter_map(|id| Some((id.strip_prefix("minecraft:")?, *id)))
+            .collect();
+        let enchantments = ids
+            .enchantments
+            .iter()
+            .chain(
+                ids.enchantment_aliases
+                    .iter()
+                    .flat_map(|(alias, target)| [alias, target]),
+            )
+            .filter_map(|id| id.strip_prefix("minecraft:"))
+            .collect();
+        let mut effects = HashMap::new();
+        for effect in ids.effects {
+            let name = effect.trim_start_matches("minecraft:");
+            effects
+                .entry(name.to_ascii_lowercase().into_boxed_str())
+                .or_insert(*effect);
+        }
         Index {
             lists,
             commands: by_name,
             command_enums: enums,
             enchantment_aliases: aliases,
+            potions,
+            enchantments,
+            effects,
         }
     })
 }
@@ -130,6 +162,29 @@ impl GeneratedBuiltIns {
     pub fn enchantment_alias(self, alias: &str) -> Option<&'static str> {
         index().enchantment_aliases.get(alias).copied()
     }
+
+    /// The table's spelling of the level sound event `name`, compared without ASCII case.
+    pub fn level_sound_event(self, name: &str) -> Option<&'static str> {
+        super::sound_events::level_sound_event(name)
+    }
+
+    /// The identifier of the potion called `name` (`Awkward` → `minecraft:awkward`): the name
+    /// lower-cased (Unicode, as recipe's reader always has) behind `minecraft:`, if it is one
+    /// of the potion effects.
+    pub fn potion(self, name: &str) -> Option<&'static str> {
+        index().potions.get(name.to_lowercase().as_str()).copied()
+    }
+
+    /// Whether `name`, without a namespace and as written, names an enchantment, an
+    /// enchantment alias or an alias's target.
+    pub fn is_enchantment(self, name: &str) -> bool {
+        index().enchantments.contains(name)
+    }
+
+    /// Whether `name`, without a namespace, names an effect, compared without ASCII case.
+    pub fn effect(self, name: &str) -> bool {
+        folded(&index().effects, name).is_some()
+    }
 }
 
 impl BuiltIns for GeneratedBuiltIns {
@@ -150,5 +205,21 @@ impl BuiltIns for GeneratedBuiltIns {
 
     fn enchantment_alias(&self, alias: &str) -> Option<&str> {
         Self::enchantment_alias(*self, alias)
+    }
+
+    fn level_sound_event(&self, name: &str) -> Option<&str> {
+        Self::level_sound_event(*self, name)
+    }
+
+    fn potion(&self, name: &str) -> Option<&str> {
+        Self::potion(*self, name)
+    }
+
+    fn is_enchantment(&self, name: &str) -> bool {
+        Self::is_enchantment(*self, name)
+    }
+
+    fn effect(&self, name: &str) -> bool {
+        Self::effect(*self, name)
     }
 }

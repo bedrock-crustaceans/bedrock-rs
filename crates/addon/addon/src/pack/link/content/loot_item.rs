@@ -64,7 +64,7 @@ fn given(cx: &LinkCx<'_>, out: &mut Findings, origin: &Origin, path: &JsonPath, 
     if let Target::Missing(hint) = cx.item(name) {
         // A name the game's own loot tables write here and the game does not have: let
         // through in this member alone.
-        if super::super::aliases::is_loot_entry_only_item(&super::super::canonical(name)) {
+        if crate::vanilla::names::is_loot_entry_only_item(&super::super::canonical(name)) {
             return;
         }
         let text = formatted(INVALID_ITEM, [name.as_str()]);

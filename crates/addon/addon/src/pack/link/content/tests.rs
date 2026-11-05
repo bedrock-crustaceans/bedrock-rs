@@ -287,13 +287,13 @@ fn every_tag_of_the_vanilla_recipes_is_a_tag_of_the_game() {
         files > 1000,
         "the recipes of the game's files were read: {files}"
     );
-    let known: BTreeSet<String> = super::super::aliases::VANILLA_ITEM_TAGS
+    let known: BTreeSet<String> = crate::vanilla::names::VANILLA_ITEM_TAGS
         .iter()
         .map(|tag| (*tag).to_owned())
         .collect();
     assert_eq!(used, known);
     assert!(
-        super::super::aliases::VANILLA_ITEM_TAGS
+        crate::vanilla::names::VANILLA_ITEM_TAGS
             .windows(2)
             .all(|pair| pair[0] < pair[1]),
         "sorted"
