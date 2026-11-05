@@ -136,6 +136,8 @@ pub struct FieldRow {
     pub fallback: Option<Lit>,
     /// `schema::min`, `max`, `above`, `below`, in the order written.
     pub bounds: &'static [Bound],
+    /// `schema::multiple_of`: the step the value is a multiple of.
+    pub multiple_of: Option<f64>,
     /// `schema::since_format`.
     pub since_format: Option<FormatVersion>,
     /// `schema::since_engine`.
@@ -167,6 +169,7 @@ impl FieldRow {
             default: None,
             fallback: None,
             bounds: &[],
+            multiple_of: None,
             since_format: None,
             since_engine: None,
             unknown: None,

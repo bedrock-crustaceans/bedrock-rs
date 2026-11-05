@@ -110,14 +110,32 @@ pub(crate) fn derive(input: &DeriveInput) -> Result<TokenStream> {
     let enum_ident = &input.ident;
     let checks = payload_checks(enum_ident, &variants.special);
     let from = from_impls(enum_ident, &variants.typed);
+    let shorthands = shorthand_rows(enum_ident, &variants.typed);
     match &enum_attrs.family {
         Some(family) if enum_attrs.from_only.is_none() => {
             let components = emit(enum_ident, family, &variants);
             let rows = crate::rows::emit(enum_ident, &enum_attrs, &variants);
             let components = quote!(#components #rows);
-            Ok(quote!(#checks #from #components))
+            Ok(quote!(#checks #from #shorthands #components))
         }
-        _ => Ok(quote!(#checks #from)),
+        _ => Ok(quote!(#checks #from #shorthands)),
+    }
+}
+
+/// The `ShorthandRows` impl: the payload of every `shorthand = scalar` row, for the door's
+/// read of a bare scalar (none in a `from_only` enum, whose variants have no rows).
+fn shorthand_rows(enum_ident: &Ident, typed: &[Typed]) -> TokenStream {
+    let payloads = typed.iter().filter_map(|t| {
+        let row = t.row.as_ref().filter(|row| row.shorthand)?;
+        let (name, ty) = (&row.name, t.ty);
+        Some(quote!((#name, ::bedrock_addon_core::schema::shape_of::<#ty>())))
+    });
+    quote! {
+        #[automatically_derived]
+        impl ::bedrock_addon_core::schema::ShorthandRows for #enum_ident {
+            const SHORTHAND_PAYLOADS: &'static [(&'static str, &'static ::bedrock_addon_core::__private::Shape)] =
+                &[#(#payloads),*];
+        }
     }
 }
 

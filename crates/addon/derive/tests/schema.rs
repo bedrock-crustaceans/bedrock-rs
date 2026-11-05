@@ -722,3 +722,370 @@ fn filters_block_specifiers_and_ranges_are_leaves_of_the_walk() {
         .collect();
     assert_eq!(at, ["inner/x"]);
 }
+
+/// The core value types the families hold in their typed structs, each walked by the derive
+/// without a family's own impl.
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+pub struct CoreValues {
+    pub item: bedrock_addon_core::shared::ItemDescriptor,
+    pub items: Option<Vec<bedrock_addon_core::shared::ItemDescriptor>>,
+    pub sound: Option<bedrock_addon_core::id::SoundEventName>,
+    pub entity: Option<bedrock_addon_core::id::EntityId>,
+    pub block: Option<bedrock_addon_core::id::BlockId>,
+    pub menu: Option<bedrock_addon_core::shared::MenuCategory>,
+    pub subject: Option<bedrock_addon_core::shared::FilterSubject>,
+    pub ints: Option<bedrock_addon_core::shared::IntRange>,
+    pub floats: Option<bedrock_addon_core::shared::FloatRange>,
+    pub specifier: Option<bedrock_addon_core::shared::BlockSpecifier>,
+    pub render_controllers: Option<Vec<bedrock_addon_core::visual::ControllerUse>>,
+    pub animate: Option<Vec<bedrock_addon_core::visual::AnimateEntry>>,
+    pub size: Option<[u32; 2]>,
+    pub tint: Option<[u8; 3]>,
+    pub inner: Inner,
+}
+
+/// Every member of [`CoreValues`] written, and an `inner.x` past its bound.
+const CORE_VALUES: &str = r#"{
+    "item": {"tags": "query.any_tag('wood')"},
+    "items": ["minecraft:stick", {"tags": "query.all_tags('a', 'b')"}, {"item_tag": "minecraft:logs"}],
+    "sound": "random.click",
+    "entity": "minecraft:pig",
+    "block": "minecraft:stone",
+    "menu": {"category": "nature", "group": "itemGroup.name.log"},
+    "subject": "other",
+    "ints": {"range_min": 1, "range_max": 3},
+    "floats": [0.5, 1.5],
+    "specifier": {"name": "minecraft:stone", "states": {"stone_type": "granite"}},
+    "render_controllers": ["controller.render.pig", {"controller.render.saddle": "query.is_saddled"}],
+    "animate": ["walk", {"look": "query.is_awake"}],
+    "size": [16, 32],
+    "tint": [255, 128, 0],
+    "inner": {"x": 12}
+}"#;
+
+fn core_values() -> CoreValues {
+    bedrock_addon_core::json::from_str_jsonc(CORE_VALUES).expect("the document reads")
+}
+
+#[test]
+fn core_value_types_are_leaves_of_the_check_and_hold_no_trigger() {
+    assert_eq!(CoreValues::triggers(), ["inner.on_y"]);
+    let mut values = core_values();
+    let before = values.clone();
+    let (out, _) = check(&mut values, MemberFailure::Refuse);
+    let at: Vec<String> = out
+        .iter()
+        .map(|d| d.location.json_path.to_string())
+        .collect();
+    assert_eq!(at, ["inner/x"]);
+    assert_eq!(values, before, "a leaf is left as read");
+}
+
+#[test]
+fn item_descriptor_tags_and_named_conditions_are_molang_fields_under_the_default_spec() {
+    const FAMILY: MolangFieldSpec =
+        MolangFieldSpec::DEFAULT.version(MolangVersionSource::FormatVersion);
+    let mut values = core_values();
+    let mut seen = Vec::new();
+    visit_fields_under(&mut values, &JsonPath::new(), &FAMILY, |field| {
+        seen.push((field.path.to_string(), *field.spec));
+    });
+    let paths: Vec<&str> = seen.iter().map(|(path, _)| path.as_str()).collect();
+    assert_eq!(
+        paths,
+        [
+            "item/tags",
+            "items/1/tags",
+            "render_controllers/1/controller.render.saddle",
+            "animate/1/look",
+        ]
+    );
+    assert!(seen.iter().all(|(_, spec)| *spec == FAMILY), "{seen:?}");
+}
+
+/// Dimension's height: a range and a multiple of 16.
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+pub struct Height {
+    #[facet(
+        default = 256,
+        schema::min = 16,
+        schema::max = 1024,
+        schema::multiple_of = 16
+    )]
+    pub height_range: i32,
+    #[facet(schema::multiple_of = 16)]
+    pub min_y: Option<i32>,
+    #[facet(schema::multiple_of = 0.5)]
+    pub scale: Option<f32>,
+}
+
+fn height(height_range: i32, min_y: Option<i32>) -> Height {
+    Height {
+        height_range,
+        min_y,
+        scale: None,
+    }
+}
+
+/// The findings of `value`'s check under `failure`, with the game's range text.
+fn check_worded<T: Schema>(value: &mut T, failure: MemberFailure) -> (Diagnostics, bool) {
+    let mut out = Diagnostics::default();
+    let reading = Reading::DOCUMENT.with_on_member_failure(failure);
+    let failed = {
+        let mut cx = SchemaCx::new(reading, JsonPath::new(), &mut out).with_range_text(true);
+        value.check(&mut cx);
+        cx.failed()
+    };
+    (out, failed)
+}
+
+#[test]
+fn multiple_of_is_a_row_fact_and_a_value_off_the_step_is_one_finding() {
+    assert_eq!(Height::FIELDS[0].multiple_of, Some(16.0));
+    assert_eq!(Height::FIELDS[1].multiple_of, Some(16.0));
+    assert_eq!(Height::FIELDS[2].multiple_of, Some(0.5));
+    assert_eq!(Boss::FIELDS[2].multiple_of, None);
+    let (out, failed) = check(&mut height(256, Some(-64)), MemberFailure::Refuse);
+    assert!(out.is_empty() && !failed, "{out:?}");
+
+    let mut off = height(40, None);
+    let (out, failed) = check(&mut off, MemberFailure::Refuse);
+    assert!(failed);
+    assert_eq!(paths(&out), [("height_range".to_owned(), Severity::Error)]);
+    let codes: Vec<&DiagnosticCode> = out.iter().map(|d| &d.code).collect();
+    assert_eq!(codes, [&DiagnosticCode::InvalidValue { text: None }]);
+    assert_eq!(off.height_range, 40, "the value stays under Refuse");
+
+    // Worded as the game words it, where the family opts into the range text.
+    let (out, _) = check_worded(&mut height(40, None), MemberFailure::Refuse);
+    let worded: Vec<DiagnosticCode> = out.iter().map(|d| d.code.clone()).collect();
+    assert_eq!(
+        worded,
+        [bedrock_addon_core::diagnostic::cereal::not_multiple_of(
+            40.0, 16.0
+        )]
+    );
+
+    // The range comes first: a value outside it is told for the range alone.
+    let (out, _) = check_worded(&mut height(2000, None), MemberFailure::Refuse);
+    let worded: Vec<DiagnosticCode> = out.iter().map(|d| d.code.clone()).collect();
+    assert_eq!(
+        worded,
+        [DiagnosticCode::InvalidValue {
+            text: Some(NumericRange::inclusive(16.0, 1024.0).text())
+        }]
+    );
+}
+
+#[test]
+fn a_value_off_the_step_resets_as_a_broken_bound_does_under_default_and_tell() {
+    let mut off = height(40, Some(8));
+    let (out, failed) = check(&mut off, MemberFailure::DefaultAndTell);
+    assert!(!failed);
+    assert_eq!(
+        paths(&out),
+        [
+            ("height_range".to_owned(), Severity::Info),
+            ("min_y".to_owned(), Severity::Info),
+        ]
+    );
+    assert_eq!(off, height(256, None));
+    // A float steps by its own literal.
+    let mut scaled = Height {
+        scale: Some(1.25),
+        ..height(256, None)
+    };
+    let (out, _) = check(&mut scaled, MemberFailure::Refuse);
+    assert_eq!(paths(&out), [("scale".to_owned(), Severity::Error)]);
+    let mut stepped = Height {
+        scale: Some(1.5),
+        ..height(256, None)
+    };
+    assert!(check(&mut stepped, MemberFailure::Refuse).0.is_empty());
+}
+
+/// Block's `minecraft:destructible_by_explosion` in the shape of an untagged enum: a bool, a
+/// bare number, an object, and a unit read as its name.
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(untagged)]
+#[repr(u8)]
+#[allow(clippy::large_enum_variant, reason = "a toy, built a few times")]
+pub enum Explosion {
+    Enabled(bool),
+    Resistance(#[facet(schema::min = 0.0)] f32),
+    Params {
+        #[facet(default = 0.0, schema::min = 0.0)]
+        explosion_resistance: f32,
+        #[facet(rename = "on_boom")]
+        on_explode: Option<EventTrigger>,
+        cond: Option<Molang>,
+        #[facet(schema::fallback = 1, schema::min = 1)]
+        count: Option<i32>,
+        inner: Option<Inner>,
+    },
+    Off,
+}
+
+fn params(explosion_resistance: f32, count: Option<i32>, x: i32) -> Explosion {
+    Explosion::Params {
+        explosion_resistance,
+        on_explode: None,
+        cond: Some(Molang::Const(1.0)),
+        count,
+        inner: Some(Inner {
+            x,
+            on_y: None,
+            on_spawn: None,
+        }),
+    }
+}
+
+#[test]
+fn an_untagged_enum_states_its_rows_per_variant() {
+    assert!(
+        Explosion::FIELDS.is_empty(),
+        "no one object: the rows are per variant"
+    );
+    let variants: Vec<(&str, Vec<&str>)> = Explosion::VARIANT_FIELDS
+        .iter()
+        .map(|(variant, rows)| (*variant, rows.iter().map(|row| row.json).collect()))
+        .collect();
+    assert_eq!(
+        variants,
+        [
+            ("Enabled", vec![""]),
+            ("Resistance", vec![""]),
+            (
+                "Params",
+                vec!["explosion_resistance", "on_boom", "cond", "count", "inner"]
+            ),
+            ("Off", vec![]),
+        ]
+    );
+    let resistance = Explosion::VARIANT_FIELDS[1].1[0];
+    assert_eq!(
+        resistance,
+        FieldRow {
+            bounds: &[Bound {
+                op: BoundOp::Min,
+                limit: Limit::Num(0.0)
+            }],
+            ..FieldRow::plain("0", "", "f32", FieldKind::Required)
+        }
+    );
+    let count = Explosion::VARIANT_FIELDS[2].1[3];
+    assert_eq!(count.fallback, Some(Lit::Int(1)));
+    // The names are facet's own.
+    let Type::User(UserType::Enum(en)) = Explosion::SHAPE.ty else {
+        panic!("an enum");
+    };
+    let facet_params: Vec<&str> = en.variants[2]
+        .data
+        .fields
+        .iter()
+        .map(facet::Field::effective_name)
+        .collect();
+    assert_eq!(facet_params, variants[2].1);
+}
+
+#[test]
+fn an_untagged_enum_checks_the_active_variant_at_the_owners_path() {
+    let (out, failed) = check(&mut Explosion::Enabled(true), MemberFailure::Refuse);
+    assert!(out.is_empty() && !failed);
+    let (out, _) = check(&mut Explosion::Off, MemberFailure::Refuse);
+    assert!(out.is_empty());
+
+    let mut bare = Explosion::Resistance(-1.0);
+    let (out, failed) = check(&mut bare, MemberFailure::Refuse);
+    assert!(failed);
+    assert_eq!(paths(&out), [(String::new(), Severity::Error)]);
+    // A newtype's value has nothing to reset to: it stays and fails its owner.
+    let (out, failed) = check(&mut bare, MemberFailure::DefaultAndTell);
+    assert!(failed);
+    assert_eq!(paths(&out), [(String::new(), Severity::Info)]);
+    assert_eq!(bare, Explosion::Resistance(-1.0));
+
+    let mut object = params(-2.0, Some(0), 12);
+    let (out, failed) = check(&mut object, MemberFailure::Refuse);
+    assert!(failed);
+    assert_eq!(
+        paths(&out),
+        [
+            ("explosion_resistance".to_owned(), Severity::Error),
+            ("count".to_owned(), Severity::Error),
+            ("inner/x".to_owned(), Severity::Error),
+        ]
+    );
+    let (_, failed) = check(&mut object, MemberFailure::DefaultAndTell);
+    assert!(!failed);
+    assert_eq!(object, params(0.0, None, 0));
+}
+
+#[test]
+fn an_untagged_enum_lists_every_variants_triggers_and_walks_the_active_ones_molang() {
+    const FAMILY: MolangFieldSpec =
+        MolangFieldSpec::DEFAULT.version(MolangVersionSource::FormatVersion);
+    assert_eq!(Explosion::triggers(), ["on_boom", "inner.on_y"]);
+    let walked = |value: &mut Explosion| {
+        let mut seen = Vec::new();
+        visit_fields_under(value, &JsonPath::new(), &FAMILY, |field| {
+            seen.push(field.path.to_string());
+        });
+        seen
+    };
+    assert_eq!(walked(&mut params(1.0, None, 0)), ["cond"]);
+    assert!(walked(&mut Explosion::Enabled(false)).is_empty());
+}
+
+/// Two untagged arms that share a trigger member list it once.
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(untagged)]
+#[repr(u8)]
+#[allow(clippy::large_enum_variant, reason = "a toy, built a few times")]
+pub enum Either {
+    Short { on_y: Option<EventTrigger> },
+    Long { on_y: Option<EventTrigger>, n: i32 },
+    Nested(Inner),
+}
+
+#[test]
+fn a_trigger_two_arms_share_is_one_member() {
+    assert_eq!(Either::triggers(), ["on_y"]);
+}
+
+/// Block's horizontal direction: the game's order is not the declaration's.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Facet, Schema)]
+#[facet(rename_all = "snake_case", schema::order = "game")]
+#[repr(u8)]
+pub enum Direction {
+    North,
+    South,
+    East,
+    West,
+}
+
+impl Direction {
+    /// The four directions, in the game's order.
+    pub const ALL: [Direction; 4] = [
+        Direction::North,
+        Direction::East,
+        Direction::South,
+        Direction::West,
+    ];
+}
+
+#[test]
+fn a_string_enum_in_the_games_order_keeps_its_own_all() {
+    assert_eq!(
+        Direction::ALL,
+        [
+            Direction::North,
+            Direction::East,
+            Direction::South,
+            Direction::West
+        ]
+    );
+    assert_eq!(Direction::NAMES, ["north", "south", "east", "west"]);
+    assert_eq!(Direction::parse_name("east"), Ok(Direction::East));
+    assert_eq!(Direction::West.to_string(), "west");
+}

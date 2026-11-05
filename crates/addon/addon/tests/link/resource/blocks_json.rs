@@ -4,7 +4,7 @@
 //! tessellation fallback of Upcoming Creator Features (V12, V13, L13).
 
 use bedrock_addon::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, Phase, ReferenceHint, Severity,
+    Diagnostic, DiagnosticDetail, Diagnostics, Phase, ReferenceHint, Severity,
 };
 use bedrock_addon::load::LoadOptions;
 use bedrock_addon::pack::LinkOptions;
@@ -445,7 +445,7 @@ mod textures {
             assert!(
                 matches!(
                     finding.code,
-                    DiagnosticCode::UnresolvedReference { text: None }
+                    bedrock_addon::diagnostic::DiagnosticCode::UnresolvedReference { text: None }
                 ),
                 "{finding:#?}"
             );

@@ -395,7 +395,7 @@ fn registries(set: &StackSet, found: &mut Vec<Unprinted>) {
     family!("behavior_tree" => {
         registry(&format!("BehaviorTrees {B}"), b.behavior_trees(), &nothing, found);
     });
-    family!("block" => {
+    family!("voxel_shape" => {
         registry(&format!("VoxelShapes {B}"), b.voxel_shapes(), &nothing, found);
     });
     family!("camera" => {
@@ -411,13 +411,13 @@ fn registries(set: &StackSet, found: &mut Vec<Unprinted>) {
     family!("server_sound_definitions" => {
         registry(&format!("ServerSoundDefinitions {B}"), b.server_sound_definitions(), &nothing, found);
     });
-    family!("biome" => {
+    family!("client_biome" => {
         registry(&format!("ClientBiomes {R}"), r.client_biomes(), &nothing, found);
     });
     family!("animation" => {
         registry(&format!("Animations {R}"), r.animations(), &nothing, found);
     });
-    family!("animation" => {
+    family!("animation_controller" => {
         registry(&format!("AnimationControllers {R}"), r.animation_controllers(), &nothing, found);
     });
     family!("geometry" => {
@@ -433,10 +433,10 @@ fn registries(set: &StackSet, found: &mut Vec<Unprinted>) {
         files(&format!("DeferredSettings.shadows {R}"), &group.shadows, &nothing, found);
         files(&format!("DeferredSettings.pbr_fallback {R}"), &group.pbr_fallback, &nothing, found);
     });
-    family!("block" => {
+    family!("blocks_json" => {
         registry(&format!("ClientBlocks {R}"), r.client_blocks(), &nothing, found);
     });
-    family!("block" => {
+    family!("block_culling" => {
         registry(&format!("BlockCulling {R}"), r.block_culling(), &nothing, found);
     });
     family!("ddui" => {
@@ -460,7 +460,7 @@ fn registries(set: &StackSet, found: &mut Vec<Unprinted>) {
     family!("atomic_client_entity" => {
         registry(&format!("AtomicClientEntities {R}"), r.atomic_client_entities(), &nothing, found);
     });
-    family!("item" => {
+    family!("attachable" => {
         registry(&format!("Attachables {R}"), r.attachables(), &nothing, found);
     });
     family!("particle" => {

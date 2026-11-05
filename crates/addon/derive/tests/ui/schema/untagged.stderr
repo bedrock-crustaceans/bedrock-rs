@@ -1,0 +1,41 @@
+error: `schema::expected` is a string enum's key: an untagged enum with data has no names to read
+ --> tests/ui/schema/untagged.rs:5:19
+  |
+5 | #[facet(untagged, schema::expected = "a value", schema::unknown = "keep")]
+  |                   ^^^^^^
+
+error: `schema::unknown` is about the members of an object: put it on the struct variant whose members it is about
+ --> tests/ui/schema/untagged.rs:5:49
+  |
+5 | #[facet(untagged, schema::expected = "a value", schema::unknown = "keep")]
+  |                                                 ^^^^^^
+
+error: a variant of an untagged enum holds one value or named members: a tuple of several has no JSON form the derive walks
+ --> tests/ui/schema/untagged.rs:8:9
+  |
+8 |     Pair(i32, i32),
+  |         ^^^^^^^^^^
+
+error: a variant of an untagged enum takes no `schema::min`: put it on the field it is about
+ --> tests/ui/schema/untagged.rs:9:13
+  |
+9 |     #[facet(schema::min = 0)]
+  |             ^^^^^^
+
+error: `kept` is not an unknown-member rule: expected `keep`, `report`, `reject` or `ignore`
+  --> tests/ui/schema/untagged.rs:11:31
+   |
+11 |     #[facet(schema::unknown = "kept")]
+   |                               ^^^^^^
+
+error: `schema::order` takes "game": the enum states its own `ALL` in the game's order
+  --> tests/ui/schema/untagged.rs:16:25
+   |
+16 | #[facet(schema::order = "declared")]
+   |                         ^^^^^^^^^^
+
+error: `schema::order` is a string enum's key: a struct has no names to read
+  --> tests/ui/schema/untagged.rs:23:9
+   |
+23 | #[facet(schema::order = "game")]
+   |         ^^^^^^

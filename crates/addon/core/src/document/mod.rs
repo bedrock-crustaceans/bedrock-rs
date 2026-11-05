@@ -363,6 +363,15 @@ pub trait Content: Sealed + Sized + Send + Sync + 'static {
     const NAME: &'static str;
     /// Sides it is loaded from.
     const SIDES: &'static [PackSide];
+
+    /// Which value is written where a document's unknown member has the key of a member this
+    /// kind writes ([`Precedence`](crate::json::Precedence)): the unknown one, as the table
+    /// puts it back by default, or the written one, for a writer that writes every member it
+    /// knows from the value. [`write_json_with`](Self::write_json_with)'s default, and a JSON
+    /// document kind's, merge by it.
+    #[doc(hidden)]
+    const UNKNOWN_PRECEDENCE: crate::json::Precedence = crate::json::Precedence::UnknownWins;
+
     /// Parses one file: version selection, upgrade to the newest struct, validation.
     ///
     /// # Errors
@@ -423,7 +432,13 @@ pub trait Content: Sealed + Sized + Send + Sync + 'static {
             out.extend_from_slice(&text);
             return Ok(Vec::new());
         };
-        crate::json::write_json_with(&root, unknown, out, style)
+        crate::json::write_json_with_precedence(
+            &root,
+            unknown,
+            Self::UNKNOWN_PRECEDENCE,
+            out,
+            style,
+        )
     }
 }
 

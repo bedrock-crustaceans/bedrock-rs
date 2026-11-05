@@ -113,9 +113,17 @@ impl<K: crate::id::Kind> SchemaFields for crate::id::Id<K> {
     fn trigger_members(_: &str, _: &mut Vec<String>) {}
 }
 
-// The shared value types a document holds whole: a filter and a range read their own syntax
-// and hold no bound the derive checks and no trigger.
-crate::impl_schema_leaf!(crate::shared::Filter);
+// The shared value types a document holds whole: each reads its own syntax and holds no
+// bound the derive checks and no trigger (an item descriptor's `tags` and a named condition's
+// members are Molang, walked by `MolangFields`).
+crate::impl_schema_leaf!(
+    crate::shared::Filter,
+    crate::shared::FilterSubject,
+    crate::shared::ItemDescriptor,
+    crate::shared::MenuCategory,
+    crate::visual::ControllerUse,
+    crate::visual::AnimateEntry,
+);
 
 /// A block descriptor reads its own syntax and holds no bound and no trigger; its `tags` (the
 /// tags and mixed forms) is walked at its member, a Molang value as any other (the Molang walk

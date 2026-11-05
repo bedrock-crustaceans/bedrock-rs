@@ -4,3 +4,7 @@
 /// The seal of `Content`, `Definition` and `Merge`: implemented by `bedrock_addon`'s
 /// types, reachable so that crate can implement the traits, hidden so nobody else does.
 pub trait Sealed {}
+
+/// facet's `Shape`, for the paths `#[derive(Components)]` emits (a family names facet itself,
+/// but the derive's output names only core).
+pub use facet::Shape;

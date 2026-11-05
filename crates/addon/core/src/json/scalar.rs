@@ -135,6 +135,16 @@ pub struct ScalarRules {
     /// Whether a member whose scalar is refused takes its default and the reader tells it (an
     /// information at the scalar), instead of failing the read there.
     pub default_and_tell: bool,
+    /// Whether a `null` read as a struct (a struct of defaults, which facet makes of it) is
+    /// told in [`ScalarRead::told`] as a misread of another JSON type. `true` in every rule set
+    /// the crate builds, today's reading. A family whose null rule reports that `null` itself
+    /// (`NullRule::Rejected` through `reject_nulls`, or its own walk) turns it off, so the told
+    /// list holds only what its rule does not tell, and can be pushed whole.
+    ///
+    /// The decision whether every slice should tell it, and so whether the option can go, is
+    /// left to the family uptake: until then a family that left the told list unread for this
+    /// one entry keeps its findings by turning it off.
+    pub tells_null_struct: bool,
 }
 
 impl ScalarRules {
@@ -144,6 +154,7 @@ impl ScalarRules {
         scalars: Scalars::ConvertAndTell,
         beyond_width: BeyondWidth::ClampAndTell,
         default_and_tell: false,
+        tells_null_struct: true,
     };
 
     /// The rules with the profile `scalars`.
@@ -166,6 +177,17 @@ impl ScalarRules {
     pub const fn with_default_and_tell(self, default_and_tell: bool) -> Self {
         Self {
             default_and_tell,
+            ..self
+        }
+    }
+}
+
+impl ScalarRules {
+    /// The rules with a `null` read as a struct told, or left to the slice's null rule.
+    #[must_use]
+    pub const fn with_tells_null_struct(self, tells_null_struct: bool) -> Self {
+        Self {
+            tells_null_struct,
             ..self
         }
     }
@@ -568,9 +590,46 @@ pub enum ScalarFailure {
     /// wrapper's refusal is).
     Read(super::SliceError),
     /// A scalar of an untagged enum none of whose scalar arms takes it, and no fault before it
-    /// in document order: refused before the typed read, a type error at the enum without a
-    /// span.
-    Refused(super::Misread),
+    /// in document order: refused before the typed read, a type error at the enum
+    /// ([`Misread::finding`](super::Misread::finding), which has no span), with the scalar's
+    /// place in the file beside it ([`RefusedScalar::span`]).
+    Refused(RefusedScalar),
+}
+
+/// The scalar of an untagged enum no arm takes ([`ScalarFailure::Refused`]): what the misread
+/// tells, and where the scalar is.
+///
+/// It reads as its [`Misread`](super::Misread) (`refused.path`, `refused.finding(at)`), so a
+/// caller written for the misread alone reads it unchanged;
+/// [`spanned_finding`](Self::spanned_finding) is that finding with the span.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct RefusedScalar {
+    /// The type error at the enum, its path from the root of the slice.
+    pub misread: super::Misread,
+    /// The scalar's place in the file (the slice's offsets); `None` only where the path cannot
+    /// be found in the text again.
+    pub span: Option<crate::diagnostic::Span>,
+}
+
+impl RefusedScalar {
+    /// [`Misread::finding`](super::Misread::finding) at `at`, spanning the scalar.
+    #[must_use]
+    pub fn spanned_finding(
+        &self,
+        at: &crate::diagnostic::JsonPath,
+    ) -> crate::diagnostic::Diagnostic {
+        let mut finding = self.misread.finding(at);
+        finding.location.span = self.span;
+        finding
+    }
+}
+
+impl std::ops::Deref for RefusedScalar {
+    type Target = super::Misread;
+
+    fn deref(&self) -> &Self::Target {
+        &self.misread
+    }
 }
 
 /// Reads `slice` as `T` under `null` (the slice's null rule) and `rules`: the scalar pre-pass.
@@ -644,6 +703,8 @@ pub fn parse_with_rules<'a, T: facet::Facet<'a>>(
         }
         match call.verdict {
             Verdict::Keep => {}
+            // A `null` read as a struct is the one conversion with no declared scalar type.
+            Verdict::Converted if call.declared.is_none() && !rules.tells_null_struct => {}
             Verdict::Converted => told.push(tell(&call.path, Misreading::WrongType)),
             Verdict::BeyondFloat => told.push(tell(&call.path, Misreading::BeyondFloat)),
             Verdict::Respell(respelt) => plan.fixes.push((call.path.clone(), event(respelt))),
@@ -654,6 +715,8 @@ pub fn parse_with_rules<'a, T: facet::Facet<'a>>(
                     told.push(tell(&call.path, Misreading::Defaulted));
                 } else if call.arm {
                     let misread = tell(&call.path, Misreading::WrongType);
+                    let span = super::span_at(slice, &misread.path);
+                    let misread = RefusedScalar { misread, span };
                     if !faulted {
                         return Err(ScalarFailure::Refused(misread));
                     }

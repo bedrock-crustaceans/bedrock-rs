@@ -10,6 +10,8 @@ mod common;
 mod fields;
 #[path = "blocks_json/keys.rs"]
 mod keys;
+// The link rules of `blocks.json` read the block family or `sounds.json`.
+#[cfg(any(feature = "block", feature = "sounds_json"))]
 #[path = "blocks_json/link.rs"]
 mod link;
 #[path = "blocks_json/located.rs"]

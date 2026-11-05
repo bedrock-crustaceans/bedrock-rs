@@ -100,6 +100,24 @@ impl<'d> SchemaCx<'d> {
         }
     }
 
+    /// The member at the current path, `value`, is no multiple of its field's `step`
+    /// (`schema::multiple_of`): one finding, graded as a broken bound is
+    /// ([`range`](Self::range)), and worded with the game's text (`40 is not multiple of 16`)
+    /// where the range text is on.
+    pub fn multiple(&mut self, value: f64, step: f64, resettable: bool) -> Verdict {
+        let code = if self.range_text {
+            crate::diagnostic::cereal::not_multiple_of(value, step)
+        } else {
+            DiagnosticCode::InvalidValue { text: None }
+        };
+        if resettable {
+            self.fail(code)
+        } else {
+            self.report(code, true);
+            Verdict::Keep
+        }
+    }
+
     fn fail(&mut self, code: DiagnosticCode) -> Verdict {
         let Grading {
             fails_owner,

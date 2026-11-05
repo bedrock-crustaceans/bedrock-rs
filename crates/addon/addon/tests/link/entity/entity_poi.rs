@@ -109,7 +109,7 @@ fn e21_without_the_poi_feature_no_poi_name_is_told() {
         &[(FILE, &sensor(&["demo:none"]))],
         &[],
         options(),
-        &LinkOptions::default(),
+        LinkOptions::default(),
     );
     assert!(said_of(&found, "poi type").is_empty(), "{found:?}");
     let _ = (FORGE, CRAFT, hosted(&[]), unresolved("", "", ""));

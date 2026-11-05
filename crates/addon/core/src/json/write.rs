@@ -68,6 +68,22 @@ pub fn write_json_with<'f, T: Facet<'f>>(
     out: &mut Vec<u8>,
     style: WriteStyle,
 ) -> Result<Vec<Diagnostic>, EncodeError> {
+    write_json_with_precedence(value, unknown, Precedence::UnknownWins, out, style)
+}
+
+/// [`write_json_with`], with `precedence` deciding a key the object already holds
+/// ([`merge_unknown_with`]).
+///
+/// # Errors
+///
+/// As [`write_json`].
+pub fn write_json_with_precedence<'f, T: Facet<'f>>(
+    value: &T,
+    unknown: &Unknown,
+    precedence: Precedence,
+    out: &mut Vec<u8>,
+    style: WriteStyle,
+) -> Result<Vec<Diagnostic>, EncodeError> {
     if unknown.is_empty() {
         return write_json(value, out, style).map(|()| Vec::new());
     }
@@ -81,7 +97,7 @@ pub fn write_json_with<'f, T: Facet<'f>>(
             at: JsonPath::new(),
             what: Unrepresentable::Unsupported,
         })?;
-    let told = merge_unknown(&mut root, unknown);
+    let told = merge_unknown_with(&mut root, unknown, precedence);
     write_json(&root, out, style)?;
     Ok(told)
 }
@@ -99,6 +115,32 @@ pub fn write_json_with<'f, T: Facet<'f>>(
 /// `DroppedField` warning of the write at the member's path.
 #[must_use]
 pub fn merge_unknown(root: &mut Value, unknown: &Unknown) -> Vec<Diagnostic> {
+    merge_unknown_with(root, unknown, Precedence::UnknownWins)
+}
+
+/// Which value a written object keeps where a document's unknown member has the key of a
+/// member the writer wrote ([`merge_unknown_with`]).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub enum Precedence {
+    /// The unknown member's value replaces the written one in place, untold: the member as the
+    /// file had it, which the read kept beside a typed default ([`merge_unknown`]).
+    #[default]
+    UnknownWins,
+    /// The written member stays and the unknown one is left out, untold: a writer that writes
+    /// every member it knows from the value (dialogue, behavior trees), so a member of the
+    /// same key in the table is a stale copy of it.
+    KnownWins,
+}
+
+/// [`merge_unknown`] with `precedence` deciding a key the object already holds; a member whose
+/// object `root` does not hold is told as there under either.
+#[must_use]
+pub fn merge_unknown_with(
+    root: &mut Value,
+    unknown: &Unknown,
+    precedence: Precedence,
+) -> Vec<Diagnostic> {
     let mut told = Vec::new();
     for owner in 0..unknown.owner_count() {
         let path = unknown.owner_path(owner);
@@ -113,6 +155,9 @@ pub fn merge_unknown(root: &mut Value, unknown: &Unknown) -> Vec<Diagnostic> {
         match object {
             Some(object) => {
                 for (key, value) in unknown.owner_members(owner) {
+                    if precedence == Precedence::KnownWins && object.contains_key(key) {
+                        continue;
+                    }
                     object.insert(&**key, value.clone());
                 }
             }

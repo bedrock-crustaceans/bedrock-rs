@@ -255,7 +255,45 @@ impl<K: crate::id::Kind> MolangFields for crate::id::Id<K> {
 }
 
 // A filter and a range hold no Molang a document's walk visits.
-crate::impl_no_molang!(crate::shared::Filter);
+crate::impl_no_molang!(
+    crate::shared::Filter,
+    crate::shared::FilterSubject,
+    crate::shared::MenuCategory,
+);
+
+/// An item descriptor's `tags` (the tags form) is a Molang field, under the walk's default
+/// spec, as a block descriptor's is.
+impl MolangFields for crate::shared::ItemDescriptor {
+    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
+        if let Self::Tags { tags, .. } = self {
+            visitor.field_default("tags", tags);
+        }
+    }
+}
+
+/// The object form of a `render_controllers` entry: every member's condition is a Molang
+/// field at its key, under the walk's default spec (a family whose conditions read otherwise
+/// walks them with `schema::molang_with`).
+impl MolangFields for crate::visual::ControllerUse {
+    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
+        if let Self::Conditional(members) = self {
+            let spec = *visitor.default_spec();
+            members.visit_slot(&spec, visitor);
+        }
+    }
+}
+
+/// The object form of a `scripts.animate` entry, walked as [`ControllerUse`]'s is.
+///
+/// [`ControllerUse`]: crate::visual::ControllerUse
+impl MolangFields for crate::visual::AnimateEntry {
+    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
+        if let Self::Conditional(members) = self {
+            let spec = *visitor.default_spec();
+            members.visit_slot(&spec, visitor);
+        }
+    }
+}
 
 /// A block descriptor's `tags` (the tags and mixed forms) is a Molang field, under the walk's
 /// default spec: a family whose descriptor tags read otherwise (`DESCRIPTOR_TAGS` in feature,

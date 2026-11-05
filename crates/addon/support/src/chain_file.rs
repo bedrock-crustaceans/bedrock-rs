@@ -400,6 +400,8 @@ mod refusal_tests {
         };
         let at = JsonPath::new().child("x");
         let finding = refusal(slice, &misread, &at);
+        // The refusal carries the same span: this helper is the core's finding with it.
+        assert_eq!(misread.spanned_finding(&at), finding);
         assert!(matches!(finding.code, DiagnosticCode::InvalidType { .. }));
         assert_eq!(finding.location.json_path.to_string(), "x/shorthand");
         let value = file.find(r#""no""#).expect("the value");

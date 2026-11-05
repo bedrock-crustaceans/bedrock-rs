@@ -219,3 +219,95 @@ fn a_flattened_struct_has_its_members_at_its_parent_object() {
         .collect();
     assert_eq!(paths, ["leaf/b"]);
 }
+
+#[test]
+fn under_known_wins_a_row_of_a_key_the_object_holds_is_left_out_untold() {
+    use bedrock_addon_core::json::{Precedence, merge_unknown_with};
+    let text = r#"{"name":"tree","leaf":{"size":1}}"#;
+    let mut unknown = Unknown::new();
+    unknown.put(&JsonPath::new(), "name", Value::from("again"));
+    unknown.put(&JsonPath::new(), "other", Value::from(2i64));
+    unknown.put(&path(&["leaf"]), "size", Value::from(9i64));
+    unknown.put(&path(&["gone"]), "f", Value::from(4i64));
+    let mut known: Value = facet_json::from_str(text).unwrap();
+    let told = merge_unknown_with(&mut known, &unknown, Precedence::KnownWins);
+    let expected: Value =
+        facet_json::from_str(r#"{"name":"tree","leaf":{"size":1},"other":2}"#).unwrap();
+    assert_eq!(known, expected);
+    // A row whose object is gone is told under either precedence.
+    assert_eq!(told.len(), 1, "{told:?}");
+    assert_eq!(told[0].location.json_path.to_string(), "gone/f");
+    // Today's rule, the default, is the unknown member's.
+    assert_eq!(Precedence::default(), Precedence::UnknownWins);
+    let mut unknown_wins: Value = facet_json::from_str(text).unwrap();
+    let again = merge_unknown_with(&mut unknown_wins, &unknown, Precedence::UnknownWins);
+    let mut plain: Value = facet_json::from_str(text).unwrap();
+    assert_eq!(again, merge_unknown(&mut plain, &unknown));
+    assert_eq!(unknown_wins, plain);
+    let expected: Value =
+        facet_json::from_str(r#"{"name":"again","leaf":{"size":9},"other":2}"#).unwrap();
+    assert_eq!(plain, expected);
+}
+
+/// A whole-file kind that writes `{"name": <its name>}`, stating which side of a shared key
+/// wins.
+#[derive(Clone, Debug, PartialEq)]
+struct Named<const KNOWN_WINS: bool>(&'static str);
+
+impl<const KNOWN_WINS: bool> bedrock_addon_core::__private::Sealed for Named<KNOWN_WINS> {}
+
+impl<const KNOWN_WINS: bool> bedrock_addon_core::document::Content for Named<KNOWN_WINS> {
+    const NAME: &'static str = "named";
+    const SIDES: &'static [bedrock_addon_core::pack_identity::PackSide] =
+        &[bedrock_addon_core::pack_identity::PackSide::Behavior];
+    const UNKNOWN_PRECEDENCE: bedrock_addon_core::json::Precedence = if KNOWN_WINS {
+        bedrock_addon_core::json::Precedence::KnownWins
+    } else {
+        bedrock_addon_core::json::Precedence::UnknownWins
+    };
+
+    fn parse(
+        _: &bedrock_addon_core::pack_identity::PackPath,
+        _: &[u8],
+        _: &bedrock_addon_core::load::LoadContext,
+    ) -> Result<bedrock_addon_core::document::Document<Self>, bedrock_addon_core::document::Rejected>
+    {
+        unimplemented!("the test builds the value by hand")
+    }
+
+    fn write_json(
+        &self,
+        out: &mut Vec<u8>,
+        style: WriteStyle,
+    ) -> Result<(), bedrock_addon_core::json::EncodeError> {
+        let mut root = IndexMap::new();
+        root.insert("name".to_owned(), self.0.to_owned());
+        write_json(&root, out, style)
+    }
+}
+
+#[test]
+fn a_content_states_whether_its_own_member_or_the_unknown_one_is_written() {
+    use bedrock_addon_core::document::Content;
+    let mut unknown = Unknown::new();
+    unknown.put(&JsonPath::new(), "name", Value::from("unknown"));
+    unknown.put(&JsonPath::new(), "other", Value::from(2i64));
+    let written = |content: &dyn Fn(&mut Vec<u8>) -> Vec<Diagnostic>| {
+        let mut out = Vec::new();
+        let told = content(&mut out);
+        assert!(told.is_empty(), "{told:?}");
+        String::from_utf8(out).unwrap()
+    };
+    let known = written(&|out| {
+        Named::<true>("known")
+            .write_json_with(&unknown, out, COMPACT)
+            .unwrap()
+    });
+    assert_eq!(known, r#"{"name":"known","other":2}"#);
+    let unknown_wins = written(&|out| {
+        Named::<false>("known")
+            .write_json_with(&unknown, out, COMPACT)
+            .unwrap()
+    });
+    assert_eq!(unknown_wins, r#"{"name":"unknown","other":2}"#);
+}

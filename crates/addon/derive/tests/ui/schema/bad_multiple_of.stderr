@@ -1,0 +1,29 @@
+error: `schema::multiple_of` takes a positive number literal, as in `schema::multiple_of = 16`
+ --> tests/ui/schema/bad_multiple_of.rs:6:35
+  |
+6 |     #[facet(schema::multiple_of = 0)]
+  |                                   ^
+
+error: `schema::multiple_of` takes a positive number literal, as in `schema::multiple_of = 16`
+ --> tests/ui/schema/bad_multiple_of.rs:8:35
+  |
+8 |     #[facet(schema::multiple_of = -16)]
+  |                                   ^^^
+
+error: `schema::multiple_of` takes a positive number literal, as in `schema::multiple_of = 16`
+  --> tests/ui/schema/bad_multiple_of.rs:10:35
+   |
+10 |     #[facet(schema::multiple_of = "16")]
+   |                                   ^^^^
+
+error: `schema::multiple_of` takes a positive number literal, as in `schema::multiple_of = 16`
+  --> tests/ui/schema/bad_multiple_of.rs:12:35
+   |
+12 |     #[facet(schema::multiple_of = a)]
+   |                                   ^
+
+error: duplicate `schema::multiple_of`
+  --> tests/ui/schema/bad_multiple_of.rs:14:39
+   |
+14 |     #[facet(schema::multiple_of = 16, schema::multiple_of = 32)]
+   |                                       ^^^^^^

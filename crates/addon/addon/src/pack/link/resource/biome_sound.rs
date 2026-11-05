@@ -7,10 +7,14 @@
 
 use bedrock_addon_core::document::ComponentRef;
 
-use super::super::{At, Findings, LinkCx, Target, Validator, kinds, unknown_sound, unresolved};
+use super::super::{At, Findings, LinkCx, Validator, kinds, unknown_sound};
+#[cfg(feature = "music")]
+use super::super::{Target, unresolved};
 use super::biome::{Claim, claims, path};
 use crate::diagnostic::Severity;
-use crate::families::client_biome::component::{AmbientSounds, BiomeMusic, ClientBiomeComponent};
+#[cfg(feature = "music")]
+use crate::families::client_biome::component::BiomeMusic;
+use crate::families::client_biome::component::{AmbientSounds, ClientBiomeComponent};
 use crate::version::FormatVersion;
 
 /// The component's key.
@@ -95,6 +99,8 @@ pub(super) fn run(cx: &LinkCx<'_>, out: &mut Findings) {
                     synthesized: false,
                     ..
                 } => ambient(cx, out, &claim, sounds),
+                // The music definitions are the `music` family's.
+                #[cfg(feature = "music")]
                 ComponentRef::Typed {
                     value: ClientBiomeComponent::BiomeMusic(music),
                     synthesized: false,
@@ -110,6 +116,7 @@ pub(super) fn run(cx: &LinkCx<'_>, out: &mut Findings) {
 /// `sounds/music_definitions.json` or one of the game's; the game's linked-asset check holds the
 /// reference and logs one it cannot resolve (the biome plays no music of it): an
 /// `UnresolvedReference` error at the member with the check's line.
+#[cfg(feature = "music")]
 fn music_definition(cx: &LinkCx<'_>, out: &mut Findings, claim: &Claim<'_>, music: &BiomeMusic) {
     let Some(id) = &music.music_definition else {
         return;

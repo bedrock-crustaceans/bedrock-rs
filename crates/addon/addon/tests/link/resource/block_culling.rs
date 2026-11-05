@@ -8,7 +8,9 @@ use bedrock_addon::diagnostic::{
 use bedrock_addon::load::LoadOptions;
 use bedrock_addon::pack::LinkOptions;
 
-use crate::common::{behavior_pack, hosted, link, link_with, resource_pack, stacks_of};
+#[cfg(feature = "molang")]
+use crate::common::{behavior_pack, resource_pack, stacks_of};
+use crate::common::{hosted, link, link_with};
 
 const BLOCK: &str = "blocks/lamp.json";
 const RULES: &str = "block_culling/lamp.json";
@@ -212,6 +214,7 @@ fn r30_a_permutation_s_geometry_is_checked_at_its_own_path() {
 
 /// One of the packs allowed the legacy creator features: `minecraft:geometry` (released
 /// 1.19.40, `requires = [LCF]`) loads in a file below its release.
+#[cfg(feature = "molang")]
 const ALLOW_LISTED: u128 = 0xda09_e399_6f5e_4287_a013_4cf1_3de3_2166;
 
 /// A block of format 1.18.0 of an allow-listed pack whose `minecraft:geometry` is the object

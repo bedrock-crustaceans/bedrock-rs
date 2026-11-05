@@ -28,7 +28,11 @@ pub use bedrock_addon_schema::*;
 
 #[doc(hidden)]
 pub use component::find_row;
-pub use component::{ComponentRow, Shorthand};
+pub use component::{
+    ComponentRow, Shorthand, ShorthandShape, misshapen_shorthand_rows, shorthand_shape,
+};
+#[doc(hidden)]
+pub use component::{ShorthandRows, shape_of};
 pub use cx::{SchemaCx, Verdict};
 #[doc(hidden)]
 pub use goal::int_fallback;

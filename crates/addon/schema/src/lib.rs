@@ -45,6 +45,9 @@ facet::define_attr_grammar! {
         Above(arbitrary),
         /// `below = x` (compile-time): the value is `< x`.
         Below(arbitrary),
+        /// `multiple_of = n` (compile-time): the value is a multiple of the positive number
+        /// `n`, checked after the field's range.
+        MultipleOf(arbitrary),
         /// `molang = SPEC` (compile-time): the field's `MolangFieldSpec`, where it is not the
         /// family's default.
         Molang(arbitrary),
@@ -62,5 +65,8 @@ facet::define_attr_grammar! {
         Expected(arbitrary),
         /// `case_insensitive` (marker, a string enum): a name is read in any case.
         CaseInsensitive,
+        /// `order = "game"` (compile-time, a string enum): the enum states its own `ALL`, in
+        /// the game's order, and the derive emits none.
+        Order(arbitrary),
     }
 }

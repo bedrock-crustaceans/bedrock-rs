@@ -174,6 +174,8 @@ pub(crate) struct FieldAttrs {
     pub unknown: Option<String>,
     pub fallback: Option<(Expr, Span)>,
     pub bounds: Vec<BoundDecl>,
+    /// `schema::multiple_of`, as the `f64` it compares with.
+    pub multiple_of: Option<(f64, Span)>,
     pub molang: Option<(Expr, Span)>,
     pub molang_with: Option<(Expr, Span)>,
     pub foreign_event: Option<Span>,
@@ -184,12 +186,17 @@ pub(crate) struct FieldAttrs {
 
 /// What a struct or enum declares.
 #[derive(Default)]
+#[allow(clippy::struct_excessive_bools, reason = "one flag per attribute read")]
 pub(crate) struct ContainerAttrs {
     pub rename_all: Option<RenameRule>,
     pub transparent: bool,
     pub unknown: Option<String>,
     pub expected: Option<LitStr>,
     pub case_insensitive: bool,
+    /// `schema::order = "game"`: the enum keeps its own `ALL`.
+    pub order_game: bool,
+    /// facet's `untagged`.
+    pub untagged: bool,
 }
 
 /// The keys of a field, the keys of a string enum's container, and the one key of both.
@@ -201,20 +208,25 @@ const FIELD_KEYS: &[&str] = &[
     "max",
     "above",
     "below",
+    "multiple_of",
     "molang",
     "molang_with",
     "foreign_event",
     "lowercase",
 ];
-const ENUM_KEYS: &[&str] = &["expected", "case_insensitive"];
+const ENUM_KEYS: &[&str] = &["expected", "case_insensitive", "order"];
 
 /// Where the attributes stand, for the placement errors.
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Place {
     Struct,
     Enum,
+    /// An untagged enum with data.
+    Untagged,
     Field,
     Variant,
+    /// A variant of an untagged enum with data.
+    UntaggedVariant,
 }
 
 /// Records `value` in `slot`, or the duplicate's error.
@@ -235,7 +247,7 @@ fn placement(entries: &[Entry], place: Place, errors: &mut Vec<Error>) {
         let field_key = FIELD_KEYS.contains(&key.as_str());
         let enum_key = ENUM_KEYS.contains(&key.as_str());
         let message = match place {
-            Place::Struct | Place::Enum if field_key => {
+            Place::Struct | Place::Enum | Place::Untagged if field_key => {
                 format!("`schema::{key}` is a field's key: put it on the field it is about")
             }
             Place::Enum if key == "unknown" => {
@@ -253,6 +265,17 @@ fn placement(entries: &[Entry], place: Place, errors: &mut Vec<Error>) {
                     "a variant of a string enum takes no `schema::` key, `schema::{key}` included"
                 )
             }
+            Place::Untagged if enum_key => format!(
+                "`schema::{key}` is a string enum's key: an untagged enum with data has no names \
+                 to read"
+            ),
+            Place::Untagged if key == "unknown" => "`schema::unknown` is about the members of an \
+                 object: put it on the struct variant whose members it is about"
+                .to_owned(),
+            Place::UntaggedVariant if field_key || enum_key => format!(
+                "a variant of an untagged enum takes no `schema::{key}`: put it on the field it \
+                 is about"
+            ),
             _ => continue,
         };
         errors.push(Error::new(entry.span, message));
@@ -321,6 +344,33 @@ fn limit(entry: &Entry, op: Op) -> Result<LimitDecl> {
             None => Err(Error::new_spanned(&expr, wrong().to_string())),
         },
         _ => Err(Error::new_spanned(&expr, wrong().to_string())),
+    }
+}
+
+/// `schema::multiple_of`'s step: a positive number literal.
+fn step(entry: &Entry) -> Result<f64> {
+    let wrong = |span: Span| {
+        Error::new(
+            span,
+            "`schema::multiple_of` takes a positive number literal, as in `schema::multiple_of = 16`",
+        )
+    };
+    let Some(Ok(expr)) = entry.expr() else {
+        return Err(wrong(entry.span));
+    };
+    let step = match &expr {
+        Expr::Lit(syn::ExprLit {
+            lit: Lit::Int(int), ..
+        }) => int.base10_parse::<f64>().ok(),
+        Expr::Lit(syn::ExprLit {
+            lit: Lit::Float(float),
+            ..
+        }) => float.base10_parse::<f64>().ok(),
+        _ => None,
+    };
+    match step {
+        Some(step) if step.is_finite() && step > 0.0 => Ok(step),
+        _ => Err(Error::new_spanned(&expr, wrong(entry.span).to_string())),
     }
 }
 
@@ -406,6 +456,10 @@ impl FieldAttrs {
                         let expr = value_expr(entry, &key)?;
                         once(&mut out.molang_with, (expr, span), &key, span, errors);
                     }
+                    "multiple_of" => {
+                        let step = step(entry)?;
+                        once(&mut out.multiple_of, (step, span), &key, span, errors);
+                    }
                     "foreign_event" => once(&mut out.foreign_event, span, &key, span, errors),
                     "lowercase" => once(&mut out.lowercase, span, &key, span, errors),
                     other => {
@@ -442,6 +496,7 @@ impl FieldAttrs {
             .as_ref()
             .map(|(_, s)| *s)
             .or_else(|| self.bounds.first().map(|b| b.span))
+            .or_else(|| self.multiple_of.as_ref().map(|(_, s)| *s))
             .or_else(|| self.molang.as_ref().map(|(_, s)| *s))
             .or_else(|| self.molang_with.as_ref().map(|(_, s)| *s))
             .or(self.foreign_event)
@@ -475,6 +530,7 @@ impl ContainerAttrs {
                         }
                     }
                     "transparent" => out.transparent = true,
+                    "untagged" => out.untagged = true,
                     "default" => errors.push(Error::new(
                         entry.span,
                         "facet's container `default` fills a missing member from the field \
@@ -498,6 +554,20 @@ impl ContainerAttrs {
                     out.case_insensitive = true;
                     Ok(())
                 }
+                Some("order") if place == Place::Enum => {
+                    string_value(entry, "order").and_then(|lit| {
+                        if lit.value() == "game" {
+                            out.order_game = true;
+                            Ok(())
+                        } else {
+                            Err(Error::new(
+                                lit.span(),
+                                "`schema::order` takes \"game\": the enum states its own `ALL` \
+                                 in the game's order",
+                            ))
+                        }
+                    })
+                }
                 _ => Ok(()),
             };
             if let Err(error) = result {
@@ -506,6 +576,40 @@ impl ContainerAttrs {
         }
         out
     }
+}
+
+/// Whether the item's attributes say facet's `untagged`.
+pub(crate) fn is_untagged(attrs: &[Attribute]) -> bool {
+    entries(attrs)
+        .iter()
+        .any(|entry| entry.builtin().as_deref() == Some("untagged"))
+}
+
+/// What a variant of an untagged enum declares: facet's `rename_all` (its members' names), and
+/// a checked `schema::unknown` (stored, the door's); an error for any other `schema::` key.
+pub(crate) fn untagged_variant(attrs: &[Attribute], errors: &mut Vec<Error>) -> Option<RenameRule> {
+    let entries = entries(attrs);
+    placement(&entries, Place::UntaggedVariant, errors);
+    let mut rename_all = None;
+    for entry in &entries {
+        match (entry.builtin().as_deref(), entry.schema_key().as_deref()) {
+            (Some("rename_all"), _) => {
+                if let Some(Ok(Expr::Lit(syn::ExprLit {
+                    lit: Lit::Str(lit), ..
+                }))) = entry.expr()
+                {
+                    rename_all = RenameRule::parse(&lit.value());
+                }
+            }
+            (_, Some("unknown")) => {
+                if let Err(error) = unknown_word(entry) {
+                    errors.push(error);
+                }
+            }
+            _ => {}
+        }
+    }
+    rename_all
 }
 
 /// A variant's `rename`, and an error for any `schema::` key on it.

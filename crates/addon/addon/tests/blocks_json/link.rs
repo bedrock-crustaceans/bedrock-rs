@@ -42,11 +42,13 @@ fn link(behavior: &[(&'static str, &str)], resource: &[(&'static str, &str)]) ->
 }
 
 /// The findings whose text is `text`.
+#[cfg(feature = "block")]
 fn with_text<'a>(d: &'a Diagnostics, text: &str) -> Vec<&'a Diagnostic> {
     d.iter().filter(|f| f.code.to_string() == text).collect()
 }
 
 /// A custom block `demo:lamp` with `components`.
+#[cfg(feature = "block")]
 fn block(components: &str) -> String {
     format!(
         r#"{{"format_version": "1.26.20", "minecraft:block": {{"description": {{"identifier": "demo:lamp"}}, "components": {{{components}}}}}}}"#
@@ -55,8 +57,11 @@ fn block(components: &str) -> String {
 
 // From 1.21.80 a block needs both a geometry and material instances: with the instances
 // alone the block does not load, and is no block to the link rules.
+#[cfg(feature = "block")]
 const MATERIALS: &str = r#""minecraft:geometry": "minecraft:geometry.full_block", "minecraft:material_instances": {"*": {"texture": "lamp"}}"#;
 
+// The rule is `block`'s and `blocks_json`'s together.
+#[cfg(feature = "block")]
 #[test]
 fn a_key_that_names_no_block() {
     let found = link(
@@ -89,10 +94,10 @@ fn a_key_that_names_no_block() {
     );
 }
 
-#[cfg(feature = "texture_atlas")]
+#[cfg(all(feature = "block", feature = "texture_atlas"))]
 const TERRAIN: &str = r#"{"resource_pack_name": "t", "texture_name": "atlas.terrain", "texture_data": {"a": {"textures": ["t0"]}, "b": {"textures": []}}}"#;
 
-#[cfg(feature = "texture_atlas")]
+#[cfg(all(feature = "block", feature = "texture_atlas"))]
 #[test]
 fn texture_names_against_the_terrain_atlas() {
     let entries = r#""demo:plain": {"textures": "a"}, "demo:first": {"textures": "a:0"},
@@ -157,6 +162,8 @@ fn texture_names_against_the_terrain_atlas() {
     }
 }
 
+// The rule is `block`'s and `blocks_json`'s together.
+#[cfg(feature = "block")]
 #[test]
 fn an_exponent_on_a_block_with_material_instances() {
     let text = "Block demo:lamp has an \"ambient_occlusion_exponent\" in 'blocks.json' file, this value is unused because the value in \"minecraft:material_instances\" component is used instead";
@@ -187,6 +194,8 @@ fn an_exponent_on_a_block_with_material_instances() {
     assert!(with_text(&found, text).is_empty(), "{found:#?}");
 }
 
+// The rule is `block`'s and `blocks_json`'s together.
+#[cfg(feature = "block")]
 #[test]
 fn the_tessellation_fallback_of_upcoming_creator_features() {
     let geometry = r#""minecraft:geometry": "minecraft:geometry.full_block", "minecraft:material_instances": {"*": {"texture": "lamp"}}"#;

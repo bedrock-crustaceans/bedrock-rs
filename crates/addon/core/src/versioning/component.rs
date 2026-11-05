@@ -33,6 +33,13 @@ use crate::version::FormatVersion;
 /// code `0x8`, an error under both masks. Findings are relative to the component; the
 /// component-map parser places them. The usual `parse` of a `#[derive(Components)]` row:
 /// `parse = versioning::parse_component::<Friction, ItemComponent>`.
+///
+/// A row with `shorthand = scalar` whose payload is a struct of one member
+/// ([`ShorthandShape::OneField`](crate::schema::ShorthandShape)) also reads a payload that is
+/// no object (`5` for `{"value": 5}`): the text is read as that member, by the slice's scalar
+/// rules and no null rule, its findings at the component and spanning the text as written.
+/// An untagged enum or a transparent newtype reads the scalar itself, so the row's shorthand
+/// changes nothing there.
 pub fn parse_component<T, C>(
     slice: JsonSlice<'_>,
     mode: ConvertMode,
@@ -41,8 +48,12 @@ pub fn parse_component<T, C>(
 ) -> Option<C>
 where
     T: for<'a> Facet<'a> + Into<C>,
+    C: crate::schema::ShorthandRows,
 {
     let _ = mode;
+    if let Some(key) = shorthand_member::<T, C>(slice) {
+        return parse_shorthand::<T>(slice, key, cx, d).map(Into::into);
+    }
     let rule = cx.null_rule;
     let ScalarRead {
         value,
@@ -77,6 +88,113 @@ where
         }
     }
     Some(value.into())
+}
+
+/// The member a bare scalar of `slice` stands for: `T` is the payload of a `shorthand =
+/// scalar` row of `C`, a struct of one member, and the text is no object.
+fn shorthand_member<T, C>(slice: JsonSlice<'_>) -> Option<&'static str>
+where
+    T: for<'a> Facet<'a>,
+    C: crate::schema::ShorthandRows,
+{
+    let shape = <T as Facet<'static>>::SHAPE;
+    C::shorthand_key(shape)?;
+    let crate::schema::ShorthandShape::OneField { key } = crate::schema::shorthand_shape(shape)?
+    else {
+        return None;
+    };
+    (!starts_an_object(slice.text)).then_some(key)
+}
+
+/// Whether the JSON text, after whitespace and comments, opens an object.
+fn starts_an_object(text: &str) -> bool {
+    let mut rest = text;
+    loop {
+        rest = rest.trim_start();
+        if let Some(after) = rest.strip_prefix("//") {
+            rest = after.split_once('\n').map_or("", |(_, tail)| tail);
+        } else if let Some(after) = rest.strip_prefix("/*") {
+            rest = after.split_once("*/").map_or("", |(_, tail)| tail);
+        } else {
+            return rest.starts_with('{');
+        }
+    }
+}
+
+/// Reads the bare scalar of `slice` as the member `key` of `T`: the text is read inside
+/// `{"key": …}`, and what is told of the member is told at the component, spanning the text
+/// as the file has it.
+fn parse_shorthand<T>(
+    slice: JsonSlice<'_>,
+    key: &str,
+    cx: &LoadContext,
+    d: &mut Diagnostics,
+) -> Option<T>
+where
+    T: for<'a> Facet<'a>,
+{
+    use crate::json::ScalarFailure;
+    let mut prefix = String::from("{");
+    prefix.push_str(&crate::json::to_json(&key).ok()?);
+    prefix.push(':');
+    // A line comment at the end of the text ends before the closing brace.
+    let wrapped = format!("{prefix}{}\n}}", slice.text);
+    let inner = JsonSlice {
+        text: &wrapped,
+        offset: slice.offset,
+    };
+    // The member's own place is the text's: a span inside it moves back by the prefix, any
+    // other (the object around it) is the text's whole.
+    let start = slice.offset + prefix.len();
+    let end = start + slice.text.len();
+    let unwrap = |span: crate::diagnostic::Span| {
+        let (offset, len) = (span.offset as usize, span.len as usize);
+        if offset >= start && offset + len <= end {
+            crate::diagnostic::Span {
+                offset: span.offset - u32::try_from(prefix.len()).unwrap_or(u32::MAX),
+                len: span.len,
+            }
+        } else {
+            super::payload::span_of(slice)
+        }
+    };
+    match parse_with_rules::<T>(inner, None, cx.scalar_rules) {
+        Ok(read) => {
+            for mut told in read.told {
+                told.path = below_member(&told.path);
+                d.push(told.finding(&JsonPath::new()));
+            }
+            Some(read.value)
+        }
+        Err(failure) => {
+            let failure = match failure {
+                ScalarFailure::Read(mut error) => {
+                    error.path = below_member(&error.path);
+                    error.span = unwrap(error.span);
+                    ScalarFailure::Read(error)
+                }
+                ScalarFailure::Refused(mut refused) => {
+                    refused.misread.path = below_member(&refused.misread.path);
+                    refused.span = refused.span.map(unwrap);
+                    ScalarFailure::Refused(refused)
+                }
+            };
+            d.push(failure_finding(&failure, &JsonPath::new(), slice));
+            None
+        }
+    }
+}
+
+/// `path` without its first step, the member a bare scalar was read as.
+fn below_member(path: &JsonPath) -> JsonPath {
+    let mut out = JsonPath::new();
+    for segment in path.segments().skip(1) {
+        match segment {
+            crate::diagnostic::JsonPathSegment::Key(key) => out.push(key),
+            crate::diagnostic::JsonPathSegment::Index(index) => out.push_index(index),
+        }
+    }
+    out
 }
 
 /// Parses a `components` object held as raw slices (`entries`, borrowed from `within`, the

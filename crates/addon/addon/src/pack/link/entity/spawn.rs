@@ -9,6 +9,7 @@ use crate::families::spawn_rules::{Condition, SpawnRules};
 /// The payload key of a spawn-rules document.
 pub(super) const RULES: &str = "minecraft:spawn_rules";
 /// The payload key of a spawn-groups document.
+#[cfg(feature = "spawn_groups")]
 const GROUPS: &str = "minecraft:spawn_groups";
 
 /// One condition of a document.
@@ -49,6 +50,8 @@ pub(super) fn each_condition<'a>(cx: &LinkCx<'a>) -> impl Iterator<Item = Condit
                 )),
                 SpawnRules::Simplified(_) => None,
             });
+    // The raid spawn groups are the `spawn_groups` family's.
+    #[cfg(feature = "spawn_groups")]
     let groups = cx
         .behavior()
         .spawn_groups()
@@ -61,6 +64,8 @@ pub(super) fn each_condition<'a>(cx: &LinkCx<'a>) -> impl Iterator<Item = Condit
                 document.value().conditions.as_deref(),
             )
         });
+    #[cfg(not(feature = "spawn_groups"))]
+    let groups = std::iter::empty::<(&Origin, &Diagnostics, &str, Option<&[Condition]>)>();
     standard
         .chain(groups)
         .flat_map(|(origin, places, payload, conditions)| {

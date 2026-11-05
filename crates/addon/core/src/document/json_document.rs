@@ -43,6 +43,12 @@ pub trait JsonDocument: VersionStruct + Send + Sync + 'static {
     /// (`"fog settings"` of the `"fog"` family).
     const NAME: &'static str = <Self::Family as Family>::NAME;
 
+    /// [`Content::UNKNOWN_PRECEDENCE`] of the kind: which value
+    /// [`write_root_with`](Self::write_root_with) keeps where an unknown member has the key of
+    /// a written one.
+    #[doc(hidden)]
+    const UNKNOWN_PRECEDENCE: crate::json::Precedence = crate::json::Precedence::UnknownWins;
+
     /// The `format_version` the value is written at. Default: the family's newest struct's,
     /// this type's own. A family that writes the version the file was read at overrides it
     /// (`source_format_version.max(FLOOR)`).
@@ -102,7 +108,11 @@ pub trait JsonDocument: VersionStruct + Send + Sync + 'static {
     #[doc(hidden)]
     fn write_root_with(&self, unknown: &Unknown) -> Result<(Value, Vec<Diagnostic>), EncodeError> {
         let mut root = self.write_root()?;
-        let told = crate::json::merge_unknown(&mut root, unknown);
+        let told = crate::json::merge_unknown_with(
+            &mut root,
+            unknown,
+            <Self as JsonDocument>::UNKNOWN_PRECEDENCE,
+        );
         Ok((root, told))
     }
 
@@ -203,6 +213,7 @@ impl<T: JsonDocument> Sealed for T {}
 impl<T: JsonDocument> Content for T {
     const NAME: &'static str = <T as JsonDocument>::NAME;
     const SIDES: &'static [PackSide] = <T as JsonDocument>::SIDES;
+    const UNKNOWN_PRECEDENCE: crate::json::Precedence = <T as JsonDocument>::UNKNOWN_PRECEDENCE;
 
     fn parse(path: &PackPath, bytes: &[u8], cx: &LoadContext) -> Result<Document<Self>, Rejected> {
         let origin = Origin::file(

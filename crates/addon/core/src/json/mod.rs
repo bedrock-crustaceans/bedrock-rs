@@ -76,8 +76,8 @@ pub use read::{
     scan, trailing_content, trailing_content_finding,
 };
 pub use scalar::{
-    BeyondWidth, Declared, JsonType, Refusal, Respelt, ScalarFailure, ScalarRead, ScalarRules,
-    ScalarShape, Scalars, StrictError, Token, Verdict, judge, parse_with_rules,
+    BeyondWidth, Declared, JsonType, Refusal, RefusedScalar, Respelt, ScalarFailure, ScalarRead,
+    ScalarRules, ScalarShape, Scalars, StrictError, Token, Verdict, judge, parse_with_rules,
 };
 #[doc(hidden)]
 pub use slice::{JsonSlice, SliceError, parse_at, span_at};
@@ -96,8 +96,8 @@ pub use unknown::{
 };
 #[doc(hidden)]
 pub use write::{
-    UNKNOWN_MEMBER_NOT_WRITTEN, merge_unknown, to_facet_json, to_facet_json_signed, to_json,
-    write_json, write_json_with,
+    Precedence, UNKNOWN_MEMBER_NOT_WRITTEN, merge_unknown, merge_unknown_with, to_facet_json,
+    to_facet_json_signed, to_json, write_json, write_json_with, write_json_with_precedence,
 };
 
 /// An untyped JSON value: opaque members (`events`, `extra`, raw layers) are held as this.

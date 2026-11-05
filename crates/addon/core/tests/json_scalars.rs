@@ -805,6 +805,58 @@ mod prepass {
     }
 
     #[test]
+    fn a_refused_arm_carries_the_span_of_its_scalar_in_the_file() {
+        // The payload is a slice of a larger file: the span is the file's.
+        let file = r#"{"x": {"s": "a", "shorthand": "no"}}"#;
+        let start = file.find(r#"{"s""#).expect("the payload");
+        let slice = JsonSlice {
+            text: &file[start..file.len() - 1],
+            offset: start,
+        };
+        let Err(ScalarFailure::Refused(refused)) =
+            parse_with_rules::<BeforeTheArm>(slice, None, STRICT)
+        else {
+            panic!("the arm is not refused");
+        };
+        let value = file.find(r#""no""#).expect("the value");
+        let span = bedrock_addon_core::diagnostic::Span {
+            offset: u32::try_from(value).expect("a short file"),
+            len: 4,
+        };
+        assert_eq!(refused.span, Some(span));
+        assert_eq!(refused.path.to_string(), "shorthand");
+        // The finding as the misread tells it, now at the scalar's place.
+        let at = bedrock_addon_core::diagnostic::JsonPath::new().child("x");
+        let finding = refused.spanned_finding(&at);
+        assert_eq!(finding.location.span, Some(span));
+        let plain = refused.finding(&at);
+        assert_eq!(
+            plain.location.span, None,
+            "the misread's own finding is unchanged"
+        );
+        assert_eq!(
+            (finding.code, finding.severity),
+            (plain.code, plain.severity)
+        );
+        // A refused arm read after an earlier fault was read after all keeps its span too.
+        let respelling = STRICT.with_scalars(Scalars::NonStrict);
+        let text = r#"{"n": true, "shorthand": 5}"#;
+        let Err(ScalarFailure::Refused(refused)) =
+            parse_with_rules::<BeforeTheArm>(JsonSlice::new(text), None, respelling)
+        else {
+            panic!("the arm is not refused");
+        };
+        let scalar = u32::try_from(text.find('5').expect("the scalar")).expect("short");
+        assert_eq!(
+            refused.span,
+            Some(bedrock_addon_core::diagnostic::Span {
+                offset: scalar,
+                len: 1
+            })
+        );
+    }
+
+    #[test]
     fn a_member_inside_an_untagged_arm_is_refused_as_the_wrapper_refuses_it() {
         for text in [
             r#"{"resistance": "3"}"#,
@@ -839,6 +891,64 @@ mod prepass {
 
     /// Under rule N1 the value handed back is the one the pre-pass walked: the members read as
     /// absent are out of it, and named, so a caller does not prune it again.
+    /// A struct member, and a struct in a list, the text may write as `null`.
+    #[derive(Debug, PartialEq, Facet)]
+    struct Nested {
+        #[facet(default)]
+        inner: Params,
+        #[facet(default)]
+        list: Vec<Params>,
+        #[facet(default)]
+        n: u8,
+    }
+
+    impl Default for Params {
+        fn default() -> Self {
+            Self { resistance: 0.0 }
+        }
+    }
+
+    #[test]
+    fn a_null_read_as_a_struct_is_told_unless_the_rules_leave_it_to_the_null_rule() {
+        let text = r#"{"inner": null, "list": [null, {"resistance": 1}], "n": "7"}"#;
+        let told = |rules: ScalarRules| {
+            let read = parse_with_rules::<Nested>(JsonSlice::new(text), None, rules).unwrap();
+            let told: Vec<(String, Misreading)> = read
+                .told
+                .iter()
+                .map(|misread| (misread.path.to_string(), misread.kind))
+                .collect();
+            (read.value, told)
+        };
+        let plain = ScalarRules::PLAIN;
+        assert!(plain.tells_null_struct, "today's rule: told");
+        let (value, all) = told(plain);
+        assert_eq!(
+            all,
+            [
+                ("inner".to_owned(), Misreading::WrongType),
+                ("list/0".to_owned(), Misreading::WrongType),
+                ("n".to_owned(), Misreading::WrongType),
+            ]
+        );
+        // Left to the family's null rule: the struct is read as before, and only the
+        // conversion is told.
+        let (quiet_value, quiet) = told(plain.with_tells_null_struct(false));
+        assert_eq!(quiet_value, value);
+        assert_eq!(quiet, [("n".to_owned(), Misreading::WrongType)]);
+        // The strict reading of the six families that leave the told list unread: with the
+        // null structs left out it holds nothing.
+        let strict_text = r#"{"inner": null, "list": [null]}"#;
+        let strict = |rules: ScalarRules| {
+            parse_with_rules::<Nested>(JsonSlice::new(strict_text), None, rules)
+                .unwrap()
+                .told
+                .len()
+        };
+        assert_eq!(strict(STRICT), 2);
+        assert_eq!(strict(STRICT.with_tells_null_struct(false)), 0);
+    }
+
     #[test]
     fn under_null_absent_the_value_comes_back_without_its_absent_members() {
         let text = r#"{"n": null, "s": "a", "maybe": null, "list": [1]}"#;

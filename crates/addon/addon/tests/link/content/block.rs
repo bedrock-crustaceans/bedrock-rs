@@ -287,12 +287,15 @@ fn b5_b6_without_the_geometry_feature_nothing_is_told() {
 }
 
 // ---- B7: the culling shape -----------------------------------------------------------------
+// The rule is `block`'s and `voxel_shape`'s together.
 
+#[cfg(feature = "voxel_shape")]
 const SLAB: (&str, &str) = (
     "shapes/slab.json",
     r#"{"format_version": "1.21.110", "minecraft:voxel_shape": {"description": {"identifier": "demo:slab"}, "shape": {"boxes": [{"min": [0, 0, 0], "max": [16, 8, 16]}]}}}"#,
 );
 
+#[cfg(feature = "voxel_shape")]
 fn culled(shape: &str) -> String {
     block(
         "demo:lamp",
@@ -302,6 +305,7 @@ fn culled(shape: &str) -> String {
     )
 }
 
+#[cfg(feature = "voxel_shape")]
 #[test]
 fn b7_a_shape_of_the_stack_and_the_two_of_the_game_are_no_finding() {
     for shape in ["demo:slab", "minecraft:empty", "minecraft:unit_cube"] {
@@ -326,6 +330,7 @@ fn b7_a_shape_of_the_stack_and_the_two_of_the_game_are_no_finding() {
     assert_eq!(said(&found, &["voxel shape"]), []);
 }
 
+#[cfg(feature = "voxel_shape")]
 /// The game logs the line at level 3
 ///  and assigns the default shape: a
 /// kept error.
