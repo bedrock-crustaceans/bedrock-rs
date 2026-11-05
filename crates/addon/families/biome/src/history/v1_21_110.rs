@@ -15,6 +15,7 @@ use bedrock_addon_core::document::{ComponentMap, Extra};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, StrictString, Value};
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor, Step};
 use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::known;
 use bedrock_addon_core::versioning::{
     ParseCx, Upgrade, UpgradeCx, VersionStruct, Versioned, parse_payload,
 };
@@ -46,7 +47,7 @@ struct Root<'a> {
 }
 
 impl Versioned for Biome {
-    const VERSION: FormatVersion = FormatVersion::new(1, 21, 110);
+    const VERSION: FormatVersion = known::V1_21_110;
 }
 
 impl VersionStruct for Biome {

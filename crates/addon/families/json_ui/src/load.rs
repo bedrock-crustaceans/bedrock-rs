@@ -2,6 +2,7 @@
 //! the united lists, each listed file merged from the lowest pack up, the global variables,
 //! the definition table and the checks over it.
 
+use bedrock_addon_core::document::unversioned;
 use std::collections::HashSet;
 
 use bedrock_addon_core::load::{Accept, CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
@@ -21,10 +22,9 @@ use bedrock_addon_core::diagnostic::{
     VanillaText,
 };
 use bedrock_addon_core::document::{
-    Content, Document, Merge, Merged, Origin, Placed, RawLayer, Rejected, VersionInfo,
+    Content, Document, Merge, Merged, Origin, Placed, RawLayer, Rejected,
 };
 use bedrock_addon_core::json::{EncodeError, Value, WriteStyle, write_json};
-use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_support::jsoncpp::read;
 
 /// The directory the listed files live in.
@@ -74,23 +74,6 @@ impl UiFile {
     }
 }
 
-/// The origin of a file read on its own: no pack.
-fn lone(path: &PackPath) -> Origin {
-    Origin::file(PackRef::app_data(), PackSide::Resource, path.clone())
-}
-
-/// A document of this unversioned family: no file carries a `format_version`.
-fn document<T>(value: T, origin: Origin, mut diagnostics: Diagnostics) -> Document<T> {
-    diagnostics.locate(&origin);
-    let none = FormatVersion::new(0, 0, 0);
-    Document::new(
-        value,
-        origin,
-        VersionInfo::new(None, false, none, none, false),
-        diagnostics,
-    )
-}
-
 /// A rejection for a file that is not the JSON object it has to be.
 fn reject(origin: Origin, message: String) -> Rejected {
     let mut diagnostics = Diagnostics::default();
@@ -125,7 +108,7 @@ impl Content for UiFile {
     /// Reads one UI file on its own: its namespace and its definitions, as written. The
     /// checks of the merge and of control creation belong to the stack ([`UiDefinitions`]).
     fn parse(path: &PackPath, bytes: &[u8], _: &LoadContext) -> Result<Document<Self>, Rejected> {
-        let origin = lone(path);
+        let origin = unversioned::lone(path);
         let mut root = root_object(&origin, bytes)?;
         let mut diagnostics = Diagnostics::default();
         // A number no double holds is read as the largest finite one, with a warning.
@@ -144,7 +127,7 @@ impl Content for UiFile {
                     .at(json_path(&["namespace"])),
             );
         }
-        Ok(document(file, origin, diagnostics))
+        Ok(unversioned::document(file, origin, diagnostics))
     }
 
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
@@ -160,7 +143,7 @@ impl Content for UiDefsList {
 
     /// Reads one `ui/_ui_defs.json`.
     fn parse(path: &PackPath, bytes: &[u8], _: &LoadContext) -> Result<Document<Self>, Rejected> {
-        let origin = lone(path);
+        let origin = unversioned::lone(path);
         let mut root = root_object(&origin, bytes)?;
         let mut list = Self::default();
         let mut diagnostics = Diagnostics::default();
@@ -197,7 +180,7 @@ impl Content for UiDefsList {
                 list.extra.insert(key.as_str().to_owned(), value.clone());
             }
         }
-        Ok(document(list, origin, diagnostics))
+        Ok(unversioned::document(list, origin, diagnostics))
     }
 
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
@@ -228,7 +211,7 @@ impl Content for GlobalVariables {
 
     /// Reads one `ui/_global_variables.json`.
     fn parse(path: &PackPath, bytes: &[u8], _: &LoadContext) -> Result<Document<Self>, Rejected> {
-        let origin = lone(path);
+        let origin = unversioned::lone(path);
         let mut root = root_object(&origin, bytes)?;
         let mut diagnostics = Diagnostics::default();
         // A number no double holds is read as the largest finite one, with a warning.
@@ -238,7 +221,11 @@ impl Content for GlobalVariables {
             &JsonPath::new(),
             &mut diagnostics,
         );
-        Ok(document(Self::from_value(&root), origin, diagnostics))
+        Ok(unversioned::document(
+            Self::from_value(&root),
+            origin,
+            diagnostics,
+        ))
     }
 
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
@@ -889,7 +876,7 @@ mod tests {
         let copy = |key: &str, text: &str| {
             let path = PackPath::new(key).unwrap();
             UiCopy {
-                origin: lone(&path),
+                origin: unversioned::lone(&path),
                 key: key.to_owned(),
                 content: match read(text.as_bytes()) {
                     Ok(json) => CopyContent::Json(json),

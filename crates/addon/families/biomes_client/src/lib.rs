@@ -73,7 +73,8 @@ impl LegacyClientBiomes {
     /// name without the namespace.
     pub fn get(&self, biome: &BiomeId) -> Option<&LegacyClientBiome> {
         self.biomes.get(biome).or_else(|| {
-            let (namespace, name) = biome.as_str().split_once(':')?;
+            let (namespace, name) =
+                bedrock_addon_core::id::syntax::split_namespace(biome.as_str())?;
             (namespace == "minecraft")
                 .then(|| self.biomes.get(&BiomeId::parse(name)))
                 .flatten()

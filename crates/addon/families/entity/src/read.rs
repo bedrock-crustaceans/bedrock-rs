@@ -14,6 +14,7 @@ use bedrock_addon_core::json::{
 };
 use bedrock_addon_core::load::{Experiment, LoadContext};
 use bedrock_addon_core::molang::MolangSource;
+use bedrock_addon_core::version::known;
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput};
 use bedrock_addon_core::versioning::{ConvertMode, Family, ParseCx};
 use facet::Facet;
@@ -34,11 +35,11 @@ use super::{
 pub(crate) const ALIASES_DEPRECATED: FormatVersion = FormatVersion::new(1, 21, 10);
 /// The format version that introduced `entity_version` and `upgrades` (behind Upcoming Creator
 /// Features until 1.26.30).
-pub(crate) const ENTITY_VERSION_SINCE: FormatVersion = FormatVersion::new(1, 26, 20);
+pub(crate) const ENTITY_VERSION_SINCE: FormatVersion = known::V1_26_20;
 /// The format version from which `entity_version` and `upgrades` need no toggle.
-pub(crate) const ENTITY_VERSION_STABLE: FormatVersion = FormatVersion::new(1, 26, 30);
+pub(crate) const ENTITY_VERSION_STABLE: FormatVersion = known::V1_26_30;
 /// The format version that introduced the root `brain` member.
-pub(crate) const BRAIN_SINCE: FormatVersion = FormatVersion::new(1, 21, 130);
+pub(crate) const BRAIN_SINCE: FormatVersion = known::V1_21_130;
 
 /// What the newest struct is parsed from.
 #[derive(Facet)]
@@ -863,7 +864,7 @@ fn schema_converted(key: &str) -> bool {
 
 /// The newest struct that holds the payload as JSON: a component typed first after it converts
 /// in the read of its step to 1.26.50.
-const LAST_JSON_STRUCT: FormatVersion = FormatVersion::new(1, 26, 40);
+const LAST_JSON_STRUCT: FormatVersion = known::V1_26_40;
 
 /// Whether the game's legacy reader says nothing of what the lenient typed read reports with
 /// `code`. A hand-written reader reads the keys it knows with `asFloat` / `asInt` / `asBool`
@@ -911,14 +912,14 @@ const BRAIN_1_26_50: [&str; 4] = [
     "minecraft:memory_sensor.find_ram_charge_position",
 ];
 /// The version that binds [`BRAIN_1_26_50`].
-const BRAIN_1_26_50_SINCE: FormatVersion = FormatVersion::new(1, 26, 50);
+const BRAIN_1_26_50_SINCE: FormatVersion = known::V1_26_50;
 
 /// The struct version that reads `pickup_items.stop_if_holding_item`.
-const STOP_IF_HOLDING_ITEM_SINCE: FormatVersion = FormatVersion::new(1, 26, 30);
+const STOP_IF_HOLDING_ITEM_SINCE: FormatVersion = known::V1_26_30;
 
 /// From 1.26.20 the generic memory goal needs its suffix; below, the bare key is a legacy key
 /// the 1.26.20 step renames.
-const GENERIC_GOALS_SINCE: FormatVersion = FormatVersion::new(1, 26, 20);
+const GENERIC_GOALS_SINCE: FormatVersion = known::V1_26_20;
 
 /// The Brain group: the memory goals and sensors other
 /// than the generic `memory_behavior.move_to_position.<name>`, which is not gated.

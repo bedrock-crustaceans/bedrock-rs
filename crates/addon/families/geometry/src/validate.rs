@@ -10,10 +10,10 @@ use super::schema::{
 };
 use super::{Bone, CubeUv, Geometry, GeometryFile, ItemDisplayTransform, PolyMesh, Polys};
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase};
-use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::{FormatVersion, known};
 
 /// From this file version the `embedded` transform is read.
-const EMBEDDED_FROM: FormatVersion = FormatVersion::new(1, 21, 110);
+const EMBEDDED_FROM: FormatVersion = known::V1_21_110;
 /// The range `Geometry::parse` clamps `visible_bounds_width` and `visible_bounds_height` to.
 const BOUNDS: (f32, f32) = (0.1, 50.0);
 

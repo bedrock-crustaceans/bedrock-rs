@@ -14,13 +14,11 @@ use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, JsonPathSegment, VanillaText,
 };
 use bedrock_addon_core::document::{
-    Content, Document, JsonContent, Merge, Merged, Origin, Placed, Rejected,
+    Content, Document, JsonContent, Merge, Merged, Origin, Placed, Rejected, unversioned,
 };
 use bedrock_addon_core::json::{EncodeError, WriteStyle};
 use bedrock_addon_core::load::Reported;
-use bedrock_addon_support::fixed_path::{
-    Authored, FileCopy, document, json_text, lone, malformed, origin, reject,
-};
+use bedrock_addon_support::fixed_path::{Authored, FileCopy, json_text, malformed};
 use bedrock_addon_support::jsoncpp::read;
 
 impl bedrock_addon_core::__private::Sealed for FontMetadata {}
@@ -44,7 +42,7 @@ fn read_metadata(origin: Origin, bytes: &[u8]) -> FileCopy<FontMetadata> {
             // The game keeps its default fonts and writes its line to the developer log, not the
             // content log: an information with its text, the file still refused.
             let code = malformed(message.to_string(), Some(metadata::NOT_JSON));
-            return Err(reject(origin, Diagnostic::info(code)));
+            return Err(unversioned::reject(origin, Diagnostic::info(code)));
         }
     };
     if !FontMetadata::version_is_supported(&root) {
@@ -54,7 +52,7 @@ fn read_metadata(origin: Origin, bytes: &[u8]) -> FileCopy<FontMetadata> {
             text: Some(VanillaText::Fixed(metadata::VERSION)),
         };
         let at = JsonPath::new().child("version");
-        return Err(reject(origin, Diagnostic::info(code).at(at)));
+        return Err(unversioned::reject(origin, Diagnostic::info(code).at(at)));
     }
     let mut diagnostics = Diagnostics::default();
     // A number no double holds is read as the largest finite one, with a warning.
@@ -84,7 +82,7 @@ fn read_metadata(origin: Origin, bytes: &[u8]) -> FileCopy<FontMetadata> {
             diagnostics.push(finding);
         }
     }
-    Ok(document(metadata, origin, diagnostics))
+    Ok(unversioned::document(metadata, origin, diagnostics))
 }
 
 /// Reads one `font/emoticons.json`.
@@ -95,7 +93,7 @@ fn read_emoticons(origin: Origin, bytes: &[u8]) -> FileCopy<EmoticonList> {
             // No emoticons; the game's "Malformed JSON" is a developer assert: an information
             // with its text, the file still refused.
             let code = malformed(message.to_string(), Some(emoticons::MALFORMED));
-            return Err(reject(origin, Diagnostic::info(code)));
+            return Err(unversioned::reject(origin, Diagnostic::info(code)));
         }
     };
     let mut diagnostics = Diagnostics::default();
@@ -107,7 +105,7 @@ fn read_emoticons(origin: Origin, bytes: &[u8]) -> FileCopy<EmoticonList> {
         &mut diagnostics,
     );
     let list = EmoticonList::from_value(&root, &mut diagnostics);
-    Ok(document(list, origin, diagnostics))
+    Ok(unversioned::document(list, origin, diagnostics))
 }
 
 impl Content for FontMetadata {
@@ -117,7 +115,7 @@ impl Content for FontMetadata {
     /// Reads one `font/font_metadata.json`. A file that is not JSON, and one whose `version`
     /// is not the integer 1 (`1.0` and `"1"` are not), is rejected: the game ignores it.
     fn parse(path: &PackPath, bytes: &[u8], _: &LoadContext) -> Result<Document<Self>, Rejected> {
-        read_metadata(lone(path), bytes)
+        read_metadata(unversioned::lone(path), bytes)
     }
 
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
@@ -141,7 +139,7 @@ impl Content for EmoticonList {
     /// Reads one `font/emoticons.json`. Only a file that is not JSON is rejected, with an
     /// error; a root that is no array is a list without emoticons, with an information.
     fn parse(path: &PackPath, bytes: &[u8], _: &LoadContext) -> Result<Document<Self>, Rejected> {
-        read_emoticons(lone(path), bytes)
+        read_emoticons(unversioned::lone(path), bytes)
     }
 
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
@@ -168,7 +166,7 @@ pub enum FontCopy {
 }
 
 fn parse_font(file: &WalkFile, _: &LoadContext) -> FontCopy {
-    let origin = origin(file.pack.clone(), file.side, &file.path);
+    let origin = unversioned::origin_of(file);
     if file.key.as_str() == FONT_METADATA_PATH {
         FontCopy::Metadata(read_metadata(origin, &file.bytes))
     } else {

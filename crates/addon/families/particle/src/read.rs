@@ -21,7 +21,7 @@ use bedrock_addon_core::diagnostic::{
 use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::json::{EncodeError, Unrepresentable, Value};
 use bedrock_addon_core::molang::{
-    EmptyRule, JsonScalar, Molang, MolangFailure, MolangFieldMut, MolangFieldSpec, MolangSource,
+    JsonScalar, Molang, MolangFailure, MolangFieldMut, MolangFieldSpec, MolangSource,
     MolangVisitor, RawVersion, ReadField, ReaderKind, Step, json_scalar,
 };
 
@@ -44,19 +44,13 @@ pub(crate) fn spec(era: Era, o: Opt) -> MolangFieldSpec {
         // The game parses an event's `expression` and ignores the result: the event is
         // kept. The crate compiles it once, on the upgraded document at the file's path,
         // under the same spec.
-        Era::Legacy if o.event => MolangFieldSpec {
-            reader: ReaderKind::SchemaValidated,
-            empty: EmptyRule::Compile,
-            ..KEPT
-        },
+        Era::Legacy if o.event => KEPT.reader(ReaderKind::SchemaValidated).compile_empty(),
         // A failed parse becomes the field's default, for a single field and for an array
         // element alike, and the reader goes on.
-        Era::Legacy => MolangFieldSpec {
-            reader: ReaderKind::SchemaValidated,
-            empty: EmptyRule::Compile,
-            on_failure: MolangFailure::ReplaceWith(default),
-            ..KEPT
-        },
+        Era::Legacy => KEPT
+            .reader(ReaderKind::SchemaValidated)
+            .compile_empty()
+            .on_failure(MolangFailure::ReplaceWith(default)),
         // A 1.20.80 document holds the text; the game compiles it when it builds the effect,
         // drops the parse result and registers the effect anyway: kept.
         Era::Cereal => KEPT,
@@ -64,11 +58,7 @@ pub(crate) fn spec(era: Era, o: Opt) -> MolangFieldSpec {
 }
 
 /// Every particle Molang field: its parser lines are kept errors, the effect loads.
-pub(crate) const KEPT: MolangFieldSpec = MolangFieldSpec {
-    error_severity: Severity::Error,
-    error_kept: true,
-    ..MolangFieldSpec::DEFAULT
-};
+pub(crate) const KEPT: MolangFieldSpec = MolangFieldSpec::KEPT;
 
 /// What a field's reader needs to know about the field.
 #[derive(Clone, Copy, Debug)]

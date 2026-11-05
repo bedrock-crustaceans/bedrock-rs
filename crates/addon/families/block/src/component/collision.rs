@@ -11,7 +11,7 @@ use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
 };
 use bedrock_addon_core::document::{ComponentMap, Extra};
-use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::{FormatVersion, known};
 
 /// `minecraft:collision_box`: what entities collide with.
 ///
@@ -127,9 +127,9 @@ impl CollisionBoundingBox {
 
 /// The version of the 1.26.60 document, from which `min`/`max` are bound and the one-box
 /// object is not.
-const V1_26_60: FormatVersion = FormatVersion::new(1, 26, 60);
+const V1_26_60: FormatVersion = known::V1_26_60;
 /// The first version vanilla reads with the cereal document.
-const V1_26_20: FormatVersion = FormatVersion::new(1, 26, 20);
+const V1_26_20: FormatVersion = known::V1_26_20;
 /// The most boxes the game's constraint allows; the 1.26.20 constraint allows the same number.
 const MAX_BOXES: usize = 16;
 

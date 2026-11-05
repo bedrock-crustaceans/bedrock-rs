@@ -4,14 +4,14 @@ use indexmap::IndexMap;
 
 use super::{AnimationController, AnimationControllerFile, StateVariable};
 use bedrock_addon_core::molang::Molang;
-use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::known;
 use bedrock_addon_support::animation::walk::atof;
 
 impl AnimationControllerFile {
     /// An empty file at format 1.10.0.
     pub fn new() -> Self {
         Self {
-            format_version: FormatVersion::new(1, 10, 0),
+            format_version: known::V1_10_0,
             animation_controllers: IndexMap::new(),
         }
     }

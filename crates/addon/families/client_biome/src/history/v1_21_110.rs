@@ -7,8 +7,10 @@ use crate::component::{AmbientSounds, ClientBiomeComponent, SoundAddition};
 use bedrock_addon_core::diagnostic::DiagnosticCode;
 use bedrock_addon_core::document::{Component as _, ComponentMap, ComponentRef, Extra};
 use bedrock_addon_core::id::SoundEventName;
+use bedrock_addon_core::id::syntax::split_namespace;
 use bedrock_addon_core::json::StrictFloat;
 use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::known;
 use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
 
 legacy_document! {
@@ -18,7 +20,7 @@ legacy_document! {
 
 /// The version below which a document gets the underwater ambient sounds: the next struct's
 /// version, so every document that reaches the step is below it.
-const UNDERWATER_AMBIENT_SOUNDS_COMPONENT_BEFORE: FormatVersion = FormatVersion::new(1, 21, 120);
+const UNDERWATER_AMBIENT_SOUNDS_COMPONENT_BEFORE: FormatVersion = known::V1_21_120;
 
 /// The chance the game gave every biome's `addition` before 1.21.120.
 const ADDITION_CHANCE: f32 = 0.0111;
@@ -58,9 +60,7 @@ fn addition(asset: SoundEventName, chance: f32) -> SoundAddition {
 
 /// Whether the identifier's namespace is exactly `minecraft`.
 fn is_vanilla(identifier: &str) -> bool {
-    identifier
-        .split_once(':')
-        .is_some_and(|(namespace, _)| namespace == "minecraft")
+    split_namespace(identifier).is_some_and(|(namespace, _)| namespace == "minecraft")
 }
 
 /// The step to 1.21.120: `ambient_sounds` moves into the type with underwater sounds. A

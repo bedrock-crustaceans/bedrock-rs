@@ -8,7 +8,7 @@
 // one.
 
 use super::legacy::LegacyAlias;
-use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::{FormatVersion, known};
 
 /// The legacy aggregate names, sorted by name.
 // Each entry is one legacy name as the client registers it. `legacy_id`, `gate` (the
@@ -38,7 +38,7 @@ pub(super) static LEGACY_ALIASES: &[LegacyAlias] = &[
         // Matches the game's packs, except for the entries marked below.
         name: "carpet",
         legacy_id: 171,
-        gate: Some(FormatVersion::new(1, 21, 30)),
+        gate: Some(known::V1_21_30),
         start_variant: 0,
         default_name: "white_carpet",
         aux0: "white_carpet",
@@ -66,7 +66,7 @@ pub(super) static LEGACY_ALIASES: &[LegacyAlias] = &[
         // Matches the game's chemistry packs, except for the entries marked below.
         name: "chemistry_table",
         legacy_id: 238,
-        gate: Some(FormatVersion::new(1, 21, 30)),
+        gate: Some(known::V1_21_30),
         start_variant: 0,
         default_name: "compound_creator",
         aux0: "compound_creator",
@@ -82,7 +82,7 @@ pub(super) static LEGACY_ALIASES: &[LegacyAlias] = &[
         // Matches the game's packs, except for the entries marked below.
         name: "cobblestone_wall",
         legacy_id: 139,
-        gate: Some(FormatVersion::new(1, 21, 30)),
+        gate: Some(known::V1_21_30),
         start_variant: 0,
         default_name: "cobblestone_wall",
         aux0: "cobblestone_wall",
@@ -108,7 +108,7 @@ pub(super) static LEGACY_ALIASES: &[LegacyAlias] = &[
         // Matches the game's chemistry packs, except for the entries marked below.
         name: "colored_torch_bp",
         legacy_id: 204,
-        gate: Some(FormatVersion::new(1, 21, 30)),
+        gate: Some(known::V1_21_30),
         // Matches the game's packs: the first block draws element 2.
         start_variant: 2,
         default_name: "colored_torch_blue",
@@ -120,7 +120,7 @@ pub(super) static LEGACY_ALIASES: &[LegacyAlias] = &[
         // Matches the game's chemistry packs, except for the entries marked below.
         name: "colored_torch_rg",
         legacy_id: 202,
-        gate: Some(FormatVersion::new(1, 21, 30)),
+        gate: Some(known::V1_21_30),
         start_variant: 0,
         default_name: "colored_torch_red",
         aux0: "colored_torch_red",
@@ -131,7 +131,7 @@ pub(super) static LEGACY_ALIASES: &[LegacyAlias] = &[
         // Matches the game's packs, except for the entries marked below.
         name: "concrete",
         legacy_id: 236,
-        gate: Some(FormatVersion::new(1, 21, 30)),
+        gate: Some(known::V1_21_30),
         start_variant: 0,
         default_name: "white_concrete",
         aux0: "white_concrete",
@@ -159,7 +159,7 @@ pub(super) static LEGACY_ALIASES: &[LegacyAlias] = &[
         // Unchecked: no vanilla file uses the name.
         name: "concrete_powder",
         legacy_id: 237,
-        gate: Some(FormatVersion::new(1, 21, 30)),
+        gate: Some(known::V1_21_30),
         start_variant: 0,
         default_name: "white_concrete_powder",
         aux0: "white_concrete_powder",
@@ -187,7 +187,7 @@ pub(super) static LEGACY_ALIASES: &[LegacyAlias] = &[
         // Matches the game's packs, except for the entries marked below.
         name: "coral",
         legacy_id: 386,
-        gate: Some(FormatVersion::new(1, 21, 30)),
+        gate: Some(known::V1_21_30),
         start_variant: 0,
         default_name: "tube_coral",
         aux0: "tube_coral",
@@ -209,7 +209,7 @@ pub(super) static LEGACY_ALIASES: &[LegacyAlias] = &[
         // Matches the game's packs, except for the entries marked below.
         name: "coral_block",
         legacy_id: 387,
-        gate: Some(FormatVersion::new(1, 21, 30)),
+        gate: Some(known::V1_21_30),
         start_variant: 0,
         default_name: "tube_coral_block",
         aux0: "tube_coral_block",
@@ -231,7 +231,7 @@ pub(super) static LEGACY_ALIASES: &[LegacyAlias] = &[
         // Matches the game's packs, except for the entries marked below.
         name: "coral_fan",
         legacy_id: 388,
-        gate: Some(FormatVersion::new(1, 21, 30)),
+        gate: Some(known::V1_21_30),
         start_variant: 0,
         default_name: "tube_coral_fan",
         aux0: "tube_coral_fan",
@@ -248,7 +248,7 @@ pub(super) static LEGACY_ALIASES: &[LegacyAlias] = &[
         // Matches the game's packs, except for the entries marked below.
         name: "coral_fan_dead",
         legacy_id: 389,
-        gate: Some(FormatVersion::new(1, 21, 30)),
+        gate: Some(known::V1_21_30),
         start_variant: 0,
         default_name: "dead_tube_coral_fan",
         aux0: "dead_tube_coral_fan",
@@ -265,7 +265,7 @@ pub(super) static LEGACY_ALIASES: &[LegacyAlias] = &[
         // Matches the game's packs, except for the entries marked below.
         name: "coral_fan_hang",
         legacy_id: 390,
-        gate: Some(FormatVersion::new(1, 21, 30)),
+        gate: Some(known::V1_21_30),
         start_variant: 0,
         default_name: "tube_coral_wall_fan",
         aux0: "tube_coral_wall_fan",
@@ -281,7 +281,7 @@ pub(super) static LEGACY_ALIASES: &[LegacyAlias] = &[
         // Matches the game's packs, except for the entries marked below.
         name: "coral_fan_hang2",
         legacy_id: 391,
-        gate: Some(FormatVersion::new(1, 21, 30)),
+        gate: Some(known::V1_21_30),
         start_variant: 0,
         default_name: "bubble_coral_wall_fan",
         aux0: "bubble_coral_wall_fan",
@@ -297,7 +297,7 @@ pub(super) static LEGACY_ALIASES: &[LegacyAlias] = &[
         // Matches the game's packs, except for the entries marked below.
         name: "coral_fan_hang3",
         legacy_id: 392,
-        gate: Some(FormatVersion::new(1, 21, 30)),
+        gate: Some(known::V1_21_30),
         start_variant: 0,
         default_name: "horn_coral_wall_fan",
         aux0: "horn_coral_wall_fan",
@@ -320,7 +320,7 @@ pub(super) static LEGACY_ALIASES: &[LegacyAlias] = &[
         // Matches the game's packs, except for the entries marked below.
         name: "double_plant",
         legacy_id: 175,
-        gate: Some(FormatVersion::new(1, 21, 30)),
+        gate: Some(known::V1_21_30),
         start_variant: 0,
         default_name: "sunflower",
         aux0: "sunflower",
@@ -338,7 +338,7 @@ pub(super) static LEGACY_ALIASES: &[LegacyAlias] = &[
         // Unchecked: no vanilla file uses the name.
         name: "double_stone_block_slab",
         legacy_id: 43,
-        gate: Some(FormatVersion::new(1, 21, 30)),
+        gate: Some(known::V1_21_30),
         start_variant: 0,
         default_name: "smooth_stone_double_slab",
         aux0: "smooth_stone_double_slab",
@@ -358,7 +358,7 @@ pub(super) static LEGACY_ALIASES: &[LegacyAlias] = &[
         // Unchecked: no vanilla file uses the name.
         name: "double_stone_block_slab2",
         legacy_id: 181,
-        gate: Some(FormatVersion::new(1, 21, 30)),
+        gate: Some(known::V1_21_30),
         start_variant: 0,
         default_name: "red_sandstone_double_slab",
         aux0: "red_sandstone_double_slab",
@@ -378,7 +378,7 @@ pub(super) static LEGACY_ALIASES: &[LegacyAlias] = &[
         // Unchecked: no vanilla file uses the name.
         name: "double_stone_block_slab3",
         legacy_id: 422,
-        gate: Some(FormatVersion::new(1, 21, 30)),
+        gate: Some(known::V1_21_30),
         start_variant: 0,
         default_name: "end_stone_brick_double_slab",
         aux0: "end_stone_brick_double_slab",
@@ -398,7 +398,7 @@ pub(super) static LEGACY_ALIASES: &[LegacyAlias] = &[
         // Unchecked: no vanilla file uses the name.
         name: "double_stone_block_slab4",
         legacy_id: 423,
-        gate: Some(FormatVersion::new(1, 21, 30)),
+        gate: Some(known::V1_21_30),
         start_variant: 0,
         default_name: "mossy_stone_brick_double_slab",
         aux0: "mossy_stone_brick_double_slab",
@@ -415,7 +415,7 @@ pub(super) static LEGACY_ALIASES: &[LegacyAlias] = &[
         // Matches the game's packs, except for the entries marked below.
         name: "double_wooden_slab",
         legacy_id: 157,
-        gate: Some(FormatVersion::new(1, 21, 30)),
+        gate: Some(known::V1_21_30),
         start_variant: 0,
         default_name: "oak_double_slab",
         aux0: "oak_double_slab",
@@ -433,7 +433,7 @@ pub(super) static LEGACY_ALIASES: &[LegacyAlias] = &[
         // Matches the game's packs, except for the entries marked below.
         name: "fence",
         legacy_id: 85,
-        gate: Some(FormatVersion::new(1, 21, 30)),
+        gate: Some(known::V1_21_30),
         start_variant: 0,
         default_name: "oak_fence",
         aux0: "oak_fence",
@@ -451,7 +451,7 @@ pub(super) static LEGACY_ALIASES: &[LegacyAlias] = &[
         // Matches the game's chemistry packs, except for the entries marked below.
         name: "hard_stained_glass",
         legacy_id: 254,
-        gate: Some(FormatVersion::new(1, 21, 30)),
+        gate: Some(known::V1_21_30),
         start_variant: 0,
         default_name: "hard_white_stained_glass",
         aux0: "hard_white_stained_glass",
@@ -479,7 +479,7 @@ pub(super) static LEGACY_ALIASES: &[LegacyAlias] = &[
         // Matches the game's chemistry packs, except for the entries marked below.
         name: "hard_stained_glass_pane",
         legacy_id: 191,
-        gate: Some(FormatVersion::new(1, 21, 30)),
+        gate: Some(known::V1_21_30),
         start_variant: 0,
         default_name: "hard_white_stained_glass_pane",
         aux0: "hard_white_stained_glass_pane",
@@ -518,7 +518,7 @@ pub(super) static LEGACY_ALIASES: &[LegacyAlias] = &[
         // Matches the game's packs, except for the entries marked below.
         name: "leaves",
         legacy_id: 18,
-        gate: Some(FormatVersion::new(1, 21, 30)),
+        gate: Some(known::V1_21_30),
         start_variant: 0,
         default_name: "oak_leaves",
         aux0: "oak_leaves",
@@ -534,7 +534,7 @@ pub(super) static LEGACY_ALIASES: &[LegacyAlias] = &[
         // Matches the game's packs, except for the entries marked below.
         name: "leaves2",
         legacy_id: 161,
-        gate: Some(FormatVersion::new(1, 21, 30)),
+        gate: Some(known::V1_21_30),
         start_variant: 0,
         default_name: "acacia_leaves",
         aux0: "acacia_leaves",
@@ -545,7 +545,7 @@ pub(super) static LEGACY_ALIASES: &[LegacyAlias] = &[
         // Matches the game's packs, except for the entries marked below.
         name: "light_block",
         legacy_id: 470,
-        gate: Some(FormatVersion::new(1, 21, 30)),
+        gate: Some(known::V1_21_30),
         start_variant: 0,
         default_name: "light_block_0",
         aux0: "light_block_0",
@@ -573,7 +573,7 @@ pub(super) static LEGACY_ALIASES: &[LegacyAlias] = &[
         // Matches the game's packs, except for the entries marked below.
         name: "log",
         legacy_id: 17,
-        gate: Some(FormatVersion::new(1, 21, 30)),
+        gate: Some(known::V1_21_30),
         start_variant: 0,
         default_name: "oak_log",
         aux0: "oak_log",
@@ -589,7 +589,7 @@ pub(super) static LEGACY_ALIASES: &[LegacyAlias] = &[
         // Matches the game's packs, except for the entries marked below.
         name: "log2",
         legacy_id: 162,
-        gate: Some(FormatVersion::new(1, 21, 30)),
+        gate: Some(known::V1_21_30),
         start_variant: 0,
         default_name: "acacia_log",
         aux0: "acacia_log",
@@ -600,7 +600,7 @@ pub(super) static LEGACY_ALIASES: &[LegacyAlias] = &[
         // Matches the game's packs, except for the entries marked below.
         name: "monster_egg",
         legacy_id: 97,
-        gate: Some(FormatVersion::new(1, 21, 30)),
+        gate: Some(known::V1_21_30),
         start_variant: 0,
         default_name: "infested_cobblestone",
         aux0: "infested_stone",
@@ -618,7 +618,7 @@ pub(super) static LEGACY_ALIASES: &[LegacyAlias] = &[
         // Matches the game's packs, except for the entries marked below.
         name: "planks",
         legacy_id: 5,
-        gate: Some(FormatVersion::new(1, 21, 30)),
+        gate: Some(known::V1_21_30),
         start_variant: 0,
         default_name: "oak_planks",
         aux0: "oak_planks",
@@ -653,7 +653,7 @@ pub(super) static LEGACY_ALIASES: &[LegacyAlias] = &[
         // plain texture at elements 0 and 1 and the pillar's at element 2.
         name: "purpur_block",
         legacy_id: 201,
-        gate: Some(FormatVersion::new(1, 21, 30)),
+        gate: Some(known::V1_21_30),
         start_variant: 0,
         default_name: "purpur_block",
         aux0: "purpur_block",
@@ -692,7 +692,7 @@ pub(super) static LEGACY_ALIASES: &[LegacyAlias] = &[
         // Matches the game's packs, except for the entries marked below.
         name: "red_flower",
         legacy_id: 38,
-        gate: Some(FormatVersion::new(1, 21, 30)),
+        gate: Some(known::V1_21_30),
         start_variant: 0,
         default_name: "poppy",
         aux0: "poppy",
@@ -758,7 +758,7 @@ pub(super) static LEGACY_ALIASES: &[LegacyAlias] = &[
         // Matches the game's packs, except for the entries marked below.
         name: "sapling",
         legacy_id: 6,
-        gate: Some(FormatVersion::new(1, 21, 30)),
+        gate: Some(known::V1_21_30),
         start_variant: 0,
         default_name: "oak_sapling",
         aux0: "oak_sapling",
@@ -776,7 +776,7 @@ pub(super) static LEGACY_ALIASES: &[LegacyAlias] = &[
         // Matches the game's packs, except for the entries marked below.
         name: "shulker_box",
         legacy_id: 218,
-        gate: Some(FormatVersion::new(1, 21, 30)),
+        gate: Some(known::V1_21_30),
         start_variant: 0,
         default_name: "white_shulker_box",
         aux0: "white_shulker_box",
@@ -825,7 +825,7 @@ pub(super) static LEGACY_ALIASES: &[LegacyAlias] = &[
         // Matches the game's packs, except for the entries marked below.
         name: "sponge",
         legacy_id: 19,
-        gate: Some(FormatVersion::new(1, 21, 30)),
+        gate: Some(known::V1_21_30),
         start_variant: 0,
         default_name: "sponge",
         aux0: "sponge",
@@ -836,7 +836,7 @@ pub(super) static LEGACY_ALIASES: &[LegacyAlias] = &[
         // Matches the game's packs, except for the entries marked below.
         name: "stained_glass",
         legacy_id: 241,
-        gate: Some(FormatVersion::new(1, 21, 30)),
+        gate: Some(known::V1_21_30),
         start_variant: 0,
         default_name: "white_stained_glass",
         aux0: "white_stained_glass",
@@ -864,7 +864,7 @@ pub(super) static LEGACY_ALIASES: &[LegacyAlias] = &[
         // Matches the game's packs, except for the entries marked below.
         name: "stained_glass_pane",
         legacy_id: 160,
-        gate: Some(FormatVersion::new(1, 21, 30)),
+        gate: Some(known::V1_21_30),
         start_variant: 0,
         default_name: "white_stained_glass_pane",
         aux0: "white_stained_glass_pane",
@@ -892,7 +892,7 @@ pub(super) static LEGACY_ALIASES: &[LegacyAlias] = &[
         // Matches the game's packs, except for the entries marked below.
         name: "stained_hardened_clay",
         legacy_id: 159,
-        gate: Some(FormatVersion::new(1, 21, 30)),
+        gate: Some(known::V1_21_30),
         start_variant: 0,
         default_name: "white_terracotta",
         aux0: "white_terracotta",
@@ -939,7 +939,7 @@ pub(super) static LEGACY_ALIASES: &[LegacyAlias] = &[
         // Unchecked: no vanilla file uses the name.
         name: "stone_block_slab",
         legacy_id: 44,
-        gate: Some(FormatVersion::new(1, 21, 30)),
+        gate: Some(known::V1_21_30),
         start_variant: 0,
         default_name: "smooth_stone_slab",
         aux0: "smooth_stone_slab",
@@ -959,7 +959,7 @@ pub(super) static LEGACY_ALIASES: &[LegacyAlias] = &[
         // Unchecked: no vanilla file uses the name.
         name: "stone_block_slab2",
         legacy_id: 182,
-        gate: Some(FormatVersion::new(1, 21, 30)),
+        gate: Some(known::V1_21_30),
         start_variant: 0,
         default_name: "red_sandstone_slab",
         aux0: "red_sandstone_slab",
@@ -979,7 +979,7 @@ pub(super) static LEGACY_ALIASES: &[LegacyAlias] = &[
         // Unchecked: no vanilla file uses the name.
         name: "stone_block_slab3",
         legacy_id: 417,
-        gate: Some(FormatVersion::new(1, 21, 30)),
+        gate: Some(known::V1_21_30),
         start_variant: 0,
         default_name: "end_stone_brick_slab",
         aux0: "end_stone_brick_slab",
@@ -999,7 +999,7 @@ pub(super) static LEGACY_ALIASES: &[LegacyAlias] = &[
         // Unchecked: no vanilla file uses the name.
         name: "stone_block_slab4",
         legacy_id: 421,
-        gate: Some(FormatVersion::new(1, 21, 30)),
+        gate: Some(known::V1_21_30),
         start_variant: 0,
         default_name: "mossy_stone_brick_slab",
         aux0: "mossy_stone_brick_slab",
@@ -1016,7 +1016,7 @@ pub(super) static LEGACY_ALIASES: &[LegacyAlias] = &[
         // Matches the game's packs, except for the entries marked below.
         name: "stonebrick",
         legacy_id: 98,
-        gate: Some(FormatVersion::new(1, 21, 30)),
+        gate: Some(known::V1_21_30),
         start_variant: 0,
         default_name: "stone_bricks",
         aux0: "stone_bricks",
@@ -1033,7 +1033,7 @@ pub(super) static LEGACY_ALIASES: &[LegacyAlias] = &[
         // Matches the game's packs, except for the entries marked below.
         name: "structure_void",
         legacy_id: 217,
-        gate: Some(FormatVersion::new(1, 21, 30)),
+        gate: Some(known::V1_21_30),
         start_variant: 0,
         default_name: "structure_void",
         aux0: "structure_void",
@@ -1045,7 +1045,7 @@ pub(super) static LEGACY_ALIASES: &[LegacyAlias] = &[
         // Matches the game's packs, except for the entries marked below.
         name: "tallgrass",
         legacy_id: 31,
-        gate: Some(FormatVersion::new(1, 21, 30)),
+        gate: Some(known::V1_21_30),
         start_variant: 0,
         default_name: "short_grass",
         aux0: "short_grass",
@@ -1057,7 +1057,7 @@ pub(super) static LEGACY_ALIASES: &[LegacyAlias] = &[
         // Matches the game's packs, except for the entries marked below.
         name: "tnt",
         legacy_id: 46,
-        gate: Some(FormatVersion::new(1, 21, 30)),
+        gate: Some(known::V1_21_30),
         // Matches the game's chemistry packs (the legacy file against its slices): the data
         // shows variant 0, not the 2 that the client's registration would suggest.
         start_variant: 0,
@@ -1070,7 +1070,7 @@ pub(super) static LEGACY_ALIASES: &[LegacyAlias] = &[
         // Matches the game's packs, except for the entries marked below.
         name: "wood",
         legacy_id: 467,
-        gate: Some(FormatVersion::new(1, 21, 30)),
+        gate: Some(known::V1_21_30),
         start_variant: 0,
         default_name: "oak_wood",
         aux0: "oak_wood",
@@ -1094,7 +1094,7 @@ pub(super) static LEGACY_ALIASES: &[LegacyAlias] = &[
         // Matches the game's packs, except for the entries marked below.
         name: "wooden_slab",
         legacy_id: 158,
-        gate: Some(FormatVersion::new(1, 21, 30)),
+        gate: Some(known::V1_21_30),
         start_variant: 0,
         default_name: "oak_slab",
         aux0: "oak_slab",
@@ -1112,7 +1112,7 @@ pub(super) static LEGACY_ALIASES: &[LegacyAlias] = &[
         // Matches the game's packs, except for the entries marked below.
         name: "wool",
         legacy_id: 35,
-        gate: Some(FormatVersion::new(1, 21, 30)),
+        gate: Some(known::V1_21_30),
         start_variant: 0,
         default_name: "white_wool",
         aux0: "white_wool",

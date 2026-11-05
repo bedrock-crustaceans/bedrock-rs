@@ -11,7 +11,7 @@
 //! refused every other (`validate`).
 
 use bedrock_addon_core::diagnostic::JsonPath;
-use bedrock_addon_core::json::Value;
+use bedrock_addon_core::json::{Coerce, Coercing, IsIntRule, Value, WideInt};
 
 use super::Problem;
 use super::numeric_table::CHECKS;
@@ -54,24 +54,11 @@ pub(crate) struct Check {
 }
 
 /// jsoncpp's `asInt` of a number the node took (`Json::Value::asInt`): a bool 0 or 1,
-/// an integer its low 32 bits, a real truncated toward zero, saturating.
-#[allow(
-    clippy::cast_possible_truncation,
-    reason = "the low 32 bits and a saturating truncation, as the game converts"
-)]
+/// an integer its low 32 bits, a real truncated toward zero, saturating; `None` for any other
+/// JSON type.
 fn as_int(value: &Value) -> Option<i32> {
-    if let Some(flag) = value.as_bool() {
-        return Some(i32::from(flag));
-    }
-    let number = value.as_number()?;
-    Some(if number.is_float() {
-        number.to_f64_lossy() as i32
-    } else {
-        number
-            .to_i64()
-            .or_else(|| number.to_u64().map(u64::cast_signed))
-            .map_or(0, |n| n as i32)
-    })
+    const AS_INT: Coercing = Coercing::new(IsIntRule::Token, WideInt::LowWord);
+    (value.is_bool() || value.is_number()).then(|| value.as_int(0, AS_INT))
 }
 
 /// jsoncpp's `asFloat` of a number the node took (`Json::Value::asFloat`): a bool 0 or 1, a number as `f32`.

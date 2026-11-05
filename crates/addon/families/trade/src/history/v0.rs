@@ -10,12 +10,13 @@ use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::id::ItemId;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::known;
 use bedrock_addon_core::versioning::{
     ParseCx, Upgrade, UpgradeCx, VersionStruct, Versioned, write_payload,
 };
 
 /// The legacy slice's version.
-pub const VERSION: FormatVersion = FormatVersion::new(0, 0, 0);
+pub const VERSION: FormatVersion = known::V0_0_0;
 
 /// A legacy trade table: the document as written.
 ///

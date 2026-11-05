@@ -5,6 +5,7 @@
 super::legacy_struct!(1, 26, 40);
 
 use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath, VanillaText};
+use bedrock_addon_core::version::known;
 use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
 use facet_value::VObject;
 
@@ -15,7 +16,7 @@ use super::ops::{
 };
 
 /// The version from which `using_door_annotation` is written `true`.
-const DOOR_ANNOTATION_TRUE: FormatVersion = FormatVersion::new(1, 10, 0);
+const DOOR_ANNOTATION_TRUE: FormatVersion = known::V1_10_0;
 
 /// 1.26.40 → 1.26.50.
 impl Upgrade for Entity {

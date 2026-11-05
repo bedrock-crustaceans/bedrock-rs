@@ -10,8 +10,9 @@ use indexmap::IndexMap;
 
 use super::UiTextureInfo;
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon_core::document::unversioned::{document, origin};
 use bedrock_addon_core::document::{Content, Document, Files, FilesBuilder, FilesRule, Rejected};
-use bedrock_addon_support::fixed_path::{below, document, file_finding, origin};
+use bedrock_addon_support::fixed_path::{below, file_finding};
 
 /// The directory whose images have side files.
 const DIRECTORY: &str = "textures/ui";
@@ -109,8 +110,8 @@ mod tests {
 
     use super::*;
     use bedrock_addon_core::diagnostic::Diagnostics;
+    use bedrock_addon_core::document::unversioned::lone;
     use bedrock_addon_core::test_cost::assert_linear_at;
-    use bedrock_addon_support::fixed_path::lone;
 
     /// The highest copy of each path is chosen, and the side files without an image named, in
     /// time linear in the listing (the order of the findings aside): two copies of every path,

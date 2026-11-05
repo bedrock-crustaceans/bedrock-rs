@@ -17,6 +17,7 @@ use bedrock_addon_core::molang::{
     Molang, MolangFields, MolangSource, MolangVisitor, RawVersion, Step,
 };
 use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::known;
 use bedrock_addon_core::versioning::{ParseCx, Upgrade, UpgradeCx, VersionStruct, Versioned};
 use bedrock_addon_support::animation::event::command_version;
 use bedrock_addon_support::animation::read::read_particle;
@@ -270,11 +271,11 @@ fn read_particle_1_8(walk: &mut Walk, node: Node<'_>) -> Option<ParticleEffect> 
 // ---- the step -----------------------------------------------------------------------------------
 
 impl Versioned for AnimationControllerFile {
-    const VERSION: FormatVersion = FormatVersion::new(1, 8, 0);
+    const VERSION: FormatVersion = known::V1_8_0;
 }
 
 impl Versioned for Latest {
-    const VERSION: FormatVersion = FormatVersion::new(1, 10, 0);
+    const VERSION: FormatVersion = known::V1_10_0;
 }
 
 impl Upgrade for AnimationControllerFile {
@@ -317,7 +318,7 @@ impl Upgrade for AnimationControllerFile {
             })
             .collect();
         Latest {
-            format_version: FormatVersion::new(1, 10, 0),
+            format_version: known::V1_10_0,
             animation_controllers,
         }
     }

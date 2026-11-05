@@ -8,11 +8,11 @@ use facet::Facet;
 use super::{PoiTag, PoiType};
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value, parse_at, unknown_members};
-use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::{ParseCx, VersionStruct, Versioned, write_payload};
 
 /// The version of both documents' only struct: 1.26.40.
-pub(crate) const V1_26_40: FormatVersion = FormatVersion::new(1, 26, 40);
+pub(crate) const V1_26_40: FormatVersion = known::V1_26_40;
 
 /// The member `key` of an object.
 fn member<'v>(object: &'v Value, key: &str) -> Option<&'v Value> {

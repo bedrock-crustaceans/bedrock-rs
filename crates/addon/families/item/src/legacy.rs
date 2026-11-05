@@ -2,7 +2,7 @@
 //! component-based document (at every version) and the legacy item format of 1.10.
 
 use bedrock_addon_core::document::Extra;
-use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::{FormatVersion, known};
 use indexmap::IndexMap;
 
 use bedrock_addon_core::diagnostic::{
@@ -199,7 +199,7 @@ pub(crate) fn is_legacy_read(key: &str) -> bool {
     LEGACY_ONLY.contains(&key) || SHARED.contains(&key) || is_tag_key(key)
 }
 
-const V1_16_100: FormatVersion = FormatVersion::new(1, 16, 100);
+const V1_16_100: FormatVersion = known::V1_16_100;
 const V1_20_20: FormatVersion = FormatVersion::new(1, 20, 20);
 const V1_20_30: FormatVersion = FormatVersion::new(1, 20, 30);
 const V1_20_50: FormatVersion = FormatVersion::new(1, 20, 50);

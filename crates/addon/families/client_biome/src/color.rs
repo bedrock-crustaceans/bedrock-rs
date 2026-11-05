@@ -5,7 +5,7 @@ use facet::Facet;
 use facet_value::VArray;
 
 use bedrock_addon_core::json::Value;
-use bedrock_addon_core::molang::JsonType;
+use bedrock_addon_core::json::ValueExt;
 use bedrock_addon_core::shared::ShapeErrorKind;
 
 /// An opaque RGB colour: `"#RRGGBB"` or `[r, g, b]` with integer
@@ -95,28 +95,11 @@ pub(crate) fn clamped_channels(value: &Value) -> Vec<usize> {
         .unwrap_or_default()
 }
 
-/// The JSON type of a value.
-fn json_type(value: &Value) -> JsonType {
-    if value.is_null() {
-        JsonType::Null
-    } else if value.is_bool() {
-        JsonType::Bool
-    } else if value.is_number() {
-        JsonType::Number
-    } else if value.is_string() {
-        JsonType::String
-    } else if value.is_array() {
-        JsonType::Array
-    } else {
-        JsonType::Object
-    }
-}
-
 /// `N` integer channels.
 fn channels<const N: usize>(value: &Value) -> Result<[i32; N], ShapeErrorKind> {
     let wrong = |found: &Value| ShapeErrorKind::WrongType {
         expected: "a colour string or an array of integers",
-        found: json_type(found),
+        found: found.json_type(),
     };
     let array = value.as_array().ok_or_else(|| wrong(value))?;
     if array.len() != N {

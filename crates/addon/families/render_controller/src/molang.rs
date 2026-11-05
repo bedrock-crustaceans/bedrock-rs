@@ -4,26 +4,21 @@
 //! controller parser compiles itself).
 
 use super::{RenderController, RenderControllerFile, Rgba};
-use bedrock_addon_core::diagnostic::{Diagnostics, Location, Severity};
+use bedrock_addon_core::diagnostic::{Diagnostics, Location};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::molang::{
-    Admission, EmptyRule, MolangContext, MolangFailure, MolangFieldSpec, MolangFields,
-    MolangVersionSource, MolangVisitor, OpsRule, ReaderKind, Step, not_checked, pass_one,
+    MolangContext, MolangFailure, MolangFieldSpec, MolangFields, MolangVisitor, ReaderKind, Step,
+    not_checked, pass_one,
 };
 use bedrock_addon_core::version::FormatVersionInput;
 
 const fn spec(on_failure: MolangFailure) -> MolangFieldSpec {
-    MolangFieldSpec {
-        reader: ReaderKind::SchemaValidated,
-        // always the pack's `min_engine_version`; the file's version never enters.
-        version: MolangVersionSource::Pack,
-        admission: Admission::Default,
-        ops: OpsRule::All,
-        empty: EmptyRule::Compile,
-        on_failure,
-        error_severity: Severity::Error,
-        error_kept: false,
-    }
+    // The version is always the pack's `min_engine_version` (the default); the file's
+    // version never enters.
+    MolangFieldSpec::DEFAULT
+        .reader(ReaderKind::SchemaValidated)
+        .compile_empty()
+        .on_failure(on_failure)
 }
 
 /// A member the schema types as an expression (`materials` and `part_visibility` values,

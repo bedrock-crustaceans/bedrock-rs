@@ -26,6 +26,7 @@ use bedrock_addon_core::json::{EncodeError, JsonSlice, Value, WriteStyle};
 use bedrock_addon_core::json::{PrepareError, Prepared};
 use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
+use bedrock_addon_core::version::known;
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput, SemVersion};
 use bedrock_addon_core::versioning::{
     ComponentSection, ComponentTable, EnvelopeCheck, ErrorMask, Family, Identity, InputKind,
@@ -36,7 +37,7 @@ use bedrock_addon_core::versioning::{
 /// The directory biome files live in.
 const DIRECTORY: &str = "biomes";
 /// The floor: the first format vanilla loads; every earlier format was experimental.
-const FLOOR: FormatVersion = FormatVersion::new(1, 21, 110);
+const FLOOR: FormatVersion = known::V1_21_110;
 /// The world version a non-base-game pack's biomes need, as the world-gate message says.
 const WORLD_GATE_VERSION: SemVersion = SemVersion::new(1, 21, 110);
 /// The first experimental format the below-floor hint names.

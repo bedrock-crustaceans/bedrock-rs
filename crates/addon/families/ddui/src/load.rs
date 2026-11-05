@@ -8,6 +8,7 @@ use std::convert::Infallible;
 use bedrock_addon_core::json::Prepared;
 use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
+use bedrock_addon_core::version::known;
 
 use super::history::{
     CompositionAny, CompositionFamily, RootAny, RootFamily, StyleAny, StyleFamily,
@@ -177,7 +178,7 @@ impl Family for StyleFamily {
     const PAYLOAD_KEY: &'static str = "minecraft:ui-style";
     const DIRECTORIES: &'static [&'static str] = &[STYLES];
     // Unused: there is no stable struct, so every version but `"beta"` has no parser.
-    const FLOOR: FormatVersion = FormatVersion::new(0, 0, 0);
+    const FLOOR: FormatVersion = known::V0_0_0;
     type Latest = NoStable;
     type Beta = UiStyle;
     // Every pack may load the beta version, with or without the Beta APIs toggle.

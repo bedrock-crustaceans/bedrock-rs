@@ -20,13 +20,9 @@ use bedrock_addon_core::json::Value;
 /// loader tests no result for an event `condition`, and the legacy trigger and the `shoot`
 /// response drop the expression the same way.
 const fn spec(reader: ReaderKind) -> MolangFieldSpec {
-    MolangFieldSpec {
-        reader,
-        version: MolangVersionSource::FormatVersion,
-        error_severity: Severity::Error,
-        error_kept: true,
-        ..MolangFieldSpec::DEFAULT
-    }
+    MolangFieldSpec::KEPT
+        .reader(reader)
+        .version(MolangVersionSource::FormatVersion)
 }
 
 /// An event response's `condition` (`ReaderKind::ScalarOrArray`, inferred).

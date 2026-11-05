@@ -6,8 +6,8 @@ use facet::Facet;
 use facet_value::VArray;
 
 use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::json::ValueExt;
 use bedrock_addon_core::json::{StrictBool, StrictFloat, StrictString, Value};
-use bedrock_addon_core::molang::JsonType;
 use bedrock_addon_core::shared::ShapeErrorKind;
 
 /// `minecraft:climate`: temperature, downfall and snow cover. Every member is optional; an
@@ -111,28 +111,11 @@ pub enum ColorRgba {
     Rgba([i32; 4]),
 }
 
-/// The JSON type of a value, for a [`ShapeErrorKind::WrongType`].
-pub(crate) fn json_type(value: &Value) -> JsonType {
-    if value.is_null() {
-        JsonType::Null
-    } else if value.is_bool() {
-        JsonType::Bool
-    } else if value.is_number() {
-        JsonType::Number
-    } else if value.is_string() {
-        JsonType::String
-    } else if value.is_array() {
-        JsonType::Array
-    } else {
-        JsonType::Object
-    }
-}
-
 /// `N` integer channels.
 fn channels<const N: usize>(value: &Value) -> Result<[i32; N], ShapeErrorKind> {
     let wrong = |found: &Value| ShapeErrorKind::WrongType {
         expected: "a colour string or an array of integers",
-        found: json_type(found),
+        found: found.json_type(),
     };
     let array = value.as_array().ok_or_else(|| wrong(value))?;
     if array.len() != N {

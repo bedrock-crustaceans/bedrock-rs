@@ -9,6 +9,7 @@ use bedrock_addon_core::diagnostic::Diagnostics;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
 use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::known;
 use bedrock_addon_core::versioning::{ParseCx, Upgrade, UpgradeCx, VersionStruct, Versioned};
 
 use crate::{read, write};
@@ -19,7 +20,7 @@ use crate::{read, write};
 pub struct Entity(pub crate::Entity);
 
 impl Versioned for Entity {
-    const VERSION: FormatVersion = FormatVersion::new(1, 26, 50);
+    const VERSION: FormatVersion = known::V1_26_50;
 }
 
 impl VersionStruct for Entity {

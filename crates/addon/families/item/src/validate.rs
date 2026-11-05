@@ -2,18 +2,18 @@
 //! are read (identifier, use duration, durability dependants, storage, kinetic weapons, swing
 //! sounds, the wearable stack size) and the crate's own check of trigger events.
 
-use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::{FormatVersion, known};
 
 use super::component::{
     BundleInteraction, DamageAbsorption, Durability, DurabilitySensor, Food, KineticWeapon,
     MaxStackSize, Shooter, StorageItem, SwingSounds, UseModifiers, Wearable, WearableSlot,
 };
-use super::history::has_namespace;
 use super::legacy::ItemFormat;
 use super::{Item, texts};
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity, VanillaText,
 };
+use bedrock_addon_core::id::syntax::has_namespace;
 use bedrock_addon_core::load::LoadContext;
 
 /// A validator finding at `at/<path…>`.
@@ -179,7 +179,7 @@ pub(crate) fn validate(
     }
     // A wearable defaults to a stack of one (as of 1.26.45; which slots count is inferred, and
     // so is that only a 1.26.30 or later document gets it: a 1.20.10 item has no such default).
-    if original >= FormatVersion::new(1, 26, 30)
+    if original >= known::V1_26_30
         && let Some(wearable) = c.get::<Wearable>()
         && !c.contains::<MaxStackSize>()
         && wearable.slot != WearableSlot::Offhand

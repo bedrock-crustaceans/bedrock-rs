@@ -10,7 +10,7 @@ use super::v1_21_0;
 use crate::{Era, color_ju, float, norm_ju, object_with, read_document};
 use bedrock_addon_core::diagnostic::Diagnostics;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
-use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::{ParseCx, Upgrade, UpgradeCx, VersionStruct, Versioned};
 
 pub use crate::DistanceType;
@@ -173,7 +173,7 @@ pub enum CoeffColorJu {
 }
 
 impl Versioned for FogDocument {
-    const VERSION: FormatVersion = FormatVersion::new(1, 16, 100);
+    const VERSION: FormatVersion = known::V1_16_100;
 }
 
 impl VersionStruct for FogDocument {

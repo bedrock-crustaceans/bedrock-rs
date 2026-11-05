@@ -9,7 +9,7 @@ use super::set::{LayerKind, LayerValue, Rgb, Rgba, TextureName, TextureSet};
 use super::texts;
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
 use bedrock_addon_core::json::{Value, strip_bom};
-use bedrock_addon_core::version::{FormatVersion, SemVersion};
+use bedrock_addon_core::version::{FormatVersion, SemVersion, known};
 use bedrock_addon_support::texture::jsoncpp::read_lenient;
 use bedrock_addon_support::texture::texts::{fixed, formatted};
 
@@ -19,9 +19,9 @@ const FORMAT_VERSION: &str = "format_version";
 pub(super) const PAYLOAD: &str = "minecraft:texture_set";
 
 /// The first schema version.
-pub(super) const V1_16_100: FormatVersion = FormatVersion::new(1, 16, 100);
+pub(super) const V1_16_100: FormatVersion = known::V1_16_100;
 /// The second, and newest, schema version.
-pub(super) const V1_21_30: FormatVersion = FormatVersion::new(1, 21, 30);
+pub(super) const V1_21_30: FormatVersion = known::V1_21_30;
 
 /// Which of the two schemas reads a file.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

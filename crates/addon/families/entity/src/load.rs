@@ -15,11 +15,12 @@ use bedrock_addon_core::json::{
 };
 use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::molang::{
-    Admission, EmptyRule, MolangFailure, MolangFieldSpec, MolangFields, MolangVisitor, OpsRule,
-    PROPERTY_DEFAULT_QUERIES, Step,
+    MolangFailure, MolangFieldSpec, MolangFields, MolangVisitor, OpsRule, PROPERTY_DEFAULT_QUERIES,
+    Step,
 };
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::vanilla::ActorType;
+use bedrock_addon_core::version::known;
 use bedrock_addon_core::version::{ENGINE_VERSION, FormatVersion, FormatVersionInput};
 use bedrock_addon_core::versioning::{
     BETA_VERSION, ComponentSection, ComponentTable, EnvelopeCheck, ErrorMask, Family, Identity,
@@ -44,7 +45,7 @@ impl Family for Entity {
     const PAYLOAD_KEY: &'static str = "minecraft:entity";
     const DIRECTORIES: &'static [&'static str] = &[DIRECTORY];
     // 1.8.0, the first version with `description.identifier`.
-    const FLOOR: FormatVersion = FormatVersion::new(1, 8, 0);
+    const FLOOR: FormatVersion = known::V1_8_0;
     const SKIP_UPGRADES_KEY: Option<&'static str> = Some("do_not_upgrade");
     // The text is the crate's own; the game reads an absent version as 0.0.0 silently.
     const MISSING_VERSION_TEXT: Option<VanillaText> = Some(VanillaText::NoFormatVersionField);
@@ -120,7 +121,7 @@ impl Family for Entity {
 }
 
 impl Versioned for Entity {
-    const VERSION: FormatVersion = FormatVersion::new(1, 26, 60);
+    const VERSION: FormatVersion = known::V1_26_60;
 }
 
 impl VersionStruct for Entity {
@@ -538,29 +539,20 @@ pub const fn load_registry() -> CollectionLoader<Registry<Entity>, Contribution<
 
 /// `description.scripts.animate[].<name>`: a Molang string at the pack's version; a rejected
 /// expression is kept and evaluates to 0.
-pub(crate) const ANIMATE: MolangFieldSpec = MolangFieldSpec {
-    empty: EmptyRule::Compile,
-    // The game logs the rejection at the error level, stores the script anyway and keeps the
-    // entity: a kept error.
-    error_severity: Severity::Error,
-    error_kept: true,
-    ..MolangFieldSpec::DEFAULT
-};
+// The game logs the rejection at the error level, stores the script anyway and keeps the
+// entity: a kept error.
+pub(crate) const ANIMATE: MolangFieldSpec = MolangFieldSpec::KEPT.compile_empty();
 
 /// `description.properties.<name>.default` (a string that is no enum value): a Molang string
 /// at the pack's version that may call only `query.had_component_group` and assigns nothing;
 /// a rejected expression drops the entity's property group.
-pub(crate) const PROPERTY_DEFAULT: MolangFieldSpec = MolangFieldSpec {
-    admission: Admission::Only(PROPERTY_DEFAULT_QUERIES),
-    ops: OpsRule::NoAssignments,
-    empty: EmptyRule::Compile,
-    on_failure: MolangFailure::DropEntry,
-    // The game logs "Error loading Actor Properties" at the error level and keeps the entity
-    // without its properties: a kept error.
-    error_severity: Severity::Error,
-    error_kept: true,
-    ..MolangFieldSpec::DEFAULT
-};
+// The game logs "Error loading Actor Properties" at the error level and keeps the entity
+// without its properties: a kept error.
+pub(crate) const PROPERTY_DEFAULT: MolangFieldSpec = MolangFieldSpec::KEPT
+    .only(PROPERTY_DEFAULT_QUERIES)
+    .ops(OpsRule::NoAssignments)
+    .compile_empty()
+    .on_failure(MolangFailure::DropEntry);
 
 impl MolangFields for Entity {
     fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {

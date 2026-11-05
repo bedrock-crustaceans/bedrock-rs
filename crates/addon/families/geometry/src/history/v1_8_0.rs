@@ -20,7 +20,7 @@ use bedrock_addon_core::diagnostic::{
 };
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
-use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::{ParseCx, Upgrade, UpgradeCx, VersionStruct, Versioned};
 
 /// The 1.8 schema's `format_version` maximum: a file above it and below 1.12.0 does not
@@ -214,7 +214,7 @@ fn read_cube(walk: &mut SchemaWalk, node: Node<'_>) -> Option<Cube> {
 }
 
 impl Versioned for GeometryFile {
-    const VERSION: FormatVersion = FormatVersion::new(1, 8, 0);
+    const VERSION: FormatVersion = known::V1_8_0;
 }
 
 impl MolangFields for GeometryFile {

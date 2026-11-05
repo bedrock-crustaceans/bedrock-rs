@@ -7,7 +7,7 @@ use bedrock_addon_core::id::SoundEventName;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, NullRule, Value, parse_at};
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
 use bedrock_addon_core::shared::{CreativeCategory, MenuCategory};
-use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::{
     BETA_VERSION, ConvertMode, ParseCx, VersionStruct, Versioned, parse_component, parse_payload,
     write_payload,
@@ -104,15 +104,15 @@ const V1_20_50: FormatVersion = FormatVersion::new(1, 20, 50);
 const V1_20_60: FormatVersion = FormatVersion::new(1, 20, 60);
 const V1_20_80: FormatVersion = FormatVersion::new(1, 20, 80);
 const V1_21_10: FormatVersion = FormatVersion::new(1, 21, 10);
-const V1_21_30: FormatVersion = FormatVersion::new(1, 21, 30);
+const V1_21_30: FormatVersion = known::V1_21_30;
 const V1_21_40: FormatVersion = FormatVersion::new(1, 21, 40);
 const V1_21_50: FormatVersion = FormatVersion::new(1, 21, 50);
 const V1_21_60: FormatVersion = FormatVersion::new(1, 21, 60);
-const V1_21_90: FormatVersion = FormatVersion::new(1, 21, 90);
-const V1_21_110: FormatVersion = FormatVersion::new(1, 21, 110);
-const V1_26_0: FormatVersion = FormatVersion::new(1, 26, 0);
-const V1_26_30: FormatVersion = FormatVersion::new(1, 26, 30);
-const V1_26_50: FormatVersion = FormatVersion::new(1, 26, 50);
+const V1_21_90: FormatVersion = known::V1_21_90;
+const V1_21_110: FormatVersion = known::V1_21_110;
+const V1_26_0: FormatVersion = known::V1_26_0;
+const V1_26_30: FormatVersion = known::V1_26_30;
+const V1_26_50: FormatVersion = known::V1_26_50;
 
 /// From 1.20.60 vanilla reports unknown members and components (the full schema parse);
 /// below it they are kept silently.
@@ -938,7 +938,7 @@ fn description_era(
                     })
                     .at(at.child("menu_category").child("group")),
                 );
-            } else if version >= V1_21_60 && !has_namespace(group) {
+            } else if version >= V1_21_60 && !bedrock_addon_core::id::syntax::has_namespace(group) {
                 // A group without a namespace fails to load from 1.21.60.
                 d.push(
                     Diagnostic::error(DiagnosticCode::NamespaceRule {
@@ -950,12 +950,6 @@ fn description_era(
         }
     }
     let _ = original;
-}
-
-/// Whether `text` is `ns:value` with both parts non-empty.
-pub(crate) fn has_namespace(text: &str) -> bool {
-    text.split_once(':')
-        .is_some_and(|(ns, value)| !ns.is_empty() && !value.is_empty())
 }
 
 /// Members the struct of `version` does not bind yet (`replace_block_item` before 1.21.40,
@@ -984,7 +978,7 @@ fn unbind_members(
                 if version < V1_26_0 {
                     c.aligned_placement = None;
                     unbound.push(("aligned_placement", false));
-                } else if cx.engine_version < FormatVersion::new(1, 26, 10) {
+                } else if cx.engine_version < known::V1_26_10 {
                     c.aligned_placement = None;
                     unbound.push(("aligned_placement", true));
                 }
@@ -1003,8 +997,7 @@ fn unbind_members(
             }
         }
         Component::Cooldown(c)
-            if object.contains_key("type")
-                && cx.engine_version < FormatVersion::new(1, 21, 130) =>
+            if object.contains_key("type") && cx.engine_version < known::V1_21_130 =>
         {
             c.kind = crate::component::CooldownType::Use;
             unbound.push(("type", true));
@@ -1021,9 +1014,9 @@ fn unbind_members(
         let code = if engine {
             DiagnosticCode::FieldSinceEngine {
                 since: if member == "type" {
-                    FormatVersion::new(1, 21, 130)
+                    known::V1_21_130
                 } else {
-                    FormatVersion::new(1, 26, 10)
+                    known::V1_26_10
                 },
             }
         } else {

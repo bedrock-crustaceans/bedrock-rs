@@ -3,6 +3,7 @@
 
 use super::Component;
 use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::known;
 
 /// The control catalogue of an engine version: the closed set of control types, the members
 /// each binds and its child set.
@@ -26,7 +27,7 @@ pub enum Catalogue {
 /// The engine version of [`Catalogue::V1_26_45`].
 const V1_26_45: FormatVersion = FormatVersion::new(1, 26, 45);
 /// The engine version of [`Catalogue::V1_26_60`].
-const V1_26_60: FormatVersion = FormatVersion::new(1, 26, 60);
+const V1_26_60: FormatVersion = known::V1_26_60;
 
 /// Whether a control type binds a member, and whether it must be written.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -178,7 +179,7 @@ impl Catalogue {
     /// The engine version the catalogue is of.
     pub fn engine(self) -> FormatVersion {
         match self {
-            Self::V1_26_20 => FormatVersion::new(1, 26, 20),
+            Self::V1_26_20 => known::V1_26_20,
             Self::V1_26_45 => V1_26_45,
             Self::V1_26_60 => V1_26_60,
         }

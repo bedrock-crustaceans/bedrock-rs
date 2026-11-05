@@ -83,7 +83,7 @@ pub enum Component {
 }
 
 impl Versioned for ParticleEffect {
-    const VERSION: FormatVersion = FormatVersion::new(1, 10, 0);
+    const VERSION: FormatVersion = bedrock_addon_core::version::known::V1_10_0;
 }
 
 /// An error of the legacy envelope checks, and of a description that gives no identifier

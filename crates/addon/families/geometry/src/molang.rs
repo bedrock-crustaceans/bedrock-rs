@@ -6,26 +6,19 @@
 //! part of rendering, not of loading, and is not reproduced here.
 
 use super::{Geometry, GeometryFile};
-use bedrock_addon_core::diagnostic::{Diagnostics, Location, Severity};
+use bedrock_addon_core::diagnostic::{Diagnostics, Location};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::molang::{
-    Admission, EmptyRule, MolangContext, MolangFailure, MolangFieldSpec, MolangFields,
-    MolangVersionSource, MolangVisitor, OpsRule, ReaderKind, Step, not_checked, pass_one,
+    MolangContext, MolangFieldSpec, MolangFields, MolangVisitor, ReaderKind, Step, not_checked,
+    pass_one,
 };
 use bedrock_addon_core::version::FormatVersionInput;
 
 /// Bone `binding`: a number or bool is kept uncompiled, a string is compiled at the pack's
 /// version with the default query set; a rejection drops the file.
-pub(crate) const BINDING: MolangFieldSpec = MolangFieldSpec {
-    reader: ReaderKind::SchemaValidated,
-    version: MolangVersionSource::Pack,
-    admission: Admission::Default,
-    ops: OpsRule::All,
-    empty: EmptyRule::Compile,
-    on_failure: MolangFailure::RejectDocument,
-    error_severity: Severity::Error,
-    error_kept: false,
-};
+pub(crate) const BINDING: MolangFieldSpec = MolangFieldSpec::REJECTING
+    .reader(ReaderKind::SchemaValidated)
+    .compile_empty();
 
 /// Visits `minecraft:geometry[*].bones[*].binding`.
 pub(crate) fn visit(geometries: &mut [Geometry], visitor: &mut MolangVisitor<'_>) {

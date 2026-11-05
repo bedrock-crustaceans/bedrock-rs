@@ -1,6 +1,7 @@
 //! The family rules on the loaded entity, run once on
 //! the newest struct (or the beta struct) against the document's original version.
 
+use bedrock_addon_core::version::known;
 use std::collections::HashSet;
 
 use bedrock_addon_core::diagnostic::{
@@ -29,7 +30,7 @@ const ROOT_LEVEL_FILTERS: FormatVersion = FormatVersion::new(1, 19, 20);
 /// is rejected.
 const DIGIT_NAMES_FAIL: FormatVersion = FormatVersion::new(1, 20, 30);
 /// The version that released the `unleash` and `execute_event_on_home_block` responses.
-const RESPONSES_1_26_30: FormatVersion = FormatVersion::new(1, 26, 30);
+const RESPONSES_1_26_30: FormatVersion = known::V1_26_30;
 
 /// Every family rule on `entity`.
 pub(crate) fn validate(entity: &mut Entity, cx: &mut ValidateCx<'_>) {
@@ -124,7 +125,7 @@ fn report(cx: &mut ValidateCx<'_>, code: DiagnosticCode, severity: Severity, at:
 fn identifier(entity: &Entity, cx: &mut ValidateCx<'_>) {
     let at = cx.at.child("description").child("identifier");
     let text = entity.description.identifier.as_str();
-    let Some((namespace, name)) = text.split_once(':') else {
+    let Some((namespace, name)) = bedrock_addon_core::id::syntax::split_namespace(text) else {
         report(
             cx,
             DiagnosticCode::NamespaceRule { text: None },
@@ -633,14 +634,9 @@ fn drop_failed_properties(entity: &mut Entity, cx: &mut ValidateCx<'_>) {
 /// an enum entry of the property is Molang, read schema-validated at the pack's version (rule
 /// M1); a rejected expression drops the `set_property` response (the extent of the drop is the
 /// crate's own).
-const SET_PROPERTY: MolangFieldSpec = MolangFieldSpec {
-    reader: ReaderKind::SchemaValidated,
-    // The game logs the error and loads the entity without the response. The parser's lines
-    // are logged at the error level: kept errors.
-    error_severity: Severity::Error,
-    error_kept: true,
-    ..MolangFieldSpec::DEFAULT
-};
+// The game logs the error and loads the entity without the response. The parser's lines
+// are logged at the error level: kept errors.
+const SET_PROPERTY: MolangFieldSpec = MolangFieldSpec::KEPT.reader(ReaderKind::SchemaValidated);
 
 /// One step of a path into the payload.
 #[derive(Clone, Debug)]

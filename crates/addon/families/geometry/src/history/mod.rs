@@ -27,7 +27,7 @@ use bedrock_addon_core::document::{Document, Rejected};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value, WriteStyle};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
-use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::{ParseCx, Upgrade, UpgradeCx, VersionStruct, Versioned};
 
 /// The newest struct under its chain name: format 1.26.40 and later.
@@ -37,14 +37,14 @@ pub mod v1_26_40 {
 
 /// The versions of the chain's structs, oldest first.
 pub const VERSIONS: [FormatVersion; 8] = [
-    FormatVersion::new(0, 0, 0),
-    FormatVersion::new(1, 8, 0),
+    known::V0_0_0,
+    known::V1_8_0,
     FormatVersion::new(1, 12, 0),
     FormatVersion::new(1, 14, 0),
     FormatVersion::new(1, 16, 0),
     FormatVersion::new(1, 19, 30),
     FormatVersion::new(1, 21, 0),
-    FormatVersion::new(1, 26, 40),
+    known::V1_26_40,
 ];
 
 /// Below this version an undeclared or wrong-typed member is removed with a warning; from it,
@@ -124,7 +124,7 @@ macro_rules! modern_file {
 pub(crate) use modern_file;
 
 impl Versioned for GeometryFile {
-    const VERSION: FormatVersion = FormatVersion::new(1, 26, 40);
+    const VERSION: FormatVersion = known::V1_26_40;
 }
 
 impl VersionStruct for GeometryFile {

@@ -2,14 +2,13 @@
 
 use super::LootTable;
 use super::parse::parse_table;
+use bedrock_addon_core::document::unversioned;
 use bedrock_addon_core::document::{
     Content, Document, Files, FilesBuilder, FilesRule, FiniteText, JsonContent, Origin, Rejected,
-    VersionInfo,
 };
 use bedrock_addon_core::json::{EncodeError, WriteStyle};
 use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
-use bedrock_addon_core::version::FormatVersion;
 
 impl bedrock_addon_core::__private::Sealed for LootTable {}
 
@@ -28,13 +27,6 @@ impl Content for LootTable {
 
 impl JsonContent for LootTable {}
 
-/// The version information of every loot table: vanilla reads no version, so
-/// none is written, effective or parsed.
-fn unversioned() -> VersionInfo {
-    let none = FormatVersion::new(0, 0, 0);
-    VersionInfo::new(None, false, none, none, false)
-}
-
 /// Loads one loot table file of `pack`.
 pub(crate) fn parse_file(
     pack: PackRef,
@@ -50,7 +42,13 @@ pub(crate) fn parse_file(
     finite.settle(&mut diagnostics, None);
     diagnostics.locate(&origin);
     match table {
-        Some(table) => Ok(Document::new(table, origin, unversioned(), diagnostics)),
+        // Vanilla reads no version: none is written, effective or parsed.
+        Some(table) => Ok(Document::new(
+            table,
+            origin,
+            unversioned::version(),
+            diagnostics,
+        )),
         None => Err(Rejected::new(origin, diagnostics)),
     }
 }

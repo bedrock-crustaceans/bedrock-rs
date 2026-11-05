@@ -10,6 +10,7 @@ use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, DiagnosticDetail, JsonPath, Phase,
 };
 use bedrock_addon_core::document::Document;
+use bedrock_addon_core::id::syntax::split_namespace;
 use bedrock_addon_core::id::{CameraPresetId, Kind, kind};
 use bedrock_addon_core::load::StackCx;
 
@@ -96,7 +97,7 @@ fn chain_ends<'a>(documents: &[&'a Document<CameraPreset>]) -> Vec<End<'a>> {
             let Some(parent) = documents.get(current).and_then(|document| parent(document)) else {
                 break (End::Valid, None);
             };
-            if parent.split_once(':').map(|(namespace, _)| namespace) == Some(VANILLA_NAMESPACE) {
+            if split_namespace(parent).map(|(namespace, _)| namespace) == Some(VANILLA_NAMESPACE) {
                 let end = if ALLOWED_MC_INHERIT.contains(&parent) {
                     End::Valid
                 } else {

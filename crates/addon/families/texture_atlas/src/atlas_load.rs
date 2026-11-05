@@ -8,11 +8,10 @@ use super::atlas::{AtlasItem, AtlasKind, TextureAtlas, TextureElement, Variation
 use super::atlas_read::read_atlas;
 use super::patch::patch_json;
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase};
-use bedrock_addon_core::document::{Extra, Merge, Merged, Origin, RawLayer};
+use bedrock_addon_core::document::{Extra, Merge, Merged, Origin, RawLayer, unversioned};
 use bedrock_addon_core::id::AtlasKey;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::load::WalkFile;
-use bedrock_addon_support::texture::document::origin_of;
 use bedrock_addon_support::texture::files::{ATLAS_IMAGE, StackFiles};
 use bedrock_addon_support::texture::jsoncpp::read_lenient;
 
@@ -39,7 +38,7 @@ pub(crate) struct AtlasCopy {
 /// out of the merge; content after the root value and a root that is no object are kept, each
 /// with an information of the crate's own (the game is silent about all three).
 pub(crate) fn parse_copy(file: &WalkFile) -> AtlasCopy {
-    let origin = origin_of(file);
+    let origin = unversioned::origin_of(file);
     let mut findings = Diagnostics::default();
     // The copy is read with the numbers no double holds clamped, so neither its layer
     // nor the merged atlas keeps an infinity; the warning names this pack's file.

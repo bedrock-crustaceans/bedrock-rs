@@ -4,12 +4,12 @@ use super::{
     Bone, Cube, Description, FitToFrame, Geometry, GeometryFile, ItemDisplayTransform,
     ItemDisplayTransforms, TextureMesh,
 };
-use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::{FormatVersion, known};
 
 /// The newest geometry schema, 1.26.40.
-pub(crate) const LATEST: FormatVersion = FormatVersion::new(1, 26, 40);
+pub(crate) const LATEST: FormatVersion = known::V1_26_40;
 /// From this file version on, `gui.fit_to_frame: false` does not disable the fit.
-const FIT_TO_FRAME_CHANGE: FormatVersion = FormatVersion::new(1, 21, 130);
+const FIT_TO_FRAME_CHANGE: FormatVersion = known::V1_21_130;
 
 impl GeometryFile {
     /// A file of the newest format holding `geometries`.

@@ -26,6 +26,7 @@ use bedrock_addon_core::load::{Experiment, LoadContext};
 use bedrock_addon_core::pack_identity::PackPath;
 use bedrock_addon_core::shared::{IntRange, RangeForm};
 use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::known;
 
 /// Parses one file: the table, or `None` when vanilla does not load it, and the findings.
 pub(crate) fn parse_table(
@@ -148,10 +149,10 @@ fn compact(value: &Value) -> String {
 const CARRY_OVER: &str = "carry_over_block_entity_data";
 
 /// The engine that has `carry_over_block_entity_data` (1.26.40).
-const CARRY_OVER_SINCE: FormatVersion = FormatVersion::new(1, 26, 40);
+const CARRY_OVER_SINCE: FormatVersion = known::V1_26_40;
 
 /// The engine that has the `biome_has_tag` condition (1.26.30).
-const BIOME_HAS_TAG_SINCE: FormatVersion = FormatVersion::new(1, 26, 30);
+const BIOME_HAS_TAG_SINCE: FormatVersion = known::V1_26_30;
 
 /// The most patterns a banner holds.
 const MAX_PATTERNS: usize = 6;

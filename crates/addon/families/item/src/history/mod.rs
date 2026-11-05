@@ -20,8 +20,8 @@ pub use component::{
 pub use document::{Description, ItemDocument, pack, unpack};
 
 pub(crate) use document::{
-    SideCarPlace, binding, from_component_map, has_namespace, into_component_map, parse_parts,
-    write_component, write_parts,
+    SideCarPlace, binding, from_component_map, into_component_map, parse_parts, write_component,
+    write_parts,
 };
 
 pub mod v1_10_0;

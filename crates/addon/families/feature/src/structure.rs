@@ -15,21 +15,21 @@ use bedrock_addon_core::json::{
     EncodeError, JsonSlice, StrictBool, StrictFloat, StrictString, Value,
 };
 use bedrock_addon_core::shared::BlockDescriptor;
-use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::ValidateCx;
 use bedrock_addon_core::versioning::{ParseCx, VersionStruct, Versioned, write_payload};
 
 /// The engine that adds `rotate_around_center` and `embed_in_surface`.
-pub(crate) const ENGINE_1_26_20: FormatVersion = FormatVersion::new(1, 26, 20);
+pub(crate) const ENGINE_1_26_20: FormatVersion = known::V1_26_20;
 /// The engine that adds `ground_level`, `leveled` and
 /// `only_check_intersection_for_motion_blocking_blocks`.
-const ENGINE_1_26_30: FormatVersion = FormatVersion::new(1, 26, 30);
+const ENGINE_1_26_30: FormatVersion = known::V1_26_30;
 /// The engine whose schema bounds `leveled.max_steepness` to `[0, 8]`.
-const ENGINE_1_26_50: FormatVersion = FormatVersion::new(1, 26, 50);
+const ENGINE_1_26_50: FormatVersion = known::V1_26_50;
 
 /// The format of `snap_to_surface_feature`'s newest schema, which runs from 1.26.50 to the
 /// current version.
-pub(crate) const SNAP_FORMAT: FormatVersion = FormatVersion::new(1, 26, 50);
+pub(crate) const SNAP_FORMAT: FormatVersion = known::V1_26_50;
 
 // ---- structure template ------------------------------------------------------------------------
 

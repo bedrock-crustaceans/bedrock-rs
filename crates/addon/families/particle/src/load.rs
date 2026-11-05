@@ -19,7 +19,7 @@ use bedrock_addon_core::json::{EncodeError, JsonSlice, Prepared, WriteStyle, pro
 use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::vanilla::ActorType;
-use bedrock_addon_core::version::{FormatVersion, FormatVersionInput, PickedVersion};
+use bedrock_addon_core::version::{FormatVersion, FormatVersionInput, PickedVersion, known};
 use bedrock_addon_core::versioning::{
     ComponentSection, ComponentTable, EnvelopeCheck, ErrorMask, Family, Identity, InputKind,
     Loaded, Parsed, StructIndex, finish, no_parser_version, parse_as_written,
@@ -34,7 +34,7 @@ impl Family for ParticleFamily {
     const DIRECTORIES: &'static [&'static str] = &["particles"];
     // The legacy slice is the only one below 1.20.80, and data-driven particles start with
     // it.
-    const FLOOR: FormatVersion = FormatVersion::new(1, 10, 0);
+    const FLOOR: FormatVersion = known::V1_10_0;
     type Latest = ParticleEffect;
     // Particles have no experimental-build struct, so there is no second text to read.
     type Beta = std::convert::Infallible;

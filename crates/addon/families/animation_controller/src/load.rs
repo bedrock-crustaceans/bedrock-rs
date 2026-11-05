@@ -14,6 +14,7 @@ use bedrock_addon_core::id::kind;
 use bedrock_addon_core::json::{EncodeError, WriteStyle};
 use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
+use bedrock_addon_core::version::known;
 use bedrock_addon_core::version::{FormatVersion, SemVersion};
 use bedrock_addon_support::animation::load::{
     FileContribution, combine, file_path, side_of, split, version_info, walk_origin, whole,
@@ -24,9 +25,9 @@ impl bedrock_addon_core::__private::Sealed for AnimationController {}
 
 fn controller_parsed_as(written: &SemVersion) -> (FormatVersion, bool) {
     if *written < V1_10_0 {
-        (FormatVersion::new(1, 8, 0), true)
+        (known::V1_8_0, true)
     } else {
-        (FormatVersion::new(1, 10, 0), false)
+        (known::V1_10_0, false)
     }
 }
 

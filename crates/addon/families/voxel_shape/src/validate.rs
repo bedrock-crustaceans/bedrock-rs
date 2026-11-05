@@ -5,6 +5,7 @@ use super::{ShapeBox, VoxelShape, texts};
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, VanillaText,
 };
+use bedrock_addon_core::id::syntax::split_namespace;
 
 /// Runs the namespace, box, bounds, overlap and width checks on `shape` as a file of a base-game
 /// pack or of any other; the first failure is the one error pushed to `d`, at a path below `at`
@@ -86,9 +87,7 @@ const WIDEST: f32 = 30.0;
 /// Whether `identifier` has a namespace (the text before its first `:`) that is exactly
 /// `minecraft`; a bare name has none.
 fn is_vanilla_namespace(identifier: &str) -> bool {
-    identifier
-        .split_once(':')
-        .is_some_and(|(namespace, _)| namespace == "minecraft")
+    split_namespace(identifier).is_some_and(|(namespace, _)| namespace == "minecraft")
 }
 
 impl ShapeBox {

@@ -1,7 +1,7 @@
 //! Constructors and the inherent helpers: vanilla's defaults and its case-folded views.
 
 use super::{Animation, AnimationFile, Bone, Channel, LoopMode};
-use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::known;
 use bedrock_addon_support::animation::walk::atof;
 use indexmap::IndexMap;
 
@@ -9,7 +9,7 @@ impl AnimationFile {
     /// An empty file at format 1.8.0, the version vanilla's own files use.
     pub fn new() -> Self {
         Self {
-            format_version: FormatVersion::new(1, 8, 0),
+            format_version: known::V1_8_0,
             animations: IndexMap::new(),
         }
     }

@@ -3,7 +3,7 @@
 //! that came without a new `format_version`. The family has no components, so this table is
 //! what a component table is elsewhere.
 
-use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::{FormatVersion, known};
 
 /// One row of [`FOG_FIELD_GATES`].
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -22,11 +22,11 @@ pub struct FogFieldGate {
     pub note: &'static str,
 }
 
-const V1_16_100: FormatVersion = FormatVersion::new(1, 16, 100);
+const V1_16_100: FormatVersion = known::V1_16_100;
 const V1_21_0: FormatVersion = FormatVersion::new(1, 21, 0);
-const V1_21_90: FormatVersion = FormatVersion::new(1, 21, 90);
-const V1_26_20: FormatVersion = FormatVersion::new(1, 26, 20);
-const E1_26_30: FormatVersion = FormatVersion::new(1, 26, 30);
+const V1_21_90: FormatVersion = known::V1_21_90;
+const V1_26_20: FormatVersion = known::V1_26_20;
+const E1_26_30: FormatVersion = known::V1_26_30;
 
 const fn gate(path: &'static str, released: FormatVersion, note: &'static str) -> FogFieldGate {
     FogFieldGate {

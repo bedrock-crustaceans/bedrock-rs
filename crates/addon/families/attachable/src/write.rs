@@ -6,6 +6,7 @@ use bedrock_addon_core::json::{
     EncodeError, JsonSlice, Unrepresentable, Value, WriteStyle, write_json,
 };
 use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::known;
 use bedrock_addon_core::versioning::{ParseCx, VersionStruct, Versioned, write_payload};
 use bedrock_addon_core::visual::HeldItemScale;
 use facet::Facet;
@@ -15,10 +16,10 @@ use super::{Attachable, Description};
 
 /// The engine version that first declares `scripts.hide_held_items` and reads
 /// `held_item_scale` as Molang.
-const ENGINE_1_26_30: FormatVersion = FormatVersion::new(1, 26, 30);
+const ENGINE_1_26_30: FormatVersion = known::V1_26_30;
 
 impl Versioned for Attachable {
-    const VERSION: FormatVersion = FormatVersion::new(1, 26, 0);
+    const VERSION: FormatVersion = known::V1_26_0;
 }
 
 impl VersionStruct for Attachable {

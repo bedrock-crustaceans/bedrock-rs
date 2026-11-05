@@ -6,6 +6,7 @@ use crate::component::GrassAppearance;
 use bedrock_addon_core::document::{Component as _, Extra};
 use bedrock_addon_core::json::StrictBool;
 use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::known;
 use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
 
 legacy_document! {
@@ -16,7 +17,7 @@ legacy_document! {
 
 /// The version below which a document gets the grass shading: the next struct's version, so
 /// every document that reaches the step is below it.
-const GRASS_SHADE_UPGRADE_BEFORE: FormatVersion = FormatVersion::new(1, 21, 100);
+const GRASS_SHADE_UPGRADE_BEFORE: FormatVersion = known::V1_21_100;
 
 /// The one biome whose grass the game shaded in code before 1.21.100
 /// (`minecraft:roofed_forest_mutated` is not shaded).

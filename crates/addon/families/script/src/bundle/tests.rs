@@ -8,6 +8,7 @@
 
 use super::lexer::{Lexed, cook, lex};
 use super::{ImportKind, ScriptSyntaxKind};
+use bedrock_addon_core::version::known;
 
 /// The import sites of `source` as `(kind, specifier)`.
 fn sites(source: &str) -> Vec<(ImportKind, String)> {
@@ -1188,7 +1189,7 @@ fn m9_on_an_engine_before_1_26_30_the_relaxed_form_refuses_the_manifest_and_no_s
         (None, None)
     );
     // From 1.26.30 the same manifest starts its script.
-    let accepted = bundles_on_engine(manifest, FormatVersion::new(1, 26, 30));
+    let accepted = bundles_on_engine(manifest, known::V1_26_30);
     assert_eq!(accepted[0].findings().count(), 0);
     assert!(accepted[0].graph.is_some());
 }

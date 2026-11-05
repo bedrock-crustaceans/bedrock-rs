@@ -13,15 +13,16 @@ use bedrock_addon_core::document::{ComponentMap, Extra};
 use bedrock_addon_core::json::JsonSlice;
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::known;
 use bedrock_addon_core::versioning::{ConvertMode, ParseCx, parse_payload};
 
 /// The first version read from the `minecraft:biome` payload alone (below it the whole
 /// document, envelope included, is read as one struct).
-pub(crate) const CEREAL: FormatVersion = FormatVersion::new(1, 21, 120);
+pub(crate) const CEREAL: FormatVersion = known::V1_21_120;
 /// The first struct with `minecraft:village_type` and the nether replacement.
-pub(crate) const V1_26_0: FormatVersion = FormatVersion::new(1, 26, 0);
+pub(crate) const V1_26_0: FormatVersion = known::V1_26_0;
 /// The first struct with `minecraft:subsurface_builder` and the noise-gradient builder.
-pub(crate) const V1_26_30: FormatVersion = FormatVersion::new(1, 26, 30);
+pub(crate) const V1_26_30: FormatVersion = known::V1_26_30;
 
 /// A stable payload: components as raw slices, parsed one at a time.
 #[derive(Facet)]

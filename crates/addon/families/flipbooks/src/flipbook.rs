@@ -9,13 +9,13 @@ use indexmap::IndexMap;
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
 use bedrock_addon_core::document::{
     Content, Document, Extra, JsonContent, Merge, Merged, Origin, Placed, RawLayer, Rejected,
+    unversioned,
 };
 use bedrock_addon_core::id::AtlasKey;
 use bedrock_addon_core::json::{EncodeError, Value, WriteStyle, write_json};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::load::WalkFile;
 use bedrock_addon_core::pack_identity::{PackPath, PackSide};
-use bedrock_addon_support::texture::document::{detached, origin_of, rejected, unversioned};
 use bedrock_addon_support::texture::jsoncpp::{
     as_bool, as_int, int_is_coerced, non_null, read_lenient, to_text,
 };
@@ -352,7 +352,7 @@ pub struct FlipbookCopy {
 /// Reads one pack's copy. A copy that is no JSON is an error and is left out, as in vanilla
 /// (whose text is its JSON library's); a root that is no array is left out with an information.
 pub(crate) fn parse_copy(file: &WalkFile) -> FlipbookCopy {
-    let origin = origin_of(file);
+    let origin = unversioned::origin_of(file);
     let mut findings = Diagnostics::default();
     // The copy is read with the numbers no double holds clamped, so neither its layer
     // nor the merged list keeps an infinity; the warning names this pack's file.
@@ -439,7 +439,7 @@ impl Content for Flipbooks {
     fn parse(path: &PackPath, bytes: &[u8], _: &LoadContext) -> Result<Document<Self>, Rejected> {
         // A number no double holds is read as the largest finite one, with a warning.
         bedrock_addon_core::document::FiniteText::load(bytes, |bytes| {
-            let origin = detached(path);
+            let origin = unversioned::lone(path);
             let mut diagnostics = Diagnostics::default();
             let read = match read_lenient(bytes) {
                 Ok(read) => read,
@@ -449,18 +449,18 @@ impl Content for Flipbooks {
                         text: None,
                     };
                     diagnostics.push(Diagnostic::error(code).in_file(&origin));
-                    return Err(rejected(origin, diagnostics));
+                    return Err(unversioned::rejected(origin, diagnostics));
                 }
             };
             if !check_file(&read.value, &origin, &mut diagnostics) {
-                return Err(rejected(origin, diagnostics));
+                return Err(unversioned::rejected(origin, diagnostics));
             }
             let mut root = VArray::new();
             merge_copy(&mut root, &mut HashMap::new(), &read.value, |_| {});
             let value = Flipbooks {
                 entries: read_entries(&root),
             };
-            Ok(unversioned(value, origin, diagnostics))
+            Ok(unversioned::document(value, origin, diagnostics))
         })
     }
 

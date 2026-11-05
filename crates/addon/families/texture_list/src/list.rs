@@ -10,11 +10,11 @@ use super::texts;
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
 };
+use bedrock_addon_core::document::unversioned;
 use bedrock_addon_core::document::{Content, Document, JsonContent, Placed, Rejected};
 use bedrock_addon_core::json::{EncodeError, Value, WriteStyle, strip_bom, write_json};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
-use bedrock_addon_support::texture::document::{detached, unversioned};
 use bedrock_addon_support::texture::files::{PackFiles, TEXTURE_SET, VERBATIM_OR_IMAGE};
 use bedrock_addon_support::texture::image::ImageFormat;
 use bedrock_addon_support::texture::jsoncpp::{root_end, skip_trivia, string_end};
@@ -559,7 +559,11 @@ impl Content for TextureList {
     fn parse(path: &PackPath, bytes: &[u8], _: &LoadContext) -> Result<Document<Self>, Rejected> {
         let mut diagnostics = Diagnostics::default();
         let list = TextureList::read(Some(bytes), &mut diagnostics);
-        Ok(unversioned(list, detached(path), diagnostics))
+        Ok(unversioned::document(
+            list,
+            unversioned::lone(path),
+            diagnostics,
+        ))
     }
 
     /// Writes the entries as a JSON array of strings.

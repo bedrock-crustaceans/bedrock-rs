@@ -6,7 +6,7 @@
 use bedrock_addon_core::document::{ComponentMap, Extra};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
-use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::{ParseCx, VersionStruct, Versioned};
 
 use crate::component::ItemComponent;
@@ -33,7 +33,7 @@ pub struct Item {
 }
 
 impl Versioned for Item {
-    const VERSION: FormatVersion = FormatVersion::new(1, 26, 30);
+    const VERSION: FormatVersion = known::V1_26_30;
 }
 
 impl VersionStruct for Item {

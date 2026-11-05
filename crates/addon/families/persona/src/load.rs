@@ -18,7 +18,7 @@ use bedrock_addon_core::diagnostic::{
 use bedrock_addon_core::document::{Content, Document, Origin, Rejected, VersionInfo};
 use bedrock_addon_core::json::{EncodeError, Value, WriteStyle, write_json};
 use bedrock_addon_core::load::LoadContext;
-use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::known;
 
 impl bedrock_addon_core::__private::Sealed for PieceMetadata {}
 impl bedrock_addon_core::__private::Sealed for PieceStoreInfo {}
@@ -155,7 +155,7 @@ fn located(findings: Vec<Diagnostic>, origin: &Origin) -> Diagnostics {
 
 /// The version record of a file that carries none.
 fn unversioned() -> VersionInfo {
-    let none = FormatVersion::new(0, 0, 0);
+    let none = known::V0_0_0;
     VersionInfo::new(None, false, none, none, false)
 }
 

@@ -5,8 +5,8 @@
 use facet::Facet;
 use facet_value::VArray;
 
-use super::climate::json_type;
 use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::json::ValueExt;
 use bedrock_addon_core::json::{StrictBool, StrictFloat, StrictString, Value};
 use bedrock_addon_core::shared::{BlockSpecifier, ShapeErrorKind};
 
@@ -203,7 +203,7 @@ fn weight(value: &Value) -> Option<u32> {
 fn pair(value: &Value) -> Result<[&Value; 2], ShapeErrorKind> {
     let array = value.as_array().ok_or(ShapeErrorKind::WrongType {
         expected: "an array of 2 elements",
-        found: json_type(value),
+        found: value.json_type(),
     })?;
     match array.as_slice() {
         [a, b] => Ok([a, b]),
@@ -223,7 +223,7 @@ impl NameOrWeight {
             .map(Self::Weight)
             .ok_or(ShapeErrorKind::WrongType {
                 expected: "a biome name or a non-negative integer",
-                found: json_type(value),
+                found: value.json_type(),
             })
     }
 
@@ -266,7 +266,7 @@ impl TryFrom<Value> for WeightedBiomes {
         }
         let array = value.as_array().ok_or(ShapeErrorKind::WrongType {
             expected: "a biome name or an array",
-            found: json_type(&value),
+            found: value.json_type(),
         })?;
         array
             .iter()
@@ -302,7 +302,7 @@ impl CategoryOrWeight {
             .map(Self::Weight)
             .ok_or(ShapeErrorKind::WrongType {
                 expected: "a temperature category or a non-negative integer",
-                found: json_type(value),
+                found: value.json_type(),
             })
     }
 

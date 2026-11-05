@@ -18,6 +18,7 @@ use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, JsonPathSegment, Severity, Span, VanillaText,
 };
 use bedrock_addon_core::id::Id;
+use bedrock_addon_core::id::syntax::has_namespace;
 use bedrock_addon_core::json::{JsonSlice, Value};
 use bedrock_addon_core::version::FormatVersion;
 
@@ -120,14 +121,6 @@ fn exponent_too_big(text: &str) -> Vec<std::ops::Range<usize>> {
         }
     }
     found
-}
-
-/// `NamespaceConstraint` without a disallowed namespace: a non-empty namespace, `:`, a
-/// non-empty name.
-pub(super) fn namespaced(identifier: &str) -> bool {
-    identifier
-        .split_once(':')
-        .is_some_and(|(namespace, name)| !namespace.is_empty() && !name.is_empty())
 }
 
 /// One file's read: the catalogue of the engine, where the reader is, and what it found.
@@ -270,9 +263,16 @@ impl Reader<'_> {
         value
     }
 
-    /// A document's `description`: the identifier.
+    /// A document's `description`: the identifier, under `NamespaceConstraint` without a
+    /// disallowed namespace.
     fn description(&mut self, slice: JsonSlice<'_>) -> Option<String> {
-        self.single(slice, "identifier", true, namespaced, Some(NAMESPACE_TEXT))
+        self.single(
+            slice,
+            "identifier",
+            true,
+            has_namespace,
+            Some(NAMESPACE_TEXT),
+        )
     }
 
     /// A `layout`: `markup`, at least one control of `set`.

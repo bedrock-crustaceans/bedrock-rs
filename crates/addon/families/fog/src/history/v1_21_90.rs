@@ -16,7 +16,7 @@ use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, Js
 use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::id::FogId;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
-use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::{ParseCx, Upgrade, UpgradeCx, VersionStruct, Versioned};
 
 pub use super::v1_21_0::{
@@ -65,7 +65,7 @@ pub struct HgSetting {
 }
 
 impl Versioned for FogDocument {
-    const VERSION: FormatVersion = FormatVersion::new(1, 21, 90);
+    const VERSION: FormatVersion = known::V1_21_90;
 }
 
 impl VersionStruct for FogDocument {

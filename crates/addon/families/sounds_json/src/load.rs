@@ -99,20 +99,12 @@ fn check_variant_keys(value: &SoundBindings, cx: Option<&LoadContext>, found: &m
     }
     #[cfg(feature = "molang")]
     if let Some((check, cx)) = cx.and_then(|cx| Some((cx.molang.as_deref()?, cx))) {
-        use bedrock_addon_core::diagnostic::{Location, Severity};
-        use bedrock_addon_core::molang::{
-            EmptyRule, MolangContext, MolangFieldSpec, ReaderKind, Side,
-        };
+        use bedrock_addon_core::diagnostic::Location;
+        use bedrock_addon_core::molang::{MolangContext, MolangFieldSpec, Side};
         // The game parses whatever string the key holds, an empty text included.
-        const KEY: MolangFieldSpec = MolangFieldSpec {
-            reader: ReaderKind::StrictVersioned,
-            empty: EmptyRule::Compile,
-            // The game parses the `key` without testing the result and registers the entity
-            // anyway: the parser's content-log errors are kept errors and the document loads.
-            error_severity: Severity::Error,
-            error_kept: true,
-            ..MolangFieldSpec::DEFAULT
-        };
+        // The game parses the `key` without testing the result and registers the entity
+        // anyway: the parser's content-log errors are kept errors and the document loads.
+        const KEY: MolangFieldSpec = MolangFieldSpec::KEPT.compile_empty();
         let context = MolangContext {
             experiments: cx.molang_experiments,
             ..MolangContext::detached()
@@ -234,5 +226,23 @@ impl Placed for SoundBindings {
     /// `sounds.json`, at the pack root: the one path the client reads.
     fn default_path(&self) -> PackPath {
         PackPath::from_static(BINDINGS_PATH)
+    }
+}
+
+#[cfg(all(test, feature = "molang"))]
+mod spec_tests {
+    use bedrock_addon_core::diagnostic::Severity;
+    use bedrock_addon_core::molang::{EmptyRule, MolangFieldSpec, ReaderKind};
+
+    #[test]
+    fn the_key_spec_is_the_kept_preset_compiling_an_empty_text() {
+        let written_out = MolangFieldSpec {
+            reader: ReaderKind::StrictVersioned,
+            empty: EmptyRule::Compile,
+            error_severity: Severity::Error,
+            error_kept: true,
+            ..MolangFieldSpec::DEFAULT
+        };
+        assert_eq!(MolangFieldSpec::KEPT.compile_empty(), written_out);
     }
 }

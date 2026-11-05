@@ -8,12 +8,11 @@ use indexmap::IndexMap;
 use super::{SPLASHES_PATH, SplashClient, Splashes};
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::document::{
-    Content, Document, JsonContent, Merge, Merged, Origin, Placed, Rejected,
+    Content, Document, JsonContent, Merge, Merged, Origin, Placed, Rejected, unversioned,
 };
 use bedrock_addon_core::json::{EncodeError, WriteStyle};
 use bedrock_addon_support::fixed_path::{
-    Authored, FileCopy, document, file_finding, json_text, lone, malformed, origin, reject,
-    root_file,
+    Authored, FileCopy, file_finding, json_text, malformed, root_file,
 };
 use bedrock_addon_support::jsoncpp::read;
 
@@ -32,7 +31,7 @@ fn read_splashes(origin: Origin, bytes: &[u8]) -> FileCopy<Splashes> {
         Ok(root) => root,
         Err(message) => {
             let code = malformed(message.to_string(), None);
-            return Err(reject(origin, Diagnostic::error(code)));
+            return Err(unversioned::reject(origin, Diagnostic::error(code)));
         }
     };
     let mut diagnostics = Diagnostics::default();
@@ -44,7 +43,7 @@ fn read_splashes(origin: Origin, bytes: &[u8]) -> FileCopy<Splashes> {
         &mut diagnostics,
     );
     let splashes = Splashes::from_value(&root, &mut diagnostics);
-    Ok(document(splashes, origin, diagnostics))
+    Ok(unversioned::document(splashes, origin, diagnostics))
 }
 
 impl Content for Splashes {
@@ -55,7 +54,7 @@ impl Content for Splashes {
     /// game skips such a copy); a root that is no object is an empty copy that replaces the lower packs'
     /// splashes.
     fn parse(path: &PackPath, bytes: &[u8], _: &LoadContext) -> Result<Document<Self>, Rejected> {
-        read_splashes(lone(path), bytes)
+        read_splashes(unversioned::lone(path), bytes)
     }
 
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
@@ -77,10 +76,7 @@ fn is_splashes(path: &PackPath) -> bool {
 }
 
 fn parse_splashes(file: &WalkFile, _: &LoadContext) -> FileCopy<Splashes> {
-    read_splashes(
-        origin(file.pack.clone(), file.side, &file.path),
-        &file.bytes,
-    )
+    read_splashes(unversioned::origin_of(file), &file.bytes)
 }
 
 /// The pool a client picks its splash from, given every pack's copy top first (the layers of
@@ -178,7 +174,7 @@ mod tests {
                         r#"{{ "canMerge": true, "splashes": [{}] }}"#,
                         texts.join(",")
                     );
-                    read_splashes(lone(&path), text.as_bytes()).expect("a copy")
+                    read_splashes(unversioned::lone(&path), text.as_bytes()).expect("a copy")
                 })
                 .collect()
         };

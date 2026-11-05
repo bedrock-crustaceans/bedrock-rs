@@ -13,6 +13,7 @@ use bedrock_addon_core::json::{StrictFloat, StrictInt, StrictString, Value};
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor, Step};
 use bedrock_addon_core::shared::{BlockDescriptor, EventTrigger, Filter, FloatRange};
 use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::known;
 use facet::Facet;
 
 use super::check::{Bound, Check, Goal};
@@ -82,7 +83,7 @@ impl MemoryMoveToPosition {
 }
 
 impl Goal for MemoryMoveToPosition {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 20);
+    const TYPED: FormatVersion = known::V1_26_20;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -158,7 +159,7 @@ impl MemoryWait {
 }
 
 impl Goal for MemoryWait {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 0);
+    const TYPED: FormatVersion = known::V1_26_0;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -230,7 +231,7 @@ impl MemoryLookAtEntity {
 }
 
 impl Goal for MemoryLookAtEntity {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 10);
+    const TYPED: FormatVersion = known::V1_26_10;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -311,7 +312,7 @@ impl MemoryFollowTarget {
 }
 
 impl Goal for MemoryFollowTarget {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 20);
+    const TYPED: FormatVersion = known::V1_26_20;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -401,35 +402,35 @@ sensor! {
     /// `minecraft:memory_sensor.find_nearest_block`: finds the nearest block of a set and
     /// stores its position in a memory.
     // Typed from 1.26.30.
-    MemorySensorFindNearestBlock(FindNearestBlockEntry, "minecraft:memory_sensor.find_nearest_block", FormatVersion::new(1, 26, 30))
+    MemorySensorFindNearestBlock(FindNearestBlockEntry, "minecraft:memory_sensor.find_nearest_block", known::V1_26_30)
 }
 
 sensor! {
     /// `minecraft:memory_sensor.find_nearest_entity`: finds the nearest entity the filters
     /// pass and stores it in a memory.
     // Typed from 1.26.20; the members follow the game's legacy parser.
-    MemorySensorFindNearestEntity(FindNearestEntityEntry, "minecraft:memory_sensor.find_nearest_entity", FormatVersion::new(1, 26, 20))
+    MemorySensorFindNearestEntity(FindNearestEntityEntry, "minecraft:memory_sensor.find_nearest_entity", known::V1_26_20)
 }
 
 sensor! {
     /// `minecraft:memory_sensor.find_nearest_poi`: finds the nearest point of interest of a
     /// kind and stores it in a memory.
     // Typed from 1.26.20; the members follow the game's legacy parser.
-    MemorySensorFindNearestPoi(FindNearestPoiEntry, "minecraft:memory_sensor.find_nearest_poi", FormatVersion::new(1, 26, 20))
+    MemorySensorFindNearestPoi(FindNearestPoiEntry, "minecraft:memory_sensor.find_nearest_poi", known::V1_26_20)
 }
 
 sensor! {
     /// `minecraft:memory_sensor.game_event`: reacts to game events (a goat horn, an instrument)
     /// near the entity.
     // A sensor component whose entries each name a game event type.
-    MemorySensorGameEvent(GameEventEntry, "minecraft:memory_sensor.game_event", FormatVersion::new(1, 26, 20))
+    MemorySensorGameEvent(GameEventEntry, "minecraft:memory_sensor.game_event", known::V1_26_20)
 }
 
 sensor! {
     /// `minecraft:memory_sensor.in_range_of_entity`: tracks whether the entity a memory holds
     /// is in range and responds when that changes.
     // Typed from 1.26.0 and declared again at 1.26.20.
-    MemorySensorInRangeOfEntity(InRangeOfEntityEntry, "minecraft:memory_sensor.in_range_of_entity", FormatVersion::new(1, 26, 0))
+    MemorySensorInRangeOfEntity(InRangeOfEntityEntry, "minecraft:memory_sensor.in_range_of_entity", known::V1_26_0)
 }
 
 impl MolangFields for MemorySensorFindNearestBlock {
@@ -846,7 +847,7 @@ impl MolangFields for MemoryRamAttack {
 }
 
 /// The version that types the four ram / jump Brain keys, which the 1.26.50 format introduces.
-const BRAIN_1_26_50: FormatVersion = FormatVersion::new(1, 26, 50);
+const BRAIN_1_26_50: FormatVersion = known::V1_26_50;
 
 sensor! {
     /// `minecraft:memory_sensor.find_ram_charge_position`: picks the position to charge a

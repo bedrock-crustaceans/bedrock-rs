@@ -15,7 +15,7 @@ use bedrock_addon_core::json::{
 };
 use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
-use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::{
     BETA_VERSION, BetaPermission, ErrorMask, Family, InputKind, Loaded, MissingVersion,
     NoComponents, NoStable, StructIndex, load,
@@ -50,7 +50,7 @@ impl Family for AtomicFamily {
     const PAYLOAD_KEY: &'static str = PAYLOAD;
     const DIRECTORIES: &'static [&'static str] = &[DIRECTORY];
     // Unused: there is no stable struct, so every version but `"beta"` has no parser.
-    const FLOOR: FormatVersion = FormatVersion::new(0, 0, 0);
+    const FLOOR: FormatVersion = known::V0_0_0;
     type Latest = NoStable;
     type Beta = AtomicClientEntity;
     // The game builds the load context with the beta permission on, whatever the pack and the

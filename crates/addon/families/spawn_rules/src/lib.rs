@@ -96,7 +96,8 @@ pub struct StandardDescription {
 impl StandardSpawnRules {
     /// The version the document is read at: its `format_version`, 1.8.0 when absent.
     pub fn effective_version(&self) -> FormatVersion {
-        self.format_version.unwrap_or(FormatVersion::new(1, 8, 0))
+        self.format_version
+            .unwrap_or(bedrock_addon_core::version::known::V1_8_0)
     }
 }
 

@@ -23,11 +23,12 @@ use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity, VanillaText,
 };
 use bedrock_addon_core::document::{ComponentMap, ComponentRef};
+use bedrock_addon_core::id::syntax::{has_namespace, split_namespace};
 use bedrock_addon_core::json::{StrictBool, Value};
 use bedrock_addon_core::load::{Experiment, LoadContext};
 use bedrock_addon_core::molang::{Molang, SourceForm};
 use bedrock_addon_core::shared::StateValue;
-use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::{Family, FieldMeta, ValidateCx, check_fields_since_engine};
 
 /// `Family::validate`.
@@ -308,7 +309,7 @@ fn rules(block: &mut Block, cx: &LoadContext, at: &JsonPath, d: &mut Diagnostics
 /// `minecraft` namespace; a base-game block's is `minecraft:…`.
 fn identifier(block: &Block, cx: &LoadContext, report: &mut Report<'_>) {
     let id = block.description.identifier.as_str();
-    let (namespace, name) = id.split_once(':').unwrap_or(("", id));
+    let (namespace, name) = split_namespace(id).unwrap_or(("", id));
     let shaped = !id.is_empty()
         && !id.chars().any(char::is_whitespace)
         && !namespace.is_empty()
@@ -407,9 +408,7 @@ fn menu_category(block: &Block, report: &mut Report<'_>) {
         );
     }
     if let Some(group) = &menu.group {
-        let namespaced = group
-            .split_once(':')
-            .is_some_and(|(ns, name)| !ns.is_empty() && !name.is_empty());
+        let namespaced = has_namespace(group);
         if !namespaced || group.chars().any(char::is_whitespace) {
             report.error(
                 DiagnosticCode::NamespaceRule { text: None },
@@ -433,7 +432,7 @@ fn states(block: &Block, report: &mut Report<'_>) {
         .collect();
     for (name, values) in &block.description.states {
         let rel = ["description", "states", name.as_str()];
-        let (namespace, path) = name.split_once(':').unwrap_or(("", name));
+        let (namespace, path) = split_namespace(name).unwrap_or(("", name));
         if name.chars().any(char::is_whitespace)
             || namespace.is_empty()
             || path.is_empty()
@@ -621,7 +620,7 @@ fn traits(block: &mut Block, cx: &LoadContext, report: &mut Report<'_>) {
     }
     if let Some(connection) = &traits.connection {
         const NAME: &str = "minecraft:connection";
-        gate(report, NAME, Some(FormatVersion::new(1, 26, 0)));
+        gate(report, NAME, Some(known::V1_26_0));
         // `vertical_connections` is bound for base-game packs only; elsewhere it is refused as
         // no state of the trait (the consequence is inferred from the game's constraint).
         if !cx.is_base_game_pack
@@ -689,17 +688,17 @@ fn traits(block: &mut Block, cx: &LoadContext, report: &mut Report<'_>) {
 /// component table).
 const SIXTEEN_WAY_ROTATION: &[FieldMeta] = &[FieldMeta {
     name: "",
-    since_engine: FormatVersion::new(1, 26, 30),
+    since_engine: known::V1_26_30,
 }];
 /// `minecraft:connection`'s `vertical_connections`.
 const VERTICAL_CONNECTIONS: &[FieldMeta] = &[FieldMeta {
     name: "",
-    since_engine: FormatVersion::new(1, 26, 50),
+    since_engine: known::V1_26_50,
 }];
 /// `internal_vanilla_data.requires_correct_tool_for_drops`.
 const VANILLA_DATA_FIELDS: &[FieldMeta] = &[FieldMeta {
     name: "requires_correct_tool_for_drops",
-    since_engine: FormatVersion::new(1, 26, 50),
+    since_engine: known::V1_26_50,
 }];
 
 /// `FieldSinceEngine` for every engine-gated member the block uses that is newer than its
@@ -1448,7 +1447,7 @@ fn field_gates(
             &rel(prefix, path),
         );
     };
-    if version < FormatVersion::new(1, 21, 90)
+    if version < known::V1_21_90
         && let Some(Geometry::Params(params)) = map.get_mut::<Geometry>()
         && params.uv_lock.take().is_some()
     {
@@ -1477,7 +1476,7 @@ fn field_gates(
             if instance.alpha_masked_tint == Some(StrictBool(true)) {
                 let tint = instance.tint_method.unwrap_or_default() != TintMethod::None;
                 let opaque = instance.render_method.unwrap_or_default() == RenderMethod::Opaque;
-                let message = if version < FormatVersion::new(1, 21, 120) {
+                let message = if version < known::V1_21_120 {
                     Some(
                         "'alpha_masked_tint' is only supported at format_version 1.21.120 or higher",
                     )
@@ -1512,7 +1511,7 @@ fn field_gates(
     // keeps `particle_count` without the toggle.
     if let Some(particles) = map.get_mut::<DestructionParticles>()
         && particles.particle_count.is_some()
-        && version < FormatVersion::new(1, 21, 90)
+        && version < known::V1_21_90
     {
         particles.particle_count = None;
         constraint(
@@ -1873,13 +1872,13 @@ fn neighbor_change(block: &Block, report: &mut Report<'_>) {
 }
 
 /// The legacy release of the multi-block trait.
-const MULTI_BLOCK_RELEASED: FormatVersion = FormatVersion::new(1, 26, 40);
+const MULTI_BLOCK_RELEASED: FormatVersion = known::V1_26_40;
 
 /// The version from which a horizontal multi-block needs no experiment.
-const HORIZONTAL_MULTI_BLOCK_RELEASE: FormatVersion = FormatVersion::new(1, 26, 50);
+const HORIZONTAL_MULTI_BLOCK_RELEASE: FormatVersion = known::V1_26_50;
 
 /// The version the legacy row of `sound` is released at.
-const SOUND_RELEASED: FormatVersion = FormatVersion::new(1, 26, 40);
+const SOUND_RELEASED: FormatVersion = known::V1_26_40;
 
 // ---- the shared values ---------------------------------------------------------------------
 

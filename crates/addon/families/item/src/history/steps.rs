@@ -29,7 +29,7 @@ use bedrock_addon_core::diagnostic::{
 };
 use bedrock_addon_core::id::SoundEventName;
 use bedrock_addon_core::json::Value;
-use bedrock_addon_core::version::{FormatVersion, FormatVersionInput};
+use bedrock_addon_core::version::{FormatVersion, FormatVersionInput, known};
 
 /// Where a 1.20.40 side-car trigger goes.
 type SideCarSlot = fn(&mut v1_20_40::Item) -> &mut Option<EventTrigger>;
@@ -907,15 +907,13 @@ impl Upgrade for v1_21_10::Item {
             // that format goes.
             let text = bedrock_addon_core::json::to_json(raw).unwrap_or_default();
             let mut own = bedrock_addon_core::diagnostic::Diagnostics::default();
-            let read = super::document::binding(FormatVersion::new(1, 21, 30), RARITY).and_then(
-                |parser| {
-                    parser(
-                        bedrock_addon_core::json::JsonSlice::new(&text),
-                        cx.load,
-                        &mut own,
-                    )
-                },
-            );
+            let read = super::document::binding(known::V1_21_30, RARITY).and_then(|parser| {
+                parser(
+                    bedrock_addon_core::json::JsonSlice::new(&text),
+                    cx.load,
+                    &mut own,
+                )
+            });
             // The game's legacy reader takes the key of such a file in silence; what the
             // 1.21.30 reader says of it is the crate's own, an information, its refusals
             // included.
@@ -1369,4 +1367,4 @@ impl Upgrade for Item {
 }
 
 #[allow(dead_code, reason = "the 1.26.0 version the damage step targets")]
-const V1_26_0: FormatVersion = FormatVersion::new(1, 26, 0);
+const V1_26_0: FormatVersion = known::V1_26_0;

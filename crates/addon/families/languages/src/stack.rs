@@ -13,8 +13,7 @@ use super::{Language, Languages};
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
 };
-use bedrock_addon_core::document::{Document, Merged, Origin, Rejected};
-use bedrock_addon_support::text::document::{document, origin, reject};
+use bedrock_addon_core::document::{Document, Merged, Origin, Rejected, unversioned};
 use bedrock_addon_support::text::lang_scan::{
     RESERVED_KEYS, defines_pack_keywords, is_pack_keyword,
 };
@@ -155,11 +154,13 @@ fn is_read(path: &PackPath) -> bool {
 /// The `Parse` job of `languages()`: the two JSON files are read; of a `.lang` file only
 /// whether it defines the pack keywords; of any other file only its place.
 fn parse_texts(file: &WalkFile, _: &LoadContext) -> TextsFile {
-    let origin = origin(file.pack.clone(), file.side, &file.path);
+    let origin = unversioned::origin_of(file);
     match file.key.as_str() {
         LANGUAGES_JSON => TextsFile::Layer(match read_languages(&file.bytes) {
-            Ok((languages, diagnostics)) => Ok(document(languages, origin, diagnostics)),
-            Err(finding) => Err(reject(origin, finding)),
+            Ok((languages, diagnostics)) => {
+                Ok(unversioned::document(languages, origin, diagnostics))
+            }
+            Err(finding) => Err(unversioned::reject(origin, finding)),
         }),
         LANGUAGE_NAMES_JSON => TextsFile::Layer(match read_names(&file.bytes) {
             Ok((names, diagnostics)) => {
@@ -167,9 +168,9 @@ fn parse_texts(file: &WalkFile, _: &LoadContext) -> TextsFile {
                     codes: Vec::new(),
                     names,
                 };
-                Ok(document(languages, origin, diagnostics))
+                Ok(unversioned::document(languages, origin, diagnostics))
             }
-            Err(finding) => Err(reject(origin, finding)),
+            Err(finding) => Err(unversioned::reject(origin, finding)),
         }),
         // Only the keyword lines are read: the file's entries and findings are the
         // `translations` line's, and `languages()` must not cost a parse of every language.

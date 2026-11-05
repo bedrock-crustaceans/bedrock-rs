@@ -5,7 +5,7 @@ use bedrock_addon_core::json::{
     JsonType, ScalarShape, StrictError, StrictFloat, StrictString, Value,
 };
 use bedrock_addon_core::molang::{
-    Admission, MolangFieldSpec, MolangVersion, MolangVersionSource, MolangVisitor,
+    MolangFieldSpec, MolangVersion, MolangVersionSource, MolangVisitor,
 };
 use bedrock_addon_core::shared::{BlockDescriptor, ItemDescriptor};
 use facet::Facet;
@@ -16,15 +16,11 @@ use super::parse::Check;
 /// A block or item descriptor's `tags` in a typed component: read at the fixed Molang version
 /// 13, only the tag queries resolve. The game logs a rejected expression and loads
 /// the entity with the descriptor kept: a kept error.
-pub(crate) const DESCRIPTOR_TAGS: MolangFieldSpec = MolangFieldSpec {
-    version: MolangVersionSource::Constant(MolangVersion::V13),
-    admission: Admission::Tags,
-    // The game's tag-expression parser logs a level-3 line for a rejected expression and
-    // still returns the descriptor, so the entity loads: a kept error.
-    error_severity: Severity::Error,
-    error_kept: true,
-    ..MolangFieldSpec::DEFAULT
-};
+// The game's tag-expression parser logs a level-3 line for a rejected expression and
+// still returns the descriptor, so the entity loads: a kept error.
+pub(crate) const DESCRIPTOR_TAGS: MolangFieldSpec = MolangFieldSpec::KEPT
+    .version(MolangVersionSource::Constant(MolangVersion::V13))
+    .tags();
 
 /// Hands an item descriptor's `tags` expression to the Molang walk.
 pub(crate) fn visit_item_tags(item: &mut ItemDescriptor, visitor: &mut MolangVisitor<'_>) {

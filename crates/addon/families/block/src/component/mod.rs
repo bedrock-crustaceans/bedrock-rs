@@ -48,8 +48,8 @@ use bedrock_addon_core::document::{ComponentMap, ComponentRef, CustomComponent};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::load::{Experiment, LoadContext, LoadRequirement};
 use bedrock_addon_core::molang::{
-    Admission, BLOCK_STATE_QUERIES, EmptyRule, MolangFailure, MolangFieldSpec, MolangVersion,
-    MolangVersionSource, MolangVisitor, OpsRule, ReaderKind,
+    BLOCK_STATE_QUERIES, EmptyRule, MolangFieldSpec, MolangVersion, MolangVersionSource,
+    MolangVisitor, OpsRule, ReaderKind,
 };
 use bedrock_addon_core::versioning::{ConvertMode, parse_component, write_payload};
 
@@ -569,56 +569,34 @@ pub(super) fn visit_geometry(visitor: &mut MolangVisitor<'_>, geometry: &mut Geo
 /// `geometry.bone_visibility.<bone>`: `{query.block_state}`, no side effects. A string entry
 /// that fails to parse is logged and dropped from the parse; the entry is still stored and the
 /// loop goes on with the next bone.
-pub(crate) const BONE_VISIBILITY: MolangFieldSpec = MolangFieldSpec {
-    reader: ReaderKind::LenientVersioned,
-    version: MolangVersionSource::Constant(MolangVersion::V13),
-    admission: Admission::Only(BLOCK_STATE_QUERIES),
-    ops: OpsRule::NoAssignmentsOrRandom,
-    empty: EmptyRule::BlockNoExpression,
-    on_failure: MolangFailure::KeepLogged,
-    error_severity: Severity::Error,
-    error_kept: true,
-};
+pub(crate) const BONE_VISIBILITY: MolangFieldSpec = MolangFieldSpec::KEPT
+    .reader(ReaderKind::LenientVersioned)
+    .version(MolangVersionSource::Constant(MolangVersion::V13))
+    .only(BLOCK_STATE_QUERIES)
+    .ops(OpsRule::NoAssignmentsOrRandom)
+    .empty(EmptyRule::BlockNoExpression);
 
 /// A block descriptor's `tags`: the `tags` query set, version 13. The game assigns the result
 /// of a failed tag-expression parse and returns normally, so the descriptor still loads.
-pub(crate) const DESCRIPTOR_TAGS: MolangFieldSpec = MolangFieldSpec {
-    reader: ReaderKind::StrictVersioned,
-    version: MolangVersionSource::Constant(MolangVersion::V13),
-    admission: Admission::Tags,
-    ops: OpsRule::All,
-    empty: EmptyRule::BlockNoExpression,
-    on_failure: MolangFailure::KeepLogged,
-    error_severity: Severity::Error,
-    error_kept: true,
-};
+pub(crate) const DESCRIPTOR_TAGS: MolangFieldSpec = MolangFieldSpec::KEPT
+    .version(MolangVersionSource::Constant(MolangVersion::V13))
+    .tags()
+    .empty(EmptyRule::BlockNoExpression);
 
 /// An item descriptor's `tags` (`item_specific_speeds`): the `tags` query set. A failed parse
 /// builds a node anyway and the caller stores it, so the descriptor still loads. The block's
 /// `item` member is assumed to read its descriptor through the same path as the item family.
-pub(crate) const ITEM_TAGS: MolangFieldSpec = MolangFieldSpec {
-    reader: ReaderKind::StrictVersioned,
-    version: MolangVersionSource::Constant(MolangVersion::V13),
-    admission: Admission::Tags,
-    ops: OpsRule::All,
-    empty: EmptyRule::BlockNoExpression,
-    on_failure: MolangFailure::KeepLogged,
-    error_severity: Severity::Error,
-    error_kept: true,
-};
+pub(crate) const ITEM_TAGS: MolangFieldSpec = MolangFieldSpec::KEPT
+    .version(MolangVersionSource::Constant(MolangVersion::V13))
+    .tags()
+    .empty(EmptyRule::BlockNoExpression);
 
 /// A deprecated trigger's or event's `condition`: unrestricted, side effects allowed. The
 /// same rule serves the `condition` of the trigger components (`on_fall_on`, `on_interact`,
 /// `on_placed`, `on_player_destroyed`, `on_player_placing`, `on_step_off`, `on_step_on`), of
 /// the definition triggers inside `queued_ticking` and `random_ticking`, and of the block's
 /// `events`; in each the game drops a failed parse result and goes on.
-pub(crate) const TRIGGER_CONDITION: MolangFieldSpec = MolangFieldSpec {
-    reader: ReaderKind::LenientVersioned,
-    version: MolangVersionSource::Constant(MolangVersion::V13),
-    admission: Admission::Default,
-    ops: OpsRule::All,
-    empty: EmptyRule::BlockNoExpression,
-    on_failure: MolangFailure::KeepLogged,
-    error_severity: Severity::Error,
-    error_kept: true,
-};
+pub(crate) const TRIGGER_CONDITION: MolangFieldSpec = MolangFieldSpec::KEPT
+    .reader(ReaderKind::LenientVersioned)
+    .version(MolangVersionSource::Constant(MolangVersion::V13))
+    .empty(EmptyRule::BlockNoExpression);

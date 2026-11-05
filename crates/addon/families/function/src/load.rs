@@ -6,7 +6,7 @@ use super::{Function, TickList};
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics};
 use bedrock_addon_core::document::{
     CombineRule, Content, Contribution, Definition, Document, JsonContent, Merge, Merged, NoBeta,
-    Origin, Placed, Registry, RegistryBuilder, Rejected, VersionInfo,
+    Placed, Registry, RegistryBuilder, Rejected, unversioned,
 };
 use bedrock_addon_core::id::{FunctionPath, Kind, kind};
 use bedrock_addon_core::json::{EncodeError, WriteStyle};
@@ -102,16 +102,6 @@ pub(super) fn function_name(path: &PackPath) -> Option<&str> {
         .filter(|name| !name.is_empty())
 }
 
-/// The origin of a file of `pack`.
-fn origin(pack: PackRef, side: PackSide, path: &PackPath) -> Origin {
-    Origin::file(pack, side, path.clone())
-}
-
-/// Neither file kind has a `format_version`: the version is the engine's.
-fn unversioned(cx: &LoadContext) -> VersionInfo {
-    VersionInfo::new(None, false, cx.engine_version, cx.engine_version, false)
-}
-
 /// Loads one function file of `pack`: the name `key` gives it (the file's path without a
 /// subpack folder) and the document or its rejection.
 fn parse_function_file(
@@ -122,7 +112,7 @@ fn parse_function_file(
     bytes: &[u8],
     cx: &LoadContext,
 ) -> (Option<FunctionPath>, Result<Document<Function>, Rejected>) {
-    let origin = origin(pack, side, path);
+    let origin = unversioned::origin(pack, side, path);
     let Some(name) = function_name(key) else {
         let mut diagnostics = Diagnostics::default();
         diagnostics.push(Diagnostic::error(DiagnosticCode::IgnoredFile {
@@ -146,7 +136,8 @@ fn parse_function_file(
         Ok(Document::new(
             function,
             origin,
-            unversioned(cx),
+            // A function has no `format_version`: the version is the engine's.
+            unversioned::version_at(cx.engine_version),
             diagnostics,
         ))
     };
@@ -162,7 +153,7 @@ fn parse_tick_file(
     bytes: &[u8],
     cx: &LoadContext,
 ) -> (Result<Document<TickList>, Rejected>, Vec<usize>) {
-    let origin = origin(pack, side, path);
+    let origin = unversioned::origin(pack, side, path);
     // A pack without `min_engine_version` gets the default version's command version, 46.
     let version = cx
         .min_engine_version
@@ -176,7 +167,9 @@ fn parse_tick_file(
     diagnostics.locate(&origin);
     let result = match parsed.list {
         Some(list) if !diagnostics.has_errors() => {
-            Ok(Document::new(list, origin, unversioned(cx), diagnostics))
+            // A tick list has no `format_version`: the version is the engine's.
+            let version = unversioned::version_at(cx.engine_version);
+            Ok(Document::new(list, origin, version, diagnostics))
         }
         _ => Err(Rejected::new(origin, diagnostics)),
     };

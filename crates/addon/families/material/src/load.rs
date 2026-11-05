@@ -2,6 +2,7 @@
 //! `.material` file, one parse job per file, and one combine that processes the lists as the
 //! client does, merges each named file over the packs and creates the materials.
 
+use bedrock_addon_core::document::unversioned;
 use std::collections::{HashMap, HashSet};
 
 use bedrock_addon_core::load::{
@@ -21,7 +22,7 @@ use super::read::{
     report_in_file, unwrap_copy,
 };
 use super::span;
-use super::write::{parse_error, rejected, stem_of, unversioned, wrong_root};
+use super::write::{parse_error, stem_of, wrong_root};
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity,
 };
@@ -100,17 +101,17 @@ fn parse_list(
         Ok(copy) => copy,
         Err(message) => {
             findings.push(parse_error(&file.path, message));
-            return (Err(rejected(origin, findings)), Vec::new());
+            return (Err(Rejected::located(origin, findings)), Vec::new());
         }
     };
     copy.report_clamped(&mut findings);
     let list = read_list_placed(kind, &copy.root, &mut findings);
     span::fill_all(&file.bytes, &mut findings);
     if let Some((list, places)) = list {
-        return (Ok(unversioned(list, origin, findings)), places);
+        return (Ok(unversioned::document(list, origin, findings)), places);
     }
     findings.push(wrong_root());
-    (Err(rejected(origin, findings)), Vec::new())
+    (Err(Rejected::located(origin, findings)), Vec::new())
 }
 
 /// The text of a list file and the index in it of each entry its list holds: where the

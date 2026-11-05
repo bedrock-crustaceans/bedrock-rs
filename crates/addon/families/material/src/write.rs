@@ -2,6 +2,7 @@
 //! [`MaterialFile`] and [`MaterialList`], `Placed` for the list. A member the value does not
 //! hold is not written, and a value the loader would refuse or read differently is refused.
 
+use bedrock_addon_core::document::unversioned;
 use facet_value::{VArray, VObject};
 
 use super::file::{
@@ -16,40 +17,15 @@ use super::read::{
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, VanillaText,
 };
-use bedrock_addon_core::document::{
-    Content, Document, Extra, Origin, Placed, Rejected, VersionInfo,
-};
+use bedrock_addon_core::document::{Content, Document, Extra, Placed, Rejected};
 use bedrock_addon_core::json::{
     EncodeError, MAX_JSON_DEPTH, Unrepresentable, Value, WriteStyle, write_json,
 };
 use bedrock_addon_core::load::LoadContext;
-use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
-use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::pack_identity::{PackPath, PackSide};
 
 /// The client's text for a copy that is no JSON: the path, then the reader's messages.
 pub(super) const PARSE_ERROR: &str = "Error parsing {} :\n {}";
-
-/// The origin of a file read on its own.
-fn detached(path: &PackPath) -> Origin {
-    Origin::file(PackRef::app_data(), PackSide::Resource, path.clone())
-}
-
-/// A document of an unversioned file: no `format_version` is read on any path.
-pub(super) fn unversioned<T>(
-    value: T,
-    origin: Origin,
-    mut diagnostics: Diagnostics,
-) -> Document<T> {
-    diagnostics.locate(&origin);
-    let none = FormatVersion::new(0, 0, 0);
-    let version = VersionInfo::new(None, false, none, none, false);
-    Document::new(value, origin, version, diagnostics)
-}
-
-/// A rejection of the file `origin` with its findings.
-pub(super) fn rejected(origin: Origin, diagnostics: Diagnostics) -> Rejected {
-    Rejected::located(origin, diagnostics)
-}
 
 /// The finding for the copy at `path` that is no JSON.
 pub(super) fn parse_error(path: &PackPath, message: String) -> Diagnostic {
@@ -115,18 +91,18 @@ impl Content for MaterialFile {
     /// Reads one `.material` file on its own, as a stack of one pack would. Rejected when the
     /// file is no JSON object or a material carries a keyword the client cannot load.
     fn parse(path: &PackPath, bytes: &[u8], _: &LoadContext) -> Result<Document<Self>, Rejected> {
-        let origin = detached(path);
+        let origin = unversioned::lone(path);
         let mut diagnostics = Diagnostics::default();
         let copy = match read_copy(bytes) {
             Ok(copy) => copy,
             Err(message) => {
                 diagnostics.push(parse_error(path, message));
-                return Err(rejected(origin, diagnostics));
+                return Err(Rejected::located(origin, diagnostics));
             }
         };
         let Some(root) = copy.root.as_object() else {
             diagnostics.push(wrong_root());
-            return Err(rejected(origin, diagnostics));
+            return Err(Rejected::located(origin, diagnostics));
         };
         let stem = stem_of(path.as_str());
         // The gate's finding, the clamped numbers, the duplicates of the map, then the
@@ -154,9 +130,9 @@ impl Content for MaterialFile {
             file.extra.insert(MATERIALS.to_owned(), dropped);
         }
         if diagnostics.has_errors() {
-            return Err(rejected(origin, diagnostics));
+            return Err(Rejected::located(origin, diagnostics));
         }
-        Ok(unversioned(file, origin, diagnostics))
+        Ok(unversioned::document(file, origin, diagnostics))
     }
 
     /// Writes the file in its form. Refused with `NotRepresentable` and the place when the
@@ -180,24 +156,24 @@ impl Content for MaterialList {
     /// Reads one list file on its own. The path says which list it is; a path that is none of
     /// the four is read as the common list. Rejected when the file is no JSON array.
     fn parse(path: &PackPath, bytes: &[u8], _: &LoadContext) -> Result<Document<Self>, Rejected> {
-        let origin = detached(path);
+        let origin = unversioned::lone(path);
         let mut diagnostics = Diagnostics::default();
         let kind = MaterialListKind::from_path(path.as_str()).unwrap_or(MaterialListKind::Common);
         let copy = match read_copy(bytes) {
             Ok(copy) => copy,
             Err(message) => {
                 diagnostics.push(parse_error(path, message));
-                return Err(rejected(origin, diagnostics));
+                return Err(Rejected::located(origin, diagnostics));
             }
         };
         copy.report_clamped(&mut diagnostics);
         let list = read_list(kind, &copy.root, &mut diagnostics);
         super::span::fill_all(bytes, &mut diagnostics);
         if let Some(list) = list {
-            return Ok(unversioned(list, origin, diagnostics));
+            return Ok(unversioned::document(list, origin, diagnostics));
         }
         diagnostics.push(wrong_root());
-        Err(rejected(origin, diagnostics))
+        Err(Rejected::located(origin, diagnostics))
     }
 
     /// Writes the list as an array of entries. Refused with `NotRepresentable` when an entry

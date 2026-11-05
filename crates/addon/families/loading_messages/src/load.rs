@@ -8,12 +8,10 @@ use indexmap::IndexMap;
 use super::{LOADING_MESSAGES_PATH, LoadingMessages, MessageList};
 use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath};
 use bedrock_addon_core::document::{
-    Content, Document, JsonContent, Merge, Merged, Origin, Placed, Rejected,
+    Content, Document, JsonContent, Merge, Merged, Origin, Placed, Rejected, unversioned,
 };
 use bedrock_addon_core::json::{EncodeError, WriteStyle};
-use bedrock_addon_support::fixed_path::{
-    Authored, FileCopy, document, json_text, lone, malformed, origin, reject, root_file,
-};
+use bedrock_addon_support::fixed_path::{Authored, FileCopy, json_text, malformed, root_file};
 use bedrock_addon_support::jsoncpp::read;
 
 impl bedrock_addon_core::__private::Sealed for LoadingMessages {}
@@ -33,7 +31,7 @@ fn read_loading(origin: Origin, bytes: &[u8]) -> FileCopy<LoadingMessages> {
         Err(message) => {
             // No tips at all.
             let code = malformed(message.to_string(), Some(LOADING_NOT_JSON));
-            return Err(reject(origin, Diagnostic::error(code)));
+            return Err(unversioned::reject(origin, Diagnostic::error(code)));
         }
     };
     let mut diagnostics = Diagnostics::default();
@@ -45,7 +43,7 @@ fn read_loading(origin: Origin, bytes: &[u8]) -> FileCopy<LoadingMessages> {
         &mut diagnostics,
     );
     let messages = LoadingMessages::from_value(&root, &mut diagnostics);
-    Ok(document(messages, origin, diagnostics))
+    Ok(unversioned::document(messages, origin, diagnostics))
 }
 
 impl Content for LoadingMessages {
@@ -55,7 +53,7 @@ impl Content for LoadingMessages {
     /// Reads one `loading_messages.json`. A file that is not JSON is rejected: the game then
     /// has no tips.
     fn parse(path: &PackPath, bytes: &[u8], _: &LoadContext) -> Result<Document<Self>, Rejected> {
-        read_loading(lone(path), bytes)
+        read_loading(unversioned::lone(path), bytes)
     }
 
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
@@ -77,10 +75,7 @@ fn is_loading(path: &PackPath) -> bool {
 }
 
 fn parse_loading(file: &WalkFile, _: &LoadContext) -> FileCopy<LoadingMessages> {
-    read_loading(
-        origin(file.pack.clone(), file.side, &file.path),
-        &file.bytes,
-    )
+    read_loading(unversioned::origin_of(file), &file.bytes)
 }
 
 /// The `Combine` job of `rp.loading_messages()`: the highest pack's file, whole. A highest

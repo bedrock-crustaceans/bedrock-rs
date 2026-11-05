@@ -14,7 +14,7 @@ use super::{
 };
 use bedrock_addon_core::diagnostic::JsonPath;
 use bedrock_addon_core::json::{EncodeError, Unrepresentable, Value};
-use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::{FormatVersion, known};
 
 type Written = Result<Value, EncodeError>;
 
@@ -218,7 +218,7 @@ impl GeometryFile {
         }
         if let Some(at) = self.locator_without_rotation() {
             // Only the shape older than 1.8 declares a locator object without `rotation`.
-            if self.format_version < FormatVersion::new(1, 8, 0) {
+            if self.format_version < known::V1_8_0 {
                 return legacy(self);
             }
             return Err(at);
@@ -313,7 +313,7 @@ fn legacy(file: &GeometryFile) -> Written {
     if file.format_version >= FormatVersion::new(1, 12, 0) {
         return Err(first_side_car(file));
     }
-    let v1_8 = file.format_version >= FormatVersion::new(1, 8, 0);
+    let v1_8 = file.format_version >= known::V1_8_0;
     let mut o = Object::new();
     o.put("format_version", version(file.format_version));
     o.opt("debug", file.debug.as_ref(), boolean)?;

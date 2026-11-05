@@ -25,7 +25,7 @@ use bedrock_addon_core::json::{EncodeError, WriteStyle, write_json};
 use bedrock_addon_core::load::Reported;
 use bedrock_addon_core::load::{Accept, CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
-use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::{
     Family, Loaded, MissingVersion, NoComponents, RangeModel, ValidateCx, Versioned,
 };
@@ -64,11 +64,11 @@ pub(crate) const V1_21_40: FormatVersion = FormatVersion::new(1, 21, 40);
 pub(crate) const V1_21_60: FormatVersion = FormatVersion::new(1, 21, 60);
 pub(crate) const V1_21_70: FormatVersion = FormatVersion::new(1, 21, 70);
 pub(crate) const V1_21_80: FormatVersion = FormatVersion::new(1, 21, 80);
-pub(crate) const V1_21_90: FormatVersion = FormatVersion::new(1, 21, 90);
-pub(crate) const V1_21_120: FormatVersion = FormatVersion::new(1, 21, 120);
-pub(crate) const V1_21_130: FormatVersion = FormatVersion::new(1, 21, 130);
-pub(crate) const V1_26_0: FormatVersion = FormatVersion::new(1, 26, 0);
-pub(crate) const V1_26_20: FormatVersion = FormatVersion::new(1, 26, 20);
+pub(crate) const V1_21_90: FormatVersion = known::V1_21_90;
+pub(crate) const V1_21_120: FormatVersion = known::V1_21_120;
+pub(crate) const V1_21_130: FormatVersion = known::V1_21_130;
+pub(crate) const V1_26_0: FormatVersion = known::V1_26_0;
+pub(crate) const V1_26_20: FormatVersion = known::V1_26_20;
 
 /// The `Versioned` impls of the structs of one chain.
 macro_rules! versions {

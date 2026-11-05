@@ -9,6 +9,7 @@ use bedrock_addon_core::id::{
 use bedrock_addon_core::json::{EncodeError, JsonSlice, StrictBool, StrictString, Value};
 use bedrock_addon_core::molang::{Molang, MolangFields, MolangSource, MolangVisitor, Step};
 use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::known;
 use bedrock_addon_core::versioning::{ParseCx, Upgrade, UpgradeCx, VersionStruct, Versioned};
 use bedrock_addon_core::visual::history::v1_10_0::Scripts;
 use bedrock_addon_core::visual::{ControllerUse, SpawnEgg};
@@ -89,7 +90,7 @@ pub struct Description {
 }
 
 impl Versioned for ClientEntity {
-    const VERSION: FormatVersion = FormatVersion::new(1, 10, 0);
+    const VERSION: FormatVersion = known::V1_10_0;
 }
 
 impl VersionStruct for ClientEntity {

@@ -14,7 +14,7 @@ use super::{settle, v1_8_0, walk_for};
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
-use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::{ParseCx, Upgrade, UpgradeCx, VersionStruct, Versioned};
 
 /// A geometry file older than 1.8.0.
@@ -252,7 +252,7 @@ fn read_cube(walk: &mut SchemaWalk, node: Node<'_>) -> Option<Cube> {
 }
 
 impl Versioned for GeometryFile {
-    const VERSION: FormatVersion = FormatVersion::new(0, 0, 0);
+    const VERSION: FormatVersion = known::V0_0_0;
 }
 
 impl MolangFields for GeometryFile {

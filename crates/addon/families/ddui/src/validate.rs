@@ -4,6 +4,7 @@
 
 use super::UiComposition;
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Phase, VanillaText};
+use bedrock_addon_core::id::syntax::split_namespace;
 use bedrock_addon_core::versioning::ValidateCx;
 
 /// The vanilla namespace, which the client looks for anywhere in the identifier: a substring
@@ -38,9 +39,8 @@ pub(crate) fn namespace(identifier: &str, cx: &mut ValidateCx<'_>) {
     cx.diagnostics.push(error);
     // An add-on identifier refused although its namespace is not `minecraft` (the test is a
     // substring test) gets a second, crate-own finding that says so by standing there.
-    let in_namespace = identifier
-        .split_once(':')
-        .is_some_and(|(namespace, _)| namespace == VANILLA_NAMESPACE);
+    let in_namespace =
+        split_namespace(identifier).is_some_and(|(namespace, _)| namespace == VANILLA_NAMESPACE);
     if !builtin && !in_namespace {
         let hint = Diagnostic::info(DiagnosticCode::NamespaceRule { text: None })
             .at(cx.at.with(&at))

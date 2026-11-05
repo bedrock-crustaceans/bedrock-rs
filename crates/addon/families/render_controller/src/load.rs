@@ -15,13 +15,14 @@ use bedrock_addon_core::id::{RenderControllerId, kind};
 use bedrock_addon_core::json::{EncodeError, WriteStyle};
 use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
+use bedrock_addon_core::version::known;
 use bedrock_addon_core::version::{FormatVersion, SemVersion};
 
 impl bedrock_addon_core::__private::Sealed for RenderControllerFile {}
 impl bedrock_addon_core::__private::Sealed for RenderController {}
 
 /// The one struct's version: every accepted file is parsed as it.
-const PARSED_AS: FormatVersion = FormatVersion::new(1, 8, 0);
+const PARSED_AS: FormatVersion = known::V1_8_0;
 
 fn version_info(written: Option<&SemVersion>) -> VersionInfo {
     let written = written.map(SemVersion::format_version);

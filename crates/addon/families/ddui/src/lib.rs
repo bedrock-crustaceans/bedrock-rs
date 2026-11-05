@@ -33,13 +33,13 @@ use bedrock_addon_core::diagnostic::Diagnostic;
 use bedrock_addon_core::document::Registry;
 use bedrock_addon_core::id::{UiCompositionId, UiRootId};
 use bedrock_addon_core::json::Value;
-use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::{FormatVersion, known};
 
 #[doc(hidden)]
 pub use load::load_group;
 
 /// The one `format_version` roots and compositions are read at.
-pub const FORMAT_VERSION: FormatVersion = FormatVersion::new(1, 21, 130);
+pub const FORMAT_VERSION: FormatVersion = known::V1_21_130;
 
 /// The data-driven UI of the resource packs (`rp.data_driven_ui()`): three collections loaded
 /// and used together.

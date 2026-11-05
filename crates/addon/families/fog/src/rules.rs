@@ -17,10 +17,10 @@ use super::{
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity, VanillaText,
 };
-use bedrock_addon_core::version::{FormatVersion, SemVersion};
+use bedrock_addon_core::version::{FormatVersion, SemVersion, known};
 
 /// The first engine that reads the keyframe forms of the volumetric members.
-pub(crate) const KEYFRAMES_SINCE: FormatVersion = FormatVersion::new(1, 26, 30);
+pub(crate) const KEYFRAMES_SINCE: FormatVersion = known::V1_26_30;
 
 fn report(d: &mut Diagnostics, severity: Severity, text: &'static str, at: JsonPath) {
     d.push(

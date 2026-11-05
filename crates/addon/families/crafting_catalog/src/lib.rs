@@ -39,7 +39,7 @@ pub(crate) const V1_21_60: FormatVersion = FormatVersion::new(1, 21, 60);
 
 /// The newest struct version (`v1_26_50::CraftingCatalogDocument::VERSION`), the
 /// `format_version` of vanilla's own 1.26.50 catalogue.
-pub(crate) const V1_26_50: FormatVersion = FormatVersion::new(1, 26, 50);
+pub(crate) const V1_26_50: FormatVersion = bedrock_addon_core::version::known::V1_26_50;
 
 /// The path of the one file a behaviour pack's catalogue is read from.
 pub(crate) const PATH: &str = "item_catalog/crafting_item_catalog.json";

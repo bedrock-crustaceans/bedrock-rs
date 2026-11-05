@@ -22,6 +22,7 @@ mod tests;
 
 use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::id::FogId;
+use bedrock_addon_core::version::known;
 
 pub(crate) use jsonutil::{Era, read_document};
 #[doc(hidden)]
@@ -32,11 +33,9 @@ pub use command::{FOG_STACK_LIMIT, FogCommandError, FogStack, is_valid_fog_ident
 pub use gates::{FOG_FIELD_GATES, FogFieldGate};
 
 /// The `format_version` of the newest fog struct, and the only one it is read at.
-pub(crate) const LATEST: bedrock_addon_core::version::FormatVersion =
-    bedrock_addon_core::version::FormatVersion::new(1, 26, 20);
+pub(crate) const LATEST: bedrock_addon_core::version::FormatVersion = known::V1_26_20;
 /// The oldest `format_version` the game reads fog settings at.
-pub(crate) const FLOOR: bedrock_addon_core::version::FormatVersion =
-    bedrock_addon_core::version::FormatVersion::new(1, 16, 100);
+pub(crate) const FLOOR: bedrock_addon_core::version::FormatVersion = known::V1_16_100;
 
 /// Fog settings (`minecraft:fog_settings`): how far and in which colour fog is drawn in air,
 /// weather and the fluids, and the volumetric fog of the deferred renderer.

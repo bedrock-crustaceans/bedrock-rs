@@ -16,7 +16,7 @@ use super::{
     ItemDisplayTransforms, Locator, PolyMesh, Polys, TextureMesh,
 };
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
-use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::{FormatVersion, known};
 
 /// What the schema of a file's era declares beyond the 1.12 members.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -46,7 +46,7 @@ pub(crate) const V1_19_30: FormatVersion = FormatVersion::new(1, 19, 30);
 /// 1.21.0.
 pub(crate) const V1_21_0: FormatVersion = FormatVersion::new(1, 21, 0);
 /// 1.26.40: the first engine with the `shelf` transform.
-pub(crate) const V1_26_40: FormatVersion = FormatVersion::new(1, 26, 40);
+pub(crate) const V1_26_40: FormatVersion = known::V1_26_40;
 
 impl Era {
     /// The schema of the struct `schema` (a chain version from 1.12.0 on) in a game of

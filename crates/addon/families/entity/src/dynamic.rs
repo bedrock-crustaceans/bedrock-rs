@@ -10,14 +10,12 @@
 //! `{"tags": …}` in a component: the pack's version in `Dynamic` components, rule M3), at every member of these components that holds a block or an item descriptor.
 //! A rejected expression is told and the descriptor kept with it.
 
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, JsonPath, Location, Phase, Severity,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, Location, Phase};
 use bedrock_addon_core::document::{ComponentMap, ComponentRef};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::molang::{
-    Admission, Molang, MolangContext, MolangFieldSpec, MolangFields, MolangVisitor, ReaderKind,
-    Step, not_checked, pass_one,
+    Molang, MolangContext, MolangFieldSpec, MolangFields, MolangVisitor, ReaderKind, Step,
+    not_checked, pass_one,
 };
 use bedrock_addon_core::version::FormatVersionInput;
 use bedrock_addon_core::versioning::ValidateCx;
@@ -28,28 +26,18 @@ use super::component::EntityComponent;
 /// A Molang member of a `Dynamic` component: the typed node vanilla's parser reads it with.
 /// The game logs a rejected expression at the error level and loads the entity, so it is a kept
 /// error; the crate drops the component itself.
-const MEMBER: MolangFieldSpec = MolangFieldSpec {
-    reader: ReaderKind::SchemaValidated,
-    // The parser logs the rejection at the error level and the entity loads: a kept error. The
-    // game discards the parse result and keeps the component, so the crate's drop of the
-    // component is its own act.
-    error_severity: Severity::Error,
-    error_kept: true,
-    ..MolangFieldSpec::DEFAULT
-};
+// The parser logs the rejection at the error level and the entity loads: a kept error. The
+// game discards the parse result and keeps the component, so the crate's drop of the
+// component is its own act.
+const MEMBER: MolangFieldSpec = MolangFieldSpec::KEPT.reader(ReaderKind::SchemaValidated);
 
 /// The `tags` of a block or item descriptor of a `Dynamic` component: a string, at the
 /// pack's Molang version, with the `tags` query set. The game logs a rejected expression and
 /// loads the entity, the descriptor kept with it: a kept error, and nothing is dropped.
 // Rule M3: the descriptor is kept with the rejected expression.
-const TAGS: MolangFieldSpec = MolangFieldSpec {
-    admission: Admission::Tags,
-    // The parser logs the rejection at the error level and the entity loads: a kept error. The
-    // game returns the descriptor even when the expression fails to parse.
-    error_severity: Severity::Error,
-    error_kept: true,
-    ..MolangFieldSpec::DEFAULT
-};
+// The parser logs the rejection at the error level and the entity loads: a kept error. The
+// game returns the descriptor even when the expression fails to parse.
+const TAGS: MolangFieldSpec = MolangFieldSpec::KEPT.tags();
 
 /// The members of `Dynamic` components that hold a block or an item descriptor: the
 /// component's key and the member's pattern (keys joined by `.`; `[]` after a key for "each

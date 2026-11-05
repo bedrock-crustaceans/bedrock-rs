@@ -4,6 +4,7 @@ super::legacy_struct!(1, 16, 0);
 
 use bedrock_addon_core::diagnostic::JsonPath;
 use bedrock_addon_core::vanilla::ActorType;
+use bedrock_addon_core::version::known;
 use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
 use facet_value::VArray;
 
@@ -13,7 +14,7 @@ use super::ops::{
 };
 
 /// The step's version, for its findings.
-const V1_16_100: FormatVersion = FormatVersion::new(1, 16, 100);
+const V1_16_100: FormatVersion = known::V1_16_100;
 
 /// 1.16.0 → 1.16.100 (gate 1.16.100).
 impl Upgrade for Entity {

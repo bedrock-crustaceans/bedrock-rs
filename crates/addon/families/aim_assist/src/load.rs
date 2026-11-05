@@ -15,7 +15,7 @@ use bedrock_addon_core::json::{EncodeError, JsonSlice, Value, WriteStyle, write_
 use bedrock_addon_core::load::Reported;
 use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
-use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::{
     EnvelopeCheck, ErrorMask, Family, Identity, InputKind, Loaded, MissingVersion, NoComponents,
     StructIndex, ValidateCx, VersionStruct, Versioned,
@@ -30,7 +30,7 @@ const PRESETS: &str = "aim_assist/presets";
 /// The first version of both families (`SCHEMA_PRESET_VERSION_1`, `SCHEMA_CATEGORY_VERSION_1`).
 pub(crate) const V1_21_50: FormatVersion = FormatVersion::new(1, 21, 50);
 /// The second preset struct (`SCHEMA_PRESET_VERSION_2`).
-pub(crate) const V1_21_120: FormatVersion = FormatVersion::new(1, 21, 120);
+pub(crate) const V1_21_120: FormatVersion = known::V1_21_120;
 
 impl Family for PresetFamily {
     const NAME: &'static str = "aim assist preset";

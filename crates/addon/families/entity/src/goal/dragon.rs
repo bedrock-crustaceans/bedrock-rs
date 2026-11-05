@@ -5,6 +5,7 @@ use bedrock_addon_core::json::{StrictFloat, StrictInt, StrictString};
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
 use bedrock_addon_core::shared::FloatRange;
 use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::known;
 use facet::Facet;
 
 use super::check::{Bound, Check, Goal};
@@ -75,7 +76,7 @@ impl DragonChargePlayer {
 }
 
 impl Goal for DragonChargePlayer {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 0);
+    const TYPED: FormatVersion = known::V1_26_0;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -123,7 +124,7 @@ impl DragonDeath {
 }
 
 impl Goal for DragonDeath {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 30);
+    const TYPED: FormatVersion = known::V1_26_30;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -220,7 +221,7 @@ impl DragonFlaming {
 }
 
 impl Goal for DragonFlaming {
-    const TYPED: FormatVersion = FormatVersion::new(1, 21, 100);
+    const TYPED: FormatVersion = known::V1_21_100;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -259,7 +260,7 @@ impl DragonHoldingPattern {
 }
 
 impl Goal for DragonHoldingPattern {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 30);
+    const TYPED: FormatVersion = known::V1_26_30;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -298,7 +299,7 @@ impl DragonLanding {
 }
 
 impl Goal for DragonLanding {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 30);
+    const TYPED: FormatVersion = known::V1_26_30;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -337,7 +338,7 @@ impl DragonScanning {
 }
 
 impl Goal for DragonScanning {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 30);
+    const TYPED: FormatVersion = known::V1_26_30;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -441,7 +442,7 @@ impl DragonStrafePlayer {
 }
 
 impl Goal for DragonStrafePlayer {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 0);
+    const TYPED: FormatVersion = known::V1_26_0;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -500,7 +501,7 @@ impl DragonTakeoff {
 }
 
 impl Goal for DragonTakeoff {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 30);
+    const TYPED: FormatVersion = known::V1_26_30;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra

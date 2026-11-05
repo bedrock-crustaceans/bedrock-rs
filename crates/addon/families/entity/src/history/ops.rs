@@ -8,6 +8,7 @@ use bedrock_addon_core::diagnostic::{
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::vanilla::ActorType;
 use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::known;
 use bedrock_addon_core::versioning::{Family, UpgradeCx};
 use facet_value::{VArray, VObject};
 use indexmap::IndexMap;
@@ -537,7 +538,7 @@ pub(crate) fn f32_value(value: f32) -> Value {
 }
 
 /// The version at or below which a payload without `components` gets no fixer op at all.
-const UNTOUCHED_AT_OR_BELOW: FormatVersion = FormatVersion::new(1, 8, 0);
+const UNTOUCHED_AT_OR_BELOW: FormatVersion = known::V1_8_0;
 
 /// The game's early exit: a document at or below 1.8.0 whose
 /// `minecraft:entity.components` is absent or `null` skips both fixer sections.

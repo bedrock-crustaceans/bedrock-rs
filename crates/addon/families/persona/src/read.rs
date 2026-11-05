@@ -23,7 +23,7 @@ use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::json::{
     JsonSlice, MAX_JSON_DEPTH, Value, check_depth, last_wins, strip_bom,
 };
-use bedrock_addon_core::version::{FormatVersion, FormatVersionInput};
+use bedrock_addon_core::version::{FormatVersion, FormatVersionInput, known};
 
 /// The payload key of a meta file written as a Minecraft document.
 pub(super) const ENVELOPE: &str = "minecraft:persona_piece_meta";
@@ -587,7 +587,7 @@ pub(super) fn written_in(extra: &Extra, key: &str) -> bool {
 
 /// The one version the meta reader of 1.26.40+ has a slice for: the loader's end version is
 /// 1.26.40 too, so its range is `[1.26.40, 1.26.40]`.
-pub(super) const META_VERSION: FormatVersion = FormatVersion::new(1, 26, 40);
+pub(super) const META_VERSION: FormatVersion = known::V1_26_40;
 
 /// One meta file from its root object, as the 1.26.40+ loader routes it:
 ///

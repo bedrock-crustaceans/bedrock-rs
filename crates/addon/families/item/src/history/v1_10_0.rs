@@ -5,7 +5,7 @@
 use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
-use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::{
     ParseCx, Upgrade, UpgradeCx, VersionStruct, Versioned, parse_payload, write_payload,
 };
@@ -39,7 +39,7 @@ pub struct Item {
 }
 
 impl Versioned for Item {
-    const VERSION: FormatVersion = FormatVersion::new(1, 10, 0);
+    const VERSION: FormatVersion = known::V1_10_0;
 }
 
 /// What the legacy item is parsed from.
@@ -98,7 +98,7 @@ impl VersionStruct for Item {
                 )
             }
         };
-        if components.seed.is_some() && cx.original_version > FormatVersion::new(1, 16, 100) {
+        if components.seed.is_some() && cx.original_version > known::V1_16_100 {
             seed_warning(&at, d);
         }
         Some(Item {

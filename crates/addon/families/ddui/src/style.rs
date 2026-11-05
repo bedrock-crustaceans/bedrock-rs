@@ -326,7 +326,8 @@ fn put_text(out: &mut VObject, key: &str, value: Option<&String>) {
 /// The payload of `style`: what the reader takes back equal, nothing it refuses.
 pub(crate) fn payload(style: &UiStyle) -> Result<Value, EncodeError> {
     let identifier = style.description.identifier.as_str();
-    if !super::read::namespaced(identifier) {
+    // `NamespaceConstraint` without a disallowed namespace.
+    if !bedrock_addon_core::id::syntax::has_namespace(identifier) {
         return Err(refusal(&["description", "identifier"]));
     }
     let mut description = VObject::new();

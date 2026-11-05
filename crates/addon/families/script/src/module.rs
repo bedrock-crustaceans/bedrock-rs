@@ -33,7 +33,7 @@ use bedrock_addon_core::diagnostic::{
 use bedrock_addon_core::document::{Document, Rejected};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::pack_identity::PackPath;
-use bedrock_addon_core::version::{FormatVersion, SemVersion};
+use bedrock_addon_core::version::{FormatVersion, SemVersion, known};
 use uuid::Uuid;
 
 use bedrock_addon_core::manifest::{
@@ -44,7 +44,7 @@ use bedrock_addon_core::manifest::{
 /// The engine version from which a format-3 manifest may write a native-module dependency's
 /// `version` in the relaxed form (`"2.0"`).
 // Before 1.26.30 the engine reads the `version` as a strict semantic version only.
-pub(crate) const RELAXED_VERSION_SINCE: FormatVersion = FormatVersion::new(1, 26, 30);
+pub(crate) const RELAXED_VERSION_SINCE: FormatVersion = known::V1_26_30;
 
 /// Which script host a script module is for.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]

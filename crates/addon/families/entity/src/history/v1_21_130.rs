@@ -2,6 +2,7 @@
 
 super::legacy_struct!(1, 21, 130);
 
+use bedrock_addon_core::version::known;
 use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
 use std::collections::HashMap;
 
@@ -11,7 +12,7 @@ use super::ops::{Members, Removed, Told, half, json, overwrite, removed, section
 use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath};
 
 /// The step's version, for its findings.
-const V1_26_0: FormatVersion = FormatVersion::new(1, 26, 0);
+const V1_26_0: FormatVersion = known::V1_26_0;
 
 /// 1.21.130 → 1.26.0.
 impl Upgrade for Entity {

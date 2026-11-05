@@ -29,7 +29,7 @@ use bedrock_addon_derive::Components;
 use facet::Facet;
 
 use super::history::BiomeFamily;
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
 use bedrock_addon_core::document::{ComponentMap, ComponentRef};
 use bedrock_addon_core::json::NullRule;
 use bedrock_addon_core::json::{
@@ -37,8 +37,8 @@ use bedrock_addon_core::json::{
 };
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::molang::{
-    Admission, EmptyRule, MolangFailure, MolangFieldSpec, MolangFields, MolangVersion,
-    MolangVersionSource, MolangVisitor, OpsRule, ReaderKind, Step,
+    MolangFieldSpec, MolangFields, MolangVersion, MolangVersionSource, MolangVisitor, ReaderKind,
+    Step,
 };
 use bedrock_addon_core::versioning::{ConvertMode, write_payload};
 
@@ -229,17 +229,12 @@ pub(crate) fn write_components(map: &ComponentMap<BiomeComponent>) -> Result<Val
 /// queries; a rejected expression fails the component and the biome is not registered.
 // The game compiles these expressions at Molang version 1 with only the `world_gen` queries
 // admitted, so a query outside that set rejects the component.
-pub(crate) const HEIGHT_RANGE: MolangFieldSpec = MolangFieldSpec {
-    reader: ReaderKind::BiomeHeightRange,
-    version: MolangVersionSource::Constant(MolangVersion::V1),
-    admission: Admission::WorldGen,
-    ops: OpsRule::All,
-    // An empty text is compiled: at version 1 it is rejected with only an info note.
-    empty: EmptyRule::Compile,
-    on_failure: MolangFailure::RejectDocument,
-    error_severity: Severity::Error,
-    error_kept: false,
-};
+pub(crate) // An empty text is compiled: at version 1 it is rejected with only an info note.
+const HEIGHT_RANGE: MolangFieldSpec = MolangFieldSpec::REJECTING
+    .reader(ReaderKind::BiomeHeightRange)
+    .version(MolangVersionSource::Constant(MolangVersion::V1))
+    .world_gen()
+    .compile_empty();
 
 impl MolangFields for SurfaceMaterialAdjustments {
     fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {

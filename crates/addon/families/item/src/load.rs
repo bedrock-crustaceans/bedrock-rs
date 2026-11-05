@@ -12,7 +12,7 @@ use bedrock_addon_core::load::{
     Accept, CollectionLoader, DocumentSource, LoadContext, LoadRequirement, StackCx, Walk, WalkFile,
 };
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide, PackType};
-use bedrock_addon_core::version::{FormatVersion, FormatVersionInput};
+use bedrock_addon_core::version::{FormatVersion, FormatVersionInput, known};
 use bedrock_addon_core::versioning::{
     self, BetaPermission, ComponentTable, EnvelopeCheck, ErrorMask, Family, InputKind, LoadOutcome,
     Loaded, MissingVersion, StructIndex, ValidateCx,
@@ -33,7 +33,7 @@ use bedrock_addon_core::document::Origin;
 pub struct ItemFamily;
 
 /// 1.16.100: the first component format, and the start of vanilla's data-driven items.
-const V1_16_100: FormatVersion = FormatVersion::new(1, 16, 100);
+const V1_16_100: FormatVersion = known::V1_16_100;
 
 impl Family for ItemFamily {
     // What the document does not read is kept for write-back: a number no double holds is
@@ -43,7 +43,7 @@ impl Family for ItemFamily {
     const PAYLOAD_KEY: &'static str = "minecraft:item";
     const DIRECTORIES: &'static [&'static str] = &["items"];
     // The game's item loader passes no minimum version: no floor.
-    const FLOOR: FormatVersion = FormatVersion::new(0, 0, 0);
+    const FLOOR: FormatVersion = known::V0_0_0;
     type Latest = Item;
     type Beta = Beta;
     type Component = ItemComponent;
@@ -175,7 +175,7 @@ impl Family for ItemFamily {
 }
 
 /// 1.26.30: the first modern slice.
-const FIRST_MODERN_SLICE: FormatVersion = FormatVersion::new(1, 26, 30);
+const FIRST_MODERN_SLICE: FormatVersion = known::V1_26_30;
 
 /// Whether `index` names a modern slice: the 1.26.30 struct, the newest one or the beta one.
 fn is_modern(index: StructIndex) -> bool {
@@ -266,7 +266,7 @@ pub(crate) const HISTORY_ROWS: &[GateRow] = &[
         name: "minecraft:custom_components",
         released: Some(FormatVersion::new(1, 21, 10)),
         requires: &[BETA_APIS],
-        deprecated_since: Some(FormatVersion::new(1, 21, 90)),
+        deprecated_since: Some(known::V1_21_90),
         deprecated_message: Some(texts::CUSTOM_COMPONENTS_DEPRECATED),
     },
     GateRow {
@@ -653,12 +653,12 @@ fn rejected_load(diagnostics: Diagnostics) -> ItemLoad {
     ItemLoad {
         outcome: LoadOutcome {
             value: None,
-            original_version: FormatVersion::new(0, 0, 0),
+            original_version: known::V0_0_0,
             version: bedrock_addon_core::document::VersionInfo::new(
                 None,
                 false,
-                FormatVersion::new(0, 0, 0),
-                FormatVersion::new(0, 0, 0),
+                known::V0_0_0,
+                known::V0_0_0,
                 false,
             ),
             diagnostics,

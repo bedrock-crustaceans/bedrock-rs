@@ -6,6 +6,7 @@ use facet_value::{VArray, VObject};
 
 use super::{Binding, Catalogue, ChildSet, Control, FORMAT_VERSION, Layout, UiComposition, UiRoot};
 use bedrock_addon_core::diagnostic::JsonPath;
+use bedrock_addon_core::id::syntax::has_namespace;
 use bedrock_addon_core::json::{EncodeError, MAX_JSON_DEPTH, Unrepresentable, Value};
 
 const ROOT_KEY: &str = "minecraft:ui-root";
@@ -24,13 +25,6 @@ fn refusal(key: &str, members: &[&str]) -> EncodeError {
         at,
         what: Unrepresentable::Unsupported,
     }
-}
-
-/// A non-empty namespace, `:`, a non-empty name.
-fn namespaced(identifier: &str) -> bool {
-    identifier
-        .split_once(':')
-        .is_some_and(|(namespace, name)| !namespace.is_empty() && !name.is_empty())
 }
 
 /// How deep `value` nests arrays and objects (a scalar is 0), counted no further than
@@ -221,7 +215,7 @@ fn document(key: &str, payload: Value) -> Value {
 /// The payload of a root.
 pub(crate) fn root_payload(root: &UiRoot) -> Result<Value, EncodeError> {
     let identifier = root.description.identifier.as_str();
-    if !namespaced(identifier) {
+    if !has_namespace(identifier) {
         return Err(refusal(ROOT_KEY, &["description", "identifier"]));
     }
     if root.attribs.root_point.is_empty() {
@@ -241,7 +235,7 @@ pub(crate) fn root_document(root: &UiRoot) -> Result<Value, EncodeError> {
 /// The payload of a composition.
 pub(crate) fn composition_payload(composition: &UiComposition) -> Result<Value, EncodeError> {
     let identifier = composition.description.identifier.as_str();
-    if !namespaced(identifier) {
+    if !has_namespace(identifier) {
         return Err(refusal(COMPOSITION_KEY, &["description", "identifier"]));
     }
     let mut attribs = VObject::new();

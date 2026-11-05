@@ -5,7 +5,7 @@ use super::{
     MultiBlockFeature, OreFeature, ScatterFeature, SingleBlockFeature, SnapToSurfaceFeature,
 };
 use bedrock_addon_core::json::NullRule;
-use bedrock_addon_core::version::{FormatVersion, FormatVersionInput};
+use bedrock_addon_core::version::{FormatVersion, FormatVersionInput, known};
 use bedrock_addon_core::versioning::{
     Family, InputKind, Selection, StructIndex, VersionChain, check_chain, select,
 };
@@ -170,7 +170,7 @@ fn the_duplicate_text_arrives_with_engine_1_26_40() {
     use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
     // Silent before 1.26.40 (the crate's own information, without text); from 1.26.40 the
     // game's level-3 text, and the second document is refused: an error.
-    let before = same_pack_duplicates(FormatVersion::new(1, 26, 30));
+    let before = same_pack_duplicates(known::V1_26_30);
     assert!(
         matches!(
             &before[..],
@@ -181,7 +181,7 @@ fn the_duplicate_text_arrives_with_engine_1_26_40() {
         ),
         "{before:?}"
     );
-    let from = same_pack_duplicates(FormatVersion::new(1, 26, 40));
+    let from = same_pack_duplicates(known::V1_26_40);
     assert!(
         matches!(
             &from[..],

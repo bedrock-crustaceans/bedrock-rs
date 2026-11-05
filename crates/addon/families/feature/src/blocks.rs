@@ -17,7 +17,7 @@ use bedrock_addon_core::json::{
 };
 use bedrock_addon_core::molang::MolangVisitor;
 use bedrock_addon_core::shared::{BlockDescriptor, BlockSpecifier, IntRange};
-use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::ValidateCx;
 use bedrock_addon_core::versioning::{ParseCx, VersionStruct, Versioned, write_payload};
 
@@ -590,7 +590,7 @@ pub(crate) const SINGLE_BLOCK_FORMAT: FormatVersion = FormatVersion::new(1, 21, 
 
 /// The format floor of `multi_block_feature` and `multipart_block_column_feature`, which are
 /// registered at this format.
-pub(crate) const MULTI_BLOCK_FORMAT: FormatVersion = FormatVersion::new(1, 26, 40);
+pub(crate) const MULTI_BLOCK_FORMAT: FormatVersion = known::V1_26_40;
 
 /// The setter texts of the named members of the block feature types.
 const GROWTH_DIRECTION: (&str, &str) = (
@@ -1041,7 +1041,7 @@ impl Rules for VegetationPatchFeature {
 }
 
 /// The engine that adds `horizontal_tree_decoration_feature`.
-const HORIZONTAL_TREE_DECORATION_ENGINE: FormatVersion = FormatVersion::new(1, 26, 40);
+const HORIZONTAL_TREE_DECORATION_ENGINE: FormatVersion = known::V1_26_40;
 
 impl Rules for HorizontalTreeDecorationFeature {
     const SINCE_ENGINE: Option<FormatVersion> = Some(HORIZONTAL_TREE_DECORATION_ENGINE);

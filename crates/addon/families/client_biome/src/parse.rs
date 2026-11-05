@@ -16,15 +16,16 @@ use bedrock_addon_core::document::{ComponentMap, ComponentSet, Extra};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, StrictString, Value};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::known;
 use bedrock_addon_core::versioning::{
     BETA_VERSION, ConvertMode, FieldGate, ParseCx, check_fields_released, parse_payload,
 };
 
 /// The first version read from the `minecraft:client_biome` payload alone (below it the whole
 /// document, envelope included, is read as one struct).
-pub(crate) const MODERN: FormatVersion = FormatVersion::new(1, 21, 130);
+pub(crate) const MODERN: FormatVersion = known::V1_21_130;
 /// The first struct whose identifier must have a namespace.
-pub(crate) const NAMESPACED: FormatVersion = FormatVersion::new(1, 21, 90);
+pub(crate) const NAMESPACED: FormatVersion = known::V1_21_90;
 /// The payload's key.
 pub(crate) const PAYLOAD_KEY: &str = "minecraft:client_biome";
 
@@ -40,7 +41,7 @@ const FIELD_GATES: [(&str, &[FieldGate]); 3] = [
             },
             FieldGate {
                 name: "underwater_music",
-                released: FormatVersion::new(1, 21, 110),
+                released: known::V1_21_110,
             },
         ],
     ),
@@ -48,7 +49,7 @@ const FIELD_GATES: [(&str, &[FieldGate]); 3] = [
         "minecraft:grass_appearance",
         &[FieldGate {
             name: "grass_is_shaded",
-            released: FormatVersion::new(1, 21, 100),
+            released: known::V1_21_100,
         }],
     ),
     (
@@ -56,15 +57,15 @@ const FIELD_GATES: [(&str, &[FieldGate]); 3] = [
         &[
             FieldGate {
                 name: "underwater_addition",
-                released: FormatVersion::new(1, 21, 120),
+                released: known::V1_21_120,
             },
             FieldGate {
                 name: "underwater_loop",
-                released: FormatVersion::new(1, 21, 120),
+                released: known::V1_21_120,
             },
             FieldGate {
                 name: "underwater_mood",
-                released: FormatVersion::new(1, 21, 120),
+                released: known::V1_21_120,
             },
         ],
     ),

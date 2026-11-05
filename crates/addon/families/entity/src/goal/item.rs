@@ -8,6 +8,7 @@ use bedrock_addon_core::shared::{
     BlockDescriptor, EventTrigger, Filter, FloatRange, IntRange, ItemDescriptor,
 };
 use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::known;
 use facet::Facet;
 use facet_value::VObject;
 
@@ -78,7 +79,7 @@ impl AdmireItem {
 }
 
 impl Goal for AdmireItem {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 20);
+    const TYPED: FormatVersion = known::V1_26_20;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -134,7 +135,7 @@ impl Barter {
 }
 
 impl Goal for Barter {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 20);
+    const TYPED: FormatVersion = known::V1_26_20;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -176,7 +177,7 @@ impl ChargeHeldItem {
 }
 
 impl Goal for ChargeHeldItem {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 40);
+    const TYPED: FormatVersion = known::V1_26_40;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -235,7 +236,7 @@ impl DrinkMilk {
 }
 
 impl Goal for DrinkMilk {
-    const TYPED: FormatVersion = FormatVersion::new(1, 21, 120);
+    const TYPED: FormatVersion = known::V1_21_120;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -286,7 +287,7 @@ impl DrinkPotion {
 }
 
 impl Goal for DrinkPotion {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 40);
+    const TYPED: FormatVersion = known::V1_26_40;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -481,7 +482,7 @@ impl DropItemFor {
 }
 
 impl Goal for DropItemFor {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 10);
+    const TYPED: FormatVersion = known::V1_26_10;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -598,7 +599,7 @@ impl EatBlock {
 }
 
 impl Goal for EatBlock {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 40);
+    const TYPED: FormatVersion = known::V1_26_40;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -669,7 +670,7 @@ impl EatCarriedItem {
 }
 
 impl Goal for EatCarriedItem {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 20);
+    const TYPED: FormatVersion = known::V1_26_20;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -713,7 +714,7 @@ impl EquipItem {
 }
 
 impl Goal for EquipItem {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 20);
+    const TYPED: FormatVersion = known::V1_26_20;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -808,7 +809,7 @@ impl GoAndGiveItemsToNoteblock {
 }
 
 impl Goal for GoAndGiveItemsToNoteblock {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 20);
+    const TYPED: FormatVersion = known::V1_26_20;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -905,7 +906,7 @@ impl GoAndGiveItemsToOwner {
 }
 
 impl Goal for GoAndGiveItemsToOwner {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 20);
+    const TYPED: FormatVersion = known::V1_26_20;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -999,7 +1000,7 @@ impl OfferFlower {
 }
 
 impl Goal for OfferFlower {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 10);
+    const TYPED: FormatVersion = known::V1_26_10;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -1158,7 +1159,7 @@ impl PickupItems {
 }
 
 impl Goal for PickupItems {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 20);
+    const TYPED: FormatVersion = known::V1_26_20;
 
     const GATED: &'static [(&'static str, FormatVersion)] = &[("stop_if_holding_item", V1_26_30)];
 
@@ -1271,7 +1272,7 @@ impl PlaceBlock {
 }
 
 impl Goal for PlaceBlock {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 30);
+    const TYPED: FormatVersion = known::V1_26_30;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -1364,7 +1365,7 @@ impl ShareItems {
 }
 
 impl Goal for ShareItems {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 30);
+    const TYPED: FormatVersion = known::V1_26_30;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -1431,7 +1432,7 @@ impl Snacking {
 }
 
 impl Goal for Snacking {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 40);
+    const TYPED: FormatVersion = known::V1_26_40;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -1527,7 +1528,7 @@ impl TakeBlock {
 }
 
 impl Goal for TakeBlock {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 30);
+    const TYPED: FormatVersion = known::V1_26_30;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -1646,7 +1647,7 @@ impl TakeFlower {
 }
 
 impl Goal for TakeFlower {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 10);
+    const TYPED: FormatVersion = known::V1_26_10;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -1729,7 +1730,7 @@ impl TradeWithPlayer {
 }
 
 impl Goal for TradeWithPlayer {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 10);
+    const TYPED: FormatVersion = known::V1_26_10;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -1860,7 +1861,7 @@ impl TransportItems {
 }
 
 impl Goal for TransportItems {
-    const TYPED: FormatVersion = FormatVersion::new(1, 21, 100);
+    const TYPED: FormatVersion = known::V1_21_100;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra

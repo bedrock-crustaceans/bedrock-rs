@@ -4,21 +4,20 @@
 use std::collections::HashSet;
 use std::fmt::Write as _;
 
-use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
+use bedrock_addon_core::pack_identity::{PackPath, PackSide};
 
 use super::{GEOMETRY_PATH, SKINS_PATH, SkinPack};
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, VanillaText,
 };
 use bedrock_addon_core::document::{
-    Content, Document, JsonContent, Origin, Placed, Rejected, VersionInfo,
+    Content, Document, JsonContent, Origin, Placed, Rejected, unversioned,
 };
 use bedrock_addon_core::json::{
     EncodeError, MAX_JSON_DEPTH, PrepareError, Prepared, Value, WriteStyle, blank_bom, check_depth,
     last_wins, write_json,
 };
 use bedrock_addon_core::load::LoadContext;
-use bedrock_addon_core::version::FormatVersion;
 
 // The loader's texts.
 /// A pack without `skins.json`.
@@ -32,11 +31,6 @@ const NOT_OBJECT: &str = "Skin manifest failed to load.  Pack Name: {} /nAuthor:
 const INVALID_SKIN: &str = "Trying to add an invalid classic skin.{}";
 
 impl bedrock_addon_core::__private::Sealed for SkinPack {}
-
-fn lone(path: &PackPath) -> Origin {
-    // A skin pack is on neither stack; the resource side is the nearer of the two.
-    Origin::file(PackRef::app_data(), PackSide::Resource, path.clone())
-}
 
 fn located(mut diagnostics: Diagnostics, origin: &Origin) -> Diagnostics {
     let found = std::mem::take(&mut diagnostics);
@@ -110,7 +104,8 @@ fn parse_placed(
     path: &PackPath,
     bytes: &[u8],
 ) -> Result<(Document<SkinPack>, Vec<JsonPath>), Rejected> {
-    let origin = lone(path);
+    // A skin pack is on neither stack; the resource side is the nearer of the two.
+    let origin = unversioned::lone(path);
     let mut root = match read_json(bytes) {
         Ok(root) => root,
         Err(error) => {
@@ -141,8 +136,7 @@ fn parse_placed(
         &mut diagnostics,
     );
     let (pack, places) = SkinPack::from_value_placed(&root, &mut diagnostics);
-    let none = FormatVersion::new(0, 0, 0);
-    let version = VersionInfo::new(None, false, none, none, false);
+    let version = unversioned::version();
     let diagnostics = located(diagnostics, &origin);
     Ok((Document::new(pack, origin, version, diagnostics), places))
 }
@@ -181,7 +175,7 @@ impl SkinPack {
             let code = DiagnosticCode::MissingRequiredField {
                 text: Some(VanillaText::Fixed(NOT_FOUND)),
             };
-            return Err(refuse(&lone(&path), code));
+            return Err(refuse(&unversioned::lone(&path), code));
         };
         let (document, places) = parse_placed(&path, bytes)?;
         let files: HashSet<&str> = paths.into_iter().collect();

@@ -6,6 +6,7 @@ use crate::component::{BiomeMusic, Precipitation};
 use bedrock_addon_core::document::{Component as _, Extra};
 use bedrock_addon_core::json::{StrictBool, StrictFloat};
 use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::known;
 use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
 
 legacy_document! {
@@ -15,7 +16,7 @@ legacy_document! {
 
 /// The version below which a document gets the precipitation component and the underwater
 /// music: the next struct's version, so every document that reaches the step is below it.
-const PARTICLES_AND_UNDERWATER_MUSIC_BEFORE: FormatVersion = FormatVersion::new(1, 21, 110);
+const PARTICLES_AND_UNDERWATER_MUSIC_BEFORE: FormatVersion = known::V1_21_110;
 
 /// The particles of the four nether biomes, which the server biome's `minecraft:climate`
 /// carried before 1.21.110. Only the one member is written: of the four densities (`ash`,

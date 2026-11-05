@@ -3,63 +3,41 @@
 //! hold one; [`walk!`] writes the impls.
 
 use super::values::{BlockList, WeightedBlock};
-use bedrock_addon_core::diagnostic::{JsonPath, Severity};
+use bedrock_addon_core::diagnostic::JsonPath;
 use bedrock_addon_core::id::FeatureId;
 use bedrock_addon_core::molang::{
-    Admission, EmptyRule, MolangFailure, MolangFieldSpec, MolangVersionSource, MolangVisitor,
-    OpsRule, ReaderKind, Step,
+    MolangFieldSpec, MolangVersionSource, MolangVisitor, ReaderKind, Step,
 };
 use bedrock_addon_core::shared::{BlockDescriptor, BlockSpecifier};
 
 /// A descriptor's `tags`: the pack's Molang version, the `tags` query set; vanilla logs the
 /// parser's lines at level 3 and keeps the descriptor, so a rejection is a kept error.
-pub(crate) const DESCRIPTOR_TAGS: MolangFieldSpec = MolangFieldSpec {
-    reader: ReaderKind::SchemaValidated,
-    version: MolangVersionSource::Pack,
-    admission: Admission::Tags,
-    ops: OpsRule::All,
-    empty: EmptyRule::Compile,
-    on_failure: MolangFailure::KeepLogged,
-    error_severity: Severity::Error,
-    error_kept: true,
-};
+pub(crate) const DESCRIPTOR_TAGS: MolangFieldSpec = MolangFieldSpec::KEPT
+    .reader(ReaderKind::SchemaValidated)
+    .tags()
+    .compile_empty();
 
 /// A typed world-generation member (`width_modifier`, `condition`): the pack's
 /// version, the `world_gen` query set; a failed compile fails the schema, so the feature is not
 /// registered.
-pub(crate) const WORLD_GEN: MolangFieldSpec = MolangFieldSpec {
-    reader: ReaderKind::SchemaValidated,
-    version: MolangVersionSource::Pack,
-    admission: Admission::WorldGen,
-    ops: OpsRule::All,
-    empty: EmptyRule::Compile,
-    on_failure: MolangFailure::RejectDocument,
-    error_severity: Severity::Error,
-    error_kept: false,
-};
+pub(crate) const WORLD_GEN: MolangFieldSpec = MolangFieldSpec::REJECTING
+    .reader(ReaderKind::SchemaValidated)
+    .world_gen()
+    .compile_empty();
 
 /// A scatter member of the `distribution` (format 1.21.10 and later): read leniently, compiled
 /// at the pack's version even in the object form, the `world_gen` query set. A failed compile
 /// is logged at level 3 and the feature loads, so it is a kept error: the client converts each
 /// member and goes on, with no failure path. An empty string is no expression.
-pub(crate) const SCATTER: MolangFieldSpec = MolangFieldSpec {
-    reader: ReaderKind::LenientVersioned,
-    version: MolangVersionSource::PackIgnoringObject,
-    admission: Admission::WorldGen,
-    ops: OpsRule::All,
-    empty: EmptyRule::NoExpression,
-    on_failure: MolangFailure::KeepLogged,
-    error_severity: Severity::Error,
-    error_kept: true,
-};
+pub(crate) const SCATTER: MolangFieldSpec = MolangFieldSpec::KEPT
+    .reader(ReaderKind::LenientVersioned)
+    .version(MolangVersionSource::PackIgnoringObject)
+    .world_gen();
 
 /// A scatter member of the root layout below format 1.21.10: the legacy schema's typed
 /// children, which take no object form. A failed compile is a kept error as for [`SCATTER`];
 /// whether the client instead refuses the feature for a text its parser rejects is not known.
-pub(crate) const SCATTER_LEGACY: MolangFieldSpec = MolangFieldSpec {
-    reader: ReaderKind::SchemaValidated,
-    ..SCATTER
-};
+pub(crate) const SCATTER_LEGACY: MolangFieldSpec = SCATTER.reader(ReaderKind::SchemaValidated);
 
 /// A member that may hold Molang fields: block descriptors (their `tags`) or expressions.
 pub(crate) trait Walk {
@@ -262,4 +240,68 @@ pub fn references(feature: &super::Feature) -> Vec<(JsonPath, Reference<'_>)> {
     };
     feature.refer(&mut out);
     out.found
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use bedrock_addon_core::diagnostic::Severity;
+    use bedrock_addon_core::molang::{Admission, EmptyRule, MolangFailure, OpsRule};
+
+    /// Each spec, field by field, as the game reads the member.
+    #[test]
+    fn the_molang_specs_keep_their_fields() {
+        use Admission::{Tags, WorldGen};
+        use EmptyRule::{Compile, NoExpression};
+        use MolangFailure::{KeepLogged, RejectDocument};
+        use MolangVersionSource::{Pack, PackIgnoringObject};
+        use ReaderKind::{LenientVersioned, SchemaValidated};
+        let spec = |reader, version, admission, empty, on_failure, error_kept| MolangFieldSpec {
+            reader,
+            version,
+            admission,
+            ops: OpsRule::All,
+            empty,
+            on_failure,
+            error_severity: Severity::Error,
+            error_kept,
+        };
+        assert_eq!(
+            DESCRIPTOR_TAGS,
+            spec(SchemaValidated, Pack, Tags, Compile, KeepLogged, true)
+        );
+        assert_eq!(
+            WORLD_GEN,
+            spec(
+                SchemaValidated,
+                Pack,
+                WorldGen,
+                Compile,
+                RejectDocument,
+                false
+            )
+        );
+        assert_eq!(
+            SCATTER,
+            spec(
+                LenientVersioned,
+                PackIgnoringObject,
+                WorldGen,
+                NoExpression,
+                KeepLogged,
+                true
+            )
+        );
+        assert_eq!(
+            SCATTER_LEGACY,
+            spec(
+                SchemaValidated,
+                PackIgnoringObject,
+                WorldGen,
+                NoExpression,
+                KeepLogged,
+                true
+            )
+        );
+    }
 }

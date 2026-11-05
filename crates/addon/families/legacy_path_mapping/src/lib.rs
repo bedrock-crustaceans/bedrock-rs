@@ -5,11 +5,10 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics};
-use bedrock_addon_core::document::{Content, Document, JsonContent, Placed, Rejected};
+use bedrock_addon_core::document::{Content, Document, JsonContent, Placed, Rejected, unversioned};
 use bedrock_addon_core::json::{EncodeError, Value, WriteStyle, write_json};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::pack_identity::{PackPath, PackSide};
-use bedrock_addon_support::texture::document::{detached, rejected, unversioned};
 use bedrock_addon_support::texture::jsoncpp::read_lenient;
 
 /// The file's path at the root of the app package.
@@ -37,12 +36,12 @@ impl Content for LegacyPathMapping {
     fn parse(path: &PackPath, bytes: &[u8], _: &LoadContext) -> Result<Document<Self>, Rejected> {
         // A number no double holds is read as the largest finite one, with a warning.
         bedrock_addon_core::document::FiniteText::load(bytes, |bytes| {
-            let origin = detached(path);
+            let origin = unversioned::lone(path);
             let mut diagnostics = Diagnostics::default();
             match read_lenient(bytes) {
                 Ok(read) => {
                     let mapping = LegacyPathMapping { json: read.value };
-                    Ok(unversioned(mapping, origin, diagnostics))
+                    Ok(unversioned::document(mapping, origin, diagnostics))
                 }
                 Err(message) => {
                     let code = DiagnosticCode::MalformedInput {
@@ -50,7 +49,7 @@ impl Content for LegacyPathMapping {
                         text: None,
                     };
                     diagnostics.push(Diagnostic::error(code).in_file(&origin));
-                    Err(rejected(origin, diagnostics))
+                    Err(unversioned::rejected(origin, diagnostics))
                 }
             }
         })

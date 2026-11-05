@@ -5,9 +5,10 @@ use bedrock_addon_core::pack_identity::{PackPath, PackSide};
 
 use super::{UiTextureInfo, write};
 use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath};
+use bedrock_addon_core::document::unversioned::{document, lone, reject};
 use bedrock_addon_core::document::{Content, Document, JsonContent, Origin, Rejected};
 use bedrock_addon_core::json::{EncodeError, Value, WriteStyle};
-use bedrock_addon_support::fixed_path::{document, json_text, lone, malformed, reject};
+use bedrock_addon_support::fixed_path::{json_text, malformed};
 use bedrock_addon_support::jsoncpp::read;
 
 impl bedrock_addon_core::__private::Sealed for UiTextureInfo {}

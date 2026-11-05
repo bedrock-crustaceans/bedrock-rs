@@ -5,7 +5,7 @@ use indexmap::IndexMap;
 
 use super::{BonePattern, RenderController, RenderControllerFile, Rgba, UvAnim, fold_case};
 use bedrock_addon_core::molang::{Molang, MolangSource, RawVersion};
-use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::known;
 
 /// The Molang version the game compiles its own default expressions with, whatever the pack.
 const BUILT_IN: RawVersion = RawVersion(13);
@@ -24,7 +24,7 @@ impl RenderControllerFile {
     /// An empty file at format 1.8.0, the version the game's own files use.
     pub fn new() -> Self {
         Self {
-            format_version: FormatVersion::new(1, 8, 0),
+            format_version: known::V1_8_0,
             render_controllers: IndexMap::new(),
             dropped: IndexMap::new(),
         }

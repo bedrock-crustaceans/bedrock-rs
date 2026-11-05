@@ -3,7 +3,7 @@
 use bedrock_addon_core::document::{ComponentMap, Extra};
 use bedrock_addon_core::id::ItemId;
 use bedrock_addon_core::shared::{CreativeCategory, MenuCategory};
-use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::known;
 use indexmap::IndexMap;
 
 use super::history::write_component;
@@ -62,7 +62,7 @@ impl Item {
     /// Runs the family's rules as if the item were loaded at the newest format version from a
     /// pack with `cx`: the component gates, the identifier rule and the validators.
     pub fn validate(&self, cx: &LoadContext) -> Diagnostics {
-        let version = FormatVersion::new(1, 26, 50);
+        let version = known::V1_26_50;
         let at = JsonPath::new().child("minecraft:item");
         let mut d = Diagnostics::default();
         let mut components = IndexMap::new();

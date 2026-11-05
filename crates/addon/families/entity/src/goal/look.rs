@@ -6,6 +6,7 @@ use bedrock_addon_core::json::{StrictBool, StrictFloat, StrictInt};
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
 use bedrock_addon_core::shared::{Filter, FloatRange, IntRange, ItemDescriptor};
 use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::known;
 use facet::Facet;
 use facet_value::VObject;
 
@@ -57,7 +58,7 @@ impl Beg {
 }
 
 impl Goal for Beg {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 40);
+    const TYPED: FormatVersion = known::V1_26_40;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -144,7 +145,7 @@ impl LookAtEntity {
 }
 
 impl Goal for LookAtEntity {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 0);
+    const TYPED: FormatVersion = known::V1_26_0;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -246,7 +247,7 @@ impl LookAtPlayer {
 }
 
 impl Goal for LookAtPlayer {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 0);
+    const TYPED: FormatVersion = known::V1_26_0;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -347,7 +348,7 @@ impl LookAtTarget {
 }
 
 impl Goal for LookAtTarget {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 0);
+    const TYPED: FormatVersion = known::V1_26_0;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -448,7 +449,7 @@ impl LookAtTradingPlayer {
 }
 
 impl Goal for LookAtTradingPlayer {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 0);
+    const TYPED: FormatVersion = known::V1_26_0;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -541,7 +542,7 @@ impl RandomLookAround {
 }
 
 impl Goal for RandomLookAround {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 30);
+    const TYPED: FormatVersion = known::V1_26_30;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -663,13 +664,10 @@ impl RandomLookAroundAndSit {
 }
 
 impl Goal for RandomLookAroundAndSit {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 30);
+    const TYPED: FormatVersion = known::V1_26_30;
 
-    const DEPRECATED: &'static [Deprecated] = &[(
-        "look_time",
-        deprecated_text!("look_time"),
-        FormatVersion::new(1, 26, 30),
-    )];
+    const DEPRECATED: &'static [Deprecated] =
+        &[("look_time", deprecated_text!("look_time"), known::V1_26_30)];
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -748,7 +746,7 @@ impl TradeInterest {
 }
 
 impl Goal for TradeInterest {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 30);
+    const TYPED: FormatVersion = known::V1_26_30;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra

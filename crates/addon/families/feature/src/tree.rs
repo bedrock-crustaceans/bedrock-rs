@@ -14,14 +14,14 @@ use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, VanillaText};
 use bedrock_addon_core::id::FeatureId;
 use bedrock_addon_core::json::{JsonType, StrictBool, StrictError, StrictFloat, Value};
 use bedrock_addon_core::shared::{BlockDescriptor, IntRange};
-use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::ValidateCx;
 
 /// The engine that adds `decoration_blocks_sequence`.
-const ENGINE_1_26_10: FormatVersion = FormatVersion::new(1, 26, 10);
+const ENGINE_1_26_10: FormatVersion = known::V1_26_10;
 /// The engine that adds the poplar parts. The gate is the crate's own: the client's builder
 /// has none.
-const ENGINE_1_26_40: FormatVersion = FormatVersion::new(1, 26, 40);
+const ENGINE_1_26_40: FormatVersion = known::V1_26_40;
 
 /// `minecraft:tree_feature`.
 #[derive(Clone, Debug, PartialEq, Facet)]

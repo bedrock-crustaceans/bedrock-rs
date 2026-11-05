@@ -10,7 +10,7 @@ use bedrock_addon_core::id::kind;
 use bedrock_addon_core::json::{EncodeError, WriteStyle};
 use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
-use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::known;
 use bedrock_addon_support::animation::load::{
     FileContribution, combine, file_path, side_of, split, walk_origin, whole,
 };
@@ -25,7 +25,7 @@ impl Content for AnimationFile {
     fn parse(path: &PackPath, bytes: &[u8], cx: &LoadContext) -> Result<Document<Self>, Rejected> {
         let origin = Origin::file(PackRef::app_data(), side_of(cx), path.clone());
         whole(parse::parse_file(bytes, cx), origin, |_| {
-            (FormatVersion::new(1, 8, 0), false)
+            (known::V1_8_0, false)
         })
     }
 
@@ -53,7 +53,7 @@ fn parse_animation_file(file: &WalkFile, cx: &LoadContext) -> FileContribution<A
     let result = whole(
         parse::parse_file(&file.bytes, cx),
         walk_origin(file),
-        |_| (FormatVersion::new(1, 8, 0), false),
+        |_| (known::V1_8_0, false),
     );
     split(result, "animations", |f: AnimationFile| {
         f.animations.into_iter().collect()

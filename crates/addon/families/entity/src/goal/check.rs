@@ -14,6 +14,7 @@ use bedrock_addon_core::shared::{
     BlockDescriptor, EventTrigger, Filter, ItemDescriptor, Range, RangeEnd, RangeForm,
 };
 use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::known;
 use bedrock_addon_core::versioning::ConvertMode;
 use facet::Facet;
 use facet_value::{VArray, VObject};
@@ -30,13 +31,13 @@ macro_rules! deprecated_text {
 pub(crate) use deprecated_text;
 
 /// The newest format version: what a strict parse without a document version reads as.
-pub(crate) const NEWEST: FormatVersion = FormatVersion::new(1, 26, 50);
+pub(crate) const NEWEST: FormatVersion = known::V1_26_50;
 /// 1.26.0: `aquatic_charge_attack` renames `charge_speed_multiplier`.
-pub(crate) const V1_26_0: FormatVersion = FormatVersion::new(1, 26, 0);
+pub(crate) const V1_26_0: FormatVersion = known::V1_26_0;
 /// 1.26.30: `pickup_items` gains `stop_if_holding_item`.
-pub(crate) const V1_26_30: FormatVersion = FormatVersion::new(1, 26, 30);
+pub(crate) const V1_26_30: FormatVersion = known::V1_26_30;
 /// 1.26.40: the melee goals bind `on_kill` on its own.
-pub(crate) const V1_26_40: FormatVersion = FormatVersion::new(1, 26, 40);
+pub(crate) const V1_26_40: FormatVersion = known::V1_26_40;
 /// 1.26.50: `ranged_attack` gains `attack_range` and `in_range_movement_mode`.
 pub(crate) const V1_26_50: FormatVersion = NEWEST;
 

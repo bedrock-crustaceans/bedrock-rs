@@ -24,7 +24,7 @@ pub(crate) use parse::{RootV1, bounds_constraints, parse_root, slice_null_rule};
 /// The first format version vanilla reads.
 pub(crate) const FLOOR: FormatVersion = FormatVersion::new(1, 18, 0);
 /// The version of the newest struct (`v1_26_50::DimensionDocument`).
-pub(crate) const V1_26_50: FormatVersion = FormatVersion::new(1, 26, 50);
+pub(crate) const V1_26_50: FormatVersion = bedrock_addon_core::version::known::V1_26_50;
 
 /// A dimension document (`minecraft:dimension`), at the newest format version.
 ///

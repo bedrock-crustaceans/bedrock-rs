@@ -258,43 +258,26 @@ pub(crate) fn tell_range_members<T>(
 /// (the Molang version mapped from `format_version`), the default query set. The item
 /// descriptor `tags` use [`ITEM_TAGS_MOLANG`], block descriptor `tags` [`BLOCK_TAGS_MOLANG`],
 /// and the legacy event / trigger / `shoot` members the specs of `item::expressions`.
-pub(crate) const FORMAT_VERSION_MOLANG: MolangFieldSpec = MolangFieldSpec {
-    version: MolangVersionSource::FormatVersion,
-    // The game logs the Molang parser's refusal at the content log's error level and the
-    // item loads on with the expression unparsed (nothing checks the result of parsing a
-    // descriptor's `tags`, and `repair_amount` is evaluated without checking the parse):
-    // kept errors.
-    error_severity: bedrock_addon_core::diagnostic::Severity::Error,
-    error_kept: true,
-    ..MolangFieldSpec::DEFAULT
-};
+///
+/// The game logs the Molang parser's refusal at the content log's error level and the item
+/// loads on with the expression unparsed (nothing checks the result of parsing a descriptor's
+/// `tags`, and `repair_amount` is evaluated without checking the parse): kept errors, for all
+/// three.
+pub(crate) const FORMAT_VERSION_MOLANG: MolangFieldSpec =
+    MolangFieldSpec::KEPT.version(MolangVersionSource::FormatVersion);
 
 /// An item descriptor's `{"tags": …}`: the item's version, the `tags` query set.
-pub(crate) const ITEM_TAGS_MOLANG: MolangFieldSpec = MolangFieldSpec {
-    version: MolangVersionSource::FormatVersion,
-    admission: bedrock_addon_core::molang::Admission::Tags,
-    // The game logs the Molang parser's refusal at the content log's error level and the
-    // item loads on with the expression unparsed (nothing checks the result of parsing a
-    // descriptor's `tags`, and `repair_amount` is evaluated without checking the parse):
-    // kept errors.
-    error_severity: bedrock_addon_core::diagnostic::Severity::Error,
-    error_kept: true,
-    ..MolangFieldSpec::DEFAULT
-};
+pub(crate) const ITEM_TAGS_MOLANG: MolangFieldSpec = MolangFieldSpec::KEPT
+    .version(MolangVersionSource::FormatVersion)
+    .tags();
 
 /// A block descriptor's `{"tags": …}` in an item component: a constant 13, the `tags` query
 /// set.
-pub(crate) const BLOCK_TAGS_MOLANG: MolangFieldSpec = MolangFieldSpec {
-    version: MolangVersionSource::Constant(bedrock_addon_core::molang::MolangVersion::V13),
-    admission: bedrock_addon_core::molang::Admission::Tags,
-    // The game logs the Molang parser's refusal at the content log's error level and the
-    // item loads on with the expression unparsed (nothing checks the result of parsing a
-    // descriptor's `tags`, and `repair_amount` is evaluated without checking the parse):
-    // kept errors.
-    error_severity: bedrock_addon_core::diagnostic::Severity::Error,
-    error_kept: true,
-    ..MolangFieldSpec::DEFAULT
-};
+pub(crate) const BLOCK_TAGS_MOLANG: MolangFieldSpec = MolangFieldSpec::KEPT
+    .version(MolangVersionSource::Constant(
+        bedrock_addon_core::molang::MolangVersion::V13,
+    ))
+    .tags();
 
 /// Visits the `tags` expression of an item descriptor.
 pub(crate) fn visit_item_descriptor(

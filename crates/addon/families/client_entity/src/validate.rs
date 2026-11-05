@@ -1,18 +1,17 @@
 //! The loader's rules on a client entity of the newest shape, the Molang field specs and the
 //! Molang walk of [`ClientEntity`].
 
+#[cfg(feature = "molang")]
+use bedrock_addon_core::diagnostic::Location;
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Phase,
 };
-#[cfg(feature = "molang")]
-use bedrock_addon_core::diagnostic::{Location, Severity};
 use bedrock_addon_core::json::StrictString;
-#[cfg(feature = "molang")]
-use bedrock_addon_core::molang::MolangSource;
 use bedrock_addon_core::molang::{
-    EmptyRule, Molang, MolangFailure, MolangFieldSpec, MolangFields, MolangVisitor, ReaderKind,
-    Step,
+    Molang, MolangFieldSpec, MolangFields, MolangVisitor, ReaderKind, Step,
 };
+#[cfg(feature = "molang")]
+use bedrock_addon_core::molang::{MolangFailure, MolangSource};
 use bedrock_addon_core::versioning::{UpgradeCx, ValidateCx};
 use bedrock_addon_core::visual::{AnimateEntry, ControllerUse, HeldItemScale, Scripts};
 use indexmap::IndexMap;
@@ -23,11 +22,8 @@ use super::read::{self, text};
 /// A named script as the schema types it (`ExpressionNode`): a number, a boolean or a string
 /// at the pack's version. A string the parser rejects fails the schema, so the document is refused
 /// and the file is skipped, in the 1.8 and 1.10 shapes too.
-pub(crate) const NAMED_SCRIPT: MolangFieldSpec = MolangFieldSpec {
-    reader: ReaderKind::SchemaValidated,
-    on_failure: MolangFailure::RejectDocument,
-    ..MolangFieldSpec::DEFAULT
-};
+pub(crate) const NAMED_SCRIPT: MolangFieldSpec =
+    MolangFieldSpec::REJECTING.reader(ReaderKind::SchemaValidated);
 
 /// The condition of an object-form `render_controllers` or `scripts.animate` entry: typed as
 /// a named script is.
@@ -39,26 +35,19 @@ pub(crate) const CONDITION: MolangFieldSpec = NAMED_SCRIPT;
 /// errors and the document is refused (an error after which the game drops the document).
 /// The same check fails an array; the typed field (`HeldItemScale`, a number or Molang)
 /// refuses one before this spec is asked, so the reader's array form is never used.
-const HELD_ITEM_SCALE: MolangFieldSpec = MolangFieldSpec {
-    reader: ReaderKind::ScalarOrArray,
-    empty: EmptyRule::Compile,
-    on_failure: MolangFailure::RejectDocument,
-    ..MolangFieldSpec::DEFAULT
-};
+const HELD_ITEM_SCALE: MolangFieldSpec = MolangFieldSpec::REJECTING
+    .reader(ReaderKind::ScalarOrArray)
+    .compile_empty();
 
 /// `initialize` / `pre_animation` as the loader parses them: the strings joined into one
 /// text. A rejected text drops that script; the file loads.
 #[cfg(feature = "molang")]
-const LOADER_SCRIPT: MolangFieldSpec = MolangFieldSpec {
-    reader: ReaderKind::SchemaValidated,
-    on_failure: MolangFailure::DropEntry,
-    // The parser's lines come before "Failed to parse"; the definition loads on without the
-    // script, so these are kept errors: error-level findings after which the game keeps the
-    // document.
-    error_severity: Severity::Error,
-    error_kept: true,
-    ..MolangFieldSpec::DEFAULT
-};
+// The parser's lines come before "Failed to parse"; the definition loads on without the
+// script, so these are kept errors: error-level findings after which the game keeps the
+// document.
+const LOADER_SCRIPT: MolangFieldSpec = MolangFieldSpec::KEPT
+    .reader(ReaderKind::SchemaValidated)
+    .on_failure(MolangFailure::DropEntry);
 
 /// Vanilla's text for a named script the loader cannot parse; `{}` is the member name.
 #[cfg(feature = "molang")]

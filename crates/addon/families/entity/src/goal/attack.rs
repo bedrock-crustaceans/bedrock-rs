@@ -8,6 +8,7 @@ use bedrock_addon_core::json::{StrictBool, StrictFloat, StrictInt, StrictString,
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
 use bedrock_addon_core::shared::{EventTrigger, Filter, FloatRange};
 use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::known;
 use facet::Facet;
 use facet_value::VObject;
 
@@ -96,12 +97,12 @@ impl AquaticChargeAttack {
 }
 
 impl Goal for AquaticChargeAttack {
-    const TYPED: FormatVersion = FormatVersion::new(1, 21, 120);
+    const TYPED: FormatVersion = known::V1_21_120;
 
     const DEPRECATED: &'static [Deprecated] = &[(
         "charge_speed_multiplier",
         deprecated_text!("charge_speed_multiplier"),
-        FormatVersion::new(1, 26, 0),
+        known::V1_26_0,
     )];
 
     fn extra_mut(&mut self) -> &mut Extra {
@@ -217,7 +218,7 @@ impl ChargeAttack {
 }
 
 impl Goal for ChargeAttack {
-    const TYPED: FormatVersion = FormatVersion::new(1, 21, 100);
+    const TYPED: FormatVersion = known::V1_21_100;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -440,12 +441,12 @@ impl DelayedAttack {
 }
 
 impl Goal for DelayedAttack {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 0);
+    const TYPED: FormatVersion = known::V1_26_0;
 
     const DEPRECATED: &'static [Deprecated] = &[(
         "cooldown_time",
         deprecated_text!("cooldown_time"),
-        FormatVersion::new(1, 26, 0),
+        known::V1_26_0,
     )];
 
     fn extra_mut(&mut self) -> &mut Extra {
@@ -610,7 +611,7 @@ impl EatMob {
 }
 
 impl Goal for EatMob {
-    const TYPED: FormatVersion = FormatVersion::new(1, 21, 100);
+    const TYPED: FormatVersion = known::V1_21_100;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -754,7 +755,7 @@ impl FireAtTarget {
 }
 
 impl Goal for FireAtTarget {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 30);
+    const TYPED: FormatVersion = known::V1_26_30;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -871,7 +872,7 @@ impl GuardianAttack {
 }
 
 impl Goal for GuardianAttack {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 0);
+    const TYPED: FormatVersion = known::V1_26_0;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -1050,7 +1051,7 @@ impl JumpAroundTarget {
 }
 
 impl Goal for JumpAroundTarget {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 20);
+    const TYPED: FormatVersion = known::V1_26_20;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -1176,7 +1177,7 @@ impl KnockbackRoar {
 }
 
 impl Goal for KnockbackRoar {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 40);
+    const TYPED: FormatVersion = known::V1_26_40;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -1246,7 +1247,7 @@ impl LeapAtTarget {
 }
 
 impl Goal for LeapAtTarget {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 40);
+    const TYPED: FormatVersion = known::V1_26_40;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -1448,7 +1449,7 @@ impl MeleeAttack {
 }
 
 impl Goal for MeleeAttack {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 0);
+    const TYPED: FormatVersion = known::V1_26_0;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -1717,7 +1718,7 @@ impl MeleeBoxAttack {
 }
 
 impl Goal for MeleeBoxAttack {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 0);
+    const TYPED: FormatVersion = known::V1_26_0;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -1903,7 +1904,7 @@ impl Ocelotattack {
 }
 
 impl Goal for Ocelotattack {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 10);
+    const TYPED: FormatVersion = known::V1_26_10;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -2077,7 +2078,7 @@ impl RamAttack {
 }
 
 impl Goal for RamAttack {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 10);
+    const TYPED: FormatVersion = known::V1_26_10;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -2244,7 +2245,7 @@ impl RangedAttack {
 }
 
 impl Goal for RangedAttack {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 40);
+    const TYPED: FormatVersion = known::V1_26_40;
 
     const REJECTED: &'static [&'static str] = &["attack_interval_min", "attack_interval_max"];
 
@@ -2389,7 +2390,7 @@ impl SlimeAttack {
 }
 
 impl Goal for SlimeAttack {
-    const TYPED: FormatVersion = FormatVersion::new(1, 21, 110);
+    const TYPED: FormatVersion = known::V1_21_110;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -2524,7 +2525,7 @@ impl SonicBoom {
 }
 
 impl Goal for SonicBoom {
-    const TYPED: FormatVersion = FormatVersion::new(1, 21, 110);
+    const TYPED: FormatVersion = known::V1_21_110;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -2641,7 +2642,7 @@ impl StalkAndPounceOnTarget {
 }
 
 impl Goal for StalkAndPounceOnTarget {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 40);
+    const TYPED: FormatVersion = known::V1_26_40;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -2854,13 +2855,10 @@ impl StompAttack {
 }
 
 impl Goal for StompAttack {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 0);
+    const TYPED: FormatVersion = known::V1_26_0;
 
-    const DEPRECATED: &'static [Deprecated] = &[(
-        "melee_fov",
-        deprecated_text!("melee_fov"),
-        FormatVersion::new(1, 26, 0),
-    )];
+    const DEPRECATED: &'static [Deprecated] =
+        &[("melee_fov", deprecated_text!("melee_fov"), known::V1_26_0)];
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -2978,7 +2976,7 @@ impl SummonEntity {
 }
 
 impl Goal for SummonEntity {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 40);
+    const TYPED: FormatVersion = known::V1_26_40;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -3038,7 +3036,7 @@ impl Swell {
 }
 
 impl Goal for Swell {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 30);
+    const TYPED: FormatVersion = known::V1_26_30;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -3102,7 +3100,7 @@ impl SwoopAttack {
 }
 
 impl Goal for SwoopAttack {
-    const TYPED: FormatVersion = FormatVersion::new(1, 21, 110);
+    const TYPED: FormatVersion = known::V1_21_110;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -3363,7 +3361,7 @@ impl UseKineticWeapon {
 }
 
 impl Goal for UseKineticWeapon {
-    const TYPED: FormatVersion = FormatVersion::new(1, 21, 120);
+    const TYPED: FormatVersion = known::V1_21_120;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra

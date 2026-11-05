@@ -39,15 +39,10 @@ const EXPRESSION: MolangFieldSpec = MolangFieldSpec::DEFAULT;
 /// The spec of a member in the lenient conversion: the schema-validated reader, and a rejected
 /// expression is a kept error.
 #[cfg(feature = "molang")]
-const LENIENT: MolangFieldSpec = MolangFieldSpec {
-    reader: ReaderKind::SchemaValidated,
-    // The game's parser logs a level-3 line for a rejected expression and the entity loads
-    // anyway: a kept error. The legacy expression nodes (`experience_reward`, `anger_level`)
-    // store the text and drop the parse result.
-    error_severity: Severity::Error,
-    error_kept: true,
-    ..MolangFieldSpec::DEFAULT
-};
+// The game's parser logs a level-3 line for a rejected expression and the entity loads
+// anyway: a kept error. The legacy expression nodes (`experience_reward`, `anger_level`)
+// store the text and drop the parse result.
+const LENIENT: MolangFieldSpec = MolangFieldSpec::KEPT.reader(ReaderKind::SchemaValidated);
 
 /// Whether the lenient conversion keeps `value` at `at`. A value the schema-validated reader
 /// rejects (the object form) is `InvalidType`, and with the `molang` feature an expression that

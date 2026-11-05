@@ -642,4 +642,30 @@ mod tests {
         assert!(matches!(info, UiTextureInfo::Nineslice(_)));
         assert!(d.is_empty());
     }
+
+    /// Pins this `isInt` copy against core's `Coerce::is_int` under `IsIntRule::Integral`:
+    /// the two agree but at `-2147483648.0`, which this copy refuses (`|x| <= i32::MAX`) and
+    /// core takes (jsoncpp's range is `[INT_MIN, INT_MAX]`). The copy stays until the game
+    /// settles which the side files read.
+    #[test]
+    fn is_int_refuses_the_lowest_i32_written_as_a_real() {
+        use bedrock_addon_core::json::{Coerce, Coercing, IsIntRule, WideInt};
+        let profile = Coercing::new(IsIntRule::Integral, WideInt::LowWord);
+        let value = |text: &str| bedrock_addon_core::json::from_str::<Value>(text).unwrap();
+        for text in [
+            "2.0",
+            "-3",
+            "2.5",
+            "\"2\"",
+            "2147483647.0",
+            "-2147483647.0",
+            "2147483648.0",
+        ] {
+            let value = value(text);
+            assert_eq!(as_int(Some(&value)), value.is_int(profile), "{text}");
+        }
+        let lowest = value("-2147483648.0");
+        assert_eq!(as_int(Some(&lowest)), None);
+        assert_eq!(lowest.is_int(profile), Some(i32::MIN));
+    }
 }

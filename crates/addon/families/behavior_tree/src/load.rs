@@ -6,9 +6,10 @@ use super::{BehaviorTree, builtin};
 use std::collections::{HashMap, HashSet};
 
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, Phase};
+use bedrock_addon_core::document::unversioned;
 use bedrock_addon_core::document::{
     CombineRule, Content, Contribution, Definition, Document, EngineVersionDecision, JsonContent,
-    NoBeta, Origin, Placed, Registry, RegistryBuilder, Rejected, VersionInfo, default_path,
+    NoBeta, Origin, Placed, Registry, RegistryBuilder, Rejected, default_path,
 };
 use bedrock_addon_core::id::{BehaviorTreeId, kind};
 use bedrock_addon_core::json::{EncodeError, WriteStyle};
@@ -93,16 +94,17 @@ fn parse_file(
     finite.settle(&mut diagnostics, Some(&origin));
     let result = match parsed.tree {
         // The reader gives a tree only when it raised no error.
-        Some(tree) => Ok(Document::new(tree, origin, unversioned(), diagnostics)),
+        // The family has no `format_version`: nothing was written, and the tree is read as
+        // the engine reads it.
+        Some(tree) => Ok(Document::new(
+            tree,
+            origin,
+            unversioned::version_at(ENGINE_VERSION),
+            diagnostics,
+        )),
         None => Err(Rejected::new(origin, diagnostics)),
     };
     (parsed.name, result)
-}
-
-/// The family has no `format_version`: nothing was written, and the tree is read as the
-/// engine reads it.
-fn unversioned() -> VersionInfo {
-    VersionInfo::new(None, false, ENGINE_VERSION, ENGINE_VERSION, false)
 }
 
 /// `behavior_trees/**`, packs from the lowest priority to the highest, as vanilla walks the

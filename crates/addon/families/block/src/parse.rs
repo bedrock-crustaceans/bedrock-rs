@@ -12,20 +12,21 @@ use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
 };
 use bedrock_addon_core::document::{ComponentMap, Extra};
+use bedrock_addon_core::id::syntax::split_namespace;
 use bedrock_addon_core::json::{
     JsonSlice, ReaderMode, Value, keep_unknown_members, parse_at, with_reader_mode,
 };
 use bedrock_addon_core::molang::{
-    Admission, BLOCK_STATE_QUERIES, EmptyRule, Molang, MolangFailure, MolangFieldSpec,
-    MolangFields, MolangVersion, MolangVersionSource, MolangVisitor, OpsRule, ReaderKind,
+    BLOCK_STATE_QUERIES, EmptyRule, Molang, MolangFailure, MolangFieldSpec, MolangFields,
+    MolangVersion, MolangVersionSource, MolangVisitor, OpsRule, ReaderKind,
 };
-use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::{ConvertMode, ParseCx, parse_component_map, parse_payload};
 
 /// The first version vanilla reads with the cereal document.
-pub(crate) const CEREAL: FormatVersion = FormatVersion::new(1, 26, 20);
+pub(crate) const CEREAL: FormatVersion = known::V1_26_20;
 /// The newest document's version.
-pub(crate) const NEWEST: FormatVersion = FormatVersion::new(1, 26, 60);
+pub(crate) const NEWEST: FormatVersion = known::V1_26_60;
 /// The version from which a legacy permutation condition that fails is an error.
 pub(crate) const CONDITION_STRICT: FormatVersion = FormatVersion::new(1, 19, 70);
 
@@ -95,7 +96,7 @@ pub(crate) const REJECTED_IN_PERMUTATIONS: [&str; 6] = [
 
 /// A key of another namespace than `minecraft` is a custom component.
 pub(crate) fn is_custom(key: &str) -> bool {
-    key.split_once(':')
+    split_namespace(key)
         .is_some_and(|(namespace, name)| namespace != "minecraft" && !name.is_empty())
 }
 
@@ -488,40 +489,25 @@ fn parse_entry<T: for<'f> Facet<'f>>(
 /// expression; a rejected expression is kept and never matches. The game logs the parser's
 /// lines at the content log's error level and builds the node without a failure, so the block
 /// loads: kept errors.
-pub(crate) const CONDITION: MolangFieldSpec = MolangFieldSpec {
-    reader: ReaderKind::LenientVersioned,
-    version: MolangVersionSource::Constant(MolangVersion::V13),
-    admission: Admission::Default,
-    ops: OpsRule::All,
-    empty: EmptyRule::BlockNoExpression,
-    on_failure: MolangFailure::KeepLogged,
-    error_severity: Severity::Error,
-    error_kept: true,
-};
+pub(crate) const CONDITION: MolangFieldSpec = MolangFieldSpec::KEPT
+    .reader(ReaderKind::LenientVersioned)
+    .version(MolangVersionSource::Constant(MolangVersion::V13))
+    .empty(EmptyRule::BlockNoExpression);
 
 /// `permutations[].condition` of a document in `[1.19.70, 1.26.20)`: a string at the pack's
 /// version, `{query.block_state}` only, no side effects; a rejected expression rejects
 /// the block ("permutation condition failed to parse").
-pub(crate) const CONDITION_LEGACY: MolangFieldSpec = MolangFieldSpec {
-    reader: ReaderKind::SchemaValidated,
-    version: MolangVersionSource::Pack,
-    admission: Admission::Only(BLOCK_STATE_QUERIES),
-    ops: OpsRule::NoAssignmentsOrRandom,
-    empty: EmptyRule::NoExpression,
-    on_failure: MolangFailure::RejectDocument,
-    error_severity: Severity::Error,
-    error_kept: false,
-};
+pub(crate) const CONDITION_LEGACY: MolangFieldSpec = MolangFieldSpec::REJECTING
+    .reader(ReaderKind::SchemaValidated)
+    .only(BLOCK_STATE_QUERIES)
+    .ops(OpsRule::NoAssignmentsOrRandom);
 
 /// `permutations[].condition` of a document below 1.19.70: the `{query.block_state}`-only rule
 /// of the legacy slice, and a condition that fails it is compiled again under the
 /// unrestricted rule (validate). The first parse logs its lines at the content log's error
 /// level and the load goes on from the retry, the block registered: kept errors.
-pub(crate) const CONDITION_OLD: MolangFieldSpec = MolangFieldSpec {
-    on_failure: MolangFailure::DropEntry,
-    error_kept: true,
-    ..CONDITION_LEGACY
-};
+pub(crate) const CONDITION_OLD: MolangFieldSpec =
+    CONDITION_LEGACY.on_failure(MolangFailure::DropEntry).kept();
 
 /// The condition spec of a document of `version`.
 pub(crate) fn condition_spec(version: FormatVersion) -> &'static MolangFieldSpec {
@@ -552,5 +538,99 @@ impl MolangFields for Block {
             "deprecated_event_handlers",
             &mut self.deprecated_event_handlers,
         );
+    }
+}
+
+#[cfg(test)]
+mod spec_tests {
+    use crate::component::{BONE_VISIBILITY, DESCRIPTOR_TAGS, ITEM_TAGS, TRIGGER_CONDITION};
+    use crate::parse::{CONDITION, CONDITION_LEGACY, CONDITION_OLD};
+    use bedrock_addon_core::diagnostic::Severity;
+    use bedrock_addon_core::molang::{
+        Admission, BLOCK_STATE_QUERIES, EmptyRule, MolangFailure, MolangFieldSpec, MolangVersion,
+        MolangVersionSource, OpsRule, ReaderKind,
+    };
+
+    /// A spec at the error severity.
+    fn spec(
+        reader: ReaderKind,
+        version: MolangVersionSource,
+        admission: Admission,
+        ops: OpsRule,
+        empty: EmptyRule,
+        on_failure: MolangFailure,
+        error_kept: bool,
+    ) -> MolangFieldSpec {
+        MolangFieldSpec {
+            reader,
+            version,
+            admission,
+            ops,
+            empty,
+            on_failure,
+            error_severity: Severity::Error,
+            error_kept,
+        }
+    }
+
+    /// The block files' Molang specs, field by field, as the game reads each member.
+    #[test]
+    fn the_block_molang_specs_keep_their_fields() {
+        use EmptyRule::{BlockNoExpression, NoExpression};
+        use MolangFailure::{DropEntry, KeepLogged, RejectDocument};
+        use OpsRule::{All, NoAssignmentsOrRandom};
+        use ReaderKind::{LenientVersioned, SchemaValidated, StrictVersioned};
+        let v13 = MolangVersionSource::Constant(MolangVersion::V13);
+        let states = Admission::Only(BLOCK_STATE_QUERIES);
+        let lenient = spec(
+            LenientVersioned,
+            v13,
+            Admission::Default,
+            All,
+            BlockNoExpression,
+            KeepLogged,
+            true,
+        );
+        assert_eq!(CONDITION, lenient);
+        assert_eq!(TRIGGER_CONDITION, lenient);
+        let legacy = spec(
+            SchemaValidated,
+            MolangVersionSource::Pack,
+            states,
+            NoAssignmentsOrRandom,
+            NoExpression,
+            RejectDocument,
+            false,
+        );
+        assert_eq!(CONDITION_LEGACY, legacy);
+        assert_eq!(
+            CONDITION_OLD,
+            MolangFieldSpec {
+                on_failure: DropEntry,
+                error_kept: true,
+                ..legacy
+            }
+        );
+        let bones = spec(
+            LenientVersioned,
+            v13,
+            states,
+            NoAssignmentsOrRandom,
+            BlockNoExpression,
+            KeepLogged,
+            true,
+        );
+        assert_eq!(BONE_VISIBILITY, bones);
+        let tags = spec(
+            StrictVersioned,
+            v13,
+            Admission::Tags,
+            All,
+            BlockNoExpression,
+            KeepLogged,
+            true,
+        );
+        assert_eq!(DESCRIPTOR_TAGS, tags);
+        assert_eq!(ITEM_TAGS, tags);
     }
 }

@@ -3,6 +3,7 @@
 super::legacy_struct!(1, 26, 30);
 
 use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath, VanillaText};
+use bedrock_addon_core::version::known;
 use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
 use facet_value::VObject;
 
@@ -10,7 +11,7 @@ use super::ops::{Members, Removed, Told, finding, kept, note, removed, sections}
 use crate::component::name_projectile_aliases;
 
 /// The step's version, for its findings.
-const V1_26_40: FormatVersion = FormatVersion::new(1, 26, 40);
+const V1_26_40: FormatVersion = known::V1_26_40;
 
 /// 1.26.30 → 1.26.40.
 impl Upgrade for Entity {

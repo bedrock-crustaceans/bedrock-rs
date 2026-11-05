@@ -3,7 +3,7 @@
 //! unreadable, partial or above the client's ceiling.
 
 use bedrock_addon_core::json::Value;
-use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::{FormatVersion, known};
 
 /// The version the client reads a `blocks.json` file as when its `format_version` is missing,
 /// unreadable or above [`BLOCKS_JSON_MAX_FORMAT_VERSION`].
@@ -119,7 +119,7 @@ pub(super) fn effective(member: Option<&Value>) -> Outcome {
         },
         Match::None { zeroed } => Outcome {
             effective: Effective::release(if zeroed {
-                FormatVersion::new(0, 0, 0)
+                known::V0_0_0
             } else {
                 BLOCKS_JSON_DEFAULT_VERSION
             }),

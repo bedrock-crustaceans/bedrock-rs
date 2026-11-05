@@ -20,6 +20,7 @@ use bedrock_addon_core::load::{
 };
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::vanilla::ActorType;
+use bedrock_addon_core::version::known;
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput, SemVersion};
 use bedrock_addon_core::versioning::{
     EnvelopeCheck, Family, Identity, Loaded, NoComponents, Parsed, ValidateCx, finish,
@@ -35,7 +36,7 @@ use super::{ClientEntity, validate};
 const DIRECTORY: &str = "entity";
 
 /// The floor: every explicit version below 1.8.0 is rejected by vanilla's own schema
-const FLOOR: FormatVersion = FormatVersion::new(1, 8, 0);
+const FLOOR: FormatVersion = known::V1_8_0;
 
 /// Vanilla's warning for a document without `format_version`, with the crate's floor in place
 /// of its 1.0.0.

@@ -5,7 +5,7 @@ use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, VanillaText,
 };
 use bedrock_addon_core::json::Value;
-use bedrock_addon_core::version::{FormatVersion, SemVersion};
+use bedrock_addon_core::version::{FormatVersion, SemVersion, known};
 use bedrock_addon_support::sound::fork::{self, Stored};
 use facet_value::VObject;
 
@@ -14,7 +14,7 @@ pub(crate) const V1_14_0: FormatVersion = FormatVersion::new(1, 14, 0);
 /// The first version that reads integer distances.
 pub(crate) const V1_20_20: FormatVersion = FormatVersion::new(1, 20, 20);
 /// The first version whose streamed entries may stream concurrently by default.
-pub(crate) const V1_26_50: FormatVersion = FormatVersion::new(1, 26, 50);
+pub(crate) const V1_26_50: FormatVersion = known::V1_26_50;
 /// The version of a file whose `format_version` is missing or unreadable.
 pub(crate) const DEFAULT_VERSION: FormatVersion = FormatVersion::new(1, 13, 0);
 

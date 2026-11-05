@@ -7,7 +7,7 @@ use bedrock_addon_core::id::ItemId;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value, WriteStyle, write_json};
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
 use bedrock_addon_core::shared::{CreativeCategory, MenuCategory};
-use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::{
     BETA_VERSION, ParseCx, VersionStruct, Versioned, write_payload,
 };
@@ -23,7 +23,7 @@ use super::{Beta, Item, ItemDeprecatedData, ItemDescription, LegacyItemData};
 use bedrock_addon_core::diagnostic::Diagnostics;
 
 /// 1.26.50: the newest item format.
-const V1_26_50: FormatVersion = FormatVersion::new(1, 26, 50);
+const V1_26_50: FormatVersion = known::V1_26_50;
 
 /// The parts of a modern format (shared by [`Item`], [`Beta`] and the 1.26.30 struct).
 pub(crate) struct Newest {

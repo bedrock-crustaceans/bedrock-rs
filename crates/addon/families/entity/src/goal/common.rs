@@ -3,6 +3,7 @@
 
 use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
 use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::json::ValueExt;
 use bedrock_addon_core::json::{ScalarShape, StrictBool, StrictFloat, StrictInt, Value};
 use bedrock_addon_core::molang::{JsonType, Molang};
 use bedrock_addon_core::shared::Filter;
@@ -47,23 +48,6 @@ fn scalar_type(shape: &ScalarShape) -> JsonType {
         ScalarShape::String(_) => JsonType::String,
         ScalarShape::Bool(_) => JsonType::Bool,
         ScalarShape::UInt(_) | ScalarShape::Int(_) | ScalarShape::Number(_) => JsonType::Number,
-    }
-}
-
-/// The JSON type of a value.
-fn value_type(value: &Value) -> JsonType {
-    if value.is_null() {
-        JsonType::Null
-    } else if value.is_bool() {
-        JsonType::Bool
-    } else if value.is_number() {
-        JsonType::Number
-    } else if value.is_string() {
-        JsonType::String
-    } else if value.is_array() {
-        JsonType::Array
-    } else {
-        JsonType::Object
     }
 }
 
@@ -490,7 +474,7 @@ fn read_vector<const N: usize>(
     let number = |value: &Value| {
         let x = value.as_number().ok_or(ValueError::WrongType {
             expected: "a number",
-            found: value_type(value),
+            found: value.json_type(),
         })?;
         #[allow(clippy::cast_possible_truncation)] // the nearest f32 is the reading
         let x = x.to_f64_lossy() as f32;
@@ -526,7 +510,7 @@ fn read_vector<const N: usize>(
     } else {
         Err(ValueError::WrongType {
             expected: "an array or an object",
-            found: value_type(value),
+            found: value.json_type(),
         })
     }
 }
@@ -827,7 +811,7 @@ impl TryFrom<Value> for ParticleColor {
         let Some(array) = value.as_array() else {
             return Err(ValueError::WrongType {
                 expected: "a string or an array",
-                found: value_type(&value),
+                found: value.json_type(),
             });
         };
         if array.len() != 4 {
@@ -846,7 +830,7 @@ impl TryFrom<Value> for ParticleColor {
                 _ => {
                     return Err(ValueError::WrongType {
                         expected: "an integer",
-                        found: value_type(element),
+                        found: element.json_type(),
                     });
                 }
             };

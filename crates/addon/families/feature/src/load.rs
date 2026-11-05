@@ -28,7 +28,7 @@ use bedrock_addon_core::load::{
     AppDataPlace, CollectionLoader, LoadContext, StackCx, Walk, WalkFile,
 };
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
-use bedrock_addon_core::version::{FormatVersion, FormatVersionInput};
+use bedrock_addon_core::version::{FormatVersion, FormatVersionInput, known};
 use bedrock_addon_core::versioning::{
     Family, InputKind, Loaded, MissingVersion, NoComponents, Parsed, ValidateCx, VersionChain,
     VersionStruct, file_version, finish, load, parse_as_written,
@@ -919,7 +919,7 @@ fn rank(pack: &PackRef) -> usize {
 }
 
 /// The engine that adds the same-pack duplicate text.
-const DUPLICATE_TEXT_ENGINE: FormatVersion = FormatVersion::new(1, 26, 40);
+const DUPLICATE_TEXT_ENGINE: FormatVersion = known::V1_26_40;
 
 /// `DuplicateIdentifier` at `origin`: a second definition of `id` that is dropped; within one
 /// pack on an engine from 1.26.40 an error with vanilla's text (the client logs "Feature with

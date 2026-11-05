@@ -28,6 +28,7 @@ use bedrock_addon_core::json::{EncodeError, JsonSlice, Value, WriteStyle};
 use bedrock_addon_core::json::{PrepareError, Prepared};
 use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
+use bedrock_addon_core::version::known;
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput};
 use bedrock_addon_core::versioning::{
     ComponentSection, ComponentTable, EnvelopeCheck, ErrorMask, Family, Identity, InputKind,
@@ -42,7 +43,7 @@ const FLOOR: FormatVersion = FormatVersion::new(1, 21, 40);
 /// it.
 const LEGACY_SLICE: FormatVersion = FormatVersion::new(1, 0, 0);
 /// The last struct of the legacy range.
-const LAST_LEGACY: FormatVersion = FormatVersion::new(1, 21, 120);
+const LAST_LEGACY: FormatVersion = known::V1_21_120;
 
 impl Family for ClientBiomeFamily {
     // What the document does not read is kept for write-back: a number no double holds is

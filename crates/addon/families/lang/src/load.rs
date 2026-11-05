@@ -4,15 +4,16 @@
 use std::collections::btree_map::Entry;
 
 use bedrock_addon_core::load::{Accept, CollectionLoader, StackCx, Walk, WalkFile};
-use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
+use bedrock_addon_core::pack_identity::{PackPath, PackSide};
 use indexmap::IndexMap;
 
 use super::{LangFile, Language, Translations};
 use bedrock_addon_core::diagnostic::Diagnostics;
-use bedrock_addon_core::document::{Content, Document, Merge, Merged, Origin, Placed, Rejected};
+use bedrock_addon_core::document::{
+    Content, Document, Merge, Merged, Origin, Placed, Rejected, unversioned,
+};
 use bedrock_addon_core::json::{EncodeError, WriteStyle};
 use bedrock_addon_core::load::LoadContext;
-use bedrock_addon_support::text::document::{document, origin};
 use bedrock_addon_support::text::language::language_of;
 
 /// Both stacks: a behaviour pack carries `texts/` for its manifest name.
@@ -36,10 +37,10 @@ impl Content for LangFile {
     /// Reads one `.lang` file; its language is the file name of `path` without `.lang`
     /// (`texts/en_US.lang`). Never rejects: vanilla drops bad lines one at a time.
     fn parse(path: &PackPath, bytes: &[u8], _: &LoadContext) -> Result<Document<Self>, Rejected> {
-        let origin = origin(PackRef::app_data(), PackSide::Resource, path);
+        let origin = unversioned::lone(path);
         let language = language_of_file(path);
         let (file, diagnostics) = LangFile::from_bytes(language, bytes);
-        Ok(document(file, origin, diagnostics))
+        Ok(unversioned::document(file, origin, diagnostics))
     }
 
     /// Writes the `.lang` text ([`LangFile::write_text`]); the style is JSON's and unused.
@@ -81,12 +82,12 @@ pub struct LangLayer {
 /// The `Parse` job of `translations(&language)`: the file's table as the stack loader reads
 /// it, and the keywords its pack reads of it.
 fn parse_lang(file: &WalkFile, _: &LoadContext) -> LangLayer {
-    let origin = origin(file.pack.clone(), file.side, &file.path);
+    let origin = unversioned::origin_of(file);
     let language = language_of(&file.key).unwrap_or_else(|| Language::new(""));
     let (lang, diagnostics) = LangFile::from_bytes(language, &file.bytes);
     LangLayer {
         keywords: lang.pack_keywords(file.pack.id()),
-        document: document(lang.translations(), origin, diagnostics),
+        document: unversioned::document(lang.translations(), origin, diagnostics),
     }
 }
 

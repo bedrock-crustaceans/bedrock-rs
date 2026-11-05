@@ -5,6 +5,7 @@ use bedrock_addon_core::json::{StrictBool, StrictFloat, StrictInt, StrictString}
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
 use bedrock_addon_core::shared::{BlockDescriptor, EventTrigger, Filter, FloatRange, IntRange};
 use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::known;
 use facet::Facet;
 
 use super::check::{Bound, Check, Deprecated, Goal, deprecated_text};
@@ -43,7 +44,7 @@ impl Breed {
 }
 
 impl Goal for Breed {
-    const TYPED: FormatVersion = FormatVersion::new(1, 21, 90);
+    const TYPED: FormatVersion = known::V1_21_90;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -126,7 +127,7 @@ impl Celebrate {
 }
 
 impl Goal for Celebrate {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 10);
+    const TYPED: FormatVersion = known::V1_26_10;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -206,7 +207,7 @@ impl CelebrateSurvive {
 }
 
 impl Goal for CelebrateSurvive {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 10);
+    const TYPED: FormatVersion = known::V1_26_10;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -279,7 +280,7 @@ impl Croak {
 }
 
 impl Goal for Croak {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 30);
+    const TYPED: FormatVersion = known::V1_26_30;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -377,7 +378,7 @@ impl Dig {
 }
 
 impl Goal for Dig {
-    const TYPED: FormatVersion = FormatVersion::new(1, 21, 120);
+    const TYPED: FormatVersion = known::V1_21_120;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -445,7 +446,7 @@ impl Emerge {
 }
 
 impl Goal for Emerge {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 30);
+    const TYPED: FormatVersion = known::V1_26_30;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -549,7 +550,7 @@ impl FertilizeFarmBlock {
 }
 
 impl Goal for FertilizeFarmBlock {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 10);
+    const TYPED: FormatVersion = known::V1_26_10;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -673,7 +674,7 @@ impl HarvestFarmBlock {
 }
 
 impl Goal for HarvestFarmBlock {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 10);
+    const TYPED: FormatVersion = known::V1_26_10;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -768,7 +769,7 @@ impl HoldGround {
 }
 
 impl Goal for HoldGround {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 20);
+    const TYPED: FormatVersion = known::V1_26_20;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -856,7 +857,7 @@ impl InspectBookshelf {
 }
 
 impl Goal for InspectBookshelf {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 10);
+    const TYPED: FormatVersion = known::V1_26_10;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -920,7 +921,7 @@ impl InvestigateSuspiciousLocation {
 }
 
 impl Goal for InvestigateSuspiciousLocation {
-    const TYPED: FormatVersion = FormatVersion::new(1, 21, 130);
+    const TYPED: FormatVersion = known::V1_21_130;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -975,7 +976,7 @@ impl LayDown {
 }
 
 impl Goal for LayDown {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 20);
+    const TYPED: FormatVersion = known::V1_26_20;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -1106,12 +1107,12 @@ impl LayEgg {
 }
 
 impl Goal for LayEgg {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 10);
+    const TYPED: FormatVersion = known::V1_26_10;
 
     const DEPRECATED: &'static [Deprecated] = &[(
         "search_count",
         deprecated_text!("search_count"),
-        FormatVersion::new(1, 26, 10),
+        known::V1_26_10,
     )];
 
     fn extra_mut(&mut self) -> &mut Extra {
@@ -1183,7 +1184,7 @@ impl MakeLove {
 }
 
 impl Goal for MakeLove {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 30);
+    const TYPED: FormatVersion = known::V1_26_30;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -1266,13 +1267,10 @@ impl Mingle {
 }
 
 impl Goal for Mingle {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 20);
+    const TYPED: FormatVersion = known::V1_26_20;
 
-    const DEPRECATED: &'static [Deprecated] = &[(
-        "poi_type",
-        deprecated_text!("poi_type"),
-        FormatVersion::new(1, 26, 20),
-    )];
+    const DEPRECATED: &'static [Deprecated] =
+        &[("poi_type", deprecated_text!("poi_type"), known::V1_26_20)];
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -1361,7 +1359,7 @@ impl Nap {
 }
 
 impl Goal for Nap {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 40);
+    const TYPED: FormatVersion = known::V1_26_40;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -1434,7 +1432,7 @@ impl PetSleepWithOwner {
 }
 
 impl Goal for PetSleepWithOwner {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 20);
+    const TYPED: FormatVersion = known::V1_26_20;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -1534,7 +1532,7 @@ impl Play {
 }
 
 impl Goal for Play {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 10);
+    const TYPED: FormatVersion = known::V1_26_10;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -1651,7 +1649,7 @@ impl PlayDead {
 }
 
 impl Goal for PlayDead {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 10);
+    const TYPED: FormatVersion = known::V1_26_10;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -1761,12 +1759,12 @@ impl RaidGarden {
 }
 
 impl Goal for RaidGarden {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 10);
+    const TYPED: FormatVersion = known::V1_26_10;
 
     const DEPRECATED: &'static [Deprecated] = &[(
         "search_count",
         deprecated_text!("search_count"),
-        FormatVersion::new(1, 26, 10),
+        known::V1_26_10,
     )];
 
     fn extra_mut(&mut self) -> &mut Extra {
@@ -1937,7 +1935,7 @@ impl RandomSearchAndDig {
 }
 
 impl Goal for RandomSearchAndDig {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 10);
+    const TYPED: FormatVersion = known::V1_26_10;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -2064,7 +2062,7 @@ impl RandomSitting {
 }
 
 impl Goal for RandomSitting {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 20);
+    const TYPED: FormatVersion = known::V1_26_20;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -2103,7 +2101,7 @@ impl ReceiveLove {
 }
 
 impl Goal for ReceiveLove {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 30);
+    const TYPED: FormatVersion = known::V1_26_30;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -2150,7 +2148,7 @@ impl Roar {
 }
 
 impl Goal for Roar {
-    const TYPED: FormatVersion = FormatVersion::new(1, 21, 110);
+    const TYPED: FormatVersion = known::V1_21_110;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -2198,7 +2196,7 @@ impl Roll {
 }
 
 impl Goal for Roll {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 30);
+    const TYPED: FormatVersion = known::V1_26_30;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -2245,7 +2243,7 @@ impl RunAroundLikeCrazy {
 }
 
 impl Goal for RunAroundLikeCrazy {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 30);
+    const TYPED: FormatVersion = known::V1_26_30;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -2292,7 +2290,7 @@ impl Scared {
 }
 
 impl Goal for Scared {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 30);
+    const TYPED: FormatVersion = known::V1_26_30;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -2331,7 +2329,7 @@ impl SilverfishMergeWithStone {
 }
 
 impl Goal for SilverfishMergeWithStone {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 40);
+    const TYPED: FormatVersion = known::V1_26_40;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -2370,7 +2368,7 @@ impl SilverfishWakeUpFriends {
 }
 
 impl Goal for SilverfishWakeUpFriends {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 40);
+    const TYPED: FormatVersion = known::V1_26_40;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -2425,7 +2423,7 @@ impl SkeletonHorseTrap {
 }
 
 impl Goal for SkeletonHorseTrap {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 30);
+    const TYPED: FormatVersion = known::V1_26_30;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -2522,13 +2520,10 @@ impl Sleep {
 }
 
 impl Goal for Sleep {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 20);
+    const TYPED: FormatVersion = known::V1_26_20;
 
-    const DEPRECATED: &'static [Deprecated] = &[(
-        "poi_type",
-        deprecated_text!("poi_type"),
-        FormatVersion::new(1, 26, 20),
-    )];
+    const DEPRECATED: &'static [Deprecated] =
+        &[("poi_type", deprecated_text!("poi_type"), known::V1_26_20)];
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -2656,7 +2651,7 @@ impl Sneeze {
 }
 
 impl Goal for Sneeze {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 30);
+    const TYPED: FormatVersion = known::V1_26_30;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -2739,7 +2734,7 @@ impl Sniff {
 }
 
 impl Goal for Sniff {
-    const TYPED: FormatVersion = FormatVersion::new(1, 21, 110);
+    const TYPED: FormatVersion = known::V1_21_110;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -2816,7 +2811,7 @@ impl StayNearNoteblock {
 }
 
 impl Goal for StayNearNoteblock {
-    const TYPED: FormatVersion = FormatVersion::new(1, 21, 110);
+    const TYPED: FormatVersion = known::V1_21_110;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -2855,7 +2850,7 @@ impl StayWhileSitting {
 }
 
 impl Goal for StayWhileSitting {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 30);
+    const TYPED: FormatVersion = known::V1_26_30;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -2942,7 +2937,7 @@ impl StompTurtleEgg {
 }
 
 impl Goal for StompTurtleEgg {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 10);
+    const TYPED: FormatVersion = known::V1_26_10;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -3020,7 +3015,7 @@ impl TimerFlag1 {
 }
 
 impl Goal for TimerFlag1 {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 0);
+    const TYPED: FormatVersion = known::V1_26_0;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -3097,7 +3092,7 @@ impl TimerFlag2 {
 }
 
 impl Goal for TimerFlag2 {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 0);
+    const TYPED: FormatVersion = known::V1_26_0;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -3174,7 +3169,7 @@ impl TimerFlag3 {
 }
 
 impl Goal for TimerFlag3 {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 0);
+    const TYPED: FormatVersion = known::V1_26_0;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -3286,7 +3281,7 @@ impl Work {
 }
 
 impl Goal for Work {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 10);
+    const TYPED: FormatVersion = known::V1_26_10;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -3453,18 +3448,18 @@ impl WorkComposter {
 }
 
 impl Goal for WorkComposter {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 10);
+    const TYPED: FormatVersion = known::V1_26_10;
 
     const DEPRECATED: &'static [Deprecated] = &[
         (
             "sound_delay_min",
             deprecated_text!("sound_delay_min"),
-            FormatVersion::new(1, 26, 10),
+            known::V1_26_10,
         ),
         (
             "sound_delay_max",
             deprecated_text!("sound_delay_max"),
-            FormatVersion::new(1, 26, 10),
+            known::V1_26_10,
         ),
     ];
 

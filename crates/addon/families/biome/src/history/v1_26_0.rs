@@ -10,6 +10,7 @@ use bedrock_addon_core::document::{ComponentMap, Extra};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
 use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::known;
 use bedrock_addon_core::versioning::{ParseCx, Upgrade, UpgradeCx, VersionStruct, Versioned};
 
 /// A biome of format `[1.26.0, 1.26.30)`: the payload of `minecraft:biome`.
@@ -24,7 +25,7 @@ pub struct Biome {
 }
 
 impl Versioned for Biome {
-    const VERSION: FormatVersion = FormatVersion::new(1, 26, 0);
+    const VERSION: FormatVersion = known::V1_26_0;
 }
 
 impl VersionStruct for Biome {

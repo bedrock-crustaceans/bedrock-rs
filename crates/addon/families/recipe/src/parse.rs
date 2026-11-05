@@ -26,6 +26,7 @@ use bedrock_addon_core::document::{Extra, VersionInfo};
 use bedrock_addon_core::id::RecipeId;
 use bedrock_addon_core::json::Prepared;
 use bedrock_addon_core::json::Value;
+use bedrock_addon_core::json::{Coerce, Coercing, IsIntRule, WideInt};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::molang::{
     JsonType, MolangList, MolangSource, ReadField, ReaderKind, ReprError, beyond_f32_warning,
@@ -33,6 +34,10 @@ use bedrock_addon_core::molang::{
 };
 use bedrock_addon_core::pack_identity::PackPath;
 use bedrock_addon_core::version::{FormatVersion, SemVersion};
+
+/// jsoncpp's `isInt` as the recipe reader asks it: an integer token that fits an `i32`; a real
+/// token never is one.
+const IS_INT: Coercing = Coercing::new(IsIntRule::Token, WideInt::LowWord);
 
 /// What the loader learnt of a file before deciding on it: its type and identifier.
 #[derive(Clone, Debug, Default)]
@@ -629,7 +634,7 @@ impl<'c> Reader<'c> {
             );
             return None;
         }
-        if let Some(count) = integer(count) {
+        if let Some(count) = count.is_int(IS_INT) {
             ingredient.count = Some(count);
         } else {
             members.keep("count");
@@ -995,7 +1000,7 @@ impl<'c> Reader<'c> {
     /// `priority`: an integer; any other value is not read.
     fn priority(&mut self, payload: &mut Members<'_>, at: &JsonPath) -> Option<i32> {
         let value = payload.take("priority")?;
-        if let Some(priority) = integer(value) {
+        if let Some(priority) = value.is_int(IS_INT) {
             return Some(priority);
         }
         payload.keep("priority");
@@ -1634,10 +1639,4 @@ fn is_empty(value: &Value) -> bool {
         || value
             .as_object()
             .is_some_and(facet_value::VObject::is_empty)
-}
-
-/// An integer-tagged number that fits an `i32` (jsoncpp's `isInt`).
-fn integer(value: &Value) -> Option<i32> {
-    let number = value.as_number().filter(|number| number.is_integer())?;
-    i32::try_from(number.to_i64()?).ok()
 }

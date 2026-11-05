@@ -18,7 +18,7 @@ use bedrock_addon_core::load::LoadRequirement;
 use bedrock_addon_core::molang::{
     Admission, Molang, MolangFieldMut, MolangVersion, RawVersion, visit_fields,
 };
-use bedrock_addon_core::version::{FormatVersion, FormatVersionInput};
+use bedrock_addon_core::version::{FormatVersion, FormatVersionInput, known};
 use bedrock_addon_core::versioning::{ParseCx, Upgrade, UpgradeCx};
 
 /// A block document of `[1.26.0, 1.26.20)`.
@@ -48,7 +48,7 @@ const CHEST_OBSTRUCTION_BEFORE: FormatVersion = FormatVersion::new(1, 26, 1);
 /// From this original version `unit_cube` is deprecated.
 const UNIT_CUBE_DEPRECATED: FormatVersion = FormatVersion::new(1, 20, 60);
 /// From this original version the v1 `custom_components` list is deprecated.
-const CUSTOM_COMPONENTS_DEPRECATED: FormatVersion = FormatVersion::new(1, 21, 90);
+const CUSTOM_COMPONENTS_DEPRECATED: FormatVersion = known::V1_21_90;
 /// The `states` / `permutations` gates.
 const STATES_FROM: FormatVersion = FormatVersion::new(1, 19, 60);
 const STATES_STRICT_FROM: FormatVersion = FormatVersion::new(1, 19, 70);
@@ -359,7 +359,7 @@ fn side_car(
             Diagnostic::info(DiagnosticCode::DeprecatedMember {
                 text: Some(VanillaText::Deprecated {
                     member: key.clone(),
-                    version: FormatVersion::new(1, 26, 20),
+                    version: known::V1_26_20,
                 }),
             })
             .at(at.clone())

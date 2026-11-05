@@ -5,6 +5,7 @@ use bedrock_addon_core::json::{StrictBool, StrictFloat, StrictInt};
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
 use bedrock_addon_core::shared::{EventTrigger, FloatRange, ItemDescriptor};
 use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::known;
 use facet::Facet;
 
 use super::check::{Bound, Check, Deprecated, Goal, deprecated_text};
@@ -116,7 +117,7 @@ impl AvoidBlock {
 }
 
 impl Goal for AvoidBlock {
-    const TYPED: FormatVersion = FormatVersion::new(1, 21, 120);
+    const TYPED: FormatVersion = known::V1_21_120;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -282,7 +283,7 @@ impl AvoidMobType {
 }
 
 impl Goal for AvoidMobType {
-    const TYPED: FormatVersion = FormatVersion::new(1, 21, 120);
+    const TYPED: FormatVersion = known::V1_21_120;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -394,58 +395,58 @@ impl DefendTrustedTarget {
 }
 
 impl Goal for DefendTrustedTarget {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 30);
+    const TYPED: FormatVersion = known::V1_26_30;
 
     const DEPRECATED: &'static [Deprecated] = &[
         (
             "attack_owner",
             deprecated_text!("attack_owner"),
-            FormatVersion::new(1, 26, 30),
+            known::V1_26_30,
         ),
         (
             "must_reach",
             deprecated_text!("must_reach"),
-            FormatVersion::new(1, 26, 30),
+            known::V1_26_30,
         ),
         (
             "persist_time",
             deprecated_text!("persist_time"),
-            FormatVersion::new(1, 26, 30),
+            known::V1_26_30,
         ),
         (
             "reselect_targets",
             deprecated_text!("reselect_targets"),
-            FormatVersion::new(1, 26, 30),
+            known::V1_26_30,
         ),
         (
             "scan_interval",
             deprecated_text!("scan_interval"),
-            FormatVersion::new(1, 26, 30),
+            known::V1_26_30,
         ),
         (
             "set_persistent",
             deprecated_text!("set_persistent"),
-            FormatVersion::new(1, 26, 30),
+            known::V1_26_30,
         ),
         (
             "target_acquisition_probability",
             deprecated_text!("target_acquisition_probability"),
-            FormatVersion::new(1, 26, 30),
+            known::V1_26_30,
         ),
         (
             "target_invisible_multiplier",
             deprecated_text!("target_invisible_multiplier"),
-            FormatVersion::new(1, 26, 30),
+            known::V1_26_30,
         ),
         (
             "target_search_height",
             deprecated_text!("target_search_height"),
-            FormatVersion::new(1, 26, 30),
+            known::V1_26_30,
         ),
         (
             "target_sneak_visibility_multiplier",
             deprecated_text!("target_sneak_visibility_multiplier"),
-            FormatVersion::new(1, 26, 30),
+            known::V1_26_30,
         ),
     ];
 
@@ -563,7 +564,7 @@ impl DefendVillageTarget {
 }
 
 impl Goal for DefendVillageTarget {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 0);
+    const TYPED: FormatVersion = known::V1_26_0;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -628,38 +629,34 @@ impl HurtByTarget {
 }
 
 impl Goal for HurtByTarget {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 30);
+    const TYPED: FormatVersion = known::V1_26_30;
 
     const DEPRECATED: &'static [Deprecated] = &[
         (
             "attack_owner",
             deprecated_text!("attack_owner"),
-            FormatVersion::new(1, 26, 30),
+            known::V1_26_30,
         ),
         (
             "must_reach",
             deprecated_text!("must_reach"),
-            FormatVersion::new(1, 26, 30),
+            known::V1_26_30,
         ),
-        (
-            "must_see",
-            deprecated_text!("must_see"),
-            FormatVersion::new(1, 26, 30),
-        ),
+        ("must_see", deprecated_text!("must_see"), known::V1_26_30),
         (
             "must_see_forget_duration",
             deprecated_text!("must_see_forget_duration"),
-            FormatVersion::new(1, 26, 30),
+            known::V1_26_30,
         ),
         (
             "persist_time",
             deprecated_text!("persist_time"),
-            FormatVersion::new(1, 26, 30),
+            known::V1_26_30,
         ),
         (
             "within_radius",
             deprecated_text!("within_radius"),
-            FormatVersion::new(1, 26, 30),
+            known::V1_26_30,
         ),
     ];
 
@@ -817,7 +814,7 @@ impl NearestAttackableTarget {
 }
 
 impl Goal for NearestAttackableTarget {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 0);
+    const TYPED: FormatVersion = known::V1_26_0;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -965,28 +962,28 @@ impl NearestPrioritizedAttackableTarget {
 }
 
 impl Goal for NearestPrioritizedAttackableTarget {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 30);
+    const TYPED: FormatVersion = known::V1_26_30;
 
     const DEPRECATED: &'static [Deprecated] = &[
         (
             "attack_owner",
             deprecated_text!("attack_owner"),
-            FormatVersion::new(1, 26, 30),
+            known::V1_26_30,
         ),
         (
             "target_acquisition_probability",
             deprecated_text!("target_acquisition_probability"),
-            FormatVersion::new(1, 26, 30),
+            known::V1_26_30,
         ),
         (
             "target_invisible_multiplier",
             deprecated_text!("target_invisible_multiplier"),
-            FormatVersion::new(1, 26, 30),
+            known::V1_26_30,
         ),
         (
             "target_sneak_visibility_multiplier",
             deprecated_text!("target_sneak_visibility_multiplier"),
-            FormatVersion::new(1, 26, 30),
+            known::V1_26_30,
         ),
     ];
 
@@ -1041,38 +1038,34 @@ impl OwnerHurtByTarget {
 }
 
 impl Goal for OwnerHurtByTarget {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 30);
+    const TYPED: FormatVersion = known::V1_26_30;
 
     const DEPRECATED: &'static [Deprecated] = &[
         (
             "attack_owner",
             deprecated_text!("attack_owner"),
-            FormatVersion::new(1, 26, 30),
+            known::V1_26_30,
         ),
         (
             "must_reach",
             deprecated_text!("must_reach"),
-            FormatVersion::new(1, 26, 30),
+            known::V1_26_30,
         ),
-        (
-            "must_see",
-            deprecated_text!("must_see"),
-            FormatVersion::new(1, 26, 30),
-        ),
+        ("must_see", deprecated_text!("must_see"), known::V1_26_30),
         (
             "must_see_forget_duration",
             deprecated_text!("must_see_forget_duration"),
-            FormatVersion::new(1, 26, 30),
+            known::V1_26_30,
         ),
         (
             "persist_time",
             deprecated_text!("persist_time"),
-            FormatVersion::new(1, 26, 30),
+            known::V1_26_30,
         ),
         (
             "within_radius",
             deprecated_text!("within_radius"),
-            FormatVersion::new(1, 26, 30),
+            known::V1_26_30,
         ),
     ];
 
@@ -1119,38 +1112,34 @@ impl OwnerHurtTarget {
 }
 
 impl Goal for OwnerHurtTarget {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 30);
+    const TYPED: FormatVersion = known::V1_26_30;
 
     const DEPRECATED: &'static [Deprecated] = &[
         (
             "attack_owner",
             deprecated_text!("attack_owner"),
-            FormatVersion::new(1, 26, 30),
+            known::V1_26_30,
         ),
         (
             "must_reach",
             deprecated_text!("must_reach"),
-            FormatVersion::new(1, 26, 30),
+            known::V1_26_30,
         ),
-        (
-            "must_see",
-            deprecated_text!("must_see"),
-            FormatVersion::new(1, 26, 30),
-        ),
+        ("must_see", deprecated_text!("must_see"), known::V1_26_30),
         (
             "must_see_forget_duration",
             deprecated_text!("must_see_forget_duration"),
-            FormatVersion::new(1, 26, 30),
+            known::V1_26_30,
         ),
         (
             "persist_time",
             deprecated_text!("persist_time"),
-            FormatVersion::new(1, 26, 30),
+            known::V1_26_30,
         ),
         (
             "within_radius",
             deprecated_text!("within_radius"),
-            FormatVersion::new(1, 26, 30),
+            known::V1_26_30,
         ),
     ];
 
@@ -1203,7 +1192,7 @@ impl TargetWhenPushed {
 }
 
 impl Goal for TargetWhenPushed {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 30);
+    const TYPED: FormatVersion = known::V1_26_30;
 
     fn extra_mut(&mut self) -> &mut Extra {
         &mut self.extra
@@ -1248,38 +1237,34 @@ impl WitherTargetHighestDamage {
 }
 
 impl Goal for WitherTargetHighestDamage {
-    const TYPED: FormatVersion = FormatVersion::new(1, 26, 30);
+    const TYPED: FormatVersion = known::V1_26_30;
 
     const DEPRECATED: &'static [Deprecated] = &[
         (
             "attack_owner",
             deprecated_text!("attack_owner"),
-            FormatVersion::new(1, 26, 30),
+            known::V1_26_30,
         ),
         (
             "must_reach",
             deprecated_text!("must_reach"),
-            FormatVersion::new(1, 26, 30),
+            known::V1_26_30,
         ),
-        (
-            "must_see",
-            deprecated_text!("must_see"),
-            FormatVersion::new(1, 26, 30),
-        ),
+        ("must_see", deprecated_text!("must_see"), known::V1_26_30),
         (
             "must_see_forget_duration",
             deprecated_text!("must_see_forget_duration"),
-            FormatVersion::new(1, 26, 30),
+            known::V1_26_30,
         ),
         (
             "persist_time",
             deprecated_text!("persist_time"),
-            FormatVersion::new(1, 26, 30),
+            known::V1_26_30,
         ),
         (
             "within_radius",
             deprecated_text!("within_radius"),
-            FormatVersion::new(1, 26, 30),
+            known::V1_26_30,
         ),
     ];
 

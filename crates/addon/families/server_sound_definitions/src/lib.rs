@@ -33,11 +33,12 @@ use bedrock_addon_core::versioning::{
 
 /// The version of the one struct, and of the one slice: the game's document format is
 /// 1.26.60.
-pub(crate) const V1_26_60: FormatVersion = FormatVersion::new(1, 26, 60);
+pub(crate) const V1_26_60: FormatVersion = bedrock_addon_core::version::known::V1_26_60;
 
 /// The engine version whose struct first binds `broadcast_range`; an older engine does not
 /// know the member.
-pub(crate) const BROADCAST_RANGE_SINCE: FormatVersion = FormatVersion::new(1, 26, 50);
+pub(crate) const BROADCAST_RANGE_SINCE: FormatVersion =
+    bedrock_addon_core::version::known::V1_26_50;
 
 /// The regex of the string constraint on a sound event name.
 const NO_WHITESPACE_REGEX: &str = "^\\S+$";
@@ -353,8 +354,7 @@ fn namespace_text(name: &str) -> Option<VanillaText> {
     if !prefixed {
         return Some(VanillaText::Fixed(NEEDS_NAMESPACE));
     }
-    let disallowed = name
-        .split_once(':')
+    let disallowed = bedrock_addon_core::id::syntax::split_namespace(name)
         .is_some_and(|(namespace, _)| namespace.eq_ignore_ascii_case(DISALLOWED_NAMESPACE));
     disallowed.then(|| VanillaText::Formatted {
         template: INVALID_NAMESPACE,

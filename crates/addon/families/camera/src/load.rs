@@ -23,6 +23,7 @@ use bedrock_addon_core::load::Reported;
 use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::known;
 use bedrock_addon_core::versioning::{
     EnvelopeCheck, ErrorMask, Family, Identity, InputKind, Loaded, MissingVersion, NoComponents,
     StructIndex, ValidateCx, VersionStruct, Versioned,
@@ -42,11 +43,11 @@ const SPLINES: &str = "cameras/splines";
 /// The first preset and list version.
 pub(crate) const V1_19_50: FormatVersion = FormatVersion::new(1, 19, 50);
 /// The newest preset struct's version.
-pub(crate) const V1_26_50: FormatVersion = FormatVersion::new(1, 26, 50);
+pub(crate) const V1_26_50: FormatVersion = known::V1_26_50;
 /// The spline struct's version.
-pub(crate) const V1_26_0: FormatVersion = FormatVersion::new(1, 26, 0);
+pub(crate) const V1_26_0: FormatVersion = known::V1_26_0;
 /// The version vanilla's own camera entity documents carry, and the one written.
-pub(crate) const ENTITY_WRITTEN: FormatVersion = FormatVersion::new(1, 26, 10);
+pub(crate) const ENTITY_WRITTEN: FormatVersion = known::V1_26_10;
 
 // ---- the families --------------------------------------------------------------------------
 
@@ -222,7 +223,7 @@ impl Family for EntityFamily {
     const DIRECTORIES: &'static [&'static str] = &["cameras"];
     // The document's version is 0.0.0, and that is a valid version: the envelope is always
     // checked.
-    const FLOOR: FormatVersion = FormatVersion::new(0, 0, 0);
+    const FLOOR: FormatVersion = known::V0_0_0;
     type Latest = CameraEntity;
     type Beta = Infallible;
     type Component = NoComponents;
@@ -615,5 +616,5 @@ impl Versioned for CameraSpline {
 }
 
 impl Versioned for CameraEntity {
-    const VERSION: FormatVersion = FormatVersion::new(0, 0, 0);
+    const VERSION: FormatVersion = known::V0_0_0;
 }

@@ -43,8 +43,7 @@ impl Content for Structure {
 
 /// The version information of a loaded structure: format 1, written as an Int, never upgraded.
 fn version() -> VersionInfo {
-    let one = FormatVersion::new(1, 0, 0);
-    VersionInfo::new(None, false, one, one, false)
+    unversioned::version_at(FormatVersion::new(1, 0, 0))
 }
 
 /// Loads one structure file of `pack`.

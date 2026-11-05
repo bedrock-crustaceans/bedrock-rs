@@ -10,7 +10,7 @@ use bedrock_addon_core::json::{
 };
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::molang;
-use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::{Loaded, ParseCx, VersionStruct, Versioned, write_payload};
 
 impl Versioned for Block {
@@ -390,10 +390,10 @@ impl Block {
 const ALLOW_LISTED: uuid::Uuid = uuid::Uuid::from_u128(0xda09_e399_6f5e_4287_a013_4cf1_3de3_2166);
 
 /// The newest version the legacy reader reads (`v1_26_0`).
-const NEWEST_LEGACY: FormatVersion = FormatVersion::new(1, 26, 0);
+const NEWEST_LEGACY: FormatVersion = known::V1_26_0;
 
 /// The version from which the v1 `minecraft:custom_components` list is deprecated.
-const V1_LIST_DEPRECATED: FormatVersion = FormatVersion::new(1, 21, 90);
+const V1_LIST_DEPRECATED: FormatVersion = known::V1_21_90;
 
 /// The crate's own members of a payload written in the 1.26.20 shape, in the shapes the legacy
 /// reader of `version` takes: the inverse of the 1.21.60 step's list conversion

@@ -18,12 +18,13 @@ use bedrock_addon_core::json::{
 };
 use bedrock_addon_core::shared::Filter;
 use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::known;
 use bedrock_addon_core::versioning::ParseCx;
 
 use super::validate as rules;
 
 /// The cereal slice's version (`v1_21_30::TradeTableData::VERSION`).
-pub(crate) const CEREAL: FormatVersion = FormatVersion::new(1, 21, 30);
+pub(crate) const CEREAL: FormatVersion = known::V1_21_30;
 
 /// A tier as the text has it.
 #[derive(Facet)]

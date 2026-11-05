@@ -1,9 +1,8 @@
 //! The Molang members of the goals: `eat_block.success_chance`, the `tags` expressions of
 //! item and block descriptors, and the legacy `condition` of a trigger.
 
-use bedrock_addon_core::diagnostic::Severity;
 use bedrock_addon_core::molang::{
-    self, Admission, Molang, MolangFailure, MolangFieldSpec, MolangVersion, MolangVersionSource,
+    self, Molang, MolangFailure, MolangFieldSpec, MolangVersion, MolangVersionSource,
     MolangVisitor, RawVersion, ReadField, ReaderKind, Step,
 };
 use bedrock_addon_core::shared::{BlockDescriptor, EventTrigger, ItemDescriptor};
@@ -17,27 +16,18 @@ pub(crate) const SUCCESS_CHANCE: MolangFieldSpec = MolangFieldSpec::DEFAULT;
 /// `eat_block.success_chance` read by the lenient conversion of an older document: the
 /// schema-validated reader, and a rejected expression is a kept error that gives the member's
 /// default (0.02).
-pub(crate) const SUCCESS_CHANCE_CONVERTED: MolangFieldSpec = MolangFieldSpec {
-    reader: ReaderKind::SchemaValidated,
-    on_failure: MolangFailure::ReplaceWith(0.02),
-    // The game logs a rejected expression at the error level and still loads the entity: the
-    // expression node stores the text and the parse result is dropped, so the finding is a kept
-    // error.
-    error_severity: Severity::Error,
-    error_kept: true,
-    ..MolangFieldSpec::DEFAULT
-};
+// The game logs a rejected expression at the error level and still loads the entity: the
+// expression node stores the text and the parse result is dropped, so the finding is a kept
+// error.
+pub(crate) const SUCCESS_CHANCE_CONVERTED: MolangFieldSpec = MolangFieldSpec::KEPT
+    .reader(ReaderKind::SchemaValidated)
+    .on_failure(MolangFailure::ReplaceWith(0.02));
 
 /// A legacy trigger `condition`: the lenient reader, the pack's version, and a rejected
 /// expression a kept error (the typed trigger has no condition).
-const CONDITION: MolangFieldSpec = MolangFieldSpec {
-    reader: ReaderKind::LenientVersioned,
-    // The game binds `condition` as an expression node and drops the parse result; it logs a
-    // rejected expression at the error level and keeps the document: a kept error.
-    error_severity: Severity::Error,
-    error_kept: true,
-    ..MolangFieldSpec::DEFAULT
-};
+// The game binds `condition` as an expression node and drops the parse result; it logs a
+// rejected expression at the error level and keeps the document: a kept error.
+const CONDITION: MolangFieldSpec = MolangFieldSpec::KEPT.reader(ReaderKind::LenientVersioned);
 
 /// Adds the trigger member `key`, when present, to `triggers`.
 pub(crate) fn push_trigger<'t>(
@@ -101,15 +91,11 @@ pub(crate) fn visit_conditions(
 /// `tags` query set. A rejected expression is a kept error and the descriptor is kept.
 // The game parses a descriptor's `tags` expression at the constant Molang version 13, and a
 // rejected expression does not stop the entity from loading.
-const TAGS: MolangFieldSpec = MolangFieldSpec {
-    version: MolangVersionSource::Constant(MolangVersion::V13),
-    admission: Admission::Tags,
-    // The game logs a rejected `tags` expression at the error level and keeps the descriptor
-    // (it is returned even when the parse fails): a kept error.
-    error_severity: Severity::Error,
-    error_kept: true,
-    ..MolangFieldSpec::DEFAULT
-};
+// The game logs a rejected `tags` expression at the error level and keeps the descriptor
+// (it is returned even when the parse fails): a kept error.
+const TAGS: MolangFieldSpec = MolangFieldSpec::KEPT
+    .version(MolangVersionSource::Constant(MolangVersion::V13))
+    .tags();
 
 /// Visits the `tags` expression of each item descriptor of list member `key`.
 pub(crate) fn visit_items(

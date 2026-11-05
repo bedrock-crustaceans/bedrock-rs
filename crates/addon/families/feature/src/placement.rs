@@ -1,6 +1,7 @@
 //! Feature types that place other features: aggregates, sequences, weighted and conditional
 //! choices, layouts, searches and filters.
 
+use bedrock_addon_core::version::known;
 use facet::Facet;
 use facet_value::VArray;
 
@@ -325,8 +326,7 @@ impl Rules for WeightedRandomFeature {
 }
 
 /// The engine that adds `early_out_scheme: none`.
-const EARLY_OUT_NONE_ENGINE: bedrock_addon_core::version::FormatVersion =
-    bedrock_addon_core::version::FormatVersion::new(1, 26, 50);
+const EARLY_OUT_NONE_ENGINE: bedrock_addon_core::version::FormatVersion = known::V1_26_50;
 
 // Any pack may use the type (it is not internal).
 impl Rules for ConditionalListFeature {
@@ -386,8 +386,7 @@ impl Rules for SearchFeature {
 impl Rules for SurfaceRelativeThresholdFeature {}
 
 /// The engine that adds `height_difference_filter_feature`.
-const HEIGHT_DIFFERENCE_ENGINE: bedrock_addon_core::version::FormatVersion =
-    bedrock_addon_core::version::FormatVersion::new(1, 26, 30);
+const HEIGHT_DIFFERENCE_ENGINE: bedrock_addon_core::version::FormatVersion = known::V1_26_30;
 
 impl Rules for HeightDifferenceFilterFeature {
     const SINCE_ENGINE: Option<bedrock_addon_core::version::FormatVersion> =

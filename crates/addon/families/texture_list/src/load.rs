@@ -12,7 +12,7 @@ use super::TextureLists;
 use super::list::{self, PackLint, TextureClaim, TextureList, TextureListMode, scan_claims};
 use bedrock_addon_core::diagnostic::Diagnostics;
 use bedrock_addon_core::document::Origin;
-use bedrock_addon_support::texture::document::unversioned;
+use bedrock_addon_core::document::unversioned;
 use bedrock_addon_support::texture::files::{
     IndexedFile, StackFiles, is_texture_file, listed_files,
 };
@@ -211,7 +211,7 @@ fn combine(parsed: Vec<ListFileParsed>, stack: &StackCx<'_>) -> TextureLists {
                 lint.omitted(entries, &mut findings);
             }
             let origin = Origin::file(pack.pack.clone(), PackSide::Resource, path);
-            lists.push(unversioned(document, origin, findings));
+            lists.push(unversioned::document(document, origin, findings));
         }
         modes.push(mode);
     }

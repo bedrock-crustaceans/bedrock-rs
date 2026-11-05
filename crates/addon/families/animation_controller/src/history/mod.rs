@@ -13,6 +13,7 @@ use bedrock_addon_core::document::{Document, Rejected};
 use bedrock_addon_core::json::{EncodeError, WriteStyle};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::known;
 
 /// A controller file parsed by the struct its `format_version` selects, not upgraded.
 #[derive(Clone, Debug, PartialEq)]
@@ -28,8 +29,8 @@ impl Any {
     /// The version of the struct that parsed the file.
     pub fn parsed_version(&self) -> FormatVersion {
         match self {
-            Self::V1_8_0(_) => FormatVersion::new(1, 8, 0),
-            Self::V1_10_0(_) => FormatVersion::new(1, 10, 0),
+            Self::V1_8_0(_) => known::V1_8_0,
+            Self::V1_10_0(_) => known::V1_10_0,
         }
     }
 

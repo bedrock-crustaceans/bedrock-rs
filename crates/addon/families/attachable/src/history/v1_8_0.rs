@@ -8,6 +8,7 @@ use bedrock_addon_core::id::{
 use bedrock_addon_core::json::{EncodeError, JsonSlice, StrictBool, StrictString, Value};
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor, Step};
 use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::known;
 use bedrock_addon_core::versioning::{ParseCx, Upgrade, UpgradeCx, VersionStruct, Versioned};
 use bedrock_addon_core::visual::history::{v1_8_0::Scripts, v1_10_0};
 use bedrock_addon_core::visual::{ControllerUse, SpawnEgg};
@@ -83,7 +84,7 @@ pub struct Description {
 }
 
 impl Versioned for Attachable {
-    const VERSION: FormatVersion = FormatVersion::new(1, 8, 0);
+    const VERSION: FormatVersion = known::V1_8_0;
 }
 
 impl VersionStruct for Attachable {
@@ -195,7 +196,7 @@ impl Upgrade for Attachable {
             animate: None,
         });
         super::v1_10_0::Attachable {
-            format_version: FormatVersion::new(1, 10, 0),
+            format_version: known::V1_10_0,
             description: super::v1_10_0::Description {
                 identifier: d.identifier,
                 min_engine_version: d.min_engine_version,

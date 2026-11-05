@@ -22,7 +22,7 @@ pub use load::load_registry;
 
 /// The first and only `format_version` vanilla has a voxel-shape parser for
 /// (1.21.110); it reads every version from it up to the engine's.
-pub(crate) const FLOOR: FormatVersion = FormatVersion::new(1, 21, 110);
+pub(crate) const FLOOR: FormatVersion = bedrock_addon_core::version::known::V1_21_110;
 
 /// The built-in shape without boxes (`minecraft:empty`): what a block culls with when its
 /// geometry names no `culling_shape`. No pack defines it.
