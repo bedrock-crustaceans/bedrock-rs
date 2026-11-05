@@ -2,7 +2,6 @@
 //! to 1.26.50.
 
 use super::super::{AudioListener, ControlScheme, PresetAimAssist};
-use super::SourceVersion;
 use bedrock_addon_core::id::CameraPresetId;
 use bedrock_addon_core::schema::Schema;
 use bedrock_addon_core::version::FormatVersion;
@@ -64,7 +63,7 @@ pub struct CameraPreset {
     // A skipped field still takes the JSON member of its name in facet rc.7, so the field is
     // given a NUL-prefixed name that no document has.
     #[facet(skip, rename = "\u{0}source_format_version")]
-    pub source_format_version: SourceVersion,
+    pub source_format_version: FormatVersion,
 }
 
 impl Versioned for CameraPreset {

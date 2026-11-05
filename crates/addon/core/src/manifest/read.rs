@@ -199,7 +199,7 @@ pub(super) fn strict_version_text(text: &str) -> Option<SemVersion> {
     if core.split('.').count() != 3 {
         return None;
     }
-    SemVersion::parse(text).filter(|version| !version.any)
+    SemVersion::parse(text).filter(|version| !version.is_any())
 }
 
 /// A relaxed version string (`"2.0"`, `"1"`): partial versions are filled with zeros; the
@@ -208,5 +208,5 @@ pub(super) fn relaxed_version_text(text: &str) -> Option<SemVersion> {
     if text == "beta" {
         return None;
     }
-    SemVersion::parse(text).filter(|version| !version.any)
+    SemVersion::parse(text).filter(|version| !version.is_any())
 }

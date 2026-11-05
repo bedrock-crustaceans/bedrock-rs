@@ -44,7 +44,7 @@ impl Schema {
     /// The schema a version selects: an exact match of the numbers and of the pre-release
     /// text. Build metadata takes no part.
     fn of(version: &SemVersion) -> Option<Schema> {
-        if version.any || !version.pre_release.is_empty() {
+        if version.is_any() || !version.pre_release.is_empty() {
             return None;
         }
         [Self::V1_16_100, Self::V1_21_30]

@@ -290,66 +290,10 @@ fn span_in(slice: JsonSlice<'_>, path: &JsonPath) -> Span {
     }
 }
 
-/// The `format_version` a history document was read at: a history struct is written back at
-/// it, so a document read and written without upgrading keeps the version its author wrote.
-/// Not a JSON member of the payload.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash, facet::Facet)]
-pub struct SourceVersion {
-    /// The major part.
-    pub major: u16,
-    /// The minor part.
-    pub minor: u16,
-    /// The patch part.
-    pub patch: u16,
-}
-
-impl SourceVersion {
-    /// The version as a [`FormatVersion`](bedrock_addon_core::version::FormatVersion).
-    #[must_use]
-    pub fn version(self) -> bedrock_addon_core::version::FormatVersion {
-        self.into()
-    }
-}
-
-impl From<SourceVersion> for bedrock_addon_core::version::FormatVersion {
-    fn from(version: SourceVersion) -> Self {
-        Self::new(version.major, version.minor, version.patch)
-    }
-}
-
-impl From<bedrock_addon_core::version::FormatVersion> for SourceVersion {
-    fn from(version: bedrock_addon_core::version::FormatVersion) -> Self {
-        Self {
-            major: version.major,
-            minor: version.minor,
-            patch: version.patch,
-        }
-    }
-}
-
 /// `{"format_version": version, key: payload}`: the whole document of a family read whole.
 pub fn document(version: &str, key: &str, payload: Value) -> Value {
     let mut root = facet_value::VObject::new();
     root.insert("format_version", version);
     root.insert(key, payload);
     root.into()
-}
-
-#[cfg(test)]
-mod source_version_tests {
-    use super::SourceVersion;
-    use bedrock_addon_core::version::FormatVersion;
-
-    #[test]
-    fn source_version_converts_to_a_format_version_and_back() {
-        let source = SourceVersion {
-            major: 1,
-            minor: 21,
-            patch: 0,
-        };
-        let version = FormatVersion::from(source);
-        assert_eq!(version, FormatVersion::new(1, 21, 0));
-        assert_eq!(SourceVersion::from(version), source);
-        assert_eq!(source.version(), version);
-    }
 }

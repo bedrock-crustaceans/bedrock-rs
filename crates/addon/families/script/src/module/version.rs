@@ -52,7 +52,7 @@ impl ScriptVersion {
         if core.split('.').count() != 3 {
             return None;
         }
-        let version = SemVersion::parse(text).filter(|version| !version.any)?;
+        let version = SemVersion::parse(text).filter(|version| !version.is_any())?;
         Some(Self::from(&version))
     }
 

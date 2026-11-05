@@ -119,7 +119,7 @@ fn read_version(walk: &mut Walk, node: Node<'_>) -> Option<SemVersion> {
             if text == "beta" {
                 return None;
             }
-            SemVersion::parse(&text).filter(|v| !v.any)
+            SemVersion::parse(&text).filter(|v| !v.is_any())
         }
         Kind::Array => {
             let mut numbers = Vec::new();

@@ -318,6 +318,66 @@ mod format_version {
         assert_eq!(ENGINE_VERSION.to_string(), "1.26.60");
     }
 
+    /// A struct holding a format version as a member, as facet reads and writes it.
+    #[derive(Debug, PartialEq, facet::Facet)]
+    struct Held {
+        version: FormatVersion,
+    }
+
+    #[test]
+    fn a_format_version_is_written_as_its_string_form() {
+        let mut out = Vec::new();
+        bedrock_addon_core::json::write_json(
+            &Held {
+                version: fv(1, 21, 60),
+            },
+            &mut out,
+            bedrock_addon_core::json::WriteStyle {
+                indent: bedrock_addon_core::json::Indent::Compact,
+                trailing_newline: false,
+            },
+        )
+        .unwrap();
+        assert_eq!(String::from_utf8(out).unwrap(), r#"{"version":"1.21.60"}"#);
+    }
+
+    #[test]
+    fn a_format_version_reads_its_string_form_back() {
+        let held: Held = facet_json::from_str(r#"{"version":"1.21.60"}"#).unwrap();
+        assert_eq!(held.version, fv(1, 21, 60));
+        assert!(facet_json::from_str::<Held>(r#"{"version":"beta"}"#).is_err());
+        assert!(facet_json::from_str::<Held>(r#"{"version":"one"}"#).is_err());
+    }
+
+    /// The member read is `SemVersion`'s: a partial version completes with zeros and a
+    /// pre-release tag is dropped; the array form `FormatVersionInput::from_json` takes is
+    /// refused, as is the beta literal.
+    #[test]
+    fn a_format_version_member_completes_a_partial_version_and_drops_the_pre_release() {
+        let read = |text: &str| -> FormatVersion {
+            facet_json::from_str::<Held>(&format!(r#"{{"version":"{text}"}}"#))
+                .unwrap()
+                .version
+        };
+        assert_eq!(read("1.21"), fv(1, 21, 0));
+        assert_eq!(read("1"), fv(1, 0, 0));
+        assert_eq!(read("1.21.60-beta.3"), fv(1, 21, 60));
+        assert!(facet_json::from_str::<Held>(r#"{"version":[1, 21, 60]}"#).is_err());
+        let refused = FormatVersion::try_from("one".to_owned()).unwrap_err();
+        assert_eq!(refused.text, "one");
+        assert_eq!(
+            refused.to_string(),
+            "`one` is not a format version: expected a version string such as \"1.21.60\" \
+             (missing numbers are 0, a pre-release tag is dropped)"
+        );
+    }
+
+    #[test]
+    fn the_default_format_version_is_the_least() {
+        assert_eq!(FormatVersion::default(), fv(0, 0, 0));
+        assert_eq!(FormatVersion::default().max(fv(1, 19, 50)), fv(1, 19, 50));
+    }
+
     #[test]
     fn format_versions_order_by_their_numbers() {
         assert!(fv(1, 21, 60) < fv(1, 21, 100));

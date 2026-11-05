@@ -57,7 +57,7 @@ pub fn format_version(walk: &mut Walk, node: Node<'_>, minimum: &SemVersion) -> 
         .as_deref()
         .filter(|t| *t != "beta")
         .and_then(SemVersion::parse)
-        .filter(|v| !v.any);
+        .filter(|v| !v.is_any());
     let Some(version) = version else {
         walk.bad_type("SemVersion", node);
         return None;

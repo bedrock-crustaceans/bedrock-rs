@@ -162,7 +162,7 @@ fn gate(root_members: usize, inner: &VObject) -> Option<SemVersion> {
     let version = SemVersion::parse(text)?;
     let exact = (version.major, version.minor, version.patch) == (1, 0, 0)
         && version.pre_release.is_empty()
-        && !version.any;
+        && !version.is_any();
     exact.then_some(version)
 }
 

@@ -18,6 +18,13 @@ pub mod known;
 /// without one, and pre-release lists compare identifier by identifier (numeric identifiers
 /// numerically and below alphanumeric ones, a strict prefix lower). Build metadata takes no part
 /// in ordering or equality, and two any-versions are equal only to each other.
+///
+/// Whether a version is the any-version is [`is_any`](Self::is_any); the flag itself is not a
+/// field a caller reads or sets:
+///
+/// ```compile_fail
+/// let any = bedrock_addon_core::version::SemVersion::ANY.any;
+/// ```
 #[derive(Clone, Debug)]
 pub struct SemVersion {
     /// Major.
@@ -30,8 +37,8 @@ pub struct SemVersion {
     pub pre_release: String,
     /// The build metadata (`build.7`); empty when there is none.
     pub build: String,
-    /// The any-version `*`; the numbers are then 0 and ignored.
-    pub any: bool,
+    /// The any-version `*`; the numbers are then 0 and ignored. Read by [`is_any`](Self::is_any).
+    any: bool,
 }
 
 impl SemVersion {
@@ -336,7 +343,16 @@ impl fmt::Display for SemVersion {
 
 /// A document version: `format_version` as three numbers. Copy, const-constructible; documents
 /// only.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+///
+/// Facet reads and writes it as a string (`"1.21.60"`), read by [`FormatVersionInput::parse`]'s
+/// rules: a partial version completes with zeros (`"1.21"` is 1.21.0, `"1"` is 1.0.0) and a
+/// pre-release tag is dropped (`"1.21.60-beta.3"` is 1.21.60). The beta literal, the array
+/// form ([`FormatVersionInput::from_json`] takes it, this member does not) and anything else
+/// that names no version are refused. The default is 0.0.0, the least version: below every document version,
+/// so `max` with a slice's version gives the slice's (what a struct built by hand, which was
+/// read at no version, is written at).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, PartialOrd, Ord, facet::Facet)]
+#[facet(proxy = String)]
 pub struct FormatVersion {
     /// Major.
     pub major: u16,
@@ -364,6 +380,32 @@ impl fmt::Display for FormatVersion {
     }
 }
 
+/// A string that names no format version (facet's read of a [`FormatVersion`]).
+#[derive(Clone, Debug, PartialEq, Eq, thiserror::Error)]
+#[error(
+    "`{text}` is not a format version: expected a version string such as \"1.21.60\" (missing numbers are 0, a pre-release tag is dropped)"
+)]
+pub struct NotAFormatVersion {
+    /// The string as written.
+    pub text: String,
+}
+
+impl TryFrom<String> for FormatVersion {
+    type Error = NotAFormatVersion;
+
+    fn try_from(text: String) -> Result<Self, NotAFormatVersion> {
+        FormatVersionInput::parse(&text)
+            .and_then(|input| input.version)
+            .ok_or(NotAFormatVersion { text })
+    }
+}
+
+impl From<&FormatVersion> for String {
+    fn from(version: &FormatVersion) -> Self {
+        version.to_string()
+    }
+}
+
 /// What the envelope actually said about its version.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct FormatVersionInput {
@@ -385,7 +427,7 @@ impl FormatVersionInput {
         // numbers and the pre-release `beta`, build metadata aside.
         let sentinel = || {
             SemVersion::parse(text).is_some_and(|v| {
-                !v.any
+                !v.is_any()
                     && (v.major, v.minor, v.patch) == (9999, 9999, 9999)
                     && v.pre_release == "beta"
             })
@@ -785,7 +827,7 @@ impl MinEngineVersion {
     /// The version as molang's engine version: the any-version, or the three numbers with a
     /// pre-release tag when the version has one (the tag text matters only as "present").
     pub fn engine_version(&self) -> EngineVersion {
-        if self.version.any {
+        if self.version.is_any() {
             return EngineVersion::Any;
         }
         engine_version_of(

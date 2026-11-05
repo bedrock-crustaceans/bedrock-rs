@@ -96,7 +96,7 @@ impl VersionStruct for v1_21_50::AimAssistPreset {
             cx,
             d,
         )?;
-        preset.source_format_version = cx.original_version.into();
+        preset.source_format_version = cx.original_version;
         Some(preset)
     }
 
@@ -105,11 +105,7 @@ impl VersionStruct for v1_21_50::AimAssistPreset {
     // writes its own root.
     fn write(&self) -> Result<Value, EncodeError> {
         Ok(document(
-            &self
-                .source_format_version
-                .version()
-                .max(Self::VERSION)
-                .to_string(),
+            &self.source_format_version.max(Self::VERSION).to_string(),
             "minecraft:aim_assist_preset",
             write_payload(self)?,
         ))

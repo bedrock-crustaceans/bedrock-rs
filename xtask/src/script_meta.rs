@@ -471,7 +471,8 @@ fn read_modules(samples: &Samples, findings: &mut Findings) -> Vec<ModuleFile> {
             );
             continue;
         };
-        let Some(sem) = SemVersion::parse(version).filter(|sem| !sem.any && sem.build.is_empty())
+        let Some(sem) =
+            SemVersion::parse(version).filter(|sem| !sem.is_any() && sem.build.is_empty())
         else {
             findings.error(
                 Check::FileName,

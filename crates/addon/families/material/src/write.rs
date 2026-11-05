@@ -340,7 +340,7 @@ impl Writer {
 fn passes_gate(version: &bedrock_addon_core::version::SemVersion) -> bool {
     (version.major, version.minor, version.patch) == (1, 0, 0)
         && version.pre_release.is_empty()
-        && !version.any
+        && !version.is_any()
 }
 
 /// The file as JSON, checked to read back as `file`.

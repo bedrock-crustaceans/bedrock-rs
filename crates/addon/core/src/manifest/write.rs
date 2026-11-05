@@ -187,7 +187,7 @@ fn header(
                 let at = "header/min_engine_version";
                 if v3 {
                     object.insert(MIN_ENGINE_VERSION, Value::from(engine.version.to_string()));
-                } else if engine.version.any || engine.version.is_pre_release() {
+                } else if engine.version.is_any() || engine.version.is_pre_release() {
                     // The legacy reader takes only the array form.
                     return Err(not_representable(at));
                 } else {
@@ -198,7 +198,7 @@ fn header(
     }
     if let Some(base) = &header.base_game_version {
         let value = match &base.version {
-            Some(base) if base.any => Value::from("*"),
+            Some(base) if base.is_any() => Value::from("*"),
             Some(base) => version(base, v3),
             None => return Err(not_representable("header/base_game_version")),
         };
@@ -415,7 +415,7 @@ fn uuid(uuid: uuid::Uuid) -> Value {
 /// A version in the format's form: a string from format 3; legacy, the `[a, b, c]` array unless
 /// the version has a pre-release or build part, which only the string form holds.
 fn version(version: &SemVersion, v3: bool) -> Value {
-    if v3 || version.any || version.is_pre_release() || !version.build.is_empty() {
+    if v3 || version.is_any() || version.is_pre_release() || !version.build.is_empty() {
         Value::from(version.to_string())
     } else {
         array(version)

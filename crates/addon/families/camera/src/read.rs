@@ -229,7 +229,7 @@ impl VersionStruct for v1_19_50::CameraPreset {
             cx,
             d,
         )?;
-        preset.source_format_version = cx.original_version.into();
+        preset.source_format_version = cx.original_version;
         constrained!(preset)
             .check(&child(&cx.at, "minecraft:camera_preset"), d)
             .then_some(preset)
@@ -242,11 +242,7 @@ impl VersionStruct for v1_19_50::CameraPreset {
     // writes its own root.
     fn write(&self) -> Result<Value, EncodeError> {
         Ok(document(
-            &self
-                .source_format_version
-                .version()
-                .max(Self::VERSION)
-                .to_string(),
+            &self.source_format_version.max(Self::VERSION).to_string(),
             "minecraft:camera_preset",
             write_payload(self)?,
         ))

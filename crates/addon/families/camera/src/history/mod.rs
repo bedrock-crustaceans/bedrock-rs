@@ -78,5 +78,3 @@ pub fn upgrade(
         cx,
     )
 }
-
-pub use bedrock_addon_support::chain_file::SourceVersion;

@@ -7,7 +7,6 @@ use bedrock_addon_core::id::{AimAssistCategoryId, AimAssistPresetId, BlockId, En
 use bedrock_addon_core::schema::Schema;
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{Upgrade, UpgradeCx, Versioned};
-use bedrock_addon_support::chain_file::SourceVersion;
 
 /// An aim-assist preset as written below format 1.21.120:
 /// [`super::super::AimAssistPreset`] with one flat `exclusion_list` in place of
@@ -31,7 +30,7 @@ pub struct AimAssistPreset {
     // A skipped field still takes the JSON member of its name in facet rc.7: a NUL-prefixed
     // name no document has.
     #[facet(skip, rename = "\u{0}source_format_version")]
-    pub source_format_version: SourceVersion,
+    pub source_format_version: FormatVersion,
 }
 
 impl Versioned for AimAssistPreset {

@@ -991,7 +991,7 @@ pub(super) fn base_game_version(
         sink.warning(Code::IgnoredProperty, at);
         return None;
     }
-    if let Some(semver) = version.version.as_ref().filter(|v| !v.any) {
+    if let Some(semver) = version.version.as_ref().filter(|v| !v.is_any()) {
         let engine = SemVersion::from(ENGINE_VERSION);
         if *semver > engine {
             sink.error(
