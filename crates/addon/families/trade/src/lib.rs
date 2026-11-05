@@ -10,215 +10,325 @@
 
 pub mod history;
 
-mod load;
-mod new;
-mod parse;
+mod read;
 mod texts;
+mod types;
 mod validate;
 mod write;
 
 #[cfg(test)]
 mod tests;
 
-use bedrock_addon_core::id::ItemId;
-use bedrock_addon_core::json::Value;
-use bedrock_addon_core::shared::Filter;
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
+use bedrock_addon_core::document::{
+    Content, Document, Files, JsonContent, Origin, Rejected, VersionInfo,
+};
+use bedrock_addon_core::json::Prepared;
+use bedrock_addon_core::json::{
+    EncodeError, EnvelopeVersion, JsonSlice, Value, WriteStyle, probe_envelope,
+};
+use bedrock_addon_core::load::DocumentSource;
+use bedrock_addon_core::load::{self, CollectionLoader, FileCopy, LoadContext, Walk};
+use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
+use bedrock_addon_core::version::{FormatVersion, FormatVersionInput};
+use bedrock_addon_core::versioning::{
+    Envelope, EnvelopeCheck, Family, Identity, InputKind, Loaded, MissingVersion, NoComponents,
+    ParseCx, Parsed, Reading, StructIndex, ValidateCx, VersionChain, finish, parse_as_written,
+};
+use history::{Any, TradeFamily, v0};
+use read::CEREAL;
 
+pub use types::{Group, ItemList, Quantity, Tier, Trade, TradeItem, TradeTable};
+
+/// The pack directory of trade tables.
+const DIRECTORY: &str = "trading";
+
+impl Family for TradeFamily {
+    const NAME: &'static str = "trade table";
+    // The document is `{"format_version"?, "tiers": [...]}`; the game binds the table to the
+    // `tiers` member alone, so the payload is the array.
+    const PAYLOAD_KEY: &'static str = "tiers";
+    // The legacy slice starts at 0.0.0.
+    const FLOOR: FormatVersion = v0::VERSION;
+    type Latest = TradeTable;
+    type Beta = std::convert::Infallible;
+    type Component = NoComponents;
+    type Any = Any;
+    const ENVELOPE: Envelope = Envelope {
+        // The game reads a table as a whole document: the version is the one its JSON reader picks
+        // from the text, the size limits apply, and rule N2 holds at the cereal slice.
+        input: InputKind::Document,
+        // The legacy parser reads the whole document and ignores other root members; the strict
+        // cereal slice (1.21.30 on) checks the envelope.
+        check: EnvelopeCheck::From(CEREAL),
+        // A missing `format_version` is 0.0.0 with no log entry.
+        missing: MissingVersion::Floor {
+            text: None,
+            severity: None,
+        },
+        ..Envelope::DEFAULT
+    };
+
+    /// The legacy slice `[0.0.0, 1.21.30)` is a hand-written parser with no cereal mask: its
+    /// `null` handling is the family's own. The game reads the cereal slice strictly, under rule
+    /// N2: an unknown member is an error there.
+    fn reading(index: StructIndex, _: DocumentSource) -> Reading {
+        match index {
+            StructIndex::Stable(0) => Reading::OWN,
+            _ => Reading::DOCUMENT,
+        }
+    }
+
+    fn identity(_: JsonSlice<'_>) -> Identity {
+        Identity::default()
+    }
+
+    fn validate(v: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {
+        if let Loaded::Stable(table) = v {
+            validate::validate(table, cx);
+        }
+    }
+}
+
+// Hand `Content`, not `JsonDocument`: a table that holds a legacy blob is written as a whole
+// legacy document (`TradeTable::document`), a payload other than `VersionStruct::write`'s
+// `tiers`, which `write_envelope` cannot write; and the parse stage reads two cases of the text
+// the generic stage does not (`parse_stage`).
+impl bedrock_addon_core::__private::Sealed for TradeTable {}
+
+impl Content for TradeTable {
+    const NAME: &'static str = "trade table";
+    const SIDES: &'static [PackSide] = &[PackSide::Behavior];
+
+    fn parse(path: &PackPath, bytes: &[u8], cx: &LoadContext) -> Result<Document<Self>, Rejected> {
+        let origin = Origin::file(PackRef::app_data(), PackSide::Behavior, path.clone());
+        match parse_stage(bytes, cx) {
+            Ok(parsed) => finished(parsed, origin, cx),
+            Err(finding) => Err(reject(origin, *finding)),
+        }
+    }
+
+    fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
+        self.write_into(out, style)
+    }
+}
+
+impl JsonContent for TradeTable {}
+
+impl TradeTable {
+    /// Parses one trade-table file without upgrading it: the struct its `format_version`
+    /// selects.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Rejected`] when the file cannot be read into a value at all, such as bytes that
+    /// are not JSON or a document the family refuses; it carries every finding about the file.
+    pub fn parse_as_written(
+        path: &PackPath,
+        bytes: &[u8],
+        cx: &LoadContext,
+    ) -> Result<Document<Any>, Rejected> {
+        let origin = Origin::file(PackRef::app_data(), PackSide::Behavior, path.clone());
+        let parsed = match parse_stage(bytes, cx) {
+            Ok(parsed) => parsed,
+            Err(finding) => return Err(reject(origin, *finding)),
+        };
+        let mut diagnostics = parsed.diagnostics;
+        diagnostics.locate(&origin);
+        match parsed.value {
+            Some(value) => Ok(Document::new(value, origin, parsed.version, diagnostics)),
+            None => Err(Rejected::new(origin, diagnostics)),
+        }
+    }
+}
+
+/// `history::upgrade`: rebuilds the parse stage from the document and finishes it.
+pub(crate) fn upgrade_document(
+    document: Document<Any>,
+    cx: &LoadContext,
+) -> Result<Document<TradeTable>, Rejected> {
+    let origin = document.origin().clone();
+    let version = document.version().clone();
+    let diagnostics = document.diagnostics().clone();
+    let value = document.into_value();
+    let at = match value {
+        Any::V0(_) => JsonPath::new(),
+        Any::V1_21_30(_) => payload_at(),
+    };
+    let written = FormatVersionInput {
+        version: Some(version.effective),
+        beta_literal: false,
+        prerelease: false,
+    };
+    let parsed = Parsed::<TradeFamily>::from_value(Some(value), version, written, at, diagnostics);
+    finished(parsed, origin, cx)
+}
+
+/// The path of the payload in a checked envelope.
+fn payload_at() -> JsonPath {
+    JsonPath::of_keys([<TradeFamily as Family>::PAYLOAD_KEY])
+}
+
+/// The finding of an unreadable file.
+fn malformed() -> Diagnostic {
+    Diagnostic::error(DiagnosticCode::MalformedInput {
+        message: "not UTF-8 JSON within the nesting limit".to_owned(),
+        text: None,
+    })
+}
+
+/// A rejection with one finding.
+fn reject(origin: Origin, finding: Diagnostic) -> Rejected {
+    let mut diagnostics = Diagnostics::default();
+    diagnostics.push(finding);
+    Rejected::located(origin, diagnostics)
+}
+
+/// The parse stage of one file: the struct its version selects, not upgraded. `Err` is a
+/// finding that rejects the file before any struct is chosen.
+///
+/// Two cases the generic stage does not express go to the legacy parser here: a document
+/// that is JSON `null` (the parser's own "must containt" text), and a `format_version` that is
+/// no string (a number or an array) whose version, as the game's JSON reader picks it from the
+/// text, selects the legacy slice: the legacy parser then reads its own version only from a
+/// string and takes 0.0.0 without a message. A non-string that gives no version (`null`, a
+/// bool, an object) is "Malformed format version" and one that selects the cereal slice is
+/// read there, both by the generic stage (the document input). A pre-release of
+/// 1.21.30 sorts below 1.21.30 and reaches the legacy slice through the generic stage.
+fn parse_stage(bytes: &[u8], cx: &LoadContext) -> Result<Parsed<TradeFamily>, Box<Diagnostic>> {
+    let prepared = Prepared::new(bytes).map_err(|_| Box::new(malformed()))?;
+    let text = prepared.as_str();
+    let document = JsonSlice::new(text);
+    match probe_envelope(document) {
+        Err(_) if is_null(text) => Ok(legacy(document, cx)),
+        Ok(envelope)
+            if matches!(
+                envelope.format_version,
+                EnvelopeVersion::Malformed | EnvelopeVersion::Array(_)
+            ) && picks_legacy(text) =>
+        {
+            Ok(legacy(document, cx))
+        }
+        _ => Ok(parse_as_written::<TradeFamily>(document, cx)),
+    }
+}
+
+/// Whether the version the game's JSON reader picks from `text` selects the legacy slice (below
+/// 1.21.30).
+fn picks_legacy(text: &str) -> bool {
+    FormatVersionInput::pick(text)
+        .with(|input, _| input.version.is_some_and(|v| v < CEREAL))
+        .or_absent(false)
+}
+
+/// Whether the text is the JSON value `null`.
+fn is_null(text: &str) -> bool {
+    bedrock_addon_core::json::from_str_jsonc::<Value>(text).is_ok_and(|v| v.is_null())
+}
+
+/// The legacy parse of the whole document at 0.0.0, for a `format_version` that is no string
+/// (as if absent).
+fn legacy(document: JsonSlice<'_>, cx: &LoadContext) -> Parsed<TradeFamily> {
+    let effective = v0::VERSION;
+    let written = FormatVersionInput {
+        version: Some(effective),
+        beta_literal: false,
+        prerelease: false,
+    };
+    let parse = ParseCx {
+        load: cx,
+        written,
+        original_version: effective,
+        at: JsonPath::new(),
+    };
+    let mut diagnostics = Diagnostics::default();
+    let value = <Any as VersionChain<TradeFamily>>::parse_struct(
+        document,
+        StructIndex::Stable(0),
+        &parse,
+        &mut diagnostics,
+    )
+    .filter(|_| !diagnostics.has_errors());
+    Parsed::from_value(
+        value,
+        VersionInfo::new(None, false, effective, v0::VERSION, false),
+        written,
+        JsonPath::new(),
+        diagnostics,
+    )
+}
+
+/// The rest of the load of a parsed file: the upgrade, the checks, the document.
+fn finished(
+    parsed: Parsed<TradeFamily>,
+    origin: Origin,
+    cx: &LoadContext,
+) -> Result<Document<TradeTable>, Rejected> {
+    let outcome = finish(parsed, cx);
+    let mut diagnostics = outcome.diagnostics;
+    diagnostics.locate(&origin);
+    match outcome.value {
+        Some(Loaded::Stable(table)) => {
+            Ok(Document::new(table, origin, outcome.version, diagnostics))
+        }
+        _ => Err(Rejected::new(origin, diagnostics)),
+    }
+}
+
+// ---- the collection ----------------------------------------------------------------------
+
+/// `trading/**/*.json` of every pack, bottom-up.
+const WALK: Walk = Walk::json_tree_in(&[DIRECTORY]);
+
+/// The loader of `bp.trade_tables()`: `trading/**/*.json` of every behaviour pack, keyed by
+/// path, the top pack's copy winning; a failing top copy leaves the path without a file
+/// (vanilla looks a table up once, by path).
 #[doc(hidden)]
-pub use load::LOADER;
+pub const LOADER: CollectionLoader<Files<TradeTable>, FileCopy<TradeTable>> =
+    load::files::<TradeTable>(WALK);
 
-/// A villager trade table (`trading/**/*.json`), at the newest format version (1.21.30).
-///
-/// JSON: `{"format_version": "1.21.30", "tiers": [tier, …]}`. A trader unlocks the tiers in
-/// order as its experience reaches each tier's `total_exp_required`; each tier offers trades
-/// picked from its groups. Tables are looked up by path, so the top pack's file at a path wins.
-#[derive(Clone, Debug, Default, PartialEq, facet::Facet)]
-#[doc(alias = "trade_table")]
-pub struct TradeTable {
-    /// The tiers, lowest first (JSON `tiers`). Vanilla accepts an empty list; the crate reports it.
-    pub tiers: Vec<Tier>,
-}
+#[cfg(test)]
+mod reading_table {
+    //! The family's reading table: what the pipeline reads each of its files and structs by.
 
-/// One tier of a trade table.
-///
-/// JSON: `{"total_exp_required": n, "groups": [group, …]}`, both required.
-#[derive(Clone, Debug, Default, PartialEq, facet::Facet)]
-#[doc(alias = "TradeTier")]
-pub struct Tier {
-    /// The groups whose trades the tier offers (JSON `groups`).
-    pub groups: Vec<Group>,
-    /// The trader experience at which the tier unlocks (JSON `total_exp_required`).
-    pub total_exp_required: u32,
-}
+    use bedrock_addon_core::versioning::testing::{assert_reading_table, reading_table};
 
-/// A group of trades: the tier offers `num_to_select` of them, picked by
-/// weight, or every one when `num_to_select` is -1.
-///
-/// JSON: `{"num_to_select"?: n, "trades": [trade, …]}`; `trades` is required and not empty.
-#[derive(Clone, Debug, Default, PartialEq, facet::Facet)]
-#[doc(alias = "TradeGroup")]
-pub struct Group {
-    /// How many trades are picked; -1 picks every one (JSON `num_to_select`, default 0, see
-    /// [`Group::num_to_select`]). It must not exceed the number of trades.
-    pub num_to_select: Option<i32>,
-    /// The trades (JSON `trades`).
-    pub trades: Vec<Trade>,
-}
-
-/// One trade: what the trader wants and what it gives in return.
-///
-/// JSON: `{"wants": [list, …], "gives": [list, …], "trader_exp"?, "max_uses"?, "reward_exp"?,
-/// "weight"?}`; `wants` and `gives` are required and not empty. An absent member reads as its
-/// default through the accessor of the same name and is not written back.
-#[derive(Clone, Debug, Default, PartialEq, facet::Facet)]
-pub struct Trade {
-    /// The items the player pays, each a list one item is picked from (JSON `wants`).
-    pub wants: Vec<ItemList>,
-    /// The items the player receives (JSON `gives`).
-    pub gives: Vec<ItemList>,
-    /// The experience the trader gains from the trade (JSON `trader_exp`, default 1).
-    pub trader_exp: Option<u32>,
-    /// How often the trade can be used before it locks (JSON `max_uses`, default 7).
-    pub max_uses: Option<i32>,
-    /// Whether the player gains experience from the trade (JSON `reward_exp`, default `true`).
-    pub reward_exp: Option<bool>,
-    /// The trade's weight when a group picks `num_to_select` trades (JSON `weight`, default 1,
-    /// at least 1). It has no effect in a group that picks every trade.
-    pub weight: Option<i32>,
-}
-
-/// One `wants` / `gives` entry: one item, or a list one item is picked
-/// from at random when the trade is generated.
-///
-/// JSON: an item object, or `{"choice": [item, …]}`. The form is kept for writing.
-#[derive(Clone, Debug, PartialEq, facet::Facet)]
-#[facet(untagged)]
-#[repr(u8)]
-#[allow(
-    clippy::large_enum_variant,
-    reason = "the bare item is the common form; an entry is built once and stored"
-)]
-#[doc(alias = "TradeItemList")]
-pub enum ItemList {
-    /// `{"choice": [item, …]}`: one of the items, picked at random. Vanilla accepts an empty
-    /// list.
-    Choice {
-        /// The items (JSON `choice`).
-        choice: Vec<TradeItem>,
-    },
-    /// A bare item object: a list of one.
-    Item(TradeItem),
-}
-
-/// One item of a trade.
-///
-/// JSON: `{"item": "<id>", "quantity"?, "functions"?, "filters"?, "price_multiplier"?}`. The
-/// identifier may carry a legacy `:aux` suffix (`minecraft:wool:14`). An absent member reads as
-/// its default and is not written back.
-#[derive(Clone, Debug, PartialEq, facet::Facet)]
-pub struct TradeItem {
-    /// How many of the item (JSON `quantity`, default 1, see [`TradeItem::quantity_range`]).
-    pub quantity: Option<Quantity>,
-    /// The item (JSON `item`, required).
-    pub item: ItemId,
-    /// Loot-table item functions applied to the item, kept as written (JSON `functions`).
-    pub functions: Option<Vec<Value>>,
-    /// The conditions under which the item is offered (JSON `filters`; default: always).
-    pub filters: Option<Filter>,
-    /// How much the price follows demand (JSON `price_multiplier`, default 0.0).
-    pub price_multiplier: Option<f32>,
-    /// The functions of a document upgraded from before 1.21.30, which keep their legacy
-    /// evaluation (JSON `__DEP_fnctns`, a deprecated name: written by an author it rejects the
-    /// table; a table holding one is written back as a 1.20.30 legacy document).
-    #[facet(rename = "__DEP_fnctns")]
-    pub legacy_functions: Option<Value>,
-    /// The filters of a document upgraded from before 1.21.30, which keep their legacy
-    /// evaluation (JSON `__DEP_fltrs`, a deprecated name: written by an author it rejects the
-    /// table; a table holding one is written back as a 1.20.30 legacy document).
-    #[facet(rename = "__DEP_fltrs")]
-    pub legacy_filters: Option<Value>,
-}
-
-/// How many of an item a trade takes or gives.
-///
-/// JSON: a whole number (`3`: exactly three) or `{"min"?: n, "max"?: n}`, each bound at least 1
-/// and 1 when absent (`{"max": 2}` is one or two). The form is kept for writing.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, facet::Facet)]
-#[facet(untagged)]
-#[repr(u8)]
-#[doc(alias = "Trade Quantity")]
-pub enum Quantity {
-    /// A whole number: exactly that many.
-    Exact(u32),
-    /// `{"min", "max"}`: between the two, inclusive.
-    Range {
-        /// The least (JSON `min`, default 1).
-        #[facet(skip_serializing_if = Option::is_none)]
-        min: Option<u32>,
-        /// The most (JSON `max`, default 1).
-        #[facet(skip_serializing_if = Option::is_none)]
-        max: Option<u32>,
-    },
-}
-
-impl Group {
-    /// How many trades the group offers: `num_to_select`, 0 when absent; -1 = every trade.
-    pub fn num_to_select(&self) -> i32 {
-        self.num_to_select.unwrap_or(0)
+    #[test]
+    fn trade_reads_as_pinned() {
+        assert_reading_table(
+            "TradeFamily",
+            &reading_table::<super::TradeFamily>(),
+            r"
+                text: Document, clamps beyond a double: false, duplicates kept in: []
+                envelope: From(FormatVersion { major: 1, minor: 21, patch: 30 })
+                missing version: at the floor, silently
+                below floor: UseFormatVersion
+                empty document: Error
+                0.0.0..=0.0.0 (0..=0): json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+                1.21.30..=1.21.30 (1..=1): json Rejected/Strict/Error/fatal/Refuse, mcb Own/Strict/Error/fatal/Refuse
+            ",
+        );
     }
 }
 
-impl Trade {
-    /// `trader_exp`, 1 when absent.
-    pub fn trader_exp(&self) -> u32 {
-        self.trader_exp.unwrap_or(1)
-    }
+#[cfg(test)]
+mod identity {
+    //! What the family's documents say about themselves before they are parsed.
 
-    /// `max_uses`, 7 when absent.
-    pub fn max_uses(&self) -> i32 {
-        self.max_uses.unwrap_or(7)
-    }
+    use bedrock_addon_core::json::JsonSlice;
+    use bedrock_addon_core::load::LoadContext;
+    use bedrock_addon_core::versioning::{Family, Identity, parse_as_written};
 
-    /// `reward_exp`, `true` when absent.
-    pub fn reward_exp(&self) -> bool {
-        self.reward_exp.unwrap_or(true)
-    }
-
-    /// `weight`, 1 when absent.
-    pub fn weight(&self) -> i32 {
-        self.weight.unwrap_or(1)
-    }
-}
-
-impl ItemList {
-    /// The items of the entry: the `choice` list, or the one bare item.
-    pub fn items(&self) -> &[TradeItem] {
-        match self {
-            Self::Choice { choice } => choice,
-            Self::Item(item) => std::slice::from_ref(item),
-        }
-    }
-}
-
-impl TradeItem {
-    /// `(min, max)` of the quantity: 1..1 when absent, `n..n` for a whole number, each absent
-    /// bound of the object form 1.
-    pub fn quantity_range(&self) -> (u32, u32) {
-        self.quantity.map_or((1, 1), Quantity::bounds)
-    }
-
-    /// `price_multiplier`, 0.0 when absent.
-    pub fn price_multiplier(&self) -> f32 {
-        self.price_multiplier.unwrap_or(0.0)
-    }
-}
-
-impl Quantity {
-    /// `(min, max)`: `n..n` for a whole number, each absent bound 1.
-    pub fn bounds(self) -> (u32, u32) {
-        match self {
-            Self::Exact(n) => (n, n),
-            Self::Range { min, max } => (min.unwrap_or(1), max.unwrap_or(1)),
-        }
+    /// The family reads no identity from its payload, not even a `description.identifier`
+    /// written in it (the default would).
+    #[test]
+    fn trade_reads_no_identity_from_the_payload() {
+        let text = format!(
+            r#"{{"format_version": "1.21.0", "{}": {{"description": {{"identifier": "demo:x"}}}}}}"#,
+            <super::TradeFamily as Family>::PAYLOAD_KEY,
+        );
+        let parsed =
+            parse_as_written::<super::TradeFamily>(JsonSlice::new(&text), &LoadContext::detached());
+        assert_eq!(parsed.identity, Identity::default());
     }
 }

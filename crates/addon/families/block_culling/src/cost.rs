@@ -74,9 +74,9 @@ fn the_spans_of_a_finding_per_rule_are_linear_in_the_rules() {
         |text| {
             let mut d = Diagnostics::default();
             let base = JsonPath::new().child("minecraft:block_culling_rules");
-            let read = super::culling::read(
+            let read = super::read::read(
                 JsonSlice { text, offset: 7 },
-                super::culling::Slice::V1_21_80,
+                super::read::Slice::V1_21_80,
                 &base,
                 &mut d,
             );

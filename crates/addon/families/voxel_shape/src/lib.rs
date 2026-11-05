@@ -4,21 +4,31 @@
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
-mod load;
-mod new;
-mod parse;
+mod read;
 mod texts;
+mod types;
 mod validate;
 mod write;
 
 #[cfg(test)]
 mod tests;
 
-use bedrock_addon_core::id::VoxelShapeId;
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, Phase, Severity};
+use bedrock_addon_core::document::{
+    CombineRule, Contribution, JsonDefinition, JsonDocument, JsonPlaced, NoBeta, Notice, Registry,
+    default_path,
+};
+use bedrock_addon_core::id::{VoxelShapeId, kind};
+use bedrock_addon_core::json::JsonSlice;
+use bedrock_addon_core::load::{self, CollectionLoader, StackCx, Walk};
+use bedrock_addon_core::pack_identity::{PackPath, PackSide};
 use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::versioning::{
+    BelowFloor, Envelope, EnvelopeCheck, Family, InputKind, Loaded, MissingVersion, NoComponents,
+    Single, ValidateCx,
+};
 
-#[doc(hidden)]
-pub use load::LOADER;
+pub use types::{Description, Shape, ShapeBox, VoxelShape};
 
 /// The first and only `format_version` vanilla has a voxel-shape parser for
 /// (1.21.110); it reads every version from it up to the engine's.
@@ -32,53 +42,126 @@ pub const EMPTY: VoxelShapeId = VoxelShapeId::from_static("minecraft:empty");
 /// pack defines it.
 pub const UNIT_CUBE: VoxelShapeId = VoxelShapeId::from_static("minecraft:unit_cube");
 
-/// A voxel shape (`minecraft:voxel_shape`): a named set of boxes, in pixels, that a block's
-/// geometry uses to cull the faces of its neighbours.
-///
-/// JSON: `{"format_version": "1.21.110", "minecraft:voxel_shape": {"description":
-/// {"identifier"}, "shape": {"boxes": [{"min": [x, y, z], "max": [x, y, z]}]}}}`. Every member
-/// is required and an unknown member fails the file. A shape has 1 to 32 boxes; each lies within
-/// -14 to 30 pixels, at least one overlaps the block itself (0 to 16 on every axis), and the
-/// whole shape spans at most 30 pixels on any axis.
-#[derive(Clone, Debug, PartialEq)]
-#[doc(alias = "minecraft:voxel_shape")]
-#[doc(alias = "shapes")]
-pub struct VoxelShape {
-    /// The shape's name (JSON `description`).
-    pub description: Description,
-    /// The shape's boxes (JSON `shape`).
-    pub shape: Shape,
-    /// The document's `format_version`. Not a JSON member; the writer writes it as
-    /// `format_version`.
-    pub source_format_version: FormatVersion,
+/// The voxel-shape family of the version-chain machinery (public only as
+/// `JsonDocument::Family`).
+#[derive(Clone, Copy, Debug)]
+#[doc(hidden)]
+pub struct VoxelShapeFamily;
+
+bedrock_addon_core::impl_no_molang!(VoxelShape);
+
+impl Family for VoxelShapeFamily {
+    const NAME: &'static str = "voxel shape";
+    const PAYLOAD_KEY: &'static str = "minecraft:voxel_shape";
+    const FLOOR: FormatVersion = FLOOR;
+    const ENVELOPE: Envelope = Envelope {
+        // The game reads a shape through the document-input reader of the cereal-based families:
+        // the version is read from the document, the size limits apply, and a member written
+        // `null` fails its type.
+        input: InputKind::Document,
+        // The document input takes the raw text below 1.21.110 or without a version, and exactly
+        // two members from 1.21.110 on.
+        check: EnvelopeCheck::From(FLOOR),
+        // Without a version the loader falls back to the caller's, which is none: "no valid version
+        // passed by the caller or found in the input" and the file is skipped.
+        missing: MissingVersion::REJECT,
+        // Below the first slice the versioned loader has no parser at all.
+        below_floor: BelowFloor::NoParser,
+        ..Envelope::DEFAULT
+    };
+    type Latest = VoxelShape;
+    type Beta = NoBeta<kind::VoxelShape>;
+    type Component = NoComponents;
+    type Any = Single<Self>;
+
+    fn validate(v: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {
+        if let Loaded::Stable(shape) = v {
+            validate::rules(shape, cx.load.is_base_game_pack, &cx.at, cx.diagnostics);
+        }
+    }
+
+    /// After a file the schema loader rejected (a parse error; not a namespace or geometry
+    /// failure, which log one line of their own), vanilla's "Failed to load voxel shape file" with
+    /// the file's path in its pack.
+    fn close(diagnostics: &mut Diagnostics, _: Option<JsonSlice<'_>>, path: &PackPath, _: bool) {
+        let rejected_by_schema = diagnostics
+            .iter()
+            .any(|finding| finding.severity >= Severity::Error && finding.phase == Phase::Parse);
+        if rejected_by_schema {
+            diagnostics.push(Diagnostic::error(DiagnosticCode::DocumentRejected {
+                text: Some(texts::failed_to_load(path.as_str())),
+            }));
+        }
+    }
 }
 
-/// `minecraft:voxel_shape/description`.
-#[derive(Clone, Debug, PartialEq, facet::Facet)]
-pub struct Description {
-    /// The shape's identifier, `namespace:name` or a bare name, at most 256 bytes (JSON
-    /// `identifier`). The `minecraft` namespace is the base game's: a base-game pack must use
-    /// it and no other pack may.
-    pub identifier: VoxelShapeId,
+impl JsonDocument for VoxelShape {
+    type Family = VoxelShapeFamily;
+    const SIDES: &'static [PackSide] = &[PackSide::Behavior];
+
+    /// The shape's own version, never below 1.21.110, which the game would not read.
+    fn write_version(&self) -> FormatVersion {
+        self.source_format_version.max(FLOOR)
+    }
 }
 
-/// `minecraft:voxel_shape/shape`.
-#[derive(Clone, Debug, PartialEq, facet::Facet)]
-pub struct Shape {
-    /// The boxes, 1 to 32 of them; they may overlap each other (JSON `boxes`).
-    pub boxes: Vec<ShapeBox>,
+impl JsonPlaced for VoxelShape {
+    /// `shapes/<identifier>.json`, the identifier's `:` written `_`.
+    fn place(&self) -> PackPath {
+        default_path("shapes", &self.description.identifier)
+    }
 }
 
-/// One box of a shape: two corners in pixels (1/16 of a block), measured from the block's
-/// minimum corner, so the block itself spans 0 to 16 on every axis.
-///
-/// JSON: `{"min": [x, y, z], "max": [x, y, z]}`; a corner may also be written `{"x", "y", "z"}`
-/// with absent members 0, and is written back as the array.
-#[derive(Clone, Copy, Debug, PartialEq, facet::Facet)]
-pub struct ShapeBox {
-    /// The corner with the smallest coordinates, each below `max`'s and at least -14 (JSON
-    /// `min`).
-    pub min: [f32; 3],
-    /// The corner with the largest coordinates, each at most 30 (JSON `max`).
-    pub max: [f32; 3],
+impl JsonDefinition for VoxelShape {
+    type Kind = kind::VoxelShape;
+
+    fn identifier(&self) -> &VoxelShapeId {
+        &self.description.identifier
+    }
+
+    /// Per identifier the shape loaded last, each replaced one noted with `ShadowedDefinition`
+    /// at info (the crate's own note; vanilla replaces silently). A file that failed binds
+    /// nothing.
+    fn combine_rule(_: &StackCx<'_>) -> CombineRule<Self> {
+        CombineRule::LastLoadedWins {
+            replaced: Some(Notice::shadowed()),
+        }
+    }
+}
+
+// ---- the collection ----------------------------------------------------------------------
+
+/// `shapes/**/*.json` (the extension compared case-sensitively), packs bottom-up: vanilla walks
+/// the stack from its last pack to its first and binds an identifier to the shape it loads
+/// last, so the highest pack's shape is the effective one. Sub-folders are read in every pack
+/// (the game reads them only in packs outside the app package).
+const WALK: Walk = Walk::json_tree_in(&["shapes"]);
+
+/// The loader of `bp.voxel_shapes()`: `shapes/**/*.json` of every behaviour pack, the shape
+/// loaded last winning per identifier.
+#[doc(hidden)]
+pub const LOADER: CollectionLoader<Registry<VoxelShape>, Contribution<VoxelShape>> =
+    load::registry::<VoxelShape>(WALK);
+
+#[cfg(test)]
+mod reading_table {
+    //! The family's reading table: what the pipeline reads each of its files and structs by.
+
+    use bedrock_addon_core::versioning::testing::{assert_reading_table, reading_table};
+
+    #[test]
+    fn voxel_shape_reads_as_pinned() {
+        assert_reading_table(
+            "VoxelShapeFamily",
+            &reading_table::<super::VoxelShapeFamily>(),
+            r"
+                text: Document, clamps beyond a double: false, duplicates kept in: []
+                envelope: From(FormatVersion { major: 1, minor: 21, patch: 110 })
+                missing version: rejected: NoValidVersion
+                below floor: NoParser
+                empty document: Error
+                1.21.110..=1.21.110 (0..=0): json Rejected/Strict/Error/fatal/Refuse, mcb Own/Strict/Error/fatal/Refuse
+            ",
+        );
+    }
 }

@@ -1,16 +1,15 @@
-//! Writing a culling-rules document with its envelope.
+//! Writing a culling-rules document: the payload, and the refusal of a value the loader would
+//! not read back (the envelope is core's `write_envelope`).
 
 use facet_value::{VArray, VObject};
 
 use super::{CullingRules, Description, GeometryPart, Rule};
 use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
-use bedrock_addon_core::json::{
-    EncodeError, JsonSlice, Unrepresentable, Value, WriteStyle, write_json,
-};
+use bedrock_addon_core::json::{EncodeError, JsonSlice, Unrepresentable, Value};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{ParseCx, VersionStruct, Versioned};
 
-use super::culling::{Slice, read};
+use super::read::{Slice, read};
 
 /// The payload of a culling-rules document: only the members the value holds are written.
 pub(super) fn payload(description: &Description, rules: &[Rule]) -> Value {
@@ -73,9 +72,10 @@ impl VersionStruct for CullingRules {
 }
 
 impl CullingRules {
-    /// The whole document at format 1.21.80, the only version that reads every member; a
-    /// value the loader would refuse to read back (a cube index below 0) is not written.
-    fn document(&self) -> Result<Value, EncodeError> {
+    /// Refuses a value the loader would refuse to read back (a cube index below 0): it is not
+    /// written. The document is written at format 1.21.80, the only version that reads every
+    /// member.
+    pub(super) fn writable(&self) -> Result<(), EncodeError> {
         let payload_at = || JsonPath::new().child("minecraft:block_culling_rules");
         // An identifier or a rule the loader refuses (in every pack: the `minecraft` namespace
         // is a base-game pack's to use, so it is written).
@@ -110,18 +110,6 @@ impl CullingRules {
                 });
             }
         }
-        let mut object = VObject::new();
-        object.insert("format_version", Self::FORMAT_VERSION.to_string().as_str());
-        object.insert("minecraft:block_culling_rules", self.write()?);
-        Ok(object.into())
-    }
-
-    /// Writes the document into `out`.
-    pub(super) fn write_into(
-        &self,
-        out: &mut Vec<u8>,
-        style: WriteStyle,
-    ) -> Result<(), EncodeError> {
-        write_json(&self.document()?, out, style)
+        Ok(())
     }
 }

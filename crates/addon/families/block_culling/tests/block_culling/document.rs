@@ -353,3 +353,23 @@ fn the_default_path_is_the_identifier_below_block_culling() {
         assert_eq!(rules.default_path().as_str(), path, "{identifier}");
     }
 }
+
+#[test]
+fn the_default_path_of_an_unusual_identifier_is_still_one_file_below_block_culling() {
+    // As the loader keeps them: bare, malformed, or with characters a path cannot hold.
+    for (identifier, path) in [
+        ("a", "block_culling/a.json"),
+        ("a/b", "block_culling/a/b.json"),
+        ("minecraft:a/../b", "block_culling/a___b.json"),
+        ("minecraft:./a", "block_culling/__a.json"),
+        ("minecraft:", "block_culling/_.json"),
+        (":a", "block_culling/a.json"),
+        ("a:b:c", "block_culling/a/b_c.json"),
+        ("minecraft:a:b", "block_culling/a_b.json"),
+        ("MINECRAFT:x/y", "block_culling/x_y.json"),
+        ("minecraft:a\u{1}b", "block_culling/a_b.json"),
+    ] {
+        let rules = CullingRules::new(CullingRulesId::parse(identifier.to_owned()), Vec::new());
+        assert_eq!(rules.default_path().as_str(), path, "{identifier:?}");
+    }
+}

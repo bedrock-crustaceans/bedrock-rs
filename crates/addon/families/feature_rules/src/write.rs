@@ -1,9 +1,9 @@
-//! Writing [`FeatureRule`]: the payload, and the document with its envelope.
+//! Writing [`FeatureRule`]: the payload (the envelope is core's `write_envelope`).
 
-use super::parse::parse_rule;
+use super::read::parse_rule;
 use super::{FLOOR, FeatureRule};
 use bedrock_addon_core::diagnostic::Diagnostics;
-use bedrock_addon_core::json::{EncodeError, JsonSlice, Value, WriteStyle, write_json};
+use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{ParseCx, VersionStruct, Versioned, write_payload};
 use facet_value::VObject;
@@ -28,27 +28,5 @@ impl VersionStruct for FeatureRule {
             object.insert(key, value.clone());
         }
         Ok(object.into())
-    }
-}
-
-impl FeatureRule {
-    /// The whole document: `format_version` (the rule's own) and the payload.
-    pub(crate) fn document(&self) -> Result<Value, EncodeError> {
-        let mut object = VObject::new();
-        object.insert(
-            "format_version",
-            self.source_format_version.max(FLOOR).to_string(),
-        );
-        object.insert("minecraft:feature_rules", self.write()?);
-        Ok(object.into())
-    }
-
-    /// Writes the document into `out`.
-    pub(crate) fn write_into(
-        &self,
-        out: &mut Vec<u8>,
-        style: WriteStyle,
-    ) -> Result<(), EncodeError> {
-        write_json(&self.document()?, out, style)
     }
 }

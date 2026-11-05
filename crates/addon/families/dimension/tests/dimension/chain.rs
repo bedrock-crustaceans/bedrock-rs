@@ -1,6 +1,6 @@
 //! The dimension chain: the step from 1.18.0, the chain's versions and the history path.
 
-use bedrock_addon_core::document::Content;
+use bedrock_addon_core::document::{Content, JsonDocument};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::pack_identity::PackPath;

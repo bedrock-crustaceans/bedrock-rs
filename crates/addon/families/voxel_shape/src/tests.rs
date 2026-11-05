@@ -1,6 +1,6 @@
 //! Unit tests of the crate-private parts: the chain and the vanilla texts.
 
-use super::load::VoxelShapeFamily;
+use super::VoxelShapeFamily;
 use super::{FLOOR, texts};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{

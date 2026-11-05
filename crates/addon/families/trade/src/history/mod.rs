@@ -12,7 +12,7 @@ mod read;
 pub mod v0;
 
 use super::TradeTable;
-use super::load::upgrade_document;
+use super::upgrade_document;
 use bedrock_addon_core::document::{Document, Rejected};
 use bedrock_addon_core::load::LoadContext;
 

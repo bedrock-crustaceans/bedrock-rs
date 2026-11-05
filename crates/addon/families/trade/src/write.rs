@@ -1,7 +1,7 @@
 //! Writing [`TradeTable`]: the payload (the `tiers` array), and the document with its envelope.
 
 use super::TradeTable;
-use super::parse::{CEREAL, parse_table};
+use super::read::{CEREAL, parse_table};
 use bedrock_addon_core::diagnostic::Diagnostics;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value, WriteStyle, write_json};
 use bedrock_addon_core::version::FormatVersion;

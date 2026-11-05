@@ -5,250 +5,210 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
 pub mod history;
-mod load;
-mod parse;
+mod read;
+mod types;
 mod validate;
+mod write;
 
 #[cfg(test)]
 mod tests;
 
-use bedrock_addon_core::document::Extra;
-use bedrock_addon_core::id::{BiomeId, DimensionId};
-use bedrock_addon_core::json::{StrictInt, StrictString};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, Phase};
+use bedrock_addon_core::document::{
+    CombineRule, Contribution, JsonDefinition, JsonDocument, JsonPlaced, NoBeta, Notice, Origin,
+    Registry, RegistryBuilder, default_path_flat,
+};
+use bedrock_addon_core::id::{DimensionId, kind};
+use bedrock_addon_core::load::DocumentSource;
+use bedrock_addon_core::load::{self, CollectionLoader, StackCx, Walk};
+use bedrock_addon_core::pack_identity::{PackPath, PackSide};
 use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::versioning::{
+    BelowFloor, Envelope, EnvelopeCheck, Family, InputKind, Loaded, MissingVersion, NoComponents,
+    Reading, StructIndex, UnknownMask, ValidateCx,
+};
+use bedrock_addon_support::puv::shadowed;
+use history::{Any, DimensionFamily};
+use indexmap::IndexMap;
 
-#[doc(hidden)]
-pub use load::LOADER;
-pub(crate) use parse::{RootV1, bounds_constraints, parse_root, slice_null_rule};
+pub(crate) use read::{RootV1, bounds_constraints, parse_root, slice_null_rule};
+pub use types::{
+    Clouds, DefaultBiome, Dimension, DimensionBounds, DimensionComponents, DimensionDescription,
+    DimensionHeight, Generation, GeneratorType,
+};
 
 /// The first format version vanilla reads.
 pub(crate) const FLOOR: FormatVersion = FormatVersion::new(1, 18, 0);
 /// The version of the newest struct (`v1_26_50::DimensionDocument`).
 pub(crate) const V1_26_50: FormatVersion = bedrock_addon_core::version::known::V1_26_50;
 
-/// A dimension document (`minecraft:dimension`), at the newest format version.
-///
-/// JSON: `{"format_version": "1.26.50", "minecraft:dimension": {"description", "components"}}`.
-/// A vanilla dimension (`minecraft:overworld`, `minecraft:nether`, `minecraft:the_end`) takes
-/// no default biome and no clouds, and the nether and the end no height; any other identifier
-/// is a custom dimension in a namespace other than `minecraft`.
-#[derive(Clone, Debug, PartialEq)]
-#[doc(alias = "minecraft:dimension")]
-#[doc(alias = "dimensions")]
-pub struct Dimension {
-    /// Which dimension the document configures (JSON `description`).
-    pub description: DimensionDescription,
-    /// Its height, default biome and generator (JSON `components`).
-    pub components: DimensionComponents,
-    /// The document's `format_version` (the floor when absent). Not a JSON member; the writer
-    /// writes it as `format_version` when it is 1.26.50 or newer.
-    pub source_format_version: FormatVersion,
-    /// Unknown members of `minecraft:dimension`.
-    pub extra: Extra,
-    /// The root members beside `format_version` and `minecraft:dimension` (vanilla reads the
-    /// whole document as one struct, so they are unknown members, not an envelope error).
-    pub root_extra: Extra,
-}
+impl Family for DimensionFamily {
+    const NAME: &'static str = "dimension";
+    const PAYLOAD_KEY: &'static str = "minecraft:dimension";
+    const FLOOR: FormatVersion = FLOOR;
+    const ENVELOPE: Envelope = Envelope {
+        // The game reads the file as a whole document: the version is the one its JSON reader picks
+        // from the text, and a `null` where a value is read counts as the wrong JSON type in the
+        // cereal slices (the legacy parser below 1.21.60 keeps its own reading:
+        // `parse::slice_null_rule`).
+        input: InputKind::Document,
+        // What the document does not read is kept for write-back: a number no double holds is
+        // the largest finite one, with a warning at it.
+        clamps_beyond_double: true,
+        // The game reads the document with no minimum version, so the raw text is read at every
+        // version.
+        check: EnvelopeCheck::Never,
+        // The game passes no version of its own, so a file without `format_version` is rejected
+        // with "no valid version passed by the caller or found in the input".
+        missing: MissingVersion::REJECT,
+        // Below the first slice the versioned loader has no parser at all.
+        below_floor: BelowFloor::NoParser,
+        ..Envelope::DEFAULT
+    };
 
-/// `minecraft:dimension/description`.
-#[derive(Clone, Debug, PartialEq, facet::Facet)]
-pub struct DimensionDescription {
-    /// The dimension (JSON `identifier`): one of the three vanilla dimensions, exactly, or a
-    /// custom dimension `namespace:name`.
-    pub identifier: DimensionId,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
-}
-
-/// `minecraft:dimension/components` from format 1.26.50: a fixed set of members, not a
-/// component registry.
-#[derive(Clone, Debug, PartialEq, facet::Facet)]
-pub struct DimensionComponents {
-    /// The height (JSON `minecraft:dimension_height`).
-    #[facet(rename = "minecraft:dimension_height", default)]
-    pub dimension_height: Option<DimensionHeight>,
-    /// The biome generated where no other is (JSON `minecraft:default_biome`).
-    #[facet(rename = "minecraft:default_biome", default)]
-    pub default_biome: Option<DefaultBiome>,
-    /// The cloud height (JSON `minecraft:clouds`; a custom dimension's only).
-    #[facet(rename = "minecraft:clouds", default)]
-    pub clouds: Option<Clouds>,
-    /// The generator (JSON `minecraft:generation`).
-    #[facet(rename = "minecraft:generation")]
-    pub generation: Generation,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
-}
-
-/// `minecraft:dimension_height`: where the dimension starts and how tall it is.
-#[derive(Clone, Debug, PartialEq, facet::Facet)]
-pub struct DimensionHeight {
-    /// The lowest y (JSON `min_y`), in `[-512, 512]`.
-    pub min_y: StrictInt<i16>,
-    /// The height (JSON `height_range`), in `[16, 1024]` and a multiple of 16.
-    pub height_range: StrictInt<i16>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
-}
-
-impl DimensionHeight {
-    /// `(min_y, height_range)`.
-    pub(crate) fn pair(&self) -> (i16, i16) {
-        (self.min_y.0, self.height_range.0)
+    /// The game reads every slice leniently: an unknown member is a warning, not an error.
+    fn reading(_: StructIndex, _: DocumentSource) -> Reading {
+        Reading::DOCUMENT.with_unknown(UnknownMask::Warn)
     }
+    type Latest = Dimension;
+    type Beta = NoBeta<kind::Dimension>;
+    type Component = NoComponents;
+    type Any = Any;
 
-    /// Whether the newest format can write this height: not `{0, 0}`, the height the upgrade
-    /// makes of absent or zero bounds, which the bind constraint of `height_range` (`[16,
-    /// 1024]`) would refuse when read back; the writer leaves such a height out.
-    pub(crate) fn is_writable(&self) -> bool {
-        self.pair() != (0, 0)
-    }
-}
-
-/// `minecraft:default_biome`.
-#[derive(Clone, Debug, PartialEq, facet::Facet)]
-pub struct DefaultBiome {
-    /// JSON `biome`.
-    pub biome: BiomeId,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
-}
-
-/// `minecraft:clouds`: "Defines the cloud height in the custom dimension."
-#[derive(Clone, Debug, PartialEq, facet::Facet)]
-pub struct Clouds {
-    /// "The Y coordinate at which clouds are rendered in the custom dimension. Defaults to 128
-    /// if this component is omitted." (JSON `height`, required), in `[-512, 512]`.
-    pub height: StrictInt<i16>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
-}
-
-/// `minecraft:generation`.
-#[derive(Clone, Debug, PartialEq, facet::Facet)]
-pub struct Generation {
-    /// The generator as written (JSON `generator_type`); only `void` names one (see
-    /// [`Generation::generator`]), any other text is a warning and the document loads.
-    pub generator_type: StrictString,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
-}
-
-impl Dimension {
-    /// The height of a dimension without `minecraft:dimension_height`: `{min_y −64, height_range
-    /// 384}`, which both the validator and the runtime definition use.
-    pub const DEFAULT_HEIGHT: (i16, i16) = (-64, 384);
-
-    /// The cloud height of a dimension without `minecraft:clouds`.
-    pub const DEFAULT_CLOUD_HEIGHT: i16 = 128;
-
-    /// The default biome of a dimension without `minecraft:default_biome`.
-    pub const DEFAULT_BIOME: BiomeId = BiomeId::from_static("minecraft:ocean");
-
-    /// `(min_y, height_range)` of the runtime definition the game builds of this document: the
-    /// height, or [`Self::DEFAULT_HEIGHT`] when there is none.
-    pub fn runtime_height(&self) -> (i16, i16) {
-        self.components
-            .dimension_height
-            .as_ref()
-            .map_or(Self::DEFAULT_HEIGHT, DimensionHeight::pair)
-    }
-
-    /// The default biome of the runtime definition: `minecraft:default_biome.biome`, or
-    /// [`Self::DEFAULT_BIOME`] (`minecraft:ocean`).
-    pub fn runtime_default_biome(&self) -> &BiomeId {
-        static OCEAN: BiomeId = Dimension::DEFAULT_BIOME;
-        self.components
-            .default_biome
-            .as_ref()
-            .map_or(&OCEAN, |default| &default.biome)
-    }
-
-    /// The cloud height of the runtime definition: `minecraft:clouds.height`, or
-    /// [`Self::DEFAULT_CLOUD_HEIGHT`] (128).
-    pub fn runtime_cloud_height(&self) -> i16 {
-        self.components
-            .clouds
-            .as_ref()
-            .map_or(Self::DEFAULT_CLOUD_HEIGHT, |clouds| clouds.height.0)
-    }
-}
-
-impl Generation {
-    /// The generator `generator_type` names: `void` is [`GeneratorType::Void`]; any other text
-    /// (case-sensitive) names none.
-    // The game's table of generator names holds the single entry `void`.
-    pub fn generator(&self) -> Option<GeneratorType> {
-        (self.generator_type.0 == "void").then_some(GeneratorType::Void)
-    }
-}
-
-/// `minecraft:dimension_bounds` of a document below 1.26.50: the lowest and highest y.
-#[derive(Clone, Debug, PartialEq, facet::Facet)]
-pub struct DimensionBounds {
-    /// JSON `min`, in `[-512, 512]` and a multiple of 16.
-    pub min: StrictInt<i32>,
-    /// JSON `max`, in `[-512, 512]` and a multiple of 16.
-    pub max: StrictInt<i32>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
-}
-
-impl DimensionBounds {
-    /// Bounds `[min, max]`.
-    pub fn new(min: i32, max: i32) -> Self {
-        Self {
-            min: StrictInt(min),
-            max: StrictInt(max),
-            extra: Extra::default(),
+    fn validate(v: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {
+        if let Loaded::Stable(dimension) = v {
+            validate::validate(dimension, cx);
         }
     }
 }
 
-/// A world generator (vanilla `GeneratorType`).
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-#[non_exhaustive]
-pub enum GeneratorType {
-    /// `Legacy` (0).
-    Legacy,
-    /// `Overworld` (1).
-    Overworld,
-    /// `Flat` (2).
-    Flat,
-    /// `Nether` (3).
-    Nether,
-    /// `TheEnd` (4).
-    TheEnd,
-    /// `Void` (5): the only one a document can name.
-    Void,
-    /// `Undefined` (6).
-    Undefined,
+impl JsonDocument for Dimension {
+    type Family = DimensionFamily;
+    const SIDES: &'static [PackSide] = &[PackSide::Behavior];
 }
 
-impl From<GeneratorType> for u8 {
-    fn from(generator: GeneratorType) -> Self {
-        generator.id()
+impl JsonPlaced for Dimension {
+    /// `dimensions/<name>.json` for a `minecraft:` identifier, `dimensions/<namespace>_<name>.json`
+    /// for any other, the `/` of the name as `_`: the walk reads the files directly in the
+    /// folder only.
+    fn place(&self) -> PackPath {
+        default_path_flat("dimensions", &self.description.identifier)
     }
 }
 
-impl GeneratorType {
-    /// Vanilla's numeric value.
-    pub fn id(self) -> u8 {
-        match self {
-            Self::Legacy => 0,
-            Self::Overworld => 1,
-            Self::Flat => 2,
-            Self::Nether => 3,
-            Self::TheEnd => 4,
-            Self::Void => 5,
-            Self::Undefined => 6,
+impl JsonDefinition for Dimension {
+    type Kind = kind::Dimension;
+
+    fn identifier(&self) -> &DimensionId {
+        &self.description.identifier
+    }
+}
+
+// ---- the collection ----------------------------------------------------------------------
+
+/// `dimensions/*.json` (not recursive; an extension exactly `json`, vanilla's byte compare),
+/// from the last stack entry to the first: packs bottom-up.
+const WALK: Walk = Walk::json_children_in(&["dimensions"]);
+
+/// Whether `id` is a custom dimension registered from script (`DimensionRegistry.
+/// registerCustomDimension`): a dimension `LoadOptions::built_ins` knows outside the
+/// `minecraft` namespace, which the script path reserves.
+fn registered_from_script(id: &DimensionId, stack: &StackCx<'_>) -> bool {
+    id.namespace() != Some("minecraft")
+        && stack.options.built_ins.as_ref().is_some_and(|built_ins| {
+            built_ins.contains(
+                <kind::Dimension as bedrock_addon_core::id::Kind>::NAME,
+                id.as_str(),
+            )
+        })
+}
+
+/// The warning of a pack definition that replaces a script registration: `ShadowedDefinition`
+/// (the registration is the definition shadowed) with vanilla's text, the identifier and the
+/// pack id as arguments, at the document's identifier. The game logs it at the content log's
+/// warning level.
+fn replaced_registration(id: &DimensionId, origin: &Origin) -> Diagnostic {
+    let at = JsonPath::new().with(&["minecraft:dimension", "description", "identifier"]);
+    // The game logs this at the content log's warning level.
+    Diagnostic::warn(DiagnosticCode::ShadowedDefinition {
+        text: Some(bedrock_addon_core::diagnostic::VanillaText::Formatted {
+            template: "Dimension definition identifier '{}' registered via scripting was replaced by the definition from pack id '{}'",
+            args: vec![id.as_str().to_owned(), origin.pack.id().uuid.to_string()],
+        }),
+    })
+    .at(at)
+    .phase(Phase::Validate)
+    .in_file(origin)
+}
+
+/// The registry: the first file walked wins (an insert only when the identifier is absent), so
+/// the lowest-priority pack's; a later one is `ShadowedDefinition` (info; vanilla turns it into
+/// a load error without text). Across packs `BottomWins` decides; within one pack the later file
+/// is dropped here. The definition that wins replaces a script registration of its
+/// identifier, with a warning; a file that fails to load replaces nothing.
+fn combine(parsed: Vec<Contribution<Dimension>>, stack: &StackCx<'_>) -> Registry<Dimension> {
+    let mut builder = RegistryBuilder::new(
+        CombineRule::BottomWins {
+            shadowed: Some(Notice::shadowed()),
+        },
+        CombineRule::bottom_wins(),
+        stack.options,
+    );
+    let mut first: IndexMap<DimensionId, Option<usize>> = IndexMap::new();
+    for contribution in parsed {
+        if let Contribution::Stable(id, document) = &contribution {
+            let pack = document.origin().pack.index();
+            match first.get(id) {
+                Some(&claimed) if claimed == pack => {
+                    for finding in document.diagnostics().iter().cloned() {
+                        builder.push_diagnostic(finding);
+                    }
+                    builder.push_diagnostic(shadowed(document.origin()));
+                    continue;
+                }
+                Some(_) => {}
+                None => {
+                    first.insert(id.clone(), pack);
+                    if registered_from_script(id, stack) {
+                        builder.push_diagnostic(replaced_registration(id, document.origin()));
+                    }
+                }
+            }
         }
+        builder.push(contribution);
+    }
+    builder.finish()
+}
+
+/// The loader of `bp.dimensions()`: the registry's walk and parse with the family's own
+/// combine (the within-pack drop and the script-registration warning, findings
+/// `RegistryBuilder::combine` does not push).
+#[doc(hidden)]
+pub const LOADER: CollectionLoader<Registry<Dimension>, Contribution<Dimension>> =
+    CollectionLoader {
+        combine,
+        ..load::registry::<Dimension>(WALK)
+    };
+
+#[cfg(test)]
+mod reading_table {
+    //! The family's reading table: what the pipeline reads each of its files and structs by.
+
+    use bedrock_addon_core::versioning::testing::{assert_reading_table, reading_table};
+
+    #[test]
+    fn dimension_reads_as_pinned() {
+        assert_reading_table(
+            "DimensionFamily",
+            &reading_table::<super::DimensionFamily>(),
+            r"
+                text: Document, clamps beyond a double: true, duplicates kept in: []
+                envelope: Never
+                missing version: rejected: NoValidVersion
+                below floor: NoParser
+                empty document: Error
+                1.18.0..=1.26.50 (0..=1): json Rejected/Strict/Warn/fatal/Refuse, mcb Own/Strict/Warn/fatal/Refuse
+            ",
+        );
     }
 }

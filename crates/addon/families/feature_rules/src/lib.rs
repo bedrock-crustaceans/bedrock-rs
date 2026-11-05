@@ -4,292 +4,301 @@
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
-mod load;
-mod parse;
+mod read;
+mod types;
 mod validate;
 mod write;
 
 #[cfg(test)]
 mod tests;
 
-use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics};
-use bedrock_addon_core::document::{Document, Extra, Registry, Rejected};
-use bedrock_addon_core::id::{FeatureId, FeatureRuleId};
-use bedrock_addon_core::json::StrictString;
-use bedrock_addon_core::shared::Filter;
+use indexmap::IndexMap;
+
+use bedrock_addon_core::diagnostic::{
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, VanillaText,
+};
+use bedrock_addon_core::document::unversioned::origin_of;
+use bedrock_addon_core::document::{
+    CombineRule, Contribution, Document, JsonDefinition, JsonDocument, JsonPlaced, NoBeta, Notice,
+    Origin, PackTie, RegistryBuilder, default_path,
+};
+use bedrock_addon_core::id::{FeatureRuleId, kind};
+use bedrock_addon_core::load::DocumentSource;
+use bedrock_addon_core::load::{
+    AppDataPlace, CollectionLoader, LoadContext, StackCx, Walk, WalkFile,
+};
+use bedrock_addon_core::pack_identity::{PackPath, PackSide};
 use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::versioning::{
+    BelowFloor, DocumentRead, Envelope, Family, InputKind, Loaded, MissingVersion, NoComponents,
+    Reading, Single, StructIndex, UnknownMask, ValidateCx, parse_document,
+};
 
 pub use bedrock_addon_support::scatter::{
     CoordinateDistribution, CoordinateEvalOrder, CoordinateRange, RandomDistribution,
     ScatterChance, ScatterFraction, ScatterParams,
 };
 
-#[doc(hidden)]
-pub use load::LOADER;
+pub use types::{
+    FeatureRule, FeatureRuleConditions, FeatureRuleDescription, FeatureRules, Iter, PlacementPass,
+};
 
 /// The first `format_version` vanilla reads feature rules at: 1.12.0, the first schema.
 pub(crate) const FLOOR: FormatVersion = FormatVersion::new(1, 12, 0);
 
-/// A feature rule (`minecraft:feature_rules`): which feature it places, in which placement pass,
-/// over which biomes, and how the positions are scattered.
-///
-/// JSON: `{"format_version": "1.12.0", "minecraft:feature_rules": {"description", "conditions",
-/// "distribution"?}}`. A rule loads even when its identifier does not match its file name or
-/// names an unknown pass (vanilla logs both and keeps the rule).
-#[derive(Clone, Debug, PartialEq)]
-#[doc(alias = "minecraft:feature_rules")]
-#[doc(alias = "feature_rules")]
-pub struct FeatureRule {
-    /// The rule's identifier and the feature it places (JSON `description`).
-    pub description: FeatureRuleDescription,
-    /// When and where the feature is placed (JSON `conditions`).
-    pub conditions: FeatureRuleConditions,
-    /// How the feature's positions are scattered (JSON `distribution`). Without it the rule
-    /// scatters no position.
-    pub distribution: Option<ScatterParams>,
-    /// The document's `format_version` (the floor when absent). Not a JSON member; the writer
-    /// writes it as `format_version`.
-    pub source_format_version: FormatVersion,
-    /// Unknown members of `minecraft:feature_rules`.
-    pub extra: Extra,
-}
+/// The feature-rule family of the version-chain machinery.
+#[derive(Clone, Copy, Debug)]
+#[doc(hidden)]
+pub struct FeatureRuleFamily;
 
-/// `minecraft:feature_rules/description`.
-#[derive(Clone, Debug, PartialEq, facet::Facet)]
-pub struct FeatureRuleDescription {
-    /// The rule's name, `namespace:rule_name`, where `rule_name` is the file name (JSON
-    /// `identifier`).
-    pub identifier: FeatureRuleId,
-    /// The feature the rule places (JSON `places_feature`). A name no feature defines is
-    /// reserved, not an error.
-    pub places_feature: FeatureId,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
-}
+impl Family for FeatureRuleFamily {
+    const NAME: &'static str = "feature rule";
+    const PAYLOAD_KEY: &'static str = "minecraft:feature_rules";
+    const FLOOR: FormatVersion = FLOOR;
+    const ENVELOPE: Envelope = Envelope {
+        // The game reads the document as JSON input: the version as it reads it from the text, the
+        // size limits, and `null` members rejected (a `null` where a value is read rejects the
+        // rule).
+        input: InputKind::Document,
+        // What the document does not read is kept for write-back: a number no double holds is
+        // the largest finite one, with a warning at it.
+        clamps_beyond_double: true,
+        // The game passes no caller version, so a file without `format_version` fails with "no
+        // valid version passed by the caller or found in the input" and is skipped.
+        missing: MissingVersion::REJECT,
+        // Below the first slice the versioned loader has no parser at all.
+        below_floor: BelowFloor::NoParser,
+        ..Envelope::DEFAULT
+    };
 
-/// `minecraft:feature_rules/conditions`.
-#[derive(Clone, Debug, PartialEq, facet::Facet)]
-pub struct FeatureRuleConditions {
-    /// The placement pass, as written (JSON `placement_pass`); [`PlacementPass`] lists the ones
-    /// vanilla defines, and [`FeatureRuleConditions::pass`] reads it.
-    pub placement_pass: StrictString,
-    /// The biomes the rule attaches to (JSON `minecraft:biome_filter`); absent is every biome.
-    #[facet(rename = "minecraft:biome_filter", default)]
-    pub biome_filter: Option<Filter>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
-}
-
-impl FeatureRuleConditions {
-    /// The placement pass `placement_pass` names, or `None` when it names no pass vanilla
-    /// defines.
-    pub fn pass(&self) -> Option<PlacementPass> {
-        PlacementPass::from_name(&self.placement_pass.0)
+    /// The one slice is registered with the unstrict error mask: an unknown member is a warning,
+    /// not an error.
+    fn reading(_: StructIndex, _: DocumentSource) -> Reading {
+        Reading::DOCUMENT.with_unknown(UnknownMask::Warn)
     }
-}
+    type Latest = FeatureRule;
+    type Beta = NoBeta<kind::FeatureRule>;
+    type Component = NoComponents;
+    type Any = Single<Self>;
 
-/// When a feature rule places its feature: the passes of world generation, in the order they
-/// run. Every rule of an earlier pass is placed before any rule of a later one; within a pass
-/// the order is not defined.
-///
-/// The game registers its twelve pass names in exactly this order.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
-#[non_exhaustive]
-pub enum PlacementPass {
-    /// `pregeneration_pass`: cave carvers only.
-    Pregeneration,
-    /// `first_pass`.
-    First,
-    /// `before_underground_pass`.
-    BeforeUnderground,
-    /// `underground_pass`.
-    Underground,
-    /// `after_underground_pass`.
-    AfterUnderground,
-    /// `before_surface_pass`.
-    BeforeSurface,
-    /// `surface_pass`.
-    Surface,
-    /// `after_surface_pass`.
-    AfterSurface,
-    /// `before_sky_pass`.
-    BeforeSky,
-    /// `sky_pass`.
-    Sky,
-    /// `after_sky_pass`.
-    AfterSky,
-    /// `final_pass`.
-    Final,
-}
-
-impl PlacementPass {
-    /// Every pass, in the order they run.
-    pub const ALL: [PlacementPass; 12] = [
-        Self::Pregeneration,
-        Self::First,
-        Self::BeforeUnderground,
-        Self::Underground,
-        Self::AfterUnderground,
-        Self::BeforeSurface,
-        Self::Surface,
-        Self::AfterSurface,
-        Self::BeforeSky,
-        Self::Sky,
-        Self::AfterSky,
-        Self::Final,
-    ];
-
-    /// The JSON name (`surface_pass`).
-    pub fn name(self) -> &'static str {
-        match self {
-            Self::Pregeneration => "pregeneration_pass",
-            Self::First => "first_pass",
-            Self::BeforeUnderground => "before_underground_pass",
-            Self::Underground => "underground_pass",
-            Self::AfterUnderground => "after_underground_pass",
-            Self::BeforeSurface => "before_surface_pass",
-            Self::Surface => "surface_pass",
-            Self::AfterSurface => "after_surface_pass",
-            Self::BeforeSky => "before_sky_pass",
-            Self::Sky => "sky_pass",
-            Self::AfterSky => "after_sky_pass",
-            Self::Final => "final_pass",
+    fn validate(v: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {
+        if let Loaded::Stable(rule) = v {
+            validate::validate(rule, cx);
         }
     }
+}
 
-    /// The pass named `name`, compared exactly (case-sensitive), or `None`.
-    pub fn from_name(name: &str) -> Option<PlacementPass> {
-        Self::ALL.into_iter().find(|pass| pass.name() == name)
+impl JsonDocument for FeatureRule {
+    type Family = FeatureRuleFamily;
+    const SIDES: &'static [PackSide] = &[PackSide::Behavior];
+
+    /// The rule's own version, never below the floor.
+    fn write_version(&self) -> FormatVersion {
+        self.source_format_version.max(FLOOR)
     }
-}
 
-/// The feature rules of a behaviour stack: one registry per placement pass, because vanilla keys
-/// a rule by its pass and its identifier (one identifier can be live in two passes).
-///
-/// Packs are read from the top of the stack down and the first rule of a `(pass, identifier)`
-/// pair wins; the app-data rules come last. A rule naming a pass vanilla does not define is kept
-/// in [`unknown_passes`](Self::unknown_passes): it loads, but no pass places it.
-#[derive(Debug)]
-#[non_exhaustive]
-pub struct FeatureRules {
-    /// `pregeneration_pass`.
-    pub pregeneration_pass: Registry<FeatureRule>,
-    /// `first_pass`.
-    pub first_pass: Registry<FeatureRule>,
-    /// `before_underground_pass`.
-    pub before_underground_pass: Registry<FeatureRule>,
-    /// `underground_pass`.
-    pub underground_pass: Registry<FeatureRule>,
-    /// `after_underground_pass`.
-    pub after_underground_pass: Registry<FeatureRule>,
-    /// `before_surface_pass`.
-    pub before_surface_pass: Registry<FeatureRule>,
-    /// `surface_pass`.
-    pub surface_pass: Registry<FeatureRule>,
-    /// `after_surface_pass`.
-    pub after_surface_pass: Registry<FeatureRule>,
-    /// `before_sky_pass`.
-    pub before_sky_pass: Registry<FeatureRule>,
-    /// `sky_pass`.
-    pub sky_pass: Registry<FeatureRule>,
-    /// `after_sky_pass`.
-    pub after_sky_pass: Registry<FeatureRule>,
-    /// `final_pass`.
-    pub final_pass: Registry<FeatureRule>,
-    /// The rules of passes vanilla does not define, by the pass name they give, in walk order.
-    pub unknown_passes: indexmap::IndexMap<String, Registry<FeatureRule>>,
-    /// Files that failed to load.
-    rejected: Vec<Rejected>,
-    /// The findings of the files that failed.
-    diagnostics: Diagnostics,
-}
-
-/// The rules of a [`FeatureRules`] in order, from [`FeatureRules::iter`].
-pub struct Iter<'a>(Box<dyn Iterator<Item = (&'a FeatureRuleId, &'a Document<FeatureRule>)> + 'a>);
-
-impl<'a> Iterator for Iter<'a> {
-    type Item = (&'a FeatureRuleId, &'a Document<FeatureRule>);
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.0.next()
-    }
-}
-
-impl std::fmt::Debug for Iter<'_> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Iter").finish_non_exhaustive()
-    }
-}
-
-impl<'a> IntoIterator for &'a FeatureRules {
-    type Item = (&'a FeatureRuleId, &'a Document<FeatureRule>);
-    type IntoIter = Iter<'a>;
-
-    fn into_iter(self) -> Iter<'a> {
-        self.iter()
-    }
-}
-
-impl FeatureRules {
-    /// The registry of `pass`.
-    pub fn pass(&self, pass: PlacementPass) -> &Registry<FeatureRule> {
-        match pass {
-            PlacementPass::Pregeneration => &self.pregeneration_pass,
-            PlacementPass::First => &self.first_pass,
-            PlacementPass::BeforeUnderground => &self.before_underground_pass,
-            PlacementPass::Underground => &self.underground_pass,
-            PlacementPass::AfterUnderground => &self.after_underground_pass,
-            PlacementPass::BeforeSurface => &self.before_surface_pass,
-            PlacementPass::Surface => &self.surface_pass,
-            PlacementPass::AfterSurface => &self.after_surface_pass,
-            PlacementPass::BeforeSky => &self.before_sky_pass,
-            PlacementPass::Sky => &self.sky_pass,
-            PlacementPass::AfterSky => &self.after_sky_pass,
-            PlacementPass::Final => &self.final_pass,
+    /// The family's read, then the identifier checks of a loaded rule (`identifier_checks`),
+    /// in the file.
+    fn read(origin: Origin, bytes: &[u8], cx: &LoadContext) -> DocumentRead<FeatureRuleFamily> {
+        match parse_document::<FeatureRuleFamily>(origin, bytes, cx) {
+            DocumentRead::Stable(document) => {
+                let origin = document.origin().clone();
+                let version = document.version().clone();
+                let mut diagnostics = document.diagnostics().clone();
+                let mut found = Diagnostics::default();
+                identifier_checks(document.value(), &origin.path, &mut found);
+                found.locate(&origin);
+                diagnostics.extend(found);
+                DocumentRead::Stable(Document::new(
+                    document.into_value(),
+                    origin,
+                    version,
+                    diagnostics,
+                ))
+            }
+            read => read,
         }
     }
+}
 
-    /// The effective rule `id` of `pass`, or `None` if no pack defines it there.
-    pub fn get(&self, pass: PlacementPass, id: &FeatureRuleId) -> Option<&Document<FeatureRule>> {
-        self.pass(pass).get(id)
+impl JsonPlaced for FeatureRule {
+    /// `feature_rules/<namespace>/<name>.json`: the file name is the identifier's name, as
+    /// vanilla requires.
+    fn place(&self) -> PackPath {
+        default_path("feature_rules", &self.description.identifier)
     }
+}
 
-    /// How many rules are effective, over every pass (the unknown ones included).
-    pub fn len(&self) -> usize {
-        self.registries().map(Registry::len).sum()
+impl JsonDefinition for FeatureRule {
+    type Kind = kind::FeatureRule;
+
+    fn identifier(&self) -> &FeatureRuleId {
+        &self.description.identifier
     }
+}
 
-    /// Whether no rule loaded.
-    pub fn is_empty(&self) -> bool {
-        self.len() == 0
+/// The file stem vanilla matches identifiers against: the text after the last `/` or `\` and
+/// before the last `.` (the whole name without a `.`).
+fn stem(path: &PackPath) -> &str {
+    let name = path.as_str().rsplit(['/', '\\']).next().unwrap_or_default();
+    name.rsplit_once('.').map_or(name, |(stem, _)| stem)
+}
+
+/// The identifier's namespace syntax, then its name against the file stem. Vanilla logs an
+/// error for either and still inserts the rule: a kept error, an error-level finding after
+/// which the game keeps the document.
+fn identifier_checks(rule: &FeatureRule, path: &PackPath, d: &mut Diagnostics) {
+    let identifier = rule.description.identifier.as_str();
+    let stem = stem(path);
+    if identifier == stem {
+        return;
     }
-
-    /// Every effective rule: the passes in the order they run, then the unknown passes; within
-    /// a registry in load order.
-    pub fn iter(&self) -> Iter<'_> {
-        Iter(Box::new(self.registries().flat_map(Registry::iter)))
+    let at = JsonPath::new().with(&["minecraft:feature_rules", "description", "identifier"]);
+    let warn = |template, args: Vec<String>| {
+        Diagnostic::error(DiagnosticCode::InvalidValue {
+            text: Some(VanillaText::Formatted { template, args }),
+        })
+        .at(at.clone())
+        .phase(Phase::Validate)
+        .into_kept()
+    };
+    match identifier.rfind(':') {
+        Some(colon) if colon >= 1 => {
+            let name = &identifier[colon + 1..];
+            if name != stem {
+                d.push(warn(
+                    "Feature rule identifier '{}' does not match filename '{}'",
+                    vec![name.to_owned(), stem.to_owned()],
+                ));
+            }
+        }
+        _ => d.push(warn(
+            "Feature rule identifier '{}' does not use the appropriate namespace syntax",
+            vec![identifier.to_owned()],
+        )),
     }
+}
 
-    /// Files that failed to load, with their findings.
-    pub fn rejected(&self) -> &[Rejected] {
-        &self.rejected
+// ---- the collection ----------------------------------------------------------------------
+
+/// `feature_rules/**/*.json`, packs top-down (vanilla walks the stack from its highest-priority
+/// pack), then the app data's `definitions/feature_rules`. Every pack's matching file is read,
+/// subpack-shadowed copies are not, and the family has no text of its own for an unreadable
+/// file.
+const WALK: Walk = Walk::json_tree_in(&["feature_rules"])
+    .top_down()
+    .app_data(&["definitions/feature_rules"], AppDataPlace::After);
+
+/// The group: one registry per pass, the first rule of a `(pass, identifier)` pair in walk
+/// order effective. Across packs the registry's `TopWins` decides (the walk is
+/// top-down, so it is the first one) and shadows the lower with `ShadowedDefinition`; within one
+/// pack (or the app data) the tie keeps the first file and shadows the later one with the same
+/// notice, where `TopWins` alone would keep the later one: the game looks the identifier up in
+/// the pass's bucket and a found one drops the new rule.
+fn combine(parsed: Vec<Contribution<FeatureRule>>, stack: &StackCx<'_>) -> FeatureRules {
+    let builder = || {
+        RegistryBuilder::new(
+            CombineRule::TopWins {
+                shadowed: Some(Notice::shadowed()),
+            }
+            .within_pack(PackTie::first(Some(Notice::shadowed()))),
+            CombineRule::top_wins(),
+            stack.options,
+        )
+    };
+    let mut passes: Vec<RegistryBuilder<FeatureRule>> =
+        PlacementPass::ALL.iter().map(|_| builder()).collect();
+    let mut unknown: IndexMap<String, RegistryBuilder<FeatureRule>> = IndexMap::new();
+    let mut rejected = Vec::new();
+    let mut diagnostics = Diagnostics::default();
+    for contribution in parsed {
+        match contribution {
+            Contribution::Stable(id, document) => {
+                let pass = document.conditions.placement_pass.0.clone();
+                let target = match PlacementPass::from_name(&pass) {
+                    Some(known) => &mut passes[known as usize],
+                    None => unknown.entry(pass).or_insert_with(builder),
+                };
+                target.push(Contribution::Stable(id, document));
+            }
+            // A feature rule has no beta struct; nothing produces one.
+            Contribution::Beta(..) => {}
+            Contribution::Rejected(_, failed) => {
+                diagnostics.extend(failed.diagnostics.iter().cloned());
+                rejected.push(failed);
+            }
+        }
     }
-
-    /// Every finding of the family: the failed files', then each registry's (its documents' and
-    /// the combine step's), the passes in order.
-    pub fn diagnostics(&self) -> impl Iterator<Item = &Diagnostic> + '_ {
-        self.diagnostics
-            .iter()
-            .chain(self.registries().flat_map(Registry::diagnostics))
-    }
-
-    /// The registries: the twelve passes in order, then the unknown ones.
-    fn registries(&self) -> impl Iterator<Item = &Registry<FeatureRule>> + '_ {
-        PlacementPass::ALL
+    let mut passes = passes.into_iter().map(RegistryBuilder::finish);
+    let mut next = || passes.next().unwrap_or_else(|| builder().finish());
+    FeatureRules {
+        pregeneration_pass: next(),
+        first_pass: next(),
+        before_underground_pass: next(),
+        underground_pass: next(),
+        after_underground_pass: next(),
+        before_surface_pass: next(),
+        surface_pass: next(),
+        after_surface_pass: next(),
+        before_sky_pass: next(),
+        sky_pass: next(),
+        after_sky_pass: next(),
+        final_pass: next(),
+        unknown_passes: unknown
             .into_iter()
-            .map(|pass| self.pass(pass))
-            .chain(self.unknown_passes.values())
+            .map(|(pass, builder)| (pass, builder.finish()))
+            .collect(),
+        rejected,
+        diagnostics,
+    }
+}
+
+/// What a `StackReport` lists of the group: every finding, the failed files' first.
+impl bedrock_addon_core::load::Reported for FeatureRules {
+    fn reported(&self) -> Box<dyn Iterator<Item = &Diagnostic> + '_> {
+        Box::new(self.diagnostics())
+    }
+}
+
+/// One file's contribution: the family's `read` in the file's pack. A failed file names no
+/// identifier (the combine reads none).
+fn parse_walk_file(file: &WalkFile, cx: &LoadContext) -> Contribution<FeatureRule> {
+    match FeatureRule::read(origin_of(file), &file.bytes, cx).stable() {
+        Ok(document) => Contribution::Stable(document.description.identifier.clone(), document),
+        Err(rejected) => Contribution::Rejected(None, rejected),
+    }
+}
+
+/// The loader of `bp.feature_rules()`.
+#[doc(hidden)]
+pub const LOADER: CollectionLoader<FeatureRules, Contribution<FeatureRule>> = CollectionLoader {
+    walk: WALK,
+    parse: parse_walk_file,
+    combine,
+    // The combine asks the stack about no other collection and names no extra files.
+    needs: &[],
+    then: None,
+};
+
+#[cfg(test)]
+mod reading_table {
+    //! The family's reading table: what the pipeline reads each of its files and structs by.
+
+    use bedrock_addon_core::versioning::testing::{assert_reading_table, reading_table};
+
+    #[test]
+    fn feature_rules_reads_as_pinned() {
+        assert_reading_table(
+            "FeatureRuleFamily",
+            &reading_table::<super::FeatureRuleFamily>(),
+            r"
+                text: Document, clamps beyond a double: true, duplicates kept in: []
+                envelope: Always
+                missing version: rejected: NoValidVersion
+                below floor: NoParser
+                empty document: Error
+                1.12.0..=1.12.0 (0..=0): json Rejected/Strict/Warn/fatal/Refuse, mcb Own/Strict/Warn/fatal/Refuse
+            ",
+        );
     }
 }

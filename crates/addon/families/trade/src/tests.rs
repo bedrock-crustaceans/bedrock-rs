@@ -1,7 +1,7 @@
 //! Unit tests of the module's private parts: the texts' arity, and where a failed typed parse
 //! is reported.
 
-use super::parse::scalar_member;
+use super::read::scalar_member;
 use super::texts;
 use bedrock_addon_core::diagnostic::JsonPathSegment;
 

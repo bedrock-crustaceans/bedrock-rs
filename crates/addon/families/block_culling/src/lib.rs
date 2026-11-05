@@ -6,10 +6,9 @@
 
 pub mod history;
 
-mod culling;
-mod load;
-mod new;
+mod read;
 mod texts;
+mod types;
 mod validate;
 mod write;
 
@@ -17,130 +16,275 @@ mod write;
 #[allow(clippy::disallowed_methods)] // the clock, to measure
 mod cost;
 
-use bedrock_addon_core::id::CullingRulesId;
+use bedrock_addon_core::diagnostic::{
+    Diagnostic, DiagnosticCode, Diagnostics, Phase, Severity, VanillaText,
+};
+use bedrock_addon_core::document::{
+    Contribution, JsonDefinition, JsonDocument, JsonPlaced, NoBeta, Registry,
+    default_path_flat_for_vanilla,
+};
+use bedrock_addon_core::id::{CullingRulesId, kind};
+use bedrock_addon_core::json::{EncodeError, EnvelopeVersion, JsonSlice, probe_envelope};
+use bedrock_addon_core::load::{self, CollectionLoader, LoadContext, Walk};
+use bedrock_addon_core::pack_identity::{PackPath, PackSide};
 use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::versioning::{
+    Envelope, EnvelopeCheck, Family, Loaded, MissingVersion, NoComponents, RangeModel, ValidateCx,
+};
+use history::{Any, CullingFamily};
+use texts::{FAILED_INTERNAL, FAILED_TO_PARSE, MISSING_OBJECT, formatted};
 
+pub use types::{Condition, CullingRule, CullingRules, Description, Facing, GeometryPart, Rule};
+
+/// The directory vanilla walks.
+const CULLING_DIRECTORY: &str = "block_culling";
+
+/// The oldest version with a parser (`v1_20_60::BlockCulling::VERSION`).
+const CULLING_FLOOR: FormatVersion = FormatVersion::new(1, 20, 60);
+
+impl Family for CullingFamily {
+    const NAME: &'static str = "block culling";
+    const PAYLOAD_KEY: &'static str = "minecraft:block_culling_rules";
+    const FLOOR: FormatVersion = CULLING_FLOOR;
+    // The game's loader registers its last parser up to 1.21.80: the ceiling is 1.21.80,
+    // below the engine's version.
+    const RANGE_MODEL: RangeModel = RangeModel::ClosedToLatest;
+    type Latest = CullingRules;
+    type Beta = NoBeta<kind::CullingRules>;
+    type Component = NoComponents;
+    type Any = Any;
+    const ENVELOPE: Envelope = Envelope {
+        // The game reads the document with the floor 1.20.60:
+        // below it (or without a version) the text is kept raw and the envelope is never looked at
+        check: EnvelopeCheck::From(CULLING_FLOOR),
+        // A missing version is 0.0.0, below the floor: the file is skipped.
+        missing: MissingVersion::REJECT,
+        ..Envelope::DEFAULT
+    };
+
+    fn validate(v: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {
+        if let Loaded::Stable(document) = v {
+            validate::check(document, cx.load.is_base_game_pack, &cx.at, cx.diagnostics);
+        }
+    }
+
+    /// Puts vanilla's texts on the findings of a culling file that was skipped:
+    /// - a file that never reaches a slice (unparsable, no version or a malformed one, a version
+    ///   below 1.20.60, an envelope that is not `format_version` plus the payload) is "Missing
+    ///   object", on the finding itself when it is the version's;
+    /// - a version above 1.21.80 is "no parser available", then "Failed to parse";
+    /// - a strict parse error is followed by "Failed to parse";
+    /// - a failed identifier or rule check by "… into internal format".
+    fn close(
+        diagnostics: &mut Diagnostics,
+        document: Option<JsonSlice<'_>>,
+        path: &PackPath,
+        failed: bool,
+    ) {
+        if !failed {
+            return;
+        }
+        let missing_object = || formatted(MISSING_OBJECT, &[path.as_str()]);
+        let found = std::mem::take(diagnostics);
+        let mut envelope = false;
+        let mut above = false;
+        let mut parse = false;
+        let mut validate = false;
+        for mut finding in found {
+            if finding.severity >= Severity::Error {
+                match &mut finding.code {
+                    DiagnosticCode::UnsupportedVersion { text } => {
+                        if matches!(text, Some(VanillaText::UseFormatVersion { .. })) {
+                            *text = Some(missing_object());
+                        } else {
+                            *text = Some(VanillaText::NoParserForVersion {
+                                version: document.map(written_version).unwrap_or_default(),
+                            });
+                            above = true;
+                        }
+                    }
+                    DiagnosticCode::MissingFormatVersion { text }
+                    | DiagnosticCode::MalformedFormatVersion { text }
+                    | DiagnosticCode::MissingPayload { text } => *text = Some(missing_object()),
+                    DiagnosticCode::MalformedInput { .. }
+                    | DiagnosticCode::EmptyDocument { .. }
+                    | DiagnosticCode::PayloadKeyMismatch
+                    | DiagnosticCode::UnknownPayloadKey { .. }
+                        if finding.location.json_path.is_empty() =>
+                    {
+                        envelope = true;
+                    }
+                    DiagnosticCode::UnrecognizedField { text }
+                        if text.is_none() && finding.location.json_path.len() == 1 =>
+                    {
+                        // A third root member: the envelope is not exactly two members.
+                        *text = Some(missing_object());
+                    }
+                    _ if finding.phase == Phase::Validate => validate = true,
+                    _ => parse = true,
+                }
+            }
+            diagnostics.push(finding);
+        }
+        if envelope {
+            diagnostics.push(closing(MISSING_OBJECT, path, Phase::Parse));
+        } else if above || parse {
+            diagnostics.push(closing(FAILED_TO_PARSE, path, Phase::Parse));
+        } else if validate {
+            diagnostics.push(closing(FAILED_INTERNAL, path, Phase::Validate));
+        }
+    }
+}
+
+impl JsonDocument for CullingRules {
+    type Family = CullingFamily;
+    const SIDES: &'static [PackSide] = &[PackSide::Resource];
+    const NAME: &'static str = "block culling rules";
+
+    fn refuse_write(&self) -> Result<(), EncodeError> {
+        self.writable()
+    }
+}
+
+impl JsonPlaced for CullingRules {
+    /// `block_culling/<namespace>/<name>.json`; `block_culling/<name>.json` for a document of
+    /// the `minecraft` namespace. Only a base-game pack may hold such a document, and the
+    /// client walks a base-game pack's folder without its sub-folders (`culling_reached`), so
+    /// the file sits in the folder itself, as vanilla's own do. A `/` in such a name becomes
+    /// `_`, so `minecraft:a/b` and `minecraft:a_b` get the same path: a pack that holds both
+    /// names one of the two files itself.
+    fn place(&self) -> PackPath {
+        default_path_flat_for_vanilla(CULLING_DIRECTORY, &self.description.identifier)
+    }
+}
+
+/// The registry: per identifier the highest pack's document; within one pack the file walked
+/// last, with a `DuplicateIdentifier` warning (ours; vanilla overwrites silently in directory
+/// order). A file that fails registers nothing and leaves an earlier document of its
+/// identifier in place. The rules are the defaults (`top_wins`).
+// The game's culling map is keyed by identifier and written only on success.
+impl JsonDefinition for CullingRules {
+    type Kind = kind::CullingRules;
+
+    fn identifier(&self) -> &CullingRulesId {
+        &self.description.identifier
+    }
+}
+
+/// A closing line of vanilla's for a culling file that was skipped.
+fn closing(template: &'static str, path: &PackPath, phase: Phase) -> Diagnostic {
+    Diagnostic::error(DiagnosticCode::DocumentRejected {
+        text: Some(formatted(template, &[path.as_str()])),
+    })
+    .phase(phase)
+}
+
+/// The `format_version` of a document as vanilla's "no parser available" text prints it:
+/// `SemVersion::asString` of what parsed (`1.26` is `1.26.0`, build metadata dropped), a
+/// pre-release and the beta literal as written (the framework's
+/// `versioning::no_parser_version`).
+fn written_version(document: JsonSlice<'_>) -> String {
+    match probe_envelope(document).map(|envelope| envelope.format_version) {
+        Ok(EnvelopeVersion::String(text)) => {
+            match bedrock_addon_core::version::FormatVersionInput::parse(&text) {
+                Some(input) => bedrock_addon_core::versioning::no_parser_version(&input, &text),
+                None => text,
+            }
+        }
+        Ok(EnvelopeVersion::Array([major, minor, patch])) => format!("{major}.{minor}.{patch}"),
+        _ => String::new(),
+    }
+}
+
+/// `block_culling/**/*.json` (the extension exactly `json`: the game compares the file's
+/// extension, without the dot, case-sensitively), packs bottom-up (the task walks the stack from its last
+/// `PackInstance` to its first).
+// The game walks `block_culling` non-recursively per pack stack entry.
+const CULLING_WALK: Walk = Walk::json_tree_in(&[CULLING_DIRECTORY]).in_pack(culling_reached);
+
+/// Whether vanilla's walk reaches `path` in the pack of `cx`: `forEachIn(…, recurseAnyways =
+/// false)` walks a pack shipped in the app package flat and every other pack with its
+/// sub-folders (the dialogue family's reading of the same call).
+fn culling_reached(path: &PackPath, cx: &LoadContext) -> bool {
+    let nested = path.segments().count() > 2;
+    !(cx.is_base_game_pack && nested)
+}
+
+/// The loader of `rp.block_culling()`: `block_culling/**/*.json` of every resource pack, the
+/// highest pack's document winning per identifier.
 #[doc(hidden)]
-pub use load::LOADER;
+pub const LOADER: CollectionLoader<Registry<CullingRules>, Contribution<CullingRules>> =
+    load::registry::<CullingRules>(CULLING_WALK);
 
-/// The culling rules of a block model (`minecraft:block_culling_rules`), at the newest format
-/// version: which parts of the model are hidden against which neighbour.
-///
-/// JSON: `{"format_version": "1.21.80", "minecraft:block_culling_rules": {"description":
-/// {"identifier"}, "rules": [{"geometry_part": {"bone", "cube"?, "face"?}, "direction",
-/// "condition"?, "cull_against_full_and_opaque"?}]}}`. An unknown member fails the file. A
-/// behaviour-pack block names a rules document with `minecraft:geometry` `culling`.
-#[derive(Clone, Debug, PartialEq, Eq)]
-#[doc(alias = "minecraft:block_culling_rules")]
-#[doc(alias = "block_culling")]
-pub struct CullingRules {
-    /// What the document is (JSON `description`).
-    pub description: Description,
-    /// The rules; the list may be empty (JSON `rules`).
-    pub rules: Vec<Rule>,
-    /// The document's own `format_version`. Not a JSON member; the writer writes 1.21.80, the
-    /// only version whose document holds every member.
-    pub source_format_version: FormatVersion,
-}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use bedrock_addon_core::document::Content;
+    use bedrock_addon_core::load::LoadContext;
+    use bedrock_addon_core::pack_identity::PackRef;
 
-/// `minecraft:block_culling_rules/description`.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Description {
-    /// The identifier a block's `minecraft:geometry` `culling` names (JSON `identifier`):
-    /// `namespace:name`, without spaces, tabs or line breaks. Only a base-game pack may use
-    /// the `minecraft` namespace.
-    pub identifier: CullingRulesId,
-}
+    /// Every finding of loading `text` as `block_culling/a.json` of no pack, which must be
+    /// rejected.
+    fn rejected_findings(text: &str) -> Diagnostics {
+        let path = PackPath::from_static("block_culling/a.json");
+        match <CullingRules as Content>::parse(&path, text.as_bytes(), &LoadContext::detached()) {
+            Ok(document) => panic!("loaded: {:#?}", document.diagnostics()),
+            Err(rejected) => rejected.diagnostics,
+        }
+    }
 
-/// One culling rule: a part of the model and the neighbour it is hidden against.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Rule {
-    /// When the part is hidden against a neighbour that is not a full, opaque block (JSON
-    /// `condition`, from format 1.21.80); without one it never is.
-    pub condition: Option<Condition>,
-    /// Whether the part is hidden against a full, opaque neighbour (JSON
-    /// `cull_against_full_and_opaque`, from format 1.21.80);
-    /// [`culls_against_full_and_opaque`](Self::culls_against_full_and_opaque) gives the
-    /// client's `true` when the member is absent.
-    pub cull_against_full_and_opaque: Option<bool>,
-    /// The part of the model (JSON `geometry_part`).
-    pub geometry_part: GeometryPart,
-    /// The side of the block whose neighbour decides (JSON `direction`).
-    pub direction: Facing,
-}
-
-/// The part of a block model a rule hides: a whole bone, or one face of one cube of it.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct GeometryPart {
-    /// The bone's name (JSON `bone`).
-    pub bone: String,
-    /// The index of a cube of the bone, 0 or more (JSON `cube`); it needs `face`.
-    pub cube: Option<i32>,
-    /// The face of that cube (JSON `face`); it needs `cube`.
-    pub face: Option<Facing>,
-}
-
-/// A side of a block (vanilla `SharedTypes::Facing`).
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-#[repr(i16)]
-pub enum Facing {
-    /// `"down"`.
-    Down = 0,
-    /// `"up"`.
-    Up = 1,
-    /// `"north"`.
-    North = 2,
-    /// `"south"`.
-    South = 3,
-    /// `"west"`.
-    West = 4,
-    /// `"east"`.
-    East = 5,
-}
-
-/// What a culling rule compares the neighbour with (JSON `condition`).
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-#[repr(i32)]
-#[non_exhaustive]
-pub enum Condition {
-    /// `"same_culling_layer"`: the neighbour's `minecraft:geometry` `culling_layer` is defined
-    /// and equal to this block's.
-    SameCullingLayer = 1,
-    /// `"same_block"`: the neighbour is the same block.
-    SameBlock = 2,
-    /// `"same_block_permutation"`: the neighbour is the same permutation of the same block.
-    SameBlockPermutation = 3,
-}
-
-/// One rule as the client holds it after loading (vanilla `BlockCullingData::CullingRule`):
-/// absent members are sentinels.
-#[derive(Clone, Debug, PartialEq, Eq)]
-#[non_exhaustive]
-pub struct CullingRule {
-    /// The side whose neighbour is checked: [`Facing`]'s number, 0 to 5.
-    pub neighbor_to_check: u8,
-    /// The condition's number less one (`same_culling_layer` 0, `same_block` 1,
-    /// `same_block_permutation` 2); `None` without a condition.
-    pub condition: Option<u8>,
-    /// Whether the part is hidden against a full, opaque neighbour.
-    pub cull_against_full_and_opaque: bool,
-    /// The bone's name.
-    pub bone: String,
-    /// The cube's index, or -1 for the whole bone.
-    pub cube_index: i32,
-    /// The face's number (0 to 5), or 6 for no face.
-    pub face_to_cull: u8,
+    #[test]
+    fn every_finding_of_a_rejected_file_carries_its_pack_and_path() {
+        let payload = |description: &str, rule: &str| {
+            format!(
+                r#"{{"format_version": "1.21.80", "minecraft:block_culling_rules": {{"description": {{"identifier": "{description}"}}, "rules": [{rule}]}}}}"#
+            )
+        };
+        let path = PackPath::from_static("block_culling/a.json");
+        for text in [
+            // Not JSON: rejected before the chain runs.
+            "{".to_owned(),
+            // A member no struct has: rejected by the chain.
+            payload(
+                "test:a",
+                r#"{"geometry_part": {"bone": "x"}, "direction": "up", "what": 2}"#,
+            ),
+            // The vanilla namespace in a user pack: rejected by the checks.
+            payload("minecraft:a", ""),
+        ] {
+            let found = rejected_findings(&text);
+            assert!(!found.is_empty(), "{text}");
+            for finding in &found {
+                assert_eq!(
+                    finding.location.pack,
+                    Some(PackRef::app_data()),
+                    "{finding:#?}"
+                );
+                assert_eq!(finding.location.path.as_ref(), Some(&path), "{finding:#?}");
+            }
+        }
+    }
 }
 
 #[cfg(test)]
-mod eq_tests {
-    use super::CullingRules;
+mod reading_table {
+    //! The family's reading table: what the pipeline reads each of its files and structs by.
 
-    fn assert_eq_trait<T: Eq>() {}
+    use bedrock_addon_core::versioning::testing::{assert_reading_table, reading_table};
 
     #[test]
-    fn culling_rules_is_eq() {
-        assert_eq_trait::<CullingRules>();
-        assert_eq_trait::<crate::history::v1_20_60::CullingRules>();
+    fn block_culling_reads_as_pinned() {
+        assert_reading_table(
+            "CullingFamily",
+            &reading_table::<super::CullingFamily>(),
+            r"
+                text: Root, clamps beyond a double: false, duplicates kept in: []
+                envelope: From(FormatVersion { major: 1, minor: 20, patch: 60 })
+                missing version: rejected: NoValidVersion
+                below floor: UseFormatVersion
+                empty document: Error
+                1.20.60..=1.21.80 (0..=1): json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+            ",
+        );
     }
 }

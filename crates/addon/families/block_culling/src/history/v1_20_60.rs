@@ -6,7 +6,7 @@ use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{ParseCx, Upgrade, UpgradeCx, VersionStruct, Versioned};
 
-use super::super::culling::{Slice, read};
+use super::super::read::{Slice, read};
 use super::super::write;
 pub use super::super::{Description, Facing, GeometryPart};
 

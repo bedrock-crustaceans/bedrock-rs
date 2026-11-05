@@ -1,6 +1,6 @@
 //! Unit tests of the feature-rule family's chain.
 
-use super::load::FeatureRuleFamily;
+use super::FeatureRuleFamily;
 use bedrock_addon_core::versioning::check_chain;
 
 #[test]

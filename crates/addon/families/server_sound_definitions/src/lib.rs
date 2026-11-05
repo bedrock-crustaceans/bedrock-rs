@@ -7,28 +7,32 @@
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
-mod load;
+mod read;
+mod types;
+mod validate;
 
-#[doc(hidden)]
-pub use load::LOADER;
-
-use facet::Facet;
 use indexmap::IndexMap;
 
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity, VanillaText,
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, Phase, VanillaText};
+use bedrock_addon_core::document::{
+    CombineRule, Contribution, Definition, Document, JsonDocument, JsonPlaced, NoBeta, Origin,
+    Registry, RegistryBuilder, Rejected,
 };
-use bedrock_addon_core::document::Extra;
-use bedrock_addon_core::id::SoundEventName;
-use bedrock_addon_core::json::{
-    EncodeError, JsonSlice, NullRule, StrictFloat, StrictString, Value, keep_unknown_members,
-    parse_at, reject_nulls,
+use bedrock_addon_core::id::{SoundEventName, kind};
+use bedrock_addon_core::json::Prepared;
+use bedrock_addon_core::load::{
+    self, Accept, CollectionLoader, FileCopy, LoadContext, StackCx, Walk,
 };
-use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
+use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
-    BelowFloor, Envelope, EnvelopeCheck, Family, InputKind, Loaded, MissingVersion, NoComponents,
-    ParseCx, ValidateCx, VersionStruct, Versioned, write_payload,
+    BelowFloor, DocumentRead, Envelope, EnvelopeCheck, Family, InputKind, Loaded, MissingVersion,
+    NoComponents, Single, ValidateCx, parse_document, parse_document_as_written,
+};
+
+pub use types::{
+    DurationInfo, DurationMode, MusicInfo, SoundDuration, SoundMetadata, SoundMetadataFile,
+    TagValueList,
 };
 
 /// The version of the one struct, and of the one slice: the game's document format is
@@ -40,267 +44,13 @@ pub(crate) const V1_26_60: FormatVersion = bedrock_addon_core::version::known::V
 pub(crate) const BROADCAST_RANGE_SINCE: FormatVersion =
     bedrock_addon_core::version::known::V1_26_50;
 
-/// The regex of the string constraint on a sound event name.
-const NO_WHITESPACE_REGEX: &str = "^\\S+$";
-/// The namespace constraint's text for a name without `namespace:value`.
-const NEEDS_NAMESPACE: &str = "string must be prefixed with a namespace (eg. namespace:value)";
-/// The namespace constraint's text for a disallowed namespace.
-const INVALID_NAMESPACE: &str = "string has invalid namespace ({})";
-/// The namespace no pack may define server sounds in, compared without case.
-const DISALLOWED_NAMESPACE: &str = "minecraft";
-
-/// A behaviour pack's server sound definitions file, `sounds/sound_definitions.json`
-/// (`#[doc(alias)]` `server_sound_definitions`): the payload is the array itself.
-#[doc(alias = "server_sound_definitions")]
-#[doc(alias = "sound_definitions.json")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
-#[facet(transparent)]
-pub struct SoundMetadataFile(pub Vec<SoundMetadata>);
-
-/// The server's metadata of one sound event (`bp.server_sound_definitions()`): how long it lasts, what
-/// music it is, the tags scripts filter on, and how far a broadcast reaches. The audio itself
-/// is the resource pack's.
-#[doc(alias = "server_sound_definitions")]
-#[derive(Clone, Debug, PartialEq, Facet)]
-pub struct SoundMetadata {
-    /// `sound_event_name`: the namespaced sound event this is the metadata of. No whitespace;
-    /// a namespace other than `minecraft` is required.
-    pub sound_event_name: StrictString,
-    /// `duration_info`: how long the sound lasts, so the server knows when it ends.
-    pub duration_info: Option<DurationInfo>,
-    /// `music_info`.
-    pub music_info: Option<MusicInfo>,
-    /// `tags`: pack-defined tags, each one value or a list of values; no key or value holds
-    /// whitespace.
-    pub tags: Option<IndexMap<String, TagValueList>>,
-    /// `broadcast_range`: how far from the sound a broadcast play reaches a player (from
-    /// engine 1.26.50; an older engine rejects the file).
-    pub broadcast_range: Option<StrictFloat<f32>>,
-    /// Unknown members, each of which rejects the file.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
-}
-
-impl SoundMetadata {
-    /// The sound event name as an identifier.
-    pub fn id(&self) -> SoundEventName {
-        SoundEventName::parse(self.sound_event_name.0.as_str())
-    }
-
-    /// The duration as the server stores it; `None` without `duration_info`.
-    pub fn duration(&self) -> Option<SoundDuration> {
-        self.duration_info.as_ref().map(DurationInfo::duration)
-    }
-}
-
-/// `duration_info`.
-#[derive(Clone, Debug, PartialEq, Facet)]
-pub struct DurationInfo {
-    /// `mode`: what the duration counts in.
-    pub mode: DurationMode,
-    /// `seconds`.
-    pub seconds: StrictFloat<f32>,
-    /// Unknown members, each of which rejects the file.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
-}
-
-impl DurationInfo {
-    /// The duration as vanilla converts it at load: game ticks (`seconds` × 20) or
-    /// milliseconds (`seconds` × 1000), computed in `f32` and truncated. A product outside
-    /// the target's range is the target's minimum, as the x86 conversion gives it.
-    // The game multiplies in single precision and converts with a truncating cast.
-    #[allow(
-        clippy::cast_possible_truncation,
-        clippy::cast_precision_loss,
-        reason = "vanilla converts with a truncating cast"
-    )]
-    pub fn duration(&self) -> SoundDuration {
-        match self.mode {
-            DurationMode::GameTime => {
-                let ticks = self.seconds.0 * 20.0_f32;
-                // 2^31 is exact in f32; anything at or past it, or NaN, is out of range.
-                SoundDuration::Ticks(if (-2_147_483_648.0..2_147_483_648.0).contains(&ticks) {
-                    ticks as i32
-                } else {
-                    i32::MIN
-                })
-            }
-            DurationMode::RealTime => {
-                let millis = self.seconds.0 * 1000.0_f32;
-                SoundDuration::Millis(
-                    if (-9_223_372_036_854_775_808.0..9_223_372_036_854_775_808.0).contains(&millis)
-                    {
-                        millis as i64
-                    } else {
-                        i64::MIN
-                    },
-                )
-            }
-        }
-    }
-}
-
-/// What a duration counts in.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Facet)]
-#[non_exhaustive]
-#[repr(u8)]
-pub enum DurationMode {
-    /// `game_time`: the duration decrements by game tick.
-    #[facet(rename = "game_time")]
-    GameTime = 0,
-    /// `real_time`: the duration decrements by wall-clock time.
-    #[facet(rename = "real_time")]
-    RealTime = 1,
-}
-
-/// A duration as the server tracks it.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-#[non_exhaustive]
-pub enum SoundDuration {
-    /// Game ticks.
-    Ticks(i32),
-    /// Milliseconds.
-    Millis(i64),
-}
-
-/// `music_info`: free-form music metadata, every member optional.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
-pub struct MusicInfo {
-    /// `genres`.
-    pub genres: Option<Vec<StrictString>>,
-    /// `moods`.
-    pub moods: Option<Vec<StrictString>>,
-    /// `artist`: display text or a translation key.
-    pub artist: Option<StrictString>,
-    /// `title`: display text or a translation key.
-    pub title: Option<StrictString>,
-    /// Unknown members, each of which rejects the file.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
-}
-
-/// The value of one tag: one string or a list of strings.
-#[derive(Clone, Debug, PartialEq, Eq, Facet)]
-#[facet(untagged)]
-#[repr(u8)]
-pub enum TagValueList {
-    /// A single value.
-    One(String),
-    /// A list of values; it may be empty and may repeat a value.
-    Many(Vec<String>),
-}
-
-impl TagValueList {
-    /// The values: a single value is a list of one.
-    pub fn values(&self) -> &[String] {
-        match self {
-            Self::One(value) => std::slice::from_ref(value),
-            Self::Many(values) => values,
-        }
-    }
-}
-
 /// The server sound definitions family of the version-chain machinery.
 #[derive(Clone, Copy, Debug)]
-pub(crate) struct MetadataFamily;
+#[doc(hidden)]
+pub struct MetadataFamily;
 
-bedrock_addon_core::version_chain! {
-    family = MetadataFamily;
-    /// A server sound definitions document: there is the 1.26.60 struct only.
-    #[derive(Clone, Debug, PartialEq)]
-    pub(crate) enum MetadataAny {
-        /// Format 1.26.60 exactly.
-        V1_26_60(SoundMetadataFile),
-    }
-}
-
-impl MolangFields for SoundMetadataFile {
-    fn visit_molang(&mut self, _: &mut MolangVisitor<'_>) {}
-}
-
-impl Versioned for SoundMetadataFile {
-    const VERSION: FormatVersion = V1_26_60;
-}
-
-/// The tag values that are neither a string nor an array of strings.
-/// facet reads a number into the untagged string arm, so the JSON is checked first.
-fn mistyped_tags(payload: &Value) -> Vec<JsonPath> {
-    let mut out = Vec::new();
-    let definitions = payload.as_array().map(facet_value::VArray::as_slice);
-    for (index, definition) in definitions.into_iter().flatten().enumerate() {
-        let tags = definition
-            .as_object()
-            .and_then(|definition| definition.get("tags"))
-            .and_then(Value::as_object);
-        for (key, value) in tags.into_iter().flatten() {
-            let strings = |value: &Value| value.is_string();
-            let fits = strings(value)
-                || value
-                    .as_array()
-                    .is_some_and(|values| values.as_slice().iter().all(strings));
-            if !fits {
-                out.push(
-                    JsonPath::new()
-                        .index(index)
-                        .child("tags")
-                        .child(key.as_str()),
-                );
-            }
-        }
-    }
-    out
-}
-
-impl VersionStruct for SoundMetadataFile {
-    fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        let json = bedrock_addon_core::json::from_str_jsonc::<Value>(payload.text).ok();
-        if json.as_ref().is_some_and(|json| !json.is_array()) {
-            // The payload is the array itself.
-            d.push(Diagnostic::error(DiagnosticCode::InvalidType { text: None }).at(cx.at.clone()));
-            return None;
-        }
-        let mistyped = json.as_ref().map(mistyped_tags).unwrap_or_default();
-        if !mistyped.is_empty() {
-            for at in &mistyped {
-                d.push(
-                    Diagnostic::error(DiagnosticCode::InvalidType { text: None })
-                        .at(cx.at.join(at)),
-                );
-            }
-            return None;
-        }
-        let mut value: Self = match parse_at::<Self>(payload) {
-            Ok(value) => value,
-            Err(error) => {
-                d.push(error.into_diagnostic(&cx.at, |code, _| code));
-                return None;
-            }
-        };
-        // A member written as `null` is present and fails its type: the game reads the file
-        // with null members rejected.
-        if cx.load.null_rule == Some(NullRule::Rejected) && reject_nulls(&value, payload, &cx.at, d)
-        {
-            return None;
-        }
-        // The strict mask: an unknown member at any level rejects the file.
-        let unknown = json
-            .map(|json| keep_unknown_members(&mut value, &json))
-            .unwrap_or_default();
-        for (path, _) in &unknown {
-            d.push(
-                Diagnostic::error(DiagnosticCode::UnrecognizedField { text: None })
-                    .at(cx.at.join(path)),
-            );
-        }
-        // An error-level finding rejects the document, so the value goes no further.
-        Some(value)
-    }
-
-    fn write(&self) -> Result<Value, EncodeError> {
-        write_payload(self)
-    }
-}
+/// The file parsed by the one struct, not upgraded.
+pub(crate) type MetadataAny = Single<MetadataFamily>;
 
 impl Family for MetadataFamily {
     const NAME: &'static str = "server_sound_definitions";
@@ -325,108 +75,169 @@ impl Family for MetadataFamily {
     // No Beta slice: `"beta"` has no parser.
     type Beta = std::convert::Infallible;
     type Component = NoComponents;
-    type Any = MetadataAny;
+    type Any = Single<Self>;
 
     fn validate(v: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {
         let Loaded::Stable(file) = v else { return };
-        validate(file, cx);
+        validate::validate(file, cx);
     }
 }
 
-/// Whether `text` matches `^\S+$`: not empty and without whitespace.
-fn no_whitespace(text: &str) -> bool {
-    !text.is_empty() && !text.chars().any(|c| c.is_whitespace() || c == '\u{feff}')
+/// The one path the server reads the definitions of a behaviour pack from.
+/// The game names this one file; it never lists the directory.
+pub(crate) const METADATA_PATH: &str = "sounds/sound_definitions.json";
+
+/// Vanilla's text for a sound event name that is registered already: an error in the sound
+/// log area, printed once.
+const DUPLICATE: &str =
+    "Duplicate server sound definition for sound event '{}'; the later definition will be ignored.";
+
+impl bedrock_addon_core::__private::Sealed for SoundMetadata {}
+
+/// `read` of the text the family reads: of a member written twice, the last copy is the one
+/// that stands (`json::last_wins` of the file's text). Bytes that are no text are passed on as
+/// they are, for the generic read to reject.
+fn with_last_wins<R>(bytes: &[u8], read: impl FnOnce(&[u8]) -> R) -> R {
+    // A leading byte-order mark is blanked, not cut, so every span is an offset into the file
+    // as written.
+    match Prepared::new(bytes) {
+        Ok(prepared) => read(bedrock_addon_core::json::last_wins(prepared.as_str()).as_bytes()),
+        Err(_) => read(bytes),
+    }
 }
 
-/// The namespace rule of the public area: `None` when `name` passes,
-/// else the constraint's text.
-// The game checks two case-insensitive patterns: the first forbids a `minecraft:` prefix, the
-// second wants one `:` with text on both sides.
-fn namespace_text(name: &str) -> Option<VanillaText> {
-    let bytes = name.as_bytes();
-    // A `:` with at least one character on each side.
-    let prefixed = bytes
-        .iter()
-        .enumerate()
-        .any(|(index, byte)| *byte == b':' && index >= 1 && index + 1 < bytes.len());
-    if !prefixed {
-        return Some(VanillaText::Fixed(NEEDS_NAMESPACE));
+impl JsonDocument for SoundMetadataFile {
+    type Family = MetadataFamily;
+    const SIDES: &'static [PackSide] = &[PackSide::Behavior];
+
+    /// Reads a behaviour pack's `sounds/sound_definitions.json`. Only `"format_version":
+    /// "1.26.60"` is read, by any pack (no toggle); the file is rejected as a whole for any
+    /// error in it.
+    fn read(origin: Origin, bytes: &[u8], cx: &LoadContext) -> DocumentRead<MetadataFamily> {
+        with_last_wins(bytes, |text| {
+            parse_document::<MetadataFamily>(origin, text, cx)
+        })
     }
-    let disallowed = bedrock_addon_core::id::syntax::split_namespace(name)
-        .is_some_and(|(namespace, _)| namespace.eq_ignore_ascii_case(DISALLOWED_NAMESPACE));
-    disallowed.then(|| VanillaText::Formatted {
-        template: INVALID_NAMESPACE,
-        args: vec![DISALLOWED_NAMESPACE.to_owned()],
+
+    /// The struct the version selects, read from the same text as [`read`](Self::read).
+    fn parse_as_written(
+        path: &PackPath,
+        bytes: &[u8],
+        cx: &LoadContext,
+    ) -> Result<Document<MetadataAny>, Rejected> {
+        with_last_wins(bytes, |text| {
+            parse_document_as_written::<MetadataFamily>(PackSide::Behavior, path, text, cx)
+        })
+    }
+}
+
+impl JsonPlaced for SoundMetadataFile {
+    /// `sounds/sound_definitions.json` of the behaviour pack: the one path the server reads.
+    fn place(&self) -> PackPath {
+        PackPath::from_static(METADATA_PATH)
+    }
+}
+
+/// An entry of the file: a hand `Definition`, as the file holds several.
+impl Definition for SoundMetadata {
+    type Kind = kind::SoundEvent;
+    type File = SoundMetadataFile;
+    type Beta = NoBeta<kind::SoundEvent>;
+}
+
+/// The walk of `bp.server_sound_definitions()`: the fixed file of each pack, lowest pack first as
+/// vanilla visits the stack.
+const WALK: Walk = Walk::json_children_in(&["sounds"]).accept(Accept::Exact(&[METADATA_PATH]));
+
+/// The duplicate finding of the definition at `index` of `file`.
+fn duplicate(file: &Origin, name: &str, index: usize) -> Diagnostic {
+    let at = JsonPath::new()
+        .child(MetadataFamily::PAYLOAD_KEY)
+        .index(index);
+    Diagnostic::error(DiagnosticCode::DuplicateIdentifier {
+        text: Some(VanillaText::Formatted {
+            template: DUPLICATE,
+            args: vec![name.to_owned()],
+        }),
     })
+    .at(at)
+    .phase(Phase::Validate)
+    .in_file(file)
 }
 
-/// The rules on the loaded file. An error rejects it.
-fn validate(file: &SoundMetadataFile, cx: &mut ValidateCx<'_>) {
-    let base = cx.at.clone();
-    let mut push = |code: DiagnosticCode, severity: Severity, index: usize, path: &[&str]| {
-        let at = base.index(index).with(path);
-        cx.diagnostics.push(
-            Diagnostic::error(code)
-                .at(at)
-                .severity(severity)
-                .phase(Phase::Validate),
-        );
-    };
-    let pattern = || bedrock_addon_core::diagnostic::cereal::string_mismatch(NO_WHITESPACE_REGEX);
-    for (index, definition) in file.0.iter().enumerate() {
-        let name = definition.sound_event_name.0.as_str();
-        if let Some(text) = namespace_text(name) {
-            push(
-                DiagnosticCode::NamespaceRule { text: Some(text) },
-                Severity::Error,
-                index,
-                &["sound_event_name"],
+/// Combines the files, lowest pack first: the first definition of a name is kept, compared
+/// byte for byte; every later one is dropped with vanilla's duplicate error (raised for each,
+/// where vanilla prints an identical text once).
+fn combine(
+    parsed: Vec<FileCopy<SoundMetadataFile>>,
+    stack: &StackCx<'_>,
+) -> Registry<SoundMetadata> {
+    let mut builder = RegistryBuilder::new(
+        CombineRule::bottom_wins(),
+        CombineRule::bottom_wins(),
+        stack.options,
+    );
+    let mut stored: IndexMap<String, PackRef> = IndexMap::new();
+    for (_, file) in parsed {
+        let file = match file {
+            Ok(file) => file,
+            Err(rejected) => {
+                builder.push(Contribution::Rejected(None, rejected));
+                continue;
+            }
+        };
+        let (origin, version) = (file.origin().clone(), file.version().clone());
+        let mut file_findings = Some(file.diagnostics().clone());
+        for (index, definition) in file.into_value().0.into_iter().enumerate() {
+            let name = definition.sound_event_name.0.clone();
+            let id = SoundEventName::parse(name.as_str());
+            let entry = Origin::new(
+                origin.pack.clone(),
+                origin.side,
+                origin.path.clone(),
+                Some(name.clone().into_boxed_str()),
+                Vec::new(),
             );
-        }
-        if !no_whitespace(name) {
-            push(pattern(), Severity::Error, index, &["sound_event_name"]);
-        }
-        for (key, value) in definition.tags.iter().flatten() {
-            if !no_whitespace(key) || !value.values().iter().all(|value| no_whitespace(value)) {
-                push(pattern(), Severity::Error, index, &["tags", key.as_str()]);
+            // The file's own findings travel with its first definition.
+            let mut diagnostics = file_findings.take().unwrap_or_default();
+            match stored.get(&name) {
+                None => {
+                    stored.insert(name, origin.pack.clone());
+                    let document = Document::new(definition, entry, version.clone(), diagnostics);
+                    builder.push(Contribution::Stable(id, document));
+                }
+                Some(first) if *first == origin.pack => {
+                    diagnostics.push(duplicate(&origin, &name, index));
+                    builder.push(Contribution::Rejected(
+                        Some(id),
+                        Rejected::new(entry, diagnostics),
+                    ));
+                }
+                Some(_) => {
+                    let document = Document::new(definition, entry, version.clone(), diagnostics);
+                    builder.push(Contribution::Stable(id, document));
+                    builder.push_diagnostic(duplicate(&origin, &name, index));
+                }
             }
         }
-        if let Some(duration) = &definition.duration_info {
-            let seconds = duration.seconds.0;
-            if !seconds.is_finite() || seconds <= 0.0 {
-                // The crate's own information: vanilla converts any value without a check.
-                push(
-                    DiagnosticCode::InvalidValue { text: None },
-                    Severity::Info,
-                    index,
-                    &["duration_info", "seconds"],
-                );
-            }
-        }
-        if let Some(range) = &definition.broadcast_range {
-            if cx.load.engine_version < BROADCAST_RANGE_SINCE {
-                // An engine below 1.26.50 does not bind the member.
-                push(
-                    DiagnosticCode::UnrecognizedField { text: None },
-                    Severity::Error,
-                    index,
-                    &["broadcast_range"],
-                );
-            } else if range.0 <= 0.0 {
-                // The crate's own information: the game binds any number without a check.
-                push(
-                    DiagnosticCode::InvalidValue { text: None },
-                    Severity::Info,
-                    index,
-                    &["broadcast_range"],
-                );
+        if let Some(findings) = file_findings {
+            for finding in findings {
+                builder.push_diagnostic(finding);
             }
         }
     }
+    builder.finish()
 }
+
+/// The loader of `bp.server_sound_definitions()`: each pack's file, parsed whole, and the
+/// family's combine into one registry of its definitions (the file holds several).
+#[doc(hidden)]
+pub const LOADER: CollectionLoader<Registry<SoundMetadata>, FileCopy<SoundMetadataFile>> =
+    load::merged::<SoundMetadataFile, _>(WALK, combine);
 
 #[cfg(test)]
 mod tests {
+    use super::validate::{NEEDS_NAMESPACE, namespace_text, no_whitespace};
     use super::*;
     use bedrock_addon_core::json::NullRule;
     use bedrock_addon_core::load::DocumentSource;
@@ -457,7 +268,7 @@ mod tests {
         let file = document.value();
         assert_eq!(
             file.to_json().unwrap(),
-            MetadataAny::V1_26_60(file.clone()).to_json().unwrap()
+            Single::<MetadataFamily>(file.clone()).to_json().unwrap()
         );
     }
 
