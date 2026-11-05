@@ -22,7 +22,7 @@ use bedrock_addon::families::script::config::{
     CommandPermissionLevel, ConfigSource, ScriptConfig, ScriptProperties, ServerNet,
 };
 use bedrock_addon::families::script::{
-    CatalogModule, CatalogVersion, ModuleCatalog, ScriptContext, ScriptDiscovery, ScriptFiles,
+    CatalogEntry, CatalogModule, ModuleCatalog, ScriptContext, ScriptDiscovery, ScriptFiles,
     ScriptModule, ScriptPlugin, ScriptVersion,
 };
 use bedrock_addon_std::{
@@ -67,7 +67,7 @@ fn plugin(module: &str) -> ScriptPlugin {
     catalog.insert(
         module,
         CatalogModule {
-            versions: vec![CatalogVersion::new(ScriptVersion::new(1, 0, 0))],
+            versions: vec![CatalogEntry::new(ScriptVersion::new(1, 0, 0))],
             ..CatalogModule::default()
         },
     );

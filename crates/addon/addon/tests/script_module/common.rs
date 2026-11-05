@@ -10,7 +10,7 @@ use std::path::{Path, PathBuf};
 
 use bedrock_addon::diagnostic::{Diagnostic, Diagnostics, Severity};
 use bedrock_addon::families::script::{
-    CatalogModule, CatalogVersion, Discovery, ModuleCatalog, ScriptContext, ScriptDiscovery,
+    CatalogEntry, CatalogModule, Discovery, ModuleCatalog, ScriptContext, ScriptDiscovery,
     ScriptFiles, ScriptModule, ScriptPlugin, ScriptVersion,
 };
 use bedrock_addon::load::LoadContext;
@@ -181,8 +181,7 @@ pub fn bds_catalog() -> ModuleCatalog {
                 ));
             }
             "module.version" => {
-                let mut entry =
-                    CatalogVersion::new(version(table.text("version").expect("version")));
+                let mut entry = CatalogEntry::new(version(table.text("version").expect("version")));
                 entry.hidden = table.flag("hidden").unwrap_or(false);
                 entry.requires = table
                     .list("requires")

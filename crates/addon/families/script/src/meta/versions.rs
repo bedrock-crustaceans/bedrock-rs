@@ -45,6 +45,11 @@ pub enum Channel {
 }
 
 /// One shipped version of a module.
+///
+/// Not a [`SemVersion`]: a `Copy`, `&'static` row of the generated table, which a `SemVersion`'s
+/// owned strings cannot sit in, and which carries more than the version (`channel`, a stub's
+/// `wrapper` and `parent_version`, the `peers` in effect). Its version (`major`, `minor`,
+/// `patch` and `pre`) converts to a `SemVersion`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub struct ModuleVersion {

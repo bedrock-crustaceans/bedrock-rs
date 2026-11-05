@@ -4,7 +4,7 @@
 //! "Build profiles differ").
 
 use bedrock_addon::families::script::{
-    CatalogModule, CatalogVersion, ModuleCatalog, ScriptContext, ScriptDiscovery, ScriptFiles,
+    CatalogEntry, CatalogModule, ModuleCatalog, ScriptContext, ScriptDiscovery, ScriptFiles,
     ScriptModule, ScriptVersion,
 };
 use bedrock_addon::load::LoadContext;
@@ -23,7 +23,7 @@ const DEPENDENCIES: usize = 5_000;
 fn chain(cycle: bool) -> ModuleCatalog {
     let mut catalog = ModuleCatalog::new();
     for i in 0..CHAIN {
-        let mut version = CatalogVersion::new(ScriptVersion::new(1, u16::MAX, 0));
+        let mut version = CatalogEntry::new(ScriptVersion::new(1, u16::MAX, 0));
         let next = if i + 1 < CHAIN {
             Some(i + 1)
         } else {

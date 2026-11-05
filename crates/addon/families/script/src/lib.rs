@@ -16,7 +16,7 @@ pub use module::native_module_of;
 #[doc(hidden)]
 pub use module::starts_a_plugin;
 pub use module::{
-    CatalogModule, CatalogVersion, Discovery, ModuleCatalog, NativeDependency, ResolvedDependency,
+    CatalogEntry, CatalogModule, Discovery, ModuleCatalog, NativeDependency, ResolvedDependency,
     ScriptContext, ScriptDiscovery, ScriptFiles, ScriptModule, ScriptPlugin, ScriptRuntime,
     ScriptTarget, ScriptVersion, SkippedModule, UuidDependency,
 };

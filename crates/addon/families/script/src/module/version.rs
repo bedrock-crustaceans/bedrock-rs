@@ -12,6 +12,12 @@ use bedrock_addon_core::version::SemVersion;
 /// below the one without, then the tags identifier by identifier (split at `.`; two numeric
 /// identifiers by value, a numeric one below any other, otherwise bytewise, and the tag with
 /// fewer identifiers first). Two versions are equal when the numbers and the tag's bytes are.
+///
+/// Not a [`SemVersion`]: two numeric identifiers compare by value at any length
+/// (`1.0.0-rc.100000000000000000000` is above `1.0.0-rc.99999999999999999999`, which
+/// `SemVersion`, reading an identifier as a `u64`, orders bytewise), equality and hashing go by
+/// the tag's bytes, [`satisfies`](Self::satisfies) is the engine's rule rather than
+/// `SemVersion`'s, and there is no build metadata or any-version.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct ScriptVersion {
     /// Major.

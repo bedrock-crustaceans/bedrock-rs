@@ -13,7 +13,7 @@ use bedrock_addon::families::script::config::{
     VARIABLES_FILE,
 };
 use bedrock_addon::families::script::{
-    CatalogModule, CatalogVersion, ModuleCatalog, ScriptContext, ScriptDiscovery, ScriptFiles,
+    CatalogEntry, CatalogModule, ModuleCatalog, ScriptContext, ScriptDiscovery, ScriptFiles,
     ScriptModule, ScriptPlugin, ScriptVersion,
 };
 use bedrock_addon::load::LoadContext;
@@ -134,7 +134,7 @@ pub fn plugin(
         catalog.insert(
             module_name,
             CatalogModule {
-                versions: vec![CatalogVersion::new(ScriptVersion::new(1, 0, 0))],
+                versions: vec![CatalogEntry::new(ScriptVersion::new(1, 0, 0))],
                 ..CatalogModule::default()
             },
         );

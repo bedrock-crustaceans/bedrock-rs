@@ -19,7 +19,7 @@ mod resolve;
 mod tests;
 mod version;
 
-pub use catalog::{CatalogModule, CatalogVersion, ModuleCatalog};
+pub use catalog::{CatalogEntry, CatalogModule, ModuleCatalog};
 pub use discover::{
     Discovery, ResolvedDependency, ScriptContext, ScriptDiscovery, ScriptFiles, ScriptModuleRef,
     ScriptPlugin, ScriptRuntime,

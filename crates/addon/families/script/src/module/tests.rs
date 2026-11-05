@@ -85,6 +85,19 @@ fn numeric_identifiers_compare_by_value_and_sort_below_others_deviation() {
     assert!(v("1.0.0-Beta") < v("1.0.0-beta"));
 }
 
+/// The type's doc example: a numeric identifier too long for a `u64` still orders by value,
+/// where `SemVersion` orders it bytewise.
+#[test]
+fn a_numeric_identifier_beyond_u64_orders_by_value_unlike_sem_version() {
+    let (small, large) = (
+        "1.0.0-rc.99999999999999999999",
+        "1.0.0-rc.100000000000000000000",
+    );
+    assert!(v(small) < v(large));
+    let sem = |text: &str| SemVersion::parse(text).expect("a version");
+    assert!(sem(small) > sem(large));
+}
+
 /// A module version of a manifest is read as a strict semantic version
 /// (the relaxed reader of format 3 and the legacy reader of formats 0 to 2 both end in it),
 /// whose pattern refuses a numeric pre-release identifier with a leading zero, so `1.0.0-01`
@@ -564,7 +577,7 @@ use bedrock_addon_core::pack_identity::PackPath;
 use uuid::Uuid;
 
 use super::{
-    CatalogModule, CatalogVersion, ModuleCatalog, NativeDependency, ScriptContext, ScriptDiscovery,
+    CatalogEntry, CatalogModule, ModuleCatalog, NativeDependency, ScriptContext, ScriptDiscovery,
     ScriptFiles, ScriptModule, ScriptTarget,
 };
 use bedrock_addon_core::manifest::dependency_texts;
@@ -685,7 +698,7 @@ fn one_module_catalog(name: &str, versions: &[ScriptVersion]) -> ModuleCatalog {
         CatalogModule {
             uuid: Some(Uuid::from_u128(2)),
             bindings: None,
-            versions: versions.iter().cloned().map(CatalogVersion::new).collect(),
+            versions: versions.iter().cloned().map(CatalogEntry::new).collect(),
         },
     );
     catalog
@@ -752,7 +765,7 @@ fn discovering_many_rejected_dependencies_is_linear() {
 fn chain_catalog(n: usize, cycle: bool) -> ModuleCatalog {
     let mut catalog = ModuleCatalog::new();
     for i in 0..n {
-        let mut version = CatalogVersion::new(ScriptVersion::new(1, 0, 0));
+        let mut version = CatalogEntry::new(ScriptVersion::new(1, 0, 0));
         if i + 1 < n {
             version.requires = vec![(format!("@chain/m{}", i + 1), ScriptVersion::new(1, 0, 0))];
         } else if cycle {

@@ -31,13 +31,15 @@ pub struct CatalogModule {
     /// `@minecraft/server-ui`): the name vanilla prints for what this module requires. `None`
     /// for a module that is its own bindings.
     pub bindings: Option<String>,
-    /// The versions served. [`ModuleCatalog::insert`] sorts them ascending.
-    pub versions: Vec<CatalogVersion>,
+    /// The versions served, one [`CatalogEntry`] each. [`ModuleCatalog::insert`] sorts them
+    /// ascending.
+    pub versions: Vec<CatalogEntry>,
 }
 
-/// One version of a [`CatalogModule`].
+/// One version of a [`CatalogModule`] as the catalog serves it: the version, whether it is
+/// listed, and what it requires.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct CatalogVersion {
+pub struct CatalogEntry {
     /// The version.
     pub version: ScriptVersion,
     /// Served but left out of vanilla's `Available versions:` list (the `-internal`
@@ -47,7 +49,7 @@ pub struct CatalogVersion {
     pub requires: Vec<(String, ScriptVersion)>,
 }
 
-impl CatalogVersion {
+impl CatalogEntry {
     /// A listed version that requires nothing.
     pub fn new(version: ScriptVersion) -> Self {
         Self {
@@ -103,7 +105,7 @@ impl ModuleCatalog {
                 meta::ModuleShape::Stub { parent } => Some(parent),
                 _ => None,
             };
-            let mut versions: Vec<CatalogVersion> = entry
+            let mut versions: Vec<CatalogEntry> = entry
                 .versions
                 .iter()
                 .map(|version| {
@@ -114,7 +116,7 @@ impl ModuleCatalog {
                         .zip(version.parent_version)
                         .and_then(|(parent, index)| parent.versions.get(usize::from(index)))
                         .map_or(version.peers, |bound| bound.peers);
-                    CatalogVersion {
+                    CatalogEntry {
                         version: module_version(version),
                         hidden: false,
                         requires: peers.iter().filter_map(requirement).collect(),
@@ -128,7 +130,7 @@ impl ModuleCatalog {
                 if let Some(version) = ScriptVersion::parse(text) {
                     // `Available versions:` leaves the internal version out.
                     let hidden = version.is_internal();
-                    versions.push(CatalogVersion {
+                    versions.push(CatalogEntry {
                         version,
                         hidden,
                         requires: Vec::new(),
@@ -138,7 +140,7 @@ impl ModuleCatalog {
             if UUID_MODULES.contains(&entry.name) {
                 // The dedicated server lists 0.1.0 of `@minecraft/server` (the version
                 // imported as `mojang-minecraft`) and ships `server-ui-0.1.0.js` beside it.
-                versions.push(CatalogVersion::new(ScriptVersion::new(0, 1, 0)));
+                versions.push(CatalogEntry::new(ScriptVersion::new(0, 1, 0)));
             }
             catalog.insert(
                 entry.name,
@@ -151,7 +153,7 @@ impl ModuleCatalog {
         }
         // The editor library ships `minecraft-server-editor.0.1.0-beta.js` and
         // `…0.1.0-internal.js`, which is where the module's name and versions come from.
-        let mut internal = CatalogVersion::new(ScriptVersion::with_pre(0, 1, 0, "internal"));
+        let mut internal = CatalogEntry::new(ScriptVersion::with_pre(0, 1, 0, "internal"));
         internal.hidden = true;
         catalog.insert(
             EDITOR,
@@ -159,7 +161,7 @@ impl ModuleCatalog {
                 uuid: None,
                 bindings: None,
                 versions: vec![
-                    CatalogVersion::new(ScriptVersion::with_pre(0, 1, 0, "beta")),
+                    CatalogEntry::new(ScriptVersion::with_pre(0, 1, 0, "beta")),
                     internal,
                 ],
             },
@@ -210,7 +212,7 @@ impl CatalogModule {
     }
 
     /// The version equal to `version`.
-    pub(super) fn version(&self, version: &ScriptVersion) -> Option<&CatalogVersion> {
+    pub(super) fn version(&self, version: &ScriptVersion) -> Option<&CatalogEntry> {
         self.versions.iter().find(|v| v.version == *version)
     }
 }

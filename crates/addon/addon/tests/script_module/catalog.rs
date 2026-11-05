@@ -3,7 +3,7 @@
 
 use bedrock_addon::diagnostic::Severity;
 use bedrock_addon::families::script::{
-    CatalogModule, CatalogVersion, Discovery, ModuleCatalog, ScriptContext, ScriptDiscovery,
+    CatalogEntry, CatalogModule, Discovery, ModuleCatalog, ScriptContext, ScriptDiscovery,
     ScriptFiles, ScriptModule, ScriptVersion, meta,
 };
 use bedrock_addon::storage::PackPath;
@@ -102,7 +102,7 @@ fn a_catalog_sorts_its_versions_and_finds_modules_by_name_and_uuid() {
             uuid: Some(uuid),
             bindings: None,
             versions: ["2.0.0", "1.0.0", "2.1.0-beta", "1.5.0"]
-                .map(|text| CatalogVersion::new(v(text)))
+                .map(|text| CatalogEntry::new(v(text)))
                 .to_vec(),
         },
     );
@@ -124,7 +124,7 @@ fn a_catalog_sorts_its_versions_and_finds_modules_by_name_and_uuid() {
         CatalogModule {
             uuid: Some(Uuid::from_u128(9)),
             bindings: None,
-            versions: vec![CatalogVersion::new(v("3.0.0"))],
+            versions: vec![CatalogEntry::new(v("3.0.0"))],
         },
     );
     assert_eq!(versions(&catalog, "@demo/module", false), ["3.0.0"]);
@@ -148,7 +148,7 @@ fn a_catalog_module_starts_from_its_default() {
     catalog.insert(
         "@demo/module",
         CatalogModule {
-            versions: vec![CatalogVersion::new(v("1.0.0"))],
+            versions: vec![CatalogEntry::new(v("1.0.0"))],
             ..CatalogModule::default()
         },
     );
@@ -175,7 +175,7 @@ fn an_empty_catalog_knows_no_module() {
 fn a_requirement_on_a_module_the_catalog_lacks_fails_the_context() {
     // Vanilla: "module [..] depends on unknown module [..]" at context creation.
     let mut catalog = ModuleCatalog::new();
-    let mut version = CatalogVersion::new(v("1.0.0"));
+    let mut version = CatalogEntry::new(v("1.0.0"));
     version.requires = vec![("@demo/absent".to_owned(), v("1.0.0"))];
     catalog.insert(
         "@demo/module",
