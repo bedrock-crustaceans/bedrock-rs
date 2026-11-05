@@ -13,7 +13,6 @@ use bedrock_addon::families::block::component::{
 };
 use bedrock_addon::families::block::{Block, Permutation, StateValues};
 use bedrock_addon::id::BlockId;
-use bedrock_addon::json::{StrictInt, StrictString};
 use bedrock_addon::load::{LoadContext, LoadOptions, StackOptions};
 use bedrock_addon::manifest::Manifest;
 use bedrock_addon::pack::{PackOrigin, PackType, PackWriter, WorldPacks, WriteError};
@@ -39,13 +38,13 @@ fn ruby_lamp() -> Block {
     materials.0.insert(
         "*".to_owned(),
         MaterialInstanceEntry::Instance(MaterialInstance {
-            texture: Some(StrictString("ruby_lamp".to_owned())),
+            texture: Some("ruby_lamp".to_owned()),
             ..MaterialInstance::default()
         }),
     );
     ruby.components.insert(materials);
     ruby.permutations
-        .push(Permutation::when("q.block_state('demo:lit')").with(LightEmission(StrictInt(15))));
+        .push(Permutation::when("q.block_state('demo:lit')").with(LightEmission(15)));
     ruby
 }
 

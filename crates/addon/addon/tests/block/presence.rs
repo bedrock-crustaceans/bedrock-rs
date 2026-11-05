@@ -270,7 +270,7 @@ fn an_absent_member_reads_as_its_default_through_the_accessor() {
         0.0
     );
     assert_eq!(
-        components.get::<Leashable>().unwrap().offset().map(|v| v.0),
+        components.get::<Leashable>().unwrap().offset(),
         [0.0, 0.25, 0.0]
     );
     assert_eq!(components.get::<CraftingTable>().unwrap().table_name(), "");

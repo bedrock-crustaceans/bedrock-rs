@@ -7,11 +7,12 @@ use super::read::CEREAL;
 use super::states::implied_states;
 use super::{StateValues, Traits};
 use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
-use bedrock_addon_core::document::{ComponentMap, Extra};
+use bedrock_addon_core::document::ComponentMap;
 use bedrock_addon_core::id::BlockId;
 use bedrock_addon_core::json::{StrictBool, StrictFloat, StrictInt, StrictString};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::molang::{Molang, MolangSource, MolangVersion};
+use bedrock_addon_core::schema;
 use bedrock_addon_core::shared::MenuCategory;
 use bedrock_addon_core::version::FormatVersion;
 
@@ -55,12 +56,12 @@ pub struct Block {
 
 /// `minecraft:block/description`.
 #[derive(Clone, Debug, PartialEq, facet::Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct Description {
     /// The block's identifier, `namespace:name`, never in the `minecraft` namespace outside the
     /// base game (JSON `identifier`).
     pub identifier: BlockId,
     /// Where the block appears in the creative menu (JSON `menu_category`).
-    #[facet(default)]
     pub menu_category: Option<MenuCategory>,
     /// The block's own states and their values (JSON `states`).
     #[facet(default, skip_serializing_if = IndexMap::is_empty)]
@@ -70,40 +71,27 @@ pub struct Description {
     pub traits: Traits,
     /// Engine data of base-game blocks (JSON `internal_vanilla_data`; base-game packs only,
     /// an unknown member elsewhere).
-    #[facet(default)]
     pub internal_vanilla_data: Option<VanillaBlockData>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// `description.internal_vanilla_data`: what the engine needs of a base-game block.
 #[derive(Clone, Debug, Default, PartialEq, facet::Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct VanillaBlockData {
     /// The legacy numeric block id (JSON `block_id`).
-    #[facet(default)]
     pub block_id: Option<StrictInt<i32>>,
     /// The block material (JSON `material`).
-    #[facet(default)]
     pub material: Option<MaterialType>,
     /// The archetype, one entry keyed by its name, as written (JSON `block_archetype`).
-    #[facet(default)]
     pub block_archetype: Option<IndexMap<String, bedrock_addon_core::json::Value>>,
     /// JSON `translucency`.
-    #[facet(default)]
     pub translucency: Option<StrictFloat<f32>>,
     /// JSON `can_dampen_vibrations`.
-    #[facet(default)]
     pub can_dampen_vibrations: Option<StrictBool>,
     /// JSON `can_occlude_vibrations`.
-    #[facet(default)]
     pub can_occlude_vibrations: Option<StrictBool>,
     /// JSON `requires_correct_tool_for_drops` (engine 1.26.50).
-    #[facet(default)]
     pub requires_correct_tool_for_drops: Option<StrictBool>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 impl VanillaBlockData {
@@ -228,7 +216,6 @@ impl Description {
             states: IndexMap::new(),
             traits: Traits::default(),
             internal_vanilla_data: None,
-            extra: Extra::default(),
         }
     }
 }

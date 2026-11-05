@@ -37,7 +37,7 @@ pub use legacy::{
 #[allow(unused_imports, reason = "the link pass reads it")]
 #[doc(hidden)]
 pub use read::loaded_identifier;
-pub use types::{Beta, Item, ItemDescription, MenuCategoryPresence};
+pub use types::{BETA, Beta, Item, ItemDescription, MenuCategoryPresence, ModernItem};
 
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, Phase, VanillaText};
 use bedrock_addon_core::document::{

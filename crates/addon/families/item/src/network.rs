@@ -4,7 +4,6 @@ use bedrock_addon_core::document::ComponentRef;
 
 use super::Item;
 use super::component::ItemComponent;
-use super::history::{from_component_map, write_component};
 use super::legacy::ItemFormat;
 use bedrock_addon_core::json::Value;
 
@@ -26,15 +25,11 @@ impl Item {
         {
             properties.insert("menu_category".into(), to_nbt(&menu));
         }
-        for (name, component) in from_component_map(&self.components) {
-            let typed = self
-                .components
-                .iter()
-                .any(|e| matches!(e, ComponentRef::Typed { name: n, .. } if n == name));
-            if !typed {
+        for entry in self.components.iter() {
+            let ComponentRef::Typed { name, value, .. } = entry else {
                 continue;
-            }
-            let Ok(json) = write_component(&component) else {
+            };
+            let Ok(json) = value.write_component() else {
                 continue;
             };
             if name == "minecraft:icon" {
@@ -42,7 +37,7 @@ impl Item {
                 properties.insert("minecraft:icon".into(), to_nbt(&json));
                 continue;
             }
-            components.insert(name.as_str().into(), to_nbt(&json));
+            components.insert(name.into(), to_nbt(&json));
         }
         if let Some(ItemComponent::MaxStackSize(size)) =
             self.components.iter().find_map(|e| match e {

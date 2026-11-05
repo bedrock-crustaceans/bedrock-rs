@@ -417,7 +417,6 @@ impl Upgrade for v1_16_100::Item {
                 Some(Component::Durability(Durability {
                     max_durability: max,
                     damage_chance: old.damage_chance,
-                    extra: old.extra,
                 }))
             }
             other => Some(other),
@@ -425,7 +424,6 @@ impl Upgrade for v1_16_100::Item {
         replace(&mut doc.components, "minecraft:repairable", |c| match c {
             Component::LegacyRepairable(old) => {
                 let mut repairable = Repairable {
-                    extra: old.extra,
                     ..Repairable::default()
                 };
                 if is_name_list(old.repair_items.as_ref()) {
@@ -607,7 +605,6 @@ impl Upgrade for v1_20_20::Item {
                     saturation_modifier: saturation,
                     can_always_eat: old.can_always_eat,
                     using_converts_to: old.using_converts_to,
-                    extra: old.extra,
                 }))
             }
             other => Some(other),
@@ -713,13 +710,11 @@ fn digger_to_1_20_50(components: &mut Components, cx: &mut UpgradeCx<'_>) {
                             block: speed.block,
                             speed: speed.speed,
                             deprecated_on_dig: speed.on_dig,
-                            extra: speed.extra,
                         }
                     })
                     .collect(),
                 use_efficiency: old.use_efficiency,
                 deprecated_on_dig: old.on_dig,
-                extra: old.extra,
             }))
         }
         other => Some(other),
@@ -747,7 +742,7 @@ impl Upgrade for v1_20_40::Item {
     fn upgrade(self, cx: &mut UpgradeCx<'_>) -> Self::Next {
         let mut doc: v1_20_50::Item = carry(self);
         let duration = match doc.components.get("minecraft:use_duration") {
-            Some(Component::UseDuration(c)) => Some((c.value, c.extra.clone())),
+            Some(Component::UseDuration(c)) => Some(c.value),
             _ => None,
         };
         let chargeable = match doc.components.shift_remove("minecraft:chargeable") {
@@ -774,14 +769,11 @@ impl Upgrade for v1_20_40::Item {
         if duration.is_some() || movement.is_some() {
             const MODIFIERS: &str = "minecraft:use_modifiers";
             let duration_moved = duration.is_some();
-            let (seconds, extra) = duration.unwrap_or_default();
+            let seconds = duration.unwrap_or_default();
             // a use_modifiers built only by these moves: use_duration 0.0, emit_vibrations
             // true (the type's defaults; not verified against the game)
             let mut modifiers = UseModifiers::new(seconds);
             modifiers.movement_modifier = movement;
-            // What the legacy component held beside its value goes with the value:
-            // unknown there, unknown here, and kept.
-            modifiers.extra = extra;
             let entry = Component::UseModifiers(modifiers);
             // the target takes the position of `use_duration` when there was one
             match doc.components.get_index_of("minecraft:use_duration") {
@@ -829,10 +821,7 @@ impl Upgrade for v1_20_40::Item {
             }
             doc.components.insert(
                 "minecraft:tags".to_owned(),
-                Component::Tags(crate::component::Tags {
-                    tags,
-                    extra: bedrock_addon_core::document::Extra::default(),
-                }),
+                Component::Tags(crate::component::Tags { tags }),
             );
         }
         doc
@@ -873,9 +862,7 @@ impl Upgrade for v1_20_50::Item {
                     .take(&member(&["components", "minecraft:icon"]), "textures")
                     .is_some();
                 moved_icon = true;
-                let mut icon = Icon::new(old.texture);
-                icon.extra = old.extra;
-                Some(Component::Icon(icon))
+                Some(Component::Icon(Icon::new(old.texture)))
             }
             other => Some(other),
         });
@@ -1053,7 +1040,6 @@ impl Upgrade for v1_21_50::Item {
                     allow_nested_storage_items: old.allow_nested_storage_items,
                     banned_items: old.banned_items,
                     allowed_items: old.allowed_items,
-                    extra: old.extra,
                 }))
             }
             other => Some(other),
@@ -1075,14 +1061,12 @@ impl Upgrade for v1_21_50::Item {
                 "minecraft:storage_weight_limit".to_owned(),
                 Component::StorageWeightLimit(StorageWeightLimit {
                     max_weight_limit: limit,
-                    ..StorageWeightLimit::default()
                 }),
             );
             doc.components.insert(
                 "minecraft:storage_weight_modifier".to_owned(),
                 Component::StorageWeightModifier(StorageWeightModifier {
                     weight_in_storage_item: weight,
-                    ..StorageWeightModifier::default()
                 }),
             );
         }
@@ -1383,13 +1367,7 @@ fn canonical_sound(name: &mut SoundEventName, cx: &mut UpgradeCx<'_>, at: JsonPa
 impl Upgrade for Item {
     type Next = Beta;
     fn upgrade(self, _: &mut UpgradeCx<'_>) -> Beta {
-        Beta {
-            description: self.description,
-            components: self.components,
-            deprecated: self.deprecated,
-            events: self.events,
-            legacy: self.legacy,
-        }
+        self.into_format()
     }
 }
 

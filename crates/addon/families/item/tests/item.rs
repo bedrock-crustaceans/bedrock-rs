@@ -6,6 +6,9 @@
 #[path = "item/common.rs"]
 mod common;
 
+#[path = "item/component_values.rs"]
+mod component_values;
+
 #[path = "item/upgrade_steps.rs"]
 mod upgrade_steps;
 

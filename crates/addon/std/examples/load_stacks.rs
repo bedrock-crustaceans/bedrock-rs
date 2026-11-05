@@ -130,7 +130,7 @@ fn register_blocks(stacks: &StackSet, registry: &mut Vec<BlockDefinition>, molan
                 Molang::Bool(value) => PermutationCondition::Constant(*value),
                 _ => PermutationCondition::Constant(false), // `Molang` is non_exhaustive
             };
-            let light = permutation.components.get::<LightEmission>().map(|l| l.0.0);
+            let light = permutation.components.get::<LightEmission>().map(|l| l.0);
             permutations.push((condition, light));
         }
         registry.push(BlockDefinition {

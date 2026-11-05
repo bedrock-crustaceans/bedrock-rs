@@ -4,7 +4,7 @@
 use nbtx::{Compound, Value as Nbt, ValueList};
 
 use super::Block;
-use super::component::{BlockComponent, write_component};
+use super::component::BlockComponent;
 use bedrock_addon_core::document::{ComponentMap, ComponentRef};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::molang::{Molang, MolangSource, MolangVersion, RawVersion};
@@ -121,7 +121,7 @@ fn components(map: &ComponentMap<BlockComponent>) -> Nbt {
     let mut compound = Compound::default();
     for entry in map.iter() {
         let (name, json) = match entry {
-            ComponentRef::Typed { name, value, .. } => match write_component(value) {
+            ComponentRef::Typed { name, value, .. } => match value.write_component() {
                 Ok(json) => (name.to_owned(), json),
                 Err(_) => continue,
             },

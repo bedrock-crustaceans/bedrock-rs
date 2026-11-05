@@ -18,8 +18,8 @@ use crate::component::{
     UseAnimation, UseModifiers, Wearable,
 };
 use crate::component::{ValueComponent, visit_block_descriptor, visit_item_descriptor};
-use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::json::Value;
+use bedrock_addon_core::schema::{self, Schema};
 
 /// One component of an older item format: a component of the newest format whose shape it
 /// already had, an old shape, a custom component or a key the format does not bind.
@@ -101,53 +101,39 @@ pub enum Component {
 
 /// `minecraft:armor` (up to 1.20.0): a marker vanilla's component binds no member of; the
 /// 1.20.20 upgrade reads `protection` into `minecraft:wearable`.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct Armor {
     /// The armour points (JSON `protection`).
-    #[facet(default)]
     pub protection: Option<i32>,
     /// The armour texture (JSON `texture_type`); dropped by the upgrade.
-    #[facet(default)]
     pub texture_type: Option<String>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// `minecraft:chargeable` (up to 1.20.40).
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct Chargeable {
     /// The movement speed factor while charging (JSON `movement_modifier`).
-    #[facet(default)]
     pub movement_modifier: Option<f32>,
     /// The trigger when charged (JSON `on_complete`).
-    #[facet(default)]
     pub on_complete: Option<EventTrigger>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// `minecraft:on_use` (up to 1.20.30).
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct OnUse {
     /// The trigger (JSON `on_use`).
-    #[facet(default)]
     pub on_use: Option<EventTrigger>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// `minecraft:on_use_on` (up to 1.20.30).
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct OnUseOn {
     /// The trigger (JSON `on_use_on`).
-    #[facet(default)]
     pub on_use_on: Option<EventTrigger>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// `minecraft:render_offsets` (up to 1.20.30): hand → person → `{position, rotation, scale}`,
@@ -159,151 +145,115 @@ pub struct RenderOffsets {
 }
 
 /// `minecraft:weapon` (up to 1.20.30).
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct Weapon {
     /// The trigger on hurting an entity (JSON `on_hurt_entity`).
-    #[facet(default)]
     pub on_hurt_entity: Option<EventTrigger>,
     /// The trigger on hitting an entity without hurting it (JSON `on_not_hurt_entity`).
-    #[facet(default)]
     pub on_not_hurt_entity: Option<EventTrigger>,
     /// The trigger on hitting a block (JSON `on_hit_block`).
-    #[facet(default)]
     pub on_hit_block: Option<EventTrigger>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// `minecraft:use_duration` (up to 1.20.40): seconds, `{"value": n}` or `n`.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct UseDuration {
     /// The use duration in seconds (JSON `value`).
-    #[facet(default)]
+    #[facet(default, schema::min = 0.0)]
     pub value: f32,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 impl ValueComponent for UseDuration {
     type Scalar = f32;
     fn from_scalar(value: f32) -> Self {
-        Self {
-            value,
-            extra: Extra::default(),
-        }
+        Self { value }
     }
 }
 
 /// `minecraft:food` up to 1.20.20: an `on_consume` trigger, and (below 1.18.0) a named
 /// `saturation_modifier`.
 #[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct LegacyFoodComponent {
     /// JSON `nutrition`.
-    #[facet(default)]
     pub nutrition: Option<i32>,
     /// JSON `saturation_modifier`: a number, or a name below 1.18.0.
-    #[facet(default)]
     pub saturation_modifier: Option<Value>,
     /// JSON `can_always_eat`.
-    #[facet(default)]
     pub can_always_eat: Option<bool>,
     /// JSON `using_converts_to`.
-    #[facet(default)]
     pub using_converts_to: Option<ItemDescriptor>,
     /// JSON `on_consume`.
-    #[facet(default)]
     pub on_consume: Option<EventTrigger>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// `minecraft:durability` of 1.16.100: `max_damage` before the 1.18 rename.
 #[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct LegacyDurability {
     /// JSON `max_damage` (below 1.18.0).
-    #[facet(default)]
     pub max_damage: Option<i32>,
     /// JSON `max_durability`.
-    #[facet(default)]
     pub max_durability: Option<i32>,
     /// JSON `damage_chance`.
-    #[facet(default)]
     pub damage_chance: Option<IntRange>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// `minecraft:repairable` of 1.16.100: `repair_items` may be a list of item names (removed by
 /// the 1.18 fixer), as written.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct LegacyRepairable {
     /// JSON `repair_items`, as written.
-    #[facet(default)]
     pub repair_items: Option<Value>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// `minecraft:digger` up to 1.20.40: `on_dig` triggers.
 #[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct LegacyDigger {
     /// JSON `destroy_speeds`.
     #[facet(default, skip_serializing_if = Vec::is_empty)]
     pub destroy_speeds: Vec<LegacyDestroySpeed>,
     /// JSON `use_efficiency`.
-    #[facet(default)]
     pub use_efficiency: Option<bool>,
     /// JSON `on_dig`.
-    #[facet(default)]
     pub on_dig: Option<EventTrigger>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// One entry of a [`LegacyDigger`].
 #[derive(Clone, Debug, PartialEq, Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct LegacyDestroySpeed {
     /// JSON `block` (required).
     pub block: BlockDescriptor,
     /// JSON `speed` (required).
     pub speed: i32,
     /// JSON `on_dig`.
-    #[facet(default)]
     pub on_dig: Option<EventTrigger>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// `minecraft:icon` up to 1.20.50: one texture key, `{"texture": key}` or `key`.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct LegacyIcon {
     /// JSON `texture`.
     #[facet(default)]
     pub texture: String,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 impl ValueComponent for LegacyIcon {
     type Scalar = String;
     fn from_scalar(texture: String) -> Self {
-        Self {
-            texture,
-            extra: Extra::default(),
-        }
+        Self { texture }
     }
 }
 
 /// `minecraft:storage_item` of 1.21.30–1.21.50: the weight members before the 1.21.60 split.
 #[derive(Clone, Debug, PartialEq, Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct LegacyStorageItem {
     /// JSON `max_slots`.
     #[facet(default = 64)]
@@ -323,9 +273,6 @@ pub struct LegacyStorageItem {
     /// JSON `weight_in_storage_item` (default 4).
     #[facet(default = 4)]
     pub weight_in_storage_item: i32,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// `minecraft:custom_components` of 1.20.80–1.21.50: a list of names.

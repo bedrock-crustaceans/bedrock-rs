@@ -1,7 +1,7 @@
 //! `minecraft:collision_box` of the 1.26.60 document: `true` / `false` or up to 16
 //! boxes, each by `origin`/`size` (the 1.26.20 reading) or by `min`/`max`.
 
-use bedrock_addon_core::json::{StrictFloat, Value};
+use bedrock_addon_core::json::Value;
 use facet::Facet;
 use facet_json::RawJson;
 
@@ -10,7 +10,8 @@ use super::types::{Vec3, vec3};
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
 };
-use bedrock_addon_core::document::{ComponentMap, Extra};
+use bedrock_addon_core::document::ComponentMap;
+use bedrock_addon_core::schema;
 use bedrock_addon_core::version::{FormatVersion, known};
 
 /// `minecraft:collision_box`: what entities collide with.
@@ -48,22 +49,16 @@ impl CollisionBox {
 /// document below 1.26.60 is converted to `min`/`max` by the upgrade
 /// ([`CollisionBoundingBox::from_origin_size`]).
 #[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct CollisionBoundingBox {
     /// The corner nearest `[-8, 0, -8]` (JSON `origin`); x and z in `-8..=8`, y in `0..=24`.
-    #[facet(default)]
     pub origin: Option<Vec3>,
     /// The extent (JSON `size`); x and z in `-16..=16`, y in `-24..=24`.
-    #[facet(default)]
     pub size: Option<Vec3>,
     /// The minimum corner (JSON `min`, 1.26.60); x and z in `0..=16`, y in `0..=24`.
-    #[facet(default)]
     pub min: Option<Vec3>,
     /// The maximum corner (JSON `max`, 1.26.60); x and z in `0..=16`, y in `0..=24`.
-    #[facet(default)]
     pub max: Option<Vec3>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 impl CollisionBoundingBox {
@@ -89,8 +84,8 @@ impl CollisionBoundingBox {
     pub fn from_origin_size(origin: Vec3, size: Vec3) -> CollisionBoundingBox {
         let (min, max) = legacy_aabb(origin, size);
         CollisionBoundingBox {
-            min: Some(to_vec3(min)),
-            max: Some(to_vec3(max)),
+            min: Some(min),
+            max: Some(max),
             ..CollisionBoundingBox::default()
         }
     }
@@ -102,8 +97,8 @@ impl CollisionBoundingBox {
     pub fn corners(&self) -> ([f32; 3], [f32; 3]) {
         if self.has_min_max() {
             // The game sorts each axis, so a `min` above its `max` is still a box.
-            let a = self.min.map_or([0.0; 3], from_vec3);
-            let b = self.max.map_or([16.0; 3], from_vec3);
+            let a = self.min.unwrap_or([0.0; 3]);
+            let b = self.max.unwrap_or([16.0; 3]);
             (
                 [a[0].min(b[0]), a[1].min(b[1]), a[2].min(b[2])],
                 [a[0].max(b[0]), a[1].max(b[1]), a[2].max(b[2])],
@@ -121,7 +116,7 @@ impl CollisionBoundingBox {
         let (min, max) = self.corners();
         let origin = [8.0 - max[0], min[1], min[2] - 8.0];
         let size = [max[0] - min[0], max[1] - min[1], max[2] - min[2]];
-        (to_vec3(origin), to_vec3(size))
+        (origin, size)
     }
 }
 
@@ -296,7 +291,7 @@ const MIN_MAX_RANGES: [(f32, f32); 3] = [(0.0, 16.0), (0.0, 24.0), (0.0, 16.0)];
 
 /// Whether each axis of a written member is in its range (an absent member is).
 fn in_ranges(value: Option<Vec3>, ranges: [(f32, f32); 3]) -> bool {
-    value.is_none_or(|v| (0..3).all(|axis| (ranges[axis].0..=ranges[axis].1).contains(&v[axis].0)))
+    value.is_none_or(|v| (0..3).all(|axis| (ranges[axis].0..=ranges[axis].1).contains(&v[axis])))
 }
 
 /// Whether the corners lie inside `(0, 0, 0)`–`(16, 24, 16)`.
@@ -309,23 +304,11 @@ fn within((min, max): ([f32; 3], [f32; 3])) -> bool {
 
 /// Converts a legacy `origin`/`size` box to its `min`/`max` corners, as the game's upgrade does.
 fn legacy_aabb(origin: Vec3, size: Vec3) -> ([f32; 3], [f32; 3]) {
-    let origin = from_vec3(origin);
-    let size = from_vec3(size);
     let a = [origin[0] + 8.0, origin[1], origin[2] + 8.0];
     let b = [a[0] + size[0], a[1] + size[1], a[2] + size[2]];
     let lo = [a[0].min(b[0]), a[1].min(b[1]), a[2].min(b[2])];
     let hi = [a[0].max(b[0]), a[1].max(b[1]), a[2].max(b[2])];
     ([16.0 - hi[0], lo[1], lo[2]], [16.0 - lo[0], hi[1], hi[2]])
-}
-
-/// The three floats of a [`Vec3`].
-fn from_vec3(v: Vec3) -> [f32; 3] {
-    [v[0].0, v[1].0, v[2].0]
-}
-
-/// Three floats as a [`Vec3`].
-fn to_vec3(v: [f32; 3]) -> Vec3 {
-    [StrictFloat(v[0]), StrictFloat(v[1]), StrictFloat(v[2])]
 }
 
 #[cfg(test)]

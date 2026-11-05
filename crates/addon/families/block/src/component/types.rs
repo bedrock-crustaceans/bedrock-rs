@@ -1,12 +1,11 @@
 //! Value types several block components share: faces, boxes, colours, tint and render methods.
 
-use bedrock_addon_core::json::{StrictFloat, StrictInt};
 use facet::Facet;
 
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::schema::{self, Schema};
 
 /// Three floats `[x, y, z]`.
-pub type Vec3 = [StrictFloat<f32>; 3];
+pub type Vec3 = [f32; 3];
 
 /// One of the six block faces as the game names them.
 ///
@@ -77,16 +76,12 @@ impl Direction {
 /// values of [`origin()`](Self::origin) and [`size()`](Self::size) for an absent member, so the
 /// default box (both `None`) is the full block.
 #[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct BoundingBox {
     /// The minimum corner (JSON `origin`); each axis in `-8..=8`.
-    #[facet(default)]
     pub origin: Option<Vec3>,
     /// The extent (JSON `size`); each axis in `-16..=16`.
-    #[facet(default)]
     pub size: Option<Vec3>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 impl BoundingBox {
@@ -105,7 +100,7 @@ impl BoundingBox {
 ///
 /// JSON: `none`, `default_foliage`, `birch_foliage`, `evergreen_foliage`, `dry_foliage`,
 /// `grass`, `water`.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Facet)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Facet, Schema)]
 #[facet(rename_all = "snake_case")]
 #[repr(u8)]
 #[non_exhaustive]
@@ -131,7 +126,7 @@ pub enum TintMethod {
 ///
 /// JSON: `double_sided`, `blend`, `blend_to_opaque`, `opaque`, `alpha_test_to_opaque`,
 /// `alpha_test`, `alpha_test_single_sided`, `alpha_test_single_sided_to_opaque`.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Facet)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Facet, Schema)]
 #[facet(rename_all = "snake_case")]
 #[repr(u8)]
 #[non_exhaustive]
@@ -163,19 +158,25 @@ pub enum Color {
     /// A hex string.
     Hex(String),
     /// Three channels.
-    Rgb([StrictInt<u8>; 3]),
+    Rgb([u8; 3]),
 }
 
 /// A float range `{min, max}`.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Facet, Schema)]
 pub struct Bounds {
     /// JSON `min`.
-    pub min: StrictFloat<f32>,
+    pub min: f32,
     /// JSON `max`.
-    pub max: StrictFloat<f32>,
+    pub max: f32,
 }
+
+// The faces and directions keep their own `ALL` arrays (the direction's in the game's order), which
+// the string-enum derive would declare again, and a colour is a hex string or three channels:
+// leaves of the schema walk, with no bound and no Molang.
+bedrock_addon_core::impl_schema_leaf!(Facing, Direction, Color);
+bedrock_addon_core::impl_no_molang!(Facing, Direction, Color);
 
 /// `[x, y, z]` as a [`Vec3`].
 pub const fn vec3(x: f32, y: f32, z: f32) -> Vec3 {
-    [StrictFloat(x), StrictFloat(y), StrictFloat(z)]
+    [x, y, z]
 }

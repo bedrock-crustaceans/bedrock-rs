@@ -8,7 +8,7 @@ use facet::Facet;
 
 use super::{ItemComponent, typed};
 use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath};
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::schema::{self, Schema};
 
 /// A component that also reads its bare value.
 pub(crate) trait ValueComponent: for<'a> Facet<'a> {
@@ -77,27 +77,26 @@ pub(crate) fn parse_value<T: ValueComponent + Into<ItemComponent>>(
     }
 }
 
-/// Declares a one-value component.
+/// Declares a one-value component: its value, its default (`= x`) and the bounds of the value
+/// (`[schema::min = x]`), and its bare form.
 macro_rules! value_component {
     (
         $(#[$meta:meta])*
-        $name:ident($ty:ty) $(= $default:literal)?;
+        $name:ident($ty:ty) $(= $default:literal)? $([$($bound:tt)+])?;
     ) => {
         $(#[$meta])*
-        #[derive(Clone, Debug, Default, PartialEq, ::facet::Facet)]
+        #[derive(Clone, Debug, PartialEq, ::facet::Facet, ::bedrock_addon_core::schema::Schema)]
+        #[facet(schema::unknown = "keep")]
         pub struct $name {
             /// The value (JSON `value`, or the bare value).
-            #[facet(default $(= $default)?)]
+            #[facet(default $(= $default)? $(, $($bound)+)?)]
             pub value: $ty,
-            /// Unknown members.
-            #[facet(skip, rename = "\u{0}extra")]
-            pub extra: ::bedrock_addon_core::document::Extra,
         }
 
         impl $name {
             /// The component holding `value`.
             pub fn new(value: $ty) -> Self {
-                Self { value, extra: ::bedrock_addon_core::document::Extra::default() }
+                Self { value }
             }
         }
 
@@ -139,14 +138,12 @@ value_component! {
 
 /// `minecraft:fire_resistant`: the dropped item is immune to fire and lava (JSON `{"value":
 /// bool}` only; no bare form is bound).
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct FireResistant {
     /// Whether it resists (JSON `value`).
     #[facet(default)]
     pub value: bool,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// `minecraft:max_stack_size`: how many items fit in one slot, 1–64.
@@ -154,29 +151,18 @@ pub struct FireResistant {
 /// JSON `{"value": n}` or `n`. An object without `value` reads as 1: vanilla's writer leaves
 /// out a default, and writes a stack size of 1 as `{}`.
 // (inferred) `max_stack_size`
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct MaxStackSize {
     /// The stack size (JSON `value`).
-    #[facet(default = 1)]
+    #[facet(default = 1, schema::min = 1, schema::max = 64)]
     pub value: i32,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 impl MaxStackSize {
     /// A stack size of `value`.
     pub fn new(value: i32) -> Self {
-        Self {
-            value,
-            extra: Extra::default(),
-        }
-    }
-}
-
-impl Default for MaxStackSize {
-    fn default() -> Self {
-        Self::new(1)
+        Self { value }
     }
 }
 

@@ -48,10 +48,10 @@ use bedrock_addon_core::document::{ComponentMap, ComponentRef, CustomComponent};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::load::{Experiment, LoadContext, LoadRequirement};
 use bedrock_addon_core::molang::{
-    BLOCK_STATE_QUERIES, EmptyRule, MolangFieldSpec, MolangVersion, MolangVersionSource,
-    MolangVisitor, OpsRule, ReaderKind,
+    BLOCK_STATE_QUERIES, EmptyRule, MolangFieldSpec, MolangVersion, MolangVersionSource, OpsRule,
+    ReaderKind,
 };
-use bedrock_addon_core::versioning::{ConvertMode, parse_component, write_payload};
+use bedrock_addon_core::versioning::{ConvertMode, parse_component};
 
 /// Vanilla's legacy creator features: the ten allow-listed packs.
 const LCF: LoadRequirement = LoadRequirement::LegacyCreatorFeatures;
@@ -64,7 +64,7 @@ const UCF: LoadRequirement = LoadRequirement::Experiment(Experiment::UpcomingCre
 /// One component of a block: the closed set of `minecraft:` components the 1.26.20 document
 /// declares, plus custom (`ns:name`) and unknown keys.
 #[derive(Clone, Debug, PartialEq, Components)]
-#[component(family = BlockFamily, custom = Custom, unknown = Unknown)]
+#[component(family = BlockFamily, custom = Custom, unknown = Unknown, write)]
 #[non_exhaustive]
 pub enum BlockComponent {
     /// `minecraft:block_entity`. No member of a legacy document; its `container` and
@@ -76,7 +76,7 @@ pub enum BlockComponent {
     #[component(name = "minecraft:chest_obstruction", released = "1.26.20", requires = [UCF], parse = parse_component::<ChestObstruction, BlockComponent>)]
     ChestObstruction(ChestObstruction),
     /// `minecraft:collision_box`.
-    #[component(name = "minecraft:collision_box", released = "1.19.50", requires = [LCF], parse = parse_collision_box)]
+    #[component(name = "minecraft:collision_box", shorthand = scalar, released = "1.19.50", requires = [LCF], parse = parse_collision_box)]
     CollisionBox(CollisionBox),
     /// `minecraft:connection_rule`.
     #[component(name = "minecraft:connection_rule", released = "1.26.0", requires = [UCF], parse = parse_component::<ConnectionRule, BlockComponent>)]
@@ -85,10 +85,10 @@ pub enum BlockComponent {
     #[component(name = "minecraft:crafting_table", released = "1.19.50", requires = [LCF], parse = parse_component::<CraftingTable, BlockComponent>)]
     CraftingTable(CraftingTable),
     /// `minecraft:destructible_by_explosion`.
-    #[component(name = "minecraft:destructible_by_explosion", parse = parse_component::<DestructibleByExplosion, BlockComponent>)]
+    #[component(name = "minecraft:destructible_by_explosion", shorthand = scalar, parse = parse_component::<DestructibleByExplosion, BlockComponent>)]
     DestructibleByExplosion(DestructibleByExplosion),
     /// `minecraft:destructible_by_mining`.
-    #[component(name = "minecraft:destructible_by_mining", molang, parse = parse_strict::<DestructibleByMining>)]
+    #[component(name = "minecraft:destructible_by_mining", shorthand = scalar, molang, parse = parse_component::<DestructibleByMining, BlockComponent>)]
     DestructibleByMining(DestructibleByMining),
     /// `minecraft:destruction_particles` (format 1.21.70, checked by the family).
     #[component(name = "minecraft:destruction_particles", parse = parse_component::<DestructionParticles, BlockComponent>)]
@@ -107,7 +107,7 @@ pub enum BlockComponent {
     #[component(name = "minecraft:entity_fall_on", parse = parse_component::<EntityFallOn, BlockComponent>)]
     EntityFallOn(EntityFallOn),
     /// `minecraft:flammable`.
-    #[component(name = "minecraft:flammable", fields = [{ name = "lava_flammable", since_engine = "1.26.30" }], parse = parse_strict::<Flammable>)]
+    #[component(name = "minecraft:flammable", shorthand = scalar, fields = [{ name = "lava_flammable", since_engine = "1.26.30" }], parse = parse_component::<Flammable, BlockComponent>)]
     Flammable(Flammable),
     /// `minecraft:flower_pottable`.
     #[component(name = "minecraft:flower_pottable", released = "1.21.120", requires = [UCF], parse = parse_component::<FlowerPottable, BlockComponent>)]
@@ -116,7 +116,7 @@ pub enum BlockComponent {
     #[component(name = "minecraft:friction", parse = parse_component::<Friction, BlockComponent>)]
     Friction(Friction),
     /// `minecraft:geometry`.
-    #[component(name = "minecraft:geometry", released = "1.19.40", requires = [LCF], fields = [{ name = "n_way_visual_rotation", since_engine = "1.26.30" }], molang, parse = parse_strict::<Geometry>)]
+    #[component(name = "minecraft:geometry", shorthand = scalar, released = "1.19.40", requires = [LCF], fields = [{ name = "n_way_visual_rotation", since_engine = "1.26.30" }], molang, parse = parse_component::<Geometry, BlockComponent>)]
     Geometry(Geometry),
     /// `minecraft:instrument_sound`. No member of a legacy document, ungated from 1.26.20.
     #[component(name = "minecraft:instrument_sound", fields = [{ name = "", since_engine = "1.26.30" }], parse = parse_component::<InstrumentSound, BlockComponent>)]
@@ -140,7 +140,7 @@ pub enum BlockComponent {
     #[component(name = "minecraft:loot", parse = parse_component::<Loot, BlockComponent>)]
     Loot(Loot),
     /// `minecraft:map_color`.
-    #[component(name = "minecraft:map_color", parse = parse_strict::<MapColor>)]
+    #[component(name = "minecraft:map_color", shorthand = scalar, parse = parse_component::<MapColor, BlockComponent>)]
     MapColor(MapColor),
     /// `minecraft:material_instances`.
     #[component(name = "minecraft:material_instances", released = "1.19.40", requires = [LCF], parse = parse_material_instances)]
@@ -174,7 +174,7 @@ pub enum BlockComponent {
     #[component(name = "minecraft:replaceable", released = "1.21.60", requires = [UCF], parse = parse_component::<Replaceable, BlockComponent>)]
     Replaceable(Replaceable),
     /// `minecraft:selection_box`.
-    #[component(name = "minecraft:selection_box", released = "1.19.60", requires = [LCF], parse = parse_strict::<SelectionBox>)]
+    #[component(name = "minecraft:selection_box", shorthand = scalar, released = "1.19.60", requires = [LCF], parse = parse_component::<SelectionBox, BlockComponent>)]
     SelectionBox(SelectionBox),
     /// `minecraft:sound`. Its legacy row is released at 1.26.40 behind Upcoming Creator
     /// Features (the family's own gate below 1.26.20); ungated from 1.26.20.
@@ -213,9 +213,9 @@ fn parse_collision_box(
     d: &mut Diagnostics,
 ) -> Option<BlockComponent> {
     if slice.text.trim_start().starts_with('{') {
-        parse_strict::<OneCollisionBox>(slice, mode, cx, d)
+        parse_component::<OneCollisionBox, BlockComponent>(slice, mode, cx, d)
     } else {
-        parse_strict::<CollisionBox>(slice, mode, cx, d)
+        parse_component::<CollisionBox, BlockComponent>(slice, mode, cx, d)
     }
 }
 
@@ -227,12 +227,6 @@ struct OneCollisionBox(CollisionBoundingBox);
 impl From<OneCollisionBox> for BlockComponent {
     fn from(one: OneCollisionBox) -> Self {
         BlockComponent::CollisionBox(CollisionBox::Boxes(vec![one.0]))
-    }
-}
-
-impl StrictShape for OneCollisionBox {
-    fn wrong_scalar(_: &Value) -> Option<JsonPath> {
-        None
     }
 }
 
@@ -294,146 +288,10 @@ fn parse_typed<T>(
 where
     T: for<'a> facet::Facet<'a>
         + Into<BlockComponent>
-        + StrictShape
         + bedrock_addon_core::document::Component<Set = BlockComponent>,
 {
-    let component = parse_strict::<T>(slice, mode, cx, d)?;
+    let component = parse_component::<T, BlockComponent>(slice, mode, cx, d)?;
     <T as bedrock_addon_core::document::Component>::try_from_set(component).ok()
-}
-
-/// `parse_component` behind the scalar check of the type's untagged positions (a wrong JSON type is
-/// `InvalidType`). facet's untagged solver coerces a scalar into
-/// a scalar arm of another type (`"true"` into `bool`), and a strict wrapper cannot be an arm,
-/// so the arms keep plain types and the JSON is checked first.
-fn parse_strict<T>(
-    slice: JsonSlice<'_>,
-    mode: ConvertMode,
-    cx: &LoadContext,
-    d: &mut Diagnostics,
-) -> Option<BlockComponent>
-where
-    T: for<'a> facet::Facet<'a> + Into<BlockComponent> + StrictShape,
-{
-    if let Ok(json) = bedrock_addon_core::json::from_str_jsonc::<Value>(slice.text)
-        && let Some(path) = T::wrong_scalar(&json)
-    {
-        // The same error as the typed read's: a wrong scalar type rejects the block under
-        // both slices, since the game's component load fails the same way.
-        d.push(Diagnostic::error(DiagnosticCode::InvalidType { text: None }).at(path));
-        return None;
-    }
-    parse_component::<T, BlockComponent>(slice, mode, cx, d)
-}
-
-/// The untagged positions of a component type whose scalar arm takes one JSON type.
-trait StrictShape {
-    /// The path of a scalar of the wrong type, if any.
-    fn wrong_scalar(json: &Value) -> Option<JsonPath>;
-}
-
-/// A scalar at `json` that is not a `bool`.
-fn bool_or_container(json: &Value) -> Option<JsonPath> {
-    (is_scalar(json) && !json.is_bool()).then(JsonPath::new)
-}
-
-/// A scalar at `json` that is not a string.
-fn string_or_container(json: &Value) -> Option<JsonPath> {
-    (is_scalar(json) && !json.is_string()).then(JsonPath::new)
-}
-
-/// Not an object or an array.
-fn is_scalar(json: &Value) -> bool {
-    !json.is_object() && !json.is_array()
-}
-
-/// `inner` below the member `key`.
-fn below(key: &str, inner: Option<JsonPath>) -> Option<JsonPath> {
-    inner.map(|inner| {
-        let mut path = JsonPath::new().child(key);
-        path.append(&inner);
-        path
-    })
-}
-
-/// The member `key` of an object.
-fn member<'v>(json: &'v Value, key: &str) -> Option<&'v Value> {
-    json.as_object()?.get(key)
-}
-
-impl StrictShape for CollisionBox {
-    fn wrong_scalar(json: &Value) -> Option<JsonPath> {
-        bool_or_container(json)
-    }
-}
-
-impl StrictShape for SelectionBox {
-    fn wrong_scalar(json: &Value) -> Option<JsonPath> {
-        bool_or_container(json)
-    }
-}
-
-impl StrictShape for DestructibleByMining {
-    fn wrong_scalar(json: &Value) -> Option<JsonPath> {
-        bool_or_container(json)
-    }
-}
-
-impl StrictShape for Flammable {
-    fn wrong_scalar(json: &Value) -> Option<JsonPath> {
-        bool_or_container(json)
-    }
-}
-
-impl StrictShape for MapColor {
-    fn wrong_scalar(json: &Value) -> Option<JsonPath> {
-        string_or_container(json)
-            .or_else(|| below("color", member(json, "color").and_then(string_or_container)))
-    }
-}
-
-impl StrictShape for Geometry {
-    fn wrong_scalar(json: &Value) -> Option<JsonPath> {
-        string_or_container(json).or_else(|| {
-            below(
-                "uv_lock",
-                member(json, "uv_lock").and_then(bool_or_container),
-            )
-        })
-    }
-}
-
-impl StrictShape for MaterialInstances {
-    fn wrong_scalar(json: &Value) -> Option<JsonPath> {
-        json.as_object()?
-            .iter()
-            .find_map(|(key, value)| below(key.as_str(), string_or_container(value)))
-    }
-}
-
-impl StrictShape for ItemVisual {
-    fn wrong_scalar(json: &Value) -> Option<JsonPath> {
-        visual_shape(json)
-    }
-}
-
-impl StrictShape for EmbeddedVisual {
-    fn wrong_scalar(json: &Value) -> Option<JsonPath> {
-        visual_shape(json)
-    }
-}
-
-/// The geometry and material instances of a visual component.
-fn visual_shape(json: &Value) -> Option<JsonPath> {
-    below(
-        "geometry",
-        member(json, "geometry").and_then(Geometry::wrong_scalar),
-    )
-    .or_else(|| {
-        below(
-            "material_instances",
-            member(json, "material_instances").and_then(MaterialInstances::wrong_scalar),
-        )
-    })
 }
 
 /// Whether the load is a cereal slice's (rule N2): the legacy slice has no null rule.
@@ -485,62 +343,12 @@ fn keep_instances(
     }
 }
 
-/// One typed component as JSON.
-pub(crate) fn write_component(component: &BlockComponent) -> Result<Value, EncodeError> {
-    use BlockComponent as C;
-    match component {
-        C::BlockEntity(c) => write_payload(c),
-        C::ChestObstruction(c) => write_payload(c),
-        C::CollisionBox(c) => write_payload(c),
-        C::ConnectionRule(c) => write_payload(c),
-        C::CraftingTable(c) => write_payload(c),
-        C::DestructibleByExplosion(c) => write_payload(c),
-        C::DestructibleByMining(c) => write_payload(c),
-        C::DestructionParticles(c) => write_payload(c),
-        C::DisplayName(c) => write_payload(c),
-        C::EmbeddedVisual(c) => write_payload(c),
-        C::EnchantmentPowerTransmitter(c) => write_payload(c),
-        C::EntityFallOn(c) => write_payload(c),
-        C::Flammable(c) => write_payload(c),
-        C::FlowerPottable(c) => write_payload(c),
-        C::Friction(c) => write_payload(c),
-        C::Geometry(c) => write_payload(c),
-        C::InstrumentSound(c) => write_payload(c),
-        C::ItemVisual(c) => write_payload(c),
-        C::Leashable(c) => write_payload(c),
-        C::LightDampening(c) => write_payload(c),
-        C::LightEmission(c) => write_payload(c),
-        C::LiquidDetection(c) => write_payload(c),
-        C::Loot(c) => write_payload(c),
-        C::MapColor(c) => write_payload(c),
-        C::MaterialInstances(c) => write_payload(c),
-        C::Movable(c) => write_payload(c),
-        C::NeighborChange(c) => write_payload(c),
-        C::PlacementFilter(c) => write_payload(c),
-        C::PrecipitationInteractions(c) => write_payload(c),
-        C::RandomOffset(c) => write_payload(c),
-        C::RedstoneConductivity(c) => write_payload(c),
-        C::RedstoneConsumer(c) => write_payload(c),
-        C::RedstoneProducer(c) => write_payload(c),
-        C::Replaceable(c) => write_payload(c),
-        C::SelectionBox(c) => write_payload(c),
-        C::Sound(c) => write_payload(c),
-        C::Support(c) => write_payload(c),
-        C::Tags(c) => write_payload(c),
-        C::Tick(c) => write_payload(c),
-        C::Transformation(c) => write_payload(c),
-        C::VibrationProperties(c) => write_payload(c),
-        C::Custom(c) => Ok(c.parameters.clone()),
-        C::Unknown(v) => Ok(v.clone()),
-    }
-}
-
 /// A component map as a JSON object, in map order.
 pub(crate) fn write_components(map: &ComponentMap<BlockComponent>) -> Result<Value, EncodeError> {
     let mut object = facet_value::VObject::new();
     for entry in map.iter() {
         let (name, json) = match entry {
-            ComponentRef::Typed { name, value, .. } => (name.to_owned(), write_component(value)?),
+            ComponentRef::Typed { name, value, .. } => (name.to_owned(), value.write_component()?),
             ComponentRef::Custom(c) => (c.name.clone(), c.parameters.clone()),
             ComponentRef::Dynamic { name, json } | ComponentRef::Unknown { name, json } => {
                 (name.to_owned(), json.clone())
@@ -550,11 +358,6 @@ pub(crate) fn write_components(map: &ComponentMap<BlockComponent>) -> Result<Val
         object.insert(name, json);
     }
     Ok(object.into())
-}
-
-/// The Molang walk of a geometry held by a visual component.
-pub(super) fn visit_geometry(visitor: &mut MolangVisitor<'_>, geometry: &mut Geometry) {
-    visitor.nested("geometry", geometry);
 }
 
 // Molang field specs of block files (rule 19, the block rows). Pass 1 only runs on documents

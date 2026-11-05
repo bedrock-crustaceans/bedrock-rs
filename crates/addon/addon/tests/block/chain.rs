@@ -259,7 +259,7 @@ fn friction_is_clamped_after_its_inversion_deviation() {
     );
     assert_eq!(
         block.permutations[0].components.get::<Friction>(),
-        Some(&Friction(bedrock_addon::json::StrictFloat(0.9)))
+        Some(&Friction(0.9))
     );
 }
 
@@ -276,7 +276,7 @@ fn light_emission_is_clamped_deviation() {
     );
     assert_eq!(
         block.permutations[0].components.get::<LightEmission>(),
-        Some(&LightEmission(bedrock_addon::json::StrictInt(15)))
+        Some(&LightEmission(15))
     );
 }
 

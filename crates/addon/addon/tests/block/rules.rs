@@ -11,7 +11,7 @@ use bedrock_addon::families::block::component::{
 };
 use bedrock_addon::families::block::{Block, Permutation, StateValues};
 use bedrock_addon::id::BlockId;
-use bedrock_addon::json::{StrictFloat, StrictInt};
+use bedrock_addon::json::StrictInt;
 use bedrock_addon::molang::{Molang, MolangVersion, RawVersion};
 
 use super::common::{context, document, errors, load, loads, rejected, ucf};
@@ -375,10 +375,7 @@ fn rule_9_schema_constraints_drop_the_component() {
         "{found:#?}"
     );
     let loaded = loads(&legacy("0.9"), &context());
-    assert_eq!(
-        loaded.components.get::<Friction>(),
-        Some(&Friction(StrictFloat(0.9)))
-    );
+    assert_eq!(loaded.components.get::<Friction>(), Some(&Friction(0.9)));
     let _: Option<(&RedstoneConsumer, &ConnectionRule, &DestructibleByExplosion)> = None;
     let _: Option<(&LightDampening, &LightEmission)> = None;
 }
@@ -433,7 +430,7 @@ fn strict_types_reject_a_wrong_json_type_in_a_1_26_20_document() {
     assert_eq!(loaded.components.len(), 3);
     assert_eq!(
         loaded.components.get::<LightEmission>(),
-        Some(&LightEmission(StrictInt(4)))
+        Some(&LightEmission(4))
     );
 }
 
@@ -525,10 +522,7 @@ fn rule_11_a_duplicate_component_keeps_the_first() {
         r#"{"description": {"identifier": "demo:x"}, "components": {"minecraft:friction": 0.5, "minecraft:friction": 0.8}}"#,
     );
     let loaded = loads(&text, &context());
-    assert_eq!(
-        loaded.components.get::<Friction>(),
-        Some(&Friction(StrictFloat(0.5)))
-    );
+    assert_eq!(loaded.components.get::<Friction>(), Some(&Friction(0.5)));
     assert!(loaded.diagnostics().iter().any(|f| matches!(
         f.code,
         DiagnosticCode::DroppedComponent { .. }
@@ -844,7 +838,7 @@ fn the_constructors_build_a_valid_block() {
         .insert("demo:lit".to_owned(), StateValues::bools());
     ruby.components.insert(DestructibleByMining::seconds(1.5));
     ruby.permutations
-        .push(Permutation::when("q.block_state('demo:lit')").with(LightEmission(StrictInt(15))));
+        .push(Permutation::when("q.block_state('demo:lit')").with(LightEmission(15)));
     assert_eq!(
         ruby.permutations[0]
             .condition

@@ -15,15 +15,15 @@ pub(super) fn run(cx: &LinkCx<'_>, out: &mut Findings) {
             let Some(Loot(table)) = components.get::<Loot>() else {
                 continue;
             };
-            if cx.loot_table(&table.0).is_missing() {
+            if cx.loot_table(table).is_missing() {
                 let path = placed(document, &at![&section; "minecraft:loot"]);
                 // The linked-asset check's grading; the severity here is read by nothing else.
                 let place = At::new(document.origin(), path, Severity::Error).validator(
                     Validator::InvalidPath,
                     1,
-                    &table.0,
+                    table,
                 );
-                out.push(unresolved(place, kinds::LOOT_TABLE, &table.0, None));
+                out.push(unresolved(place, kinds::LOOT_TABLE, table, None));
             }
         }
     }

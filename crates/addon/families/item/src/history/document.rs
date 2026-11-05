@@ -2,15 +2,16 @@
 //! version parameter selects what the format binds; and the parse and write both they and the
 //! newest struct use.
 
-use bedrock_addon_core::document::{Extra, Unknown as Table};
+use bedrock_addon_core::document::Unknown as Table;
 use bedrock_addon_core::id::SoundEventName;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, NullRule, Value, parse_at};
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
+use bedrock_addon_core::schema::{self, Schema, SchemaCx};
 use bedrock_addon_core::shared::{CreativeCategory, MenuCategory};
 use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::{
-    BETA_VERSION, ConvertMode, ParseCx, VersionStruct, Versioned, parse_component, parse_payload,
-    write_payload,
+    BETA_VERSION, ConvertMode, ParseCx, Reading, VersionStruct, Versioned, parse_component,
+    parse_payload, write_payload,
 };
 use facet::Facet;
 use facet_json::RawJson;
@@ -78,19 +79,15 @@ pub struct ItemDocument<const V: u32> {
 /// The `description` of an older item format: `identifier`, the 1.16.100–1.20.0 `category`
 /// and the 1.20.20 and later `menu_category`.
 #[derive(Clone, Debug, PartialEq, Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct Description {
     /// JSON `identifier` (required).
     pub identifier: String,
     /// JSON `category` (up to 1.20.0): `construction`, `nature`, `equipment`, `items` or
     /// `none`.
-    #[facet(default)]
     pub category: Option<String>,
     /// JSON `menu_category` (from 1.20.20).
-    #[facet(default)]
     pub menu_category: Option<MenuCategory>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 const V1_17_0: FormatVersion = FormatVersion::new(1, 17, 0);
@@ -454,20 +451,15 @@ pub(crate) fn binding(version: FormatVersion, key: &str) -> Option<Parser> {
 
 /// What the parse shell reads of an item object.
 #[derive(Facet)]
+#[facet(schema::unknown = "keep")]
 struct Shell<'a> {
     description: Description,
-    #[facet(default)]
     components: Option<IndexMap<String, RawJson<'a>>>,
-    #[facet(default, rename = "__deprecated_components")]
+    #[facet(rename = "__deprecated_components")]
     deprecated: Option<Value>,
-    #[facet(default)]
     deprecated_component_data: Option<Value>,
-    #[facet(default)]
     legacy_data: Option<Value>,
-    #[facet(default)]
     events: Option<Value>,
-    #[facet(skip, rename = "\u{0}extra")]
-    extra: Extra,
 }
 
 /// One component-format struct as parsed: the parts every struct holds.
@@ -1078,11 +1070,24 @@ fn check_component(
     // A check of the crate's own whose game constraint is not known: dropped, an
     // information.
     let unverified = |d: &mut Diagnostics, member: &str| told(d, member, Severity::Info);
+    // The bounds the component's type states, each a constraint the game binds, or each a
+    // check of the crate's own.
+    let bound = |d: &mut Diagnostics, member: Option<JsonPath>, severity: Severity| match member {
+        Some(member) => {
+            d.push(
+                Diagnostic::error(DiagnosticCode::InvalidValue { text: None })
+                    .severity(severity)
+                    .at(member),
+            );
+            false
+        }
+        None => true,
+    };
     let _ = key;
     match component {
-        Component::MaxStackSize(c) if !(1..=64).contains(&c.value) => invalid(d, "value"),
-        Component::Fuel(c) if c.duration < 0.05 => invalid(d, "duration"),
-        Component::Damage(c) if !(0..=32767).contains(&c.value) => invalid(d, "value"),
+        Component::MaxStackSize(c) => bound(d, out_of_bounds(c), Severity::Error),
+        Component::Fuel(c) => bound(d, out_of_bounds(c), Severity::Error),
+        Component::Damage(c) => bound(d, out_of_bounds(c), Severity::Error),
         Component::Durability(c) => {
             let chance = c
                 .damage_chance
@@ -1097,8 +1102,8 @@ fn check_component(
             }
         }
         Component::Enchantable(c) => {
-            if c.value < 0 {
-                return invalid(d, "value");
+            if let Some(member) = out_of_bounds(c) {
+                return bound(d, Some(member), Severity::Error);
             }
             if !crate::component::ENCHANT_SLOTS.contains(&c.slot.as_str()) {
                 // The slot's regex constraint fails ("expected string to match the …
@@ -1129,27 +1134,23 @@ fn check_component(
                 true
             }
         }
-        Component::UseDuration(c) if c.value < 0.0 => unverified(d, "value"),
-        Component::Wearable(c) if c.protection < 0 => invalid(d, "protection"),
-        Component::SwingDuration(c) if c.value < 0.0 => invalid(d, "value"),
+        Component::UseDuration(c) => bound(d, out_of_bounds(c), Severity::Info),
+        Component::Wearable(c) => bound(d, out_of_bounds(c), Severity::Error),
+        Component::SwingDuration(c) => bound(d, out_of_bounds(c), Severity::Error),
         Component::KineticWeapon(c) => {
             for (name, condition) in [
                 ("damage_conditions", &c.damage_conditions),
                 ("knockback_conditions", &c.knockback_conditions),
                 ("dismount_conditions", &c.dismount_conditions),
             ] {
-                if let Some(condition) = condition
-                    && (condition.min_speed.is_some_and(|s| s < 0.0)
-                        || condition.min_relative_speed.is_some_and(|s| s < 0.0))
-                {
+                // (Told at the condition, as the crate's own check.)
+                if condition.as_ref().and_then(out_of_bounds).is_some() {
                     return unverified(d, name);
                 }
             }
             true
         }
-        Component::Compostable(c) if !(1..=100).contains(&c.composting_chance) => {
-            unverified(d, "composting_chance")
-        }
+        Component::Compostable(c) => bound(d, out_of_bounds(c), Severity::Info),
         Component::StorageItem(c) if c.max_slots > 64 => invalid(d, "max_slots"),
         Component::LegacyStorageItem(c) => {
             if c.max_slots > 64 {
@@ -1162,15 +1163,9 @@ fn check_component(
                 true
             }
         }
-        Component::StorageWeightLimit(c) if c.max_weight_limit > 64 => {
-            invalid(d, "max_weight_limit")
-        }
-        Component::StorageWeightModifier(c) if c.weight_in_storage_item < 0 => {
-            invalid(d, "weight_in_storage_item")
-        }
-        Component::BundleInteraction(c) if !(1..=64).contains(&c.num_viewable_slots) => {
-            unverified(d, "num_viewable_slots")
-        }
+        Component::StorageWeightLimit(c) => bound(d, out_of_bounds(c), Severity::Error),
+        Component::StorageWeightModifier(c) => bound(d, out_of_bounds(c), Severity::Error),
+        Component::BundleInteraction(c) => bound(d, out_of_bounds(c), Severity::Info),
         Component::DamageAbsorption(c) if c.absorbable_causes.is_empty() => {
             unverified(d, "absorbable_causes")
         }
@@ -1236,6 +1231,22 @@ fn check_component(
         }
         _ => true,
     }
+}
+
+/// The path below the component of the first member of `value` outside the bounds its type
+/// states (`schema::min`, `schema::max`); `None` when every member is inside them. The rule
+/// that calls it says how severe the finding is.
+fn out_of_bounds<T: Schema + Clone>(value: &T) -> Option<JsonPath> {
+    let mut found = Diagnostics::default();
+    let mut value = value.clone();
+    {
+        let mut cx = SchemaCx::new(Reading::DOCUMENT, JsonPath::new(), &mut found);
+        value.check(&mut cx);
+    }
+    found
+        .iter()
+        .next()
+        .map(|finding| finding.location.json_path.clone())
 }
 
 /// A path of `parts` below a component (`"3"` and other digits are indexes).
@@ -1410,53 +1421,12 @@ fn drop_minecraft_names<T>(list: &mut Vec<T>, name: fn(&T) -> &str, d: &mut Diag
     });
 }
 
-/// One component as JSON.
+/// One component as JSON. A component of the newest format's shape is written by
+/// [`ItemComponent::write_component`], the dispatch the derive emits; the old shapes, which the
+/// newest enum does not hold, are written here, three of them by hand: `render_offsets` as the
+/// JSON kept, the 1.21.90 list as its names and the keyed 1.21.90 form as its object.
 pub(crate) fn write_component(component: &Component) -> Result<Value, EncodeError> {
     Ok(match component {
-        Component::AllowOffHand(c) => write_payload(c)?,
-        Component::BlockPlacer(c) => write_payload(c)?,
-        Component::BundleInteraction(c) => write_payload(c)?,
-        Component::CanDestroyInCreative(c) => write_payload(c)?,
-        Component::Compostable(c) => write_payload(c)?,
-        Component::Cooldown(c) => write_payload(c)?,
-        Component::Damage(c) => write_payload(c)?,
-        Component::DamageAbsorption(c) => write_payload(c)?,
-        Component::Digger(c) => write_payload(c)?,
-        Component::DisplayName(c) => write_payload(c)?,
-        Component::Durability(c) => write_payload(c)?,
-        Component::DurabilitySensor(c) => write_payload(c)?,
-        Component::Dyeable(c) => write_payload(c)?,
-        Component::Enchantable(c) => write_payload(c)?,
-        Component::EntityPlacer(c) => write_payload(c)?,
-        Component::FireResistant(c) => write_payload(c)?,
-        Component::Food(c) => write_payload(c)?,
-        Component::Fuel(c) => write_payload(c)?,
-        Component::Glint(c) => write_payload(c)?,
-        Component::HandEquipped(c) => write_payload(c)?,
-        Component::HoverTextColor(c) => write_payload(c)?,
-        Component::Icon(c) => write_payload(c)?,
-        Component::InteractButton(c) => c.to_value(),
-        Component::KineticWeapon(c) => write_payload(c)?,
-        Component::LiquidClipped(c) => write_payload(c)?,
-        Component::MaxStackSize(c) => write_payload(c)?,
-        Component::PiercingWeapon(c) => write_payload(c)?,
-        Component::Projectile(c) => write_payload(c)?,
-        Component::Rarity(c) => write_payload(c)?,
-        Component::Record(c) => write_payload(c)?,
-        Component::Repairable(c) => write_payload(c)?,
-        Component::Shooter(c) => write_payload(c)?,
-        Component::ShouldDespawn(c) => write_payload(c)?,
-        Component::StackedByData(c) => write_payload(c)?,
-        Component::StorageItem(c) => write_payload(c)?,
-        Component::StorageWeightLimit(c) => write_payload(c)?,
-        Component::StorageWeightModifier(c) => write_payload(c)?,
-        Component::SwingDuration(c) => write_payload(c)?,
-        Component::SwingSounds(c) => write_payload(c)?,
-        Component::Tags(c) => write_payload(c)?,
-        Component::Throwable(c) => write_payload(c)?,
-        Component::UseAnimation(c) => write_payload(c)?,
-        Component::UseModifiers(c) => write_payload(c)?,
-        Component::Wearable(c) => write_payload(c)?,
         Component::Armor(c) => write_payload(c)?,
         Component::Chargeable(c) => write_payload(c)?,
         Component::OnUse(c) => write_payload(c)?,
@@ -1480,6 +1450,11 @@ pub(crate) fn write_component(component: &Component) -> Result<Value, EncodeErro
         Component::CustomComponents(c) => c.to_value(),
         Component::Custom(c) => c.parameters.clone(),
         Component::Unknown(v) => v.clone(),
+        newest => match into_item(newest.clone()) {
+            Ok(newest) => newest.write_component()?,
+            // (Every variant `into_item` gives back is matched above.)
+            Err(_) => Value::NULL,
+        },
     })
 }
 
@@ -1652,136 +1627,94 @@ pub(crate) fn into_component_map(
 ) -> bedrock_addon_core::document::ComponentMap<ItemComponent> {
     let mut map = bedrock_addon_core::document::ComponentMap::new();
     for (key, component) in components {
-        let typed: Option<ItemComponent> = match component {
-            Component::AllowOffHand(c) => Some(c.into()),
-            Component::BlockPlacer(c) => Some(c.into()),
-            Component::BundleInteraction(c) => Some(c.into()),
-            Component::CanDestroyInCreative(c) => Some(c.into()),
-            Component::Compostable(c) => Some(c.into()),
-            Component::Cooldown(c) => Some(c.into()),
-            Component::Damage(c) => Some(c.into()),
-            Component::DamageAbsorption(c) => Some(c.into()),
-            Component::Digger(c) => Some(c.into()),
-            Component::DisplayName(c) => Some(c.into()),
-            Component::Durability(c) => Some(c.into()),
-            Component::DurabilitySensor(c) => Some(c.into()),
-            Component::Dyeable(c) => Some(c.into()),
-            Component::Enchantable(c) => Some(c.into()),
-            Component::EntityPlacer(c) => Some(c.into()),
-            Component::FireResistant(c) => Some(c.into()),
-            Component::Food(c) => Some(c.into()),
-            Component::Fuel(c) => Some(c.into()),
-            Component::Glint(c) => Some(c.into()),
-            Component::HandEquipped(c) => Some(c.into()),
-            Component::HoverTextColor(c) => Some(c.into()),
-            Component::Icon(c) => Some(c.into()),
-            Component::InteractButton(c) => Some(c.into()),
-            Component::KineticWeapon(c) => Some(c.into()),
-            Component::LiquidClipped(c) => Some(c.into()),
-            Component::MaxStackSize(c) => Some(c.into()),
-            Component::PiercingWeapon(c) => Some(c.into()),
-            Component::Projectile(c) => Some(c.into()),
-            Component::Rarity(c) => Some(c.into()),
-            Component::Record(c) => Some(c.into()),
-            Component::Repairable(c) => Some(c.into()),
-            Component::Shooter(c) => Some(c.into()),
-            Component::ShouldDespawn(c) => Some(c.into()),
-            Component::StackedByData(c) => Some(c.into()),
-            Component::StorageItem(c) => Some(c.into()),
-            Component::StorageWeightLimit(c) => Some(c.into()),
-            Component::StorageWeightModifier(c) => Some(c.into()),
-            Component::SwingDuration(c) => Some(c.into()),
-            Component::SwingSounds(c) => Some(c.into()),
-            Component::Tags(c) => Some(c.into()),
-            Component::Throwable(c) => Some(c.into()),
-            Component::UseAnimation(c) => Some(c.into()),
-            Component::UseModifiers(c) => Some(c.into()),
-            Component::Wearable(c) => Some(c.into()),
-            Component::Custom(c) => {
-                map.insert_custom(c);
-                None
+        match into_item(component) {
+            Ok(typed) => {
+                map.insert_typed(typed, false);
             }
-            Component::Unknown(json) => {
-                map.insert_unknown(&key, json);
-                None
-            }
-            other => {
+            Err(Component::Custom(c)) => map.insert_custom(c),
+            Err(Component::Unknown(json)) => map.insert_unknown(&key, json),
+            Err(other) => {
                 if let Ok(json) = write_component(&other) {
                     map.insert_unknown(&key, json);
                 }
-                None
             }
-        };
-        if let Some(typed) = typed {
-            map.insert_typed(typed, false);
         }
     }
     map
 }
 
-/// An older struct's components from the newest struct's (for writing the newest struct with
-/// the same writer).
-pub(crate) fn from_component_map(
+/// A component of the newest format's shape as the newest enum's, or the component itself
+/// for an old shape, a custom component and an unknown key.
+#[allow(
+    clippy::result_large_err,
+    reason = "the component goes back to its caller by value, as it came"
+)]
+fn into_item(component: Component) -> Result<ItemComponent, Component> {
+    Ok(match component {
+        Component::AllowOffHand(c) => c.into(),
+        Component::BlockPlacer(c) => c.into(),
+        Component::BundleInteraction(c) => c.into(),
+        Component::CanDestroyInCreative(c) => c.into(),
+        Component::Compostable(c) => c.into(),
+        Component::Cooldown(c) => c.into(),
+        Component::Damage(c) => c.into(),
+        Component::DamageAbsorption(c) => c.into(),
+        Component::Digger(c) => c.into(),
+        Component::DisplayName(c) => c.into(),
+        Component::Durability(c) => c.into(),
+        Component::DurabilitySensor(c) => c.into(),
+        Component::Dyeable(c) => c.into(),
+        Component::Enchantable(c) => c.into(),
+        Component::EntityPlacer(c) => c.into(),
+        Component::FireResistant(c) => c.into(),
+        Component::Food(c) => c.into(),
+        Component::Fuel(c) => c.into(),
+        Component::Glint(c) => c.into(),
+        Component::HandEquipped(c) => c.into(),
+        Component::HoverTextColor(c) => c.into(),
+        Component::Icon(c) => c.into(),
+        Component::InteractButton(c) => c.into(),
+        Component::KineticWeapon(c) => c.into(),
+        Component::LiquidClipped(c) => c.into(),
+        Component::MaxStackSize(c) => c.into(),
+        Component::PiercingWeapon(c) => c.into(),
+        Component::Projectile(c) => c.into(),
+        Component::Rarity(c) => c.into(),
+        Component::Record(c) => c.into(),
+        Component::Repairable(c) => c.into(),
+        Component::Shooter(c) => c.into(),
+        Component::ShouldDespawn(c) => c.into(),
+        Component::StackedByData(c) => c.into(),
+        Component::StorageItem(c) => c.into(),
+        Component::StorageWeightLimit(c) => c.into(),
+        Component::StorageWeightModifier(c) => c.into(),
+        Component::SwingDuration(c) => c.into(),
+        Component::SwingSounds(c) => c.into(),
+        Component::Tags(c) => c.into(),
+        Component::Throwable(c) => c.into(),
+        Component::UseAnimation(c) => c.into(),
+        Component::UseModifiers(c) => c.into(),
+        Component::Wearable(c) => c.into(),
+        other => return Err(other),
+    })
+}
+
+/// The newest struct's components as JSON, in map order (for writing the newest struct with
+/// the same writer as the older ones): a typed component by the dispatch the derive emits, a
+/// custom one as its parameters, a dynamic or unknown key as written.
+pub(crate) fn written_components(
     map: &bedrock_addon_core::document::ComponentMap<ItemComponent>,
-) -> Vec<(String, Component)> {
+) -> Vec<(String, Result<Value, EncodeError>)> {
     use bedrock_addon_core::document::ComponentRef;
     let mut out = Vec::new();
     for entry in map.iter() {
         match entry {
             ComponentRef::Typed { name, value, .. } => {
-                let component = match value.clone() {
-                    ItemComponent::AllowOffHand(c) => c.into(),
-                    ItemComponent::BlockPlacer(c) => c.into(),
-                    ItemComponent::BundleInteraction(c) => c.into(),
-                    ItemComponent::CanDestroyInCreative(c) => c.into(),
-                    ItemComponent::Compostable(c) => c.into(),
-                    ItemComponent::Cooldown(c) => c.into(),
-                    ItemComponent::Damage(c) => c.into(),
-                    ItemComponent::DamageAbsorption(c) => c.into(),
-                    ItemComponent::Digger(c) => c.into(),
-                    ItemComponent::DisplayName(c) => c.into(),
-                    ItemComponent::Durability(c) => c.into(),
-                    ItemComponent::DurabilitySensor(c) => c.into(),
-                    ItemComponent::Dyeable(c) => c.into(),
-                    ItemComponent::Enchantable(c) => c.into(),
-                    ItemComponent::EntityPlacer(c) => c.into(),
-                    ItemComponent::FireResistant(c) => c.into(),
-                    ItemComponent::Food(c) => c.into(),
-                    ItemComponent::Fuel(c) => c.into(),
-                    ItemComponent::Glint(c) => c.into(),
-                    ItemComponent::HandEquipped(c) => c.into(),
-                    ItemComponent::HoverTextColor(c) => c.into(),
-                    ItemComponent::Icon(c) => c.into(),
-                    ItemComponent::InteractButton(c) => c.into(),
-                    ItemComponent::KineticWeapon(c) => c.into(),
-                    ItemComponent::LiquidClipped(c) => c.into(),
-                    ItemComponent::MaxStackSize(c) => c.into(),
-                    ItemComponent::PiercingWeapon(c) => c.into(),
-                    ItemComponent::Projectile(c) => c.into(),
-                    ItemComponent::Rarity(c) => c.into(),
-                    ItemComponent::Record(c) => c.into(),
-                    ItemComponent::Repairable(c) => c.into(),
-                    ItemComponent::Shooter(c) => c.into(),
-                    ItemComponent::ShouldDespawn(c) => c.into(),
-                    ItemComponent::StackedByData(c) => c.into(),
-                    ItemComponent::StorageItem(c) => c.into(),
-                    ItemComponent::StorageWeightLimit(c) => c.into(),
-                    ItemComponent::StorageWeightModifier(c) => c.into(),
-                    ItemComponent::SwingDuration(c) => c.into(),
-                    ItemComponent::SwingSounds(c) => c.into(),
-                    ItemComponent::Tags(c) => c.into(),
-                    ItemComponent::Throwable(c) => c.into(),
-                    ItemComponent::UseAnimation(c) => c.into(),
-                    ItemComponent::UseModifiers(c) => c.into(),
-                    ItemComponent::Wearable(c) => c.into(),
-                    ItemComponent::Custom(c) => Component::Custom(c),
-                    ItemComponent::Unknown(v) => Component::Unknown(v),
-                };
-                out.push((name.to_owned(), component));
+                out.push((name.to_owned(), value.write_component()));
             }
-            ComponentRef::Custom(c) => out.push((c.name.clone(), Component::Custom(c.clone()))),
+            ComponentRef::Custom(c) => out.push((c.name.clone(), Ok(c.parameters.clone()))),
             ComponentRef::Dynamic { name, json } | ComponentRef::Unknown { name, json } => {
-                out.push((name.to_owned(), Component::Unknown(json.clone())));
+                out.push((name.to_owned(), Ok(json.clone())));
             }
             _ => {}
         }

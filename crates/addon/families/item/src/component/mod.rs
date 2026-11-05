@@ -51,11 +51,11 @@ const LCF: LoadRequirement = LoadRequirement::LegacyCreatorFeatures;
 /// One component of an item: a typed component, a custom component (`ns:name`, from format
 /// 1.21.90), or a key the format does not bind, kept for write-back.
 #[derive(Clone, Debug, PartialEq, Components)]
-#[component(family = ItemFamily, custom = Custom, unknown = Unknown)]
+#[component(family = ItemFamily, custom = Custom, unknown = Unknown, write)]
 #[non_exhaustive]
 pub enum ItemComponent {
     /// `minecraft:allow_off_hand`.
-    #[component(name = "minecraft:allow_off_hand", released = "1.20.20", parse = parse_value::<AllowOffHand>)]
+    #[component(name = "minecraft:allow_off_hand", shorthand = scalar, released = "1.20.20", parse = parse_value::<AllowOffHand>)]
     AllowOffHand(AllowOffHand),
     /// `minecraft:block_placer`.
     #[component(name = "minecraft:block_placer", released = "1.20.10", requires = [LCF], fields = [{ name = "aligned_placement", since_engine = "1.26.10" }], molang, parse = typed::<BlockPlacer>)]
@@ -64,7 +64,7 @@ pub enum ItemComponent {
     #[component(name = "minecraft:bundle_interaction", released = "1.21.30", parse = typed::<BundleInteraction>)]
     BundleInteraction(BundleInteraction),
     /// `minecraft:can_destroy_in_creative`.
-    #[component(name = "minecraft:can_destroy_in_creative", released = "1.20.10", parse = parse_value::<CanDestroyInCreative>)]
+    #[component(name = "minecraft:can_destroy_in_creative", shorthand = scalar, released = "1.20.10", parse = parse_value::<CanDestroyInCreative>)]
     CanDestroyInCreative(CanDestroyInCreative),
     /// `minecraft:compostable`.
     #[component(name = "minecraft:compostable", released = "1.21.50", parse = typed::<Compostable>)]
@@ -73,7 +73,7 @@ pub enum ItemComponent {
     #[component(name = "minecraft:cooldown", released = "1.20.10", requires = [LCF], fields = [{ name = "type", since_engine = "1.21.130" }], parse = typed::<Cooldown>)]
     Cooldown(Cooldown),
     /// `minecraft:damage`.
-    #[component(name = "minecraft:damage", released = "1.20.20", parse = parse_value::<Damage>)]
+    #[component(name = "minecraft:damage", shorthand = scalar, released = "1.20.20", parse = parse_value::<Damage>)]
     Damage(Damage),
     /// `minecraft:damage_absorption`.
     #[component(name = "minecraft:damage_absorption", released = "1.21.10", parse = typed::<DamageAbsorption>)]
@@ -106,19 +106,19 @@ pub enum ItemComponent {
     #[component(name = "minecraft:food", released = "1.20.30", requires = [LCF], molang, parse = typed::<Food>)]
     Food(Food),
     /// `minecraft:fuel`.
-    #[component(name = "minecraft:fuel", released = "1.20.0", requires = [LCF], parse = parse_value::<Fuel>)]
+    #[component(name = "minecraft:fuel", shorthand = scalar, released = "1.20.0", requires = [LCF], parse = parse_value::<Fuel>)]
     Fuel(Fuel),
     /// `minecraft:glint`, which supersedes the legacy `minecraft:foil`.
-    #[component(name = "minecraft:glint", released = "1.20.20", supersedes = "minecraft:foil", parse = parse_value::<Glint>)]
+    #[component(name = "minecraft:glint", shorthand = scalar, released = "1.20.20", supersedes = "minecraft:foil", parse = parse_value::<Glint>)]
     Glint(Glint),
     /// `minecraft:hand_equipped`.
-    #[component(name = "minecraft:hand_equipped", released = "1.20.20", parse = parse_value::<HandEquipped>)]
+    #[component(name = "minecraft:hand_equipped", shorthand = scalar, released = "1.20.20", parse = parse_value::<HandEquipped>)]
     HandEquipped(HandEquipped),
     /// `minecraft:hover_text_color`.
-    #[component(name = "minecraft:hover_text_color", released = "1.20.10", parse = parse_value::<HoverTextColor>)]
+    #[component(name = "minecraft:hover_text_color", shorthand = scalar, released = "1.20.10", parse = parse_value::<HoverTextColor>)]
     HoverTextColor(HoverTextColor),
     /// `minecraft:icon`.
-    #[component(name = "minecraft:icon", released = "1.20.0", requires = [LCF], parse = parse_value::<Icon>)]
+    #[component(name = "minecraft:icon", shorthand = scalar, released = "1.20.0", requires = [LCF], parse = parse_value::<Icon>)]
     Icon(Icon),
     /// `minecraft:interact_button`.
     #[component(name = "minecraft:interact_button", released = "1.20.30", parse = look::parse_interact_button)]
@@ -127,10 +127,10 @@ pub enum ItemComponent {
     #[component(name = "minecraft:kinetic_weapon", released = "1.21.90", fields = [{ name = "", since_engine = "1.21.130" }], parse = typed::<KineticWeapon>)]
     KineticWeapon(KineticWeapon),
     /// `minecraft:liquid_clipped`.
-    #[component(name = "minecraft:liquid_clipped", released = "1.20.20", parse = parse_value::<LiquidClipped>)]
+    #[component(name = "minecraft:liquid_clipped", shorthand = scalar, released = "1.20.20", parse = parse_value::<LiquidClipped>)]
     LiquidClipped(LiquidClipped),
     /// `minecraft:max_stack_size`.
-    #[component(name = "minecraft:max_stack_size", released = "1.20.10", parse = parse_value::<MaxStackSize>)]
+    #[component(name = "minecraft:max_stack_size", shorthand = scalar, released = "1.20.10", parse = parse_value::<MaxStackSize>)]
     MaxStackSize(MaxStackSize),
     /// `minecraft:piercing_weapon`.
     #[component(name = "minecraft:piercing_weapon", released = "1.21.90", fields = [{ name = "", since_engine = "1.21.130" }], parse = typed::<PiercingWeapon>)]
@@ -139,7 +139,7 @@ pub enum ItemComponent {
     #[component(name = "minecraft:projectile", released = "1.20.10", requires = [LCF], parse = typed::<Projectile>)]
     Projectile(Projectile),
     /// `minecraft:rarity`.
-    #[component(name = "minecraft:rarity", released = "1.21.30", parse = parse_value::<Rarity>)]
+    #[component(name = "minecraft:rarity", shorthand = scalar, released = "1.21.30", parse = parse_value::<Rarity>)]
     Rarity(Rarity),
     /// `minecraft:record`.
     #[component(name = "minecraft:record", released = "1.20.10", requires = [LCF], parse = typed::<Record>)]
@@ -151,10 +151,10 @@ pub enum ItemComponent {
     #[component(name = "minecraft:shooter", released = "1.20.10", requires = [LCF], molang, parse = typed::<Shooter>)]
     Shooter(Shooter),
     /// `minecraft:should_despawn`.
-    #[component(name = "minecraft:should_despawn", released = "1.20.20", parse = parse_value::<ShouldDespawn>)]
+    #[component(name = "minecraft:should_despawn", shorthand = scalar, released = "1.20.20", parse = parse_value::<ShouldDespawn>)]
     ShouldDespawn(ShouldDespawn),
     /// `minecraft:stacked_by_data`.
-    #[component(name = "minecraft:stacked_by_data", released = "1.20.20", parse = parse_value::<StackedByData>)]
+    #[component(name = "minecraft:stacked_by_data", shorthand = scalar, released = "1.20.20", parse = parse_value::<StackedByData>)]
     StackedByData(StackedByData),
     /// `minecraft:storage_item`.
     #[component(name = "minecraft:storage_item", released = "1.21.30", molang, parse = typed::<StorageItem>)]
@@ -166,7 +166,7 @@ pub enum ItemComponent {
     #[component(name = "minecraft:storage_weight_modifier", released = "1.21.60", parse = typed::<StorageWeightModifier>)]
     StorageWeightModifier(StorageWeightModifier),
     /// `minecraft:swing_duration`.
-    #[component(name = "minecraft:swing_duration", released = "1.21.90", fields = [{ name = "", since_engine = "1.21.120" }], parse = parse_value::<SwingDuration>)]
+    #[component(name = "minecraft:swing_duration", shorthand = scalar, released = "1.21.90", fields = [{ name = "", since_engine = "1.21.120" }], parse = parse_value::<SwingDuration>)]
     SwingDuration(SwingDuration),
     /// `minecraft:swing_sounds`.
     #[component(name = "minecraft:swing_sounds", released = "1.21.90", fields = [{ name = "", since_engine = "1.21.130" }], parse = typed::<SwingSounds>)]
@@ -178,7 +178,7 @@ pub enum ItemComponent {
     #[component(name = "minecraft:throwable", released = "1.20.10", requires = [LCF], parse = typed::<Throwable>)]
     Throwable(Throwable),
     /// `minecraft:use_animation`.
-    #[component(name = "minecraft:use_animation", released = "1.20.20", parse = parse_value::<UseAnimation>)]
+    #[component(name = "minecraft:use_animation", shorthand = scalar, released = "1.20.20", parse = parse_value::<UseAnimation>)]
     UseAnimation(UseAnimation),
     /// `minecraft:use_modifiers`.
     #[component(name = "minecraft:use_modifiers", released = "1.20.50", parse = typed::<UseModifiers>)]

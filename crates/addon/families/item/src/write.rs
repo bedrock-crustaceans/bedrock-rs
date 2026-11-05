@@ -3,7 +3,7 @@
 use std::borrow::Cow;
 
 use bedrock_addon_core::diagnostic::{Diagnostic, JsonPath};
-use bedrock_addon_core::document::{ComponentMap, ComponentRef, Extra, Unknown, UnknownMembers};
+use bedrock_addon_core::document::{ComponentMap, ComponentRef, Unknown, UnknownMembers};
 use bedrock_addon_core::json::{
     EncodeError, JsonSlice, Value, WriteStyle, merge_unknown, write_json,
 };
@@ -18,11 +18,11 @@ use facet_value::VObject;
 use super::component::ItemComponent;
 use super::history::ItemFamily;
 use super::history::{
-    self, CustomComponentEntry, CustomComponents, SideCarPlace, from_component_map,
-    write_component, write_parts,
+    self, CustomComponentEntry, CustomComponents, SideCarPlace, write_parts, written_components,
 };
 use super::legacy::{ItemFormat, LegacyFormatItem};
 use super::read::parse_newest;
+use super::types::{ModernItem, modern_version};
 use super::{Beta, Item, ItemDeprecatedData, ItemDescription, LegacyItemData};
 use bedrock_addon_core::diagnostic::Diagnostics;
 
@@ -102,7 +102,7 @@ pub(crate) fn newest_value(
     legacy: &LegacyItemData,
     unknown: &Unknown,
 ) -> Result<Value, EncodeError> {
-    let typed = from_component_map(components);
+    let typed = written_components(components);
     // What the legacy reading alone holds of a newest-format document, after the components.
     let mut held: Vec<(String, Result<Value, EncodeError>)> = legacy
         .held_in_shared_alone
@@ -122,10 +122,7 @@ pub(crate) fn newest_value(
     );
     write_parts(
         description_value(description, unknown),
-        typed
-            .into_iter()
-            .map(|(key, component)| (key, write_component(&component)))
-            .chain(held),
+        typed.into_iter().chain(held),
         (
             &side_car_to_write(deprecated, components),
             SideCarPlace::AfterEvents,
@@ -135,31 +132,17 @@ pub(crate) fn newest_value(
     )
 }
 
-impl Versioned for Item {
-    const VERSION: FormatVersion = V1_26_50;
+impl<const V: u32> Versioned for ModernItem<V> {
+    const VERSION: FormatVersion = modern_version(V);
 }
 
-impl VersionStruct for Item {
+impl<const V: u32> VersionStruct for ModernItem<V> {
     fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        let n = parse_newest(payload, V1_26_50, cx, d)?;
-        Some(Item {
-            description: n.description,
-            components: n.components,
-            deprecated: n.deprecated,
-            events: n.events,
-            legacy: n.legacy,
-        })
+        parse_newest(payload, cx, d)
     }
 
     fn write(&self) -> Result<Value, EncodeError> {
-        newest_value(
-            &self.description,
-            &self.components,
-            &self.deprecated,
-            self.events.as_ref(),
-            &self.legacy,
-            &Unknown::new(),
-        )
+        self.write_with_unknown(&Unknown::new())
     }
 
     fn write_with_unknown(&self, unknown: &Unknown) -> Result<Value, EncodeError> {
@@ -174,53 +157,7 @@ impl VersionStruct for Item {
     }
 }
 
-impl MolangFields for Item {
-    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
-        visitor.nested("components", &mut self.components);
-        self.legacy.expressions.visit_molang(visitor);
-    }
-}
-
-impl Versioned for Beta {
-    const VERSION: FormatVersion = BETA_VERSION;
-}
-
-impl VersionStruct for Beta {
-    fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        let n = parse_newest(payload, BETA_VERSION, cx, d)?;
-        Some(Beta {
-            description: n.description,
-            components: n.components,
-            deprecated: n.deprecated,
-            events: n.events,
-            legacy: n.legacy,
-        })
-    }
-
-    fn write(&self) -> Result<Value, EncodeError> {
-        newest_value(
-            &self.description,
-            &self.components,
-            &self.deprecated,
-            self.events.as_ref(),
-            &self.legacy,
-            &Unknown::new(),
-        )
-    }
-
-    fn write_with_unknown(&self, unknown: &Unknown) -> Result<Value, EncodeError> {
-        newest_value(
-            &self.description,
-            &self.components,
-            &self.deprecated,
-            self.events.as_ref(),
-            &self.legacy,
-            unknown,
-        )
-    }
-}
-
-impl MolangFields for Beta {
+impl<const V: u32> MolangFields for ModernItem<V> {
     fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
         visitor.nested("components", &mut self.components);
         self.legacy.expressions.visit_molang(visitor);
@@ -236,16 +173,23 @@ fn envelope(version: FormatVersion, payload: Value) -> Value {
 /// game: its `components` has a registered component (a typed one, or one the legacy reading
 /// alone holds) or a `tag:` key. Custom components and keys no table knows are not registered.
 pub(crate) fn is_component_based_as_written(item: &Item) -> bool {
-    from_component_map(&item.components)
+    item.components
         .iter()
-        .map(|(key, _)| key)
+        .filter_map(|entry| match entry {
+            ComponentRef::Typed { name, .. }
+            | ComponentRef::Dynamic { name, .. }
+            | ComponentRef::Unknown { name, .. } => Some(name),
+            ComponentRef::Custom(c) => Some(c.name.as_str()),
+            _ => None,
+        })
         .chain(
             item.legacy
                 .held_in_shared_alone
                 .iter()
-                .filter(|key| item.legacy.shared.contains_key(*key)),
+                .filter(|key| item.legacy.shared.contains_key(*key))
+                .map(String::as_str),
         )
-        .any(|key| super::read::is_registered(key))
+        .any(super::read::is_registered)
 }
 
 /// The document of an item: the newest format, or, for an item in the legacy item format, that format
@@ -309,7 +253,6 @@ pub(crate) fn item_root_with(
                 identifier: item.description.identifier.as_str().to_owned(),
                 category: item.legacy.category.clone(),
                 menu_category: None,
-                extra: Extra::default(),
             },
             components: format_item.clone(),
             events: item.events.clone(),
@@ -321,7 +264,7 @@ pub(crate) fn item_root_with(
         let mut root = envelope(V1_26_50, item.write_with_unknown(unknown)?);
         let told = merge_unknown(&mut root, unknown);
         let payload = payload_of(&root);
-        match refuse_what_the_format_refuses(&payload, V1_26_50) {
+        match refuse_what_the_format_refuses::<Item>(&payload) {
             Ok(()) => (root, told),
             Err(refused) => written_at_1_26_0(item, payload, unknown).ok_or(refused)?,
         }
@@ -393,7 +336,7 @@ pub(crate) fn newest_refusal(
     let mut root = envelope(V1_26_50, item.write_with_unknown(unknown).ok()?);
     let _ = merge_unknown(&mut root, unknown);
     let payload = payload_of(&root);
-    match refuse_what_the_format_refuses(&payload, V1_26_50) {
+    match refuse_what_the_format_refuses::<Item>(&payload) {
         Err(EncodeError::NotRepresentable { at, .. }) => Some(at),
         _ => None,
     }
@@ -407,10 +350,8 @@ pub(crate) fn newest_refusal(
 /// reads back as the item, else refuses it at the first of them. What the
 /// struct binds is what its reader reads: the payload is read back with it, and an unknown
 /// member or component it tells of is the refusal.
-fn refuse_what_the_format_refuses(
-    payload: &Value,
-    version: FormatVersion,
-) -> Result<(), EncodeError> {
+fn refuse_what_the_format_refuses<S: VersionStruct>(payload: &Value) -> Result<(), EncodeError> {
+    let version = S::VERSION;
     let Ok(text) = bedrock_addon_core::json::to_facet_json(payload) else {
         return Ok(());
     };
@@ -430,7 +371,7 @@ fn refuse_what_the_format_refuses(
         at: at.clone(),
     };
     let mut told = Diagnostics::default();
-    let _ = parse_newest(JsonSlice::new(&text), version, &parse, &mut told);
+    let _ = S::parse(JsonSlice::new(&text), &parse, &mut told);
     let refused = told.iter().find(|finding| {
         matches!(
             finding.code,
@@ -466,7 +407,7 @@ pub(crate) fn write_beta_with(
 ) -> Result<Vec<Diagnostic>, EncodeError> {
     let mut root = envelope(BETA_VERSION, beta.write_with_unknown(unknown)?);
     let told = merge_unknown(&mut root, unknown);
-    refuse_what_the_format_refuses(&payload_of(&root), BETA_VERSION)?;
+    refuse_what_the_format_refuses::<Beta>(&payload_of(&root))?;
     write_json(&root, out, style)?;
     Ok(told)
 }

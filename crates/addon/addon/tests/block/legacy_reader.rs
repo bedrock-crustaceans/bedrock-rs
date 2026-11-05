@@ -9,7 +9,6 @@
 
 use bedrock_addon::diagnostic::DiagnosticCode;
 use bedrock_addon::families::block::component::{LightEmission, MaterialInstances};
-use bedrock_addon::json::{StrictBool, StrictFloat, StrictInt};
 
 use super::common::{context, document, loads, rejected};
 
@@ -39,7 +38,7 @@ fn a_legacy_ambient_occlusion_bool_reads_as_zero_or_one() {
                 .and_then(|i| i.ambient_occlusion);
             assert_eq!(
                 read,
-                Some(StrictFloat(expected)),
+                Some(expected),
                 "{version} {written}: {:#?}",
                 block.diagnostics()
             );
@@ -112,7 +111,7 @@ fn a_legacy_bool_member_takes_a_number_as_nonzero() {
             .and_then(|i| i.face_dimming);
         assert_eq!(
             read,
-            Some(StrictBool(expected)),
+            Some(expected),
             "{written}: {:#?}",
             block.diagnostics()
         );
@@ -135,7 +134,7 @@ fn a_legacy_integer_member_wraps_and_truncates() {
         let block = loads(&text, &context());
         assert_eq!(
             block.components.get::<LightEmission>().map(|l| l.0),
-            Some(StrictInt(expected)),
+            Some(expected),
             "{written}: {:#?}",
             block.diagnostics()
         );

@@ -10,7 +10,7 @@ use bedrock_addon::families::block::component::{
     PrecipitationInteractions, RandomOffset, RedstoneConductivity, Support,
 };
 use bedrock_addon::families::block::{Block, StateValues};
-use bedrock_addon::json::{StrictFloat, StrictInt};
+use bedrock_addon::json::StrictFloat;
 use bedrock_addon::molang::{Molang, MolangVersion, RawVersion};
 use bedrock_addon::version::FormatVersion;
 
@@ -269,15 +269,12 @@ fn full_chain_1_16_0() {
     );
     let c = &block.components;
     assert!(
-        matches!(c.get::<DestructibleByMining>(), Some(DestructibleByMining::Params(p)) if p.seconds_to_destroy == StrictFloat(4.0))
+        matches!(c.get::<DestructibleByMining>(), Some(DestructibleByMining::Params(p)) if p.seconds_to_destroy.total_cmp(&4.0).is_eq())
     );
-    assert!((c.get::<Friction>().unwrap().0.0 - 0.4).abs() < 1e-6);
+    assert!((c.get::<Friction>().unwrap().0 - 0.4).abs() < 1e-6);
+    assert_eq!(c.get::<LightEmission>(), Some(&LightEmission(15)));
     assert_eq!(
-        c.get::<LightEmission>(),
-        Some(&LightEmission(StrictInt(15)))
-    );
-    assert_eq!(
-        c.get::<Loot>().map(|l| l.0.0.as_str()),
+        c.get::<Loot>().map(|l| l.0.as_str()),
         Some("loot_tables/chests/simple_dungeon.json")
     );
     assert!(matches!(c.get::<MapColor>(), Some(MapColor::Hex(h)) if h == "#00ff00"));
@@ -471,7 +468,7 @@ fn field_gates() {
                 .components
                 .get::<DestructionParticles>()
                 .and_then(|p| p.particle_count),
-            Some(StrictInt(20))
+            Some(20)
         );
         assert!(
             !block.diagnostics().iter().any(|f| invalid_value(&f.code)),
@@ -582,7 +579,7 @@ fn cross_component() {
     );
     let offset = block.components.get::<RandomOffset>().expect("kept");
     let x = offset.x.as_ref().unwrap();
-    assert_eq!((x.range.min.0, x.range.max.0), (0.0, 0.0));
+    assert_eq!((x.range.min, x.range.max), (0.0, 0.0));
     expect(
         block.diagnostics(),
         |c| matches!(c, DiagnosticCode::ClampedValue { .. }),

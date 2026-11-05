@@ -7,36 +7,29 @@ use facet::Facet;
 
 use super::value::{ValueComponent, value_component};
 use super::visit_item_descriptor;
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::schema::{self, Schema};
 
 /// `minecraft:compostable`: a composter takes the item.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct Compostable {
     /// The chance in percent, 1–100, that it adds a layer (JSON `composting_chance`, required).
+    #[facet(schema::min = 1, schema::max = 100)]
     pub composting_chance: i32,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// `minecraft:food`: the item can be eaten.
 #[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct Food {
     /// The hunger restored (JSON `nutrition`).
-    #[facet(default)]
     pub nutrition: Option<i32>,
     /// The saturation factor (JSON `saturation_modifier`).
-    #[facet(default)]
     pub saturation_modifier: Option<f32>,
     /// It can be eaten when not hungry (JSON `can_always_eat`).
-    #[facet(default)]
     pub can_always_eat: Option<bool>,
     /// The item left after eating (JSON `using_converts_to`).
-    #[facet(default)]
     pub using_converts_to: Option<ItemDescriptor>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 impl MolangFields for Food {
@@ -51,23 +44,18 @@ impl MolangFields for Food {
 
 /// `minecraft:fuel`: the item burns in a furnace (JSON `{"duration": seconds}` or a bare
 /// number; at least 0.05).
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct Fuel {
     /// The burn time in seconds (JSON `duration`).
-    #[facet(default)]
+    #[facet(default, schema::min = 0.05)]
     pub duration: f32,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 impl Fuel {
     /// A burn time of `duration` seconds.
     pub fn new(duration: f32) -> Self {
-        Self {
-            duration,
-            extra: Extra::default(),
-        }
+        Self { duration }
     }
 }
 
@@ -84,7 +72,7 @@ value_component! {
 }
 
 /// The animation of [`UseAnimation`] (vanilla `UseAnimation`).
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Facet)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Facet, Schema)]
 #[repr(u8)]
 #[non_exhaustive]
 pub enum UseAnimationKind {
@@ -123,26 +111,22 @@ pub enum UseAnimationKind {
 
 /// `minecraft:use_modifiers`: how using the item behaves.
 #[derive(Clone, Debug, PartialEq, Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct UseModifiers {
     /// How long a use lasts, in seconds, at least 0 (JSON `use_duration`).
     #[facet(default)]
     pub use_duration: f32,
     /// The movement speed factor while using it, 0–1 (JSON `movement_modifier`).
-    #[facet(default)]
     pub movement_modifier: Option<f32>,
     /// Using it emits vibrations (JSON `emit_vibrations`; default true).
     #[facet(default = true)]
     pub emit_vibrations: bool,
     /// The sound when a use starts (JSON `start_sound`).
-    #[facet(default)]
     pub start_sound: Option<SoundEventName>,
     /// When a held use starts again (JSON `start_using`, from 1.26.30; default `if_first`,
     /// and `always` for a document older than 1.26.30).
     #[facet(default)]
     pub start_using: StartUsing,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 impl UseModifiers {
@@ -154,7 +138,6 @@ impl UseModifiers {
             emit_vibrations: true,
             start_sound: None,
             start_using: StartUsing::IfFirst,
-            extra: Extra::default(),
         }
     }
 }

@@ -2,8 +2,8 @@
 
 use facet::Facet;
 
-use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::json::{StrictFloat, StrictInt, StrictString, Value};
+use bedrock_addon_core::schema;
 use bedrock_addon_core::shared::{BlockDescriptor, StateValue};
 
 /// The values one block state can take (JSON `description.states.<name>`).
@@ -173,22 +173,20 @@ impl From<&StateValues> for Value {
 
 /// `description.traits`: built-in behaviours that add states the engine sets on placement.
 #[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct Traits {
     /// JSON `minecraft:placement_direction`.
-    #[facet(default, rename = "minecraft:placement_direction")]
+    #[facet(rename = "minecraft:placement_direction")]
     pub placement_direction: Option<PlacementDirection>,
     /// JSON `minecraft:placement_position`.
-    #[facet(default, rename = "minecraft:placement_position")]
+    #[facet(rename = "minecraft:placement_position")]
     pub placement_position: Option<PlacementPosition>,
     /// JSON `minecraft:connection`.
-    #[facet(default, rename = "minecraft:connection")]
+    #[facet(rename = "minecraft:connection")]
     pub connection: Option<Connection>,
     /// JSON `minecraft:multi_block`.
-    #[facet(default, rename = "minecraft:multi_block")]
+    #[facet(rename = "minecraft:multi_block")]
     pub multi_block: Option<MultiBlock>,
-    /// Unknown traits.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 impl Traits {
@@ -200,6 +198,7 @@ impl Traits {
 
 /// `minecraft:placement_direction`: the direction the player faced when placing the block.
 #[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct PlacementDirection {
     /// `minecraft:cardinal_direction`, `minecraft:facing_direction`,
     /// `minecraft:corner_and_cardinal_direction`, `minecraft:sixteen_way_rotation` (JSON
@@ -208,14 +207,9 @@ pub struct PlacementDirection {
     pub enabled_states: Vec<StrictString>,
     /// Degrees added to the placement rotation, a multiple of 90 in `0..=360` (JSON
     /// `y_rotation_offset`).
-    #[facet(default)]
     pub y_rotation_offset: Option<StrictFloat<f32>>,
     /// Blocks a corner placement connects with (JSON `blocks_to_corner_with`).
-    #[facet(default)]
     pub blocks_to_corner_with: Option<Vec<BlockDescriptor>>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 impl PlacementDirection {
@@ -227,29 +221,26 @@ impl PlacementDirection {
 
 /// `minecraft:placement_position`: where on the face the block was placed.
 #[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct PlacementPosition {
     /// `minecraft:block_face`, `minecraft:vertical_half` (JSON `enabled_states`; at least one).
     #[facet(default)]
     pub enabled_states: Vec<StrictString>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// `minecraft:connection`: connections to neighbouring blocks.
 #[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct Connection {
     /// `minecraft:cardinal_connections`, `minecraft:vertical_connections` (JSON
     /// `enabled_states`; at least one).
     #[facet(default)]
     pub enabled_states: Vec<StrictString>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// `minecraft:multi_block`: a block made of several stacked parts (doors, tall plants).
 #[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct MultiBlock {
     /// `minecraft:multi_block_part` (JSON `enabled_states`; required).
     #[facet(default)]
@@ -258,11 +249,7 @@ pub struct MultiBlock {
     /// Features (JSON `direction`, required).
     pub direction: StrictString,
     /// How many parts, `2..=4` (JSON `parts`); 2 when absent.
-    #[facet(default)]
     pub parts: Option<StrictInt<u8>>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 impl MultiBlock {

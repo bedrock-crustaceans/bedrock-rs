@@ -6,10 +6,11 @@ use bedrock_addon_core::shared::{BlockDescriptor, BlockSpecifier, EventTrigger};
 use facet::Facet;
 
 use super::visit_block_descriptor;
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::schema;
 
 /// `minecraft:block_placer`: using the item places `block`.
 #[derive(Clone, Debug, PartialEq, Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct BlockPlacer {
     /// The block placed (JSON `block`, required).
     pub block: BlockSpecifier,
@@ -19,15 +20,10 @@ pub struct BlockPlacer {
     pub use_on: Vec<BlockDescriptor>,
     /// The item is the block's item: it replaces the block's own item (JSON
     /// `replace_block_item`, from 1.21.40; default false).
-    #[facet(default)]
     pub replace_block_item: Option<bool>,
     /// The block is aligned to the player's facing (JSON `aligned_placement`, from 1.26.0,
     /// engine 1.26.10; default false).
-    #[facet(default)]
     pub aligned_placement: Option<bool>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 impl BlockPlacer {
@@ -38,7 +34,6 @@ impl BlockPlacer {
             use_on: Vec::new(),
             replace_block_item: None,
             aligned_placement: None,
-            extra: Extra::default(),
         }
     }
 }
@@ -51,35 +46,30 @@ impl MolangFields for BlockPlacer {
 
 /// `minecraft:digger`: how fast the item breaks blocks.
 #[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct Digger {
     /// The speed per block (JSON `destroy_speeds`).
     #[facet(default, skip_serializing_if = Vec::is_empty)]
     pub destroy_speeds: Vec<DestroySpeed>,
     /// The `efficiency` enchantment applies (JSON `use_efficiency`).
-    #[facet(default)]
     pub use_efficiency: Option<bool>,
     /// The deprecated `on_dig` trigger, as the 1.20.50 upgrade keeps it under its new name
     /// (JSON `__deprecated_on_dig`).
-    #[facet(default, rename = "__deprecated_on_dig")]
+    #[facet(rename = "__deprecated_on_dig")]
     pub deprecated_on_dig: Option<EventTrigger>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// One entry of a [`Digger`].
 #[derive(Clone, Debug, PartialEq, Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct DestroySpeed {
     /// The blocks (JSON `block`, required).
     pub block: BlockDescriptor,
     /// The speed (JSON `speed`, required).
     pub speed: i32,
     /// The deprecated per-block `on_dig` trigger (JSON `__deprecated_on_dig`).
-    #[facet(default, rename = "__deprecated_on_dig")]
+    #[facet(rename = "__deprecated_on_dig")]
     pub deprecated_on_dig: Option<EventTrigger>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 impl Digger {
@@ -112,9 +102,9 @@ impl MolangFields for Digger {
 
 /// `minecraft:entity_placer`: using the item spawns `entity`.
 #[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct EntityPlacer {
     /// The entity spawned, with an optional `<event>` (JSON `entity`).
-    #[facet(default)]
     pub entity: Option<EntityId>,
     /// The blocks it may be used on; empty means any (JSON `use_on`).
     #[facet(default, skip_serializing_if = Vec::is_empty)]
@@ -122,9 +112,6 @@ pub struct EntityPlacer {
     /// The blocks a dispenser may place it on (JSON `dispense_on`).
     #[facet(default, skip_serializing_if = Vec::is_empty)]
     pub dispense_on: Vec<BlockDescriptor>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 impl MolangFields for EntityPlacer {

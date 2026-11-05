@@ -65,7 +65,7 @@ pub(super) fn culled<'a>(cx: &LinkCx<'a>) -> Vec<Culled<'a>> {
             let Some(Geometry::Params(geometry)) = components.get::<Geometry>() else {
                 continue;
             };
-            let Some(culling) = geometry.culling.as_ref().map(|name| name.0.as_str()) else {
+            let Some(culling) = geometry.culling.as_ref().map(String::as_str) else {
                 continue;
             };
             if culling.is_empty() {
@@ -135,7 +135,7 @@ pub(super) fn culling_layers(cx: &LinkCx<'_>, out: &mut Findings) {
             .geometry
             .culling_layer
             .as_ref()
-            .is_some_and(|layer| layer.0 != CULLING_LAYER_UNDEFINED);
+            .is_some_and(|layer| layer != CULLING_LAYER_UNDEFINED);
         if layered {
             continue;
         }

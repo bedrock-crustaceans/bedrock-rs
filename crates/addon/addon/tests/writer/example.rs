@@ -5,7 +5,6 @@ use bedrock_addon::document::Resolution;
 use bedrock_addon::families::block::component::{DestructibleByMining, LightEmission};
 use bedrock_addon::families::block::{Block, Permutation, StateValues};
 use bedrock_addon::id::BlockId;
-use bedrock_addon::json::StrictInt;
 use bedrock_addon::load::{LoadContext, LoadOptions};
 use bedrock_addon::manifest::Manifest;
 use bedrock_addon::pack::{Behavior, PackOrigin, PackStack, PackType, PackWriter};
@@ -25,7 +24,7 @@ fn ruby_lamp() -> Block {
     // a "geometry" and "material_instances" component."), which the example's own
     // `assert!(!findings.has_errors())` would trip over.
     ruby.permutations
-        .push(Permutation::when("q.block_state('demo:lit')").with(LightEmission(StrictInt(15))));
+        .push(Permutation::when("q.block_state('demo:lit')").with(LightEmission(15)));
     ruby
 }
 

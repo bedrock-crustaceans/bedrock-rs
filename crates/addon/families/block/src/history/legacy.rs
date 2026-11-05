@@ -8,7 +8,6 @@ use indexmap::IndexMap;
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, VanillaText,
 };
-use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
 use bedrock_addon_core::version::FormatVersion;
@@ -32,9 +31,6 @@ pub struct Legacy<const MAJOR: u16, const MINOR: u16, const PATCH: u16> {
     pub events: Option<Value>,
     /// The names of the 1.21.60 `minecraft:custom_components` list, in order (from 1.21.90).
     pub ordered_v1_custom_components: Vec<String>,
-    /// The root members beside `format_version` and `minecraft:block` (vanilla's legacy
-    /// slice reads the raw text and ignores them; reported as unknown members).
-    pub root_extra: Extra,
     /// The components a step inserted, as `(section, name)` (`None`: the base); not JSON.
     pub synthesized: Vec<(Option<usize>, String)>,
     /// The section whose `minecraft:creative_category` component the 1.19.10 step made
@@ -77,7 +73,6 @@ impl<const MAJOR: u16, const MINOR: u16, const PATCH: u16> Legacy<MAJOR, MINOR, 
             permutations: self.permutations,
             events: self.events,
             ordered_v1_custom_components: self.ordered_v1_custom_components,
-            root_extra: self.root_extra,
             synthesized: self.synthesized,
             category_from: self.category_from,
         }

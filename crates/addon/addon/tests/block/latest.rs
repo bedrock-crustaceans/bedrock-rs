@@ -587,7 +587,7 @@ fn enchantment_power_transmitter() {
             block
                 .components
                 .get::<EnchantmentPowerTransmitter>()
-                .map(|c| c.0.0),
+                .map(|c| c.0),
             value,
             "{n}"
         );
@@ -845,7 +845,7 @@ fn a_container_and_its_rules() {
         .get::<BlockEntity>()
         .expect("the component");
     let data = entity.container.as_ref().expect("a container");
-    assert_eq!(data.slot_count.0, 27);
+    assert_eq!(data.slot_count, 27);
     let d = rejected(&container(r#"{"slot_count": 27}"#), &context());
     assert!(
         error_texts(&d).iter().any(|t| t

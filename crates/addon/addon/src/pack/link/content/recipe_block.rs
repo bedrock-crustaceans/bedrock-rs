@@ -27,7 +27,7 @@ pub(super) fn run(cx: &LinkCx<'_>, out: &mut Findings) {
     for (_, block) in cx.behavior().blocks() {
         for (_, components) in sections(block) {
             if let Some(table) = components.get::<CraftingTable>() {
-                offered.extend(table.crafting_tags.iter().map(|tag| tag.0.as_str()));
+                offered.extend(table.crafting_tags.iter().map(String::as_str));
             }
         }
     }

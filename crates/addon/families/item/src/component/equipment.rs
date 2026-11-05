@@ -7,32 +7,27 @@ use bedrock_addon_core::shared::{IntRange, ItemDescriptor};
 use facet::Facet;
 
 use super::{FORMAT_VERSION_MOLANG, visit_item_descriptor};
-use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::json::Value;
+use bedrock_addon_core::schema::{self, Schema};
 
 /// `minecraft:damage_absorption`: worn armour absorbs damage of these causes, spending
 /// durability.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct DamageAbsorption {
     /// The damage causes (JSON `absorbable_causes`, required, at least one).
     pub absorbable_causes: Vec<String>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// `minecraft:durability`: how much use the item takes before it breaks.
 #[derive(Clone, Debug, PartialEq, Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct Durability {
     /// The durability, at least 0 (JSON `max_durability`, required).
     pub max_durability: i32,
     /// The chance in percent, 0–100, that a use spends durability (JSON `damage_chance`;
     /// default 100).
-    #[facet(default)]
     pub damage_chance: Option<IntRange>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 impl Durability {
@@ -41,7 +36,6 @@ impl Durability {
         Self {
             max_durability,
             damage_chance: None,
-            extra: Extra::default(),
         }
     }
 }
@@ -49,12 +43,10 @@ impl Durability {
 /// `minecraft:durability_sensor`: particles and sounds when the durability falls to a
 /// threshold.
 #[derive(Clone, Debug, PartialEq, Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct DurabilitySensor {
     /// The thresholds (JSON `durability_thresholds`, required, at least one).
     pub durability_thresholds: Vec<DurabilityThreshold>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// One threshold of a [`DurabilitySensor`].
@@ -62,21 +54,17 @@ pub struct DurabilitySensor {
 /// A member the document leaves out stays unset (and is not written); the game gives it the
 /// value the constants and accessors below state.
 #[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct DurabilityThreshold {
     /// The durability at which it fires (JSON `durability`).
     #[facet(default)]
     pub durability: i32,
     /// The particle shown (JSON `particle_type`; unset: the particle type value
     /// [`DEFAULT_PARTICLE_TYPE`](Self::DEFAULT_PARTICLE_TYPE)).
-    #[facet(default)]
     pub particle_type: Option<String>,
     /// The sound played (JSON `sound_event`): a level sound event's name below 1.26.50, any
     /// sound name from 1.26.50 (unset: the empty name).
-    #[facet(default)]
     pub sound_event: Option<SoundEventName>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 impl DurabilityThreshold {
@@ -91,27 +79,23 @@ impl DurabilityThreshold {
 }
 
 /// `minecraft:dyeable`: the item can be dyed in a cauldron.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct Dyeable {
     /// The colour before dyeing (JSON `default_color`: a `#RRGGBB` string or `[r, g, b]`), as
     /// written.
-    #[facet(default)]
     pub default_color: Option<Value>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// `minecraft:enchantable`: which enchantments the item takes and how well.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct Enchantable {
     /// The enchantability, at least 0 (JSON `value`, required).
+    #[facet(schema::min = 0)]
     pub value: i32,
     /// The enchant slot (JSON `slot`, required); an unknown name is read as `none`.
     pub slot: String,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// The enchant slot names vanilla's `slot` regex accepts (`EnchantSlot`).
@@ -147,27 +131,22 @@ pub(crate) const ENCHANT_SLOTS: &[&str] = &[
 
 /// `minecraft:repairable`: the items that repair this one, and by how much.
 #[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct Repairable {
     /// The repair entries (JSON `repair_items`).
     #[facet(default, skip_serializing_if = Vec::is_empty)]
     pub repair_items: Vec<RepairItem>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// One entry of a [`Repairable`].
 #[derive(Clone, Debug, PartialEq, Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct RepairItem {
     /// The items that repair (JSON `items`, required).
     pub items: Vec<ItemDescriptor>,
     /// The durability restored (JSON `repair_amount`): a number, a Molang string or
     /// `{"expression", "version"}`, compiled at the item's version.
-    #[facet(default)]
     pub repair_amount: Option<Molang>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 impl MolangFields for Repairable {
@@ -194,19 +173,16 @@ impl MolangFields for Repairable {
 }
 
 /// `minecraft:wearable`: the item is worn in `slot`.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct Wearable {
     /// The slot (JSON `slot`, required).
     pub slot: WearableSlot,
     /// The armour points, at least 0 (JSON `protection`; default 0).
-    #[facet(default)]
+    #[facet(default, schema::min = 0)]
     pub protection: i32,
     /// The wearer is hidden from the locator bar (JSON `hides_player_location`, from 1.21.90).
-    #[facet(default)]
     pub hides_player_location: Option<bool>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 impl Wearable {
@@ -216,14 +192,13 @@ impl Wearable {
             slot,
             protection: 0,
             hides_player_location: None,
-            extra: Extra::default(),
         }
     }
 }
 
 /// The slot a [`Wearable`] goes in.
 // The five-value "Wearable Slot" enum
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Facet)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Facet, Schema)]
 #[repr(u8)]
 #[non_exhaustive]
 pub enum WearableSlot {
@@ -243,17 +218,4 @@ pub enum WearableSlot {
     /// The feet (JSON `slot.armor.feet`).
     #[facet(rename = "slot.armor.feet")]
     Feet,
-}
-
-impl WearableSlot {
-    /// The JSON spelling.
-    pub fn name(self) -> &'static str {
-        match self {
-            Self::Offhand => "slot.weapon.offhand",
-            Self::Head => "slot.armor.head",
-            Self::Chest => "slot.armor.chest",
-            Self::Legs => "slot.armor.legs",
-            Self::Feet => "slot.armor.feet",
-        }
-    }
 }

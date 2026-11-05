@@ -449,7 +449,6 @@ The writer gives the pack three ways: `files()` (every file, `manifest.json` fir
 use bedrock_addon::families::block::component::LightEmission;
 use bedrock_addon::families::block::{Block, Permutation, StateValues};
 use bedrock_addon::id::BlockId;
-use bedrock_addon::json::StrictInt;
 use bedrock_addon::load::{LoadContext, LoadOptions};
 use bedrock_addon::manifest::Manifest;
 use bedrock_addon::pack::{Behavior, PackOrigin, PackStack, PackType, PackWriter, WriteError};
@@ -458,7 +457,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut lamp = Block::new(BlockId::from_static("demo:ruby_lamp"));
     lamp.description.states.insert("demo:lit".to_owned(), StateValues::bools());
     lamp.permutations
-        .push(Permutation::when("q.block_state('demo:lit')").with(LightEmission(StrictInt(15))));
+        .push(Permutation::when("q.block_state('demo:lit')").with(LightEmission(15)));
     // A value built in code is checked by the rules a loaded one is checked by.
     assert!(!lamp.validate(&LoadContext::detached()).has_errors());
 

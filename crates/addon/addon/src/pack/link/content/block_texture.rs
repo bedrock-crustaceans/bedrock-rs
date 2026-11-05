@@ -43,7 +43,7 @@ pub(super) fn run(cx: &LinkCx<'_>, out: &mut Findings) {
                 && let Some(texture) = &particles.texture
             {
                 let path = at![&section; "minecraft:destruction_particles", "texture"];
-                tile(cx, out, view, document, &path, &texture.0);
+                tile(cx, out, view, document, &path, texture);
             }
         }
     }
@@ -62,7 +62,7 @@ fn materials(
         if let MaterialInstanceEntry::Instance(instance) = entry
             && let Some(texture) = &instance.texture
         {
-            tile(cx, out, view, document, &at![path; name, "texture"], &texture.0);
+            tile(cx, out, view, document, &at![path; name, "texture"], texture);
         }
     }
 }

@@ -91,8 +91,7 @@ fn upgrade_section(map: &mut ComponentMap<crate::component::BlockComponent>) {
         return;
     };
     for b in boxes.iter_mut() {
-        let mut upgraded = CollisionBoundingBox::from_origin_size(b.origin(), b.size());
-        upgraded.extra = std::mem::take(&mut b.extra);
-        *b = upgraded;
+        // (The box's unknown members stay in the document's table at its path.)
+        *b = CollisionBoundingBox::from_origin_size(b.origin(), b.size());
     }
 }

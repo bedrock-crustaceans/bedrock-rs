@@ -33,7 +33,7 @@ fn culling_shapes(cx: &LinkCx<'_>, out: &mut Findings, document: &Document<Block
         let Some(shape) = &geometry.culling_shape else {
             continue;
         };
-        let name = shape.0.as_str();
+        let name = shape.as_str();
         if BUILT_IN_SHAPES.contains(&name) {
             continue;
         }

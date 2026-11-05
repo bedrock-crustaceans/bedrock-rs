@@ -2,9 +2,9 @@
 //! component-based check rejects (below 1.16.100, 1.16.101–1.16.x, and later documents
 //! whose `components` name no registered component).
 
-use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
+use bedrock_addon_core::schema;
 use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::{
     ParseCx, Upgrade, UpgradeCx, VersionStruct, Versioned, parse_payload, write_payload,
@@ -42,14 +42,11 @@ impl Versioned for Item {
 
 /// What the legacy item is parsed from.
 #[derive(Facet)]
+#[facet(schema::unknown = "keep")]
 struct Shell {
     description: Description,
-    #[facet(default)]
     components: Option<Value>,
-    #[facet(default)]
     events: Option<Value>,
-    #[facet(skip, rename = "\u{0}extra")]
-    extra: Extra,
 }
 
 impl VersionStruct for Item {

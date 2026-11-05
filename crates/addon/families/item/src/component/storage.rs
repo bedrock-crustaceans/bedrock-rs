@@ -6,30 +6,20 @@ use bedrock_addon_core::shared::ItemDescriptor;
 use facet::Facet;
 
 use super::visit_item_descriptor;
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::schema::{self, Schema};
 
 /// `minecraft:bundle_interaction`: the bundle user interface (needs `storage_item`).
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct BundleInteraction {
     /// The slots shown, 1–64 (JSON `num_viewable_slots`; default 12).
-    #[facet(default = 12)]
+    #[facet(default = 12, schema::min = 1, schema::max = 64)]
     pub num_viewable_slots: i32,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
-}
-
-impl Default for BundleInteraction {
-    fn default() -> Self {
-        Self {
-            num_viewable_slots: 12,
-            extra: Extra::default(),
-        }
-    }
 }
 
 /// `minecraft:storage_item`: the item stores other items (needs a stack size of 1).
 #[derive(Clone, Debug, PartialEq, Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct StorageItem {
     /// The number of slots, at most 64 (JSON `max_slots`; default 64).
     #[facet(default = 64)]
@@ -43,9 +33,6 @@ pub struct StorageItem {
     /// Only these items may go in; empty means any (JSON `allowed_items`).
     #[facet(default, skip_serializing_if = Vec::is_empty)]
     pub allowed_items: Vec<ItemDescriptor>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 impl Default for StorageItem {
@@ -55,7 +42,6 @@ impl Default for StorageItem {
             allow_nested_storage_items: true,
             banned_items: Vec::new(),
             allowed_items: Vec::new(),
-            extra: Extra::default(),
         }
     }
 }
@@ -78,43 +64,21 @@ impl MolangFields for StorageItem {
 }
 
 /// `minecraft:storage_weight_limit`: the total weight a storage item holds (from 1.21.60).
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct StorageWeightLimit {
     /// The limit, at most 64 (JSON `max_weight_limit`; default 64).
-    #[facet(default = 64)]
+    #[facet(default = 64, schema::max = 64)]
     pub max_weight_limit: i32,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
-}
-
-impl Default for StorageWeightLimit {
-    fn default() -> Self {
-        Self {
-            max_weight_limit: 64,
-            extra: Extra::default(),
-        }
-    }
 }
 
 /// `minecraft:storage_weight_modifier`: the weight of this item inside a storage item (from
 /// 1.21.60).
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct StorageWeightModifier {
     /// The weight, at least 0; 0 means it cannot be stored (JSON `weight_in_storage_item`;
     /// default 4).
-    #[facet(default = 4)]
+    #[facet(default = 4, schema::min = 0)]
     pub weight_in_storage_item: i32,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
-}
-
-impl Default for StorageWeightModifier {
-    fn default() -> Self {
-        Self {
-            weight_in_storage_item: 4,
-            extra: Extra::default(),
-        }
-    }
 }

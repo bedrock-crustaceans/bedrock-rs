@@ -28,7 +28,7 @@ pub(super) fn run(cx: &LinkCx<'_>, out: &mut Findings) {
         let Some(document) = rules_of(cx, &culled) else {
             continue;
         };
-        let geometry = GeometryId::parse(culled.geometry.identifier.0.as_str());
+        let geometry = GeometryId::parse(culled.geometry.identifier.as_str());
         if !matches!(cx.geometry(&geometry), Target::Defined(_)) {
             continue;
         }

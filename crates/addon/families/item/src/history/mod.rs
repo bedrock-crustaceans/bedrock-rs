@@ -21,8 +21,7 @@ pub use component::{
 pub use document::{Description, ItemDocument, pack, unpack};
 
 pub(crate) use document::{
-    SideCarPlace, binding, from_component_map, into_component_map, parse_parts, write_component,
-    write_parts,
+    SideCarPlace, binding, into_component_map, parse_parts, write_parts, written_components,
 };
 #[cfg(test)]
 pub(crate) use gates::{GateRow, gate_with, release_threshold};

@@ -11,17 +11,15 @@ use indexmap::IndexMap;
 use super::ItemComponent;
 use super::value::{ValueComponent, value_component};
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics};
-use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::schema::{self, Schema};
 
 /// `minecraft:display_name`: the item's name, or a localization key (JSON `{"value": text}`).
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct DisplayName {
     /// The name or localization key (JSON `value`).
     #[facet(default)]
     pub value: String,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 value_component! {
@@ -44,14 +42,12 @@ value_component! {
 /// JSON `{"textures": {"default": key, …}}`, or a bare key (the `default` texture). Keys
 /// besides `default` (`dyed`, `icon_trim`, `bundle_open_front`, `bundle_open_back`, trim
 /// palettes) are read by the engine where they apply.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct Icon {
     /// The texture keys by role (JSON `textures`).
     #[facet(default)]
     pub textures: IndexMap<String, String>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 impl Icon {
@@ -59,10 +55,7 @@ impl Icon {
     pub fn new(key: impl Into<String>) -> Self {
         let mut textures = IndexMap::new();
         textures.insert("default".to_owned(), key.into());
-        Self {
-            textures,
-            extra: Extra::default(),
-        }
+        Self { textures }
     }
 
     /// The `default` texture key.
@@ -81,7 +74,10 @@ impl ValueComponent for Icon {
 /// `minecraft:interact_button`: the touch-control interact button.
 ///
 /// JSON `true`/`false`, or the button's text (which also turns it on); no object form.
-#[derive(Clone, Debug, Default, PartialEq)]
+/// Its row's parser reads it; the JSON value is facet's proxy, so the component is
+/// written as the flag or the text.
+#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[facet(opaque, proxy = Value)]
 pub struct InteractButton {
     /// The button is shown.
     pub requires_interact: bool,
@@ -113,6 +109,20 @@ impl InteractButton {
     }
 }
 
+impl TryFrom<Value> for InteractButton {
+    type Error = &'static str;
+
+    fn try_from(value: Value) -> Result<Self, Self::Error> {
+        Self::from_value(&value).ok_or("expected a bool or a string")
+    }
+}
+
+impl From<&InteractButton> for Value {
+    fn from(button: &InteractButton) -> Self {
+        button.to_value()
+    }
+}
+
 /// The parser of `minecraft:interact_button`: a bool or a string; another type is a
 /// type error, which refuses the item. The one context without `strict_components` is the
 /// write-back probe of `write.rs`, which reads only the `Unrecognized*` codes, so the error
@@ -138,23 +148,18 @@ pub(crate) fn parse_interact_button(
 /// A member the document leaves out stays unset (and is not written); the game gives it the
 /// value [`effective_duration`](Self::effective_duration) and its siblings state.
 #[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct Record {
     /// The sound played (JSON `sound_event`): a level sound event's name in a stable
     /// document, any sound name in a beta one. Unset: the stable struct plays the level sound
     /// event [`STABLE_DEFAULT_SOUND_EVENT`](Self::STABLE_DEFAULT_SOUND_EVENT), the beta struct
     /// the empty name.
-    #[facet(default)]
     pub sound_event: Option<SoundEventName>,
     /// The length in seconds (JSON `duration`; unset: 0.0).
-    #[facet(default)]
     pub duration: Option<f32>,
     /// The comparator signal of a jukebox playing it, 1–13 (JSON `comparator_signal`; unset:
     /// 1).
-    #[facet(default)]
     pub comparator_signal: Option<i32>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 impl Record {
@@ -182,12 +187,40 @@ impl Record {
 }
 
 /// `minecraft:tags`: the item tags.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
 pub struct Tags {
     /// The tags (JSON `tags`).
     #[facet(default, skip_serializing_if = Vec::is_empty)]
     pub tags: Vec<String>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{InteractButton, ItemComponent};
+    use bedrock_addon_core::json::Value;
+
+    /// The write dispatch writes the button through its proxy: the flag, or the text.
+    #[test]
+    fn interact_button_writes_its_flag_or_its_text() {
+        for button in [
+            InteractButton {
+                requires_interact: false,
+                interact_text: None,
+            },
+            InteractButton {
+                requires_interact: true,
+                interact_text: Some("Use".to_owned()),
+            },
+        ] {
+            let written = ItemComponent::InteractButton(button.clone()).write_component();
+            assert_eq!(written.ok(), Some(button.to_value()));
+        }
+        assert_eq!(
+            ItemComponent::InteractButton(InteractButton::default())
+                .write_component()
+                .ok(),
+            Some(Value::from(false))
+        );
+    }
 }

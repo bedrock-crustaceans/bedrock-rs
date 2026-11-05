@@ -9,24 +9,19 @@ use indexmap::IndexMap;
 
 use super::component::ItemComponent;
 use super::history::gate;
-use super::history::write_component;
 use super::{ItemDeprecatedData, LegacyItemData};
 use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
 use bedrock_addon_core::load::LoadContext;
 
-/// An item definition (`minecraft:item`), in the newest format version (1.26.50); an item
-/// written in an older format is upgraded to it on load ([`history`](crate::history) has the older structs).
+/// An item document of a modern format: the members the newest struct ([`Item`]), the beta
+/// struct ([`Beta`]) and the 1.26.30 struct ([`history::v1_26_30::Item`](crate::history::v1_26_30::Item))
+/// share, one struct per format version `V` ([`pack`](crate::history::pack)ed; [`BETA`] for the
+/// beta struct).
 ///
-/// Two item formats exist. A document is component based only when its `format_version` is
-/// exactly 1.16.100 or 1.17.0 and later, **and** its `components` name at least one known
-/// component (or a `tag:` key); everything else is the legacy item format of 1.10, read into
-/// [`LegacyItemData::format_item`] with an empty component map ([`ItemFormat::Legacy`](crate::ItemFormat::Legacy)).
-///
-/// JSON: `{"format_version": "1.26.50", "minecraft:item": {"description": …, "components":
-/// {…}, "__deprecated_components"?: …, "events"?: …}}`.
+/// JSON: `{"format_version": …, "minecraft:item": {"description": …, "components": {…},
+/// "__deprecated_components"?: …, "events"?: …}}`.
 #[derive(Clone, Debug, PartialEq)]
-#[doc(alias = "item")]
-pub struct Item {
+pub struct ModernItem<const V: u32> {
     /// The identifier and creative-menu placement (JSON `description`).
     pub description: ItemDescription,
     /// The components, in file order (JSON `components`).
@@ -38,6 +33,47 @@ pub struct Item {
     /// What vanilla's legacy reader takes from the same document; not written.
     pub legacy: LegacyItemData,
 }
+
+/// The [`ModernItem`] version of the beta struct ([`BETA_VERSION`](bedrock_addon_core::versioning::BETA_VERSION),
+/// whose parts do not [`pack`](crate::history::pack)).
+#[doc(hidden)]
+pub const BETA: u32 = u32::MAX;
+
+/// The format version a [`ModernItem`] version stands for.
+pub(crate) const fn modern_version(packed: u32) -> bedrock_addon_core::version::FormatVersion {
+    if packed == BETA {
+        bedrock_addon_core::versioning::BETA_VERSION
+    } else {
+        crate::history::unpack(packed)
+    }
+}
+
+impl<const V: u32> ModernItem<V> {
+    /// The same members as the struct of another modern format: a step that moves every
+    /// member unchanged.
+    pub(crate) fn into_format<const W: u32>(self) -> ModernItem<W> {
+        ModernItem {
+            description: self.description,
+            components: self.components,
+            deprecated: self.deprecated,
+            events: self.events,
+            legacy: self.legacy,
+        }
+    }
+}
+
+/// An item definition (`minecraft:item`), in the newest format version (1.26.50); an item
+/// written in an older format is upgraded to it on load ([`history`](crate::history) has the older structs).
+///
+/// Two item formats exist. A document is component based only when its `format_version` is
+/// exactly 1.16.100 or 1.17.0 and later, **and** its `components` name at least one known
+/// component (or a `tag:` key); everything else is the legacy item format of 1.10, read into
+/// [`LegacyItemData::format_item`] with an empty component map ([`ItemFormat::Legacy`](crate::ItemFormat::Legacy)).
+///
+/// JSON: `{"format_version": "1.26.50", "minecraft:item": {"description": …, "components":
+/// {…}, "__deprecated_components"?: …, "events"?: …}}`.
+#[doc(alias = "item")]
+pub type Item = ModernItem<{ crate::history::pack(1, 26, 50) }>;
 
 /// An item's `description`.
 #[derive(Clone, Debug, PartialEq)]
@@ -100,19 +136,7 @@ impl ItemDescription {
 /// `record`, whose `sound_event` takes any sound name (a level sound event's name in a stable
 /// document); the other sound members take any sound name from 1.26.50 already. Reached
 /// through `Registry::beta()`.
-#[derive(Clone, Debug, PartialEq)]
-pub struct Beta {
-    /// The identifier and creative-menu placement (JSON `description`).
-    pub description: ItemDescription,
-    /// The components, in file order (JSON `components`).
-    pub components: ComponentMap<ItemComponent>,
-    /// Data older formats moved out of the components (JSON `__deprecated_components`).
-    pub deprecated: ItemDeprecatedData,
-    /// The legacy `events` object, kept as written (JSON `events`).
-    pub events: Option<Value>,
-    /// What vanilla's legacy reader takes from the same document; not written.
-    pub legacy: LegacyItemData,
-}
+pub type Beta = ModernItem<BETA>;
 
 impl Item {
     /// The stack size vanilla uses: `minecraft:max_stack_size`, else 1 for an item worn in an
@@ -166,8 +190,8 @@ impl Item {
         let at = JsonPath::new().child("minecraft:item");
         let mut d = Diagnostics::default();
         let mut components = IndexMap::new();
-        for (name, component) in super::history::from_component_map(&self.components) {
-            if let Ok(json) = write_component(&component) {
+        for (name, written) in super::history::written_components(&self.components) {
+            if let Ok(json) = written {
                 components.insert(name, json);
             }
         }

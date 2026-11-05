@@ -6,52 +6,39 @@ use facet::Facet;
 use indexmap::IndexMap;
 
 use super::TRIGGER_CONDITION;
-use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::molang::{Molang, MolangFields, MolangVisitor};
+use bedrock_addon_core::schema;
 use bedrock_addon_core::shared::FilterSubject;
 
 /// The legacy components of one section (the base or a permutation) that the 1.26.20
 /// conversion moved aside (JSON `deprecated`, the crate's own member). Only documents below 1.26.20 of
 /// allow-listed packs (vanilla's legacy creator features) carry them.
 #[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct DeprecatedComponents {
     /// JSON `on_fall_on`.
-    #[facet(default)]
     pub on_fall_on: Option<DeprecatedBaseTrigger>,
     /// JSON `on_interact`.
-    #[facet(default)]
     pub on_interact: Option<DeprecatedBaseTrigger>,
     /// JSON `on_placed`.
-    #[facet(default)]
     pub on_placed: Option<DeprecatedBaseTrigger>,
     /// JSON `on_player_destroyed`.
-    #[facet(default)]
     pub on_player_destroyed: Option<DeprecatedBaseTrigger>,
     /// JSON `on_player_placing`.
-    #[facet(default)]
     pub on_player_placing: Option<DeprecatedBaseTrigger>,
     /// JSON `on_step_off`.
-    #[facet(default)]
     pub on_step_off: Option<DeprecatedBaseTrigger>,
     /// JSON `on_step_on`.
-    #[facet(default)]
     pub on_step_on: Option<DeprecatedBaseTrigger>,
     /// JSON `queued_ticking`.
-    #[facet(default)]
     pub queued_ticking: Option<DeprecatedQueuedTicking>,
     /// JSON `random_ticking`.
-    #[facet(default)]
     pub random_ticking: Option<DeprecatedRandomTicking>,
     /// JSON `breathability`.
-    #[facet(default)]
     pub breathability: Option<Breathing>,
     /// JSON `unit_cube`: the section was a full unit cube.
-    #[facet(default)]
     pub unit_cube: Option<StrictBool>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 impl DeprecatedComponents {
@@ -79,22 +66,16 @@ impl DeprecatedComponents {
 /// A legacy trigger component (the game's deprecated trigger): an event to run, its
 /// condition and target.
 #[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct DeprecatedBaseTrigger {
     /// The event of `deprecated_event_handlers` to run (JSON `event`).
-    #[facet(default)]
     pub event: Option<StrictString>,
     /// When it runs (JSON `condition`).
-    #[facet(default)]
     pub condition: Option<Molang>,
     /// Who the event targets (JSON `target`: `self`, `other`, …).
-    #[facet(default)]
     pub target: Option<FilterSubject>,
     /// `on_fall_on` only: the fall distance it needs (JSON `min_fall_distance`).
-    #[facet(default)]
     pub min_fall_distance: Option<StrictFloat<f32>>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 impl MolangFields for DeprecatedBaseTrigger {
@@ -105,6 +86,7 @@ impl MolangFields for DeprecatedBaseTrigger {
 
 /// The legacy `minecraft:queued_ticking` component.
 #[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct DeprecatedQueuedTicking {
     /// JSON `min_ticks`.
     #[facet(default = StrictInt(0_u32))]
@@ -118,20 +100,15 @@ pub struct DeprecatedQueuedTicking {
     /// JSON `on_tick`.
     #[facet(default)]
     pub on_tick: DeprecatedBaseTrigger,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// The legacy `minecraft:random_ticking` component.
 #[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct DeprecatedRandomTicking {
     /// JSON `on_tick`.
     #[facet(default)]
     pub on_tick: DeprecatedBaseTrigger,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// The legacy `minecraft:breathability` value.
@@ -167,15 +144,13 @@ impl MolangFields for DeprecatedComponents {
 /// A legacy block event (the game's deprecated definition event), kept for write-back and for
 /// hosts that still run them (JSON `deprecated_event_handlers.<name>`, the crate's own member).
 #[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct DeprecatedDefinitionEvent {
     /// The weight of a `randomize` entry (JSON `probability`).
-    #[facet(default)]
     pub probability: Option<StrictFloat<f32>>,
     /// When the event runs (JSON `condition`).
-    #[facet(default)]
     pub condition: Option<Molang>,
     /// The event the node fires (JSON `trigger`).
-    #[facet(default)]
     pub trigger: Option<DefinitionTrigger>,
     /// `sequence` children, run in order (JSON `sequence`).
     #[facet(default, skip_serializing_if = Vec::is_empty)]
@@ -187,28 +162,19 @@ pub struct DeprecatedDefinitionEvent {
     /// `responses`).
     #[facet(default, skip_serializing_if = Vec::is_empty)]
     pub responses: Vec<IndexMap<String, Value>>,
-    /// Unknown members. `default`: the reader does not fill a skipped member of a node
-    /// that is an element of a node of its own type, and refuses every nested node for it.
-    #[facet(skip, default, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 /// The event a legacy event node fires (the game's definition trigger): its name, target and
 /// condition.
 #[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[facet(schema::unknown = "keep")]
 pub struct DefinitionTrigger {
     /// The event of `deprecated_event_handlers` (JSON `event`).
-    #[facet(default)]
     pub event: Option<StrictString>,
     /// Who the event targets (JSON `target`).
-    #[facet(default)]
     pub target: Option<FilterSubject>,
     /// When it fires (JSON `condition`).
-    #[facet(default)]
     pub condition: Option<Molang>,
-    /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
-    pub extra: Extra,
 }
 
 impl MolangFields for DefinitionTrigger {

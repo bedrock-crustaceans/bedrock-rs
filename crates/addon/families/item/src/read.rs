@@ -5,7 +5,7 @@
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
 };
-use bedrock_addon_core::document::{ComponentMap, Document, Origin, Rejected};
+use bedrock_addon_core::document::{Document, Origin, Rejected};
 use bedrock_addon_core::id::ItemId;
 use bedrock_addon_core::json::{JsonSlice, PrepareError, Prepared, Value};
 use bedrock_addon_core::load::{DocumentSource, LoadContext};
@@ -20,9 +20,10 @@ use indexmap::IndexMap;
 
 use super::component::ItemComponent;
 use super::history::{
-    HISTORY_ROWS, ItemFamily, from_component_map, into_component_map, parse_parts, write_component,
+    HISTORY_ROWS, ItemFamily, into_component_map, parse_parts, written_components,
 };
-use super::{ItemDeprecatedData, ItemDescription, LegacyItemData, texts};
+use super::types::{ModernItem, modern_version};
+use super::{ItemDescription, texts};
 
 /// 1.16.100: the first component format, and the start of vanilla's data-driven items.
 pub(crate) const V1_16_100: FormatVersion = known::V1_16_100;
@@ -56,7 +57,6 @@ pub(crate) fn is_component_based(
 /// What the routing reads of a payload: its component names.
 #[derive(facet::Facet)]
 struct Probe<'a> {
-    #[facet(default)]
     components: Option<IndexMap<String, RawJson<'a>>>,
 }
 
@@ -276,23 +276,14 @@ pub(crate) fn read_item(
     }
 }
 
-/// The parts of a modern format (shared by [`Item`], [`Beta`] and the 1.26.30 struct).
-pub(crate) struct Newest {
-    pub(crate) description: ItemDescription,
-    pub(crate) components: ComponentMap<ItemComponent>,
-    pub(crate) deprecated: ItemDeprecatedData,
-    pub(crate) events: Option<Value>,
-    pub(crate) legacy: LegacyItemData,
-}
-
-/// Parses a modern format: the struct of `version` (1.26.30, 1.26.50, or the beta struct's
-/// version for a beta document, whose members are the same).
-pub(crate) fn parse_newest(
+/// Parses a modern format: the struct of `V` (1.26.30, 1.26.50, or the beta struct for a beta
+/// document, whose members are the same).
+pub(crate) fn parse_newest<const V: u32>(
     payload: JsonSlice<'_>,
-    version: FormatVersion,
     cx: &ParseCx<'_>,
     d: &mut Diagnostics,
-) -> Option<Newest> {
+) -> Option<ModernItem<V>> {
+    let version = modern_version(V);
     let parts = parse_parts(payload, version, cx, d)?;
     let menu_category_presence =
         super::MenuCategoryPresence::of(parts.description.menu_category.as_ref());
@@ -305,14 +296,14 @@ pub(crate) fn parse_newest(
     // The legacy reading holds a component it shares with the typed read in the form the
     // writer writes that component in, so that the written text gives the reading the file
     // gave (`16` and `{"value": 16}` are one value to both readers).
-    for (key, component) in from_component_map(&components) {
+    for (key, written) in written_components(&components) {
         if let Some(held) = legacy.shared.get_mut(&key)
-            && let Ok(written) = write_component(&component)
+            && let Ok(written) = written
         {
             *held = written;
         }
     }
-    Some(Newest {
+    Some(ModernItem {
         description: ItemDescription {
             identifier: ItemId::parse(parts.description.identifier),
             menu_category,

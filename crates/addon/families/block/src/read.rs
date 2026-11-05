@@ -11,18 +11,16 @@ use super::{Block, Description, Permutation};
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
 };
-use bedrock_addon_core::document::{ComponentMap, Document, Extra, Origin, Rejected};
+use bedrock_addon_core::document::{ComponentMap, Document, Origin, Rejected};
 use bedrock_addon_core::id::syntax::split_namespace;
 use bedrock_addon_core::json::Prepared;
-use bedrock_addon_core::json::{
-    JsonSlice, ReaderMode, ScalarRules, Scalars, Value, keep_unknown_members, parse_at,
-    with_reader_mode,
-};
+use bedrock_addon_core::json::{JsonSlice, ScalarRules, Value, keep_unknown_members, parse_at};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::molang::{
     BLOCK_STATE_QUERIES, EmptyRule, Molang, MolangFailure, MolangFieldSpec, MolangFields,
     MolangVersion, MolangVersionSource, MolangVisitor, OpsRule, ReaderKind,
 };
+use bedrock_addon_core::schema;
 use bedrock_addon_core::version::FormatVersionInput;
 use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::{ConvertMode, ParseCx, parse_component_map, parse_payload};
@@ -39,6 +37,7 @@ pub(crate) const CONDITION_STRICT: FormatVersion = FormatVersion::new(1, 19, 70)
 
 /// What a payload is read into: components as raw slices, parsed one at a time.
 #[derive(Facet)]
+#[facet(schema::unknown = "keep")]
 struct Shell<'a> {
     description: Description,
     #[facet(default)]
@@ -52,16 +51,14 @@ struct Shell<'a> {
     /// Deprecated by name in the cereal document: the game skips the value unread, so any
     /// value is held (an `Option<Value>`, which the strict reader does not judge: `"events": null` is
     /// the deprecation alone).
-    #[facet(default)]
     events: Option<Value>,
     #[facet(default)]
     ordered_v1_custom_components: Vec<String>,
-    #[facet(skip, rename = "\u{0}extra")]
-    extra: Extra,
 }
 
 /// What a permutation is read into.
 #[derive(Facet)]
+#[facet(schema::unknown = "keep")]
 struct PermutationShell<'a> {
     condition: Molang,
     #[facet(default)]
@@ -70,8 +67,6 @@ struct PermutationShell<'a> {
     deprecated: DeprecatedComponents,
     #[facet(default)]
     ordered_v1_custom_components: Vec<String>,
-    #[facet(skip, rename = "\u{0}extra")]
-    extra: Extra,
 }
 
 /// The keys the 1.26.20 document rejects in base `components`: the game's document binds them
@@ -271,7 +266,7 @@ fn newest_members(
         d.unknown_mut().put(
             &at.child("minecraft:block_entity"),
             "entity_storage",
-            Value::from(value.0),
+            Value::from(value),
         );
     }
 }
@@ -414,15 +409,11 @@ fn section(
     // The game's legacy component parser reads every cereal-registered description with
     // its non-strict schema reader (the strict flag of the component metadata is clear): a bool and a number read as each other, an
     // integer token by its low bits, a real by its truncation. A cereal document is the strict
-    // reader's. Both refuse a number beyond its float. The strict wrappers read by the reader
-    // mode, plain members by the context's scalar rules: the `Reading` of the document's kind
-    // of slice (`reading_of`), set here too for a read outside a versioned load and for a
-    // legacy document converted by the 1.26.20 step.
+    // reader's. Both refuse a number beyond its float. The components' members are read by the
+    // context's scalar rules: the `Reading` of the document's kind of slice (`reading_of`), set
+    // here too for a read outside a versioned load and for a legacy document converted by the
+    // 1.26.20 step.
     let scalar_rules = crate::reading_of(rejected.is_some()).scalar_rules();
-    let reader = match scalar_rules.scalars {
-        Scalars::NonStrict => ReaderMode::NonStrict,
-        _ => ReaderMode::Strict,
-    };
     let strict;
     let load = if cx.load.strict_components && cx.load.scalar_rules == scalar_rules {
         cx.load
@@ -433,17 +424,15 @@ fn section(
         strict = with_strict;
         &strict
     };
-    let mut map = with_reader_mode(reader, || {
-        parse_component_map::<BlockFamily>(
-            &kept,
-            payload,
-            at,
-            ConvertMode::Strict,
-            is_custom,
-            load,
-            d,
-        )
-    });
+    let mut map = parse_component_map::<BlockFamily>(
+        &kept,
+        payload,
+        at,
+        ConvertMode::Strict,
+        is_custom,
+        load,
+        d,
+    );
     for (key, raw) in unread {
         // The schema of the legacy document has no child for the key: the game logs "child
         // '%s' not valid here." at the content log's error level, validation fails and with

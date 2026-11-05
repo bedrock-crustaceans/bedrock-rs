@@ -13,7 +13,7 @@ use super::component::{
     MaterialInstanceEntry, MaterialInstances, Movable, MovementType, NeighborChange,
     NeighborChangeDirection, PlacementFilter, PrecipitationBehavior, PrecipitationInteractions,
     RandomOffset, RedstoneConsumer, RedstoneProducer, RenderMethod, SelectionBox, Tags, Tick,
-    TintMethod, Transformation, UvLock, Vec3, legacy_constraint, write_component,
+    TintMethod, Transformation, UvLock, Vec3, legacy_constraint,
 };
 use super::history::BlockFamily;
 use super::read::{CEREAL, NEWEST};
@@ -24,12 +24,15 @@ use bedrock_addon_core::diagnostic::{
 };
 use bedrock_addon_core::document::{ComponentMap, ComponentRef};
 use bedrock_addon_core::id::syntax::{has_namespace, split_namespace};
-use bedrock_addon_core::json::{StrictBool, Value};
+use bedrock_addon_core::json::Value;
 use bedrock_addon_core::load::{Experiment, LoadContext};
 use bedrock_addon_core::molang::{Molang, SourceForm};
+use bedrock_addon_core::schema::{Schema, SchemaCx};
 use bedrock_addon_core::shared::StateValue;
 use bedrock_addon_core::version::{FormatVersion, known};
-use bedrock_addon_core::versioning::{Family, FieldMeta, ValidateCx, check_fields_since_engine};
+use bedrock_addon_core::versioning::{
+    Family, FieldMeta, Reading, ValidateCx, check_fields_since_engine,
+};
 
 /// `Family::validate`.
 pub(crate) fn validate(block: &mut Block, cx: &mut ValidateCx<'_>) {
@@ -766,7 +769,7 @@ fn engine_fields(block: &Block, cx: &LoadContext, report: &mut Report<'_>) {
             if meta.fields.is_empty() {
                 continue;
             }
-            let json = write_component(value).unwrap_or(Value::NULL);
+            let json = value.write_component().unwrap_or(Value::NULL);
             let present = |field: &str| field.is_empty() || member(&json, field).is_some();
             let at = report.path(&rel(&prefix, &[name]));
             check_fields_since_engine(meta.fields, present, &at, cx, report.d);
@@ -886,22 +889,14 @@ fn component_rules(
     // Friction and light emission: bound by the legacy descriptions too, so checked in every
     // format. What the legacy reader holds here is what its non-strict read gave (`true` is
     // 1.0, `-1` is 255), held to the same range.
-    if map
-        .get::<Friction>()
-        .is_some_and(|f| !(0.0..=0.9).contains(&f.0.0))
-    {
-        drop(
-            report,
-            "minecraft:friction",
-            constraint_text(NumericRange::inclusive(0.0, 0.9).code()),
-            &[],
-        );
+    if let Some(bound) = map.get::<Friction>().and_then(out_of_bounds) {
+        drop(report, "minecraft:friction", constraint_text(bound), &[]);
     }
-    if map.get::<LightEmission>().is_some_and(|l| l.0.0 > 15) {
+    if let Some(bound) = map.get::<LightEmission>().and_then(out_of_bounds) {
         // The legacy description binds the brightness to a closed `[0, 15]` range, the
-        // 1.26.20 component to `max(15)`.
+        // 1.26.20 component to `max(15)` (the component's bound).
         let bound = if cereal {
-            at_most_15()
+            bound
         } else {
             NumericRange::inclusive(0.0, 15.0).code()
         };
@@ -914,60 +909,54 @@ fn component_rules(
     }
     // Rule 9 and the schema constraints (cereal documents; a step clamps older values).
     if cereal {
-        if map.get::<LightDampening>().is_some_and(|l| l.0.0 > 15) {
+        if let Some(bound) = map.get::<LightDampening>().and_then(out_of_bounds) {
             drop(
                 report,
                 "minecraft:light_dampening",
-                constraint_text(at_most_15()),
+                constraint_text(bound),
                 &[],
             );
         }
-        if map
-            .get::<RedstoneProducer>()
-            .is_some_and(|r| r.power.0 > 15)
-        {
+        if let Some(bound) = map.get::<RedstoneProducer>().and_then(out_of_bounds) {
             drop(
                 report,
                 "minecraft:redstone_producer",
-                constraint_text(at_most_15()),
+                constraint_text(bound),
                 &["power"],
             );
         }
-        if map
-            .get::<RedstoneConsumer>()
-            .is_some_and(|r| r.min_power() > 15)
-        {
+        if let Some(bound) = map.get::<RedstoneConsumer>().and_then(out_of_bounds) {
             drop(
                 report,
                 "minecraft:redstone_consumer",
-                constraint_text(at_most_15()),
+                constraint_text(bound),
                 &["min_power"],
             );
         }
         if let Some(axis) = map.get::<Transformation>().and_then(|t| {
             t.rotation
-                .and_then(|r| r.into_iter().find(|axis| axis.0 % 90.0 != 0.0))
+                .and_then(|r| r.into_iter().find(|axis| axis % 90.0 != 0.0))
         }) {
-            let text = constraint_text(cereal::not_multiple_of(f64::from(axis.0), 90.0));
+            let text = constraint_text(cereal::not_multiple_of(f64::from(axis), 90.0));
             drop(report, "minecraft:transformation", text, &["rotation"]);
         }
         if let Some(DestructibleByExplosion::Params(p)) = map.get::<DestructibleByExplosion>()
-            && p.explosion_resistance < 0.0
+            && let Some(bound) = out_of_bounds(p)
         {
             drop(
                 report,
                 "minecraft:destructible_by_explosion",
-                constraint_text(NumericRange::at_least(0.0).code()),
+                constraint_text(bound),
                 &["explosion_resistance"],
             );
         }
         if let Some(DestructibleByMining::Params(p)) = map.get::<DestructibleByMining>()
-            && p.seconds_to_destroy.0 < 0.0
+            && let Some(bound) = out_of_bounds(p)
         {
             drop(
                 report,
                 "minecraft:destructible_by_mining",
-                constraint_text(NumericRange::at_least(0.0).code()),
+                constraint_text(bound),
                 &["seconds_to_destroy"],
             );
         }
@@ -1003,7 +992,7 @@ fn component_rules(
         }
         if map
             .get::<Tags>()
-            .is_some_and(|t| t.0.is_empty() || t.0.iter().any(|tag| tag.0.is_empty()))
+            .is_some_and(|t| t.0.is_empty() || t.0.iter().any(String::is_empty))
         {
             drop(report, "minecraft:tags", None, &[]);
         }
@@ -1011,14 +1000,14 @@ fn component_rules(
             if params
                 .culling_shape
                 .as_ref()
-                .is_some_and(|s| !culling_shape_ok(&s.0))
+                .is_some_and(|s| !culling_shape_ok(s))
             {
                 let text = constraint_text(cereal::string_mismatch(CULLING_SHAPE_REGEX));
                 drop(report, "minecraft:geometry", text, &["culling_shape"]);
             } else if params
                 .culling_layer
                 .as_ref()
-                .is_some_and(|l| !culling_layer_ok(&l.0))
+                .is_some_and(|l| !culling_layer_ok(l))
             {
                 let text = constraint_text(cereal::string_mismatch(CULLING_LAYER_REGEX));
                 drop(report, "minecraft:geometry", text, &["culling_layer"]);
@@ -1027,7 +1016,7 @@ fn component_rules(
         if map.get::<MaterialInstances>().is_some_and(|m| {
             m.0.values().any(|e| {
                 matches!(e, MaterialInstanceEntry::Instance(i)
-                    if i.ambient_occlusion.is_some_and(|a| !(0.0..=10.0).contains(&a.0)))
+                    if i.ambient_occlusion.is_some_and(|a| !(0.0..=10.0).contains(&a)))
             })
         }) {
             let text = constraint_text(NumericRange::inclusive(0.0, 10.0).code());
@@ -1039,7 +1028,7 @@ fn component_rules(
     // at most 64 characters, and `table_name` at most 256 (the localisation-id constraint).
     if let Some(table) = map.get::<CraftingTable>() {
         // The game's string constraint counts bytes.
-        let long_tag = table.crafting_tags.iter().position(|t| t.0.len() > 64);
+        let long_tag = table.crafting_tags.iter().position(|t| t.len() > 64);
         if table.crafting_tags.len() > 64 {
             drop(
                 report,
@@ -1058,7 +1047,7 @@ fn component_rules(
         } else if table
             .table_name
             .as_ref()
-            .is_some_and(|name| name.0.len() > 256)
+            .is_some_and(|name| name.len() > 256)
         {
             drop(
                 report,
@@ -1113,8 +1102,8 @@ fn component_rules(
     // stays.
     if !cereal && let Some(SelectionBox::Box(single)) = map.get::<SelectionBox>() {
         let (origin, size) = (single.origin(), single.size());
-        let min = [origin[0].0 + 8.0, origin[1].0, origin[2].0 + 8.0];
-        let max = [min[0] + size[0].0, min[1] + size[1].0, min[2] + size[2].0];
+        let min = [origin[0] + 8.0, origin[1], origin[2] + 8.0];
+        let max = [min[0] + size[0], min[1] + size[1], min[2] + size[2]];
         let unit = |v: [f32; 3]| v.iter().all(|c| (0.0..=1.0).contains(&(c * 0.0625)));
         for (ok, message) in [
             (
@@ -1160,7 +1149,7 @@ fn component_rules(
     if !cereal
         && map
             .get::<Tick>()
-            .is_some_and(|t| t.interval_range[0].0 > t.interval_range[1].0)
+            .is_some_and(|t| t.interval_range[0] > t.interval_range[1])
     {
         let path = report.path(&rel(&prefix, &["minecraft:tick", "interval_range"]));
         report.d.push(
@@ -1175,7 +1164,7 @@ fn component_rules(
     } else if cereal
         && map
             .get::<Tick>()
-            .is_some_and(|t| t.interval_range[0].0 > t.interval_range[1].0)
+            .is_some_and(|t| t.interval_range[0] > t.interval_range[1])
     {
         drop(
             report,
@@ -1194,9 +1183,9 @@ fn component_rules(
     // bones: cannot use bone visibility feature with: <identifier>".
     if let Some(Geometry::Params(params)) = map.get::<Geometry>() {
         let vanilla = matches!(
-            params.identifier.0.as_str(),
+            params.identifier.as_str(),
             "minecraft:geometry.full_block" | "minecraft:geometry.cross"
-        ) || (!cereal && params.identifier.0 == "minecraft:geometry.full_block_v1");
+        ) || (!cereal && params.identifier == "minecraft:geometry.full_block_v1");
         if params.bone_visibility_len() > 64 {
             let text = constraint_text(cereal::too_many_map_elements());
             drop(report, "minecraft:geometry", text, &["bone_visibility"]);
@@ -1222,7 +1211,7 @@ fn component_rules(
             } else {
                 text(
                     "invalid bones: cannot use bone visibility feature with: {}",
-                    &[params.identifier.0.as_str()],
+                    &[params.identifier.as_str()],
                 )
             };
             drop(report, "minecraft:geometry", message, &["bone_visibility"]);
@@ -1288,9 +1277,18 @@ fn constraint_text(code: DiagnosticCode) -> Option<VanillaText> {
     }
 }
 
-/// The game's numeric constraint with a maximum of 15.
-fn at_most_15() -> DiagnosticCode {
-    NumericRange::at_most(15.0).code()
+/// The finding of the bounds `T` states (`schema::min`, `schema::max`) on `value`, worded with
+/// the game's range text; `None` when every member is inside its bounds. The rule that calls
+/// it says where the finding goes, how severe it is and what a failed bound drops.
+fn out_of_bounds<T: Schema + Clone>(value: &T) -> Option<DiagnosticCode> {
+    let mut found = Diagnostics::default();
+    let mut value = value.clone();
+    {
+        let mut cx =
+            SchemaCx::new(Reading::DOCUMENT, JsonPath::new(), &mut found).with_range_text(true);
+        value.check(&mut cx);
+    }
+    found.iter().next().map(|finding| finding.code.clone())
 }
 
 /// The `culling_shape` regex the game's constraint uses.
@@ -1353,7 +1351,7 @@ fn base_game_members(
                 report.keep(
                     &rel(prefix, &["minecraft:material_instances", key]),
                     "dithering",
-                    Value::from(dithering.0),
+                    Value::from(dithering),
                 );
                 report.push(
                     DiagnosticCode::UnrecognizedField { text: None },
@@ -1432,8 +1430,8 @@ fn depth(value: &Value) -> usize {
 /// A box, x and z shifted by 8, inside `(0, 0, 0)–(16, height, 16)`.
 fn inside(b: &BoundingBox, height: f32) -> bool {
     let (origin, size) = (b.origin(), b.size());
-    let min = [origin[0].0 + 8.0, origin[1].0, origin[2].0 + 8.0];
-    let max = [min[0] + size[0].0, min[1] + size[1].0, min[2] + size[2].0];
+    let min = [origin[0] + 8.0, origin[1], origin[2] + 8.0];
+    let max = [min[0] + size[0], min[1] + size[1], min[2] + size[2]];
     let limit = [16.0, height, 16.0];
     (0..3).all(|i| min[i] >= 0.0 && max[i] <= limit[i] && min[i] <= limit[i] && max[i] >= 0.0)
 }
@@ -1490,7 +1488,7 @@ fn field_gates(
                     &["minecraft:material_instances", key, "isotropic"],
                 );
             }
-            if instance.alpha_masked_tint == Some(StrictBool(true)) {
+            if instance.alpha_masked_tint == Some(true) {
                 let tint = instance.tint_method.unwrap_or_default() != TintMethod::None;
                 let opaque = instance.render_method.unwrap_or_default() == RenderMethod::Opaque;
                 let message = if version < known::V1_21_120 {
@@ -1568,13 +1566,13 @@ fn random_offset(
     let lower = |axis: usize| {
         boxes
             .iter()
-            .map(|(origin, _)| origin[axis].0)
+            .map(|(origin, _)| origin[axis])
             .fold(f32::INFINITY, f32::min)
     };
     let upper = |axis: usize| {
         boxes
             .iter()
-            .map(|(origin, size)| origin[axis].0 + size[axis].0.max(0.0))
+            .map(|(origin, size)| origin[axis] + size[axis].max(0.0))
             .fold(f32::NEG_INFINITY, f32::max)
     };
     let bounds = [(-8.0f32, 8.0f32), (0.0, 16.0), (-8.0, 8.0)];
@@ -1593,8 +1591,8 @@ fn random_offset(
         let min_allowed = cell_min - lower(axis);
         let max_allowed = cell_max - upper(axis);
         for (bound, value, allowed, below) in [
-            ("min", &mut slot.range.min.0, min_allowed, true),
-            ("max", &mut slot.range.max.0, max_allowed, false),
+            ("min", &mut slot.range.min, min_allowed, true),
+            ("max", &mut slot.range.max, max_allowed, false),
         ] {
             let out = if below {
                 *value < allowed
@@ -1819,7 +1817,7 @@ fn block_entity(block: &Block, report: &mut Report<'_>) {
         return;
     };
     let at = ["components", "minecraft:block_entity", "container"];
-    if !(1..=54).contains(&container.slot_count.0) {
+    if out_of_bounds(container).is_some() {
         report.error(
             DiagnosticCode::InvalidValue { text: None },
             &[at[0], at[1], at[2], "slot_count"],
@@ -1828,7 +1826,7 @@ fn block_entity(block: &Block, report: &mut Report<'_>) {
     if container
         .title
         .as_ref()
-        .is_some_and(|title| title.0.is_empty() || title.0.chars().count() > 256)
+        .is_some_and(|title| title.is_empty() || title.chars().count() > 256)
     {
         report.error(
             DiagnosticCode::InvalidValue { text: None },
@@ -2285,13 +2283,13 @@ fn n_way_visual_rotation(block: &Block, report: &mut Report<'_>) {
     let states = block.states_with_traits();
     for (axis, state) in axes {
         if let Some(state) = state
-            && !states.contains_key(&state.0)
+            && !states.contains_key(state)
         {
             report.error(
                 DiagnosticCode::UnresolvedReference {
                     text: text(
                         "'minecraft:geometry' field 'n_way_visual_rotation.{}' references unknown state '{}'",
-                        &[axis, &state.0],
+                        &[axis, state],
                     ),
                 },
                 &rel,
