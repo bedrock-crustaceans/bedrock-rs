@@ -302,7 +302,7 @@ fn components<C: ComponentEra>(
         let Some(meta) = table.get(key) else {
             map.insert_unknown(key, json);
             // The strict mask's input, not a grade: core's `unknown_members_are_errors`
-            // (`versioning/load.rs`) turns this Parse-phase warning into the refusing error the
+            // (`versioning/pipeline.rs`) turns this Parse-phase warning into the refusing error the
             // game gives for an unknown member.
             d.push(Diagnostic::new(
                 DiagnosticCode::UnrecognizedComponent { text: None },

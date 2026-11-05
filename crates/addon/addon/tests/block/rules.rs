@@ -1295,7 +1295,7 @@ fn the_generic_checks_of_a_legacy_block_report_below_the_payload_key() {
         at(|c| matches!(c, DiagnosticCode::MissingToggles { .. })),
         ["minecraft:block/permutations/0/components/minecraft:connection_rule"]
     );
-    // Molang pass 2 (`versioning::load::molang_pass_two`).
+    // Molang pass 2 (`versioning::pipeline::molang_pass_two`).
     assert_eq!(
         at(|c| matches!(c, DiagnosticCode::InvalidMolang { .. })),
         ["minecraft:block/permutations/0/condition"]

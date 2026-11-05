@@ -31,6 +31,7 @@
 //!   parser (its writers call themselves for each level of a value).
 
 mod clamp_text;
+mod coerce;
 pub(crate) use clamp_text::first_beyond_double;
 mod duplicates;
 mod envelope;
@@ -53,6 +54,7 @@ pub use clamp_text::{
     ClampedText, Width, clamp_beyond_double, clamp_beyond_double_first_kept, clamp_text,
     clamp_tokens, drop_spoken_for, spoken_for,
 };
+pub use coerce::{Coerce, Coercing, IsIntRule, WideInt};
 #[doc(hidden)]
 pub use duplicates::{last_wins, last_wins_except};
 pub use envelope::{Envelope, EnvelopeVersion, probe_envelope};
@@ -91,6 +93,41 @@ pub use write::{to_facet_json, to_facet_json_signed, to_json, write_json};
 
 /// An untyped JSON value: opaque members (`events`, `extra`, raw layers) are held as this.
 pub use facet_value::Value;
+
+/// What core adds to [`Value`], a foreign type that takes no inherent method.
+pub trait ValueExt: value_seal::Sealed {
+    /// The JSON type of the value, as jsoncpp's type tests see it: one of the six, a number
+    /// whether integral or not.
+    ///
+    /// The molang crate's [`JsonType`](crate::molang::JsonType) (the six), not
+    /// [`json::JsonType`](JsonType), which is the strict reader's scalars only, integer and real apart.
+    fn json_type(&self) -> crate::molang::JsonType;
+}
+
+mod value_seal {
+    /// Only [`Value`](super::Value) has the extension.
+    pub trait Sealed {}
+    impl Sealed for super::Value {}
+}
+
+impl ValueExt for Value {
+    fn json_type(&self) -> crate::molang::JsonType {
+        use crate::molang::JsonType;
+        if self.is_null() {
+            JsonType::Null
+        } else if self.is_bool() {
+            JsonType::Bool
+        } else if self.is_number() {
+            JsonType::Number
+        } else if self.is_string() {
+            JsonType::String
+        } else if self.is_array() {
+            JsonType::Array
+        } else {
+            JsonType::Object
+        }
+    }
+}
 
 /// How `Content::write_json` lays the text out; default two spaces and a trailing newline.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]

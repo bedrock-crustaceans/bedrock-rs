@@ -1,7 +1,7 @@
 //! What `version_chain!`'s expansion calls. Not an API.
 
-use super::load::{molang_context, unsupported};
 use super::payload::span_of;
+use super::pipeline::{molang_context, unsupported};
 use super::range::{Selection, select};
 use super::{
     BETA_VERSION, EnvelopeCheck, Family, ParseCx, StructIndex, Upgrade, UpgradeCx, VersionChain,

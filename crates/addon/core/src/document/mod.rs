@@ -29,6 +29,7 @@ pub mod layered;
 mod merged;
 mod placed;
 pub mod registry;
+pub mod unversioned;
 
 #[doc(hidden)]
 pub use by_id::RegistryBuilder;

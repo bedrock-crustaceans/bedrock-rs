@@ -131,7 +131,7 @@ impl<'a> Report<'a> {
 
     /// An unknown member at `steps` below the component. Not a grade the user sees: every
     /// client-biome format version reads with the strict mask (`error_mask` in `load.rs`), and
-    /// core's `unknown_members_are_errors` (`versioning/load.rs`) turns this Parse-phase
+    /// core's `unknown_members_are_errors` (`versioning/pipeline.rs`) turns this Parse-phase
     /// `UnrecognizedField` warning into the refusing error the game gives for an unknown
     /// member; the `Warning` is that step's input.
     pub(crate) fn unknown_member(&mut self, code: DiagnosticCode, steps: &[&str]) {
@@ -166,7 +166,7 @@ where
     let unrecognized = |path: JsonPath| {
         // Not a finding the user sees as a warning: every client-biome format version reads
         // with the strict mask (`error_mask` in `load.rs`), and core's
-        // `unknown_members_are_errors` (`versioning/load.rs`) turns a Parse-phase
+        // `unknown_members_are_errors` (`versioning/pipeline.rs`) turns a Parse-phase
         // `UnrecognizedField` / `UnrecognizedComponent` warning into the refusing error the game
         // gives for an unknown member. The `Warning` here is that step's input, not a grade.
         Diagnostic::new(

@@ -8,7 +8,7 @@
 //! so a file vanilla accepts is never dropped by the type; [`Id::is_well_formed`] says which.
 
 mod facet_proxy;
-mod syntax;
+pub mod syntax;
 
 use std::fmt;
 use std::hash::{Hash, Hasher};

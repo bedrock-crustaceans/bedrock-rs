@@ -8,6 +8,8 @@ use std::hash::{Hash, Hasher};
 use crate::json::Value;
 use crate::molang::{EngineVersion, MolangVersion};
 
+pub mod known;
+
 /// A pack version: the manifest's `header.version` and `dependencies[].version`.
 ///
 /// Vanilla's `SemVersion`: three `u16` numbers, a pre-release identifier list and build
@@ -512,6 +514,73 @@ pub enum PickedVersion {
     },
 }
 
+impl PickedVersion {
+    /// What the value says, for [`Version`](Self::Version); `None` for `Absent` and
+    /// `Malformed`.
+    pub fn version(&self) -> Option<&FormatVersionInput> {
+        match self {
+            Self::Version { input, .. } => Some(input),
+            Self::Absent | Self::Malformed => None,
+        }
+    }
+
+    /// The version as written, for [`Version`](Self::Version).
+    pub fn written(&self) -> Option<&str> {
+        match self {
+            Self::Version { written, .. } => Some(written),
+            Self::Absent | Self::Malformed => None,
+        }
+    }
+
+    /// Whether the key is there with a value that gives no version.
+    pub fn is_malformed(&self) -> bool {
+        matches!(self, Self::Malformed)
+    }
+
+    /// `f` over the version and its text, `Absent` and `Malformed` kept apart for
+    /// [`MappedVersion::or_absent`] or [`MappedVersion::or_else`] to answer:
+    /// `FormatVersionInput::pick(text).with(|_, written| written.to_owned()).or_absent(String::new())`.
+    pub fn with<T>(self, f: impl FnOnce(&FormatVersionInput, &str) -> T) -> MappedVersion<T> {
+        match self {
+            Self::Absent => MappedVersion::Absent,
+            Self::Malformed => MappedVersion::Malformed,
+            Self::Version { input, written } => MappedVersion::Version(f(&input, &written)),
+        }
+    }
+}
+
+/// A [`PickedVersion`] whose version has been mapped ([`PickedVersion::with`]).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum MappedVersion<T> {
+    /// No `"format_version"` key in the text.
+    Absent,
+    /// The key with a value that gives no version.
+    Malformed,
+    /// What the mapping made of the version.
+    Version(T),
+}
+
+impl<T> MappedVersion<T> {
+    /// The mapped version, or `absent` both when the key is missing and when its value is
+    /// malformed.
+    pub fn or_absent(self, absent: T) -> T {
+        match self {
+            Self::Version(value) => value,
+            Self::Absent | Self::Malformed => absent,
+        }
+    }
+
+    /// The mapped version, `absent()` when the key is missing, `malformed()` when its value
+    /// gives no version.
+    pub fn or_else(self, absent: impl FnOnce() -> T, malformed: impl FnOnce() -> T) -> T {
+        match self {
+            Self::Version(value) => value,
+            Self::Absent => absent(),
+            Self::Malformed => malformed(),
+        }
+    }
+}
+
 /// JSON white space.
 fn json_space(c: char) -> bool {
     matches!(c, ' ' | '\t' | '\n' | '\r')
@@ -814,7 +883,7 @@ impl BaseGameVersion {
 /// The engine version the crate tracks, bumped together with the protocol version. It is the
 /// game's current format version for items, blocks and manifests, and so the version at which
 /// every open-ended slice sequence of a family closes.
-pub const ENGINE_VERSION: FormatVersion = FormatVersion::new(1, 26, 60);
+pub const ENGINE_VERSION: FormatVersion = known::V1_26_60;
 
 /// The engine version Molang versions are mapped from: three numbers and, for a pre-release,
 /// its tag (`pre` when the text is not a semver tag; only "has a tag" takes part in the

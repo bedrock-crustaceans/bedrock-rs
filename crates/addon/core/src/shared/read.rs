@@ -11,7 +11,7 @@
 use molang::json::{MolangSource, SourceForm};
 
 use crate::diagnostic::JsonPath;
-use crate::json::{Indent, Value, WriteStyle, write_json};
+use crate::json::{Indent, Value, ValueExt, WriteStyle, write_json};
 use crate::molang::JsonType;
 
 /// Why a shared value's JSON could not be read, or a value could not be written as JSON: what
@@ -143,30 +143,13 @@ pub(crate) fn fail(member: &'static str, kind: ShapeErrorKind) -> Failure {
     Failure::new(kind).key(member)
 }
 
-/// The JSON type of `value`, as jsoncpp's type tests see it.
-pub(crate) fn json_type(value: &Value) -> JsonType {
-    if value.is_null() {
-        JsonType::Null
-    } else if value.is_bool() {
-        JsonType::Bool
-    } else if value.is_number() {
-        JsonType::Number
-    } else if value.is_string() {
-        JsonType::String
-    } else if value.is_array() {
-        JsonType::Array
-    } else {
-        JsonType::Object
-    }
-}
-
 /// [`ShapeErrorKind::WrongType`] in member `member` for `found`.
 pub(crate) fn wrong_type(member: &'static str, expected: &'static str, found: &Value) -> Failure {
     fail(
         member,
         ShapeErrorKind::WrongType {
             expected,
-            found: json_type(found),
+            found: found.json_type(),
         },
     )
 }
@@ -264,7 +247,7 @@ pub(crate) fn jsoncpp_type(value: &Value) -> i32 {
         Some(n) if n.is_float() => 3,
         Some(n) if n.to_i64().is_some() => 1,
         Some(_) => 2,
-        None => match json_type(value) {
+        None => match value.json_type() {
             JsonType::Null => 0,
             JsonType::String => 4,
             JsonType::Bool => 5,

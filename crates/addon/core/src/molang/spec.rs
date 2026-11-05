@@ -47,6 +47,106 @@ impl MolangFieldSpec {
     };
 }
 
+/// The presets and the `const fn` builder: a spec is a preset and the fields that differ from
+/// it (`MolangFieldSpec::KEPT.reader(ReaderKind::SchemaValidated)`).
+impl MolangFieldSpec {
+    /// [`DEFAULT`](Self::DEFAULT) with a rejecting message kept: the game logs the parser's
+    /// line at the error level and loads the document with the field. The base of most cereal
+    /// specs (28 of the 46 that are not aliases).
+    pub const KEPT: Self = Self::DEFAULT.kept();
+
+    /// [`DEFAULT`](Self::DEFAULT) with a rejected expression dropping the document, the error
+    /// not kept: a schema-typed member whose failure fails the file (11 of the 46).
+    pub const REJECTING: Self = Self::DEFAULT.on_failure(MolangFailure::RejectDocument);
+
+    /// The same spec with another reader.
+    #[must_use]
+    pub const fn reader(mut self, reader: ReaderKind) -> Self {
+        self.reader = reader;
+        self
+    }
+
+    /// The same spec with another version source.
+    #[must_use]
+    pub const fn version(mut self, version: MolangVersionSource) -> Self {
+        self.version = version;
+        self
+    }
+
+    /// The same spec with another query admission.
+    #[must_use]
+    pub const fn admission(mut self, admission: Admission) -> Self {
+        self.admission = admission;
+        self
+    }
+
+    /// The same spec admitting the `tags` query set.
+    #[must_use]
+    pub const fn tags(self) -> Self {
+        self.admission(Admission::Tags)
+    }
+
+    /// The same spec admitting the `world_gen` query set.
+    #[must_use]
+    pub const fn world_gen(self) -> Self {
+        self.admission(Admission::WorldGen)
+    }
+
+    /// The same spec admitting only `queries`.
+    #[must_use]
+    pub const fn only(self, queries: &'static [&'static str]) -> Self {
+        self.admission(Admission::Only(queries))
+    }
+
+    /// The same spec with another operations rule.
+    #[must_use]
+    pub const fn ops(mut self, ops: OpsRule) -> Self {
+        self.ops = ops;
+        self
+    }
+
+    /// The same spec with another empty-text rule.
+    #[must_use]
+    pub const fn empty(mut self, empty: EmptyRule) -> Self {
+        self.empty = empty;
+        self
+    }
+
+    /// The same spec compiling an empty text ([`EmptyRule::Compile`]).
+    #[must_use]
+    pub const fn compile_empty(self) -> Self {
+        self.empty(EmptyRule::Compile)
+    }
+
+    /// The same spec with another failure outcome.
+    #[must_use]
+    pub const fn on_failure(mut self, on_failure: MolangFailure) -> Self {
+        self.on_failure = on_failure;
+        self
+    }
+
+    /// The same spec with a rejecting message at another severity.
+    #[must_use]
+    pub const fn error_severity(mut self, error_severity: Severity) -> Self {
+        self.error_severity = error_severity;
+        self
+    }
+
+    /// The same spec with a rejecting message kept ([`error_kept`](Self::error_kept)).
+    #[must_use]
+    pub const fn kept(mut self) -> Self {
+        self.error_kept = true;
+        self
+    }
+
+    /// The same spec with a rejecting message not kept.
+    #[must_use]
+    pub const fn not_kept(mut self) -> Self {
+        self.error_kept = false;
+        self
+    }
+}
+
 impl Default for MolangFieldSpec {
     fn default() -> Self {
         Self::DEFAULT

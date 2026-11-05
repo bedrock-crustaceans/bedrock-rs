@@ -1,5 +1,6 @@
 //! The syntax check and the canonical form of an identifier, shared by `Id::new`,
-//! `Id::from_static` (a `const` evaluation) and the comparison traits.
+//! `Id::from_static` (a `const` evaluation) and the comparison traits; public for the two
+//! namespace helpers a family's own text rules use ([`split_namespace`], [`has_namespace`]).
 
 use std::hash::{Hash, Hasher};
 
@@ -215,6 +216,20 @@ fn body(text: &str, suffix: Suffix) -> &str {
         }
         _ => text,
     }
+}
+
+/// `(namespace, name)` of `text`, split at the first `:`; `None` without one. Either part may
+/// be empty: this is the split, not the check ([`has_namespace`]). No suffix is removed and
+/// no character is checked; it is the split a family's `minecraft` test reads.
+pub fn split_namespace(text: &str) -> Option<(&str, &str)> {
+    text.split_once(':')
+}
+
+/// Whether `text` is a non-empty namespace, `:`, and a non-empty name, the namespace ending at
+/// the first `:` (`demo:a:b` has one; `:a`, `a:` and `stone` do not). No character is checked:
+/// a family whose rule has an alphabet keeps its own.
+pub fn has_namespace(text: &str) -> bool {
+    split_namespace(text).is_some_and(|(namespace, name)| !namespace.is_empty() && !name.is_empty())
 }
 
 /// `(namespace, path)` of a namespaced text, its suffix removed; the namespace ends at the

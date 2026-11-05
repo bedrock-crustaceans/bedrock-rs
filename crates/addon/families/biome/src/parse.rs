@@ -168,7 +168,7 @@ fn builder_bound(
 }
 
 /// An `UnrecognizedComponent` at `path`: the strict mask's input, not a grade. Core's
-/// `unknown_members_are_errors` (`versioning/load.rs`) turns this Parse-phase warning into the
+/// `unknown_members_are_errors` (`versioning/pipeline.rs`) turns this Parse-phase warning into the
 /// refusing error the game gives for an unknown member.
 fn unrecognized(path: JsonPath) -> Diagnostic {
     Diagnostic::new(

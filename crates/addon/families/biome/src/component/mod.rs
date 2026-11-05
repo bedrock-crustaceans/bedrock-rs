@@ -106,7 +106,7 @@ pub enum BiomeComponent {
 /// One component read strictly from its slice: every slice of the biome loader parses with
 /// the strict mask, so a component that does not deserialise rejects the document (an error).
 /// Unknown members are kept and reported as Parse-phase `UnrecognizedField` warnings, which
-/// core's `unknown_members_are_errors` (`versioning/load.rs`) turns into the refusing error the
+/// core's `unknown_members_are_errors` (`versioning/pipeline.rs`) turns into the refusing error the
 /// game gives for an unknown member; the `Warning` is that step's input, not a grade. Findings
 /// are relative to the component.
 fn parse_row<T>(

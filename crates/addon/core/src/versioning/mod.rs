@@ -18,8 +18,8 @@
 mod chain;
 mod component;
 mod file;
-mod load;
 mod payload;
+mod pipeline;
 mod range;
 mod reading;
 #[doc(hidden)]
@@ -33,10 +33,10 @@ pub use component::{
     check_released, parse_component, parse_component_map, validate_components,
 };
 pub use file::{BelowFloor, FileFamily};
-pub use load::{
+pub use payload::{parse_payload, write_payload};
+pub use pipeline::{
     Parsed, file_version, finish, load, member_version, no_parser_version, parse_as_written,
 };
-pub use payload::{parse_payload, write_payload};
 pub use range::{ChainError, Selection, check_chain, ranges, select, select_versions};
 pub use reading::{MemberFailure, NullHandling, Reading, Scalars, TextReading, UnknownMask};
 
@@ -582,7 +582,7 @@ pub trait Family: Sized + 'static {
     /// The payload's identity before parsing, for messages and `UpgradeCx::identifier`.
     /// Default: `description.identifier` and `description.runtime_identifier`.
     fn identity(payload: JsonSlice<'_>) -> Identity {
-        load::description_identity(payload)
+        pipeline::description_identity(payload)
     }
     /// `UpgradeCx::actor_type`; `Mob` by default (entity: `ActorType::for_entity`).
     #[allow(unused_variables)]
