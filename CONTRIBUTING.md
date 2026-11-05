@@ -31,7 +31,7 @@ compiling against the RakNet API, run `cargo update -p raknet-tokio`. `bedrock_l
 | --- | --- |
 | `bedrock/src/lib.rs` | The `bedrock` facade: one `pub mod` per crate, each behind a feature. |
 | `crates/<name>/` | One crate per concern: `protocol_core`, `macros`, `protocol`, `network`, `auth`, `form`, `level`, `shared`. `README.md` says what each does. |
-| `crates/addon/` | The add-on toolkit: `core`, `derive`, `support`, `addon`, `std` and one crate per content family under `families/`. |
+| `crates/addon/` | The add-on toolkit: `core`, `derive`, `support`, `vanilla` (the game's tables, no dependencies), `addon`, `std` and one crate per content family under `families/`. |
 | `xtask/` | The code generators: the protocol (`cargo xtask`), and the add-on tables built from the game's metadata (`cargo xtask script-meta --samples <dir>`, `actor-types --samples <dir>`, `entity-schemas`). |
 | `bedrock/examples/server.rs` | A login-flow server against the newest protocol, driving the login explicitly with the `network::login` helpers; the end-to-end check. `client.rs` is its counterpart. |
 

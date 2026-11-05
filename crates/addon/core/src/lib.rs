@@ -31,7 +31,9 @@
 //! - `visual`: the description slots client entities, attachables and atomic client entities
 //!   share, and the spawn egg of a description.
 //! - `shared`: value types several content modules use (descriptors, ranges, filters).
-//! - `vanilla`: generated vanilla identifier lists, the command table and `ActorType`.
+//! - `vanilla`: the game's tables (identifier lists, commands, name lists, level sound
+//!   events) re-exported from `bedrock_addon_vanilla`, `GeneratedBuiltIns` over them, and
+//!   `ActorType`.
 //! - `pack_identity`: the pack-identity vocabulary (`PackPath`, `PackRef`, `PackIdVersion`,
 //!   `PackType`, `PackSide`, `PackOrigin`); `bedrock_addon::storage` and `bedrock_addon::pack`
 //!   are its documented paths.

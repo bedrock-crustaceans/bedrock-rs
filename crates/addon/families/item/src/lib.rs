@@ -19,7 +19,6 @@ mod legacy;
 #[cfg(feature = "nbt")]
 mod network;
 mod read;
-mod sounds;
 mod texts;
 mod types;
 mod validate;

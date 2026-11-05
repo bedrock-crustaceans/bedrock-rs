@@ -28,7 +28,7 @@ No type or function is re-exported at the crate root. (One macro is there, hidde
 | `molang` | the molang types pack content holds (`Molang`, `MolangSource`, `MolangVersion`); with the `molang` feature, the compile check | `molang` |
 | `visual` | the description slots client entities, attachables and atomic client entities share (`HasVisuals`, `Visuals`), and the spawn egg of a description (`SpawnEgg`, `SpawnEggInfo`) | `visual` |
 | `shared` | value types several content modules use (descriptors, ranges, filters) | `shared` |
-| `vanilla` | generated vanilla identifier lists, the command table and `ActorType` | `vanilla` |
+| `vanilla` | the game's tables of the `bedrock_addon_vanilla` data crate (identifier lists, commands, name lists, level sound events), `GeneratedBuiltIns` over them, and `ActorType` | `vanilla` |
 | `pack_identity` | `PackPath`, `PackRef`, `PackIdVersion`, `PackType`, `PackSide`, `PackOrigin` | `storage` and `pack` |
 | `versioning` | the version-chain machinery behind every family's `history`: `Family`, `Upgrade`, `version_chain!` | hidden: not public API of `bedrock_addon` |
 

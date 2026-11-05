@@ -16,6 +16,7 @@
 use bedrock_addon_core::load::{
     self, Accept, BuiltIns, CollectionLoader, FileCopy, Registration, StackCx, StackPack, Walk,
 };
+use bedrock_addon_core::vanilla::GeneratedBuiltIns;
 use uuid::Uuid;
 
 use super::merge::{self, Items, Merger};
@@ -65,13 +66,12 @@ impl Items for StackItems<'_> {
         }
         // The built-in items include the blocks that have an item; a block without one
         // (`minecraft:fire`) is no item.
-        match self.built_ins {
-            Some(built_ins) => built_ins.contains(<kind::Item as Kind>::NAME, &name),
-            // Without a host: the vanilla item identifiers the crate was generated with.
-            None => bedrock_addon_core::vanilla::ids()
-                .items
-                .contains(&name.as_str()),
-        }
+        // Without a host: the game's tables.
+        let built_ins: &dyn BuiltIns = match self.built_ins {
+            Some(host) => host,
+            None => &GeneratedBuiltIns,
+        };
+        built_ins.contains(<kind::Item as Kind>::NAME, &name)
     }
 }
 

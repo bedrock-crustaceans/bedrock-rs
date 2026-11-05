@@ -14,6 +14,8 @@ use bedrock_addon_core::diagnostic::{
 };
 use bedrock_addon_core::id::FunctionPath;
 use bedrock_addon_core::json::{MAX_JSON_DEPTH, TooDeep, Value, check_depth, strip_bom};
+use bedrock_addon_core::load::BuiltIns;
+#[cfg(test)]
 use bedrock_addon_core::vanilla::Command;
 
 /// What vanilla removes from both ends of a line: ASCII whitespace.
@@ -36,12 +38,14 @@ fn line_number(index: usize) -> u32 {
 }
 
 /// Reads the lines of the function `name` under `command_version` (`None`: the pack has no
-/// usable `min_engine_version`, and no line is checked). An error-level finding means vanilla
-/// does not create the function.
+/// usable `min_engine_version`, and no line is checked), each first word looked up in
+/// `built_ins` (the context's provider). An error-level finding means vanilla does not create
+/// the function.
 pub(super) fn parse_function(
     name: FunctionPath,
     bytes: &[u8],
     command_version: Option<u8>,
+    built_ins: &dyn BuiltIns,
 ) -> (Function, Diagnostics) {
     // The byte order mark is stripped before the split.
     let content = strip_bom(bytes);
@@ -96,9 +100,10 @@ pub(super) fn parse_function(
             function.commands.push(kept);
             continue;
         };
-        // The first word must be a registered command.
+        // The first word must be a registered command: the provider's (the game's table
+        // without a host, compared without ASCII case as `find_command` does).
         let word = first_word(line);
-        if let Some(command) = find_command(word) {
+        if let Some(command) = built_ins.command(word) {
             // A number of arguments no overload takes is the crate's own note. Whether the
             // line parses is the command system's to say, so this never drops a line. The
             // game's load checks the first word only, so the note is an information.
@@ -175,21 +180,15 @@ fn unknown_command_text(word: &str) -> &'static str {
 }
 
 /// The command of the core `vanilla` command table that `word` names, by its name
-/// or an alias, compared without ASCII case. The table stands for vanilla's check that a first
-/// word is a valid command.
+/// or an alias, compared without ASCII case: what the provider's default answers
+/// (`GeneratedBuiltIns::command`). The table stands for vanilla's check that a first word is a
+/// valid command.
 ///
 /// Whether vanilla folds case there is not known. Folding never rejects a function vanilla may
 /// load; the command system, which parses the lines, decides for good.
+#[cfg(test)]
 pub(super) fn find_command(word: &str) -> Option<&'static Command> {
-    bedrock_addon_core::vanilla::commands()
-        .iter()
-        .find(|command| {
-            command.name.eq_ignore_ascii_case(word)
-                || command
-                    .aliases
-                    .iter()
-                    .any(|alias| alias.eq_ignore_ascii_case(word))
-        })
+    bedrock_addon_core::vanilla::GeneratedBuiltIns.command(word)
 }
 
 /// Whether `word` has the `namespace:name` form of a command a script registers. No vanilla

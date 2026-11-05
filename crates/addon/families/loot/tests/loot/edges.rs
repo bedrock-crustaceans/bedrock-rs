@@ -1514,3 +1514,57 @@ fn a_single_value_form_is_reported_at_the_members_own_path() {
         [at(0, "enchants/0"), at(1, "patterns/0"), at(2, "effects/0")]
     );
 }
+
+/// A host whose provider knows `sharpness` alone: the reader asks it, so the game's other
+/// enchantments are told and dropped as a name no enchantment has.
+struct SharpnessOnly;
+
+impl bedrock_addon_core::load::BuiltIns for SharpnessOnly {
+    fn contains(&self, _kind: &'static str, _id: &str) -> bool {
+        false
+    }
+    fn is_enchantment(&self, name: &str) -> bool {
+        name == "sharpness"
+    }
+}
+
+#[test]
+fn an_enchantment_the_provider_does_not_know_is_told_and_dropped() {
+    let mut cx = cx();
+    cx.set_built_ins(Some(std::sync::Arc::new(SharpnessOnly)));
+    let table = load_in(
+        &with_functions(
+            r#"{"function": "specific_enchants", "enchants": ["sharpness", "infinity"]}, {"function": "enchant_book_for_trading", "enchantments": [{"name": "sharpness"}, {"name": "infinity"}]}"#,
+        ),
+        &cx,
+    )
+    .unwrap();
+    let FunctionKind::SpecificEnchants { enchants } = &functions(&table)[0].kind else {
+        panic!()
+    };
+    let ids: Vec<&str> = enchants
+        .as_deref()
+        .unwrap()
+        .iter()
+        .map(|e| e.id.as_str())
+        .collect();
+    assert_eq!(ids, ["sharpness"]);
+    let FunctionKind::EnchantBookForTrading { enchantments, .. } = &functions(&table)[1].kind
+    else {
+        panic!()
+    };
+    let names: Vec<&str> = enchantments
+        .as_deref()
+        .unwrap()
+        .iter()
+        .map(|option| option.name.as_str())
+        .collect();
+    assert_eq!(names, ["sharpness"]);
+    assert_eq!(
+        paths_of(&table, "UnresolvedReference"),
+        [
+            format!("{F0}/enchants/1"),
+            "pools/0/entries/0/functions/1/enchantments/1".to_owned()
+        ]
+    );
+}

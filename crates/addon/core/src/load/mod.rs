@@ -117,7 +117,8 @@ impl fmt::Debug for LoadOptions {
 ///
 /// | Table | Asked through | A host |
 /// | --- | --- | --- |
-/// | blocks, items, entities, biomes, dimensions, camera presets, jigsaw structures, effects, enchantments, potion effects and types, cooldown categories | `contains` | replaces it |
+/// | blocks, items, entities, biomes, dimensions, camera presets (camera's list check), jigsaw structures | `contains` | replaces it |
+/// | effects, enchantments, potion effects and types, cooldown categories | `contains`, for a caller that asks; no reader of the crate shapes data with it | replaces it; the answers that change what a reader keeps come from `potion`, `is_enchantment` and `effect` (below), not from `contains` |
 /// | code features (`feature`), level sound events, aim-assist categories and presets | `contains` | replaces it |
 /// | commands, command enums, enchantment aliases | `command`, `command_enum`, `enchantment_alias` | replaces it |
 /// | potions, enchantment names, effect names, level sound event spelling (parse and upgrade time) | `potion`, `is_enchantment`, `effect`, `level_sound_event` | replaces it |

@@ -237,7 +237,7 @@ fn parse_function_file(
         .min_engine_version
         .as_ref()
         .map(MinEngineVersion::command_version);
-    let (function, mut diagnostics) = parse_function(name.clone(), bytes, version);
+    let (function, mut diagnostics) = parse_function(name.clone(), bytes, version, cx.built_ins());
     diagnostics.locate(&origin);
     let result = if diagnostics.has_errors() {
         Err(Rejected::new(origin, diagnostics))

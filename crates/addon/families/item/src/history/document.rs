@@ -595,7 +595,7 @@ pub(crate) fn parse_parts(
                 unbind_members(key, c, &values[key], version, cx.load, &mut own);
                 if check_component(key, c, version, original, cx.load, &mut own) {
                     shared_checks(c, &mut own);
-                    level_sound_events(c, version, &mut own);
+                    level_sound_events(c, version, cx.load, &mut own);
                 } else {
                     component = None;
                 }
@@ -749,17 +749,23 @@ pub(crate) fn parse_parts(
 }
 
 /// The sound members a struct binds as a `LevelSoundEvent` take only a level sound event's
-/// name (compared without case: it is not known whether the game folds case, so the lenient
-/// reading is taken); any other text is an enum error that rejects the item. Below 1.26.50
+/// name, by the context's provider (compared without case: it is not known whether the game
+/// folds case, so the lenient reading is taken); any other text is an enum error that
+/// rejects the item. Below 1.26.50
 /// these are `use_modifiers.start_sound`, the three `swing_sounds` and each
 /// `durability_sensor` threshold's `sound_event`; the stable `record.sound_event` is one at
 /// every stable version. The beta struct binds all five as sound names.
-fn level_sound_events(component: &Component, version: FormatVersion, d: &mut Diagnostics) {
+fn level_sound_events(
+    component: &Component,
+    version: FormatVersion,
+    load: &LoadContext,
+    d: &mut Diagnostics,
+) {
     let stable = version < BETA_VERSION;
     let enum_before_1_26_50 = version < V1_26_50;
     let mut check = |name: Option<&SoundEventName>, path: JsonPath| {
         if let Some(name) = name
-            && crate::sounds::level_sound_event(name.as_str()).is_none()
+            && load.level_sound_event(name.as_str()).is_none()
         {
             d.push(Diagnostic::error(DiagnosticCode::InvalidEnumValue { text: None }).at(path));
         }

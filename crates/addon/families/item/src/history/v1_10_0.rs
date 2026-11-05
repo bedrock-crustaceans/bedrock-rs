@@ -3,6 +3,7 @@
 //! whose `components` name no registered component).
 
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
+use bedrock_addon_core::load::BuiltIns;
 use bedrock_addon_core::schema;
 use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::{
@@ -81,7 +82,7 @@ impl VersionStruct for Item {
                 read_format_item(
                     object,
                     &shell.description.identifier,
-                    bedrock_addon_core::vanilla::ids().effects,
+                    cx.load.built_ins(),
                     &at,
                     d,
                 )
@@ -196,11 +197,11 @@ const CLIENT_KEYS: [&str; 6] = [
 ];
 
 /// Reads the legacy key set from `components` (at `at`).
-/// `effects` are the vanilla mob effect identifiers (empty: not compiled in, every name passes).
+/// `effects` answers which mob effects the game has (the context's provider).
 pub(crate) fn read_format_item(
     components: &VObject,
     identifier: &str,
-    effects: &[&str],
+    effects: &dyn BuiltIns,
     at: &JsonPath,
     d: &mut Diagnostics,
 ) -> LegacyFormatItem {
@@ -241,21 +242,17 @@ pub(crate) fn read_format_item(
     item
 }
 
-/// Whether `name` is one of `effects` (vanilla's mob effects); `true` when the list is empty
-/// (not compiled in).
-fn known_effect(name: &str, effects: &[&str]) -> bool {
-    effects.is_empty()
-        || effects.iter().any(|e| {
-            e.trim_start_matches("minecraft:")
-                .eq_ignore_ascii_case(name)
-        })
+/// Whether `name` is one of the game's mob effects by `effects` (bare, without ASCII case);
+/// a name it does not know is told by the caller.
+fn known_effect(name: &str, effects: &dyn BuiltIns) -> bool {
+    effects.effect(name)
 }
 
 /// `minecraft:food` of the legacy format as the game's legacy reader reads it.
 fn read_food(
     value: &Value,
     identifier: &str,
-    effects: &[&str],
+    effects: &dyn BuiltIns,
     at: &JsonPath,
     d: &mut Diagnostics,
 ) -> LegacyFood {
@@ -579,6 +576,22 @@ mod tests {
     use super::*;
     use bedrock_addon_core::diagnostic::Severity;
 
+    /// A provider that knows the effects of its list, compared as `known_effect` compared
+    /// before the provider: bare and without ASCII case.
+    struct Effects(&'static [&'static str]);
+
+    impl BuiltIns for Effects {
+        fn contains(&self, _kind: &'static str, _id: &str) -> bool {
+            false
+        }
+        fn effect(&self, name: &str) -> bool {
+            self.0.iter().any(|e| {
+                e.trim_start_matches("minecraft:")
+                    .eq_ignore_ascii_case(name)
+            })
+        }
+    }
+
     /// an unknown `effects` or `remove_effects` name is a warning with vanilla's
     /// text, the effect kept.
     #[test]
@@ -588,7 +601,7 @@ mod tests {
         )
         .unwrap();
         let mut d = Diagnostics::default();
-        let effects = ["minecraft:speed", "minecraft:poison"];
+        let effects = Effects(&["minecraft:speed", "minecraft:poison"]);
         let item = read_format_item(
             json.as_object().unwrap(),
             "demo:x",
@@ -612,12 +625,12 @@ mod tests {
         let food = item.food.unwrap();
         assert_eq!(food.effects.len(), 2);
         assert_eq!(food.remove_effects.len(), 2);
-        // without the vanilla list every name passes
+        // a provider that knows every name tells none
         let mut d = Diagnostics::default();
         read_format_item(
             json.as_object().unwrap(),
             "demo:x",
-            &[],
+            &Effects(&["speed", "zoom", "poison", "fizz"]),
             &JsonPath::new(),
             &mut d,
         );

@@ -2,7 +2,9 @@
 //! ingredient (item, aux, count).
 
 use super::{Ingredient, IngredientObject, ItemName};
+use bedrock_addon_core::load::BuiltIns;
 use bedrock_addon_core::molang::{Molang, MolangList};
+use bedrock_addon_core::vanilla::GeneratedBuiltIns;
 
 /// The aux value that stands for every aux value of an item (vanilla's wildcard 32767).
 pub(super) const WILDCARD_AUX: i32 = 32767;
@@ -34,19 +36,20 @@ impl ItemIdProblem {
 }
 
 /// The potion `text` names (`minecraft:potion_type:awkward` → `minecraft:awkward`), if it is one
-/// of vanilla's potions.
+/// of vanilla's potions by the game's tables.
 ///
 /// Vanilla tries the whole string as a potion name before it splits it as an item. The form
 /// accepted here is the `minecraft:potion_type:<name>` one that vanilla's own recipe files use,
 /// with the name compared without case (vanilla ships `Thick` and `Awkward`) against the list
 /// of potions the game knows.
 pub(super) fn potion(text: &str) -> Option<String> {
+    potion_in(text, &GeneratedBuiltIns)
+}
+
+/// [`potion`], asking `built_ins` (the reader's provider) which potions the game has.
+pub(super) fn potion_in(text: &str, built_ins: &dyn BuiltIns) -> Option<String> {
     let name = text.strip_prefix(POTION_PREFIX)?;
-    let id = format!("minecraft:{}", name.to_lowercase());
-    bedrock_addon_core::vanilla::ids()
-        .potion_effects
-        .contains(&id.as_str())
-        .then_some(id)
+    built_ins.potion(name).map(str::to_owned)
 }
 
 impl ItemName {
@@ -82,6 +85,11 @@ pub(super) fn parse_item(text: &str) -> (ItemName, Vec<ItemIdProblem>) {
         };
         return (name, Vec::new());
     }
+    split_item(text)
+}
+
+/// The item-name half of [`parse_item`]: `text` split as an item, never as a potion.
+pub(super) fn split_item(text: &str) -> (ItemName, Vec<ItemIdProblem>) {
     let tokens: Vec<&str> = text.split(':').collect();
     let mut problems = Vec::new();
     let (namespace, name, aux) = match tokens.as_slice() {
@@ -153,7 +161,9 @@ impl Ingredient {
         }
     }
 
-    /// The potion the string form names (`minecraft:awkward`).
+    /// The potion the string form names (`minecraft:awkward`), by the game's tables: it has no
+    /// context, so it keeps them whatever a host's provider says, where the reader's
+    /// `item_text` asks the provider.
     pub fn potion(&self) -> Option<String> {
         match self {
             Self::Name(text) => potion(text),

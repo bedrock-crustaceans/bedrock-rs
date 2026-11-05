@@ -1346,13 +1346,14 @@ impl Upgrade for v1_26_30::Item {
     }
 }
 
-/// A level sound event `name` as the game writes it: the table's spelling (lower
-/// case), with an information where the step changed it.
+/// A level sound event `name` as the game writes it: the provider's spelling (the tables':
+/// lower case), with an information where the step changed it. A name the provider does
+/// not know is moved as written; the 1.26.30 check has already told it.
 fn canonical_sound(name: &mut SoundEventName, cx: &mut UpgradeCx<'_>, at: JsonPath) {
-    if let Some(canonical) = crate::sounds::level_sound_event(name.as_str())
-        && canonical != name.as_str()
+    if let Some(canonical) = cx.load.level_sound_event(name.as_str())
+        && canonical.as_str() != name.as_str()
     {
-        *name = SoundEventName::parse(canonical);
+        *name = SoundEventName::parse(canonical.as_str());
         cx.diagnostics.push(
             Diagnostic::info(DiagnosticCode::ValueRewritten { text: None })
                 .at(at)

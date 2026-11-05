@@ -358,3 +358,44 @@ fn an_item_above_the_engine_is_refused_with_the_text_of_its_path() {
         &third_party(),
     );
 }
+
+/// A host whose provider knows no effect: a legacy food effect the game's tables know is then
+/// told as a name no effect has, the effect kept, as for any unknown name.
+struct NoEffects;
+
+impl bedrock_addon_core::load::BuiltIns for NoEffects {
+    fn contains(&self, _kind: &'static str, _id: &str) -> bool {
+        false
+    }
+    fn effect(&self, _name: &str) -> bool {
+        false
+    }
+}
+
+#[test]
+fn a_legacy_effect_the_provider_does_not_know_is_told() {
+    let json = item(
+        "1.10",
+        "minecraft:x",
+        r#""minecraft:food": {"nutrition": 1, "effects": [{"name": "speed"}], "remove_effects": ["poison"]}"#,
+    );
+    let tables = findings(&json, &allowlisted());
+    assert!(!has_text(&tables, "Failed to load"), "{tables:#?}");
+    let mut hosted = allowlisted();
+    hosted.set_built_ins(Some(std::sync::Arc::new(NoEffects)));
+    let told = findings(&json, &hosted);
+    assert!(
+        has_text(
+            &told,
+            "Item[minecraft:x] Failed to load effect with name[speed] from Json. bad name?"
+        ),
+        "{told:#?}"
+    );
+    assert!(
+        has_text(
+            &told,
+            "Item[minecraft:x] Failed to load remove_effect with name[poison] from Json. bad name?"
+        ),
+        "{told:#?}"
+    );
+}

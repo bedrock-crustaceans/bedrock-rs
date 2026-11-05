@@ -115,3 +115,39 @@ fn the_unknown_command_check_reads_the_core_command_table() {
     let bad = format!("{text}bogus x\n");
     assert!(Function::parse(&path, bad.as_bytes(), &LoadContext::detached()).is_err());
 }
+
+/// A host whose provider has no `say`: the first word is asked of the context's provider, so
+/// a `say` line is an unknown command, rejected under the current command version as a word
+/// outside the table is.
+struct NoSay;
+
+impl bedrock_addon::load::BuiltIns for NoSay {
+    fn contains(&self, _kind: &'static str, _id: &str) -> bool {
+        false
+    }
+    fn command(&self, name: &str) -> Option<&vanilla::Command> {
+        if name.eq_ignore_ascii_case("say") {
+            None
+        } else {
+            vanilla::GeneratedBuiltIns.command(name)
+        }
+    }
+}
+
+#[test]
+fn the_unknown_command_check_asks_the_context_s_provider() {
+    let path = PackPath::new("functions/hello.mcfunction").unwrap();
+    let text = b"say hi\ntp @s ~ ~ ~\n";
+    let tables = Function::parse(&path, text, &LoadContext::detached())
+        .unwrap_or_else(|rejected| panic!("{rejected}"));
+    assert_eq!(commands(&tables), ["say hi", "tp @s ~ ~ ~"]);
+    let mut hosted = LoadContext::detached();
+    hosted.set_built_ins(Some(std::sync::Arc::new(NoSay)));
+    assert!(Function::parse(&path, text, &hosted).is_err());
+    // Below command version 12 the line is dropped and the function kept.
+    hosted.min_engine_version = Some(MinEngineVersion::new(1, 15, 0));
+    let kept =
+        Function::parse(&path, text, &hosted).unwrap_or_else(|rejected| panic!("{rejected}"));
+    assert_eq!(commands(&kept), ["tp @s ~ ~ ~"]);
+    assert_eq!(kept.dropped.len(), 1);
+}

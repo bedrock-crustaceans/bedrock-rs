@@ -270,3 +270,51 @@ fn a_stable_record_takes_only_level_sound_event_names() {
         loads(&sounding(version, &record("record.cat")), &third_party());
     }
 }
+
+/// A host whose provider has one level sound event, `custom.boom`, compared without case.
+struct OneSound;
+
+impl bedrock_addon_core::load::BuiltIns for OneSound {
+    fn contains(&self, _kind: &'static str, _id: &str) -> bool {
+        false
+    }
+    fn level_sound_event(&self, name: &str) -> Option<&str> {
+        name.eq_ignore_ascii_case("custom.boom")
+            .then_some("custom.boom")
+    }
+}
+
+/// The 1.26.30 start sound is checked and spelled by the context's provider: the host's
+/// event is accepted and rewritten to its spelling; a name the host does not know is the
+/// enum error a name outside the game's table is.
+#[test]
+fn a_legacy_start_sound_is_checked_and_spelled_by_the_provider() {
+    let custom = item(
+        "1.26.30",
+        "demo:x",
+        r#""minecraft:use_modifiers": {"use_duration": 1.0, "start_sound": "Custom.Boom"}"#,
+    );
+    let vanilla = item(
+        "1.26.30",
+        "demo:x",
+        r#""minecraft:use_modifiers": {"use_duration": 1.0, "start_sound": "Hurt"}"#,
+    );
+    let tables = third_party();
+    assert!(has(&rejects(&custom, &tables), |code| code.name()
+        == "InvalidEnumValue"));
+    let document = loads(&vanilla, &tables);
+    let modifiers = document.components.get::<UseModifiers>().unwrap();
+    assert_eq!(modifiers.start_sound.as_ref().unwrap().as_str(), "hurt");
+
+    let mut hosted = third_party();
+    hosted.set_built_ins(Some(std::sync::Arc::new(OneSound)));
+    let document = loads(&custom, &hosted);
+    let modifiers = document.components.get::<UseModifiers>().unwrap();
+    assert_eq!(
+        modifiers.start_sound.as_ref().unwrap().as_str(),
+        "custom.boom"
+    );
+    assert_eq!(with_code(document.diagnostics(), "ValueRewritten").len(), 1);
+    assert!(has(&rejects(&vanilla, &hosted), |code| code.name()
+        == "InvalidEnumValue"));
+}

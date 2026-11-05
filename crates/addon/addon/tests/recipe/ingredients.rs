@@ -85,3 +85,35 @@ fn ingredient_data_float_number_is_truncated_without_the_compile_check() {
     let document = loaded("ingredient_data_float.json", &cx());
     assert_eq!(shaped(&document).key["#"].aux(), 2);
 }
+
+/// A host whose provider knows no potion: `minecraft:potion_type:awkward` is then an ordinary
+/// item text to the reader, and the game's item parser logs its third token as an aux value.
+struct NoPotions;
+
+impl bedrock_addon::load::BuiltIns for NoPotions {
+    fn contains(&self, _kind: &'static str, _id: &str) -> bool {
+        false
+    }
+    fn potion(&self, _name: &str) -> Option<&str> {
+        None
+    }
+}
+
+#[test]
+fn a_potion_the_provider_does_not_know_is_an_item_text_with_its_finding() {
+    let tables = loaded("brewing_mix_potion_type.json", &cx_base_game());
+    clean(tables.diagnostics());
+    let mut cx = cx_base_game();
+    cx.set_built_ins(Some(std::sync::Arc::new(NoPotions)));
+    let hosted = loaded("brewing_mix_potion_type.json", &cx);
+    let findings = with_text(hosted.diagnostics(), "Invalid aux value in item ID \"{}\"");
+    let texts: Vec<Vec<String>> = findings.iter().map(|finding| args(finding)).collect();
+    assert_eq!(
+        texts,
+        [
+            ["minecraft:potion_type:awkward"],
+            ["minecraft:potion_type:weakness"]
+        ]
+    );
+    assert!(findings.iter().all(|finding| finding.kept));
+}

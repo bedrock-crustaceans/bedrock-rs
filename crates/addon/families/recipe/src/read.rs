@@ -13,7 +13,7 @@
 
 use std::collections::HashSet;
 
-use super::ingredient::{constant_data, parse_item, potion};
+use super::ingredient::{constant_data, potion_in, split_item};
 use super::types::MISSING_VERSION;
 use super::{
     BrewingContainer, BrewingMix, Description, Furnace, Ingredient, IngredientObject,
@@ -715,12 +715,13 @@ impl<'c> Reader<'c> {
 
     /// What vanilla's item-name parser logs about an item text. The game logs each line as an
     /// error and goes on with the tokens it has (a missing namespace is `minecraft`), so each
-    /// is a kept error.
+    /// is a kept error. A potion text (the context's provider names the potion) logs nothing;
+    /// one the provider does not know is split as an item, with that split's lines.
     fn item_text(&mut self, text: &str, at: &JsonPath) {
-        if potion(text).is_some() {
+        if potion_in(text, self.cx.built_ins()).is_some() {
             return;
         }
-        for problem in parse_item(text).1 {
+        for problem in split_item(text).1 {
             self.diagnostics.push_kept_error(
                 Diagnostic::error(DiagnosticCode::InvalidValue {
                     text: formatted(problem.template(), [text.to_owned()]),

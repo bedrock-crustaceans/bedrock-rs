@@ -821,10 +821,11 @@ impl Walk<'_> {
             let name = written
                 .and_then(Value::as_string)
                 .map(VString::as_str)
-                .filter(|name| is_enchantment(name));
+                .filter(|name| self.cx.built_ins().is_enchantment(name));
             let Some(name) = name else {
-                // No enchantment has that name: the option is dropped with an error-level
-                // line of the game's content log and the table is kept: a kept error.
+                // No enchantment has that name (by the context's provider: the game's tables
+                // or a host): the option is dropped with an error-level line of the game's
+                // content log and the table is kept: a kept error.
                 let shown = written.map(as_written).unwrap_or_default();
                 self.kept(
                     DiagnosticCode::UnresolvedReference {
@@ -1000,7 +1001,7 @@ impl Walk<'_> {
                 self.wrong_type(&at);
                 continue;
             };
-            if is_enchantment(&enchant.id) {
+            if self.cx.built_ins().is_enchantment(&enchant.id) {
                 out.push(enchant);
             } else {
                 // An `UnresolvedReference` information of the crate's own: vanilla drops it
@@ -1217,17 +1218,6 @@ impl Walk<'_> {
         }
         Some(out)
     }
-}
-
-/// `name` is the string id of a vanilla enchantment (`"sharpness"`, without a namespace), by the vanilla identifier lists, aliases included.
-pub(crate) fn is_enchantment(name: &str) -> bool {
-    let ids = bedrock_addon_core::vanilla::ids();
-    let bare = |id: &&str| id.strip_prefix("minecraft:") == Some(name);
-    ids.enchantments.iter().any(bare)
-        || ids
-            .enchantment_aliases
-            .iter()
-            .any(|(alias, target)| bare(alias) || bare(target))
 }
 
 /// A banner type: a name or 0..1.
