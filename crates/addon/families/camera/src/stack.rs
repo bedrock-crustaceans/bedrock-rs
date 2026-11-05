@@ -191,7 +191,7 @@ fn invalid(document: &Document<CameraPreset>, end: End<'_>) -> Option<Diagnostic
 /// The finding that keeps `list` from loading, if any: an unknown preset, then an empty list,
 /// then a preset named twice (vanilla's order). `defined` holds the presets the stack defined
 /// and whether each survived the discard pass; a preset the stack does not define is known when
-/// it is a built-in or one of vanilla's (the generated identifier list).
+/// the game has it: the host's provider says so, or without one the generated identifier list.
 pub(crate) fn check_list(
     list: &Document<CameraList>,
     defined: &IndexMap<CameraPresetId, bool>,
@@ -258,7 +258,8 @@ pub(crate) fn duplicate_splines(files: &[Document<CameraSpline>]) -> Vec<Diagnos
 }
 
 /// Whether the list entry `id` names a preset: one the stack defined that survived the
-/// discard pass, a built-in or one of vanilla's.
+/// discard pass, or one of the game's (the host's provider when it gave one, else the
+/// tables), as the link pass asks.
 fn known_preset(
     id: &CameraPresetId,
     defined: &IndexMap<CameraPresetId, bool>,
@@ -266,13 +267,9 @@ fn known_preset(
 ) -> bool {
     match defined.get(id) {
         Some(survived) => *survived,
-        None => {
-            stack.options.built_ins.as_ref().is_some_and(|built_ins| {
-                built_ins.contains(<kind::CameraPreset as Kind>::NAME, id.as_str())
-            }) || bedrock_addon_core::vanilla::ids()
-                .camera_presets
-                .contains(&id.as_str())
-        }
+        None => stack
+            .built_ins()
+            .contains(<kind::CameraPreset as Kind>::NAME, id.as_str()),
     }
 }
 

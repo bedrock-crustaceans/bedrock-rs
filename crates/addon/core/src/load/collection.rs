@@ -503,6 +503,16 @@ impl<'a> StackCx<'a> {
         self
     }
 
+    /// What answers for the game's own content: the host's provider when the stack's
+    /// options gave one, else the generated tables, as [`LoadContext::built_ins`] answers.
+    pub fn built_ins(&self) -> &'a dyn super::BuiltIns {
+        static TABLES: crate::vanilla::GeneratedBuiltIns = crate::vanilla::GeneratedBuiltIns;
+        match &self.options.built_ins {
+            Some(host) => host.as_ref(),
+            None => &TABLES,
+        }
+    }
+
     /// Whether a pack of the stack registered `id`, and which: the answer of the stack's
     /// loaded collection of kind `K` (its effective definitions, stable or beta).
     /// [`Registration::NotInView`] unless the combining collection declared `K::NAME` in

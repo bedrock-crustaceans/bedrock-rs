@@ -390,6 +390,37 @@ fn a_list_naming_a_vanilla_preset_loads_without_the_vanilla_pack_but_not_an_unkn
     assert!(stack.cameras().lists.is_empty());
 }
 
+/// A host's provider answers for the game's presets instead of the tables, as in the link pass:
+/// a preset it does not know is unknown, vanilla's or not.
+#[test]
+fn a_hosts_provider_replaces_the_vanilla_preset_names() {
+    struct Host;
+    impl bedrock_addon::load::BuiltIns for Host {
+        fn contains(&self, kind: &'static str, id: &str) -> bool {
+            (kind, id) == ("camera preset", "host:cam")
+        }
+    }
+    let with_host = |cameras: &str| {
+        let options = bedrock_addon::load::LoadOptions {
+            built_ins: Some(std::sync::Arc::new(Host)),
+            ..bedrock_addon::load::LoadOptions::default()
+        };
+        let file = (
+            "cameras/lists/l.json",
+            list_json("1.21.60", "ex:l", cameras),
+        );
+        super::common::stack_with(&[&[file]], options)
+    };
+    assert_eq!(with_host(r#"["host:cam"]"#).cameras().lists.len(), 1);
+    assert!(
+        with_host(r#"["minecraft:first_person"]"#)
+            .cameras()
+            .lists
+            .is_empty(),
+        "the host does not know minecraft:first_person"
+    );
+}
+
 /// A 1.26.50 document cannot spell the flag the step sets, so an upgraded
 /// preset that keeps it (no `starting_rot`) is written at 1.19.50, the struct's first version,
 /// which the game reads with the legacy slice and upgrades the same way; one with a

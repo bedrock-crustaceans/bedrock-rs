@@ -178,6 +178,14 @@ pub fn leak(text: String) -> &'static str {
 
 /// A behaviour stack of packs, top first; each pack is its `(path, text)` files.
 pub fn stack(packs: &[&[(&'static str, String)]]) -> PackStack<Behavior> {
+    stack_with(packs, LoadOptions::default())
+}
+
+/// [`stack`] loaded with `options`.
+pub fn stack_with(
+    packs: &[&[(&'static str, String)]],
+    options: LoadOptions,
+) -> PackStack<Behavior> {
     let packs: Vec<_> = packs
         .iter()
         .enumerate()
@@ -189,7 +197,7 @@ pub fn stack(packs: &[&[(&'static str, String)]]) -> PackStack<Behavior> {
             spec.open()
         })
         .collect();
-    PackStack::<Behavior>::of(packs, LoadOptions::default()).unwrap()
+    PackStack::<Behavior>::of(packs, options).unwrap()
 }
 
 /// `(code name, message)` of each finding of the group at `severity`: the camera loader's own;
