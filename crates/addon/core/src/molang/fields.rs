@@ -323,7 +323,7 @@ impl MolangFields for crate::visual::AnimateEntry {
 
 /// A block descriptor's `tags` (the tags and mixed forms) is a Molang field, under the walk's
 /// default spec: a family whose descriptor tags read otherwise (`DESCRIPTOR_TAGS` in feature,
-/// block and entity) walks them by hand.
+/// block and entity) walks them with its own function, named by `schema::molang_with`.
 impl MolangFields for crate::shared::BlockDescriptor {
     fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
         if let Self::Tags { tags, .. } | Self::Mixed { tags, .. } = self {

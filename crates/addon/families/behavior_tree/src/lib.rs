@@ -432,6 +432,10 @@ impl bedrock_addon_core::__private::Sealed for BehaviorTree {}
 impl Content for BehaviorTree {
     const NAME: &'static str = "behavior tree";
     const SIDES: &'static [PackSide] = &[PackSide::Behavior];
+    /// The writer writes every member it knows from the value, so a member of the same key in
+    /// the table is never written over it.
+    const UNKNOWN_PRECEDENCE: bedrock_addon_core::json::Precedence =
+        bedrock_addon_core::json::Precedence::KnownWins;
 
     /// Parses one behavior-tree file; the rules between files (one tree per name, the
     /// built-in trees) apply to a stack, not to a single file.
@@ -443,7 +447,7 @@ impl Content for BehaviorTree {
         self.write_into(out, style)
     }
 
-    /// The writer's own merge of the unknown members (`Precedence::KnownWins`: one named like a
+    /// The writer's own merge of the unknown members (`Self::UNKNOWN_PRECEDENCE`: one named like a
     /// member the writer writes is left out), kept for its depth check: the members' nesting
     /// counts against the reader's limit.
     fn write_json_with(

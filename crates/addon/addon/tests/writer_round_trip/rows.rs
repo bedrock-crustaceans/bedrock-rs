@@ -250,7 +250,7 @@ pub fn rows() -> Vec<Row> {
             |k| { below(k, "recipes", ".json") }
         )],
     ));
-    #[cfg(all(feature = "animation", feature = "animation_controller"))]
+    #[cfg(feature = "animation")]
     rows.push(Row::of(
         "Animations",
         vec![kind!(
@@ -261,7 +261,7 @@ pub fn rows() -> Vec<Row> {
             |k| below(k, "animations", ".json")
         )],
     ));
-    #[cfg(all(feature = "animation", feature = "animation_controller"))]
+    #[cfg(feature = "animation_controller")]
     rows.push(Row::of(
         "AnimationControllers",
         vec![kind!(

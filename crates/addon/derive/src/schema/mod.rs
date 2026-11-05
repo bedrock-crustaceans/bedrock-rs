@@ -832,10 +832,16 @@ fn getters(ident: &Ident, infos: &[FieldInfo]) -> TokenStream {
             let inner = info.option?;
             let vis = info.vis;
             let value = typed(fallback, inner);
-            let doc = format!(
-                "`{name}`, or `{}` where the document has none.",
-                attr::text(fallback)
-            );
+            // A named fallback is often a private const of the family, which the doc of a
+            // public getter cannot name: it says what the const is instead.
+            let doc = if matches!(fallback, syn::Expr::Path(_)) {
+                format!("`{name}`, or the family's default where the document has none.")
+            } else {
+                format!(
+                    "`{name}`, or `{}` where the document has none.",
+                    attr::text(fallback)
+                )
+            };
             Some(quote! {
                 #[doc = #doc]
                 #[must_use]

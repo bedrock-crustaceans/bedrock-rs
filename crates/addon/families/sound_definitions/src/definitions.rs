@@ -54,7 +54,8 @@ pub const CATEGORIES: &[&str] = &[
 #[non_exhaustive]
 pub struct SoundDefinitions {
     /// `format_version`, when it reads as a version (a string or three integers). Vanilla
-    /// stamps `"1.26.50"` on every older copy. Written as a version string.
+    /// stamps `"1.26.50"` on every older copy. Written as a version string, `"1.26.50"` when
+    /// `None`.
     pub format_version: Option<SemVersion>,
     /// `sound_definitions`: the definitions by sound event name, in file order.
     pub sound_definitions: IndexMap<SoundEventName, SoundDefinition>,
@@ -100,10 +101,15 @@ impl SoundDefinitions {
             return Ok(root.clone());
         }
         let mut root = Object::new(&self.read, &self.extra);
-        root.member("format_version", self.format_version.is_none(), || {
-            Ok(self.format_version.as_ref().map_or(Value::NULL, |version| {
-                Value::from(version.to_string().as_str())
-            }))
+        // Always written: every read of an object stamps one (the version steps), so a value
+        // without one (a stack without the file, a `null` root, a value built by hand) writes
+        // the version the steps stamp, and its written text reads as what it was written from.
+        root.member("format_version", false, || {
+            let version = self
+                .format_version
+                .clone()
+                .unwrap_or_else(|| SemVersion::from(super::upgrade::V1_26_50));
+            Ok(Value::from(version.to_string().as_str()))
         })?;
         let empty = self.sound_definitions.is_empty() && self.not_definitions.is_empty();
         root.member("sound_definitions", empty, || {
@@ -834,5 +840,28 @@ mod tests {
         assert_eq!(keys(&written(entry.to_value(&definition))), ENTRY_KEYS);
         assert_eq!(keys(&written(parameter.to_value())), PARAMETER_KEYS);
         assert_eq!(keys(&written(action.to_value())), ACTION_KEYS);
+    }
+
+    #[test]
+    fn a_value_without_a_format_version_writes_the_version_every_read_stamps() {
+        use bedrock_addon_core::document::Content;
+        use bedrock_addon_core::load::LoadContext;
+        use bedrock_addon_core::pack_identity::PackPath;
+        // A stack without the file merges no copy, and the value of a `null` root holds
+        // nothing: the read of what such a value writes is upgraded, which stamps the
+        // version, so the written text has to hold it to read as what it was written from.
+        let empty = SoundDefinitions::from_json(Value::NULL);
+        let written =
+            bedrock_addon_core::json::to_json(&empty.to_value().expect("written")).expect("text");
+        let json = |text: &str| bedrock_addon_core::json::from_str::<Value>(text).expect("JSON");
+        assert_eq!(json(&written), json(r#"{"format_version": "1.26.50"}"#));
+        let path = PackPath::new("sounds/sound_definitions.json").expect("a pack path");
+        let again = SoundDefinitions::parse(&path, written.as_bytes(), &LoadContext::detached())
+            .expect("loads");
+        assert_eq!(
+            again.to_value().expect("written again"),
+            empty.to_value().expect("written"),
+            "the written text reads as what it was written from"
+        );
     }
 }

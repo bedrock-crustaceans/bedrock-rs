@@ -219,7 +219,6 @@ fn a_hand_built_data_expression_equals_its_reparse() {
         format_version: Some(bedrock_addon::version::FormatVersion::new(1, 12, 0)),
         description: Description {
             identifier: bedrock_addon::id::RecipeId::new("demo:wool").unwrap(),
-            ..Description::default()
         },
         tags: Some(Tags::One("crafting_table".to_owned())),
         pattern: vec!["#".to_owned()],

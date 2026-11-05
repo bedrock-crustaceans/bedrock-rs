@@ -473,6 +473,55 @@ fn is_test_file(relative: &Path) -> bool {
     })
 }
 
+/// Whether the module of `file` is declared by its parent behind `#[cfg(test)]`
+/// (`#[cfg(test)] mod scalar_tests;` in `lib.rs`): a file the crate compiles for its tests
+/// alone, whatever its name.
+fn declared_for_tests(file: &Path) -> bool {
+    let (Some(dir), Some(stem)) = (file.parent(), file.file_stem()) else {
+        return false;
+    };
+    let stem = stem.to_string_lossy();
+    let (module, parents) = if matches!(&*stem, "lib" | "main" | "mod") {
+        // A crate root, or a directory's module declared by the file beside the directory.
+        let Some(name) = dir.file_name() else {
+            return false;
+        };
+        let up = dir.parent().map(Path::to_path_buf).unwrap_or_default();
+        (
+            name.to_string_lossy().into_owned(),
+            vec![
+                up.join("lib.rs"),
+                up.join("mod.rs"),
+                dir.with_extension("rs"),
+            ],
+        )
+    } else {
+        (
+            stem.into_owned(),
+            vec![
+                dir.join("lib.rs"),
+                dir.join("main.rs"),
+                dir.join("mod.rs"),
+                dir.with_extension("rs"),
+            ],
+        )
+    };
+    let declaration = format!("mod {module};");
+    parents
+        .iter()
+        .filter(|parent| parent.as_path() != file)
+        .any(|parent| {
+            let Ok(source) = fs::read_to_string(parent) else {
+                return false;
+            };
+            let code = code_of(&source);
+            test_items(&code).into_iter().any(|item| {
+                let item: Vec<&str> = code[item].split_whitespace().collect();
+                item.join(" ").ends_with(&declaration)
+            })
+        })
+}
+
 /// The name every finding gives its path.
 const JSON_PATH: &str = "json_path";
 
@@ -694,7 +743,7 @@ fn library_code_does_not_read_the_text_of_a_finding_s_path() {
         rust_files(&src, &mut files);
         for file in files {
             let relative = file.strip_prefix(&src).unwrap();
-            if is_test_file(relative) {
+            if is_test_file(relative) || declared_for_tests(&file) {
                 continue;
             }
             scanned += 1;
@@ -748,6 +797,22 @@ fn the_scan_for_path_text_sees_the_call_and_nothing_else() {
         "pack/stack/accessors/tests/forms.rs"
     )));
     assert!(!is_test_file(Path::new("entity/goal/check.rs")));
+}
+
+/// A file whose module its parent declares behind `#[cfg(test)]` (`mod scalar_tests;`) is a
+/// file of tests, whatever its name; one declared for the library is not.
+#[test]
+fn a_module_its_parent_declares_for_tests_is_no_library_file() {
+    let families = Path::new(env!("CARGO_MANIFEST_DIR")).join("../families");
+    if !families.is_dir() {
+        // A crate packaged alone has no sibling to look at.
+        return;
+    }
+    let src = families.join("attachable/src");
+    assert!(declared_for_tests(&src.join("scalar_tests.rs")));
+    assert!(declared_for_tests(&src.join("peek_tests.rs")));
+    assert!(!declared_for_tests(&src.join("read.rs")));
+    assert!(!declared_for_tests(&src.join("lib.rs")));
 }
 
 /// The library part of a file is all of it but the items of its tests: a test-only item long

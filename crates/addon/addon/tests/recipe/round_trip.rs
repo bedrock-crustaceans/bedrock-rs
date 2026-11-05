@@ -124,7 +124,6 @@ fn a_recipe_built_by_hand_is_written_and_read_back() {
         format_version: Some(FormatVersion::new(1, 20, 10)),
         description: Description {
             identifier: RecipeId::new("demo:ruby_block").unwrap(),
-            ..Description::default()
         },
         tags: Some(Tags::Many(vec!["crafting_table".to_owned()])),
         pattern: vec!["##".to_owned(), "##".to_owned()],

@@ -1009,3 +1009,118 @@ mod tests {
         assert_eq!(prepass, typed, "{text}: {read:?}");
     }
 }
+
+/// The integer types a [`StrictInt`](super::StrictInt) holds: `i8` to `i64` and `u8` to `u64`.
+///
+/// The set is closed: the trait cannot be implemented outside this crate.
+///
+/// ```compile_fail,E0277
+/// use bedrock_addon_core::json::{ScalarShape, StrictIntType};
+///
+/// #[derive(Clone, Copy)]
+/// struct Mine(u8);
+/// impl TryFrom<u64> for Mine {
+///     type Error = ();
+///     fn try_from(_: u64) -> Result<Self, ()> { Err(()) }
+/// }
+/// impl TryFrom<i64> for Mine {
+///     type Error = ();
+///     fn try_from(_: i64) -> Result<Self, ()> { Err(()) }
+/// }
+/// impl StrictIntType for Mine {
+///     fn to_shape(self) -> ScalarShape { ScalarShape::Null }
+///     fn from_non_strict(_: &ScalarShape) -> Option<Self> { None }
+/// }
+/// ```
+pub trait StrictIntType: sealed::Sealed + Copy + TryFrom<u64> + TryFrom<i64> {
+    /// The written form: `UInt` for a non-negative value, `Int` for a negative one.
+    fn to_shape(self) -> ScalarShape;
+
+    /// The non-strict readers' value of `shape` ([`ReaderMode::NonStrict`](super::ReaderMode::NonStrict)): the low bits of an
+    /// integer token (`ldrb`, `ldr w`, `ldr x` of the token's 64 bits), a bool as `0` or `1`,
+    /// a real as the truncation toward zero that `fcvtzs` / `fcvtzu` gives (saturating), a
+    /// negative real as the negated truncation of its magnitude. `None` for the other types.
+    fn from_non_strict(shape: &ScalarShape) -> Option<Self>;
+}
+
+/// The seal of [`StrictIntType`] and `StrictFloatType`: private to `json`, so no type outside
+/// this crate has it.
+pub(super) mod sealed {
+    pub trait Sealed {}
+}
+
+macro_rules! strict_int_types {
+    ($($t:ty => $real:ident),*) => {$(
+        impl sealed::Sealed for $t {}
+        impl StrictIntType for $t {
+            fn to_shape(self) -> ScalarShape {
+                // Every value of these types fits `u64` or, when negative, `i64`; the `Null`
+                // arm is never taken.
+                match (u64::try_from(self), i64::try_from(self)) {
+                    (Ok(u), _) => ScalarShape::UInt(u),
+                    (Err(_), Ok(i)) => ScalarShape::Int(i),
+                    (Err(_), Err(_)) => ScalarShape::Null,
+                }
+            }
+
+            #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss, clippy::cast_possible_wrap)] // the low bits are the reading
+            fn from_non_strict(shape: &ScalarShape) -> Option<Self> {
+                let bits = match shape {
+                    ScalarShape::Bool(b) => u64::from(*b),
+                    ScalarShape::UInt(u) => *u,
+                    ScalarShape::Int(i) => *i as u64,
+                    ScalarShape::Number(x) => $real(*x),
+                    ScalarShape::Null | ScalarShape::String(_) => return None,
+                };
+                Some(bits as $t)
+            }
+        }
+    )*};
+}
+strict_int_types!(
+    i8 => real_as_i32, i16 => real_as_i32, i32 => real_as_i32, i64 => real_as_i64,
+    u8 => real_as_i32, u16 => real_as_i32, u32 => real_as_u32, u64 => real_as_u64
+);
+
+// The non-strict readers' reals: `x >= 0` is the saturating truncation toward zero, `x < 0`
+// the negated truncation of `-x`. The 8 and 16 bit readers go through the signed 32 bit
+// conversion.
+
+#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+fn real_as_i32(x: f64) -> u64 {
+    let v = if x >= 0.0 {
+        x as i32
+    } else {
+        (-x as i32).wrapping_neg()
+    };
+    u64::from(v as u32)
+}
+
+#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+fn real_as_u32(x: f64) -> u64 {
+    let v = if x >= 0.0 {
+        x as u32
+    } else {
+        (-x as u32).wrapping_neg()
+    };
+    u64::from(v)
+}
+
+#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+fn real_as_i64(x: f64) -> u64 {
+    let v = if x >= 0.0 {
+        x as i64
+    } else {
+        (-x as i64).wrapping_neg()
+    };
+    v as u64
+}
+
+#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+fn real_as_u64(x: f64) -> u64 {
+    if x >= 0.0 {
+        x as u64
+    } else {
+        (-x as u64).wrapping_neg()
+    }
+}

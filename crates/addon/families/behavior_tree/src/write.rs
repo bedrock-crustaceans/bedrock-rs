@@ -26,10 +26,9 @@ use super::read::{
 };
 use super::{BehaviorTree, Node, Param};
 use bedrock_addon_core::diagnostic::{Diagnostic, JsonPath};
-use bedrock_addon_core::document::Unknown;
+use bedrock_addon_core::document::{Content, Unknown};
 use bedrock_addon_core::json::{
-    EncodeError, MAX_JSON_DEPTH, Precedence, Unrepresentable, Value, WriteStyle,
-    merge_unknown_with, write_json,
+    EncodeError, MAX_JSON_DEPTH, Unrepresentable, Value, WriteStyle, merge_unknown_with, write_json,
 };
 
 impl BehaviorTree {
@@ -76,7 +75,11 @@ impl BehaviorTree {
         root.insert(PAYLOAD, payload);
         let mut document = root.into_value();
         // A member the writer writes is never written over by an unknown one of its key.
-        let told = merge_unknown_with(&mut document, unknown, Precedence::KnownWins);
+        let told = merge_unknown_with(
+            &mut document,
+            unknown,
+            <Self as Content>::UNKNOWN_PRECEDENCE,
+        );
         // And exactly, with what the members themselves add (an `[x, y, z]`, `data_items`, an
         // unknown member).
         if value_nesting(&document) > MAX_JSON_DEPTH {

@@ -173,7 +173,7 @@ fn bare_value<T>(slice: JsonSlice<'_>, cx: &LoadContext, d: &mut Diagnostics) ->
 where
     T: ValueComponent + Into<Component>,
 {
-    if crate::component::value_is_object(slice.text) {
+    if slice.opens_an_object() {
         return typed::<T>(slice, cx, d);
     }
     match crate::component::read_bare::<T::Scalar>(slice, cx, d) {
@@ -1448,8 +1448,9 @@ fn drop_minecraft_names<T>(list: &mut Vec<T>, name: fn(&T) -> &str, d: &mut Diag
 }
 
 /// One component as JSON. A component of the newest format's shape is written by
-/// [`ItemComponent::write_component`], the dispatch the derive emits; the old shapes, which the
-/// newest enum does not hold, are written here, three of them by hand: `render_offsets` as the
+/// [`ItemComponent::write_component`], the dispatch the derive emits; the match lists every
+/// variant, so a new one has to say how it is written. The old shapes, which the newest enum
+/// does not hold, are written here, three of them by hand: `render_offsets` as the
 /// JSON kept, the 1.21.90 list as its names and the keyed 1.21.90 form as its object.
 pub(crate) fn write_component(component: &Component) -> Result<Value, EncodeError> {
     Ok(match component {
@@ -1476,17 +1477,51 @@ pub(crate) fn write_component(component: &Component) -> Result<Value, EncodeErro
         Component::CustomComponents(c) => c.to_value(),
         Component::Custom(c) => c.parameters.clone(),
         Component::Unknown(v) => v.clone(),
-        newest => match into_item(newest.clone()) {
-            Ok(newest) => newest.write_component()?,
-            // Every variant `into_item` gives back is matched above: one it did not would
-            // have no writer, not a `null`.
-            Err(_) => {
-                return Err(EncodeError::NotRepresentable {
-                    at: JsonPath::new(),
-                    what: bedrock_addon_core::json::Unrepresentable::Unsupported,
-                });
-            }
-        },
+        // The newest shapes, written by the dispatch the derive emits.
+        Component::AllowOffHand(c) => ItemComponent::from(c.clone()).write_component()?,
+        Component::BlockPlacer(c) => ItemComponent::from(c.clone()).write_component()?,
+        Component::BundleInteraction(c) => ItemComponent::from(c.clone()).write_component()?,
+        Component::CanDestroyInCreative(c) => ItemComponent::from(c.clone()).write_component()?,
+        Component::Compostable(c) => ItemComponent::from(c.clone()).write_component()?,
+        Component::Cooldown(c) => ItemComponent::from(c.clone()).write_component()?,
+        Component::Damage(c) => ItemComponent::from(c.clone()).write_component()?,
+        Component::DamageAbsorption(c) => ItemComponent::from(c.clone()).write_component()?,
+        Component::Digger(c) => ItemComponent::from(c.clone()).write_component()?,
+        Component::DisplayName(c) => ItemComponent::from(c.clone()).write_component()?,
+        Component::Durability(c) => ItemComponent::from(c.clone()).write_component()?,
+        Component::DurabilitySensor(c) => ItemComponent::from(c.clone()).write_component()?,
+        Component::Dyeable(c) => ItemComponent::from(c.clone()).write_component()?,
+        Component::Enchantable(c) => ItemComponent::from(c.clone()).write_component()?,
+        Component::EntityPlacer(c) => ItemComponent::from(c.clone()).write_component()?,
+        Component::FireResistant(c) => ItemComponent::from(c.clone()).write_component()?,
+        Component::Food(c) => ItemComponent::from(c.clone()).write_component()?,
+        Component::Fuel(c) => ItemComponent::from(c.clone()).write_component()?,
+        Component::Glint(c) => ItemComponent::from(c.clone()).write_component()?,
+        Component::HandEquipped(c) => ItemComponent::from(c.clone()).write_component()?,
+        Component::HoverTextColor(c) => ItemComponent::from(c.clone()).write_component()?,
+        Component::Icon(c) => ItemComponent::from(c.clone()).write_component()?,
+        Component::InteractButton(c) => ItemComponent::from(c.clone()).write_component()?,
+        Component::KineticWeapon(c) => ItemComponent::from(c.clone()).write_component()?,
+        Component::LiquidClipped(c) => ItemComponent::from(c.clone()).write_component()?,
+        Component::MaxStackSize(c) => ItemComponent::from(c.clone()).write_component()?,
+        Component::PiercingWeapon(c) => ItemComponent::from(c.clone()).write_component()?,
+        Component::Projectile(c) => ItemComponent::from(c.clone()).write_component()?,
+        Component::Rarity(c) => ItemComponent::from(c.clone()).write_component()?,
+        Component::Record(c) => ItemComponent::from(c.clone()).write_component()?,
+        Component::Repairable(c) => ItemComponent::from(c.clone()).write_component()?,
+        Component::Shooter(c) => ItemComponent::from(c.clone()).write_component()?,
+        Component::ShouldDespawn(c) => ItemComponent::from(c.clone()).write_component()?,
+        Component::StackedByData(c) => ItemComponent::from(c.clone()).write_component()?,
+        Component::StorageItem(c) => ItemComponent::from(c.clone()).write_component()?,
+        Component::StorageWeightLimit(c) => ItemComponent::from(c.clone()).write_component()?,
+        Component::StorageWeightModifier(c) => ItemComponent::from(c.clone()).write_component()?,
+        Component::SwingDuration(c) => ItemComponent::from(c.clone()).write_component()?,
+        Component::SwingSounds(c) => ItemComponent::from(c.clone()).write_component()?,
+        Component::Tags(c) => ItemComponent::from(c.clone()).write_component()?,
+        Component::Throwable(c) => ItemComponent::from(c.clone()).write_component()?,
+        Component::UseAnimation(c) => ItemComponent::from(c.clone()).write_component()?,
+        Component::UseModifiers(c) => ItemComponent::from(c.clone()).write_component()?,
+        Component::Wearable(c) => ItemComponent::from(c.clone()).write_component()?,
     })
 }
 

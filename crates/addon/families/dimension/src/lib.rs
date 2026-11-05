@@ -42,6 +42,13 @@ pub(crate) const FLOOR: FormatVersion = FormatVersion::new(1, 18, 0);
 /// The version of the newest struct (`v1_26_50::DimensionDocument`).
 pub(crate) const V1_26_50: FormatVersion = bedrock_addon_core::version::known::V1_26_50;
 
+/// The game reads every slice leniently: an unknown member is a warning, not an error. A
+/// scalar member takes its own JSON type alone.
+pub(crate) const JSON_READING: Reading = Reading::DOCUMENT
+    .with_unknown(UnknownMask::Warn)
+    .with_scalars(Scalars::Strict)
+    .with_beyond_width(BeyondWidth::Error);
+
 impl Family for DimensionFamily {
     const NAME: &'static str = "dimension";
     const PAYLOAD_KEY: &'static str = "minecraft:dimension";
@@ -66,13 +73,8 @@ impl Family for DimensionFamily {
         ..Envelope::DEFAULT
     };
 
-    /// The game reads every slice leniently: an unknown member is a warning, not an error. A
-    /// scalar member takes its own JSON type alone.
     fn reading(_: StructIndex, _: DocumentSource) -> Reading {
-        Reading::DOCUMENT
-            .with_unknown(UnknownMask::Warn)
-            .with_scalars(Scalars::Strict)
-            .with_beyond_width(BeyondWidth::Error)
+        JSON_READING
     }
     type Latest = Dimension;
     type Beta = NoBeta<kind::Dimension>;

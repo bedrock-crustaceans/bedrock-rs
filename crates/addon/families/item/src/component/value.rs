@@ -22,21 +22,6 @@ pub(crate) trait ValueComponent: for<'a> Facet<'a> {
     fn from_scalar(value: Self::Scalar) -> Self;
 }
 
-/// Whether the JSON text (after whitespace and comments) is an object.
-pub(crate) fn is_object(text: &str) -> bool {
-    let mut rest = text;
-    loop {
-        rest = rest.trim_start();
-        if let Some(after) = rest.strip_prefix("//") {
-            rest = after.split_once('\n').map_or("", |(_, tail)| tail);
-        } else if let Some(after) = rest.strip_prefix("/*") {
-            rest = after.split_once("*/").map_or("", |(_, tail)| tail);
-        } else {
-            return rest.starts_with('{');
-        }
-    }
-}
-
 /// Reads the bare `value` of a one-value component from `slice` under the slice's scalar rules
 /// (`LoadContext::scalar_rules`), and says what it is read as where that is another value than
 /// the text writes (a string where a number belongs, a number beyond a float), as a member of
@@ -58,15 +43,15 @@ pub(crate) fn read_bare<S: for<'a> Facet<'a>>(
 }
 
 /// Parses a [`ValueComponent`] from its object form or its bare value (`minecraft:icon`'s
-/// row). A bare value of the wrong type drops the component with one warning, as a failed
-/// object form does.
+/// row). A bare value of the wrong type drops the component with one error, a type error
+/// that refuses the item; a bare value its type refuses is told at the value and dropped.
 pub(crate) fn parse_value<T: ValueComponent + Into<ItemComponent>>(
     slice: JsonSlice<'_>,
     mode: ConvertMode,
     cx: &LoadContext,
     d: &mut Diagnostics,
 ) -> Option<ItemComponent> {
-    if is_object(slice.text) {
+    if slice.opens_an_object() {
         return typed::<T>(slice, mode, cx, d);
     }
     match read_bare::<T::Scalar>(slice, cx, d) {
@@ -161,19 +146,5 @@ impl MaxStackSize {
     /// A stack size of `value`.
     pub fn new(value: i32) -> Self {
         Self { value }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::is_object;
-
-    #[test]
-    fn an_object_is_recognised_after_comments_and_whitespace() {
-        assert!(is_object(" {\"value\": 1}"));
-        assert!(is_object("// note\n {}"));
-        assert!(is_object("/* x */{}"));
-        assert!(!is_object(" 16"));
-        assert!(!is_object("\"text\""));
     }
 }

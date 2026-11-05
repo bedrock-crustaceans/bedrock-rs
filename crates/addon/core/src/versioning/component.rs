@@ -108,22 +108,7 @@ where
     else {
         return None;
     };
-    (!starts_an_object(slice.text)).then_some(key)
-}
-
-/// Whether the JSON text, after whitespace and comments, opens an object.
-fn starts_an_object(text: &str) -> bool {
-    let mut rest = text;
-    loop {
-        rest = rest.trim_start();
-        if let Some(after) = rest.strip_prefix("//") {
-            rest = after.split_once('\n').map_or("", |(_, tail)| tail);
-        } else if let Some(after) = rest.strip_prefix("/*") {
-            rest = after.split_once("*/").map_or("", |(_, tail)| tail);
-        } else {
-            return rest.starts_with('{');
-        }
-    }
+    (!slice.opens_an_object()).then_some(key)
 }
 
 /// Reads the bare scalar of `slice` as the member `key` of `T`: the text is read inside

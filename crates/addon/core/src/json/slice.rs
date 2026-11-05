@@ -31,6 +31,22 @@ impl<'a> JsonSlice<'a> {
         Self { text, offset: 0 }
     }
 
+    /// Whether the text, after whitespace and comments, opens an object: the object form of a
+    /// component that also reads a bare value.
+    pub fn opens_an_object(&self) -> bool {
+        let mut rest = self.text;
+        loop {
+            rest = rest.trim_start();
+            if let Some(after) = rest.strip_prefix("//") {
+                rest = after.split_once('\n').map_or("", |(_, tail)| tail);
+            } else if let Some(after) = rest.strip_prefix("/*") {
+                rest = after.split_once("*/").map_or("", |(_, tail)| tail);
+            } else {
+                return rest.starts_with('{');
+            }
+        }
+    }
+
     /// The slice a `RawJson` captured from this slice's text, with its file offset: the pointer
     /// difference between the two. `None` when `raw` does not borrow from this text (an owned
     /// `RawJson`, or one taken from another document).
@@ -710,6 +726,16 @@ mod tests {
     use indexmap::IndexMap;
 
     use super::*;
+
+    #[test]
+    fn an_object_is_recognised_after_comments_and_whitespace() {
+        let opens = |text| JsonSlice::new(text).opens_an_object();
+        assert!(opens(" {\"value\": 1}"));
+        assert!(opens("// note\n {}"));
+        assert!(opens("/* x */{}"));
+        assert!(!opens(" 16"));
+        assert!(!opens("\"text\""));
+    }
 
     /// Today's recipe at every call site, verbatim: the oracle of `into_diagnostic`.
     fn recipe(error: &SliceError, base: &JsonPath, slice: JsonSlice<'_>) -> Diagnostic {

@@ -33,7 +33,7 @@ pub use value::{
 };
 
 pub(crate) use equipment::ENCHANT_SLOTS;
-pub(crate) use value::{ValueComponent, is_object as value_is_object, parse_value, read_bare};
+pub(crate) use value::{ValueComponent, parse_value, read_bare};
 
 use bedrock_addon_core::document::CustomComponent;
 use bedrock_addon_core::json::{JsonSlice, Value};
@@ -118,6 +118,8 @@ pub enum ItemComponent {
     #[component(name = "minecraft:hover_text_color", shorthand = scalar, released = "1.20.10", parse = typed::<HoverTextColor>)]
     HoverTextColor(HoverTextColor),
     /// `minecraft:icon`.
+    // `parse_value`, not the door's shorthand: the bare key is `textures.default`, not a
+    // member of the component as written, which `shorthand = scalar` cannot read it as.
     #[component(name = "minecraft:icon", shorthand = scalar, released = "1.20.0", requires = [LCF], parse = parse_value::<Icon>)]
     Icon(Icon),
     /// `minecraft:interact_button`.

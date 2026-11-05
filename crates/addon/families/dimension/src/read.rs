@@ -13,7 +13,7 @@ use bedrock_addon_core::json::{
 };
 use bedrock_addon_core::schema::{self, Schema, SchemaCx};
 use bedrock_addon_core::version::FormatVersion;
-use bedrock_addon_core::versioning::{ParseCx, Reading};
+use bedrock_addon_core::versioning::ParseCx;
 
 /// The whole document of `[1.18.0, 1.26.50)` (vanilla `v1_21_60::DimensionDocument`).
 #[derive(Facet, Schema)]
@@ -129,7 +129,7 @@ pub(crate) fn parse_root<R: for<'f> Facet<'f>>(
 /// cereal's text (the range first), which fails the file as vanilla's bind does. `false` when
 /// one broke.
 pub(crate) fn constraints<T: Schema>(value: &mut T, at: &JsonPath, d: &mut Diagnostics) -> bool {
-    let mut cx = SchemaCx::new(Reading::DOCUMENT, at.clone(), d).with_range_text(true);
+    let mut cx = SchemaCx::new(crate::JSON_READING, at.clone(), d).with_range_text(true);
     value.check(&mut cx);
     !cx.failed()
 }

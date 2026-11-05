@@ -251,7 +251,7 @@ fn read_component(name: &str, at: Version, value: &Value, d: &mut Diagnostics) -
         }
         _ => {
             let (kept, found) = read(&format!("minecraft:{name}"), &json, mode);
-            d.extend(found);
+            d.extend_with_unknown(found);
             kept.is_some()
         }
     }

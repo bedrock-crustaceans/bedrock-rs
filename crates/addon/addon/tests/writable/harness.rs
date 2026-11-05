@@ -241,6 +241,65 @@ const BOOL_AS_NUMBER: &[(&str, &str)] = &[("particle", "bool written as number")
 /// (bool, unsigned and float reads); no log on a conversion.
 const NON_STRICT_BELOW: &[(&str, FormatVersion)] = &[("block", FormatVersion::new(1, 26, 20))];
 
+/// The families whose writer writes the typed value, each member as the client reads it, with
+/// its reason (phase 3 step 8, `feat(music)!` and `feat(sound_definitions)!`: these used to
+/// write the document as read, which held every replacement as written). The client reads
+/// these files with no message on a member of another type, so the outcome is "written as
+/// read" when no finding tells of the replacement and the written text holds the client's
+/// reading at the place: a reading of the non-strict reader
+/// (see [`non_strict_readings`]), the largest double of the replacement's sign for a number
+/// beyond a float (the float cast makes it the same infinity again), or, for a `null` or a
+/// replacement of another kind than the member, a value of the kind the unchanged document is
+/// written with there. What stood beside the place may be held in the author's spelling where
+/// the typed value does not read it (a member kept as written): see [`lost_beside`].
+const WRITES_ITS_READING: &[(&str, &str)] = &[
+    (
+        "music_definitions",
+        "the typed value, as the client reads it",
+    ),
+    (
+        "sound_definitions",
+        "the typed value, as the client reads it",
+    ),
+];
+
+/// Whether `family` writes its reading (see [`WRITES_ITS_READING`]).
+fn writes_its_reading(family: &str) -> bool {
+    WRITES_ITS_READING.iter().any(|(of, _)| *of == family)
+}
+
+/// Whether two values are of one JSON kind.
+fn same_kind(one: &Value, other: &Value) -> bool {
+    (one.is_null() && other.is_null())
+        || (one.as_bool().is_some() && other.as_bool().is_some())
+        || (one.as_number().is_some() && other.as_number().is_some())
+        || (one.as_string().is_some() && other.as_string().is_some())
+        || (one.as_array().is_some() && other.as_array().is_some())
+        || (one.as_object().is_some() && other.as_object().is_some())
+}
+
+/// Whether `held` is the client's reading of `replacement` in a member the unchanged document
+/// writes as `unchanged` (see [`WRITES_ITS_READING`]).
+fn is_its_reading(replacement: &str, held: &Value, unchanged: Option<&Value>) -> bool {
+    if let Some(held) = number(held) {
+        if non_strict_readings(replacement).contains(&held) {
+            return true;
+        }
+        if let Ok(real) = replacement.parse::<f64>()
+            && real.abs() > f64::from(f32::MAX)
+            && held.to_bits() == f64::MAX.copysign(real).to_bits()
+        {
+            return true;
+        }
+    }
+    let Some(replaced) = parse(replacement) else {
+        return false;
+    };
+    unchanged.is_some_and(|unchanged| {
+        (replaced.is_null() || !same_kind(&replaced, unchanged)) && same_kind(held, unchanged)
+    })
+}
+
 // --- the judgement ---------------------------------------------------------------------------
 
 /// The unchanged document: what its load found and the scalars of what it writes.
@@ -251,6 +310,8 @@ struct Base {
     leaves: Vec<String>,
     /// What the unchanged document is written as.
     value: Value,
+    /// The unchanged document as the author wrote it.
+    input: Value,
 }
 
 /// The scalars of `value` outside the member at `path`; `None` when it has no such member.
@@ -287,18 +348,34 @@ fn leaves_beside(value: &Value, path: &[String]) -> Option<Vec<String>> {
 /// What the written text loses BESIDE the member a finding is at: the scalars the
 /// unchanged document is written with outside the member that `value` is written with fewer
 /// of. An element of a list is told of as the list is: a list is one value.
-fn lost_beside(base: &Base, node: &Node, value: &Value) -> Vec<String> {
+///
+/// A family that writes its reading ([`WRITES_ITS_READING`]) respells what it reads (`null` as
+/// `0.0`, `"true"` as `true`) and keeps a member it does not read as written: what stands
+/// beside is held when the written text holds all of it as the family writes it or all of it
+/// as the author wrote it.
+fn lost_beside(family: &str, base: &Base, node: &Node, value: &Value) -> Vec<String> {
+    let lost = lost_beside_of(&base.value, node, value);
+    if !lost.is_empty()
+        && writes_its_reading(family)
+        && lost_beside_of(&base.input, node, value).is_empty()
+    {
+        return Vec::new();
+    }
+    lost
+}
+
+/// What `value` loses beside the member against `unchanged` (see [`lost_beside`]).
+fn lost_beside_of(unchanged: &Value, node: &Node, value: &Value) -> Vec<String> {
     let elements = node.index.iter().rev().take_while(|index| **index).count();
     let unit = &node.path[..node.path.len() - elements];
     let (Some(before), Some(mut after)) =
-        (leaves_beside(&base.value, unit), leaves_beside(value, unit))
+        (leaves_beside(unchanged, unit), leaves_beside(value, unit))
     else {
         // The member is at another place in one of the texts, or in none: not judged.
         return Vec::new();
     };
     // The version a family writes is no value the written text owes the author.
-    let version = base
-        .value
+    let version = unchanged
         .as_object()
         .and_then(|root| root.get("format_version"))
         .and_then(scalar);
@@ -504,6 +581,7 @@ fn held_at_the_place(
 /// at a member above it, or at one the load drops whole. `Err` when they tell of it at the
 /// member alone and the written text loses what stood beside it.
 fn told_by_findings(
+    family: &str,
     base: &Base,
     node: &Node,
     ours: &Outcome,
@@ -545,7 +623,7 @@ fn told_by_findings(
     if said_here {
         // Told at the member alone: what the written text loses BESIDE the member (a
         // component that goes whole for one member of another type) must be told above it.
-        let lost = lost_beside(base, node, value);
+        let lost = lost_beside(family, base, node, value);
         if !lost.is_empty() {
             return Err(format!(
                 "told at the member alone, and the written text loses {lost:?} beside it; findings: {:?}",
@@ -610,8 +688,14 @@ fn judge(
             return Ok("absent");
         }
     }
-    if let Some(told) = told_by_findings(base, node, &ours, &value)? {
+    if let Some(told) = told_by_findings(family, base, node, &ours, &value)? {
         return Ok(told);
+    }
+    if writes_its_reading(family)
+        && let Some(held) = at
+        && is_its_reading(replacement, held, lookup(&base.value, &node.path))
+    {
+        return Ok("written as read");
     }
     // Held at another place: a scalar the unchanged document's written text has not.
     let mut ours_leaves = Vec::new();
@@ -752,6 +836,7 @@ fn base_of(
                 texts: ours.findings.iter().map(finding_text).collect(),
                 leaves: all,
                 value,
+                input: parse(document).unwrap_or(Value::NULL),
             })
         }
         Err(done) => {

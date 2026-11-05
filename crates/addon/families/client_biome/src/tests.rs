@@ -281,9 +281,16 @@ beta float_attr.value {} => rejected [InvalidType Error minecraft:client_biome/e
 
 /// Documents with a struct member written `null`: what the slice's null rule makes of it,
 /// told once (rejected where the input rejects nulls, read as its defaults elsewhere).
+///
+/// The first two null a whole component, which `parse_typed`'s `!json.is_object()` check
+/// refuses before the scalar pre-pass runs. The third nulls a struct member inside a
+/// component and reaches the typed read, where the family's strict scalars refuse the `null`
+/// at the member: the told-null-struct path (`with_tells_null_struct(false)`) is unreachable
+/// for `client_biome` today, and turning the option on leaves every row as pinned.
 const NULL_STRUCTS: &[&str] = &[
     r#"{"format_version": "1.21.130", "minecraft:client_biome": {"description": {"identifier": "demo:a"}, "components": {"minecraft:water_appearance": null}}}"#,
     r#"{"format_version": "1.21.110", "minecraft:client_biome": {"description": {"identifier": "demo:a"}, "components": {"minecraft:precipitation": null}}}"#,
+    r#"{"format_version": "1.21.130", "minecraft:client_biome": {"description": {"identifier": "demo:a"}, "components": {"minecraft:ambient_sounds": {"addition": null}}}}"#,
 ];
 
 #[test]
@@ -301,4 +308,5 @@ fn a_null_struct_member_reads_as_pinned() {
 /// The null struct table.
 const NULL_STRUCTS_EXPECTED: &str = r"rejected [InvalidType Error minecraft:client_biome/components/minecraft:water_appearance -; MalformedInput Error minecraft:client_biome -; MalformedInput Error  -]
 rejected [InvalidType Error minecraft:client_biome/components/minecraft:precipitation -; MalformedInput Error  -; MalformedInput Error  -]
+rejected [InvalidType Error minecraft:client_biome/components/minecraft:ambient_sounds/addition 155+4; MalformedInput Error minecraft:client_biome -; MalformedInput Error  -]
 ";

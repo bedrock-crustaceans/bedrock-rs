@@ -77,7 +77,8 @@ pub use read::{
 };
 pub use scalar::{
     BeyondWidth, Declared, JsonType, Refusal, RefusedScalar, Respelt, ScalarFailure, ScalarRead,
-    ScalarRules, ScalarShape, Scalars, StrictError, Token, Verdict, judge, parse_with_rules,
+    ScalarRules, ScalarShape, Scalars, StrictError, StrictIntType, Token, Verdict, judge,
+    parse_with_rules,
 };
 #[doc(hidden)]
 pub use slice::{JsonSlice, SliceError, parse_at, span_at};
@@ -85,8 +86,7 @@ pub use slice::{JsonSlice, SliceError, parse_at, span_at};
 // module doc.
 #[doc(hidden)]
 pub use strict::{
-    ReaderMode, StrictBool, StrictFloat, StrictFloatType, StrictInt, StrictIntType, StrictString,
-    with_reader_mode,
+    ReaderMode, StrictBool, StrictFloat, StrictFloatType, StrictInt, StrictString, with_reader_mode,
 };
 pub use text::MAX_JSON_DEPTH;
 #[doc(hidden)]
