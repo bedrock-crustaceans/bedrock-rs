@@ -2,10 +2,14 @@
 //! `history::*`.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
-#![recursion_limit = "512"]
 
 pub mod component;
 mod dynamic;
+#[allow(
+    dead_code,
+    reason = "the schema tables hold rows that only some of the readers use"
+)]
+mod game_schema;
 #[doc(hidden)]
 pub use dynamic::DESCRIPTORS;
 pub mod goal;
@@ -15,11 +19,6 @@ mod molang;
 mod network;
 mod read;
 mod references;
-#[allow(
-    dead_code,
-    reason = "the schema tables hold rows that only some of the readers use"
-)]
-mod schema;
 mod types;
 mod validate;
 mod write;

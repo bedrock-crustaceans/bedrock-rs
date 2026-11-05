@@ -1,0 +1,11 @@
+error: `kept` is not an unknown-member rule: expected `keep`, `report`, `reject` or `ignore`
+ --> tests/ui/schema/unknown_word.rs:5:27
+  |
+5 | #[facet(schema::unknown = "kept")]
+  |                           ^^^^^^
+
+error: `drop` is not an unknown-member rule: expected `keep`, `report`, `reject` or `ignore`
+ --> tests/ui/schema/unknown_word.rs:7:31
+  |
+7 |     #[facet(schema::unknown = "drop")]
+  |                               ^^^^^^

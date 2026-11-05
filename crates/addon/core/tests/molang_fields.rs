@@ -299,3 +299,34 @@ fn an_invalid_expression_loads_unchecked_without_the_compile_pass() {
     let codes: Vec<&DiagnosticCode> = diagnostics.iter().map(|d| &d.code).collect();
     assert_eq!(codes, [&DiagnosticCode::MolangNotChecked { fields: 2 }]);
 }
+
+/// A field walked with `field_default` takes the walk's default spec: the one
+/// `visit_fields_under` names, `MolangFieldSpec::DEFAULT` under `visit_fields`.
+#[test]
+fn field_default_takes_the_walks_default_spec() {
+    struct Plain {
+        cond: Option<Molang>,
+    }
+    impl MolangFields for Plain {
+        fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
+            visitor.field_default("cond", &mut self.cond);
+        }
+    }
+    let mut plain = Plain {
+        cond: Some(Molang::Const(1.0)),
+    };
+    let mut specs = Vec::new();
+    molang::visit_fields_under(&mut plain, &JsonPath::new(), &TAGS, |field| {
+        specs.push((field.path.to_string(), *field.spec));
+    });
+    molang::visit_fields(&mut plain, &JsonPath::new(), |field| {
+        specs.push((field.path.to_string(), *field.spec));
+    });
+    assert_eq!(
+        specs,
+        [
+            ("cond".to_owned(), TAGS),
+            ("cond".to_owned(), MolangFieldSpec::DEFAULT)
+        ]
+    );
+}

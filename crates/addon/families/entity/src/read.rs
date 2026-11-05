@@ -26,9 +26,9 @@ use indexmap::IndexMap;
 
 use super::STRICT_SLICES;
 use super::component::EntityComponent;
+use super::game_schema;
 use super::goal;
 use super::history::first_typed;
-use super::schema;
 use super::{
     AnimateEntry, Brain, ComponentGroup, DeprecatedData, Description, Entity, EntityVersion, Event,
     Property, PropertyDefault, PropertyType, Scripts, SpawnCategory, UpgradeEntry, Written,
@@ -808,10 +808,10 @@ struct SchemaRead {
 /// where the game's schema reader reads it in a document at `version`: a reader that was never
 /// migrated (every version), or a migrated one typed first after 1.26.40, whose conversion is the
 /// lenient read of the 1.26.40 → 1.26.50 step. The others convert in their step
-/// (`history::ops::schema_conversions`). Strict from 1.15.0 ([`schema::STRICT_SINCE`]). A
+/// (`history::ops::schema_conversions`). Strict from 1.15.0 ([`game_schema::STRICT_SINCE`]). A
 /// component written as `null` is left to rule N1.
 fn schema_read(key: &str, slice: JsonSlice<'_>, version: FormatVersion) -> Option<SchemaRead> {
-    let owner = schema::component(key).filter(|owner| {
+    let owner = game_schema::component(key).filter(|owner| {
         owner.reads(version)
             && owner
                 .typed_since
@@ -821,7 +821,8 @@ fn schema_read(key: &str, slice: JsonSlice<'_>, version: FormatVersion) -> Optio
     if json.is_null() {
         return None;
     }
-    let mut outcome = schema::validate(owner.members, &json, version >= schema::STRICT_SINCE);
+    let mut outcome =
+        game_schema::validate(owner.members, &json, version >= game_schema::STRICT_SINCE);
     outcome.check_numbers(owner.name, &json);
     let text = outcome
         .replacement()
@@ -860,7 +861,7 @@ fn goal_ranges_read(
 /// Whether the game converts `key` with a schema-driven legacy reader in a step (typed first at or
 /// below [`LAST_JSON_STRUCT`]): `history::ops::schema_conversions` validated it there.
 fn schema_converted(key: &str) -> bool {
-    schema::component(key)
+    game_schema::component(key)
         .and_then(|owner| owner.typed_since)
         .is_some_and(|(a, b, c)| FormatVersion::new(a, b, c) <= LAST_JSON_STRUCT)
 }

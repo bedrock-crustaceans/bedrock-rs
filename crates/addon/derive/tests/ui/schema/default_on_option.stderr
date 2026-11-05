@@ -1,0 +1,11 @@
+error: an `Option` field keeps absence: facet's `default = ..` would fill `Some(..)` on read and write it back; drop it, and state what absence stands for with `schema::fallback = ..`
+ --> tests/ui/schema/default_on_option.rs:6:13
+  |
+6 |     #[facet(default = 1)]
+  |             ^^^^^^^
+
+error: an `Option` field is `None` when absent without facet's `default`: drop it (`schema::fallback = ..` states what absence stands for)
+ --> tests/ui/schema/default_on_option.rs:8:13
+  |
+8 |     #[facet(default)]
+  |             ^^^^^^^

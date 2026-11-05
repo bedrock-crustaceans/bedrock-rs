@@ -1,6 +1,6 @@
 # bedrock_addon_derive
 
-The proc-macro of the `bedrock_addon` crate family: `#[derive(Components)]` on a family's component enum emits a `Component` impl per variant type, `From<T>` for the enum, and the sorted static component table the version-chain machinery looks components up in. Users never depend on this crate directly: `bedrock_addon` derives its own component enums with it and does not re-export it.
+The proc-macros of the `bedrock_addon` crate family. `#[derive(Components)]` on a family's component enum emits a `Component` impl per variant type, `From<T>` for the enum, and the sorted static component table the version-chain machinery looks components up in. `#[derive(Schema)]` on a typed document struct or string enum emits the impls its `schema::` attributes state; it is reached as `bedrock_addon_core::schema::Schema`, through the grammar crate `bedrock_addon_schema`. Users never depend on this crate directly: `bedrock_addon` derives its own types with it and does not re-export it.
 
 ## Installation
 
@@ -15,7 +15,7 @@ bedrock_addon = { git = "https://github.com/bedrock-crustaceans/bedrock-rs.git" 
 
 | Feature | Contents | Implies |
 | --- | --- | --- |
-| (always) | `#[derive(Components)]` | |
+| (always) | `#[derive(Components)]`, `#[derive(Schema)]` | |
 
 ## What the derive emits
 
@@ -42,8 +42,13 @@ On the enum, `#[component(...)]`, each key at most once:
 | `unknown` | a variant | The variant for keys no table knows: no impl, no table row. |
 | `dynamic` | a variant | The entity variant for keys vanilla parses at runtime: each `#[component(...)]` on it is one table row with no Rust type. |
 | `from_only` | (flag) | Emit `From<Type> for <Enum>` per typed variant, with the payload type checks of the `custom`, `unknown` and `dynamic` variants, and nothing of the table. |
+| `write` | (flag) | Emit `write_component(&self)`, the write dispatch: each typed variant through `versioning::write_payload`, the custom one as its parameters, the unknown and dynamic ones as written. |
+| `write_with` | a function path | The write dispatch with `path(component)` for each typed variant instead (biome's null-stripping writer). One of `write` and `write_with`. |
+| `versioned` | a generic function path | The goal parse by version, `fn<T: GoalMeta>(JsonSlice, FormatVersion, &LoadContext, &mut Diagnostics) -> Option<Enum>`: each `goal` row puts `path::<T>` in `VERSIONED`. Required by a `goal` row. |
+| `typed_table` | a function path | `fn(&str) -> Option<Option<FormatVersion>>`, the generated game table's typed version of a key (`None`: the table does not list it): emit a test that holds every row's `typed` to it. |
+| `triggers` | (flag) | Emit `triggers()`: `(key, member)` of every trigger member, from each payload's `Schema::trigger_members` and each row's `triggers = [..]`, sorted. |
 
-On a typed variant (the keys may be spread over several attributes, each key at most once), and on each `#[component(...)]` of the `dynamic` variant; the keys are the fields of `ComponentMeta`, one to one:
+On a typed variant (the keys may be spread over several attributes, each key at most once), and on each `#[component(...)]` of the `dynamic` variant; the keys up to `molang` are the fields of `ComponentMeta`, one to one:
 
 | Key | Value | `ComponentMeta` field | When absent |
 | --- | --- | --- | --- |
@@ -57,10 +62,49 @@ On a typed variant (the keys may be spread over several attributes, each key at 
 | `fields` | `[{ name = "a.b", since_engine = "1.21.0" }, …]` | `fields` (`FieldMeta`) | `[]` |
 | `parse` | a function path | `parse`: reads the component's JSON slice | error |
 | `molang` | (flag) | not in `ComponentMeta`: the type implements `MolangFields`, and the enum's walk forwards to it | the variant holds no Molang |
+| `typed` | `"1.26.30"` | not in `ComponentMeta`: `SCHEMA_ROWS` `typed`, `typed_since(key)`, and a goal's `GoalMeta::TYPED` | `None` |
+| `shorthand` | `scalar` | `SCHEMA_ROWS` `shorthand`: a bare scalar stands for the component's one value | `None` |
+| `goal` | (flag) | `SCHEMA_ROWS` `goal`; emits `impl GoalMeta for <Type>` (`TYPED` from `typed`, `priority()` from the goal's `schema::fallback`) and its `VERSIONED` entry; needs `typed` and the enum's `versioned` | not a goal |
+| `triggers` | `["member", …]` | `SCHEMA_ROWS` `triggers`: trigger members the payload does not list (an untyped row's) | `[]` |
 
-`molang` is a typed variant's key only: on a `dynamic` row (JSON, no typed fields) and in a `from_only` enum it is an error.
+`molang`, `goal` and `shorthand` are a typed variant's keys only: on a `dynamic` row (JSON, no typed fields) they are an error, and so is `molang` in a `from_only` enum, which takes none of the enum keys after `from_only` either.
+
+With `family` and not `from_only`, the enum also gets `SCHEMA_ROWS` (one `schema::ComponentRow` per row, sorted by name), `schema_row(key)` and `typed_since(key)`. A goal row's `priority` fallback is checked at compile time: a goal struct whose `priority` has no `schema::fallback = <integer>` fails the build.
 
 Versions are `"major.minor.patch"` literals of decimal digits, checked at expansion time. A missing required key, an unknown or repeated key, a malformed version, a variant that is not `Name(Type)`, a component name used twice and a target that is not an enum are errors at the offending tokens. A non-enum target stops the derive at once; for an enum, the errors found in the enum's attributes and in its variants are collected and reported in one go.
+
+## `#[derive(Schema)]`
+
+It reads facet's own `default`, `rename`, `rename_all`, `transparent`, `flatten` and `skip` and the `schema::` keys (the grammar crate's README lists them), and emits impls only, never the item:
+
+- on a struct: `impl Schema` with `FIELDS` (one `FieldRow` per field: names, type, kind, default, fallback, bounds, since, unknown rule), `check` (the bounds `min`, `max`, `above`, `below` and `lowercase`, graded by the slice's `on_member_failure` through `SchemaCx`, then the walk into every field) and `trigger_members` (every `EventTrigger` field without `foreign_event`, at any depth); `impl MolangFields` (a Molang field under the walk's default spec, or its `schema::molang`; `schema::molang_with` for a hand walk; every other field nested); `impl Default` when no field is required; and a getter per `Option` field with a `schema::fallback`;
+- on a unit-only enum: `ALL`, `NAMES`, `EXPECTED` (`schema::expected`, or the names listed), `name`, `from_name` (in any case with `schema::case_insensitive`), `parse_name`, `Display`, and empty `Schema` and `MolangFields` impls.
+
+A field is required (plain `T`), filled on read (plain `T` with facet's `default = x`, the value written in the field's own type) or optional (`Option<T>`, with or without `schema::fallback`). The derive refuses at compile time what a struct leaves unsaid or says twice: facet's `default` on an `Option`, `fallback` on a plain field, a bound that is not a number or another field's name, a stored key whose value is not a string literal, a version that is not `major.minor.patch`, an `unknown` rule that is not `keep`, `report`, `reject` or `ignore`, a key on the wrong item, `lowercase` off a `String`, `foreign_event` off an `EventTrigger`, `molang` off a Molang field. A misspelt key is facet's error.
+
+```rust
+use bedrock_addon_core::schema::{self, Schema};
+use facet::Facet;
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+pub struct BreakDoor {
+    #[facet(schema::fallback = 0)]
+    pub priority: Option<i32>,
+    #[facet(schema::fallback = 1.0, schema::min = 0.0)]
+    pub speed: Option<f32>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Facet, Schema)]
+#[facet(rename_all = "snake_case")]
+#[repr(u8)]
+pub enum EquipmentSlot {
+    Head,
+    MainHand,
+}
+
+assert_eq!(BreakDoor::default().speed(), 1.0);
+assert_eq!(EquipmentSlot::from_name("main_hand"), Some(EquipmentSlot::MainHand));
+```
 
 ## Examples
 

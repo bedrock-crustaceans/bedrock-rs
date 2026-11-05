@@ -31,6 +31,8 @@ uuid = { workspace = true }
 # Always built with `facet` only: `version`, `json`, `hash`, `catalog`, `ops`.
 molang = { workspace = true, features = ["facet"] }
 semver = { workspace = true }
+# The `schema::` attribute grammar, re-exported as `schema`.
+bedrock_addon_schema = { path = "../schema" }
 
 # No thread of WebAssembly has a stack to grow from within: there the stack is the embedder's
 # to size (`json::MAX_JSON_DEPTH`).

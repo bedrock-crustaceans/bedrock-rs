@@ -1,5 +1,5 @@
 //! `cargo xtask entity-schemas` (second part): renders
-//! `crates/addon/families/entity/src/schema/numeric_table.rs` from the dump of the numeric
+//! `crates/addon/families/entity/src/game_schema/numeric_table.rs` from the dump of the numeric
 //! checks the game's goal readers run on their members,
 //! `xtask/src/script_meta/game/entity_goal_numeric_checks.tsv` (one row per numeric check of a
 //! goal member: its comparison, bound, default and message text).
@@ -13,7 +13,7 @@ use std::io;
 /// The dump, relative to the workspace root.
 pub const INPUT: &str = "xtask/src/script_meta/game/entity_goal_numeric_checks.tsv";
 /// The generated table, relative to the workspace root.
-pub const OUTPUT: &str = "crates/addon/families/entity/src/schema/numeric_table.rs";
+pub const OUTPUT: &str = "crates/addon/families/entity/src/game_schema/numeric_table.rs";
 
 /// One check: a row of the dump the game runs.
 #[derive(Debug, PartialEq)]
@@ -154,8 +154,10 @@ mod tests {
         .unwrap();
         assert!(
             generated
-                == include_str!("../../crates/addon/families/entity/src/schema/numeric_table.rs"),
-            "crates/addon/families/entity/src/schema/numeric_table.rs is stale: run `cargo xtask entity-schemas`"
+                == include_str!(
+                    "../../crates/addon/families/entity/src/game_schema/numeric_table.rs"
+                ),
+            "crates/addon/families/entity/src/game_schema/numeric_table.rs is stale: run `cargo xtask entity-schemas`"
         );
     }
 

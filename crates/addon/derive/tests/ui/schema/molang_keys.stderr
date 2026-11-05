@@ -1,0 +1,11 @@
+error: `schema::molang` and `schema::molang_with` both say how the field is walked: keep one
+  --> tests/ui/schema/molang_keys.rs:11:36
+   |
+11 |     #[facet(schema::molang = SPEC, schema::molang_with = walk)]
+   |                                    ^^^^^^
+
+error: `schema::molang` names the spec of a Molang field, and this field holds no `Molang`, `MolangSource` or `MolangList`: a hand walk is `schema::molang_with`
+  --> tests/ui/schema/molang_keys.rs:13:13
+   |
+13 |     #[facet(schema::molang = SPEC)]
+   |             ^^^^^^

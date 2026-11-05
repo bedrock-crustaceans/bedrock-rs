@@ -88,7 +88,7 @@ pub use check::{FieldOutcome, check_fields, molang_diagnostic};
 #[doc(hidden)]
 pub use fields::{
     MolangField, MolangFieldMut, MolangFields, MolangPass, MolangSlot, MolangVisitor, Step,
-    count_sources, not_checked, pass_one, visit_fields,
+    count_sources, not_checked, pass_one, visit_fields, visit_fields_under,
 };
 #[doc(hidden)]
 pub use read::{

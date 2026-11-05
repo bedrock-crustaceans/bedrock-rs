@@ -80,6 +80,7 @@ pub struct MolangField<'a> {
 #[doc(hidden)]
 pub struct MolangVisitor<'v> {
     path: JsonPath,
+    default_spec: &'v MolangFieldSpec,
     visit: &'v mut dyn FnMut(MolangField<'_>),
 }
 
@@ -87,6 +88,7 @@ impl std::fmt::Debug for MolangVisitor<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("MolangVisitor")
             .field("path", &self.path)
+            .field("default_spec", self.default_spec)
             .finish_non_exhaustive()
     }
 }
@@ -103,6 +105,22 @@ impl MolangVisitor<'_> {
         self.enter(step.into());
         slot.visit_slot(spec, self);
         self.path.pop();
+    }
+
+    /// The field `step` under the walk's default spec ([`visit_fields_under`]): a
+    /// `#[derive(Schema)]` field with no `schema::molang` key.
+    pub fn field_default<'s, S: MolangSlot + ?Sized>(
+        &mut self,
+        step: impl Into<Step<'s>>,
+        slot: &mut S,
+    ) {
+        let spec = self.default_spec;
+        self.field(step, spec, slot);
+    }
+
+    /// The spec a field without its own takes: the family's, or [`MolangFieldSpec::DEFAULT`].
+    pub fn default_spec(&self) -> &MolangFieldSpec {
+        self.default_spec
     }
 
     /// The member or element `step`, which holds Molang fields of its own.
@@ -231,15 +249,29 @@ impl<T: MolangFields> MolangFields for IndexMap<String, T> {
     }
 }
 
-/// Calls `visit` for every Molang field of `document`, with paths below `base`.
+/// Calls `visit` for every Molang field of `document`, with paths below `base`; a field with
+/// no spec of its own takes [`MolangFieldSpec::DEFAULT`].
 #[doc(hidden)]
 pub fn visit_fields<T: MolangFields + ?Sized>(
     document: &mut T,
     base: &JsonPath,
+    visit: impl FnMut(MolangField<'_>),
+) {
+    visit_fields_under(document, base, &MolangFieldSpec::DEFAULT, visit);
+}
+
+/// [`visit_fields`] with `default_spec` the spec of every field that has none of its own
+/// ([`MolangVisitor::field_default`]): the family's default.
+#[doc(hidden)]
+pub fn visit_fields_under<T: MolangFields + ?Sized>(
+    document: &mut T,
+    base: &JsonPath,
+    default_spec: &MolangFieldSpec,
     mut visit: impl FnMut(MolangField<'_>),
 ) {
     let mut visitor = MolangVisitor {
         path: base.clone(),
+        default_spec,
         visit: &mut visit,
     };
     document.visit_molang(&mut visitor);

@@ -20,7 +20,7 @@ use bedrock_addon_core::versioning::ValidateCx;
 use indexmap::IndexMap;
 
 use super::component::EntityComponent;
-use super::schema;
+use super::game_schema;
 use super::{Entity, MemoryType, PropertyType};
 
 /// `ROOT_LEVEL_FILTERS_VERSION`: from 1.19.20 a root-level event `filters` is read.
@@ -487,10 +487,10 @@ const BEFORE_RESPONSES: [&str; 5] = ["weight", "filters", "trigger", "add", "rem
 /// The members of the response `key` (an object) as its schema validates them, the game's lines
 /// as kept errors. Returns whether the validation failed.
 fn response_schema(key: &str, member: &Value, at: &JsonPath, cx: &mut ValidateCx<'_>) -> bool {
-    if let Some(response) = schema::event_response(key)
+    if let Some(response) = game_schema::event_response(key)
         && member.is_object()
     {
-        let outcome = schema::validate(response.members, member, true);
+        let outcome = game_schema::validate(response.members, member, true);
         // The collection's information at the node comes from `drop_responses`, not the
         // component's `ValueRewritten`: only the game's lines are told here.
         for problem_finding in outcome.findings(at, Phase::Validate) {

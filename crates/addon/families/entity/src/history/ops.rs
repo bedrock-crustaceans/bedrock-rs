@@ -15,7 +15,7 @@ use indexmap::IndexMap;
 
 use super::Payload;
 use crate::Entity;
-use crate::schema;
+use crate::game_schema;
 
 /// The members of a JSON object: `components` (an `IndexMap`) or a group (a `VObject`).
 pub(crate) trait Members {
@@ -151,13 +151,13 @@ pub(crate) fn sections(payload: &mut Payload) -> Vec<PayloadSection<'_>> {
 /// before the step's own ops (its typed-shape ops act on the converted component). What the game
 /// logs is told, and the component becomes what the reader parses: `{}` when the validation failed
 /// (the component keeps its defaults), the component without what the lenient mode took out. Strict
-/// from 1.15.0 ([`schema::STRICT_SINCE`]); a component written as `null` is left to rule N1.
+/// from 1.15.0 ([`game_schema::STRICT_SINCE`]); a component written as `null` is left to rule N1.
 pub(crate) fn schema_conversions(payload: &mut Payload, to: FormatVersion, cx: &mut UpgradeCx<'_>) {
-    let strict = cx.original_version >= schema::STRICT_SINCE;
+    let strict = cx.original_version >= game_schema::STRICT_SINCE;
     let mut found = Diagnostics::default();
     for section in sections(payload) {
         for key in section.members.keys() {
-            let Some(owner) = schema::component(&key).filter(|owner| {
+            let Some(owner) = game_schema::component(&key).filter(|owner| {
                 owner
                     .typed_since
                     .is_some_and(|(a, b, c)| FormatVersion::new(a, b, c) == to)
@@ -167,7 +167,7 @@ pub(crate) fn schema_conversions(payload: &mut Payload, to: FormatVersion, cx: &
             let Some(value) = section.members.get_mut(&key).filter(|v| !v.is_null()) else {
                 continue;
             };
-            let mut outcome = schema::validate(owner.members, value, strict);
+            let mut outcome = game_schema::validate(owner.members, value, strict);
             outcome.check_numbers(owner.name, value);
             let at = JsonPath::new()
                 .child(<Entity as Family>::PAYLOAD_KEY)

@@ -12,10 +12,12 @@ use syn::{Attribute, Error, Ident, LitStr, Path, Result, Token, Type, braced, br
 
 /// The keys a component row accepts, in the order the docs list them.
 const ROW_KEYS: &str = "`name`, `released`, `deprecated_since`, `deprecated_message`, \
-    `supersedes`, `requires`, `area`, `fields`, `parse`, `molang`";
+    `supersedes`, `requires`, `area`, `fields`, `parse`, `molang`, `typed`, `shorthand`, `goal`, \
+    `triggers`";
 
 /// The keys the enum accepts.
-const ENUM_KEYS: &str = "`family`, `custom`, `unknown`, `dynamic`, `from_only`";
+const ENUM_KEYS: &str = "`family`, `custom`, `unknown`, `dynamic`, `from_only`, `write`, \
+    `write_with`, `versioned`, `typed_table`, `triggers`";
 
 /// The attributes on the enum.
 #[derive(Default)]
@@ -31,6 +33,18 @@ pub(crate) struct EnumAttrs {
     /// `from_only`: emit `From` impls and nothing else (an older version's enum); the flag's
     /// span, for errors.
     pub from_only: Option<Span>,
+    /// `write`: emit the write dispatch over `write_payload`; the flag's span.
+    pub write: Option<Span>,
+    /// `write_with = path`: emit the write dispatch over `path` instead.
+    pub write_with: Option<Path>,
+    /// `versioned = path`: the generic parse of a goal by the document's version; each `goal`
+    /// row puts `path::<T>` in the enum's `VERSIONED` table.
+    pub versioned: Option<Path>,
+    /// `typed_table = path`: `fn(&str) -> Option<Option<FormatVersion>>`, the generated game
+    /// table's typed version of a key; a test the derive emits holds every row's `typed` to it.
+    pub typed_table: Option<Path>,
+    /// `triggers`: emit `triggers()`, the trigger members of every row; the flag's span.
+    pub triggers: Option<Span>,
 }
 
 impl EnumAttrs {
@@ -50,6 +64,16 @@ impl EnumAttrs {
                     set_once(&meta, &mut out.dynamic, |m| m.value()?.parse())
                 } else if meta.path.is_ident("from_only") {
                     set_once(&meta, &mut out.from_only, |m| Ok(m.path.span()))
+                } else if meta.path.is_ident("write") {
+                    set_once(&meta, &mut out.write, |m| Ok(m.path.span()))
+                } else if meta.path.is_ident("write_with") {
+                    set_once(&meta, &mut out.write_with, |m| m.value()?.parse())
+                } else if meta.path.is_ident("versioned") {
+                    set_once(&meta, &mut out.versioned, |m| m.value()?.parse())
+                } else if meta.path.is_ident("typed_table") {
+                    set_once(&meta, &mut out.typed_table, |m| m.value()?.parse())
+                } else if meta.path.is_ident("triggers") {
+                    set_once(&meta, &mut out.triggers, |m| Ok(m.path.span()))
                 } else {
                     Err(unsupported(&meta, "enum attribute", ENUM_KEYS))
                 }
@@ -72,7 +96,7 @@ pub(crate) struct Version {
 
 impl Version {
     /// Parses `"1.21.60"`; the error points at the literal.
-    fn parse(lit: &LitStr) -> Result<Self> {
+    pub(crate) fn parse(lit: &LitStr) -> Result<Self> {
         let text = lit.value();
         // Digits only: `u16::from_str` alone would also take a leading `+`.
         let parts: Vec<Option<u16>> = text
@@ -157,6 +181,15 @@ pub(crate) struct Row {
     /// `molang`: the component type holds Molang fields, and the enum's `MolangFields` walk
     /// forwards to it.
     pub molang: bool,
+    /// `typed = "1.26.30"`: the format version from which the game reads it with its typed
+    /// struct.
+    pub typed: Option<Version>,
+    /// `shorthand = scalar`.
+    pub shorthand: bool,
+    /// `goal`: the row is an AI goal; the flag's span, for errors.
+    pub goal: Option<Span>,
+    /// `triggers = ["member", ..]`: trigger members the payload type does not list itself.
+    pub triggers: Vec<LitStr>,
 }
 
 /// A row while its attributes are read; every key at most once.
@@ -172,6 +205,10 @@ struct RowParts {
     fields: Option<Vec<Field>>,
     parse: Option<Path>,
     molang: Option<Span>,
+    typed: Option<Version>,
+    shorthand: Option<Span>,
+    goal: Option<Span>,
+    triggers: Option<Vec<LitStr>>,
 }
 
 impl RowParts {
@@ -230,6 +267,30 @@ impl RowParts {
                 set_once(&meta, &mut self.parse, |m| m.value()?.parse())
             } else if meta.path.is_ident("molang") {
                 set_once(&meta, &mut self.molang, |m| Ok(m.path.span()))
+            } else if meta.path.is_ident("typed") {
+                set_once(&meta, &mut self.typed, version_value)
+            } else if meta.path.is_ident("shorthand") {
+                set_once(&meta, &mut self.shorthand, |m| {
+                    let shape: Ident = m.value()?.parse()?;
+                    if shape == "scalar" {
+                        Ok(shape.span())
+                    } else {
+                        Err(Error::new(
+                            shape.span(),
+                            format!("unknown shorthand `{shape}`; expected `scalar`"),
+                        ))
+                    }
+                })
+            } else if meta.path.is_ident("goal") {
+                set_once(&meta, &mut self.goal, |m| Ok(m.path.span()))
+            } else if meta.path.is_ident("triggers") {
+                set_once(&meta, &mut self.triggers, |m| {
+                    let content;
+                    let input = m.value()?;
+                    bracketed!(content in input);
+                    let members = Punctuated::<LitStr, Token![,]>::parse_terminated(&content)?;
+                    Ok(members.into_iter().collect())
+                })
             } else {
                 Err(unsupported(&meta, "component attribute", ROW_KEYS))
             }
@@ -263,6 +324,10 @@ impl RowParts {
             fields: self.fields.unwrap_or_default(),
             parse,
             molang: self.molang.is_some(),
+            typed: self.typed,
+            shorthand: self.shorthand.is_some(),
+            goal: self.goal,
+            triggers: self.triggers.unwrap_or_default(),
         })
     }
 }
@@ -292,6 +357,18 @@ pub(crate) fn dynamic_rows(attrs: &[Attribute]) -> Result<Vec<Row>> {
                     span,
                     "a dynamic key holds JSON, not Molang fields: `molang` applies to typed \
                      variants",
+                ));
+            }
+            if let Some(span) = parts.goal {
+                return Err(Error::new(
+                    span,
+                    "a dynamic key holds JSON, not a goal struct: `goal` applies to typed variants",
+                ));
+            }
+            if let Some(span) = parts.shorthand {
+                return Err(Error::new(
+                    span,
+                    "a dynamic key holds JSON as written: `shorthand` applies to typed variants",
                 ));
             }
             parts.finish(attr)

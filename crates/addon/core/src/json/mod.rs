@@ -37,6 +37,7 @@ mod duplicates;
 mod envelope;
 pub(crate) mod extra;
 mod finite;
+pub mod kit;
 mod null;
 mod path;
 mod prepared;

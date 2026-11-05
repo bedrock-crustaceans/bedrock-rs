@@ -1,0 +1,481 @@
+//! Expansion tests for `#[derive(Schema)]`: the plan's `Boss`, `BreakDoor`, `EquipmentSlot`
+//! and `Friction`, and toys for each attribute. A test checks what the derive emits (rows,
+//! `check` under the slice's rule, the Molang walk, the trigger members, `Default`, the
+//! getters, a string enum's names) and that the JSON names it emits are the ones facet's own
+//! `Shape` carries.
+
+use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath, Severity};
+use bedrock_addon_core::molang::{
+    Molang, MolangFieldSpec, MolangVersionSource, visit_fields_under,
+};
+use bedrock_addon_core::schema::{
+    self, Bound, BoundOp, FieldKind, FieldRow, Limit, Lit, Schema, SchemaCx, UnknownRule,
+};
+use bedrock_addon_core::shared::EventTrigger;
+use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::versioning::{MemberFailure, Reading};
+use facet::{Facet, Shape, Type, UserType};
+use indexmap::IndexMap;
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+pub struct Color {
+    pub r: u8,
+    pub g: u8,
+    pub b: u8,
+}
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+pub struct Boss {
+    #[facet(default = 55)]
+    pub hud_range: i32,
+    #[facet(default = true)]
+    pub should_darken_sky: bool,
+    #[facet(default = 2.0, schema::min = 0.0)]
+    pub radius: f32,
+    pub on_x: Option<EventTrigger>,
+    pub cond: Option<Molang>,
+    pub color: Color,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Facet, Schema)]
+#[facet(rename_all = "snake_case")]
+#[repr(u8)]
+pub enum EquipmentSlot {
+    Head,
+    Chest,
+    Legs,
+    Feet,
+    MainHand,
+}
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+pub struct BreakDoor {
+    #[facet(schema::fallback = 0)]
+    pub priority: Option<i32>,
+    pub control_flags: Option<Vec<String>>,
+    #[facet(schema::fallback = 1.0, schema::min = 0.0)]
+    pub speed: Option<f32>,
+    pub slot: Option<EquipmentSlot>,
+}
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(transparent)]
+pub struct Friction(#[facet(default = 0.4, schema::min = 0.0, schema::max = 0.9)] pub f32);
+
+fn check<T: Schema>(value: &mut T, failure: MemberFailure) -> (Diagnostics, bool) {
+    let mut out = Diagnostics::default();
+    let reading = Reading::DOCUMENT.with_on_member_failure(failure);
+    let failed = {
+        let mut cx = SchemaCx::new(reading, JsonPath::new(), &mut out);
+        value.check(&mut cx);
+        cx.failed()
+    };
+    (out, failed)
+}
+
+fn paths(out: &Diagnostics) -> Vec<(String, Severity)> {
+    out.iter()
+        .map(|d| (d.location.json_path.to_string(), d.severity))
+        .collect()
+}
+
+fn boss() -> Boss {
+    Boss {
+        hud_range: 55,
+        should_darken_sky: true,
+        radius: 2.0,
+        on_x: Some(EventTrigger::new("x")),
+        cond: Some(Molang::Const(1.0)),
+        color: Color { r: 1, g: 2, b: 3 },
+    }
+}
+
+#[test]
+fn boss_rows_state_each_fields_kind_default_and_bound() {
+    let rows = Boss::FIELDS;
+    let names: Vec<(&str, FieldKind)> = rows.iter().map(|r| (r.json, r.kind)).collect();
+    assert_eq!(
+        names,
+        [
+            ("hud_range", FieldKind::Filled),
+            ("should_darken_sky", FieldKind::Filled),
+            ("radius", FieldKind::Filled),
+            ("on_x", FieldKind::Optional),
+            ("cond", FieldKind::Optional),
+            ("color", FieldKind::Required),
+        ]
+    );
+    assert_eq!(rows[0].default, Some(Lit::Int(55)));
+    assert_eq!(rows[1].default, Some(Lit::Bool(true)));
+    assert_eq!(
+        rows[2],
+        FieldRow {
+            default: Some(Lit::Float(2.0)),
+            bounds: &[Bound {
+                op: BoundOp::Min,
+                limit: Limit::Num(0.0)
+            }],
+            ..FieldRow::plain("radius", "radius", "f32", FieldKind::Filled)
+        }
+    );
+    assert_eq!(rows[5].ty, "Color");
+}
+
+#[test]
+fn a_broken_bound_fails_the_owner_under_refuse_and_resets_under_default_and_tell() {
+    let mut refused = Boss {
+        radius: -1.0,
+        ..boss()
+    };
+    let (out, failed) = check(&mut refused, MemberFailure::Refuse);
+    assert!(failed);
+    assert_eq!(refused.radius, -1.0, "the value stays");
+    assert_eq!(paths(&out), [("radius".to_owned(), Severity::Error)]);
+
+    let mut told = Boss {
+        radius: -1.0,
+        ..boss()
+    };
+    let (out, failed) = check(&mut told, MemberFailure::DefaultAndTell);
+    assert!(!failed);
+    assert_eq!(told.radius, 2.0, "the field's facet default");
+    assert_eq!(paths(&out), [("radius".to_owned(), Severity::Warning)]);
+
+    let mut fine = boss();
+    let (out, failed) = check(&mut fine, MemberFailure::Refuse);
+    assert!(out.is_empty() && !failed);
+}
+
+#[test]
+fn boss_walks_its_molang_field_under_the_default_spec() {
+    const FAMILY: MolangFieldSpec =
+        MolangFieldSpec::DEFAULT.version(MolangVersionSource::FormatVersion);
+    let mut value = boss();
+    let mut seen = Vec::new();
+    visit_fields_under(&mut value, &JsonPath::new(), &FAMILY, |field| {
+        seen.push((field.path.to_string(), *field.spec));
+    });
+    assert_eq!(seen, [("cond".to_owned(), FAMILY)]);
+}
+
+#[test]
+fn an_event_trigger_field_is_a_trigger_member() {
+    assert_eq!(Boss::triggers(), ["on_x"]);
+}
+
+#[test]
+fn a_struct_with_no_required_field_gets_default_and_getters_answer_the_fallback() {
+    let door = BreakDoor::default();
+    assert_eq!(
+        door,
+        BreakDoor {
+            priority: None,
+            control_flags: None,
+            speed: None,
+            slot: None,
+        }
+    );
+    assert_eq!(door.priority(), 0);
+    assert_eq!(door.speed(), 1.0);
+    let set = BreakDoor {
+        priority: Some(3),
+        speed: Some(0.5),
+        ..door
+    };
+    assert_eq!((set.priority(), set.speed()), (3, 0.5));
+    assert_eq!(BreakDoor::FIELDS[0].fallback, Some(Lit::Int(0)));
+    assert_eq!(BreakDoor::FIELDS[0].kind, FieldKind::Optional);
+}
+
+#[test]
+fn an_option_bound_resets_to_its_fallback_and_an_absent_member_is_not_checked() {
+    let mut door = BreakDoor {
+        speed: Some(-2.0),
+        ..BreakDoor::default()
+    };
+    let (out, _) = check(&mut door, MemberFailure::DefaultAndTell);
+    assert_eq!(door.speed, Some(1.0));
+    assert_eq!(paths(&out), [("speed".to_owned(), Severity::Warning)]);
+
+    let mut absent = BreakDoor::default();
+    let (out, _) = check(&mut absent, MemberFailure::Refuse);
+    assert!(out.is_empty());
+}
+
+#[test]
+fn a_string_enum_names_its_values_through_rename_all() {
+    assert_eq!(EquipmentSlot::ALL.len(), 5);
+    assert_eq!(
+        EquipmentSlot::NAMES,
+        ["head", "chest", "legs", "feet", "main_hand"]
+    );
+    assert_eq!(EquipmentSlot::MainHand.name(), "main_hand");
+    assert_eq!(EquipmentSlot::MainHand.to_string(), "main_hand");
+    assert_eq!(EquipmentSlot::from_name("feet"), Some(EquipmentSlot::Feet));
+    assert_eq!(EquipmentSlot::from_name("Feet"), None);
+    let error = EquipmentSlot::parse_name("tail").unwrap_err();
+    assert_eq!(
+        error.to_string(),
+        "expected one of: head, chest, legs, feet, main_hand, found `tail`"
+    );
+    let shape: Vec<&str> = match EquipmentSlot::SHAPE.ty {
+        Type::User(UserType::Enum(e)) => e
+            .variants
+            .iter()
+            .map(facet::Variant::effective_name)
+            .collect(),
+        _ => panic!("an enum"),
+    };
+    assert_eq!(shape, EquipmentSlot::NAMES, "facet's names");
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Facet, Schema)]
+#[facet(schema::expected = "a control flag name", schema::case_insensitive)]
+#[repr(u8)]
+pub enum ControlFlag {
+    #[facet(rename = "move")]
+    Move,
+    #[facet(rename = "look")]
+    Look,
+}
+
+#[test]
+fn expected_and_case_insensitive_shape_the_name_lookup_and_its_error() {
+    assert_eq!(ControlFlag::from_name("MOVE"), Some(ControlFlag::Move));
+    assert_eq!(ControlFlag::EXPECTED, "a control flag name");
+    assert_eq!(
+        ControlFlag::parse_name("jump").unwrap_err().to_string(),
+        "expected a control flag name, found `jump`"
+    );
+}
+
+#[test]
+fn a_transparent_newtype_checks_at_its_owners_path() {
+    assert_eq!(Friction::default(), Friction(0.4));
+    assert_eq!(Friction::FIELDS[0].json, "");
+    let mut high = Friction(1.5);
+    let (out, _) = check(&mut high, MemberFailure::DefaultAndTell);
+    assert_eq!(high, Friction(0.4));
+    assert_eq!(paths(&out), [(String::new(), Severity::Warning)]);
+}
+
+fn shape_names(shape: &'static Shape) -> Vec<&'static str> {
+    match shape.ty {
+        Type::User(UserType::Struct(st)) => st
+            .fields
+            .iter()
+            .filter(|f| !f.flags.contains(facet::FieldFlags::SKIP))
+            .map(facet::Field::effective_name)
+            .collect(),
+        _ => panic!("a struct"),
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(rename_all = "camelCase", schema::unknown = "report")]
+pub struct Renamed {
+    #[facet(default = 1)]
+    pub hud_range: i32,
+    #[facet(
+        rename = "Other",
+        schema::since_format = "1.21.60",
+        schema::unknown = "keep"
+    )]
+    pub other_value: Option<i32>,
+    #[facet(skip)]
+    pub side: u8,
+    #[facet(schema::since_engine = "1.20.0")]
+    pub r#type: Option<String>,
+}
+
+#[test]
+fn the_json_names_are_facets_and_the_stored_keys_are_rows() {
+    let rows: Vec<&str> = Renamed::FIELDS.iter().map(|r| r.json).collect();
+    assert_eq!(rows, shape_names(Renamed::SHAPE));
+    assert_eq!(rows, ["hudRange", "Other", "type"]);
+    assert_eq!(Renamed::UNKNOWN, Some(UnknownRule::Report));
+    assert_eq!(
+        Renamed::FIELDS[1].since_format,
+        Some(FormatVersion::new(1, 21, 60))
+    );
+    assert_eq!(Renamed::FIELDS[1].unknown, Some(UnknownRule::Keep));
+    assert_eq!(
+        Renamed::FIELDS[2].since_engine,
+        Some(FormatVersion::new(1, 20, 0))
+    );
+    let renamed = Renamed::default();
+    assert_eq!((renamed.hud_range, renamed.side), (1, 0));
+}
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+pub struct Span {
+    #[facet(default = 0.0)]
+    pub low: f32,
+    #[facet(default = 1.0, schema::min = low)]
+    pub high: f32,
+    #[facet(schema::fallback = 2, schema::above = floor)]
+    pub top: Option<i32>,
+    #[facet(schema::fallback = 1)]
+    pub floor: Option<i32>,
+}
+
+#[test]
+fn a_cross_field_bound_compares_with_the_other_member_and_falls_back_to_it() {
+    assert_eq!(
+        Span::FIELDS[1].bounds,
+        [Bound {
+            op: BoundOp::Min,
+            limit: Limit::Field("low")
+        }]
+    );
+    let mut span = Span {
+        low: 3.0,
+        high: 1.0,
+        top: Some(1),
+        floor: None,
+    };
+    let (out, _) = check(&mut span, MemberFailure::DefaultAndTell);
+    assert_eq!(span.high, 3.0, "the other member");
+    assert_eq!(
+        span.top,
+        Some(1),
+        "the floor's fallback, 1: top is not above it"
+    );
+    assert_eq!(
+        paths(&out),
+        [
+            ("high".to_owned(), Severity::Warning),
+            ("top".to_owned(), Severity::Warning)
+        ]
+    );
+}
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+pub struct Named {
+    #[facet(schema::lowercase)]
+    pub id: String,
+    #[facet(schema::lowercase)]
+    pub alias: Option<String>,
+}
+
+#[test]
+fn lowercase_is_graded_and_reset_to_the_lower_case_spelling() {
+    let mut named = Named {
+        id: "Zombie".to_owned(),
+        alias: Some("ok".to_owned()),
+    };
+    let (out, failed) = check(&mut named, MemberFailure::Refuse);
+    assert!(failed);
+    assert_eq!(named.id, "Zombie");
+    assert_eq!(paths(&out), [("id".to_owned(), Severity::Error)]);
+    let (_, _) = check(&mut named, MemberFailure::DefaultAndTell);
+    assert_eq!(named.id, "zombie");
+}
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+pub struct Inner {
+    #[facet(default = 0, schema::max = 9)]
+    pub x: i32,
+    pub on_y: Option<EventTrigger>,
+    #[facet(schema::foreign_event)]
+    pub on_spawn: Option<EventTrigger>,
+}
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+pub struct Outer {
+    pub list: Vec<Inner>,
+    pub by_name: IndexMap<String, Inner>,
+    pub events: Option<Vec<EventTrigger>>,
+    #[facet(flatten)]
+    pub shared: Inner,
+}
+
+#[test]
+fn check_and_triggers_walk_into_lists_maps_and_flattened_fields() {
+    assert_eq!(
+        Outer::triggers(),
+        ["list[].on_y", "by_name.*.on_y", "events[]", "on_y"]
+    );
+    let inner = |x| Inner {
+        x,
+        on_y: None,
+        on_spawn: None,
+    };
+    let mut outer = Outer {
+        list: vec![inner(1), inner(10)],
+        by_name: IndexMap::from([("a".to_owned(), inner(11))]),
+        events: None,
+        shared: inner(12),
+    };
+    let (out, _) = check(&mut outer, MemberFailure::Refuse);
+    let at: Vec<String> = out
+        .iter()
+        .map(|d| d.location.json_path.to_string())
+        .collect();
+    assert_eq!(at, ["list/1/x", "by_name/a/x", "x"]);
+    assert_eq!(Outer::FIELDS[3].json, "");
+    assert!(Outer::FIELDS[3].flatten);
+}
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+pub struct Gated {
+    #[cfg_attr(all(), facet(schema::min = 0))]
+    pub on: Option<i32>,
+    #[cfg_attr(any(), facet(schema::min = 0))]
+    pub off: Option<i32>,
+}
+
+#[test]
+fn a_cfg_attr_key_counts_only_when_its_condition_holds() {
+    assert_eq!(Gated::FIELDS[0].bounds.len(), 1);
+    assert!(Gated::FIELDS[1].bounds.is_empty());
+}
+
+const TAGS: MolangFieldSpec = MolangFieldSpec::DEFAULT.tags();
+
+fn walk_tags(tags: &mut [Molang], visitor: &mut bedrock_addon_core::molang::MolangVisitor<'_>) {
+    for (index, tag) in tags.iter_mut().enumerate() {
+        visitor.field(index, &TAGS, tag);
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+pub struct Specs {
+    #[facet(schema::molang = TAGS)]
+    pub tagged: Option<Molang>,
+    #[facet(schema::molang_with = walk_tags)]
+    pub tags: Vec<Molang>,
+    pub boss: Option<Boss>,
+}
+
+#[test]
+fn molang_and_molang_with_override_the_default_walk() {
+    let mut specs = Specs {
+        tagged: Some(Molang::Const(1.0)),
+        tags: vec![Molang::Const(2.0)],
+        boss: Some(boss()),
+    };
+    let mut seen = Vec::new();
+    visit_fields_under(
+        &mut specs,
+        &JsonPath::new(),
+        &MolangFieldSpec::DEFAULT,
+        |field| {
+            seen.push((field.path.to_string(), field.spec.admission));
+        },
+    );
+    assert_eq!(
+        seen,
+        [
+            ("tagged".to_owned(), TAGS.admission),
+            ("tags/0".to_owned(), TAGS.admission),
+            ("boss/cond".to_owned(), MolangFieldSpec::DEFAULT.admission),
+        ]
+    );
+}
+
+#[test]
+fn the_namespace_resolves_through_core() {
+    // `schema` is used by the attributes above; this keeps the import named.
+    let _ = schema::BoundOp::Min;
+}

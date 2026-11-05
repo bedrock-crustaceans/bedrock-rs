@@ -1,0 +1,6 @@
+error: unknown attribute `fallbak`, did you mean `fallback`?
+       available attributes: since_format, since_engine, unknown, fallback, min, max, above, below, molang, molang_with, foreign_event, lowercase, expected, case_insensitive
+ --> tests/ui/schema/misspelt_key.rs:6:21
+  |
+6 |     #[facet(schema::fallbak = 1)]
+  |                     ^^^^^^^

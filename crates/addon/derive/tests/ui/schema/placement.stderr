@@ -1,0 +1,35 @@
+error: `schema::min` is a field's key: put it on the field it is about
+ --> tests/ui/schema/placement.rs:5:9
+  |
+5 | #[facet(schema::min = 0, schema::expected = "a name")]
+  |         ^^^^^^
+
+error: `schema::expected` is a string enum's key: a struct has no names to read
+ --> tests/ui/schema/placement.rs:5:26
+  |
+5 | #[facet(schema::min = 0, schema::expected = "a name")]
+  |                          ^^^^^^
+
+error: `schema::case_insensitive` is a string enum's key: put it on the enum
+ --> tests/ui/schema/placement.rs:7:13
+  |
+7 |     #[facet(schema::case_insensitive)]
+  |             ^^^^^^
+
+error: a `skip` field is not read or written: it takes no `schema::` key
+ --> tests/ui/schema/placement.rs:9:19
+  |
+9 |     #[facet(skip, schema::fallback = 1)]
+  |                   ^^^^^^
+
+error: `schema::lowercase` is a field's key: put it on the field it is about
+  --> tests/ui/schema/placement.rs:14:9
+   |
+14 | #[facet(schema::lowercase)]
+   |         ^^^^^^
+
+error: a variant of a string enum takes no `schema::` key, `schema::expected` included
+  --> tests/ui/schema/placement.rs:17:13
+   |
+17 |     #[facet(schema::expected = "a slot")]
+   |             ^^^^^^

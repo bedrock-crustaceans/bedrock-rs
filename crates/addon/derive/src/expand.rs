@@ -10,24 +10,69 @@ use syn::{Data, DataEnum, DeriveInput, Error, Fields, Ident, Result, Type, Varia
 use crate::attr::{self, EnumAttrs, Row, Version};
 
 /// A typed variant, `Friction(Friction)`, with its table row (`None` in a `from_only` enum).
-struct Typed<'a> {
-    variant: &'a Ident,
-    ty: &'a Type,
-    row: Option<Row>,
+pub(crate) struct Typed<'a> {
+    pub variant: &'a Ident,
+    pub ty: &'a Type,
+    pub row: Option<Row>,
 }
 
 /// A `custom`, `unknown` or `dynamic` variant and the payload type the version-chain model gives it.
-struct Special<'a> {
-    variant: &'a Ident,
+pub(crate) struct Special<'a> {
+    pub variant: &'a Ident,
     ty: &'a Type,
     expected: TokenStream,
 }
 
 /// The variants of the enum, sorted by role.
-struct Variants<'a> {
-    typed: Vec<Typed<'a>>,
-    special: Vec<Special<'a>>,
-    dynamic_rows: Vec<Row>,
+pub(crate) struct Variants<'a> {
+    pub typed: Vec<Typed<'a>>,
+    pub special: Vec<Special<'a>>,
+    pub dynamic_rows: Vec<Row>,
+}
+
+/// The rules of the keys that fill the second table and its dispatches: no such key on a
+/// `from_only` enum, one write dispatch, and a goal row's typed version and parse.
+fn schema_rules(enum_attrs: &EnumAttrs, variants: &Variants, errors: &mut Vec<Error>) {
+    if enum_attrs.from_only.is_some() {
+        let spans = [
+            enum_attrs.write,
+            enum_attrs.write_with.as_ref().map(Spanned::span),
+            enum_attrs.versioned.as_ref().map(Spanned::span),
+            enum_attrs.typed_table.as_ref().map(Spanned::span),
+            enum_attrs.triggers,
+        ];
+        for span in spans.into_iter().flatten() {
+            errors.push(Error::new(
+                span,
+                "a `from_only` enum has no rows: `write`, `write_with`, `versioned`, \
+                 `typed_table` and `triggers` belong to the family's newest enum",
+            ));
+        }
+    }
+    if let (Some(_), Some(with)) = (enum_attrs.write, &enum_attrs.write_with) {
+        errors.push(Error::new_spanned(
+            with,
+            "`write` and `write_with` both emit the write dispatch: keep one",
+        ));
+    }
+    for row in variants.typed.iter().filter_map(|t| t.row.as_ref()) {
+        let Some(goal) = row.goal else {
+            continue;
+        };
+        if row.typed.is_none() {
+            errors.push(Error::new(
+                goal,
+                "a `goal` row states the goal's typed version: `typed = \"major.minor.patch\"`",
+            ));
+        }
+        if enum_attrs.versioned.is_none() {
+            errors.push(Error::new(
+                goal,
+                "a `goal` row needs the enum's `versioned = path`: the goal parse its \
+                 `VERSIONED` entry instantiates",
+            ));
+        }
+    }
 }
 
 /// Expands the derive, or the errors that stop it. Every error of an enum is reported at
@@ -55,6 +100,7 @@ pub(crate) fn derive(input: &DeriveInput) -> Result<TokenStream> {
         _ => {}
     }
     let variants = variants(data, &enum_attrs, &mut errors);
+    schema_rules(&enum_attrs, &variants, &mut errors);
     if let Some(error) = errors.into_iter().reduce(|mut all, next| {
         all.combine(next);
         all
@@ -67,6 +113,8 @@ pub(crate) fn derive(input: &DeriveInput) -> Result<TokenStream> {
     match &enum_attrs.family {
         Some(family) if enum_attrs.from_only.is_none() => {
             let components = emit(enum_ident, family, &variants);
+            let rows = crate::rows::emit(enum_ident, &enum_attrs, &variants);
+            let components = quote!(#components #rows);
             Ok(quote!(#checks #from #components))
         }
         _ => Ok(quote!(#checks #from)),

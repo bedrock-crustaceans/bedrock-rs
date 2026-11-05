@@ -1,4 +1,4 @@
-//! `cargo xtask entity-schemas`: renders `crates/addon/families/entity/src/schema/table.rs` from the
+//! `cargo xtask entity-schemas`: renders `crates/addon/families/entity/src/game_schema/table.rs` from the
 //! schema dump of the game's entity components, goals and event responses,
 //! `xtask/src/script_meta/game/entity_schemas.txt` (one `owner` line per component,
 //! goal or event response, followed by an indented line per schema member).
@@ -14,7 +14,7 @@ use std::{fs, io};
 /// The dump, relative to the workspace root.
 pub const INPUT: &str = "xtask/src/script_meta/game/entity_schemas.txt";
 /// The generated table, relative to the workspace root.
-pub const OUTPUT: &str = "crates/addon/families/entity/src/schema/table.rs";
+pub const OUTPUT: &str = "crates/addon/families/entity/src/game_schema/table.rs";
 
 /// Writes [`OUTPUT`] from [`INPUT`], and the goal numeric checks' table
 /// ([`crate::goal_numeric`]).
@@ -507,8 +507,9 @@ owner play_sound kind=event_response typed_since=-
     fn the_committed_schema_table_is_the_render_of_the_dump() {
         let generated = generate(include_str!("script_meta/game/entity_schemas.txt")).unwrap();
         assert!(
-            generated == include_str!("../../crates/addon/families/entity/src/schema/table.rs"),
-            "crates/addon/families/entity/src/schema/table.rs is stale: run `cargo xtask entity-schemas`"
+            generated
+                == include_str!("../../crates/addon/families/entity/src/game_schema/table.rs"),
+            "crates/addon/families/entity/src/game_schema/table.rs is stale: run `cargo xtask entity-schemas`"
         );
     }
 

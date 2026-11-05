@@ -1,0 +1,12 @@
+error[E0599]: no associated function or constant named `default` found for struct `Boss` in the current scope
+  --> tests/ui/schema/required_field_has_no_default.rs:12:19
+   |
+ 5 | struct Boss {
+   | ----------- associated function or constant `default` not found for this struct
+...
+12 |     let _ = Boss::default();
+   |                   ^^^^^^^ associated function or constant not found in `Boss`
+   |
+   = help: items from traits can only be used if the trait is implemented and in scope
+   = note: the following trait defines an item `default`, perhaps you need to implement it:
+           candidate #1: `std::default::Default`

@@ -4,7 +4,6 @@
 //! upgraded when they load.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
-#![recursion_limit = "512"]
 
 /// Armour trims (`TrimData`, `TrimPattern`, `TrimMaterial`): vanilla data compiled into the game.
 pub mod trim;

@@ -36,6 +36,8 @@
 //! - `pack_identity`: the pack-identity vocabulary (`PackPath`, `PackRef`, `PackIdVersion`,
 //!   `PackType`, `PackSide`, `PackOrigin`); `bedrock_addon::storage` and `bedrock_addon::pack`
 //!   are its documented paths.
+//! - `schema`: the `schema::` attribute grammar (`bedrock_addon_schema`, re-exported) that a
+//!   typed document struct states its per-field facts in; hidden at the facade.
 //! - `versioning`: the version-chain machinery (`Family`, `Upgrade`, `version_chain!`);
 //!   hidden at the facade.
 //!
@@ -93,6 +95,9 @@ struct NoItemAtTheRoot;
 #[doc = include_str!("../README.md")]
 struct ReadmeDoctests;
 
+// The paths the derives emit, `::bedrock_addon_core::schema::…`, resolve inside this crate too.
+extern crate self as bedrock_addon_core;
+
 #[doc(hidden)]
 pub mod __private;
 pub mod diagnostic;
@@ -103,6 +108,7 @@ pub mod load;
 pub mod manifest;
 pub mod molang;
 pub mod pack_identity;
+pub mod schema;
 pub mod shared;
 #[doc(hidden)]
 pub mod test_cost;

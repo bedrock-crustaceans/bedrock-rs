@@ -9,8 +9,8 @@ mod common;
 #[path = "loot/rows.rs"]
 mod rows;
 
-#[path = "loot/schema.rs"]
-mod schema;
+#[path = "loot/parameters.rs"]
+mod parameters;
 
 #[path = "loot/rules.rs"]
 mod rules;

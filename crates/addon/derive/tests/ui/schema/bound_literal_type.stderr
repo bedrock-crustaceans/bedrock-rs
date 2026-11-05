@@ -1,0 +1,27 @@
+error[E0308]: mismatched types
+ --> tests/ui/schema/bound_literal_type.rs:6:42
+  |
+4 | #[derive(Facet, Schema)]
+  |                 ------ arguments to this enum variant are incorrect
+5 | struct Radius {
+6 |     #[facet(default = 2.0, schema::min = 0)]
+  |                                          ^ expected `f32`, found integer
+  |
+help: the type constructed contains `{integer}` due to the type of the argument passed
+ --> tests/ui/schema/bound_literal_type.rs:4:17
+  |
+4 | #[derive(Facet, Schema)]
+  |                 ^^^^^^
+5 | struct Radius {
+6 |     #[facet(default = 2.0, schema::min = 0)]
+  |                                          - this argument influences the type of `Some`
+note: tuple variant defined here
+ --> $RUST/core/src/option.rs
+  |
+  |     Some(#[stable(feature = "rust1", since = "1.0.0")] T),
+  |     ^^^^
+  = note: this error originates in the derive macro `Schema` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: use a float literal
+  |
+6 |     #[facet(default = 2.0, schema::min = 0.0)]
+  |                                           ++

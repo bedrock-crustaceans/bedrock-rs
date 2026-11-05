@@ -5,7 +5,6 @@
 //! the older shapes; `Beta` is the `"format_version": "beta"` document.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
-#![recursion_limit = "512"]
 
 pub mod component;
 mod environment;

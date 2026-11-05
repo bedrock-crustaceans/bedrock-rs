@@ -6,7 +6,6 @@
 //! loads, and `history` has that older struct.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
-#![recursion_limit = "512"]
 
 pub mod component;
 pub mod history;

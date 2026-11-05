@@ -1,7 +1,9 @@
-//! The proc-macro of the `bedrock_addon` crate family.
+//! The proc-macros of the `bedrock_addon` crate family.
 //!
-//! A proc-macro crate exports only its macros, so the one item here is
-//! `#[derive(Components)]`, at the crate root: on a family's component enum it emits a
+//! A proc-macro crate exports only its macros, so the two items here are derives at the crate
+//! root. `#[derive(Schema)]` emits the impls a typed document struct's `schema::` attributes
+//! state; it is reached through `bedrock_addon_core::schema`. `#[derive(Components)]`: on a
+//! family's component enum it emits a
 //! `Component` impl per variant type, `From<T>` for the enum and the sorted component table
 //! the version-chain machinery looks components up in. What it emits names items of five
 //! modules of `bedrock_addon_core`: `document`, `versioning`, `version`, `molang` (the
@@ -33,6 +35,8 @@ struct ReadmeDoctests;
 
 mod attr;
 mod expand;
+mod rows;
+mod schema;
 
 use proc_macro::TokenStream;
 use syn::{DeriveInput, parse_macro_input};
@@ -79,12 +83,17 @@ use syn::{DeriveInput, parse_macro_input};
 /// | `unknown` | a variant | The variant for keys no table knows: no impl, no table row. |
 /// | `dynamic` | a variant | The entity variant for keys vanilla parses at runtime: each `#[component(...)]` on it is one table row with no Rust type. |
 /// | `from_only` | (flag) | Emit `From<Type> for <Enum>` per typed variant, with the payload type checks of the `custom`, `unknown` and `dynamic` variants, and nothing of the table. |
+/// | `write` | (flag) | Emit `write_component(&self)`, the write dispatch: each typed variant through `versioning::write_payload`, the custom one as its parameters, the unknown and dynamic ones as written. |
+/// | `write_with` | a function path | The write dispatch with `path(component)` for each typed variant instead (biome's null-stripping writer). One of `write` and `write_with`. |
+/// | `versioned` | a generic function path | The goal parse by version, `fn<T: GoalMeta>(JsonSlice, FormatVersion, &LoadContext, &mut Diagnostics) -> Option<Enum>`: each `goal` row puts `path::<T>` in `VERSIONED`. Required by a `goal` row. |
+/// | `typed_table` | a function path | `fn(&str) -> Option<Option<FormatVersion>>`, the generated game table's typed version of a key (`None`: the table does not list it): emit a test that holds every row's `typed` to it. |
+/// | `triggers` | (flag) | Emit `triggers()`: `(key, member)` of every trigger member, from each payload's `Schema::trigger_members` and each row's `triggers = [..]`, sorted. |
 ///
 /// # Component attributes
 ///
 /// `#[component(...)]` on a typed variant (the keys may be spread over several attributes, each
-/// key at most once), and each `#[component(...)]` on the `dynamic` variant. The keys are the
-/// fields of `ComponentMeta`, one to one:
+/// key at most once), and each `#[component(...)]` on the `dynamic` variant. The keys up to
+/// `molang` are the fields of `ComponentMeta`, one to one:
 ///
 /// | Key | Value | `ComponentMeta` field | When absent |
 /// | --- | --- | --- | --- |
@@ -98,9 +107,19 @@ use syn::{DeriveInput, parse_macro_input};
 /// | `fields` | `[{ name = "a.b", since_engine = "1.21.0" }, …]` | `fields` (`FieldMeta`) | `[]` |
 /// | `parse` | a function path | `parse`: reads the component's JSON slice | error |
 /// | `molang` | (flag) | not in `ComponentMeta`: the type implements `MolangFields`, and the enum's walk forwards to it | the variant holds no Molang |
+/// | `typed` | `"1.26.30"` | not in `ComponentMeta`: `SCHEMA_ROWS` `typed`, `typed_since(key)`, and a goal's `GoalMeta::TYPED` | `None` |
+/// | `shorthand` | `scalar` | `SCHEMA_ROWS` `shorthand`: a bare scalar stands for the component's one value | `None` |
+/// | `goal` | (flag) | `SCHEMA_ROWS` `goal`; emits `impl GoalMeta for <Type>` (`TYPED` from `typed`, `priority()` from the goal's `schema::fallback`) and its `VERSIONED` entry; needs `typed` and the enum's `versioned` | not a goal |
+/// | `triggers` | `["member", …]` | `SCHEMA_ROWS` `triggers`: trigger members the payload does not list (an untyped row's) | `[]` |
 ///
-/// `molang` is a typed variant's key only: on a `dynamic` row (JSON, no typed fields) and in a
-/// `from_only` enum it is an error.
+/// `molang`, `goal` and `shorthand` are a typed variant's keys only: on a `dynamic` row (JSON,
+/// no typed fields) they are an error, and so is `molang` in a `from_only` enum, which takes
+/// none of the enum keys after `from_only` either.
+///
+/// With `family` and not `from_only`, the enum also gets `SCHEMA_ROWS` (one
+/// `schema::ComponentRow` per row, sorted by name), `schema_row(key)` and `typed_since(key)`. A
+/// goal row's `priority` fallback is checked at compile time: a goal struct whose `priority`
+/// has no `schema::fallback = <integer>` fails the build.
 ///
 /// Versions are `"major.minor.patch"` literals of decimal digits, checked at expansion time. A
 /// missing required key, an unknown or repeated key, a malformed version, a variant that is
@@ -178,6 +197,60 @@ use syn::{DeriveInput, parse_macro_input};
 pub fn derive_components(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     expand::derive(&input)
+        .unwrap_or_else(syn::Error::into_compile_error)
+        .into()
+}
+
+/// Derives the impls a typed document struct's attributes state; reached as
+/// `bedrock_addon_core::schema::Schema`, beside the trait of the same name.
+///
+/// It reads facet's own `default`, `rename`, `rename_all`, `transparent`, `flatten` and `skip`
+/// and the `schema::` keys of `#[facet(..)]` (the grammar is `bedrock_addon_schema`), and emits
+/// impls only, never the item:
+///
+/// - on a struct: `impl Schema` (`FIELDS`, the row table; `check`, the bounds and `lowercase`
+///   graded by the slice through `SchemaCx`, then the walk into every field;
+///   `trigger_members`); `impl MolangFields` (a Molang field under the walk's default spec or
+///   its `schema::molang`, every other field nested); `impl Default` when no field is required;
+///   a getter `fn x(&self) -> T` per `Option` field with a `schema::fallback`;
+/// - on a unit-only enum: `ALL`, `NAMES`, `EXPECTED`, `name`, `from_name`, `parse_name`,
+///   `Display`, and empty `Schema` and `MolangFields` impls.
+///
+/// A field is required (plain `T`), filled on read (plain `T` with facet's `default = x`, the
+/// value in the field's own type) or optional (`Option<T>`, with or without
+/// `schema::fallback`). What the derive refuses at compile time: facet's `default` on an
+/// `Option`, `fallback` on a plain field, a bound that is neither a number nor another field's
+/// name (or names the field itself, or a field that does not exist, or doubles a side), a
+/// stored key whose value is not a string literal, a version that is not `major.minor.patch`,
+/// an `unknown` that is not `keep`, `report`, `reject` or `ignore`, a key on the wrong item
+/// (a field's key on the container, an enum's key on a field or a struct, any key on a
+/// variant or a `skip` field), `lowercase` off a `String`, `foreign_event` off an
+/// `EventTrigger`, `molang` off a Molang field or beside `molang_with`, generics, a tuple
+/// struct that is not transparent, and an enum with data. A misspelt key is facet's error.
+///
+/// The emitted paths are `::bedrock_addon_core::…`, so the user crate depends on core.
+///
+/// ```
+/// use bedrock_addon_core::schema::{self, Schema};
+/// use facet::Facet;
+///
+/// #[derive(Clone, Debug, PartialEq, Facet, Schema)]
+/// pub struct BreakDoor {
+///     #[facet(schema::fallback = 0)]
+///     pub priority: Option<i32>,
+///     #[facet(schema::fallback = 1.0, schema::min = 0.0)]
+///     pub speed: Option<f32>,
+/// }
+///
+/// let door = BreakDoor::default();
+/// assert_eq!((door.priority, door.priority()), (None, 0));
+/// assert_eq!(door.speed(), 1.0);
+/// assert_eq!(BreakDoor::FIELDS[1].json, "speed");
+/// ```
+#[proc_macro_derive(Schema, attributes(facet))]
+pub fn derive_schema(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as DeriveInput);
+    schema::derive(&input)
         .unwrap_or_else(syn::Error::into_compile_error)
         .into()
 }
