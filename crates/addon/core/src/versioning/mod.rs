@@ -36,7 +36,9 @@ pub use component::{
     ComponentSection, check_experimental_fields, check_fields_released, check_fields_since_engine,
     parse_component, parse_component_map, validate_components,
 };
-pub use document::{parse_document, parse_document_as_written};
+pub use document::{
+    DocumentRead, OpenBeta, beta_refused, parse_document, parse_document_as_written,
+};
 pub use file::{BelowFloor, FileFamily};
 pub use payload::{parse_payload, write_payload};
 pub use pipeline::{
@@ -46,7 +48,7 @@ pub use pipeline::{
 pub use range::{ChainError, Selection, check_chain, ranges, select, select_versions};
 pub use reading::{MemberFailure, NullHandling, Reading, Scalars, UnknownMask};
 pub use single::Single;
-pub use write::write_document;
+pub use write::write_envelope;
 
 use std::fmt;
 

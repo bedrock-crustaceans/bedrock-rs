@@ -48,7 +48,7 @@ pub use combine::{
 pub use component::{Component, ComponentMap, ComponentRef, ComponentSet, CustomComponent};
 #[doc(hidden)]
 pub use finite::FiniteText;
-pub use json_document::{JsonDefinition, JsonDocument};
+pub use json_document::{JsonDefinition, JsonDocument, JsonPlaced};
 #[doc(hidden)]
 pub use merged::{Layer, MergeCx};
 pub use merged::{Merged, RawLayer};

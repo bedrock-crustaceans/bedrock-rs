@@ -10,7 +10,8 @@ use crate::load::{LoadContext, StackCx};
 use crate::pack_identity::{PackPath, PackRef, PackSide};
 use crate::version::FormatVersion;
 use crate::versioning::{
-    Family, VersionStruct, Versioned, parse_document, parse_document_as_written, write_document,
+    DocumentRead, Family, VersionStruct, Versioned, parse_document, parse_document_as_written,
+    write_envelope,
 };
 
 use super::Origin;
@@ -18,10 +19,11 @@ use super::Origin;
 /// A versioned JSON file kind whose newest struct is `Self`: one document per file, read
 /// through its family's chain and written back with the family's envelope.
 ///
-/// Core implements `Sealed`, [`Content`] (parse = [`parse_document`], write =
-/// [`write_document`]), [`JsonContent`] and [`Placed`] (`default_path` = [`place`](Self::place))
-/// for every `JsonDocument`, so a type that implements it implements none of those by hand: a
-/// family moving onto it deletes its own four impls in the same change (they would overlap).
+/// Core implements `Sealed`, [`Content`] (parse = [`read`](Self::read), a beta document refused
+/// with "no parser available" for `beta` and closed as failed, write =
+/// [`write_envelope`]) and [`JsonContent`] for every `JsonDocument`, and [`Placed`] for every
+/// [`JsonPlaced`], so a type that implements them implements none of those by hand: a family
+/// moving onto them deletes its own impls in the same change (they would overlap).
 /// A file kind that is not this (lang, a multi-definition file read its own way, a beta struct
 /// whose family's `Latest` is another type) keeps its hand impls beside the blanket ones.
 ///
@@ -37,20 +39,22 @@ pub trait JsonDocument: VersionStruct + Send + Sync + 'static {
     /// (`"fog settings"` of the `"fog"` family).
     const NAME: &'static str = <Self::Family as Family>::NAME;
 
-    /// Where `PackWriter::add` puts this value ([`Placed::default_path`]): one of
-    /// `document::{default_path, default_path_flat, default_path_flat_for_vanilla}` of the
-    /// identifier, or a fixed path.
-    fn place(&self) -> PackPath;
-
     /// The `format_version` the value is written at. Default: the family's newest struct's,
     /// this type's own. A family that writes the version the file was read at overrides it
     /// (`source_format_version.max(FLOOR)`).
+    ///
+    /// Ignored on the raw-text path (`Family::ENVELOPE.check` is `EnvelopeCheck::Never`, or
+    /// `From(m)` with this version below `m`), where the struct writes its own envelope: its
+    /// `VersionStruct::write` is the whole document, version member included (dimension,
+    /// attachable, `client_entity`).
     fn write_version(&self) -> FormatVersion {
         <Self as Versioned>::VERSION
     }
 
     /// Adds the root members written after the payload (a document's `root_extra`); none by
-    /// default. Not written on the raw-text path, where the struct writes its own root.
+    /// default. Ignored on the raw-text path (`EnvelopeCheck::Never`, see
+    /// [`write_version`](Self::write_version)), where the struct writes its own root, root
+    /// members included.
     #[allow(unused_variables)]
     fn write_extras(&self, root: &mut Extra) {}
 
@@ -62,6 +66,21 @@ pub trait JsonDocument: VersionStruct + Send + Sync + 'static {
     /// `EncodeError` when the value must not be written.
     fn refuse_write(&self) -> Result<(), EncodeError> {
         Ok(())
+    }
+
+    /// Reads the file at `origin`: the stable document, a beta one or the rejection. Default:
+    /// [`parse_document`] of the family. [`Content::parse`] (a beta document refused) and
+    /// `load::registry` read through it, so a family with a check of its own around the
+    /// generic read (a gate before the parse, an admit step, an identifier or vanilla check
+    /// after it) overrides it and wraps the default, the one place both paths see.
+    ///
+    /// The default's stable document and rejection are closed (`Family::close`) and their
+    /// findings located; an override that adds a finding after it adds it after the close,
+    /// put in the file itself (`Rejected::located`, `OpenBeta::push`). It does not reach
+    /// [`parse_as_written`](Self::parse_as_written), which gives the struct before the upgrade
+    /// and the checks: a family whose override gates the text overrides that too.
+    fn read(origin: Origin, bytes: &[u8], cx: &LoadContext) -> DocumentRead<Self::Family> {
+        parse_document::<Self::Family>(origin, bytes, cx)
     }
 
     /// The struct the file's `format_version` selects, not upgraded, for the file `path` read on
@@ -78,6 +97,16 @@ pub trait JsonDocument: VersionStruct + Send + Sync + 'static {
     ) -> Result<Document<<Self::Family as Family>::Any>, Rejected> {
         parse_document_as_written::<Self::Family>(first_side(Self::SIDES), path, bytes, cx)
     }
+}
+
+/// A [`JsonDocument`] with a path of its own in a pack, where `PackWriter::add` puts it: core
+/// implements [`Placed`] for it (`default_path` = [`place`](Self::place)). A file kind the
+/// writer is not given by value (trade's tables) implements none.
+pub trait JsonPlaced: JsonDocument {
+    /// Where `PackWriter::add` puts this value ([`Placed::default_path`]): one of
+    /// `document::{default_path, default_path_flat, default_path_flat_for_vanilla}` of the
+    /// identifier, or a fixed path.
+    fn place(&self) -> PackPath;
 }
 
 /// A [`JsonDocument`] that is one definition of a registry, its file holding only it
@@ -124,7 +153,7 @@ fn document_of<T: JsonDocument>(value: &T) -> Result<Value, EncodeError> {
     value.refuse_write()?;
     let mut extras = Extra::default();
     value.write_extras(&mut extras);
-    Ok(write_document::<T::Family>(
+    Ok(write_envelope::<T::Family>(
         value.write_version(),
         VersionStruct::write(value)?,
         &extras,
@@ -143,7 +172,7 @@ impl<T: JsonDocument> Content for T {
             first_side(<T as JsonDocument>::SIDES),
             path.clone(),
         );
-        parse_document::<T::Family>(origin, bytes, cx).1
+        T::read(origin, bytes, cx).stable()
     }
 
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
@@ -153,7 +182,7 @@ impl<T: JsonDocument> Content for T {
 
 impl<T: JsonDocument> JsonContent for T {}
 
-impl<T: JsonDocument> Placed for T {
+impl<T: JsonPlaced> Placed for T {
     fn default_path(&self) -> PackPath {
         self.place()
     }

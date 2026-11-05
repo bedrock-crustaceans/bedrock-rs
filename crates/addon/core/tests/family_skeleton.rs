@@ -100,7 +100,7 @@ fn a_family_without_a_beta_struct_names_no_beta_and_its_value_clones() {
     );
 }
 
-// ---- write_document ------------------------------------------------------------------------
+// ---- write_envelope ------------------------------------------------------------------------
 
 /// The toy struct on the raw-text path below 2.0.0: the family reads its root struct from the
 /// whole document there.
@@ -137,12 +137,12 @@ fn text(value: &Value) -> String {
 }
 
 #[test]
-fn write_document_puts_the_version_first_and_the_payload_under_the_family_key() {
+fn write_envelope_puts_the_version_first_and_the_payload_under_the_family_key() {
     use bedrock_addon_core::document::Extra;
-    use bedrock_addon_core::versioning::{__macro::document_json, write_document};
+    use bedrock_addon_core::versioning::{__macro::document_json, write_envelope};
     let payload = write_payload(&spark()).unwrap();
     let v = FormatVersion::new(1, 0, 0);
-    let written = write_document::<by_macro::GlintChain>(v, payload.clone(), &Extra::default());
+    let written = write_envelope::<by_macro::GlintChain>(v, payload.clone(), &Extra::default());
     assert_eq!(
         text(&written),
         document_json::<by_macro::GlintChain>(v, &payload).unwrap(),
@@ -156,10 +156,10 @@ fn write_document_puts_the_version_first_and_the_payload_under_the_family_key() 
 }
 
 #[test]
-fn write_document_writes_the_beta_version_as_beta() {
+fn write_envelope_writes_the_beta_version_as_beta() {
     use bedrock_addon_core::document::Extra;
-    use bedrock_addon_core::versioning::{BETA_VERSION, write_document};
-    let written = write_document::<by_macro::GlintChain>(
+    use bedrock_addon_core::versioning::{BETA_VERSION, write_envelope};
+    let written = write_envelope::<by_macro::GlintChain>(
         BETA_VERSION,
         write_payload(&spark()).unwrap(),
         &Extra::default(),
@@ -174,16 +174,16 @@ fn write_document_writes_the_beta_version_as_beta() {
 }
 
 #[test]
-fn write_document_writes_the_root_extras_after_the_payload_in_their_order() {
+fn write_envelope_writes_the_root_extras_after_the_payload_in_their_order() {
     use bedrock_addon_core::document::Extra;
-    use bedrock_addon_core::versioning::write_document;
+    use bedrock_addon_core::versioning::write_envelope;
     let extras: Extra = [
         ("zeta".to_owned(), Value::from(1)),
         ("alpha".to_owned(), Value::from(true)),
     ]
     .into_iter()
     .collect();
-    let written = write_document::<by_macro::GlintChain>(
+    let written = write_envelope::<by_macro::GlintChain>(
         FormatVersion::new(1, 0, 0),
         Value::from(facet_value::VObject::new()),
         &extras,
@@ -198,13 +198,13 @@ fn write_document_writes_the_root_extras_after_the_payload_in_their_order() {
 }
 
 #[test]
-fn write_document_on_the_raw_text_path_is_the_payload_alone() {
+fn write_envelope_on_the_raw_text_path_is_the_payload_alone() {
     use bedrock_addon_core::document::Extra;
-    use bedrock_addon_core::versioning::{__macro::document_json, write_document};
+    use bedrock_addon_core::versioning::{__macro::document_json, write_envelope};
     let payload = write_payload(&spark()).unwrap();
     let extras: Extra = [("zeta".to_owned(), Value::from(1))].into_iter().collect();
     let below = FormatVersion::new(1, 0, 0);
-    let written = write_document::<raw_below_2::RawGlintChain>(below, payload.clone(), &extras);
+    let written = write_envelope::<raw_below_2::RawGlintChain>(below, payload.clone(), &extras);
     assert_eq!(
         written, payload,
         "the payload is the root; nothing is added to it"
@@ -215,7 +215,7 @@ fn write_document_on_the_raw_text_path_is_the_payload_alone() {
     );
     // From the envelope's version on, the envelope.
     let at = FormatVersion::new(2, 0, 0);
-    let enveloped = write_document::<raw_below_2::RawGlintChain>(at, payload.clone(), &extras);
+    let enveloped = write_envelope::<raw_below_2::RawGlintChain>(at, payload.clone(), &extras);
     assert!(enveloped.as_object().unwrap().get("demo:glint").is_some());
 }
 
@@ -337,8 +337,8 @@ fn single_parses_as_written_and_writes_its_document_back() {
 // ---- JsonDocument and JsonDefinition -------------------------------------------------------
 
 use bedrock_addon_core::document::{
-    CombineRule, Content, Definition, Document, JsonContent, JsonDefinition, JsonDocument, Notice,
-    Origin, Placed, Rejected, default_path,
+    CombineRule, Content, Definition, Document, JsonContent, JsonDefinition, JsonDocument,
+    JsonPlaced, Notice, Origin, Placed, Rejected, default_path,
 };
 use bedrock_addon_core::id::Id;
 use bedrock_addon_core::json::WriteStyle;
@@ -349,6 +349,9 @@ use bedrock_addon_core::pack_identity::{PackRef, PackSide};
 impl JsonDocument for Glint {
     type Family = single::GlintFamily;
     const SIDES: &'static [PackSide] = &[PackSide::Resource];
+}
+
+impl JsonPlaced for Glint {
     fn place(&self) -> PackPath {
         default_path("glints", &self.description.identifier)
     }
@@ -368,7 +371,8 @@ impl JsonDefinition for Glint {
 }
 
 /// A file kind with every default overridden: written at the version it was read at, with a
-/// root member after the payload, refusing a level of 0, named apart from its family.
+/// root member after the payload, refusing a level of 0, named apart from its family. Shaped
+/// like trade's tables, it has no path of its own (no `JsonPlaced`, so no `Placed`).
 #[derive(Clone, Debug, PartialEq)]
 pub struct Ember {
     pub heat: u8,
@@ -399,9 +403,8 @@ impl VersionStruct for Ember {
     }
 }
 
-impl bedrock_addon_core::molang::MolangFields for Ember {
-    fn visit_molang(&mut self, _: &mut bedrock_addon_core::molang::MolangVisitor<'_>) {}
-}
+// No Molang field: the empty walk a `Single` family's struct needs.
+bedrock_addon_core::impl_no_molang!(Ember);
 
 pub struct EmberFamily;
 
@@ -419,9 +422,6 @@ impl JsonDocument for Ember {
     type Family = EmberFamily;
     const SIDES: &'static [PackSide] = &[PackSide::Behavior, PackSide::Resource];
     const NAME: &'static str = "ember settings";
-    fn place(&self) -> PackPath {
-        PackPath::from_static("embers.json")
-    }
     fn write_version(&self) -> FormatVersion {
         self.read_at.unwrap_or(<Self as Versioned>::VERSION)
     }
@@ -488,6 +488,44 @@ fn a_block_definition_of_its_own_file<
 
 fn glint_path() -> PackPath {
     PackPath::from_static("glints/demo/spark.json")
+}
+
+/// `C` is a file kind, whether placed or not.
+fn content<C: Content>() {}
+
+/// Whether `T` is `Placed`, by autoref specialisation: the inherent-like method on `&Probe<T>`
+/// for a placed `T` is found before the fallback on `Probe<T>`.
+struct Probe<T>(std::marker::PhantomData<T>);
+
+trait IsPlaced {
+    fn placed(&self) -> bool;
+}
+
+impl<T: Placed> IsPlaced for &Probe<T> {
+    fn placed(&self) -> bool {
+        true
+    }
+}
+
+trait NotPlaced {
+    fn placed(&self) -> bool;
+}
+
+impl<T> NotPlaced for Probe<T> {
+    fn placed(&self) -> bool {
+        false
+    }
+}
+
+#[test]
+#[allow(
+    clippy::needless_borrow,
+    reason = "the probe needs both borrows to try the placed impl first"
+)]
+fn a_json_document_is_placed_only_when_it_is_json_placed() {
+    content::<Ember>();
+    assert!((&&Probe::<Glint>(std::marker::PhantomData)).placed());
+    assert!(!(&&Probe::<Ember>(std::marker::PhantomData)).placed());
 }
 
 #[test]
@@ -591,7 +629,6 @@ fn a_json_document_writes_through_its_overrides() {
         cold.to_json(),
         Err(EncodeError::NotRepresentable { .. })
     ));
-    assert_eq!(cold.default_path().as_str(), "embers.json");
 }
 
 fn parse_as_written_glint() -> Document<bedrock_addon_core::versioning::Single<single::GlintFamily>>
@@ -731,15 +768,50 @@ fn walked() -> Vec<WalkFile> {
     ]
 }
 
-/// The loader a family writes by hand today (voxel shape's): its parse and combine.
+/// The finding of an unreadable file, as voxel shape spells it.
+fn malformed() -> Diagnostic {
+    Diagnostic::error(DiagnosticCode::MalformedInput {
+        message: "not UTF-8 JSON within the nesting limit".to_owned(),
+        text: None,
+    })
+}
+
+/// voxel shape's `parse_file` (`families/voxel_shape/src/load.rs`), verbatim but for the
+/// family and the struct: the oracle the generic loader is checked against.
+fn parse_file(
+    pack: PackRef,
+    side: PackSide,
+    path: &PackPath,
+    bytes: &[u8],
+    cx: &LoadContext,
+) -> Result<Document<Glint>, Rejected> {
+    use bedrock_addon_core::json::Prepared;
+    use bedrock_addon_core::versioning::load_file;
+    let origin = Origin::file(pack, side, path.clone());
+    // The BOM is blanked, not cut, so every span is an offset into the file as written.
+    let Ok(prepared) = Prepared::new(bytes) else {
+        let mut diagnostics = Diagnostics::default();
+        diagnostics.push(malformed());
+        <single::GlintFamily as Family>::close(&mut diagnostics, None, path, true);
+        return Err(Rejected::located(origin, diagnostics));
+    };
+    let document = prepared.slice();
+    let outcome = load_file::<single::GlintFamily>(document, path, cx);
+    let mut diagnostics = outcome.diagnostics;
+    diagnostics.locate(&origin);
+    match outcome.value {
+        Some(Loaded::Stable(shape)) => {
+            Ok(Document::new(shape, origin, outcome.version, diagnostics))
+        }
+        _ => Err(Rejected::new(origin, diagnostics)),
+    }
+}
+
+/// voxel shape's `parse_walk_file`, verbatim but for the struct.
 fn hand_parse(file: &WalkFile, cx: &LoadContext) -> Contribution<Glint> {
-    let origin = Origin::file(file.pack.clone(), file.side, file.path.clone());
-    let (identifier, document) = bedrock_addon_core::versioning::parse_document::<
-        single::GlintFamily,
-    >(origin, &file.bytes, cx);
-    match document {
+    match parse_file(file.pack.clone(), file.side, &file.path, &file.bytes, cx) {
         Ok(document) => Contribution::Stable(document.description.identifier.clone(), document),
-        Err(rejected) => Contribution::Rejected(identifier.map(Id::parse), rejected),
+        Err(rejected) => Contribution::Rejected(None, rejected),
     }
 }
 
@@ -780,6 +852,64 @@ fn summary(registry: &Registry<Glint>) -> Summary {
     )
 }
 
+/// Files of pack 1 that fail early: no text, a malformed version, no payload.
+fn early_failures() -> Vec<WalkFile> {
+    let file = |path: &'static str, bytes: &'static [u8]| WalkFile {
+        pack: pack(1),
+        side: PackSide::Resource,
+        path: PackPath::from_static(path),
+        key: PackPath::from_static(path),
+        bytes: bytes::Bytes::from_static(bytes),
+    };
+    vec![
+        file("glints/demo/binary.json", &[0xff, 0xfe, 0x00]),
+        file(
+            "glints/demo/version.json",
+            br#"{"format_version": "one", "demo:glint": {"description": {"identifier": "demo:a"}, "level": 1}}"#,
+        ),
+        file("glints/demo/empty.json", br#"{"format_version": "1.0.0"}"#),
+    ]
+}
+
+/// Each file's contribution through the generic loader equals the hand loader's, but for one
+/// difference: a rejected file names the identifier its payload gave (`Some`, when it got as
+/// far as the payload) where voxel shape's loader names none. Under voxel shape's rule
+/// (`LastLoadedWins`) a rejection's identifier is never read, so the registries are equal.
+#[test]
+fn registry_contributions_equal_the_hand_loader_but_for_a_rejected_identifier() {
+    let load = LoadContext::detached();
+    let mut files = walked();
+    files.extend(early_failures());
+    let mut named = Vec::new();
+    for file in &files {
+        match ((GLINTS.parse)(file, &load), hand_parse(file, &load)) {
+            (Contribution::Stable(id, generic), Contribution::Stable(hand_id, hand)) => {
+                assert_eq!(id, hand_id);
+                assert_eq!(generic, hand, "{}", file.path);
+            }
+            (Contribution::Rejected(id, generic), Contribution::Rejected(None, hand)) => {
+                assert_eq!(generic.origin, hand.origin);
+                assert_eq!(generic.diagnostics, hand.diagnostics, "{}", file.path);
+                named.push((file.path.as_str().to_owned(), id.map(|id| id.to_string())));
+            }
+            (generic, hand) => panic!("{}: {generic:?} against {hand:?}", file.path),
+        }
+    }
+    assert_eq!(
+        named,
+        [
+            (
+                "glints/demo/spark.json".to_owned(),
+                Some("demo:spark".to_owned())
+            ),
+            ("glints/demo/binary.json".to_owned(), None),
+            ("glints/demo/version.json".to_owned(), None),
+            ("glints/demo/empty.json".to_owned(), None),
+        ],
+        "the payload's identifier of a file that got as far as its payload, else none"
+    );
+}
+
 #[test]
 fn registry_loads_a_json_definition_as_the_hand_written_loader_does() {
     let options = LoadOptions::default();
@@ -793,6 +923,19 @@ fn registry_loads_a_json_definition_as_the_hand_written_loader_does() {
     );
     let hand = hand_combine(files.iter().map(|f| hand_parse(f, &load)).collect(), &cx);
     assert_eq!(summary(&generic), summary(&hand));
+    // And with the files that fail before their payload is read.
+    let mut failing = files.clone();
+    failing.extend(early_failures());
+    assert_eq!(
+        summary(&(GLINTS.combine)(
+            failing.iter().map(|f| (GLINTS.parse)(f, &load)).collect(),
+            &cx
+        )),
+        summary(&hand_combine(
+            failing.iter().map(|f| hand_parse(f, &load)).collect(),
+            &cx
+        ))
+    );
     // Last loaded wins: pack 0's subpack copy, at level 9, in its own file.
     let spark = generic
         .get(&BlockId::parse("demo:spark"))
@@ -830,6 +973,19 @@ fn a_failed_definition_names_the_identifier_its_payload_gave() {
         rejected.origin,
         Origin::file(pack(1), PackSide::Resource, failing.path.clone())
     );
+}
+
+#[test]
+fn a_failed_definition_names_no_identifier_before_its_version_is_read() {
+    let load = LoadContext::detached();
+    let mut file = walked()[1].clone();
+    file.bytes = bytes::Bytes::from_static(
+        br#"{"format_version": "one", "demo:glint": {"description": {"identifier": "demo:spark"}, "level": 1}}"#,
+    );
+    let Contribution::Rejected(id, _) = (GLINTS.parse)(&file, &load) else {
+        panic!("the version is malformed")
+    };
+    assert_eq!(id, None, "the identity is read after the version");
 }
 
 #[test]
@@ -874,4 +1030,533 @@ fn files_keys_each_copy_by_its_path_in_its_pack_and_the_top_pack_wins() {
         Some(top.origin().clone())
     );
     assert_eq!((JOINED_NOTES.combine)(parsed, &cx), "top|low");
+}
+
+// ---- beta documents ------------------------------------------------------------------------
+
+use bedrock_addon_core::versioning::{BETA_VERSION, BetaPermission};
+
+/// The stable struct of a toy family that also has a beta struct.
+#[derive(Clone, Debug, PartialEq, Facet)]
+pub struct Flare {
+    pub description: GlintDescription,
+    pub level: u8,
+}
+
+impl Versioned for Flare {
+    const VERSION: FormatVersion = FormatVersion::new(1, 0, 0);
+}
+
+impl VersionStruct for Flare {
+    fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
+        parse_payload(payload, cx, d)
+    }
+    fn write(&self) -> Result<Value, EncodeError> {
+        write_payload(self)
+    }
+}
+
+/// The beta struct (`"format_version": "beta"`): another shape than the stable one.
+#[derive(Clone, Debug, PartialEq, Facet)]
+pub struct FlareBeta {
+    pub description: GlintDescription,
+    pub glow: bool,
+}
+
+impl Versioned for FlareBeta {
+    const VERSION: FormatVersion = BETA_VERSION;
+}
+
+impl VersionStruct for FlareBeta {
+    fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
+        parse_payload(payload, cx, d)
+    }
+    fn write(&self) -> Result<Value, EncodeError> {
+        write_payload(self)
+    }
+}
+
+impl bedrock_addon_core::__private::Sealed for FlareBeta {}
+
+/// The beta definition, read from the same files as the stable one.
+impl Definition for FlareBeta {
+    type Kind = kind::Block;
+    type File = Flare;
+    type Beta = NoBeta<kind::Block>;
+}
+
+pub struct FlareFamily;
+
+bedrock_addon_core::version_chain! {
+    family = FlareFamily;
+    #[derive(Clone, Debug, PartialEq)]
+    pub enum FlareAny {
+        V1_0_0(Flare),
+    }
+    beta = Beta(FlareBeta);
+    molang = none;
+}
+
+impl Family for FlareFamily {
+    const NAME: &'static str = "flare";
+    const PAYLOAD_KEY: &'static str = "demo:flare";
+    const FLOOR: FormatVersion = FormatVersion::new(1, 0, 0);
+    // Beta documents are allowed in every pack, so the toy needs no beta-enabled context.
+    const BETA_PERMISSION: BetaPermission = BetaPermission::Always;
+    type Latest = Flare;
+    type Beta = FlareBeta;
+    type Component = NoComponents;
+    type Any = FlareAny;
+
+    /// Records each close and whether the file failed, so a test sees how it was closed.
+    fn close(
+        diagnostics: &mut Diagnostics,
+        _: Option<JsonSlice<'_>>,
+        path: &PackPath,
+        failed: bool,
+    ) {
+        diagnostics.push(Diagnostic::info(DiagnosticCode::DocumentRejected {
+            text: Some(VanillaText::Formatted {
+                template: "flare {} closed, failed: {}",
+                args: vec![path.as_str().to_owned(), failed.to_string()],
+            }),
+        }));
+    }
+}
+
+impl JsonDocument for Flare {
+    type Family = FlareFamily;
+    const SIDES: &'static [PackSide] = &[PackSide::Behavior];
+
+    /// The generic read, then an identifier check of the family's own (as `feature_rules`
+    /// has): a stable flare in the `minecraft` namespace outside a base-game pack is rejected.
+    fn read(
+        origin: Origin,
+        bytes: &[u8],
+        cx: &LoadContext,
+    ) -> bedrock_addon_core::versioning::DocumentRead<FlareFamily> {
+        use bedrock_addon_core::versioning::{DocumentRead, parse_document};
+        match parse_document::<FlareFamily>(origin, bytes, cx) {
+            DocumentRead::Stable(flare)
+                if flare
+                    .description
+                    .identifier
+                    .as_str()
+                    .starts_with("minecraft:")
+                    && !cx.is_base_game_pack =>
+            {
+                let mut diagnostics = flare.diagnostics().clone();
+                diagnostics.push(Diagnostic::error(DiagnosticCode::NamespaceRule {
+                    text: None,
+                }));
+                DocumentRead::Rejected(
+                    Some(flare.description.identifier.to_string()),
+                    Rejected::located(flare.origin().clone(), diagnostics),
+                )
+            }
+            read => read,
+        }
+    }
+}
+
+impl JsonDefinition for Flare {
+    type Kind = kind::Block;
+    fn identifier(&self) -> &BlockId {
+        &self.description.identifier
+    }
+}
+
+const BETA_FLARE: &str = r#"{"format_version": "beta", "demo:flare": {"description": {"identifier": "demo:sun"}, "glow": true}}"#;
+
+fn flare_path() -> PackPath {
+    PackPath::from_static("flares/demo/sun.json")
+}
+
+/// The closes `FlareFamily::close` recorded, each as `failed: <bool>`.
+fn closes(diagnostics: &Diagnostics) -> Vec<bool> {
+    diagnostics
+        .iter()
+        .filter_map(|d| match &d.code {
+            DiagnosticCode::DocumentRejected {
+                text: Some(VanillaText::Formatted { template, args }),
+            } if template.starts_with("flare") => Some(args[1] == "true"),
+            _ => None,
+        })
+        .collect()
+}
+
+#[test]
+fn a_stable_json_document_refuses_a_beta_file_and_closes_it_failed() {
+    let rejected = <Flare as Content>::parse(
+        &flare_path(),
+        BETA_FLARE.as_bytes(),
+        &LoadContext::detached(),
+    )
+    .expect_err("the stable type reads no beta document");
+    assert!(
+        rejected.diagnostics.iter().any(|d| matches!(
+            &d.code,
+            DiagnosticCode::UnsupportedVersion {
+                text: Some(VanillaText::NoParserForVersion { version })
+            } if version == "beta"
+        )),
+        "the beta refusal entity's own parse pushes: {:?}",
+        rejected.diagnostics
+    );
+    assert_eq!(
+        closes(&rejected.diagnostics),
+        [true],
+        "closed once, as failed"
+    );
+    for finding in &rejected.diagnostics {
+        assert_eq!(finding.location.path, Some(flare_path()));
+    }
+}
+
+#[test]
+fn a_registry_takes_a_beta_file_as_a_beta_contribution_closed_as_loaded() {
+    const FLARES: CollectionLoader<Registry<Flare>, Contribution<Flare>> =
+        bedrock_addon_core::load::registry::<Flare>(Walk::json_tree_in(&["flares"]));
+    let file = WalkFile {
+        pack: pack(1),
+        side: PackSide::Behavior,
+        path: flare_path(),
+        key: flare_path(),
+        bytes: bytes::Bytes::from_static(BETA_FLARE.as_bytes()),
+    };
+    let contribution = (FLARES.parse)(&file, &LoadContext::detached());
+    let Contribution::Beta(id, document) = contribution else {
+        panic!("a beta contribution: {contribution:?}")
+    };
+    assert_eq!(id, BlockId::parse("demo:sun"));
+    assert!(document.glow);
+    assert_eq!(
+        *document.origin(),
+        Origin::file(pack(1), PackSide::Behavior, flare_path())
+    );
+    assert_eq!(
+        closes(document.diagnostics()),
+        [false],
+        "closed once, as loaded"
+    );
+}
+
+const VANILLA_FLARE: &str = r#"{"format_version": "1.0.0", "demo:flare": {"description": {"identifier": "minecraft:sun"}, "level": 1}}"#;
+
+fn is_namespace_rule(d: &Diagnostic) -> bool {
+    matches!(d.code, DiagnosticCode::NamespaceRule { .. })
+}
+
+#[test]
+fn an_overridden_read_is_what_content_parse_reads() {
+    let cx = LoadContext::detached();
+    let rejected = <Flare as Content>::parse(&flare_path(), VANILLA_FLARE.as_bytes(), &cx)
+        .expect_err("the family's identifier check");
+    let found: Vec<_> = rejected
+        .diagnostics
+        .iter()
+        .filter(|d| is_namespace_rule(d))
+        .collect();
+    assert_eq!(found.len(), 1, "{:?}", rejected.diagnostics);
+    assert_eq!(found[0].location.path, Some(flare_path()));
+    // A flare of another namespace passes the check.
+    let sun = BETA_FLARE
+        .replace("beta", "1.0.0")
+        .replace(r#""glow": true"#, r#""level": 2"#);
+    let flare = <Flare as Content>::parse(&flare_path(), sun.as_bytes(), &cx).expect("loads");
+    assert_eq!(flare.level, 2);
+}
+
+#[test]
+fn an_overridden_read_is_what_a_registry_reads() {
+    const FLARES: CollectionLoader<Registry<Flare>, Contribution<Flare>> =
+        bedrock_addon_core::load::registry::<Flare>(Walk::json_tree_in(&["flares"]));
+    let file = WalkFile {
+        pack: pack(2),
+        side: PackSide::Behavior,
+        path: flare_path(),
+        key: flare_path(),
+        bytes: bytes::Bytes::from_static(VANILLA_FLARE.as_bytes()),
+    };
+    let contribution = (FLARES.parse)(&file, &LoadContext::detached());
+    let Contribution::Rejected(id, rejected) = contribution else {
+        panic!("the family's identifier check rejects it: {contribution:?}")
+    };
+    assert_eq!(id, Some(BlockId::parse("minecraft:sun")));
+    assert_eq!(
+        rejected.origin,
+        Origin::file(pack(2), PackSide::Behavior, flare_path())
+    );
+    assert!(
+        rejected.diagnostics.iter().any(is_namespace_rule),
+        "{:?}",
+        rejected.diagnostics
+    );
+}
+
+// ---- FileFamily ----------------------------------------------------------------------------
+
+use bedrock_addon_core::versioning::FileFamily;
+
+/// The toy family without a beta struct (`NoBeta`, as its `JsonDefinition` needs) is a
+/// `FileFamily` too.
+impl FileFamily for single::GlintFamily {
+    fn document(value: &Glint) -> Result<Value, EncodeError> {
+        value.write()
+    }
+}
+
+/// So is the toy family with a beta struct.
+impl FileFamily for FlareFamily {
+    fn document(value: &Flare) -> Result<Value, EncodeError> {
+        value.write()
+    }
+}
+
+/// `F` is a one-file family whose newest struct is also a definition.
+fn a_file_family_of_a_json_definition<F: FileFamily<Latest: JsonDefinition>>() {}
+
+#[test]
+fn a_file_family_has_no_beta_or_a_beta_struct() {
+    a_file_family_of_a_json_definition::<single::GlintFamily>();
+    a_file_family_of_a_json_definition::<FlareFamily>();
+    assert_eq!(
+        <FlareFamily as FileFamily>::document(&Flare {
+            description: GlintDescription {
+                identifier: BlockId::parse("demo:sun"),
+            },
+            level: 1,
+        })
+        .unwrap(),
+        write_payload(&Flare {
+            description: GlintDescription {
+                identifier: BlockId::parse("demo:sun"),
+            },
+            level: 1,
+        })
+        .unwrap()
+    );
+}
+
+// ---- files and merged over a JSON document -------------------------------------------------
+
+const EMBERS: CollectionLoader<Files<Ember>, FileCopy<Ember>> =
+    bedrock_addon_core::load::files::<Ember>(Walk::exact_files(&["embers.json"]));
+
+/// The heat of every ember that loaded, and how many copies failed.
+fn sum_heat(parsed: Vec<FileCopy<Ember>>, _: &StackCx<'_>) -> (u32, usize) {
+    let failed = parsed.iter().filter(|(_, copy)| copy.is_err()).count();
+    let heat = parsed
+        .into_iter()
+        .filter_map(|(_, copy)| copy.ok())
+        .map(|document| u32::from(document.heat))
+        .sum();
+    (heat, failed)
+}
+
+const ALL_EMBERS: CollectionLoader<(u32, usize), FileCopy<Ember>> =
+    bedrock_addon_core::load::merged::<Ember, _>(Walk::exact_files(&["embers.json"]), sum_heat);
+
+/// Pack 1's ember at the root, and pack 0's in a subpack, on the resource side (`Ember` is
+/// read on its own as a behaviour file), whose heat is no `u8`.
+fn embers() -> [WalkFile; 2] {
+    let file = |index: usize, path: &'static str, text: &'static str| WalkFile {
+        pack: pack(index),
+        side: PackSide::Resource,
+        path: PackPath::from_static(path),
+        key: PackPath::from_static("embers.json"),
+        bytes: bytes::Bytes::from_static(text.as_bytes()),
+    };
+    [
+        file(
+            1,
+            "embers.json",
+            r#"{"format_version": "1.2.0", "demo:ember": {"heat": 3}}"#,
+        ),
+        file(
+            0,
+            "subpacks/hd/embers.json",
+            r#"{"format_version": "1.2.0", "demo:ember": {"heat": "hot"}}"#,
+        ),
+    ]
+}
+
+/// The failing copy is rejected in the walked file: its pack, its side and its subpack path,
+/// on the rejection and on every finding.
+fn assert_rejected_in_its_subpack(copy: &FileCopy<Ember>) {
+    let (key, copy) = copy;
+    assert_eq!(
+        key.as_str(),
+        "embers.json",
+        "keyed without the subpack folder"
+    );
+    let rejected = copy.as_ref().expect_err("heat is no u8");
+    let walked = Origin::file(
+        pack(0),
+        PackSide::Resource,
+        PackPath::from_static("subpacks/hd/embers.json"),
+    );
+    assert_eq!(rejected.origin, walked);
+    assert!(!rejected.diagnostics.is_empty());
+    for finding in &rejected.diagnostics {
+        assert_eq!(finding.location.pack, Some(pack(0)), "{finding:?}");
+        assert_eq!(
+            finding.location.path,
+            Some(walked.path.clone()),
+            "{finding:?}"
+        );
+    }
+}
+
+#[test]
+fn files_puts_a_failed_json_document_in_its_subpack_file() {
+    let options = LoadOptions::default();
+    let packs = stack();
+    let cx = StackCx::new(&options, &packs);
+    let load = LoadContext::detached();
+    let parsed: Vec<_> = embers().iter().map(|f| (EMBERS.parse)(f, &load)).collect();
+    assert_rejected_in_its_subpack(&parsed[1]);
+    let loaded = parsed[0].1.as_ref().expect("loads");
+    assert_eq!(loaded.origin().pack, pack(1));
+    assert_eq!(loaded.origin().side, PackSide::Resource, "the walked side");
+    let files = (EMBERS.combine)(parsed, &cx);
+    assert!(
+        files
+            .rejected()
+            .iter()
+            .any(|r| r.origin.path.as_str() == "subpacks/hd/embers.json"),
+        "the rejection is kept in its file"
+    );
+}
+
+#[test]
+fn merged_puts_a_failed_json_document_in_its_subpack_file() {
+    let options = LoadOptions::default();
+    let packs = stack();
+    let cx = StackCx::new(&options, &packs);
+    let load = LoadContext::detached();
+    let parsed: Vec<_> = embers()
+        .iter()
+        .map(|f| (ALL_EMBERS.parse)(f, &load))
+        .collect();
+    assert_rejected_in_its_subpack(&parsed[1]);
+    assert_eq!((ALL_EMBERS.combine)(parsed, &cx), (3, 1));
+}
+
+// ---- impl_no_molang! -----------------------------------------------------------------------
+
+#[test]
+fn impl_no_molang_states_a_struct_without_molang_fields() {
+    use bedrock_addon_core::molang::count_sources;
+    let mut ember = Ember {
+        heat: 1,
+        read_at: None,
+    };
+    assert_eq!(count_sources(&mut ember), 0);
+    let read = <Ember as Content>::parse(
+        &PackPath::from_static("embers.json"),
+        br#"{"format_version": "1.2.0", "demo:ember": {"heat": 1}}"#,
+        &LoadContext::detached(),
+    )
+    .expect("loads");
+    assert!(
+        !read
+            .diagnostics()
+            .iter()
+            .any(|d| matches!(d.code, DiagnosticCode::MolangNotChecked { .. })),
+        "nothing to check"
+    );
+}
+
+// ---- Single and Molang ---------------------------------------------------------------------
+
+/// A one-version struct with a Molang field.
+#[derive(Clone, Debug, PartialEq, Facet)]
+pub struct Beam {
+    pub condition: bedrock_addon_core::molang::Molang,
+}
+
+impl Versioned for Beam {
+    const VERSION: FormatVersion = FormatVersion::new(1, 0, 0);
+}
+
+impl VersionStruct for Beam {
+    fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
+        parse_payload(payload, cx, d)
+    }
+    fn write(&self) -> Result<Value, EncodeError> {
+        write_payload(self)
+    }
+}
+
+impl bedrock_addon_core::molang::MolangFields for Beam {
+    fn visit_molang(&mut self, visitor: &mut bedrock_addon_core::molang::MolangVisitor<'_>) {
+        visitor.field(
+            "condition",
+            &bedrock_addon_core::molang::MolangFieldSpec::DEFAULT,
+            &mut self.condition,
+        );
+    }
+}
+
+/// The beam family twice: by `version_chain!` and on `Single`.
+mod beam {
+    use super::*;
+
+    pub struct ByMacro;
+
+    bedrock_addon_core::version_chain! {
+        family = ByMacro;
+        pub enum Any {
+            V1_0_0(Beam),
+        }
+    }
+
+    pub struct OnSingle;
+
+    macro_rules! family {
+        ($family:ty, $any:ty) => {
+            impl Family for $family {
+                const NAME: &'static str = "beam";
+                const PAYLOAD_KEY: &'static str = "demo:beam";
+                const FLOOR: FormatVersion = FormatVersion::new(1, 0, 0);
+                type Latest = Beam;
+                type Beta = NoBeta<kind::Block>;
+                type Component = NoComponents;
+                type Any = $any;
+            }
+        };
+    }
+
+    family!(ByMacro, Any);
+    family!(OnSingle, bedrock_addon_core::versioning::Single<Self>);
+}
+
+#[test]
+fn single_walks_its_struct_for_molang_pass_two_as_a_chain_of_one_does() {
+    use bedrock_addon_core::versioning::{Single, VersionChain};
+    let text = r#"{"format_version": "1.0.0", "demo:beam": {"condition": "q.is_baby"}}"#;
+    let cx = LoadContext::detached();
+    let single = load::<beam::OnSingle>(JsonSlice::new(text), &cx);
+    let generated = load::<beam::ByMacro>(JsonSlice::new(text), &cx);
+    assert!(
+        single
+            .diagnostics
+            .iter()
+            .any(|d| matches!(d.code, DiagnosticCode::MolangNotChecked { .. })),
+        "pass 2 reached the condition: {:?}",
+        single.diagnostics
+    );
+    assert_eq!(single.diagnostics, generated.diagnostics);
+    // The walk itself: the struct, once.
+    let Some(mut loaded) = single.value else {
+        panic!("loads")
+    };
+    let mut visits = 0;
+    let mut sources = 0;
+    <Single<beam::OnSingle> as VersionChain<beam::OnSingle>>::with_molang(&mut loaded, &mut |f| {
+        visits += 1;
+        sources += bedrock_addon_core::molang::count_sources(f);
+    });
+    assert_eq!((visits, sources), (1, 1));
 }

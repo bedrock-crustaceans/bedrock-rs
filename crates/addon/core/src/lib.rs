@@ -11,8 +11,8 @@
 //!
 //! A public item of this crate has its path in the module it lives in (the `molang` module
 //! also re-exports the `molang` crate, whose items so have a second path). No type or
-//! function is re-exported at the crate root (the hidden macro `version_chain!` is exported
-//! there, as `#[macro_export]` places it). Modules, with the feature a part of one needs:
+//! function is re-exported at the crate root (the hidden macros `version_chain!` and
+//! `impl_no_molang!` are exported there, as `#[macro_export]` places them). Modules, with the feature a part of one needs:
 //!
 //! - `id`: typed identifiers (`Id<K>`, `Kind`, the `kind` markers and one alias per kind).
 //! - `version`: pack versions (`SemVersion`) and document versions (`FormatVersion`), the

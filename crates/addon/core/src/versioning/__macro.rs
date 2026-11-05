@@ -94,13 +94,13 @@ pub fn parse_selected_as<F: Family, C: VersionChain<F>>(
 
 /// A whole document in the struct's own version: the envelope around `payload`
 /// (`"format_version"` first, `"beta"` for the beta struct), or `payload` itself where the
-/// family reads the root struct from the whole text ([`write_document`](super::write_document)
+/// family reads the root struct from the whole text ([`write_envelope`](super::write_envelope)
 /// as text).
 pub fn document_json<F: Family>(
     version: FormatVersion,
     payload: &Value,
 ) -> Result<String, EncodeError> {
-    crate::json::to_json(&super::write_document::<F>(
+    crate::json::to_json(&super::write_envelope::<F>(
         version,
         payload.clone(),
         &crate::document::Extra::default(),

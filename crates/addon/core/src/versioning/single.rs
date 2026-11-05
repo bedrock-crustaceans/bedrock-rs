@@ -5,7 +5,7 @@ use std::fmt;
 use super::__macro::{parse_selected_as, parse_with};
 use super::{
     Family, Loaded, ParseCx, StructIndex, UpgradeCx, VersionChain, VersionStruct, Versioned,
-    write_document,
+    write_envelope,
 };
 use crate::diagnostic::Diagnostics;
 use crate::document::Extra;
@@ -20,11 +20,11 @@ use crate::version::FormatVersion;
 ///
 /// It reads and writes as that `version_chain!` does: `VERSIONS` is the newest struct's version,
 /// the struct is parsed with Molang pass 1, the Molang pass 2 walk visits it, and
-/// [`to_json`](Self::to_json) writes the document through [`write_document`].
+/// [`to_json`](Self::to_json) writes the document through [`write_envelope`].
 ///
 /// A chain of one declared `molang = none;` has its struct's empty `MolangFields` impl emitted by
-/// `version_chain!`; a family moving onto `Single` keeps that impl, written by hand beside the
-/// struct. Today's one-version chains that declare it: camera's list, spline and entity chains,
+/// `version_chain!`; a family moving onto `Single` keeps that impl with
+/// `bedrock_addon_core::impl_no_molang!(Struct);` beside the struct. Today's one-version chains that declare it: camera's list, spline and entity chains,
 /// aim assist's categories, jigsaw's structure, pool, structure set and processor list, DDUI's
 /// root and composition, POI's type and tag, and voxel shape.
 pub struct Single<F: Family>(pub F::Latest);
@@ -77,7 +77,7 @@ impl<F: Family> Single<F> {
     ///
     /// `EncodeError` when the struct has no JSON form.
     pub fn to_json(&self) -> Result<String, EncodeError> {
-        let document = write_document::<F>(
+        let document = write_envelope::<F>(
             self.parsed_version(),
             VersionStruct::write(&self.0)?,
             &Extra::default(),

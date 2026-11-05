@@ -272,10 +272,6 @@ macro_rules! version_chain {
 
     (@molang [] [ $($ty:ty,)* ]) => {};
     (@molang [ none ] [ $($ty:ty,)* ]) => {
-        $(
-            impl $crate::molang::MolangFields for $ty {
-                fn visit_molang(&mut self, _: &mut $crate::molang::MolangVisitor<'_>) {}
-            }
-        )*
+        $( $crate::impl_no_molang!($ty); )*
     };
 }

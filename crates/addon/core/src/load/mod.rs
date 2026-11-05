@@ -23,6 +23,8 @@ pub use collection::{
     Accept, AppDataPlace, CollectionLoader, Registered, Registration, Reported, StackCx, StackPack,
     Walk, WalkFile, WalkOrder, unread_files,
 };
+// The constructors a family's `LOADER` is built with: internal to the crate family, as the
+// loader machinery above is.
 #[doc(hidden)]
 pub use constructors::{FileCopy, files, merged, registry};
 pub use context::{BiomeRenderIdentifiers, DocumentSource, LoadContext};

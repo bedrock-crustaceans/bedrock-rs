@@ -355,3 +355,29 @@ pub(super) fn at(base: &Location, path: &JsonPath) -> Location {
         ..base.clone()
     }
 }
+
+/// The empty [`MolangFields`] impl of each struct named: a document struct with no Molang
+/// field, whose walk visits nothing.
+///
+/// A family's chain needs the impl for every struct in it, and `version_chain!` writes it for
+/// a chain declared `molang = none;`; a one-version family on `versioning::Single` has no
+/// macro to write it, so it names its struct here, beside the struct:
+///
+/// ```
+/// pub struct VoxelShape {
+///     pub identifier: String,
+/// }
+///
+/// bedrock_addon_core::impl_no_molang!(VoxelShape);
+/// ```
+#[doc(hidden)]
+#[macro_export]
+macro_rules! impl_no_molang {
+    ($($ty:ty),+ $(,)?) => {
+        $(
+            impl $crate::molang::MolangFields for $ty {
+                fn visit_molang(&mut self, _: &mut $crate::molang::MolangVisitor<'_>) {}
+            }
+        )+
+    };
+}

@@ -14,7 +14,8 @@ use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::FormatVersionInput;
 use bedrock_addon_core::versioning::{
-    Family, Identity, Loaded, ParseCx, Parsed, finish_file, parse_as_written, parse_file_as_written,
+    Family, Identity, Loaded, ParseCx, Parsed, beta_refused, finish, parse_as_written,
+    parse_file_as_written,
 };
 
 /// A family of this module: no beta struct, written back whole; its own texts for the generic
@@ -82,14 +83,20 @@ fn unreadable<F: FileFamily>(origin: Origin) -> Rejected {
     Rejected::new(origin, diagnostics)
 }
 
-/// The rest of the load of a parsed file, closed once by core's `finish_file`.
+/// The rest of the load of a parsed file, closed once. A beta document is refused as the
+/// blanket `Content::parse` refuses it (core's `beta_refused`), and the file closed as failed.
 fn finished<F: FileFamily>(
     parsed: Parsed<F>,
     document: Option<JsonSlice<'_>>,
     origin: Origin,
     cx: &LoadContext,
 ) -> Result<Document<F::Latest>, Rejected> {
-    let outcome = finish_file(parsed, document, &origin.path, cx);
+    let mut outcome = finish(parsed, cx);
+    if matches!(outcome.value, Some(Loaded::Beta(_))) {
+        outcome.diagnostics.push(beta_refused());
+    }
+    let failed = !matches!(outcome.value, Some(Loaded::Stable(_)));
+    <F as Family>::close(&mut outcome.diagnostics, document, &origin.path, failed);
     let mut diagnostics = outcome.diagnostics;
     locate(&mut diagnostics, &origin);
     match outcome.value {
@@ -426,5 +433,131 @@ mod source_version_tests {
         assert_eq!(version, FormatVersion::new(1, 21, 0));
         assert_eq!(SourceVersion::from(version), source);
         assert_eq!(source.version(), version);
+    }
+}
+
+#[cfg(test)]
+mod beta_tests {
+    use super::{FileFamily, parse_file};
+    use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, VanillaText};
+    use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
+    use bedrock_addon_core::load::LoadContext;
+    use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
+    use bedrock_addon_core::version::FormatVersion;
+    use bedrock_addon_core::versioning::{
+        BETA_VERSION, BetaPermission, Family, NoComponents, ParseCx, VersionStruct, Versioned,
+        parse_payload, write_payload,
+    };
+
+    #[derive(Clone, Debug, PartialEq, facet::Facet)]
+    struct Lamp {
+        level: u8,
+    }
+
+    impl Versioned for Lamp {
+        const VERSION: FormatVersion = FormatVersion::new(1, 0, 0);
+    }
+
+    impl VersionStruct for Lamp {
+        fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
+            parse_payload(payload, cx, d)
+        }
+        fn write(&self) -> Result<Value, EncodeError> {
+            write_payload(self)
+        }
+    }
+
+    #[derive(Clone, Debug, PartialEq, facet::Facet)]
+    struct LampBeta {
+        glow: bool,
+    }
+
+    impl Versioned for LampBeta {
+        const VERSION: FormatVersion = BETA_VERSION;
+    }
+
+    impl VersionStruct for LampBeta {
+        fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
+            parse_payload(payload, cx, d)
+        }
+        fn write(&self) -> Result<Value, EncodeError> {
+            write_payload(self)
+        }
+    }
+
+    struct LampFamily;
+
+    bedrock_addon_core::version_chain! {
+        family = LampFamily;
+        enum LampAny {
+            V1_0_0(Lamp),
+        }
+        beta = Beta(LampBeta);
+        molang = none;
+    }
+
+    impl Family for LampFamily {
+        const NAME: &'static str = "lamp";
+        const PAYLOAD_KEY: &'static str = "demo:lamp";
+        const FLOOR: FormatVersion = FormatVersion::new(1, 0, 0);
+        const BETA_PERMISSION: BetaPermission = BetaPermission::Always;
+        type Latest = Lamp;
+        type Beta = LampBeta;
+        type Component = NoComponents;
+        type Any = LampAny;
+
+        /// Records each close and whether the file failed.
+        fn close(
+            diagnostics: &mut Diagnostics,
+            _: Option<JsonSlice<'_>>,
+            _: &PackPath,
+            failed: bool,
+        ) {
+            diagnostics.push(Diagnostic::info(DiagnosticCode::DocumentRejected {
+                text: Some(VanillaText::Formatted {
+                    template: "closed, failed: {}",
+                    args: vec![failed.to_string()],
+                }),
+            }));
+        }
+    }
+
+    impl FileFamily for LampFamily {
+        fn document(value: &Lamp) -> Result<Value, EncodeError> {
+            value.write()
+        }
+    }
+
+    #[test]
+    fn a_beta_file_of_a_file_family_is_refused_and_closed_as_failed() {
+        let path = PackPath::from_static("lamps/sun.json");
+        let text = r#"{"format_version": "beta", "demo:lamp": {"glow": true}}"#;
+        let (_, document) = parse_file::<LampFamily>(
+            PackRef::app_data(),
+            PackSide::Behavior,
+            &path,
+            text.as_bytes(),
+            &LoadContext::detached(),
+        );
+        let rejected = document.expect_err("only the stable struct is written back");
+        let codes: Vec<_> = rejected
+            .diagnostics
+            .iter()
+            .map(|d| d.code.clone())
+            .collect();
+        assert!(
+            matches!(
+                codes.as_slice(),
+                [
+                    DiagnosticCode::UnsupportedVersion {
+                        text: Some(VanillaText::NoParserForVersion { version })
+                    },
+                    DiagnosticCode::DocumentRejected {
+                        text: Some(VanillaText::Formatted { args, .. })
+                    },
+                ] if version == "beta" && args[0] == "true"
+            ),
+            "the refusal, then one close as failed: {codes:?}"
+        );
     }
 }

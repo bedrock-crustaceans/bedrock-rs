@@ -3,8 +3,10 @@
 //! `parse_file` copies (`voxel_shape`, `block_culling`, `dimension`, `feature_rules`,
 //! `crafting_catalog`, `server_sound_definitions`, `particle`, support's `chain_file`).
 
-use super::{Family, Loaded, finish_file, parse_as_written, parse_file_as_written};
-use crate::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics};
+use std::fmt;
+
+use super::{Family, Loaded, finish, parse_as_written, parse_file_as_written};
+use crate::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, VanillaText};
 use crate::document::{Document, Origin, Rejected};
 use crate::json::Prepared;
 use crate::load::LoadContext;
@@ -28,35 +30,159 @@ fn unreadable<F: Family>(origin: Origin) -> Rejected {
     Rejected::located(origin, diagnostics)
 }
 
-/// Loads the file at `origin` of family `F`, upgraded to the newest struct and validated, and
-/// closed once ([`Family::close`], told whether the file failed). Gives the identifier the
-/// payload names (`Family::identity`), when it is a string, beside the document or its
-/// rejection, so that a registry can name the identifier a failed file claimed.
+/// What reading one file of family `F` gives ([`parse_document`],
+/// [`JsonDocument::read`](crate::document::JsonDocument::read)): the newest stable struct, the
+/// beta struct, or the rejection.
 ///
-/// A document of the beta struct is a rejection here: a family with a beta struct routes it
-/// itself.
+/// The stable document and the rejection are closed ([`Family::close`], once). The beta document
+/// is not closed yet ([`OpenBeta`]): whether it failed is the taker's to say, a registry keeping
+/// it ([`OpenBeta::keep`]) and the stable type's own `Content::parse` refusing it
+/// ([`OpenBeta::refuse`]).
+pub enum DocumentRead<F: Family> {
+    /// The file upgraded to the newest stable struct and validated.
+    Stable(Document<F::Latest>),
+    /// A beta document (`"format_version": "beta"`) the load allowed, with the identifier the
+    /// payload names (`Family::identity`), when it is a string.
+    Beta(Option<String>, OpenBeta<F>),
+    /// The rejection, with the identifier the payload names when the file got as far as its
+    /// envelope and version (`None` for a file that is no text or whose version is unreadable).
+    Rejected(Option<String>, Rejected),
+}
+
+impl<F: Family> DocumentRead<F> {
+    /// The stable document or the rejection: a beta document is refused
+    /// ([`OpenBeta::refuse`]), as a file kind with no beta struct of its own refuses it.
+    ///
+    /// # Errors
+    ///
+    /// `Rejected` for a rejected file or a beta one; it carries the located findings.
+    pub fn stable(self) -> Result<Document<F::Latest>, Rejected> {
+        match self {
+            Self::Stable(document) => Ok(document),
+            Self::Beta(_, beta) => Err(beta.refuse()),
+            Self::Rejected(_, rejected) => Err(rejected),
+        }
+    }
+}
+
+/// Prints the variant and the document's origin, without a `Debug` bound on the structs.
+impl<F: Family> fmt::Debug for DocumentRead<F> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Stable(document) => f.debug_tuple("Stable").field(document.origin()).finish(),
+            Self::Beta(id, beta) => f
+                .debug_tuple("Beta")
+                .field(id)
+                .field(beta.document.origin())
+                .finish(),
+            Self::Rejected(id, rejected) => f
+                .debug_tuple("Rejected")
+                .field(id)
+                .field(&rejected.origin)
+                .finish(),
+        }
+    }
+}
+
+/// A beta document read and not yet closed: [`keep`](Self::keep) closes it as loaded,
+/// [`refuse`](Self::refuse) and [`reject`](Self::reject) as failed. Either closes it once; the file's text is gone by then,
+/// so the close is told no text (`document: None`).
+pub struct OpenBeta<F: Family> {
+    document: Document<F::Beta>,
+}
+
+impl<F: Family> OpenBeta<F> {
+    /// The document, as read.
+    pub fn document(&self) -> &Document<F::Beta> {
+        &self.document
+    }
+
+    /// Adds a finding before the close (a family's `read` wrapping the default), put in the
+    /// document's file.
+    pub fn push(&mut self, finding: Diagnostic) {
+        let origin = self.document.origin().clone();
+        let diagnostics = self.document.diagnostics_mut();
+        diagnostics.push(finding);
+        diagnostics.locate(&origin);
+    }
+
+    /// The document kept (a registry's beta contribution), closed as loaded.
+    pub fn keep(mut self) -> Document<F::Beta> {
+        self.close(false);
+        self.document
+    }
+
+    /// The document refused, as a file kind with no beta struct refuses it: "no parser
+    /// available" for the version `beta` ([`beta_refused`]), then the close as failed.
+    pub fn refuse(mut self) -> Rejected {
+        self.document.diagnostics_mut().push(beta_refused());
+        self.reject()
+    }
+
+    /// The document rejected for a reason the taker told first ([`push`](Self::push)), closed
+    /// as failed.
+    pub fn reject(mut self) -> Rejected {
+        self.close(true);
+        let (_, origin, _, diagnostics) = self.document.into_parts();
+        Rejected::located(origin, diagnostics)
+    }
+
+    fn close(&mut self, failed: bool) {
+        let origin = self.document.origin().clone();
+        let diagnostics = self.document.diagnostics_mut();
+        F::close(diagnostics, None, &origin.path, failed);
+        diagnostics.locate(&origin);
+    }
+}
+
+/// The finding of a beta document read by a file kind with no beta struct: the game's
+/// versioned loader has no parser for the version `beta` (`VanillaText::NoParserForVersion`).
+pub fn beta_refused() -> Diagnostic {
+    Diagnostic::error(DiagnosticCode::UnsupportedVersion {
+        text: Some(VanillaText::NoParserForVersion {
+            version: "beta".to_owned(),
+        }),
+    })
+}
+
+/// Loads the file at `origin` of family `F`, upgraded to the newest struct and validated: a
+/// stable document or a rejection closed once ([`Family::close`], told whether the file
+/// failed), or a beta document left open for its taker to close ([`DocumentRead`]). Every
+/// finding is put in the file's pack and path.
 pub fn parse_document<F: Family>(
     origin: Origin,
     bytes: &[u8],
     cx: &LoadContext,
-) -> (Option<String>, Result<Document<F::Latest>, Rejected>) {
+) -> DocumentRead<F> {
     // The BOM is blanked, not cut, so every span is an offset into the file as written.
     let Ok(prepared) = Prepared::new(bytes) else {
-        return (None, Err(unreadable::<F>(origin)));
+        return DocumentRead::Rejected(None, unreadable::<F>(origin));
     };
     let document = prepared.slice();
     let parsed = parse_as_written::<F>(document, cx);
     let identifier = parsed.identity.identifier.clone();
-    let outcome = finish_file(parsed, Some(document), &origin.path, cx);
+    let outcome = finish(parsed, cx);
     let mut diagnostics = outcome.diagnostics;
-    diagnostics.locate(&origin);
-    let document = match outcome.value {
+    match outcome.value {
         Some(Loaded::Stable(value)) => {
-            Ok(Document::new(value, origin, outcome.version, diagnostics))
+            F::close(&mut diagnostics, Some(document), &origin.path, false);
+            diagnostics.locate(&origin);
+            DocumentRead::Stable(Document::new(value, origin, outcome.version, diagnostics))
         }
-        Some(Loaded::Beta(_)) | None => Err(Rejected::new(origin, diagnostics)),
-    };
-    (identifier, document)
+        Some(Loaded::Beta(value)) => {
+            diagnostics.locate(&origin);
+            DocumentRead::Beta(
+                identifier,
+                OpenBeta {
+                    document: Document::new(value, origin, outcome.version, diagnostics),
+                },
+            )
+        }
+        None => {
+            F::close(&mut diagnostics, Some(document), &origin.path, true);
+            DocumentRead::Rejected(identifier, Rejected::located(origin, diagnostics))
+        }
+    }
 }
 
 /// The struct the file's `format_version` selects, not upgraded, for the file `path` read on

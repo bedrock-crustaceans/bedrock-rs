@@ -1,4 +1,4 @@
-//! The envelope of a written document ([`write_document`]): the one place a family's writer
+//! The envelope of a written document ([`write_envelope`]): the one place a family's writer
 //! spells `"format_version"`.
 
 use facet_value::VObject;
@@ -18,12 +18,14 @@ use crate::version::FormatVersion;
 /// [`Value`].
 ///
 /// The envelopes the families build by hand today that are this shape, version first, one
-/// payload key, then the root extras: `voxel_shape`, `feature_rules`, dimension (`root_extra`
-/// after), `block_culling`, fog (behind its pre-write refusal), trade (the cereal branch),
-/// `crafting_catalog`, `texture_set`, particle, biome, `client_biome` (`root_extra` after), item,
-/// entity (`"beta"` for the beta struct), block (both writers), attachable and `client_entity`
-/// (two copies each), the generic copy of camera, jigsaw, poi and `deferred_settings`, support's
-/// `chain_file::document`, ddui (two copies) and `atomic_client_entity`. Recipe (the key per
+/// payload key, then the root extras: `voxel_shape`, `feature_rules`, `block_culling`, fog
+/// (behind its pre-write refusal), trade (the cereal branch), `crafting_catalog`, `texture_set`,
+/// particle, biome, `client_biome` (`root_extra` after), item, entity (`"beta"` for the beta
+/// struct), block (both writers), the generic copy of camera, jigsaw, poi and
+/// `deferred_settings`, support's `chain_file::document`, ddui (two copies) and
+/// `atomic_client_entity`. Dimension, attachable and `client_entity` read their root struct
+/// from the whole text (`EnvelopeCheck::Never`): the struct writes its own envelope, version and
+/// root members included, and this returns it unchanged. Recipe (the key per
 /// recipe kind, the version member left out when there is none), the spawn legacy writer (an
 /// optional version), dialogue (the version as written) and feature (the key per feature type)
 /// are the shape but not of one family's `PAYLOAD_KEY`, or not always with a version.
@@ -34,7 +36,7 @@ use crate::version::FormatVersion;
 /// (`format_version` is a passthrough member), `blocks_json` (the version among the block keys),
 /// persona (an optional envelope) and `sound_definitions` (its upgrade steps edit the document in
 /// place).
-pub fn write_document<F: Family>(version: FormatVersion, payload: Value, extras: &Extra) -> Value {
+pub fn write_envelope<F: Family>(version: FormatVersion, payload: Value, extras: &Extra) -> Value {
     if raw_text::<F>(version) {
         return payload;
     }
