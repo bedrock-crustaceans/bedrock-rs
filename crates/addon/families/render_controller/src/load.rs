@@ -9,7 +9,7 @@ use super::{RenderController, RenderControllerFile};
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Phase, Severity};
 use bedrock_addon_core::document::{
     CombineRule, Content, Contribution, Definition, Document, JsonContent, NoBeta, Notice, Origin,
-    Placed, Registry, RegistryBuilder, Rejected, VersionInfo, default_path,
+    PackTie, Placed, Registry, RegistryBuilder, Rejected, VersionInfo, default_path,
 };
 use bedrock_addon_core::id::{RenderControllerId, kind};
 use bedrock_addon_core::json::{EncodeError, WriteStyle};
@@ -187,6 +187,11 @@ fn parse_walk_file(file: &WalkFile, cx: &LoadContext) -> FileContribution {
 /// `RenderControllerShadowed` (the crate's own note; the game replaces silently), and a controller
 /// that failed above one that loaded with `RenderControllerFallback`.
 fn combine(parsed: Vec<FileContribution>, stack: &StackCx<'_>) -> Registry<RenderController> {
+    // The crate's own note: the game replaces silently.
+    let shadowed_notice = Notice {
+        code: DiagnosticCode::RenderControllerShadowed,
+        severity: Severity::Info,
+    };
     let mut builder = RegistryBuilder::new(
         CombineRule::TopWinsFallback {
             fallback: Some(Notice {
@@ -194,7 +199,10 @@ fn combine(parsed: Vec<FileContribution>, stack: &StackCx<'_>) -> Registry<Rende
                 // The game keeps the lower one silently, so this is the crate's own information.
                 severity: Severity::Info,
             }),
-        },
+        }
+        // Inside one pack the controller loaded last replaces the earlier ones of its name (the
+        // walk gives a pack's files in path order), each replaced one noted.
+        .within_pack(PackTie::last(Some(shadowed_notice))),
         CombineRule::top_wins(),
         stack.options,
     );
@@ -203,17 +211,6 @@ fn combine(parsed: Vec<FileContribution>, stack: &StackCx<'_>) -> Registry<Rende
             .phase(Phase::Validate)
             .in_file(origin)
     };
-    // Inside one pack the controller loaded last replaces the earlier ones of its name (the
-    // walk gives a pack's files in path order): how many definitions each pack has of each
-    // name, so that every one but the last is noted and left out.
-    let mut remaining: IndexMap<(Option<usize>, RenderControllerId), usize> = IndexMap::new();
-    for contribution in parsed.iter().flat_map(|file| &file.contributions) {
-        if let Contribution::Stable(id, document) = contribution {
-            *remaining
-                .entry((document.origin().pack.index(), id.clone()))
-                .or_insert(0) += 1;
-        }
-    }
     // A file of the directory that is no `.json` file, from the packs' file lists: the game
     // skips it without a word, so this is the crate's own information.
     for (pack, ignored) in
@@ -224,7 +221,8 @@ fn combine(parsed: Vec<FileContribution>, stack: &StackCx<'_>) -> Registry<Rende
             Diagnostic::info(DiagnosticCode::IgnoredFile { text: None }).in_file(&file),
         );
     }
-    // The effective definition of each name so far, to note the one a higher pack replaces.
+    // The effective definition of each name so far, to note the one a higher pack replaces
+    // (one of the same pack is the tie's to note).
     let mut effective: IndexMap<RenderControllerId, Origin> = IndexMap::new();
     for file in parsed {
         for finding in file.findings {
@@ -233,21 +231,10 @@ fn combine(parsed: Vec<FileContribution>, stack: &StackCx<'_>) -> Registry<Rende
         for contribution in file.contributions {
             if let Contribution::Stable(id, document) = &contribution {
                 let incoming = document.origin().clone();
-                let left = remaining
-                    .get_mut(&(incoming.pack.index(), id.clone()))
-                    .map_or(0, |left| {
-                        *left -= 1;
-                        *left
-                    });
-                if left > 0 {
-                    // A later controller of this pack replaces this one.
-                    for finding in document.diagnostics().iter().cloned() {
-                        builder.push_diagnostic(finding);
-                    }
-                    builder.push_diagnostic(shadowed(&incoming));
-                    continue;
-                }
-                if let Some(lower) = effective.insert(id.clone(), incoming) {
+                let pack = incoming.pack.index();
+                if let Some(lower) = effective.insert(id.clone(), incoming)
+                    && lower.pack.index() != pack
+                {
                     builder.push_diagnostic(shadowed(&lower));
                 }
             }

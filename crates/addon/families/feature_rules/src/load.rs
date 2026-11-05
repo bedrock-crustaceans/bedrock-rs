@@ -10,9 +10,9 @@ use bedrock_addon_core::diagnostic::{
 };
 use bedrock_addon_core::document::{
     CombineRule, Content, Contribution, Definition, Document, JsonContent, NoBeta, Notice, Origin,
-    Placed, RegistryBuilder, Rejected, default_path,
+    PackTie, Placed, RegistryBuilder, Rejected, default_path,
 };
-use bedrock_addon_core::id::{FeatureRuleId, kind};
+use bedrock_addon_core::id::kind;
 use bedrock_addon_core::json::{EncodeError, Prepared, WriteStyle};
 use bedrock_addon_core::load::{
     AppDataPlace, CollectionLoader, LoadContext, StackCx, Walk, WalkFile,
@@ -22,7 +22,7 @@ use bedrock_addon_core::versioning::{
     ErrorMask, Family, InputKind, Loaded, MissingVersion, NoComponents, StructIndex, ValidateCx,
     finish, parse_as_written,
 };
-use bedrock_addon_support::puv::{puv_below_floor, shadowed};
+use bedrock_addon_support::puv::puv_below_floor;
 
 /// The feature-rule family of the version-chain machinery.
 #[derive(Clone, Copy, Debug)]
@@ -207,15 +207,16 @@ fn parse_walk_file(file: &WalkFile, cx: &LoadContext) -> Contribution<FeatureRul
 /// The group: one registry per pass, the first rule of a `(pass, identifier)` pair in walk
 /// order effective. Across packs the registry's `TopWins` decides (the walk is
 /// top-down, so it is the first one) and shadows the lower with `ShadowedDefinition`; within one
-/// pack (or the app data) the later file is dropped here with the same notice, where `TopWins`
-/// would keep the later one: the game looks the identifier up in the pass's bucket and a
-/// found one drops the new rule.
+/// pack (or the app data) the tie keeps the first file and shadows the later one with the same
+/// notice, where `TopWins` alone would keep the later one: the game looks the identifier up in
+/// the pass's bucket and a found one drops the new rule.
 fn combine(parsed: Vec<Contribution<FeatureRule>>, stack: &StackCx<'_>) -> FeatureRules {
     let builder = || {
         RegistryBuilder::new(
             CombineRule::TopWins {
                 shadowed: Some(Notice::shadowed()),
-            },
+            }
+            .within_pack(PackTie::first(Some(Notice::shadowed()))),
             CombineRule::top_wins(),
             stack.options,
         )
@@ -223,25 +224,12 @@ fn combine(parsed: Vec<Contribution<FeatureRule>>, stack: &StackCx<'_>) -> Featu
     let mut passes: Vec<RegistryBuilder<FeatureRule>> =
         PlacementPass::ALL.iter().map(|_| builder()).collect();
     let mut unknown: IndexMap<String, RegistryBuilder<FeatureRule>> = IndexMap::new();
-    let mut first: IndexMap<(String, FeatureRuleId), Option<usize>> = IndexMap::new();
     let mut rejected = Vec::new();
     let mut diagnostics = Diagnostics::default();
     for contribution in parsed {
         match contribution {
             Contribution::Stable(id, document) => {
                 let pass = document.conditions.placement_pass.0.clone();
-                let pack = document.origin().pack.index();
-                match first.get(&(pass.clone(), id.clone())) {
-                    Some(&claimed) if claimed == pack => {
-                        diagnostics.extend(document.diagnostics().iter().cloned());
-                        diagnostics.push(shadowed(document.origin()));
-                        continue;
-                    }
-                    Some(_) => {}
-                    None => {
-                        first.insert((pass.clone(), id.clone()), pack);
-                    }
-                }
                 let target = match PlacementPass::from_name(&pass) {
                     Some(known) => &mut passes[known as usize],
                     None => unknown.entry(pass).or_insert_with(builder),

@@ -10,13 +10,13 @@ use super::texts::{
 use super::{FLOOR, FogSettings, LATEST, rules};
 use crate::history::{Any, FogFamily};
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, VanillaText,
 };
 use bedrock_addon_core::document::{
     CombineRule, Content, Contribution, Definition, Document, JsonContent, NoBeta, Notice, Origin,
-    Placed, Registry, RegistryBuilder, Rejected, VersionInfo, default_path,
+    PackTie, Placed, Registry, RegistryBuilder, Rejected, VersionInfo, default_path,
 };
-use bedrock_addon_core::id::{FogId, kind};
+use bedrock_addon_core::id::kind;
 use bedrock_addon_core::json::{
     EncodeError, EnvelopeVersion, JsonSlice, MAX_JSON_DEPTH, PrepareError, Prepared, Value,
     WriteStyle, blank_bom, check_depth, last_wins, parse_at, probe_envelope,
@@ -29,7 +29,6 @@ use bedrock_addon_core::versioning::{
     EnvelopeCheck, Family, Identity, Loaded, MissingVersion, NoComponents, ParseCx, Parsed,
     RangeModel, StructIndex, VersionChain, finish, parse_as_written,
 };
-use indexmap::IndexSet;
 
 impl Family for FogFamily {
     const NAME: &'static str = "fog";
@@ -403,45 +402,21 @@ fn parse_walk_file(file: &WalkFile, cx: &LoadContext) -> Contribution<FogSetting
 }
 
 /// The registry: per identifier the highest pack's definition; each lower one is noted with
-/// `ShadowedDefinition` at info (ours; the game skips it silently). A file that failed
-/// registers nothing, so a lower pack's definition of its identifier still does.
+/// `ShadowedDefinition` at info (ours; the game skips it silently). Inside one pack the first
+/// file to register an identifier keeps it too (the walk gives a pack's files in path order):
+/// a later one is noted with the same info and keeps the findings of its parse, which the
+/// game ran before it looked the identifier up. A file that failed registers nothing, so a
+/// lower pack's definition of its identifier still does.
 fn combine(parsed: Vec<Contribution<FogSettings>>, stack: &StackCx<'_>) -> Registry<FogSettings> {
-    let mut builder = RegistryBuilder::new(
+    RegistryBuilder::combine(
+        parsed,
         CombineRule::TopWins {
             shadowed: Some(Notice::shadowed()),
-        },
+        }
+        .within_pack(PackTie::first(Some(Notice::shadowed()))),
         CombineRule::top_wins(),
         stack.options,
-    );
-    // Inside one pack the first file to register an identifier keeps it too (the walk gives a
-    // pack's files in path order): a later one is skipped with the same info, and keeps the
-    // findings of its parse, which the game ran before it looked the identifier up.
-    let mut registered: IndexSet<(Option<usize>, FogId)> = IndexSet::new();
-    for contribution in parsed {
-        if let Contribution::Stable(id, document) = &contribution {
-            let origin = document.origin();
-            if !registered.insert((origin.pack.index(), id.clone())) {
-                for finding in document.diagnostics().iter().cloned() {
-                    builder.push_diagnostic(finding);
-                }
-                let notice = Notice::shadowed();
-                builder.push_diagnostic(Diagnostic::new(
-                    notice.code,
-                    notice.severity,
-                    Phase::Validate,
-                    Location::new(
-                        Some(origin.pack.clone()),
-                        Some(origin.path.clone()),
-                        JsonPath::new(),
-                        None,
-                    ),
-                ));
-                continue;
-            }
-        }
-        builder.push(contribution);
-    }
-    builder.finish()
+    )
 }
 
 /// The loader of `rp.fogs()`: `fogs/*.json` of every resource pack, the highest pack's

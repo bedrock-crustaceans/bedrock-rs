@@ -263,6 +263,75 @@ fn every_finding_names_its_pack_and_file() {
     );
 }
 
+/// What the stack keeps of a rule written twice in one pack, beside a lower pack's copy and a
+/// file that fails: the layers of `x` in its pass under `keep_shadowed`, and every finding of
+/// the group in order, each as (code, pack, path).
+#[test]
+fn rule_10_what_the_group_keeps_of_a_rule_written_twice_in_one_pack() {
+    let top = bp(1)
+        .file(
+            "feature_rules/a/x.json",
+            rule!("x", "surface_pass", "demo:first"),
+        )
+        // The stem is not the identifier's name: a kept error of the copy that loses.
+        .file(
+            "feature_rules/b/y.json",
+            rule!("x", "surface_pass", "demo:second"),
+        )
+        .file("feature_rules/c/broken.json", b"{")
+        .open();
+    let bottom = bp(2)
+        .file(
+            "feature_rules/x.json",
+            rule!("x", "surface_pass", "demo:low"),
+        )
+        .open();
+    let options = LoadOptions {
+        keep_shadowed: true,
+        ..LoadOptions::default()
+    };
+    let stack = PackStack::<Behavior>::of([top, bottom], options).unwrap();
+    let rules = stack.feature_rules();
+    let place = |pack: &bedrock_addon::pack::PackRef, path: &PackPath| {
+        format!("{} {}", pack.name(), path.as_str())
+    };
+    let layers: Vec<String> = rules
+        .pass(PlacementPass::Surface)
+        .layers(&id("x"))
+        .map(|document| place(&document.origin().pack, &document.origin().path))
+        .collect();
+    // The copy the tie drops is kept as shadowed, beside the lower pack's.
+    assert_eq!(
+        layers,
+        [
+            "bp 1 feature_rules/a/x.json",
+            "bp 1 feature_rules/b/y.json",
+            "bp 2 feature_rules/x.json",
+        ]
+    );
+    let findings: Vec<String> = rules
+        .diagnostics()
+        .map(|finding| {
+            let at = match (&finding.location.pack, &finding.location.path) {
+                (Some(pack), Some(path)) => place(pack, path),
+                _ => String::new(),
+            };
+            format!("{} {at}", finding.code.name())
+        })
+        .collect();
+    assert_eq!(
+        findings,
+        // The failed files' findings first, then the pass's registry: the dropped copy's
+        // findings and its notice are the registry's now, in walk order.
+        [
+            "MalformedInput bp 1 feature_rules/c/broken.json",
+            "InvalidValue bp 1 feature_rules/b/y.json",
+            "ShadowedDefinition bp 1 feature_rules/b/y.json",
+            "ShadowedDefinition bp 2 feature_rules/x.json",
+        ]
+    );
+}
+
 /// Every finding of `findings` names the pack `pack` and one of `files`, and each of `files`
 /// has one: the loader gives each finding its document's pack and file (phase 1 step 4 pin).
 fn assert_in_files<'a>(

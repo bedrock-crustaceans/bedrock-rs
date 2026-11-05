@@ -393,11 +393,12 @@ fn the_layers_of_a_name_defined_twice_in_a_pack() {
         .layers(&id("controller.render.cow"))
         .map(|d| (d.origin().pack.index(), d.origin().path.as_str()))
         .collect();
-    // Today the earlier file of the top pack is left out before the registry sees it.
+    // The pack's earlier file is the tie's loser, kept as a layer.
     assert_eq!(
         layers,
         [
             (Some(0), "render_controllers/b.json"),
+            (Some(0), "render_controllers/a.json"),
             (Some(1), "render_controllers/c.json"),
         ]
     );
@@ -417,8 +418,8 @@ fn the_layers_of_a_name_defined_twice_in_a_pack() {
     assert_eq!(
         shadowed,
         [
-            (Some(0), "render_controllers/a.json"),
             (Some(1), "render_controllers/c.json"),
+            (Some(0), "render_controllers/a.json"),
         ]
     );
 }

@@ -382,8 +382,8 @@ fn s01_three_files_of_one_pack_and_a_lower_pack() {
     );
 }
 
-/// A lower pack's definition is the registry's to shadow (it stays in the identifier's layers);
-/// only a later file of the same pack is settled before the registry sees it.
+/// A lower pack's definition is the registry's to shadow, and so is a later file of the same
+/// pack: both stay in the identifier's layers, behind the effective one, in walk order.
 #[test]
 fn s01_a_lower_pack_s_definition_stays_a_layer() {
     let fog = doc("1.26.20", "");
@@ -408,6 +408,7 @@ fn s01_a_lower_pack_s_definition_stays_a_layer() {
         layers,
         [
             (Some(0), "fogs/a.json".to_owned()),
+            (Some(0), "fogs/b.json".to_owned()),
             (Some(1), "fogs/a.json".to_owned())
         ]
     );
