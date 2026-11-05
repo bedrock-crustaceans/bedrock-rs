@@ -53,6 +53,11 @@ impl Typed for WitherTargetHighestDamage {
 }
 
 /// A goal's control flag: what the goal takes control of while it runs.
+///
+/// The names of [`goal::ControlFlag`](crate::goal::ControlFlag), but read by facet's enum: a
+/// strict read tells an unknown name as `InvalidEnumValue` at the list (or at the element
+/// before it), where the goal's tells `InvalidType` at the element; `tests/entity/descriptors.rs`
+/// pins both.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Facet, Schema)]
 #[repr(u8)]
 #[non_exhaustive]
@@ -68,36 +73,10 @@ pub enum ControlFlag {
     Jump,
 }
 
-/// The `entity_types` of a targeting goal: one mob descriptor or an array of them.
-#[derive(Clone, Debug, PartialEq, Facet)]
-#[facet(untagged)]
-#[repr(u8)]
-#[allow(
-    clippy::large_enum_variant,
-    reason = "unboxed so the unknown-member walk keeps the object form's members"
-)]
-pub enum EntityTypes {
-    /// An array of descriptors.
-    Many(Vec<MobDescriptor>),
-    /// One descriptor, written as an object.
-    One(MobDescriptor),
-}
-
-impl Default for EntityTypes {
-    fn default() -> Self {
-        Self::Many(Vec::new())
-    }
-}
+/// The `entity_types` of a targeting goal: one [`MobDescriptor`] or an array of them.
+pub type EntityTypes = crate::EntityTypesOf<MobDescriptor>;
 
 impl EntityTypes {
-    /// The descriptors, in order.
-    pub fn as_slice(&self) -> &[MobDescriptor] {
-        match self {
-            Self::Many(list) => list,
-            Self::One(one) => std::slice::from_ref(one),
-        }
-    }
-
     /// The findings of every descriptor's filters, under `at`.
     pub(crate) fn check(
         &self,
@@ -116,6 +95,13 @@ impl EntityTypes {
 }
 
 /// Which entities a goal applies to, and how (the game's mob descriptor).
+///
+/// [`goal::MobDescriptor`](crate::goal::MobDescriptor) is the same descriptor read differently,
+/// kept apart until a capture settles it: here the members are plain with their defaults, which
+/// are written back, and `must_see_forget_duration` is an `i32` (2.5 is refused, and a lenient
+/// read drops the whole descriptor); the goal's is an `f32`, the type the game's schema gives
+/// the goal member. No capture has the member inside a descriptor (`zombie_nautilus.json` has
+/// it as a `nearest_attackable_target` member, `17`). `tests/entity/descriptors.rs` pins both.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct MobDescriptor {

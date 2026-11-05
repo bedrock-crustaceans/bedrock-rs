@@ -32,6 +32,7 @@ pub(crate) use trigger_fields;
 
 pub mod component;
 mod dynamic;
+mod entity_types;
 #[allow(
     dead_code,
     reason = "the schema tables hold rows that only some of the readers use"
@@ -57,6 +58,7 @@ pub use network::actor_identifiers;
 #[doc(hidden)]
 pub use write::component as component_json;
 
+pub use entity_types::EntityTypes as EntityTypesOf;
 pub use types::{
     AnimateEntry, Beta, Brain, ComponentGroup, DeprecatedData, Description, Entity, EntityVersion,
     Event, InternalMemoryAccess, Memory, MemoryType, Property, PropertyDefault, PropertyType,

@@ -279,7 +279,7 @@ fn swim_with_entity_takes_one_descriptor_or_a_list() {
     );
     assert!(matches!(
         g.expect("kept").entity_types,
-        Some(goal::EntityTypes::List(_))
+        Some(goal::EntityTypes::Many(_))
     ));
 }
 

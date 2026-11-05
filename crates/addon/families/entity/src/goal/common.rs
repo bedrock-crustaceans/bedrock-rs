@@ -129,6 +129,11 @@ macro_rules! names {
 names! {
     /// One entry of a goal's `control_flags`: what the goal claims while it runs, so goals
     /// that claim the same flag do not run together. The game names these flags.
+    ///
+    /// [`component::ControlFlag`](crate::component::ControlFlag) has the same names but tells
+    /// an unknown one differently in a strict read (`InvalidEnumValue` at the list, where this
+    /// one tells `InvalidType` at the element), so the two stay apart;
+    /// `tests/entity/descriptors.rs` pins both.
     pub enum ControlFlag ("a control flag name", exact) {
         /// `move`: the goal moves the mob.
         Move = "move",
@@ -669,55 +674,18 @@ impl TryFrom<&Vec2> for Value {
     }
 }
 
-/// `entity_types`: the mobs a goal reacts to, one descriptor or a list of them (vanilla
-/// `EntityTypes`, read as a list and also as a single descriptor).
-#[derive(Clone, Debug, PartialEq, Facet)]
-#[facet(untagged)]
-#[repr(u8)]
-#[allow(
-    clippy::large_enum_variant,
-    reason = "unknown members behind a `Box` are not kept for write-back (they are reported, nothing is written back)"
-)]
-pub enum EntityTypes {
-    /// `[descriptor, …]`.
-    List(Vec<MobDescriptor>),
-    /// A single descriptor object.
-    One(MobDescriptor),
-}
-
-impl Default for EntityTypes {
-    /// The empty list.
-    fn default() -> Self {
-        Self::List(Vec::new())
-    }
-}
-
-impl EntityTypes {
-    /// The descriptors, in document order.
-    pub fn as_slice(&self) -> &[MobDescriptor] {
-        match self {
-            Self::List(list) => list,
-            Self::One(one) => std::slice::from_ref(one),
-        }
-    }
-
-    /// The descriptors, in document order.
-    pub fn iter(&self) -> std::slice::Iter<'_, MobDescriptor> {
-        self.as_slice().iter()
-    }
-}
-
-impl<'a> IntoIterator for &'a EntityTypes {
-    type Item = &'a MobDescriptor;
-    type IntoIter = std::slice::Iter<'a, MobDescriptor>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.iter()
-    }
-}
+/// `entity_types` of a goal: one [`MobDescriptor`] or a list of them.
+pub type EntityTypes = crate::EntityTypesOf<MobDescriptor>;
 
 /// One entry of `entity_types`: which mobs match (`filters`) and how the goal treats them.
 /// This is the game's mob descriptor.
+///
+/// [`component::MobDescriptor`](crate::component::MobDescriptor) is the same descriptor read
+/// differently, kept apart until a capture settles it: here every member is an `Option` and
+/// only what was read is written back, and `must_see_forget_duration` is an `f32` (2.5 reads),
+/// as the game's schema types the goal member; the component's is an `i32` with its defaults
+/// written back. No capture has the member inside a descriptor (`zombie_nautilus.json` has it
+/// as a `nearest_attackable_target` member, `17`). `tests/entity/descriptors.rs` pins both.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct MobDescriptor {
@@ -769,7 +737,7 @@ impl MobDescriptor {
 pub(crate) fn check_entity_types(c: &mut GoalCheck<'_>, key: &str, types: Option<&EntityTypes>) {
     let Some(types) = types else { return };
     let mut at = c.path(key);
-    let list = matches!(types, EntityTypes::List(_));
+    let list = matches!(types, EntityTypes::Many(_));
     let mut found = Diagnostics::default();
     for (i, descriptor) in types.as_slice().iter().enumerate() {
         if list {
@@ -912,7 +880,7 @@ mod tests {
 
     #[test]
     fn entity_types_iterate_in_document_order() {
-        let two = EntityTypes::List(vec![MobDescriptor::default(), MobDescriptor::default()]);
+        let two = EntityTypes::Many(vec![MobDescriptor::default(), MobDescriptor::default()]);
         assert_eq!(two.iter().count(), 2);
         assert_eq!((&two).into_iter().count(), 2);
         let one = EntityTypes::One(MobDescriptor::default());

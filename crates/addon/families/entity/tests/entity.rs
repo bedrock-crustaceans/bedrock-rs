@@ -49,3 +49,6 @@ mod component;
 
 #[path = "entity/engine.rs"]
 mod engine;
+
+#[path = "entity/descriptors.rs"]
+mod descriptors;
