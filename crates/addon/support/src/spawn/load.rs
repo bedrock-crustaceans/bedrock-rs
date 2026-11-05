@@ -107,6 +107,29 @@ pub fn load_family<F: Family, T>(
     (identifier, result)
 }
 
+/// One family's parse of `text` as written: the struct its `format_version` selects, not
+/// upgraded or validated, located as [`load_family`] locates it.
+pub fn load_family_as_written<F: Family>(
+    text: &str,
+    cx: &LoadContext,
+    origin: &Origin,
+) -> (Option<String>, Result<Document<F::Any>, Rejected>) {
+    let parsed = parse_as_written::<F>(JsonSlice::new(text), cx);
+    let identifier = parsed.identity.identifier.clone();
+    let mut diagnostics = parsed.diagnostics;
+    locate(&mut diagnostics, origin);
+    let result = match parsed.value {
+        Some(value) => Ok(Document::new(
+            value,
+            origin.clone(),
+            parsed.version,
+            diagnostics,
+        )),
+        None => Err(Rejected::new(origin.clone(), diagnostics)),
+    };
+    (identifier, result)
+}
+
 /// Loads one spawn file of either kind: the shared steps before and after the family's load.
 pub fn load_file<T>(
     origin: &Origin,

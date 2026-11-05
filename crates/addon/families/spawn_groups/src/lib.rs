@@ -16,7 +16,8 @@ pub use bedrock_addon_support::spawn::{
 
 use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::document::{
-    JsonDefinition, JsonDocument, JsonPlaced, NoBeta, Origin, Registry, default_path,
+    Document, JsonDefinition, JsonDocument, JsonPlaced, NoBeta, Origin, Registry, Rejected,
+    default_path,
 };
 use bedrock_addon_core::id::SpawnGroupId;
 use bedrock_addon_core::id::kind;
@@ -30,7 +31,7 @@ use bedrock_addon_core::versioning::{
 };
 use bedrock_addon_support::spawn::legacy::{GROUPS_KEY, V1_8_0};
 use bedrock_addon_support::spawn::load::{
-    FileLoad, Parsed, combine, contribution, load_family, load_file, origin,
+    FileLoad, Parsed, combine, contribution, load_family, load_family_as_written, load_file, origin,
 };
 
 /// A raid spawn group (`minecraft:spawn_groups`): the conditions the server spawns as one batch
@@ -160,6 +161,21 @@ impl JsonDocument for SpawnGroup {
             Err(rejected) => DocumentRead::Rejected(loaded.identifier, rejected),
         }
     }
+
+    /// Parses one spawn-group file without upgrading it, through the same spawn steps as
+    /// [`read`](JsonDocument::read): a root that is no object, and the closing line of a file
+    /// that fails, are told as a read tells them.
+    fn parse_as_written(
+        path: &PackPath,
+        bytes: &[u8],
+        cx: &LoadContext,
+    ) -> Result<Document<GroupAny>, Rejected> {
+        let origin = origin(PackRef::app_data(), PackSide::Behavior, path);
+        let (_, result) = load_file(&origin, bytes, FAILED_GROUPS, |text, origin| {
+            load_family_as_written::<GroupFamily>(text, cx, origin)
+        });
+        result
+    }
 }
 
 impl JsonPlaced for SpawnGroup {
@@ -219,5 +235,55 @@ mod reading_table {
                 1.8.0..=1.8.0 (0..=0): json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
             ",
         );
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use bedrock_addon_core::diagnostic::Diagnostic;
+    use bedrock_addon_core::document::Content;
+
+    fn path() -> PackPath {
+        PackPath::new("definitions/spawn_groups/raid.json").unwrap()
+    }
+
+    /// The findings of `text` read whole and read as written; both must be rejections.
+    fn both_findings(text: &str) -> (Vec<Diagnostic>, Vec<Diagnostic>) {
+        let cx = LoadContext::detached();
+        let read = <SpawnGroup as Content>::parse(&path(), text.as_bytes(), &cx)
+            .expect_err("the read rejects it");
+        let written = <SpawnGroup as JsonDocument>::parse_as_written(&path(), text.as_bytes(), &cx)
+            .expect_err("the as-written parse rejects it");
+        (
+            read.diagnostics.iter().cloned().collect(),
+            written.diagnostics.iter().cloned().collect(),
+        )
+    }
+
+    #[test]
+    fn a_root_that_is_no_object_is_rejected_alike_read_whole_and_as_written() {
+        for text in [
+            r#"["format_version", 1]"#,
+            r#"[{"format_version": "1.8.0"}]"#,
+            "7",
+        ] {
+            let (read, written) = both_findings(text);
+            assert!(
+                read.iter().any(|d| matches!(
+                    d.code,
+                    bedrock_addon_core::diagnostic::DiagnosticCode::DocumentRejected { .. }
+                )),
+                "{text}: {read:?}"
+            );
+            assert_eq!(written, read, "{text}");
+        }
+    }
+
+    #[test]
+    fn a_payload_that_fails_is_rejected_alike_read_whole_and_as_written() {
+        let text = r#"{"format_version": "1.8.0", "minecraft:spawn_groups": {"description": {}}}"#;
+        let (read, written) = both_findings(text);
+        assert_eq!(written, read);
     }
 }

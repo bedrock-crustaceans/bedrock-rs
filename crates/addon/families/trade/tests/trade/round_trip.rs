@@ -2,7 +2,7 @@
 //! history path; and values built in code.
 
 use bedrock_addon_core::diagnostic::Severity;
-use bedrock_addon_core::document::Content;
+use bedrock_addon_core::document::{Content, JsonDocument};
 use bedrock_addon_core::id::ItemId;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::pack_identity::PackPath;

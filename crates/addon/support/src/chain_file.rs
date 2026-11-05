@@ -15,7 +15,7 @@ use bedrock_addon_core::json::{JsonSlice, Value, parse_at, probe_envelope};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::version::FormatVersionInput;
 use bedrock_addon_core::versioning::{
-    Family, FileFamily, Identity, Loaded, ParseCx, Parsed, beta_refused, finish,
+    Family, Identity, Loaded, ParseCx, Parsed, beta_refused, finish,
 };
 
 /// The closing line `text` of a failed file.
@@ -32,7 +32,7 @@ pub fn closing_line(diagnostics: &mut Diagnostics, text: &'static str) {
 ///
 /// `Rejected` when the upgrade or the family's checks leave no value; it carries the located
 /// findings.
-pub fn upgrade<F: FileFamily>(
+pub fn upgrade<F: Family>(
     document: Document<F::Any>,
     at: JsonPath,
     cx: &LoadContext,

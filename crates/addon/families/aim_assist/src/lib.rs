@@ -31,14 +31,14 @@ use bedrock_addon_core::document::{
     NoBeta, Notice, RegistryBuilder, Rejected, default_path,
 };
 use bedrock_addon_core::id::{AimAssistPresetId, kind};
-use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
+use bedrock_addon_core::json::JsonSlice;
 use bedrock_addon_core::load::Reported;
 use bedrock_addon_core::load::{self, CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackSide};
 use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::{
-    BelowFloor, Envelope, EnvelopeCheck, Family, FileFamily, Identity, InputKind, Loaded,
-    MissingVersion, NoComponents, ValidateCx, VersionStruct, Versioned, parse_document,
+    BelowFloor, Envelope, EnvelopeCheck, Family, Identity, InputKind, Loaded, MissingVersion,
+    NoComponents, ValidateCx, Versioned, parse_document,
 };
 use bedrock_addon_support::chain_file as file;
 use history::{Any, CategoriesAny, CategoriesFamily, PresetFamily};
@@ -111,12 +111,6 @@ impl Family for PresetFamily {
     }
 }
 
-impl FileFamily for PresetFamily {
-    fn document(value: &AimAssistPreset) -> Result<Value, EncodeError> {
-        value.write()
-    }
-}
-
 impl Family for CategoriesFamily {
     const NAME: &'static str = "aim assist categories";
     const PAYLOAD_KEY: &'static str = "minecraft:aim_assist_categories";
@@ -144,12 +138,6 @@ impl Family for CategoriesFamily {
         if let Loaded::Stable(categories) = v {
             read::category_namespaces(categories, cx);
         }
-    }
-}
-
-impl FileFamily for CategoriesFamily {
-    fn document(value: &AimAssistCategories) -> Result<Value, EncodeError> {
-        value.write()
     }
 }
 

@@ -34,8 +34,10 @@ bedrock_addon_core::version_chain! {
     molang = none;
 }
 
-/// Runs the remaining upgrade step of a document [`TradeTable::parse_as_written`] gave: the same
-/// result [`TradeTable::parse`](bedrock_addon_core::document::Content::parse) gives for its file
+/// Runs the remaining upgrade step of a document
+/// [`TradeTable::parse_as_written`](bedrock_addon_core::document::JsonDocument::parse_as_written)
+/// gave: the same result [`TradeTable::parse`](bedrock_addon_core::document::Content::parse)
+/// gives for its file.
 /// It works over the document because the document holds the origin.
 ///
 /// # Errors

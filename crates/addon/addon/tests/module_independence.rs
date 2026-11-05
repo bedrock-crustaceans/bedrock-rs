@@ -810,7 +810,7 @@ fn the_library_part_of_a_file_with_an_early_test_item_is_the_rest_of_it() {
         "src/pack/link/resource/block.rs",
         "../families/material/src/patch.rs",
         "src/pack/link/mod.rs",
-        "../families/feature/src/load.rs",
+        "../families/feature/src/lib.rs",
     ] {
         let source = fs::read_to_string(root.join(file)).unwrap();
         let library = library_part(&source);

@@ -1415,50 +1415,6 @@ fn an_overridden_read_is_what_a_registry_reads() {
     );
 }
 
-// ---- FileFamily ----------------------------------------------------------------------------
-
-use bedrock_addon_core::versioning::FileFamily;
-
-/// The toy family without a beta struct (`NoBeta`, as its `JsonDefinition` needs) is a
-/// `FileFamily` too.
-impl FileFamily for single::GlintFamily {
-    fn document(value: &Glint) -> Result<Value, EncodeError> {
-        value.write()
-    }
-}
-
-/// So is the toy family with a beta struct.
-impl FileFamily for FlareFamily {
-    fn document(value: &Flare) -> Result<Value, EncodeError> {
-        value.write()
-    }
-}
-
-/// `F` is a one-file family whose newest struct is also a definition.
-fn a_file_family_of_a_json_definition<F: FileFamily<Latest: JsonDefinition>>() {}
-
-#[test]
-fn a_file_family_has_no_beta_or_a_beta_struct() {
-    a_file_family_of_a_json_definition::<single::GlintFamily>();
-    a_file_family_of_a_json_definition::<FlareFamily>();
-    assert_eq!(
-        <FlareFamily as FileFamily>::document(&Flare {
-            description: GlintDescription {
-                identifier: BlockId::parse("demo:sun"),
-            },
-            level: 1,
-        })
-        .unwrap(),
-        write_payload(&Flare {
-            description: GlintDescription {
-                identifier: BlockId::parse("demo:sun"),
-            },
-            level: 1,
-        })
-        .unwrap()
-    );
-}
-
 // ---- files and merged over a JSON document -------------------------------------------------
 
 const EMBERS: CollectionLoader<Files<Ember>, FileCopy<Ember>> =

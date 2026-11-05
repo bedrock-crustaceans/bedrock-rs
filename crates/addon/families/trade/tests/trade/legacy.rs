@@ -2,7 +2,7 @@
 //! fixtures t01, t02, t04, t09, t10, t11 and the F.6.6 list).
 
 use bedrock_addon_core::diagnostic::Severity;
-use bedrock_addon_core::document::Content;
+use bedrock_addon_core::document::{Content, JsonDocument};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_family_trade::{Tier, TradeTable};

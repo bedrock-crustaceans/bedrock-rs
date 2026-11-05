@@ -39,7 +39,7 @@ pub use component::{
 pub use document::{
     DocumentRead, OpenBeta, beta_refused, parse_document, parse_document_as_written,
 };
-pub use file::{BelowFloor, FileFamily};
+pub use file::BelowFloor;
 pub use payload::{parse_payload, write_payload};
 pub use pipeline::{
     Parsed, file_version, finish, finish_file, load, load_file, member_version, no_parser_version,
@@ -552,8 +552,7 @@ pub trait Family: Sized + 'static {
     /// default does nothing. The closed entries ([`load_file`], [`finish_file`]) call it once
     /// per file; [`parse_file_as_written`] calls it only for a parse with no value (`failed`),
     /// and a successful one is not closed, its [`finish_file`] closes the file; the unclosed
-    /// ones never do. The one-file families' write-back sub-trait [`FileFamily`] closes
-    /// through it too.
+    /// ones never do.
     #[allow(unused_variables)]
     fn close(
         diagnostics: &mut Diagnostics,

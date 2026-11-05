@@ -21,19 +21,18 @@ mod tests;
 
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
 use bedrock_addon_core::document::{
-    Content, Document, Files, JsonContent, Origin, Rejected, VersionInfo,
+    Document, Extra, Files, JsonDocument, Origin, Rejected, VersionInfo,
 };
 use bedrock_addon_core::json::Prepared;
-use bedrock_addon_core::json::{
-    EncodeError, EnvelopeVersion, JsonSlice, Value, WriteStyle, probe_envelope,
-};
+use bedrock_addon_core::json::{EncodeError, EnvelopeVersion, JsonSlice, Value, probe_envelope};
 use bedrock_addon_core::load::DocumentSource;
 use bedrock_addon_core::load::{self, CollectionLoader, FileCopy, LoadContext, Walk};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput};
 use bedrock_addon_core::versioning::{
-    Envelope, EnvelopeCheck, Family, Identity, InputKind, Loaded, MissingVersion, NoComponents,
-    ParseCx, Parsed, Reading, StructIndex, ValidateCx, VersionChain, finish, parse_as_written,
+    DocumentRead, Envelope, EnvelopeCheck, Family, Identity, InputKind, Loaded, MissingVersion,
+    NoComponents, ParseCx, Parsed, Reading, StructIndex, ValidateCx, VersionChain, VersionStruct,
+    finish, parse_as_written, write_envelope, write_payload,
 };
 use history::{Any, TradeFamily, v0};
 use read::CEREAL;
@@ -90,32 +89,39 @@ impl Family for TradeFamily {
     }
 }
 
-// Hand `Content`, not `JsonDocument`: a table that holds a legacy blob is written as a whole
-// legacy document (`TradeTable::document`), a payload other than `VersionStruct::write`'s
-// `tiers`, which `write_envelope` cannot write; and the parse stage reads two cases of the text
-// the generic stage does not (`parse_stage`).
-impl bedrock_addon_core::__private::Sealed for TradeTable {}
-
-impl Content for TradeTable {
-    const NAME: &'static str = "trade table";
+// `JsonDocument` with its own `write_root`: a table that holds a legacy blob is written as a
+// whole legacy document, a payload other than `VersionStruct::write`'s `tiers`; and its own
+// `read` and `parse_as_written`: the parse stage reads two cases of the text the generic stage
+// does not (`parse_stage`). No `JsonPlaced`: the writer is not given tables by value.
+impl JsonDocument for TradeTable {
+    type Family = TradeFamily;
     const SIDES: &'static [PackSide] = &[PackSide::Behavior];
 
-    fn parse(path: &PackPath, bytes: &[u8], cx: &LoadContext) -> Result<Document<Self>, Rejected> {
-        let origin = Origin::file(PackRef::app_data(), PackSide::Behavior, path.clone());
-        match parse_stage(bytes, cx) {
+    /// The whole document: `format_version` (1.21.30, the only struct from it on) and `tiers`;
+    /// a table that holds a legacy blob in the legacy shape instead (`v0::legacy_form`: the
+    /// newest format has the blobs only under deprecated names the game rejects).
+    fn write_root(&self) -> Result<Value, EncodeError> {
+        if let Some(legacy) = history::v0::legacy_form(self)? {
+            return write_payload(&legacy);
+        }
+        Ok(write_envelope::<TradeFamily>(
+            CEREAL,
+            VersionStruct::write(self)?,
+            &Extra::default(),
+        ))
+    }
+
+    fn read(origin: Origin, bytes: &[u8], cx: &LoadContext) -> DocumentRead<TradeFamily> {
+        let read = match parse_stage(bytes, cx) {
             Ok(parsed) => finished(parsed, origin, cx),
             Err(finding) => Err(reject(origin, *finding)),
+        };
+        match read {
+            Ok(document) => DocumentRead::Stable(document),
+            Err(rejected) => DocumentRead::Rejected(None, rejected),
         }
     }
 
-    fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
-        self.write_into(out, style)
-    }
-}
-
-impl JsonContent for TradeTable {}
-
-impl TradeTable {
     /// Parses one trade-table file without upgrading it: the struct its `format_version`
     /// selects.
     ///
@@ -123,7 +129,7 @@ impl TradeTable {
     ///
     /// Returns [`Rejected`] when the file cannot be read into a value at all, such as bytes that
     /// are not JSON or a document the family refuses; it carries every finding about the file.
-    pub fn parse_as_written(
+    fn parse_as_written(
         path: &PackPath,
         bytes: &[u8],
         cx: &LoadContext,

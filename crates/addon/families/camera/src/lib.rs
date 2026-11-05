@@ -43,11 +43,11 @@ use std::convert::Infallible;
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, VanillaText};
 use bedrock_addon_core::document::unversioned::origin_of;
 use bedrock_addon_core::document::{
-    Contribution, Document, Extra, JsonDefinition, JsonDocument, JsonPlaced, NoBeta, Registry,
-    Rejected, default_path,
+    Contribution, Document, JsonDefinition, JsonDocument, JsonPlaced, NoBeta, Registry, Rejected,
+    default_path,
 };
 use bedrock_addon_core::id::{CameraListId, CameraPresetId, kind};
-use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
+use bedrock_addon_core::json::JsonSlice;
 use bedrock_addon_core::load::DocumentSource;
 use bedrock_addon_core::load::Reported;
 use bedrock_addon_core::load::{self, CollectionLoader, LoadContext, Walk, WalkFile};
@@ -55,9 +55,8 @@ use bedrock_addon_core::pack_identity::{PackPath, PackSide};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::version::known;
 use bedrock_addon_core::versioning::{
-    BelowFloor, Envelope, EnvelopeCheck, Family, FileFamily, Identity, InputKind, Loaded,
-    MissingVersion, NoComponents, Reading, StructIndex, UnknownMask, ValidateCx, VersionStruct,
-    Versioned, parse_document, write_envelope,
+    BelowFloor, Envelope, EnvelopeCheck, Family, Identity, InputKind, Loaded, MissingVersion,
+    NoComponents, Reading, StructIndex, UnknownMask, ValidateCx, Versioned, parse_document,
 };
 use bedrock_addon_support::chain_file::{self as file, closing_line};
 use history::{
@@ -251,12 +250,6 @@ impl Family for PresetFamily {
     }
 }
 
-impl FileFamily for PresetFamily {
-    fn document(value: &CameraPreset) -> Result<Value, EncodeError> {
-        value.write()
-    }
-}
-
 impl Family for ListFamily {
     const NAME: &'static str = "camera list";
     const PAYLOAD_KEY: &'static str = "minecraft:camera_list";
@@ -313,12 +306,6 @@ impl Family for ListFamily {
     }
 }
 
-impl FileFamily for ListFamily {
-    fn document(value: &CameraList) -> Result<Value, EncodeError> {
-        value.write()
-    }
-}
-
 impl Family for SplineFamily {
     const NAME: &'static str = "camera spline";
     const PAYLOAD_KEY: &'static str = "minecraft:camera_custom_splines";
@@ -350,16 +337,6 @@ impl Family for SplineFamily {
     }
 }
 
-impl FileFamily for SplineFamily {
-    fn document(value: &CameraSpline) -> Result<Value, EncodeError> {
-        Ok(write_envelope::<Self>(
-            value.write_version(),
-            value.write()?,
-            &Extra::default(),
-        ))
-    }
-}
-
 impl Family for EntityFamily {
     const NAME: &'static str = "camera entity";
     const PAYLOAD_KEY: &'static str = "minecraft:camera_entity";
@@ -376,16 +353,6 @@ impl Family for EntityFamily {
         missing: MissingVersion::REJECT,
         ..Envelope::DEFAULT
     };
-}
-
-impl FileFamily for EntityFamily {
-    fn document(value: &CameraEntity) -> Result<Value, EncodeError> {
-        Ok(write_envelope::<Self>(
-            value.write_version(),
-            value.write()?,
-            &Extra::default(),
-        ))
-    }
 }
 
 // ---- the documents ---------------------------------------------------------------------------

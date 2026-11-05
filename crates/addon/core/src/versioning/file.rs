@@ -1,30 +1,4 @@
-//! The write-back sub-trait of a one-file family ([`FileFamily`]) and the policy below a chain's
-//! floor ([`BelowFloor`]).
-
-use super::{Family, VersionStruct};
-use crate::json::{EncodeError, Value};
-
-/// A family whose files are one document each, written back whole: the write-back sub-trait
-/// of [`Family`].
-///
-/// Its beta is any: none (`Infallible`), `NoBeta<K>` (so the family's newest struct can also be
-/// a [`JsonDefinition`](crate::document::JsonDefinition)), or a beta struct, which the support
-/// crate's one-file load refuses as the blanket `Content::parse` does ("no parser available"
-/// for `beta`, [`beta_refused`](super::beta_refused), the file closed as failed): only the
-/// newest stable struct is written back.
-///
-/// Its files close with [`Family::close`], run once per file by the closed entry points
-/// (`versioning::load_file`, `parse_file_as_written`, `finish_file`) the support crate's
-/// one-file load goes through.
-pub trait FileFamily: Family<Latest: VersionStruct + Clone> {
-    /// The whole document of `value`, `format_version` included.
-    ///
-    /// # Errors
-    ///
-    /// `EncodeError::NotRepresentable` when `value` holds something JSON cannot spell, such as a
-    /// non-finite number.
-    fn document(value: &Self::Latest) -> Result<Value, EncodeError>;
-}
+//! The policy below a chain's floor ([`BelowFloor`]).
 
 /// What a document below the chain's floor is told (`Family::ENVELOPE.below_floor`).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]

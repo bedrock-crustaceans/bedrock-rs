@@ -72,10 +72,10 @@ pub trait JsonDocument: VersionStruct + Send + Sync + 'static {
     /// [`write_version`](Self::write_version), the struct's payload and
     /// [`write_extras`](Self::write_extras), after [`refuse_write`](Self::refuse_write).
     ///
-    /// Overridden only by a family that picks the format it writes by what the value holds:
-    /// block and item write a value the newest format cannot hold as an older document, whose
-    /// payload is not [`VersionStruct::write`]. The three hooks above are then the override's
-    /// to call or not.
+    /// Overridden for a value written in a format other than the newest envelope: one the
+    /// newest format cannot hold, written as an older document whose payload is not
+    /// [`VersionStruct::write`] (block, item, trade's legacy blobs). The three hooks above are
+    /// then the override's to call or not.
     ///
     /// # Errors
     ///
