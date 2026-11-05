@@ -4,14 +4,15 @@
 use facet_value::VObject;
 
 use super::component::ClientBiomeComponent;
-use super::parse::{ComponentEra, MODERN, PAYLOAD_KEY, beta_payload, payload, strict};
+use super::history::ClientBiomeFamily;
+use super::read::{ComponentEra, MODERN, PAYLOAD_KEY, beta_payload, payload, strict};
 use super::{Beta, ClientBiome, Description};
 use bedrock_addon_core::diagnostic::Diagnostics;
 use bedrock_addon_core::document::{ComponentMap, ComponentRef, Extra};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value, WriteStyle, write_json};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
-    BETA_VERSION, ParseCx, VersionStruct, Versioned, write_payload,
+    BETA_VERSION, ParseCx, VersionStruct, Versioned, write_envelope, write_payload,
 };
 
 /// A component map as a JSON object, in map order; keys no table knows are written back as
@@ -47,7 +48,10 @@ pub(crate) fn object<C: ComponentEra>(
     Ok(object)
 }
 
-/// The whole document: `format_version`, the payload, then the root's unknown members.
+/// The whole document: `format_version`, the payload, then the root's unknown members. The
+/// legacy structs' text is the whole document (the raw-text path, below 1.21.130) with the
+/// version as written, so they write their envelope here; the newest and the beta struct go
+/// through core's `write_envelope`.
 pub(crate) fn document(version: &str, payload: Value, root_extra: &Extra) -> Value {
     let mut root = VObject::new();
     root.insert("format_version", Value::from(version));
@@ -118,8 +122,8 @@ impl ClientBiome {
         out: &mut Vec<u8>,
         style: WriteStyle,
     ) -> Result<(), EncodeError> {
-        let root = document(
-            &Self::VERSION.to_string(),
+        let root = write_envelope::<ClientBiomeFamily>(
+            Self::VERSION,
             VersionStruct::write(self)?,
             &Extra::default(),
         );
@@ -134,7 +138,11 @@ impl Beta {
         out: &mut Vec<u8>,
         style: WriteStyle,
     ) -> Result<(), EncodeError> {
-        let root = document("beta", VersionStruct::write(self)?, &Extra::default());
+        let root = write_envelope::<ClientBiomeFamily>(
+            BETA_VERSION,
+            VersionStruct::write(self)?,
+            &Extra::default(),
+        );
         write_json(&root, out, style)
     }
 }

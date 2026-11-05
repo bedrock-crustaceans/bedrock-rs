@@ -571,20 +571,20 @@ fn the_chain_is_two_structs_from_the_floor() {
     use bedrock_addon_core::versioning::{
         Family, RangeModel, VersionChain, Versioned, check_chain,
     };
-    type Chain = <super::load::CatalogFamily as Family>::Any;
-    assert!(check_chain::<super::load::CatalogFamily>().is_ok());
+    type Chain = <crate::CatalogFamily as Family>::Any;
+    assert!(check_chain::<crate::CatalogFamily>().is_ok());
     assert_eq!(
-        <Chain as VersionChain<super::load::CatalogFamily>>::VERSIONS,
+        <Chain as VersionChain<crate::CatalogFamily>>::VERSIONS,
         [super::V1_21_60, super::V1_26_50]
     );
-    let has_beta = <Chain as VersionChain<super::load::CatalogFamily>>::HAS_BETA;
+    let has_beta = <Chain as VersionChain<crate::CatalogFamily>>::HAS_BETA;
     assert!(!has_beta);
     assert_eq!(<CraftingCatalog as Versioned>::VERSION, super::V1_26_50);
     {
         use bedrock_addon_core::json::NullRule;
         use bedrock_addon_core::load::DocumentSource;
         use bedrock_addon_core::versioning::{ErrorMask, InputKind, StructIndex};
-        type F = super::load::CatalogFamily;
+        type F = crate::CatalogFamily;
         assert_eq!(F::ENVELOPE.input, InputKind::Document);
         assert_eq!(
             F::reading(StructIndex::Stable(0), DocumentSource::Json).error_mask(),
@@ -599,13 +599,13 @@ fn the_chain_is_two_structs_from_the_floor() {
             Some(NullRule::Rejected)
         );
     }
-    assert_eq!(super::load::CatalogFamily::FLOOR, super::V1_21_60);
+    assert_eq!(crate::CatalogFamily::FLOOR, super::V1_21_60);
     assert_eq!(
-        super::load::CatalogFamily::RANGE_MODEL,
+        crate::CatalogFamily::RANGE_MODEL,
         RangeModel::ClosedToEngine
     );
     assert_eq!(
-        super::load::CatalogFamily::PAYLOAD_KEY,
+        crate::CatalogFamily::PAYLOAD_KEY,
         "minecraft:crafting_items_catalog"
     );
     assert_eq!(super::LOADER.walk.directories, ["item_catalog"]);

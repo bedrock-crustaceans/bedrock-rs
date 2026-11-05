@@ -1,11 +1,11 @@
 //! The two single-struct chains: contiguity, the range models' selection, floors and ceilings, no
 //! beta; and the history enums' own-version write.
 
-use bedrock_addon::families::spawn_rules::history::{
-    Any, SimplifiedAny, SimplifiedFamily, SpawnFamily,
-};
+use bedrock_addon::families::spawn_rules::{Any, SimplifiedAny, SimplifiedFamily, SpawnFamily};
 use bedrock_addon::version::{ENGINE_VERSION, FormatVersion, FormatVersionInput};
-use bedrock_addon::versioning::{Family, RangeModel, Selection, VersionChain, check_chain, select};
+use bedrock_addon::versioning::{
+    Family, RangeModel, Selection, Single, VersionChain, check_chain, select,
+};
 
 use super::common::{context, document, experiment, legacy, loads, rejected, standard};
 
@@ -73,7 +73,7 @@ fn the_history_enum_writes_its_own_version() {
         &legacy(r#"{"minecraft:weight": {"default": 3}}"#),
         &context(),
     );
-    let any = Any::V1_8_0(standard(&document).clone());
+    let any: Any = Single(standard(&document).clone());
     assert_eq!(any.parsed_version(), FormatVersion::new(1, 8, 0));
     let text = any.to_json().unwrap();
     assert!(

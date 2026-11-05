@@ -10,6 +10,8 @@
 //! type claims.
 
 use bedrock_addon as ba;
+// `parse_as_written` is `JsonDocument`'s for the kinds on the family skeleton.
+use ba::document::JsonDocument as _;
 
 use super::{Kind, Level, Row, Side};
 

@@ -12,10 +12,7 @@ use super::read::{Writer, put, put_opt};
 use super::{Description, ParticleEffect};
 use bedrock_addon_core::document::Component as _;
 use bedrock_addon_core::document::{ComponentRef, Extra};
-use bedrock_addon_core::json::{
-    EncodeError, MAX_JSON_DEPTH, Unrepresentable, Value, WriteStyle, check_depth, write_json,
-};
-use bedrock_addon_core::versioning::Versioned;
+use bedrock_addon_core::json::{EncodeError, MAX_JSON_DEPTH, Unrepresentable, Value};
 
 /// The key of the payload.
 pub(crate) const PAYLOAD_KEY: &str = "particle_effect";
@@ -120,7 +117,10 @@ pub(crate) fn payload(effect: &ParticleEffect, w: &mut Writer) -> Result<Value, 
     )
 }
 
-/// The document around a payload: `format_version`, then the payload.
+/// The document around a payload: `format_version`, then the payload. The 1.10.0 struct's
+/// text is the whole document (the raw-text path, below the envelope `Family::ENVELOPE`
+/// checks), so it writes its envelope itself; the newest struct's goes through core's
+/// `write_envelope`.
 pub(crate) fn document(version: &str, payload: Value) -> Value {
     let mut root = VObject::new();
     root.insert("format_version", Value::from(version));
@@ -128,26 +128,41 @@ pub(crate) fn document(version: &str, payload: Value) -> Value {
     root.into()
 }
 
-impl ParticleEffect {
-    /// Writes the document, at format 1.20.80, into `out`. A value the loader would not read
-    /// back has no text: a number that is not finite, a Molang bool, an unknown member or
-    /// component (only a value built by hand holds one: the reader keeps none; the
-    /// 1.20.80 reader refuses them), events nested deeper than a file may be.
-    pub(crate) fn write_into(
-        &self,
-        out: &mut Vec<u8>,
-        style: WriteStyle,
-    ) -> Result<(), EncodeError> {
-        let mut w = Writer::default();
-        let payload = w.key(PAYLOAD_KEY, |w| payload(self, w))?;
-        let root = document(&Self::VERSION.to_string(), payload);
-        let start = out.len();
-        write_json(&root, out, style)?;
-        // An unknown member may nest as deep as it likes; the reader stops at its limit.
-        if check_depth(&out[start..], MAX_JSON_DEPTH).is_err() {
-            out.truncate(start);
-            return Err(w.key(PAYLOAD_KEY, |w| w.refuse(Unrepresentable::Unsupported)));
-        }
-        Ok(())
+/// The payload of the newest struct, as a 1.20.80 document holds it under its key: every
+/// refusal is at its path in the document, below the key.
+///
+/// `description` and `components` are always written (the 1.20.80 reader requires them),
+/// every other member only where the value has it. An effect that was read partially from a
+/// file below 1.20.80, because the legacy parser stopped in it, is written whole at its
+/// defaults: `basic_render_parameters` with an empty `material` or `texture` and an empty
+/// `components` are written although the file had none, and what the parser never reached
+/// (components, curves, events after the stop) is not. The text loads again to an equal
+/// value, without the warning the first load gave, since the written file has the members
+/// that warning was about.
+///
+/// A value the loader would not read back has no text: a number that is not finite, a
+/// Molang bool, an unknown member or component (only a value built by hand holds one: the
+/// reader keeps none; the 1.20.80 reader refuses them), events nested deeper than a file may
+/// be.
+pub(crate) fn document_payload(effect: &ParticleEffect) -> Result<Value, EncodeError> {
+    let mut w = Writer::default();
+    let payload = w.key(PAYLOAD_KEY, |w| payload(effect, w))?;
+    // An unknown member may nest as deep as it likes; the reader stops at its limit. The
+    // document is one level deeper than its payload.
+    if nests_deeper_than(&payload, MAX_JSON_DEPTH - 1) {
+        return Err(w.key(PAYLOAD_KEY, |w| w.refuse(Unrepresentable::Unsupported)));
+    }
+    Ok(payload)
+}
+
+/// Whether `value` nests arrays and objects more than `levels` deep, looked at to that depth
+/// only (a value built by hand may nest without bound).
+fn nests_deeper_than(value: &Value, levels: usize) -> bool {
+    if let Some(array) = value.as_array() {
+        levels == 0 || array.iter().any(|v| nests_deeper_than(v, levels - 1))
+    } else if let Some(object) = value.as_object() {
+        levels == 0 || object.values().any(|v| nests_deeper_than(v, levels - 1))
+    } else {
+        false
     }
 }

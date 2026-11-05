@@ -1,6 +1,6 @@
 //! The peek at a file's root before the chain reads it.
 
-use super::load::root_of;
+use crate::root_of;
 
 /// The peek reads what the load reads: of a payload written twice the last stands, whole.
 /// An untyped read of the text as written would merge the two objects and name an

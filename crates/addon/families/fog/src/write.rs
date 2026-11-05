@@ -12,9 +12,7 @@ use super::{
 use crate::history::v1_16_100::{CoeffColorJu, FogColorJu};
 use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
 use bedrock_addon_core::document::Extra;
-use bedrock_addon_core::json::{
-    EncodeError, JsonSlice, Unrepresentable, Value, WriteStyle, write_json,
-};
+use bedrock_addon_core::json::{EncodeError, JsonSlice, Unrepresentable, Value};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{ParseCx, VersionStruct, Versioned};
 
@@ -340,26 +338,12 @@ impl VersionStruct for FogSettings {
 }
 
 impl FogSettings {
-    /// The whole document: `format_version` 1.26.20, the only version the game reads this
-    /// shape at, and the payload.
-    pub(crate) fn document(&self) -> Result<Value, EncodeError> {
-        let mut object = VObject::new();
-        object.insert("format_version", LATEST.to_string());
-        object.insert("minecraft:fog_settings", self.write()?);
-        Ok(object.into())
-    }
-
-    /// Writes the document into `out`. The document is written at 1.26.20, where the game
-    /// holds it to the rules V15–V20; so do the older schemas, so a value that
-    /// breaks one has no text the game or this loader reads anywhere, and is refused with the
-    /// path of the entry. So is a keyed member a caller built with one time twice
-    /// (`-0` and `0` are one time), at the second keyframe of that time: the reader keeps one
-    /// keyframe per time.
-    pub(crate) fn write_into(
-        &self,
-        out: &mut Vec<u8>,
-        style: WriteStyle,
-    ) -> Result<(), EncodeError> {
+    /// The refusal before the document is written (`JsonDocument::refuse_write`): the first
+    /// rule V15–V20 the value breaks, at its path below the payload key, then a time written
+    /// twice in a keyed member, at the second keyframe of that time. The document itself is
+    /// `format_version` 1.26.20, the only version the game reads this shape at, and the
+    /// payload, through core's `write_envelope`.
+    pub(crate) fn refuse_write_rules(&self) -> Result<(), EncodeError> {
         let at = JsonPath::new().child("minecraft:fog_settings");
         let mut found = Diagnostics::default();
         super::rules::cereal_rules(self, &at, &mut found);
@@ -377,6 +361,6 @@ impl FogSettings {
                 what: Unrepresentable::Unsupported,
             });
         }
-        write_json(&self.document()?, out, style)
+        Ok(())
     }
 }

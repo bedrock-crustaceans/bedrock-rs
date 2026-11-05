@@ -2,6 +2,7 @@
 //! conversion and lower-casing, the chain's shape, and documents read as written and upgraded.
 
 use bedrock_addon::diagnostic::{Diagnostics, Severity};
+use bedrock_addon::document::JsonDocument as _;
 use bedrock_addon::families::attachable::Attachable;
 use bedrock_addon::families::attachable::history::{self, Any, AttachableFamily, v1_8_0, v1_10_0};
 use bedrock_addon::json::Value;

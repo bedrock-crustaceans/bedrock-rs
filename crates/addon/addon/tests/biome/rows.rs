@@ -1,7 +1,7 @@
 //! Every row of the biome fixtures, one test each, named after the row.
 
 use bedrock_addon::diagnostic::{DiagnosticCode, Diagnostics, Severity, VanillaText};
-use bedrock_addon::document::{ComponentRef, Content};
+use bedrock_addon::document::{ComponentRef, Content, JsonDocument as _};
 use bedrock_addon::families::biome::component::{
     Builder, Climate, NoiseType, OverworldHeight, ReplaceBiomes, SubsurfaceBuilder, SurfaceBuilder,
     Tags, VillageKind, VillageType,

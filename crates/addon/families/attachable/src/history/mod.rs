@@ -34,7 +34,7 @@ bedrock_addon_core::version_chain! {
     }
 }
 
-/// Runs the remaining upgrade steps of a document [`Attachable::parse_as_written`] gave: the
+/// Runs the remaining upgrade steps of a document [`Attachable::parse_as_written`](bedrock_addon_core::document::JsonDocument::parse_as_written) gave: the
 /// same result [`Attachable::parse`](bedrock_addon_core::document::Content::parse) gives for its file
 /// (`history::Any::upgrade`, realised over the document, which holds the
 /// origin).
@@ -47,5 +47,5 @@ pub fn upgrade(
     document: Document<Any>,
     cx: &LoadContext,
 ) -> Result<Document<Attachable>, Rejected> {
-    super::load::upgrade_document(document, cx)
+    crate::upgrade_document(document, cx)
 }

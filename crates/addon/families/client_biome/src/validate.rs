@@ -11,7 +11,7 @@
 use super::component::{
     AmbientSounds, BiomeMusic, ClientBiomeComponent, Precipitation, WaterAppearance, child,
 };
-use super::parse::PAYLOAD_KEY;
+use super::read::PAYLOAD_KEY;
 use super::texts::{NO_SOUND, OPACITY, PRECIPITATION, VOLUME, fixed};
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase};
 use bedrock_addon_core::document::{Component, ComponentMap};

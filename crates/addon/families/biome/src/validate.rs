@@ -12,7 +12,7 @@ use super::component::{
     SubsurfaceBuilder, SurfaceBuilder, SurfaceMaterialAdjustments, WeightedBiome, WeightedBiomes,
     child,
 };
-use super::parse::V1_26_0;
+use super::read::V1_26_0;
 use super::texts::{
     BOTH_NOISE, DIMENSION_1_21_80, DIMENSION_1_26_0, DUPLICATE_PAIR, EMPTY_REPLACEMENTS_1_21_80,
     EMPTY_REPLACEMENTS_1_26_0, HEIGHT_RANGE_BOUNDS, IDENTIFIER, MULTIPLE_DIMENSIONS,

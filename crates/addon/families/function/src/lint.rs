@@ -337,7 +337,7 @@ mod tests {
     /// Whether `line` (a command and its arguments) has a wrong arity under `version`.
     fn wrong(line: &str, version: u8) -> bool {
         let (word, arguments) = line.split_once(' ').unwrap_or((line, ""));
-        let command = super::super::parse::find_command(word).expect(word);
+        let command = super::super::read::find_command(word).expect(word);
         has_wrong_arity(command, arguments, version)
     }
 

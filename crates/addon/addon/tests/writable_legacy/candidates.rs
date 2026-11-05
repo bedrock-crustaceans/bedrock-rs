@@ -313,6 +313,7 @@ fn trd6_a_quantity_text_with_spaces_and_a_sign_is_the_range_it_spells() {
 /// the number it stands for: noted at the member.
 #[test]
 fn prt4_a_boolean_at_a_molang_member_is_noted_at_the_member() {
+    use bedrock_addon::document::JsonDocument as _;
     let components = "particle_effect/components";
     let (found, written) = particle(
         r#""minecraft:emitter_rate_instant":{"num_particles":true},"minecraft:emitter_lifetime_once":{"active_time":1},"minecraft:particle_initial_speed":false"#,

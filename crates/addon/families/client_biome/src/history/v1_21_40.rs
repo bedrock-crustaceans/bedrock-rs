@@ -11,7 +11,7 @@ use crate::component::{
     FoliageColorMap, GrassAppearance, GrassColor, GrassColorMap, child, parse_typed,
     write_component,
 };
-use crate::parse::ComponentEra;
+use crate::read::ComponentEra;
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
 use bedrock_addon_core::document::{ComponentMap, ComponentSet, Extra};
 use bedrock_addon_core::id::SoundEventName;

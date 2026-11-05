@@ -1,7 +1,7 @@
 //! The upgrades of the fog chain (`u01`–`u08`) and the history API.
 
 use bedrock_addon::diagnostic::Severity;
-use bedrock_addon::document::Content;
+use bedrock_addon::document::{Content, JsonDocument as _};
 use bedrock_addon::families::fog::history::{self, Any, v1_16_100};
 use bedrock_addon::families::fog::{ColorNorm, DistanceType, FogColor, FogSettings, Keyframed};
 use bedrock_addon::storage::PackPath;

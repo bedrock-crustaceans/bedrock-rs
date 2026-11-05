@@ -19,7 +19,7 @@ pub mod v1_21_70;
 pub mod v1_21_90;
 
 use super::component::ClientBiomeComponent;
-use super::parse::PAYLOAD_KEY;
+use super::read::PAYLOAD_KEY;
 use super::{Beta, ClientBiome};
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, Phase};
 use bedrock_addon_core::document::{
@@ -73,7 +73,7 @@ pub fn upgrade(
     document: Document<Any>,
     cx: &LoadContext,
 ) -> Result<Document<ClientBiome>, Rejected> {
-    super::load::upgrade_document(document, cx)
+    crate::upgrade_document(document, cx)
 }
 
 /// One struct of a format below 1.21.130: the whole document, with the components of `$set`.
@@ -105,7 +105,7 @@ macro_rules! legacy_document {
                 cx: &::bedrock_addon_core::versioning::ParseCx<'_>,
                 d: &mut ::bedrock_addon_core::diagnostic::Diagnostics,
             ) -> Option<Self> {
-                use $crate::parse::{strict, whole};
+                use $crate::read::{strict, whole};
                 use ::bedrock_addon_core::versioning::Versioned;
                 let read = strict(cx, d, |d| whole::<$set>(document, Self::VERSION, cx, d))?;
                 Some(Self {

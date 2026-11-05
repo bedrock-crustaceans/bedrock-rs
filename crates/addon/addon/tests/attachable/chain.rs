@@ -2,6 +2,7 @@
 //! not what it does to a client entity.
 
 use bedrock_addon::diagnostic::Severity;
+use bedrock_addon::document::JsonDocument as _;
 use bedrock_addon::families::attachable::Attachable;
 use bedrock_addon::families::attachable::history::{self, Any};
 use bedrock_addon::json::Value;

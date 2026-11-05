@@ -1241,6 +1241,50 @@ fn a_registry_takes_a_beta_file_as_a_beta_contribution_closed_as_loaded() {
     );
 }
 
+/// A beta document a family built its own way, opened with `OpenBeta::new`: kept, it is
+/// closed once as loaded; refused, once as failed with the beta refusal.
+#[test]
+fn a_beta_document_a_family_built_opens_and_closes_once() {
+    use bedrock_addon_core::document::VersionInfo;
+    use bedrock_addon_core::versioning::{BETA_VERSION, OpenBeta};
+    let beta = || {
+        let document = Document::new(
+            FlareBeta {
+                description: GlintDescription {
+                    identifier: BlockId::parse("demo:sun"),
+                },
+                glow: true,
+            },
+            Origin::file(pack(1), PackSide::Behavior, flare_path()),
+            VersionInfo::new(None, true, BETA_VERSION, BETA_VERSION, false),
+            Diagnostics::default(),
+        );
+        OpenBeta::<FlareFamily>::new(document)
+    };
+    let kept = beta().keep();
+    assert!(kept.glow);
+    assert_eq!(
+        closes(kept.diagnostics()),
+        [false],
+        "closed once, as loaded"
+    );
+    let refused = beta().refuse();
+    assert_eq!(
+        closes(&refused.diagnostics),
+        [true],
+        "closed once, as failed"
+    );
+    assert!(refused.diagnostics.iter().any(|d| matches!(
+        &d.code,
+        DiagnosticCode::UnsupportedVersion {
+            text: Some(VanillaText::NoParserForVersion { version })
+        } if version == "beta"
+    )));
+    for finding in &refused.diagnostics {
+        assert_eq!(finding.location.path, Some(flare_path()));
+    }
+}
+
 const VANILLA_FLARE: &str = r#"{"format_version": "1.0.0", "demo:flare": {"description": {"identifier": "minecraft:sun"}, "level": 1}}"#;
 
 fn is_namespace_rule(d: &Diagnostic) -> bool {

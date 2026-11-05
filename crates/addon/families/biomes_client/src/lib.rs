@@ -714,7 +714,9 @@ fn combine(copies: Vec<BiomesCopy>, _: &StackCx<'_>) -> Merged<LegacyClientBiome
     merge(copies)
 }
 
-/// The loader of `rp.legacy_client_biomes()`.
+/// The loader of `rp.legacy_client_biomes()`, the family's own: a copy may take no part
+/// (`BiomesCopy::Skipped`, `Failed`) with findings of its own, which `load::merged`'s
+/// `FileCopy` cannot carry.
 #[doc(hidden)]
 pub const LOADER: CollectionLoader<Merged<LegacyClientBiomes, RawLayer>, BiomesCopy> =
     CollectionLoader {

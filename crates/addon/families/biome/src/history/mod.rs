@@ -38,7 +38,7 @@ bedrock_addon_core::version_chain! {
     Beta(Beta);
 }
 
-/// Runs the remaining upgrade steps of a document [`Biome::parse_as_written`] gave: the same
+/// Runs the remaining upgrade steps of a document [`Biome::parse_as_written`](bedrock_addon_core::document::JsonDocument::parse_as_written) gave: the same
 /// result [`Biome::parse`](bedrock_addon_core::document::Content::parse) gives for its file
 /// (`history::Any::upgrade`, realised over the document, which holds the origin of the file).
 /// A beta document is rejected here (it is a [`Beta`]).
@@ -47,5 +47,5 @@ bedrock_addon_core::version_chain! {
 ///
 /// Returns [`Rejected`] when the document is a beta one, or a remaining upgrade step leaves an error finding.
 pub fn upgrade(document: Document<Any>, cx: &LoadContext) -> Result<Document<Biome>, Rejected> {
-    super::load::upgrade_document(document, cx)
+    crate::upgrade_document(document, cx)
 }

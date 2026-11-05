@@ -3,7 +3,7 @@
 
 use facet_value::{VArray, VObject};
 
-use super::parse::VALUES;
+use super::read::VALUES;
 use super::{Function, FunctionLine, TickList};
 use bedrock_addon_core::diagnostic::JsonPath;
 use bedrock_addon_core::json::{EncodeError, Unrepresentable, Value, WriteStyle, write_json};

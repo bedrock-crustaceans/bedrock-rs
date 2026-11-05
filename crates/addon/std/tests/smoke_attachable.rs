@@ -21,7 +21,7 @@ use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
 use bedrock_addon::diagnostic::{Diagnostic, Severity};
-use bedrock_addon::document::Registry;
+use bedrock_addon::document::{JsonDocument as _, Registry};
 use bedrock_addon::families::attachable::{Attachable, Condition, ItemBindings};
 use bedrock_addon::id::AttachableId;
 use bedrock_addon::load::{AppData, LoadOptions, StackOptions};

@@ -2,7 +2,7 @@
 //! Nether.
 
 use crate::component::BiomeComponent;
-use crate::parse::payload;
+use crate::read::payload;
 use crate::write::object;
 use crate::{Biome as Latest, Description};
 use bedrock_addon_core::diagnostic::Diagnostics;

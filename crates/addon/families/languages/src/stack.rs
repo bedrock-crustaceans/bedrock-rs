@@ -345,6 +345,8 @@ fn other_file_findings(
 
 /// The loader of `languages()`, on either stack: every file below `texts/` and `Texts/`. The
 /// two lists are read; the other files are looked at for what they are, which the lints need.
+/// The family's own: one walk reads two file kinds and looks at the `.lang` files without
+/// reading them (`TextsFile`), which `load::merged`'s `FileCopy` cannot carry.
 pub const LOADER: CollectionLoader<Merged<Languages>, TextsFile> = CollectionLoader {
     // Lowest pack first: `loadAllVersionsOf` returns every pack's copy, lowest priority first.
     walk: Walk::json_tree_in(&[TEXTS]).accept(Accept::Fn(is_read)),

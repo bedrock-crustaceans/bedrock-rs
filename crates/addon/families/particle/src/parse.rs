@@ -201,9 +201,9 @@ impl VersionStruct for ParticleEffect {
         Self::read(&value, &mut r)
     }
 
-    /// The payload.
+    /// The payload (`write::document_payload`).
     fn write(&self) -> Result<Value, EncodeError> {
-        super::write::payload(self, &mut Writer::default())
+        super::write::document_payload(self)
     }
 }
 

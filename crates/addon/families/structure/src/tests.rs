@@ -2,11 +2,11 @@
 
 use bedrock_addon_core::load::LoadContext;
 
-use super::parse;
+use super::read;
 
 /// The structure of `bytes`, which must load.
 fn load(bytes: &[u8]) -> super::Structure {
-    parse::read(bytes, &LoadContext::detached())
+    read::read(bytes, &LoadContext::detached())
         .0
         .expect("the structure loads")
 }
@@ -43,7 +43,7 @@ fn a_file_in_another_layout_keeps_its_tree() {
 fn a_rejected_copy_in_a_subpack_is_keyed_without_its_folder() {
     use bedrock_addon_core::pack_identity::PackPath;
     let key = PackPath::from_static("structures/house.mcstructure");
-    let keyed = |path: &'static str| super::load::keyed(&PackPath::from_static(path), &key);
+    let keyed = |path: &'static str| crate::keyed(&PackPath::from_static(path), &key);
     assert!(keyed("structures/house.mcstructure"));
     assert!(keyed("subpacks/high/structures/house.mcstructure"));
     assert!(!keyed("subpacks/highstructures/house.mcstructure"));

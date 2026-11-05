@@ -11,6 +11,8 @@ impl BlocksJson {
     /// `format_version_index` of them (after the last one when there are fewer). An entry
     /// named `format_version` has no place in the file and is not written.
     fn document(&self) -> Result<Value, EncodeError> {
+        // Not core's `write_envelope`: the version is one member among the block keys, at
+        // the place it was read, not an envelope around one payload.
         let mut object = VObject::new();
         let version_at = self.format_version_index.min(self.entries.len());
         for (index, (name, value)) in self.entries.iter().enumerate() {

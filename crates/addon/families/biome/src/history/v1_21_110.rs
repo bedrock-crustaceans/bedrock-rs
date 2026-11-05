@@ -7,7 +7,7 @@ use facet_json::RawJson;
 use super::v1_21_120;
 use crate::Description;
 use crate::component::{BiomeComponent, child};
-use crate::parse::payload;
+use crate::read::payload;
 use crate::texts::INVALID_BIOME_FILE;
 use crate::write::object;
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, VanillaText};

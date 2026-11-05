@@ -92,6 +92,13 @@ pub struct OpenBeta<F: Family> {
 }
 
 impl<F: Family> OpenBeta<F> {
+    /// A beta document a family read its own way (a `JsonDocument::read` that does not wrap
+    /// [`parse_document`]), its findings located and not yet closed: the taker closes it, as
+    /// it closes one [`parse_document`] gave.
+    pub fn new(document: Document<F::Beta>) -> Self {
+        Self { document }
+    }
+
     /// The document, as read.
     pub fn document(&self) -> &Document<F::Beta> {
         &self.document

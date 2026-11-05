@@ -3,7 +3,7 @@
 //! each pinned by a test named `deviation`.
 
 use bedrock_addon::diagnostic::{DiagnosticCode, Severity, VanillaText};
-use bedrock_addon::document::Content;
+use bedrock_addon::document::{Content, JsonDocument as _};
 use bedrock_addon::families::biome::Biome;
 use bedrock_addon::families::biome::history::{self, Any, BiomeFamily};
 use bedrock_addon::version::{ENGINE_VERSION, FormatVersion, FormatVersionInput};

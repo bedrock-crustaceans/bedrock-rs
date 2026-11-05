@@ -6,7 +6,7 @@ use bedrock_addon_core::pack_identity::{PackIdVersion, PackPath, PackRef, PackSi
 use bytes::Bytes;
 use uuid::Uuid;
 
-use super::{BehaviorTree, Node, builtin, link, load, parse};
+use super::{BehaviorTree, LOADER, Node, builtin, link, read};
 use bedrock_addon_core::diagnostic::{DiagnosticDetail, Phase, Severity};
 use bedrock_addon_core::document::Registry;
 use bedrock_addon_core::version::SemVersion;
@@ -16,7 +16,7 @@ use bedrock_addon_core::version::SemVersion;
 fn registry(trees: &[(&str, &str)]) -> Registry<BehaviorTree> {
     let id = PackIdVersion::new(Uuid::nil(), SemVersion::new(1, 0, 0), PackType::Behavior);
     let pack = PackRef::new(0, id, "p");
-    let loader = load::LOADER;
+    let loader = LOADER;
     let cx = LoadContext::detached();
     let parsed = trees
         .iter()
@@ -229,7 +229,7 @@ fn every_built_in_text_names_its_tree_and_loads_without_a_finding() {
     assert!(names.is_sorted(), "{names:?}");
     assert_eq!(names.len(), 9);
     for (name, text) in builtin::TREES {
-        let parsed = parse::parse_document(text.as_bytes());
+        let parsed = read::parse_document(text.as_bytes());
         assert_eq!(
             parsed.name.as_ref().map(bedrock_addon_core::id::Id::as_str),
             Some(name)
@@ -245,7 +245,7 @@ fn every_built_in_text_names_its_tree_and_loads_without_a_finding() {
 
 #[test]
 fn the_formatted_text_has_one_placeholder() {
-    assert_eq!(parse::PARSE_ERROR.matches("{}").count(), 1);
+    assert_eq!(read::PARSE_ERROR.matches("{}").count(), 1);
 }
 
 /// The findings of one tree come in document order.

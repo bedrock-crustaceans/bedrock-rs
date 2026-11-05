@@ -10,8 +10,6 @@ pub mod history;
 mod command;
 mod gates;
 mod jsonutil;
-mod load;
-mod new;
 mod read;
 mod rules;
 mod texts;
@@ -25,9 +23,32 @@ use bedrock_addon_core::id::FogId;
 use bedrock_addon_core::version::known;
 
 pub(crate) use jsonutil::{Era, read_document};
-#[doc(hidden)]
-pub use load::{LOADER, upgrade_document};
 pub(crate) use write::{color_ju, float, norm_ju, object_with};
+
+use crate::history::{Any, FogFamily};
+use crate::texts::{
+    EMPTY_AFTER_PARSE, EMPTY_RESOURCE, FAILED_TO_VALIDATE, INVALID_VERSION, NO_IDENTIFIER,
+    PARSE_ERROR, UNSUPPORTED_VERSION,
+};
+use bedrock_addon_core::diagnostic::{
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, VanillaText,
+};
+use bedrock_addon_core::document::{
+    CombineRule, Contribution, Document, JsonDefinition, JsonDocument, JsonPlaced, NoBeta, Notice,
+    Origin, PackTie, Registry, Rejected, VersionInfo, default_path,
+};
+use bedrock_addon_core::id::kind;
+use bedrock_addon_core::json::{
+    EncodeError, EnvelopeVersion, JsonSlice, MAX_JSON_DEPTH, PrepareError, Prepared, Value,
+    blank_bom, check_depth, last_wins, parse_at, probe_envelope,
+};
+use bedrock_addon_core::load::{self, CollectionLoader, LoadContext, StackCx, Walk};
+use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
+use bedrock_addon_core::version::{FormatVersion, FormatVersionInput};
+use bedrock_addon_core::versioning::{
+    DocumentRead, Envelope, EnvelopeCheck, Family, Loaded, MissingVersion, NoComponents, ParseCx,
+    Parsed, RangeModel, StructIndex, VersionChain, finish, parse_as_written,
+};
 
 pub use command::{FOG_STACK_LIMIT, FogCommandError, FogStack, is_valid_fog_identifier};
 pub use gates::{FOG_FIELD_GATES, FogFieldGate};
@@ -287,4 +308,537 @@ pub enum Keyframed<T> {
 /// their bits are equal.
 pub(crate) fn same_zero(time: f32) -> f32 {
     time + 0.0
+}
+
+impl Family for FogFamily {
+    const NAME: &'static str = "fog";
+    const PAYLOAD_KEY: &'static str = "minecraft:fog_settings";
+    const FLOOR: FormatVersion = FLOOR;
+    // The cereal parser is built with the 2-argument `CerealParserBase(ctx, VERSION)`: exactly
+    // 1.26.20, whatever the engine.
+    const RANGE_MODEL: RangeModel = RangeModel::ClosedToLatest;
+    type Latest = FogSettings;
+    type Beta = NoBeta<kind::Fog>;
+    type Component = NoComponents;
+    type Any = Any;
+    const ENVELOPE: Envelope = Envelope {
+        // Below 1.26.20 the strict schema root reads the whole document (a third root member is an
+        // unknown member of it); from 1.26.20 `MinecraftDocumentInput` wants exactly two members.
+        // A pre-release of 1.26.20 sorts below it.
+        check: EnvelopeCheck::From(LATEST),
+        missing: MissingVersion::Reject {
+            text: Some(VanillaText::Fixed(INVALID_VERSION)),
+        },
+        ..Envelope::DEFAULT
+    };
+}
+
+/// The payload's path in the file.
+fn payload_at() -> JsonPath {
+    JsonPath::new().child(FogFamily::PAYLOAD_KEY)
+}
+
+/// An error of the gates, at the document root.
+fn gate(code: DiagnosticCode) -> Diagnostics {
+    let mut diagnostics = Diagnostics::default();
+    diagnostics.push(Diagnostic::error(code));
+    diagnostics
+}
+
+fn malformed(message: String) -> Diagnostics {
+    gate(DiagnosticCode::MalformedInput {
+        text: Some(VanillaText::Formatted {
+            template: PARSE_ERROR,
+            args: vec![message.clone()],
+        }),
+        message,
+    })
+}
+
+fn empty(text: &'static str) -> Diagnostics {
+    gate(DiagnosticCode::EmptyDocument {
+        text: Some(VanillaText::Fixed(text)),
+    })
+}
+
+/// `parseFogDefinitionIdentifier`: `minecraft:fog_settings.description.identifier` of the raw
+/// JSON is a non-empty string.
+fn has_identifier(root: &Value) -> bool {
+    let identifier = root
+        .as_object()
+        .and_then(|root| root.get(FogFamily::PAYLOAD_KEY)?.as_object())
+        .and_then(|settings| settings.get("description")?.as_object())
+        .and_then(|description| description.get("identifier")?.as_string());
+    identifier.is_some_and(|text| !text.as_str().is_empty())
+}
+
+/// Steps 1 to 7 of `registerFogFromJson` on a file's bytes: the text with duplicate members
+/// settled, or the findings of the gate that skipped the file.
+fn gates(bytes: &[u8]) -> Result<String, Diagnostics> {
+    let too_deep = || malformed("nesting too deep".to_owned());
+    // The nesting is checked before the encoding (`Prepared` checks the encoding first): a
+    // text both too deep and not UTF-8 is told as too deep. The mark is blanked first, or
+    // the scan stops at it.
+    let bytes = &*blank_bom(bytes);
+    check_depth(bytes, MAX_JSON_DEPTH).map_err(|_| too_deep())?;
+    let prepared = Prepared::non_empty(bytes).map_err(|error| match error {
+        PrepareError::Empty => empty(EMPTY_RESOURCE),
+        PrepareError::TooDeep(_) => too_deep(),
+        PrepareError::NotUtf8(error) => malformed(error.to_string()),
+    })?;
+    let text = prepared.as_str();
+    // Of a member written twice the last value stands, before anything looks at the text.
+    let cleaned = last_wins(text).into_owned();
+    let root =
+        parse_at::<Value>(JsonSlice::new(&cleaned)).map_err(|e| malformed(e.error.to_string()))?;
+    // `Json::Value::empty()`: null, or an array or object without members.
+    let is_empty = root.is_null()
+        || root.as_object().is_some_and(facet_value::VObject::is_empty)
+        || root.as_array().is_some_and(facet_value::VArray::is_empty);
+    if is_empty {
+        return Err(empty(EMPTY_AFTER_PARSE));
+    }
+    if !has_identifier(&root) {
+        return Err(gate(DiagnosticCode::MissingIdentifier {
+            text: Some(VanillaText::Fixed(NO_IDENTIFIER)),
+        }));
+    }
+    let invalid = || {
+        gate(DiagnosticCode::MissingFormatVersion {
+            text: Some(VanillaText::Fixed(INVALID_VERSION)),
+        })
+    };
+    let envelope = probe_envelope(JsonSlice::new(&cleaned)).map_err(|_| invalid())?;
+    match &envelope.format_version {
+        EnvelopeVersion::String(written) => {
+            let version = FormatVersionInput::parse(written).ok_or_else(invalid)?;
+            // The literal "beta" goes on to the chain, which has no beta struct.
+            let below = !version.beta_literal
+                && version
+                    .version
+                    .is_none_or(|v| v < FLOOR || (version.prerelease && v == FLOOR));
+            if below {
+                return Err(gate(DiagnosticCode::UnsupportedVersion {
+                    text: Some(VanillaText::Fixed(UNSUPPORTED_VERSION)),
+                }));
+            }
+        }
+        // V5a (ours): the dispatcher takes a three-element array, and then either parser
+        // refuses it; it is refused here.
+        EnvelopeVersion::Array(_) => {
+            return Err(gate(DiagnosticCode::MalformedFormatVersion { text: None }));
+        }
+        _ => return Err(invalid()),
+    }
+    Ok(cleaned)
+}
+
+/// The closing line of a document either parser refused.
+fn failed_to_validate(diagnostics: &mut Diagnostics) {
+    diagnostics.push(Diagnostic::error(DiagnosticCode::DocumentRejected {
+        text: Some(VanillaText::Fixed(FAILED_TO_VALIDATE)),
+    }));
+}
+
+/// The upgrade walk, then what the game checks on the definition: the keyframe gate and, for a
+/// document read at 1.26.20, the cereal parser's validation rules, either failing with the
+/// closing line; then the namespace rule.
+fn finish_parsed(
+    parsed: Parsed<FogFamily>,
+    cx: &LoadContext,
+) -> (Option<FogSettings>, VersionInfo, Diagnostics) {
+    let outcome = finish(parsed, cx);
+    let version = outcome.version;
+    let mut diagnostics = outcome.diagnostics;
+    let Some(Loaded::Stable(settings)) = outcome.value else {
+        // The literal "beta" never reached a parser: "Invalid 'format_version' …" in the game.
+        if !version.beta {
+            failed_to_validate(&mut diagnostics);
+        }
+        return (None, version, diagnostics);
+    };
+    let at = payload_at();
+    rules::keyframe_gate(&settings, cx.engine_version, &at, &mut diagnostics);
+    if version.parsed_as == LATEST {
+        rules::format_version(
+            &version.effective.to_string(),
+            &JsonPath::new(),
+            &mut diagnostics,
+        );
+    }
+    // V15–V20 are every era's: the 1.26.20 validation lambda's, and the strict schema's
+    // typed nodes' own (the same nodes in all three older schemas). There V15 and V17–V20 are
+    // level 3 and fail the validation, so the file is refused through "Failed to validate fog
+    // schema" below, and V16–V16b are level 2.
+    rules::cereal_rules(&settings, &at, &mut diagnostics);
+    if diagnostics.has_errors() {
+        failed_to_validate(&mut diagnostics);
+        return (None, version, diagnostics);
+    }
+    rules::namespace(
+        settings.description.identifier.as_str(),
+        cx.is_base_game_pack,
+        &at,
+        &mut diagnostics,
+    );
+    let settings = (!diagnostics.has_errors()).then_some(settings);
+    (settings, version, diagnostics)
+}
+
+/// The struct of the chain that reads the 1.21.90 root.
+const V1_21_90: usize = 2;
+
+/// The parse stage of a text the gates let through: the chain's, except for a pre-release of
+/// 1.26.20. The game's dispatcher compares with a plain `<`, so `1.26.20-beta.1` is below
+/// 1.26.20 and read by the 1.21.90 root; the chain's range model, built for the game's other loaders,
+/// covers no pre-release of its newest struct, so that one case is routed here.
+fn as_written(text: &str, cx: &LoadContext) -> Parsed<FogFamily> {
+    let document = JsonSlice::new(text);
+    let written = match probe_envelope(document).map(|envelope| envelope.format_version) {
+        Ok(EnvelopeVersion::String(written)) => FormatVersionInput::parse(&written)
+            .filter(|input| input.prerelease && input.version == Some(LATEST))
+            .map(|input| (written, input)),
+        _ => None,
+    };
+    let Some((written, input)) = written else {
+        return parse_as_written::<FogFamily>(document, cx);
+    };
+    let mut diagnostics = Diagnostics::default();
+    let at = JsonPath::new().child("format_version");
+    diagnostics.push(
+        Diagnostic::info(DiagnosticCode::PrereleaseFormatVersion { version: written }).at(at),
+    );
+    let versions = <Any as VersionChain<FogFamily>>::VERSIONS;
+    let parsed_as = versions.get(V1_21_90).copied().unwrap_or(FLOOR);
+    let parse = ParseCx {
+        load: cx,
+        written: input,
+        original_version: LATEST,
+        at: JsonPath::new(),
+    };
+    let value = <Any as VersionChain<FogFamily>>::parse_struct(
+        document,
+        StructIndex::Stable(V1_21_90),
+        &parse,
+        &mut diagnostics,
+    )
+    .filter(|_| !diagnostics.has_errors());
+    Parsed::from_value(
+        value,
+        VersionInfo::new(Some(LATEST), false, LATEST, parsed_as, false),
+        input,
+        JsonPath::new(),
+        diagnostics,
+    )
+}
+
+impl JsonDocument for FogSettings {
+    type Family = FogFamily;
+    const SIDES: &'static [PackSide] = &[PackSide::Resource];
+    const NAME: &'static str = "fog settings";
+
+    /// One fog file: the gates `registerFogFromJson` runs before either parser, the parse
+    /// stage (`as_written`), the upgrade and the rules after it (`finish_parsed`).
+    fn read(origin: Origin, bytes: &[u8], cx: &LoadContext) -> DocumentRead<FogFamily> {
+        let text = match gates(bytes) {
+            Ok(text) => text,
+            Err(diagnostics) => {
+                return DocumentRead::Rejected(None, Rejected::located(origin, diagnostics));
+            }
+        };
+        let parsed = as_written(&text, cx);
+        let identifier = parsed.identity.identifier.clone();
+        let (settings, version, diagnostics) = finish_parsed(parsed, cx);
+        let diagnostics = diagnostics.located(&origin);
+        match settings {
+            Some(settings) => {
+                DocumentRead::Stable(Document::new(settings, origin, version, diagnostics))
+            }
+            None => DocumentRead::Rejected(identifier, Rejected::new(origin, diagnostics)),
+        }
+    }
+
+    /// Parses one fog file without upgrading it: the struct its `format_version` selects,
+    /// after the same gates as [`read`](JsonDocument::read);
+    /// [`history::upgrade`] finishes it.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Rejected`] when the file cannot be read into a value at all, such as bytes that
+    /// are not JSON or a document the family refuses; it carries every finding about the file.
+    fn parse_as_written(
+        path: &PackPath,
+        bytes: &[u8],
+        cx: &LoadContext,
+    ) -> Result<Document<Any>, Rejected> {
+        let origin = Origin::file(PackRef::app_data(), PackSide::Resource, path.clone());
+        let text = match gates(bytes) {
+            Ok(text) => text,
+            Err(diagnostics) => {
+                return Err(Rejected::located(origin, diagnostics));
+            }
+        };
+        let parsed = as_written(&text, cx);
+        let mut diagnostics = parsed.diagnostics;
+        if let Some(any) = parsed.value {
+            return Ok(Document::new(
+                any,
+                origin.clone(),
+                parsed.version,
+                diagnostics.located(&origin),
+            ));
+        }
+        if !parsed.version.beta {
+            failed_to_validate(&mut diagnostics);
+        }
+        Err(Rejected::located(origin, diagnostics))
+    }
+
+    /// The document is written at 1.26.20, where the game holds it to the rules V15–V20; so
+    /// do the older schemas, so a value that breaks one has no text the game or this loader
+    /// reads anywhere, and is refused with the path of the entry. So is a keyed member a
+    /// caller built with one time twice (`-0` and `0` are one time), at the second keyframe of
+    /// that time: the reader keeps one keyframe per time.
+    fn refuse_write(&self) -> Result<(), EncodeError> {
+        self.refuse_write_rules()
+    }
+}
+
+impl JsonPlaced for FogSettings {
+    /// `fogs/<identifier>.json`, the identifier's `:` written `_`
+    /// (`fogs/minecraft_fog_bamboo_jungle.json`).
+    fn place(&self) -> PackPath {
+        default_path("fogs", &self.description.identifier)
+    }
+}
+
+impl JsonDefinition for FogSettings {
+    type Kind = kind::Fog;
+
+    fn identifier(&self) -> &FogId {
+        &self.description.identifier
+    }
+
+    /// Per identifier the highest pack's definition; each lower one is noted with
+    /// `ShadowedDefinition` at info (ours; the game skips it silently). Inside one pack the
+    /// first file to register an identifier keeps it too (the walk gives a pack's files in
+    /// path order): a later one is noted with the same info and keeps the findings of its
+    /// parse, which the game ran before it looked the identifier up. A file that failed
+    /// registers nothing, so a lower pack's definition of its identifier still does.
+    fn combine_rule(_: &StackCx<'_>) -> CombineRule<Self> {
+        CombineRule::TopWins {
+            shadowed: Some(Notice::shadowed()),
+        }
+        .within_pack(PackTie::first(Some(Notice::shadowed())))
+    }
+}
+
+/// `history::upgrade`: the remaining steps and the rules on a document
+/// [`FogSettings::parse_as_written`] gave.
+///
+/// # Errors
+///
+/// Returns [`Rejected`] when an upgrade step or a check refuses the document; it carries every
+/// finding about the file.
+#[doc(hidden)]
+pub fn upgrade_document(
+    document: Document<Any>,
+    cx: &LoadContext,
+) -> Result<Document<FogSettings>, Rejected> {
+    let origin = document.origin().clone();
+    let version = document.version().clone();
+    let diagnostics = document.diagnostics().clone();
+    let at = if version.parsed_as == LATEST {
+        payload_at()
+    } else {
+        JsonPath::new()
+    };
+    let written = FormatVersionInput {
+        version: Some(version.effective),
+        beta_literal: false,
+        prerelease: false,
+    };
+    let parsed = Parsed::<FogFamily>::from_value(
+        Some(document.into_value()),
+        version,
+        written,
+        at,
+        diagnostics,
+    );
+    let (settings, version, diagnostics) = finish_parsed(parsed, cx);
+    // The findings the document carried are located already; the new ones are not.
+    let diagnostics = diagnostics.located(&origin);
+    match settings {
+        Some(settings) => Ok(Document::new(settings, origin, version, diagnostics)),
+        None => Err(Rejected::new(origin, diagnostics)),
+    }
+}
+
+// ---- the collection ----------------------------------------------------------------------------
+
+/// `fogs/*.json`, packs top-down: the game walks its stack from index 0 and the first file to
+/// register an identifier keeps it.
+// The game collects them with `getResourcesOfGroup(pack, "fogs")`.
+const WALK: Walk = Walk::json_children_in(&["fogs"]).top_down();
+
+/// The loader of `rp.fogs()`: `fogs/*.json` of every resource pack, the highest pack's
+/// definition winning per identifier.
+#[doc(hidden)]
+pub const LOADER: CollectionLoader<Registry<FogSettings>, Contribution<FogSettings>> =
+    load::registry::<FogSettings>(WALK);
+
+//
+// A present distance entry starts from `FogSetting::ZERO_SETTING` and takes each written member.
+
+/// The three bytes of `#RRGGBB`; 0 for a digit pair that is no hex.
+fn hex_bytes(text: &str) -> [u8; 3] {
+    let digits = text.strip_prefix('#').unwrap_or(text);
+    [0, 2, 4].map(|start| {
+        digits
+            .get(start..start + 2)
+            .and_then(|pair| u8::from_str_radix(pair, 16).ok())
+            .unwrap_or(0)
+    })
+}
+
+impl FogSettings {
+    /// Settings named `identifier` that set nothing.
+    pub fn new(identifier: FogId) -> Self {
+        Self {
+            description: FogDescription::new(identifier),
+            distance: None,
+            volumetric: None,
+            extra: Extra::default(),
+        }
+    }
+
+    /// The identifier's namespace as the game takes it: the lower-cased text before the first
+    /// `:`, or the whole lower-cased identifier when it has none.
+    pub fn namespace(&self) -> String {
+        let identifier = self.description.identifier.as_str();
+        identifier
+            .split(':')
+            .next()
+            .unwrap_or(identifier)
+            .to_ascii_lowercase()
+    }
+}
+
+impl FogDescription {
+    /// A description with `identifier`.
+    pub fn new(identifier: FogId) -> Self {
+        Self {
+            identifier,
+            extra: Extra::default(),
+        }
+    }
+}
+
+impl DistanceType {
+    /// The JSON spelling: `"fixed"` or `"render"`.
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Fixed => "fixed",
+            Self::Render => "render",
+        }
+    }
+}
+
+impl FogColor {
+    /// The colour as the game uses it: red, green and blue from 0 to 1 (each byte over 255).
+    pub fn rgb(&self) -> [f32; 3] {
+        let bytes = match self {
+            Self::Hex(text) => hex_bytes(text),
+            Self::Rgb255(rgb) => *rgb,
+        };
+        bytes.map(|c| f32::from(c) / 255.0)
+    }
+}
+
+impl ColorNorm {
+    /// The colour as the game uses it: each component clamped to 0 to 1.
+    pub fn rgb(&self) -> [f32; 3] {
+        match self {
+            Self::Hex(text) => hex_bytes(text).map(|c| f32::from(c) / 255.0),
+            Self::Array(rgb) => rgb.map(|c| c.clamp(0.0, 1.0)),
+        }
+    }
+}
+
+impl FogDistanceSetting {
+    /// `fog_start`; 0 when the setting leaves it out.
+    pub fn fog_start(&self) -> f32 {
+        self.fog_start.unwrap_or(0.0)
+    }
+
+    /// `fog_end`; 0 when the setting leaves it out.
+    pub fn fog_end(&self) -> f32 {
+        self.fog_end.unwrap_or(0.0)
+    }
+
+    /// `render_distance_type`; `fixed` when the setting leaves it out.
+    pub fn render_distance_type(&self) -> DistanceType {
+        self.render_distance_type.unwrap_or_default()
+    }
+}
+
+impl FogWaterDistanceSetting {
+    /// `fog_start`; 0 when the setting leaves it out.
+    pub fn fog_start(&self) -> f32 {
+        self.fog_start.unwrap_or(0.0)
+    }
+
+    /// `fog_end`; 0 when the setting leaves it out.
+    pub fn fog_end(&self) -> f32 {
+        self.fog_end.unwrap_or(0.0)
+    }
+
+    /// `render_distance_type`; `fixed` when the setting leaves it out.
+    pub fn render_distance_type(&self) -> DistanceType {
+        self.render_distance_type.unwrap_or_default()
+    }
+}
+
+impl<T> Keyframed<T> {
+    /// The one value, when the member is not keyed by time.
+    pub fn single(&self) -> Option<&T> {
+        match self {
+            Self::Single(value) => Some(value),
+            Self::Keys(_) => None,
+        }
+    }
+
+    /// Every value the member holds, with its time key (`None` for a single value).
+    pub fn values(&self) -> Vec<(Option<f32>, &T)> {
+        match self {
+            Self::Single(value) => vec![(None, value)],
+            Self::Keys(keys) => keys
+                .iter()
+                .map(|(time, value)| (Some(*time), value))
+                .collect(),
+        }
+    }
+}
+
+#[cfg(test)]
+mod reading_table {
+    //! The family's reading table: what the pipeline reads each of its files and structs by.
+
+    use bedrock_addon_core::versioning::testing::{assert_reading_table, reading_table};
+
+    #[test]
+    fn fog_reads_as_pinned() {
+        assert_reading_table(
+            "FogFamily",
+            &reading_table::<super::FogFamily>(),
+            r#"
+                text: Root, clamps beyond a double: false, duplicates kept in: []
+                envelope: From(FormatVersion { major: 1, minor: 26, patch: 20 })
+                missing version: rejected: Fixed("Invalid 'format_version' in fog settings JSON")
+                below floor: UseFormatVersion
+                empty document: Error
+                1.16.100..=1.26.20 (0..=3): json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+            "#,
+        );
+    }
 }

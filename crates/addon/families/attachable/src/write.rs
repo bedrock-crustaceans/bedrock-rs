@@ -2,9 +2,7 @@
 //! with its `format_version`.
 
 use bedrock_addon_core::diagnostic::{Diagnostics, Severity};
-use bedrock_addon_core::json::{
-    EncodeError, JsonSlice, Unrepresentable, Value, WriteStyle, write_json,
-};
+use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::version::known;
 use bedrock_addon_core::versioning::{ParseCx, VersionStruct, Versioned, write_payload};
@@ -111,8 +109,10 @@ impl VersionStruct for Attachable {
         })
     }
 
+    /// The whole document (the struct reads the whole text, `EnvelopeCheck::Never`), at
+    /// `written_version`.
     fn write(&self) -> Result<Value, EncodeError> {
-        self.document(self.format_version)
+        self.document(self.written_version())
     }
 }
 
@@ -154,27 +154,5 @@ impl Attachable {
         root.insert("format_version", version.to_string());
         root.insert(read::PAYLOAD, Value::from(payload));
         Ok(root.into())
-    }
-
-    /// Writes the document into `out`, or refuses it with the path of what this loader would
-    /// not read. Whether its Molang compiles is not asked: that depends on the pack.
-    pub(crate) fn write_into(
-        &self,
-        out: &mut Vec<u8>,
-        style: WriteStyle,
-    ) -> Result<(), EncodeError> {
-        let mut text = Vec::new();
-        write_json(&self.document(self.written_version())?, &mut text, style)?;
-        // A value built in code may hold what no file can: an empty `item` object, a slot
-        // name outside its pattern, a version above the engine's. The text is given out only
-        // when this loader reads it.
-        if let Some(at) = super::load::refused_at(&text) {
-            return Err(EncodeError::NotRepresentable {
-                at,
-                what: Unrepresentable::Unsupported,
-            });
-        }
-        out.extend_from_slice(&text);
-        Ok(())
     }
 }

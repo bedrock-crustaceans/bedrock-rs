@@ -3,8 +3,8 @@
 //! four times the input takes about four times the time. A load through a stack cannot show this,
 //! because the walk and the parse dominate it.
 
-use super::load::{ParsedBlocks, combine_blocks};
 use super::resolve::{self, duplicate_keys};
+use crate::{ParsedBlocks, combine_blocks};
 use bedrock_addon_core::document::Origin;
 use bedrock_addon_core::load::LoadOptions;
 use bedrock_addon_core::load::StackCx;

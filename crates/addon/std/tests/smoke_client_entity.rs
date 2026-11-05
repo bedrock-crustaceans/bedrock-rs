@@ -19,7 +19,7 @@ use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
 use bedrock_addon::diagnostic::{Diagnostic, Severity};
-use bedrock_addon::document::Registry;
+use bedrock_addon::document::{JsonDocument as _, Registry};
 use bedrock_addon::families::client_entity::ClientEntity;
 use bedrock_addon::load::{LoadOptions, StackOptions};
 use bedrock_addon::pack::{OpenOptions, PackOrigin, PackStack, StackSet};

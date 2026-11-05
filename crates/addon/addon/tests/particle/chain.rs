@@ -1,5 +1,6 @@
 //! The 1.10.0 → 1.20.80 step, the chain and the history path.
 
+use bedrock_addon::document::JsonDocument as _;
 use bedrock_addon::families::particle::ParticleEffect;
 use bedrock_addon::families::particle::component::ParticleComponent;
 use bedrock_addon::families::particle::history::{self, Any, ParticleFamily, v1_10_0};

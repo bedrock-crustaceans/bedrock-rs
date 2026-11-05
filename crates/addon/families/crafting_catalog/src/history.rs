@@ -6,9 +6,9 @@
 //! `v1_21_60::CraftingCatalogCategory`); the step is a plain copy of that member, which
 //! renames, defaults, drops and logs nothing.
 
-use super::load::{CatalogFamily, upgrade_document};
-use super::parse::parse_catalog;
+use super::read::parse_catalog;
 use super::{CraftingCatalog, V1_21_60};
+use crate::{CatalogFamily, upgrade_document};
 use bedrock_addon_core::diagnostic::Diagnostics;
 use bedrock_addon_core::document::{Document, Rejected};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
@@ -35,7 +35,7 @@ bedrock_addon_core::version_chain! {
 }
 
 impl CatalogAny {
-    /// Runs the rest of the load on a document [`CraftingCatalog::parse_as_written`] gave: the
+    /// Runs the rest of the load on a document [`CraftingCatalog::parse_as_written`](bedrock_addon_core::document::JsonDocument::parse_as_written) gave: the
     /// same result [`Content::parse`](bedrock_addon_core::document::Content::parse) gives for its file.
     ///
     /// # Errors

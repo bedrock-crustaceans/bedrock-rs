@@ -4,7 +4,7 @@
 use std::fmt::Write as _;
 
 use bedrock_addon::diagnostic::Diagnostics;
-use bedrock_addon::document::{Content, Placed};
+use bedrock_addon::document::{Content, JsonDocument as _, Placed};
 use bedrock_addon::families::particle::component::{
     DistanceEvent, EmitterLifetimeEvents, EmitterRateInstant, ParticleMotionCollision, VectorEvents,
 };

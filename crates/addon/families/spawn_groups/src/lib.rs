@@ -5,10 +5,7 @@
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
-pub mod history;
-
 mod legacy;
-mod load;
 mod validate;
 
 pub use bedrock_addon_support::spawn::{
@@ -16,12 +13,25 @@ pub use bedrock_addon_support::spawn::{
     HerdInfo, MobEventFilter, MobSpawnRules, OneOrMany, Permutation, PopulationControl,
     RangeFilter, VillageFilter, Weight, WorldAgeFilter,
 };
-#[doc(hidden)]
-pub use load::LOADER;
 
 use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::document::{
+    JsonDefinition, JsonDocument, JsonPlaced, NoBeta, Origin, Registry, default_path,
+};
 use bedrock_addon_core::id::SpawnGroupId;
+use bedrock_addon_core::id::kind;
+use bedrock_addon_core::load::LoadContext;
+use bedrock_addon_core::load::{AppDataPlace, CollectionLoader, Walk, WalkFile};
+use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::versioning::{
+    BelowFloor, DocumentRead, Envelope, EnvelopeCheck, Family, Loaded, MissingVersion,
+    NoComponents, Single, ValidateCx,
+};
+use bedrock_addon_support::spawn::legacy::{GROUPS_KEY, V1_8_0};
+use bedrock_addon_support::spawn::load::{
+    FileLoad, Parsed, combine, contribution, load_family, load_file, origin,
+};
 
 /// A raid spawn group (`minecraft:spawn_groups`): the conditions the server spawns as one batch
 /// when a raid wave names the group (`minecraft:raid_group_<wave>`).
@@ -68,5 +78,146 @@ impl SpawnGroup {
             .flatten()
             .map(|c| c.rules_with(bedrock_addon_support::spawn::condition::SPAWN_GROUPS))
             .collect()
+    }
+}
+
+/// The closing line of a spawn-group file that failed.
+const FAILED_GROUPS: &str = "Failed to load spawn groups";
+/// The app-data directory of spawn groups (`SPAWN_GROUPS_FILE_TYPE`).
+const GROUPS_DIRECTORY: &str = "definitions/spawn_groups";
+
+/// The `spawn_groups` family: one struct, `spawn_groups` (`v1_8_0`), with no `Upgrade` step.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+#[doc(hidden)]
+pub struct GroupFamily;
+
+/// A spawn-group document as written: the one struct, the newest.
+#[doc(hidden)]
+pub type GroupAny = Single<GroupFamily>;
+
+impl Family for GroupFamily {
+    const NAME: &'static str = "spawn group";
+    const PAYLOAD_KEY: &'static str = GROUPS_KEY;
+    const FLOOR: FormatVersion = V1_8_0;
+    const ENVELOPE: Envelope = Envelope {
+        // What the document does not read is kept for write-back: a number no double holds is
+        // the largest finite one, with a warning at it.
+        clamps_beyond_double: true,
+        // The loader reads the raw text, never the cereal path.
+        check: EnvelopeCheck::Never,
+        // A missing version is an error, as in vanilla ("no valid version passed by the caller or
+        // found in the input").
+        missing: MissingVersion::REJECT,
+        // Below the first slice the versioned loader has no parser at all.
+        below_floor: BelowFloor::NoParser,
+        ..Envelope::DEFAULT
+    };
+    type Latest = SpawnGroup;
+    type Beta = NoBeta<kind::SpawnGroup>;
+    type Component = NoComponents;
+    type Any = Single<Self>;
+
+    fn validate(v: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {
+        if let Loaded::Stable(group) = v {
+            validate::group(group, cx);
+        }
+    }
+}
+
+/// Loads one spawn-group file.
+pub(crate) fn parse_group(
+    pack: PackRef,
+    side: PackSide,
+    path: &PackPath,
+    bytes: &[u8],
+    cx: &LoadContext,
+) -> FileLoad<SpawnGroup> {
+    let origin = origin(pack, side, path);
+    let (identifier, result) = load_file(&origin, bytes, FAILED_GROUPS, |text, origin| {
+        load_family::<GroupFamily, _>(text, cx, origin, std::convert::identity)
+    });
+    // A group without conditions is never registered.
+    let registered = result
+        .as_ref()
+        .is_ok_and(|document| document.conditions.as_ref().is_some_and(|c| !c.is_empty()));
+    FileLoad {
+        identifier,
+        result,
+        registered,
+    }
+}
+
+impl JsonDocument for SpawnGroup {
+    type Family = GroupFamily;
+    const SIDES: &'static [PackSide] = &[PackSide::Behavior];
+
+    /// Loads one spawn-group file (the shared spawn steps around the chain). A group without
+    /// conditions loads (with its warning) although a stack does not register it.
+    fn read(origin: Origin, bytes: &[u8], cx: &LoadContext) -> DocumentRead<GroupFamily> {
+        let loaded = parse_group(origin.pack.clone(), origin.side, &origin.path, bytes, cx);
+        match loaded.result {
+            Ok(document) => DocumentRead::Stable(document),
+            Err(rejected) => DocumentRead::Rejected(loaded.identifier, rejected),
+        }
+    }
+}
+
+impl JsonPlaced for SpawnGroup {
+    /// `definitions/spawn_groups/<name>.json` (an app-data path: no pack reads it).
+    fn place(&self) -> PackPath {
+        default_path(GROUPS_DIRECTORY, &self.description.identifier)
+    }
+}
+
+impl JsonDefinition for SpawnGroup {
+    type Kind = kind::SpawnGroup;
+
+    fn identifier(&self) -> &SpawnGroupId {
+        &self.description.identifier
+    }
+}
+
+fn parse_group_file(file: &WalkFile, cx: &LoadContext) -> Parsed<SpawnGroup> {
+    contribution(
+        parse_group(file.pack.clone(), file.side, &file.path, &file.bytes, cx),
+        |id| SpawnGroupId::parse(id),
+        |document| document.description.identifier.clone(),
+    )
+}
+
+/// The loader of `bp.spawn_groups()`, the family's own: a group that loads without conditions is
+/// not registered but its findings are (`Parsed::Unregistered`), which `load::registry` has no
+/// shape for. Only only the app data's `definitions/spawn_groups/*.json`
+/// (not recursive, extension exactly `json`), in file-name order, a later file with the same
+/// identifier replacing the earlier one with a `DuplicateIdentifier` warning; no pack is read.
+#[doc(hidden)]
+pub const LOADER: CollectionLoader<Registry<SpawnGroup>, Parsed<SpawnGroup>> = CollectionLoader {
+    walk: Walk::json_children_in(&[]).app_data(&[GROUPS_DIRECTORY], AppDataPlace::After),
+    parse: parse_group_file,
+    combine,
+    needs: &[],
+    then: None,
+};
+
+#[cfg(test)]
+mod reading_table {
+    //! The family's reading table: what the pipeline reads each of its files and structs by.
+
+    use bedrock_addon_core::versioning::testing::{assert_reading_table, reading_table};
+
+    #[test]
+    fn spawn_groups_reads_as_pinned() {
+        assert_reading_table(
+            "GroupFamily",
+            &reading_table::<super::GroupFamily>(),
+            r"
+                text: Root, clamps beyond a double: true, duplicates kept in: []
+                envelope: Never
+                missing version: rejected: NoValidVersion
+                below floor: NoParser
+                empty document: Error
+                1.8.0..=1.8.0 (0..=0): json Own/Strict/Warn/lenient/Refuse, mcb Own/Strict/Warn/lenient/Refuse
+            ",
+        );
     }
 }

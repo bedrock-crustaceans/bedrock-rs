@@ -24,7 +24,7 @@ use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
 use bedrock_addon::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, Severity};
-use bedrock_addon::document::Content;
+use bedrock_addon::document::{Content, JsonDocument as _};
 use bedrock_addon::families::particle::ParticleEffect;
 use bedrock_addon::families::particle::history::Any;
 use bedrock_addon::load::{LoadContext, LoadOptions, StackOptions};

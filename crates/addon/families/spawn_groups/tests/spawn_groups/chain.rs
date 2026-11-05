@@ -5,7 +5,7 @@ use bedrock_addon_core::version::{ENGINE_VERSION, FormatVersion, FormatVersionIn
 use bedrock_addon_core::versioning::{
     Family, RangeModel, Selection, VersionChain, check_chain, select,
 };
-use bedrock_addon_family_spawn_groups::history::{GroupAny, GroupFamily};
+use bedrock_addon_family_spawn_groups::{GroupAny, GroupFamily};
 
 fn engine() -> String {
     ENGINE_VERSION.to_string()

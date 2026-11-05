@@ -34,7 +34,7 @@ bedrock_addon_core::version_chain! {
     }
 }
 
-/// Runs the remaining upgrade steps of a document [`ClientEntity::parse_as_written`] gave: the
+/// Runs the remaining upgrade steps of a document [`ClientEntity::parse_as_written`](bedrock_addon_core::document::JsonDocument::parse_as_written) gave: the
 /// same result [`ClientEntity::parse`](bedrock_addon_core::document::Content::parse) gives for its file.
 ///
 /// The split lets a caller inspect the document as written before it is upgraded.
@@ -47,5 +47,5 @@ pub fn upgrade(
     document: Document<Any>,
     cx: &LoadContext,
 ) -> Result<Document<ClientEntity>, Rejected> {
-    super::load::upgrade_document(document, cx)
+    crate::upgrade_document(document, cx)
 }

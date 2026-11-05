@@ -7,7 +7,7 @@
 //! and the two things the 1.10 step does to script text among them, so the older shapes are
 //! compared too).
 
-use bedrock_addon::document::{Content, Document};
+use bedrock_addon::document::{Content, Document, JsonDocument as _};
 use bedrock_addon::families::attachable::Attachable;
 use bedrock_addon::families::attachable::history::Any;
 use bedrock_addon::json::EncodeError;

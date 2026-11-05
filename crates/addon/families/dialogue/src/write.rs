@@ -22,6 +22,8 @@ impl DialogueFile {
         let mut payload = VObject::new();
         payload.insert("scenes", scenes);
         extend(&mut payload, &self.dialogue_extra);
+        // Not core's `write_envelope`: the version is written as the file spelled it (a
+        // `SemVersion`, not a `FormatVersion`), and dialogue is no family chain.
         let mut root = VObject::new();
         root.insert("format_version", version_text(&self.format_version));
         root.insert("minecraft:npc_dialogue", payload);

@@ -2,6 +2,7 @@
 //! `s01`–`s02d`.
 
 use bedrock_addon::diagnostic::{Diagnostics, Severity};
+use bedrock_addon::document::JsonDocument as _;
 use bedrock_addon::families::client_entity::ClientEntity;
 use bedrock_addon::families::client_entity::history::{
     self, Any, ClientEntityFamily, v1_8_0, v1_10_0,

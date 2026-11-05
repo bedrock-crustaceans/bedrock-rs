@@ -4,7 +4,7 @@
 use super::v1_26_0;
 use crate::Description;
 use crate::component::{BiomeComponent, Tags, VillageKind, VillageType};
-use crate::parse::payload;
+use crate::read::payload;
 use crate::write::object;
 use bedrock_addon_core::diagnostic::Diagnostics;
 use bedrock_addon_core::document::{ComponentMap, Extra};

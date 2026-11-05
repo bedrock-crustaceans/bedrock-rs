@@ -40,7 +40,7 @@ bedrock_addon_core::version_chain! {
 }
 
 /// Runs the remaining upgrade steps and the checks of a document
-/// [`FogSettings::parse_as_written`] gave: the same result
+/// [`FogSettings::parse_as_written`](bedrock_addon_core::document::JsonDocument::parse_as_written) gave: the same result
 /// [`FogSettings::parse`](bedrock_addon_core::document::Content::parse) gives for its file (that is
 /// `history::Any::upgrade`, over the document, which holds the origin).
 ///

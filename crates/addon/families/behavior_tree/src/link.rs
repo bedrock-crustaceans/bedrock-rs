@@ -5,7 +5,7 @@
 
 use std::collections::HashMap;
 
-use super::parse::{PAYLOAD, ROOT};
+use super::read::{PAYLOAD, ROOT};
 use super::{BehaviorTree, Node};
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Phase,

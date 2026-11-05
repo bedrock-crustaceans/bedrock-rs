@@ -14,12 +14,10 @@
 //! is kept without a warning, since the catalogue cannot know.
 
 use bedrock_addon_core::load::{
-    Accept, BuiltIns, CollectionLoader, LoadContext, Registration, StackCx, StackPack, Walk,
-    WalkFile,
+    self, Accept, BuiltIns, CollectionLoader, FileCopy, Registration, StackCx, StackPack, Walk,
 };
 use uuid::Uuid;
 
-use super::load::parse_file;
 use super::merge::{self, Items, Merger};
 use super::{CatalogKey, CraftingCatalog, PATH};
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, DiagnosticDetail, Phase};
@@ -31,7 +29,7 @@ impl Merge for CraftingCatalog {
 }
 
 /// One catalogue file of the walk, loaded or rejected.
-pub type CatalogFile = Result<Document<CraftingCatalog>, Rejected>;
+type CatalogFile = Result<Document<CraftingCatalog>, Rejected>;
 
 /// `item_catalog/crafting_item_catalog.json` of every pack; packs bottom-up.
 const WALK: Walk = Walk::json_tree_in(&["item_catalog"]).accept(Accept::Exact(&[PATH]));
@@ -39,11 +37,6 @@ const WALK: Walk = Walk::json_tree_in(&["item_catalog"]).accept(Accept::Exact(&[
 /// The identifier kinds the merge asks the stack about: the items and the blocks its packs
 /// registered.
 const NEEDS: &[&str] = &[<kind::Item as Kind>::NAME, <kind::Block as Kind>::NAME];
-
-/// The parse step: one pack's catalogue file.
-fn parse_walk_file(file: &WalkFile, cx: &LoadContext) -> CatalogFile {
-    parse_file(file.pack.clone(), file.side, &file.path, &file.bytes, cx)
-}
 
 /// The items and blocks of a stack.
 struct StackItems<'a> {
@@ -122,7 +115,9 @@ fn no_base() -> Diagnostic {
 /// The stack's catalogue: the base file first, then the file of every pack above it, the top
 /// pack last. Packs below the base are not read. Without a base the files of the stack merge
 /// onto empty categories, with one warning.
-fn combine(files: Vec<CatalogFile>, stack: &StackCx<'_>) -> Merged<CraftingCatalog> {
+fn combine(files: Vec<FileCopy<CraftingCatalog>>, stack: &StackCx<'_>) -> Merged<CraftingCatalog> {
+    // The one path the walk reads: the key says nothing more.
+    let files: Vec<CatalogFile> = files.into_iter().map(|(_, file)| file).collect();
     let registry = StackItems {
         stack,
         built_ins: stack.options.built_ins.as_deref(),
@@ -148,10 +143,8 @@ fn combine(files: Vec<CatalogFile>, stack: &StackCx<'_>) -> Merged<CraftingCatal
 }
 
 /// The loader of `bp.crafting_catalog()`.
-pub const LOADER: CollectionLoader<Merged<CraftingCatalog>, CatalogFile> = CollectionLoader {
-    walk: WALK,
-    parse: parse_walk_file,
-    combine,
-    needs: NEEDS,
-    then: None,
-};
+pub const LOADER: CollectionLoader<Merged<CraftingCatalog>, FileCopy<CraftingCatalog>> =
+    CollectionLoader {
+        needs: NEEDS,
+        ..load::merged::<CraftingCatalog, _>(WALK, combine)
+    };

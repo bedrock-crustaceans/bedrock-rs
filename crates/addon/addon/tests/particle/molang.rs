@@ -9,6 +9,7 @@
 )]
 
 use bedrock_addon::diagnostic::{DiagnosticCode as Code, Diagnostics, Severity};
+use bedrock_addon::document::JsonDocument as _;
 use bedrock_addon::families::particle::ParticleEffect;
 use bedrock_addon::families::particle::component::{
     EmitterLifetimeExpression, EmitterRateInstant, EmitterShapeSphere, ParticleInitialization,

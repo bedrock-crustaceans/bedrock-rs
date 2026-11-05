@@ -4,11 +4,9 @@
 
 use facet_value::{VArray, VObject};
 
-use super::load::CatalogFamily;
-use super::{CatalogItem, Category, CraftingCatalog, Group, GroupIdentifier, V1_26_50};
+use super::{CatalogItem, Category, CraftingCatalog, Group, GroupIdentifier};
 use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::json::Value;
-use bedrock_addon_core::versioning::Family;
 
 /// Appends the unknown members of a level after its known ones.
 fn with_extra(mut object: VObject, extra: &Extra) -> Value {
@@ -76,16 +74,5 @@ impl CraftingCatalog {
         let mut object = VObject::new();
         object.insert("categories", array(&self.categories, Category::write));
         with_extra(object, &self.extra)
-    }
-
-    /// The whole document: `format_version` 1.26.50, the newest struct's version and vanilla's
-    /// own stamp, then the payload. A read never keeps an unknown member; an `extra` a caller
-    /// filled by hand is written after the known members of its level, and the strict 1.26.50
-    /// slice refuses it on the next read.
-    pub(super) fn document(&self) -> Value {
-        let mut root = VObject::new();
-        root.insert("format_version", V1_26_50.to_string());
-        root.insert(CatalogFamily::PAYLOAD_KEY, self.payload());
-        root.into()
     }
 }

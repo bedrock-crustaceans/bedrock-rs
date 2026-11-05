@@ -16,7 +16,7 @@ fn lang(code: &str) -> Language {
 fn the_translations_walk_reads_the_lang_files_directly_in_texts() {
     use bedrock_addon_core::load::WalkOrder;
 
-    let walk = super::load::LOADER.walk;
+    let walk = crate::LOADER.walk;
     let reads = |path: &str| walk.matches(&PackPath::new(path).unwrap()).is_some();
     assert!(reads("texts/en_US.lang"));
     for path in [

@@ -1,12 +1,12 @@
-//! Reading and writing [`Biome`] and [`Beta`] as version structs: the payload object, and the
-//! document with its envelope.
+//! Reading and writing [`Biome`] and [`Beta`] as version structs: the payload object (core's
+//! `write_envelope` puts it in its document).
 
 use super::component::write_components;
-use super::parse::{V1_26_30, beta_payload, payload};
+use super::read::{V1_26_30, beta_payload, payload};
 use super::{Beta, Biome, Description};
 use bedrock_addon_core::diagnostic::Diagnostics;
 use bedrock_addon_core::document::{ComponentMap, Extra};
-use bedrock_addon_core::json::{EncodeError, JsonSlice, Value, WriteStyle, write_json};
+use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
@@ -28,14 +28,6 @@ pub(crate) fn object(
         object.insert(key, value.clone());
     }
     Ok(object.into())
-}
-
-/// The whole document: `format_version` and the payload.
-fn document(version: &str, payload: Value) -> Value {
-    let mut root = facet_value::VObject::new();
-    root.insert("format_version", Value::from(version));
-    root.insert("minecraft:biome", payload);
-    root.into()
 }
 
 impl Versioned for Biome {
@@ -95,31 +87,5 @@ impl VersionStruct for Beta {
 impl MolangFields for Beta {
     fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
         visitor.nested("components", &mut self.components);
-    }
-}
-
-impl Biome {
-    /// Writes the document, at format 1.26.30, into `out`.
-    pub(crate) fn write_into(
-        &self,
-        out: &mut Vec<u8>,
-        style: WriteStyle,
-    ) -> Result<(), EncodeError> {
-        write_json(
-            &document(&Self::VERSION.to_string(), self.write()?),
-            out,
-            style,
-        )
-    }
-}
-
-impl Beta {
-    /// Writes the document, at `"format_version": "beta"`, into `out`.
-    pub(crate) fn write_into(
-        &self,
-        out: &mut Vec<u8>,
-        style: WriteStyle,
-    ) -> Result<(), EncodeError> {
-        write_json(&document("beta", self.write()?), out, style)
     }
 }
