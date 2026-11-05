@@ -1,7 +1,7 @@
 //! The code vocabulary: every code the crate lists is a `DiagnosticCode` variant, and no name from
 //! the rejected list is one.
 
-use bedrock_addon_core::diagnostic::DiagnosticCode;
+use bedrock_addon_core::diagnostic::{Class, CodeDef, DiagnosticCode, Kind};
 
 /// Every code: the document-level list, the RP-side and shared codes, every family's codes and
 /// the manifest variants.
@@ -186,6 +186,8 @@ const LISTED_CODES: &[&str] = &[
     "VersionTooHigh",
     "VersionTooLow",
     "MinEngineVersionCapFormatVersion1",
+    // a code declared by a `CodeDef`, named by its owner and its own name
+    "Specific",
 ];
 
 /// Names that were considered for codes and rejected: they must never become codes.
@@ -308,4 +310,24 @@ fn name_is_the_variant_name() {
         let debug = format!("{code:?}");
         assert!(debug.starts_with(code.name()), "{debug} vs {}", code.name());
     }
+}
+
+/// A code declared by a definition beside its rule.
+static DENSITY_OUT_OF_UNIT: CodeDef<1> = CodeDef::new(
+    "fog/density_out_of_unit",
+    Kind::InvalidValue,
+    Class::Error,
+    "fog density {} is outside [0, 1]",
+);
+
+/// A specific code is the one `Specific` variant of the list, and is known by its stable id,
+/// `owner/name`: its name is its own, never a listed or a rejected variant name.
+#[test]
+fn a_specific_code_is_known_by_owner_and_name() {
+    let code = DiagnosticCode::from(DENSITY_OUT_OF_UNIT.with(["2"]));
+    assert_eq!(code.variant_name(), "Specific");
+    assert_eq!(code.id(), "fog/density_out_of_unit");
+    assert_eq!(code.name(), "density_out_of_unit");
+    assert!(!LISTED_CODES.contains(&code.name()));
+    assert!(!REJECTED_NAMES.contains(&code.name()));
 }

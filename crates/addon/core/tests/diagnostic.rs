@@ -10,8 +10,11 @@ use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Location, PackReport,
     Phase, ReferenceHint, Severity, Span,
 };
+use bedrock_addon_core::document::Origin;
 use bedrock_addon_core::load::{Place, RootId};
-use bedrock_addon_core::pack_identity::{PackIdVersion, PackOrigin, PackPath, PackRef, PackType};
+use bedrock_addon_core::pack_identity::{
+    PackIdVersion, PackOrigin, PackPath, PackRef, PackSide, PackType,
+};
 use bedrock_addon_core::version::SemVersion;
 use uuid::Uuid;
 
@@ -782,4 +785,65 @@ fn display_appends_a_note_after_the_message() {
     // A note is the detail's whole text, and two notes compare by their words.
     assert_eq!(DiagnosticDetail::Note("a").to_string(), ": a");
     assert_ne!(DiagnosticDetail::Note("a"), DiagnosticDetail::Note("b"));
+}
+
+/// The file a located list is put in.
+fn fog_origin() -> Origin {
+    Origin::file(
+        PackRef::app_data(),
+        PackSide::Resource,
+        PackPath::from_static("fogs/a.json"),
+    )
+}
+
+/// Two findings named where the file has them, after an upgrade moved `old` to `new`: the
+/// list knows that the member the document holds at `new` is at `old` in the file.
+fn moved_findings() -> (Diagnostics, JsonPath, JsonPath) {
+    let (from, to) = (JsonPath::of_keys(["old"]), JsonPath::of_keys(["new"]));
+    let mut diagnostics = Diagnostics::default();
+    diagnostics.push(finding(
+        DiagnosticCode::UnknownSound { text: None },
+        Severity::Warning,
+    ));
+    diagnostics.moved(from.clone(), to.clone());
+    diagnostics.push(Diagnostic::error(DiagnosticCode::InvalidValue { text: None }).at(to.clone()));
+    diagnostics.name_as_the_file_has_it();
+    assert_eq!(diagnostics.place_of(&to), from);
+    (diagnostics, from, to)
+}
+
+#[test]
+fn locate_puts_every_finding_in_the_file_of_the_origin() {
+    let (mut diagnostics, from, _) = moved_findings();
+    let origin = fog_origin();
+    diagnostics.locate(&origin);
+    assert_eq!(diagnostics.len(), 2);
+    for found in &diagnostics {
+        assert_eq!(found.location.pack, Some(origin.pack.clone()));
+        assert_eq!(found.location.path, Some(origin.path.clone()));
+    }
+    assert_eq!(diagnostics.iter().nth(1).unwrap().location.json_path, from);
+    assert_eq!(diagnostics.clone().located(&origin), diagnostics);
+}
+
+/// In place, the list keeps the places of the moves it has undone; the families'
+/// take-and-repush copy (`std::mem::take`, then a push of each finding) drops them, and the
+/// link pass then sees the member where the document holds it.
+#[test]
+fn locate_in_place_keeps_the_places_take_and_repush_drops() {
+    let origin = fog_origin();
+    let (mut in_place, from, to) = moved_findings();
+    in_place.locate(&origin);
+    assert_eq!(in_place.place_of(&to), from);
+    assert_eq!(moved_findings().0.located(&origin).place_of(&to), from);
+
+    let (mut repushed, _, _) = moved_findings();
+    let found = std::mem::take(&mut repushed);
+    for mut f in found {
+        f.location.pack = Some(origin.pack.clone());
+        f.location.path = Some(origin.path.clone());
+        repushed.push(f);
+    }
+    assert_eq!(repushed, in_place, "the findings are the same either way");
+    assert_eq!(repushed.place_of(&to), to, "the places are gone");
 }

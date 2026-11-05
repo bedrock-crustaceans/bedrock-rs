@@ -1232,10 +1232,11 @@ macro_rules! families {
 document_types!(families);
 
 /// The game line of a kept error, by which the written text's load and the read are matched:
-/// only a finding that carries a game text (`DiagnosticCode::game_text`) has
-/// one; a kept error without it renders only its kind's word and pairs with nothing.
+/// only a finding with the game's sentence (`Diagnostic::vanilla`, a legacy code's game text or
+/// a specific code's game sentence) has one; a kept error without it renders only its kind's
+/// word and pairs with nothing.
 fn kept_line(finding: &Diagnostic) -> Option<String> {
-    let has_game_text = finding.code.game_text().is_some();
+    let has_game_text = finding.vanilla().is_some();
     (finding.kept && has_game_text).then(|| finding.code.to_string())
 }
 

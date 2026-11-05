@@ -183,6 +183,11 @@ impl Origin {
         }
     }
 
+    /// The origin of a one-definition file: no member key, no other contributor.
+    pub fn file(pack: PackRef, side: PackSide, path: PackPath) -> Self {
+        Self::new(pack, side, path, None, Vec::new())
+    }
+
     /// Where a combine-time finding about this document is: its pack and file.
     pub(crate) fn location(&self) -> Location {
         Location::new(
@@ -272,6 +277,15 @@ impl Rejected {
             origin,
             diagnostics,
         }
+    }
+
+    /// A rejection of the document at `origin`, every finding put in its pack and file.
+    ///
+    /// In place: the list keeps the moves and places it holds, so the link pass can still
+    /// ask where a member of the document is in the file.
+    pub fn located(origin: Origin, mut diagnostics: Diagnostics) -> Self {
+        diagnostics.locate(&origin);
+        Self::new(origin, diagnostics)
     }
 }
 
@@ -382,4 +396,55 @@ pub trait Placed: Content {
 pub trait Merge: Sealed {
     /// The key of one entry of the merged value, for [`Merged::origin`].
     type Key: Eq + Hash;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::diagnostic::{Diagnostic, DiagnosticCode};
+
+    fn fog_origin() -> Origin {
+        Origin::file(
+            PackRef::app_data(),
+            PackSide::Resource,
+            PackPath::from_static("fogs/a.json"),
+        )
+    }
+
+    #[test]
+    fn a_file_origin_has_no_key_and_no_contributor() {
+        let pack = PackRef::app_data();
+        let path = PackPath::from_static("fogs/a.json");
+        assert_eq!(
+            Origin::file(pack.clone(), PackSide::Resource, path.clone()),
+            Origin::new(pack, PackSide::Resource, path, None, Vec::new())
+        );
+    }
+
+    /// Findings named where the file has them, and the place a moved member has in the file.
+    fn moved_findings() -> (Diagnostics, JsonPath, JsonPath) {
+        let (from, to) = (JsonPath::of_keys(["old"]), JsonPath::of_keys(["new"]));
+        let mut diagnostics = Diagnostics::default();
+        diagnostics.moved(from.clone(), to.clone());
+        diagnostics
+            .push(Diagnostic::error(DiagnosticCode::InvalidValue { text: None }).at(to.clone()));
+        diagnostics.name_as_the_file_has_it();
+        assert_eq!(diagnostics.place_of(&to), from);
+        (diagnostics, from, to)
+    }
+
+    #[test]
+    fn a_located_rejection_puts_every_finding_in_the_file_and_keeps_the_places() {
+        let (diagnostics, from, to) = moved_findings();
+        let origin = fog_origin();
+        let rejected = Rejected::located(origin.clone(), diagnostics);
+        assert_eq!(rejected.origin, origin);
+        assert_eq!(rejected.diagnostics.len(), 1);
+        for finding in &rejected.diagnostics {
+            assert_eq!(finding.location.pack, Some(origin.pack.clone()));
+            assert_eq!(finding.location.path, Some(origin.path.clone()));
+            assert_eq!(finding.location.json_path, from);
+        }
+        assert_eq!(rejected.diagnostics.place_of(&to), from);
+    }
 }

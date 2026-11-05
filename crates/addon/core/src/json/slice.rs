@@ -11,7 +11,9 @@ use facet_path::PathStep;
 
 use super::Value;
 use super::path::{MemberPath, path_at};
-use crate::diagnostic::{JsonPath, Span};
+use crate::diagnostic::{
+    Diagnostic, DiagnosticCode, JsonPath, Span, code_for_deserialize_error_kind,
+};
 
 /// A slice of a document's text with its file offset, so a nested parse reports file offsets.
 /// Internal: the versioning machinery names it.
@@ -59,6 +61,62 @@ pub struct SliceError {
     /// facet's error; its `kind` picks the diagnostic code (see `code_for_deserialize_error_kind`).
     #[source]
     pub error: Box<DeserializeError>,
+    /// The slice was empty or whitespace only: an end of input is then an empty document.
+    blank: bool,
+}
+
+impl SliceError {
+    /// The members from the slice root to the failing value: [`path`](Self::path).
+    pub fn relative_path(&self) -> &JsonPath {
+        &self.path
+    }
+
+    /// Whether the failure is at a member, not at the slice root.
+    pub fn has_path(&self) -> bool {
+        !self.path.is_empty()
+    }
+
+    /// Whether the slice was empty or whitespace only.
+    pub fn is_blank(&self) -> bool {
+        self.blank
+    }
+
+    /// facet's words for the failure, as its error kind renders them.
+    pub fn kind_text(&self) -> String {
+        self.error.kind.to_string()
+    }
+
+    /// Whether facet's words for the failure contain `words`: the question a family asks
+    /// when facet has no kind of its own for a failure (jigsaw's unknown tag).
+    pub fn describes(&self, words: &str) -> bool {
+        self.kind_text().contains(words)
+    }
+
+    /// The table's code for the failure graded as at a member (`has_path`) or at the slice
+    /// root: [`into_diagnostic`](Self::into_diagnostic) gives
+    /// `code_with_path(self.has_path())`, a family that grades otherwise asks for the other.
+    pub fn code_with_path(&self, has_path: bool) -> DiagnosticCode {
+        code_for_deserialize_error_kind(&self.error.kind, has_path, self.blank)
+    }
+
+    /// The finding of the failed parse: an error told in [`Phase::Parse`] at `base` followed by
+    /// the failing member, at the error's span, its code chosen by facet's error kind
+    /// (`code_for_deserialize_error_kind`). `remap` gets that code and the error itself, and
+    /// returns the code to tell: a family whose game reports a failure otherwise says so there,
+    /// asking the error what it needs ([`relative_path`](Self::relative_path),
+    /// [`describes`](Self::describes), or [`code_with_path`](Self::code_with_path) to grade it
+    /// as at a member or at the root); the identity keeps the table's code. The builder changes
+    /// the rest ([`Diagnostic::severity`], [`Diagnostic::phase`]).
+    pub fn into_diagnostic(
+        self,
+        base: &JsonPath,
+        remap: impl FnOnce(DiagnosticCode, &SliceError) -> DiagnosticCode,
+    ) -> Diagnostic {
+        let code = remap(self.code_with_path(self.has_path()), &self);
+        let mut at = base.clone();
+        at.append(&self.path);
+        Diagnostic::error(code).at(at).span(self.span)
+    }
 }
 
 /// Deserialises `T` from the slice's text with the jsonc entry point, the way every typed pack
@@ -84,6 +142,7 @@ pub fn parse_at<'a, T: Facet<'a>>(slice: JsonSlice<'a>) -> Result<T, SliceError>
             span,
             path: members.to_json_path(),
             error: Box::new(error),
+            blank: slice.text.trim().is_empty(),
         }
     })
 }
@@ -100,6 +159,7 @@ pub(crate) fn parse_without<'a, T: Facet<'a>>(
             span,
             path: members.to_json_path(),
             error: Box::new(error),
+            blank: slice.text.trim().is_empty(),
         }
     })
 }
@@ -645,6 +705,102 @@ mod tests {
     use indexmap::IndexMap;
 
     use super::*;
+
+    /// Today's recipe at every call site, verbatim: the oracle of `into_diagnostic`.
+    fn recipe(error: &SliceError, base: &JsonPath, slice: JsonSlice<'_>) -> Diagnostic {
+        use crate::diagnostic::{Location, Phase, Severity};
+        let blank = slice.text.trim().is_empty();
+        let code =
+            code_for_deserialize_error_kind(&error.error.kind, !error.path.is_empty(), blank);
+        let mut at = base.clone();
+        at.append(&error.path);
+        Diagnostic::new(
+            code,
+            Severity::Error,
+            Phase::Parse,
+            Location::new(None, None, at, Some(error.span)),
+        )
+    }
+
+    #[test]
+    fn into_diagnostic_is_the_recipe_of_the_call_sites() {
+        let base = JsonPath::of_keys(["minecraft:block", "components"]);
+        for text in [
+            r#"{"v": "x"}"#,
+            r#"{"v": 300}"#,
+            "{}",
+            r#"{"v": 1,"#,
+            "",
+            "  ",
+            "[1]",
+        ] {
+            let slice = JsonSlice::new(text);
+            let error = parse_at::<Inner>(slice).unwrap_err();
+            let expected = recipe(&error, &base, slice);
+            assert_eq!(
+                error.into_diagnostic(&base, |code, _| code),
+                expected,
+                "{text:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn a_blank_slice_is_an_empty_document() {
+        let error = parse_at::<Inner>(JsonSlice::new(" \n ")).unwrap_err();
+        let finding = error.into_diagnostic(&JsonPath::new(), |code, _| code);
+        assert!(
+            matches!(finding.code, DiagnosticCode::EmptyDocument { .. }),
+            "{:?}",
+            finding.code
+        );
+    }
+
+    #[test]
+    fn remap_gets_the_code_and_the_error() {
+        let error = parse_at::<Inner>(JsonSlice::new(r#"{"v": "x"}"#)).unwrap_err();
+        let text = error.error.kind.to_string();
+        let finding = error.into_diagnostic(&JsonPath::of_keys(["base"]), |code, error| {
+            assert!(
+                matches!(code, DiagnosticCode::InvalidType { .. }),
+                "{code:?}"
+            );
+            assert_eq!(*error.relative_path(), JsonPath::of_keys(["v"]));
+            assert!(error.has_path());
+            assert!(!error.is_blank());
+            assert_eq!(error.kind_text(), text);
+            assert!(error.describes(&text[..3]));
+            assert!(!error.describes("no such words in it"));
+            assert_eq!(error.code_with_path(error.has_path()), code);
+            DiagnosticCode::InvalidValue { text: None }
+        });
+        assert!(matches!(finding.code, DiagnosticCode::InvalidValue { .. }));
+        assert_eq!(finding.location.json_path, JsonPath::of_keys(["base", "v"]));
+    }
+
+    /// The call sites that grade the failure as if it were (or were not) at a member: an item
+    /// scalar (never), a catalog entry (whenever its full path is not the root).
+    #[test]
+    fn remap_can_grade_the_failure_with_another_has_path() {
+        let text = r#"{"v": [1]}"#;
+        let error = parse_at::<Inner>(JsonSlice::new(text)).unwrap_err();
+        assert!(
+            matches!(
+                error.code_with_path(true),
+                DiagnosticCode::InvalidType { .. }
+            ),
+            "at a member, a token of the wrong kind is a type error"
+        );
+        let finding = error.into_diagnostic(&JsonPath::of_keys(["base"]), |_, error| {
+            error.code_with_path(false)
+        });
+        assert!(
+            matches!(finding.code, DiagnosticCode::MalformedInput { .. }),
+            "graded as at the root, it is malformed input: {:?}",
+            finding.code
+        );
+        assert_eq!(finding.location.json_path, JsonPath::of_keys(["base", "v"]));
+    }
 
     #[test]
     fn slice_error_chains_the_facet_error_as_its_source() {

@@ -2,7 +2,9 @@
 //! with sample arguments and compared with the template byte for byte. This is the one test in
 //! the crate family that matches on diagnostic text.
 
-use bedrock_addon_core::diagnostic::{DiagnosticCode, NotFoundHint, VanillaText};
+use bedrock_addon_core::diagnostic::{
+    Class, CodeDef, DiagnosticCode, Kind, NotFoundHint, VanillaText,
+};
 use bedrock_addon_core::pack_identity::{PackIdVersion, PackType};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::version::SemVersion;
@@ -1130,15 +1132,28 @@ fn crate_text_of_every_code() -> Vec<(DiagnosticCode, &'static str)> {
             C::MinEngineVersionCapFormatVersion1,
             "min_engine_version of a format 1 manifest is capped to 1.12.0",
         ),
+        (
+            C::from(SAMPLE_SPECIFIC.with(["x"])),
+            "a sample code of the test about x",
+        ),
     ]
 }
+
+/// The specific code of the table's `Specific` row: a code of the toolkit's own, rendered
+/// by its line.
+static SAMPLE_SPECIFIC: CodeDef<1> = CodeDef::new(
+    "test/sample",
+    Kind::Lint,
+    Class::Lint,
+    "a sample code of the test about {}",
+);
 
 /// Every variant has a row in the table of the crate's own texts, in declaration order, once.
 #[test]
 fn every_variant_has_a_row_of_the_crate_text() {
     let rows: Vec<&str> = crate_text_of_every_code()
         .iter()
-        .map(|(code, _)| code.name())
+        .map(|(code, _)| code.variant_name())
         .collect();
     let missing: Vec<_> = DiagnosticCode::NAMES
         .iter()

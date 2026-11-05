@@ -5,6 +5,8 @@
 
 use std::fmt::{self, Display as _};
 
+use super::def::Code;
+
 use crate::pack_identity::PackIdVersion;
 use crate::version::FormatVersion;
 use crate::visual::ShadowReason;
@@ -47,9 +49,9 @@ macro_rules! diagnostic_codes {
             /// Every code's name, in declaration order: the variant names, which are stable.
             pub const NAMES: &'static [&'static str] = &[$(stringify!($variant)),*];
 
-            /// The code's name: its variant name (`"UnrecognizedField"`), for filtering and
-            /// reports that must not depend on the message text.
-            pub fn name(&self) -> &'static str {
+            /// The variant's name, as [`NAMES`](Self::NAMES) lists it: `"Specific"` for every
+            /// specific code ([`name`](Self::name) gives a specific code's own).
+            pub fn variant_name(&self) -> &'static str {
                 match self {
                     $(Self::$variant { .. } => stringify!($variant),)*
                 }
@@ -777,6 +779,33 @@ diagnostic_codes! {
         },
         /// A format-0/1 manifest's `min_engine_version` of 1.13.0 or above, capped to 1.12.0.
         MinEngineVersionCapFormatVersion1,
+        // ---- specific codes ----
+        /// A code declared by a [`CodeDef`](super::CodeDef) beside the rule that raises it: its
+        /// owner, name, kind, class and the game's sentence are the definition's.
+        Specific {
+            /// The code with its arguments.
+            code: Code,
+        },
+    }
+}
+
+impl DiagnosticCode {
+    /// The code's name: its variant name (`"UnrecognizedField"`), or a specific code's own
+    /// name within its owner, for filtering and reports that must not depend on the message
+    /// text.
+    pub fn name(&self) -> &'static str {
+        match self {
+            Self::Specific { code } => code.name(),
+            other => other.variant_name(),
+        }
+    }
+
+    /// The stable id: the variant name, or a specific code's `owner/name`.
+    pub fn id(&self) -> &'static str {
+        match self {
+            Self::Specific { code } => code.id(),
+            other => other.variant_name(),
+        }
     }
 }
 
@@ -2118,6 +2147,7 @@ impl fmt::Display for DiagnosticCode {
             Self::MinEngineVersionCapFormatVersion1 => {
                 f.write_str("min_engine_version of a format 1 manifest is capped to 1.12.0")
             }
+            Self::Specific { code } => code.fmt(f),
         }
     }
 }

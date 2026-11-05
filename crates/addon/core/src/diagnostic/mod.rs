@@ -1,15 +1,19 @@
 //! Findings as data: one typed `Diagnostic` per thing a vanilla content log would print, never a
 //! log line. Tests match on `code` variants, never on text.
 
+mod builder;
 pub mod cereal;
 mod code;
+mod def;
 mod deprecated;
 mod event;
 mod facet;
 mod origin;
+pub mod testing;
 pub mod validator;
 
 pub use code::{DiagnosticCode, NotFoundHint, VanillaText};
+pub use def::{Class, Code, CodeDef, Kind};
 pub use deprecated::ENUM_VALUE_DEPRECATED;
 pub use event::EVENT_BOTH_RANDOMIZE_AND_SEQUENCE;
 #[doc(hidden)]
@@ -19,9 +23,11 @@ pub use origin::Origins;
 
 use std::fmt;
 
+use crate::document::Origin;
 use crate::load::Place;
 use crate::pack_identity::{PackIdVersion, PackOrigin, PackPath, PackRef, PackType};
-use crate::version::BaseGameVersion;
+use crate::version::{BaseGameVersion, FormatVersion};
+use crate::visual::ShadowReason;
 
 /// One finding: a typed code, a severity, where, and in which phase.
 #[derive(Clone, Debug, PartialEq)]
@@ -41,9 +47,10 @@ pub struct Diagnostic {
     /// A kept error: an error-level finding after which the game keeps the document. It counts
     /// as an error wherever findings are counted, and rejects nothing:
     /// [`Diagnostics::has_errors`] and the loads' "any error rejects" checks pass it by. Set
-    /// only through [`Diagnostics::push_kept_error`], or through the doc-hidden
-    /// `Diagnostic::into_kept` that it uses, for a compile pass that marks a finding before it
-    /// is pushed.
+    /// by [`Diagnostic::of`] for a code of [`Class::KeptError`], by
+    /// [`Diagnostics::push_kept_error`], and by the doc-hidden `Diagnostic::into_kept` that it
+    /// uses, for a compile pass that marks a finding before it is pushed;
+    /// [`Diagnostic::severity`] below error level clears it.
     pub kept: bool,
 }
 
@@ -54,17 +61,40 @@ impl Diagnostic {
         self.severity == Severity::Error && !self.kept
     }
 
-    /// This finding as a kept error: at error level, rejecting nothing. The one place
-    /// [`kept`](Self::kept) is set: [`Diagnostics::push_kept_error`] goes through it, and so
-    /// does a compile pass that marks a Molang finding kept before it is pushed. Both halves
-    /// must hold for the finding: it is an error in the game's content log, and the game's
-    /// loader goes on with the document.
+    /// This finding as a kept error: at error level, rejecting nothing. A legacy code is made
+    /// [`kept`](Self::kept) here: [`Diagnostics::push_kept_error`] goes through it, and so
+    /// does a compile pass that marks a Molang finding kept before it is pushed; a specific
+    /// code is kept by its [`Class::KeptError`] in [`of`](Self::of). Both halves must hold for
+    /// the finding: it is an error in the game's content log, and the game's loader goes on
+    /// with the document.
     #[doc(hidden)]
     #[must_use]
     pub fn into_kept(mut self) -> Self {
         self.severity = Severity::Error;
         self.kept = true;
         self
+    }
+
+    /// The general kind of the finding: a specific code's own, or the kind a legacy code
+    /// belongs to. For the question `d.kind() == Kind::InvalidValue`, whichever rule raised it.
+    pub fn kind(&self) -> Kind {
+        def::kind_of(&self.code)
+    }
+
+    /// Whether the finding is a code of `def`, whatever its arguments: the specific question.
+    /// A legacy code is no code of any definition.
+    pub fn is<const N: usize>(&self, def: &CodeDef<N>) -> bool {
+        matches!(&self.code, DiagnosticCode::Specific { code } if code.is(def))
+    }
+
+    /// The game's sentence for the finding, with its arguments; `None` when the game prints
+    /// none and the finding is the toolkit's own. A legacy code gives the game text it carries
+    /// in its `text` field.
+    pub fn vanilla(&self) -> Option<String> {
+        match &self.code {
+            DiagnosticCode::Specific { code } => code.vanilla(),
+            legacy => legacy.game_text().map(ToString::to_string),
+        }
     }
 
     /// A finding without detail. The struct is `#[non_exhaustive]`, so `bedrock_addon` builds
@@ -116,6 +146,12 @@ impl fmt::Display for Diagnostic {
 }
 
 /// An attachment of a [`Diagnostic`]: what the code alone does not say.
+///
+/// A [`CodeDef`] that [`was`](CodeDef::was) a legacy code with a typed payload (a
+/// `ShadowReason`, a `PackIdVersion`, an `io::ErrorKind`, a UUID, a `NotFoundHint`, a
+/// `FormatVersion`) puts that payload here: the definition's arguments are the text the line
+/// says, the detail is the data a caller matches on. Those payload variants are data only and
+/// add nothing to the content-log line.
 #[derive(Clone, Debug, PartialEq)]
 #[non_exhaustive]
 pub enum DiagnosticDetail {
@@ -146,11 +182,32 @@ pub enum DiagnosticDetail {
     /// text for it): which member a written document carries a value as, or why an item has
     /// no text.
     Note(&'static str),
+    /// Why the shared identifier map ignored a document (`ClientEntityShadowed`'s and
+    /// `AttachableShadowed`'s `reason`). Data only.
+    Shadow(ShadowReason),
+    /// The packs of a stack finding: the pack, and the dependency it names when it names one
+    /// (`MissingDependency`, `DependencyAutoAdded`, `PackNotFound`). Data only.
+    Packs {
+        /// The pack the finding is about.
+        pack: PackIdVersion,
+        /// The dependency it names, when it names one.
+        dependency: Option<PackIdVersion>,
+    },
+    /// What the host reported for a file it could not read (`ReadError`'s `kind`). Data only.
+    Io(std::io::ErrorKind),
+    /// The UUID a finding names (`UnmatchedConfigFolder`'s `expected`): a finding with none
+    /// has no such detail. Data only.
+    Uuid(uuid::Uuid),
+    /// Why an import likely resolved to no file (`ScriptImportNotFound`'s `hint`). Data only.
+    NotFound(NotFoundHint),
+    /// The format version a finding names (`BiomeFormatHint`'s `version`, `FieldSinceEngine`'s
+    /// `since`). Data only.
+    FormatVersion(FormatVersion),
 }
 
 /// The suffix a detail adds to the diagnostic's message: ` | <compiler message>` for Molang,
 /// `: <kind> '<id>'` and the hint for a reference, `: <kind> '<path>, <path>'` for tried paths,
-/// `: <note>` for a note.
+/// `: <note>` for a note; nothing for a typed payload.
 impl fmt::Display for DiagnosticDetail {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -171,6 +228,13 @@ impl fmt::Display for DiagnosticDetail {
                 }
             }
             Self::TriedPaths { kind, paths } => write!(f, ": {kind} '{}'", paths.join(", ")),
+            // Data only: the code's arguments carry what the line says.
+            Self::Shadow(_)
+            | Self::Packs { .. }
+            | Self::Io(_)
+            | Self::Uuid(_)
+            | Self::NotFound(_)
+            | Self::FormatVersion(_) => Ok(()),
         }
     }
 }
@@ -296,9 +360,43 @@ impl JsonPath {
 
     /// Continues the path with every segment of `other` (a path relative to this one, such as
     /// `SliceError::path` below a component key).
-    #[doc(hidden)]
     pub fn append(&mut self, other: &JsonPath) {
         self.segments.extend(other.segments.iter().cloned());
+    }
+
+    /// The path of the member `key` below this one.
+    #[must_use]
+    pub fn child(&self, key: &str) -> Self {
+        let mut path = self.clone();
+        path.push(key);
+        path
+    }
+
+    /// The path of the array element `index` below this one.
+    #[must_use]
+    pub fn index(&self, index: usize) -> Self {
+        let mut path = self.clone();
+        path.push_index(index);
+        path
+    }
+
+    /// This path continued by every segment of `relative`.
+    #[must_use]
+    pub fn join(&self, relative: &JsonPath) -> Self {
+        let mut path = self.clone();
+        path.append(relative);
+        path
+    }
+
+    /// The path of the members `keys` below this one, from the outermost down, each taken as
+    /// written: a key of digits stays a key (an array element is [`index`](Self::index)).
+    #[must_use]
+    pub fn with<K: AsRef<str>>(&self, keys: &[K]) -> Self {
+        let mut path = self.clone();
+        for key in keys {
+            path.push(key.as_ref());
+        }
+        path
     }
 
     /// Steps out of the last segment; `false` when the path was already the root.
@@ -731,6 +829,24 @@ impl Diagnostics {
         held.places_index = std::sync::OnceLock::new();
     }
 
+    /// Puts every finding in the pack and file of `origin`, in place: the moves and places
+    /// the list holds stay, so the link pass can still ask where a member of the document is
+    /// in the file ([`place_of`](Self::place_of)). Rebuilding the list from its findings (a
+    /// `for` over the list, pushing each) would drop them.
+    pub fn locate(&mut self, origin: &Origin) {
+        for finding in self.iter_mut() {
+            finding.location.pack = Some(origin.pack.clone());
+            finding.location.path = Some(origin.path.clone());
+        }
+    }
+
+    /// [`locate`](Self::locate), by value.
+    #[must_use]
+    pub fn located(mut self, origin: &Origin) -> Self {
+        self.locate(origin);
+        self
+    }
+
     /// Keeps the findings `keep` says to keep, in order. A recorded move stays before the
     /// findings told after it, and the places stay.
     #[doc(hidden)]
@@ -898,5 +1014,105 @@ impl PackReport {
     /// For error messages: the first error, else the most severe finding, else "no findings".
     pub fn summary(&self) -> impl fmt::Display + '_ {
         self.diagnostics.summary()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn components() -> JsonPath {
+        JsonPath::of_keys(["minecraft:block", "components"])
+    }
+
+    /// Each typed payload a legacy code carries, as a detail.
+    fn typed_details() -> Vec<DiagnosticDetail> {
+        let pack = |n: u128| {
+            PackIdVersion::new(
+                uuid::Uuid::from_u128(n),
+                crate::version::SemVersion::new(1, 0, 0),
+                PackType::Resource,
+            )
+        };
+        vec![
+            DiagnosticDetail::Shadow(crate::visual::ShadowReason::OlderMinEngineVersion),
+            DiagnosticDetail::Packs {
+                pack: pack(1),
+                dependency: Some(pack(2)),
+            },
+            DiagnosticDetail::Packs {
+                pack: pack(1),
+                dependency: None,
+            },
+            DiagnosticDetail::Io(std::io::ErrorKind::NotFound),
+            DiagnosticDetail::Uuid(uuid::Uuid::from_u128(3)),
+            DiagnosticDetail::NotFound(NotFoundHint::CaseMismatch),
+            DiagnosticDetail::FormatVersion(crate::version::FormatVersion::new(1, 21, 0)),
+        ]
+    }
+
+    /// A typed payload rides on the finding as data: compared, cloned, and not in the line.
+    #[test]
+    fn a_typed_payload_is_data_on_the_finding_and_not_in_its_line() {
+        for detail in typed_details() {
+            let bare = Diagnostic::warn(DiagnosticCode::InternalError);
+            let with = bare.clone().detail(detail.clone());
+            assert_eq!(with.detail.as_deref(), Some(&detail));
+            assert_eq!(with.clone(), with);
+            assert_ne!(with, bare);
+            assert_eq!(with.to_string(), bare.to_string(), "{detail:?}");
+        }
+        let details = typed_details();
+        for (i, a) in details.iter().enumerate() {
+            for (j, b) in details.iter().enumerate() {
+                assert_eq!(a == b, i == j, "{a:?} vs {b:?}");
+            }
+        }
+    }
+
+    #[test]
+    fn child_steps_into_a_member_and_leaves_the_base() {
+        let base = components();
+        let child = base.child("minecraft:friction");
+        assert_eq!(
+            child.to_string(),
+            "minecraft:block/components/minecraft:friction"
+        );
+        assert_eq!(base, components());
+        let mut pushed = components();
+        pushed.push("minecraft:friction");
+        assert_eq!(child, pushed);
+    }
+
+    #[test]
+    fn index_steps_into_an_element_unlike_a_key_of_its_digits() {
+        let element = components().index(0);
+        assert_eq!(element.to_string(), "minecraft:block/components/0");
+        let mut pushed = components();
+        pushed.push_index(0);
+        assert_eq!(element, pushed);
+        assert_ne!(element, components().child("0"), "an index is no key");
+    }
+
+    #[test]
+    fn join_continues_the_base_with_a_relative_path() {
+        let relative = JsonPath::new().child("a").index(2);
+        let joined = components().join(&relative);
+        assert_eq!(joined.to_string(), "minecraft:block/components/a/2");
+        let mut appended = components();
+        appended.append(&relative);
+        assert_eq!(joined, appended);
+        assert_eq!(components().join(&JsonPath::new()), components());
+    }
+
+    #[test]
+    fn with_steps_into_each_key_as_written() {
+        let path = JsonPath::new().with(&["minecraft:block", "components", "0"]);
+        assert_eq!(path, components().child("0"));
+        assert_eq!(path.to_string(), "minecraft:block/components/0");
+        assert_eq!(JsonPath::new().with(&["a/b"]).to_string(), "a~1b");
+        assert_eq!(components().with::<&str>(&[]), components());
+        let owned = vec![String::from("x")];
+        assert_eq!(JsonPath::new().with(&owned), JsonPath::of_keys(["x"]));
     }
 }
