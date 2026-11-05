@@ -1,10 +1,10 @@
-//! [`SchemaCx`]: where a derived `Schema::check` reports a failed bound or a member the game
-//! lower-cases, graded by the slice's [`Reading`] rather than by the struct.
+//! [`SchemaCx`]: where a derived `Schema::check` reports a failed bound, graded by the slice's
+//! [`Reading`] rather than by the struct.
 
-use super::rows::BoundOp;
+use super::grading::{Grading, grade};
 use crate::diagnostic::cereal::NumericRange;
-use crate::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity};
-use crate::versioning::{MemberFailure, Reading};
+use crate::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
+use crate::versioning::Reading;
 
 /// What a derived check does with the member after [`SchemaCx`] recorded its failure.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -13,21 +13,27 @@ pub enum Verdict {
     /// The value stays; the owner has failed ([`SchemaCx::failed`]) and the slice's rule drops
     /// what it drops.
     Keep,
-    /// The member takes its default (`MemberFailure::DefaultAndTell`): the field's facet
-    /// `default`, its `schema::fallback`, the other member of a cross-field bound, or `None`.
+    /// The member takes its default (`MemberFailure::DefaultAndTell`): a plain field its facet
+    /// `default`, an `Option` `None` (a `schema::fallback` is what absence stands for, never
+    /// written into the data), and the side of a cross-field bound the other member.
     Reset,
 }
 
 /// The context a derived `Schema::check` reports to: the JSON path it walks, the slice's rule
 /// for a member that fails, and the findings.
 ///
-/// `Refuse`, `DropOwner` and `DropElement` record an `Error` and mark the owner failed (the
-/// value stays, [`Verdict::Keep`]); `DefaultAndTell` records a `Warning` and resets the member
-/// ([`Verdict::Reset`]). A bound's finding is `InvalidValue` with the game's range text
-/// ([`NumericRange::text`]).
+/// A failed member is graded by [`grade`]: `Refuse`, `DropOwner` and `DropElement` record an
+/// `Error` and mark the owner failed (the value stays, [`Verdict::Keep`]); `DefaultAndTell`
+/// records an `Info` and resets the member ([`Verdict::Reset`]).
+///
+/// A field's bounds are one range ([`range`](Self::range)), and a value outside it is one
+/// `InvalidValue` finding, with no text unless the family opts into the game's range text
+/// ([`with_range_text`](Self::with_range_text)). These are the typed struct's bounds only: the
+/// legacy per-row numeric templates of entity's goals stay on their generated table.
 #[derive(Debug)]
 pub struct SchemaCx<'d> {
-    failure: MemberFailure,
+    grading: Grading,
+    range_text: bool,
     path: JsonPath,
     out: &'d mut Diagnostics,
     failed: bool,
@@ -37,11 +43,21 @@ impl<'d> SchemaCx<'d> {
     /// A context for the value at `at`, read under `reading`, reporting to `out`.
     pub fn new(reading: Reading, at: JsonPath, out: &'d mut Diagnostics) -> Self {
         Self {
-            failure: reading.on_member_failure,
+            grading: grade(reading.on_member_failure),
+            range_text: false,
             path: at,
             out,
             failed: false,
         }
+    }
+
+    /// The context with a bound's finding worded with the game's range text
+    /// ([`NumericRange::text`], `the input is outside of the accepted range [0, 0.9]`) where
+    /// `on`, as block tells it; without, the finding has no text, as entity and item tell it.
+    #[must_use]
+    pub fn with_range_text(mut self, on: bool) -> Self {
+        self.range_text = on;
+        self
     }
 
     /// The path of the member the walk is at.
@@ -69,40 +85,43 @@ impl<'d> SchemaCx<'d> {
         self.path.pop();
     }
 
-    /// The member at the current path broke the bound `op limit`.
-    pub fn bound(&mut self, op: BoundOp, limit: f64) -> Verdict {
-        let range = match op {
-            BoundOp::Min => NumericRange::at_least(limit),
-            BoundOp::Max => NumericRange::at_most(limit),
-            BoundOp::Above => NumericRange {
-                exclusive_min: true,
-                ..NumericRange::at_least(limit)
-            },
-            BoundOp::Below => NumericRange {
-                exclusive_max: true,
-                ..NumericRange::at_most(limit)
-            },
-        };
-        self.fail(range.code())
-    }
-
-    /// The member at the current path has an upper-case letter where the game lower-cases it.
-    pub fn not_lowercase(&mut self) -> Verdict {
-        self.fail(DiagnosticCode::InvalidValue { text: None })
+    /// The member at the current path is outside `range`, its field's bounds: one finding,
+    /// whichever side it broke. `resettable` says whether the member has a value to take
+    /// (a default, a fallback, `None`, the other member); a required field has none, so under
+    /// `DefaultAndTell` it fails its owner at that rule's severity instead of being accepted.
+    pub fn range(&mut self, range: NumericRange, resettable: bool) -> Verdict {
+        let text = self.range_text.then(|| range.text());
+        let code = DiagnosticCode::InvalidValue { text };
+        if resettable {
+            self.fail(code)
+        } else {
+            self.report(code, true);
+            Verdict::Keep
+        }
     }
 
     fn fail(&mut self, code: DiagnosticCode) -> Verdict {
-        let (severity, verdict) = if self.failure == MemberFailure::DefaultAndTell {
-            (Severity::Warning, Verdict::Reset)
+        let Grading {
+            fails_owner,
+            resets,
+            ..
+        } = self.grading;
+        self.report(code, fails_owner);
+        if resets {
+            Verdict::Reset
         } else {
-            self.failed = true;
-            (Severity::Error, Verdict::Keep)
-        };
+            Verdict::Keep
+        }
+    }
+
+    /// Records `code` at the current path at the rule's severity, failing the owner where
+    /// `fails_owner`.
+    fn report(&mut self, code: DiagnosticCode, fails_owner: bool) {
+        self.failed |= fails_owner;
         self.out.push(
             Diagnostic::error(code)
                 .at(self.path.clone())
-                .severity(severity),
+                .severity(self.grading.severity),
         );
-        verdict
     }
 }

@@ -178,6 +178,8 @@ pub(crate) struct FieldAttrs {
     pub molang_with: Option<(Expr, Span)>,
     pub foreign_event: Option<Span>,
     pub lowercase: Option<Span>,
+    /// Where the first stored key (`since_format`, `since_engine`, `unknown`) is written.
+    pub stored: Option<Span>,
 }
 
 /// What a struct or enum declares.
@@ -235,6 +237,10 @@ fn placement(entries: &[Entry], place: Place, errors: &mut Vec<Error>) {
         let message = match place {
             Place::Struct | Place::Enum if field_key => {
                 format!("`schema::{key}` is a field's key: put it on the field it is about")
+            }
+            Place::Enum if key == "unknown" => {
+                "`schema::unknown` is about the members of an object: a string enum has none"
+                    .to_owned()
             }
             Place::Struct if enum_key => {
                 format!("`schema::{key}` is a string enum's key: a struct has no names to read")
@@ -370,6 +376,9 @@ impl FieldAttrs {
                 continue;
             };
             let span = entry.span;
+            if matches!(key.as_str(), "since_format" | "since_engine" | "unknown") {
+                out.stored.get_or_insert(span);
+            }
             let result: Result<()> = (|| {
                 match key.as_str() {
                     "since_format" | "since_engine" => {
@@ -437,6 +446,7 @@ impl FieldAttrs {
             .or_else(|| self.molang_with.as_ref().map(|(_, s)| *s))
             .or(self.foreign_event)
             .or(self.lowercase)
+            .or(self.stored)
     }
 }
 
@@ -465,6 +475,12 @@ impl ContainerAttrs {
                         }
                     }
                     "transparent" => out.transparent = true,
+                    "default" => errors.push(Error::new(
+                        entry.span,
+                        "facet's container `default` fills a missing member from the field \
+                         type's `Default`, not from the field's own: drop it and state each \
+                         plain field's default with `default = ..` on the field",
+                    )),
                     _ => {}
                 }
                 continue;
@@ -509,4 +525,28 @@ pub(crate) fn variant_rename(attrs: &[Attribute], errors: &mut Vec<Error>) -> Op
 /// The tokens of `value` as one line, for the row table.
 pub(crate) fn text(value: &impl ToTokens) -> String {
     value.to_token_stream().to_string()
+}
+
+/// The tokens of a type as Rust writes it (`Option<Vec<String>>`, `IndexMap<String, Inner>`,
+/// `&'static str`): the printer's spaces dropped, except between two words and after a `,` or
+/// a `;`.
+pub(crate) fn type_text(ty: &impl ToTokens) -> String {
+    let printed = text(ty);
+    let word = |c: char| c.is_alphanumeric() || c == '_' || c == '\'';
+    let mut out = String::with_capacity(printed.len());
+    let mut chars = printed.chars().peekable();
+    while let Some(c) = chars.next() {
+        if c != ' ' {
+            out.push(c);
+            continue;
+        }
+        let before = out.chars().next_back();
+        let after = chars.peek().copied();
+        let keep = matches!(before, Some(',' | ';'))
+            || (before.is_some_and(word) && after.is_some_and(word));
+        if keep {
+            out.push(' ');
+        }
+    }
+    out
 }

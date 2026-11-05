@@ -86,7 +86,7 @@ use syn::{DeriveInput, parse_macro_input};
 /// | `write` | (flag) | Emit `write_component(&self)`, the write dispatch: each typed variant through `versioning::write_payload`, the custom one as its parameters, the unknown and dynamic ones as written. |
 /// | `write_with` | a function path | The write dispatch with `path(component)` for each typed variant instead (biome's null-stripping writer). One of `write` and `write_with`. |
 /// | `versioned` | a generic function path | The goal parse by version, `fn<T: GoalMeta>(JsonSlice, FormatVersion, &LoadContext, &mut Diagnostics) -> Option<Enum>`: each `goal` row puts `path::<T>` in `VERSIONED`. Required by a `goal` row. |
-/// | `typed_table` | a function path | `fn(&str) -> Option<Option<FormatVersion>>`, the generated game table's typed version of a key (`None`: the table does not list it): emit a test that holds every row's `typed` to it. |
+/// | `typed_table` | a function path (a name in scope, or `crate::`/`::`) | `fn(&str) -> Option<Option<FormatVersion>>`, the generated game table's typed version of a key (`None`: the table does not list it): emit a test that holds every row's `typed` to it. |
 /// | `triggers` | (flag) | Emit `triggers()`: `(key, member)` of every trigger member, from each payload's `Schema::trigger_members` and each row's `triggers = [..]`, sorted. |
 ///
 /// # Component attributes
@@ -208,8 +208,9 @@ pub fn derive_components(input: TokenStream) -> TokenStream {
 /// and the `schema::` keys of `#[facet(..)]` (the grammar is `bedrock_addon_schema`), and emits
 /// impls only, never the item:
 ///
-/// - on a struct: `impl Schema` (`FIELDS`, the row table; `check`, the bounds and `lowercase`
-///   graded by the slice through `SchemaCx`, then the walk into every field;
+/// - on a struct: `impl Schema` (`FIELDS`, the row table; `check`, each field's bounds as one
+///   range graded by the slice through `SchemaCx` (cross-field ones last) and the silent ASCII
+///   lower-casing of `lowercase`, then the walk into every field;
 ///   `trigger_members`); `impl MolangFields` (a Molang field under the walk's default spec or
 ///   its `schema::molang`, every other field nested); `impl Default` when no field is required;
 ///   a getter `fn x(&self) -> T` per `Option` field with a `schema::fallback`;
@@ -219,12 +220,12 @@ pub fn derive_components(input: TokenStream) -> TokenStream {
 /// A field is required (plain `T`), filled on read (plain `T` with facet's `default = x`, the
 /// value in the field's own type) or optional (`Option<T>`, with or without
 /// `schema::fallback`). What the derive refuses at compile time: facet's `default` on an
-/// `Option`, `fallback` on a plain field, a bound that is neither a number nor another field's
+/// `Option` or on the container, `fallback` on a plain field, a bound that is neither a number nor another field's
 /// name (or names the field itself, or a field that does not exist, or doubles a side), a
 /// stored key whose value is not a string literal, a version that is not `major.minor.patch`,
 /// an `unknown` that is not `keep`, `report`, `reject` or `ignore`, a key on the wrong item
-/// (a field's key on the container, an enum's key on a field or a struct, any key on a
-/// variant or a `skip` field), `lowercase` off a `String`, `foreign_event` off an
+/// (a field's key on the container, an enum's key on a field or a struct, `unknown` on a
+/// string enum, any key on a variant or a `skip` field), `lowercase` off a `String`, `foreign_event` off an
 /// `EventTrigger`, `molang` off a Molang field or beside `molang_with`, generics, a tuple
 /// struct that is not transparent, and an enum with data. A misspelt key is facet's error.
 ///

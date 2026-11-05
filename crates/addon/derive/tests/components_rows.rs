@@ -83,7 +83,8 @@ pub struct Float {
     dynamic = Dynamic,
     write,
     versioned = parse_versioned,
-    typed_table = game_typed,
+    // An absolute path: the generated test module names it as written.
+    typed_table = crate::game_typed,
     triggers,
 )]
 pub enum ToyComponent {

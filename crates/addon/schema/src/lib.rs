@@ -9,7 +9,8 @@
 //! The one path users name is `bedrock_addon_core::schema`, which re-exports this crate with
 //! the `Schema` trait beside it. The crate is a leaf of its own because facet's grammar macro
 //! exports its dispatcher with `#[macro_export]`, at a crate root, and the namespace `schema::`
-//! has to resolve to that root. It depends on facet alone.
+//! has to resolve to that root. It depends on facet, for the grammar, and on
+//! `bedrock_addon_derive`, whose `#[derive(Schema)]` it re-exports beside the grammar.
 //!
 //! Modules: none. Features: none.
 
@@ -53,8 +54,8 @@ facet::define_attr_grammar! {
         /// `foreign_event` (marker): an `EventTrigger` field whose event belongs to another
         /// entity, so it is no trigger of this one.
         ForeignEvent,
-        /// `lowercase` (marker): a string the game lower-cases; an upper-case letter is a
-        /// failed member.
+        /// `lowercase` (marker): a string the game lower-cases (ASCII letters) as it reads it,
+        /// telling nothing; the check does the same.
         Lowercase,
         /// `expected = "a control flag name"` (compile-time, a string enum): what the enum
         /// takes, in words, for the error of a name it does not know.

@@ -249,6 +249,24 @@ impl<T: MolangFields> MolangFields for IndexMap<String, T> {
     }
 }
 
+impl<T: MolangFields, S: std::hash::BuildHasher> MolangFields
+    for std::collections::HashMap<String, T, S>
+{
+    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
+        for (key, inner) in self.iter_mut() {
+            visitor.nested(key.as_str(), inner);
+        }
+    }
+}
+
+impl<T: MolangFields> MolangFields for std::collections::BTreeMap<String, T> {
+    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
+        for (key, inner) in self.iter_mut() {
+            visitor.nested(key.as_str(), inner);
+        }
+    }
+}
+
 /// Calls `visit` for every Molang field of `document`, with paths below `base`; a field with
 /// no spec of its own takes [`MolangFieldSpec::DEFAULT`].
 #[doc(hidden)]

@@ -233,9 +233,14 @@ fn typed_test(enum_ident: &Ident, table: &syn::Path) -> TokenStream {
         #[doc(hidden)]
         #[allow(non_snake_case)]
         mod #module {
+            // The table's path as written: a bare name or `self::` resolves through the glob,
+            // `crate::` and `::` as they are.
+            #[allow(unused_imports)]
+            use super::*;
+
             #[test]
             fn every_rows_typed_version_is_the_game_tables() {
-                let table: fn(&str) -> ::core::option::Option<::core::option::Option<::bedrock_addon_core::version::FormatVersion>> = super::#table;
+                let table: fn(&str) -> ::core::option::Option<::core::option::Option<::bedrock_addon_core::version::FormatVersion>> = #table;
                 let mut differ = ::std::vec::Vec::new();
                 for row in super::#enum_ident::SCHEMA_ROWS {
                     if let ::core::option::Option::Some(game) = table(row.name) {

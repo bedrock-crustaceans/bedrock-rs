@@ -9,6 +9,7 @@ mod particle;
 
 use super::*;
 use crate::json::{IsIntRule, WideInt};
+use crate::versioning::MemberFailure;
 
 /// A finding as the oracle captures were written: severity, path, code, span, kept.
 fn rendered(found: &Diagnostics) -> Vec<String> {
@@ -90,14 +91,14 @@ fn a_member_written_null_is_absent_only_under_the_absent_null_rule() {
 }
 
 #[test]
-fn a_failed_read_is_an_error_when_the_reading_refuses_and_an_information_otherwise() {
+fn a_failed_read_is_an_error_that_fails_the_owner_unless_the_member_takes_its_default() {
     let json = value(r#"{"a": 1}"#);
     let root = Node::new(&json, at(&["p"]));
     for (failure, severity) in [
         (MemberFailure::Refuse, "Error"),
         (MemberFailure::DefaultAndTell, "Info"),
-        (MemberFailure::DropOwner, "Info"),
-        (MemberFailure::DropElement, "Info"),
+        (MemberFailure::DropOwner, "Error"),
+        (MemberFailure::DropElement, "Error"),
     ] {
         let mut found = Diagnostics::default();
         let mut read = Read::new(
@@ -268,11 +269,11 @@ fn a_strict_reading_takes_a_scalar_of_its_own_kind_alone() {
 }
 
 #[test]
-fn a_coercing_reading_takes_a_bool_as_a_number_and_any_number_as_an_int() {
+fn a_json_cpp_reading_takes_a_bool_as_a_number_and_any_number_as_an_int() {
     let json = value(r#"[true, "5", 2.7, -2.7, 4294967298, null]"#);
     let root = Node::new(&json, JsonPath::new());
     let mut found = Diagnostics::default();
-    let mut read = Read::new(Reading::COERCING, &mut found);
+    let mut read = Read::new(Reading::OWN.with_scalars(Scalars::JsonCpp), &mut found);
     let elements = read.array(&root).expect("an array");
     let nodes: Vec<Node<'_>> = elements.iter().collect();
     let numbers: Vec<_> = nodes.iter().map(|n| read.number(n)).collect();

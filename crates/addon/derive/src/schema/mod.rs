@@ -225,20 +225,13 @@ fn derive_struct(input: &DeriveInput, fields: &Fields, errors: &mut Vec<Error>) 
     let core = core();
     let ident = &input.ident;
     let rows = infos.iter().map(|info| field_row(info));
-    let checks = infos.iter().map(|info| field_check(info, &infos));
+    let checks = infos.iter().map(|info| field_check(info, &infos)).chain(
+        infos
+            .iter()
+            .filter_map(|info| field_cross_check(info, &infos)),
+    );
     let molang = infos.iter().map(field_molang);
-    let triggers = infos
-        .iter()
-        .filter(|info| info.attrs.foreign_event.is_none())
-        .map(|info| {
-            let ty = info.ty;
-            if info.inline {
-                quote!(<#ty as #core::schema::SchemaFields>::trigger_members(prefix, out);)
-            } else {
-                let json = &info.json;
-                quote!(<#ty as #core::schema::SchemaFields>::trigger_members(&#core::schema::member(prefix, #json), out);)
-            }
-        });
+    let triggers = trigger_calls(&infos);
     let unknown = container.unknown.as_ref().map(|word| {
         let rule = unknown_option(Some(word));
         quote!(const UNKNOWN: ::core::option::Option<#core::schema::UnknownRule> = #rule;)
@@ -275,6 +268,25 @@ fn derive_struct(input: &DeriveInput, fields: &Fields, errors: &mut Vec<Error>) 
         #default
         #getters
     }
+}
+
+/// `trigger_members`' calls: one per field that is no `foreign_event`, below the field's key
+/// (or at the owner's for an inline field).
+fn trigger_calls(infos: &[FieldInfo]) -> Vec<TokenStream> {
+    let core = core();
+    infos
+        .iter()
+        .filter(|info| info.attrs.foreign_event.is_none())
+        .map(|info| {
+            let ty = info.ty;
+            if info.inline {
+                quote!(<#ty as #core::schema::SchemaFields>::trigger_members(prefix, out);)
+            } else {
+                let json = &info.json;
+                quote!(<#ty as #core::schema::SchemaFields>::trigger_members(&#core::schema::member(prefix, #json), out);)
+            }
+        })
+        .collect()
 }
 
 /// The forced declarations of one field.
@@ -365,7 +377,7 @@ fn field_row(info: &FieldInfo) -> TokenStream {
         attrs,
         ..
     } = info;
-    let ty_text = attr::text(ty);
+    let ty_text = attr::type_text(ty);
     let kind = format_ident!(
         "{}",
         if info.option.is_some() {
@@ -439,141 +451,192 @@ fn field_row(info: &FieldInfo) -> TokenStream {
     }
 }
 
-/// The value a failed member resets to, `None` when it keeps its value (a required field).
-fn reset(info: &FieldInfo, limit_is_field: bool) -> Option<TokenStream> {
-    let value_ty = info.value_ty();
-    if limit_is_field {
-        return Some(if info.option.is_some() {
-            quote!(::core::option::Option::Some(__limit))
-        } else {
-            quote!(__limit)
-        });
-    }
+/// The value a failed member takes from its own declaration, `None` when it keeps its value
+/// (a required field): an `Option` becomes absent (its fallback is what absence stands for and
+/// is never written into the data), a plain field takes its facet `default`.
+fn own_reset(info: &FieldInfo) -> Option<TokenStream> {
     if info.option.is_some() {
-        return Some(info.attrs.fallback.as_ref().map_or_else(
-            || quote!(::core::option::Option::None),
-            |(fallback, _)| {
-                let value = typed(fallback, value_ty);
-                quote!(::core::option::Option::Some(#value))
-            },
-        ));
+        return Some(quote!(::core::option::Option::None));
     }
     let default = info.attrs.default.as_ref()?;
     Some(default.value.as_ref().map_or_else(
         || quote!(::core::default::Default::default()),
-        |expr| typed(expr, value_ty),
+        |expr| typed(expr, info.value_ty()),
     ))
 }
 
-/// The limit of a bound as an `Option<T>`: a number, or the sibling's value (its fallback where
-/// it is an absent `Option` with one; no check where it is absent without one).
-fn limit_expr(bound: &BoundDecl, all: &[FieldInfo]) -> TokenStream {
-    match &bound.limit {
+/// The bound on the lower side (`min`, `above`) or the upper one (`max`, `below`).
+fn side_bound<'a>(info: &'a FieldInfo<'_>, low: bool) -> Option<&'a BoundDecl> {
+    info.attrs
+        .bounds
+        .iter()
+        .find(|b| matches!(b.op, Op::Min | Op::Above) == low)
+}
+
+/// Whether a bound of the field names another field: its check runs after every field's own.
+fn is_cross(info: &FieldInfo) -> bool {
+    info.attrs
+        .bounds
+        .iter()
+        .any(|b| matches!(b.limit, LimitDecl::Field(_)))
+}
+
+/// The limit of a bound as an `Option<T>`, typed by the field: a number, or the sibling's value
+/// (what it stands for where it is an absent `Option` with a fallback; no side where it is
+/// absent without one).
+fn limit_expr(bound: Option<&BoundDecl>, value_ty: &Type, all: &[FieldInfo]) -> TokenStream {
+    let Some(bound) = bound else {
+        return quote!({ let __limit: ::core::option::Option<#value_ty> = ::core::option::Option::None; __limit });
+    };
+    let limit = match &bound.limit {
         LimitDecl::Num(expr) => quote!(::core::option::Option::Some(#expr)),
-        LimitDecl::Field(other) => {
-            let Some(sibling) = all.iter().find(|f| *other == f.rust) else {
-                return quote!(::core::option::Option::None);
-            };
-            let member = &sibling.member;
-            match (&sibling.option, &sibling.attrs.fallback) {
-                (None, _) => quote!(::core::option::Option::Some(self.#member)),
-                (Some(inner), Some((fallback, _))) => {
-                    let fallback = typed(fallback, inner);
-                    quote!(::core::option::Option::Some(::core::option::Option::unwrap_or(self.#member, #fallback)))
+        LimitDecl::Field(other) => match all.iter().find(|f| *other == f.rust) {
+            None => quote!(::core::option::Option::None),
+            Some(sibling) => {
+                let member = &sibling.member;
+                match (&sibling.option, &sibling.attrs.fallback) {
+                    (None, _) => quote!(::core::option::Option::Some(self.#member)),
+                    (Some(inner), Some((fallback, _))) => {
+                        let fallback = typed(fallback, inner);
+                        quote!(::core::option::Option::Some(::core::option::Option::unwrap_or(self.#member, #fallback)))
+                    }
+                    (Some(_), None) => quote!(self.#member),
                 }
-                (Some(_), None) => quote!(self.#member),
             }
-        }
+        },
+    };
+    // The limit typed by the field: a literal of another type is the compiler's error at it.
+    let span = bound.span;
+    quote_spanned!(span=> { let __limit: ::core::option::Option<#value_ty> = #limit; __limit })
+}
+
+/// What the member takes when `side` failed under `DefaultAndTell`: the other member where the
+/// side names one, else its own reset; nothing for a required field.
+fn side_reset(info: &FieldInfo, bound: Option<&BoundDecl>, limit: &TokenStream) -> TokenStream {
+    let member = &info.member;
+    if bound.is_some_and(|b| matches!(b.limit, LimitDecl::Field(_))) {
+        let value = if info.option.is_some() {
+            quote!(::core::option::Option::Some(__other))
+        } else {
+            quote!(__other)
+        };
+        return quote! {
+            if let ::core::option::Option::Some(__other) = #limit {
+                self.#member = #value;
+            }
+        };
+    }
+    match own_reset(info) {
+        Some(value) => quote!(self.#member = #value;),
+        None => TokenStream::new(),
     }
 }
 
-/// A field's part of `check`: its bounds and `lowercase` at its path, then the walk into it.
-fn field_check(info: &FieldInfo, all: &[FieldInfo]) -> TokenStream {
+/// A field's bounds: one range, one finding, whichever side the value broke; empty where the
+/// field states none.
+fn field_bounds(info: &FieldInfo, all: &[FieldInfo]) -> TokenStream {
+    if info.attrs.bounds.is_empty() {
+        return TokenStream::new();
+    }
     let core = core();
     let member = &info.member;
     let value_ty = info.value_ty();
-    let bounds = info.attrs.bounds.iter().map(|bound| {
-        let compare = format_ident!(
-            "{}",
-            match bound.op {
-                Op::Min => "lt",
-                Op::Max => "gt",
-                Op::Above => "le",
-                Op::Below => "ge",
-            }
-        );
-        let op = bound.op.variant();
-        let limit = limit_expr(bound, all);
-        let apply = reset(info, matches!(bound.limit, LimitDecl::Field(_))).map_or_else(
-            || quote!(let _ = __verdict;),
-            |value| {
-                quote! {
-                    if __verdict == #core::schema::Verdict::Reset {
-                        self.#member = #value;
-                    }
+    let (low, high) = (side_bound(info, true), side_bound(info, false));
+    let exclusive =
+        |bound: Option<&BoundDecl>| bound.is_some_and(|b| matches!(b.op, Op::Above | Op::Below));
+    let (low_exclusive, high_exclusive) = (exclusive(low), exclusive(high));
+    let (low_limit, high_limit) = (
+        limit_expr(low, value_ty, all),
+        limit_expr(high, value_ty, all),
+    );
+    let low_reset = side_reset(info, low, &quote!(__sides.low));
+    let high_reset = side_reset(info, high, &quote!(__sides.high));
+    // A side resets where it names another member or the field has its own reset.
+    let resettable = |bound: Option<&BoundDecl>| {
+        bound.is_some_and(|b| matches!(b.limit, LimitDecl::Field(_))) || own_reset(info).is_some()
+    };
+    let (low_resettable, high_resettable) = (resettable(low), resettable(high));
+    let value = if info.option.is_some() {
+        quote!(self.#member)
+    } else {
+        quote!(::core::option::Option::Some(self.#member))
+    };
+    let apply = if low_reset.is_empty() && high_reset.is_empty() {
+        quote!(let _ = (__verdict, __side);)
+    } else {
+        quote! {
+            if __verdict == #core::schema::Verdict::Reset {
+                match __side {
+                    #core::schema::Side::Low => { #low_reset }
+                    #core::schema::Side::High => { #high_reset }
                 }
-            },
-        );
-        let value = if info.option.is_some() {
-            quote!(__value)
-        } else {
-            quote!(self.#member)
+            }
+        }
+    };
+    quote! {{
+        let __sides = #core::schema::Sides::<#value_ty> {
+            low: #low_limit,
+            low_exclusive: #low_exclusive,
+            high: #high_limit,
+            high_exclusive: #high_exclusive,
         };
-        let test = quote! {
-            if ::core::cmp::PartialOrd::#compare(&#value, &__limit) {
-                let __verdict = cx.bound(
-                    #core::schema::BoundOp::#op,
-                    #core::schema::Number::to_f64(__limit),
-                );
+        if let ::core::option::Option::Some(__value) = #value {
+            if let ::core::option::Option::Some(__side) = __sides.broken(__value) {
+                let __resettable = match __side {
+                    #core::schema::Side::Low => #low_resettable,
+                    #core::schema::Side::High => #high_resettable,
+                };
+                let __verdict = cx.range(__sides.range(), __resettable);
                 #apply
             }
-        };
-        // The limit typed by the field: a literal of another type is the compiler's error at it.
-        let span = bound.span;
-        let typed_limit = quote_spanned!(span=> let __limit: ::core::option::Option<#value_ty> = #limit;);
-        if info.option.is_some() {
-            quote! {{
-                #typed_limit
-                if let (::core::option::Option::Some(__limit), ::core::option::Option::Some(__value)) = (__limit, self.#member) {
-                    #test
-                }
-            }}
-        } else {
-            quote! {{
-                #typed_limit
-                if let ::core::option::Option::Some(__limit) = __limit {
-                    #test
-                }
-            }}
         }
-    });
-    let lowercase = info.attrs.lowercase.map(|_| {
-        let fix = quote! {
-            if __value.chars().any(char::is_uppercase)
-                && cx.not_lowercase() == #core::schema::Verdict::Reset
-            {
-                *__value = __value.to_lowercase();
-            }
-        };
-        if info.option.is_some() {
-            quote!(if let ::core::option::Option::Some(__value) = &mut self.#member { #fix })
-        } else {
-            quote!({ let __value = &mut self.#member; #fix })
-        }
-    });
-    let walk = quote!(#core::schema::SchemaFields::check_fields(&mut self.#member, cx););
+    }}
+}
+
+/// `body` at the field's path: inside `enter`/`leave`, or at the owner's for an inline field.
+fn at_field(info: &FieldInfo, body: TokenStream) -> TokenStream {
     if info.inline {
-        quote!(#(#bounds)* #lowercase #walk)
+        body
     } else {
         let json = &info.json;
         quote! {
             cx.enter(#json);
-            #(#bounds)*
-            #lowercase
-            #walk
+            #body
             cx.leave();
         }
     }
+}
+
+/// A field's own part of `check`: its bounds (unless one names another field), `lowercase`
+/// (the ASCII lower-casing the game applies in silence), then the walk into it.
+fn field_check(info: &FieldInfo, all: &[FieldInfo]) -> TokenStream {
+    let core = core();
+    let member = &info.member;
+    let bounds = if is_cross(info) {
+        TokenStream::new()
+    } else {
+        field_bounds(info, all)
+    };
+    // The game lower-cases the member as it reads it and tells nothing.
+    let lowercase = info.attrs.lowercase.map(|_| {
+        if info.option.is_some() {
+            quote! {
+                if let ::core::option::Option::Some(__value) = &mut self.#member {
+                    __value.make_ascii_lowercase();
+                }
+            }
+        } else {
+            quote!(self.#member.make_ascii_lowercase();)
+        }
+    });
+    let walk = quote!(#core::schema::SchemaFields::check_fields(&mut self.#member, cx););
+    at_field(info, quote!(#bounds #lowercase #walk))
+}
+
+/// A field's cross-field bounds, which run after every field's own check, so they compare with
+/// the other member as that check left it.
+fn field_cross_check(info: &FieldInfo, all: &[FieldInfo]) -> Option<TokenStream> {
+    is_cross(info).then(|| at_field(info, field_bounds(info, all)))
 }
 
 /// A field's part of the Molang walk.

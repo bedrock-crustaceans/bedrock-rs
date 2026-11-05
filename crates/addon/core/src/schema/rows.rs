@@ -117,7 +117,7 @@ pub struct FieldRow {
     /// The JSON key: facet's `rename` or `rename_all` applied (empty for a transparent
     /// newtype's field and for a flattened one, which share their owner's object).
     pub json: &'static str,
-    /// The field type, as its tokens print.
+    /// The field type, as Rust writes it (`Option<Vec<String>>`).
     pub ty: &'static str,
     /// Required, filled on read, or optional.
     pub kind: FieldKind,

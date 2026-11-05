@@ -4,7 +4,8 @@
 //! getters, a string enum's names) and that the JSON names it emits are the ones facet's own
 //! `Shape` carries.
 
-use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath, Severity};
+use bedrock_addon_core::diagnostic::cereal::NumericRange;
+use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::molang::{
     Molang, MolangFieldSpec, MolangVersionSource, visit_fields_under,
 };
@@ -122,7 +123,23 @@ fn boss_rows_state_each_fields_kind_default_and_bound() {
 }
 
 #[test]
-fn a_broken_bound_fails_the_owner_under_refuse_and_resets_under_default_and_tell() {
+fn a_rows_type_is_printed_as_rust_writes_it() {
+    let types: Vec<&str> = BreakDoor::FIELDS.iter().map(|r| r.ty).collect();
+    assert_eq!(
+        types,
+        [
+            "Option<i32>",
+            "Option<Vec<String>>",
+            "Option<f32>",
+            "Option<EquipmentSlot>"
+        ]
+    );
+    assert_eq!(Outer::FIELDS[1].ty, "IndexMap<String, Inner>");
+}
+
+#[test]
+fn a_broken_bound_fails_the_owner_under_refuse_and_resets_with_an_information_under_default_and_tell()
+ {
     let mut refused = Boss {
         radius: -1.0,
         ..boss()
@@ -139,7 +156,7 @@ fn a_broken_bound_fails_the_owner_under_refuse_and_resets_under_default_and_tell
     let (out, failed) = check(&mut told, MemberFailure::DefaultAndTell);
     assert!(!failed);
     assert_eq!(told.radius, 2.0, "the field's facet default");
-    assert_eq!(paths(&out), [("radius".to_owned(), Severity::Warning)]);
+    assert_eq!(paths(&out), [("radius".to_owned(), Severity::Info)]);
 
     let mut fine = boss();
     let (out, failed) = check(&mut fine, MemberFailure::Refuse);
@@ -188,14 +205,18 @@ fn a_struct_with_no_required_field_gets_default_and_getters_answer_the_fallback(
 }
 
 #[test]
-fn an_option_bound_resets_to_its_fallback_and_an_absent_member_is_not_checked() {
+fn an_option_bound_resets_to_absence_and_an_absent_member_is_not_checked() {
     let mut door = BreakDoor {
         speed: Some(-2.0),
         ..BreakDoor::default()
     };
     let (out, _) = check(&mut door, MemberFailure::DefaultAndTell);
-    assert_eq!(door.speed, Some(1.0));
-    assert_eq!(paths(&out), [("speed".to_owned(), Severity::Warning)]);
+    assert_eq!(
+        door.speed, None,
+        "the fallback is never written into the data"
+    );
+    assert_eq!(door.speed(), 1.0, "absence stands for the fallback");
+    assert_eq!(paths(&out), [("speed".to_owned(), Severity::Info)]);
 
     let mut absent = BreakDoor::default();
     let (out, _) = check(&mut absent, MemberFailure::Refuse);
@@ -256,7 +277,7 @@ fn a_transparent_newtype_checks_at_its_owners_path() {
     let mut high = Friction(1.5);
     let (out, _) = check(&mut high, MemberFailure::DefaultAndTell);
     assert_eq!(high, Friction(0.4));
-    assert_eq!(paths(&out), [(String::new(), Severity::Warning)]);
+    assert_eq!(paths(&out), [(String::new(), Severity::Info)]);
 }
 
 fn shape_names(shape: &'static Shape) -> Vec<&'static str> {
@@ -344,8 +365,8 @@ fn a_cross_field_bound_compares_with_the_other_member_and_falls_back_to_it() {
     assert_eq!(
         paths(&out),
         [
-            ("high".to_owned(), Severity::Warning),
-            ("top".to_owned(), Severity::Warning)
+            ("high".to_owned(), Severity::Info),
+            ("top".to_owned(), Severity::Info)
         ]
     );
 }
@@ -359,17 +380,16 @@ pub struct Named {
 }
 
 #[test]
-fn lowercase_is_graded_and_reset_to_the_lower_case_spelling() {
+fn lowercase_lower_cases_ascii_in_silence_as_the_game_does() {
     let mut named = Named {
         id: "Zombie".to_owned(),
-        alias: Some("ok".to_owned()),
+        alias: Some("ÉCLAIR".to_owned()),
     };
     let (out, failed) = check(&mut named, MemberFailure::Refuse);
-    assert!(failed);
-    assert_eq!(named.id, "Zombie");
-    assert_eq!(paths(&out), [("id".to_owned(), Severity::Error)]);
-    let (_, _) = check(&mut named, MemberFailure::DefaultAndTell);
+    assert!(!failed);
+    assert!(out.is_empty(), "no finding: {out:?}");
     assert_eq!(named.id, "zombie");
+    assert_eq!(named.alias.as_deref(), Some("Éclair"), "ASCII letters only");
 }
 
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
@@ -478,4 +498,162 @@ fn molang_and_molang_with_override_the_default_walk() {
 fn the_namespace_resolves_through_core() {
     // `schema` is used by the attributes above; this keeps the import named.
     let _ = schema::BoundOp::Min;
+}
+
+#[test]
+fn a_field_with_two_bounds_is_one_range_and_one_finding_with_no_text_by_default() {
+    let mut high = Friction(1.5);
+    let (out, failed) = check(&mut high, MemberFailure::Refuse);
+    assert!(failed);
+    let codes: Vec<&DiagnosticCode> = out.iter().map(|d| &d.code).collect();
+    assert_eq!(codes, [&DiagnosticCode::InvalidValue { text: None }]);
+
+    let mut out = Diagnostics::default();
+    let mut cx = SchemaCx::new(Reading::DOCUMENT, JsonPath::new(), &mut out).with_range_text(true);
+    Friction(-1.0).check(&mut cx);
+    let range = NumericRange::inclusive(0.0, f64::from(0.9_f32));
+    let codes: Vec<&DiagnosticCode> = out.iter().map(|d| &d.code).collect();
+    assert_eq!(codes, [&range.code()], "the game's range text, both sides");
+}
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+pub struct Exclusive {
+    #[facet(default = 0.5, schema::above = 0.0, schema::below = 1.0)]
+    pub chance: f64,
+}
+
+#[test]
+fn an_exclusive_range_states_its_open_sides() {
+    let mut out = Diagnostics::default();
+    let mut cx = SchemaCx::new(Reading::DOCUMENT, JsonPath::new(), &mut out).with_range_text(true);
+    Exclusive { chance: 1.0 }.check(&mut cx);
+    let range = NumericRange {
+        exclusive_min: true,
+        exclusive_max: true,
+        ..NumericRange::inclusive(0.0, 1.0)
+    };
+    assert_eq!(
+        out.iter().map(|d| &d.code).collect::<Vec<_>>(),
+        [&range.code()]
+    );
+}
+
+#[test]
+fn nan_fails_every_bound() {
+    let mut nan = Friction(f32::NAN);
+    let (out, failed) = check(&mut nan, MemberFailure::Refuse);
+    assert!(failed);
+    assert_eq!(out.iter().count(), 1);
+    let mut door = BreakDoor {
+        speed: Some(f32::NAN),
+        ..BreakDoor::default()
+    };
+    let (_, failed) = check(&mut door, MemberFailure::Refuse);
+    assert!(failed, "a NaN is not >= 0");
+}
+
+/// The plan's `[0, other]` shape: `value` is at least 0 and at most `limit`, which stands for 10
+/// where the document has none. `value` comes first, so the order of the checks is not the
+/// order of the fields.
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+pub struct Window {
+    #[facet(default = 0, schema::min = 0, schema::max = limit)]
+    pub value: i32,
+    #[facet(schema::fallback = 10, schema::min = 0)]
+    pub limit: Option<i32>,
+}
+
+#[test]
+fn a_cross_field_bound_compares_with_the_other_member_when_it_is_written() {
+    let mut window = Window {
+        value: 7,
+        limit: Some(5),
+    };
+    let mut out = Diagnostics::default();
+    let reading = Reading::DOCUMENT.with_on_member_failure(MemberFailure::DefaultAndTell);
+    let mut cx = SchemaCx::new(reading, JsonPath::new(), &mut out).with_range_text(true);
+    window.check(&mut cx);
+    assert_eq!(window.value, 5, "the other member");
+    let codes: Vec<&DiagnosticCode> = out.iter().map(|d| &d.code).collect();
+    assert_eq!(codes, [&NumericRange::inclusive(0.0, 5.0).code()]);
+}
+
+#[test]
+fn a_cross_field_bound_compares_with_what_an_absent_member_stands_for() {
+    let mut window = Window {
+        value: 12,
+        limit: None,
+    };
+    let (out, _) = check(&mut window, MemberFailure::DefaultAndTell);
+    assert_eq!(window.value, 10, "the other member's fallback");
+    assert_eq!(paths(&out), [("value".to_owned(), Severity::Info)]);
+
+    let mut low = Window {
+        value: -1,
+        limit: None,
+    };
+    let (_, _) = check(&mut low, MemberFailure::DefaultAndTell);
+    assert_eq!(
+        low.value, 0,
+        "the numeric side resets to the field's own default"
+    );
+}
+
+#[test]
+fn a_cross_field_bound_runs_after_the_other_members_own_check() {
+    // `limit` breaks its own bound and is reset first; `value` is then within what it stands
+    // for, where in field order it would have been compared with -3.
+    let mut window = Window {
+        value: 7,
+        limit: Some(-3),
+    };
+    let (out, _) = check(&mut window, MemberFailure::DefaultAndTell);
+    assert_eq!(window.value, 7);
+    assert_eq!(paths(&out), [("limit".to_owned(), Severity::Info)]);
+}
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+pub struct Needs {
+    #[facet(schema::min = 1)]
+    pub count: i32,
+}
+
+#[test]
+fn a_required_field_with_nothing_to_reset_to_fails_its_owner_even_under_default_and_tell() {
+    let mut needs = Needs { count: 0 };
+    let (out, failed) = check(&mut needs, MemberFailure::DefaultAndTell);
+    assert!(failed, "no silent acceptance");
+    assert_eq!(needs.count, 0, "the value stays");
+    assert_eq!(paths(&out), [("count".to_owned(), Severity::Info)]);
+}
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+pub struct Holders {
+    pub boxed: Box<Inner>,
+    pub hashed: std::collections::HashMap<String, Inner>,
+    pub sorted: std::collections::BTreeMap<String, Inner>,
+}
+
+#[test]
+fn check_and_triggers_walk_into_boxes_and_std_maps() {
+    assert_eq!(
+        Holders::triggers(),
+        ["boxed.on_y", "hashed.*.on_y", "sorted.*.on_y"]
+    );
+    let inner = |x| Inner {
+        x,
+        on_y: None,
+        on_spawn: None,
+    };
+    let mut holders = Holders {
+        boxed: Box::new(inner(10)),
+        hashed: [("h".to_owned(), inner(11))].into(),
+        sorted: [("s".to_owned(), inner(12))].into(),
+    };
+    let (out, _) = check(&mut holders, MemberFailure::Refuse);
+    let at: Vec<String> = out
+        .iter()
+        .map(|d| d.location.json_path.to_string())
+        .collect();
+    assert_eq!(at, ["boxed/x", "hashed/h/x", "sorted/s/x"]);
 }

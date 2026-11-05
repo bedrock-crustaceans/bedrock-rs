@@ -26,9 +26,14 @@ help: the trait `Schema` is not implemented for `Drift`
    |
 46 | struct Drift {
    | ^^^^^^^^^^^^
-help: the trait `Schema` is implemented for `Float`
+help: the following other types implement trait `Schema`
   --> tests/ui/goal_without_priority_fallback.rs:40:24
    |
 40 | #[derive(facet::Facet, Schema)]
-   |                        ^^^^^^
+   |                        ^^^^^^ `Float`
+   |
+  ::: $WORKSPACE/crates/addon/core/src/schema/walk.rs
+   |
+   | impl<T: Schema> Schema for Box<T> {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `std::boxed::Box<T>`
    = note: this error originates in the derive macro `Schema` (in Nightly builds, run with -Z macro-backtrace for more info)

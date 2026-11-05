@@ -23,9 +23,9 @@
 //! | axis | what the kit does with it |
 //! |---|---|
 //! | [`Reading::null`] | [`NullHandling::Absent`]: [`opt`](Read::opt) reads a `null` member as absent, [`required`](Read::required) as missing; otherwise the member is there and its read takes the `null` |
-//! | [`Reading::scalars`] | [`Scalars::Strict`]: a token of another kind is a wrong type; [`Scalars::Coercing`]: [`number`](Read::number) takes a bool and [`int`](Read::int) any number, as [`Coerce`] reads them |
+//! | [`Reading::scalars`] | [`Scalars::JsonCpp`] only, in two reads: [`number`](Read::number) also takes a bool, as 1 or 0, and [`int`](Read::int) any number, cut as `asInt` cuts it under the caller's [`Coercing`] (a string or `null` is still a wrong type to both, and a bool to `int`). [`Scalars::Strict`], [`Scalars::NonStrict`] and [`Scalars::ConvertAndTell`] read alike here: a token of another kind is a wrong type, and `int` takes what `isInt` takes. [`bool`](Read::bool) and [`string`](Read::string) coerce under none |
 //! | [`Reading::unknown`] | the severity of [`unknown`](Read::unknown): [`UnknownMask::Error`] an error, [`UnknownMask::Warn`] a warning |
-//! | [`Reading::on_member_failure`] | the severity of a failed read (a wrong type, a missing member): [`MemberFailure::Refuse`] an error, any other an information, since the member then takes its default (the game says nothing) |
+//! | [`Reading::on_member_failure`] | a failed read (a wrong type, a missing member), graded by [`schema::grade`](crate::schema::grade): [`MemberFailure::DefaultAndTell`](crate::versioning::MemberFailure::DefaultAndTell) an information, since the member then takes its default (the game says nothing); any other an error that fails what is read ([`Read::failed`]), the caller dropping what the rule drops |
 //!
 //! A finding the kit does not word as a family's game does is the family's to tell, with
 //! [`Read::push`] at the node's [`path`](Node::path) and [`span`](Node::span); a text of the
@@ -70,7 +70,7 @@ use super::{Coerce, Coercing, JsonSlice, Value};
 use crate::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, Span, VanillaText,
 };
-use crate::versioning::{MemberFailure, NullHandling, Reading, Scalars, UnknownMask};
+use crate::versioning::{NullHandling, Reading, Scalars, UnknownMask};
 
 #[cfg(test)]
 mod tests;
@@ -357,11 +357,14 @@ impl Disposition {
 /// `wrong_type` font and `json_ui` (a text per member), attachable and `client_entity`
 /// ("unknown child schema option type.  Allowed types: …", formatted per member, so through
 /// [`Read::push`]), `crafting_catalog` (a `MalformedInput` naming both types, through
-/// [`Read::push`]); `missing` `block_culling` ([`cereal::missing_required_field`]), particle's
-/// legacy era, loot, font and `json_ui` (a text per member); `unknown` `block_culling` and
-/// script ([`cereal::MEMBER_NOT_IN_SCHEMA_TEXT`]).
+/// [`Read::push`]); `missing` particle's legacy era, loot, font and `json_ui` (a text per
+/// member); `unknown` script ([`cereal::MEMBER_NOT_IN_SCHEMA_TEXT`]). `block_culling` words its
+/// `missing` and `unknown` findings with the member's path as a breadcrumb before the game's
+/// text ([`cereal::missing_required_field`], [`cereal::member_not_in_schema`]), a text per
+/// path, so it tells them through [`Read::push`], not here.
 ///
 /// [`cereal::missing_required_field`]: crate::diagnostic::cereal::missing_required_field
+/// [`cereal::member_not_in_schema`]: crate::diagnostic::cereal::member_not_in_schema
 /// [`cereal::MEMBER_NOT_IN_SCHEMA_TEXT`]: crate::diagnostic::cereal::MEMBER_NOT_IN_SCHEMA_TEXT
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 pub struct Texts {
@@ -466,7 +469,9 @@ impl<'d> Read<'d> {
         self.reading
     }
 
-    /// Whether a finding that rejects the document has been told.
+    /// Whether what is read has failed: a finding that rejects the document has been told, or a
+    /// member failed under a rule that fails its owner (every [`MemberFailure`](crate::versioning::MemberFailure) but
+    /// `DefaultAndTell`; the caller drops the document, the owner or the element).
     pub fn failed(&self) -> bool {
         self.failed
     }
@@ -499,19 +504,13 @@ impl<'d> Read<'d> {
         self.findings.push(finding);
     }
 
-    /// The severity of a failed read under the reading.
-    fn failure_severity(&self) -> Severity {
-        match self.reading.on_member_failure {
-            MemberFailure::Refuse => Severity::Error,
-            _ => Severity::Info,
-        }
-    }
-
-    /// Tells `code` at `path` and `span` at the failure severity.
+    /// Tells `code` at `path` and `span`, graded by the reading's
+    /// [`on_member_failure`](Reading::on_member_failure).
     fn fail(&mut self, code: DiagnosticCode, path: JsonPath, span: Option<Span>) {
-        let severity = self.failure_severity();
-        let mut finding = Diagnostic::error(code).severity(severity).at(path);
+        let grading = crate::schema::grade(self.reading.on_member_failure);
+        let mut finding = Diagnostic::error(code).severity(grading.severity).at(path);
         finding.location.span = span;
+        self.failed |= grading.fails_owner;
         self.push(finding);
     }
 
@@ -775,10 +774,11 @@ impl<'d> Read<'d> {
     /// # }
     /// let json: Value = from_str_jsonc("[true, 1]").unwrap();
     /// let mut found = Diagnostics::default();
-    /// let mut read = Read::new(Reading::COERCING, &mut found);
+    /// use bedrock_addon_core::versioning::Scalars;
+    /// let mut read = Read::new(Reading::OWN.with_scalars(Scalars::JsonCpp), &mut found);
     /// let elements = read.array(&Node::new(&json, JsonPath::new())).unwrap();
     /// let read: Vec<Option<bool>> = elements.iter().map(|n| read.bool(&n)).collect();
-    /// // Not even a coercing reading takes a number for a bool.
+    /// // Not even the `JsonCpp` reading takes a number for a bool.
     /// assert_eq!(read, [Some(true), None]);
     /// ```
     pub fn bool(&mut self, node: &Node<'_>) -> Option<bool> {
@@ -817,8 +817,9 @@ impl<'d> Read<'d> {
         read
     }
 
-    /// The number `node` holds, as the double it spells; under [`Scalars::Coercing`] a bool
-    /// too, as 1 or 0. A [wrong type](Self::wrong_type) for any other value.
+    /// The number `node` holds, as the double it spells; under [`Scalars::JsonCpp`] a bool
+    /// too, as 1 or 0. A [wrong type](Self::wrong_type) for any other value, a string included
+    /// under either.
     ///
     /// ```
     /// # use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
@@ -833,7 +834,8 @@ impl<'d> Read<'d> {
     /// let mut found = Diagnostics::default();
     /// let mut read = Read::new(Reading::DOCUMENT, &mut found);
     /// let strict: Vec<Option<f64>> = read.array(&root).unwrap().iter().map(|n| read.number(&n)).collect();
-    /// let mut read = Read::new(Reading::COERCING, &mut found);
+    /// use bedrock_addon_core::versioning::Scalars;
+    /// let mut read = Read::new(Reading::OWN.with_scalars(Scalars::JsonCpp), &mut found);
     /// let coercing: Vec<Option<f64>> = read.array(&root).unwrap().iter().map(|n| read.number(&n)).collect();
     /// assert_eq!(strict, [Some(0.5), Some(2.0), None]);
     /// assert_eq!(coercing, [Some(0.5), Some(2.0), Some(1.0)]);
@@ -841,8 +843,8 @@ impl<'d> Read<'d> {
     pub fn number(&mut self, node: &Node<'_>) -> Option<f64> {
         let read = match (node.value.as_number(), self.reading.scalars) {
             (Some(number), _) => Some(number.to_f64_lossy()),
-            (None, Scalars::Strict) => None,
-            (None, _) => node.value.as_bool().map(|flag| f64::from(u8::from(flag))),
+            (None, Scalars::JsonCpp) => node.value.as_bool().map(|flag| f64::from(u8::from(flag))),
+            (None, _) => None,
         };
         if read.is_none() {
             self.wrong_type(node);
@@ -851,9 +853,10 @@ impl<'d> Read<'d> {
     }
 
     /// The `i32` `node` holds, under `ints` (jsoncpp's `isInt` and `asInt`, which the families
-    /// disagree on, so each names its own): under [`Scalars::Strict`] the number `isInt`
-    /// takes; under [`Scalars::Coercing`] any number, as `asInt` reads it. A
-    /// [wrong type](Self::wrong_type) for any other value.
+    /// disagree on, so each names its own): under every profile but `JsonCpp` the number `isInt`
+    /// takes; under [`Scalars::JsonCpp`] any number, as `asInt` cuts it. A
+    /// [wrong type](Self::wrong_type) for any other value, a bool or a string included under
+    /// either.
     ///
     /// ```
     /// # use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
@@ -875,14 +878,15 @@ impl<'d> Read<'d> {
     /// };
     /// assert_eq!(ints(&mut read, TOKEN), [Some(3), None, None]);
     /// assert_eq!(ints(&mut read, INTEGRAL), [Some(3), Some(2), None]);
-    /// let mut read = Read::new(Reading::COERCING, &mut found);
+    /// use bedrock_addon_core::versioning::Scalars;
+    /// let mut read = Read::new(Reading::OWN.with_scalars(Scalars::JsonCpp), &mut found);
     /// // `asInt` cuts a real toward zero.
     /// assert_eq!(ints(&mut read, TOKEN), [Some(3), Some(2), Some(2)]);
     /// ```
     pub fn int(&mut self, node: &Node<'_>, ints: Coercing) -> Option<i32> {
         let read = match self.reading.scalars {
-            Scalars::Strict => node.value.is_int(ints),
-            _ => node.value.as_number().map(|_| node.value.as_int(0, ints)),
+            Scalars::JsonCpp => node.value.as_number().map(|_| node.value.as_int(0, ints)),
+            _ => node.value.is_int(ints),
         };
         if read.is_none() {
             self.wrong_type(node);

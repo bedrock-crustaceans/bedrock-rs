@@ -3,7 +3,8 @@
 //! The grammar of `bedrock_addon_schema` is re-exported whole, so that `#[facet(schema::min =
 //! 0.0)]` resolves through `use bedrock_addon_core::schema::{self, Schema};`, which imports
 //! the namespace, the derive and the trait at once. Beside it: the [`Schema`] trait, its row
-//! table ([`FieldRow`]), the context a derived check reports to ([`SchemaCx`]), and what
+//! table ([`FieldRow`]), the context a derived check reports to ([`SchemaCx`]), the grading of
+//! a failed member both it and the reader kit apply ([`grade`]), and what
 //! `#[derive(Components)]` emits for a goal row ([`GoalMeta`]) and per row
 //! ([`ComponentRow`]).
 //!
@@ -13,8 +14,10 @@
 mod component;
 mod cx;
 mod goal;
+mod grading;
 mod molang_leaves;
 mod rows;
+mod sides;
 mod walk;
 
 // The grammar's dispatcher macros (`__attr`, `__parse_attr`) and its helper re-exports come
@@ -30,7 +33,10 @@ pub use cx::{SchemaCx, Verdict};
 #[doc(hidden)]
 pub use goal::int_fallback;
 pub use goal::{GoalMeta, VersionedParseFn};
+pub use grading::{Grading, grade};
 pub use rows::{Bound, BoundOp, FieldKind, FieldRow, Limit, Lit, UnknownRule};
+#[doc(hidden)]
+pub use sides::{Side, Sides};
 #[doc(hidden)]
 pub use walk::{Number, SchemaFields, member};
 pub use walk::{Schema, UnknownName};

@@ -1,6 +1,8 @@
 //! The `Schema` trait `#[derive(Schema)]` implements, and `SchemaFields`, the walk into a
 //! field's type that its `check` and its trigger list recurse through.
 
+use std::collections::{BTreeMap, HashMap};
+
 use indexmap::IndexMap;
 
 use super::cx::SchemaCx;
@@ -10,7 +12,8 @@ use super::rows::{FieldRow, UnknownRule};
 /// implemented by `#[derive(Schema)]`, never by hand.
 ///
 /// `FIELDS` is the row table, to be tested against the generated game tables; `check` applies
-/// the bounds and `lowercase` under the slice's rule and walks into every field;
+/// the bounds under the slice's rule, lower-cases the `lowercase` members (in silence, as the
+/// game does) and walks into every field;
 /// `trigger_members` lists the members that hold a trigger of this entity.
 pub trait Schema {
     /// The fields in declaration order, `skip` fields left out (empty for a string enum).
@@ -19,8 +22,8 @@ pub trait Schema {
     /// The container's `schema::unknown`.
     const UNKNOWN: Option<UnknownRule> = None;
 
-    /// The bounds and `lowercase` of every field, at the members' paths below `cx`'s, then the
-    /// same for what each field holds.
+    /// The bounds of every field, at the members' paths below `cx`'s, and the ASCII
+    /// lower-casing of each `lowercase` one, then the same for what each field holds.
     fn check(&mut self, cx: &mut SchemaCx<'_>);
 
     /// Appends the trigger members below `prefix` (keys joined by `.`, `[]` after a list, `*`
@@ -88,7 +91,49 @@ impl<T: SchemaFields> SchemaFields for Vec<T> {
     }
 }
 
-impl<T: SchemaFields> SchemaFields for IndexMap<String, T> {
+/// A boxed `Schema` type is that type (a recursive struct holds itself in a `Box`). `Box` is
+/// fundamental, so the walk reaches it through this impl and the blanket `SchemaFields` one,
+/// not through an impl of its own.
+impl<T: Schema> Schema for Box<T> {
+    const FIELDS: &'static [FieldRow] = T::FIELDS;
+    const UNKNOWN: Option<UnknownRule> = T::UNKNOWN;
+
+    fn check(&mut self, cx: &mut SchemaCx<'_>) {
+        T::check(self, cx);
+    }
+
+    fn trigger_members(prefix: &str, out: &mut Vec<String>) {
+        T::trigger_members(prefix, out);
+    }
+}
+
+/// The walk into each value of a map keyed by member name, at the member's path.
+macro_rules! map_fields {
+    ($($map:ident),+) => {
+        $(
+            impl<T: SchemaFields, S> SchemaFields for $map<String, T, S>
+            where
+                S: core::hash::BuildHasher,
+            {
+                fn check_fields(&mut self, cx: &mut SchemaCx<'_>) {
+                    for (key, inner) in self.iter_mut() {
+                        cx.enter(key);
+                        inner.check_fields(cx);
+                        cx.leave();
+                    }
+                }
+
+                fn trigger_members(prefix: &str, out: &mut Vec<String>) {
+                    T::trigger_members(&member(prefix, "*"), out);
+                }
+            }
+        )+
+    };
+}
+
+map_fields!(IndexMap, HashMap);
+
+impl<T: SchemaFields> SchemaFields for BTreeMap<String, T> {
     fn check_fields(&mut self, cx: &mut SchemaCx<'_>) {
         for (key, inner) in self.iter_mut() {
             cx.enter(key);
