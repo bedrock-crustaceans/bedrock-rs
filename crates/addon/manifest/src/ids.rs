@@ -38,3 +38,30 @@ pub(super) fn hash(text: &str) -> Uuid {
     bytes[6] = (bytes[6] & 0x0f) | 0x30;
     Uuid::from_bytes(bytes)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// `hash` over more than one MD5 block, recorded from the hand MD5 and checked against
+    /// Python's `hashlib`: 57 bytes (the length crosses the 56-byte pad edge) and 70 (a full
+    /// block and part of a second). `salvage` is pinned end to end in
+    /// `tests/characterize_manifest.txt` ("legacy uuid malformed v0 pad edge", "... two blocks").
+    #[test]
+    fn hash_over_more_than_one_block_is_pinned() {
+        let pad_edge = format!("{}0123456", "not-a-uuid".repeat(5));
+        assert_eq!(pad_edge.len(), 57);
+        assert_eq!(
+            hash(&pad_edge).hyphenated().to_string(),
+            "a9dcce50-f29f-3752-e866-fabfa96b8308"
+        );
+        assert_eq!(
+            hash(&"not-a-uuid".repeat(7)).hyphenated().to_string(),
+            "a74d62d9-5e96-3ad5-d026-085f8fc86227"
+        );
+        assert_eq!(
+            salvage(&"not-a-uuid".repeat(7)).hyphenated().to_string(),
+            "ffe97b72-7572-369f-24ef-5594735028e7"
+        );
+    }
+}

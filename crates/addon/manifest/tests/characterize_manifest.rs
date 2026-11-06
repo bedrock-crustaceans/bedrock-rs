@@ -149,6 +149,10 @@ fn cases() -> Vec<(&'static str, String)> {
         ("legacy uuid empty", v2_header(r#""name": "P", "uuid": "", "version": [1, 0, 0], "min_engine_version": [1, 21, 0]"#)),
         ("legacy uuid malformed", v2_header(r#""name": "P", "uuid": "abc", "version": [1, 0, 0], "min_engine_version": [1, 21, 0]"#)),
         ("legacy uuid malformed v0", v0(&v0_header("").replace(HEADER_UUID, "abc"))),
+        // Salvaged ids hashed over more than one MD5 block: 7 + 50 bytes puts the length past
+        // the 56-byte pad edge; 7 + 70 fills a block and starts another.
+        ("legacy uuid malformed v0 pad edge", v0(&v0_header("").replace(HEADER_UUID, &"not-a-uuid".repeat(5)))),
+        ("legacy uuid malformed v0 two blocks", v0(&v0_header("").replace(HEADER_UUID, &"not-a-uuid".repeat(7)))),
         ("legacy module uuid malformed v0", v0(&v0_header("").replace(MODULE_UUID, "abc"))),
         // ---- legacy: version ----
         ("legacy version absent", v2_header(&format!(r#""name": "P", "uuid": "{HEADER_UUID}", "min_engine_version": [1, 21, 0]"#))),
