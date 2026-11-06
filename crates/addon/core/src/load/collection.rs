@@ -711,7 +711,8 @@ impl StackPack {
     /// manifest here, as it was read when the pack was opened, so a `combine` that needs more
     /// of it than the entry's own fields reads it here instead of parsing the file again.
     /// `None` for an entry built by hand, and for any other `T`. The manifest crate's
-    /// extension trait names the one type the loaders store.
+    /// extension trait `StackPackManifest` (reached as `bedrock_addon::manifest::StackPackManifest`)
+    /// names the one type the loaders store: `pack.manifest()` is `pack.opened::<Manifest>()`.
     pub fn opened<T: Any>(&self) -> Option<&T> {
         self.opened.as_ref()?.0.downcast_ref()
     }

@@ -4,8 +4,8 @@
 //! `bedrock_addon_manifest`) and the shared crates (and support's `biome_json`, for the three
 //! biome families until it goes, and script for `server_config`, the one family on a family):
 //! its manifest names no other, and its sources do not either (`bedrock_addon_storage` is not
-//! among them). The manifest crate itself depends on core alone, and so does the storage
-//! crate. The compiler enforces the rest (a family crate cannot name `bedrock_addon`'s `pack`
+//! among them). The manifest and storage crates themselves depend on core and the crates
+//! their formats are read with, no family and no shared crate. The compiler enforces the rest (a family crate cannot name `bedrock_addon`'s `pack`
 //! or `load`, or another family).
 //!
 //! The second rule: library code never reads the text of a finding's path.
@@ -179,7 +179,18 @@ fn lifted_violations(family: &str, manifest: &str, sources: &[(String, String)])
             let rest = &code[index + "bedrock_addon".len()..];
             let end = rest.find(|c: char| !is_ident(c)).unwrap_or(rest.len());
             let name = format!("bedrock_addon{}", &rest[..end]);
-            let Some(path) = rest[end..].trim_start().strip_prefix("::") else {
+            let after = rest[end..].trim_start();
+            if (family, name.as_str()) == SCRIPT_ALLOWANCE
+                && after
+                    .strip_prefix("as")
+                    .is_some_and(|rest| rest.starts_with(char::is_whitespace))
+            {
+                // `use bedrock_addon_family_script as s;` would hide every `s::` path from the scan.
+                let line = code[..index].matches('\n').count() + 1;
+                violations.push(format!("{family}/src/{relative}:{line} renames {name}"));
+                continue;
+            }
+            let Some(path) = after.strip_prefix("::") else {
                 continue;
             };
             let biome_json = path.trim_start().starts_with("biome_json")
@@ -419,7 +430,9 @@ fn the_lifted_scan_reads_manifests_and_paths() {
              use bedrock_addon_family_script::{ScriptContext, ScriptModuleRef, ScriptPlugin};\n\
              fn f() -> bedrock_addon_family_script::ScriptBundle { todo!() }\n\
              use bedrock_addon_family_script::{ScriptPlugin, meta::module, ScriptVersion};\n\
-             use bedrock_addon_family_script::bundle::{ScriptBundle as B};\n"
+             use bedrock_addon_family_script::bundle::{ScriptBundle as B};\n\
+             use bedrock_addon_family_script as s;\n\
+             use bedrock_addon_family_script::*;\n"
                 .to_owned(),
         ),
         (
@@ -436,6 +449,8 @@ fn the_lifted_scan_reads_manifests_and_paths() {
             "server_config/src/lib.rs:3 names bedrock_addon_family_script::ScriptBundle",
             "server_config/src/lib.rs:4 names bedrock_addon_family_script::ScriptVersion",
             "server_config/src/lib.rs:5 names bedrock_addon_family_script::bundle",
+            "server_config/src/lib.rs:6 renames bedrock_addon_family_script",
+            "server_config/src/lib.rs:7 names bedrock_addon_family_script::",
             "server_config/src/tests.rs:2 names bedrock_addon_family_script::ScriptBundle",
         ]
     );

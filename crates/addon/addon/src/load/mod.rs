@@ -4,8 +4,11 @@
 //! `Place`, `ListDepth`, `ReadRange`, `Limits`, … are re-exported here, their one documented path.
 
 pub use bedrock_addon_core::load::{
-    AppData, BiomeRenderIdentifiers, BuiltIns, Experiment, Experiments, Limits, ListDepth,
-    LoadContext, LoadOptions, Place, RECOMMENDED_JOB_STACK, ReadRange, RootId,
+    AppData, BiomeRenderIdentifiers, BuiltIns, DocumentSource, Experiment, Experiments,
+    JSON_DOCUMENT_WARNING_BYTES, JsonDocumentSize, Limits, ListDepth, ListedFile, LoadContext,
+    LoadOptions, LoadRequirement, MAX_JSON_DOCUMENT_BYTES, NamedFiles, Place,
+    RECOMMENDED_JOB_STACK, ReadRange, RootId, SaveName, json_document_size,
+    json_document_size_against,
 };
 
 mod io;

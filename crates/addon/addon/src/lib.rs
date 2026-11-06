@@ -88,7 +88,8 @@
 //! - `molang`: the load-time Molang compile check.
 //! - `nbt`: the client-network NBT methods (`Block::to_network_nbt`, …).
 //! - one feature per family (`block`, `attachable`, …, `script`) and `full` for all of them.
-//!   A link rule between two families runs only with both features on.
+//!   A link rule between two families runs only with both features on. `server_config` (the
+//!   server's `config/` folder) implies `script`.
 //! - `script-syntax`: a full JavaScript syntax check of script files (implies `script`; outside
 //!   `full`).
 //!

@@ -104,6 +104,16 @@ fn records() -> BTreeMap<String, u64> {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
     let mut all = Vec::new();
     files(&root, &root, &mut all);
+    // The container fixtures moved to the storage crate with it; their records keep the
+    // `storage/` prefix they had below this crate's fixtures.
+    let storage = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../storage/tests/fixtures");
+    let mut moved = Vec::new();
+    files(&storage, &storage, &mut moved);
+    all.extend(
+        moved
+            .into_iter()
+            .map(|(relative, path)| (format!("storage/{relative}"), path)),
+    );
     let kinds = kinds();
     let cx = LoadContext::detached();
     let mut out = BTreeMap::new();

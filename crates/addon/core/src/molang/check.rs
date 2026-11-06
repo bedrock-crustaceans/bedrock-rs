@@ -423,9 +423,8 @@ const PACK_SETTING_QUERIES: [&str; 3] = [
 ];
 
 /// Whether `diagnostic` is molang's client-only lint about one of the three pack-setting
-/// queries: the lint names its query first, by its declared name. For a family that compiles its
-/// expressions itself and tells the lint as [`MolangCheck::check_source`] does (a warning,
-/// once for an expression, on the server side).
+/// queries: the lint names its query first, by its declared name. [`MolangCheck::check_source`]
+/// tells it apart (a warning, once for an expression, on the server side).
 // molang `lint_query_side`: "<name> is a client-only query in this crate's table; …".
 #[must_use]
 pub(crate) fn is_pack_setting_lint(diagnostic: &MolangDiagnostic) -> bool {

@@ -52,10 +52,7 @@ pub use combine::{
 pub use component::{Component, ComponentMap, ComponentRef, ComponentSet, CustomComponent};
 pub use finite::FiniteText;
 pub use json_document::{JsonDefinition, JsonDocument, JsonPlaced};
-// hidden: built only by `load::constructors`; a `Family` author names it
-#[doc(hidden)]
-pub use merged::{Layer, MergeCx};
-pub use merged::{Merged, RawLayer};
+pub use merged::{Layer, MergeCx, Merged, RawLayer};
 pub use placed::default_path;
 pub use placed::{default_path_flat, default_path_flat_for_vanilla};
 pub use unknown::Unknown;

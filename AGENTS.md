@@ -125,7 +125,8 @@ numbers in the commit body.
 socket; a unit test beside the type is enough.
 
 **`crates/addon/*`**: the add-on toolkit. `core` holds identifiers, versions, diagnostics and the
-version-chain machinery; `manifest` reads and writes `manifest.json` on top of core; each
+version-chain machinery; `manifest` reads and writes `manifest.json` on top of core; `storage`
+reads the pack containers (zip, marketplace encryption, brarchive, MCB) over bytes; each
 content family (`families/<name>`) owns the types and rules of one kind of game file; `addon`
 composes them into packs, stacks, the link pass and the writer, and `std` drives them over the
 file system. Oracle: the game's own files. Red tests are small JSON
@@ -158,5 +159,8 @@ regenerates them reads a checkout of Mojang's `bedrock-samples` repository at a 
 - Feature-gated code compiles only with the feature on: `auth-ureq`, `auth-reqwest`,
   `protocol`'s per-version features, and every crate behind the `bedrock` facade. A change that builds under a crate's
   default features has not been built the way CI builds it (`--all-features`).
+- `bedrock_addon_core::test_cost` (the linear-cost measure the addon tests use) and
+  `json::kit::fixed_path::testing` build only under core's `test-cost` feature: a crate whose
+  tests reach them turns it on in a `[dev-dependencies]` line on core.
 - Errors are `thiserror` enums per crate; a new failure is a new variant, never a `String`.
   Library code propagates with `?`; `unwrap` and `expect` belong in tests, benches and `xtask`.
