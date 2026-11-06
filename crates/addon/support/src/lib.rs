@@ -15,7 +15,6 @@ pub mod schema_walk;
 pub mod shape;
 pub mod signed_zero;
 pub mod sound;
-pub mod text;
 pub mod texture;
 
 #[cfg(test)]
@@ -33,9 +32,6 @@ mod tests {
         assert_debug::<crate::shape::Member>();
         assert_debug::<crate::fixed_path::Object>();
         assert_debug::<crate::sound::report::Reporter<'static>>();
-        assert_debug::<crate::text::lang_scan::End>();
-        assert_debug::<crate::text::lang_scan::Kind>();
-        assert_debug::<crate::text::lang_scan::Segment>();
     }
 
     #[test]

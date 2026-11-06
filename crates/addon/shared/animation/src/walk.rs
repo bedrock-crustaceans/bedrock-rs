@@ -350,7 +350,7 @@ impl Walk {
         );
     }
 
-    /// "Value '<value>' not allowed" (a bool outside its set) at the current path.
+    /// `"Value '<value>' not allowed"` (a bool outside its set) at the current path.
     pub fn not_allowed(&mut self, value: &str, node: Node<'_>) {
         self.error(
             DiagnosticCode::InvalidValue {

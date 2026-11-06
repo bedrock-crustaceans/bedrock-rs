@@ -67,7 +67,7 @@ font = ["dep:bedrock_addon_family_font"]
 geometry = ["dep:bedrock_addon_family_geometry"]
 json_ui = ["dep:bedrock_addon_family_json_ui"]
 lang = ["dep:bedrock_addon_family_lang"]
-languages = ["dep:bedrock_addon_family_languages"]
+languages = ["dep:bedrock_addon_family_lang"]
 legacy_path_mapping = ["dep:bedrock_addon_family_legacy_path_mapping"]
 loading_messages = ["dep:bedrock_addon_family_loading_messages"]
 material = ["dep:bedrock_addon_family_material"]
@@ -190,7 +190,6 @@ bedrock_addon_family_item = { path = "../families/item", optional = true }
 bedrock_addon_family_jigsaw = { path = "../families/jigsaw", optional = true }
 bedrock_addon_family_json_ui = { path = "../families/json_ui", optional = true }
 bedrock_addon_family_lang = { path = "../families/lang", optional = true }
-bedrock_addon_family_languages = { path = "../families/languages", optional = true }
 bedrock_addon_family_legacy_path_mapping = { path = "../families/legacy_path_mapping", optional = true }
 bedrock_addon_family_loading_messages = { path = "../families/loading_messages", optional = true }
 bedrock_addon_family_loot = { path = "../families/loot", optional = true }

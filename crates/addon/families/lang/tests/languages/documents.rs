@@ -8,7 +8,8 @@ use bedrock_addon_core::diagnostic::{
 use bedrock_addon_core::document::{Content, Document, Placed, Rejected};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::pack_identity::PackPath;
-use bedrock_addon_family_languages::{Language, LanguageNames, Languages};
+use bedrock_addon_family_lang::Language;
+use bedrock_addon_family_lang::languages::{LanguageNames, Languages};
 
 use super::common::*;
 

@@ -1,13 +1,13 @@
 //! The `.lang` reader: vanilla's `Localization::appendTranslations`, a byte-level state machine
-//! (`support::text::lang_scan`), and our lints on what it read.
+//! (`scan.rs`), and our lints on what it read.
 
 use std::collections::HashMap;
 
 use super::{KeyFilter, LangFile, LangLayout, Language, Line, Translations};
+use crate::scan::{BOM, End, Kind, scan};
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Span, VanillaText,
 };
-use bedrock_addon_support::text::lang_scan::{BOM, End, Kind, scan};
 
 /// Bytes as text: vanilla copies bytes without decoding them.
 fn text(bytes: &[u8]) -> String {

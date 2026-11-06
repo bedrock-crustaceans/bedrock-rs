@@ -4,14 +4,12 @@ use bedrock_addon_core::pack_identity::{PackPath, PackSide};
 
 use super::read::{codes_json, names_json, read_languages, read_names};
 use super::{Language, LanguageNames, Languages};
+use crate::SIDES;
 use bedrock_addon_core::document::{
     Content, Document, JsonContent, Merge, Placed, Rejected, unversioned,
 };
 use bedrock_addon_core::json::{EncodeError, WriteStyle, write_json};
 use bedrock_addon_core::load::LoadContext;
-
-/// Both stacks: a behaviour pack carries `texts/` for its manifest name.
-const SIDES: &[PackSide] = &[PackSide::Behavior, PackSide::Resource];
 
 impl bedrock_addon_core::__private::Sealed for Languages {}
 impl bedrock_addon_core::__private::Sealed for LanguageNames {}

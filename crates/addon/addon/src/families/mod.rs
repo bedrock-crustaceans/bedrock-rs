@@ -134,7 +134,7 @@ pub use bedrock_addon_family_lang as lang;
 #[cfg(feature = "languages")]
 #[cfg_attr(docsrs, doc(cfg(feature = "languages")))]
 #[doc(inline)]
-pub use bedrock_addon_family_languages as languages;
+pub use bedrock_addon_family_lang::languages;
 #[cfg(feature = "legacy_path_mapping")]
 #[cfg_attr(docsrs, doc(cfg(feature = "legacy_path_mapping")))]
 #[doc(inline)]

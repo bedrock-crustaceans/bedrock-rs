@@ -14,8 +14,11 @@
 
 mod format;
 mod keyword;
+mod language;
+pub mod languages;
 mod overlay;
 mod read;
+mod scan;
 mod write;
 
 #[cfg(test)]
@@ -27,10 +30,10 @@ pub use format::replace_tokens;
 pub use keyword::{pack_key_prefix, pack_keyword_value};
 pub use overlay::locale_overlay_paths;
 
-pub use bedrock_addon_support::text::lang_scan::{RESERVED_KEYS, is_pack_keyword};
-pub use bedrock_addon_support::text::language::Language;
+pub use language::Language;
 #[doc(hidden)]
-pub use bedrock_addon_support::text::language::language_of;
+pub use language::language_of;
+pub use scan::{RESERVED_KEYS, is_pack_keyword};
 use std::collections::btree_map::Entry;
 
 use bedrock_addon_core::load::{Accept, CollectionLoader, StackCx, Walk, WalkFile};
@@ -131,8 +134,14 @@ pub struct KeyFilter<'a> {
 /// Both stacks: a behaviour pack carries `texts/` for its manifest name.
 const SIDES: &[PackSide] = &[PackSide::Behavior, PackSide::Resource];
 
-/// The directory the stack loader reads.
+/// The directory the stack loaders read.
 const TEXTS: &str = "texts";
+
+/// The layers top first; within one pack the later copy first. The walks are lowest pack
+/// first, so that is the walk order reversed.
+fn top_first<T>(layers: &mut [Document<T>]) {
+    layers.reverse();
+}
 
 impl bedrock_addon_core::__private::Sealed for LangFile {}
 impl bedrock_addon_core::__private::Sealed for Translations {}
@@ -230,9 +239,7 @@ fn combine_translations(parsed: Vec<LangLayer>, _: &StackCx<'_>) -> Merged<Trans
         }
         layers.push(document);
     }
-    // The layers top first; the walks are lowest pack first, so that is the walk order
-    // reversed.
-    layers.reverse();
+    top_first(&mut layers);
     Merged::new(value, origins, layers, diagnostics)
 }
 

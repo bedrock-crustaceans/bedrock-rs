@@ -10,8 +10,6 @@
 //! The reader stays a hand walk over the two JSON lists, read as vanilla's JSON library reads them:
 //! no schema stands behind them.
 
-#![cfg_attr(docsrs, feature(doc_cfg))]
-
 mod content;
 mod read;
 mod stack;
@@ -19,7 +17,7 @@ mod stack;
 #[cfg(test)]
 mod tests;
 
-pub use bedrock_addon_support::text::language::Language;
+pub use crate::Language;
 
 #[doc(hidden)]
 pub use stack::LOADER;

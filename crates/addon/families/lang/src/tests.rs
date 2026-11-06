@@ -4,7 +4,7 @@
 use bedrock_addon_core::pack_identity::PackPath;
 
 use super::{KeyFilter, LangFile, Language, RESERVED_KEYS};
-use bedrock_addon_support::text::lang_scan::defines_pack_keywords;
+use crate::scan::defines_pack_keywords;
 
 fn lang(code: &str) -> Language {
     Language::new(code)
@@ -140,4 +140,14 @@ fn the_keyword_scan_reads_a_keyword_line_as_the_reader_does() {
             bytes.escape_ascii()
         );
     }
+}
+
+// ---- the byte machine -------------------------------------------------------------
+
+#[test]
+fn the_scan_types_implement_debug() {
+    fn assert_debug<T: std::fmt::Debug>() {}
+    assert_debug::<crate::scan::End>();
+    assert_debug::<crate::scan::Kind>();
+    assert_debug::<crate::scan::Segment>();
 }

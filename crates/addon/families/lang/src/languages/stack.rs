@@ -10,17 +10,13 @@ use indexmap::IndexMap;
 
 use super::read::{read_languages, read_names};
 use super::{Language, Languages};
+use crate::scan::{RESERVED_KEYS, defines_pack_keywords, is_pack_keyword};
+use crate::{TEXTS, language_of, top_first};
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
 };
 use bedrock_addon_core::document::{Document, Merged, Origin, Rejected, unversioned};
-use bedrock_addon_support::text::lang_scan::{
-    RESERVED_KEYS, defines_pack_keywords, is_pack_keyword,
-};
-use bedrock_addon_support::text::language::language_of;
 
-/// The directory the stack loader reads.
-const TEXTS: &str = "texts";
 /// The directory only vanilla's single-pack append path also tries (L12).
 const TEXTS_CAPITAL: &str = "Texts";
 const LANGUAGES_JSON: &str = "texts/languages.json";
@@ -181,12 +177,6 @@ fn parse_texts(file: &WalkFile, _: &LoadContext) -> TextsFile {
             defines: defines_pack_keywords(&file.bytes),
         },
     }
-}
-
-/// The layers top first; within one pack the later copy first. The walks are lowest pack
-/// first, so that is the walk order reversed.
-fn top_first<T>(layers: &mut [Document<T>]) {
-    layers.reverse();
 }
 
 /// The `Combine` job of `languages()`: the union of the codes in first-seen order and the
