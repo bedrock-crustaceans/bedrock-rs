@@ -1,6 +1,7 @@
 //! The JSON member path of a token in a text (`path_at`), and what the walks of this crate ask
 //! of a `diagnostic::JsonPath` beyond its public methods.
 
+use super::lex::{Kind, Lexer, Rules, Structure, key_text};
 use crate::diagnostic::{JsonPath, JsonPathSegment};
 
 /// What the walks of this crate ask of a [`JsonPath`] beyond its public methods.
@@ -36,122 +37,34 @@ impl JsonPath {
     }
 }
 
-/// One open container while scanning.
-enum Frame {
-    /// An object, with the key of the member being read (`None` before its key).
-    Object(Option<String>),
-    /// An array, with the index of the element being read.
-    Array(usize),
-}
-
 /// The members leading to the token at byte `offset` of `text`: the value that starts there, or,
-/// for a member key, that member. A lexical scan (strings, comments, brackets), not a parse; it
-/// runs only to place an error facet reported, and stops at the offset.
+/// for a member key, that member. A lexical scan (strings, comments, brackets), not a parse,
+/// by the lenient reading of `lex` (a form feed is white space here); it runs only to place an
+/// error facet reported, and stops at the offset.
 pub(crate) fn path_at(text: &str, offset: usize) -> JsonPath {
-    let bytes = text.as_bytes();
-    let mut frames: Vec<Frame> = Vec::new();
-    let mut i = 0;
-    while i < bytes.len() {
-        let byte = bytes[i];
-        if byte.is_ascii_whitespace() {
-            i += 1;
-            continue;
-        }
-        if byte == b'/' && matches!(bytes.get(i + 1), Some(b'/' | b'*')) {
-            i = skip_comment(bytes, i);
-            continue;
-        }
-        let end = token_end(bytes, i);
-        let at_key = byte == b'"' && matches!(frames.last(), Some(Frame::Object(None)));
-        if end > offset {
-            let mut members = members_of(&frames);
+    let mut lexer = Lexer::new(text.as_bytes(), Rules::lenient(true));
+    let mut open = Structure::new();
+    while let Ok(Some(token)) = lexer.next_token() {
+        let at_key = matches!(token.kind, Kind::String { .. }) && open.awaits_key();
+        if token.end > offset {
+            let mut path = open.path().clone();
             if at_key {
-                members.push(&key_text(&text[i..end]));
+                path.push(&key_text(&text[token.range()]));
             }
-            return members;
+            return path;
         }
-        match byte {
-            b'{' => frames.push(Frame::Object(None)),
-            b'[' => frames.push(Frame::Array(0)),
-            b'}' | b']' => {
-                frames.pop();
+        match token.kind {
+            Kind::OpenObject => open.open_object(),
+            Kind::OpenArray => open.open_array(),
+            Kind::CloseObject | Kind::CloseArray => {
+                open.close();
             }
-            b',' => match frames.last_mut() {
-                Some(Frame::Object(key)) => *key = None,
-                Some(Frame::Array(index)) => *index += 1,
-                None => {}
-            },
-            b'"' if at_key => {
-                if let Some(Frame::Object(key)) = frames.last_mut() {
-                    *key = Some(key_text(&text[i..end]));
-                }
-            }
+            Kind::Comma => open.comma(),
+            Kind::String { .. } if at_key => open.enter_key(&key_text(&text[token.range()])),
             _ => {}
         }
-        i = end;
     }
-    members_of(&frames)
-}
-
-/// The members the open frames select.
-fn members_of(frames: &[Frame]) -> JsonPath {
-    let mut members = JsonPath::new();
-    for frame in frames {
-        match frame {
-            Frame::Object(Some(key)) => members.push(key),
-            Frame::Object(None) => {}
-            Frame::Array(index) => members.push_index(*index),
-        }
-    }
-    members
-}
-
-/// A key token's text: its unescaped value, or the text between the quotes when it does not
-/// unescape.
-fn key_text(token: &str) -> String {
-    crate::json::from_str::<String>(token).unwrap_or_else(|_| token.trim_matches('"').to_owned())
-}
-
-/// The end of the token starting at `i`: a string to its closing quote, punctuation one byte,
-/// anything else (numbers, literals) to the next delimiter.
-fn token_end(bytes: &[u8], i: usize) -> usize {
-    match bytes[i] {
-        b'"' => {
-            let mut j = i + 1;
-            while let Some(&byte) = bytes.get(j) {
-                match byte {
-                    b'\\' => j += 2,
-                    b'"' => return j + 1,
-                    _ => j += 1,
-                }
-            }
-            bytes.len()
-        }
-        b'{' | b'}' | b'[' | b']' | b',' | b':' => i + 1,
-        _ => bytes[i..]
-            .iter()
-            .position(|&b| {
-                b.is_ascii_whitespace()
-                    || matches!(b, b'{' | b'}' | b'[' | b']' | b',' | b':' | b'"' | b'/')
-            })
-            .map_or(bytes.len(), |n| (i + n).max(i + 1)),
-    }
-}
-
-/// The index after the comment starting at `i` (`//` to the line end, `/*` to `*/` or the end).
-fn skip_comment(bytes: &[u8], i: usize) -> usize {
-    let body = i + 2;
-    if bytes.get(i + 1) == Some(&b'/') {
-        bytes[body.min(bytes.len())..]
-            .iter()
-            .position(|&b| b == b'\n')
-            .map_or(bytes.len(), |n| body + n + 1)
-    } else {
-        bytes
-            .get(body..)
-            .and_then(|rest| rest.windows(2).position(|pair| pair == b"*/"))
-            .map_or(bytes.len(), |n| body + n + 2)
-    }
+    open.path().clone()
 }
 
 #[cfg(test)]

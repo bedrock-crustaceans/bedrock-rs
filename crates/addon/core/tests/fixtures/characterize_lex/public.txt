@@ -1,0 +1,1311 @@
+## "{\"a\":1}"
+scan(comments)    Ok(Scanned { root_end: Some(7), trailing: None })
+scan(no comments) Ok(Scanned { root_end: Some(7), trailing: None })
+check_depth(128)  Ok(())
+check_depth(3)    Ok(())
+last_wins         borrowed
+last_wins_except  borrowed
+lenient.root_end  Some(7)
+lenient.trivia    0
+lenient.string    Some(Some(4))
+prepared.blank    Ok(false)
+opens_an_object   true
+span_at(a)  Some(Span { offset: 5, len: 1 })
+span_at(a/0)  None
+span_at(b)  None
+clamp_tokens      None []
+clamp_tokens(a)   None []
+clamp_double      None []
+clamp_text        None []
+clamp_non_finite  []
+## "{\"a\":\"\\q\"}"
+scan(comments)    Err(BadEscape { offset: 6, len: 2, found: 'q' })
+scan(no comments) Err(BadEscape { offset: 6, len: 2, found: 'q' })
+check_depth(128)  Ok(())
+check_depth(3)    Ok(())
+last_wins         borrowed
+last_wins_except  borrowed
+lenient.root_end  Some(10)
+lenient.trivia    0
+lenient.string    Some(Some(4))
+prepared.blank    Ok(false)
+opens_an_object   true
+span_at(a)  None
+span_at(a/0)  None
+span_at(b)  None
+clamp_tokens      None []
+clamp_tokens(a)   None []
+clamp_double      None []
+(no value)
+## "{\"a\":\"\\u12\"}"
+scan(comments)    Err(BadUnicodeEscape { offset: 6, len: 5, found: Some('"') })
+scan(no comments) Err(BadUnicodeEscape { offset: 6, len: 5, found: Some('"') })
+check_depth(128)  Ok(())
+check_depth(3)    Ok(())
+last_wins         borrowed
+last_wins_except  borrowed
+lenient.root_end  Some(12)
+lenient.trivia    0
+lenient.string    Some(Some(4))
+prepared.blank    Ok(false)
+opens_an_object   true
+span_at(a)  None
+span_at(a/0)  None
+span_at(b)  None
+clamp_tokens      None []
+clamp_tokens(a)   None []
+clamp_double      None []
+(no value)
+## "{\"a\":\"\\u12"
+scan(comments)    Err(BadUnicodeEscape { offset: 6, len: 4, found: None })
+scan(no comments) Err(BadUnicodeEscape { offset: 6, len: 4, found: None })
+check_depth(128)  Ok(())
+check_depth(3)    Ok(())
+last_wins         borrowed
+last_wins_except  borrowed
+lenient.root_end  None
+lenient.trivia    0
+lenient.string    Some(Some(4))
+prepared.blank    Ok(false)
+opens_an_object   true
+span_at(a)  None
+span_at(a/0)  None
+span_at(b)  None
+clamp_tokens      None []
+clamp_tokens(a)   None []
+clamp_double      None []
+(no value)
+## "{\"a\":\"abc"
+scan(comments)    Ok(Scanned { root_end: None, trailing: None })
+scan(no comments) Ok(Scanned { root_end: None, trailing: None })
+check_depth(128)  Ok(())
+check_depth(3)    Ok(())
+last_wins         borrowed
+last_wins_except  borrowed
+lenient.root_end  None
+lenient.trivia    0
+lenient.string    Some(Some(4))
+prepared.blank    Ok(false)
+opens_an_object   true
+span_at(a)  None
+span_at(a/0)  None
+span_at(b)  None
+clamp_tokens      None []
+clamp_tokens(a)   None []
+clamp_double      None []
+(no value)
+## "{\"a\":\"x\\\\\",\"b\":2}"
+scan(comments)    Ok(Scanned { root_end: Some(17), trailing: None })
+scan(no comments) Ok(Scanned { root_end: Some(17), trailing: None })
+check_depth(128)  Ok(())
+check_depth(3)    Ok(())
+last_wins         borrowed
+last_wins_except  borrowed
+lenient.root_end  Some(17)
+lenient.trivia    0
+lenient.string    Some(Some(4))
+prepared.blank    Ok(false)
+opens_an_object   true
+span_at(a)  Some(Span { offset: 5, len: 5 })
+span_at(a/0)  None
+span_at(b)  Some(Span { offset: 15, len: 1 })
+clamp_tokens      None []
+clamp_tokens(a)   None []
+clamp_double      None []
+clamp_text        None []
+clamp_non_finite  []
+## "{\"a\":\"\\/\\b\\f\\n\\r\\t\\u00e9\"}"
+scan(comments)    Ok(Scanned { root_end: Some(26), trailing: None })
+scan(no comments) Ok(Scanned { root_end: Some(26), trailing: None })
+check_depth(128)  Ok(())
+check_depth(3)    Ok(())
+last_wins         borrowed
+last_wins_except  borrowed
+lenient.root_end  Some(26)
+lenient.trivia    0
+lenient.string    Some(Some(4))
+prepared.blank    Ok(false)
+opens_an_object   true
+span_at(a)  Some(Span { offset: 5, len: 20 })
+span_at(a/0)  None
+span_at(b)  None
+clamp_tokens      None []
+clamp_tokens(a)   None []
+clamp_double      None []
+clamp_text        None []
+clamp_non_finite  []
+## "{\"a\":1 /* x"
+scan(comments)    Err(UnterminatedComment { offset: 7, len: 4 })
+scan(no comments) Ok(Scanned { root_end: None, trailing: None })
+check_depth(128)  Ok(())
+check_depth(3)    Ok(())
+last_wins         borrowed
+last_wins_except  borrowed
+lenient.root_end  None
+lenient.trivia    0
+lenient.string    Some(Some(4))
+prepared.blank    Ok(false)
+opens_an_object   true
+span_at(a)  None
+span_at(a/0)  None
+span_at(b)  None
+clamp_tokens      None []
+clamp_tokens(a)   None []
+clamp_double      None []
+(no value)
+## "{\"a\":1} /* x"
+scan(comments)    Ok(Scanned { root_end: Some(7), trailing: Some(8) })
+scan(no comments) Ok(Scanned { root_end: Some(7), trailing: Some(8) })
+check_depth(128)  Ok(())
+check_depth(3)    Ok(())
+last_wins         borrowed
+last_wins_except  borrowed
+lenient.root_end  Some(7)
+lenient.trivia    0
+lenient.string    Some(Some(4))
+prepared.blank    Ok(false)
+opens_an_object   true
+span_at(a)  Some(Span { offset: 5, len: 1 })
+span_at(a/0)  None
+span_at(b)  None
+clamp_tokens      None []
+clamp_tokens(a)   None []
+clamp_double      None []
+clamp_text        None []
+clamp_non_finite  []
+## "{\"a\":\u{c}1}"
+scan(comments)    Ok(Scanned { root_end: None, trailing: None })
+scan(no comments) Ok(Scanned { root_end: None, trailing: None })
+check_depth(128)  Ok(())
+check_depth(3)    Ok(())
+last_wins         borrowed
+last_wins_except  borrowed
+lenient.root_end  Some(8)
+lenient.trivia    0
+lenient.string    Some(Some(4))
+prepared.blank    Ok(false)
+opens_an_object   true
+span_at(a)  None
+span_at(a/0)  None
+span_at(b)  None
+clamp_tokens      None []
+clamp_tokens(a)   None []
+clamp_double      None []
+(no value)
+## "{\"a\":1}\u{c}"
+scan(comments)    Ok(Scanned { root_end: Some(7), trailing: Some(7) })
+scan(no comments) Ok(Scanned { root_end: Some(7), trailing: Some(7) })
+check_depth(128)  Ok(())
+check_depth(3)    Ok(())
+last_wins         borrowed
+last_wins_except  borrowed
+lenient.root_end  Some(7)
+lenient.trivia    0
+lenient.string    Some(Some(4))
+prepared.blank    Ok(false)
+opens_an_object   true
+span_at(a)  Some(Span { offset: 5, len: 1 })
+span_at(a/0)  None
+span_at(b)  None
+clamp_tokens      None []
+clamp_tokens(a)   None []
+clamp_double      None []
+clamp_text        None []
+clamp_non_finite  []
+## "\u{c}{\"a\":1}"
+scan(comments)    Ok(Scanned { root_end: None, trailing: None })
+scan(no comments) Ok(Scanned { root_end: None, trailing: None })
+check_depth(128)  Ok(())
+check_depth(3)    Ok(())
+last_wins         borrowed
+last_wins_except  borrowed
+lenient.root_end  Some(8)
+lenient.trivia    1
+lenient.string    Some(Some(5))
+prepared.blank    Ok(false)
+opens_an_object   true
+span_at(a)  None
+span_at(a/0)  None
+span_at(b)  None
+clamp_tokens      None []
+clamp_tokens(a)   None []
+clamp_double      None []
+(no value)
+## "{\"a\":\u{a0}1}"
+scan(comments)    Ok(Scanned { root_end: None, trailing: None })
+scan(no comments) Ok(Scanned { root_end: None, trailing: None })
+check_depth(128)  Ok(())
+check_depth(3)    Ok(())
+last_wins         borrowed
+last_wins_except  borrowed
+lenient.root_end  Some(9)
+lenient.trivia    0
+lenient.string    Some(Some(4))
+prepared.blank    Ok(false)
+opens_an_object   true
+span_at(a)  None
+span_at(a/0)  None
+span_at(b)  None
+clamp_tokens      None []
+clamp_tokens(a)   None []
+clamp_double      None []
+(no value)
+## "\u{a0}{\"a\":1}"
+scan(comments)    Ok(Scanned { root_end: None, trailing: None })
+scan(no comments) Ok(Scanned { root_end: None, trailing: None })
+check_depth(128)  Ok(())
+check_depth(3)    Ok(())
+last_wins         borrowed
+last_wins_except  borrowed
+lenient.root_end  Some(2)
+lenient.trivia    0
+lenient.string    Some(Some(6))
+prepared.blank    Ok(false)
+opens_an_object   true
+span_at(a)  None
+span_at(a/0)  None
+span_at(b)  None
+clamp_tokens      None []
+clamp_tokens(a)   None []
+clamp_double      None []
+(no value)
+## "{\"a\":[1}]"
+scan(comments)    Ok(Scanned { root_end: None, trailing: None })
+scan(no comments) Ok(Scanned { root_end: None, trailing: None })
+check_depth(128)  Ok(())
+check_depth(3)    Ok(())
+last_wins         borrowed
+last_wins_except  borrowed
+lenient.root_end  Some(9)
+lenient.trivia    0
+lenient.string    Some(Some(4))
+prepared.blank    Ok(false)
+opens_an_object   true
+span_at(a)  None
+span_at(a/0)  None
+span_at(b)  None
+clamp_tokens      None []
+clamp_tokens(a)   None []
+clamp_double      None []
+(no value)
+## "[}"
+scan(comments)    Ok(Scanned { root_end: None, trailing: None })
+scan(no comments) Ok(Scanned { root_end: None, trailing: None })
+check_depth(128)  Ok(())
+check_depth(3)    Ok(())
+last_wins         borrowed
+last_wins_except  borrowed
+lenient.root_end  Some(2)
+lenient.trivia    0
+lenient.string    None
+prepared.blank    Ok(false)
+opens_an_object   false
+span_at(a)  None
+span_at(a/0)  None
+span_at(b)  None
+clamp_tokens      None []
+clamp_tokens(a)   None []
+clamp_double      None []
+(no value)
+## "}"
+scan(comments)    Ok(Scanned { root_end: None, trailing: None })
+scan(no comments) Ok(Scanned { root_end: None, trailing: None })
+check_depth(128)  Ok(())
+check_depth(3)    Ok(())
+last_wins         borrowed
+last_wins_except  borrowed
+lenient.root_end  None
+lenient.trivia    0
+lenient.string    None
+prepared.blank    Ok(false)
+opens_an_object   false
+span_at(a)  None
+span_at(a/0)  None
+span_at(b)  None
+clamp_tokens      None []
+clamp_tokens(a)   None []
+clamp_double      None []
+(no value)
+## "]]]{"
+scan(comments)    Ok(Scanned { root_end: None, trailing: None })
+scan(no comments) Ok(Scanned { root_end: None, trailing: None })
+check_depth(128)  Ok(())
+check_depth(3)    Ok(())
+last_wins         borrowed
+last_wins_except  borrowed
+lenient.root_end  None
+lenient.trivia    0
+lenient.string    None
+prepared.blank    Ok(false)
+opens_an_object   false
+span_at(a)  None
+span_at(a/0)  None
+span_at(b)  None
+clamp_tokens      None []
+clamp_tokens(a)   None []
+clamp_double      None []
+(no value)
+## "\"str\""
+scan(comments)    Ok(Scanned { root_end: Some(5), trailing: None })
+scan(no comments) Ok(Scanned { root_end: Some(5), trailing: None })
+check_depth(128)  Ok(())
+check_depth(3)    Ok(())
+last_wins         borrowed
+last_wins_except  borrowed
+lenient.root_end  Some(5)
+lenient.trivia    0
+lenient.string    Some(Some(5))
+prepared.blank    Ok(false)
+opens_an_object   false
+span_at(a)  None
+span_at(a/0)  None
+span_at(b)  None
+clamp_tokens      None []
+clamp_tokens(a)   None []
+clamp_double      None []
+clamp_text        None []
+clamp_non_finite  []
+## "12 garbage"
+scan(comments)    Ok(Scanned { root_end: Some(2), trailing: Some(3) })
+scan(no comments) Ok(Scanned { root_end: Some(2), trailing: Some(3) })
+check_depth(128)  Ok(())
+check_depth(3)    Ok(())
+last_wins         borrowed
+last_wins_except  borrowed
+lenient.root_end  Some(2)
+lenient.trivia    0
+lenient.string    None
+prepared.blank    Ok(false)
+opens_an_object   false
+span_at(a)  None
+span_at(a/0)  None
+span_at(b)  None
+clamp_tokens      None []
+clamp_tokens(a)   None []
+clamp_double      None []
+clamp_text        None []
+clamp_non_finite  []
+## "-"
+scan(comments)    Ok(Scanned { root_end: None, trailing: None })
+scan(no comments) Ok(Scanned { root_end: None, trailing: None })
+check_depth(128)  Ok(())
+check_depth(3)    Ok(())
+last_wins         borrowed
+last_wins_except  borrowed
+lenient.root_end  Some(1)
+lenient.trivia    0
+lenient.string    None
+prepared.blank    Ok(false)
+opens_an_object   false
+span_at(a)  None
+span_at(a/0)  None
+span_at(b)  None
+clamp_tokens      None []
+clamp_tokens(a)   None []
+clamp_double      None []
+(no value)
+## "1.5e+"
+scan(comments)    Ok(Scanned { root_end: Some(5), trailing: None })
+scan(no comments) Ok(Scanned { root_end: Some(5), trailing: None })
+check_depth(128)  Ok(())
+check_depth(3)    Ok(())
+last_wins         borrowed
+last_wins_except  borrowed
+lenient.root_end  Some(5)
+lenient.trivia    0
+lenient.string    None
+prepared.blank    Ok(false)
+opens_an_object   false
+span_at(a)  None
+span_at(a/0)  None
+span_at(b)  None
+clamp_tokens      None []
+clamp_tokens(a)   None []
+clamp_double      None []
+(no value)
+## "nul"
+scan(comments)    Ok(Scanned { root_end: None, trailing: None })
+scan(no comments) Ok(Scanned { root_end: None, trailing: None })
+check_depth(128)  Ok(())
+check_depth(3)    Ok(())
+last_wins         borrowed
+last_wins_except  borrowed
+lenient.root_end  Some(3)
+lenient.trivia    0
+lenient.string    None
+prepared.blank    Ok(false)
+opens_an_object   false
+span_at(a)  None
+span_at(a/0)  None
+span_at(b)  None
+clamp_tokens      None []
+clamp_tokens(a)   None []
+clamp_double      None []
+(no value)
+## "{\"a\":1} trailing"
+scan(comments)    Ok(Scanned { root_end: Some(7), trailing: Some(8) })
+scan(no comments) Ok(Scanned { root_end: Some(7), trailing: Some(8) })
+check_depth(128)  Ok(())
+check_depth(3)    Ok(())
+last_wins         borrowed
+last_wins_except  borrowed
+lenient.root_end  Some(7)
+lenient.trivia    0
+lenient.string    Some(Some(4))
+prepared.blank    Ok(false)
+opens_an_object   true
+span_at(a)  Some(Span { offset: 5, len: 1 })
+span_at(a/0)  None
+span_at(b)  None
+clamp_tokens      None []
+clamp_tokens(a)   None []
+clamp_double      None []
+clamp_text        None []
+clamp_non_finite  []
+## "// c\n{\"a\":1}"
+scan(comments)    Ok(Scanned { root_end: Some(12), trailing: None })
+scan(no comments) Ok(Scanned { root_end: None, trailing: None })
+check_depth(128)  Ok(())
+check_depth(3)    Ok(())
+last_wins         borrowed
+last_wins_except  borrowed
+lenient.root_end  Some(12)
+lenient.trivia    5
+lenient.string    Some(Some(9))
+prepared.blank    Ok(false)
+opens_an_object   true
+span_at(a)  Some(Span { offset: 10, len: 1 })
+span_at(a/0)  None
+span_at(b)  None
+clamp_tokens      None []
+clamp_tokens(a)   None []
+clamp_double      None []
+clamp_text        None []
+clamp_non_finite  []
+## "/* c */ {\"a\":1}"
+scan(comments)    Ok(Scanned { root_end: Some(15), trailing: None })
+scan(no comments) Ok(Scanned { root_end: None, trailing: None })
+check_depth(128)  Ok(())
+check_depth(3)    Ok(())
+last_wins         borrowed
+last_wins_except  borrowed
+lenient.root_end  Some(15)
+lenient.trivia    8
+lenient.string    Some(Some(12))
+prepared.blank    Ok(false)
+opens_an_object   true
+span_at(a)  Some(Span { offset: 13, len: 1 })
+span_at(a/0)  None
+span_at(b)  None
+clamp_tokens      None []
+clamp_tokens(a)   None []
+clamp_double      None []
+clamp_text        None []
+clamp_non_finite  []
+## "/* c */ [1]"
+scan(comments)    Ok(Scanned { root_end: Some(11), trailing: None })
+scan(no comments) Ok(Scanned { root_end: None, trailing: None })
+check_depth(128)  Ok(())
+check_depth(3)    Ok(())
+last_wins         borrowed
+last_wins_except  borrowed
+lenient.root_end  Some(11)
+lenient.trivia    8
+lenient.string    None
+prepared.blank    Ok(false)
+opens_an_object   false
+span_at(a)  None
+span_at(a/0)  None
+span_at(b)  None
+clamp_tokens      None []
+clamp_tokens(a)   None []
+clamp_double      None []
+clamp_text        None []
+clamp_non_finite  []
+## "{\"a/b\":1,\"c~d\":{\"e\":[0,1e39]}}"
+scan(comments)    Ok(Scanned { root_end: Some(30), trailing: None })
+scan(no comments) Ok(Scanned { root_end: Some(30), trailing: None })
+check_depth(128)  Ok(())
+check_depth(3)    Ok(())
+last_wins         borrowed
+last_wins_except  borrowed
+lenient.root_end  Some(30)
+lenient.trivia    0
+lenient.string    Some(Some(6))
+prepared.blank    Ok(false)
+opens_an_object   true
+span_at(a)  None
+span_at(a/0)  None
+span_at(b)  None
+clamp_tokens      Some("{\"a/b\":1,\"c~d\":{\"e\":[0,3.4028235e38]}}") [Info root/c~0d/e/1@33+4]
+clamp_tokens(a)   Some("{\"a/b\":1,\"c~d\":{\"e\":[0,3.4028235e38]}}") [Info root/c~0d/e/1@33+4]
+clamp_double      None []
+clamp_text        Some("{\"a/b\":1,\"c~d\":{\"e\":[0,3.4028235e38]}}") [Info root/c~0d/e/1@33+4]
+clamp_non_finite  []
+## "{\"a\":1,\"a\":2}"
+scan(comments)    Ok(Scanned { root_end: Some(13), trailing: None })
+scan(no comments) Ok(Scanned { root_end: Some(13), trailing: None })
+check_depth(128)  Ok(())
+check_depth(3)    Ok(())
+last_wins         owned("{      \"a\":2}")
+last_wins_except  owned("{      \"a\":2}")
+lenient.root_end  Some(13)
+lenient.trivia    0
+lenient.string    Some(Some(4))
+prepared.blank    Ok(false)
+opens_an_object   true
+span_at(a)  Some(Span { offset: 11, len: 1 })
+span_at(a/0)  None
+span_at(b)  None
+clamp_tokens      None []
+clamp_tokens(a)   None []
+clamp_double      None []
+clamp_text        None []
+clamp_non_finite  []
+## "{\"a\\u0062\":1,\"ab\":2}"
+scan(comments)    Ok(Scanned { root_end: Some(20), trailing: None })
+scan(no comments) Ok(Scanned { root_end: Some(20), trailing: None })
+check_depth(128)  Ok(())
+check_depth(3)    Ok(())
+last_wins         owned("{            \"ab\":2}")
+last_wins_except  owned("{            \"ab\":2}")
+lenient.root_end  Some(20)
+lenient.trivia    0
+lenient.string    Some(Some(10))
+prepared.blank    Ok(false)
+opens_an_object   true
+span_at(a)  None
+span_at(a/0)  None
+span_at(b)  None
+clamp_tokens      None []
+clamp_tokens(a)   None []
+clamp_double      None []
+clamp_text        None []
+clamp_non_finite  []
+## "{\"a\":{\"b\":1,\"b\":2},\"a\":{\"c\":3,\"c\":4}}"
+scan(comments)    Ok(Scanned { root_end: Some(37), trailing: None })
+scan(no comments) Ok(Scanned { root_end: Some(37), trailing: None })
+check_depth(128)  Ok(())
+check_depth(3)    Ok(())
+last_wins         owned("{                  \"a\":{      \"c\":4}}")
+last_wins_except  owned("{                  \"a\":{\"c\":3,\"c\":4}}")
+lenient.root_end  Some(37)
+lenient.trivia    0
+lenient.string    Some(Some(4))
+prepared.blank    Ok(false)
+opens_an_object   true
+span_at(a)  Some(Span { offset: 23, len: 13 })
+span_at(a/0)  None
+span_at(b)  None
+clamp_tokens      None []
+clamp_tokens(a)   None []
+clamp_double      None []
+clamp_text        None []
+clamp_non_finite  []
+## "{\"k\":{\"a\":1,\"a\":2},\"k\":3}"
+scan(comments)    Ok(Scanned { root_end: Some(25), trailing: None })
+scan(no comments) Ok(Scanned { root_end: Some(25), trailing: None })
+check_depth(128)  Ok(())
+check_depth(3)    Ok(())
+last_wins         owned("{                  \"k\":3}")
+last_wins_except  owned("{                  \"k\":3}")
+lenient.root_end  Some(25)
+lenient.trivia    0
+lenient.string    Some(Some(4))
+prepared.blank    Ok(false)
+opens_an_object   true
+span_at(a)  None
+span_at(a/0)  None
+span_at(b)  None
+clamp_tokens      None []
+clamp_tokens(a)   None []
+clamp_double      None []
+clamp_text        None []
+clamp_non_finite  []
+## "{\"a\":1,\"a\":2,\"b\":tru}"
+scan(comments)    Ok(Scanned { root_end: None, trailing: None })
+scan(no comments) Ok(Scanned { root_end: None, trailing: None })
+check_depth(128)  Ok(())
+check_depth(3)    Ok(())
+last_wins         owned("{      \"a\":2,\"b\":tru}")
+last_wins_except  owned("{      \"a\":2,\"b\":tru}")
+lenient.root_end  Some(21)
+lenient.trivia    0
+lenient.string    Some(Some(4))
+prepared.blank    Ok(false)
+opens_an_object   true
+span_at(a)  None
+span_at(a/0)  None
+span_at(b)  None
+clamp_tokens      None []
+clamp_tokens(a)   None []
+clamp_double      None []
+(no value)
+## "{\"a\":tru,\"a\":2}"
+scan(comments)    Ok(Scanned { root_end: None, trailing: None })
+scan(no comments) Ok(Scanned { root_end: None, trailing: None })
+check_depth(128)  Ok(())
+check_depth(3)    Ok(())
+last_wins         borrowed
+last_wins_except  borrowed
+lenient.root_end  Some(15)
+lenient.trivia    0
+lenient.string    Some(Some(4))
+prepared.blank    Ok(false)
+opens_an_object   true
+span_at(a)  None
+span_at(a/0)  None
+span_at(b)  None
+clamp_tokens      None []
+clamp_tokens(a)   None []
+clamp_double      None []
+(no value)
+## "{\"a\":[1,2,],}"
+scan(comments)    Ok(Scanned { root_end: Some(13), trailing: None })
+scan(no comments) Ok(Scanned { root_end: Some(13), trailing: None })
+check_depth(128)  Ok(())
+check_depth(3)    Ok(())
+last_wins         borrowed
+last_wins_except  borrowed
+lenient.root_end  Some(13)
+lenient.trivia    0
+lenient.string    Some(Some(4))
+prepared.blank    Ok(false)
+opens_an_object   true
+span_at(a)  Some(Span { offset: 5, len: 6 })
+span_at(a/0)  Some(Span { offset: 6, len: 1 })
+span_at(b)  None
+clamp_tokens      None []
+clamp_tokens(a)   None []
+clamp_double      None []
+clamp_text        None []
+clamp_non_finite  []
+## "{,,\"a\":1}"
+scan(comments)    Ok(Scanned { root_end: Some(9), trailing: None })
+scan(no comments) Ok(Scanned { root_end: Some(9), trailing: None })
+check_depth(128)  Ok(())
+check_depth(3)    Ok(())
+last_wins         borrowed
+last_wins_except  borrowed
+lenient.root_end  Some(9)
+lenient.trivia    0
+lenient.string    Some(Some(6))
+prepared.blank    Ok(false)
+opens_an_object   true
+span_at(a)  None
+span_at(a/0)  None
+span_at(b)  None
+clamp_tokens      None []
+clamp_tokens(a)   None []
+clamp_double      None []
+(no value)
+## "{\"a\" 1}"
+scan(comments)    Ok(Scanned { root_end: Some(7), trailing: None })
+scan(no comments) Ok(Scanned { root_end: Some(7), trailing: None })
+check_depth(128)  Ok(())
+check_depth(3)    Ok(())
+last_wins         borrowed
+last_wins_except  borrowed
+lenient.root_end  Some(7)
+lenient.trivia    0
+lenient.string    Some(Some(4))
+prepared.blank    Ok(false)
+opens_an_object   true
+span_at(a)  None
+span_at(a/0)  None
+span_at(b)  None
+clamp_tokens      None []
+clamp_tokens(a)   None []
+clamp_double      None []
+(no value)
+## "{\"a\":1 \"b\":2}"
+scan(comments)    Ok(Scanned { root_end: Some(13), trailing: None })
+scan(no comments) Ok(Scanned { root_end: Some(13), trailing: None })
+check_depth(128)  Ok(())
+check_depth(3)    Ok(())
+last_wins         borrowed
+last_wins_except  borrowed
+lenient.root_end  Some(13)
+lenient.trivia    0
+lenient.string    Some(Some(4))
+prepared.blank    Ok(false)
+opens_an_object   true
+span_at(a)  None
+span_at(a/0)  None
+span_at(b)  None
+clamp_tokens      None []
+clamp_tokens(a)   None []
+clamp_double      None []
+(no value)
+## ""
+scan(comments)    Ok(Scanned { root_end: None, trailing: None })
+scan(no comments) Ok(Scanned { root_end: None, trailing: None })
+check_depth(128)  Ok(())
+check_depth(3)    Ok(())
+last_wins         borrowed
+last_wins_except  borrowed
+lenient.root_end  None
+lenient.trivia    0
+lenient.string    None
+prepared.blank    Ok(true)
+opens_an_object   false
+span_at(a)  None
+span_at(a/0)  None
+span_at(b)  None
+clamp_tokens      None []
+clamp_tokens(a)   None []
+clamp_double      None []
+(no value)
+## "   "
+scan(comments)    Ok(Scanned { root_end: None, trailing: None })
+scan(no comments) Ok(Scanned { root_end: None, trailing: None })
+check_depth(128)  Ok(())
+check_depth(3)    Ok(())
+last_wins         borrowed
+last_wins_except  borrowed
+lenient.root_end  None
+lenient.trivia    3
+lenient.string    None
+prepared.blank    Ok(true)
+opens_an_object   false
+span_at(a)  None
+span_at(a/0)  None
+span_at(b)  None
+clamp_tokens      None []
+clamp_tokens(a)   None []
+clamp_double      None []
+(no value)
+## "// only"
+scan(comments)    Ok(Scanned { root_end: None, trailing: None })
+scan(no comments) Ok(Scanned { root_end: None, trailing: None })
+check_depth(128)  Ok(())
+check_depth(3)    Ok(())
+last_wins         borrowed
+last_wins_except  borrowed
+lenient.root_end  None
+lenient.trivia    7
+lenient.string    None
+prepared.blank    Ok(true)
+opens_an_object   false
+span_at(a)  None
+span_at(a/0)  None
+span_at(b)  None
+clamp_tokens      None []
+clamp_tokens(a)   None []
+clamp_double      None []
+(no value)
+## "/* only"
+scan(comments)    Err(UnterminatedComment { offset: 0, len: 7 })
+scan(no comments) Ok(Scanned { root_end: None, trailing: None })
+check_depth(128)  Ok(())
+check_depth(3)    Ok(())
+last_wins         borrowed
+last_wins_except  borrowed
+lenient.root_end  None
+lenient.trivia    7
+lenient.string    None
+prepared.blank    Ok(true)
+opens_an_object   false
+span_at(a)  None
+span_at(a/0)  None
+span_at(b)  None
+clamp_tokens      None []
+clamp_tokens(a)   None []
+clamp_double      None []
+(no value)
+## "/* only */"
+scan(comments)    Ok(Scanned { root_end: None, trailing: None })
+scan(no comments) Ok(Scanned { root_end: None, trailing: None })
+check_depth(128)  Ok(())
+check_depth(3)    Ok(())
+last_wins         borrowed
+last_wins_except  borrowed
+lenient.root_end  None
+lenient.trivia    10
+lenient.string    None
+prepared.blank    Ok(true)
+opens_an_object   false
+span_at(a)  None
+span_at(a/0)  None
+span_at(b)  None
+clamp_tokens      None []
+clamp_tokens(a)   None []
+clamp_double      None []
+(no value)
+## "[ /* c */ ]"
+scan(comments)    Ok(Scanned { root_end: Some(11), trailing: None })
+scan(no comments) Ok(Scanned { root_end: None, trailing: None })
+check_depth(128)  Ok(())
+check_depth(3)    Ok(())
+last_wins         borrowed
+last_wins_except  borrowed
+lenient.root_end  Some(11)
+lenient.trivia    0
+lenient.string    None
+prepared.blank    Ok(false)
+opens_an_object   false
+span_at(a)  None
+span_at(a/0)  None
+span_at(b)  None
+clamp_tokens      None []
+clamp_tokens(a)   None []
+clamp_double      None []
+clamp_text        None []
+clamp_non_finite  []
+## "[ // c\n ]"
+scan(comments)    Ok(Scanned { root_end: Some(9), trailing: None })
+scan(no comments) Ok(Scanned { root_end: None, trailing: None })
+check_depth(128)  Ok(())
+check_depth(3)    Ok(())
+last_wins         borrowed
+last_wins_except  borrowed
+lenient.root_end  Some(9)
+lenient.trivia    0
+lenient.string    None
+prepared.blank    Ok(false)
+opens_an_object   false
+span_at(a)  None
+span_at(a/0)  None
+span_at(b)  None
+clamp_tokens      None []
+clamp_tokens(a)   None []
+clamp_double      None []
+clamp_text        None []
+clamp_non_finite  []
+## "[ ]"
+scan(comments)    Ok(Scanned { root_end: Some(3), trailing: None })
+scan(no comments) Ok(Scanned { root_end: Some(3), trailing: None })
+check_depth(128)  Ok(())
+check_depth(3)    Ok(())
+last_wins         borrowed
+last_wins_except  borrowed
+lenient.root_end  Some(3)
+lenient.trivia    0
+lenient.string    None
+prepared.blank    Ok(false)
+opens_an_object   false
+span_at(a)  None
+span_at(a/0)  None
+span_at(b)  None
+clamp_tokens      None []
+clamp_tokens(a)   None []
+clamp_double      None []
+clamp_text        None []
+clamp_non_finite  []
+## "[\u{a0}]"
+scan(comments)    Ok(Scanned { root_end: None, trailing: None })
+scan(no comments) Ok(Scanned { root_end: None, trailing: None })
+check_depth(128)  Ok(())
+check_depth(3)    Ok(())
+last_wins         borrowed
+last_wins_except  borrowed
+lenient.root_end  Some(4)
+lenient.trivia    0
+lenient.string    None
+prepared.blank    Ok(false)
+opens_an_object   false
+span_at(a)  None
+span_at(a/0)  None
+span_at(b)  None
+clamp_tokens      None []
+clamp_tokens(a)   None []
+clamp_double      None []
+(no value)
+## "[\"[ ]\", 1]"
+scan(comments)    Ok(Scanned { root_end: Some(10), trailing: None })
+scan(no comments) Ok(Scanned { root_end: Some(10), trailing: None })
+check_depth(128)  Ok(())
+check_depth(3)    Ok(())
+last_wins         borrowed
+last_wins_except  borrowed
+lenient.root_end  Some(10)
+lenient.trivia    0
+lenient.string    Some(Some(6))
+prepared.blank    Ok(false)
+opens_an_object   false
+span_at(a)  None
+span_at(a/0)  None
+span_at(b)  None
+clamp_tokens      None []
+clamp_tokens(a)   None []
+clamp_double      None []
+clamp_text        None []
+clamp_non_finite  []
+## "{\"a\":1e999,\"b\":-1e400,\"c\":\"1e999\"}"
+scan(comments)    Ok(Scanned { root_end: Some(34), trailing: None })
+scan(no comments) Ok(Scanned { root_end: Some(34), trailing: None })
+check_depth(128)  Ok(())
+check_depth(3)    Ok(())
+last_wins         borrowed
+last_wins_except  borrowed
+lenient.root_end  Some(34)
+lenient.trivia    0
+lenient.string    Some(Some(4))
+prepared.blank    Ok(false)
+opens_an_object   true
+span_at(a)  Some(Span { offset: 5, len: 5 })
+span_at(a/0)  None
+span_at(b)  Some(Span { offset: 15, len: 6 })
+clamp_tokens      Some("{\"a\":3.4028235e38,\"b\":-3.4028235e38,\"c\":\"1e999\"}") [Info root/a@15+5, Info root/b@25+6]
+clamp_tokens(a)   Some("{\"a\":3.4028235e38,\"b\":-3.4028235e38,\"c\":\"1e999\"}") [Info root/a@15+5, Info root/b@25+6]
+clamp_double      Some("{\"a\":1.7976931348623157e308,\"b\":-1.7976931348623157e308,\"c\":\"1e999\"}") [Info root/a@15+5, Info root/b@25+6]
+clamp_text        Some("{\"a\":3.4028235e38,\"b\":-3.4028235e38,\"c\":\"1e999\"}") [Info root/a@15+5, Info root/b@25+6]
+clamp_non_finite  ["a@15+5", "b@25+6"]
+## "{\"a\":1e39,\"a\":2}"
+scan(comments)    Ok(Scanned { root_end: Some(16), trailing: None })
+scan(no comments) Ok(Scanned { root_end: Some(16), trailing: None })
+check_depth(128)  Ok(())
+check_depth(3)    Ok(())
+last_wins         owned("{         \"a\":2}")
+last_wins_except  owned("{         \"a\":2}")
+lenient.root_end  Some(16)
+lenient.trivia    0
+lenient.string    Some(Some(4))
+prepared.blank    Ok(false)
+opens_an_object   true
+span_at(a)  Some(Span { offset: 14, len: 1 })
+span_at(a/0)  None
+span_at(b)  None
+clamp_tokens      Some("{\"a\":3.4028235e38,\"a\":2}") []
+clamp_tokens(a)   Some("{\"a\":3.4028235e38,\"a\":2}") []
+clamp_double      None []
+clamp_text        None []
+clamp_non_finite  []
+## "{\"a\":2,\"a\":1e39}"
+scan(comments)    Ok(Scanned { root_end: Some(16), trailing: None })
+scan(no comments) Ok(Scanned { root_end: Some(16), trailing: None })
+check_depth(128)  Ok(())
+check_depth(3)    Ok(())
+last_wins         owned("{      \"a\":1e39}")
+last_wins_except  owned("{      \"a\":1e39}")
+lenient.root_end  Some(16)
+lenient.trivia    0
+lenient.string    Some(Some(4))
+prepared.blank    Ok(false)
+opens_an_object   true
+span_at(a)  Some(Span { offset: 11, len: 4 })
+span_at(a/0)  None
+span_at(b)  None
+clamp_tokens      Some("{\"a\":2,\"a\":3.4028235e38}") [Info root/a@21+4]
+clamp_tokens(a)   Some("{\"a\":2,\"a\":3.4028235e38}") [Info root/a@21+4]
+clamp_double      None []
+clamp_text        Some("{\"a\":2,\"a\":3.4028235e38}") [Info root/a@21+4]
+clamp_non_finite  []
+## "{\"a\":1e39,\"b\":{\"c\":-1e39},\"a\":3e39}"
+scan(comments)    Ok(Scanned { root_end: Some(35), trailing: None })
+scan(no comments) Ok(Scanned { root_end: Some(35), trailing: None })
+check_depth(128)  Ok(())
+check_depth(3)    Ok(())
+last_wins         owned("{         \"b\":{\"c\":-1e39},\"a\":3e39}")
+last_wins_except  owned("{         \"b\":{\"c\":-1e39},\"a\":3e39}")
+lenient.root_end  Some(35)
+lenient.trivia    0
+lenient.string    Some(Some(4))
+prepared.blank    Ok(false)
+opens_an_object   true
+span_at(a)  Some(Span { offset: 30, len: 4 })
+span_at(a/0)  None
+span_at(b)  Some(Span { offset: 14, len: 11 })
+clamp_tokens      Some("{\"a\":3.4028235e38,\"b\":{\"c\":-3.4028235e38},\"a\":3.4028235e38}") [Info root/b/c@29+5, Info root/a@40+4]
+clamp_tokens(a)   Some("{\"a\":3.4028235e38,\"b\":{\"c\":-3.4028235e38},\"a\":3.4028235e38}") [Info root/b/c@29+5, Info root/a@40+4]
+clamp_double      None []
+clamp_text        Some("{\"a\":1e39,\"b\":{\"c\":-3.4028235e38},\"a\":3.4028235e38}") [Info root/a@40+4, Info root/b/c@29+5]
+clamp_non_finite  []
+## "{\"a\":{\"x\":1e39},\"a\":{\"y\":2e39}}"
+scan(comments)    Ok(Scanned { root_end: Some(31), trailing: None })
+scan(no comments) Ok(Scanned { root_end: Some(31), trailing: None })
+check_depth(128)  Ok(())
+check_depth(3)    Ok(())
+last_wins         owned("{               \"a\":{\"y\":2e39}}")
+last_wins_except  owned("{               \"a\":{\"y\":2e39}}")
+lenient.root_end  Some(31)
+lenient.trivia    0
+lenient.string    Some(Some(4))
+prepared.blank    Ok(false)
+opens_an_object   true
+span_at(a)  Some(Span { offset: 20, len: 10 })
+span_at(a/0)  None
+span_at(b)  None
+clamp_tokens      Some("{\"a\":{\"x\":3.4028235e38},\"a\":{\"y\":3.4028235e38}}") [Info root/a/y@35+4]
+clamp_tokens(a)   Some("{\"a\":{\"x\":3.4028235e38},\"a\":{\"y\":3.4028235e38}}") [Info root/a/y@35+4]
+clamp_double      None []
+clamp_text        Some("{\"a\":{\"x\":1e39},\"a\":{\"y\":3.4028235e38}}") [Info root/a/x@-, Info root/a/y@35+4]
+clamp_non_finite  []
+## "{\"b\":1e39,\"a\":1e39,\"b\":2e39}"
+scan(comments)    Ok(Scanned { root_end: Some(28), trailing: None })
+scan(no comments) Ok(Scanned { root_end: Some(28), trailing: None })
+check_depth(128)  Ok(())
+check_depth(3)    Ok(())
+last_wins         owned("{         \"a\":1e39,\"b\":2e39}")
+last_wins_except  owned("{         \"a\":1e39,\"b\":2e39}")
+lenient.root_end  Some(28)
+lenient.trivia    0
+lenient.string    Some(Some(4))
+prepared.blank    Ok(false)
+opens_an_object   true
+span_at(a)  Some(Span { offset: 14, len: 4 })
+span_at(a/0)  None
+span_at(b)  Some(Span { offset: 23, len: 4 })
+clamp_tokens      Some("{\"b\":3.4028235e38,\"a\":3.4028235e38,\"b\":3.4028235e38}") [Info root/a@24+4, Info root/b@33+4]
+clamp_tokens(a)   Some("{\"b\":3.4028235e38,\"a\":3.4028235e38,\"b\":3.4028235e38}") [Info root/a@24+4, Info root/b@33+4]
+clamp_double      None []
+clamp_text        Some("{\"b\":1e39,\"a\":3.4028235e38,\"b\":3.4028235e38}") [Info root/b@33+4, Info root/a@24+4]
+clamp_non_finite  []
+## "[1e39,[-1e39],{\"a\\\"b\":1e39}]"
+scan(comments)    Ok(Scanned { root_end: Some(28), trailing: None })
+scan(no comments) Ok(Scanned { root_end: Some(28), trailing: None })
+check_depth(128)  Ok(())
+check_depth(3)    Ok(())
+last_wins         borrowed
+last_wins_except  borrowed
+lenient.root_end  Some(28)
+lenient.trivia    0
+lenient.string    Some(Some(21))
+prepared.blank    Ok(false)
+opens_an_object   false
+span_at(a)  None
+span_at(a/0)  None
+span_at(b)  None
+clamp_tokens      Some("[3.4028235e38,[-3.4028235e38],{\"a\\\"b\":3.4028235e38}]") [Info root/0@11+4, Info root/1/0@17+5, Info root/2/a"b@32+4]
+clamp_tokens(a)   Some("[3.4028235e38,[-3.4028235e38],{\"a\\\"b\":3.4028235e38}]") [Info root/0@11+4, Info root/1/0@17+5, Info root/2/a"b@32+4]
+clamp_double      None []
+clamp_text        Some("[3.4028235e38,[-3.4028235e38],{\"a\\\"b\":3.4028235e38}]") [Info root/0@11+4, Info root/1/0@17+5, Info root/2/a"b@32+4]
+clamp_non_finite  []
+## "{\"a\": \"]}\" // [\n, \"b\": 1}"
+scan(comments)    Ok(Scanned { root_end: Some(25), trailing: None })
+scan(no comments) Ok(Scanned { root_end: None, trailing: None })
+check_depth(128)  Ok(())
+check_depth(3)    Ok(())
+last_wins         borrowed
+last_wins_except  borrowed
+lenient.root_end  Some(25)
+lenient.trivia    0
+lenient.string    Some(Some(4))
+prepared.blank    Ok(false)
+opens_an_object   true
+span_at(a)  Some(Span { offset: 6, len: 4 })
+span_at(a/0)  None
+span_at(b)  Some(Span { offset: 23, len: 1 })
+clamp_tokens      None []
+clamp_tokens(a)   None []
+clamp_double      None []
+clamp_text        None []
+clamp_non_finite  []
+## "{\"a\":[[[\"\\q\"]]]}"
+scan(comments)    Err(BadEscape { offset: 9, len: 2, found: 'q' })
+scan(no comments) Err(BadEscape { offset: 9, len: 2, found: 'q' })
+check_depth(128)  Ok(())
+check_depth(3)    Err(TooDeep { offset: 7 })
+last_wins         borrowed
+last_wins_except  borrowed
+lenient.root_end  Some(16)
+lenient.trivia    0
+lenient.string    Some(Some(4))
+prepared.blank    Ok(false)
+opens_an_object   true
+span_at(a)  None
+span_at(a/0)  None
+span_at(b)  None
+clamp_tokens      None []
+clamp_tokens(a)   None []
+clamp_double      None []
+(no value)
+## "[[\"\\q\",[[[[]]]]]]"
+scan(comments)    Err(BadEscape { offset: 3, len: 2, found: 'q' })
+scan(no comments) Err(BadEscape { offset: 3, len: 2, found: 'q' })
+check_depth(128)  Ok(())
+check_depth(3)    Err(TooDeep { offset: 8 })
+last_wins         borrowed
+last_wins_except  borrowed
+lenient.root_end  Some(17)
+lenient.trivia    0
+lenient.string    Some(Some(6))
+prepared.blank    Ok(false)
+opens_an_object   false
+span_at(a)  None
+span_at(a/0)  None
+span_at(b)  None
+clamp_tokens      None []
+clamp_tokens(a)   None []
+clamp_double      None []
+(no value)
+## "{\"a\":{\"b\":{\"c\":{\"d\":1}}}}"
+scan(comments)    Ok(Scanned { root_end: Some(25), trailing: None })
+scan(no comments) Ok(Scanned { root_end: Some(25), trailing: None })
+check_depth(128)  Ok(())
+check_depth(3)    Err(TooDeep { offset: 15 })
+last_wins         borrowed
+last_wins_except  borrowed
+lenient.root_end  Some(25)
+lenient.trivia    0
+lenient.string    Some(Some(4))
+prepared.blank    Ok(false)
+opens_an_object   true
+span_at(a)  Some(Span { offset: 5, len: 19 })
+span_at(a/0)  None
+span_at(b)  None
+clamp_tokens      None []
+clamp_tokens(a)   None []
+clamp_double      None []
+clamp_text        None []
+clamp_non_finite  []
+## 128 levels
+scan(comments)    Ok(Scanned { root_end: Some(256), trailing: None })
+scan(no comments) Ok(Scanned { root_end: Some(256), trailing: None })
+check_depth(128)  Ok(())
+check_depth(3)    Err(TooDeep { offset: 3 })
+last_wins         borrowed
+last_wins_except  borrowed
+lenient.root_end  Some(256)
+lenient.trivia    0
+lenient.string    None
+prepared.blank    Ok(false)
+opens_an_object   false
+span_at(a)  None
+span_at(a/0)  None
+span_at(b)  None
+## 129 levels
+scan(comments)    Err(TooDeep { offset: 128 })
+scan(no comments) Err(TooDeep { offset: 128 })
+check_depth(128)  Err(TooDeep { offset: 128 })
+check_depth(3)    Err(TooDeep { offset: 3 })
+last_wins         borrowed
+last_wins_except  borrowed
+lenient.root_end  Some(258)
+lenient.trivia    0
+lenient.string    None
+prepared.blank    Err(TooDeep(TooDeep { offset: 128 }))
+opens_an_object   false
+span_at(a)  None
+span_at(a/0)  None
+span_at(b)  None
+## 129 levels after a bad escape
+scan(comments)    Err(BadEscape { offset: 2, len: 2, found: 'q' })
+scan(no comments) Err(BadEscape { offset: 2, len: 2, found: 'q' })
+check_depth(128)  Err(TooDeep { offset: 133 })
+check_depth(3)    Err(TooDeep { offset: 8 })
+last_wins         borrowed
+last_wins_except  borrowed
+lenient.root_end  Some(263)
+lenient.trivia    0
+lenient.string    Some(Some(5))
+prepared.blank    Err(TooDeep(TooDeep { offset: 133 }))
+opens_an_object   false
+span_at(a)  None
+span_at(a/0)  None
+span_at(b)  None
+## 129 levels in a comment
+scan(comments)    Ok(Scanned { root_end: Some(135), trailing: None })
+scan(no comments) Err(TooDeep { offset: 130 })
+check_depth(128)  Ok(())
+check_depth(3)    Ok(())
+last_wins         borrowed
+last_wins_except  borrowed
+lenient.root_end  Some(135)
+lenient.trivia    0
+lenient.string    None
+prepared.blank    Ok(false)
+opens_an_object   false
+span_at(a)  None
+span_at(a/0)  None
+span_at(b)  None
+clamp_tokens      None []
+clamp_tokens(a)   None []
+clamp_double      None []
+clamp_text        None []
+clamp_non_finite  []
+## 129 levels in a string
+scan(comments)    Ok(Scanned { root_end: Some(133), trailing: None })
+scan(no comments) Ok(Scanned { root_end: Some(133), trailing: None })
+check_depth(128)  Ok(())
+check_depth(3)    Ok(())
+last_wins         borrowed
+last_wins_except  borrowed
+lenient.root_end  Some(133)
+lenient.trivia    0
+lenient.string    Some(Some(132))
+prepared.blank    Ok(false)
+opens_an_object   false
+span_at(a)  None
+span_at(a/0)  None
+span_at(b)  None
+clamp_tokens      None []
+clamp_tokens(a)   None []
+clamp_double      None []
+clamp_text        None []
+clamp_non_finite  []
+## 129 levels after the root
+scan(comments)    Ok(Scanned { root_end: Some(2), trailing: Some(3) })
+scan(no comments) Ok(Scanned { root_end: Some(2), trailing: Some(3) })
+check_depth(128)  Ok(())
+check_depth(3)    Ok(())
+last_wins         borrowed
+last_wins_except  borrowed
+lenient.root_end  Some(2)
+lenient.trivia    0
+lenient.string    None
+prepared.blank    Ok(false)
+opens_an_object   false
+span_at(a)  None
+span_at(a/0)  None
+span_at(b)  None
+## 128 objects
+scan(comments)    Ok(Scanned { root_end: Some(769), trailing: None })
+scan(no comments) Ok(Scanned { root_end: Some(769), trailing: None })
+check_depth(128)  Ok(())
+check_depth(3)    Err(TooDeep { offset: 15 })
+last_wins         borrowed
+last_wins_except  borrowed
+lenient.root_end  Some(769)
+lenient.trivia    0
+lenient.string    Some(Some(4))
+prepared.blank    Ok(false)
+opens_an_object   true
+span_at(a)  Some(Span { offset: 5, len: 763 })
+span_at(a/0)  None
+span_at(b)  None
+## 129 objects
+scan(comments)    Err(TooDeep { offset: 640 })
+scan(no comments) Err(TooDeep { offset: 640 })
+check_depth(128)  Err(TooDeep { offset: 640 })
+check_depth(3)    Err(TooDeep { offset: 15 })
+last_wins         borrowed
+last_wins_except  borrowed
+lenient.root_end  Some(775)
+lenient.trivia    0
+lenient.string    Some(Some(4))
+prepared.blank    Err(TooDeep(TooDeep { offset: 640 }))
+opens_an_object   true
+span_at(a)  None
+span_at(a/0)  None
+span_at(b)  None
+## duplicate at 127 levels
+scan(comments)    Ok(Scanned { root_end: Some(267), trailing: None })
+scan(no comments) Ok(Scanned { root_end: Some(267), trailing: None })
+check_depth(128)  Ok(())
+check_depth(3)    Err(TooDeep { offset: 3 })
+last_wins         owned(267 bytes)
+last_wins_except  owned(267 bytes)
+lenient.root_end  Some(267)
+lenient.trivia    0
+lenient.string    Some(Some(131))
+prepared.blank    Ok(false)
+opens_an_object   false
+span_at(a)  None
+span_at(a/0)  None
+span_at(b)  None
+## duplicate at 128 levels
+scan(comments)    Err(TooDeep { offset: 128 })
+scan(no comments) Err(TooDeep { offset: 128 })
+check_depth(128)  Err(TooDeep { offset: 128 })
+check_depth(3)    Err(TooDeep { offset: 3 })
+last_wins         borrowed
+last_wins_except  borrowed
+lenient.root_end  Some(269)
+lenient.trivia    0
+lenient.string    Some(Some(132))
+prepared.blank    Err(TooDeep(TooDeep { offset: 128 }))
+opens_an_object   false
+span_at(a)  None
+span_at(a/0)  None
+span_at(b)  None

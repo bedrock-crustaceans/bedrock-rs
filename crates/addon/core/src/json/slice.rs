@@ -10,6 +10,7 @@ use facet_json::{DeserializeError, RawJson};
 use facet_path::PathStep;
 
 use super::Value;
+use super::lex::{Kind, Lexer, Rules};
 use super::path::path_at;
 use crate::diagnostic::{
     Diagnostic, DiagnosticCode, JsonPath, JsonPathSegment, Span, code_for_deserialize_error_kind,
@@ -336,7 +337,7 @@ fn is_kept_as_written(shape: &'static Shape) -> bool {
 /// behind it alone, and the first that has a comment there hands the whole text to
 /// [`has_array_of_comments`], which reads it as its tokens from the start: the end of a
 /// comment is not looked for from every `[` that stands before it.
-fn has_empty_array(text: &str) -> bool {
+pub(super) fn has_empty_array(text: &str) -> bool {
     for (at, _) in text.match_indices('[') {
         match text[at + 1..].trim_start().as_bytes().first() {
             Some(b']') => return true,
@@ -351,55 +352,26 @@ fn has_empty_array(text: &str) -> bool {
 /// nothing at all between its brackets too), read as the jsonc reader reads it: a `[` or a
 /// comment's marks in a string are text, a `[` in a comment is comment, a `//` comment ends
 /// at its newline and a `/* */` comment at its first `*/`. One pass over the text.
-fn has_array_of_comments(text: &str) -> bool {
-    let bytes = text.as_bytes();
-    // Whether the last token was `[`.
+pub(super) fn has_array_of_comments(text: &str) -> bool {
+    let mut lexer = Lexer::new(text.as_bytes(), Rules::lenient(false));
+    // Whether the last token was `[`, white space (`str::trim_start`'s, as the first look
+    // takes it) and comments aside.
     let mut open = false;
-    let mut at = 0;
-    while let Some(&byte) = bytes.get(at) {
-        match (byte, bytes.get(at + 1)) {
-            (b'/', Some(b'/')) => {
-                let line = bytes.get(at + 2..).unwrap_or_default();
-                at += 2 + line.iter().position(|&b| b == b'\n').unwrap_or(line.len());
-            }
-            (b'/', Some(b'*')) => {
-                let block = bytes.get(at + 2..).unwrap_or_default();
-                match block.windows(2).position(|pair| pair == b"*/") {
-                    Some(end) => at += end + 4,
-                    // A comment without an end closes no array.
-                    None => return false,
-                }
-            }
-            (b'"', _) => {
-                open = false;
-                at += 1;
-                while let Some(&inside) = bytes.get(at) {
-                    at += if inside == b'\\' { 2 } else { 1 };
-                    if inside == b'"' {
-                        break;
-                    }
-                }
-            }
-            (b'[', _) => {
-                open = true;
-                at += 1;
-            }
-            (b']', _) if open => return true,
-            (byte, _) if byte.is_ascii() => {
-                // The white space `str::trim_start` takes, as the first look does.
-                open &= char::from(byte).is_whitespace();
-                at += 1;
-            }
-            _ => {
-                let Some(other) = text.get(at..).and_then(|rest| rest.chars().next()) else {
-                    return false;
-                };
-                open &= other.is_whitespace();
-                at += other.len_utf8();
-            }
+    loop {
+        if lexer.skip_trivia().is_some() {
+            // A comment without an end closes no array.
+            return false;
+        }
+        let Ok(Some(token)) = lexer.token() else {
+            return false;
+        };
+        match token.kind {
+            Kind::OpenArray => open = true,
+            Kind::CloseArray if open => return true,
+            Kind::Atom => open &= text[token.range()].chars().all(char::is_whitespace),
+            _ => open = false,
         }
     }
-    false
 }
 
 /// The first map of `shape` that `json` gives an array, by the members to it.

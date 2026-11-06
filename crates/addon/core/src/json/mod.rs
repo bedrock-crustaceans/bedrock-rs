@@ -35,6 +35,8 @@
 // hidden: API not yet reviewed
 #[doc(hidden)]
 pub mod build;
+#[cfg(test)]
+mod characterize_lex;
 mod clamp_text;
 mod coerce;
 pub(crate) use clamp_text::first_beyond_double;
@@ -46,6 +48,7 @@ mod finite;
 #[doc(hidden)]
 pub mod jsoncpp;
 pub mod kit;
+mod lex;
 // hidden: API not yet reviewed
 #[doc(hidden)]
 pub mod lossy;
@@ -88,10 +91,13 @@ pub use null::{
 pub use prepared::{PrepareError, Prepared};
 // hidden: API not yet reviewed
 #[doc(hidden)]
+pub use lex::{Scanned, UnsafeText, scan};
+// hidden: API not yet reviewed
+#[doc(hidden)]
 pub use read::{
-    DOCUMENT_NUMBER_TOO_BIG, DOCUMENT_ROOT_NOT_SINGULAR, Scanned, TRAILING_CONTENT, UnsafeText,
-    document_json_refusal, from_slice_jsonc, from_str, from_str_borrowed_jsonc, from_str_jsonc,
-    scan, trailing_content, trailing_content_finding,
+    DOCUMENT_NUMBER_TOO_BIG, DOCUMENT_ROOT_NOT_SINGULAR, TRAILING_CONTENT, document_json_refusal,
+    from_slice_jsonc, from_str, from_str_borrowed_jsonc, from_str_jsonc, trailing_content,
+    trailing_content_finding,
 };
 pub use scalar::{
     BeyondWidth, Declared, JsonType, Refusal, RefusedScalar, Respelt, ScalarFailure, ScalarRead,

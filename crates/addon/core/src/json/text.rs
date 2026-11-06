@@ -1,5 +1,7 @@
 //! What runs over the raw bytes before facet sees them: the BOM and the nesting limit.
 
+use super::lex::{Kind, Lexer, Rules};
+
 /// The deepest nesting of arrays and objects a document may have: facet-json has no limit of its
 /// own and a deeper document overflows the parser's stack.
 ///
@@ -67,17 +69,21 @@ pub fn blank_bom(bytes: &[u8]) -> std::borrow::Cow<'_, [u8]> {
 ///
 /// Returns `TooDeep` with the offset of the first bracket nested past `max`.
 pub fn check_depth(bytes: &[u8], max: usize) -> Result<(), TooDeep> {
+    // Read loosely: a string's escapes, an unended comment and what is no JSON are the
+    // parser's to report, once the nesting is known to be within the limit.
+    let mut lexer = Lexer::new(bytes, Rules::lenient(false));
     let mut depth = 0usize;
-    let mut i = 0;
-    while let Some(&byte) = bytes.get(i) {
-        match byte {
-            b'[' | b'{' => {
+    while let Ok(Some(token)) = lexer.next_token() {
+        match token.kind {
+            Kind::OpenArray | Kind::OpenObject => {
                 depth += 1;
                 if depth > max {
-                    return Err(TooDeep { offset: i });
+                    return Err(TooDeep {
+                        offset: token.start,
+                    });
                 }
             }
-            b']' | b'}' => {
+            Kind::CloseArray | Kind::CloseObject => {
                 // The bracket that closes the root, or one that closes nothing: either way
                 // no root value goes on from here.
                 if depth <= 1 {
@@ -85,52 +91,12 @@ pub fn check_depth(bytes: &[u8], max: usize) -> Result<(), TooDeep> {
                 }
                 depth -= 1;
             }
-            b' ' | b'\t' | b'\n' | b'\r' => {}
-            // A root that is a string.
-            b'"' if depth == 0 => return Ok(()),
-            b'"' => i = skip_string(bytes, i + 1),
-            b'/' => match bytes.get(i + 1) {
-                Some(b'/') => i = skip_line_comment(bytes, i + 2),
-                Some(b'*') => i = skip_block_comment(bytes, i + 2),
-                _ if depth == 0 => return Ok(()),
-                _ => {}
-            },
-            // A root that is a number or a literal, or no JSON at all.
+            // A root that is a string, a number or a literal, or no JSON at all.
             _ if depth == 0 => return Ok(()),
             _ => {}
         }
-        i += 1;
     }
     Ok(())
-}
-
-/// The index of the closing quote of a string whose body starts at `i` (or the end).
-fn skip_string(bytes: &[u8], mut i: usize) -> usize {
-    while let Some(&byte) = bytes.get(i) {
-        match byte {
-            b'\\' => i += 2,
-            b'"' => return i,
-            _ => i += 1,
-        }
-    }
-    bytes.len()
-}
-
-/// The index of the newline ending a `//` comment whose body starts at `i` (or the end).
-fn skip_line_comment(bytes: &[u8], i: usize) -> usize {
-    bytes
-        .get(i..)
-        .and_then(|rest| rest.iter().position(|&byte| byte == b'\n'))
-        .map_or(bytes.len(), |n| i + n)
-}
-
-/// The index of the `/` closing a `/* */` comment whose body starts at `i`; an unterminated
-/// comment runs to the end, as facet-json accepts it there.
-fn skip_block_comment(bytes: &[u8], i: usize) -> usize {
-    bytes
-        .get(i..)
-        .and_then(|rest| rest.windows(2).position(|pair| pair == b"*/"))
-        .map_or(bytes.len(), |n| i + n + 1)
 }
 
 /// A document nests arrays and objects deeper than the limit.

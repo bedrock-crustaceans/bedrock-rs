@@ -1,0 +1,406 @@
+## "{\"a\":1}"
+first_fault          None
+first_beyond_double  None
+has_empty_array      false
+array_of_comments    false
+path_at              0:"" 1:"a" 7:""
+## "{\"a\":\"\\q\"}"
+first_fault          Some(6)
+first_beyond_double  None
+has_empty_array      false
+array_of_comments    false
+path_at              0:"" 1:"a" 10:""
+## "{\"a\":\"\\u12\"}"
+first_fault          Some(6)
+first_beyond_double  None
+has_empty_array      false
+array_of_comments    false
+path_at              0:"" 1:"a" 12:""
+## "{\"a\":\"\\u12"
+first_fault          Some(6)
+first_beyond_double  None
+has_empty_array      false
+array_of_comments    false
+path_at              0:"" 1:"a"
+## "{\"a\":\"abc"
+first_fault          Some(5)
+first_beyond_double  None
+has_empty_array      false
+array_of_comments    false
+path_at              0:"" 1:"a"
+## "{\"a\":\"x\\\\\",\"b\":2}"
+first_fault          None
+first_beyond_double  None
+has_empty_array      false
+array_of_comments    false
+path_at              0:"" 1:"a" 11:"b" 17:""
+## "{\"a\":\"\\/\\b\\f\\n\\r\\t\\u00e9\"}"
+first_fault          None
+first_beyond_double  None
+has_empty_array      false
+array_of_comments    false
+path_at              0:"" 1:"a" 26:""
+## "{\"a\":1 /* x"
+first_fault          Some(7)
+first_beyond_double  None
+has_empty_array      false
+array_of_comments    false
+path_at              0:"" 1:"a"
+## "{\"a\":1} /* x"
+first_fault          None
+first_beyond_double  None
+has_empty_array      false
+array_of_comments    false
+path_at              0:"" 1:"a" 7:""
+## "{\"a\":\u{c}1}"
+first_fault          Some(5)
+first_beyond_double  None
+has_empty_array      false
+array_of_comments    false
+path_at              0:"" 1:"a" 8:""
+## "{\"a\":1}\u{c}"
+first_fault          None
+first_beyond_double  None
+has_empty_array      false
+array_of_comments    false
+path_at              0:"" 1:"a" 7:""
+## "\u{c}{\"a\":1}"
+first_fault          Some(0)
+first_beyond_double  None
+has_empty_array      false
+array_of_comments    false
+path_at              0:"" 2:"a" 8:""
+## "{\"a\":\u{a0}1}"
+first_fault          Some(5)
+first_beyond_double  None
+has_empty_array      false
+array_of_comments    false
+path_at              0:"" 1:"a" 9:""
+## "\u{a0}{\"a\":1}"
+first_fault          Some(0)
+first_beyond_double  None
+has_empty_array      false
+array_of_comments    false
+path_at              0:"" 3:"a" 9:""
+## "{\"a\":[1}]"
+first_fault          Some(7)
+first_beyond_double  None
+has_empty_array      false
+array_of_comments    false
+path_at              0:"" 1:"a" 6:"a/0" 8:"a" 9:""
+## "[}"
+first_fault          Some(1)
+first_beyond_double  None
+has_empty_array      false
+array_of_comments    false
+path_at              0:"" 1:"0" 2:""
+## "}"
+first_fault          Some(0)
+first_beyond_double  None
+has_empty_array      false
+array_of_comments    false
+path_at              0:""
+## "]]]{"
+first_fault          Some(0)
+first_beyond_double  None
+has_empty_array      false
+array_of_comments    false
+path_at              0:""
+## "\"str\""
+first_fault          None
+first_beyond_double  None
+has_empty_array      false
+array_of_comments    false
+path_at              0:""
+## "12 garbage"
+first_fault          None
+first_beyond_double  None
+has_empty_array      false
+array_of_comments    false
+path_at              0:""
+## "-"
+first_fault          Some(0)
+first_beyond_double  None
+has_empty_array      false
+array_of_comments    false
+path_at              0:""
+## "1.5e+"
+first_fault          Some(0)
+first_beyond_double  None
+has_empty_array      false
+array_of_comments    false
+path_at              0:""
+## "nul"
+first_fault          Some(0)
+first_beyond_double  None
+has_empty_array      false
+array_of_comments    false
+path_at              0:""
+## "{\"a\":1} trailing"
+first_fault          None
+first_beyond_double  None
+has_empty_array      false
+array_of_comments    false
+path_at              0:"" 1:"a" 7:""
+## "// c\n{\"a\":1}"
+first_fault          None
+first_beyond_double  None
+has_empty_array      false
+array_of_comments    false
+path_at              0:"" 6:"a" 12:""
+## "/* c */ {\"a\":1}"
+first_fault          None
+first_beyond_double  None
+has_empty_array      false
+array_of_comments    false
+path_at              0:"" 9:"a" 15:""
+## "/* c */ [1]"
+first_fault          None
+first_beyond_double  None
+has_empty_array      false
+array_of_comments    false
+path_at              0:"" 9:"0" 11:""
+## "{\"a/b\":1,\"c~d\":{\"e\":[0,1e39]}}"
+first_fault          None
+first_beyond_double  None
+has_empty_array      false
+array_of_comments    false
+path_at              0:"" 1:"a~1b" 9:"c~0d" 16:"c~0d/e" 21:"c~0d/e/0" 23:"c~0d/e/1" 28:"c~0d/e" 29:"c~0d" 30:""
+## "{\"a\":1,\"a\":2}"
+first_fault          None
+first_beyond_double  None
+has_empty_array      false
+array_of_comments    false
+path_at              0:"" 1:"a" 13:""
+## "{\"a\\u0062\":1,\"ab\":2}"
+first_fault          None
+first_beyond_double  None
+has_empty_array      false
+array_of_comments    false
+path_at              0:"" 1:"ab" 20:""
+## "{\"a\":{\"b\":1,\"b\":2},\"a\":{\"c\":3,\"c\":4}}"
+first_fault          None
+first_beyond_double  None
+has_empty_array      false
+array_of_comments    false
+path_at              0:"" 1:"a" 6:"a/b" 18:"a" 24:"a/c" 36:"a" 37:""
+## "{\"k\":{\"a\":1,\"a\":2},\"k\":3}"
+first_fault          None
+first_beyond_double  None
+has_empty_array      false
+array_of_comments    false
+path_at              0:"" 1:"k" 6:"k/a" 18:"k" 25:""
+## "{\"a\":1,\"a\":2,\"b\":tru}"
+first_fault          Some(20)
+first_beyond_double  None
+has_empty_array      false
+array_of_comments    false
+path_at              0:"" 1:"a" 13:"b" 21:""
+## "{\"a\":tru,\"a\":2}"
+first_fault          Some(8)
+first_beyond_double  None
+has_empty_array      false
+array_of_comments    false
+path_at              0:"" 1:"a" 15:""
+## "{\"a\":[1,2,],}"
+first_fault          None
+first_beyond_double  None
+has_empty_array      false
+array_of_comments    false
+path_at              0:"" 1:"a" 6:"a/0" 8:"a/1" 10:"a/2" 11:"a" 12:""
+## "{,,\"a\":1}"
+first_fault          Some(1)
+first_beyond_double  None
+has_empty_array      false
+array_of_comments    false
+path_at              0:"" 3:"a" 9:""
+## "{\"a\" 1}"
+first_fault          Some(5)
+first_beyond_double  None
+has_empty_array      false
+array_of_comments    false
+path_at              0:"" 1:"a" 7:""
+## "{\"a\":1 \"b\":2}"
+first_fault          Some(7)
+first_beyond_double  None
+has_empty_array      false
+array_of_comments    false
+path_at              0:"" 1:"a" 13:""
+## ""
+first_fault          Some(0)
+first_beyond_double  None
+has_empty_array      false
+array_of_comments    false
+path_at              0:""
+## "   "
+first_fault          Some(3)
+first_beyond_double  None
+has_empty_array      false
+array_of_comments    false
+path_at              0:""
+## "// only"
+first_fault          Some(7)
+first_beyond_double  None
+has_empty_array      false
+array_of_comments    false
+path_at              0:""
+## "/* only"
+first_fault          Some(0)
+first_beyond_double  None
+has_empty_array      false
+array_of_comments    false
+path_at              0:""
+## "/* only */"
+first_fault          Some(10)
+first_beyond_double  None
+has_empty_array      false
+array_of_comments    false
+path_at              0:""
+## "[ /* c */ ]"
+first_fault          None
+first_beyond_double  None
+has_empty_array      true
+array_of_comments    true
+path_at              0:"" 1:"0" 11:""
+## "[ // c\n ]"
+first_fault          None
+first_beyond_double  None
+has_empty_array      true
+array_of_comments    true
+path_at              0:"" 1:"0" 9:""
+## "[ ]"
+first_fault          None
+first_beyond_double  None
+has_empty_array      true
+array_of_comments    true
+path_at              0:"" 1:"0" 3:""
+## "[\u{a0}]"
+first_fault          Some(1)
+first_beyond_double  None
+has_empty_array      true
+array_of_comments    true
+path_at              0:"" 1:"0" 4:""
+## "[\"[ ]\", 1]"
+first_fault          None
+first_beyond_double  None
+has_empty_array      true
+array_of_comments    false
+path_at              0:"" 1:"0" 7:"1" 10:""
+## "{\"a\":1e999,\"b\":-1e400,\"c\":\"1e999\"}"
+first_fault          None
+first_beyond_double  Some(5..10)
+has_empty_array      false
+array_of_comments    false
+path_at              0:"" 1:"a" 11:"b" 22:"c" 34:""
+## "{\"a\":1e39,\"a\":2}"
+first_fault          None
+first_beyond_double  None
+has_empty_array      false
+array_of_comments    false
+path_at              0:"" 1:"a" 16:""
+## "{\"a\":2,\"a\":1e39}"
+first_fault          None
+first_beyond_double  None
+has_empty_array      false
+array_of_comments    false
+path_at              0:"" 1:"a" 16:""
+## "{\"a\":1e39,\"b\":{\"c\":-1e39},\"a\":3e39}"
+first_fault          None
+first_beyond_double  None
+has_empty_array      false
+array_of_comments    false
+path_at              0:"" 1:"a" 10:"b" 15:"b/c" 25:"b" 26:"a" 35:""
+## "{\"a\":{\"x\":1e39},\"a\":{\"y\":2e39}}"
+first_fault          None
+first_beyond_double  None
+has_empty_array      false
+array_of_comments    false
+path_at              0:"" 1:"a" 6:"a/x" 15:"a" 21:"a/y" 30:"a" 31:""
+## "{\"b\":1e39,\"a\":1e39,\"b\":2e39}"
+first_fault          None
+first_beyond_double  None
+has_empty_array      false
+array_of_comments    false
+path_at              0:"" 1:"b" 10:"a" 19:"b" 28:""
+## "[1e39,[-1e39],{\"a\\\"b\":1e39}]"
+first_fault          None
+first_beyond_double  None
+has_empty_array      false
+array_of_comments    false
+path_at              0:"" 1:"0" 6:"1" 7:"1/0" 13:"1" 14:"2" 15:"2/a\"b" 27:"2" 28:""
+## "{\"a\": \"]}\" // [\n, \"b\": 1}"
+first_fault          None
+first_beyond_double  None
+has_empty_array      false
+array_of_comments    false
+path_at              0:"" 1:"a" 17:"b" 25:""
+## "{\"a\":[[[\"\\q\"]]]}"
+first_fault          Some(9)
+first_beyond_double  None
+has_empty_array      false
+array_of_comments    false
+path_at              0:"" 1:"a" 6:"a/0" 7:"a/0/0" 8:"a/0/0/0" 13:"a/0/0" 14:"a/0" 15:"a" 16:""
+## "[[\"\\q\",[[[[]]]]]]"
+first_fault          Some(3)
+first_beyond_double  None
+has_empty_array      true
+array_of_comments    true
+path_at              0:"" 1:"0" 2:"0/0" 7:"0/1" 8:"0/1/0" 9:"0/1/0/0" 10:"0/1/0/0/0" 11:"0/1/0/0/0/0" 12:"0/1/0/0/0" 13:"0/1/0/0" 14:"0/1/0" 15:"0/1" 16:"0" 17:""
+## "{\"a\":{\"b\":{\"c\":{\"d\":1}}}}"
+first_fault          None
+first_beyond_double  None
+has_empty_array      false
+array_of_comments    false
+path_at              0:"" 1:"a" 6:"a/b" 11:"a/b/c" 16:"a/b/c/d" 22:"a/b/c" 23:"a/b" 24:"a" 25:""
+## 128 levels
+first_fault          None
+first_beyond_double  None
+has_empty_array      true
+array_of_comments    true
+## 129 levels
+first_fault          Some(128)
+first_beyond_double  None
+has_empty_array      true
+array_of_comments    true
+## 129 levels after a bad escape
+first_fault          Some(2)
+first_beyond_double  None
+has_empty_array      true
+array_of_comments    true
+## 129 levels in a comment
+first_fault          None
+first_beyond_double  None
+has_empty_array      true
+array_of_comments    true
+path_at              0:"" 1:"0" 135:""
+## 129 levels in a string
+first_fault          None
+first_beyond_double  None
+has_empty_array      false
+array_of_comments    false
+path_at              0:"" 1:"0" 133:""
+## 129 levels after the root
+first_fault          None
+first_beyond_double  None
+has_empty_array      true
+array_of_comments    true
+## 128 objects
+first_fault          None
+first_beyond_double  None
+has_empty_array      false
+array_of_comments    false
+## 129 objects
+first_fault          Some(640)
+first_beyond_double  None
+has_empty_array      false
+array_of_comments    false
+## duplicate at 127 levels
+first_fault          None
+first_beyond_double  None
+has_empty_array      false
+array_of_comments    false
+## duplicate at 128 levels
+first_fault          Some(128)
+first_beyond_double  None
+has_empty_array      false
+array_of_comments    false

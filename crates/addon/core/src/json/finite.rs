@@ -11,7 +11,7 @@ use std::collections::HashMap;
 use std::ops::Range;
 
 use super::Value;
-use super::read::{number_end, skip_trivia, string_end};
+use super::lex::{Kind, Lexer, Rules, Structure, key_text};
 use super::slice::JsonSlice;
 use crate::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, Span,
@@ -166,103 +166,43 @@ fn all_finite(value: &Value) -> bool {
     true
 }
 
-/// An array or object the walk of the text is inside.
-enum Frame {
-    /// An object, and the token of the key the walk is at.
-    Object(Option<Range<usize>>),
-    /// An array, and the index the walk is at.
-    Array(usize),
-}
-
 /// Every number token of `source` that spells an infinity, in the order of the text: its
 /// path from the root of the slice and its span in the file. One pass over the tokens of a
 /// text the door reads (a text it would refuse gives what was found before the fault).
-fn infinite_tokens(source: JsonSlice<'_>) -> Vec<(JsonPath, Span)> {
-    let bytes = source.text.as_bytes();
-    let mut frames: Vec<Frame> = Vec::new();
+pub(super) fn infinite_tokens(source: JsonSlice<'_>) -> Vec<(JsonPath, Span)> {
+    let text = source.text;
+    let mut lexer = Lexer::new(text.as_bytes(), Rules::strict(true));
+    let mut open = Structure::new();
     let mut found = Vec::new();
-    let mut at = 0;
-    loop {
-        at = skip_trivia(bytes, at, true);
-        let Some(&byte) = bytes.get(at) else {
-            break;
-        };
-        let start = at;
-        match byte {
-            b'{' | b'[' => {
-                frames.push(if byte == b'{' {
-                    Frame::Object(None)
-                } else {
-                    Frame::Array(0)
-                });
-                at += 1;
-                continue;
+    while let Ok(Some(token)) = lexer.next_token() {
+        match token.kind {
+            Kind::OpenObject => open.open_object(),
+            Kind::OpenArray => open.open_array(),
+            Kind::Comma => open.comma(),
+            Kind::String { .. } if open.awaits_key() => {
+                open.enter_key(&key_text(&text[token.range()]));
             }
-            b'}' | b']' => {
-                frames.pop();
-                at += 1;
-            }
-            b',' => {
-                if let Some(Frame::Array(index)) = frames.last_mut() {
-                    *index += 1;
-                }
-                at += 1;
-                continue;
-            }
-            b'"' => {
-                let Ok((end, _)) = string_end(bytes, at) else {
-                    break;
-                };
-                at = end;
-                // In an object, the string before a colon is the key.
-                if let Some(Frame::Object(key)) = frames.last_mut()
-                    && bytes.get(skip_trivia(bytes, end, true)) == Some(&b':')
+            Kind::CloseObject | Kind::CloseArray | Kind::String { .. } | Kind::Number => {
+                if token.kind == Kind::Number
+                    && text[token.range()]
+                        .parse::<f64>()
+                        .is_ok_and(f64::is_infinite)
                 {
-                    *key = Some(start..end);
-                    continue;
+                    found.push((open.path().clone(), span(source, token.range())));
                 }
-            }
-            b'-' | b'0'..=b'9' => {
-                at = number_end(bytes, at);
-                let token = source.text.get(start..at).unwrap_or_default();
-                if token.parse::<f64>().is_ok_and(f64::is_infinite) {
-                    found.push((path_of(source.text, &frames), span(source, start..at)));
+                if matches!(token.kind, Kind::CloseObject | Kind::CloseArray) {
+                    open.close();
                 }
-                if at == start {
+                // A whole value: at the root it ends the document.
+                if open.depth() == 0 {
                     break;
                 }
             }
             // A colon, a literal, or what is no JSON: nothing the walk keeps.
-            _ => {
-                at += 1;
-                continue;
-            }
-        }
-        // A whole value: at the root it ends the document.
-        if frames.is_empty() {
-            break;
+            _ => {}
         }
     }
     found
-}
-
-/// The path the open `frames` spell in `text`.
-fn path_of(text: &str, frames: &[Frame]) -> JsonPath {
-    let mut path = JsonPath::new();
-    for frame in frames {
-        match frame {
-            Frame::Array(index) => path.push_index(*index),
-            Frame::Object(key) => {
-                let token = key.clone().and_then(|key| text.get(key)).unwrap_or("\"\"");
-                // The key as the reader decodes it; as written between its quotes if not.
-                match super::from_str::<String>(token) {
-                    Ok(key) => path.push(&key),
-                    Err(_) => path.push(token.trim_matches('"')),
-                }
-            }
-        }
-    }
-    path
 }
 
 /// The range of the slice's text as a span of the file.

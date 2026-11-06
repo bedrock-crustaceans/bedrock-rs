@@ -48,81 +48,13 @@ use facet_format::{
 use facet_json::{DeserializeError, JsonParser};
 
 use super::Value;
+use super::lex::{Kind, Lexer, Marks, Refused, Rules, UnsafeText, scan, scan_tokens};
 use super::slice::JsonSlice;
 use super::stack::with_stack_for;
 use super::text::MAX_JSON_DEPTH;
 use crate::diagnostic::{
     Diagnostic, DiagnosticCode, JsonPath, Location, Phase, Severity, Span, VanillaText,
 };
-
-/// What [`scan`] found in a text facet may read.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct Scanned {
-    /// The byte offset just past the root value. `None` when the text has no whole root value
-    /// (it is blank, cut off, or not JSON): the parser reports that.
-    pub root_end: Option<usize>,
-    /// The byte offset of the first byte after the root value that is neither white space nor
-    /// a comment: vanilla's reader never looks at it.
-    pub trailing: Option<usize>,
-}
-
-/// Why [`scan`] keeps a text from facet.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, thiserror::Error)]
-#[non_exhaustive]
-pub enum UnsafeText {
-    /// A backslash in a string before a character that is no escape.
-    #[error("bad escape sequence `\\{found}` in a string at byte {offset}")]
-    BadEscape {
-        /// The byte offset of the backslash.
-        offset: usize,
-        /// The length of the backslash and the character.
-        len: usize,
-        /// The character after the backslash.
-        found: char,
-    },
-    /// `\u` without four hexadecimal digits after it.
-    #[error("bad unicode escape sequence in a string at byte {offset}")]
-    BadUnicodeEscape {
-        /// The byte offset of the backslash.
-        offset: usize,
-        /// The length up to and including the first character that is no digit.
-        len: usize,
-        /// That character; `None` when the text ends first.
-        found: Option<char>,
-    },
-    /// An array or object nested deeper than `MAX_JSON_DEPTH`.
-    #[error("JSON nesting deeper than the limit at byte {offset}")]
-    TooDeep {
-        /// The byte offset of the first bracket past the limit.
-        offset: usize,
-    },
-    /// A `/*` comment before the end of the root value that has no `*/` (in a text read with
-    /// comments).
-    #[error("block comment without an end at byte {offset}")]
-    UnterminatedComment {
-        /// The byte offset of the comment's slash.
-        offset: usize,
-        /// The length from the slash to the end of the text.
-        len: usize,
-    },
-}
-
-impl UnsafeText {
-    /// Where in the scanned text.
-    pub fn span(&self) -> Span {
-        let (offset, len) = match *self {
-            Self::BadEscape { offset, len, .. }
-            | Self::BadUnicodeEscape { offset, len, .. }
-            | Self::UnterminatedComment { offset, len } => (offset, len),
-            Self::TooDeep { offset } => (offset, 1),
-        };
-        let to_u32 = |n: usize| u32::try_from(n).unwrap_or(u32::MAX);
-        Span {
-            offset: to_u32(offset),
-            len: to_u32(len),
-        }
-    }
-}
 
 /// What a string may have after a backslash.
 const ESCAPE: &str = "one of `\"\\/bfnrtu` after a backslash (bad escape sequence in string)";
@@ -171,350 +103,6 @@ impl From<UnsafeText> for DeserializeError {
             kind,
         }
     }
-}
-
-/// Reads `bytes` token by token the way facet-json's scanner does (white space, `//` and
-/// `/* */` comments when `comments`, one byte of punctuation, strings, numbers, the three
-/// literals) and refuses a string escape outside RFC 8259, nesting past the limit and a `/*`
-/// comment that does not end before the root value does. Every other fault (a string that
-/// does not end, a missing comma, a stray byte) is left for the parser to report, which it
-/// does without decoding anything.
-///
-/// Linear in the text, one pass, no allocation beyond the open brackets.
-///
-/// # Errors
-///
-/// Returns `UnsafeText` for a string escape outside RFC 8259, nesting past the limit, or a `/*` comment that does not end before the root value.
-pub fn scan(bytes: &[u8], comments: bool) -> Result<Scanned, UnsafeText> {
-    scan_tokens(bytes, comments, &mut Marks::default()).map_err(|refused| refused.found)
-}
-
-/// What [`scan_tokens`] refused, and where the token that holds it starts: the text before
-/// that offset is text the scan passed.
-struct Refused {
-    found: UnsafeText,
-    /// The offset of the string's opening quote, of the bracket past the limit, or of the
-    /// slash of the comment without an end.
-    token: usize,
-}
-
-/// What the scan marks for the copy facet reads in place of a text ([`facet_copy`]).
-#[derive(Default)]
-struct Marks {
-    /// The integer tokens too large for 64 bits.
-    wide: Vec<Range<usize>>,
-    /// The whole comments, each without the newline that ends a `//` one.
-    comments: Vec<Range<usize>>,
-    /// The most arrays and objects open at once: how deep the text nests.
-    levels: usize,
-}
-
-impl Marks {
-    /// The marks that lie within the first `len` bytes.
-    fn within(&self, len: usize) -> Self {
-        let within = |ranges: &[Range<usize>]| {
-            ranges
-                .iter()
-                .filter(|range| range.end <= len)
-                .cloned()
-                .collect()
-        };
-        Self {
-            wide: within(&self.wide),
-            comments: within(&self.comments),
-            levels: self.levels,
-        }
-    }
-}
-
-/// The refusal of the `/*` comment at `offset` that has no end.
-fn unended_comment(bytes: &[u8], offset: usize) -> Refused {
-    Refused {
-        found: UnsafeText::UnterminatedComment {
-            offset,
-            len: bytes.len() - offset,
-        },
-        token: offset,
-    }
-}
-
-/// [`scan`], which also marks where the integer tokens too large for 64 bits and the
-/// comments lie.
-fn scan_tokens(bytes: &[u8], comments: bool, marks: &mut Marks) -> Result<Scanned, Refused> {
-    // The open brackets. `sure` is whether the text so far is one the parser reads the same
-    // way: once a bracket closes another kind, a literal is misspelt or a byte starts no
-    // token, the parser has failed there, and the scan only goes on checking strings (from
-    // every position the parser's cursor could be left at) without naming a root end.
-    let mut open: Vec<u8> = Vec::new();
-    let mut sure = true;
-    let mut at = 0;
-    let root_end = loop {
-        let unended;
-        (at, unended) = skip_trivia_with(bytes, at, comments, |comment| {
-            // Past a fault the parser reads nothing, and its message may name a byte there:
-            // nothing is marked for the copy, so the byte it names is the author's.
-            if sure {
-                marks.comments.push(comment);
-            }
-        });
-        // A `/*` without an end inside the root: the parser's message for it depends on
-        // whether it still knows the text has comments, so the scan reports it, in
-        // the parser's words. Past a fault the parser never gets this far.
-        if let Some(offset) = unended.filter(|_| sure) {
-            return Err(unended_comment(bytes, offset));
-        }
-        let Some(&byte) = bytes.get(at) else {
-            return Ok(Scanned {
-                root_end: None,
-                trailing: None,
-            });
-        };
-        let start = at;
-        // Whether the token is a whole value (a scalar, or the bracket closing a container).
-        let value = match byte {
-            b'"' => {
-                // A string that does not end is the parser's to report.
-                let (end, closed) = string_end(bytes, at).map_err(|found| Refused {
-                    found,
-                    token: start,
-                })?;
-                at = end;
-                closed
-            }
-            b'{' | b'[' => {
-                if open.len() >= MAX_JSON_DEPTH {
-                    return Err(Refused {
-                        found: UnsafeText::TooDeep { offset: at },
-                        token: at,
-                    });
-                }
-                open.push(byte);
-                marks.levels = marks.levels.max(open.len());
-                at += 1;
-                false
-            }
-            b'}' | b']' => {
-                at += 1;
-                let opener = if byte == b'}' { b'{' } else { b'[' };
-                if open.last() == Some(&opener) {
-                    open.pop();
-                    true
-                } else {
-                    sure = false;
-                    false
-                }
-            }
-            b':' | b',' => {
-                at += 1;
-                sure &= !open.is_empty();
-                false
-            }
-            b'-' | b'0'..=b'9' => {
-                at = number_end(bytes, at);
-                if sure && is_wide_integer(&bytes[start..at]) {
-                    marks.wide.push(start..at);
-                }
-                let digits = at - start > usize::from(byte == b'-');
-                sure &= digits;
-                digits
-            }
-            b't' | b'f' | b'n' => {
-                let literal: &[u8] = match byte {
-                    b't' => b"true",
-                    b'f' => b"false",
-                    _ => b"null",
-                };
-                let matched = bytes[at..]
-                    .iter()
-                    .zip(literal)
-                    .take_while(|(a, b)| a == b)
-                    .count();
-                // The parser's cursor stays on the first byte that differs.
-                at += matched;
-                sure &= matched == literal.len();
-                matched == literal.len()
-            }
-            _ => {
-                // No token starts here: the parser stops on this byte.
-                at += 1;
-                sure = false;
-                false
-            }
-        };
-        if value && sure && open.is_empty() {
-            break at;
-        }
-    };
-    Ok(Scanned {
-        root_end: Some(root_end),
-        trailing: content_from(bytes, root_end, comments),
-    })
-}
-
-/// The offset of the first content from `at`: the first byte that is neither white space nor
-/// part of a whole comment. A `/*` that never ends is content from its slash (the parser
-/// refuses such a comment inside the root value; after it, it is what vanilla never looks
-/// at, like anything else). `None` when only white space and whole comments follow.
-fn content_from(bytes: &[u8], mut at: usize, comments: bool) -> Option<usize> {
-    loop {
-        match bytes.get(at..) {
-            Some([b' ' | b'\t' | b'\n' | b'\r', ..]) => at += 1,
-            Some([b'/', b'/', rest @ ..]) if comments => {
-                at += 2 + rest
-                    .iter()
-                    .position(|&byte| byte == b'\n')
-                    .map_or(rest.len(), |n| n + 1);
-            }
-            Some([b'/', b'*', rest @ ..]) if comments => {
-                match rest.windows(2).position(|pair| pair == b"*/") {
-                    Some(n) => at += n + 4,
-                    None => return Some(at),
-                }
-            }
-            Some([]) | None => return None,
-            Some(_) => return Some(at),
-        }
-    }
-}
-
-/// The index after the white space and (when `comments`) comments from `at`, as facet-json's
-/// `skip_whitespace` reads them: a `//` comment to its newline, a `/* */` comment to its
-/// `*/`, or to the end when it has none (the parser reports that).
-pub(super) fn skip_trivia(bytes: &[u8], at: usize, comments: bool) -> usize {
-    skip_trivia_with(bytes, at, comments, |_| {}).0
-}
-
-/// [`skip_trivia`], handing `whole` each comment that ends: a `//` comment without its
-/// newline, a `/* */` comment with its `*/`. With the index comes the offset of the slash of
-/// a `/*` comment that has no end.
-fn skip_trivia_with(
-    bytes: &[u8],
-    mut at: usize,
-    comments: bool,
-    mut whole: impl FnMut(Range<usize>),
-) -> (usize, Option<usize>) {
-    loop {
-        match bytes.get(at..) {
-            Some([b' ' | b'\t' | b'\n' | b'\r', ..]) => at += 1,
-            Some([b'/', b'/', rest @ ..]) if comments => {
-                let line = rest
-                    .iter()
-                    .position(|&byte| byte == b'\n')
-                    .unwrap_or(rest.len());
-                whole(at..at + 2 + line);
-                at += 2 + line;
-            }
-            Some([b'/', b'*', rest @ ..]) if comments => {
-                match rest.windows(2).position(|pair| pair == b"*/") {
-                    Some(n) => {
-                        whole(at..at + n + 4);
-                        at += n + 4;
-                    }
-                    None => return (bytes.len(), Some(at)),
-                }
-            }
-            _ => return (at, None),
-        }
-    }
-}
-
-/// The index after the string whose opening quote is at `at`, and whether it has a closing
-/// quote (the index is the end of the text when it has none). Every escape in it is one of
-/// RFC 8259's.
-pub(super) fn string_end(bytes: &[u8], at: usize) -> Result<(usize, bool), UnsafeText> {
-    let mut i = at + 1;
-    loop {
-        match bytes.get(i) {
-            None => return Ok((bytes.len(), false)),
-            Some(b'"') => return Ok((i + 1, true)),
-            Some(b'\\') => match bytes.get(i + 1) {
-                // A backslash that ends the text: the string does not end.
-                None => return Ok((bytes.len(), false)),
-                Some(b'"' | b'\\' | b'/' | b'b' | b'f' | b'n' | b'r' | b't') => i += 2,
-                Some(b'u') => {
-                    for digit in i + 2..i + 6 {
-                        if !bytes.get(digit).is_some_and(u8::is_ascii_hexdigit) {
-                            let found = char_at(bytes, digit);
-                            let end = digit + found.map_or(0, |(_, len)| len);
-                            return Err(UnsafeText::BadUnicodeEscape {
-                                offset: i,
-                                len: end - i,
-                                found: found.map(|(found, _)| found),
-                            });
-                        }
-                    }
-                    i += 6;
-                }
-                Some(_) => {
-                    let (found, len) = char_at(bytes, i + 1).unwrap_or(('\u{fffd}', 1));
-                    return Err(UnsafeText::BadEscape {
-                        offset: i,
-                        len: 1 + len,
-                        found,
-                    });
-                }
-            },
-            Some(_) => i += 1,
-        }
-    }
-}
-
-/// The character starting at `at` and its length in bytes; U+FFFD and one byte where the bytes
-/// are no UTF-8. `None` at the end of the text.
-fn char_at(bytes: &[u8], at: usize) -> Option<(char, usize)> {
-    let rest = bytes.get(at..).filter(|rest| !rest.is_empty())?;
-    let head = &rest[..rest.len().min(4)];
-    let valid = match std::str::from_utf8(head) {
-        Ok(text) => text,
-        Err(error) => std::str::from_utf8(&head[..error.valid_up_to()]).unwrap_or(""),
-    };
-    Some(
-        valid
-            .chars()
-            .next()
-            .map_or(('\u{fffd}', 1), |found| (found, found.len_utf8())),
-    )
-}
-
-/// The index after the number token starting at `at`, by facet-json's `scan_number`: an
-/// optional `-`, digits, an optional `.` and digits, an optional exponent. Whether the
-/// characters are a number is the parser's to say.
-pub(super) fn number_end(bytes: &[u8], mut at: usize) -> usize {
-    let digits = |mut at: usize| {
-        while bytes.get(at).is_some_and(u8::is_ascii_digit) {
-            at += 1;
-        }
-        at
-    };
-    if bytes.get(at) == Some(&b'-') {
-        at += 1;
-    }
-    at = digits(at);
-    if bytes.get(at) == Some(&b'.') {
-        at = digits(at + 1);
-    }
-    if matches!(bytes.get(at), Some(b'e' | b'E')) {
-        at += 1;
-        if matches!(bytes.get(at), Some(b'+' | b'-')) {
-            at += 1;
-        }
-        at = digits(at);
-    }
-    at
-}
-
-/// Whether a number token is an integer (digits alone after an optional `-`) that fits
-/// neither `i64` nor `u64`: the tokens facet-json reads as 128-bit integers or refuses
-/// (`scanner::parse_number`, the one its default `lexical-parse` feature compiles). Every
-/// other number token is left to facet.
-fn is_wide_integer(token: &[u8]) -> bool {
-    let digits = token.strip_prefix(b"-").unwrap_or(token);
-    // Eighteen digits fit an `i64`, whatever they are.
-    if digits.len() <= 18 || !digits.iter().all(u8::is_ascii_digit) {
-        return false;
-    }
-    std::str::from_utf8(token)
-        .is_ok_and(|token| token.parse::<i64>().is_err() && token.parse::<u64>().is_err())
 }
 
 /// The digits and exponent of the real token that spells the double the integer `digits`
@@ -1383,30 +971,27 @@ fn text_outside_comments(bytes: &[u8]) -> Result<String, DeserializeError> {
         kind,
     };
     let mut copy = bytes.to_vec();
-    let mut at = 0;
+    let mut lexer = Lexer::new(bytes, Rules::strict(true));
     loop {
-        let after = skip_trivia(bytes, at, true);
-        for byte in &mut copy[at..after] {
+        let from = lexer.at();
+        lexer.skip_trivia();
+        for byte in &mut copy[from..lexer.at()] {
             if !byte.is_ascii() {
                 *byte = b'?';
             }
         }
-        at = after;
-        match bytes.get(at) {
-            None => break,
-            Some(b'"') => {
-                let (end, _) = string_end(bytes, at)?;
-                if std::str::from_utf8(&bytes[at..end]).is_err() {
-                    // facet's error for a string that is not UTF-8, on the string.
-                    let kind = DeserializeErrorKind::InvalidUtf8 {
-                        context: [0; 16],
-                        context_len: 0,
-                    };
-                    return Err(error(at, end - at, kind));
-                }
-                at = end;
-            }
-            Some(_) => at += 1,
+        let Some(token) = lexer.token()? else {
+            break;
+        };
+        if matches!(token.kind, Kind::String { .. })
+            && std::str::from_utf8(&bytes[token.range()]).is_err()
+        {
+            // facet's error for a string that is not UTF-8, on the string.
+            let kind = DeserializeErrorKind::InvalidUtf8 {
+                context: [0; 16],
+                context_len: 0,
+            };
+            return Err(error(token.start, token.len(), kind));
         }
     }
     String::from_utf8(copy).map_err(|failure| {
@@ -1524,6 +1109,7 @@ mod tests {
 
     use super::*;
     use crate::json::Value;
+    use crate::json::lex::is_wide_integer;
 
     /// xorshift64*: a fixed sequence per seed.
     struct Rng(u64);

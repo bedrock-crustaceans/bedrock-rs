@@ -8,6 +8,7 @@
 
 use std::borrow::Cow;
 
+use super::lex::{Lexer, Rules};
 use super::slice::JsonSlice;
 use super::text::{MAX_JSON_DEPTH, TooDeep, blank_bom, check_depth};
 
@@ -92,29 +93,8 @@ impl<'a> Prepared<'a> {
     /// accepts it at the end of a text. `null` is not blank here; the envelope's
     /// `EmptyDocument` rule adds it on its own.
     pub fn is_blank(&self) -> bool {
-        let bytes = self.text.as_bytes();
-        let mut i = 0;
-        while let Some(&byte) = bytes.get(i) {
-            match byte {
-                b' ' | b'\t' | b'\n' | b'\r' => i += 1,
-                b'/' => match bytes.get(i + 1) {
-                    Some(b'/') => {
-                        i = bytes[i + 2..]
-                            .iter()
-                            .position(|&b| b == b'\n')
-                            .map_or(bytes.len(), |n| i + 2 + n);
-                    }
-                    Some(b'*') => {
-                        i = bytes[i + 2..]
-                            .windows(2)
-                            .position(|pair| pair == b"*/")
-                            .map_or(bytes.len(), |n| i + 2 + n + 2);
-                    }
-                    _ => return false,
-                },
-                _ => return false,
-            }
-        }
-        true
+        let mut lexer = Lexer::new(self.text.as_bytes(), Rules::lenient(false));
+        lexer.skip_trivia();
+        lexer.at() >= self.text.len()
     }
 }

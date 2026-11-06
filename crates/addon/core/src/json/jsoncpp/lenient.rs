@@ -7,6 +7,7 @@ use crate::json::{
 };
 
 use super::ReadError;
+use crate::json::lex::{Kind, Lexer, Rules, loose_string_end};
 
 /// One copy of a merge-before-parse file, read the way `Json::Reader::parse` reads it.
 #[derive(Clone, Debug, PartialEq)]
@@ -48,75 +49,42 @@ pub fn read_lenient(bytes: &[u8]) -> Result<Lenient, ReadError> {
 /// close; `None` leaves the whole text to the reader (and its error).
 pub fn root_end(text: &str) -> Option<usize> {
     let bytes = text.as_bytes();
-    let mut at = skip_trivia(bytes, 0);
+    let mut lexer = Lexer::new(bytes, Rules::lenient(true));
     let mut depth = 0usize;
     loop {
-        match *bytes.get(at)? {
-            b'"' => at = string_end(bytes, at)?,
-            b'{' | b'[' => {
-                depth += 1;
-                at += 1;
-            }
-            b'}' | b']' => {
-                depth = depth.checked_sub(1)?;
-                at += 1;
-            }
-            b',' | b':' if depth > 0 => at += 1,
-            b',' | b':' => return None,
-            _ => {
-                // A number or a literal: up to the next structural byte or white space.
-                let start = at;
-                while bytes
-                    .get(at)
-                    .is_some_and(|byte| !byte.is_ascii_whitespace() && !b"{}[],:\"/".contains(byte))
-                {
-                    at += 1;
-                }
-                if at == start {
-                    return None;
-                }
-            }
+        lexer.skip_trivia();
+        let token = lexer.token().ok()??;
+        match token.kind {
+            Kind::String { closed: false } => return None,
+            Kind::OpenObject | Kind::OpenArray => depth += 1,
+            Kind::CloseObject | Kind::CloseArray => depth = depth.checked_sub(1)?,
+            Kind::Colon | Kind::Comma if depth == 0 => return None,
+            // A number or a literal runs to the next structural byte or white space; a `/`
+            // that opens no comment is none.
+            Kind::Atom if bytes.get(token.start) == Some(&b'/') => return None,
+            _ => {}
         }
         if depth == 0 {
-            return Some(at);
+            return Some(lexer.at());
         }
-        at = skip_trivia(bytes, at);
     }
 }
 
 /// The offset just past the string that opens at `at`.
 pub fn string_end(bytes: &[u8], at: usize) -> Option<usize> {
-    let mut at = at + 1;
-    loop {
-        match *bytes.get(at)? {
-            b'"' => return Some(at + 1),
-            b'\\' => at += 2,
-            _ => at += 1,
-        }
+    match loose_string_end(bytes, at) {
+        (end, true) => Some(end),
+        (_, false) => None,
     }
 }
 
-/// The offset of the first byte at or after `at` that is neither white space nor inside a
-/// comment.
-pub fn skip_trivia(bytes: &[u8], mut at: usize) -> usize {
-    loop {
-        match (bytes.get(at), bytes.get(at + 1)) {
-            (Some(byte), _) if byte.is_ascii_whitespace() => at += 1,
-            (Some(b'/'), Some(b'/')) => {
-                while bytes.get(at).is_some_and(|byte| *byte != b'\n') {
-                    at += 1;
-                }
-            }
-            (Some(b'/'), Some(b'*')) => {
-                at += 2;
-                while at < bytes.len() && bytes.get(at..at + 2) != Some(b"*/") {
-                    at += 1;
-                }
-                at = (at + 2).min(bytes.len());
-            }
-            _ => return at,
-        }
-    }
+/// The offset of the first byte at or after `at` that is neither white space (a form feed
+/// too) nor inside a comment.
+pub fn skip_trivia(bytes: &[u8], at: usize) -> usize {
+    let mut lexer = Lexer::new(bytes, Rules::lenient(true));
+    lexer.seek(at);
+    lexer.skip_trivia();
+    lexer.at()
 }
 
 /// Whether `text` holds white space and comments only.

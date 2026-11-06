@@ -15,7 +15,7 @@ use facet_json::RawJson;
 use indexmap::IndexMap;
 
 use super::Value;
-use super::read::{number_end, skip_trivia, string_end};
+use super::lex::{Kind, Lexer, Rules};
 use super::slice::{JsonSlice, parse_at};
 use crate::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, JsonPathSegment, Span};
 use crate::molang::beyond_f32_warning;
@@ -418,7 +418,7 @@ pub fn clamp_tokens(
         text: slice.text,
         width,
         first_kept_in,
-        path: Vec::new(),
+        path: JsonPath::new(),
         frames: Vec::new(),
         hits: Vec::new(),
     }
@@ -435,12 +435,7 @@ pub fn clamp_tokens(
         copied = hit.edit.start + hit.edit.old;
         if let Some(path) = hit.path {
             let mut number_at = at.clone();
-            for segment in &path {
-                match segment {
-                    Member::Key(key) => number_at.push(key),
-                    Member::Index(index) => number_at.push_index(*index),
-                }
-            }
+            number_at.append(&path);
             d.push(beyond_f32_warning(
                 number_at,
                 Some(Span {
@@ -455,19 +450,13 @@ pub fn clamp_tokens(
     Some(ClampedText { text, edits })
 }
 
-/// A member on the way to a token.
-enum Member {
-    Key(String),
-    Index(usize),
-}
-
 /// One number token to replace.
 struct Hit {
     edit: Edit,
     replacement: &'static str,
     /// Where the number is, from the root; `None` once the copy it is in is known not to be
     /// the one kept.
-    path: Option<Vec<Member>>,
+    path: Option<JsonPath>,
 }
 
 /// An object or array the walk is in.
@@ -488,7 +477,9 @@ struct Walk<'a> {
     text: &'a str,
     width: &'a dyn Fn(&[JsonPathSegment<'_>]) -> Option<Width>,
     first_kept_in: &'a [&'a str],
-    path: Vec<Member>,
+    /// The members on the way to the token, kept by the walk's own rule: a key from the
+    /// first string of a member to the end of its value, an index for each array.
+    path: JsonPath,
     frames: Vec<Frame>,
     hits: Vec<Hit>,
 }
@@ -497,83 +488,72 @@ impl Walk<'_> {
     /// The numbers to replace, in the order of the text: the root value's, nothing after it.
     fn run(mut self) -> Option<Vec<Hit>> {
         let bytes = self.text.as_bytes();
-        let mut at = 0;
+        let mut lexer = Lexer::new(bytes, Rules::strict(true));
         loop {
-            at = skip_trivia(bytes, at, true);
-            let ended = match *bytes.get(at)? {
-                b'{' => {
-                    let first_kept = matches!(
-                        self.path.last(),
-                        Some(Member::Key(key)) if self.first_kept_in.contains(&key.as_str())
-                    );
+            // A string with an escape the reader refuses, or the end of the text before the
+            // root value's: not well-formed.
+            let token = lexer.next_token().ok()??;
+            let ended = match token.kind {
+                Kind::OpenObject => {
+                    let first_kept = self
+                        .path
+                        .last_key()
+                        .is_some_and(|key| self.first_kept_in.contains(&key));
                     self.frames.push(Frame::Object {
                         members: HashMap::new(),
                         member_from: None,
                         first_kept,
                     });
-                    at += 1;
                     false
                 }
-                b'[' => {
+                Kind::OpenArray => {
                     self.frames.push(Frame::Array);
-                    self.path.push(Member::Index(0));
-                    at += 1;
+                    self.path.push_index(0);
                     false
                 }
-                b'}' => {
+                Kind::CloseObject => {
                     let Some(Frame::Object {
                         member_from: None, ..
                     }) = self.frames.pop()
                     else {
                         return None;
                     };
-                    at += 1;
                     true
                 }
-                b']' => {
+                Kind::CloseArray => {
                     let Some(Frame::Array) = self.frames.pop() else {
                         return None;
                     };
                     self.path.pop();
-                    at += 1;
                     true
                 }
-                b',' => {
-                    if let (Some(Frame::Array), Some(Member::Index(index))) =
-                        (self.frames.last(), self.path.last_mut())
+                Kind::Comma => {
+                    if let (Some(Frame::Array), Some(JsonPathSegment::Index(index))) =
+                        (self.frames.last(), self.path.segments().last())
                     {
-                        *index += 1;
+                        self.path.pop();
+                        self.path.push_index(index + 1);
                     }
-                    at += 1;
                     false
                 }
-                b':' => {
-                    at += 1;
-                    false
-                }
-                b'"' => {
-                    let (end, true) = string_end(bytes, at).ok()? else {
-                        return None;
-                    };
-                    let is_key = self.key(self.text.get(at..end)?)?;
-                    at = end;
-                    !is_key
-                }
-                b'-' | b'0'..=b'9' => {
-                    let end = number_end(bytes, at).max(at + 1);
-                    self.number(at, self.text.get(at..end)?);
-                    at = end;
+                Kind::Colon => false,
+                Kind::String { closed: false } => return None,
+                Kind::String { closed: true } => !self.key(self.text.get(token.range())?)?,
+                Kind::Number => {
+                    self.number(token.start, self.text.get(token.range())?);
                     true
                 }
-                _ => {
-                    // `true`, `false`, `null`: whatever stands for a value.
-                    let start = at;
-                    while bytes.get(at).is_some_and(u8::is_ascii_alphanumeric) {
-                        at += 1;
-                    }
-                    if at == start {
+                Kind::Literal { .. } | Kind::Atom | Kind::Other => {
+                    // `true`, `false`, `null`: whatever run of letters and digits stands for
+                    // a value.
+                    let run = bytes[token.start..]
+                        .iter()
+                        .take_while(|byte| byte.is_ascii_alphanumeric())
+                        .count();
+                    if run == 0 {
                         return None;
                     }
+                    lexer.seek(token.start + run);
                     true
                 }
             };
@@ -597,12 +577,12 @@ impl Walk<'_> {
             return Some(false);
         }
         *member_from = Some(from);
-        let key = if token.contains('\\') {
-            crate::json::from_str::<String>(token).ok()?
+        if token.contains('\\') {
+            self.path
+                .push(&crate::json::from_str::<String>(token).ok()?);
         } else {
-            token.get(1..token.len().checked_sub(1)?)?.to_owned()
-        };
-        self.path.push(Member::Key(key));
+            self.path.push(token.get(1..token.len().checked_sub(1)?)?);
+        }
         Some(true)
     }
 
@@ -619,28 +599,14 @@ impl Walk<'_> {
         if nearest.is_finite() {
             return;
         }
-        let segments: Vec<JsonPathSegment<'_>> = self
-            .path
-            .iter()
-            .map(|member| match member {
-                Member::Key(key) => JsonPathSegment::Key(key),
-                Member::Index(index) => JsonPathSegment::Index(*index),
-            })
-            .collect();
+        let segments: Vec<JsonPathSegment<'_>> = self.path.segments().collect();
         let width = match (self.width)(&segments) {
             Some(Width::Double) if number.is_finite() => return,
             Some(width) => width,
             None => return,
         };
         let replacement = replacement(width, number < 0.0);
-        let path = self
-            .path
-            .iter()
-            .map(|member| match member {
-                Member::Key(key) => Member::Key(key.clone()),
-                Member::Index(index) => Member::Index(*index),
-            })
-            .collect();
+        let path = self.path.clone();
         self.hits.push(Hit {
             edit: Edit {
                 start,
@@ -664,7 +630,12 @@ impl Walk<'_> {
         else {
             return;
         };
-        let (Some(from), Some(Member::Key(key))) = (member_from.take(), self.path.pop()) else {
+        // The member ends with its value; whatever the path's last step is, it is the
+        // member's no more (a value without a key ends none, and takes it all the same).
+        let from = member_from.take();
+        let key = self.path.last_key().map(str::to_owned);
+        self.path.pop();
+        let (Some(from), Some(key)) = (from, key) else {
             return;
         };
         let unkept = match members.entry(key) {
@@ -703,28 +674,18 @@ fn holds_beyond_double(text: &str) -> bool {
 /// ([`holds_beyond_double`]'s walk). `None` when there is none, and for a text the reader
 /// refuses before one.
 pub(crate) fn first_beyond_double(text: &str) -> Option<std::ops::Range<usize>> {
-    let bytes = text.as_bytes();
-    let mut at = 0;
-    while let Some(&byte) = bytes.get(at) {
-        match byte {
-            b'"' => match string_end(bytes, at) {
-                Ok((end, _)) => at = end,
-                Err(_) => return None,
-            },
-            b'/' => at = skip_trivia(bytes, at, true).max(at + 1),
-            b'-' | b'0'..=b'9' => {
-                let end = number_end(bytes, at).max(at + 1);
-                // The shortest spelling of a number beyond a double without an exponent has
-                // 309 digits.
-                let token = text.get(at..end).unwrap_or_default();
-                if (token.len() >= 309 || token.contains(['e', 'E']))
-                    && token.parse::<f64>().is_ok_and(f64::is_infinite)
-                {
-                    return Some(at..end);
-                }
-                at = end;
-            }
-            _ => at += 1,
+    let mut lexer = Lexer::new(text.as_bytes(), Rules::strict(true));
+    while let Some(token) = lexer.next_token().ok()? {
+        if token.kind != Kind::Number {
+            continue;
+        }
+        // The shortest spelling of a number beyond a double without an exponent has 309
+        // digits.
+        let number = text.get(token.range()).unwrap_or_default();
+        if (number.len() >= 309 || number.contains(['e', 'E']))
+            && number.parse::<f64>().is_ok_and(f64::is_infinite)
+        {
+            return Some(token.range());
         }
     }
     None
