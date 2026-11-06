@@ -47,7 +47,7 @@ fn value(text: &str) -> Value {
     from_str_jsonc(text).unwrap_or_else(|e| panic!("{text}: {e}"))
 }
 
-// ---- rule A: `support/src/fixed_path.rs` `as_int` (also `shared::read::int`) --------------
+// ---- rule A: `core::json::kit::fixed_path` `as_int` (also `shared::read::int`) --------------
 
 /// jsoncpp's `isInt` for a member read into an `i32`: a number written without a fraction or
 /// an exponent, in `i32`.
@@ -159,7 +159,7 @@ fn the_rules_differ_only_on_integral_reals() {
     }
 }
 
-// ---- asInt: `support/src/texture/jsoncpp.rs` (= persona, entity) and `support/src/sound/fork.rs`
+// ---- asInt: `core::json::jsoncpp::lenient` (= persona, entity) and `core::json::jsoncpp::fork`
 
 /// texture's `as_int`.
 fn texture_as_int(value: Option<&Value>, default: i32) -> i32 {

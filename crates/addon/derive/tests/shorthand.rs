@@ -19,9 +19,9 @@ use facet::Facet;
 
 struct Toy;
 
-enum ToyAny {}
+enum ToyHistory {}
 
-impl VersionChain<Toy> for ToyAny {
+impl VersionChain<Toy> for ToyHistory {
     const VERSIONS: &'static [FormatVersion] = &[];
 
     fn parse(
@@ -45,7 +45,7 @@ impl Family for Toy {
     type Latest = NoStable;
     type Beta = Infallible;
     type Component = Shorthands;
-    type History = ToyAny;
+    type History = ToyHistory;
 
     fn components() -> &'static ComponentTable<Self> {
         Shorthands::TABLE
@@ -115,9 +115,9 @@ pub struct Pair {
 
 struct Other;
 
-enum OtherAny {}
+enum OtherHistory {}
 
-impl VersionChain<Other> for OtherAny {
+impl VersionChain<Other> for OtherHistory {
     const VERSIONS: &'static [FormatVersion] = &[];
 
     fn parse(
@@ -141,7 +141,7 @@ impl Family for Other {
     type Latest = NoStable;
     type Beta = Infallible;
     type Component = Misshapen;
-    type History = OtherAny;
+    type History = OtherHistory;
 
     fn components() -> &'static ComponentTable<Self> {
         Misshapen::TABLE

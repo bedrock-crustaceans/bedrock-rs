@@ -16,6 +16,7 @@ use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::version::known;
 
 /// A controller file parsed by the struct its `format_version` selects, not upgraded.
+// Hand-written: waits on the `Family` skeleton (not yet adopted by this family).
 #[derive(Clone, Debug, PartialEq)]
 #[non_exhaustive]
 pub enum AnimationControllerHistory {

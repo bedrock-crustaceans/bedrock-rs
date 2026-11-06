@@ -120,8 +120,8 @@ pub struct Description {
     pub min_engine_version: Option<Value>,
     /// The members client entities and attachables share, at the description's own level
     /// (`materials` to `hide_armor`, in that order).
-    // `default`: a flattened struct none of whose members is written reads as a missing field
-    // otherwise (facet's flatten reader).
+    // `default`: production reads the description through `DescriptionRead`; this keeps a
+    // facet-direct read of `Description` from calling an all-absent `slots` a missing field.
     #[facet(flatten, default)]
     pub slots: VisualSlots,
     /// `item`: the item this attachable is drawn for, always or under a condition. Absent,

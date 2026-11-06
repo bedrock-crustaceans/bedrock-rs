@@ -410,10 +410,10 @@ fn every_attachable_molang_occurrence_loads_with_its_text_and_version() {
         let mut members = pairs::Members::new();
         match written.into_value() {
             AttachableHistory::V1_8_0(mut attachable) => {
-                pairs::members(&mut attachable, None, &mut members)
+                pairs::members(&mut attachable, None, &mut members);
             }
             AttachableHistory::V1_10_0(mut attachable) => {
-                pairs::members(&mut attachable, None, &mut members)
+                pairs::members(&mut attachable, None, &mut members);
             }
             AttachableHistory::V1_26_0(mut attachable) => {
                 // From 1.26.0 `initialize` / `pre_animation` hold plain strings, which carry

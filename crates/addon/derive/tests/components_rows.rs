@@ -20,9 +20,9 @@ use facet::Facet;
 
 struct Toy;
 
-enum ToyAny {}
+enum ToyHistory {}
 
-impl VersionChain<Toy> for ToyAny {
+impl VersionChain<Toy> for ToyHistory {
     const VERSIONS: &'static [FormatVersion] = &[];
 
     fn parse(
@@ -46,7 +46,7 @@ impl Family for Toy {
     type Latest = NoStable;
     type Beta = Infallible;
     type Component = ToyComponent;
-    type History = ToyAny;
+    type History = ToyHistory;
 
     fn components() -> &'static ComponentTable<Self> {
         ToyComponent::TABLE
@@ -242,9 +242,9 @@ fn written<'f, T: Facet<'f>>(component: &T) -> Result<Value, EncodeError> {
 
 struct ToyBiome;
 
-enum ToyBiomeAny {}
+enum ToyBiomeHistory {}
 
-impl VersionChain<ToyBiome> for ToyBiomeAny {
+impl VersionChain<ToyBiome> for ToyBiomeHistory {
     const VERSIONS: &'static [FormatVersion] = &[];
 
     fn parse(
@@ -268,7 +268,7 @@ impl Family for ToyBiome {
     type Latest = NoStable;
     type Beta = Infallible;
     type Component = BiomeComponent;
-    type History = ToyBiomeAny;
+    type History = ToyBiomeHistory;
 
     fn components() -> &'static ComponentTable<Self> {
         BiomeComponent::TABLE

@@ -302,10 +302,10 @@ fn every_client_entity_molang_occurrence_loads_with_its_text_and_version() {
         }
         match written.into_value() {
             ClientEntityHistory::V1_8_0(mut entity) => {
-                pairs::members(&mut entity, None, &mut members)
+                pairs::members(&mut entity, None, &mut members);
             }
             ClientEntityHistory::V1_10_0(mut entity) => {
-                pairs::members(&mut entity, None, &mut members)
+                pairs::members(&mut entity, None, &mut members);
             }
             ClientEntityHistory::V1_26_0(mut entity) => {
                 // From 1.26.0 the elements are plain strings (`visual::Scripts`): the loaded

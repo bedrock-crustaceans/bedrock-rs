@@ -21,7 +21,7 @@ use bedrock_addon_shared_shapes::color::is_hex;
 /// The rules of the game's `fog_description_schema`: names as written, the members of an object
 /// in sorted key order (jsoncpp's `std::map`), strict, an object failed by any member, and a
 /// lossy float told.
-const RULES: Rules = Rules {
+pub(crate) const RULES: Rules = Rules {
     names: Names::Exact,
     order: Order::Sorted,
     validation: Validation::Strict,

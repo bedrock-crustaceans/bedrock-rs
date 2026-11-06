@@ -5,10 +5,9 @@
 
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
 use bedrock_addon_core::json::node_tree::{
-    ARRAY_TOO_LARGE, ARRAY_TOO_SMALL, Failure, Kind, Lossy, Names, Node, Order, Pattern, Rules,
+    ARRAY_TOO_LARGE, ARRAY_TOO_SMALL, Failure, Lossy, Names, Node, Order, Pattern, Rules,
     Validation, Walk, text,
 };
-use bedrock_addon_core::json::{JsonSlice, parse_at};
 
 use crate::texts::{CHILD_REMOVED, INDEX_NOT_WHOLE, UV_TRUNCATED};
 
@@ -74,12 +73,9 @@ impl Leaves for Walk {
         reason = "the range is checked first"
     )]
     fn int(&mut self, node: Node<'_>) -> Option<i32> {
-        let integral = (node.kind() == Kind::Number)
-            .then(|| parse_at::<f64>(JsonSlice::new(node.text())).ok())
-            .flatten()
-            .filter(|x| {
-                x.fract() == 0.0 && (f64::from(i32::MIN)..=f64::from(i32::MAX)).contains(x)
-            });
+        let integral = node.number().filter(|x| {
+            x.fract() == 0.0 && (f64::from(i32::MIN)..=f64::from(i32::MAX)).contains(x)
+        });
         if integral.is_none() {
             self.bad_type("int", node);
         }

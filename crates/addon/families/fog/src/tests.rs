@@ -291,3 +291,22 @@ fn a_text_too_deep_and_not_utf8_behind_a_bom_is_told_as_too_deep() {
         .collect();
     assert_eq!(messages, ["nesting too deep"]);
 }
+
+/// W2: under the family's rules a member that failed fails its object, and the required check
+/// is then not made (the opposite of geometry, which judges by the errors raised).
+#[test]
+fn a_failed_member_fails_the_object_and_the_required_check_is_not_made() {
+    use bedrock_addon_core::diagnostic::JsonPath;
+    use bedrock_addon_core::json::node_tree::{Group, Hit, Node, Walk};
+    let groups = [Group::name("a"), Group::required("b")];
+    let mut walk = Walk::new(super::jsonutil::RULES, &JsonPath::new());
+    let ok = walk.object(Node::root(r#"{"a": 1}"#).unwrap(), &groups, |_, _, _, _| {
+        Hit::Failed
+    });
+    assert!(!ok, "a member that failed must fail the object");
+    let findings: Vec<_> = walk.diagnostics.iter().map(|d| d.code.name()).collect();
+    assert!(
+        findings.is_empty(),
+        "the required check must not run after a failed member: {findings:?}"
+    );
+}

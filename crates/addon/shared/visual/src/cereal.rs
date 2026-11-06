@@ -36,9 +36,9 @@ pub const CLIENT_ENTITY: &str = "minecraft:client_entity";
 /// The payload key of an attachable.
 pub const ATTACHABLE: &str = "minecraft:attachable";
 /// The pattern of a slot name (`materials`, `textures`, `geometry`, …), as vanilla prints it.
-pub const MAP_KEY: &str = "[a-zA-Z0-9_.-]+";
+pub(crate) const MAP_KEY: &str = "[a-zA-Z0-9_.-]+";
 /// The pattern of a `scripts.variables` key, as vanilla prints it.
-pub const VARIABLE_KEY: &str = "variable.[a-zA-Z_][a-zA-Z0-9_]*";
+pub(crate) const VARIABLE_KEY: &str = "variable.[a-zA-Z_][a-zA-Z0-9_]*";
 
 /// How a family reads the description schema the client entity and attachable share: its
 /// payload, the scalar rules of its slices, the members of its own, and where the two readers
@@ -72,7 +72,7 @@ pub struct Profile {
 pub enum ConditionTypes {
     /// By the condition's key, as any member is (`allowed_types`): `string`.
     ByName,
-    /// As the place it is ([`allowed_at`]): `molang`.
+    /// As the place it is (`allowed_at`): `molang`.
     ByPlace,
 }
 
@@ -142,7 +142,7 @@ pub fn is_condition_key(key: &str) -> bool {
 
 /// Whether `key` fully matches `variable.[a-zA-Z_][a-zA-Z0-9_]*`; the `.` is the regex's
 /// any-character.
-pub fn is_variable_key(key: &str) -> bool {
+pub(crate) fn is_variable_key(key: &str) -> bool {
     let Some(rest) = key.strip_prefix("variable") else {
         return false;
     };
@@ -474,7 +474,7 @@ fn refused(
 /// member its struct does not declare (`undeclared`): those are undeclared, `null` or not.
 /// `min_engine_version` is kept as written below its top level, whatever its elements are,
 /// and a `null` family member `own` is the family's to tell.
-pub fn declared_nulls(
+pub(crate) fn declared_nulls(
     json: &Value,
     undeclared: &IndexSet<JsonPath>,
     own: Option<&str>,
@@ -545,7 +545,7 @@ pub fn declared_nulls(
 /// none of them: the member's own, or its elements'; a value of a map, of a condition object
 /// or of the family's object-form `own` member is Molang, and below 1.10 a name of
 /// `animation_controllers[]` is a string.
-pub fn allowed_at(path: &JsonPath, names_only: bool, own: Option<&str>) -> &'static str {
+pub(crate) fn allowed_at(path: &JsonPath, names_only: bool, own: Option<&str>) -> &'static str {
     let segments: Vec<JsonPathSegment<'_>> = path.segments().collect();
     let first = segments.first().copied();
     let below_element = segments
@@ -782,7 +782,7 @@ pub fn check_map<V>(
 /// fully matches `[a-zA-Z0-9_.:-]+`; the members after the one vanilla reads are dropped with an
 /// information. An empty object passes the schema; the loader's rules warn of it
 /// (`validate::empty_conditions`).
-pub fn check_condition<'m>(
+pub(crate) fn check_condition<'m>(
     members: &'m IndexMap<String, Molang>,
     ignored: impl Iterator<Item = &'m str>,
     at: &JsonPath,
@@ -841,7 +841,7 @@ pub fn check_identifier(identifier: &str, at: &JsonPath, d: &mut Diagnostics) {
     }
 }
 
-/// The conditional objects of `render_controllers` ([`check_condition`]).
+/// The conditional objects of `render_controllers` (`check_condition`).
 pub fn check_controllers(
     controllers: Option<&[ControllerUse]>,
     at: &JsonPath,
@@ -856,7 +856,7 @@ pub fn check_controllers(
     }
 }
 
-/// The conditional objects of `scripts.animate` ([`check_condition`]); `at` is `scripts`.
+/// The conditional objects of `scripts.animate` (`check_condition`); `at` is `scripts`.
 pub fn check_animate(animate: Option<&[AnimateEntry]>, at: &JsonPath, d: &mut Diagnostics) {
     for (index, entry) in animate.into_iter().flatten().enumerate() {
         if let AnimateEntry::Conditional(members) = entry {

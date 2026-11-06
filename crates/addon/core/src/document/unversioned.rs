@@ -1,7 +1,6 @@
 //! The document kit of a file no `format_version` is read on: its origin, its document, its
-//! rejection. One copy of the `lone`/`origin`/`document`/`reject` kits of
-//! `support/fixed_path.rs`, `support/text/document.rs`, `support/texture/document.rs` and
-//! `json_ui`, which the families move onto in their own changes.
+//! rejection. The one copy of the `lone`/`origin`/`document`/`reject` kit that
+//! the families without a `format_version` share.
 
 use super::{Document, Origin, Rejected, VersionInfo};
 use crate::diagnostic::{Diagnostic, Diagnostics};

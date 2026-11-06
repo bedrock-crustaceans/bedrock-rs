@@ -25,9 +25,9 @@ const REQUIREMENT: LoadRequirement =
 struct Toy;
 
 /// The toy family's chain: uninhabited, the tests never load a document.
-enum ToyAny {}
+enum ToyHistory {}
 
-impl VersionChain<Toy> for ToyAny {
+impl VersionChain<Toy> for ToyHistory {
     const VERSIONS: &'static [FormatVersion] = &[];
 
     fn parse(
@@ -51,7 +51,7 @@ impl Family for Toy {
     type Latest = NoStable;
     type Beta = Infallible;
     type Component = ToyComponent;
-    type History = ToyAny;
+    type History = ToyHistory;
 
     fn components() -> &'static ComponentTable<Self> {
         ToyComponent::TABLE
@@ -449,9 +449,9 @@ fn custom_and_unknown_variants_are_left_alone() {
 struct Lit;
 
 /// `Lit`'s chain: uninhabited.
-enum LitAny {}
+enum LitHistory {}
 
-impl VersionChain<Lit> for LitAny {
+impl VersionChain<Lit> for LitHistory {
     const VERSIONS: &'static [FormatVersion] = &[];
 
     fn parse(
@@ -475,7 +475,7 @@ impl Family for Lit {
     type Latest = NoStable;
     type Beta = Infallible;
     type Component = LitComponent;
-    type History = LitAny;
+    type History = LitHistory;
 
     fn components() -> &'static ComponentTable<Self> {
         LitComponent::TABLE

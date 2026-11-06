@@ -74,6 +74,7 @@ impl VersionStruct for SoundDefinitions {
 }
 
 /// A sound definitions file as the struct of its own version reads it.
+// Hand-written: waits on the `Family` skeleton (not yet adopted by this family).
 #[derive(Clone, Debug, PartialEq)]
 #[non_exhaustive]
 #[allow(

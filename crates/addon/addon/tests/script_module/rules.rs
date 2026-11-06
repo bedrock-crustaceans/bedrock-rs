@@ -1604,3 +1604,49 @@ fn a_syntax_fault_in_the_copy_of_a_dependency_member_that_loses_refuses_the_mani
     let (script, _) = parse(&sound).expect("the manifest loads");
     assert_eq!(script.expect("a script module").dependencies.len(), 1);
 }
+
+#[test]
+fn a_manifest_whose_dependencies_were_edited_after_reading_ignores_the_stale_places() {
+    use bedrock_addon::manifest::Dependency;
+    // The reader drops the first element, so the places are the file's (`dependencies/1`, ...)
+    // and no longer the positions the manifest holds its dependencies at.
+    let text = legacy(
+        "p",
+        1,
+        JS,
+        &format!(
+            r#"{{ "module_name": "@minecraft/server", "uuid": "{SERVER_UUID}", "version": "2.0.0" }},
+               {{ "module_name": "@minecraft/server", "version": "beta" }},
+               {{ "uuid": "{SERVER_UI_UUID}", "version": [0, 1, 0] }}"#
+        ),
+    );
+    let mut manifest = Manifest::parse(
+        &PackPath::from_static("manifest.json"),
+        text.as_bytes(),
+        &bedrock_addon::manifest::CapabilityRegistry::default(),
+    )
+    .expect("loads")
+    .into_value();
+    let read = ScriptModule::from_manifest(&manifest).expect("a script module");
+    assert_eq!(read.dependencies[0].path.to_string(), "dependencies/1");
+    // Edited by hand: a dependency is pushed, so the places no longer match the list.
+    let pushed = manifest.dependencies[0].clone();
+    manifest.dependencies.push(pushed);
+    let edited = ScriptModule::from_manifest(&manifest).expect("a script module");
+    let held: Vec<String> = manifest
+        .dependencies
+        .iter()
+        .enumerate()
+        .filter(|(_, dependency)| matches!(dependency, Dependency::NativeModule { .. }))
+        .map(|(index, _)| format!("dependencies/{index}"))
+        .collect();
+    let paths: Vec<String> = edited
+        .dependencies
+        .iter()
+        .map(|dependency| dependency.path.to_string())
+        .collect();
+    assert_eq!(
+        paths, held,
+        "a stale place must give way to the position the list holds"
+    );
+}

@@ -307,12 +307,8 @@ fn a_base_game_pack_imports_the_bindings_a_world_s_pack_may_not() {
     );
 }
 
-/// A world with one behaviour pack at root 1 that has a subpack `sp`, selected by the world.
-fn world_with_subpack() -> (Responder, WorldPacks) {
-    world_with_subpack_and(&[])
-}
-
-/// [`world_with_subpack`] with `extra` files (path below root 1, bytes) in the pack too.
+/// A world with one behaviour pack at root 1 that has a subpack `sp`, selected by the world,
+/// with `extra` files (path below root 1, bytes) in the pack too.
 fn world_with_subpack_and(extra: &[(&str, &[u8])]) -> (Responder, WorldPacks) {
     let subpacks = r#",
     "dependencies": [{ "module_name": "@minecraft/server", "version": "2.0.0" }],

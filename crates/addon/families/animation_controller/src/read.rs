@@ -11,7 +11,6 @@ use super::{
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
 };
-use bedrock_addon_core::json::JsonSlice;
 use bedrock_addon_core::json::node_tree::{
     Group, Hit, Kind, Node, Pattern, UNKNOWN_OPTION_TYPE, Walk, text,
 };
@@ -117,8 +116,7 @@ pub(crate) fn load_format_version(walk: &mut Walk, root: Node<'_>) -> Option<Loa
 fn read_version(walk: &mut Walk, node: Node<'_>) -> Option<SemVersion> {
     match node.kind() {
         Kind::String => {
-            let text =
-                bedrock_addon_core::json::parse_at::<String>(JsonSlice::new(node.text())).ok()?;
+            let text = node.string()?;
             if text == "beta" {
                 return None;
             }

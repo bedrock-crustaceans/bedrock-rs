@@ -74,3 +74,44 @@ fn a_pair_of_expressions_is_told_of_by_its_elements_then_by_its_length() {
         assert_eq!(told, findings, "{text}");
     }
 }
+
+/// W2: under the family's rules a member that failed fails its object, and the required check
+/// is then not made (the opposite of geometry, which judges by the errors raised).
+#[test]
+fn a_failed_member_fails_the_object_and_the_required_check_is_not_made() {
+    use bedrock_addon_core::diagnostic::JsonPath;
+    use bedrock_addon_core::json::node_tree::{Group, Hit, Node, Walk};
+    let groups = [Group::name("a"), Group::required("b")];
+    let mut walk = Walk::new(super::read::RULES, &JsonPath::new());
+    let ok = walk.object(Node::root(r#"{"a": 1}"#).unwrap(), &groups, |_, _, _, _| {
+        Hit::Failed
+    });
+    assert!(!ok, "a member that failed must fail the object");
+    let findings: Vec<_> = walk.diagnostics.iter().map(|d| d.code.name()).collect();
+    assert!(
+        findings.is_empty(),
+        "the required check must not run after a failed member: {findings:?}"
+    );
+}
+
+/// W3: a number a float does not hold is told, as a `LossyConversion` information.
+#[test]
+fn a_float_that_narrows_is_told_as_lossy() {
+    use bedrock_addon_core::diagnostic::{JsonPath, Severity};
+    use bedrock_addon_core::json::node_tree::{Node, Walk};
+    let mut walk = Walk::new(super::read::RULES, &JsonPath::new());
+    walk.enter("x");
+    assert_eq!(
+        walk.float(Node::root("0.123456789012").unwrap()),
+        Some(0.123_456_79)
+    );
+    let findings: Vec<_> = walk
+        .diagnostics
+        .iter()
+        .map(|d| (d.severity, d.code.name(), d.location.json_path.to_string()))
+        .collect();
+    assert_eq!(
+        findings,
+        [(Severity::Info, "LossyConversion", "x".to_owned())]
+    );
+}

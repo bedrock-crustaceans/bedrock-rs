@@ -1,5 +1,6 @@
-//! Vanilla's content-log texts of the texture loaders: `{}` is where `VanillaText::Formatted`
-//! puts each argument. Each family has its own texts; the builders are shared.
+//! Builders for the vanilla content-log texts of any loader (the texture, spawn and
+//! other families use them): `{}` is where `VanillaText::Formatted` puts each argument. The
+//! texts themselves are the family's own; only these builders are shared.
 
 use super::VanillaText;
 

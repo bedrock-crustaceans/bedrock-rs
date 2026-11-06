@@ -11,9 +11,9 @@ use bedrock_addon_core::versioning::{
 use bedrock_addon_derive::Components;
 
 struct Toy;
-enum ToyAny {}
+enum ToyHistory {}
 
-impl VersionChain<Toy> for ToyAny {
+impl VersionChain<Toy> for ToyHistory {
     const VERSIONS: &'static [FormatVersion] = &[];
     fn parse(_: JsonSlice<'_>, _: FormatVersion, _: &LoadContext, _: &mut Diagnostics) -> Option<Self> {
         None
@@ -30,7 +30,7 @@ impl Family for Toy {
     type Latest = NoStable;
     type Beta = Infallible;
     type Component = ToyComponent;
-    type History = ToyAny;
+    type History = ToyHistory;
     fn components() -> &'static ComponentTable<Self> {
         ToyComponent::TABLE
     }

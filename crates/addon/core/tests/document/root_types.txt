@@ -1,5 +1,7 @@
 # Root types of `bedrock_addon`: every type a stack collection or a parse hands out inside
 # `Document<T>`, whose methods `Document`'s must not hide.
+# Only histories under `addon/src` are scanned (see `document_deref.rs`), so only types
+# that file reaches belong here.
 # One name per line; `#` starts a comment. A family adds its root types here.
 
 # behaviour packs

@@ -157,6 +157,12 @@ pub struct ScriptModule {
     pub min_engine_version: Option<SemVersion>,
 }
 
+/// Whether the manifest's places still describe its dependencies: one place per element. A
+/// list edited after reading has another length, and its places are those of other elements.
+fn places_match(manifest: &Manifest) -> bool {
+    manifest.places.dependencies.len() == manifest.dependencies.len()
+}
+
 impl ScriptModule {
     /// The script side of `manifest`; `None` when it has no `script` or `client_script`
     /// module.
@@ -263,10 +269,16 @@ impl ScriptModule {
             .as_ref()
             .map(|min| min.version.format_version());
         // The native-module dependencies the reader kept, in file order, each with its place.
+        // Places of a list edited since (another length) belong to other elements: none are used.
+        let places: &[_] = if places_match(manifest) {
+            &manifest.places.dependencies
+        } else {
+            &[]
+        };
         let natives = manifest
             .dependencies
             .iter()
-            .zip(&manifest.places.dependencies)
+            .zip(places)
             .filter_map(|(dependency, place)| match dependency {
                 Dependency::NativeModule { module_name, .. } => Some((module_name.as_str(), place)),
                 Dependency::Pack { .. } => None,
@@ -339,11 +351,17 @@ impl ScriptModule {
             at
         };
         // A manifest built by hand has no places; its dependencies are where it holds them.
+        let places_match = places_match(manifest);
         let dependency_path = |index: usize| {
-            manifest.places.dependencies.get(index).map_or_else(
-                || JsonPath::new().child("dependencies").index(index),
-                |place| place.at.clone(),
-            )
+            manifest
+                .places
+                .dependencies
+                .get(index)
+                .filter(|_| places_match)
+                .map_or_else(
+                    || JsonPath::new().child("dependencies").index(index),
+                    |place| place.at.clone(),
+                )
         };
         let mut scripts = manifest
             .modules

@@ -149,7 +149,7 @@ fn loader_script_drops_its_entry() {
     );
 }
 
-/// The scatter members: `support/src/scatter.rs` and `families/feature/src/molang.rs` `SCATTER`.
+/// The scatter members: `crates/addon/shared/scatter` and `families/feature/src/molang.rs` `SCATTER`.
 #[test]
 fn scatter_kept() {
     let scatter = MolangFieldSpec {

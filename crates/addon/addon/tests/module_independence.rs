@@ -334,9 +334,9 @@ fn the_lifted_scan_reads_manifests_and_paths() {
 
 /// The families whose shared bodies moved out of `bedrock_addon_support` into core or a
 /// `shared/*` crate: they depend on core and the shared crates, and on support no more. Every
-/// family but those of [`BIOME_JSON_ALLOWANCE`] that ever depended on support (`lang` shares
-/// nothing: it has no shared crate).
-const ON_SHARED_CRATES: [&str; 30] = [
+/// family but those of [`BIOME_JSON_ALLOWANCE`] that ever depended on support, and `lang`, which
+/// never did and is kept here so it cannot start to.
+const ON_SHARED_CRATES: [&str; 31] = [
     "aim_assist",
     "animation",
     "animation_controller",
@@ -352,6 +352,7 @@ const ON_SHARED_CRATES: [&str; 30] = [
     "geometry",
     "item",
     "json_ui",
+    "lang",
     "legacy_path_mapping",
     "loading_messages",
     "music",

@@ -204,8 +204,6 @@ fn written_over(at: &JsonPath, name: &str, made: Option<&(usize, String)>) -> Di
         .phase(Phase::Upgrade)
 }
 
-/// The member `key` of the element `index` of `animation_controllers` (`at` is the
-/// description).
 /// The note of an `animation_controllers` element without a member: it moves nothing and
 /// goes with the list (the crate's own note; the game is silent).
 fn empty_element(at: &JsonPath, index: usize) -> Diagnostic {
@@ -216,6 +214,8 @@ fn empty_element(at: &JsonPath, index: usize) -> Diagnostic {
         .phase(Phase::Upgrade)
 }
 
+/// The member `key` of the element `index` of `animation_controllers` (`at` is the
+/// description).
 fn controller_at(at: &JsonPath, index: usize, key: &str) -> JsonPath {
     at.child("animation_controllers").index(index).child(key)
 }

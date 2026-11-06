@@ -59,7 +59,7 @@ const LOADER_SCRIPT: MolangFieldSpec = MolangFieldSpec::KEPT
 #[cfg(feature = "molang")]
 pub const FAILED_TO_PARSE: &str = "Failed to parse '{}'!";
 /// Vanilla's text for a `held_item_scale` at or below 0: the file, then the value.
-pub const HELD_ITEM_SCALE_TEXT: &str = "In file '{}', parameter \"held_item_scale\" has invalid value: must be greater than zero, was '{}'.";
+pub(crate) const HELD_ITEM_SCALE_TEXT: &str = "In file '{}', parameter \"held_item_scale\" has invalid value: must be greater than zero, was '{}'.";
 /// Stands for the file's path in a text until the load knows it.
 pub const FILE: &str = "\u{0}file";
 
@@ -81,7 +81,7 @@ pub fn visit_controllers(
 }
 
 /// The conditional entries of `scripts.animate`, each a field per member.
-pub fn visit_animate(
+pub(crate) fn visit_animate(
     animate: Option<&mut Vec<AnimateEntry>>,
     spec: &MolangFieldSpec,
     visitor: &mut MolangVisitor<'_>,
@@ -117,7 +117,7 @@ impl MolangFields for VisualSlots {
 }
 
 /// The named scripts the schema types as Molang.
-pub fn visit_named(scripts: &mut Scripts, visitor: &mut MolangVisitor<'_>) {
+pub(crate) fn visit_named(scripts: &mut Scripts, visitor: &mut MolangVisitor<'_>) {
     visitor.field("scale", &NAMED_SCRIPT, &mut scripts.scale);
     visitor.field("scaleX", &NAMED_SCRIPT, &mut scripts.scale_x);
     visitor.field("scalex", &NAMED_SCRIPT, &mut scripts.scalex);
@@ -147,7 +147,7 @@ pub fn visit_named(scripts: &mut Scripts, visitor: &mut MolangVisitor<'_>) {
 /// as its schema parses it: on its own, as written. A rejection is an error and fails the
 /// document. Nothing without the `molang` feature or a compile check.
 #[cfg_attr(not(feature = "molang"), allow(unused_variables))]
-pub fn check_element(
+pub(crate) fn check_element(
     source: &bedrock_addon_core::molang::MolangSource,
     at: &JsonPath,
     cx: &mut UpgradeCx<'_>,

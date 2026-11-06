@@ -129,6 +129,20 @@ impl<'a> Node<'a> {
         }
     }
 
+    /// The value as a double, when it is a number the reader holds as one.
+    pub fn number(&self) -> Option<f64> {
+        (self.kind() == Kind::Number)
+            .then(|| parse_at::<f64>(self.slice).ok())
+            .flatten()
+    }
+
+    /// The value as a string with its escapes resolved, when it is a string.
+    pub fn string(&self) -> Option<String> {
+        (self.kind() == Kind::String)
+            .then(|| parse_at::<String>(self.slice).ok())
+            .flatten()
+    }
+
     /// The value's text.
     pub fn text(&self) -> &'a str {
         self.slice.text
@@ -468,7 +482,7 @@ impl Walk {
         self.push(cereal::unknown_child_option(allowed), severity, node.span());
     }
 
-    /// "child '<key>' not valid here." at the member, or under [`Validation::Lenient`] its
+    /// `child '<key>' not valid here.` at the member, or under [`Validation::Lenient`] its
     /// removal as an information.
     fn unknown(&mut self, key: &str, node: Node<'_>) {
         self.enter(key);
@@ -490,7 +504,7 @@ impl Walk {
         self.leave();
     }
 
-    /// "Required child <name> not found" at the current path.
+    /// `Required child <name> not found` at the current path.
     pub fn missing(&mut self, name: &str, node: Node<'_>) {
         self.error(
             DiagnosticCode::MissingRequiredField {
@@ -541,7 +555,7 @@ impl Walk {
 
     /// Walks an object node against its name groups, the members in the walk's [`Order`]: each
     /// member is handed to `on` with the index of the first group it matches; an unmatched
-    /// member is undeclared ([`unknown`](Self::unknown)), and so is one `on` gives
+    /// member is undeclared (an unknown-member finding), and so is one `on` gives
     /// [`Hit::NoOption`]. Unless the object failed by the walk's [`Failure`], each required
     /// group without a member is "Required child %s not found". `false` when the object failed.
     pub fn object<'a>(

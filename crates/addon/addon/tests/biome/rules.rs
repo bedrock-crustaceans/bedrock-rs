@@ -598,7 +598,7 @@ fn the_format_hint_reads_the_last_copy_of_a_doubled_payload() {
 }
 
 /// biome checks no colour: a `map_tints` colour that is no hex text, or an array channel
-/// outside 0..=255, loads and is told nothing (client_biome's colour rule, `is_rgb` and
+/// outside 0..=255, loads and is told nothing (`client_biome`'s colour rule, `is_rgb` and
 /// `clamped_channels`, is that family's own).
 #[test]
 fn a_map_tints_colour_is_not_checked() {

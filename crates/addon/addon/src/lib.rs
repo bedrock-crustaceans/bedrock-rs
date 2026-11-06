@@ -143,9 +143,15 @@ pub use bedrock_addon_core::json;
 pub use bedrock_addon_core::manifest;
 #[doc(inline)]
 pub use bedrock_addon_core::molang;
-/// Value types several content modules use: core's ranges, filters and event triggers, the
-/// shapes of `bedrock_addon_shared_shapes` (descriptors, menu categories, colours, ...) and,
-/// under [`biome_env`](shared::biome_env), what the two biome documents share.
+/// Value types several content modules use: core's ranges, filters and event triggers, and the
+/// shapes of `bedrock_addon_shared_shapes` (descriptors, menu categories, colours, ...) at
+/// this level.
+///
+/// The rule: every other `bedrock_addon_shared_*` crate that two families own together is a
+/// module here named for it, present when a family that uses it is enabled
+/// (`biome_env`, `spawn`, `animation`, `scatter`). The visual slots stand
+/// at [`visual`] instead. Only the shared types appear here; the shells that wrap them stay in
+/// each family.
 pub mod shared {
     #[doc(inline)]
     pub use bedrock_addon_core::shared::*;
@@ -154,9 +160,29 @@ pub mod shared {
     /// What the biome and client-biome documents share: the beta document's environment
     /// attributes and the `{description, components}` payload frame
     /// (`bedrock_addon_shared_biome_env`).
+    #[cfg(any(feature = "biome", feature = "client_biome"))]
     pub mod biome_env {
         #[doc(inline)]
         pub use bedrock_addon_shared_biome_env::*;
+    }
+    /// What spawn groups and spawn rules share (`bedrock_addon_shared_spawn`).
+    #[cfg(any(feature = "spawn_groups", feature = "spawn_rules"))]
+    pub mod spawn {
+        #[doc(inline)]
+        pub use bedrock_addon_shared_spawn::*;
+    }
+    /// What animations and animation controllers share (`bedrock_addon_shared_animation`).
+    #[cfg(any(feature = "animation", feature = "animation_controller"))]
+    pub mod animation {
+        #[doc(inline)]
+        pub use bedrock_addon_shared_animation::*;
+    }
+    /// What features and feature rules share: the scatter parameters
+    /// (`bedrock_addon_shared_scatter`).
+    #[cfg(any(feature = "feature", feature = "feature_rules"))]
+    pub mod scatter {
+        #[doc(inline)]
+        pub use bedrock_addon_shared_scatter::*;
     }
 }
 #[doc(inline)]

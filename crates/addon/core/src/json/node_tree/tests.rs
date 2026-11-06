@@ -500,3 +500,16 @@ fn a_list_and_a_float_map_read_what_their_walk_takes() {
         [("x".to_owned(), 1.0), ("y".to_owned(), 2.5)]
     );
 }
+
+#[test]
+fn a_node_reads_as_a_number_or_a_string_only_when_it_is_one() {
+    let number = |text| Node::root(text).unwrap().number();
+    let string = |text| Node::root(text).unwrap().string();
+    assert_eq!(number("1.5"), Some(1.5));
+    assert_eq!(number("-3"), Some(-3.0));
+    assert_eq!(number(r#""1""#), None);
+    assert_eq!(number("true"), None);
+    assert_eq!(string(r#""a\nb""#), Some("a\nb".to_owned()));
+    assert_eq!(string("1"), None);
+    assert_eq!(string("null"), None);
+}

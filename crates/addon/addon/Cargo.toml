@@ -26,15 +26,15 @@ nbt = ["dep:nbtx", "bedrock_addon_family_block?/nbt", "bedrock_addon_family_enti
 # behaviour pack
 aim_assist = ["dep:bedrock_addon_family_aim_assist"]
 behavior_tree = ["dep:bedrock_addon_family_behavior_tree"]
-biome = ["dep:bedrock_addon_family_biome"]
+biome = ["dep:bedrock_addon_family_biome", "dep:bedrock_addon_shared_biome_env"]
 block = ["dep:bedrock_addon_family_block"]
 camera = ["dep:bedrock_addon_family_camera"]
 crafting_catalog = ["dep:bedrock_addon_family_crafting_catalog"]
 dialogue = ["dep:bedrock_addon_family_dialogue"]
 dimension = ["dep:bedrock_addon_family_dimension"]
 entity = ["dep:bedrock_addon_family_entity"]
-feature = ["dep:bedrock_addon_family_feature"]
-feature_rules = ["dep:bedrock_addon_family_feature_rules"]
+feature = ["dep:bedrock_addon_family_feature", "dep:bedrock_addon_shared_scatter"]
+feature_rules = ["dep:bedrock_addon_family_feature_rules", "dep:bedrock_addon_shared_scatter"]
 function = ["dep:bedrock_addon_family_function"]
 item = ["dep:bedrock_addon_family_item"]
 jigsaw = ["dep:bedrock_addon_family_jigsaw"]
@@ -43,20 +43,20 @@ poi = ["dep:bedrock_addon_family_poi"]
 recipe = ["dep:bedrock_addon_family_recipe"]
 script = ["dep:bedrock_addon_family_script"]
 server_sound_definitions = ["dep:bedrock_addon_family_server_sound_definitions"]
-spawn_groups = ["dep:bedrock_addon_family_spawn_groups"]
-spawn_rules = ["dep:bedrock_addon_family_spawn_rules"]
+spawn_groups = ["dep:bedrock_addon_family_spawn_groups", "dep:bedrock_addon_shared_spawn"]
+spawn_rules = ["dep:bedrock_addon_family_spawn_rules", "dep:bedrock_addon_shared_spawn"]
 structure = ["dep:bedrock_addon_family_structure", "dep:nbtx"]  # structure palettes are NBT compounds (pack/link/world/structure_block.rs)
 trade = ["dep:bedrock_addon_family_trade"]
 voxel_shape = ["dep:bedrock_addon_family_voxel_shape"]
 # resource pack
-animation = ["dep:bedrock_addon_family_animation"]
-animation_controller = ["dep:bedrock_addon_family_animation_controller"]
+animation = ["dep:bedrock_addon_family_animation", "dep:bedrock_addon_shared_animation"]
+animation_controller = ["dep:bedrock_addon_family_animation_controller", "dep:bedrock_addon_shared_animation"]
 atomic_client_entity = ["dep:bedrock_addon_family_atomic_client_entity"]
 attachable = ["dep:bedrock_addon_family_attachable"]
 biomes_client = ["dep:bedrock_addon_family_biomes_client"]
 block_culling = ["dep:bedrock_addon_family_block_culling"]
 blocks_json = ["dep:bedrock_addon_family_blocks_json"]
-client_biome = ["dep:bedrock_addon_family_client_biome"]
+client_biome = ["dep:bedrock_addon_family_client_biome", "dep:bedrock_addon_shared_biome_env"]
 client_entity = ["dep:bedrock_addon_family_client_entity"]
 credits = ["dep:bedrock_addon_family_credits"]
 ddui = ["dep:bedrock_addon_family_ddui"]
@@ -155,8 +155,11 @@ script-syntax = ["script", "bedrock_addon_family_script?/script-syntax"]   # ful
 
 [dependencies]
 bedrock_addon_core = { path = "../core" }
-bedrock_addon_shared_biome_env = { path = "../shared/biome_env" }
+bedrock_addon_shared_animation = { path = "../shared/animation", optional = true }
+bedrock_addon_shared_biome_env = { path = "../shared/biome_env", optional = true }
+bedrock_addon_shared_scatter = { path = "../shared/scatter", optional = true }
 bedrock_addon_shared_shapes = { path = "../shared/shapes" }
+bedrock_addon_shared_spawn = { path = "../shared/spawn", optional = true }
 bedrock_addon_shared_visual = { path = "../shared/visual" }
 bedrock_addon_derive = { path = "../derive" }
 bedrock_addon_family_aim_assist = { path = "../families/aim_assist", optional = true }

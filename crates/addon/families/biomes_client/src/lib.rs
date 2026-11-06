@@ -189,7 +189,7 @@ impl Content for LegacyClientBiomes {
     /// Reads one `biomes_client.json` on its own: the file as the merge leaves it when no
     /// other pack has one. A text that is not JSON is rejected.
     fn parse(path: &PackPath, bytes: &[u8], _: &LoadContext) -> Result<Document<Self>, Rejected> {
-        // A number no double holds is read as the largest finite one, with a warning.
+        // A number no double holds is read as the largest finite one, with an info finding.
         bedrock_addon_core::document::FiniteText::load(bytes, |bytes| {
             let origin = Origin::file(PackRef::app_data(), PackSide::Resource, path.clone());
             let layer = match read_copy(origin.clone(), bytes) {
@@ -238,7 +238,7 @@ impl Placed for LegacyClientBiomes {
 #[doc(hidden)]
 #[derive(Clone, Debug)]
 pub enum BiomesCopy {
-    /// The file's JSON, and what reading it found: the warnings of the numbers no double
+    /// The file's JSON, and what reading it found: the info findings of the numbers no double
     /// holds, each read as the largest finite one.
     Layer(RawLayer, Diagnostics),
     /// A file that takes no part, and why (a base-game pack's in a world from 1.21.40).
@@ -296,7 +296,7 @@ fn parse_walk_file(file: &WalkFile, cx: &LoadContext) -> BiomesCopy {
         return BiomesCopy::Skipped(only(skipped));
     }
     // The copy is read with the numbers no double holds clamped, so neither its layer
-    // nor the merged document keeps an infinity; the warning names this pack's file.
+    // nor the merged document keeps an infinity; the info finding names this pack's file.
     let finite = bedrock_addon_core::document::FiniteText::of(&file.bytes);
     let mut copy = read_copy(origin.clone(), finite.bytes());
     match &mut copy {

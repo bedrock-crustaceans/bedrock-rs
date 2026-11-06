@@ -1170,7 +1170,7 @@ pub struct FlareFamily;
 bedrock_addon_core::version_chain! {
     family = FlareFamily;
     #[derive(Clone, Debug, PartialEq)]
-    pub enum FlareAny {
+    pub enum FlareHistory {
         V1_0_0(Flare),
     }
     beta = Beta(FlareBeta);
@@ -1186,7 +1186,7 @@ impl Family for FlareFamily {
     type Latest = Flare;
     type Beta = FlareBeta;
     type Component = NoComponents;
-    type History = FlareAny;
+    type History = FlareHistory;
 
     /// Records each close and whether the file failed, so a test sees how it was closed.
     fn close(

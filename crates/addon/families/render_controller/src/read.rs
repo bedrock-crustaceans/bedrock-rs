@@ -442,11 +442,7 @@ fn read_root(walk: &mut Walk, root: Node<'_>, drafts: &mut Drafts) -> Option<Sem
 /// The `format_version` node: a version string (`NoWildcards`; a partial `"1.10"` is 1.10.0)
 /// within the schema's bounds.
 fn format_version(walk: &mut Walk, node: Node<'_>) -> Option<SemVersion> {
-    let written = if node.kind() == Kind::String {
-        parse_at::<String>(JsonSlice::new(node.text())).ok()
-    } else {
-        None
-    };
+    let written = node.string();
     let version = written
         .as_deref()
         .filter(|t| *t != "beta")

@@ -128,7 +128,7 @@ fn read_version(
         return (None, DEFAULT_VERSION, "1.0".to_owned());
     };
     let as_written = if node.kind() == Kind::String {
-        parse_at::<String>(JsonSlice::new(node.text())).unwrap_or_default()
+        node.string().unwrap_or_default()
     } else {
         node.text().to_owned()
     };
