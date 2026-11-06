@@ -183,8 +183,7 @@ pub fn settle_list(list: &mut MolangList, context_version: RawVersion) -> Result
 /// Pass 1 for a string-only field (`MolangSource`): molang has no string-only reader, so the
 /// object form is refused here (as `reader`'s `UnsupportedType` of an object), then the string
 /// takes `context_version`.
-#[doc(hidden)]
-pub fn settle_source(
+pub(crate) fn settle_source(
     source: &mut MolangSource,
     reader: ReaderKind,
     context_version: RawVersion,

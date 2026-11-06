@@ -164,8 +164,7 @@ impl MolangCheck {
     /// policy (`ReplaceWith` keeps the expression, the family substitutes the value), arrays and
     /// resources accepted, and the version from the source, or from the options for
     /// `PackIgnoringObject`.
-    #[doc(hidden)]
-    pub fn check_options(
+    pub(crate) fn check_options(
         &self,
         spec: &MolangFieldSpec,
         side: Side,
@@ -420,9 +419,8 @@ const PACK_SETTING_QUERIES: [&str; 3] = [
 /// expressions itself and tells the lint as [`MolangCheck::check_source`] does (a warning,
 /// once for an expression, on the server side).
 // molang `lint_query_side`: "<name> is a client-only query in this crate's table; …".
-#[doc(hidden)]
 #[must_use]
-pub fn is_pack_setting_lint(diagnostic: &MolangDiagnostic) -> bool {
+pub(crate) fn is_pack_setting_lint(diagnostic: &MolangDiagnostic) -> bool {
     diagnostic.code() == super::DiagCode::QueryClientOnly
         && diagnostic
             .message()
@@ -492,8 +490,7 @@ fn is_no_expression(source: &MolangSource, rule: EmptyRule) -> bool {
 /// `error_severity` as before, below it an information, since the game has no such line.
 /// The detail is the compiler's diagnostic, so the content-log line ends in
 /// vanilla's `<expression> | <message>`.
-#[doc(hidden)]
-pub fn molang_diagnostic(
+pub(crate) fn molang_diagnostic(
     diagnostic: &MolangDiagnostic,
     source: &MolangSource,
     error_severity: Severity,

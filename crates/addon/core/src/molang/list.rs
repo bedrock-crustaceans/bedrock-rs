@@ -21,9 +21,8 @@ use crate::json::Value;
 #[derive(Debug, Facet)]
 #[facet(untagged)]
 #[repr(u8)]
-#[doc(hidden)]
 #[allow(dead_code, reason = "the object payload exists to be rejected")]
-pub enum ListForm {
+pub(crate) enum ListForm {
     /// `null`.
     Null,
     /// A string: an expression.
@@ -45,13 +44,11 @@ pub enum ListForm {
 /// [`MolangList`] as JSON.
 #[derive(Debug, Facet)]
 #[facet(transparent)]
-#[doc(hidden)]
-pub struct ListProxy(ListForm);
+pub(crate) struct ListProxy(ListForm);
 
 /// Why the `facet` impl of [`MolangList`] rejected a JSON value or could not write one.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, thiserror::Error)]
-#[doc(hidden)]
-pub enum ListRejected {
+pub(crate) enum ListRejected {
     /// `null` inside an array (at the top, the field's `Option` takes it).
     #[error("a Molang list element cannot be null")]
     Null,

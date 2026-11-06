@@ -22,8 +22,7 @@ pub use deprecated::ENUM_VALUE_DEPRECATED;
 pub use event::EVENT_BOTH_RANDOMIZE_AND_SEQUENCE;
 #[doc(hidden)]
 pub use facet::code_for_deserialize_error_kind;
-#[doc(hidden)]
-pub use origin::Origins;
+use origin::Origins;
 
 use std::fmt;
 
@@ -676,7 +675,7 @@ impl Diagnostics {
     /// The findings in order, each open to a change in place.
     #[allow(
         clippy::iter_without_into_iter,
-        reason = "a loader's door, hidden: `&mut Diagnostics` is no public iterator"
+        reason = "a loader's door: `&mut Diagnostics` is no public iterator"
     )]
     pub fn iter_mut(&mut self) -> std::slice::IterMut<'_, Diagnostic> {
         match self.0.as_mut() {
@@ -841,7 +840,7 @@ impl Diagnostics {
     }
 
     /// Gives every finding told after a recorded move the path its member has in the file
-    /// ([`Origins`]), and forgets the moves. Called once, when the chain and the
+    /// (`Origins`), and forgets the moves. Called once, when the chain and the
     /// checks on its result are done.
     pub fn name_as_the_file_has_it(&mut self) {
         let Some(held) = self.0.as_mut() else {

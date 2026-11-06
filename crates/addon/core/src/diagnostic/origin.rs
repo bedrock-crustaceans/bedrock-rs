@@ -16,7 +16,7 @@ use super::JsonPath;
 /// for each finding, the moves made before it, so that it is at the member as the file has it. A
 /// finding told before a move is about the document as it was then and is left alone.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub struct Origins(Vec<Move>);
+pub(crate) struct Origins(Vec<Move>);
 
 /// One move: the member now at `to` was at `from`; `told` findings had been told.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -44,6 +44,7 @@ impl ByPlace<'_> {
 
 impl Origins {
     /// No move.
+    #[cfg(test)]
     pub fn new() -> Self {
         Self::default()
     }

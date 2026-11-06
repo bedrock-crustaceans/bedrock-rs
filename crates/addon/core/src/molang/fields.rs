@@ -4,9 +4,10 @@
 
 use indexmap::IndexMap;
 
+use super::read::settle_source;
 use super::{
     Molang, MolangContext, MolangFieldSpec, MolangList, MolangSource, ReprError, settle,
-    settle_list, settle_source,
+    settle_list,
 };
 use crate::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,

@@ -19,7 +19,7 @@
 //! - `MolangFields`: the walk over a version struct's fields; `pass_one` (reader check and
 //!   version, both builds), `not_checked`, and with `molang` `check_fields` / `MolangCheck::check`
 //!   (pass 2, over molang's `compile::check`), `MolangCheck::check_source_with` and `ReportRules`
-//!   (a family's own pass 2) and `molang_diagnostic` (the mapping of one compiler diagnostic);
+//!   (a family's own pass 2);
 //! - `MolangContext`, `pack_molang_version`, `format_molang_version`: where versions come from.
 
 #[cfg(feature = "molang")]
@@ -81,10 +81,7 @@ pub enum MolangList {
 // Internal to the crate family: the readers, the field specs and the two passes.
 #[cfg(feature = "molang")]
 #[doc(hidden)]
-pub use check::is_pack_setting_lint;
-#[cfg(feature = "molang")]
-#[doc(hidden)]
-pub use check::{FieldOutcome, check_fields, molang_diagnostic};
+pub use check::{FieldOutcome, check_fields};
 #[doc(hidden)]
 pub use fields::{
     MolangField, MolangFieldMut, MolangFields, MolangPass, MolangSlot, MolangVisitor, Step,
@@ -93,7 +90,6 @@ pub use fields::{
 #[doc(hidden)]
 pub use read::{
     beyond_f32, beyond_f32_warning, json_scalar, read, read_finite, read_list, settle, settle_list,
-    settle_source,
 };
 #[doc(hidden)]
 pub use spec::{
