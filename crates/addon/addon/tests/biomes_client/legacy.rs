@@ -707,7 +707,7 @@ fn bc14_overrides_client_biome() {
 
 /// `bc15_ignored_members`: the two entry members of the row, which vanilla never
 /// reads, among the ten it does. (Root members:
-/// `a_root_format_version_is_an_info_and_another_root_member_a_warning`.)
+/// `a_root_format_version_and_another_root_member_are_each_an_info`.)
 #[test]
 fn bc15_ignored_members() {
     let stack = merged(&[
@@ -762,9 +762,9 @@ fn the_lookup_falls_back_to_the_bare_name() {
 }
 
 /// the file has no version; a `format_version` written at its root is read
-/// by nothing (ours: an info). Any other root member is an unknown one.
+/// by nothing (ours: an info). Any other root member is an unknown one, an info too.
 #[test]
-fn a_root_format_version_is_an_info_and_another_root_member_a_warning() {
+fn a_root_format_version_and_another_root_member_are_each_an_info() {
     let stack = merged(&[r#"{"format_version": "1.21.40", "note": 1, "biomes": {"a:one": {}}}"#]);
     let unknown = found(&stack, |c| matches!(c, Code::UnrecognizedField { .. }));
     let seen: Vec<(String, Severity)> = unknown

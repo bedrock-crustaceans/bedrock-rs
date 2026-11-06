@@ -5,7 +5,8 @@
 //! client biome sets.
 //!
 //! The reader stays a hand walk over the merged JSON, as the game reads it after its own merge
-//! strategy: no schema stands behind it.
+//! strategy: no schema stands behind it. The walk reads with the reader kit
+//! (`json::kit`), every finding an information; the merge itself is the game's, by hand.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
@@ -13,19 +14,23 @@ use facet_value::{VArray, VObject};
 use indexmap::IndexMap;
 
 use bedrock_addon_core::__private::Sealed;
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase};
+use bedrock_addon_core::diagnostic::{
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity,
+};
 use bedrock_addon_core::document::{
     Content, Document, JsonContent, Merge, Merged, Origin, Placed, RawLayer, Rejected, VersionInfo,
 };
 use bedrock_addon_core::id::{BiomeId, FogId};
+use bedrock_addon_core::json::kit::{Disposition, Members, Node, Read};
 use bedrock_addon_core::json::{
     EncodeError, PrepareError, Prepared, Value, WriteStyle, last_wins, write_json,
 };
 use bedrock_addon_core::load::{Accept, CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::SemVersion;
+use bedrock_addon_core::versioning::{MemberFailure, Reading};
 
-use bedrock_addon_shared_shapes::color::is_hex;
+use bedrock_addon_shared_shapes::color::hex_bytes;
 use bedrock_addon_support::biome_json::child;
 
 /// The file, at the pack root.
@@ -311,7 +316,7 @@ fn flag(object: &VObject, key: &str, at: &JsonPath, notes: &mut Notes<'_>) -> bo
         None => false,
         Some(value) if value.is_null() => false,
         Some(value) => value.as_bool().unwrap_or_else(|| {
-            notes.warning(
+            notes.info(
                 DiagnosticCode::InvalidType { text: None },
                 child(at, &[key]),
             );
@@ -329,15 +334,29 @@ struct Notes<'a> {
 impl Notes<'_> {
     /// A note of the crate's own: the game's merge is silent here, so the finding is an
     /// information.
-    fn warning(&mut self, code: DiagnosticCode, at: JsonPath) {
-        self.diagnostics
-            .push(Diagnostic::info(code).in_file(self.origin).at(at));
-    }
-
     fn info(&mut self, code: DiagnosticCode, at: JsonPath) {
         self.diagnostics
             .push(Diagnostic::info(code).in_file(self.origin).at(at));
     }
+
+    /// A read with the reader kit under [`READING`], every finding an information in this
+    /// file.
+    fn read<T>(&mut self, read: impl FnOnce(&mut Read<'_>) -> T) -> T {
+        let mut found = Diagnostics::default();
+        let value = read(&mut Read::new(READING, &mut found).unknown_severity(Severity::Info));
+        found.locate(self.origin);
+        self.diagnostics.extend(found);
+        value
+    }
+}
+
+/// How the kit reads the files and the merged value: a `null` member is absent, and a member of
+/// the wrong type is an information (the member reads as absent; the game says nothing).
+const READING: Reading = Reading::NULL_ABSENT.with_on_member_failure(MemberFailure::DefaultAndTell);
+
+/// The member `key` of `members`, at its path through [`child`] (a key of digits is an index).
+fn member<'v>(members: &Members<'v>, key: &str, value: &'v Value) -> Node<'v> {
+    Node::new(value, child(members.node().path(), &[key]))
 }
 
 /// The transform that runs before the merge: every key of `biomes` without a
@@ -453,14 +472,14 @@ fn recursive_merge(dst: &mut VObject, src: &VObject, at: &JsonPath, notes: &mut 
 
 /// What a file's entries say that the merge will not act on, judged
 /// against what the lower files merged to.
-fn check_copy(file: &VObject, below: &VObject, notes: &mut Notes<'_>) {
-    for (key, _) in file {
-        let at = child(&JsonPath::new(), &[key.as_str()]);
-        match key.as_str() {
-            BIOMES => {}
-            // The file has no version: one written here is read by nothing.
-            "format_version" => notes.info(DiagnosticCode::UnrecognizedField { text: None }, at),
-            _ => notes.warning(DiagnosticCode::UnrecognizedField { text: None }, at),
+fn check_copy(file: &VObject, below: &VObject, read: &mut Read<'_>) {
+    for (key, value) in file {
+        let key = key.as_str();
+        // The file has no version: a `format_version` written here is read by nothing, and
+        // any other root member but `biomes` is an unknown one.
+        if key != BIOMES {
+            let node = Node::new(value, child(&JsonPath::new(), &[key]));
+            read.unknown_member(&node, Disposition::Keep);
         }
     }
     let Some(biomes) = file.get(BIOMES).and_then(Value::as_object) else {
@@ -477,38 +496,34 @@ fn check_copy(file: &VObject, below: &VObject, notes: &mut Notes<'_>) {
         .filter(|_| !cleared);
     for (key, entry) in biomes {
         let key = key.as_str();
-        let at = child(&JsonPath::new(), &[BIOMES, key]);
-        let Some(entry) = entry.as_object() else {
-            notes.warning(DiagnosticCode::InvalidType { text: None }, at);
+        let node = Node::new(entry, child(&JsonPath::new(), &[BIOMES, key]));
+        let Some(members) = read.object(&node) else {
             continue;
         };
-        for (member, _) in entry {
-            if !MEMBERS.contains(&member.as_str()) {
-                notes.warning(
-                    DiagnosticCode::UnrecognizedField { text: None },
-                    child(&at, &[member.as_str()]),
-                );
+        for (name, value) in entry.as_object().into_iter().flatten() {
+            if !MEMBERS.contains(&name.as_str()) {
+                read.unknown_member(&member(&members, name, value), Disposition::Keep);
             }
         }
+        let at = node.path();
         // only the `default` entry's flag is read.
         if key != DEFAULT
-            && entry
+            && members
                 .get("remove_all_prior_fog")
-                .is_some_and(Value::is_true)
+                .is_some_and(|flag| flag.value().is_true())
         {
-            notes.warning(
-                DiagnosticCode::NoEffect { text: None },
-                child(&at, &["remove_all_prior_fog"]),
+            read.push(
+                Diagnostic::info(DiagnosticCode::NoEffect { text: None })
+                    .at(child(at, &["remove_all_prior_fog"])),
             );
         }
         // the predicate sees an entry only when a lower file has the key; a first
         // entry is copied as written, and nothing reads its `fog_identifier`.
         let first = !prior.is_some_and(|prior| prior.get(key).is_some_and(Value::is_object));
-        if first && entry.contains_key("fog_identifier") && !entry.contains_key("fog_ids_to_merge")
-        {
-            notes.warning(
-                DiagnosticCode::LegacyFogIgnored,
-                child(&at, &["fog_identifier"]),
+        if first && members.contains("fog_identifier") && !members.contains("fog_ids_to_merge") {
+            read.push(
+                Diagnostic::info(DiagnosticCode::LegacyFogIgnored)
+                    .at(child(at, &["fog_identifier"])),
             );
         }
     }
@@ -538,7 +553,7 @@ pub(crate) fn merge(copies: Vec<BiomesCopy>) -> Merged<LegacyClientBiomes, RawLa
                 origin: &layer.origin,
                 diagnostics: &mut diagnostics,
             };
-            check_copy(file, &merged, &mut notes);
+            notes.read(|read| check_copy(file, &merged, read));
             recursive_merge(&mut merged, file, &JsonPath::new(), &mut notes);
             let biomes = file.get(BIOMES).and_then(Value::as_object);
             let cleared = biomes
@@ -571,90 +586,69 @@ pub(crate) fn merge(copies: Vec<BiomesCopy>) -> Merged<LegacyClientBiomes, RawLa
 // ---- reading the merged value --------------------------------------------------------------
 
 /// `"#RRGGBB"` as RGBA from 0 to 1 (the form of every vanilla file).
-fn color(value: &Value) -> Option<[f32; 4]> {
-    let text = value.as_string()?.as_str();
-    if !is_hex(text, 6) {
-        return None;
-    }
-    let channel = |i: usize| u8::from_str_radix(text.get(i..i + 2)?, 16).ok().map(unit);
-    Some([channel(1)?, channel(3)?, channel(5)?, 1.0])
+fn color(text: &str) -> Option<[f32; 4]> {
+    hex_bytes::<3>(text).map(|[r, g, b]| [unit(r), unit(g), unit(b), 1.0])
 }
 
-/// Reads one entry of the merged value.
-fn read_entry(entry: &VObject, at: &JsonPath, notes: &mut Notes<'_>) -> LegacyClientBiome {
-    let wrong = |notes: &mut Notes<'_>, member: &str| {
-        notes.warning(
-            DiagnosticCode::InvalidType { text: None },
-            child(at, &[member]),
-        );
-    };
-    let color_of = |notes: &mut Notes<'_>, member: &str| {
-        let value = entry.get(member).filter(|value| !value.is_null())?;
-        let read = color(value);
-        if read.is_none() {
-            wrong(notes, member);
-        }
-        read
-    };
-    let water_surface_color = color_of(notes, "water_surface_color");
-    let fog_color = color_of(notes, "fog_color");
-    let water_fog_color = color_of(notes, "water_fog_color");
-    let number = |notes: &mut Notes<'_>, member: &str| {
-        let value = entry.get(member).filter(|value| !value.is_null())?;
-        #[allow(
-            clippy::cast_possible_truncation,
-            reason = "the game reads the member as a float"
-        )]
-        let read = value.as_number().map(|number| number.to_f64_lossy() as f32);
-        if read.is_none() {
-            notes.warning(
-                DiagnosticCode::InvalidType { text: None },
-                child(at, &[member]),
-            );
-        }
-        read
-    };
-    // A value outside [0, 1] is clamped (the game does it silently).
-    let water_surface_transparency = number(notes, "water_surface_transparency").map(|value| {
-        if !(0.0..=1.0).contains(&value) {
-            notes.warning(
-                DiagnosticCode::ClampedValue { text: None },
-                child(at, &["water_surface_transparency"]),
-            );
-        }
-        value.clamp(0.0, 1.0)
-    });
-    let water_fog_distance = number(notes, "water_fog_distance");
-    let mut fog_ids_to_merge = Vec::new();
-    match entry.get("fog_ids_to_merge") {
-        None => {}
-        Some(value) if value.is_null() => {}
-        Some(value) => match value.as_array() {
-            Some(ids) => {
-                for (index, id) in ids.iter().enumerate() {
-                    match id.as_string() {
-                        Some(id) => fog_ids_to_merge.push(FogId::parse(id.as_str())),
-                        None => notes.warning(
-                            DiagnosticCode::InvalidType { text: None },
-                            child(at, &["fog_ids_to_merge", &index.to_string()]),
-                        ),
-                    }
-                }
-            }
-            None => notes.warning(
-                DiagnosticCode::InvalidType { text: None },
-                child(at, &["fog_ids_to_merge"]),
-            ),
-        },
+/// The colour `key`: absent, or `"#RRGGBB"`; anything else is of the wrong type.
+fn color_of(read: &mut Read<'_>, members: &Members<'_>, key: &str) -> Option<[f32; 4]> {
+    let node = read.opt(members, key)?;
+    let color = color(read.string(&node)?);
+    if color.is_none() {
+        read.wrong_type(&node);
     }
-    let old_fog = flag(entry, "make_back_compat_fog", at, notes).then(|| OldFog {
+    color
+}
+
+/// The number `key`, read as a float.
+fn number_of(read: &mut Read<'_>, members: &Members<'_>, key: &str) -> Option<(f32, JsonPath)> {
+    let node = read.opt(members, key)?;
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "the game reads the member as a float"
+    )]
+    read.number(&node)
+        .map(|number| (number as f32, node.path().clone()))
+}
+
+/// Reads one entry of the merged value. The findings follow this order, not the members'.
+fn read_entry(read: &mut Read<'_>, members: &Members<'_>) -> LegacyClientBiome {
+    let water_surface_color = color_of(read, members, "water_surface_color");
+    let fog_color = color_of(read, members, "fog_color");
+    let water_fog_color = color_of(read, members, "water_fog_color");
+    // A value outside [0, 1] is clamped (the game does it silently).
+    let water_surface_transparency =
+        number_of(read, members, "water_surface_transparency").map(|(value, at)| {
+            if !(0.0..=1.0).contains(&value) {
+                read.push(Diagnostic::info(DiagnosticCode::ClampedValue { text: None }).at(at));
+            }
+            value.clamp(0.0, 1.0)
+        });
+    let water_fog_distance = number_of(read, members, "water_fog_distance").map(|(value, _)| value);
+    let mut fog_ids_to_merge = Vec::new();
+    if let Some(node) = read.opt(members, "fog_ids_to_merge")
+        && let Some(ids) = read.array(&node)
+    {
+        // An element of the wrong type is dropped alone.
+        for id in ids.iter() {
+            if let Some(id) = read.string(&id) {
+                fog_ids_to_merge.push(FogId::parse(id));
+            }
+        }
+    }
+    let back_compat = read
+        .opt(members, "make_back_compat_fog")
+        .and_then(|node| read.bool(&node))
+        .unwrap_or(false);
+    let old_fog = back_compat.then(|| OldFog {
         fog_color,
         water_fog_color,
         water_fog_distance,
-        // A fog identifier without a namespace gets `minecraft:`.
-        fog_identifier: entry
+        // A fog identifier without a namespace gets `minecraft:`; one of another type is
+        // silently none.
+        fog_identifier: members
             .get("fog_identifier")
-            .and_then(Value::as_string)
+            .and_then(|node| node.value().as_string())
             .map(|id| {
                 if id.as_str().contains(':') {
                     FogId::parse(id.as_str())
@@ -684,15 +678,20 @@ fn read(
             for (key, entry) in biomes {
                 let key = key.as_str();
                 let id = BiomeId::parse(key);
-                let (Some(entry), Some(origin)) = (entry.as_object(), origins.get(&id)) else {
+                let (true, Some(origin)) = (entry.is_object(), origins.get(&id)) else {
                     continue;
                 };
-                let at = child(&JsonPath::new(), &[BIOMES, key]);
+                let node = Node::new(entry, child(&JsonPath::new(), &[BIOMES, key]));
                 let mut notes = Notes {
                     origin,
                     diagnostics,
                 };
-                let read = read_entry(entry, &at, &mut notes);
+                let Some(read) = notes.read(|read| {
+                    let members = read.object(&node)?;
+                    Some(read_entry(read, &members))
+                }) else {
+                    continue;
+                };
                 if key == DEFAULT {
                     value.default = Some(read);
                 } else {

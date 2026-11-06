@@ -4,6 +4,8 @@
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 #![cfg(feature = "biomes_client")]
 
+#[path = "biomes_client/characterize.rs"]
+mod characterize;
 #[path = "biomes_client/common.rs"]
 mod common;
 #[path = "biomes_client/legacy.rs"]

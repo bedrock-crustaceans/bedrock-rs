@@ -1,4 +1,4 @@
-//! What the biome families share: the path of a member below another, and the colour pattern.
+//! What the biome families share: the path of a member below another.
 
 use bedrock_addon_core::diagnostic::JsonPath;
 
