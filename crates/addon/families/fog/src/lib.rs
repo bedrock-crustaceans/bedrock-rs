@@ -7,12 +7,12 @@
 
 pub mod history;
 
+pub mod codes;
 mod command;
 mod gates;
 mod jsonutil;
 mod read;
 mod rules;
-mod texts;
 mod write;
 
 #[cfg(test)]
@@ -27,12 +27,9 @@ pub(crate) use jsonutil::{Era, read_document};
 pub(crate) use write::{color_ju, float, norm_ju, object_with};
 
 use crate::history::{FogFamily, FogHistory};
-use crate::texts::{
-    EMPTY_AFTER_PARSE, EMPTY_RESOURCE, FAILED_TO_VALIDATE, INVALID_VERSION, NO_IDENTIFIER,
-    PARSE_ERROR, UNSUPPORTED_VERSION,
-};
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, VanillaText,
+    CodeDef, Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, VanillaText,
 };
 use bedrock_addon_core::document::{
     CombineRule, Contribution, Document, JsonDefinition, JsonDocument, JsonPlaced, NoBeta, Notice,
@@ -313,7 +310,7 @@ impl Family for FogFamily {
         // A pre-release of 1.26.20 sorts below it.
         check: EnvelopeCheck::From(LATEST),
         missing: MissingVersion::Reject {
-            text: Some(VanillaText::Fixed(INVALID_VERSION)),
+            text: Some(VanillaText::Fixed(codes::INVALID_VERSION.template())),
         },
         ..Envelope::DEFAULT
     };
@@ -325,26 +322,22 @@ fn payload_at() -> JsonPath {
 }
 
 /// An error of the gates, at the document root.
-fn gate(code: DiagnosticCode) -> Diagnostics {
+fn gate(finding: Diagnostic) -> Diagnostics {
     let mut diagnostics = Diagnostics::default();
-    diagnostics.push(Diagnostic::error(code));
+    diagnostics.push(finding);
     diagnostics
 }
 
+/// The reader's messages in the game's line, and again as the finding's syntax detail.
 fn malformed(message: String) -> Diagnostics {
-    gate(DiagnosticCode::MalformedInput {
-        text: Some(VanillaText::Formatted {
-            template: PARSE_ERROR,
-            args: vec![message.clone()],
-        }),
-        message,
-    })
+    gate(
+        Diagnostic::of(codes::PARSE_ERROR.with([message.clone()]))
+            .detail(DiagnosticDetail::Syntax(message)),
+    )
 }
 
-fn empty(text: &'static str) -> Diagnostics {
-    gate(DiagnosticCode::EmptyDocument {
-        text: Some(VanillaText::Fixed(text)),
-    })
+fn empty(code: &'static CodeDef<0>) -> Diagnostics {
+    gate(Diagnostic::of(code))
 }
 
 /// `parseFogDefinitionIdentifier`: `minecraft:fog_settings.description.identifier` of the raw
@@ -368,7 +361,7 @@ fn gates(bytes: &[u8]) -> Result<String, Diagnostics> {
     let bytes = &*blank_bom(bytes);
     check_depth(bytes, MAX_JSON_DEPTH).map_err(|_| too_deep())?;
     let prepared = Prepared::non_empty(bytes).map_err(|error| match error {
-        PrepareError::Empty => empty(EMPTY_RESOURCE),
+        PrepareError::Empty => empty(&codes::EMPTY_RESOURCE),
         PrepareError::TooDeep(_) => too_deep(),
         PrepareError::NotUtf8(error) => malformed(error.to_string()),
     })?;
@@ -382,18 +375,12 @@ fn gates(bytes: &[u8]) -> Result<String, Diagnostics> {
         || root.as_object().is_some_and(facet_value::VObject::is_empty)
         || root.as_array().is_some_and(facet_value::VArray::is_empty);
     if is_empty {
-        return Err(empty(EMPTY_AFTER_PARSE));
+        return Err(empty(&codes::EMPTY_AFTER_PARSE));
     }
     if !has_identifier(&root) {
-        return Err(gate(DiagnosticCode::MissingIdentifier {
-            text: Some(VanillaText::Fixed(NO_IDENTIFIER)),
-        }));
+        return Err(gate(Diagnostic::of(&codes::NO_IDENTIFIER)));
     }
-    let invalid = || {
-        gate(DiagnosticCode::MissingFormatVersion {
-            text: Some(VanillaText::Fixed(INVALID_VERSION)),
-        })
-    };
+    let invalid = || gate(Diagnostic::of(&codes::INVALID_VERSION));
     let envelope = probe_envelope(JsonSlice::new(&cleaned)).map_err(|_| invalid())?;
     match &envelope.format_version {
         EnvelopeVersion::String(written) => {
@@ -404,15 +391,13 @@ fn gates(bytes: &[u8]) -> Result<String, Diagnostics> {
                     .version
                     .is_none_or(|v| v < FLOOR || (version.prerelease && v == FLOOR));
             if below {
-                return Err(gate(DiagnosticCode::UnsupportedVersion {
-                    text: Some(VanillaText::Fixed(UNSUPPORTED_VERSION)),
-                }));
+                return Err(gate(Diagnostic::of(&codes::UNSUPPORTED_VERSION)));
             }
         }
         // V5a (ours): the dispatcher takes a three-element array, and then either parser
         // refuses it; it is refused here.
         EnvelopeVersion::Array(_) => {
-            return Err(gate(DiagnosticCode::MalformedFormatVersion { text: None }));
+            return Err(gate(Diagnostic::of(&core_codes::MALFORMED_FORMAT_VERSION)));
         }
         _ => return Err(invalid()),
     }
@@ -421,9 +406,7 @@ fn gates(bytes: &[u8]) -> Result<String, Diagnostics> {
 
 /// The closing line of a document either parser refused.
 fn failed_to_validate(diagnostics: &mut Diagnostics) {
-    diagnostics.push(Diagnostic::error(DiagnosticCode::DocumentRejected {
-        text: Some(VanillaText::Fixed(FAILED_TO_VALIDATE)),
-    }));
+    diagnostics.push(Diagnostic::of(&codes::FAILED_TO_VALIDATE));
 }
 
 /// The upgrade walk, then what the game checks on the definition: the keyframe gate and, for a
@@ -491,9 +474,7 @@ fn as_written(text: &str, cx: &LoadContext) -> Parsed<FogFamily> {
     };
     let mut diagnostics = Diagnostics::default();
     let at = JsonPath::new().child("format_version");
-    diagnostics.push(
-        Diagnostic::info(DiagnosticCode::PrereleaseFormatVersion { version: written }).at(at),
-    );
+    diagnostics.push(Diagnostic::of(core_codes::PRERELEASE_FORMAT_VERSION.with([written])).at(at));
     let versions = <FogHistory as VersionChain<FogFamily>>::VERSIONS;
     let parsed_as = versions.get(V1_21_90).copied().unwrap_or(FLOOR);
     let parse = ParseCx {

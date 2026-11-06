@@ -5,8 +5,8 @@
 //
 // A failed validation refuses the file with "Failed to validate fog schema".
 
-use super::texts::{
-    BAD_FORMAT_VERSION, END_BELOW_START, MAX_HEIGHT_REQUIRED, MID_BELOW_MAX, MINECRAFT_NAMESPACE,
+use super::codes::{
+    self, BAD_FORMAT_VERSION, END_BELOW_START, MAX_HEIGHT_REQUIRED, MID_BELOW_MAX,
     RENDER_END_ABOVE, RENDER_START_ABOVE, RENDER_START_BELOW, UNIFORM_HEIGHTS, ZERO_BELOW_MAX,
     ZERO_HEIGHT_REQUIRED,
 };
@@ -14,22 +14,19 @@ use super::{
     DistanceType, FogSettings, FogVolumetricDensitySetting, FogVolumetricMediaCoeffsSetting,
     Keyframed, same_zero,
 };
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity, VanillaText,
-};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{CodeDef, Diagnostic, Diagnostics, JsonPath, Phase, Severity};
 use bedrock_addon_core::version::{FormatVersion, SemVersion, known};
 
 /// The first engine that reads the keyframe forms of the volumetric members.
 pub(crate) const KEYFRAMES_SINCE: FormatVersion = known::V1_26_30;
 
-fn report(d: &mut Diagnostics, severity: Severity, text: &'static str, at: JsonPath) {
+fn report(d: &mut Diagnostics, severity: Severity, code: &'static CodeDef<0>, at: JsonPath) {
     d.push(
-        Diagnostic::error(DiagnosticCode::InvalidValue {
-            text: Some(VanillaText::Fixed(text)),
-        })
-        .severity(severity)
-        .at(at)
-        .phase(Phase::Validate),
+        Diagnostic::of(code)
+            .severity(severity)
+            .at(at)
+            .phase(Phase::Validate),
     );
 }
 
@@ -40,7 +37,7 @@ pub(crate) fn format_version(written: &str, at: &JsonPath, d: &mut Diagnostics) 
         report(
             d,
             Severity::Error,
-            BAD_FORMAT_VERSION,
+            &BAD_FORMAT_VERSION,
             at.with(&["format_version"]),
         );
     }
@@ -59,7 +56,7 @@ fn distance_entry(
         return;
     };
     if start > end {
-        report(d, Severity::Error, END_BELOW_START, at.clone());
+        report(d, Severity::Error, &END_BELOW_START, at.clone());
     }
     if kind != Some(DistanceType::Render) {
         return;
@@ -69,13 +66,13 @@ fn distance_entry(
     // nodes write them with `_contentLog(1, 2, …)` (`FogSetting`, `FogDistanceSetting`), and
     // go on.
     if start > 1.0 {
-        report(d, Severity::Warning, RENDER_START_ABOVE, at.clone());
+        report(d, Severity::Warning, &RENDER_START_ABOVE, at.clone());
     }
     if start < -1.0 {
-        report(d, Severity::Warning, RENDER_START_BELOW, at.clone());
+        report(d, Severity::Warning, &RENDER_START_BELOW, at.clone());
     }
     if end > 1.0 {
-        report(d, Severity::Warning, RENDER_END_ABOVE, at.clone());
+        report(d, Severity::Warning, &RENDER_END_ABOVE, at.clone());
     }
 }
 
@@ -116,20 +113,20 @@ fn density_entry(setting: &FogVolumetricDensitySetting, at: &JsonPath, d: &mut D
     if setting.uniform == Some(true) {
         // The lambda returns after this check: V19–V20 never run for a uniform entry.
         if max.is_some() || zero.is_some() {
-            report(d, Severity::Error, UNIFORM_HEIGHTS, at.clone());
+            report(d, Severity::Error, &UNIFORM_HEIGHTS, at.clone());
         }
         return;
     }
     if max.is_none() {
-        report(d, Severity::Error, MAX_HEIGHT_REQUIRED, at.clone());
+        report(d, Severity::Error, &MAX_HEIGHT_REQUIRED, at.clone());
     }
     if zero.is_none() {
-        report(d, Severity::Error, ZERO_HEIGHT_REQUIRED, at.clone());
+        report(d, Severity::Error, &ZERO_HEIGHT_REQUIRED, at.clone());
     }
     if let (Some(zero), Some(max)) = (zero, max)
         && pairs(zero, max).iter().any(|(zero, max)| zero < max)
     {
-        report(d, Severity::Error, ZERO_BELOW_MAX, at.clone());
+        report(d, Severity::Error, &ZERO_BELOW_MAX, at.clone());
     }
 }
 
@@ -178,7 +175,7 @@ pub(crate) fn cereal_rules(settings: &FogSettings, at: &JsonPath, d: &mut Diagno
                     && mid >= max
                     && mid != 0.0
                 {
-                    report(d, Severity::Error, MID_BELOW_MAX, transition_at);
+                    report(d, Severity::Error, &MID_BELOW_MAX, transition_at);
                 }
             }
         }
@@ -213,11 +210,9 @@ pub(crate) fn namespace(
     let namespace = identifier.split(':').next().unwrap_or(identifier);
     if !is_base_game_pack && namespace.eq_ignore_ascii_case("minecraft") {
         d.push(
-            Diagnostic::error(DiagnosticCode::NamespaceRule {
-                text: Some(VanillaText::Fixed(MINECRAFT_NAMESPACE)),
-            })
-            .at(at.with(&["description", "identifier"]))
-            .phase(Phase::Validate),
+            Diagnostic::of(&codes::MINECRAFT_NAMESPACE)
+                .at(at.with(&["description", "identifier"]))
+                .phase(Phase::Validate),
         );
     }
 }
@@ -335,7 +330,7 @@ pub(crate) fn keyframe_gate(
         .map(|(keys, _)| at.with(&keys));
     for path in keyed {
         d.push(
-            Diagnostic::error(DiagnosticCode::UnsupportedValueForm)
+            Diagnostic::of(&core_codes::UNSUPPORTED_VALUE_FORM)
                 .at(path)
                 .phase(Phase::Validate),
         );

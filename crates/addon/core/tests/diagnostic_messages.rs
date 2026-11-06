@@ -4,7 +4,8 @@
 
 use bedrock_addon_core::diagnostic::ShadowReason;
 use bedrock_addon_core::diagnostic::{
-    Class, CodeDef, DiagnosticCode, Kind, NotFoundHint, VanillaText,
+    Class, Code, CodeDef, Diagnostic, DiagnosticCode, Kind, Location, NotFoundHint, Phase,
+    Severity, VanillaText, codes,
 };
 use bedrock_addon_core::pack_identity::{PackIdVersion, PackType};
 use bedrock_addon_core::version::FormatVersion;
@@ -1193,4 +1194,1111 @@ fn the_json_document_size_texts() {
         .to_string(),
         "JSON document is approaching the maximum allowed size: 100663296 bytes loaded, 134217728 bytes maximum. Consider reducing or splitting the document where possible, or raise this issue if further increases in size are expected."
     );
+}
+
+/// One row per definition of `diagnostic::codes`, in its order: the code with sample arguments
+/// and the legacy code it replaces with the same payload. A raise site that moves from the one
+/// to the other prints the same line.
+#[expect(
+    clippy::too_many_lines,
+    reason = "a table with one row per definition; there is no seam to split at"
+)]
+fn core_definitions() -> Vec<(Code, DiagnosticCode)> {
+    use DiagnosticCode as C;
+    vec![
+        (
+            Code::from(&codes::UNSUPPORTED_VERSION),
+            C::UnsupportedVersion { text: None },
+        ),
+        (
+            codes::UNSUPPORTED_VERSION_WORDED.with(["a game line {}"]),
+            C::UnsupportedVersion {
+                text: Some(VanillaText::Fixed("a game line {}")),
+            },
+        ),
+        (
+            Code::from(&codes::BETA_FEATURES_NOT_ENABLED),
+            C::BetaFeaturesNotEnabled { text: None },
+        ),
+        (
+            codes::BETA_FEATURES_NOT_ENABLED_WORDED.with(["a game line {}"]),
+            C::BetaFeaturesNotEnabled {
+                text: Some(VanillaText::Fixed("a game line {}")),
+            },
+        ),
+        (
+            codes::PRERELEASE_FORMAT_VERSION.with(["1.21.0-beta"]),
+            C::PrereleaseFormatVersion {
+                version: "1.21.0-beta".into(),
+            },
+        ),
+        (
+            Code::from(&codes::MISSING_TOGGLES),
+            C::MissingToggles { text: None },
+        ),
+        (
+            codes::MISSING_TOGGLES_WORDED.with(["a game line {}"]),
+            C::MissingToggles {
+                text: Some(VanillaText::Fixed("a game line {}")),
+            },
+        ),
+        (
+            Code::from(&codes::DEPRECATED_MEMBER),
+            C::DeprecatedMember { text: None },
+        ),
+        (
+            codes::DEPRECATED_MEMBER_WORDED.with(["a game line {}"]),
+            C::DeprecatedMember {
+                text: Some(VanillaText::Fixed("a game line {}")),
+            },
+        ),
+        (
+            Code::from(&codes::UNRECOGNIZED_FIELD),
+            C::UnrecognizedField { text: None },
+        ),
+        (
+            codes::UNRECOGNIZED_FIELD_WORDED.with(["a game line {}"]),
+            C::UnrecognizedField {
+                text: Some(VanillaText::Fixed("a game line {}")),
+            },
+        ),
+        (
+            Code::from(&codes::UNRECOGNIZED_COMPONENT),
+            C::UnrecognizedComponent { text: None },
+        ),
+        (
+            codes::UNRECOGNIZED_COMPONENT_WORDED.with(["a game line {}"]),
+            C::UnrecognizedComponent {
+                text: Some(VanillaText::Fixed("a game line {}")),
+            },
+        ),
+        (
+            Code::from(&codes::INVALID_VALUE),
+            C::InvalidValue { text: None },
+        ),
+        (
+            codes::INVALID_VALUE_WORDED.with(["a game line {}"]),
+            C::InvalidValue {
+                text: Some(VanillaText::Fixed("a game line {}")),
+            },
+        ),
+        (
+            Code::from(&codes::MISSING_REQUIRED_FIELD),
+            C::MissingRequiredField { text: None },
+        ),
+        (
+            codes::MISSING_REQUIRED_FIELD_WORDED.with(["a game line {}"]),
+            C::MissingRequiredField {
+                text: Some(VanillaText::Fixed("a game line {}")),
+            },
+        ),
+        (
+            Code::from(&codes::CLAMPED_VALUE),
+            C::ClampedValue { text: None },
+        ),
+        (
+            codes::CLAMPED_VALUE_WORDED.with(["a game line {}"]),
+            C::ClampedValue {
+                text: Some(VanillaText::Fixed("a game line {}")),
+            },
+        ),
+        (
+            Code::from(&codes::DROPPED_COMPONENT),
+            C::DroppedComponent { text: None },
+        ),
+        (
+            codes::DROPPED_COMPONENT_WORDED.with(["a game line {}"]),
+            C::DroppedComponent {
+                text: Some(VanillaText::Fixed("a game line {}")),
+            },
+        ),
+        (
+            Code::from(&codes::DROPPED_FIELD),
+            C::DroppedField { text: None },
+        ),
+        (
+            codes::DROPPED_FIELD_WORDED.with(["a game line {}"]),
+            C::DroppedField {
+                text: Some(VanillaText::Fixed("a game line {}")),
+            },
+        ),
+        (
+            Code::from(&codes::MEMBER_NOT_KEPT),
+            C::MemberNotKept { text: None },
+        ),
+        (
+            codes::MEMBER_NOT_KEPT_WORDED.with(["a game line {}"]),
+            C::MemberNotKept {
+                text: Some(VanillaText::Fixed("a game line {}")),
+            },
+        ),
+        (
+            Code::from(&codes::VALUE_REWRITTEN),
+            C::ValueRewritten { text: None },
+        ),
+        (
+            codes::VALUE_REWRITTEN_WORDED.with(["a game line {}"]),
+            C::ValueRewritten {
+                text: Some(VanillaText::Fixed("a game line {}")),
+            },
+        ),
+        (
+            codes::DUPLICATE_COMPONENT_VERSION.with([
+                "minecraft:a",
+                "minecraft:a.v2",
+                "minecraft:a.v2",
+                "minecraft:a",
+            ]),
+            C::DuplicateComponentVersion {
+                old: "minecraft:a".into(),
+                new: "minecraft:a.v2".into(),
+            },
+        ),
+        (
+            Code::from(&codes::UNKNOWN_SOUND),
+            C::UnknownSound { text: None },
+        ),
+        (
+            codes::UNKNOWN_SOUND_WORDED.with(["a game line {}"]),
+            C::UnknownSound {
+                text: Some(VanillaText::Fixed("a game line {}")),
+            },
+        ),
+        (
+            Code::from(&codes::GENERIC_GOAL_SUFFIX_MISSING),
+            C::GenericGoalSuffixMissing,
+        ),
+        (
+            Code::from(&codes::MALFORMED_INPUT),
+            C::MalformedInput {
+                message: String::new(),
+                text: None,
+            },
+        ),
+        (
+            codes::SYNTAX.with(["unexpected character '}'"]),
+            C::MalformedInput {
+                message: "unexpected character '}'".into(),
+                text: None,
+            },
+        ),
+        (
+            codes::MALFORMED_INPUT_WORDED.with(["a game line {}"]),
+            C::MalformedInput {
+                message: "the reader's message".into(),
+                text: Some(VanillaText::Fixed("a game line {}")),
+            },
+        ),
+        (
+            codes::FORMAT_VERSION_ABOVE_ENGINE.with(["1.99.0", "1.26.60"]),
+            C::FormatVersionAboveEngine {
+                version: "1.99.0".into(),
+            },
+        ),
+        (
+            Code::from(&codes::CLIENT_ENTITY_SHADOWED),
+            C::ClientEntityShadowed { reason: None },
+        ),
+        (
+            Code::from(&codes::CLIENT_ENTITY_SHADOWED_OLDER),
+            C::ClientEntityShadowed {
+                reason: Some(ShadowReason::OlderMinEngineVersion),
+            },
+        ),
+        (
+            Code::from(&codes::CLIENT_ENTITY_SHADOWED_ABOVE_STACK),
+            C::ClientEntityShadowed {
+                reason: Some(ShadowReason::MinEngineVersionAboveStack),
+            },
+        ),
+        (
+            Code::from(&codes::ATTACHABLE_SHADOWED),
+            C::AttachableShadowed { reason: None },
+        ),
+        (
+            Code::from(&codes::ATTACHABLE_SHADOWED_OLDER),
+            C::AttachableShadowed {
+                reason: Some(ShadowReason::OlderMinEngineVersion),
+            },
+        ),
+        (
+            Code::from(&codes::ATTACHABLE_SHADOWED_ABOVE_STACK),
+            C::AttachableShadowed {
+                reason: Some(ShadowReason::MinEngineVersionAboveStack),
+            },
+        ),
+        (
+            Code::from(&codes::ITEM_BINDING_SHADOWED),
+            C::ItemBindingShadowed,
+        ),
+        (
+            Code::from(&codes::RENDER_CONTROLLER_SHADOWED),
+            C::RenderControllerShadowed,
+        ),
+        (
+            Code::from(&codes::IDENTIFIER_COLLISION),
+            C::IdentifierCollision { text: None },
+        ),
+        (
+            codes::IDENTIFIER_COLLISION_WORDED.with(["a game line {}"]),
+            C::IdentifierCollision {
+                text: Some(VanillaText::Fixed("a game line {}")),
+            },
+        ),
+        (
+            Code::from(&codes::UNRESOLVED_REFERENCE),
+            C::UnresolvedReference { text: None },
+        ),
+        (
+            codes::UNRESOLVED_REFERENCE_WORDED.with(["a game line {}"]),
+            C::UnresolvedReference {
+                text: Some(VanillaText::Fixed("a game line {}")),
+            },
+        ),
+        (
+            Code::from(&codes::INVALID_REFERENCE),
+            C::InvalidReference { text: None },
+        ),
+        (
+            codes::INVALID_REFERENCE_WORDED.with(["a game line {}"]),
+            C::InvalidReference {
+                text: Some(VanillaText::Fixed("a game line {}")),
+            },
+        ),
+        (
+            Code::from(&codes::TEXTURE_NOT_FOUND),
+            C::TextureNotFound { text: None },
+        ),
+        (
+            codes::TEXTURE_NOT_FOUND_WORDED.with(["a game line {}"]),
+            C::TextureNotFound {
+                text: Some(VanillaText::Fixed("a game line {}")),
+            },
+        ),
+        (Code::from(&codes::SPLASHES_REPLACED), C::SplashesReplaced),
+        (Code::from(&codes::NO_SPLASHES), C::NoSplashes),
+        (
+            Code::from(&codes::UNRESOLVED_LANG_KEY),
+            C::UnresolvedLangKey,
+        ),
+        (
+            Code::from(&codes::IGNORED_FILE),
+            C::IgnoredFile { text: None },
+        ),
+        (
+            codes::IGNORED_FILE_WORDED.with(["a game line {}"]),
+            C::IgnoredFile {
+                text: Some(VanillaText::Fixed("a game line {}")),
+            },
+        ),
+        (Code::from(&codes::PACK_ICON_MISSING), C::PackIconMissing),
+        (Code::from(&codes::PACK_ICON_SHAPE), C::PackIconShape),
+        (Code::from(&codes::GLYPH_SHEET_SHAPE), C::GlyphSheetShape),
+        (
+            Code::from(&codes::SKIN_PACK_NAME_MISMATCH),
+            C::SkinPackNameMismatch,
+        ),
+        (
+            Code::from(&codes::SKIN_PACK_CREATOR_RULE),
+            C::SkinPackCreatorRule,
+        ),
+        (
+            Code::from(&codes::IGNORED_MEMBER),
+            C::IgnoredMember { text: None },
+        ),
+        (
+            codes::IGNORED_MEMBER_WORDED.with(["a game line {}"]),
+            C::IgnoredMember {
+                text: Some(VanillaText::Fixed("a game line {}")),
+            },
+        ),
+        (
+            Code::from(&codes::UNMATCHED_CONDITION),
+            C::UnmatchedCondition,
+        ),
+        (
+            Code::from(&codes::WHERE_ARRAY_NEVER_MATCHES),
+            C::WhereArrayNeverMatches,
+        ),
+        (Code::from(&codes::REBASED_OVERRIDE), C::RebasedOverride),
+        (
+            Code::from(&codes::SHADOWED_DEFINITION),
+            C::ShadowedDefinition { text: None },
+        ),
+        (
+            codes::SHADOWED_DEFINITION_WORDED.with(["a game line {}"]),
+            C::ShadowedDefinition {
+                text: Some(VanillaText::Fixed("a game line {}")),
+            },
+        ),
+        (
+            codes::READ_ERROR.with([std::io::ErrorKind::NotFound.to_string()]),
+            C::ReadError {
+                kind: std::io::ErrorKind::NotFound,
+                text: None,
+            },
+        ),
+        (
+            codes::READ_ERROR_WORDED.with(["a game line {}"]),
+            C::ReadError {
+                kind: std::io::ErrorKind::NotFound,
+                text: Some(VanillaText::Fixed("a game line {}")),
+            },
+        ),
+        (
+            Code::from(&codes::MISSING_PAYLOAD),
+            C::MissingPayload { text: None },
+        ),
+        (
+            codes::MISSING_PAYLOAD_WORDED.with(["a game line {}"]),
+            C::MissingPayload {
+                text: Some(VanillaText::Fixed("a game line {}")),
+            },
+        ),
+        (
+            Code::from(&codes::NAMESPACE_RULE),
+            C::NamespaceRule { text: None },
+        ),
+        (
+            codes::NAMESPACE_RULE_WORDED.with(["a game line {}"]),
+            C::NamespaceRule {
+                text: Some(VanillaText::Fixed("a game line {}")),
+            },
+        ),
+        (
+            Code::from(&codes::INVALID_TYPE),
+            C::InvalidType { text: None },
+        ),
+        (
+            codes::INVALID_TYPE_WORDED.with(["a game line {}"]),
+            C::InvalidType {
+                text: Some(VanillaText::Fixed("a game line {}")),
+            },
+        ),
+        (
+            Code::from(&codes::SKIPPED_CACHE_DOCUMENT),
+            C::SkippedCacheDocument,
+        ),
+        (
+            Code::from(&codes::MISSING_FORMAT_VERSION),
+            C::MissingFormatVersion { text: None },
+        ),
+        (
+            codes::MISSING_FORMAT_VERSION_WORDED.with(["a game line {}"]),
+            C::MissingFormatVersion {
+                text: Some(VanillaText::Fixed("a game line {}")),
+            },
+        ),
+        (
+            Code::from(&codes::MALFORMED_FORMAT_VERSION),
+            C::MalformedFormatVersion { text: None },
+        ),
+        (
+            codes::MALFORMED_FORMAT_VERSION_WORDED.with(["a game line {}"]),
+            C::MalformedFormatVersion {
+                text: Some(VanillaText::Fixed("a game line {}")),
+            },
+        ),
+        (
+            Code::from(&codes::EMPTY_DOCUMENT),
+            C::EmptyDocument { text: None },
+        ),
+        (
+            codes::EMPTY_DOCUMENT_WORDED.with(["a game line {}"]),
+            C::EmptyDocument {
+                text: Some(VanillaText::Fixed("a game line {}")),
+            },
+        ),
+        (
+            Code::from(&codes::UNUSUAL_FORMAT_VERSION),
+            C::UnusualFormatVersion,
+        ),
+        (
+            Code::from(&codes::VANILLA_REJECTS_VERSION),
+            C::VanillaRejectsVersion,
+        ),
+        (
+            Code::from(&codes::FORMAT_VERSION_ARRAY),
+            C::FormatVersionArray,
+        ),
+        (
+            Code::from(&codes::PAYLOAD_KEY_MISMATCH),
+            C::PayloadKeyMismatch,
+        ),
+        (
+            codes::UNKNOWN_PAYLOAD_KEY.with(["minecraft:x"]),
+            C::UnknownPayloadKey {
+                name: "minecraft:x".into(),
+            },
+        ),
+        (Code::from(&codes::IGNORED_PAYLOAD), C::IgnoredPayload),
+        (
+            Code::from(&codes::DOCUMENT_REJECTED),
+            C::DocumentRejected { text: None },
+        ),
+        (
+            codes::DOCUMENT_REJECTED_WORDED.with(["a game line {}"]),
+            C::DocumentRejected {
+                text: Some(VanillaText::Fixed("a game line {}")),
+            },
+        ),
+        (
+            Code::from(&codes::MISSING_IDENTIFIER),
+            C::MissingIdentifier { text: None },
+        ),
+        (
+            codes::MISSING_IDENTIFIER_WORDED.with(["a game line {}"]),
+            C::MissingIdentifier {
+                text: Some(VanillaText::Fixed("a game line {}")),
+            },
+        ),
+        (
+            Code::from(&codes::SOUND_DEFINITIONS_WRAPPER_WITHOUT_VERSION),
+            C::SoundDefinitionsWrapperWithoutVersion,
+        ),
+        (
+            Code::from(&codes::MISSING_MIN_ENGINE_VERSION),
+            C::MissingMinEngineVersion,
+        ),
+        (
+            codes::FIELD_SINCE_ENGINE.with(["1.20.0"]),
+            C::FieldSinceEngine { since: V1_20_0 },
+        ),
+        (
+            codes::FIELD_UNTIL_ENGINE.with(["1.20.0"]),
+            C::FieldUntilEngine { last: V1_20_0 },
+        ),
+        (
+            Code::from(&codes::UNSUPPORTED_VALUE_FORM),
+            C::UnsupportedValueForm,
+        ),
+        (
+            Code::from(&codes::INVALID_ENUM_VALUE),
+            C::InvalidEnumValue { text: None },
+        ),
+        (
+            codes::INVALID_ENUM_VALUE_WORDED.with(["a game line {}"]),
+            C::InvalidEnumValue {
+                text: Some(VanillaText::Fixed("a game line {}")),
+            },
+        ),
+        (
+            codes::INVALID_MOLANG.with(["q.foo +"]),
+            C::InvalidMolang {
+                expression: "q.foo +".into(),
+            },
+        ),
+        (
+            codes::MOLANG_LINT.with(["q.foo"]),
+            C::MolangLint {
+                expression: "q.foo".into(),
+            },
+        ),
+        (
+            codes::MOLANG_NOT_CHECKED.with(["3"]),
+            C::MolangNotChecked { fields: 3 },
+        ),
+        (
+            Code::from(&codes::KEYFRAME_OUT_OF_DOMAIN),
+            C::KeyframeOutOfDomain,
+        ),
+        (Code::from(&codes::LOSSY_CONVERSION), C::LossyConversion),
+        (Code::from(&codes::LITERAL_IGNORED), C::LiteralIgnored),
+        (
+            Code::from(&codes::NON_CANONICAL_MEMBER_CASE),
+            C::NonCanonicalMemberCase,
+        ),
+        (
+            Code::from(&codes::CASE_FOLDED_TRANSITION),
+            C::CaseFoldedTransition,
+        ),
+        (
+            Code::from(&codes::UNORDERED_REMAP_CURVE),
+            C::UnorderedRemapCurve,
+        ),
+        (
+            Code::from(&codes::IMPLICIT_INITIAL_STATE),
+            C::ImplicitInitialState,
+        ),
+        (
+            Code::from(&codes::UNRECOGNIZED_EVENT_STRING),
+            C::UnrecognizedEventString,
+        ),
+        (Code::from(&codes::INVALID_NODE), C::InvalidNode),
+        (Code::from(&codes::INVALID_ROOT), C::InvalidRoot),
+        (
+            codes::UNKNOWN_NODE.with(["bt:x"]),
+            C::UnknownNode {
+                name: "bt:x".into(),
+            },
+        ),
+        (
+            codes::LEGACY_ITEM_FORMAT.with(["no format_version"]),
+            C::LegacyItemFormat {
+                reason: "no format_version",
+            },
+        ),
+        (Code::from(&codes::PERSONA_PIECE_PACK), C::PersonaPiecePack),
+        (
+            Code::from(&codes::LANG_KEY_TRAILING_SPACE),
+            C::LangKeyTrailingSpace,
+        ),
+        (
+            Code::from(&codes::SCATTER_PARAM_VALUE),
+            C::ScatterParamValue { text: None },
+        ),
+        (
+            codes::SCATTER_PARAM_VALUE_WORDED.with(["a game line {}"]),
+            C::ScatterParamValue {
+                text: Some(VanillaText::Fixed("a game line {}")),
+            },
+        ),
+        (
+            Code::from(&codes::UNSUPPORTED_OPERATOR),
+            C::UnsupportedOperator,
+        ),
+        (
+            Code::from(&codes::INVALID_TEXTURE),
+            C::InvalidTexture { text: None },
+        ),
+        (
+            codes::INVALID_TEXTURE_WORDED.with(["a game line {}"]),
+            C::InvalidTexture {
+                text: Some(VanillaText::Fixed("a game line {}")),
+            },
+        ),
+        (
+            Code::from(&codes::LAYER_IMAGE_UNDECODABLE),
+            C::LayerImageUndecodable,
+        ),
+        (Code::from(&codes::LAYER_IMAGE_FORMAT), C::LayerImageFormat),
+        (
+            Code::from(&codes::CAPABILITY_HINT),
+            C::CapabilityHint { text: None },
+        ),
+        (
+            codes::CAPABILITY_HINT_WORDED.with(["a game line {}"]),
+            C::CapabilityHint {
+                text: Some(VanillaText::Fixed("a game line {}")),
+            },
+        ),
+        (
+            Code::from(&codes::VIBRANT_VISUALS_DISABLED_BY_PACK),
+            C::VibrantVisualsDisabledByPack,
+        ),
+        (
+            Code::from(&codes::FONT_FILE_MISSING),
+            C::FontFileMissing { text: None },
+        ),
+        (
+            codes::FONT_FILE_MISSING_WORDED.with(["a game line {}"]),
+            C::FontFileMissing {
+                text: Some(VanillaText::Fixed("a game line {}")),
+            },
+        ),
+        (
+            Code::from(&codes::FONT_NAME_OVERRIDDEN),
+            C::FontNameOverridden,
+        ),
+        (Code::from(&codes::MIXED_FONT_PAGE), C::MixedFontPage),
+        (
+            Code::from(&codes::ATOMIC_FILTER_LIGHTING_IGNORED),
+            C::AtomicFilterLightingIgnored,
+        ),
+        (
+            Code::from(&codes::ATOMIC_UNSUPPORTED_RENDER_CONTROLLER),
+            C::AtomicUnsupportedRenderController,
+        ),
+        (
+            Code::from(&codes::DUPLICATE_IDENTIFIER),
+            C::DuplicateIdentifier { text: None },
+        ),
+        (
+            codes::DUPLICATE_IDENTIFIER_WORDED.with(["a game line {}"]),
+            C::DuplicateIdentifier {
+                text: Some(VanillaText::Fixed("a game line {}")),
+            },
+        ),
+        (Code::from(&codes::DUPLICATE_BONE), C::DuplicateBone),
+        (
+            Code::from(&codes::ATOMIC_CLIENT_ENTITY_SHADOWED),
+            C::AtomicClientEntityShadowed,
+        ),
+        (
+            Code::from(&codes::ANIMATION_CONTROLLER_SHADOWED),
+            C::AnimationControllerShadowed,
+        ),
+        (
+            Code::from(&codes::SHADOWED_BY_BUILTIN),
+            C::ShadowedByBuiltin,
+        ),
+        (
+            Code::from(&codes::REFERENCE_CYCLE),
+            C::ReferenceCycle { text: None },
+        ),
+        (
+            codes::REFERENCE_CYCLE_WORDED.with(["a game line {}"]),
+            C::ReferenceCycle {
+                text: Some(VanillaText::Fixed("a game line {}")),
+            },
+        ),
+        (
+            Code::from(&codes::CLIENT_BIOME_SHADOWS_LOWER_PACKS),
+            C::ClientBiomeShadowsLowerPacks,
+        ),
+        (
+            Code::from(&codes::CLIENT_BIOME_OVERRIDDEN_BY_BIOMES_CLIENT),
+            C::ClientBiomeOverriddenByBiomesClient,
+        ),
+        (
+            Code::from(&codes::VANILLA_BIOMES_CLIENT_SKIPPED),
+            C::VanillaBiomesClientSkipped,
+        ),
+        (Code::from(&codes::LEGACY_FOG_IGNORED), C::LegacyFogIgnored),
+        (
+            Code::from(&codes::BIOME_FORMAT_HINT_LEGACY),
+            C::BiomeFormatHint {
+                version: None,
+                surface_components: false,
+            },
+        ),
+        (
+            codes::BIOME_FORMAT_HINT_EXPERIMENTAL.with(["1.20.0"]),
+            C::BiomeFormatHint {
+                version: Some(V1_20_0),
+                surface_components: false,
+            },
+        ),
+        (
+            codes::BIOME_FORMAT_HINT_EXPERIMENTAL_SURFACE.with(["1.20.0"]),
+            C::BiomeFormatHint {
+                version: Some(V1_20_0),
+                surface_components: true,
+            },
+        ),
+        (Code::from(&codes::NO_EFFECT), C::NoEffect { text: None }),
+        (
+            codes::NO_EFFECT_WORDED.with(["a game line {}"]),
+            C::NoEffect {
+                text: Some(VanillaText::Fixed("a game line {}")),
+            },
+        ),
+        (
+            Code::from(&codes::SYNTHESIZED_COMPONENT),
+            C::SynthesizedComponent,
+        ),
+        (
+            Code::from(&codes::IDENTIFIER_NAMESPACED),
+            C::IdentifierNamespaced,
+        ),
+        (
+            Code::from(&codes::UPGRADE_TABLE_MISSED_BARE_IDENTIFIER),
+            C::UpgradeTableMissedBareIdentifier,
+        ),
+        (
+            Code::from(&codes::ITEM_BINDING_OVERLAP),
+            C::ItemBindingOverlap,
+        ),
+        (
+            Code::from(&codes::RENDER_CONTROLLER_FALLBACK),
+            C::RenderControllerFallback,
+        ),
+        (
+            codes::CASE_FOLDING_DISABLED_AT_LINE.with(["3"]),
+            C::CaseFoldingDisabled {
+                line: Some(3),
+                unresolvable: false,
+            },
+        ),
+        (
+            codes::CASE_FOLDING_DISABLED_AT_LINE_UNRESOLVABLE.with(["3"]),
+            C::CaseFoldingDisabled {
+                line: Some(3),
+                unresolvable: true,
+            },
+        ),
+        (
+            Code::from(&codes::CASE_FOLDING_DISABLED),
+            C::CaseFoldingDisabled {
+                line: None,
+                unresolvable: false,
+            },
+        ),
+        (
+            Code::from(&codes::CASE_FOLDING_DISABLED_UNRESOLVABLE),
+            C::CaseFoldingDisabled {
+                line: None,
+                unresolvable: true,
+            },
+        ),
+        (
+            Code::from(&codes::POI_BLOCK_CLAIMED_TWICE),
+            C::PoiBlockClaimedTwice,
+        ),
+        (Code::from(&codes::POI_NO_BLOCKS), C::PoiNoBlocks),
+        (
+            Code::from(&codes::SOUND_DEFINITIONS_CLEARED),
+            C::SoundDefinitionsCleared,
+        ),
+        (
+            Code::from(&codes::SOUNDS_JSON_TABLE_CLEARED),
+            C::SoundsJsonTableCleared,
+        ),
+        (
+            Code::from(&codes::SOUNDS_CLEARED_BY_LEGACY_OVERLAY),
+            C::SoundsClearedByLegacyOverlay,
+        ),
+        (
+            Code::from(&codes::DISTANCE_RESET_BY_LEGACY_OVERLAY),
+            C::DistanceResetByLegacyOverlay,
+        ),
+        (Code::from(&codes::UNUSED_PROPERTY), C::UnusedProperty),
+        (Code::from(&codes::NO_UI_DEFINITIONS), C::NoUiDefinitions),
+        (
+            Code::from(&codes::SETTING_TYPE_MISMATCH),
+            C::SettingTypeMismatch,
+        ),
+        (
+            Code::from(&codes::SETTING_UNKNOWN_OPTION),
+            C::SettingUnknownOption,
+        ),
+        (
+            Code::from(&codes::SETTING_UNKNOWN_NAME),
+            C::SettingUnknownName,
+        ),
+        (Code::from(&codes::SETTING_CLAMPED), C::SettingClamped),
+        (
+            Code::from(&codes::LEGACY_SETTING_IGNORED),
+            C::LegacySettingIgnored,
+        ),
+        (
+            codes::PATH_REJECTED.with(["a\u{fffd}.json"]),
+            C::PathRejected {
+                entry: "a\u{fffd}.json".into(),
+            },
+        ),
+        (Code::from(&codes::FILE_NOT_LOADED), C::FileNotLoaded),
+        (Code::from(&codes::INTERNAL_ERROR), C::InternalError),
+        (
+            Code::from(&codes::UNSUPPORTED_FILE_FORMAT),
+            C::UnsupportedFileFormat,
+        ),
+        (Code::from(&codes::DUPLICATE_ENTRY), C::DuplicateEntry),
+        (
+            codes::MISSING_DEPENDENCY.with([pack().to_string(), dependency().to_string()]),
+            C::MissingDependency {
+                pack: pack(),
+                dependency: dependency(),
+            },
+        ),
+        (
+            codes::DEPENDENCY_AUTO_ADDED.with([dependency().to_string(), pack().to_string()]),
+            C::DependencyAutoAdded {
+                pack: pack(),
+                dependency: dependency(),
+            },
+        ),
+        (
+            codes::PACK_NOT_FOUND.with([pack().to_string()]),
+            C::PackNotFound { pack: pack() },
+        ),
+        (
+            codes::MULTIPLE_SCRIPT_MODULES.with(["p"]),
+            C::MultipleScriptModules { plugin: "p".into() },
+        ),
+        (
+            Code::from(&codes::SCRIPT_MODULE_PERMISSION),
+            C::ScriptModulePermission { text: None },
+        ),
+        (
+            codes::SCRIPT_MODULE_PERMISSION_WORDED.with(["a game line {}"]),
+            C::ScriptModulePermission {
+                text: Some(VanillaText::Fixed("a game line {}")),
+            },
+        ),
+        (
+            codes::SCRIPT_MODULE_VERSION_UNAVAILABLE.with([
+                "p",
+                "m",
+                "9.9.9",
+                "@minecraft/server",
+                "\nCurrent [stable] version is [1.0.0].",
+                "\n1.0.0\n1.1.0",
+            ]),
+            C::ScriptModuleVersionUnavailable {
+                plugin: "p".into(),
+                module: "m".into(),
+                requested: "9.9.9".into(),
+                dependency: "@minecraft/server".into(),
+                current: Some(("stable".into(), "1.0.0".into())),
+                available: vec!["1.0.0".into(), "1.1.0".into()],
+            },
+        ),
+        (
+            codes::SCRIPT_MODULE_VERSION_CONFLICT.with([
+                "p",
+                "m",
+                "\n [1.0.0] requested by [a],\n [2.0.0] requested by [b]",
+            ]),
+            C::ScriptModuleVersionConflict {
+                plugin: "p".into(),
+                module: "m".into(),
+                requests: vec![("1.0.0".into(), "a".into()), ("2.0.0".into(), "b".into())],
+            },
+        ),
+        (
+            codes::SCRIPT_MODULE_PROMOTED.with(["p", "m", "1.0.0", "1.1.0", "q"]),
+            C::ScriptModulePromoted {
+                plugin: "p".into(),
+                module: "m".into(),
+                from: "1.0.0".into(),
+                to: "1.1.0".into(),
+                requested_by: "q".into(),
+            },
+        ),
+        (
+            Code::from(&codes::SCRIPT_ALPHA_DEPENDENCY),
+            C::ScriptAlphaDependency,
+        ),
+        (
+            Code::from(&codes::SCRIPT_ENTRY_OUTSIDE_ROOT),
+            C::ScriptEntryOutsideRoot,
+        ),
+        (
+            Code::from(&codes::SCRIPT_SYNTAX_ERROR),
+            C::ScriptSyntaxError { text: None },
+        ),
+        (
+            codes::SCRIPT_SYNTAX_ERROR_WORDED.with(["a game line {}"]),
+            C::ScriptSyntaxError {
+                text: Some(VanillaText::Fixed("a game line {}")),
+            },
+        ),
+        (
+            codes::SCRIPT_IMPORT_NOT_FOUND.with(["./a.js"]),
+            C::ScriptImportNotFound {
+                specifier: "./a.js".into(),
+                hint: None,
+            },
+        ),
+        (
+            Code::from(&codes::SCRIPT_IMPORT_CRASHES_ENGINE),
+            C::ScriptImportCrashesEngine,
+        ),
+        (
+            codes::SCRIPT_MODULE_UNRECOGNIZED.with(["@x/y"]),
+            C::ScriptModuleUnrecognized {
+                module: "@x/y".into(),
+            },
+        ),
+        (
+            codes::SCRIPT_MODULE_RESTRICTED.with(["@x/y", "main.js"]),
+            C::ScriptModuleRestricted {
+                module: "@x/y".into(),
+                referrer: "main.js".into(),
+            },
+        ),
+        (
+            Code::from(&codes::SCRIPT_IMPORT_NOT_CHECKED),
+            C::ScriptImportNotChecked,
+        ),
+        (
+            Code::from(&codes::SCRIPT_FILE_NOT_LOADABLE),
+            C::ScriptFileNotLoadable,
+        ),
+        (
+            Code::from(&codes::SCRIPT_EVAL_WITHOUT_CAPABILITY),
+            C::ScriptEvalWithoutCapability,
+        ),
+        (
+            Code::from(&codes::SCRIPT_IMPORT_META_EMPTY),
+            C::ScriptImportMetaEmpty,
+        ),
+        (
+            Code::from(&codes::SCRIPTS_NOT_CHECKED),
+            C::ScriptsNotChecked,
+        ),
+        (
+            codes::SCRIPT_SYNTAX_NOT_CHECKED.with(["2"]),
+            C::ScriptSyntaxNotChecked { files: 2 },
+        ),
+        (
+            Code::from(&codes::PACK_CONFIG_SHADOWS_DEFAULT),
+            C::PackConfigShadowsDefault,
+        ),
+        (
+            codes::UNMATCHED_CONFIG_FOLDER.with(["abc"]),
+            C::UnmatchedConfigFolder {
+                folder: "abc".into(),
+                expected: None,
+            },
+        ),
+        (
+            codes::UNMATCHED_CONFIG_FOLDER_EXPECTED
+                .with([String::from("abc"), Uuid::from_u128(3).to_string()]),
+            C::UnmatchedConfigFolder {
+                folder: "abc".into(),
+                expected: Some(Uuid::from_u128(3)),
+            },
+        ),
+        (
+            codes::NET_CONFIG_REJECTED.with(["@minecraft/server-net", "bad"]),
+            C::NetConfigRejected {
+                module: "@minecraft/server-net".into(),
+                errors: "bad".into(),
+            },
+        ),
+        (
+            Code::from(&codes::INVALID_PROPERTY),
+            C::InvalidProperty { text: None },
+        ),
+        (
+            codes::INVALID_PROPERTY_WORDED.with(["a game line {}"]),
+            C::InvalidProperty {
+                text: Some(VanillaText::Fixed("a game line {}")),
+            },
+        ),
+        (
+            Code::from(&codes::MALFORMED_PROPERTY_VERSION),
+            C::MalformedPropertyVersion { text: None },
+        ),
+        (
+            codes::MALFORMED_PROPERTY_VERSION_WORDED.with(["a game line {}"]),
+            C::MalformedPropertyVersion {
+                text: Some(VanillaText::Fixed("a game line {}")),
+            },
+        ),
+        (
+            Code::from(&codes::WRONG_TYPE_PROPERTY),
+            C::WrongTypeProperty { text: None },
+        ),
+        (
+            codes::WRONG_TYPE_PROPERTY_WORDED.with(["a game line {}"]),
+            C::WrongTypeProperty {
+                text: Some(VanillaText::Fixed("a game line {}")),
+            },
+        ),
+        (
+            Code::from(&codes::MISSING_PROPERTY),
+            C::MissingProperty { text: None },
+        ),
+        (
+            codes::MISSING_PROPERTY_WORDED.with(["a game line {}"]),
+            C::MissingProperty {
+                text: Some(VanillaText::Fixed("a game line {}")),
+            },
+        ),
+        (Code::from(&codes::EMPTY_PROPERTY), C::EmptyProperty),
+        (
+            Code::from(&codes::MALFORMED_PROPERTY_UUID),
+            C::MalformedPropertyUuid,
+        ),
+        (Code::from(&codes::DUPLICATE_UUID), C::DuplicateUuid),
+        (Code::from(&codes::MISSING_MODULES), C::MissingModules),
+        (Code::from(&codes::MULTIPLE_MODULES), C::MultipleModules),
+        (
+            codes::INVALID_CAPABILITY.with(["flying"]),
+            C::InvalidCapability {
+                name: "flying".into(),
+            },
+        ),
+        (Code::from(&codes::IGNORED_PROPERTY), C::IgnoredProperty),
+        (
+            codes::VERSION_TOO_HIGH.with(["3.0.0", "2.0.0"]),
+            C::VersionTooHigh {
+                version: "3.0.0".into(),
+                limit: "2.0.0".into(),
+            },
+        ),
+        (
+            codes::VERSION_TOO_LOW.with(["0.0.1", "1.0.0"]),
+            C::VersionTooLow {
+                version: "0.0.1".into(),
+                limit: "1.0.0".into(),
+            },
+        ),
+        (
+            Code::from(&codes::MIN_ENGINE_VERSION_CAP_FORMAT_VERSION1),
+            C::MinEngineVersionCapFormatVersion1,
+        ),
+    ]
+}
+
+/// The legacy variants without a `text` field whose own line is the game's sentence: their
+/// definition holds it as its game template, so `vanilla()` gives it where the legacy code
+/// gives none (a legacy code's `vanilla()` reads its `text` field alone).
+const GAME_LINES_WITHOUT_TEXT_FIELD: &[&str] = &[
+    "DuplicateComponentVersion",
+    "UnknownPayloadKey",
+    "UnknownNode",
+    "AtomicFilterLightingIgnored",
+    "AtomicUnsupportedRenderController",
+    "MultipleScriptModules",
+    "ScriptModuleVersionUnavailable",
+    "ScriptModuleVersionConflict",
+    "ScriptModulePromoted",
+    "ScriptImportNotFound",
+    "ScriptModuleUnrecognized",
+    "ScriptModuleRestricted",
+    "NetConfigRejected",
+    "InvalidCapability",
+];
+
+/// The legacy variants no production code raises: they get no definition and go with the enum.
+const DEAD_VARIANTS: &[&str] = &["UnsupportedAudioFormat", "PackSettingChangeIgnored"];
+
+fn finding(code: DiagnosticCode) -> Diagnostic {
+    Diagnostic::new(code, Severity::Error, Phase::Parse, Location::default())
+}
+
+/// Each definition renders the legacy code's line byte for byte, under its name and of its
+/// kind, so moving a raise site onto it changes no text, pin or kind.
+#[test]
+fn every_core_definition_renders_the_line_of_the_legacy_code_it_replaces() {
+    for (code, legacy) in core_definitions() {
+        let id = code.id();
+        assert_eq!(code.to_string(), legacy.to_string(), "{id}");
+        assert_eq!(code.name(), legacy.name(), "{id}");
+        assert_eq!(
+            finding(code.clone().into()).kind(),
+            finding(legacy.clone()).kind(),
+            "{id}"
+        );
+        let was = finding(legacy.clone()).vanilla();
+        if GAME_LINES_WITHOUT_TEXT_FIELD.contains(&legacy.name()) {
+            assert_eq!(was, None, "{id}");
+            assert_eq!(code.vanilla(), Some(legacy.to_string()), "{id}");
+        } else {
+            assert_eq!(code.vanilla(), was, "{id}");
+        }
+    }
+}
+
+/// The table has one row per definition of `codes::ALL`, in its order.
+#[test]
+fn every_core_definition_has_one_row() {
+    let rows: Vec<&str> = core_definitions()
+        .iter()
+        .map(|(code, _)| code.id())
+        .collect();
+    let all: Vec<&str> = codes::ALL.iter().map(|meta| meta.id()).collect();
+    assert_eq!(rows, all);
+}
+
+/// Every legacy variant a raise site uses has a definition in `codes` to move onto.
+#[test]
+fn every_raised_legacy_variant_has_a_core_definition() {
+    let replaced: Vec<&str> = codes::ALL.iter().filter_map(|meta| meta.legacy()).collect();
+    let missing: Vec<&&str> = DiagnosticCode::NAMES
+        .iter()
+        .filter(|name| **name != "Specific" && !DEAD_VARIANTS.contains(name))
+        .filter(|name| !replaced.contains(name))
+        .collect();
+    assert!(
+        missing.is_empty(),
+        "variants without a definition: {missing:?}"
+    );
+    for dead in DEAD_VARIANTS {
+        assert!(!replaced.contains(dead), "{dead}");
+    }
 }

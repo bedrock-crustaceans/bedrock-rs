@@ -725,7 +725,7 @@ fn wrong_types_fail_the_cereal_parse() {
         // Our own finding: no text of the game's.
         assert!(
             d.iter()
-                .all(|f| !matches!(f.code, DiagnosticCode::InvalidType { text: Some(_) }))
+                .all(|f| !(f.code.name() == "InvalidType" && f.vanilla().is_some()))
         );
         refused(&d);
     }

@@ -77,6 +77,10 @@ pub enum DiagnosticDetail {
     /// The format version a finding names (`BiomeFormatHint`'s `version`, `FieldSinceEngine`'s
     /// `since`). Data only.
     FormatVersion(FormatVersion),
+    /// The reader's own message behind a syntax finding whose line is the game's sentence
+    /// (`MalformedInput`'s `message` where its `text` is given): what the parser said, which
+    /// the content-log line does not print. Data only.
+    Syntax(String),
 }
 
 /// The suffix a detail adds to the diagnostic's message: ` | <compiler message>` for Molang,
@@ -108,7 +112,8 @@ impl fmt::Display for DiagnosticDetail {
             | Self::Io(_)
             | Self::Uuid(_)
             | Self::NotFound(_)
-            | Self::FormatVersion(_) => Ok(()),
+            | Self::FormatVersion(_)
+            | Self::Syntax(_) => Ok(()),
         }
     }
 }

@@ -2,15 +2,14 @@
 //! `fog_description_schema`: one walk, two members gated on the root's version.
 
 use super::DistanceType;
-use super::texts::{COLOR_FORMAT, COLOR_SHAPE, DISTANCE_PATTERNS, EXPECTED_NUMBER, INTEGRAL};
+use super::codes;
 use crate::history::v1_21_90::{
     CoeffColorJu, Coefficients, Density, DensitySetting, Description, Distance, FogColorJu,
     FogPayload, FogSetting, HenyeyGreensteinG, HgSetting, InitFog, MediaCoefficients,
     TransitionFog, Volumetric,
 };
-use bedrock_addon_core::diagnostic::{
-    DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
-};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::json::JsonSlice;
 use bedrock_addon_core::json::node_tree::{
     Failure, Group, Hit, Kind, Lossy, NOT_ALLOWED_REGEX, Names, Node, OUTSIDE_RANGE, Order, Rules,
@@ -28,6 +27,10 @@ pub(crate) const RULES: Rules = Rules {
     failure: Failure::MemberFailed,
     lossy: Lossy::Told,
 };
+
+/// The two `render_distance_type` patterns as the string node prints them: the argument of
+/// the node's "not allowed" line.
+const DISTANCE_PATTERNS: &str = "fixed or render";
 
 /// Which root of the schema reads a document.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -161,7 +164,7 @@ fn description_node(walk: &mut Walk, node: Node<'_>) -> Option<Description> {
         };
         if !is_namespaced(&text) {
             // The node's own message is not recorded; the file fails with the closing line.
-            walk.error(DiagnosticCode::InvalidValue { text: None }, v.span());
+            walk.error(DiagnosticCode::from(&core_codes::INVALID_VALUE), v.span());
             return Hit::Failed;
         }
         identifier = Some(text);
@@ -233,7 +236,7 @@ fn distance_type(walk: &mut Walk, node: Node<'_>) -> Option<DistanceType> {
         // The type is held, and written in lower case: the spelling of the file is noted
         // (ours; the game reads both alike).
         walk.push(
-            DiagnosticCode::ValueRewritten { text: None },
+            DiagnosticCode::from(&core_codes::VALUE_REWRITTEN),
             Severity::Info,
             Some(node.span()),
         );
@@ -248,7 +251,7 @@ fn hex(walk: &mut Walk, node: Node<'_>) -> Option<String> {
     if is_hex(&text, 6) {
         Some(text)
     } else {
-        walk.invalid(COLOR_FORMAT, &[], node);
+        walk.error(DiagnosticCode::from(&codes::COLOR_FORMAT), node.span());
         None
     }
 }
@@ -262,7 +265,7 @@ fn rgb_nodes<'a>(walk: &mut Walk, node: Node<'a>) -> Option<[Node<'a>; 3]> {
         for (offset, element) in rest.iter().enumerate() {
             walk.enter_index(3 + offset);
             walk.push(
-                DiagnosticCode::DroppedField { text: None },
+                DiagnosticCode::from(&core_codes::DROPPED_FIELD),
                 Severity::Info,
                 Some(element.span()),
             );
@@ -270,7 +273,7 @@ fn rgb_nodes<'a>(walk: &mut Walk, node: Node<'a>) -> Option<[Node<'a>; 3]> {
         }
         Some([*r, *g, *b])
     } else {
-        walk.invalid(COLOR_SHAPE, &[], node);
+        walk.error(DiagnosticCode::from(&codes::COLOR_SHAPE), node.span());
         None
     }
 }
@@ -278,7 +281,7 @@ fn rgb_nodes<'a>(walk: &mut Walk, node: Node<'a>) -> Option<[Node<'a>; 3]> {
 /// Neither a string nor an array: the base node's validation refuses it (its text is not
 /// recorded).
 fn not_a_color(walk: &mut Walk, node: Node<'_>) {
-    walk.error(DiagnosticCode::InvalidType { text: None }, node.span());
+    walk.error(DiagnosticCode::from(&core_codes::INVALID_TYPE), node.span());
 }
 
 /// `fog_color` / `init_fog.fog_color`: `#rrggbb`, or an array read through
@@ -302,7 +305,10 @@ fn fog_color(walk: &mut Walk, node: Node<'_>) -> Option<FogColorJu> {
                     // validate fog schema" (`_contentLog(true, 3, 26)`) and never registers
                     // the fog: the file is refused, and the line is the closing one's.
                     Kind::Null => {
-                        walk.error(DiagnosticCode::InvalidType { text: None }, element.span());
+                        walk.error(
+                            DiagnosticCode::from(&core_codes::INVALID_TYPE),
+                            element.span(),
+                        );
                         ok = false;
                     }
                     // Read as vanilla reads it, and said: the element is
@@ -310,7 +316,7 @@ fn fog_color(walk: &mut Walk, node: Node<'_>) -> Option<FogColorJu> {
                     // pass a bool without a line, so it is an information.
                     Kind::Bool => {
                         walk.push(
-                            DiagnosticCode::InvalidType { text: None },
+                            DiagnosticCode::from(&core_codes::INVALID_TYPE),
                             Severity::Info,
                             Some(element.span()),
                         );
@@ -322,7 +328,7 @@ fn fog_color(walk: &mut Walk, node: Node<'_>) -> Option<FogColorJu> {
                             if clamped != written {
                                 // Ours; vanilla clamps without a word.
                                 walk.push(
-                                    DiagnosticCode::ClampedValue { text: None },
+                                    DiagnosticCode::from(&core_codes::CLAMPED_VALUE),
                                     Severity::Info,
                                     Some(element.span()),
                                 );
@@ -333,9 +339,7 @@ fn fog_color(walk: &mut Walk, node: Node<'_>) -> Option<FogColorJu> {
                         // (`_contentLog(true, 3, 17)`) and the fog reader ignores the
                         // parse result, so the file loads: a kept error.
                         Err(_) => walk.push_kept(
-                            DiagnosticCode::InvalidValue {
-                                text: Some(VanillaText::Fixed(INTEGRAL)),
-                            },
+                            DiagnosticCode::from(&codes::INTEGRAL),
                             Some(element.span()),
                         ),
                     },
@@ -345,9 +349,7 @@ fn fog_color(walk: &mut Walk, node: Node<'_>) -> Option<FogColorJu> {
                         // (`_contentLog(true, 3, 17)`) and fails, and the file is
                         // refused as for a `null`.
                         walk.error(
-                            DiagnosticCode::InvalidType {
-                                text: Some(VanillaText::Fixed(EXPECTED_NUMBER)),
-                            },
+                            DiagnosticCode::from(&codes::EXPECTED_NUMBER),
                             element.span(),
                         );
                         ok = false;

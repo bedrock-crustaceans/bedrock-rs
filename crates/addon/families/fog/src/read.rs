@@ -10,6 +10,7 @@ use super::{
     FogVolumetricHenyeyGreensteinGSetting, FogVolumetricMediaCoeffsCollection,
     FogVolumetricMediaCoeffsSetting, FogWaterDistanceSetting, Keyframed, same_zero,
 };
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::FogId;
@@ -52,7 +53,7 @@ fn tell(read: &mut Read<'_>, code: DiagnosticCode, severity: Severity, node: &No
 fn violation(read: &mut Read<'_>, node: &Node<'_>) {
     tell(
         read,
-        DiagnosticCode::InvalidValue { text: None },
+        DiagnosticCode::from(&core_codes::INVALID_VALUE),
         Severity::Error,
         node,
     );
@@ -184,7 +185,7 @@ fn fog_color(read: &mut Read<'_>, node: &Node<'_>) -> Option<FogColor> {
             if clamped != written {
                 tell(
                     read,
-                    DiagnosticCode::ClampedValue { text: None },
+                    DiagnosticCode::from(&core_codes::CLAMPED_VALUE),
                     Severity::Info,
                     element,
                 );
@@ -268,7 +269,7 @@ fn keyframed<'v, T>(
     for (_, member) in dropped {
         tell(
             read,
-            DiagnosticCode::DroppedField { text: None },
+            DiagnosticCode::from(&core_codes::DROPPED_FIELD),
             Severity::Info,
             &member,
         );
@@ -292,7 +293,7 @@ fn settings(read: &mut Read<'_>, node: &Node<'_>) -> Option<FogSettings> {
     if ok && description.is_none() {
         tell(
             read,
-            DiagnosticCode::MissingRequiredField { text: None },
+            DiagnosticCode::from(&core_codes::MISSING_REQUIRED_FIELD),
             Severity::Error,
             node,
         );
@@ -316,7 +317,7 @@ fn description(read: &mut Read<'_>, node: &Node<'_>) -> Option<FogDescription> {
     if ok && identifier.is_none() {
         tell(
             read,
-            DiagnosticCode::MissingRequiredField { text: None },
+            DiagnosticCode::from(&core_codes::MISSING_REQUIRED_FIELD),
             Severity::Error,
             node,
         );
@@ -353,7 +354,7 @@ fn distance_type(read: &mut Read<'_>, node: &Node<'_>) -> Option<DistanceType> {
         _ => {
             tell(
                 read,
-                DiagnosticCode::InvalidEnumValue { text: None },
+                DiagnosticCode::from(&core_codes::INVALID_ENUM_VALUE),
                 Severity::Error,
                 node,
             );

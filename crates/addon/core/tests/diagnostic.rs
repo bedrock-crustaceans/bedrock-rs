@@ -7,7 +7,7 @@ use bedrock_addon_core::test_cost as cost;
 
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Location, PackReport,
-    Phase, ReferenceHint, Severity, Span,
+    Phase, ReferenceHint, Severity, Span, VanillaText,
 };
 use bedrock_addon_core::document::Origin;
 use bedrock_addon_core::load::{Place, RootId};
@@ -914,4 +914,23 @@ fn locate_in_place_keeps_the_places_take_and_repush_drops() {
     }
     assert_eq!(repushed, in_place, "the findings are the same either way");
     assert_eq!(repushed.place_of(&to), to, "the places are gone");
+}
+
+/// The reader's message behind a game-worded syntax finding rides on it as data: the line is
+/// the game's sentence alone, as `MalformedInput` prints it when its `text` is given.
+#[test]
+fn a_syntax_detail_is_data_and_not_in_the_line() {
+    let bare = Diagnostic::error(DiagnosticCode::MalformedInput {
+        message: String::new(),
+        text: Some(VanillaText::Fixed("parse error")),
+    });
+    let with = bare
+        .clone()
+        .detail(DiagnosticDetail::Syntax("unexpected '}'".into()));
+    assert_eq!(
+        with.detail.as_deref(),
+        Some(&DiagnosticDetail::Syntax("unexpected '}'".into()))
+    );
+    assert_eq!(with.to_string(), bare.to_string());
+    assert_eq!(with.to_string(), "[error] parse error");
 }

@@ -1,7 +1,7 @@
 //! Unit tests of the fog internals the integration tests cannot name: the chain's parameters,
 //! the unreachable rule V14, and the field-gate table against the readers.
 
-use super::{FLOOR, FOG_FIELD_GATES, LATEST, rules, texts};
+use super::{FLOOR, FOG_FIELD_GATES, LATEST, codes, rules};
 use crate::history::FogFamily;
 use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::versioning::{
@@ -38,7 +38,8 @@ fn invalid_format_version_rule() {
     let finding = d.iter().next().expect("V14 reports");
     assert_eq!(finding.severity, Severity::Error);
     assert_eq!(finding.code.name(), "InvalidValue");
-    assert_eq!(finding.code.to_string(), texts::BAD_FORMAT_VERSION);
+    assert!(finding.is(&codes::BAD_FORMAT_VERSION));
+    assert_eq!(finding.code.to_string(), "Invalid format version.");
     assert_eq!(finding.location.json_path.to_string(), "format_version");
 
     let mut d = Diagnostics::default();
@@ -240,7 +241,7 @@ fn findings_carry_the_file_and_pack() {
 /// UTF-8 is told as too deep.
 #[test]
 fn a_text_too_deep_and_not_utf8_is_told_as_too_deep() {
-    use bedrock_addon_core::diagnostic::DiagnosticCode;
+    use bedrock_addon_core::diagnostic::DiagnosticDetail;
     use bedrock_addon_core::document::Content;
     use bedrock_addon_core::load::LoadContext;
     use bedrock_addon_core::pack_identity::PackPath;
@@ -256,8 +257,9 @@ fn a_text_too_deep_and_not_utf8_is_told_as_too_deep() {
     let messages: Vec<_> = rejected
         .diagnostics
         .iter()
-        .filter_map(|f| match &f.code {
-            DiagnosticCode::MalformedInput { message, .. } => Some(message.as_str()),
+        .filter(|f| f.code.name() == "MalformedInput")
+        .filter_map(|f| match f.detail.as_deref() {
+            Some(DiagnosticDetail::Syntax(message)) => Some(message.as_str()),
             _ => None,
         })
         .collect();
@@ -267,7 +269,7 @@ fn a_text_too_deep_and_not_utf8_is_told_as_too_deep() {
 /// Behind a byte-order mark too: the mark is blanked before the nesting is scanned.
 #[test]
 fn a_text_too_deep_and_not_utf8_behind_a_bom_is_told_as_too_deep() {
-    use bedrock_addon_core::diagnostic::DiagnosticCode;
+    use bedrock_addon_core::diagnostic::DiagnosticDetail;
     use bedrock_addon_core::document::Content;
     use bedrock_addon_core::load::LoadContext;
     use bedrock_addon_core::pack_identity::PackPath;
@@ -284,8 +286,9 @@ fn a_text_too_deep_and_not_utf8_behind_a_bom_is_told_as_too_deep() {
     let messages: Vec<_> = rejected
         .diagnostics
         .iter()
-        .filter_map(|f| match &f.code {
-            DiagnosticCode::MalformedInput { message, .. } => Some(message.as_str()),
+        .filter(|f| f.code.name() == "MalformedInput")
+        .filter_map(|f| match f.detail.as_deref() {
+            Some(DiagnosticDetail::Syntax(message)) => Some(message.as_str()),
             _ => None,
         })
         .collect();

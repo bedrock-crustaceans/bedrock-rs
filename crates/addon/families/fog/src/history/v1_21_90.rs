@@ -8,7 +8,8 @@ use crate::{
     FogVolumetricHenyeyGreensteinGSetting, FogVolumetricMediaCoeffsCollection,
     FogVolumetricMediaCoeffsSetting, FogWaterDistanceSetting, Keyframed,
 };
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, Phase};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Diagnostic, JsonPath, Phase};
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::FogId;
 use bedrock_addon_core::versioning::{Legacy, LegacyStep, UpgradeCx};
@@ -81,7 +82,7 @@ fn entry(
             at.push(key);
         }
         cx.diagnostics.push(
-            Diagnostic::info(DiagnosticCode::DroppedField { text: None })
+            Diagnostic::of(&core_codes::DROPPED_FIELD)
                 .at(at)
                 .phase(Phase::Upgrade),
         );

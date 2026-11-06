@@ -20,15 +20,38 @@
 //! assert_eq!(code.vanilla(), None); // the toolkit's own: the game prints no sentence
 //! assert_eq!(code.to_string(), "fog density 1.5 is outside [0, 1]");
 //! ```
+//!
+//! # Where definitions live
+//!
+//! Each family declares its codes in its own `codes.rs`, a public module of `pub static`
+//! definitions, one per sentence, beside the rules that raise them (`families/fog/src/codes.rs`
+//! is the model):
+//!
+//! - the id is `<family>/<the const's name in lower case>` (`fog/end_below_start`);
+//! - a code the game prints has its sentence as [`game`](CodeDef::game), byte for byte, and a
+//!   line of the crate's own; a code of the toolkit's own has the line alone;
+//! - while the legacy [`DiagnosticCode`] lives, a definition [`was`](CodeDef::was) the variant
+//!   its sites raised, so pins and filters on the name hold until the pin rename;
+//! - its [`Kind`] is the legacy variant's, and its [`Class`] the severity its sites raise it at
+//!   (a site at another severity keeps it with [`Diagnostic::severity`](super::Diagnostic::severity));
+//! - a helper that took a text (`report(d, severity, text, at)`) takes a `&'static CodeDef<0>`,
+//!   and a reader that still takes a text takes [`CodeDef::template`];
+//! - the family's `texts.rs` goes: its consts become the definitions.
+//!
+//! A finding no family owns (the door, the envelope, the kit, the builders, the link pass) is
+//! a definition of [`codes`](super::codes), the core's: one generic definition per legacy
+//! variant, and a `_WORDED` one taking the game's sentence whole for a site whose sentence has
+//! no definition of its own yet.
 
 use std::fmt;
 use std::hash::{Hash, Hasher};
 
 use super::{DiagnosticCode, Severity};
 
-/// What a definition holds, whatever its arity: what a [`Code`] points at.
+/// What a definition holds, whatever its arity: what a [`Code`] points at, and what a list of
+/// definitions of several arities holds ([`CodeDef::meta`], [`codes::ALL`](super::codes::ALL)).
 #[derive(Clone, Copy, Debug)]
-pub(super) struct CodeMeta {
+pub struct CodeMeta {
     id: &'static str,
     owner: &'static str,
     name: &'static str,
@@ -45,6 +68,56 @@ impl CodeMeta {
         match self.legacy {
             Some(legacy) => legacy,
             None => self.name,
+        }
+    }
+
+    /// The stable id, `owner/name`.
+    pub const fn id(&self) -> &'static str {
+        self.id
+    }
+
+    /// Who declares the code.
+    pub const fn owner(&self) -> &'static str {
+        self.owner
+    }
+
+    /// The code's stable name: the legacy variant's it [`was`](CodeDef::was), else its own.
+    pub const fn name(&self) -> &'static str {
+        self.stable_name()
+    }
+
+    /// The name of the legacy variant the definition replaces, when it was one.
+    pub const fn legacy(&self) -> Option<&'static str> {
+        self.legacy
+    }
+
+    /// The general kind of finding.
+    pub const fn kind(&self) -> Kind {
+        self.kind
+    }
+
+    /// How the finding is graded.
+    pub const fn class(&self) -> Class {
+        self.class
+    }
+
+    /// The game's sentence, `{}` where each argument goes; `None` for a code of the toolkit's
+    /// own.
+    pub const fn game_template(&self) -> Option<&'static str> {
+        self.game
+    }
+
+    /// The crate's own line, `{}` where each argument goes when it has any.
+    pub const fn line(&self) -> &'static str {
+        self.line
+    }
+
+    /// The number of arguments the code takes: the placeholders of its game sentence, else of
+    /// its line.
+    pub const fn arity(&self) -> usize {
+        match self.game {
+            Some(game) => placeholders(game),
+            None => placeholders(self.line),
         }
     }
 }
@@ -203,6 +276,21 @@ impl<const N: usize> CodeDef<N> {
     pub const fn class(&self) -> Class {
         self.meta.class
     }
+
+    /// The sentence a code of the definition renders, `{}` where each argument goes: the
+    /// game's when there is one, else the crate's line. A `const`, so a reader that still
+    /// takes a text (an envelope's `missing` rule) takes it from the definition.
+    pub const fn template(&self) -> &'static str {
+        match self.meta.game {
+            Some(game) => game,
+            None => self.meta.line,
+        }
+    }
+
+    /// What the definition holds, whatever its arity: the entry of a list of definitions.
+    pub const fn meta(&self) -> &CodeMeta {
+        &self.meta
+    }
 }
 
 /// A code without arguments, as is.
@@ -216,6 +304,14 @@ impl From<&'static CodeDef<0>> for Code {
 impl From<&'static CodeDef<0>> for DiagnosticCode {
     fn from(def: &'static CodeDef<0>) -> Self {
         Code::from(def).into()
+    }
+}
+
+impl DiagnosticCode {
+    /// Whether this is a code of `def`, whatever its arguments: the specific question asked of
+    /// a code without its finding. A legacy code is no code of any definition.
+    pub fn is<const N: usize>(&self, def: &CodeDef<N>) -> bool {
+        matches!(self, Self::Specific { code } if code.is(def))
     }
 }
 
@@ -452,14 +548,10 @@ pub enum Kind {
     EngineVersion,
     /// Content that needs a toggle, an experiment or a capability.
     Toggle,
-    /// A member or component the schema does not declare, kept and written back.
-    UnknownMember,
-    /// A member read and not kept: the loaded document does not hold it.
-    MemberNotKept,
-    /// A member or component a rule dropped.
-    DroppedMember,
-    /// A member, property or setting read and ignored, or that has no say.
-    IgnoredMember,
+    /// A member or component the schema does not declare, and what became of it: kept, not
+    /// kept, dropped by a rule, or ignored as the game ignores it. One kind, four facts: the
+    /// question `matches!(d.kind(), Kind::UnknownMember(_))` is the general one.
+    UnknownMember(Disposition),
     /// A deprecated member or format.
     Deprecated,
     /// A required member is absent.
@@ -513,6 +605,38 @@ pub enum Kind {
     Config,
 }
 
+/// What became of a member or component the schema does not declare: the payload of
+/// [`Kind::UnknownMember`].
+///
+/// The reader's policy, [`kit::Disposition`](crate::json::kit::Disposition), converts into it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub enum Disposition {
+    /// Told and kept: the member goes to the document's unknown members and a written document
+    /// has it (`UnrecognizedField`, `UnrecognizedComponent`).
+    Kept,
+    /// Told and not kept: nothing reads it and a written document lacks it (`MemberNotKept`).
+    NotKept,
+    /// Dropped by a rule (`DroppedField`, `DroppedComponent`, the older of two versions of one
+    /// component).
+    Dropped,
+    /// Read and ignored, as the game ignores it (`IgnoredMember`, an ignored property,
+    /// literal, setting, legacy entry or filter).
+    Ignored,
+}
+
+impl From<crate::json::kit::Disposition> for Disposition {
+    fn from(disposition: crate::json::kit::Disposition) -> Self {
+        use crate::json::kit::Disposition as Policy;
+        match disposition {
+            Policy::Keep => Self::Kept,
+            Policy::Report => Self::NotKept,
+            Policy::Reject => Self::Dropped,
+            Policy::Ignore => Self::Ignored,
+        }
+    }
+}
+
 /// The kind of a code: a specific code's own, a legacy variant's by the table.
 #[allow(clippy::too_many_lines)] // one arm per kind over every legacy variant: the table
 pub(super) fn kind_of(code: &DiagnosticCode) -> Kind {
@@ -547,18 +671,20 @@ pub(super) fn kind_of(code: &DiagnosticCode) -> Kind {
         | C::CapabilityHint { .. }
         | C::InvalidCapability { .. }
         | C::VibrantVisualsDisabledByPack => K::Toggle,
-        C::UnrecognizedField { .. } | C::UnrecognizedComponent { .. } => K::UnknownMember,
-        C::MemberNotKept { .. } => K::MemberNotKept,
+        C::UnrecognizedField { .. } | C::UnrecognizedComponent { .. } => {
+            K::UnknownMember(Disposition::Kept)
+        }
+        C::MemberNotKept { .. } => K::UnknownMember(Disposition::NotKept),
         C::DroppedField { .. }
         | C::DroppedComponent { .. }
-        | C::DuplicateComponentVersion { .. } => K::DroppedMember,
+        | C::DuplicateComponentVersion { .. } => K::UnknownMember(Disposition::Dropped),
         C::IgnoredMember { .. }
         | C::IgnoredProperty
         | C::LiteralIgnored
         | C::LegacySettingIgnored
         | C::PackSettingChangeIgnored
         | C::AtomicFilterLightingIgnored
-        | C::LegacyFogIgnored => K::IgnoredMember,
+        | C::LegacyFogIgnored => K::UnknownMember(Disposition::Ignored),
         C::DeprecatedMember { .. } | C::LegacyItemFormat { .. } => K::Deprecated,
         C::MissingRequiredField { .. }
         | C::MissingProperty { .. }
@@ -810,6 +936,27 @@ mod tests {
     }
 
     #[test]
+    fn a_definitions_meta_holds_what_it_declares_whatever_its_arity() {
+        let meta = FILE_MISSING.meta();
+        assert_eq!(meta.id(), "core/file_missing");
+        assert_eq!(meta.owner(), "core");
+        assert_eq!(meta.name(), "file_missing");
+        assert_eq!(meta.legacy(), None);
+        assert_eq!(meta.kind(), Kind::UnresolvedReference);
+        assert_eq!(meta.class(), Class::Error);
+        assert_eq!(meta.game_template(), Some("Failed to load file: {}"));
+        assert_eq!(meta.line(), "no file {}");
+        assert_eq!(meta.arity(), 1);
+        assert_eq!(FILE_MISSING.template(), "Failed to load file: {}");
+        assert_eq!(TRAILING_COMMA.template(), "a trailing comma");
+        let metas: [&CodeMeta; 2] = [TRAILING_COMMA.meta(), DENSITY_WAS.meta()];
+        assert_eq!(metas[0].arity(), 0);
+        assert_eq!(metas[0].game_template(), None);
+        assert_eq!(metas[1].name(), "InvalidValue");
+        assert_eq!(metas[1].legacy(), Some("InvalidValue"));
+    }
+
+    #[test]
     fn a_replacing_definition_keeps_the_legacy_name_and_kind() {
         testing::assert_replaces(&DENSITY_WAS, DiagnosticCode::InvalidValue { text: None });
     }
@@ -830,6 +977,9 @@ mod tests {
         assert!(d.is(&FILE_MISSING_AGAIN));
         assert!(!d.is(&TRAILING_COMMA));
         assert!(!finding(DiagnosticCode::InvalidValue { text: None }).is(&FILE_MISSING));
+        assert!(DiagnosticCode::from(FILE_MISSING.with(["a"])).is(&FILE_MISSING_AGAIN));
+        assert!(!DiagnosticCode::from(FILE_MISSING.with(["a"])).is(&TRAILING_COMMA));
+        assert!(!DiagnosticCode::InvalidValue { text: None }.is(&DENSITY_WAS));
     }
 
     #[test]
@@ -845,12 +995,55 @@ mod tests {
         );
         assert_eq!(
             finding(DiagnosticCode::UnrecognizedField { text: None }).kind(),
-            Kind::UnknownMember
+            Kind::UnknownMember(Disposition::Kept)
         );
-        assert_eq!(
-            finding(DiagnosticCode::MemberNotKept { text: None }).kind(),
-            Kind::MemberNotKept
-        );
+    }
+
+    /// The four unknown-member codes are one kind, told apart by what became of the member;
+    /// the neighbours that drop or ignore a member go with them.
+    #[test]
+    fn the_unknown_member_codes_are_one_kind_with_their_disposition() {
+        use Disposition as D;
+        let rows = [
+            (DiagnosticCode::UnrecognizedField { text: None }, D::Kept),
+            (
+                DiagnosticCode::UnrecognizedComponent { text: None },
+                D::Kept,
+            ),
+            (DiagnosticCode::MemberNotKept { text: None }, D::NotKept),
+            (DiagnosticCode::DroppedField { text: None }, D::Dropped),
+            (DiagnosticCode::DroppedComponent { text: None }, D::Dropped),
+            (
+                DiagnosticCode::DuplicateComponentVersion {
+                    old: "a".into(),
+                    new: "b".into(),
+                },
+                D::Dropped,
+            ),
+            (DiagnosticCode::IgnoredMember { text: None }, D::Ignored),
+            (DiagnosticCode::IgnoredProperty, D::Ignored),
+            (DiagnosticCode::LiteralIgnored, D::Ignored),
+            (DiagnosticCode::LegacySettingIgnored, D::Ignored),
+            (DiagnosticCode::PackSettingChangeIgnored, D::Ignored),
+            (DiagnosticCode::AtomicFilterLightingIgnored, D::Ignored),
+            (DiagnosticCode::LegacyFogIgnored, D::Ignored),
+        ];
+        for (code, disposition) in rows {
+            assert_eq!(
+                finding(code.clone()).kind(),
+                Kind::UnknownMember(disposition),
+                "{code:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn the_readers_policy_converts_into_the_disposition() {
+        use crate::json::kit::Disposition as Policy;
+        assert_eq!(Disposition::from(Policy::Keep), Disposition::Kept);
+        assert_eq!(Disposition::from(Policy::Report), Disposition::NotKept);
+        assert_eq!(Disposition::from(Policy::Reject), Disposition::Dropped);
+        assert_eq!(Disposition::from(Policy::Ignore), Disposition::Ignored);
     }
 
     #[test]

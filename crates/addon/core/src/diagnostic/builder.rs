@@ -151,7 +151,7 @@ mod tests {
         CodeDef::new("fog/kept", Kind::InvalidValue, Class::KeptError, "kept");
     static UNKNOWN: CodeDef<0> = CodeDef::new(
         "fog/unknown",
-        Kind::UnknownMember,
+        Kind::UnknownMember(crate::diagnostic::Disposition::Kept),
         Class::Unknown,
         "unknown",
     );

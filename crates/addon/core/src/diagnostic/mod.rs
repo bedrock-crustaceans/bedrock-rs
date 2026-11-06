@@ -5,6 +5,7 @@ mod builder;
 pub mod builders;
 pub mod cereal;
 mod code;
+pub mod codes;
 mod def;
 mod deprecated;
 mod detail;
@@ -23,7 +24,7 @@ pub mod texts;
 pub mod validator;
 
 pub use code::{DiagnosticCode, NotFoundHint, VanillaText};
-pub use def::{Class, Code, CodeDef, Kind};
+pub use def::{Class, Code, CodeDef, CodeMeta, Disposition, Kind};
 pub use deprecated::ENUM_VALUE_DEPRECATED;
 pub use event::EVENT_BOTH_RANDOMIZE_AND_SEQUENCE;
 // hidden: reader plumbing: maps the facet error kinds to codes for the crate family's readers
