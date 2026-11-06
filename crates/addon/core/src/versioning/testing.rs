@@ -70,7 +70,8 @@ pub struct StepOutput {
 /// The context [`step_output`] runs a step in.
 #[derive(Clone, Debug)]
 pub struct Checks<'a> {
-    /// The load context the step sees.
+    /// The load context the step sees. Its `reading` is also the reading the step grades by
+    /// (`UpgradeCx::reading`); `LoadContext::detached`'s by default.
     pub load: LoadContext,
     /// `UpgradeCx::identifier`.
     pub identifier: &'a str,
@@ -144,6 +145,7 @@ where
         identifier: checks.identifier,
         actor_type: checks.actor_type,
         skip_section_a: settings.skip_section_a,
+        reading: checks.load.reading,
         diagnostics: &mut out,
     });
     let payload = next.write().map_err(|_| FailureKind::NotWritten)?;

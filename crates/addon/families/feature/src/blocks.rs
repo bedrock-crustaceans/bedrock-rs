@@ -10,7 +10,7 @@ use super::read::parse_strict_with;
 use super::validate::Check;
 use super::values::{BlockList, JsonInt, WeightedBlock, pair, weight_of, weight_value};
 use super::{Rules, V1_13_0};
-use bedrock_addon_core::diagnostic::Diagnostics;
+use bedrock_addon_core::diagnostic::{Diagnostics, Severity};
 use bedrock_addon_core::id::FeatureId;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, JsonType, StrictError, Value};
 use bedrock_addon_core::molang::MolangVisitor;
@@ -763,7 +763,9 @@ impl Rules for SingleBlockFeature {
         match &self.places_block {
             Some(PlacesBlock::Specifier(specifier)) => {
                 let at = check.path("places_block");
-                check.diagnostics.extend(specifier.check(&at));
+                check
+                    .diagnostics
+                    .extend(specifier.check(&at, Severity::Warning));
             }
             Some(PlacesBlock::Descriptor(descriptor)) => {
                 check.descriptor("places_block", Some(descriptor));
@@ -771,7 +773,9 @@ impl Rules for SingleBlockFeature {
             Some(PlacesBlock::Weighted(entries)) => {
                 check.each("places_block", entries, |check, entry| {
                     let at = check.path("block");
-                    check.diagnostics.extend(entry.block.check(&at));
+                    check
+                        .diagnostics
+                        .extend(entry.block.check(&at, Severity::Warning));
                 });
             }
             None => {}

@@ -76,7 +76,7 @@ impl Typed for ApplyKnockbackRulesV1_8_0 {
         let at = JsonPath::new().child("presets");
         for (i, preset) in self.presets.iter().enumerate() {
             if let Some(filter) = &preset.filter {
-                cx.extend(filter.check(&at.index(i).child("filter")));
+                cx.extend(filter.check(&at.index(i).child("filter"), cx.unknown()));
             }
         }
     }
@@ -216,7 +216,7 @@ impl Typed for PushableByEntityV1_26_30 {
         for (i, preset) in self.presets.iter().enumerate() {
             if let Some(filters) = &preset.filters {
                 let at: JsonPath = at.index(i).child("filters");
-                cx.extend(filters.check(&at));
+                cx.extend(filters.check(&at, cx.unknown()));
             }
         }
     }

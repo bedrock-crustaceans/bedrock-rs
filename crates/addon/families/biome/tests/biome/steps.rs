@@ -37,6 +37,7 @@ fn step_1_26_0(identifier: &str, components: &str) -> v1_26_0::Biome {
         identifier,
         actor_type: ActorType::Mob,
         skip_section_a: false,
+        reading: load.reading,
         diagnostics: &mut out,
     });
     assert!(out.is_empty(), "the step reports nothing");

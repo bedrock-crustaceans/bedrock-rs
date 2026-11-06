@@ -8,7 +8,7 @@
 
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 
-use bedrock_addon::diagnostic::{Diagnostic, DiagnosticCode, Severity};
+use bedrock_addon::diagnostic::{Diagnostic, DiagnosticCode, DiagnosticDetail, Severity};
 use bedrock_addon::document::Content;
 use bedrock_addon::load::LoadContext;
 use bedrock_addon::storage::PackPath;
@@ -19,16 +19,26 @@ struct Outcome {
     findings: Vec<Diagnostic>,
 }
 
+/// The reader's message of a syntax finding: the legacy `MalformedInput` payload, or, for a
+/// family on its own definition (fog's `parse_error`), the `DiagnosticDetail::Syntax` it carries.
+fn syntax_message(d: &Diagnostic) -> Option<&str> {
+    match &d.code {
+        DiagnosticCode::MalformedInput { message, .. } => Some(message),
+        code if code.name() == "MalformedInput" => match d.detail.as_deref() {
+            Some(DiagnosticDetail::Syntax(message)) => Some(message),
+            _ => None,
+        },
+        _ => None,
+    }
+}
+
 impl Outcome {
     /// The messages of the `MalformedInput` findings of `severity` or above.
     fn malformed(&self, severity: Severity) -> Vec<String> {
         self.findings
             .iter()
             .filter(|d| d.severity >= severity)
-            .filter_map(|d| match &d.code {
-                DiagnosticCode::MalformedInput { message, .. } => Some(message.clone()),
-                _ => None,
-            })
+            .filter_map(|d| syntax_message(d).map(str::to_owned))
             .collect()
     }
 
@@ -38,8 +48,7 @@ impl Outcome {
             .iter()
             .filter(|d| {
                 // (The item catalog tells its refusal at information level.)
-                matches!(&d.code, DiagnosticCode::MalformedInput { message, .. }
-                    if message == "The document root must not be followed by other values.")
+                syntax_message(d) == Some("The document root must not be followed by other values.")
             })
             .collect()
     }
@@ -48,10 +57,7 @@ impl Outcome {
     fn trailing(&self) -> Vec<&Diagnostic> {
         self.findings
             .iter()
-            .filter(|d| {
-                matches!(&d.code, DiagnosticCode::MalformedInput { message, .. }
-                    if message == "content after the JSON value is ignored")
-            })
+            .filter(|d| syntax_message(d) == Some("content after the JSON value is ignored"))
             .collect()
     }
 }
@@ -318,8 +324,9 @@ fn a_block_file_with_a_bad_escape_is_rejected_at_the_escape() {
         .collect();
     assert_eq!(errors.len(), 1, "{:?}", outcome.findings);
     assert!(
-        matches!(&errors[0].code, DiagnosticCode::MalformedInput { message, .. }
-            if message.contains("bad escape sequence in string") && message.contains('é')),
+        syntax_message(errors[0])
+            .is_some_and(|message| message.contains("bad escape sequence in string")
+                && message.contains('é')),
         "{:?}",
         errors[0].code
     );

@@ -5,7 +5,7 @@ use facet::Facet;
 use facet_json::RawJson;
 
 use super::{FeatureRule, FeatureRuleConditions, FeatureRuleDescription};
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
+use bedrock_addon_core::diagnostic::{Class, Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
 use bedrock_addon_core::json::{
     JsonSlice, NullRule, ScalarFailure, Value, keep_unknown_members_with, parse_with_rules,
     reject_nulls,
@@ -47,7 +47,7 @@ pub(crate) fn parse_rule(
     let shell: Shell<'_> = parse_payload(payload, cx, d)?;
     if let Some(filter) = &shell.conditions.biome_filter {
         let at = cx.at.with(&["conditions", "minecraft:biome_filter"]);
-        d.extend(filter.check(&at));
+        d.extend(filter.check(&at, cx.load.grade(Class::Unknown)));
     }
     let distribution = match shell.distribution {
         None => None,
@@ -195,9 +195,11 @@ fn typed<T: for<'f> Facet<'f>>(
                     let mut full = at.clone();
                     full.append(&path);
                     // Under the slice's error mask an unknown member is a level-2 content-log
-                    // line, a warning that does not stop the load.
+                    // line, a warning that does not stop the load: the reading's grade.
                     d.push(
-                        Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None }).at(full),
+                        Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None })
+                            .severity(crate::READING.grade(Class::Unknown))
+                            .at(full),
                     );
                 }
             }

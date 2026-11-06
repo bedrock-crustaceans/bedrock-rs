@@ -173,7 +173,7 @@ pub struct IgnoreCannotBeAttacked {
 impl Typed for IgnoreCannotBeAttacked {
     fn check(&mut self, cx: &mut ComponentCheck<'_>) {
         if let Some(filters) = &self.filters {
-            cx.extend(filters.check(&JsonPath::new().child("filters")));
+            cx.extend(filters.check(&JsonPath::new().child("filters"), cx.unknown()));
         }
     }
 }
@@ -379,7 +379,7 @@ impl Typed for Healable {
             }
         }
         if let Some(filters) = &self.filters {
-            cx.extend(filters.check(&JsonPath::new().child("filters")));
+            cx.extend(filters.check(&JsonPath::new().child("filters"), cx.unknown()));
         }
     }
 }

@@ -20,7 +20,7 @@ use super::texts::{
     OVERLAP, PRE_CAVES, SNOW_ACCUMULATION, SURFACE_BUILDER_UNRESOLVED, WEIGHTED_BIOME,
     WEIGHTED_CLIMATE, fixed, text,
 };
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, Phase};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, Phase, Severity};
 use bedrock_addon_core::document::ComponentMap;
 use bedrock_addon_core::id::BiomeId;
 use bedrock_addon_core::shared::RangeForm;
@@ -269,7 +269,7 @@ fn check_blocks(component: &BiomeComponent, base: &[&str], cx: &mut ValidateCx<'
     for (path, block) in blocks(component) {
         let mut at = child(&cx.at, base);
         at.append(&path);
-        cx.diagnostics.extend(block.check(&at));
+        cx.diagnostics.extend(block.check(&at, Severity::Warning));
     }
 }
 

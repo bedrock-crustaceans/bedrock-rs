@@ -278,6 +278,7 @@ pub(crate) fn finish(
         identifier: "",
         actor_type: ActorType::Mob,
         skip_section_a: false,
+        reading: cx.reading,
         diagnostics,
     });
     let errors = |d: &Diagnostics| d.iter().filter(|d| d.severity == Severity::Error).count();

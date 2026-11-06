@@ -575,16 +575,16 @@ fn the_chain_is_two_structs_from_the_floor() {
     {
         use bedrock_addon_core::json::NullRule;
         use bedrock_addon_core::load::DocumentSource;
-        use bedrock_addon_core::versioning::{ErrorMask, InputKind, StructIndex};
+        use bedrock_addon_core::versioning::{InputKind, StructIndex, UnknownMask};
         type F = crate::CatalogFamily;
         assert_eq!(F::ENVELOPE.input, InputKind::Document);
         assert_eq!(
-            F::reading(StructIndex::Stable(0), DocumentSource::Json).error_mask(),
-            ErrorMask::Unstrict
+            F::reading(StructIndex::Stable(0), DocumentSource::Json).unknown,
+            UnknownMask::Warn
         );
         assert_eq!(
-            F::reading(StructIndex::Stable(1), DocumentSource::Json).error_mask(),
-            ErrorMask::Strict
+            F::reading(StructIndex::Stable(1), DocumentSource::Json).unknown,
+            UnknownMask::Error
         );
         assert_eq!(
             F::reading(StructIndex::Stable(1), DocumentSource::Json).null_rule(),

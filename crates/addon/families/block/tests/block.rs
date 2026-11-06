@@ -14,3 +14,6 @@ mod places;
 
 #[path = "block/bounds.rs"]
 mod bounds;
+
+#[path = "block/unknown_severity.rs"]
+mod unknown_severity;

@@ -4,8 +4,11 @@
 //! from its own slice (a failing one is dropped, the rest load), each property, the brain and
 //! the scripts are built member by member so a bad one is reported at its path.
 
+use std::cell::OnceCell;
+
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity, Span, Told, VanillaText,
+    Class, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity, Span, Told,
+    VanillaText,
 };
 use bedrock_addon_core::document::{
     ComponentMap, ComponentSet, Origin, Rejected, Unknown as Table, VersionInfo,
@@ -20,7 +23,7 @@ use bedrock_addon_core::molang::MolangSource;
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::schema;
 use bedrock_addon_core::version::{ENGINE_VERSION, FormatVersion, FormatVersionInput, known};
-use bedrock_addon_core::versioning::{ConvertMode, Family, Loaded, ParseCx, load};
+use bedrock_addon_core::versioning::{ConvertMode, Family, Loaded, ParseCx, UnknownMask, load};
 use facet::Facet;
 use facet_json::RawJson;
 use indexmap::IndexMap;
@@ -28,7 +31,7 @@ use indexmap::IndexMap;
 use super::component::EntityComponent;
 use super::game_schema;
 use super::goal;
-use super::versions::{BRAIN_1_26_50, BRAIN_1_26_50_KEYS, LAST_JSON_STRUCT, STRICT_SLICES};
+use super::versions::{BRAIN_1_26_50, BRAIN_1_26_50_KEYS, LAST_JSON_STRUCT};
 use super::{
     AnimateEntry, Brain, ComponentGroup, DeprecatedData, Description, Entity, EntityVersion, Event,
     Property, PropertyDefault, PropertyType, Scripts, SpawnCategory, UpgradeEntry, Written,
@@ -134,7 +137,7 @@ struct ScriptsShell<'a> {
 
 /// The state of one read: the context and where findings go.
 pub(crate) struct Reader<'c, 'd> {
-    /// The load context.
+    /// The load context, whose reading is the slice's that parsed the document.
     pub load: &'c LoadContext,
     /// The document's original version, which the version rules compare against.
     pub original_version: FormatVersion,
@@ -142,9 +145,46 @@ pub(crate) struct Reader<'c, 'd> {
     pub d: &'d mut Diagnostics,
     /// Whether spans are meaningful: false when the text was written by an upgrade step.
     pub spans: bool,
+    /// `load` with an unknown member told as a warning, made when first asked for: the
+    /// context of a component the legacy reader converts or that stays untyped.
+    silent: OnceCell<LoadContext>,
 }
 
-impl Reader<'_, '_> {
+impl<'c, 'd> Reader<'c, 'd> {
+    /// A reader of a document of `original_version` in `load`, telling into `d`.
+    pub(crate) fn new(
+        load: &'c LoadContext,
+        original_version: FormatVersion,
+        d: &'d mut Diagnostics,
+        spans: bool,
+    ) -> Self {
+        Self {
+            load,
+            original_version,
+            d,
+            spans,
+            silent: OnceCell::new(),
+        }
+    }
+
+    /// The severity of an unknown member or component of what the slice types: the grade of
+    /// the reading the document is read under (an error under the strict mask of the slices
+    /// from 1.21.89, the beta one included).
+    pub(crate) fn unknown(&self) -> Severity {
+        self.load.grade(Class::Unknown)
+    }
+
+    /// The context of a component that is no part of the slice: one the legacy reader converts
+    /// (below the version that types it) or that no version types. Its unknown members are
+    /// the conversion's warnings whatever the slice's mask, which the read then reports as
+    /// informations ([`legacy_reader_is_silent`]).
+    fn silent_load(&self) -> &LoadContext {
+        self.silent.get_or_init(|| {
+            let mut load = self.load.clone();
+            load.reading = load.reading.with_unknown(UnknownMask::Warn);
+            load
+        })
+    }
     /// A finding at `at`.
     pub(crate) fn report(
         &mut self,
@@ -185,7 +225,11 @@ impl Reader<'_, '_> {
         let before = self.d.len();
         let value = self.typed::<T>(slice, base, Severity::Error);
         for finding in self.d.iter_mut().skip(before) {
-            if finding.severity == Severity::Error && !finding.kept {
+            // An unknown member is the slice's finding, not the failure's.
+            if finding.severity == Severity::Error
+                && !finding.kept
+                && !matches!(finding.code, DiagnosticCode::UnrecognizedField { .. })
+            {
                 *finding = finding.clone().into_kept();
             }
         }
@@ -193,8 +237,8 @@ impl Reader<'_, '_> {
     }
 
     /// Parses `T` from `slice`, keeping the unknown members of its structs that keep them in
-    /// the table of the read (`Diagnostics::unknown_mut`; each one an `UnrecognizedField`
-    /// warning); a failure is reported at `base` with `severity`.
+    /// the table of the read (`Diagnostics::unknown_mut`; each one an `UnrecognizedField` at
+    /// [`Self::unknown`]); a failure is reported at `base` with `severity`.
     pub(crate) fn typed<'a, T: Facet<'a>>(
         &mut self,
         slice: JsonSlice<'a>,
@@ -213,11 +257,11 @@ impl Reader<'_, '_> {
             let (unknown, misread) = keep_unknown(&value, &json, &mut kept);
             self.d.unknown_mut().absorb(base, kept);
             for (path, _) in unknown {
-                // The game logs this at the warning level for a document below 1.21.89 and lifts it
-                // to an error from that version on.
+                // The game logs this at the warning level for a document below 1.21.89; the
+                // strict slices from that version on make it an error.
                 self.report(
                     DiagnosticCode::UnrecognizedField { text: None },
-                    Severity::Warning,
+                    self.unknown(),
                     base.join(&path),
                     None,
                 );
@@ -288,12 +332,7 @@ pub(crate) fn entity(
     cx: &ParseCx<'_>,
     d: &mut Diagnostics,
 ) -> Option<Entity> {
-    let mut reader = Reader {
-        load: cx.load,
-        original_version: cx.original_version,
-        d,
-        spans: true,
-    };
+    let mut reader = Reader::new(cx.load, cx.original_version, d, true);
     let entity = read_entity(&mut reader, payload, &cx.at)?;
     if let Some(found) =
         member_version_value(payload).and_then(|version| payload_version_unread(Some(&version), cx))
@@ -333,47 +372,6 @@ pub(crate) fn payload_version_unread(
 
 /// [`entity`] with an explicit reader: the newest struct from `payload`, findings below `at`.
 pub(crate) fn read_entity(
-    r: &mut Reader<'_, '_>,
-    payload: JsonSlice<'_>,
-    at: &JsonPath,
-) -> Option<Entity> {
-    let start = r.d.len();
-    let entity = read_entity_members(r, payload, at);
-    if r.original_version >= STRICT_SLICES {
-        // `entity_version` is checked by hand (its "Error loading 'entity_version' …" texts),
-        // not read by the slice's types: a member inside it that its checks do not read is no
-        // unknown member of the slice (the entity-version check tells it); the member itself, below 1.26.20, is.
-        let hand_checked = at.child("description").child("entity_version");
-        unknown_members_are_errors(r.d, start, &hand_checked);
-    }
-    entity
-}
-
-/// A document of a slice the game reads with the strict error codes (1.21.89 on, and beta) is
-/// refused for an unknown member or component of what the slice types. The
-/// framework turns the payload's own findings into errors when the newest struct parses
-/// the file; a document the steps carry here is read after it, so the read does it for what
-/// it told from `start` on. A component converted from below its typed version is no part of
-/// the slice (its findings are the conversion's, `Phase::Upgrade`) and keeps its warnings.
-fn unknown_members_are_errors(d: &mut Diagnostics, start: usize, hand_checked: &JsonPath) {
-    for finding in d.iter_mut().skip(start) {
-        if finding.severity == Severity::Warning
-            && finding.phase == Phase::Parse
-            && !(finding.location.json_path.starts_with(hand_checked)
-                && finding.location.json_path.len() > hand_checked.len())
-            && matches!(
-                finding.code,
-                DiagnosticCode::UnrecognizedField { .. }
-                    | DiagnosticCode::UnrecognizedComponent { .. }
-            )
-        {
-            finding.severity = Severity::Error;
-        }
-    }
-}
-
-/// [`read_entity`]'s reading.
-fn read_entity_members(
     r: &mut Reader<'_, '_>,
     payload: JsonSlice<'_>,
     at: &JsonPath,
@@ -435,7 +433,7 @@ fn read_entity_members(
         })
         .collect();
     // An unknown member is told and not kept. From 1.21.89 it refuses the
-    // document (`unknown_members_are_errors`); below, the legacy slice ignores it and the
+    // document (the strict slices' grade); below, the legacy slice ignores it and the
     // conversion to the strict newest struct does not carry it, so the write-back has none.
     r.d.unknown_mut().take_all(at);
     let brain = shell.brain.and_then(|raw| {
@@ -445,9 +443,9 @@ fn read_entity_members(
             // an unknown member.
             r.report(
                 DiagnosticCode::UnrecognizedField { text: None },
-                // The game logs this at the warning level for a document below 1.21.89 and lifts it
-                // to an error from that version on.
-                Severity::Warning,
+                // The game logs this at the warning level for a document below 1.21.89; the
+                // strict slices from that version on make it an error.
+                r.unknown(),
                 at.child("brain"),
                 Some(span_of(slice)),
             );
@@ -631,7 +629,11 @@ pub(crate) fn read_components(
             }
             found.unknown_mut().absorb(&JsonPath::new(), kept);
         }
-        let read = KeyRead { key, converted };
+        let read = KeyRead {
+            key,
+            converted,
+            silent: converted || EntityComponent::typed_since(typed_key).is_none(),
+        };
         let Ok(value) = read.parse(slice, r, &mut found) else {
             // An unknown component is told and not kept (from 1.21.89 it refuses the document).
             unknown_component(r, path, slice);
@@ -741,6 +743,9 @@ struct KeyRead<'k> {
     /// Whether the document is below the version that types the key (its legacy reader converts
     /// it).
     converted: bool,
+    /// Whether the key is no part of the slice: converted, or typed by no version. It is read
+    /// in the reader's [`silent_load`](Reader::silent_load).
+    silent: bool,
 }
 
 impl KeyRead<'_> {
@@ -752,8 +757,9 @@ impl KeyRead<'_> {
         r: &Reader<'_, '_>,
         found: &mut Diagnostics,
     ) -> Result<Option<EntityComponent>, NoReader> {
+        let load = if self.silent { r.silent_load() } else { r.load };
         if let Some(parse) = goal::versioned(self.key) {
-            return Ok(parse(slice, r.original_version, r.load, found));
+            return Ok(parse(slice, r.original_version, load, found));
         }
         let row = <Entity as Family>::components()
             .get(self.key)
@@ -761,7 +767,7 @@ impl KeyRead<'_> {
         Ok((row.parse)(
             slice,
             mode_for(self.key, self.converted),
-            r.load,
+            load,
             found,
         ))
     }
@@ -784,9 +790,9 @@ fn mode_for(key: &str, converted: bool) -> ConvertMode {
 fn unknown_component(r: &mut Reader<'_, '_>, path: JsonPath, slice: JsonSlice<'_>) {
     r.report(
         DiagnosticCode::UnrecognizedComponent { text: None },
-        // The game logs this at the warning level for a document below 1.21.89 and lifts it
-        // to an error from that version on.
-        Severity::Warning,
+        // The game logs this at the warning level for a document below 1.21.89; the strict
+        // slices from that version on make it an error.
+        r.unknown(),
         path,
         Some(span_of(slice)),
     );
@@ -1262,9 +1268,9 @@ fn settle_entity_version(
         if let Some(value) = entity_version {
             r.report(
                 DiagnosticCode::UnrecognizedField { text: None },
-                // The game logs this at the warning level for a document below 1.21.89 and lifts it
-                // to an error from that version on.
-                Severity::Warning,
+                // The game logs this at the warning level for a document below 1.21.89; the
+                // strict slices from that version on make it an error.
+                r.unknown(),
                 version_at,
                 None,
             );
@@ -1274,9 +1280,9 @@ fn settle_entity_version(
         if let Some(upgrades) = upgrades {
             r.report(
                 DiagnosticCode::UnrecognizedField { text: None },
-                // The game logs this at the warning level for a document below 1.21.89 and lifts it
-                // to an error from that version on.
-                Severity::Warning,
+                // The game logs this at the warning level for a document below 1.21.89; the
+                // strict slices from that version on make it an error.
+                r.unknown(),
                 at.child("upgrades"),
                 None,
             );

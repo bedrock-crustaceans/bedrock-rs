@@ -51,8 +51,13 @@ impl VersionStruct for Biome {
         let mut found = Diagnostics::default();
         let parsed = read(document, cx, &mut found);
         // Any failure of the strict load is reported as vanilla's "Invalid Biome file", after
-        // the finding that says where.
-        if found.has_errors() {
+        // the finding that says where. An unknown member, which the slice's mask grades an
+        // error, is not counted: the line follows the other failures alone (pinned by
+        // `chain::a_prerelease_of_1_21_120_is_read_from_the_raw_text_by_the_legacy_struct`).
+        if found
+            .iter()
+            .any(|finding| finding.rejects() && !is_unknown_member(finding))
+        {
             found.push(
                 Diagnostic::error(DiagnosticCode::MalformedInput {
                     message: INVALID_BIOME_FILE.to_owned(),
@@ -112,4 +117,12 @@ impl Upgrade for Biome {
             components: self.components,
         }
     }
+}
+
+/// Whether `finding` tells of an unknown member or component.
+fn is_unknown_member(finding: &Diagnostic) -> bool {
+    matches!(
+        finding.code,
+        DiagnosticCode::UnrecognizedField { .. } | DiagnosticCode::UnrecognizedComponent { .. }
+    )
 }

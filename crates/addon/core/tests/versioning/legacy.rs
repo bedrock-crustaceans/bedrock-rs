@@ -197,6 +197,7 @@ fn an_identity_step_hands_the_payload_on() {
         identifier: "demo:x",
         actor_type: bedrock_addon_core::vanilla::ActorType::Mob,
         skip_section_a: false,
+        reading: bedrock_addon_core::versioning::Reading::OWN,
         diagnostics: &mut d,
     };
     let stepped: history::V1_2_0 = Legacy::<LampPayload, 1, 1, 0>(payload.clone()).upgrade(&mut cx);

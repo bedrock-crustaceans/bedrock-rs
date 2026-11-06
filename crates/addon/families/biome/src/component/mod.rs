@@ -29,7 +29,7 @@ use bedrock_addon_derive::Components;
 use facet::Facet;
 
 use super::history::BiomeFamily;
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
+use bedrock_addon_core::diagnostic::{Class, Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
 use bedrock_addon_core::document::ComponentMap;
 use bedrock_addon_core::json::NullRule;
 use bedrock_addon_core::json::{
@@ -102,9 +102,8 @@ pub enum BiomeComponent {
 
 /// One component read strictly from its slice: every slice of the biome loader parses with
 /// the strict mask, so a component that does not deserialise rejects the document (an error).
-/// Unknown members are kept and reported as Parse-phase `UnrecognizedField` warnings, which
-/// core's `unknown_members_are_errors` (`versioning/pipeline.rs`) turns into the refusing error the
-/// game gives for an unknown member; the `Warning` is that step's input, not a grade. Findings
+/// Unknown members are kept and reported as `UnrecognizedField`, graded by the slice's reading
+/// (the refusing error the game gives for an unknown member under the strict mask). Findings
 /// are relative to the component.
 fn parse_row<T>(
     slice: JsonSlice<'_>,
@@ -118,7 +117,9 @@ where
     let _ = mode;
     let json = bedrock_addon_core::json::from_str_jsonc::<Value>(slice.text).ok();
     let unrecognized = |path: JsonPath| {
-        Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None }).at(path)
+        Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None })
+            .at(path)
+            .severity(cx.grade(Class::Unknown))
     };
     // The scalars are read by the family's rules (`crate::reading`: strict, a number beyond its
     // float a type error), in a versioned load and outside one alike.

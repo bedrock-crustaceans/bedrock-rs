@@ -9,7 +9,8 @@
 //! of their level, with an `UnrecognizedField` warning in both modes.
 
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, JsonPathSegment, Severity, Told, VanillaText,
+    Class, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, JsonPathSegment, Severity, Told,
+    VanillaText,
 };
 use bedrock_addon_core::json::{JsonSlice, NullRule, Value, to_json};
 use bedrock_addon_core::load::LoadContext;
@@ -50,10 +51,6 @@ pub(crate) trait Typed: for<'a> Facet<'a> {
 /// Where a component's rule checks report: the mode decides what a broken rule does.
 pub(crate) struct ComponentCheck<'d> {
     mode: ConvertMode,
-    #[cfg_attr(
-        not(feature = "molang"),
-        allow(dead_code, reason = "only the lenient Molang compile reads it")
-    )]
     load: &'d LoadContext,
     out: &'d mut Diagnostics,
     failed: bool,
@@ -74,6 +71,12 @@ impl<'d> ComponentCheck<'d> {
     #[cfg(feature = "molang")]
     pub(crate) fn load(&self) -> &LoadContext {
         self.load
+    }
+
+    /// The severity of an unknown member of a shared value the component holds: the grade of
+    /// the reading the file is loaded under.
+    pub(crate) fn unknown(&self) -> Severity {
+        self.load.grade(Class::Unknown)
     }
 
     /// The mode of the read.
@@ -470,8 +473,12 @@ fn read_shaped<T: Typed>(
     d.unknown_mut().absorb(&JsonPath::new(), kept);
     for (path, _) in unknown {
         // The game logs an unknown member at level 2 (a warning) for the legacy slice; the
-        // strict slice from 1.21.89 makes it an error.
-        d.push(Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None }).at(path.clone()));
+        // strict slice from 1.21.89 makes it an error: the slice's grade.
+        d.push(
+            Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None })
+                .severity(cx.grade(Class::Unknown))
+                .at(path.clone()),
+        );
     }
     // A value of another JSON type: the typed read fails it and the entity is
     // refused; the legacy readers' `as*`

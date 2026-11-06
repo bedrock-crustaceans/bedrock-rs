@@ -8,11 +8,12 @@ use indexmap::IndexMap;
 
 use super::payload::{failure_finding, join, span_of, tell_unknown};
 use super::{
-    ComponentTable, ContextArea, ConvertMode, ErrorMask, ExperimentalField, Family, FieldGate,
-    FieldMeta,
+    ComponentTable, ContextArea, ConvertMode, ExperimentalField, Family, FieldGate, FieldMeta,
+    UnknownMask,
 };
 use crate::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
+    Class, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
+    VanillaText,
 };
 use crate::document::{ComponentMap, ComponentRef, ComponentSet, CustomComponent};
 use crate::json::{JsonSlice, NullRule, ScalarRead, Value, parse_with_rules, reject_nulls};
@@ -24,7 +25,7 @@ use crate::version::FormatVersion;
 /// `mode` is the caller's to honour), its unknown members kept in `d`'s table (by paths
 /// relative to the component, which the component-map parser places; which structs keep them
 /// is `parse_payload`'s rule) and told as `parse_payload` tells them (an `UnrecognizedField`
-/// warning the strict mask turns into an error after the parse, or the word a struct states). A failed parse (a member of the wrong type, `0x8`, or a required member missing,
+/// graded by the slice's reading, or the word a struct states). A failed parse (a member of the wrong type, `0x8`, or a required member missing,
 /// `0x80`) is one finding: in a cereal slice of a document-input family
 /// ([`LoadContext::strict_components`]) an error, which rejects the whole document under both
 /// masks; elsewhere (`JsonCpp` slices, hand-written legacy slices) an error too. A legacy
@@ -211,7 +212,7 @@ fn below_member(path: &JsonPath) -> JsonPath {
 /// `at/<key>` (`at` is the object's path in the file). A row whose value has no typed key (an
 /// entity's dynamic keys) keeps the JSON as a dynamic entry. A key `is_custom` accepts is a
 /// custom component, kept as written. Any other key is kept for write-back and reported as an
-/// `UnrecognizedComponent` warning.
+/// `UnrecognizedComponent`, graded by the slice's reading (`LoadContext::grade`).
 pub fn parse_component_map<'a, F: Family>(
     entries: &IndexMap<String, RawJson<'a>>,
     within: JsonSlice<'a>,
@@ -273,10 +274,10 @@ pub fn parse_component_map<'a, F: Family>(
         } else {
             map.insert_unknown(key, json());
             d.push(Diagnostic::new(
-                // Cereal's own text for a component the schema does not list: level 2, a
-                // warning; a `Strict` slice makes it an error after the parse.
+                // Cereal's own text for a component the schema does not list: level 2, an
+                // error under a strict slice's mask.
                 crate::diagnostic::cereal::component_not_in_schema(),
-                Severity::Warning,
+                cx.grade(Class::Unknown),
                 Phase::Parse,
                 Location::new(None, None, path, Some(span_of(slice))),
             ));
@@ -341,10 +342,7 @@ pub fn validate_components<F: Family>(
     let gate_severity = Severity::Error;
     // A deprecated or out-of-area component is reported like a component missing from the
     // schema: level 2 under the unstrict mask, an error under the strict one.
-    let unknown_severity = match unknown_mask::<F>(original_version, cx.source) {
-        ErrorMask::Strict => Severity::Error,
-        ErrorMask::Unstrict => Severity::Warning,
-    };
+    let unknown_severity = unknown_mask::<F>(original_version, cx.source).severity();
     let mut passed = true;
     let mut dropped: Vec<String> = Vec::new();
     for entry in map.iter() {
@@ -612,12 +610,12 @@ fn finding(code: DiagnosticCode, severity: Severity, path: JsonPath) -> Diagnost
     )
 }
 
-/// The error mask of the struct that reads a document written at `version` from `source`: the
-/// mask the unknown-component findings of the validate phase follow.
+/// The unknown mask of the struct that reads a document written at `version` from `source`:
+/// the mask the unknown-component findings of the validate phase follow.
 fn unknown_mask<F: Family>(
     version: FormatVersion,
     source: crate::load::DocumentSource,
-) -> ErrorMask {
+) -> UnknownMask {
     let input = crate::version::FormatVersionInput {
         version: Some(version),
         beta_literal: false,
@@ -625,8 +623,8 @@ fn unknown_mask<F: Family>(
     };
     match super::range::select::<F>(&input) {
         super::range::Selection::Struct(i) => {
-            super::reading::slice_reading::<F>(super::StructIndex::Stable(i), source).error_mask()
+            super::reading::slice_reading::<F>(super::StructIndex::Stable(i), source).unknown
         }
-        _ => ErrorMask::Unstrict,
+        _ => UnknownMask::Warn,
     }
 }

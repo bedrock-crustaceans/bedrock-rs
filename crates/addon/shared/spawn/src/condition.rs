@@ -536,7 +536,9 @@ fn descriptor(value: &Value, at: &JsonPath, d: &mut Diagnostics) -> Option<Block
     } else {
         BlockDescriptor::from(value.clone())
     };
-    for found in &descriptor.check(at) {
+    // The spawn families read under the first-run profile, whose mask tells an unknown
+    // member as a warning.
+    for found in &descriptor.check(at, Severity::Warning) {
         d.push(found.clone());
     }
     (!matches!(descriptor, BlockDescriptor::Invalid(_))).then_some(descriptor)
@@ -821,7 +823,8 @@ fn biome_filter(value: &Value, at: &JsonPath, d: &mut Diagnostics) -> Option<Fil
     }
     match Filter::try_from(value.clone()) {
         Ok(filter) => {
-            for found in &filter.check(at) {
+            // An unknown member is a warning, as at `descriptor`.
+            for found in &filter.check(at, Severity::Warning) {
                 d.push(found.clone());
             }
             Some(filter)

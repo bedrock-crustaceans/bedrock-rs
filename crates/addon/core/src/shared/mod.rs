@@ -26,14 +26,20 @@ use crate::diagnostic::{
 };
 use crate::document::UnknownMembers;
 
-/// An `UnrecognizedField` warning for each member of `extra`, at `at/<key>`: a shared type the
-/// game reads with cereal (a filter, an event trigger, a block descriptor's proxy), whose
-/// unknown member is logged at level 2 by the unstrict reader; a `Strict` slice makes it an
-/// error.
+/// An `UnrecognizedField` at `severity` for each member of `extra`, at `at/<key>`: a shared
+/// type the game reads with cereal (a filter, an event trigger, a block descriptor's proxy),
+/// whose unknown member is logged at level 2 by the unstrict reader. The caller passes the
+/// grade of [`Class::Unknown`](crate::diagnostic::Class::Unknown) of the reading it reads
+/// under: an error under a strict mask.
 // hidden: reader plumbing of the crate family (the game's jsoncpp contract)
 #[doc(hidden)]
-pub fn unrecognized(extra: &UnknownMembers, at: &JsonPath, out: &mut Diagnostics) {
-    unrecognized_except(extra, at, &[], Severity::Warning, out);
+pub fn unrecognized(
+    extra: &UnknownMembers,
+    at: &JsonPath,
+    severity: Severity,
+    out: &mut Diagnostics,
+) {
+    unrecognized_except(extra, at, &[], severity, out);
 }
 
 /// [`unrecognized`] for the members of `extra` other than `skip` (members another finding

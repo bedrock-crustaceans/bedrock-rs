@@ -4,7 +4,7 @@
 #[path = "shared/common.rs"]
 mod common;
 
-use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath};
+use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath, Severity};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::shared::{EventTrigger, Filter, FilterSubject};
 use common::{compact, read, round_trip};
@@ -56,7 +56,7 @@ fn d6_a_legacy_condition_is_kept_in_extra() {
 fn the_check_covers_the_filters() {
     let t: EventTrigger =
         read(r#"{"event": "e", "filters": {"all_of": [{"test": "is_nothing"}]}}"#).unwrap();
-    let found = t.check(&JsonPath::new());
+    let found = t.check(&JsonPath::new(), Severity::Warning);
     assert_eq!(found.len(), 1);
     let finding = found.iter().next().unwrap();
     assert!(matches!(

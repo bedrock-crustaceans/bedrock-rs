@@ -278,15 +278,16 @@ impl Filter {
     /// The findings vanilla's reader logs for this filter, located under `at` (each at its own
     /// path below it): a test name vanilla does not register is an `UnresolvedReference` kept
     /// error with vanilla's text (the test then evaluates false); each member kept in a test's
-    /// or a group's `extra` is an `UnrecognizedField` warning (cereal's `0x4`, unstrict mask).
-    pub fn check(&self, at: &JsonPath) -> Diagnostics {
+    /// or a group's `extra` is an `UnrecognizedField` at `unknown` (cereal's `0x4`: the grade
+    /// of an unknown member by the reading the caller reads under).
+    pub fn check(&self, at: &JsonPath, unknown: Severity) -> Diagnostics {
         let mut out = Diagnostics::default();
         let mut path = at.clone();
-        self.check_into(&mut path, &mut out);
+        self.check_into(&mut path, unknown, &mut out);
         out
     }
 
-    fn check_into(&self, path: &mut JsonPath, out: &mut Diagnostics) {
+    fn check_into(&self, path: &mut JsonPath, unknown: Severity, out: &mut Diagnostics) {
         match self {
             Self::Test(test) => {
                 if VANILLA_TESTS.binary_search(&test.test.as_str()).is_err() {
@@ -302,12 +303,12 @@ impl Filter {
                         path,
                     ));
                 }
-                unrecognized(&test.extra, path, out);
+                unrecognized(&test.extra, path, unknown, out);
             }
             Self::List(list) => {
                 for (index, filter) in list.iter().enumerate() {
                     path.push_index(index);
-                    filter.check_into(path, out);
+                    filter.check_into(path, unknown, out);
                     path.pop();
                 }
             }
@@ -315,11 +316,11 @@ impl Filter {
                 for (key, member) in GROUP_KEYS.iter().zip(group.members()) {
                     if let Some(filter) = member {
                         path.push(key);
-                        filter.check_into(path, out);
+                        filter.check_into(path, unknown, out);
                         path.pop();
                     }
                 }
-                unrecognized(&group.extra, path, out);
+                unrecognized(&group.extra, path, unknown, out);
             }
         }
     }

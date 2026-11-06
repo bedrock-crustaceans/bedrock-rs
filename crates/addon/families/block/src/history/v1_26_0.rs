@@ -830,6 +830,7 @@ mod tests {
             identifier: "demo:x",
             actor_type: ActorType::Mob,
             skip_section_a: false,
+            reading: load.reading,
             diagnostics: &mut diagnostics,
         };
         let block = convert(payload, &legacy, &mut cx).block;

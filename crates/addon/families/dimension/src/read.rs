@@ -6,7 +6,7 @@ use facet::Facet;
 
 use super::{DimensionComponents, DimensionDescription};
 use crate::history::v1_18_0::Components as ComponentsV1;
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
+use bedrock_addon_core::diagnostic::{Class, Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
 use bedrock_addon_core::json::{
     JsonSlice, NullRule, ScalarFailure, ScalarRead, Value, keep_unknown_members, parse_with_rules,
     reject_nulls,
@@ -114,7 +114,7 @@ pub(crate) fn parse_root<R: for<'f> Facet<'f>>(
             // in silence, so the crate reports an information.
             let code = DiagnosticCode::UnrecognizedField { text: None };
             let finding = if cx.original_version >= CEREAL_FLOOR {
-                Diagnostic::warn(code)
+                Diagnostic::warn(code).severity(cx.load.grade(Class::Unknown))
             } else {
                 Diagnostic::info(code)
             };

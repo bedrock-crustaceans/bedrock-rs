@@ -137,7 +137,7 @@ impl Typed for PreferredPath {
         for (i, set) in self.preferred_path_blocks.iter().enumerate() {
             let blocks = sets.index(i).child("blocks");
             for (j, block) in set.blocks.iter().enumerate() {
-                cx.extend(block.check(&blocks.index(j)));
+                cx.extend(block.check(&blocks.index(j), cx.unknown()));
             }
         }
     }
@@ -301,7 +301,7 @@ impl Typed for BlockMovementSlowdownImmunity {
     fn check(&mut self, cx: &mut ComponentCheck<'_>) {
         let at = JsonPath::new().child("blocks");
         for (i, block) in self.blocks.iter().enumerate() {
-            cx.extend(block.check(&at.index(i)));
+            cx.extend(block.check(&at.index(i), cx.unknown()));
         }
     }
 }
@@ -576,7 +576,7 @@ impl Typed for Buoyant {
     fn check(&mut self, cx: &mut ComponentCheck<'_>) {
         let blocks = JsonPath::new().child("liquid_blocks");
         for (i, block) in self.liquid_blocks.iter().enumerate() {
-            cx.extend(block.check(&blocks.index(i)));
+            cx.extend(block.check(&blocks.index(i), cx.unknown()));
         }
     }
 }
@@ -647,7 +647,7 @@ impl Typed for Teleport {
 
     fn check(&mut self, cx: &mut ComponentCheck<'_>) {
         if let Some(filter) = &self.projectile_filter {
-            cx.extend(filter.check(&JsonPath::new().child("projectile_filter")));
+            cx.extend(filter.check(&JsonPath::new().child("projectile_filter"), cx.unknown()));
         }
     }
 }
@@ -713,12 +713,15 @@ impl Typed for Trail {
 
     fn check(&mut self, cx: &mut ComponentCheck<'_>) {
         if let Some(filter) = &self.spawn_filter {
-            cx.extend(filter.check(&JsonPath::new().child("spawn_filter")));
+            cx.extend(filter.check(&JsonPath::new().child("spawn_filter"), cx.unknown()));
         }
-        cx.extend(self.block_type.check(&JsonPath::new().child("block_type")));
+        cx.extend(
+            self.block_type
+                .check(&JsonPath::new().child("block_type"), cx.unknown()),
+        );
         let blocks = JsonPath::new().child("replaceable_blocks");
         for (i, block) in self.replaceable_blocks.iter().enumerate() {
-            cx.extend(block.check(&blocks.index(i)));
+            cx.extend(block.check(&blocks.index(i), cx.unknown()));
         }
         // The typed reader bounds `radius` to -1 ..= 16.
         cx.within(

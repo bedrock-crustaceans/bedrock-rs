@@ -6,7 +6,8 @@
 //! scalar's member and tells it, [`Reading::scalar_rules`]; every other failure fails the read
 //! there) and by a derived `Schema::check` (`schema::SchemaCx`).
 
-use super::{ErrorMask, Family, StructIndex};
+use super::{Family, StructIndex};
+use crate::diagnostic::{Class, Severity};
 use crate::json::NullRule;
 pub use crate::json::{BeyondWidth, Scalars};
 use crate::load::DocumentSource;
@@ -51,18 +52,18 @@ impl NullHandling {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum UnknownMask {
-    /// An error: the document is rejected ([`ErrorMask::Strict`]).
+    /// An error: the document is rejected.
     Error,
-    /// A warning: the document is kept ([`ErrorMask::Unstrict`]).
+    /// A warning: the document is kept.
     Warn,
 }
 
 impl UnknownMask {
-    /// The [`ErrorMask`] of the mask.
-    pub const fn error_mask(self) -> ErrorMask {
+    /// The severity of an unknown member or component under this mask.
+    pub const fn severity(self) -> Severity {
         match self {
-            Self::Error => ErrorMask::Strict,
-            Self::Warn => ErrorMask::Unstrict,
+            Self::Error => Severity::Error,
+            Self::Warn => Severity::Warning,
         }
     }
 }
@@ -218,8 +219,62 @@ impl Reading {
         self.null.rule()
     }
 
-    /// The error mask of this reading.
-    pub const fn error_mask(self) -> ErrorMask {
-        self.unknown.error_mask()
+    /// The severity a finding of `class` has under this reading: an unknown member or
+    /// component ([`Class::Unknown`]) follows the slice's [`unknown`](Self::unknown) mask, and
+    /// every other class is its [`default_severity`](Class::default_severity). (Not
+    /// `schema::grading::grade`, which says what a member that fails to read does.)
+    pub const fn grade(self, class: Class) -> Severity {
+        match class {
+            Class::Unknown => self.unknown.severity(),
+            _ => class.default_severity(),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_unknown_mask_gives_the_severity_of_an_unknown_member() {
+        assert_eq!(UnknownMask::Error.severity(), Severity::Error);
+        assert_eq!(UnknownMask::Warn.severity(), Severity::Warning);
+    }
+
+    #[test]
+    fn a_reading_grades_only_an_unknown_member_by_its_mask() {
+        let classes = [
+            Class::Error,
+            Class::KeptError,
+            Class::Unknown,
+            Class::Warning,
+            Class::Lint,
+        ];
+        let graded = |reading: Reading| classes.map(|class| reading.grade(class));
+        assert_eq!(
+            graded(Reading::DOCUMENT),
+            [
+                Severity::Error,
+                Severity::Error,
+                Severity::Error,
+                Severity::Warning,
+                Severity::Info,
+            ]
+        );
+        assert_eq!(
+            graded(Reading::DOCUMENT.with_unknown(UnknownMask::Warn)),
+            [
+                Severity::Error,
+                Severity::Error,
+                Severity::Warning,
+                Severity::Warning,
+                Severity::Info,
+            ]
+        );
+        assert_eq!(graded(Reading::OWN), graded(Reading::NULL_ABSENT));
+        assert_eq!(
+            graded(Reading::OWN.with_unknown(UnknownMask::Error)),
+            graded(Reading::DOCUMENT)
+        );
     }
 }

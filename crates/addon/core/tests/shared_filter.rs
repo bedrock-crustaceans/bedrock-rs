@@ -151,7 +151,7 @@ fn an_unknown_test_name_is_a_kept_error_with_vanillas_text() {
             .unwrap();
     let mut at = JsonPath::new();
     at.push("filters");
-    let found = f.check(&at);
+    let found = f.check(&at, Severity::Warning);
     assert_eq!(found.len(), 1);
     let finding = found.iter().next().unwrap();
     // The game logs an error at level 3 and the test evaluates false, so the document loads on:
@@ -185,7 +185,10 @@ fn the_tests_vanilla_registers_have_no_finding() {
         "has_memory",
     ] {
         let f = Filter::Test(FilterTest::new(name));
-        assert!(f.check(&JsonPath::new()).is_empty(), "{name}");
+        assert!(
+            f.check(&JsonPath::new(), Severity::Warning).is_empty(),
+            "{name}"
+        );
     }
 }
 

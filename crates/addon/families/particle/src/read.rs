@@ -21,7 +21,7 @@ use super::curve::{Curve, named_map, object_member};
 use super::event::EventNode;
 use super::{BasicRenderParameters, Description, ParticleEffect, texts};
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
+    Class, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
 };
 use bedrock_addon_core::document::{ComponentMap, UnknownMembers};
 use bedrock_addon_core::id::ParticleId;
@@ -51,8 +51,8 @@ impl Era {
         match self {
             // The legacy parser goes on with a member's default after its line.
             Era::Legacy => Reading::OWN.with_on_member_failure(MemberFailure::DefaultAndTell),
-            // The strict document; an unknown member is told as the warning the game logs,
-            // which the pipeline's strict mask makes an error.
+            // The strict document; an unknown member is told at the grade the slice's
+            // reading gives it (an error under the strict mask), set by the reader.
             Era::Cereal => Reading::DOCUMENT.with_unknown(UnknownMask::Warn),
         }
     }
@@ -144,6 +144,9 @@ pub(crate) struct Reader<'d> {
     molang_version: RawVersion,
     path: JsonPath,
     muted: u32,
+    /// The severity of an unknown member or component of a 1.20.80 document: the slice's
+    /// grade of [`Class::Unknown`].
+    unknown: Severity,
     d: &'d mut Diagnostics,
 }
 
@@ -160,8 +163,16 @@ impl<'d> Reader<'d> {
             molang_version,
             path: at,
             muted: 0,
+            unknown: Severity::Warning,
             d,
         }
+    }
+
+    /// The same reader, telling an unknown member or component of a 1.20.80 document at
+    /// `unknown`: the grade of [`Class::Unknown`] by the reading of the slice that reads.
+    pub(crate) fn grading(mut self, unknown: Severity) -> Self {
+        self.unknown = unknown;
+        self
     }
 
     /// Whether the legacy parser reads the document.
@@ -204,7 +215,7 @@ impl<'d> Reader<'d> {
         let read = Read::new(self.era.reading(), self.d);
         match self.era {
             Era::Legacy => read.unknown_severity(Severity::Info),
-            Era::Cereal => read,
+            Era::Cereal => read.unknown_severity(self.unknown),
         }
     }
 
@@ -1119,14 +1130,12 @@ pub(crate) fn read_components(
                     // Not kept: the game stores no unknown key. The legacy parser writes its
                     // line at the error level and the effect loads, so the finding is a kept
                     // error; a 1.20.80 document logs a warning, which its strict loading
-                    // makes an error that refuses the document.
+                    // grades an error that refuses the document.
                     if r.legacy() {
                         r.push_kept(DiagnosticCode::UnrecognizedComponent { text });
                     } else {
-                        r.push(
-                            DiagnosticCode::UnrecognizedComponent { text },
-                            Severity::Warning,
-                        );
+                        let unknown = r.unknown;
+                        r.push(DiagnosticCode::UnrecognizedComponent { text }, unknown);
                     }
                 }
             }
@@ -1218,7 +1227,8 @@ impl VersionStruct for ParticleEffect {
     /// `particle_effect`).
     fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
         let value = json(payload, &cx.at, d)?;
-        let mut r = Reader::new(Era::Cereal, cx.load.molang_version, cx.at.clone(), d);
+        let mut r = Reader::new(Era::Cereal, cx.load.molang_version, cx.at.clone(), d)
+            .grading(cx.load.grade(Class::Unknown));
         Self::read(&value, &mut r)
     }
 

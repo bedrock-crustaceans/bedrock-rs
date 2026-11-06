@@ -174,12 +174,13 @@ impl BlockDescriptor {
     /// The findings vanilla's readers log for this descriptor, located under `at`: a
     /// [`BlockDescriptor::Mixed`] (the cereal reader's text) or a [`BlockDescriptor::Invalid`]
     /// (the JSON reader's text) is an `InvalidValue` kept error; each member kept in `extra` is
-    /// an `UnrecognizedField` warning at its own path (cereal's `0x4` under the unstrict mask).
-    pub fn check(&self, at: &JsonPath) -> Diagnostics {
+    /// an `UnrecognizedField` at `unknown` at its own path (cereal's `0x4`: the grade of an
+    /// unknown member by the reading the caller reads under).
+    pub fn check(&self, at: &JsonPath, unknown: Severity) -> Diagnostics {
         let mut out = Diagnostics::default();
         let text = match self {
             Self::Block { extra, .. } | Self::Tags { extra, .. } => {
-                unrecognized(extra, at, &mut out);
+                unrecognized(extra, at, unknown, &mut out);
                 return out;
             }
             // The game's order for its two tests is not known; the crate tests states first.
@@ -189,7 +190,7 @@ impl BlockDescriptor {
                 extra,
                 ..
             } => {
-                unrecognized(extra, at, &mut out);
+                unrecognized(extra, at, unknown, &mut out);
                 let block = name.as_ref().map_or("", BlockId::as_str).to_owned();
                 if states.is_empty() {
                     VanillaText::BlockDescriptorNameAndTags { block }
@@ -392,10 +393,10 @@ impl BlockSpecifier {
 
 impl BlockSpecifier {
     /// The findings for this specifier, located under `at`: each member kept in `extra` is an
-    /// `UnrecognizedField` warning at its own path.
-    pub fn check(&self, at: &JsonPath) -> Diagnostics {
+    /// `UnrecognizedField` at `unknown` at its own path.
+    pub fn check(&self, at: &JsonPath, unknown: Severity) -> Diagnostics {
         let mut out = Diagnostics::default();
-        unrecognized(&self.extra, at, &mut out);
+        unrecognized(&self.extra, at, unknown, &mut out);
         out
     }
 }

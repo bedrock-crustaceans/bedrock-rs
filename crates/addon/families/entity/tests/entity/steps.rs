@@ -84,6 +84,7 @@ where
         identifier: &identifier,
         actor_type: ActorType::for_entity(&identifier, runtime.as_deref()),
         skip_section_a: skip,
+        reading: cx.reading,
         diagnostics: &mut diagnostics,
     };
     let next = value.upgrade(&mut upgrade);

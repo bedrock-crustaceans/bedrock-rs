@@ -4,7 +4,7 @@ use facet::Facet;
 
 use super::{Checked, child};
 use bedrock_addon_core::diagnostic::DiagnosticCode;
-use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath};
+use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::id::{MusicDefinitionId, SoundEventName};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::schema::{self, Schema};
@@ -156,7 +156,7 @@ fn check_addition(json: &Value, key: &'static str, d: &mut Diagnostics) {
 }
 
 impl Checked for AmbientSounds {
-    fn check(json: &Value, d: &mut Diagnostics) {
+    fn check(json: &Value, _: Severity, d: &mut Diagnostics) {
         check_addition(json, "addition", d);
         check_addition(json, "underwater_addition", d);
     }

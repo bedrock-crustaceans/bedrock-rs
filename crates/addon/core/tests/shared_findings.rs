@@ -88,7 +88,7 @@ fn a_filter_reports_unknown_members_at_every_level() {
         r#"{"any_of": [{"test": "is_family", "value": "pig", "note": 1}, {"all_of": [], "x": 2}], "y": true}"#,
     ))
     .unwrap();
-    let found = f.check(&path(&["filters"]));
+    let found = f.check(&path(&["filters"]), Severity::Warning);
     assert_eq!(
         unrecognized(&found),
         [
@@ -106,7 +106,7 @@ fn a_trigger_reports_its_unknown_members_and_its_filters() {
     ))
     .unwrap();
     assert_eq!(
-        unrecognized(&t.check(&path(&["on_hurt"]))),
+        unrecognized(&t.check(&path(&["on_hurt"]), Severity::Warning)),
         [
             path(&["on_hurt", "filters", "z"]),
             path(&["on_hurt", "condition"]),

@@ -36,9 +36,8 @@ const DEFAULT_PHASE: Phase = Phase::Parse;
 
 impl Diagnostic {
     /// A finding told in [`Phase::Parse`]: every site that raises it outside parsing must chain
-    /// [`phase`](Self::phase), since readers branch on the phase (`unknown_members_are_errors`
-    /// in `core/src/versioning/pipeline.rs` and in `families/entity/src/read.rs`, the
-    /// rejection checks of jigsaw and voxel shape).
+    /// [`phase`](Self::phase), since readers branch on the phase (the rejection checks of
+    /// jigsaw and voxel shape, the closing line of a refused entity).
     ///
     /// The finding is of a specific code, graded by the code's [`Class`]: an error, a kept
     /// error (an error that rejects nothing), a warning, or information for a lint. It is at the

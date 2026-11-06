@@ -11,7 +11,7 @@ use common::{compact, read, round_trip};
 
 /// The one finding of `descriptor`'s check, as its vanilla text.
 fn text_of(descriptor: &BlockDescriptor) -> VanillaText {
-    let found = descriptor.check(&JsonPath::new());
+    let found = descriptor.check(&JsonPath::new(), Severity::Warning);
     assert_eq!(found.len(), 1, "{descriptor:?}");
     let finding = found.iter().next().unwrap();
     // The game logs these at level 3 and goes on: a kept error.
@@ -37,7 +37,7 @@ fn a_string_names_one_block() {
     };
     assert_eq!(name, &BlockId::new("minecraft:stone").unwrap());
     assert!(states.is_empty() && !object && extra.is_empty());
-    assert!(d.check(&JsonPath::new()).is_empty());
+    assert!(d.check(&JsonPath::new(), Severity::Warning).is_empty());
 }
 
 #[test]
@@ -66,7 +66,7 @@ fn tags_is_a_molang_expression() {
         panic!("not tags")
     };
     assert_eq!(tags.as_str(), "query.any_tag('stone')");
-    assert!(d.check(&JsonPath::new()).is_empty());
+    assert!(d.check(&JsonPath::new(), Severity::Warning).is_empty());
 }
 
 #[test]

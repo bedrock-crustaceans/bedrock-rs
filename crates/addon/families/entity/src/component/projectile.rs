@@ -977,7 +977,7 @@ impl OnHit {
         {
             let mut here = at.child("definition_event");
             here.push("event_trigger");
-            cx.extend(trigger.check(&here));
+            cx.extend(trigger.check(&here, cx.unknown()));
         }
         if let Some(damage) = &mut self.impact_damage {
             let mut here = at.child("impact_damage");
@@ -1002,7 +1002,7 @@ impl OnHit {
         if let Some(particles) = &self.particle_on_hit {
             let names = at.child("particle_on_hit").child("particle_item_name");
             for (name, filter) in &particles.particle_item_name {
-                cx.extend(filter.check(&names.child(name)));
+                cx.extend(filter.check(&names.child(name), cx.unknown()));
             }
         }
         if let Some(cloud) = &mut self.spawn_aoe_cloud
@@ -1017,7 +1017,7 @@ impl OnHit {
             cx.bounds(here.clone(), spawn);
             let triggers = here.child("on_spawn");
             for (i, trigger) in spawn.on_spawn.iter().enumerate() {
-                cx.extend(trigger.check(&triggers.index(i)));
+                cx.extend(trigger.check(&triggers.index(i), cx.unknown()));
             }
         }
     }

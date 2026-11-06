@@ -2,7 +2,7 @@
 //! table), strict or lenient, and the member checks every goal runs while it is read.
 
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
+    Class, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
 };
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::{
@@ -123,14 +123,14 @@ enum Mode {
 pub(crate) fn parse<T: Goal>(
     slice: JsonSlice<'_>,
     mode: ConvertMode,
-    _: &LoadContext,
+    load: &LoadContext,
     d: &mut Diagnostics,
 ) -> Option<EntityComponent> {
     let mode = match mode {
         ConvertMode::Strict => Mode::Strict(NEWEST),
         ConvertMode::Lenient => Mode::Lenient,
     };
-    read::<T>(slice, mode, d).map(Into::into)
+    read::<T>(slice, mode, load.grade(Class::Unknown), d).map(Into::into)
 }
 
 /// A parse of a goal by the document's format version: what the entity document's component
@@ -143,7 +143,7 @@ pub(crate) type VersionedParseFn = bedrock_addon_core::schema::VersionedParseFn<
 pub(crate) fn parse_versioned<T: Goal>(
     slice: JsonSlice<'_>,
     version: FormatVersion,
-    _: &LoadContext,
+    load: &LoadContext,
     d: &mut Diagnostics,
 ) -> Option<EntityComponent> {
     let mode = if version < T::TYPED {
@@ -151,7 +151,7 @@ pub(crate) fn parse_versioned<T: Goal>(
     } else {
         Mode::Strict(version)
     };
-    read::<T>(slice, mode, d).map(Into::into)
+    read::<T>(slice, mode, load.grade(Class::Unknown), d).map(Into::into)
 }
 
 /// Reads a goal.
@@ -160,8 +160,13 @@ pub(crate) fn parse_versioned<T: Goal>(
 /// error and drops the goal, and so is a value outside its member's bounds. Lenient (an older
 /// document converted in a step): such a member is an `InvalidValue` warning and takes its
 /// default; the goal is dropped only when its value is not an object. Unknown members are kept
-/// and reported as `UnrecognizedField` warnings either way.
-fn read<T: Goal>(slice: JsonSlice<'_>, mode: Mode, d: &mut Diagnostics) -> Option<T> {
+/// and reported as `UnrecognizedField` at `grade` (the slice's) either way.
+fn read<T: Goal>(
+    slice: JsonSlice<'_>,
+    mode: Mode,
+    grade: Severity,
+    d: &mut Diagnostics,
+) -> Option<T> {
     let (mut value, json, version) = match mode {
         Mode::Strict(version) => {
             // The game reads an entity through jsoncpp, where a member written as `null` is
@@ -202,8 +207,9 @@ fn read<T: Goal>(slice: JsonSlice<'_>, mode: Mode, d: &mut Diagnostics) -> Optio
                 value.forget(name);
                 d.push(
                     // The game logs an unrecognised member of a legacy-format goal as a
-                    // warning; from 1.21.89 it refuses the document.
+                    // warning; the strict slices from 1.21.89 refuse the document.
                     Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None })
+                        .severity(grade)
                         .at(JsonPath::new().child(name)),
                 );
             }
@@ -256,15 +262,17 @@ fn read<T: Goal>(slice: JsonSlice<'_>, mode: Mode, d: &mut Diagnostics) -> Optio
         } else {
             d.push(
                 // The game logs an unrecognised member of a legacy-format goal as a warning;
-                // from 1.21.89 it refuses the document.
-                Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None }).at(path),
+                // the strict slices from 1.21.89 refuse the document.
+                Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None })
+                    .severity(grade)
+                    .at(path),
             );
         }
     }
     if version.is_none() {
         value.lenient_value();
     }
-    let mut check = GoalCheck::new(version.is_some(), d);
+    let mut check = GoalCheck::new(version.is_some(), grade, d);
     value.check(&mut check);
     if check.failed || rejected {
         return None;
@@ -718,16 +726,20 @@ impl<T: PartialOrd + Copy> Bound<T> {
 /// (strict) or resets the member to its default (lenient).
 pub(crate) struct GoalCheck<'d> {
     strict: bool,
+    /// The severity of an unknown member of the goal or of a shared value it holds: the
+    /// slice's grade.
+    unknown: Severity,
     d: &'d mut Diagnostics,
     failed: bool,
     at: JsonPath,
 }
 
 impl<'d> GoalCheck<'d> {
-    /// A check of a goal at the root of its slice.
-    pub(crate) fn new(strict: bool, d: &'d mut Diagnostics) -> Self {
+    /// A check of a goal at the root of its slice, an unknown member at `unknown`.
+    pub(crate) fn new(strict: bool, unknown: Severity, d: &'d mut Diagnostics) -> Self {
         Self {
             strict,
+            unknown,
             d,
             failed: false,
             at: JsonPath::new(),
@@ -737,6 +749,11 @@ impl<'d> GoalCheck<'d> {
     /// The path of member `key`.
     pub(crate) fn path(&self, key: &str) -> JsonPath {
         self.at.child(key)
+    }
+
+    /// The severity of an unknown member of a shared value the goal holds.
+    pub(crate) fn unknown(&self) -> Severity {
+        self.unknown
     }
 
     /// Adds findings made elsewhere (a shared type's `check`).
@@ -1026,7 +1043,7 @@ impl<'d> GoalCheck<'d> {
     /// Reports a filter member's findings.
     pub(crate) fn filter(&mut self, key: &str, filter: Option<&Filter>) {
         if let Some(filter) = filter {
-            let found = filter.check(&self.path(key));
+            let found = filter.check(&self.path(key), self.unknown);
             self.d.extend(found);
         }
     }
@@ -1034,7 +1051,7 @@ impl<'d> GoalCheck<'d> {
     /// Reports a trigger member's findings.
     pub(crate) fn trigger(&mut self, key: &str, trigger: Option<&EventTrigger>) {
         if let Some(trigger) = trigger {
-            let found = trigger.check(&self.path(key));
+            let found = trigger.check(&self.path(key), self.unknown);
             self.d.extend(found);
         }
     }
@@ -1044,7 +1061,7 @@ impl<'d> GoalCheck<'d> {
         for (i, trigger) in triggers.into_iter().flatten().enumerate() {
             let mut at = self.path(key);
             at.push_index(i);
-            let found = trigger.check(&at);
+            let found = trigger.check(&at, self.unknown);
             self.d.extend(found);
         }
     }
@@ -1066,8 +1083,10 @@ impl<'d> GoalCheck<'d> {
             at.push(name);
             self.d.push(
                 // The game logs an unrecognised member of a legacy-format goal as a warning;
-                // from 1.21.89 it refuses the document.
-                Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None }).at(at),
+                // the strict slices from 1.21.89 refuse the document.
+                Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None })
+                    .severity(self.unknown)
+                    .at(at),
             );
         }
     }
@@ -1088,7 +1107,7 @@ impl<'d> GoalCheck<'d> {
     /// Reports the findings of a block descriptor member.
     pub(crate) fn block(&mut self, key: &str, block: Option<&BlockDescriptor>) {
         if let Some(block) = block {
-            let found = block.check(&self.path(key));
+            let found = block.check(&self.path(key), self.unknown);
             self.d.extend(found);
         }
     }
@@ -1120,7 +1139,7 @@ impl<'d> GoalCheck<'d> {
         for (i, block) in blocks.into_iter().flatten().enumerate() {
             let mut at = self.path(key);
             at.push_index(i);
-            let found = block.check(&at);
+            let found = block.check(&at, self.unknown);
             self.d.extend(found);
         }
     }

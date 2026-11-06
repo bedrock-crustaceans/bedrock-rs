@@ -551,7 +551,7 @@ fn group_references(value: &Value, at: &JsonPath, groups: &HashSet<&str>, cx: &m
 fn filters(value: &mut Value, at: &JsonPath, cx: &mut ValidateCx<'_>) {
     match Filter::try_from(value.clone()) {
         Ok(filter) => {
-            let found = filter.check(at);
+            let found = filter.check(at, Severity::Warning);
             cx.diagnostics.extend(placed(found));
             if let Ok(normal) = Value::try_from(&filter) {
                 *value = normal;
@@ -571,7 +571,7 @@ fn filters(value: &mut Value, at: &JsonPath, cx: &mut ValidateCx<'_>) {
 fn trigger(value: &mut Value, at: &JsonPath, cx: &mut ValidateCx<'_>) {
     match EventTrigger::try_from(value.clone()) {
         Ok(trigger) => {
-            let found = trigger.check(at);
+            let found = trigger.check(at, Severity::Warning);
             cx.diagnostics.extend(placed(found));
             if let Ok(normal) = Value::try_from(&trigger) {
                 *value = normal;
@@ -1013,6 +1013,7 @@ mod tests {
             skipped: Vec::new(),
             #[cfg(feature = "molang")]
             molang_failures: Vec::new(),
+            reading: load.reading,
             diagnostics: &mut diagnostics,
         };
         let mut at = JsonPath::new();

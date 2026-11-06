@@ -514,6 +514,7 @@ fn a_finding_of_a_subsensor_the_1_20_0_step_shifted_names_the_member_of_the_file
         identifier: "demo:x",
         actor_type: ActorType::Mob,
         skip_section_a: false,
+        reading: load.reading,
         diagnostics: &mut found,
     });
     let sensor = "minecraft:entity/components/minecraft:entity_sensor";

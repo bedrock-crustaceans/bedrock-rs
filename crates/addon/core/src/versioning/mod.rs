@@ -174,8 +174,20 @@ pub struct UpgradeCx<'a> {
     /// Suppress the version-gated upgrade ops (`Family::SKIP_UPGRADES_KEY` present in the payload,
     /// or `original_version >= ENGINE_VERSION`).
     pub skip_section_a: bool,
+    /// The reading of the slice that parsed the document, for the whole walk of the steps:
+    /// what a step asks when it grades a finding ([`grade`](Self::grade)). `load.reading` is
+    /// the parse's alone, and is not this.
+    pub reading: Reading,
     /// Where the step reports.
     pub diagnostics: &'a mut Diagnostics,
+}
+
+impl UpgradeCx<'_> {
+    /// The severity a finding of `class` has under the reading of the slice that parsed the
+    /// document ([`Reading::grade`]).
+    pub fn grade(&self, class: crate::diagnostic::Class) -> Severity {
+        self.reading.grade(class)
+    }
 }
 
 /// The result of a chain walk: the newest stable struct or the beta struct.
@@ -307,8 +319,19 @@ pub struct ValidateCx<'a> {
     #[cfg(feature = "molang")]
     #[cfg_attr(docsrs, doc(cfg(feature = "molang")))]
     pub molang_failures: Vec<crate::molang::FieldOutcome>,
+    /// The reading of the slice that parsed the document: what a check asks when it grades a
+    /// finding ([`grade`](Self::grade)).
+    pub reading: Reading,
     /// Where validation reports. An error rejects the document.
     pub diagnostics: &'a mut Diagnostics,
+}
+
+impl ValidateCx<'_> {
+    /// The severity a finding of `class` has under the reading of the slice that parsed the
+    /// document ([`Reading::grade`]).
+    pub fn grade(&self, class: crate::diagnostic::Class) -> Severity {
+        self.reading.grade(class)
+    }
 }
 
 /// What a payload says about itself before its struct is parsed: `description.identifier` and
@@ -451,20 +474,6 @@ pub enum VersionInput {
     /// present value that gives no version is malformed. The JSON size limits apply. A family
     /// gets it by declaring `InputKind::Document`.
     Document,
-}
-
-/// The result-code mask a slice is registered with: which findings of the parse reject the
-/// document.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-#[non_exhaustive]
-pub enum ErrorMask {
-    /// An unknown member (code `0x4`) or component (code `0x400`) is a warning and the
-    /// document is kept. The default.
-    #[default]
-    Unstrict,
-    /// An unknown member or component of the payload is an error and the document is
-    /// rejected.
-    Strict,
 }
 
 /// The input kind the game builds for a family's files, in one place: it says where the

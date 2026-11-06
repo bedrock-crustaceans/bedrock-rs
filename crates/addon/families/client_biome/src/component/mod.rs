@@ -23,7 +23,9 @@ use bedrock_addon_derive::Components;
 use facet::Facet;
 
 use super::history::ClientBiomeFamily;
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity};
+use bedrock_addon_core::diagnostic::{
+    Class, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity,
+};
 use bedrock_addon_core::json::{
     JsonSlice, ScalarFailure, ScalarRead, Value, keep_unknown_members, parse_with_rules,
     unknown_members,
@@ -96,29 +98,33 @@ pub enum ClientBiomeComponent {
 /// typed parse so that each failure carries its own code and vanilla's text.
 pub(crate) trait Checked {
     /// Reports the component's constraint failures (paths below the component); an error
-    /// among them rejects the component.
+    /// among them rejects the component. An unknown member it finds is told at `unknown`, the
+    /// slice's grade.
     #[allow(unused_variables)]
-    fn check(json: &Value, d: &mut Diagnostics) {}
+    fn check(json: &Value, unknown: Severity, d: &mut Diagnostics) {}
 }
 
 /// One component read strictly from its slice: every slice of the client-biome loader parses
 /// with the strict mask, so a component that does not deserialise, or breaks a constraint of
 /// its binding, rejects the document. Unknown members are reported as `UnrecognizedField`,
-/// which the family's strict mask makes errors that refuse the document, as vanilla does.
-/// Findings are relative to the component.
-pub(crate) fn parse_typed<T>(slice: JsonSlice<'_>, d: &mut Diagnostics) -> Option<T>
+/// graded by the slice's reading: every client-biome format version reads with the strict mask
+/// (`Family::reading`'s default, the profile of the `InputKind::Document` envelope in `lib.rs`),
+/// so in a load they are the errors that refuse the document, as vanilla's are. Findings are
+/// relative to the component.
+pub(crate) fn parse_typed<T>(
+    slice: JsonSlice<'_>,
+    cx: &LoadContext,
+    d: &mut Diagnostics,
+) -> Option<T>
 where
     T: for<'a> Facet<'a> + Checked,
 {
     let json = bedrock_addon_core::json::from_str_jsonc::<Value>(slice.text).ok();
+    let unknown = cx.grade(Class::Unknown);
     let unrecognized = |path: JsonPath| {
-        // Not a finding the user sees as a warning: every client-biome format version reads
-        // with the strict mask (`Family::reading`'s default, the profile of the
-        // `InputKind::Document` envelope in `lib.rs`), and core's `unknown_members_are_errors`
-        // (`versioning/pipeline.rs`) turns a Parse-phase `UnrecognizedField` /
-        // `UnrecognizedComponent` warning into the refusing error the game gives for an unknown
-        // member. The `Warning` here is that step's input, not a grade.
-        Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None }).at(path)
+        Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None })
+            .at(path)
+            .severity(unknown)
     };
     if let Some(json) = &json {
         // A component is an object; facet's own finding for another value has no path.
@@ -129,8 +135,13 @@ where
             return None;
         }
         let start = d.len();
-        T::check(json, d);
-        if d.iter().skip(start).any(|f| f.severity == Severity::Error) {
+        T::check(json, unknown, d);
+        // An unknown member does not stop the read here, the checks' other errors alone do: it
+        // refuses the document by its grade.
+        if d.iter()
+            .skip(start)
+            .any(|f| f.severity == Severity::Error && !crate::read::is_unknown_member(f))
+        {
             return None;
         }
     }
@@ -188,7 +199,7 @@ where
     T: for<'a> Facet<'a> + Checked + Into<ClientBiomeComponent>,
 {
     let _ = mode;
-    let value = parse_typed::<T>(slice, d)?;
+    let value = parse_typed::<T>(slice, cx, d)?;
     // A `null` where the component reads a value is a type error, which refuses the client
     // biome.
     if cx.null_rule == Some(bedrock_addon_core::json::NullRule::Rejected)

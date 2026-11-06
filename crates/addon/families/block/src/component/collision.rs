@@ -139,6 +139,7 @@ pub(crate) fn read_collision_box(
     raw: Option<&RawJson<'_>>,
     at: &JsonPath,
     version: FormatVersion,
+    unknown: Severity,
     d: &mut Diagnostics,
 ) -> bool {
     let one = raw.is_some_and(|raw| raw.as_str().trim_start().starts_with('{'));
@@ -165,12 +166,12 @@ pub(crate) fn read_collision_box(
             if let Some(value) = slot.take() {
                 let mut path = box_at(index);
                 path.push(name);
-                // `min` and `max` are unknown members of this box. The strict slice turns an
-                // unknown member into the error that refuses the block. Below 1.26.20 the
-                // game's description binds `origin` and `size` alone and says nothing of an
-                // unknown member, so the crate reports it as an information.
+                // `min` and `max` are unknown members of this box, at `unknown` (the strict
+                // slice's error, which refuses the block). Below 1.26.20 the game's description
+                // binds `origin` and `size` alone and says nothing of an unknown member, so the
+                // crate reports it as an information.
                 let severity = if version >= V1_26_20 {
-                    Severity::Warning
+                    unknown
                 } else {
                     Severity::Info
                 };

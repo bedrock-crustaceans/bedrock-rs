@@ -380,12 +380,11 @@ pub(crate) fn into_latest(payload: &Payload, cx: &mut UpgradeCx<'_>) -> Entity {
         );
         return placeholder(payload);
     };
-    let mut reader = Reader {
-        load: cx.load,
-        original_version: cx.original_version,
-        d: cx.diagnostics,
-        spans: false,
-    };
+    // The read grades by the reading of the slice that parsed the document, which the
+    // load context of the steps does not carry.
+    let mut load = cx.load.clone();
+    load.reading = cx.reading;
+    let mut reader = Reader::new(&load, cx.original_version, cx.diagnostics, false);
     let Some(mut entity) = read_entity(&mut reader, JsonSlice::new(&text), &at) else {
         return placeholder(payload);
     };

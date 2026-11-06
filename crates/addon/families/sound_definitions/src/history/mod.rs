@@ -141,6 +141,7 @@ impl SoundDefinitionsHistory {
             identifier: "",
             actor_type: ActorType::Mob,
             skip_section_a: false,
+            reading: cx.reading,
             diagnostics,
         };
         match self {

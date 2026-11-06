@@ -8,7 +8,7 @@ use indexmap::IndexMap;
 
 use super::component::{BiomeComponent, Builder, SubsurfaceBuilder, SurfaceBuilder, child};
 use super::{Description, EnvironmentAttributes};
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
+use bedrock_addon_core::diagnostic::{Class, Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
 use bedrock_addon_core::document::ComponentMap;
 use bedrock_addon_core::json::JsonSlice;
 use bedrock_addon_core::load::LoadContext;
@@ -96,9 +96,9 @@ pub(crate) fn beta_payload(
 /// The `components` object of a struct of `version`, in file order. A component the struct
 /// binds is read strictly (a failure is an error). Any other key, a component of a later
 /// struct (`minecraft:village_type` before 1.26.0, `minecraft:subsurface_builder` before
-/// 1.26.30) included, is an `UnrecognizedComponent` and dropped; the family's strict mask
-/// makes it an error that refuses the document, as vanilla does for an unknown member in
-/// every format version.
+/// 1.26.30) included, is an `UnrecognizedComponent` and dropped, graded by the slice's reading:
+/// the family's strict mask makes it an error that refuses the document, as vanilla does for an
+/// unknown member in every format version.
 pub(crate) fn components(
     entries: &IndexMap<String, RawJson<'_>>,
     within: JsonSlice<'_>,
@@ -127,7 +127,7 @@ pub(crate) fn components(
                     map.insert_typed(value, false);
                 }
             }
-            _ => d.push(unrecognized(path)),
+            _ => d.push(unrecognized(path, cx)),
         }
     }
     map
@@ -154,11 +154,12 @@ fn builder_bound(
     }
 }
 
-/// An `UnrecognizedComponent` at `path`: the strict mask's input, not a grade. Core's
-/// `unknown_members_are_errors` (`versioning/pipeline.rs`) turns this Parse-phase warning into the
-/// refusing error the game gives for an unknown member.
-fn unrecognized(path: JsonPath) -> Diagnostic {
-    Diagnostic::warn(DiagnosticCode::UnrecognizedComponent { text: None }).at(path)
+/// An `UnrecognizedComponent` at `path`, graded by the slice's reading (the refusing error the
+/// game gives for an unknown member under the strict mask).
+fn unrecognized(path: JsonPath, cx: &LoadContext) -> Diagnostic {
+    Diagnostic::warn(DiagnosticCode::UnrecognizedComponent { text: None })
+        .at(path)
+        .severity(cx.grade(Class::Unknown))
 }
 
 #[cfg(test)]

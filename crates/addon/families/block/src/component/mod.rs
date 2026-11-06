@@ -43,7 +43,9 @@ pub use visual::{
 use bedrock_addon_derive::Components;
 
 use super::history::BlockFamily;
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity};
+use bedrock_addon_core::diagnostic::{
+    Class, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity,
+};
 use bedrock_addon_core::document::{ComponentMap, ComponentRef, CustomComponent};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::load::{Experiment, LoadContext, LoadRequirement};
@@ -238,7 +240,7 @@ fn parse_material_instances(
     d: &mut Diagnostics,
 ) -> Option<BlockComponent> {
     let mut value: MaterialInstances = parse_typed(slice, mode, cx, d)?;
-    keep_instances(&mut value, slice, None, is_cereal(cx), d);
+    keep_instances(&mut value, slice, None, instance_unknown(cx), d);
     Some(value.into())
 }
 
@@ -254,7 +256,7 @@ fn parse_item_visual(
         &mut value.material_instances,
         slice,
         Some("material_instances"),
-        is_cereal(cx),
+        instance_unknown(cx),
         d,
     );
     Some(value.into())
@@ -272,7 +274,7 @@ fn parse_embedded_visual(
         &mut value.material_instances,
         slice,
         Some("material_instances"),
-        is_cereal(cx),
+        instance_unknown(cx),
         d,
     );
     Some(value.into())
@@ -299,15 +301,24 @@ fn is_cereal(cx: &LoadContext) -> bool {
     cx.null_rule == Some(bedrock_addon_core::json::NullRule::Rejected)
 }
 
+/// The severity of an unknown member of a material instance: in a cereal document the slice's
+/// grade (the strict mask's error, which refuses the block); in a legacy one the game says
+/// nothing of an unknown member, so the crate reports it as an information.
+fn instance_unknown(cx: &LoadContext) -> Severity {
+    if is_cereal(cx) {
+        cx.grade(Class::Unknown)
+    } else {
+        Severity::Info
+    }
+}
+
 /// Keeps the unknown members of each material instance (below the member `within`, if any)
-/// and reports them: in a cereal document the marker the strict mask turns into the error
-/// that refuses the block; in a legacy one the game says nothing of an unknown member, so the
-/// crate reports it as an information.
+/// and reports each at `unknown`.
 fn keep_instances(
     instances: &mut MaterialInstances,
     slice: JsonSlice<'_>,
     within: Option<&str>,
-    cereal: bool,
+    unknown: Severity,
     d: &mut Diagnostics,
 ) {
     let Ok(json) = bedrock_addon_core::json::from_str_jsonc::<Value>(slice.text) else {
@@ -333,11 +344,7 @@ fn keep_instances(
         path.push(&member);
         d.push(
             Diagnostic::error(DiagnosticCode::UnrecognizedField { text: None })
-                .severity(if cereal {
-                    Severity::Warning
-                } else {
-                    Severity::Info
-                })
+                .severity(unknown)
                 .at(path),
         );
     }

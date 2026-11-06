@@ -5,7 +5,9 @@ use facet::Facet;
 use facet_json::RawJson;
 
 use super::{Description, Shape, ShapeBox, VoxelShape, texts};
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Span};
+use bedrock_addon_core::diagnostic::{
+    Class, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, Span,
+};
 use bedrock_addon_core::json::{self, JsonSlice, Value, parse_at};
 use bedrock_addon_core::versioning::ParseCx;
 
@@ -45,7 +47,8 @@ pub(crate) fn parse_shape(
         }
     };
     // Each of these is an error in `d`, and an error rejects the document.
-    unknown_members(payload, &cx.at, d);
+    let unknown = cx.load.grade(Class::Unknown);
+    unknown_members(payload, &cx.at, unknown, d);
     constraints(
         shell.description.identifier.as_str(),
         shell.shape.boxes.len(),
@@ -61,8 +64,8 @@ pub(crate) fn parse_shape(
         .enumerate()
         .map(|(index, shell)| {
             let at = cx.at.with(&["shape", "boxes"]).index(index);
-            let min = corner(payload, &shell.min, &at.child("min"), d);
-            let max = corner(payload, &shell.max, &at.child("max"), d);
+            let min = corner(payload, &shell.min, &at.child("min"), unknown, d);
+            let max = corner(payload, &shell.max, &at.child("max"), unknown, d);
             Some(ShapeBox {
                 min: min?,
                 max: max?,
@@ -116,25 +119,27 @@ pub(crate) fn constraints(identifier: &str, boxes: usize, at: &JsonPath, d: &mut
 }
 
 /// Reports every member of `payload` no schema type binds, in document order (the corners are
-/// read on their own), each an `UnrecognizedField` warning that the slice's strict mask makes
-/// the error that fails the file (`Family::reading`).
-fn unknown_members(payload: JsonSlice<'_>, at: &JsonPath, d: &mut Diagnostics) {
+/// read on their own), each an `UnrecognizedField` at `severity`, the slice's grade (its strict
+/// mask makes it the error that fails the file, `Family::reading`).
+fn unknown_members(payload: JsonSlice<'_>, at: &JsonPath, severity: Severity, d: &mut Diagnostics) {
     let Ok(json) = bedrock_addon_core::json::from_str_jsonc::<Value>(payload.text) else {
         return;
     };
     for (path, _) in &json::unknown_members(<Shell<'_> as Facet>::SHAPE, &json) {
-        d.push(unknown(at.join(path)));
+        d.push(unknown(at.join(path), severity));
     }
 }
 
 /// One corner (vanilla's `Vec3`), in the two forms the game tries in this order: `[x, y, z]`,
 /// exactly three numbers; then an object with the optional members `x`, `y` and `z`, an absent
-/// one 0. `None` (with the errors in `d`) for anything else.
+/// one 0. `None` (with the errors in `d`) for anything else. A member no axis takes is an
+/// `UnrecognizedField` at `unknown`.
 // The game logs the help text when the array form fails and clears it when the members load.
 fn corner(
     payload: JsonSlice<'_>,
     raw: &RawJson<'_>,
     at: &JsonPath,
+    unknown: Severity,
     d: &mut Diagnostics,
 ) -> Option<[f32; 3]> {
     let span = payload.nested(raw).map(|slice| Span {
@@ -193,7 +198,7 @@ fn corner(
         d.push(Diagnostic::error(DiagnosticCode::InvalidType { text: None }).at(at.child(key)));
     }
     for key in &unbound {
-        d.push(unknown(at.child(key)));
+        d.push(self::unknown(at.child(key), unknown));
     }
     // With a finding above the value is not used: an error in `d` rejects the document.
     Some(read)
@@ -207,11 +212,12 @@ fn number(json: &Value) -> Option<f32> {
     x.is_finite().then_some(x)
 }
 
-/// A member the schema does not bind, at `at`: the marker `unknown_members_are_errors` turns
-/// into the error that refuses the document (every voxel-shape slice is strict).
-fn unknown(at: JsonPath) -> Diagnostic {
+/// A member the schema does not bind, at `at` and `severity`: the slice's grade, the error that
+/// refuses the document (every voxel-shape slice is strict).
+fn unknown(at: JsonPath, severity: Severity) -> Diagnostic {
     Diagnostic::warn(DiagnosticCode::UnrecognizedField {
         text: Some(texts::not_in_schema()),
     })
     .at(at)
+    .severity(severity)
 }

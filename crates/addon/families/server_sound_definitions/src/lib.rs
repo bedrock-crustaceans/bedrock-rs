@@ -263,7 +263,7 @@ mod tests {
     use bedrock_addon_core::load::DocumentSource;
     use bedrock_addon_core::version::FormatVersionInput;
     use bedrock_addon_core::versioning::{
-        ErrorMask, InputKind, Selection, StructIndex, VersionChain, select,
+        InputKind, Selection, StructIndex, UnknownMask, VersionChain, select,
     };
 
     /// The `to_json` the family once wrote by hand, the chain's text as is, equals `Content`'s
@@ -307,8 +307,8 @@ mod tests {
             Some(NullRule::Rejected)
         );
         assert_eq!(
-            MetadataFamily::reading(StructIndex::Stable(0), DocumentSource::Json).error_mask(),
-            ErrorMask::Strict
+            MetadataFamily::reading(StructIndex::Stable(0), DocumentSource::Json).unknown,
+            UnknownMask::Error
         );
         assert_eq!(
             MetadataFamily::PAYLOAD_KEY,

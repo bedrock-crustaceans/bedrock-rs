@@ -83,12 +83,12 @@ pub struct LoadContext {
     /// `Family::reading` (`Reading::keeps_unknown`), read by `versioning::parse_payload` and
     /// `parse_component`; `false` outside a versioned load.
     pub keeps_unknown: bool,
-    /// The severity an unknown member a struct rejects or ignores (`schema::unknown =
-    /// "reject"`, `"ignore"`) is told at: an error where the slice's unknown members are
-    /// (`UnknownMask::Error`), else a warning. Set by the versioning load from
-    /// `Reading::unknown`; a warning outside it. (An unknown member told as unrecognized is a
-    /// warning the strict mask makes an error after the parse.)
-    pub unknown_severity: crate::diagnostic::Severity,
+    /// The reading of the slice being parsed, which grades its findings
+    /// ([`grade`](Self::grade)): set by the versioning load from the slice's `Family::reading`
+    /// for the parse of the struct alone (not its upgrade steps or its checks), and
+    /// [`Reading::OWN`](crate::versioning::Reading::OWN) outside it, where an unknown member
+    /// is a warning.
+    pub reading: crate::versioning::Reading,
     /// Whether the document is read by a cereal slice of a Minecraft Document family (the
     /// slice's null rule is N2, whatever the source): `parse_component` then rejects the
     /// document for a component whose typed read fails (a type error) or whose required member
@@ -136,7 +136,7 @@ impl fmt::Debug for LoadContext {
             .field("null_rule", &self.null_rule)
             .field("scalar_rules", &self.scalar_rules)
             .field("keeps_unknown", &self.keeps_unknown)
-            .field("unknown_severity", &self.unknown_severity)
+            .field("reading", &self.reading)
             .field("strict_components", &self.strict_components)
             .field("source", &self.source)
             .field("max_json_document_bytes", &self.max_json_document_bytes)
@@ -227,7 +227,7 @@ impl LoadContext {
             null_rule: None,
             scalar_rules: crate::json::ScalarRules::PLAIN,
             keeps_unknown: false,
-            unknown_severity: crate::diagnostic::Severity::Warning,
+            reading: crate::versioning::Reading::OWN,
             strict_components: false,
             source: DocumentSource::Json,
             max_json_document_bytes: super::MAX_JSON_DOCUMENT_BYTES,
@@ -264,6 +264,14 @@ impl LoadContext {
     pub fn set_built_ins(&mut self, built_ins: Option<Arc<dyn BuiltIns>>) {
         self.built_ins = built_ins;
     }
+
+    /// The severity a finding of `class` has in the slice being parsed: its
+    /// [`reading`](Self::reading)'s grade
+    /// ([`Reading::grade`](crate::versioning::Reading::grade)), where only an unknown member
+    /// or component follows the slice's mask.
+    pub fn grade(&self, class: crate::diagnostic::Class) -> crate::diagnostic::Severity {
+        self.reading.grade(class)
+    }
 }
 
 /// The render-configuration identifiers the client renderer records for one biome, which
@@ -278,4 +286,28 @@ pub struct BiomeRenderIdentifiers {
     pub lighting: LightingSettingsId,
     /// `minecraft:water_identifier`.
     pub water: WaterSettingsId,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::diagnostic::{Class, Severity};
+    use crate::versioning::{Reading, UnknownMask};
+
+    #[test]
+    fn outside_a_slice_an_unknown_member_is_a_warning() {
+        let cx = LoadContext::detached();
+        assert_eq!(cx.reading, Reading::OWN);
+        assert_eq!(cx.grade(Class::Unknown), Severity::Warning);
+        assert_eq!(cx.grade(Class::Error), Severity::Error);
+    }
+
+    #[test]
+    fn the_context_grades_by_the_reading_it_carries() {
+        let mut cx = LoadContext::detached();
+        cx.reading = Reading::OWN.with_unknown(UnknownMask::Error);
+        assert_eq!(cx.grade(Class::Unknown), Severity::Error);
+        assert_eq!(cx.grade(Class::Lint), Severity::Info);
+        assert_eq!(cx.grade(Class::Warning), Severity::Warning);
+    }
 }

@@ -215,6 +215,7 @@ mod tests {
             identifier: "demo:ghost",
             actor_type: ActorType::Mob,
             skip_section_a: false,
+            reading: load.reading,
             diagnostics: &mut diagnostics,
         });
         diagnostics

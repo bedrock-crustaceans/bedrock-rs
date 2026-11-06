@@ -54,7 +54,7 @@ macro_rules! triggers {
         impl Typed for $name {
             fn check(&mut self, cx: &mut ComponentCheck<'_>) {
                 if let Some(filters) = &self.filters {
-                    cx.extend(filters.check(&JsonPath::new().child("filters")));
+                    cx.extend(filters.check(&JsonPath::new().child("filters"), cx.unknown()));
                 }
             }
         }

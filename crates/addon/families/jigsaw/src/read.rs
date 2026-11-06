@@ -15,7 +15,7 @@ use super::{
     ProcessorList, ProcessorRule, StructureSet, TemplatePool, V1_21_50,
 };
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, VanillaText,
+    Class, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
 };
 use bedrock_addon_core::document::{Document, Origin, Rejected, Unknown, VersionInfo};
 use bedrock_addon_core::json::{
@@ -43,7 +43,8 @@ const MAX_FILE_REFERENCE: usize = 256;
 const UNKNOWN_TAG: &str = "No variant found";
 
 /// Parses `T` from `payload`: the typed parse, its unknown members kept in the document's table
-/// by the path of the struct they belong to (each an `UnrecognizedField` warning), and a failed parse as one error.
+/// by the path of the struct they belong to (each an `UnrecognizedField` at the slice's grade, a
+/// warning), and a failed parse as one error.
 /// An internally tagged enum's unknown tag is `InvalidEnumValue`, as vanilla's enum binds
 /// report it (facet calls it a type mismatch). `check` sees the JSON before the typed parse and
 /// returns `false` to refuse it (the type pre-check of an untagged member).
@@ -81,9 +82,11 @@ fn parse_typed<'a, T: Facet<'a>>(
             if let Some(json) = &json {
                 let mut kept = Unknown::new();
                 for (path, _) in keep_unknown_members(&value, json, &mut kept) {
-                    // The game logs an unknown member at the content log's warning level and goes on.
+                    // The game logs an unknown member at the content log's warning level and goes
+                    // on: the slice's grade of an unknown member.
                     d.push(
                         Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None })
+                            .severity(cx.load.grade(Class::Unknown))
                             .at(cx.at.join(&path)),
                     );
                 }
@@ -121,6 +124,10 @@ fn read_failure(error: bedrock_addon_core::json::SliceError, cx: &ParseCx<'_>) -
         }
     })
 }
+
+/// The grade of an unknown member of a shared type the documents hold: the families read every
+/// slice under [`JSON_READING`](crate::JSON_READING), whose mask warns.
+const UNKNOWN: Severity = crate::JSON_READING.grade(Class::Unknown);
 
 /// The bind constraints `value` states as its bounds (`Schema::check`), at `at`: each member
 /// outside its bound is an `InvalidValue` error, which fails the file as the game's parse does.
@@ -197,7 +204,7 @@ impl JigsawStructure {
         // to 128 and `vertical` to 1 or more: the struct's own bounds and its enum's.
         bounds(self, at, d);
         if let Some(filter) = &self.biome_filters {
-            d.extend(filter.check(&at.child("biome_filters")));
+            d.extend(filter.check(&at.child("biome_filters"), UNKNOWN));
         }
     }
 }
@@ -366,7 +373,7 @@ fn check_rules(rules: &[ProcessorRule], at: &JsonPath, d: &mut Diagnostics) {
         {
             violation(at.child("block_entity_modifier").child("loot_table"), d);
         }
-        d.extend(rule.output_state.check(&at.child("output_state")));
+        d.extend(rule.output_state.check(&at.child("output_state"), UNKNOWN));
     }
 }
 
@@ -381,7 +388,7 @@ fn check_block_predicate(predicate: &BlockPredicate, at: &JsonPath, d: &mut Diag
     match predicate {
         BlockPredicate::RandomBlockMatch { probability: p, .. } => probability(p, d),
         BlockPredicate::BlockstateMatch { block_state, .. } => {
-            d.extend(block_state.check(&at.child("block_state")));
+            d.extend(block_state.check(&at.child("block_state"), UNKNOWN));
         }
         BlockPredicate::RandomBlockstateMatch {
             block_state,
@@ -389,7 +396,7 @@ fn check_block_predicate(predicate: &BlockPredicate, at: &JsonPath, d: &mut Diag
             ..
         } => {
             probability(p, d);
-            d.extend(block_state.check(&at.child("block_state")));
+            d.extend(block_state.check(&at.child("block_state"), UNKNOWN));
         }
         _ => {}
     }

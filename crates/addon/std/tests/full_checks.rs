@@ -31,7 +31,7 @@ mod pairs;
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
-use bedrock_addon::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, VanillaText};
+use bedrock_addon::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, Severity, VanillaText};
 use bedrock_addon::document::Content;
 use bedrock_addon::families::entity::Entity;
 use bedrock_addon::json::{JsonSlice, Value, parse_at};
@@ -94,7 +94,7 @@ impl Filters {
                 let text = format!(r#"{{"test": "{name}"}}"#);
                 let filter: Filter = parse_at(JsonSlice::new(&text)).expect("a filter test");
                 filter
-                    .check(&JsonPath::new())
+                    .check(&JsonPath::new(), Severity::Warning)
                     .iter()
                     .any(|finding| unknown_filter_test(finding).is_some())
             })

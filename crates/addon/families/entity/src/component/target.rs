@@ -146,7 +146,7 @@ impl MobDescriptor {
     /// The findings of the descriptor's filters, under `at`.
     fn check(&self, at: &bedrock_addon_core::diagnostic::JsonPath, cx: &mut ComponentCheck<'_>) {
         if let Some(filters) = &self.filters {
-            cx.extend(filters.check(&at.child("filters")));
+            cx.extend(filters.check(&at.child("filters"), cx.unknown()));
         }
     }
 }

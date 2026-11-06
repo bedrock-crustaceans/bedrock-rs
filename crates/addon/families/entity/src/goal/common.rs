@@ -1,7 +1,7 @@
 //! The member types the AI goals share: the goal base (`priority`, `control_flags`), entity
 //! type lists, vectors, sound events and the named-value enums the game's schema defines as constants.
 
-use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
+use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::json::{ScalarShape, Value, ValueExt};
 use bedrock_addon_core::molang::{JsonType, Molang};
 use bedrock_addon_core::schema::{self, Schema};
@@ -516,11 +516,12 @@ impl MobDescriptor {
         }
     }
 
-    /// The findings of the descriptor's filter, located under `at`.
-    pub(crate) fn check(&self, at: &JsonPath, out: &mut Diagnostics) {
+    /// The findings of the descriptor's filter, located under `at`, an unknown member at
+    /// `unknown`.
+    pub(crate) fn check(&self, at: &JsonPath, unknown: Severity, out: &mut Diagnostics) {
         if let Some(filters) = &self.filters {
             let path = at.child("filters");
-            out.extend(filters.check(&path));
+            out.extend(filters.check(&path, unknown));
         }
     }
 }
@@ -535,7 +536,7 @@ pub(crate) fn check_entity_types(c: &mut GoalCheck<'_>, key: &str, types: Option
         if list {
             at.push_index(i);
         }
-        descriptor.check(&at, &mut found);
+        descriptor.check(&at, c.unknown(), &mut found);
         if list {
             at.pop();
         }

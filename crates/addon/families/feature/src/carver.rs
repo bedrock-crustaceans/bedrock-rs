@@ -8,7 +8,7 @@ use super::molang::{WORLD_GEN, Walk};
 use super::validate::Check;
 use super::values::{CarverRange, JsonInt};
 use super::{Rules, V1_13_0, strict_struct};
-use bedrock_addon_core::diagnostic::{DiagnosticCode, VanillaText};
+use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity, VanillaText};
 use bedrock_addon_core::molang::{Molang, MolangFields, MolangVisitor};
 use bedrock_addon_core::versioning::ValidateCx;
 use bedrock_addon_shared_shapes::BlockSpecifier;
@@ -74,12 +74,12 @@ macro_rules! carver {
             fn rules(&mut self, check: &mut ValidateCx<'_>) {
                 if let Some(block) = &self.fill_with {
                     let at = check.path("fill_with");
-                    check.diagnostics.extend(block.check(&at));
+                    check.diagnostics.extend(block.check(&at, Severity::Warning));
                 }
                 $(
                     if let Some(block) = &self.$extra {
                         let at = check.path(stringify!($extra));
-                        check.diagnostics.extend(block.check(&at));
+                        check.diagnostics.extend(block.check(&at, Severity::Warning));
                     }
                 )*
                 check.int_min("skip_carve_chance", self.skip_carve_chance, 1);

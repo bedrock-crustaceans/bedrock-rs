@@ -255,7 +255,7 @@ impl Typed for AngerLevel {
             0,
         );
         if let Some(filter) = &self.nuisance_filter {
-            cx.extend(filter.check(&JsonPath::new().child("nuisance_filter")));
+            cx.extend(filter.check(&JsonPath::new().child("nuisance_filter"), cx.unknown()));
         }
         // A sound whose condition the lenient reader rejects has no condition to fall back to:
         // the entry is dropped.

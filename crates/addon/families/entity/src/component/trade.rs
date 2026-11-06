@@ -191,7 +191,7 @@ impl Typed for Tamemount {
             }
         }
         if let Some(event) = &self.tame_event {
-            cx.extend(event.check(&JsonPath::new().child("tame_event")));
+            cx.extend(event.check(&JsonPath::new().child("tame_event"), cx.unknown()));
         }
     }
 }

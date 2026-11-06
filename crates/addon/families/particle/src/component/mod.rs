@@ -35,6 +35,7 @@ pub use types::{
     ColorExpr, ColorGradient, EmitterDirection, Gradient, PlaneNormal, TintColor, VectorEvents,
 };
 
+use bedrock_addon_core::diagnostic::Class;
 use bedrock_addon_derive::Components;
 
 use super::history::ParticleFamily;
@@ -297,7 +298,8 @@ where
         ConvertMode::Lenient => Era::Legacy,
         ConvertMode::Strict => Era::Cereal,
     };
-    let mut r = Reader::new(era, cx.molang_version, JsonPath::new(), d);
+    let mut r =
+        Reader::new(era, cx.molang_version, JsonPath::new(), d).grading(cx.grade(Class::Unknown));
     read_named(T::NAME, &value, &mut r).flatten()
 }
 

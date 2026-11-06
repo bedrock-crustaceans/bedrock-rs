@@ -9,7 +9,7 @@ use super::component::{BlockComponent, DeprecatedComponents, DeprecatedDefinitio
 use super::history::{BlockFamily, BlockHistory};
 use super::{Block, Description, Permutation};
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
+    Class, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
 };
 use bedrock_addon_core::document::{ComponentMap, Document, Origin, Rejected};
 use bedrock_addon_core::id::syntax::split_namespace;
@@ -149,6 +149,7 @@ pub(crate) fn parse_document(
     if cereal {
         unknown_traits(d, start, &cx.at);
     }
+    let unknown = cx.load.grade(Class::Unknown);
     // `events` is bound and deprecated by name in the cereal document: written at all (`null`
     // included), it is the deprecation alone, which the game checks before it reads the value.
     let root = if cereal {
@@ -161,7 +162,7 @@ pub(crate) fn parse_document(
         .and_then(Value::as_object)
         .is_some_and(|root| root.contains_key("events"));
     if let Some(root) = &root {
-        reject_crate_members(root, &cx.at, d);
+        reject_crate_members(root, &cx.at, unknown, d);
     }
     let mut one_box = Vec::new();
     let mut components = section(
@@ -177,6 +178,7 @@ pub(crate) fn parse_document(
         shell.components.get(COLLISION_BOX),
         &cx.at.with(&["components", COLLISION_BOX]),
         cx.original_version,
+        unknown,
         d,
     ) {
         one_box.push(None);
@@ -185,6 +187,7 @@ pub(crate) fn parse_document(
         &mut components,
         &cx.at.with(&["components"]),
         cx.original_version,
+        unknown,
         d,
     );
     let mut permutations = Vec::with_capacity(shell.permutations.len());
@@ -205,6 +208,7 @@ pub(crate) fn parse_document(
             p.components.get(COLLISION_BOX),
             &at.with(&[COLLISION_BOX]),
             cx.original_version,
+            unknown,
             d,
         ) {
             one_box.push(Some(index));
@@ -241,12 +245,13 @@ pub(crate) fn parse_document(
 const COLLISION_BOX: &str = "minecraft:collision_box";
 
 /// The members only the 1.26.60 document binds, in a 1.26.20 one: `block_entity.entity_storage`
-/// is an unknown member there (`UnrecognizedField`, an error in the strict slice; held with
-/// the component's unknown members). `block_entity` is a base component.
+/// is an unknown member there (`UnrecognizedField` at `unknown`, an error in the strict slice;
+/// held with the component's unknown members). `block_entity` is a base component.
 fn newest_members(
     map: &mut ComponentMap<BlockComponent>,
     at: &JsonPath,
     version: FormatVersion,
+    unknown: Severity,
     d: &mut Diagnostics,
 ) {
     if !(CEREAL..NEWEST).contains(&version) {
@@ -256,11 +261,11 @@ fn newest_members(
         return;
     };
     if let Some(value) = entity.entity_storage.take() {
-        // The marker `unknown_members_are_errors` turns into the error that refuses the block
-        // (the strict slice rejects an unknown member): only reachable in
+        // The strict slice's error that refuses the block: only reachable in
         // [1.26.20, 1.26.60), never a warning the load keeps.
         d.push(
             Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None })
+                .severity(unknown)
                 .at(at.with(&["minecraft:block_entity", "entity_storage"])),
         );
         d.unknown_mut().put(
@@ -299,10 +304,10 @@ fn tell_events(written: bool, events: Option<&Value>, cx: &ParseCx<'_>, d: &mut 
 
 /// The crate's own members a cereal document has: `deprecated` (of the block or of a
 /// permutation) and `deprecated_event_handlers` are no members of the game's document
-/// (`UnrecognizedField`, which the strict slice makes an error);
+/// (`UnrecognizedField` at `unknown`, the strict slice's error);
 /// `ordered_v1_custom_components` (of either) is bound and deprecated by name.
 /// Each rejects the block; what the shell read of them is not used.
-fn reject_crate_members(root: &Value, at: &JsonPath, d: &mut Diagnostics) {
+fn reject_crate_members(root: &Value, at: &JsonPath, unknown: Severity, d: &mut Diagnostics) {
     let mut sections = vec![(root, at.clone())];
     for (index, permutation) in root
         .as_object()
@@ -320,17 +325,18 @@ fn reject_crate_members(root: &Value, at: &JsonPath, d: &mut Diagnostics) {
         let Some(object) = object.as_object() else {
             continue;
         };
-        let unknown: &[&str] = if index == 0 {
+        let ours: &[&str] = if index == 0 {
             &["deprecated", "deprecated_event_handlers"]
         } else {
             &["deprecated"]
         };
-        for key in unknown {
+        for key in ours {
             if object.contains_key(key) {
-                // The marker `unknown_members_are_errors` turns into the error that refuses
-                // the block (cereal documents alone reach here).
+                // The strict slice's error that refuses the block (cereal documents alone
+                // reach here).
                 d.push(
                     Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None })
+                        .severity(unknown)
                         .at(path.with(&[key])),
                 );
             }

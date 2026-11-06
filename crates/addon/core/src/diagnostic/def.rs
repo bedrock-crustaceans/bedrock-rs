@@ -506,8 +506,12 @@ pub enum Class {
     /// The game logs an error and keeps the document: an error that is
     /// [`kept`](super::Diagnostic::kept).
     KeptError,
-    /// An unknown member or component: a warning until the slice's reading grades it (an error
-    /// where the slice is strict, as `ErrorMask::Strict` is).
+    /// An unknown member or component, graded where it is raised by the reading of the slice
+    /// that reads it ([`Reading::grade`](crate::versioning::Reading::grade), through
+    /// `LoadContext::grade`, `UpgradeCx::grade` or `ValidateCx::grade`): an error under a
+    /// strict [`UnknownMask`](crate::versioning::UnknownMask), and the document is refused; a
+    /// warning under an unstrict one. Nothing raises its severity after the read: a site that
+    /// tells one at another severity says so where it raises it.
     Unknown,
     /// The document loads: a warning.
     Warning,

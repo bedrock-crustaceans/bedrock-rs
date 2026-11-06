@@ -89,6 +89,7 @@ fn upgraded_height(identifier: &str, bounds: Option<(i32, i32)>) -> Option<(i16,
         identifier,
         actor_type: bedrock_addon_core::vanilla::ActorType::Mob,
         skip_section_a: false,
+        reading: bedrock_addon_core::versioning::Reading::OWN,
         diagnostics: &mut diagnostics,
     });
     assert!(diagnostics.is_empty(), "{diagnostics:#?}");

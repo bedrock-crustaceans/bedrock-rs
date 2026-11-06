@@ -79,7 +79,7 @@ pub(crate) fn validate(table: &mut TradeTable, cx: &mut ValidateCx<'_>) {
 fn check_filters(list: &ItemList, at: &JsonPath, cx: &mut ValidateCx<'_>) {
     let mut check = |filters: Option<&bedrock_addon_core::shared::Filter>, item_at: &JsonPath| {
         if let Some(filters) = filters {
-            for finding in filters.check(&item_at.child("filters")) {
+            for finding in filters.check(&item_at.child("filters"), Severity::Warning) {
                 cx.diagnostics.push(finding);
             }
         }

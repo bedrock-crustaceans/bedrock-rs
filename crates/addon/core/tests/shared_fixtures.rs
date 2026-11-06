@@ -13,7 +13,7 @@
 #[path = "shared/common.rs"]
 mod common;
 
-use bedrock_addon_core::diagnostic::JsonPath;
+use bedrock_addon_core::diagnostic::{JsonPath, Severity};
 use bedrock_addon_core::shared::{Filter, FilterScalar, FilterSubject};
 use common::{compact, normalised};
 use facet::Facet;
@@ -43,7 +43,11 @@ fn sg20_biome_filter() {
     assert_eq!(test.test, "has_biome_tag");
     assert_eq!(test.operator.as_deref(), Some("=="));
     assert_eq!(test.value, Some(FilterScalar::String("animal".into())));
-    assert!(row.biome_filter.check(&JsonPath::new()).is_empty());
+    assert!(
+        row.biome_filter
+            .check(&JsonPath::new(), Severity::Warning)
+            .is_empty()
+    );
 }
 
 #[derive(Facet)]
@@ -85,7 +89,12 @@ fn s13_simplified_multiple_conditions() {
             Some(&FilterScalar::String("plains".into()))
         )
     );
-    assert!(second.biome_filter.check(&JsonPath::new()).is_empty());
+    assert!(
+        second
+            .biome_filter
+            .check(&JsonPath::new(), Severity::Warning)
+            .is_empty()
+    );
 }
 
 #[test]
@@ -100,7 +109,11 @@ fn r01_1_13_0_loads() {
         matches!(&list[0], Filter::Test(t) if t.subject.unwrap_or_default() == FilterSubject::Self_)
     );
     assert!(matches!(&list[1], Filter::Group(g) if g.any_of.is_some()));
-    assert!(row.biome_filter.check(&JsonPath::new()).is_empty());
+    assert!(
+        row.biome_filter
+            .check(&JsonPath::new(), Severity::Warning)
+            .is_empty()
+    );
 }
 
 #[test]

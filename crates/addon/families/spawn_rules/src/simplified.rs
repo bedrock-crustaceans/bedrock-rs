@@ -5,7 +5,7 @@ use facet::Facet;
 
 use super::texts;
 use bedrock_addon_core::diagnostic::{
-    DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
+    Class, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
 };
 use bedrock_addon_core::id::{EntityId, SpawnRulesId};
 use bedrock_addon_core::json::{
@@ -121,11 +121,12 @@ impl VersionStruct for SimplifiedSpawnRules {
     fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
         let json = bedrock_addon_core::json::from_str_jsonc::<Value>(payload.text).ok();
         // The spawn-rule loader registers the slice with the lenient error mask, under which an
-        // unknown member is written to the content log at the warning level.
+        // unknown member is written to the content log at the warning level: the grade.
+        let severity = cx.load.grade(Class::Unknown);
         let unknown = |path: &JsonPath, d: &mut Diagnostics| {
             finding(
                 DiagnosticCode::UnrecognizedField { text: None },
-                Severity::Warning,
+                severity,
                 &cx.at.join(path),
                 d,
             );

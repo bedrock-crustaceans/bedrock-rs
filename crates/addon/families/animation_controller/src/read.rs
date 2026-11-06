@@ -271,6 +271,7 @@ pub(crate) fn upgrade(
                 identifier: "",
                 actor_type: ActorType::Mob,
                 skip_section_a: false,
+                reading: cx.reading,
                 diagnostics: &mut found,
             });
             let failed = found.has_errors();

@@ -5,7 +5,7 @@ use facet::Facet;
 
 use super::ParseCx;
 use crate::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, Span,
+    Class, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, Span,
     code_for_deserialize_error_kind,
 };
 use crate::json::{
@@ -19,9 +19,9 @@ use crate::schema::UnknownRule;
 /// `Value`) and keeps the unknown members of its structs that keep them in `d`'s table
 /// (below `cx.at`; which keep is `json::walk`'s rule, under the slice's
 /// `Reading::keeps_unknown`), each told by its disposition: kept or reported, an
-/// `UnrecognizedField` warning; `schema::unknown = "reject"` a `DroppedField` and `"ignore"` an
-/// `IgnoredMember`, both at `LoadContext::unknown_severity`. Its scalars are read by the
-/// slice's scalar rules (`LoadContext::scalar_rules`, the scalar pre-pass). A failed typed parse
+/// `UnrecognizedField`; `schema::unknown = "reject"` a `DroppedField` and `"ignore"` an
+/// `IgnoredMember`; each graded by the slice's reading (`LoadContext::grade`). Its scalars are
+/// read by the slice's scalar rules (`LoadContext::scalar_rules`, the scalar pre-pass). A failed typed parse
 /// is one error (its code chosen by facet's error kind) at the failing member, and `None`.
 pub fn parse_payload<'a, T: Facet<'a>>(
     payload: JsonSlice<'a>,
@@ -64,10 +64,10 @@ pub fn parse_payload<'a, T: Facet<'a>>(
 
 /// Tells each unknown member the door found, at `base` followed by its path, by its
 /// disposition: kept, or not kept by a struct that says nothing or `report`, an
-/// `UnrecognizedField` warning (the game logs an unknown member at content-log level 2; a
-/// `Strict` slice makes it an error after the parse); rejected (`schema::unknown = "reject"`) a
-/// `DroppedField`, ignored (`"ignore"`) an `IgnoredMember`, both at the slice's
-/// `LoadContext::unknown_severity`.
+/// `UnrecognizedField` (the game logs an unknown member at content-log level 2, an error under
+/// a strict slice's mask); rejected (`schema::unknown = "reject"`) a `DroppedField`, ignored
+/// (`"ignore"`) an `IgnoredMember`. Each is graded by the slice's reading
+/// (`LoadContext::grade`).
 pub(super) fn tell_unknown(
     unknown: Vec<(JsonPath, UnknownRule)>,
     base: &JsonPath,
@@ -78,15 +78,15 @@ pub(super) fn tell_unknown(
         let (code, severity) = match rule {
             UnknownRule::Reject => (
                 DiagnosticCode::DroppedField { text: None },
-                cx.unknown_severity,
+                cx.grade(Class::Unknown),
             ),
             UnknownRule::Ignore => (
                 DiagnosticCode::IgnoredMember { text: None },
-                cx.unknown_severity,
+                cx.grade(Class::Unknown),
             ),
             UnknownRule::Keep | UnknownRule::Report => (
                 DiagnosticCode::UnrecognizedField { text: None },
-                Severity::Warning,
+                cx.grade(Class::Unknown),
             ),
         };
         d.push(Diagnostic::new(

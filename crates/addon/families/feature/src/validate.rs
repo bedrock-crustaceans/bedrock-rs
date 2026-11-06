@@ -6,7 +6,7 @@ use super::read::{
     RANGE_MIN_OUT_OF_RANGE, formatted, not_valid_here,
 };
 use super::values::{BlockList, Chance, ChanceList, JsonInt};
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, Phase};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, Phase, Severity};
 use bedrock_addon_core::shared::IntRange;
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{FieldMeta, ValidateCx, check_fields_since_engine};
@@ -219,7 +219,8 @@ impl Check for ValidateCx<'_> {
     fn descriptor(&mut self, key: &str, value: Option<&BlockDescriptor>) {
         if let Some(descriptor) = value {
             let at = self.path(key);
-            self.diagnostics.extend(descriptor.check(&at));
+            self.diagnostics
+                .extend(descriptor.check(&at, Severity::Warning));
         }
     }
 
@@ -227,7 +228,9 @@ impl Check for ValidateCx<'_> {
         if let Some(values) = values {
             self.each(key, values, |check, descriptor| {
                 let at = check.at.clone();
-                check.diagnostics.extend(descriptor.check(&at));
+                check
+                    .diagnostics
+                    .extend(descriptor.check(&at, Severity::Warning));
             });
         }
     }

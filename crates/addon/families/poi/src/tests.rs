@@ -389,7 +389,7 @@ fn both_documents_read_a_minecraft_document_input_under_the_strict_mask() {
     use super::history::{PoiTagFamily, PoiTypeFamily};
     use bedrock_addon_core::json::NullRule;
     use bedrock_addon_core::load::DocumentSource;
-    use bedrock_addon_core::versioning::{ErrorMask, Family, InputKind, StructIndex};
+    use bedrock_addon_core::versioning::{Family, InputKind, StructIndex, UnknownMask};
     // Both loaders read a document input, and the one slice of each is read strictly.
     let slice = StructIndex::Stable(0);
     assert_eq!(PoiTypeFamily::ENVELOPE.input, InputKind::Document);
@@ -403,12 +403,12 @@ fn both_documents_read_a_minecraft_document_input_under_the_strict_mask() {
         Some(NullRule::Rejected)
     );
     assert_eq!(
-        PoiTypeFamily::reading(slice, DocumentSource::Json).error_mask(),
-        ErrorMask::Strict
+        PoiTypeFamily::reading(slice, DocumentSource::Json).unknown,
+        UnknownMask::Error
     );
     assert_eq!(
-        PoiTagFamily::reading(slice, DocumentSource::Json).error_mask(),
-        ErrorMask::Strict
+        PoiTagFamily::reading(slice, DocumentSource::Json).unknown,
+        UnknownMask::Error
     );
 }
 

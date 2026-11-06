@@ -9,7 +9,7 @@ mod particle;
 
 use super::*;
 use crate::json::{IsIntRule, WideInt};
-use crate::versioning::MemberFailure;
+use crate::versioning::{MemberFailure, UnknownMask};
 
 /// A finding as the oracle captures were written: severity, path, code, span, kept.
 fn rendered(found: &Diagnostics) -> Vec<String> {

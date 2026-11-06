@@ -37,7 +37,7 @@ use crate::deprecated::ItemDeprecatedData;
 use crate::legacy::{LegacyItemData, is_legacy_read, read_legacy};
 use crate::texts;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
+    Class, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
 };
 use bedrock_addon_core::load::LoadContext;
 
@@ -510,6 +510,7 @@ pub(crate) fn parse_parts(
 ) -> Option<Parts> {
     let original = cx.original_version;
     let strict = strict(original);
+    let unknown = cx.load.grade(Class::Unknown);
     let mut found = Diagnostics::default();
     let Some(shell) = parse_payload::<Shell<'_>>(payload, cx, &mut found) else {
         d.extend_with_unknown(found);
@@ -594,14 +595,18 @@ pub(crate) fn parse_parts(
             if let Some(c) = component.as_mut() {
                 unbind_members(key, c, &values[key], version, cx.load, &mut own);
                 if check_component(key, c, version, original, cx.load, &mut own) {
-                    shared_checks(c, &mut own);
+                    shared_checks(c, unknown, &mut own);
                     level_sound_events(c, version, cx.load, &mut own);
                 } else {
                     component = None;
                 }
             }
+            // An unknown member is left out of the errors: a component dropped with no other
+            // error is still summarised.
             if component.is_none()
-                && !own.has_errors()
+                && !own
+                    .iter()
+                    .any(|told| told.rejects() && !is_unknown_member(told))
                 && !own.iter().any(|told| told.location.json_path.is_empty())
             {
                 // Also where a member below the component is told (one the crate's own
@@ -639,15 +644,14 @@ pub(crate) fn parse_parts(
             );
         } else {
             components.insert(key.clone(), Component::Unknown(values[key].clone()));
-            // From 1.26.30 an unknown member is an error of the strict slice: the warning the
-            // versioning load raises to an error (`unknown_members_are_errors`). Below it a
-            // registered name this slice does not bind (a component of a later format) stays
-            // in the document and is a member the schema does not know, a warning-level line
-            // in the content log; a name no component ever had is removed first without a
-            // line, so the crate reports it as an information.
+            // From 1.26.30 an unknown member is an error of the strict slice (its grade of an
+            // unknown member). Below it a registered name this slice does not bind (a
+            // component of a later format) stays in the document and is a member the schema
+            // does not know, a warning-level line in the content log; a name no component ever
+            // had is removed first without a line, so the crate reports it as an information.
             let registered = crate::component::ItemComponent::TABLE.get(key).is_some();
             let severity = if version >= V1_26_30 || registered {
-                Severity::Warning
+                unknown
             } else {
                 Severity::Info
             };
@@ -706,10 +710,10 @@ pub(crate) fn parse_parts(
     if version >= V1_26_30 && shell.events.is_some() {
         // The 1.26.30 format and the newer ones bind `description`, `components` and the
         // two deprecated side-car names alone: `events` is an unknown member there, an error
-        // in the strict slice. Held, and written back. The warning is the marker
-        // `unknown_members_are_errors` raises to the error.
+        // in the strict slice. Held, and written back.
         found.push(
             Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None })
+                .severity(unknown)
                 .at(cx.at.child("events")),
         );
     }
@@ -719,6 +723,7 @@ pub(crate) fn parse_parts(
         shell.legacy_data,
         version,
         &cx.at,
+        unknown,
         &mut found,
     );
     description_era(
@@ -726,6 +731,7 @@ pub(crate) fn parse_parts(
         version,
         original,
         &cx.at.child("description"),
+        unknown,
         &mut found,
     );
     if !strict {
@@ -819,24 +825,26 @@ pub(crate) fn is_custom_key(key: &str) -> bool {
     }
 }
 
-/// The side-car members of the item object at `version`.
+/// The side-car members of the item object at `version`, an unknown member at `unknown`.
 fn side_car(
     written: Option<Value>,
     data: Option<Value>,
     legacy_data: Option<Value>,
     version: FormatVersion,
     at: &JsonPath,
+    unknown: Severity,
     d: &mut Diagnostics,
 ) -> ItemDeprecatedData {
     let mut out = ItemDeprecatedData::default();
     if version >= V1_26_30 {
         // The 1.26.30 format binds the side-car only as the deprecated names
-        // `deprecated_component_data` / `legacy_data`; the warning is the marker
-        // `unknown_members_are_errors` raises to the error.
+        // `deprecated_component_data` / `legacy_data`: `__deprecated_components` is an
+        // unknown member.
         if let Some(value) = written {
             d.unknown_mut().put(at, "__deprecated_components", value);
             d.push(
                 Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None })
+                    .severity(unknown)
                     .at(at.child("__deprecated_components")),
             );
         }
@@ -871,6 +879,7 @@ fn side_car(
             d.unknown_mut().put(at, key, value);
             d.push(
                 Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None })
+                    .severity(unknown)
                     .at(at.child(key)),
             );
         }
@@ -900,21 +909,33 @@ fn side_car(
     out
 }
 
+/// Whether `finding` tells an unknown member or component.
+fn is_unknown_member(finding: &Diagnostic) -> bool {
+    matches!(
+        finding.code,
+        DiagnosticCode::UnrecognizedField { .. } | DiagnosticCode::UnrecognizedComponent { .. }
+    )
+}
+
 /// The description members `version` binds: `category` up to 1.20.0, `menu_category` from
-/// 1.20.20, with the creative category's default of the era.
+/// 1.20.20, with the creative category's default of the era, a member of the other era told at
+/// `severity`.
 fn description_era(
     description: &mut Description,
     version: FormatVersion,
     original: FormatVersion,
     at: &JsonPath,
+    severity: Severity,
     d: &mut Diagnostics,
 ) {
-    // A description member of the other era is a member the schema does not know: a
-    // warning-level line in the content log under the legacy chain while the item loads;
-    // from 1.26.30 the marker `unknown_members_are_errors` raises it.
+    // A description member of the other era is a member the schema does not know, at
+    // `severity`: a warning-level line in the content log under the legacy chain while the
+    // item loads; from 1.26.30 the strict slice's error.
     let unknown = |d: &mut Diagnostics, key: &str| {
         d.push(
-            Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None }).at(at.child(key)),
+            Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None })
+                .severity(severity)
+                .at(at.child(key)),
         );
     };
     if version < V1_20_20 {
@@ -1294,12 +1315,12 @@ fn at(parts: &[&str]) -> JsonPath {
 }
 
 /// The findings of the shared value types a component holds (each reports its own unknown
-/// members and shapes), at their paths below the component.
+/// members, at `unknown`, and shapes), at their paths below the component.
 #[allow(
     clippy::too_many_lines,
     reason = "one arm per component holding shared values"
 )]
-fn shared_checks(component: &Component, d: &mut Diagnostics) {
+fn shared_checks(component: &Component, unknown: Severity, d: &mut Diagnostics) {
     use bedrock_addon_core::shared::EventTrigger;
     use bedrock_addon_shared_shapes::{BlockDescriptor, ItemDescriptor};
     let items = |list: &[ItemDescriptor], key: &str, d: &mut Diagnostics| {
@@ -1309,19 +1330,23 @@ fn shared_checks(component: &Component, d: &mut Diagnostics) {
     };
     let blocks = |list: &[BlockDescriptor], key: &str, d: &mut Diagnostics| {
         for (i, block) in list.iter().enumerate() {
-            d.extend(block.check(&at(&[key, &i.to_string()])));
+            d.extend(block.check(&at(&[key, &i.to_string()]), unknown));
         }
     };
     let trigger = |trigger: Option<&EventTrigger>, path: &[&str], d: &mut Diagnostics| {
         if let Some(trigger) = trigger {
-            d.extend(trigger.check(&at(path)));
+            d.extend(trigger.check(&at(path), unknown));
         }
     };
     match component {
         Component::Digger(c) => {
             for (i, speed) in c.destroy_speeds.iter().enumerate() {
                 let i = i.to_string();
-                d.extend(speed.block.check(&at(&["destroy_speeds", &i, "block"])));
+                d.extend(
+                    speed
+                        .block
+                        .check(&at(&["destroy_speeds", &i, "block"]), unknown),
+                );
                 trigger(
                     speed.deprecated_on_dig.as_ref(),
                     &["destroy_speeds", &i, "__deprecated_on_dig"],
@@ -1333,13 +1358,17 @@ fn shared_checks(component: &Component, d: &mut Diagnostics) {
         Component::LegacyDigger(c) => {
             for (i, speed) in c.destroy_speeds.iter().enumerate() {
                 let i = i.to_string();
-                d.extend(speed.block.check(&at(&["destroy_speeds", &i, "block"])));
+                d.extend(
+                    speed
+                        .block
+                        .check(&at(&["destroy_speeds", &i, "block"]), unknown),
+                );
                 trigger(speed.on_dig.as_ref(), &["destroy_speeds", &i, "on_dig"], d);
             }
             trigger(c.on_dig.as_ref(), &["on_dig"], d);
         }
         Component::BlockPlacer(c) => {
-            d.extend(c.block.check(&at(&["block"])));
+            d.extend(c.block.check(&at(&["block"]), unknown));
             blocks(&c.use_on, "use_on", d);
         }
         Component::EntityPlacer(c) => {

@@ -6,6 +6,9 @@
 #[path = "item/common.rs"]
 mod common;
 
+#[path = "item/unknown_severity.rs"]
+mod unknown_severity;
+
 #[path = "item/component_values.rs"]
 mod component_values;
 

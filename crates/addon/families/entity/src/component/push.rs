@@ -103,7 +103,7 @@ impl KnockbackPreset {
         cx: &mut ComponentCheck<'_>,
     ) {
         if let Some(filter) = &self.filter {
-            cx.extend(filter.check(&at.child("filter")));
+            cx.extend(filter.check(&at.child("filter"), cx.unknown()));
         }
         // The game's schema: `slowdown_scale` minimum 0, maximum 1.
         cx.within(
@@ -238,7 +238,7 @@ impl PushPreset {
         cx: &mut ComponentCheck<'_>,
     ) {
         if let Some(filters) = &self.filters {
-            cx.extend(filters.check(&at.child("filters")));
+            cx.extend(filters.check(&at.child("filters"), cx.unknown()));
         }
         // The game's schema minimums.
         cx.at_least(&at.child("min_distance"), &mut self.min_distance, 0.0, 0.01);

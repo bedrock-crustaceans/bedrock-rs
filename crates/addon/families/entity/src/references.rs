@@ -11,7 +11,7 @@
 use std::collections::HashSet;
 use std::sync::LazyLock;
 
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, Phase};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, Phase, Severity};
 use bedrock_addon_core::document::{ComponentMap, ComponentRef};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::shared::Filter;
@@ -316,7 +316,7 @@ fn components(
                     && let Ok(filter) = Filter::try_from(filters.clone())
                 {
                     older_members(filters, &trigger_at.child("filters"), cx);
-                    let found = filter.check(&trigger_at.child("filters"));
+                    let found = filter.check(&trigger_at.child("filters"), Severity::Warning);
                     // Of the shared check the unknown test names alone: the game's own
                     // files write members of the older filter form here, which it maps to
                     // tests and which `older_members` holds to the game's list. Told in the
@@ -682,6 +682,7 @@ mod tests {
             skipped: Vec::new(),
             #[cfg(feature = "molang")]
             molang_failures: Vec::new(),
+            reading: load.reading,
             diagnostics: &mut diagnostics,
         };
         check(entity, &mut cx);

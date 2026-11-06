@@ -1,21 +1,21 @@
 //! Reading a catalogue payload on the reader kit, each level a node with its text so every
 //! finding keeps its span: vanilla's cereal reader fails the file on a wrong type, a missing
 //! required member, an unknown category or a constraint, and tells every unknown member as an
-//! `UnrecognizedField` warning, which the strict 1.26.50 slice turns into the error that skips
-//! the file (`Family::reading`).
+//! `UnrecognizedField` graded by the slice: the strict 1.26.50 slice's error that skips the
+//! file, a warning in the 1.20.0 slice (`Family::reading`).
 
 use indexmap::IndexMap;
 
 use super::{CatalogItem, Category, CategoryName, CraftingCatalog, Group, GroupIdentifier};
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, VanillaText};
+use bedrock_addon_core::diagnostic::{Class, Diagnostic, DiagnosticCode, Diagnostics, VanillaText};
 use bedrock_addon_core::id::ItemId;
 use bedrock_addon_core::json::kit::{Disposition, Elements, Members, Node, Read};
 use bedrock_addon_core::json::{JsonSlice, Value, from_str_jsonc, parse_at};
 use bedrock_addon_core::versioning::{ParseCx, Reading, UnknownMask};
 use facet_json::RawJson;
 
-/// How the raw reader reads: the strict document, its unknown members told as warnings (the
-/// strict slice makes them errors after the parse).
+/// How the raw reader reads: the strict document, its unknown members told at the slice's grade
+/// (`parse_catalog`).
 const READING: Reading = Reading::DOCUMENT.with_unknown(UnknownMask::Warn);
 
 /// A value's JSON type as the catalogue's messages name it.
@@ -249,5 +249,6 @@ pub(super) fn parse_catalog(
         return None;
     };
     let node = Node::with_text(&json, cx.at.clone(), payload);
-    catalog(&mut Read::new(READING, d), &node)
+    let unknown = cx.load.grade(Class::Unknown);
+    catalog(&mut Read::new(READING, d).unknown_severity(unknown), &node)
 }

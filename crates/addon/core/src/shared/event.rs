@@ -5,7 +5,7 @@ use facet_value::VObject;
 use super::filter::{Filter, FilterSubject};
 use super::read::{self, ROOT, ShapeError, wrong_type};
 use super::unrecognized;
-use crate::diagnostic::{Diagnostics, JsonPath};
+use crate::diagnostic::{Diagnostics, JsonPath, Severity};
 use crate::document::UnknownMembers;
 use crate::json::Value;
 
@@ -47,15 +47,16 @@ impl EventTrigger {
     }
 
     /// The findings of the trigger's `filters` (an unknown test name), located under
-    /// `at/filters`.
-    pub fn check(&self, at: &JsonPath) -> Diagnostics {
+    /// `at/filters`, and of its unknown members, each at `unknown` (the grade of an unknown
+    /// member by the reading the caller reads under).
+    pub fn check(&self, at: &JsonPath, unknown: Severity) -> Diagnostics {
         let mut out = Diagnostics::default();
         if let Some(filters) = &self.filters {
             let mut path = at.clone();
             path.push("filters");
-            out.extend(filters.check(&path));
+            out.extend(filters.check(&path, unknown));
         }
-        unrecognized(&self.extra, at, &mut out);
+        unrecognized(&self.extra, at, unknown, &mut out);
         out
     }
 }

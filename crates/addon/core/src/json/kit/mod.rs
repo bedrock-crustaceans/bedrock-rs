@@ -24,7 +24,7 @@
 //! |---|---|
 //! | [`Reading::null`] | [`NullHandling::Absent`]: [`opt`](Read::opt) reads a `null` member as absent, [`required`](Read::required) as missing; otherwise the member is there and its read takes the `null` |
 //! | [`Reading::scalars`] | [`Scalars::JsonCpp`] only, in two reads: [`number`](Read::number) also takes a bool, as 1 or 0, and [`int`](Read::int) any number, cut as `asInt` cuts it under the caller's [`Coercing`] (a string or `null` is still a wrong type to both, and a bool to `int`). [`Scalars::Strict`], [`Scalars::NonStrict`] and [`Scalars::ConvertAndTell`] read alike here: a token of another kind is a wrong type, and `int` takes what `isInt` takes. [`bool`](Read::bool) and [`string`](Read::string) coerce under none |
-//! | [`Reading::unknown`] | the severity of [`unknown`](Read::unknown): [`UnknownMask::Error`] an error, [`UnknownMask::Warn`] a warning |
+//! | [`Reading::unknown`] | the severity of [`unknown`](Read::unknown): [`UnknownMask::Error`](crate::versioning::UnknownMask::Error) an error, [`UnknownMask::Warn`](crate::versioning::UnknownMask::Warn) a warning |
 //! | [`Reading::on_member_failure`] | a failed read (a wrong type, a missing member), graded by [`schema::grade`](crate::schema::grade): [`MemberFailure::DefaultAndTell`](crate::versioning::MemberFailure::DefaultAndTell) an information, since the member then takes its default (the game says nothing); any other an error that fails what is read ([`Read::failed`]), the caller dropping what the rule drops |
 //!
 //! A finding the kit does not word as a family's game does is the family's to tell, with
@@ -68,9 +68,9 @@ use indexmap::IndexMap;
 
 use super::{Coerce, Coercing, JsonSlice, Value};
 use crate::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, Span, VanillaText,
+    Class, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, Span, VanillaText,
 };
-use crate::versioning::{NullHandling, Reading, Scalars, UnknownMask};
+use crate::versioning::{NullHandling, Reading, Scalars};
 
 // hidden: API not yet reviewed
 #[doc(hidden)]
@@ -405,10 +405,7 @@ pub struct Read<'d> {
 impl<'d> Read<'d> {
     /// A read under `reading`, telling into `findings`.
     pub fn new(reading: Reading, findings: &'d mut Diagnostics) -> Self {
-        let unknown_severity = match reading.unknown {
-            UnknownMask::Error => Severity::Error,
-            _ => Severity::Warning,
-        };
+        let unknown_severity = reading.grade(Class::Unknown);
         Self {
             reading,
             texts: Texts::CODES,

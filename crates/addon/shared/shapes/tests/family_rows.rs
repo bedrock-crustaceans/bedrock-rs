@@ -12,7 +12,7 @@
 )]
 mod common;
 
-use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath, VanillaText};
+use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath, Severity, VanillaText};
 use bedrock_addon_core::molang::SourceForm;
 use bedrock_addon_shared_shapes::{
     BlockDescriptor, BlockSpecifier, CreativeCategory, ItemDescriptor, MenuCategory,
@@ -30,7 +30,7 @@ fn read_fixture<T: for<'a> Facet<'a>>(text: &str) -> T {
 
 /// The vanilla text of the single `InvalidValue` finding of `descriptor`.
 fn block_text(descriptor: &BlockDescriptor) -> VanillaText {
-    let found = descriptor.check(&JsonPath::new());
+    let found = descriptor.check(&JsonPath::new(), Severity::Warning);
     assert_eq!(found.len(), 1);
     match &found.iter().next().unwrap().code {
         DiagnosticCode::InvalidValue { text: Some(text) } => text.clone(),
@@ -83,7 +83,7 @@ fn descriptor_kept(text: &str) {
         VanillaText::BlockDescriptorShape { value: "5".into() }
     );
     assert!(matches!(on[1], BlockDescriptor::Block { .. }));
-    assert!(on[1].check(&JsonPath::new()).is_empty());
+    assert!(on[1].check(&JsonPath::new(), Severity::Warning).is_empty());
     assert!(fixture.empty.on.is_empty());
 }
 
@@ -130,7 +130,7 @@ fn sg50_tags_compile() {
     let row: SpawnsOnBlockTags =
         read_fixture(include_str!("fixtures/spawn_groups/sg50_tags_compile.json"));
     assert_eq!(block_tags(&row.on), "q.any_tag('grass')");
-    assert!(row.on.check(&JsonPath::new()).is_empty());
+    assert!(row.on.check(&JsonPath::new(), Severity::Warning).is_empty());
 }
 
 #[test]
@@ -155,7 +155,11 @@ fn sg52_tags_shape_then_molang() {
     );
     // The shape is fine; the Molang error is the compile pass's.
     assert_eq!(block_tags(&blocks[1]), "1 +");
-    assert!(blocks[1].check(&JsonPath::new()).is_empty());
+    assert!(
+        blocks[1]
+            .check(&JsonPath::new(), Severity::Warning)
+            .is_empty()
+    );
     assert_eq!(row.above.distance, 2);
 }
 

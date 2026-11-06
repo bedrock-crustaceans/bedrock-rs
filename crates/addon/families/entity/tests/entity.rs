@@ -38,6 +38,9 @@ mod replaced;
 #[path = "entity/steps.rs"]
 mod steps;
 
+#[path = "entity/unknown_severity.rs"]
+mod unknown_severity;
+
 #[path = "entity/table.rs"]
 mod table;
 

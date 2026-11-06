@@ -11,8 +11,8 @@ use super::component::validate_components;
 use super::payload::span_of;
 use super::range::{Selection, select};
 use super::{
-    BETA_VERSION, BelowFloor, BetaPermission, EnvelopeCheck, ErrorMask, Family, Identity,
-    LoadOutcome, Loaded, MissingVersion, ParseCx, StructIndex, UpgradeCx, ValidateCx, VersionChain,
+    BETA_VERSION, BelowFloor, BetaPermission, EnvelopeCheck, Family, Identity, LoadOutcome, Loaded,
+    MissingVersion, ParseCx, Reading, StructIndex, UpgradeCx, ValidateCx, VersionChain,
     VersionInput,
 };
 use crate::diagnostic::{
@@ -380,6 +380,7 @@ pub fn finish<F: Family>(parsed: Parsed<F>, cx: &LoadContext) -> LoadOutcome<F> 
         ..
     } = parsed;
     let original_version = version.effective;
+    let reading = parsed_reading::<F>(&version, cx.source);
     let value = value.and_then(|any| {
         let versions = <F::History as VersionChain<F>>::VERSIONS;
         version.upgraded = !version.beta && versions.last() != Some(&version.parsed_as);
@@ -390,6 +391,7 @@ pub fn finish<F: Family>(parsed: Parsed<F>, cx: &LoadContext) -> LoadOutcome<F> 
             identifier: &identifier,
             actor_type,
             skip_section_a,
+            reading,
             diagnostics: &mut diagnostics,
         };
         let mut loaded = any.upgrade_to_end(&mut upgrade);
@@ -401,6 +403,7 @@ pub fn finish<F: Family>(parsed: Parsed<F>, cx: &LoadContext) -> LoadOutcome<F> 
             &written,
             original_version,
             &at,
+            reading,
             cx,
             &mut diagnostics,
         );
@@ -420,12 +423,32 @@ pub fn finish<F: Family>(parsed: Parsed<F>, cx: &LoadContext) -> LoadOutcome<F> 
     }
 }
 
+/// The reading of the slice that parsed a document (`version.parsed_as`, the beta struct at
+/// [`BETA_VERSION`]), which the steps and the checks grade by; [`Reading::OWN`] for a version
+/// that is no slice of the chain (a family's own parse that names none).
+fn parsed_reading<F: Family>(
+    version: &VersionInfo,
+    source: crate::load::DocumentSource,
+) -> Reading {
+    let index = if version.parsed_as == BETA_VERSION {
+        StructIndex::Beta
+    } else {
+        let versions = <F::History as VersionChain<F>>::VERSIONS;
+        match versions.iter().position(|v| *v == version.parsed_as) {
+            Some(i) => StructIndex::Stable(i),
+            None => return Reading::OWN,
+        }
+    };
+    super::reading::slice_reading::<F>(index, source)
+}
+
 /// The generic checks, Molang pass 2 and `F::validate` on the loaded value.
 fn validate<F: Family>(
     loaded: &mut Loaded<F>,
     written: &FormatVersionInput,
     original_version: FormatVersion,
     at: &JsonPath,
+    reading: Reading,
     cx: &LoadContext,
     d: &mut Diagnostics,
 ) {
@@ -451,6 +474,7 @@ fn validate<F: Family>(
         skipped,
         #[cfg(feature = "molang")]
         molang_failures,
+        reading,
         diagnostics: d,
     };
     F::validate(loaded, &mut validate);
@@ -630,26 +654,22 @@ impl Run {
             StructIndex::Stable(i) => versions.get(i).copied().unwrap_or(F::FLOOR),
             StructIndex::Beta => BETA_VERSION,
         };
-        // The selected slice's reading: its null rule, its scalar rules and its unknown-member
-        // rule ride on the context into `parse_payload` and `parse_component` (a rule the
-        // caller's context carries does not leak in; an MCB source is read by the binary reader,
-        // so by default it has no null rule), and so does whether a component that fails to
-        // read is fatal.
+        // The selected slice's reading: its null rule, its scalar rules and the reading itself
+        // (which grades an unknown member) ride on the context into `parse_payload` and
+        // `parse_component` (a rule the caller's context carries does not leak in; an MCB
+        // source is read by the binary reader, so by default it has no null rule), and so does
+        // whether a component that fails to read is fatal.
         let reading = super::reading::slice_reading::<F>(index, cx.source);
         let rule = reading.null_rule();
         let strict_components = reading.components_fatal;
         let scalar_rules = reading.scalar_rules();
         let keeps_unknown = reading.keeps_unknown;
-        let unknown_severity = match reading.unknown {
-            super::UnknownMask::Error => Severity::Error,
-            super::UnknownMask::Warn => Severity::Warning,
-        };
         let scoped;
         let load = if cx.null_rule == rule
             && cx.strict_components == strict_components
             && cx.scalar_rules == scalar_rules
             && cx.keeps_unknown == keeps_unknown
-            && cx.unknown_severity == unknown_severity
+            && cx.reading == reading
         {
             cx
         } else {
@@ -658,7 +678,7 @@ impl Run {
             with_rule.strict_components = strict_components;
             with_rule.scalar_rules = scalar_rules;
             with_rule.keeps_unknown = keeps_unknown;
-            with_rule.unknown_severity = unknown_severity;
+            with_rule.reading = reading;
             scoped = with_rule;
             &scoped
         };
@@ -668,32 +688,7 @@ impl Run {
             original_version: self.version.effective,
             at: self.at.clone(),
         };
-        let value = F::History::parse_struct(payload, index, &parse, &mut self.diagnostics);
-        if reading.error_mask() == ErrorMask::Strict {
-            self.unknown_members_are_errors();
-        }
-        value
-    }
-
-    /// The strict mask: every unknown member (code `0x4`) or component (code `0x400`) the
-    /// parse told of in the payload (anywhere on the raw-text path, where the
-    /// root is the struct) is an error, and the document is rejected.
-    fn unknown_members_are_errors(&mut self) {
-        let at = self.at.clone();
-        for finding in self.diagnostics.iter_mut() {
-            let unknown = matches!(
-                finding.code,
-                DiagnosticCode::UnrecognizedField { .. }
-                    | DiagnosticCode::UnrecognizedComponent { .. }
-            );
-            if unknown
-                && finding.severity == Severity::Warning
-                && finding.phase == Phase::Parse
-                && finding.location.json_path.starts_with(&at)
-            {
-                finding.severity = Severity::Error;
-            }
-        }
+        F::History::parse_struct(payload, index, &parse, &mut self.diagnostics)
     }
 
     /// The text the struct parses and its path: the payload under the family's key in a

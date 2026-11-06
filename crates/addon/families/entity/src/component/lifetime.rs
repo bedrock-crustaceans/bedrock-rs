@@ -84,7 +84,7 @@ impl Typed for SpawnOnDeath {
             &mut self.additional_spawn_range,
         );
         if let Some(filters) = &self.filters {
-            cx.extend(filters.check(&JsonPath::new().child("filters")));
+            cx.extend(filters.check(&JsonPath::new().child("filters"), cx.unknown()));
         }
     }
 }
@@ -422,7 +422,7 @@ impl Typed for Timer {
             cx.range(&JsonPath::new().child("time"), time);
         }
         if let Some(trigger) = &self.time_down_event {
-            cx.extend(trigger.check(&JsonPath::new().child("time_down_event")));
+            cx.extend(trigger.check(&JsonPath::new().child("time_down_event"), cx.unknown()));
         }
     }
 }

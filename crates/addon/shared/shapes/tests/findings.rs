@@ -70,13 +70,16 @@ fn descriptors_report_their_unknown_members() {
     assert!(unrecognized_at(&d.check(&JsonPath::new()), Severity::Info).is_empty());
     let d = BlockDescriptor::from(value(r#"{"name": "a:b", "weight": 2}"#));
     assert_eq!(
-        unrecognized(&d.check(&JsonPath::new())),
+        unrecognized(&d.check(&JsonPath::new(), Severity::Warning)),
         [path(&["weight"])]
     );
     let d = BlockDescriptor::from(value(r#"{"tags": "1", "name": "a:b", "w": 2}"#));
-    let found = d.check(&JsonPath::new());
+    let found = d.check(&JsonPath::new(), Severity::Warning);
     assert_eq!(found.len(), 2);
     assert_eq!(unrecognized(&found), [path(&["w"])]);
     let s = BlockSpecifier::try_from(value(r#"{"name": "a:b", "x": 1}"#)).unwrap();
-    assert_eq!(unrecognized(&s.check(&JsonPath::new())), [path(&["x"])]);
+    assert_eq!(
+        unrecognized(&s.check(&JsonPath::new(), Severity::Warning)),
+        [path(&["x"])]
+    );
 }

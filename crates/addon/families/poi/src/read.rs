@@ -6,7 +6,9 @@
 use facet::Facet;
 
 use super::{PoiTag, PoiType};
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity};
+use bedrock_addon_core::diagnostic::{
+    Class, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity,
+};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value, parse_at, unknown_members};
 use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::{ParseCx, VersionStruct, Versioned, write_payload};
@@ -99,25 +101,35 @@ fn byte(object: &Value, key: &str, at: &JsonPath, d: &mut Diagnostics) -> bool {
 /// Parses `T` from `payload`, strictly: `check` judges the JSON first (the member types facet
 /// would coerce or cannot report, a `null` included (every member's check takes a `null` for
 /// the wrong type), and the value constraints; it returns `false` when the typed parse cannot
-/// read a member it reported); a member no field takes is an `UnrecognizedField` warning,
-/// which the slice's mask makes an error (`Family::reading`), and a failed typed parse is an
-/// error at the failing member. `None` when anything was an error.
+/// read a member it reported); a member no field takes is an `UnrecognizedField` graded by the
+/// slice's mask (`Family::reading`: an error), and a failed typed parse is an error at the
+/// failing member. `None` when anything but an unknown member was an error: the value of a
+/// document whose only errors are its unknown members is built (the pipeline drops it for
+/// them).
 fn parse_strict<'a, T: Facet<'a>>(
     payload: JsonSlice<'a>,
     cx: &ParseCx<'_>,
     d: &mut Diagnostics,
     check: impl FnOnce(&Value, &JsonPath, &mut Diagnostics) -> bool,
 ) -> Option<T> {
-    let errors = |d: &Diagnostics| d.iter().filter(|f| f.severity >= Severity::Error).count();
+    let errors = |d: &Diagnostics| {
+        d.iter()
+            .filter(|f| {
+                f.severity >= Severity::Error
+                    && !matches!(f.code, DiagnosticCode::UnrecognizedField { .. })
+            })
+            .count()
+    };
     let before = errors(d);
     if let Ok(json) = bedrock_addon_core::json::from_str_jsonc::<Value>(payload.text) {
         let typed = check(&json, &cx.at, d);
         for (path, _) in unknown_members(T::SHAPE, &json) {
-            // The game's parser reports an unknown member as a warning; this slice reads
-            // strictly, so the framework lifts the finding to an error that refuses the file.
+            // The game's parser reports an unknown member, which this slice's strict mask makes
+            // an error that refuses the file.
             d.push(
                 Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None })
-                    .at(cx.at.join(&path)),
+                    .at(cx.at.join(&path))
+                    .severity(cx.load.grade(Class::Unknown)),
             );
         }
         if !typed {

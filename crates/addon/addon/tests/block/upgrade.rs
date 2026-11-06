@@ -63,6 +63,7 @@ where
         identifier: "demo:x",
         actor_type: ActorType::Mob,
         skip_section_a: false,
+        reading: cx.reading,
         diagnostics: &mut d,
     });
     let written = next.write().expect("written");

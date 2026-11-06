@@ -290,6 +290,7 @@ fn one_step(text: &str, cx: &LoadContext) -> (Value, Diagnostics) {
         identifier: "",
         actor_type: ActorType::Mob,
         skip_section_a: false,
+        reading: cx.reading,
         diagnostics: &mut diagnostics,
     };
     let value = match written.into_value() {

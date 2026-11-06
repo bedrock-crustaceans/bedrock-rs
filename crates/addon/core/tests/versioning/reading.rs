@@ -9,10 +9,10 @@ use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::testing::slice_reading;
 use bedrock_addon_core::versioning::{
     BeyondWidth, ComponentTable, Envelope, Family, InputKind, Loaded, NullHandling, Reading,
-    Scalars, StructIndex, UnknownMask, VersionInput,
+    Scalars, StructIndex, UnknownMask, ValidateCx, VersionInput,
 };
 
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon_core::diagnostic::{Class, Diagnostic, DiagnosticCode, Phase, Severity};
 use bedrock_addon_core::load::LoadContext;
 
 use crate::envelope::{
@@ -235,6 +235,25 @@ reading_toy!(DocumentByText, document_by_text, {
     }
 });
 
+// The floor slice strict, the others unstrict; its check grades a finding as an unknown
+// member, by the reading of the slice that parsed the document.
+reading_toy!(GradedByTheSlice, graded_by_the_slice, {
+    fn reading(index: StructIndex, _: DocumentSource) -> Reading {
+        match index {
+            StructIndex::Stable(0) => Reading::OWN.with_unknown(UnknownMask::Error),
+            _ => Reading::OWN,
+        }
+    }
+    fn validate(_: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {
+        let severity = cx.grade(Class::Unknown);
+        cx.diagnostics.push(
+            Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None })
+                .severity(severity)
+                .phase(Phase::Validate),
+        );
+    }
+});
+
 // The first run's input; the text clamps beyond a double.
 reading_toy!(ClampsByText, clamps_by_text, {
     const ENVELOPE: Envelope = Envelope {
@@ -287,6 +306,25 @@ fn the_slice_s_unknown_mask_comes_from_reading() {
             Severity::Error
         )]
     );
+}
+
+#[test]
+fn the_checks_grade_by_the_reading_of_the_slice_that_parsed_the_document() {
+    let told = |version: &str| {
+        let text = format!(
+            r#"{{"format_version": "{version}", "minecraft:toy": {{"description": {{"identifier": "demo:x"}}}}}}"#
+        );
+        let outcome = load_with::<GradedByTheSlice>(&text, &LoadContext::detached());
+        outcome
+            .diagnostics
+            .iter()
+            .filter(|d| d.phase == Phase::Validate)
+            .map(|d| (d.code.clone(), d.severity))
+            .collect::<Vec<_>>()
+    };
+    let unknown = DiagnosticCode::UnrecognizedField { text: None };
+    assert_eq!(told("1.0.0"), [(unknown.clone(), Severity::Error)]);
+    assert_eq!(told("1.2.0"), [(unknown, Severity::Warning)]);
 }
 
 #[test]

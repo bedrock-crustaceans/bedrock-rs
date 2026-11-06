@@ -10,7 +10,7 @@ use super::component::{ClientBiomeComponent, child};
 use super::texts::{IDENTIFIER_NAMESPACE, IDENTIFIER_UPPER, INVALID_FILE, fixed};
 use super::{Description, EnvironmentAttributes};
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, VanillaText,
+    Class, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, VanillaText,
 };
 use bedrock_addon_core::document::{ComponentMap, ComponentSet};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
@@ -86,7 +86,12 @@ pub(crate) trait ComponentEra: ComponentSet + From<ClientBiomeComponent> {
         clippy::option_option,
         reason = "three outcomes: not this era's, read, failed (reported)"
     )]
-    fn read_own(key: &str, slice: JsonSlice<'_>, d: &mut Diagnostics) -> Option<Option<Self>> {
+    fn read_own(
+        key: &str,
+        slice: JsonSlice<'_>,
+        cx: &LoadContext,
+        d: &mut Diagnostics,
+    ) -> Option<Option<Self>> {
         None
     }
 
@@ -140,7 +145,8 @@ pub(crate) struct Whole<C: ComponentSet> {
 }
 
 /// Runs a struct's strict read; any error it raises is followed by vanilla's "Invalid Client
-/// Biome file", and the struct is not built.
+/// Biome file", and the struct is not built. An unknown member, which the slice's mask grades
+/// an error, is not counted: the line follows the other failures alone.
 pub(crate) fn strict<T>(
     cx: &ParseCx<'_>,
     d: &mut Diagnostics,
@@ -148,7 +154,10 @@ pub(crate) fn strict<T>(
 ) -> Option<T> {
     let mut found = Diagnostics::default();
     let parsed = read(&mut found);
-    if found.has_errors() {
+    if found
+        .iter()
+        .any(|finding| finding.rejects() && !is_unknown_member(finding))
+    {
         found.push(
             Diagnostic::error(DiagnosticCode::MalformedInput {
                 message: INVALID_FILE.to_owned(),
@@ -160,6 +169,14 @@ pub(crate) fn strict<T>(
     d.extend_with_unknown(found);
     // The chain drops the value of a parse that raised an error.
     parsed
+}
+
+/// Whether `finding` tells of an unknown member or component.
+pub(crate) fn is_unknown_member(finding: &Diagnostic) -> bool {
+    matches!(
+        finding.code,
+        DiagnosticCode::UnrecognizedField { .. } | DiagnosticCode::UnrecognizedComponent { .. }
+    )
 }
 
 /// Reads a stable payload object as the struct of `version` binds it.
@@ -270,8 +287,8 @@ fn check_identifier(
 /// binds is read strictly (a failure is an error). A component or member of a later struct is
 /// the error "To use … use json format version … or higher" (vanilla: the strict loader's
 /// unknown member; the document is not loaded either way). Any other key is an
-/// `UnrecognizedComponent`, which the family's strict mask makes an error that refuses the
-/// document, as vanilla does for an unknown member.
+/// `UnrecognizedComponent`, graded by the slice's reading: the family's strict mask makes it an
+/// error that refuses the document, as vanilla does for an unknown member.
 fn components<C: ComponentEra>(
     entries: &IndexMap<String, RawJson<'_>>,
     within: JsonSlice<'_>,
@@ -292,10 +309,11 @@ fn components<C: ComponentEra>(
             bedrock_addon_core::json::from_str_jsonc::<Value>(slice.text).unwrap_or(Value::NULL);
         let Some(meta) = table.get(key) else {
             map.insert_unknown(key, json);
-            // The strict mask's input, not a grade: core's `unknown_members_are_errors`
-            // (`versioning/pipeline.rs`) turns this Parse-phase warning into the refusing error the
-            // game gives for an unknown member.
-            d.push(Diagnostic::warn(DiagnosticCode::UnrecognizedComponent { text: None }).at(path));
+            d.push(
+                Diagnostic::warn(DiagnosticCode::UnrecognizedComponent { text: None })
+                    .at(path)
+                    .severity(cx.grade(Class::Unknown)),
+            );
             continue;
         };
         // Here, not on the finished map: a component the struct of `version` does not bind is
@@ -307,7 +325,7 @@ fn components<C: ComponentEra>(
         if gated(key, &json, version, &path, d) {
             continue;
         }
-        let value = read_component(&path, d, |found| match C::read_own(key, slice, found) {
+        let value = read_component(&path, d, |found| match C::read_own(key, slice, cx, found) {
             Some(own) => own,
             None => (meta.parse)(slice, ConvertMode::Strict, cx, found).map(C::from),
         });

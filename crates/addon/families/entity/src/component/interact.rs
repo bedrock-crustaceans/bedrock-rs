@@ -228,7 +228,7 @@ impl Typed for Interact {
         let at = JsonPath::new().child("interactions");
         for (i, interaction) in self.interactions.iter().enumerate() {
             if let Some(trigger) = &interaction.on_interact {
-                cx.extend(trigger.check(&at.index(i).child("on_interact")));
+                cx.extend(trigger.check(&at.index(i).child("on_interact"), cx.unknown()));
             }
         }
     }

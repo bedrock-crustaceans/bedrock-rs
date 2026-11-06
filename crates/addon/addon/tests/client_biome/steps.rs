@@ -339,6 +339,7 @@ mod absent_only {
             identifier: "",
             actor_type: ActorType::Mob,
             skip_section_a: false,
+            reading: load.reading,
             diagnostics: &mut diagnostics,
         });
         (next, diagnostics)

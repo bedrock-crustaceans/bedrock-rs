@@ -1910,7 +1910,7 @@ fn shared_values(block: &Block, report: &mut Report<'_>) {
                 "blocks_to_corner_with",
             ]);
             at.push_index(i);
-            found.extend(descriptor.check(&at));
+            found.extend(descriptor.check(&at, Severity::Warning));
         }
     }
     let sections = std::iter::once((None, &block.components)).chain(
@@ -1930,7 +1930,7 @@ fn shared_values(block: &Block, report: &mut Report<'_>) {
                     at.push_index(c);
                     at.push("block_filter");
                     at.push_index(b);
-                    found.extend(descriptor.check(&at));
+                    found.extend(descriptor.check(&at, Severity::Warning));
                 }
             }
         }

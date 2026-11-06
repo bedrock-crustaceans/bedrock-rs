@@ -9,7 +9,7 @@ use super::{Checked, child};
 use crate::color::{Color255Rgb, clamped_channels, is_rgb};
 use crate::texts::{COLOR, WATER_EMPTY, fixed};
 use bedrock_addon_core::diagnostic::DiagnosticCode;
-use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath};
+use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::molang::JsonType;
@@ -271,7 +271,12 @@ fn check_rgb_value(value: &Value, at: &[&str], d: &mut Diagnostics) {
 }
 
 /// The member `color` of `json`: a colour, or `{"color_map": <one of names>}`.
-fn check_color_or_map(json: &Value, known: fn(&str) -> bool, d: &mut Diagnostics) {
+fn check_color_or_map(
+    json: &Value,
+    known: fn(&str) -> bool,
+    unknown: Severity,
+    d: &mut Diagnostics,
+) {
     let Some(value) = json.as_object().and_then(|object| object.get("color")) else {
         return;
     };
@@ -300,39 +305,50 @@ fn check_color_or_map(json: &Value, known: fn(&str) -> bool, d: &mut Diagnostics
         if key.as_str() != COLOR_MAP {
             d.push(
                 Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None })
-                    .at(child(&JsonPath::new(), &["color", key.as_str()])),
+                    .at(child(&JsonPath::new(), &["color", key.as_str()]))
+                    .severity(unknown),
             );
         }
     }
 }
 
 impl Checked for FoliageAppearance {
-    fn check(json: &Value, d: &mut Diagnostics) {
-        check_color_or_map(json, |name| FoliageColorMap::from_name(name).is_some(), d);
+    fn check(json: &Value, unknown: Severity, d: &mut Diagnostics) {
+        check_color_or_map(
+            json,
+            |name| FoliageColorMap::from_name(name).is_some(),
+            unknown,
+            d,
+        );
     }
 }
 
 impl Checked for GrassAppearance {
-    fn check(json: &Value, d: &mut Diagnostics) {
-        check_color_or_map(json, |name| GrassColorMap::from_name(name).is_some(), d);
+    fn check(json: &Value, unknown: Severity, d: &mut Diagnostics) {
+        check_color_or_map(
+            json,
+            |name| GrassColorMap::from_name(name).is_some(),
+            unknown,
+            d,
+        );
     }
 }
 
 impl Checked for DryFoliageColor {
-    fn check(json: &Value, d: &mut Diagnostics) {
+    fn check(json: &Value, _: Severity, d: &mut Diagnostics) {
         check_rgb(json, "color", d);
     }
 }
 
 impl Checked for SkyColor {
-    fn check(json: &Value, d: &mut Diagnostics) {
+    fn check(json: &Value, _: Severity, d: &mut Diagnostics) {
         check_rgb(json, "sky_color", d);
     }
 }
 
 impl Checked for WaterAppearance {
     /// The constraint of every version that at least one member is present, then the colour.
-    fn check(json: &Value, d: &mut Diagnostics) {
+    fn check(json: &Value, _: Severity, d: &mut Diagnostics) {
         if let Some(object) = json.as_object()
             && object.get("surface_color").is_none()
             && object.get("surface_opacity").is_none()

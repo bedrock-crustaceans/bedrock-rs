@@ -344,14 +344,14 @@ fn pin_the_door_tells_a_reported_member_as_it_tells_a_kept_one() {
     }
 }
 
-/// Pin, a question for the diagnostics table: the door tells a member its struct rejects or
-/// ignores at the context's `unknown_severity`, and a kept or reported one at a fixed warning
-/// (which the strict mask lifts to an error after the parse, so a versioned load shows no
-/// difference). Read here outside the load, the asymmetry shows. Pinned, not decided.
+/// The door tells every unknown member at the reading's grade of an unknown member, whatever
+/// its struct does with it (kept, reported, rejected or ignored): a strict slice grades them
+/// to an error where they are raised, with no lift after the parse. Read here outside the
+/// load, with the reading set to the strict mask, every line is an error.
 #[test]
-fn pin_the_door_tells_only_reject_and_ignore_at_the_unknown_severity() {
+fn the_door_tells_every_unknown_member_at_the_reading_s_grade() {
     let mut load = LoadContext::detached();
-    load.unknown_severity = Severity::Error;
+    load.reading = load.reading.with_unknown(UnknownMask::Error);
     let cx = ParseCx {
         load: &load,
         written: FormatVersionInput {
@@ -367,13 +367,7 @@ fn pin_the_door_tells_only_reject_and_ignore_at_the_unknown_severity() {
     assert!(payload.is_some(), "{d:?}");
     let expected: Vec<String> = told_at(Severity::Warning)
         .into_iter()
-        .map(|line| {
-            if line.contains("DroppedField") || line.contains("IgnoredMember") {
-                line.replace("Warning", "Error")
-            } else {
-                line
-            }
-        })
+        .map(|line| line.replace("Warning", "Error"))
         .collect();
     assert_eq!(told(&d), expected);
 }

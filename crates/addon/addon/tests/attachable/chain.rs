@@ -99,6 +99,7 @@ fn a10_without_the_list_the_step_only_stamps_the_version() {
         identifier: "example:wand",
         actor_type: bedrock_addon::vanilla::ActorType::Mob,
         skip_section_a: false,
+        reading: bedrock_addon::versioning::Reading::OWN,
         diagnostics: &mut diagnostics,
     };
     let stepped = bedrock_addon::versioning::Upgrade::upgrade(old, &mut upgrade);

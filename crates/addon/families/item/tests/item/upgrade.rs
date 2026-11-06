@@ -85,6 +85,7 @@ fn upgrade<S: Upgrade>(
         identifier,
         actor_type: bedrock_addon_core::vanilla::ActorType::Mob,
         skip_section_a: false,
+        reading: cx.reading,
         diagnostics: &mut d,
     });
     (next, d)
