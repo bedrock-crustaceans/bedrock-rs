@@ -23,6 +23,9 @@ mod conditions;
 #[path = "attachable/depth.rs"]
 mod depth;
 
+#[path = "attachable/drifts.rs"]
+mod drifts;
+
 #[path = "../../families/attachable/tests/attachable/generate.rs"]
 mod generate;
 

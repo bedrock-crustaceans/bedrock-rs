@@ -2,13 +2,13 @@
 //! with sample arguments and compared with the template byte for byte. This is the one test in
 //! the crate family that matches on diagnostic text.
 
+use bedrock_addon_core::diagnostic::ShadowReason;
 use bedrock_addon_core::diagnostic::{
     Class, CodeDef, DiagnosticCode, Kind, NotFoundHint, VanillaText,
 };
 use bedrock_addon_core::pack_identity::{PackIdVersion, PackType};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::version::SemVersion;
-use bedrock_addon_core::visual::ShadowReason;
 use uuid::Uuid;
 
 const V1_20_0: FormatVersion = FormatVersion {

@@ -7,9 +7,9 @@ use std::fmt::{self, Display as _};
 
 use super::def::Code;
 
+use super::ShadowReason;
 use crate::pack_identity::PackIdVersion;
 use crate::version::FormatVersion;
-use crate::visual::ShadowReason;
 
 /// Declares [`DiagnosticCode`] and its name table from one variant list, so the names cannot
 /// drift from the variants.

@@ -19,3 +19,17 @@ fn the_peek_of_a_payload_written_twice_reads_the_last_whole() {
     let keys: Vec<&str> = description.iter().map(|(key, _)| key.as_str()).collect();
     assert_eq!(keys, ["materials"]);
 }
+
+/// D5: the peek reads the text without a depth check of its own (the attachable's checks the
+/// depth first), and core's reader refuses a text nested past the JSON limit: no root either
+/// way. `admit` rejects the file after it.
+#[test]
+fn the_peek_of_a_text_nested_past_the_json_limit_is_none() {
+    let levels = bedrock_addon_core::json::MAX_JSON_DEPTH + 1;
+    let text = format!(
+        r#"{{"minecraft:client_entity": {{"description": {{"min_engine_version": {}1{}}}}}}}"#,
+        "[".repeat(levels),
+        "]".repeat(levels)
+    );
+    assert!(root_of(text.as_bytes()).is_none());
+}

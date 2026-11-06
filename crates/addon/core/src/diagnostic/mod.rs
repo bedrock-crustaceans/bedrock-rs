@@ -27,7 +27,18 @@ use crate::document::{Origin, Unknown};
 use crate::load::Place;
 use crate::pack_identity::{PackIdVersion, PackOrigin, PackPath, PackRef, PackType};
 use crate::version::{BaseGameVersion, FormatVersion};
-use crate::visual::ShadowReason;
+
+/// Why the shared identifier map of client entities and attachables ignored a document
+/// (`visual::MergeStep::Ignore`): the reason of [`DiagnosticDetail::Shadow`] and of the
+/// `ClientEntityShadowed` and `AttachableShadowed` codes.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum ShadowReason {
+    /// Its `min_engine_version` is above the highest pack `min_engine_version` of the stack.
+    MinEngineVersionAboveStack,
+    /// Its `min_engine_version` is below that of the definition already loaded.
+    OlderMinEngineVersion,
+}
 
 /// One finding: a typed code, a severity, where, and in which phase.
 #[derive(Clone, Debug, PartialEq)]
@@ -1115,7 +1126,7 @@ mod tests {
             )
         };
         vec![
-            DiagnosticDetail::Shadow(crate::visual::ShadowReason::OlderMinEngineVersion),
+            DiagnosticDetail::Shadow(ShadowReason::OlderMinEngineVersion),
             DiagnosticDetail::Packs {
                 pack: pack(1),
                 dependency: Some(pack(2)),

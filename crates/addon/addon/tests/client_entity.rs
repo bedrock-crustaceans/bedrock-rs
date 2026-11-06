@@ -7,6 +7,9 @@
 #[path = "client_entity/common.rs"]
 mod common;
 
+#[path = "client_entity/drifts.rs"]
+mod drifts;
+
 #[path = "common/responder.rs"]
 mod responder;
 

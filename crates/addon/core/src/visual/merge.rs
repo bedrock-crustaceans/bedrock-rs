@@ -26,15 +26,9 @@ pub enum MergeStep {
     Ignore(ShadowReason),
 }
 
-/// Why [`MergeStep::Ignore`] dropped a document.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-#[non_exhaustive]
-pub enum ShadowReason {
-    /// Its `min_engine_version` is above the highest pack `min_engine_version` of the stack.
-    MinEngineVersionAboveStack,
-    /// Its `min_engine_version` is below that of the definition already loaded.
-    OlderMinEngineVersion,
-}
+/// Why [`MergeStep::Ignore`] dropped a document; declared beside the finding that carries
+/// it ([`DiagnosticDetail::Shadow`](crate::diagnostic::DiagnosticDetail::Shadow)).
+pub use crate::diagnostic::ShadowReason;
 
 /// The step for a document whose `description.min_engine_version` is `offered`, against the
 /// definition already loaded for its identifier (with `existing`, its `min_engine_version`) and
