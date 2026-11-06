@@ -7,10 +7,10 @@
 
 use bedrock_addon_core::diagnostic::JsonPath;
 use bedrock_addon_core::json::{Value, from_slice_jsonc, from_str_jsonc, last_wins, strip_bom};
-use bedrock_addon_core::manifest::{
+use bedrock_addon_core::pack_identity::PackPath;
+use bedrock_addon_manifest::{
     CapabilityRegistry, Dependency, DependencyPlace, Manifest, ManifestFormat,
 };
-use bedrock_addon_core::pack_identity::PackPath;
 
 /// One `dependencies[]` element that names a native module, as the file has it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

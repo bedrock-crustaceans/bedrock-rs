@@ -17,6 +17,7 @@ script-syntax = ["dep:oxc_parser"]
 
 [dependencies]
 bedrock_addon_core = { path = "../../core" }
+bedrock_addon_manifest = { path = "../../manifest" }
 bytes = { workspace = true }
 facet = { workspace = true }
 facet-json = { workspace = true }

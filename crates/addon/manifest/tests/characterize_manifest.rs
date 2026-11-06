@@ -19,8 +19,8 @@ use std::path::PathBuf;
 
 use bedrock_addon_core::diagnostic::JsonPathSegment;
 use bedrock_addon_core::document::Document;
-use bedrock_addon_core::manifest::{CapabilityRegistry, Manifest};
 use bedrock_addon_core::pack_identity::PackPath;
+use bedrock_addon_manifest::{CapabilityRegistry, Manifest};
 
 /// The pin file.
 fn pins() -> PathBuf {

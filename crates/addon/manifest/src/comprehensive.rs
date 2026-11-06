@@ -7,11 +7,11 @@
 
 use std::collections::HashSet;
 
-use crate::diagnostic::{DiagnosticCode as Code, JsonPath, VanillaText};
-use crate::document::UnknownMembers;
-use crate::json::Value;
-use crate::pack_identity::PackType;
-use crate::version::MinEngineVersion;
+use bedrock_addon_core::diagnostic::{DiagnosticCode as Code, JsonPath, VanillaText};
+use bedrock_addon_core::document::UnknownMembers;
+use bedrock_addon_core::json::Value;
+use bedrock_addon_core::pack_identity::PackType;
+use bedrock_addon_core::version::MinEngineVersion;
 use uuid::Uuid;
 
 use super::capability::CapabilityRegistry;

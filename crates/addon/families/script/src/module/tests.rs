@@ -4,8 +4,8 @@ use super::resolve::{
     Entry, Request, VersionResolution, conflicts, pair_conflicts, requested, resolve, table,
 };
 use super::{ScriptRuntime, ScriptVersion};
-use bedrock_addon_core::manifest::NativeModuleVersion;
 use bedrock_addon_core::version::SemVersion;
+use bedrock_addon_manifest::NativeModuleVersion;
 
 fn v(text: &str) -> ScriptVersion {
     ScriptVersion::parse(text).unwrap_or_else(|| panic!("{text} is no version"))

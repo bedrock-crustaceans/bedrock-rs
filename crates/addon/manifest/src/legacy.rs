@@ -6,10 +6,10 @@
 //! modules and metadata from inside the header and skips everything else; it is upgraded to
 //! format 1, and its UUID, version and module problems are warnings instead of errors.
 
-use crate::diagnostic::{DiagnosticCode as Code, JsonPath, VanillaText};
-use crate::json::Value;
-use crate::pack_identity::PackType;
-use crate::version::{BaseGameVersion, MinEngineVersion, SemVersion};
+use bedrock_addon_core::diagnostic::{DiagnosticCode as Code, JsonPath, VanillaText};
+use bedrock_addon_core::json::Value;
+use bedrock_addon_core::pack_identity::PackType;
+use bedrock_addon_core::version::{BaseGameVersion, MinEngineVersion, SemVersion};
 use indexmap::IndexMap;
 use uuid::Uuid;
 
@@ -51,8 +51,8 @@ pub(super) fn read(
                     "Pack Manifest version 0 is deprecated, please include format_version 2 in your manifest.json.",
                 )),
             },
-            crate::diagnostic::Severity::Warning,
-            crate::diagnostic::Phase::Parse,
+            bedrock_addon_core::diagnostic::Severity::Warning,
+            bedrock_addon_core::diagnostic::Phase::Parse,
             &path(&["format_version"]),
         );
         let manifest = reader.read_v0(root);
@@ -64,8 +64,8 @@ pub(super) fn read(
             // silence).
             reader.sink.push(
                 Code::UnusualFormatVersion,
-                crate::diagnostic::Severity::Info,
-                crate::diagnostic::Phase::Upgrade,
+                bedrock_addon_core::diagnostic::Severity::Info,
+                bedrock_addon_core::diagnostic::Phase::Upgrade,
                 &JsonPath::new(),
             );
         }
@@ -827,8 +827,8 @@ pub(super) fn check_capability(
             },
             // The capability registry is the crate's own API and the game has no pack-report
             // warning for it, so the crate reports an information.
-            crate::diagnostic::Severity::Info,
-            crate::diagnostic::Phase::Validate,
+            bedrock_addon_core::diagnostic::Severity::Info,
+            bedrock_addon_core::diagnostic::Phase::Validate,
             at,
         ),
     }
@@ -950,8 +950,8 @@ pub(super) fn metadata(sink: &mut Sink<'_>, container: &Value, at: &JsonPath) ->
             if !METADATA_MEMBERS.contains(&key.as_str()) {
                 sink.push(
                     Code::MemberNotKept { text: None },
-                    crate::diagnostic::Severity::Info,
-                    crate::diagnostic::Phase::Parse,
+                    bedrock_addon_core::diagnostic::Severity::Info,
+                    bedrock_addon_core::diagnostic::Phase::Parse,
                     &below(at, key.as_str()),
                 );
             }

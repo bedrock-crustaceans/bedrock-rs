@@ -12,6 +12,7 @@ members = [
     "crates/addon/addon",
     "crates/addon/core",
     "crates/addon/derive",
+    "crates/addon/manifest",
     "crates/addon/schema",
     "crates/addon/std",
     "crates/addon/support",

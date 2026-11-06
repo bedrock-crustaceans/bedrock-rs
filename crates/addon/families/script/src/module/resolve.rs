@@ -11,7 +11,7 @@
 use std::collections::{HashMap, HashSet};
 
 use super::ScriptVersion;
-use bedrock_addon_core::manifest::NativeModuleVersion;
+use bedrock_addon_manifest::NativeModuleVersion;
 
 /// One request for a version of a module.
 #[derive(Clone, Debug, PartialEq, Eq)]

@@ -4,10 +4,10 @@
 //! arrays, `memory_tier`; format 3: version strings, `memory_performance_tier`), unknown members
 //! of a legacy manifest after the known members of their object, and written by core's writer.
 
-use crate::document::UnknownMembers;
-use crate::json::{self, EncodeError, Unrepresentable, Value, WriteStyle};
-use crate::pack_identity::PackType;
-use crate::version::{MinEngineVersion, SemVersion};
+use bedrock_addon_core::document::UnknownMembers;
+use bedrock_addon_core::json::{self, EncodeError, Unrepresentable, Value, WriteStyle};
+use bedrock_addon_core::pack_identity::PackType;
+use bedrock_addon_core::version::{MinEngineVersion, SemVersion};
 use facet_value::{VArray, VNumber, VObject};
 
 use super::read::{path, version_array};
@@ -15,7 +15,7 @@ use super::{
     Dependency, Header, Manifest, ManifestFormat, Metadata, Module, NativeModuleVersion,
     RelaxedSemVersion, Setting, Subpack,
 };
-use crate::diagnostic::JsonPath;
+use bedrock_addon_core::diagnostic::JsonPath;
 
 /// Writes `manifest` as JSON text to `out`. On failure nothing is appended.
 pub(super) fn write(

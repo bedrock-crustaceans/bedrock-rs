@@ -1,12 +1,12 @@
 //! `Manifest::parse`: the text, the reader the `format_version` selects, and the document.
 
-use crate::diagnostic::{
+use bedrock_addon_core::diagnostic::{
     DiagnosticCode as Code, JsonPath, Span, VanillaText, code_for_deserialize_error_kind,
 };
-use crate::document::{Document, Origin, Rejected, VersionInfo};
-use crate::json::{MAX_JSON_DEPTH, Value, check_depth, strip_bom};
-use crate::pack_identity::{PackPath, PackRef, PackSide, PackType};
-use crate::version::{FormatVersion, FormatVersionInput, PickedVersion};
+use bedrock_addon_core::document::{Document, Origin, Rejected, VersionInfo};
+use bedrock_addon_core::json::{MAX_JSON_DEPTH, Value, check_depth, strip_bom};
+use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide, PackType};
+use bedrock_addon_core::version::{FormatVersion, FormatVersionInput, PickedVersion};
 
 use super::capability::CapabilityRegistry;
 use super::read::Sink;
@@ -43,7 +43,7 @@ fn read(
     sink: &mut Sink<'_>,
 ) -> Option<(Manifest, Option<FormatVersion>)> {
     let file = bytes;
-    let file = &*crate::json::blank_bom(file);
+    let file = &*bedrock_addon_core::json::blank_bom(file);
     let bytes = strip_bom(file);
     if check_depth(bytes, MAX_JSON_DEPTH).is_err() {
         sink.error(
@@ -59,8 +59,10 @@ fn read(
     // source position, and nothing is read. Bytes that are not UTF-8 are the parser's to
     // report.
     let parsed = match std::str::from_utf8(bytes) {
-        Ok(text) => crate::json::from_str_jsonc(&crate::json::last_wins(text)),
-        Err(_) => crate::json::from_slice_jsonc(bytes),
+        Ok(text) => {
+            bedrock_addon_core::json::from_str_jsonc(&bedrock_addon_core::json::last_wins(text))
+        }
+        Err(_) => bedrock_addon_core::json::from_slice_jsonc(bytes),
     };
     let root: Value = match parsed {
         Ok(root) => root,

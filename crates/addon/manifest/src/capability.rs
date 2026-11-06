@@ -3,7 +3,7 @@
 use std::fmt;
 use std::sync::Arc;
 
-use crate::pack_identity::PackType;
+use bedrock_addon_core::pack_identity::PackType;
 use indexmap::IndexMap;
 use uuid::Uuid;
 

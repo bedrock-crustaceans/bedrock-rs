@@ -140,9 +140,10 @@ pub use bedrock_addon_core::id;
 #[doc(inline)]
 pub use bedrock_addon_core::json;
 #[doc(inline)]
-pub use bedrock_addon_core::manifest;
-#[doc(inline)]
 pub use bedrock_addon_core::molang;
+// The pack manifest, its own crate.
+#[doc(inline)]
+pub use bedrock_addon_manifest as manifest;
 /// Value types several content modules use: core's ranges, filters and event triggers, and the
 /// shapes of `bedrock_addon_shared_shapes` (descriptors, menu categories, colours, ...) at
 /// this level.

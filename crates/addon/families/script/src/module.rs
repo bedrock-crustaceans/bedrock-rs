@@ -36,7 +36,7 @@ use bedrock_addon_core::pack_identity::PackPath;
 use bedrock_addon_core::version::{FormatVersion, SemVersion, known};
 use uuid::Uuid;
 
-use bedrock_addon_core::manifest::{
+use bedrock_addon_manifest::{
     Capability, CapabilityRegistry, Dependency, Manifest, ManifestFormat, NativeModuleVersion,
 };
 

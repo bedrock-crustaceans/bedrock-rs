@@ -125,9 +125,10 @@ numbers in the commit body.
 socket; a unit test beside the type is enough.
 
 **`crates/addon/*`**: the add-on toolkit. `core` holds identifiers, versions, diagnostics and the
-version-chain machinery; each content family (`families/<name>`) owns the types and rules of one
-kind of game file; `addon` composes them into packs, stacks, the link pass and the writer, and
-`std` drives them over the file system. Oracle: the game's own files. Red tests are small JSON
+version-chain machinery; `manifest` reads and writes `manifest.json` on top of core; each
+content family (`families/<name>`) owns the types and rules of one kind of game file; `addon`
+composes them into packs, stacks, the link pass and the writer, and `std` drives them over the
+file system. Oracle: the game's own files. Red tests are small JSON
 documents in the family's or `addon`'s `tests/`, asserting the typed value and the findings the
 game's content log would print; write the document back and require it to read the same.
 The tests that load whole trees of the game's packs (`full*` in `std/tests`) and the vanilla

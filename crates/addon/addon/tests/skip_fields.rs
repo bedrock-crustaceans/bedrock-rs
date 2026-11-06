@@ -8,7 +8,7 @@
 use std::path::{Path, PathBuf};
 
 /// The source roots the convention holds for, as paths below the workspace's `crates/`.
-const ROOTS: &[&str] = &["addon/src", "core/src"];
+const ROOTS: &[&str] = &["addon/src", "core/src", "manifest/src"];
 
 /// Skipped fields exempt from the convention, as `(file below its root, field line trimmed,
 /// reason)`. The scan reads whole files, so `#[cfg(test)]` code is exempted here by path.

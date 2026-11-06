@@ -3,9 +3,11 @@
 
 use std::collections::HashSet;
 
-use crate::diagnostic::{DiagnosticCode as Code, JsonPath, Phase, Severity, VanillaText};
-use crate::json::Value;
-use crate::version::{FormatVersion, MinEngineVersion, SemVersion};
+use bedrock_addon_core::diagnostic::{
+    DiagnosticCode as Code, JsonPath, Phase, Severity, VanillaText,
+};
+use bedrock_addon_core::json::Value;
+use bedrock_addon_core::version::{FormatVersion, MinEngineVersion, SemVersion};
 
 use super::read::{Sink, below, member, path, text};
 

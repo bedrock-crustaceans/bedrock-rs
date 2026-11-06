@@ -1,10 +1,11 @@
 //! A family lifted into its own crate (`crates/addon/families/<name>/`, the package
 //! `bedrock_addon_family_<name>`, which `families/mod.rs` re-exports) depends on no
-//! `bedrock_addon` crate but core, the derive and the shared crates (and support's
-//! `biome_json`, for the three biome families until it goes, and script for `server_config`,
-//! the one family on a family): its manifest names no other, and its sources do not either.
-//! The compiler enforces the rest (a family crate cannot name `crate::pack`, `crate::storage`,
-//! another family or `bedrock_addon`'s `load`).
+//! `bedrock_addon` crate but the foundation crates (core, the derive and the pack manifest
+//! `bedrock_addon_manifest`) and the shared crates (and support's `biome_json`, for the three
+//! biome families until it goes, and script for `server_config`, the one family on a family):
+//! its manifest names no other, and its sources do not either. The manifest crate itself
+//! depends on core alone. The compiler enforces the rest (a family crate cannot name
+//! `crate::pack`, `crate::storage`, another family or `bedrock_addon`'s `load`).
 //!
 //! The second rule: library code never reads the text of a finding's path.
 //!
@@ -103,12 +104,17 @@ const SCRIPT_ITEMS: [&str; 4] = ["meta", "ScriptContext", "ScriptModuleRef", "Sc
 /// plugin built by hand.
 const SCRIPT_TEST_ITEMS: [&str; 2] = ["ResolvedDependency", "ScriptVersion"];
 
+/// The pack manifest's crate: a foundation crate like core and the derive, below every family
+/// (the script family reads the manifest's modules and capabilities).
+const MANIFEST: &str = "bedrock_addon_manifest";
+
 /// Whether the lifted family `family` may depend on the `bedrock_addon*` crate `name`: itself,
-/// core, the derive (six families derive their component tables with it), the shared crates,
-/// support for the families of [`BIOME_JSON_ALLOWANCE`], and script for `server_config`
-/// ([`SCRIPT_ALLOWANCE`]).
+/// core, the derive (six families derive their component tables with it), the manifest crate,
+/// the shared crates, support for the families of [`BIOME_JSON_ALLOWANCE`], and script for
+/// `server_config` ([`SCRIPT_ALLOWANCE`]).
 fn family_may_name(family: &str, name: &str) -> bool {
     name == format!("bedrock_addon_family_{family}")
+        || name == MANIFEST
         || shared_may_name(name)
         || (name == SUPPORT && BIOME_JSON_ALLOWANCE.contains(&family))
         || (family, name) == SCRIPT_ALLOWANCE
@@ -149,8 +155,8 @@ fn items_named(path: &str) -> Vec<&str> {
 }
 
 /// What a lifted family crate depends on or names that it may not: any `bedrock_addon*` crate
-/// but itself, core, the derive and the shared crates (and `biome_json` of support for the
-/// families of [`BIOME_JSON_ALLOWANCE`], and the [`SCRIPT_ITEMS`] of script for
+/// but itself, core, the derive, the manifest crate and the shared crates (and `biome_json` of
+/// support for the families of [`BIOME_JSON_ALLOWANCE`], and the [`SCRIPT_ITEMS`] of script for
 /// `server_config`, its tests also the [`SCRIPT_TEST_ITEMS`]), in its manifest (`manifest`) or its sources
 /// (`sources`, each with its path below the crate's `src/`).
 fn lifted_violations(family: &str, manifest: &str, sources: &[(String, String)]) -> Vec<String> {
@@ -343,10 +349,10 @@ fn lifted_families_depend_on_no_other_family_and_not_on_bedrock_addon() {
     }
     assert!(
         violations.is_empty(),
-        "a lifted family depends on bedrock_addon_core, bedrock_addon_derive and the \
-         bedrock_addon_shared_* crates only (and biome_json of bedrock_addon_support for the \
-         biome_json allowance, and SCRIPT_ITEMS of bedrock_addon_family_script for \
-         server_config):\n{}",
+        "a lifted family depends on bedrock_addon_core, bedrock_addon_derive, \
+         bedrock_addon_manifest and the bedrock_addon_shared_* crates only (and biome_json of \
+         bedrock_addon_support for the biome_json allowance, and SCRIPT_ITEMS of \
+         bedrock_addon_family_script for server_config):\n{}",
         violations.join("\n")
     );
 }
@@ -757,6 +763,108 @@ fn the_shared_scan_reads_manifests_and_paths() {
             "shapes/Cargo.toml:11 depends on bedrock_addon",
             "shapes/src/lib.rs:3 names bedrock_addon_family_fog::",
             "shapes/src/lib.rs:4 names bedrock_addon_support::",
+        ]
+    );
+}
+
+/// The directory of the manifest crate: `crates/addon/manifest/`.
+fn manifest_dir() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../manifest")
+}
+
+/// The crates the manifest crate may depend on: core, and the facet, `indexmap` and `uuid`
+/// crates core's types are made of.
+const MANIFEST_MAY_DEPEND_ON: [&str; 5] = [
+    "bedrock_addon_core",
+    "facet",
+    "facet-value",
+    "indexmap",
+    "uuid",
+];
+
+/// What the manifest crate depends on or names that it may not: in its manifest
+/// (`manifest`), any crate outside [`MANIFEST_MAY_DEPEND_ON`]; in its sources (`sources`, each
+/// with its path below the crate's `src/`), a `bedrock_addon*` crate other than core.
+fn manifest_violations(manifest: &str, sources: &[(String, String)]) -> Vec<String> {
+    let mut violations = Vec::new();
+    for (line, dependency) in manifest_dependencies(manifest) {
+        if !MANIFEST_MAY_DEPEND_ON.contains(&dependency.as_str()) {
+            violations.push(format!(
+                "manifest/Cargo.toml:{line} depends on {dependency}"
+            ));
+        }
+    }
+    for (relative, source) in sources {
+        let code = code_of(source).replace("r#", "");
+        for (index, _) in code.match_indices("bedrock_addon") {
+            if code[..index].chars().next_back().is_some_and(is_ident) {
+                continue;
+            }
+            let rest = &code[index + "bedrock_addon".len()..];
+            let end = rest.find(|c: char| !is_ident(c)).unwrap_or(rest.len());
+            let named = format!("bedrock_addon{}", &rest[..end]);
+            if rest[end..].trim_start().starts_with("::") && named != "bedrock_addon_core" {
+                let line = code[..index].matches('\n').count() + 1;
+                violations.push(format!("manifest/src/{relative}:{line} names {named}::"));
+            }
+        }
+    }
+    violations
+}
+
+/// The manifest crate sits below every family and beside core's other foundations: it
+/// depends on core (and the crates core's types are made of) only, so a family may name it.
+#[test]
+fn the_manifest_crate_depends_on_core_only() {
+    let dir = manifest_dir();
+    let Ok(manifest) = fs::read_to_string(dir.join("Cargo.toml")) else {
+        // A crate packaged alone has no sibling to scan.
+        return;
+    };
+    assert!(
+        manifest
+            .lines()
+            .any(|line| line.trim() == format!("name = \"{MANIFEST}\"")),
+        "manifest/Cargo.toml is not the package {MANIFEST}"
+    );
+    let mut files = Vec::new();
+    rust_files(&dir.join("src"), &mut files);
+    assert!(!files.is_empty(), "the manifest crate has no source");
+    let sources: Vec<(String, String)> = files
+        .iter()
+        .map(|file| {
+            let relative = file.strip_prefix(dir.join("src")).unwrap();
+            (
+                relative.display().to_string(),
+                fs::read_to_string(file).unwrap(),
+            )
+        })
+        .collect();
+    let violations = manifest_violations(&manifest, &sources);
+    assert!(
+        violations.is_empty(),
+        "the manifest crate depends on bedrock_addon_core (facet, indexmap, uuid) only:\n{}",
+        violations.join("\n")
+    );
+}
+
+#[test]
+fn the_manifest_scan_reads_manifests_and_paths() {
+    let manifest = "[package]\nname = \"bedrock_addon_manifest\"\n\n[dependencies]\n\
+        bedrock_addon_core = { path = \"../core\" }\nbedrock_addon_derive = { path = \"x\" }\n\
+        uuid = { workspace = true }\nserde.workspace = true\n";
+    let sources = [(
+        "lib.rs".to_owned(),
+        "use bedrock_addon_core::id::Id;\n// bedrock_addon_family_item::Item in a comment\n\
+         use bedrock_addon_shared_shapes::A;"
+            .to_owned(),
+    )];
+    assert_eq!(
+        manifest_violations(manifest, &sources),
+        [
+            "manifest/Cargo.toml:6 depends on bedrock_addon_derive",
+            "manifest/Cargo.toml:8 depends on serde",
+            "manifest/src/lib.rs:3 names bedrock_addon_shared_shapes::",
         ]
     );
 }
@@ -1195,9 +1303,9 @@ fn library_code_does_not_read_the_text_of_a_finding_s_path() {
     const SHOWN: [(&str, usize); 5] = [
         ("core/src/diagnostic/mod.rs", 1),
         ("core/src/json/mod.rs", 1),
-        ("core/src/manifest/read.rs", 1),
         ("core/src/shared/read.rs", 1),
         ("families/script/src/meta/error.rs", 1),
+        ("manifest/src/read.rs", 1),
     ];
     let manifest = Path::new(env!("CARGO_MANIFEST_DIR"));
     let mut violations = Vec::new();
@@ -1208,10 +1316,14 @@ fn library_code_does_not_read_the_text_of_a_finding_s_path() {
     let shared = directories(&shared_dir())
         .into_iter()
         .map(|name| shared_dir().join(name).join("src"));
-    for src in [manifest.join("src"), manifest.join("../core/src")]
-        .into_iter()
-        .chain(lifted)
-        .chain(shared)
+    for src in [
+        manifest.join("src"),
+        manifest.join("../core/src"),
+        manifest.join("../manifest/src"),
+    ]
+    .into_iter()
+    .chain(lifted)
+    .chain(shared)
     {
         if !src.is_dir() {
             // A crate packaged alone has no sibling to scan.

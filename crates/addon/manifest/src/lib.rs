@@ -1,5 +1,8 @@
 //! The pack manifest: legacy (0/1/2) and comprehensive (3) formats parsed into one `Manifest`,
 //! the capability registry, and the script-module parts surfaced as `script::ScriptModule`.
+//!
+//! No I/O, and no dependency but `bedrock_addon_core` (and the facet, `indexmap` and `uuid`
+//! crates it shares). Users reach it as `bedrock_addon::manifest`.
 
 // Submodule declarations and root re-exports.
 mod capability;
@@ -24,18 +27,18 @@ pub use module_type::ModuleType;
 pub use relaxed_version::RelaxedSemVersion;
 pub use setting::{DropdownOption, Setting};
 
-use crate::__private::Sealed;
-use crate::diagnostic::JsonPath;
-use crate::document::{Content, Document, Rejected, UnknownMembers};
-use crate::json::{EncodeError, WriteStyle};
-use crate::load::{LoadContext, StackPack};
-use crate::pack_identity::{PackIdVersion, PackPath, PackSide, PackType};
-use crate::version::{BaseGameVersion, ENGINE_VERSION, MinEngineVersion, SemVersion};
+use bedrock_addon_core::__private::Sealed;
+use bedrock_addon_core::diagnostic::JsonPath;
+use bedrock_addon_core::document::{Content, Document, Rejected, UnknownMembers};
+use bedrock_addon_core::json::{EncodeError, WriteStyle};
+use bedrock_addon_core::load::{LoadContext, StackPack};
+use bedrock_addon_core::pack_identity::{PackIdVersion, PackPath, PackSide, PackType};
+use bedrock_addon_core::version::{BaseGameVersion, ENGINE_VERSION, MinEngineVersion, SemVersion};
 use indexmap::IndexMap;
 use std::sync::Arc;
 use uuid::Uuid;
 
-use crate::pack_identity::PackScope;
+use bedrock_addon_core::pack_identity::PackScope;
 
 /// A pack manifest (`manifest.json`), upgraded to the comprehensive (format 3) model.
 ///
@@ -299,7 +302,9 @@ impl Manifest {
         capabilities: &CapabilityRegistry,
     ) -> Result<Document<Manifest>, Rejected> {
         // A number no double holds is read as the largest finite one, with a warning.
-        crate::document::FiniteText::load(bytes, |bytes| parse::parse(path, bytes, capabilities))
+        bedrock_addon_core::document::FiniteText::load(bytes, |bytes| {
+            parse::parse(path, bytes, capabilities)
+        })
     }
 
     /// A format-2 manifest with fresh random UUIDs for the header and one module of

@@ -12,18 +12,18 @@
 //! own coercion and its own parse-error type, which a typed deserialisation cannot report.
 //! Findings on a `Value` have a JSON path and no byte offset.
 
-use crate::diagnostic::{
+use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, Span, VanillaText,
 };
-use crate::document::UnknownMembers;
-use crate::json::Value;
-use crate::pack_identity::PackPath;
-use crate::version::{ENGINE_VERSION, SemVersion};
+use bedrock_addon_core::document::UnknownMembers;
+use bedrock_addon_core::json::Value;
+use bedrock_addon_core::pack_identity::PackPath;
+use bedrock_addon_core::version::{ENGINE_VERSION, SemVersion};
 use uuid::Uuid;
 
 use super::{DependencyPlace, ids};
 
-use crate::pack_identity::PackScope;
+use bedrock_addon_core::pack_identity::PackScope;
 
 /// The lowest `min_engine_version` (and world-template `base_game_version`) a format-2 or
 /// format-3 pack may declare.

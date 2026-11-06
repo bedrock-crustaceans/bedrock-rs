@@ -1,6 +1,6 @@
 //! `RelaxedSemVersion`: a version that may be written with fewer than three parts.
 
-use crate::version::SemVersion;
+use bedrock_addon_core::version::SemVersion;
 
 use super::read::relaxed_version_text;
 

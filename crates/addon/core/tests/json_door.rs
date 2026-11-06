@@ -10,7 +10,13 @@
 use std::path::{Path, PathBuf};
 
 /// The source roots the rule holds for, as paths below the workspace's `crates/`.
-const ROOTS: &[&str] = &["addon/src", "core/src", "std/src", "derive/src"];
+const ROOTS: &[&str] = &[
+    "addon/src",
+    "core/src",
+    "std/src",
+    "derive/src",
+    "manifest/src",
+];
 
 /// The module that may call the parsers.
 const DOOR: &str = "core/src/json/read.rs";
@@ -383,7 +389,7 @@ fn only_the_door_calls_a_facet_json_parser() {
 /// The crates must name facet-json by its own name: a renamed dependency would pass the scan.
 #[test]
 fn no_crate_renames_facet_json() {
-    for name in ["addon", "core", "std", "derive"] {
+    for name in ["addon", "core", "std", "derive", "manifest"] {
         let manifest = std::fs::read_to_string(crates_dir().join(name).join("Cargo.toml")).unwrap();
         for line in manifest.lines() {
             assert!(

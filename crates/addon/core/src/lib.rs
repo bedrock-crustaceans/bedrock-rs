@@ -105,7 +105,6 @@ pub mod document;
 pub mod id;
 pub mod json;
 pub mod load;
-pub mod manifest;
 pub mod molang;
 pub mod pack_identity;
 pub mod schema;

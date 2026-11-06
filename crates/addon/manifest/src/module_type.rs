@@ -2,7 +2,7 @@
 
 use std::fmt;
 
-use crate::pack_identity::PackType;
+use bedrock_addon_core::pack_identity::PackType;
 
 /// A module's `type` (`data`, `resources`, `script`, `client_script`, `skin_pack`, …): one of
 /// the sixteen names vanilla's module-type table knows, kept as written.
