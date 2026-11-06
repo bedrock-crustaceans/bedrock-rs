@@ -260,7 +260,6 @@ impl Unknown {
     /// Copies the unknown members of the object at `from`, and of every object below it, to
     /// `to`, each by [`put`](Self::put)'s rule; those at `from` stay: a step that copies an
     /// object copies its members.
-    #[doc(hidden)]
     pub fn copy(&mut self, from: &JsonPath, to: &JsonPath) {
         let copies: Vec<(JsonPath, Box<str>, Value)> = self
             .iter()
@@ -283,7 +282,6 @@ impl Unknown {
     /// The list at `list` now holds, in order, the elements it had at the indices `kept`
     /// (ascending): the members of an element left out are dropped, those of an element kept
     /// go to its new index ([`Diagnostics::left_out`](crate::diagnostic::Diagnostics::left_out)).
-    #[doc(hidden)]
     pub fn left_out(&mut self, list: &JsonPath, kept: &[usize]) {
         self.remap(|path| {
             let Some(rest) = path.strip_prefix(list) else {
@@ -303,7 +301,6 @@ impl Unknown {
     /// the table, by paths relative to `at`: a part of the document becomes a document of its
     /// own (a file of several definitions split into one document per definition). The
     /// inverse of [`absorb`](Self::absorb).
-    #[doc(hidden)]
     #[must_use]
     pub fn take_below(&mut self, at: &JsonPath) -> Unknown {
         if self.is_empty() {
@@ -323,7 +320,6 @@ impl Unknown {
     /// Puts every row of `other` below `at` (its paths relative to `at`), each member by
     /// [`put`](Self::put)'s rule: a reader that read a part of the document with paths of
     /// its own hands its unknown members on.
-    #[doc(hidden)]
     pub fn absorb(&mut self, at: &JsonPath, other: Unknown) {
         for (path, members) in other.into_groups() {
             let path = at.join(&path);

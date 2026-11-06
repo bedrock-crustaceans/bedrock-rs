@@ -104,7 +104,6 @@ pub trait JsonDocument: VersionStruct + Send + Sync + 'static {
     /// # Errors
     ///
     /// As [`write_root`](Self::write_root).
-    #[doc(hidden)]
     fn write_root_with(&self, unknown: &Unknown) -> Result<(Value, Vec<Diagnostic>), EncodeError> {
         let mut root = self.write_root()?;
         let told = crate::json::merge_unknown_with(

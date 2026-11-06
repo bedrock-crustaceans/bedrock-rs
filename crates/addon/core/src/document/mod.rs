@@ -47,7 +47,6 @@ pub use combine::{
     TieWinner,
 };
 pub use component::{Component, ComponentMap, ComponentRef, ComponentSet, CustomComponent};
-#[doc(hidden)]
 pub use finite::FiniteText;
 pub use json_document::{JsonDefinition, JsonDocument, JsonPlaced};
 #[doc(hidden)]
@@ -81,10 +80,12 @@ pub struct Document<T> {
 }
 
 impl<T> Document<T> {
-    /// A document from its parts (the fields are private, so `bedrock_addon` builds it
-    /// here). The unknown members the read kept with its findings
-    /// ([`Diagnostics::unknown_mut`]) become the document's.
-    #[doc(hidden)]
+    /// A document from its parts: the value, where it came from, its version information and
+    /// the findings of the read.
+    ///
+    /// The unknown members the read kept with its findings ([`Diagnostics::unknown_mut`]) are
+    /// taken out of the list and become the document's, so the list holds none afterwards.
+    /// The fields are private, so this is the only constructor.
     pub fn new(
         value: T,
         origin: Origin,
@@ -102,7 +103,6 @@ impl<T> Document<T> {
     }
 
     /// The document with `unknown` as its unknown members.
-    #[doc(hidden)]
     #[must_use]
     pub fn with_unknown_members(mut self, unknown: Unknown) -> Self {
         self.unknown = unknown;
@@ -173,7 +173,6 @@ impl<T> Document<T> {
     /// that rebuilds the parse stage from a document as written, so the moves of its steps
     /// carry the members as in a parse of the file, and the document it builds
     /// ([`Document::new`]) holds them again.
-    #[doc(hidden)]
     pub fn into_parsed_parts(self) -> (T, Origin, VersionInfo, Diagnostics) {
         let (value, origin, version, mut diagnostics, unknown) = self.into_parts();
         if !unknown.is_empty() {
@@ -230,9 +229,11 @@ pub struct Origin {
 }
 
 impl Origin {
-    /// An origin from its parts (the struct is `#[non_exhaustive]`, so `bedrock_addon`
-    /// builds it here).
-    #[doc(hidden)]
+    /// An origin from its parts: the pack, the side, the file, the member key (for a file of
+    /// several definitions) and the other packs that contribute to the same document.
+    ///
+    /// The struct is `#[non_exhaustive]`, so this is the plain constructor outside the crate;
+    /// [`Origin::file`] is the form for a one-definition file.
     pub fn new(
         pack: PackRef,
         side: PackSide,
@@ -302,9 +303,11 @@ pub struct VersionInfo {
 }
 
 impl VersionInfo {
-    /// Version information from its parts (the struct is `#[non_exhaustive]`, so
-    /// `bedrock_addon` builds it here).
-    #[doc(hidden)]
+    /// Version information from its parts: the version the file wrote (if any), whether it is
+    /// a beta format, the effective version and the version it was parsed as, and whether an
+    /// upgrade step ran.
+    ///
+    /// The struct is `#[non_exhaustive]`, so this is the plain constructor outside the crate.
     pub fn new(
         written: Option<FormatVersion>,
         beta: bool,
@@ -335,9 +338,11 @@ pub struct Rejected {
 }
 
 impl Rejected {
-    /// A rejection from its parts (the struct is `#[non_exhaustive]`, so `bedrock_addon`
-    /// builds it here).
-    #[doc(hidden)]
+    /// A rejection from its parts: where the document was and the findings that refused it.
+    ///
+    /// A rejected document keeps nothing: the unknown members of `diagnostics` are dropped.
+    /// The struct is `#[non_exhaustive]`, so this is the plain constructor outside the crate;
+    /// [`Rejected::located`] also puts every finding in the document's pack and file.
     pub fn new(origin: Origin, mut diagnostics: Diagnostics) -> Self {
         // A rejected document keeps nothing: its unknown members go with it.
         drop(diagnostics.take_unknown());
@@ -411,7 +416,6 @@ pub trait Content: Sealed + Sized + Send + Sync + 'static {
     /// # Errors
     ///
     /// As [`write_json`](Self::write_json).
-    #[doc(hidden)]
     fn write_json_with(
         &self,
         unknown: &Unknown,

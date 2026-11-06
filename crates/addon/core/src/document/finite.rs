@@ -16,7 +16,6 @@ use crate::json::{ClampedText, JsonSlice, clamp_beyond_double, strip_bom};
 /// document holds and writes the clamped number, and the load ends with an `InvalidValue`
 /// warning at each number, on its token as written. A file without such a number costs one
 /// walk of its tokens and is read as it is.
-#[doc(hidden)]
 #[derive(Debug)]
 pub struct FiniteText<'a> {
     bytes: Cow<'a, [u8]>,

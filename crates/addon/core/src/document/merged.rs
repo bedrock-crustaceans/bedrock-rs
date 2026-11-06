@@ -56,9 +56,10 @@ impl<T: Merge, L> Merged<T, L> {
     }
 
     /// A merged value from its parts: the value, the winning origin per key, the layers
-    /// top-first and the findings (the fields are private, so `bedrock_addon` builds
-    /// it here).
-    #[doc(hidden)]
+    /// top-first and the findings.
+    ///
+    /// The fields are private, so this is the only constructor; [`Merged::merge`] builds the
+    /// parts from a walk of the copies.
     pub fn new(
         value: T,
         origins: IndexMap<T::Key, Origin>,
@@ -78,8 +79,7 @@ impl<T: Merge, L: Layer> Merged<T, L> {
     /// Folds the copies of a family's walk, in walk order, into `initial` with the family's
     /// merge strategy `step`, which records the winning origin of each entry it writes
     /// ([`MergeCx::claim`]). A failed copy contributes its findings only. The layers are kept
-    /// top-first (`bedrock_addon` builds the value here).
-    #[doc(hidden)]
+    /// top-first.
     pub fn merge(
         walk: Vec<Result<L, Rejected>>,
         initial: T,
@@ -220,9 +220,9 @@ pub struct RawLayer {
 }
 
 impl RawLayer {
-    /// A layer from its parts (the struct is `#[non_exhaustive]`, so `bedrock_addon`
-    /// builds it here).
-    #[doc(hidden)]
+    /// A layer from its parts: where the copy came from and its JSON as read.
+    ///
+    /// The struct is `#[non_exhaustive]`, so this is the plain constructor outside the crate.
     pub fn new(origin: Origin, json: json::Value) -> Self {
         Self { origin, json }
     }

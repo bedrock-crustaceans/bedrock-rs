@@ -95,6 +95,8 @@ enum Step {
 
 impl Failure {
     /// A failure of the value itself.
+    // hidden: `Failure` is the carrier of the shape readers' errors (reader plumbing of the
+    // crate family) and is itself hidden; this constructor goes with it.
     #[doc(hidden)]
     pub fn new(kind: ShapeErrorKind) -> Self {
         Self {

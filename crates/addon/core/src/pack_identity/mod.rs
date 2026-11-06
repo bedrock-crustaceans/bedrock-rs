@@ -318,9 +318,9 @@ struct PackRefInner {
 }
 
 impl PackRef {
-    /// The handle of the pack at `index` on a stack (hidden: `bedrock_addon` builds it as it
-    /// stacks packs).
-    #[doc(hidden)]
+    /// The handle of the pack at `index` on a stack, with its identity and display name.
+    ///
+    /// The fields are private, so this is the only way to build a handle for a pack.
     pub fn new(index: usize, id: PackIdVersion, name: impl Into<Box<str>>) -> Self {
         Self {
             index: Some(index),
@@ -332,8 +332,7 @@ impl PackRef {
     }
 
     /// The synthetic handle of the app-data layer: nil UUID, version 0.0.0, name `app data`
-    /// (hidden: `bedrock_addon` builds it).
-    #[doc(hidden)]
+    /// It sorts below every pack on a stack.
     pub fn app_data() -> Self {
         Self {
             index: None,

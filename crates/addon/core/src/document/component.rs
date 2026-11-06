@@ -14,7 +14,6 @@ use crate::molang::{MolangFields, MolangVisitor};
 pub trait ComponentSet: Sized + 'static {
     /// The JSON key of a typed variant (`"minecraft:friction"`); `None` for the custom,
     /// unknown and dynamic variants, whose key is not the type's.
-    #[doc(hidden)]
     fn name(&self) -> Option<&'static str>;
 }
 
@@ -27,16 +26,16 @@ pub trait Component: Sized {
     const NAME: &'static str;
 
     /// The component, if `set` is its variant.
-    #[doc(hidden)]
     fn from_set(set: &Self::Set) -> Option<&Self>;
     /// The component, mutably, if `set` is its variant.
-    #[doc(hidden)]
     fn from_set_mut(set: &mut Self::Set) -> Option<&mut Self>;
     /// The component, if `set` is its variant; `set` back otherwise.
-    #[doc(hidden)]
+    ///
+    /// # Errors
+    ///
+    /// `set` itself, when it is another variant.
     fn try_from_set(set: Self::Set) -> Result<Self, Self::Set>;
     /// The component as its family's enum.
-    #[doc(hidden)]
     fn into_set(self) -> Self::Set;
 }
 
@@ -153,7 +152,6 @@ impl<C: ComponentSet> ComponentMap<C> {
     /// Inserts or replaces a typed component read from a file or inserted by an upgrade
     /// step (`synthesized`), keyed by its type's name; returns the replaced one. A value
     /// without a typed key (`ComponentSet::name` is `None`) is returned untouched.
-    #[doc(hidden)]
     pub fn insert_typed(&mut self, value: C, synthesized: bool) -> Option<C> {
         let Some(name) = value.name() else {
             return Some(value);
@@ -169,7 +167,6 @@ impl<C: ComponentSet> ComponentMap<C> {
     /// memory goal `minecraft:memory_behavior.move_to_position.<name>`): one entry per key.
     /// Returns the replaced one; [`get`](Self::get) finds only an entry keyed by the type's
     /// own name, [`iter`](Self::iter) yields every entry with its key.
-    #[doc(hidden)]
     pub fn insert_typed_as(&mut self, name: &str, value: C, synthesized: bool) -> Option<C> {
         match self.insert_entry(name, Entry::Typed { value, synthesized })? {
             Entry::Typed { value, .. } => Some(value),
@@ -178,20 +175,17 @@ impl<C: ComponentSet> ComponentMap<C> {
     }
 
     /// Inserts or replaces a custom component, keyed by its name.
-    #[doc(hidden)]
     pub fn insert_custom(&mut self, component: CustomComponent) {
         let name = component.name.clone();
         self.insert_entry(&name, Entry::Custom(component));
     }
 
     /// Inserts or replaces a key the family parses at run time, kept as JSON.
-    #[doc(hidden)]
     pub fn insert_dynamic(&mut self, name: &str, json: json::Value) {
         self.insert_entry(name, Entry::Dynamic(json));
     }
 
     /// Inserts or replaces a key no table knows, kept as JSON for write-back.
-    #[doc(hidden)]
     pub fn insert_unknown(&mut self, name: &str, json: json::Value) {
         self.insert_entry(name, Entry::Unknown(json));
     }
@@ -199,7 +193,6 @@ impl<C: ComponentSet> ComponentMap<C> {
     /// Removes the entry keyed `name`, whatever its kind, keeping the order of the others;
     /// `false` when there was none. What validation uses to drop a deprecated, vanilla-only or
     /// superseded component it knows only by name.
-    #[doc(hidden)]
     pub fn remove_named(&mut self, name: &str) -> bool {
         self.entries.shift_remove(name).is_some()
     }

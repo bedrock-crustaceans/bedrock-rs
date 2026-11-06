@@ -82,7 +82,6 @@ impl Diagnostic {
     /// code is kept by its [`Class::KeptError`] in [`of`](Self::of). Both halves must hold for
     /// the finding: it is an error in the game's content log, and the game's loader goes on
     /// with the document.
-    #[doc(hidden)]
     #[must_use]
     pub fn into_kept(mut self) -> Self {
         self.severity = Severity::Error;
@@ -112,9 +111,12 @@ impl Diagnostic {
         }
     }
 
-    /// A finding without detail. The struct is `#[non_exhaustive]`, so `bedrock_addon` builds
-    /// it here.
-    #[doc(hidden)]
+    /// A finding without detail, from all four parts: the long form of the constructors.
+    ///
+    /// It does not grade by class (the `severity` is taken as given) and the finding is not
+    /// `kept`. Prefer [`Diagnostic::of`], [`Diagnostic::error`], [`Diagnostic::warn`] and
+    /// [`Diagnostic::info`] with the builder where the severity follows from the code. The
+    /// struct is `#[non_exhaustive]`, so this is the only way to build one outside the crate.
     pub fn new(code: DiagnosticCode, severity: Severity, phase: Phase, location: Location) -> Self {
         Self {
             code,
@@ -324,9 +326,11 @@ pub struct Location {
 }
 
 impl Location {
-    /// A location from its parts. The struct is `#[non_exhaustive]`, so `bedrock_addon` builds
-    /// it here.
-    #[doc(hidden)]
+    /// A location from its four parts: the pack, the file in it, the JSON path in the file and
+    /// the byte range, each as far as it is known.
+    ///
+    /// The struct is `#[non_exhaustive]`, so this is the plain constructor outside the crate;
+    /// [`Location::default`] is the location with none of the parts.
     pub fn new(
         pack: Option<PackRef>,
         path: Option<PackPath>,
@@ -670,7 +674,6 @@ impl Diagnostics {
     }
 
     /// The findings in order, each open to a change in place.
-    #[doc(hidden)]
     #[allow(
         clippy::iter_without_into_iter,
         reason = "a loader's door, hidden: `&mut Diagnostics` is no public iterator"
@@ -732,7 +735,6 @@ impl Diagnostics {
     /// The unknown members kept below `from` move with it ([`Unknown::rebase`]): the rows of
     /// the object at `from` and of the objects below it. An unknown member whose own path is
     /// `from` is in its parent's row and does not move; the step takes and puts it.
-    #[doc(hidden)]
     pub fn moved(&mut self, from: JsonPath, to: JsonPath) {
         self.held().unknown.rebase(&from, &to);
         self.record_move(from, to);
@@ -746,13 +748,11 @@ impl Diagnostics {
 
     /// The unknown members kept so far, by the paths of their objects from the document
     /// root: a reader keeps a member here, a step takes one it reads ([`Unknown::take`]).
-    #[doc(hidden)]
     pub fn unknown_mut(&mut self) -> &mut Unknown {
         &mut self.held().unknown
     }
 
     /// The unknown members kept so far ([`unknown_mut`](Self::unknown_mut)).
-    #[doc(hidden)]
     pub fn unknown(&self) -> &Unknown {
         static NONE: Unknown = Unknown::new();
         self.0.as_ref().map_or(&NONE, |held| &held.unknown)
@@ -760,7 +760,6 @@ impl Diagnostics {
 
     /// Takes the unknown members kept so far out of the list: the document built from the
     /// read holds them.
-    #[doc(hidden)]
     pub fn take_unknown(&mut self) -> Unknown {
         self.0
             .as_mut()
@@ -793,7 +792,6 @@ impl Diagnostics {
     ///
     /// The unknown members kept below an element left out are dropped, those below one kept
     /// go with it ([`Unknown::left_out`]).
-    #[doc(hidden)]
     pub fn left_out(&mut self, list: &JsonPath, kept: &[usize]) {
         if let Some(held) = self.0.as_mut() {
             held.unknown.left_out(list, kept);
@@ -811,7 +809,6 @@ impl Diagnostics {
     /// The path the member at `at` (a path of the document as the steps have made it so
     /// far) has in the file: every recorded move undone, the latest first. For a step that
     /// holds where the file has a member (a block's write refusal names it).
-    #[doc(hidden)]
     pub fn source_of(&self, at: &JsonPath) -> JsonPath {
         self.0
             .as_ref()
@@ -823,7 +820,6 @@ impl Diagnostics {
     /// below the member's own path (a move goes on through [`Diagnostics::moved`]). The
     /// unknown members the list holds are not among them: [`take_unknown`](Self::take_unknown)
     /// first.
-    #[doc(hidden)]
     pub fn into_told(self) -> Vec<Told> {
         let held = self.0.map(|held| *held).unwrap_or_default();
         // The unknown members are not told: a reader hands them on with `take_unknown`.
@@ -847,7 +843,6 @@ impl Diagnostics {
     /// Gives every finding told after a recorded move the path its member has in the file
     /// ([`Origins`]), and forgets the moves. Called once, when the chain and the
     /// checks on its result are done.
-    #[doc(hidden)]
     pub fn name_as_the_file_has_it(&mut self) {
         let Some(held) = self.0.as_mut() else {
             return;
@@ -874,7 +869,6 @@ impl Diagnostics {
     /// the held path of each member and asks once per member. Before the moves are undone
     /// (a document from `parse_as_written`, whose upgrade has not run) nothing is known yet
     /// and `at` comes back unchanged; so does a path no move touches.
-    #[doc(hidden)]
     pub fn place_of(&self, at: &JsonPath) -> JsonPath {
         let Some(held) = self.0.as_ref().filter(|held| !held.places.is_empty()) else {
             return at.clone();
@@ -887,7 +881,6 @@ impl Diagnostics {
 
     /// Appends the findings of `other`, with the moves recorded among them (each still
     /// before the findings told after it) and the places of the moves it has undone.
-    #[doc(hidden)]
     pub fn append(&mut self, other: Diagnostics) {
         let Some(other) = other.0 else {
             return;
@@ -904,7 +897,6 @@ impl Diagnostics {
     /// Appends the findings of `other` and keeps its unknown members, without its moves and
     /// places: `extend` with the findings of a list that a parse filled, whose unknown
     /// members (paths from the document root) the document keeps.
-    #[doc(hidden)]
     pub fn extend_with_unknown(&mut self, mut other: Diagnostics) {
         let unknown = other.take_unknown();
         self.extend(other);
@@ -933,7 +925,6 @@ impl Diagnostics {
 
     /// Keeps the findings `keep` says to keep, in order. A recorded move stays before the
     /// findings told after it, and the places stay.
-    #[doc(hidden)]
     pub fn retain(&mut self, mut keep: impl FnMut(&Diagnostic) -> bool) {
         let Some(held) = self.0.as_mut() else {
             return;
@@ -967,7 +958,6 @@ impl Diagnostics {
 }
 
 /// One entry of [`Diagnostics::into_told`].
-#[doc(hidden)]
 #[derive(Clone, Debug, PartialEq)]
 pub enum Told {
     /// A finding.
@@ -1077,8 +1067,10 @@ pub struct PackReport {
 }
 
 impl PackReport {
-    /// An empty report for a pack found at `location`. The struct is `#[non_exhaustive]`, so
-    /// `bedrock_addon` builds it here and fills the fields.
+    /// An empty report for a pack found at `location`.
+    // hidden: the report is the output of `bedrock_addon`'s loaders and is built only there
+    // (`load/pack.rs`, `pack/mod.rs`, `pack/writer/mod.rs`); it needs `pub` because that is
+    // another crate. The struct is `#[non_exhaustive]` and will gain fields.
     #[doc(hidden)]
     pub fn new(location: Place, pack_type: PackType, pack_origin: PackOrigin) -> Self {
         Self {
