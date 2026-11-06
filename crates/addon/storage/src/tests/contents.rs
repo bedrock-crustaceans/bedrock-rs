@@ -1,8 +1,8 @@
 //! `contents.json` read as a contents table: the plain fixtures and the per-asset cipher rows.
 
 use super::{fixture, fixture_names};
-use crate::storage::contents::{AssetCipher, ContentsJson, ContentsTable};
-use crate::storage::{ContentKey, PackPath};
+use crate::contents::{AssetCipher, ContentsJson, ContentsTable};
+use crate::{ContentKey, PackPath};
 
 #[test]
 fn every_plain_fixture_parses() {

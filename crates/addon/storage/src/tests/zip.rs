@@ -9,8 +9,8 @@ use bedrock_addon_core::load::Limits;
 use bytes::Bytes;
 
 use super::{fixture, fixture_names};
-use crate::storage::zip::{ZipIndex, encode};
-use crate::storage::{PackPath, PathRejected, StorageError, ZipFault, ZipLimit};
+use crate::zip::{ZipIndex, encode};
+use crate::{PackPath, PathRejected, StorageError, ZipFault, ZipLimit};
 
 /// A zip of `files`, stored or deflated, written with the `zip` crate directly (not the crate's own encoder).
 fn zip_of(files: &[(&str, &[u8])], method: CompressionMethod) -> Vec<u8> {
@@ -723,7 +723,7 @@ mod nested {
 /// storage code never calls it. The clippy `disallowed-methods` list enforces the same.
 #[test]
 fn extract_is_never_called() {
-    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src/storage");
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
     let needle = concat!(".", "extract", "(");
     let mut stack = vec![root];
     while let Some(dir) = stack.pop() {

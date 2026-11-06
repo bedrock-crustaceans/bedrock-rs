@@ -9,11 +9,11 @@ use std::path::PathBuf;
 use facet_value::Value;
 
 use super::{Body, assert_unsupported, document};
-use crate::storage::mcb::to_json_text;
+use crate::mcb::to_json_text;
 
 const KEY: &str = "minecraft:crafting_items_catalog";
 
-fn decode(version: (u16, u16, u32), body: &Body) -> Result<String, crate::storage::StorageError> {
+fn decode(version: (u16, u16, u32), body: &Body) -> Result<String, crate::StorageError> {
     to_json_text(&document(KEY, version, &body.0))
 }
 
@@ -70,10 +70,10 @@ fn a_catalogue_body_with_bytes_after_it_a_bad_flag_or_at_another_version_is_unsu
     assert_unsupported(decode((1, 26, 60), &catalog()));
 }
 
-/// `tests/fixtures/item/catalog/<relative>`.
+/// `crates/addon/addon/tests/fixtures/item/catalog/<relative>` (the catalogue's fixtures).
 fn catalog_fixture(relative: &str) -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("tests/fixtures/item/catalog")
+        .join("../addon/tests/fixtures/item/catalog")
         .join(relative)
 }
 
@@ -83,7 +83,7 @@ fn bake(name: &str) -> Value {
     )))
     .unwrap();
     let text = to_json_text(&bytes).unwrap_or_else(|e| panic!("{name}: {e:?}"));
-    crate::json::from_str(&text).unwrap()
+    bedrock_addon_core::json::from_str(&text).unwrap()
 }
 
 #[test]
@@ -120,7 +120,7 @@ fn every_vanilla_bake_decodes_to_its_last_byte() {
 #[test]
 fn the_1_26_40_bake_is_its_loose_twin() {
     let twin = std::fs::read_to_string(catalog_fixture("cat14_line_comments.json")).unwrap();
-    let twin: Value = crate::json::from_str_jsonc(&twin).unwrap();
+    let twin: Value = bedrock_addon_core::json::from_str_jsonc(&twin).unwrap();
     assert_eq!(bake("vanilla_1.26.40"), twin);
 }
 
@@ -130,6 +130,6 @@ fn the_1_26_50_bake_is_the_decoded_fixture() {
         "vanilla_1_26_50/crafting_item_catalog.decoded.json",
     ))
     .unwrap();
-    let twin: Value = crate::json::from_str(&twin).unwrap();
+    let twin: Value = bedrock_addon_core::json::from_str(&twin).unwrap();
     assert_eq!(bake("vanilla_1.26.50"), twin);
 }

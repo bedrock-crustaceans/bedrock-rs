@@ -17,7 +17,7 @@ use super::{ContentKey, StorageError};
 /// `Decrypt` when the bytes carry no encryption header or the plaintext is not a contents
 /// table (a wrong key decrypts to noise); `MissingContentKey` when the header is there and no
 /// key was given.
-pub(crate) fn decrypt_contents(
+pub fn decrypt_contents(
     bytes: &[u8],
     key: Option<&ContentKey>,
 ) -> Result<ContentsJson, StorageError> {
@@ -27,10 +27,7 @@ pub(crate) fn decrypt_contents(
 
 /// Decrypts a whole file behind the encryption header (a whole-file encrypted zip) with the
 /// pack key, the same way as `contents.json`; `Decrypt` unless the plaintext is a zip.
-pub(crate) fn decrypt_archive(
-    bytes: &[u8],
-    key: Option<&ContentKey>,
-) -> Result<Bytes, StorageError> {
+pub fn decrypt_archive(bytes: &[u8], key: Option<&ContentKey>) -> Result<Bytes, StorageError> {
     let plain = decrypt_behind_header(bytes, key)?;
     if detect(&plain) != FileType::Zip {
         return Err(StorageError::Decrypt);
@@ -53,7 +50,7 @@ fn decrypt_behind_header(bytes: &[u8], key: Option<&ContentKey>) -> Result<Vec<u
 /// Decrypts one asset with its own cipher from the contents table. Assets carry no header: the
 /// ciphertext starts at offset 0. The key's first 16 bytes are the IV (CFB8) or the initial
 /// counter block (CTR).
-pub(crate) fn decrypt_asset(bytes: &[u8], cipher: &AssetCipher) -> Result<Bytes, StorageError> {
+pub fn decrypt_asset(bytes: &[u8], cipher: &AssetCipher) -> Result<Bytes, StorageError> {
     let mut plain = bytes.to_vec();
     match cipher {
         AssetCipher::Cfb8(key) => cfb8_decrypt(key.bytes(), &iv(key), &mut plain),
@@ -74,11 +71,11 @@ fn iv(key: &ContentKey) -> [u8; 16] {
 }
 
 /// AES-256-CFB8 decryption in place (8-bit feedback: the game's `Cfb`, not `Cfb128`).
-pub(crate) fn cfb8_decrypt(key: &[u8; 32], iv: &[u8; 16], data: &mut [u8]) {
+pub fn cfb8_decrypt(key: &[u8; 32], iv: &[u8; 16], data: &mut [u8]) {
     cfb8::Decryptor::<Aes256>::new(key.into(), iv.into()).decrypt(data);
 }
 
 /// AES-256-CTR decryption in place, with a 128-bit big-endian counter starting at `counter`.
-pub(crate) fn ctr_decrypt(key: &[u8; 32], counter: &[u8; 16], data: &mut [u8]) {
+pub fn ctr_decrypt(key: &[u8; 32], counter: &[u8; 16], data: &mut [u8]) {
     ctr::Ctr128BE::<Aes256>::new(key.into(), counter.into()).apply_keystream(data);
 }

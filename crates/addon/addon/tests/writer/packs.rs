@@ -142,12 +142,12 @@ pub fn folder_with_subpacks() -> Case {
 }
 
 /// A folder pack whose `blocks/` is served by `__brarchive/blocks.brarchive`
-/// (`storage/brarchive/small.brarchive`: `ruby.json` 88 bytes, `main.js` empty,
+/// (`crates/addon/storage/tests/fixtures/brarchive/small.brarchive`: `ruby.json` 88 bytes, `main.js` empty,
 /// `sapphire.json` 39 bytes) over two loose files. A copy holds the layer's files loose and no
 /// archive: `ruby.json` and `sapphire.json` from the archive, `main.js` from the loose file its
 /// empty entry does not shadow.
 pub fn brarchive_folder() -> Case {
-    let archive = fixture("storage/brarchive/small.brarchive");
+    let archive = fixture("../../../storage/tests/fixtures/brarchive/small.brarchive");
     // The data starts after the header and three descriptors.
     let data = &archive[16 + 3 * 256..];
     let (ruby, sapphire) = (data[..88].to_vec(), data[88..88 + 39].to_vec());
@@ -172,7 +172,10 @@ pub fn brarchive_folder() -> Case {
 /// The entries of a zip's `unzip -Z1` listing that are files.
 #[cfg(feature = "zip")]
 fn listing(zip: &str) -> Vec<String> {
-    let text = String::from_utf8(fixture(&format!("storage/zip_listings/{zip}.txt"))).unwrap();
+    let text = String::from_utf8(fixture(&format!(
+        "../../../storage/tests/fixtures/zip_listings/{zip}.txt"
+    )))
+    .unwrap();
     text.lines()
         .filter(|line| !line.ends_with('/') && !line.is_empty())
         .map(str::to_owned)
@@ -187,10 +190,11 @@ fn listing(zip: &str) -> Vec<String> {
 pub fn zip_packs() -> Vec<Case> {
     use std::io::{Cursor, Read};
 
-    let mut zips: Vec<String> = std::fs::read_dir(fixtures().join("storage/zip_packs"))
-        .unwrap()
-        .map(|entry| entry.unwrap().file_name().to_string_lossy().into_owned())
-        .collect();
+    let mut zips: Vec<String> =
+        std::fs::read_dir(fixtures().join("../../../storage/tests/fixtures/zip_packs"))
+            .unwrap()
+            .map(|entry| entry.unwrap().file_name().to_string_lossy().into_owned())
+            .collect();
     zips.sort();
     let mut cases = Vec::new();
     for zip in zips {
@@ -212,7 +216,7 @@ pub fn zip_packs() -> Vec<Case> {
             continue;
         }
         let prefix = shallowest[0].strip_suffix("manifest.json").unwrap();
-        let bytes = fixture(&format!("storage/zip_packs/{zip}"));
+        let bytes = fixture(&format!("../../../storage/tests/fixtures/zip_packs/{zip}"));
         let mut archive = zip::ZipArchive::new(Cursor::new(&bytes[..])).unwrap();
         let mut manifest = None;
         let mut files = Vec::new();

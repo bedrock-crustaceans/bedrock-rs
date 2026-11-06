@@ -3,11 +3,15 @@
 //! `bedrock_addon` crate but the foundation crates (core, the derive and the pack manifest
 //! `bedrock_addon_manifest`) and the shared crates (and support's `biome_json`, for the three
 //! biome families until it goes, and script for `server_config`, the one family on a family):
-//! its manifest names no other, and its sources do not either. The manifest crate itself
-//! depends on core alone. The compiler enforces the rest (a family crate cannot name
-//! `crate::pack`, `crate::storage`, another family or `bedrock_addon`'s `load`).
+//! its manifest names no other, and its sources do not either (`bedrock_addon_storage` is not
+//! among them). The manifest crate itself depends on core alone, and so does the storage
+//! crate. The compiler enforces the rest (a family crate cannot name `bedrock_addon`'s `pack`
+//! or `load`, or another family).
 //!
 //! The second rule: library code never reads the text of a finding's path.
+//!
+//! The third: the storage crate (`crates/addon/storage/`) depends on core and the container
+//! crates only, never on a family, a shared crate or `bedrock_addon`.
 //!
 //! The tests read the crate's own source files, which library code may never do.
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]
@@ -870,6 +874,117 @@ fn the_manifest_scan_reads_manifests_and_paths() {
     );
 }
 
+/// The storage crate: `crates/addon/storage/`.
+fn storage_dir() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../storage")
+}
+
+/// What the storage crate may depend on: core, the archive, crypto and JSON crates its
+/// containers are read with, and the value type its tests compare decoded text as. No family,
+/// no shared crate, not `bedrock_addon`.
+const STORAGE_MAY_NAME: &[&str] = &[
+    "bedrock_addon_core",
+    "brarchive",
+    "bytes",
+    "thiserror",
+    "facet",
+    "facet-json",
+    "facet-value",
+    "zip",
+    "aes",
+    "cfb8",
+    "ctr",
+];
+
+/// What the storage crate depends on or names that it may not: a dependency outside
+/// [`STORAGE_MAY_NAME`] in its manifest (`manifest`), or a `bedrock_addon*` crate other than
+/// core in its sources (`sources`, each with its path below the crate's `src/`).
+fn storage_violations(manifest: &str, sources: &[(String, String)]) -> Vec<String> {
+    let mut violations = Vec::new();
+    for (line, dependency) in manifest_dependencies(manifest) {
+        if !STORAGE_MAY_NAME.contains(&dependency.as_str()) {
+            violations.push(format!("storage/Cargo.toml:{line} depends on {dependency}"));
+        }
+    }
+    for (relative, source) in sources {
+        let code = code_of(source).replace("r#", "");
+        for (index, _) in code.match_indices("bedrock_addon") {
+            if code[..index].chars().next_back().is_some_and(is_ident) {
+                continue;
+            }
+            let rest = &code[index + "bedrock_addon".len()..];
+            let end = rest.find(|c: char| !is_ident(c)).unwrap_or(rest.len());
+            let named = format!("bedrock_addon{}", &rest[..end]);
+            if rest[end..].trim_start().starts_with("::") && named != "bedrock_addon_core" {
+                let line = code[..index].matches('\n').count() + 1;
+                violations.push(format!("storage/src/{relative}:{line} names {named}::"));
+            }
+        }
+    }
+    violations
+}
+
+/// The containers sit below everything that reads a document: storage depends on core and
+/// the container crates only, so the loader, the writer and the families stay above it.
+#[test]
+fn storage_depends_on_core_and_no_family() {
+    let dir = storage_dir();
+    let manifest = fs::read_to_string(dir.join("Cargo.toml")).unwrap();
+    assert!(
+        manifest
+            .lines()
+            .any(|line| line.trim() == "name = \"bedrock_addon_storage\""),
+        "storage/Cargo.toml is not the package bedrock_addon_storage"
+    );
+    let mut files = Vec::new();
+    rust_files(&dir.join("src"), &mut files);
+    assert!(
+        !files.is_empty(),
+        "no source below crates/addon/storage/src"
+    );
+    let sources: Vec<(String, String)> = files
+        .iter()
+        .map(|file| {
+            let relative = file.strip_prefix(dir.join("src")).unwrap();
+            (
+                relative.display().to_string(),
+                fs::read_to_string(file).unwrap(),
+            )
+        })
+        .collect();
+    let violations = storage_violations(&manifest, &sources);
+    assert!(
+        violations.is_empty(),
+        "the storage crate depends on bedrock_addon_core and the container crates only:\n{}",
+        violations.join("\n")
+    );
+}
+
+#[test]
+fn the_storage_scan_reads_manifests_and_paths() {
+    let manifest = "[package]\nname = \"bedrock_addon_storage\"\n\n[dependencies]\n\
+        bedrock_addon_core = { path = \"../core\" }\nbedrock_addon_shared_shapes = { path = \"x\" }\n\
+        zip = { workspace = true, optional = true }\nserde.workspace = true\n\
+        [dev-dependencies]\nfacet-value = { workspace = true }\nbedrock_addon_family_item = { path = \"y\" }\n";
+    let sources = [(
+        "mcb.rs".to_owned(),
+        "use bedrock_addon_core::json::Value;\n\
+         // bedrock_addon_family_item::Item in a comment\nuse bedrock_addon_family_item::Item;\n\
+         fn f() { bedrock_addon::load::x(); }"
+            .to_owned(),
+    )];
+    assert_eq!(
+        storage_violations(manifest, &sources),
+        [
+            "storage/Cargo.toml:6 depends on bedrock_addon_shared_shapes",
+            "storage/Cargo.toml:8 depends on serde",
+            "storage/Cargo.toml:11 depends on bedrock_addon_family_item",
+            "storage/src/mcb.rs:3 names bedrock_addon_family_item::",
+            "storage/src/mcb.rs:4 names bedrock_addon::",
+        ]
+    );
+}
+
 #[test]
 fn comments_and_literals_are_not_code() {
     let source = "// use crate::block::A;\n/* crate::item /* nested */ crate::pack */\nlet s = \"crate::entity\"; let r = r#\"crate::loot \"quoted\"\"#; let c = '\"'; let q = '\\''; fn f<'a>(x: &'a str) { crate::id::X }";
@@ -1321,6 +1436,7 @@ fn library_code_does_not_read_the_text_of_a_finding_s_path() {
         manifest.join("src"),
         manifest.join("../core/src"),
         manifest.join("../manifest/src"),
+        manifest.join("../storage/src"),
     ]
     .into_iter()
     .chain(lifted)

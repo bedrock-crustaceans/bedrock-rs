@@ -2,9 +2,9 @@
 //! JSON cannot write. Each is a fault, never a panic.
 
 use super::{Body, assert_unsupported, document};
-use crate::json::{MAX_JSON_DEPTH, check_depth};
-use crate::storage::mcb::to_json_text;
-use crate::storage::{McbFault, StorageError};
+use crate::mcb::to_json_text;
+use crate::{McbFault, StorageError};
+use bedrock_addon_core::json::{MAX_JSON_DEPTH, check_depth};
 
 /// One small document of every payload kind, each with strings, counts and floats.
 fn samples() -> Vec<Vec<u8>> {
@@ -260,7 +260,10 @@ fn decoding_costs_in_proportion_to_the_body() {
         }
         document("tiers", (1, 26, 10), &body.0)
     };
-    crate::test_cost::assert_linear_at("storage::mcb::to_json_text", 12_000, table, |document| {
-        to_json_text(document).unwrap().len()
-    });
+    bedrock_addon_core::test_cost::assert_linear_at(
+        "storage::mcb::to_json_text",
+        12_000,
+        table,
+        |document| to_json_text(document).unwrap().len(),
+    );
 }

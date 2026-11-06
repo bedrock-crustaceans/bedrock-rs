@@ -4,8 +4,8 @@
 use bytes::Bytes;
 
 use super::{fixture, game_files};
-use crate::storage::brarchive::{Brarchive, BrarchiveLayer, archive_dir};
-use crate::storage::{PackPath, PathRejected, StorageError};
+use crate::brarchive::{Brarchive, BrarchiveLayer, archive_dir};
+use crate::{PackPath, PathRejected, StorageError};
 
 const RUBY: &[u8] =
     br#"{"format_version":"1.21.0","minecraft:block":{"description":{"identifier":"demo:ruby"}}}"#;

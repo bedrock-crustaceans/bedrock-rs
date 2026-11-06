@@ -35,11 +35,11 @@ fn write(dir: &Path, path: &str, bytes: &[u8]) {
     fs::write(path, bytes).unwrap();
 }
 
-/// `crates/addon/addon/tests/fixtures/storage/<path>`.
+/// `crates/addon/storage/tests/fixtures/<path>`.
 #[cfg(any(feature = "zip", feature = "encrypted"))]
 fn storage_fixture(path: &str) -> std::path::PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../addon/tests/fixtures/storage")
+        .join("../storage/tests/fixtures")
         .join(path)
 }
 

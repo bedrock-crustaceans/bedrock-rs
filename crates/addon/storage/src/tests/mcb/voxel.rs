@@ -1,7 +1,7 @@
 //! `minecraft:voxel_shape` bodies.
 
 use super::{Body, assert_unsupported, document};
-use crate::storage::mcb::to_json_text;
+use crate::mcb::to_json_text;
 
 const VERSION: (u16, u16, u32) = (1, 21, 110);
 
@@ -9,7 +9,7 @@ const VERSION: (u16, u16, u32) = (1, 21, 110);
     clippy::needless_pass_by_value,
     reason = "a test hands over what it built"
 )]
-fn shape(body: Body) -> Result<String, crate::storage::StorageError> {
+fn shape(body: Body) -> Result<String, crate::StorageError> {
     to_json_text(&document("minecraft:voxel_shape", VERSION, &body.0))
 }
 

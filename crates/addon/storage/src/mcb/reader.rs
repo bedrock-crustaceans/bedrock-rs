@@ -9,7 +9,7 @@
 // refused whole.
 
 use super::McbValue;
-use crate::storage::{McbFault, StorageError};
+use crate::{McbFault, StorageError};
 
 /// The fault of every body this reader does not know: cut short, a count or a length the
 /// layout was never seen with, an unknown component, bytes after the end.

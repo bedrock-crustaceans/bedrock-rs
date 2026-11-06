@@ -6,15 +6,11 @@ use std::path::PathBuf;
 use facet_value::Value;
 
 use super::{Body, assert_unsupported, document};
-use crate::storage::mcb::to_json_text;
+use crate::mcb::to_json_text;
 
 const VERSION: (u16, u16, u32) = (1, 26, 40);
 
-fn decode(
-    key: &str,
-    version: (u16, u16, u32),
-    body: &Body,
-) -> Result<String, crate::storage::StorageError> {
+fn decode(key: &str, version: (u16, u16, u32), body: &Body) -> Result<String, crate::StorageError> {
     to_json_text(&document(key, version, &body.0))
 }
 
@@ -70,10 +66,10 @@ fn a_poi_body_with_bytes_after_it_or_cut_short_or_at_another_version_is_unsuppor
     ));
 }
 
-/// `tests/fixtures/poi/<relative>`.
+/// `crates/addon/addon/tests/fixtures/poi/<relative>` (the poi family's fixtures).
 fn poi_fixture(relative: &str) -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("tests/fixtures/poi")
+        .join("../addon/tests/fixtures/poi")
         .join(relative)
 }
 
@@ -94,8 +90,8 @@ fn every_vanilla_poi_document_decodes_to_its_last_byte_as_its_decoded_twin() {
                 "poi/poi42_experimental_poi/poi/{kind}/{name}"
             )))
             .unwrap();
-            let decoded: Value = crate::json::from_str(&text).unwrap();
-            let twin: Value = crate::json::from_str(&twin).unwrap();
+            let decoded: Value = bedrock_addon_core::json::from_str(&text).unwrap();
+            let twin: Value = bedrock_addon_core::json::from_str(&twin).unwrap();
             assert_eq!(decoded, twin, "{kind}/{name}");
             count += 1;
         }

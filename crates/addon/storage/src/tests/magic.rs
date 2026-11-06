@@ -1,8 +1,8 @@
 //! Magic detection over the copied fixtures.
 
 use super::{fixture, fixture_names};
-use crate::storage::ContentIdentity;
-use crate::storage::magic::{FileType, PREFIX_LEN, detect};
+use crate::ContentIdentity;
+use crate::magic::{FileType, PREFIX_LEN, detect};
 
 fn detect_fixture(relative: &str) -> FileType {
     let bytes = fixture(relative);

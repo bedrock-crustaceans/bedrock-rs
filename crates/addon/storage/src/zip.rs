@@ -40,7 +40,7 @@ const ZIP64_END_RECORD_LEN: usize = 56;
 ///
 /// Cheap to clone: the archive's metadata is shared and the bytes are a [`Bytes`].
 #[derive(Clone, Debug)]
-pub(crate) struct ZipIndex {
+pub struct ZipIndex {
     /// The archive as given: `Pack::to_archive` serves it unchanged.
     bytes: Bytes,
     archive: ZipArchive<Cursor<Bytes>>,
@@ -52,20 +52,20 @@ pub(crate) struct ZipIndex {
 
 /// The nested archives of a composite: [`ZipIndex::nested_archives`].
 #[derive(Debug, Default)]
-pub(crate) struct NestedArchives {
+pub struct NestedArchives {
     /// The top-level files that are zip archives, sorted.
-    pub(crate) archives: Vec<PackPath>,
+    pub archives: Vec<PackPath>,
     /// The top-level files that could not be read to tell, with the reason.
-    pub(crate) unreadable: Vec<(PackPath, StorageError)>,
+    pub unreadable: Vec<(PackPath, StorageError)>,
 }
 
 /// One file of a [`ZipIndex`].
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub(crate) struct ZipEntry {
+pub struct ZipEntry {
     /// The entry's name as a pack path.
-    pub(crate) path: PackPath,
+    pub path: PackPath,
     /// Its decompressed size, as the central directory declares it.
-    pub(crate) size: u64,
+    pub size: u64,
     /// Its index in the `zip` crate's archive.
     index: usize,
 }
@@ -77,7 +77,7 @@ impl ZipIndex {
     ///
     /// Directory entries are not files and are left out. Duplicate names keep the last entry
     /// and are listed in [`ZipIndex::duplicates`] for the `duplicate_entry` warning.
-    pub(crate) fn decode(bytes: Bytes, limits: &Limits) -> Result<ZipIndex, StorageError> {
+    pub fn decode(bytes: Bytes, limits: &Limits) -> Result<ZipIndex, StorageError> {
         if bytes.len() as u64 > limits.max_archive_bytes {
             return Err(StorageError::LimitExceeded {
                 limit: ZipLimit::ArchiveBytes,
@@ -170,22 +170,22 @@ impl ZipIndex {
     }
 
     /// Every file, sorted bytewise by path.
-    pub(crate) fn files(&self) -> &[ZipEntry] {
+    pub fn files(&self) -> &[ZipEntry] {
         &self.files
     }
 
     /// Paths written more than once; the index keeps the last entry of each.
-    pub(crate) fn duplicates(&self) -> &[PackPath] {
+    pub fn duplicates(&self) -> &[PackPath] {
         &self.duplicates
     }
 
     /// The archive bytes the index was decoded from.
-    pub(crate) fn bytes(&self) -> &Bytes {
+    pub fn bytes(&self) -> &Bytes {
         &self.bytes
     }
 
     /// The file at `path`.
-    pub(crate) fn get(&self, path: &PackPath) -> Option<&ZipEntry> {
+    pub fn get(&self, path: &PackPath) -> Option<&ZipEntry> {
         self.files
             .binary_search_by(|entry| entry.path.cmp(path))
             .ok()
@@ -195,7 +195,7 @@ impl ZipIndex {
     /// Inflates one entry. The output is capped at the declared size (which the index already
     /// checked against the limits): an entry that inflates past it is malformed, so a lying
     /// central directory cannot make a read allocate more than it declared.
-    pub(crate) fn read(&self, entry: &ZipEntry) -> Result<Bytes, StorageError> {
+    pub fn read(&self, entry: &ZipEntry) -> Result<Bytes, StorageError> {
         let bytes = self.read_at_most(entry, entry.size.saturating_add(1))?;
         if bytes.len() as u64 != entry.size {
             return Err(StorageError::Zip {
@@ -206,7 +206,7 @@ impl ZipIndex {
     }
 
     /// Inflates the file at `path`; `NotFound` if the archive has none.
-    pub(crate) fn read_path(&self, path: &PackPath) -> Result<Bytes, StorageError> {
+    pub fn read_path(&self, path: &PackPath) -> Result<Bytes, StorageError> {
         let entry = self.get(path).ok_or(StorageError::NotFound)?;
         self.read(entry)
     }
@@ -217,7 +217,7 @@ impl ZipIndex {
     /// [`ZipIndex::read`] and [`ZipIndex::decode`]. A top-level file that cannot be read to tell
     /// (zip-level encryption, an unsupported method) is listed with its error and the rest are
     /// still examined.
-    pub(crate) fn nested_archives(&self) -> NestedArchives {
+    pub fn nested_archives(&self) -> NestedArchives {
         let mut nested = NestedArchives::default();
         for entry in self
             .files
@@ -255,7 +255,7 @@ impl ZipIndex {
 /// Zip bytes of `files`: `manifest.json` first, the rest in the order given; every entry
 /// deflated and dated 1980-01-01 (`DateTime::DEFAULT`), so the same files always give the same
 /// bytes: the wall clock never enters the archive.
-pub(crate) fn encode<'a>(
+pub fn encode<'a>(
     files: impl IntoIterator<Item = (&'a PackPath, &'a [u8])>,
 ) -> Result<Bytes, StorageError> {
     let manifest = PackPath::from_static("manifest.json");
@@ -281,7 +281,7 @@ pub(crate) fn encode<'a>(
 /// The limit of `limits` an archive of `files` breaks when it is read: more entries than an
 /// archive may have, an entry name longer than the reader takes, a file or the files
 /// together beyond their sizes. `None` for files the reader takes.
-pub(crate) fn refused_by<'a>(
+pub fn refused_by<'a>(
     files: impl IntoIterator<Item = (&'a PackPath, &'a [u8])>,
     limits: &Limits,
 ) -> Option<ZipLimit> {

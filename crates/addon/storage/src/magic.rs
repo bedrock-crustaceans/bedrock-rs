@@ -3,11 +3,11 @@
 use super::key::ContentIdentity;
 
 /// How many leading bytes [`detect`] looks at; a loader requests `ReadRange::Prefix(256)`.
-pub(crate) const PREFIX_LEN: usize = 256;
+pub const PREFIX_LEN: usize = 256;
 
 /// The kind of a file, by magic bytes, never by extension.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub(crate) enum FileType {
+pub enum FileType {
     /// A zip archive (`.mcpack`, `.zip`, `.mcaddon`, `.mctemplate`, `.mcworld`).
     Zip,
     /// A file behind the marketplace encryption header: `contents.json`, or a whole-file
@@ -27,11 +27,11 @@ const ZIP_MAGIC: [u8; 4] = [0x50, 0x4B, 0x03, 0x04];
 /// The brarchive header magic, u64 `0x267052A0B125277D` little-endian.
 const BRARCHIVE_MAGIC: [u8; 8] = 0x2670_52A0_B125_277D_u64.to_le_bytes();
 /// `\x7FMCB`, i32 `0x42434D7F` little-endian.
-pub(crate) const MCB_MAGIC: [u8; 4] = [0x7F, b'M', b'C', b'B'];
+pub const MCB_MAGIC: [u8; 4] = [0x7F, b'M', b'C', b'B'];
 /// u32 `0x9BCFB9FC` at offset 4 of the encryption header.
 const ENCRYPTED_MAGIC: [u8; 4] = 0x9BCF_B9FC_u32.to_le_bytes();
 /// The encryption header's size: the ciphertext of `contents.json` starts here.
-pub(crate) const ENCRYPTED_HEADER_LEN: usize = 0x100;
+pub const ENCRYPTED_HEADER_LEN: usize = 0x100;
 /// The longest identity the header may hold.
 const MAX_IDENTITY_LEN: usize = 0xEE;
 
@@ -40,7 +40,7 @@ const MAX_IDENTITY_LEN: usize = 0xEE;
 /// The game's order: the zip signature first (at any length); a prefix shorter than 256 bytes is
 /// unknown; then the encryption header. The brarchive and MCB magics are the crate's own: the
 /// game tells those apart where it opens them.
-pub(crate) fn detect(prefix: &[u8]) -> FileType {
+pub fn detect(prefix: &[u8]) -> FileType {
     // The zip local-file-header signature at offset 0.
     if prefix.starts_with(&ZIP_MAGIC) {
         return FileType::Zip;

@@ -14,33 +14,33 @@ use super::{ContentKey, PackPath};
 /// Every member is optional: the `contents.json` of an unencrypted pack has no `version` and no
 /// entry has a `key`.
 #[derive(Clone, Debug, PartialEq, Eq, Facet)]
-pub(crate) struct ContentsJson {
+pub struct ContentsJson {
     /// `version`: 1 in a current file; the game rewrites any other value (and a missing one);
     /// the crate reports it.
     #[facet(default)]
-    pub(crate) version: Option<u32>,
+    pub version: Option<u32>,
     /// `content`: one entry per file.
     #[facet(default)]
-    pub(crate) content: Vec<ContentsEntry>,
+    pub content: Vec<ContentsEntry>,
 }
 
 /// One entry of `contents.json`'s `content` array.
 #[derive(Clone, Debug, PartialEq, Eq, Facet)]
-pub(crate) struct ContentsEntry {
+pub struct ContentsEntry {
     /// `path`: the file, relative to the pack root.
-    pub(crate) path: String,
+    pub path: String,
     /// `key`: the asset's own key string (encrypted packs only).
     #[facet(default)]
-    pub(crate) key: Option<String>,
+    pub key: Option<String>,
     /// `mode`: `"cfb"` (the default) or `"ctr"`.
     // The game's newer per-asset cipher mode: absent or `"cfb"` is CFB8, `"ctr"` is counter mode.
     #[facet(default)]
-    pub(crate) mode: Option<String>,
+    pub mode: Option<String>,
 }
 
 /// Why `contents.json` text could not be read.
 #[derive(Debug, thiserror::Error)]
-pub(crate) enum ContentsError {
+pub enum ContentsError {
     /// Nested deeper than [`MAX_JSON_DEPTH`].
     #[error("contents.json is nested too deeply")]
     TooDeep(#[source] TooDeep),
@@ -52,8 +52,8 @@ pub(crate) enum ContentsError {
 impl ContentsJson {
     /// Reads `contents.json` text like any pack JSON: BOM stripped, depth checked, comments
     /// allowed, the last copy of a repeated member standing.
-    pub(crate) fn parse(bytes: &[u8]) -> Result<ContentsJson, ContentsError> {
-        let bytes = &*crate::json::blank_bom(bytes);
+    pub fn parse(bytes: &[u8]) -> Result<ContentsJson, ContentsError> {
+        let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
         let bytes = strip_bom(bytes);
         check_depth(bytes, MAX_JSON_DEPTH).map_err(ContentsError::TooDeep)?;
         // Of a member written twice the last one stands, as in the game's own JSON readers; the
@@ -61,21 +61,21 @@ impl ContentsJson {
         // Bytes that are
         // not UTF-8 go to the byte reader as they are.
         let read = match std::str::from_utf8(bytes) {
-            Ok(text) => crate::json::from_str_jsonc(&last_wins(text)),
-            Err(_) => crate::json::from_slice_jsonc(bytes),
+            Ok(text) => bedrock_addon_core::json::from_str_jsonc(&last_wins(text)),
+            Err(_) => bedrock_addon_core::json::from_slice_jsonc(bytes),
         };
         read.map_err(|error| ContentsError::Json(Box::new(error)))
     }
 
     /// `version` is 1.
-    pub(crate) fn is_current(&self) -> bool {
+    pub fn is_current(&self) -> bool {
         self.version == Some(1)
     }
 }
 
 /// How one asset is decrypted.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub(crate) enum AssetCipher {
+pub enum AssetCipher {
     /// AES-256-CFB8 with the asset's key (mode `"cfb"` or absent).
     Cfb8(ContentKey),
     /// AES-256-CTR with the asset's key (mode `"ctr"`).
@@ -101,14 +101,14 @@ impl AssetCipher {
 
 /// The encrypted assets of a pack by path: the entries of `contents.json` that carry a key.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub(crate) struct ContentsTable {
+pub struct ContentsTable {
     assets: BTreeMap<PackPath, AssetCipher>,
 }
 
 impl ContentsTable {
     /// The table of `contents`. An entry without a key is a plain file and is left out, as is
     /// one whose path breaks the pack-path rules (no read can name it).
-    pub(crate) fn from_json(contents: &ContentsJson) -> ContentsTable {
+    pub fn from_json(contents: &ContentsJson) -> ContentsTable {
         let assets = contents
             .content
             .iter()
@@ -122,7 +122,7 @@ impl ContentsTable {
     }
 
     /// How the asset at `path` is decrypted; `None` for a plain file.
-    pub(crate) fn get(&self, path: &PackPath) -> Option<&AssetCipher> {
+    pub fn get(&self, path: &PackPath) -> Option<&AssetCipher> {
         self.assets.get(path)
     }
 

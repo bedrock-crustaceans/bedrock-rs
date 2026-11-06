@@ -296,7 +296,7 @@ mod archives {
     #[test]
     fn a_zipped_world_holds_its_behavior_and_resource_packs() {
         let bytes = Bytes::from(super::super::fixture(
-            "storage/zip_packs/FlatWorldWithEditorPacksAndPlayerData.zip",
+            "../../../storage/tests/fixtures/zip_packs/FlatWorldWithEditorPacksAndPlayerData.zip",
         ));
         let mut responder = Responder::new(Order::Issue);
         responder.root_file(4, bytes);
@@ -374,7 +374,8 @@ mod archives {
 #[cfg(feature = "encrypted")]
 #[test]
 fn two_packs_of_one_identity_ask_for_its_key_once() {
-    let contents = super::fixture("storage/encrypted_synthetic/contents.json");
+    let contents =
+        super::fixture("../../../storage/tests/fixtures/encrypted_synthetic/contents.json");
     let mut responder = Responder::new(Order::Seeded(9));
     responder
         .file(1, "a/manifest.json", manifest(1, "data"))

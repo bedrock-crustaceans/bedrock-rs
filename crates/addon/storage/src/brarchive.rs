@@ -16,16 +16,16 @@ const ARCHIVE_EXTENSION: &str = ".brarchive";
 
 /// One decoded `.brarchive`: its entries, each a range of the archive bytes.
 #[derive(Clone, Debug)]
-pub(crate) struct Brarchive {
+pub struct Brarchive {
     bytes: Bytes,
     entries: Vec<BrarchiveEntry>,
 }
 
 /// One entry of a [`Brarchive`].
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub(crate) struct BrarchiveEntry {
+pub struct BrarchiveEntry {
     /// The entry name, relative to the folder the archive stands for.
-    pub(crate) name: Box<str>,
+    pub name: Box<str>,
     /// Where its bytes are in the archive.
     range: Range<usize>,
 }
@@ -33,7 +33,7 @@ pub(crate) struct BrarchiveEntry {
 impl Brarchive {
     /// Decodes the header and descriptors of `bytes`; `Brarchive` when the magic or version is
     /// wrong, a name is longer than 247 bytes or not UTF-8, or an entry lies outside the file.
-    pub(crate) fn decode(bytes: Bytes) -> Result<Brarchive, StorageError> {
+    pub fn decode(bytes: Bytes) -> Result<Brarchive, StorageError> {
         let entries = brarchive::entries(&bytes)
             .map_err(|_| StorageError::Brarchive)?
             .map(|entry| {
@@ -48,12 +48,12 @@ impl Brarchive {
     }
 
     /// Every entry, in archive order.
-    pub(crate) fn entries(&self) -> &[BrarchiveEntry] {
+    pub fn entries(&self) -> &[BrarchiveEntry] {
         &self.entries
     }
 
     /// The bytes of `entry`: a slice of the archive, no copy.
-    pub(crate) fn read(&self, entry: &BrarchiveEntry) -> Bytes {
+    pub fn read(&self, entry: &BrarchiveEntry) -> Bytes {
         self.bytes.slice(entry.range.clone())
     }
 
@@ -84,7 +84,7 @@ impl Brarchive {
 /// The folder an archive stands for: `__brarchive/<dir>.brarchive` serves `<dir>/`, relative to
 /// the folder that holds `__brarchive` (`subpacks/x/__brarchive/textures.brarchive` serves
 /// `subpacks/x/textures/`). `None` for any other path.
-pub(crate) fn archive_dir(path: &PackPath) -> Option<PackPath> {
+pub fn archive_dir(path: &PackPath) -> Option<PackPath> {
     let text = path.as_str();
     let (before, after) = match text.split_once(&format!("{ARCHIVE_FOLDER}/")) {
         Some(("", after)) => ("", after),
@@ -101,7 +101,7 @@ pub(crate) fn archive_dir(path: &PackPath) -> Option<PackPath> {
 /// The files of a pack's `.brarchive`s by pack path. A pack read checks this layer first and
 /// falls through to the loose file; the pack's index is the union of both.
 #[derive(Clone, Debug, Default)]
-pub(crate) struct BrarchiveLayer {
+pub struct BrarchiveLayer {
     files: BTreeMap<PackPath, Bytes>,
 }
 
@@ -109,7 +109,7 @@ impl BrarchiveLayer {
     /// Adds every entry of `archive` under `dir` (from [`archive_dir`]); a later entry for the
     /// same path replaces an earlier one. `PathRejected` when an entry name breaks the
     /// pack-path rules, and then nothing of the archive is added.
-    pub(crate) fn add(&mut self, dir: &PackPath, archive: &Brarchive) -> Result<(), StorageError> {
+    pub fn add(&mut self, dir: &PackPath, archive: &Brarchive) -> Result<(), StorageError> {
         let mut files = Vec::with_capacity(archive.entries().len());
         for entry in archive.entries() {
             let name = PackPath::new(&entry.name).map_err(|reason| StorageError::PathRejected {
@@ -125,7 +125,7 @@ impl BrarchiveLayer {
     /// The bytes the archives hold for `path`. A zero-size entry gives `None`, so it never
     /// shadows the loose file: the game's library packs ship a `scripts.brarchive` whose
     /// entries are all empty next to the loose scripts, and those load in full.
-    pub(crate) fn get(&self, path: &PackPath) -> Option<Bytes> {
+    pub fn get(&self, path: &PackPath) -> Option<Bytes> {
         self.files
             .get(path)
             .filter(|bytes| !bytes.is_empty())
@@ -133,12 +133,12 @@ impl BrarchiveLayer {
     }
 
     /// Some archive has an entry for `path`, empty or not.
-    pub(crate) fn contains(&self, path: &PackPath) -> bool {
+    pub fn contains(&self, path: &PackPath) -> bool {
         self.files.contains_key(path)
     }
 
     /// Every entry path, sorted bytewise.
-    pub(crate) fn paths(&self) -> impl Iterator<Item = &PackPath> + '_ {
+    pub fn paths(&self) -> impl Iterator<Item = &PackPath> + '_ {
         self.files.keys()
     }
 }

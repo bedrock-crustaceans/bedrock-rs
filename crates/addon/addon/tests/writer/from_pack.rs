@@ -191,7 +191,7 @@ fn an_mcb_document_the_decoder_reads_is_written_as_json_text_and_any_other_as_it
     use bedrock_addon::families::voxel_shape::VoxelShape;
     use bedrock_addon::load::LoadContext;
 
-    let archive = fixture("storage/brarchive/mcb.brarchive");
+    let archive = fixture("../../../storage/tests/fixtures/brarchive/mcb.brarchive");
     let baked = brarchive::serialize([("step.json", step_shape())]).unwrap();
     let pack = Pack::from_files(
         [
@@ -263,7 +263,7 @@ fn keys(identity: &str) -> OpenOptions {
 
 /// The synthetic encrypted pack with a valid plaintext manifest.
 fn synthetic_files() -> Vec<(bedrock_addon::storage::PackPath, Bytes)> {
-    let dir = "storage/encrypted_synthetic";
+    let dir = "../../../storage/tests/fixtures/encrypted_synthetic";
     let mut files = vec![(
         path("manifest.json"),
         Bytes::from(ruby_manifest().to_json().unwrap()),
@@ -288,7 +288,7 @@ fn an_encrypted_pack_without_its_key_is_not_copied() {
     let synthetic = Pack::from_files(synthetic_files(), &OpenOptions::default()).unwrap();
     assert_encrypted("encrypted_synthetic, no key", &synthetic);
     // The vanilla test pack: an encrypted `contents.json`, two brarchives.
-    let dir = fixtures().join("storage/encrypted/testPack");
+    let dir = fixtures().join("../../../storage/tests/fixtures/encrypted/testPack");
     let files: Vec<_> = [
         "manifest.json",
         "contents.json",
@@ -329,7 +329,7 @@ fn an_encrypted_pack_with_its_key_is_not_copied_either() {
 #[test]
 fn an_encrypted_archive_is_not_copied() {
     let baked = Pack::from_archive(
-        fixture("storage/zip_packs/bakedPack.zip"),
+        fixture("../../../storage/tests/fixtures/zip_packs/bakedPack.zip"),
         &OpenOptions::default(),
     )
     .unwrap();
@@ -373,7 +373,8 @@ fn zip_of(members: &[(&str, &[u8])]) -> Vec<u8> {
 /// itself hides a manifest without a header, so no pack), and the options holding its key.
 #[cfg(feature = "encrypted")]
 fn whole_file_encrypted(zip: &[u8]) -> (Vec<u8>, OpenOptions) {
-    let header = &fixture("storage/encrypted_archive/whole.mcpack")[..0x100];
+    let header =
+        &fixture("../../../storage/tests/fixtures/encrypted_archive/whole.mcpack")[..0x100];
     let mut bytes = header.to_vec();
     bytes.extend(cfb8_encrypt(PACK_KEY, zip));
     (bytes, keys("00000000-0000-4000-8000-0000000a2c41"))

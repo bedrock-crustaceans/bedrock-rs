@@ -291,7 +291,7 @@ mod mcb_helpers {
 
     fn mcb_brarchive() -> std::path::PathBuf {
         std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("../addon/tests/fixtures/storage/brarchive/mcb.brarchive")
+            .join("../storage/tests/fixtures/brarchive/mcb.brarchive")
     }
 
     const MANIFEST: &[u8] = br#"{

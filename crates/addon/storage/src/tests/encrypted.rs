@@ -2,10 +2,10 @@
 //! encrypted by `openssl enc` (an independent implementation) with known keys.
 
 use super::fixture;
-use crate::storage::contents::{AssetCipher, ContentsTable};
-use crate::storage::crypt::{cfb8_decrypt, ctr_decrypt, decrypt_asset, decrypt_contents};
-use crate::storage::magic::{FileType, detect};
-use crate::storage::{ContentIdentity, ContentKey, PackPath, StorageError};
+use crate::contents::{AssetCipher, ContentsTable};
+use crate::crypt::{cfb8_decrypt, ctr_decrypt, decrypt_asset, decrypt_contents};
+use crate::magic::{FileType, detect};
+use crate::{ContentIdentity, ContentKey, PackPath, StorageError};
 
 /// The keys `encrypted_synthetic/` was built with.
 const PACK_KEY: &[u8; 32] = b"pack-key-for-the-synthetic-pack!";
@@ -26,7 +26,7 @@ fn synthetic_table() -> ContentsTable {
 /// `synthetic/valid_reference.zip` and the synthetic pack key.
 mod whole_archive {
     use super::*;
-    use crate::storage::crypt::decrypt_archive;
+    use crate::crypt::decrypt_archive;
 
     #[test]
     fn decrypts_to_the_zip_it_hides() {

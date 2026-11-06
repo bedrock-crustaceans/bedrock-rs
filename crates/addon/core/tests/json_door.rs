@@ -16,6 +16,7 @@ const ROOTS: &[&str] = &[
     "std/src",
     "derive/src",
     "manifest/src",
+    "storage/src",
 ];
 
 /// The module that may call the parsers.
@@ -389,7 +390,7 @@ fn only_the_door_calls_a_facet_json_parser() {
 /// The crates must name facet-json by its own name: a renamed dependency would pass the scan.
 #[test]
 fn no_crate_renames_facet_json() {
-    for name in ["addon", "core", "std", "derive", "manifest"] {
+    for name in ["addon", "core", "std", "derive", "manifest", "storage"] {
         let manifest = std::fs::read_to_string(crates_dir().join(name).join("Cargo.toml")).unwrap();
         for line in manifest.lines() {
             assert!(

@@ -1722,7 +1722,7 @@ fn read_only_a_brarchive_layer_is_written_as_loose_files() {
 fn read_only_an_mcb_document_is_written_as_json_text_where_its_body_is_decoded() {
     let archive = std::fs::read(
         PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("tests/fixtures/storage/brarchive/mcb.brarchive"),
+            .join("../storage/tests/fixtures/brarchive/mcb.brarchive"),
     )
     .unwrap();
     // A baked voxel shape, `demo:step` with one box.
@@ -1804,8 +1804,8 @@ fn read_only_an_mcb_document_is_written_as_json_text_where_its_body_is_decoded()
 #[test]
 fn read_only_an_encrypted_pack_is_not_written() {
     use bedrock_addon::pack::WriteError;
-    let dir =
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/storage/encrypted/testPack");
+    let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../storage/tests/fixtures/encrypted/testPack");
     let files: BTreeMap<String, Vec<u8>> = files_below(&dir).into_iter().collect();
     let pack = open(&files);
     assert!(matches!(

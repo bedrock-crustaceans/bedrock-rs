@@ -1,23 +1,15 @@
-//! Every MCB document of the game's installs against its JSON twin: the loose file of the
-//! same path, which each pack ships beside the archive that shadows it.
-//!
-//! A twin is not a function of the body: the same bytes have twins that differ in a member
-//! written at its default (`"surface_only": false`) or in one the bake does not keep
-//! (`velocity` of `emitter_local_space`), and the newest effects of the game ship a twin in the
-//! form their author wrote (a gradient of `#AARRGGBB` strings keyed `0.0`) where the body
-//! has the baked one. So the comparison is member by member, and what differs is counted by
-//! kind and place and pinned here, each line with its reason.
+//! Every MCB document of the game's installs through the reader of its family, beside its
+//! JSON twin: the loose file of the same path, which each pack ships beside the archive that
+//! shadows it. The decode against the twin, member by member, is
+//! `bedrock_addon_storage`'s `tests/mcb/vanilla.rs`; the corpus walk is a copy of its own.
 
-use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 
 use bytes::Bytes;
-use facet_value::Value;
 
-use super::super::game_files;
 use crate::storage::brarchive::Brarchive;
 use crate::storage::magic::{FileType, detect};
-use crate::storage::mcb::{McbHeader, to_json_text};
+use crate::storage::mcb::McbHeader;
 
 /// The installs whose archives are read: the folder under the game files, and the label the
 /// findings print.
@@ -44,13 +36,6 @@ impl Baked {
     }
 
     /// The document's path in its pack: `particles/sneeze.json`.
-    #[cfg(all(
-        feature = "voxel_shape",
-        feature = "camera",
-        feature = "item",
-        feature = "particle",
-        feature = "trade"
-    ))]
     fn pack_path(&self) -> String {
         let archive = self.archive.with_extension("");
         let archive = archive.to_string_lossy();
@@ -114,283 +99,42 @@ fn baked() -> Option<Vec<Baked>> {
     Some(documents)
 }
 
-/// The differences between a decoded document and its twin, as `kind place detail` lines.
-#[derive(Default)]
-struct Differences {
-    lines: Vec<String>,
-    /// Numbers equal in value: written as a float by both, or as a float here and without
-    /// a fraction in the twin (the twins of the baked effects write `5` for 5.0).
-    float_in_both: usize,
-    float_here_only: usize,
-}
-
-/// A place without what tells one document from another: array positions, gradient times.
-fn general(place: &str) -> String {
-    let mut out = String::new();
-    for part in place.split('/') {
-        if part.is_empty() {
-            continue;
-        }
-        out.push('/');
-        if part.parse::<f64>().is_ok() {
-            out.push('*');
-        } else {
-            out.push_str(part);
-        }
-    }
-    out
-}
-
-fn short(value: &Value) -> String {
-    let text = crate::json::to_facet_json(value).unwrap();
-    if text.len() > 48 {
-        format!("{}…", text.chars().take(48).collect::<String>())
-    } else {
-        text
-    }
-}
-
-impl Differences {
-    fn note(&mut self, kind: &str, place: &str, detail: &str) {
-        self.lines
-            .push(format!("{kind} {} {detail}", general(place)));
-    }
-
-    fn compare(&mut self, here: &Value, twin: &Value, place: &str) {
-        if let (Some(here), Some(twin)) = (here.as_object(), twin.as_object()) {
-            for (key, value) in twin {
-                let place = format!("{place}/{}", key.as_str());
-                match here.get(key.as_str()) {
-                    Some(here) => self.compare(here, value, &place),
-                    None => self.note("twin-only", &place, &short(value)),
-                }
-            }
-            for (key, value) in here {
-                if twin.get(key.as_str()).is_none() {
-                    let place = format!("{place}/{}", key.as_str());
-                    self.note("here-only", &place, &short(value));
-                }
-            }
-        } else if let (Some(here_items), Some(twin_items)) = (here.as_array(), twin.as_array()) {
-            if here_items.len() != twin_items.len() {
-                self.note("length", place, &format!("{} {}", short(here), short(twin)));
-                return;
-            }
-            for (index, (here, twin)) in here_items.iter().zip(twin_items.iter()).enumerate() {
-                self.compare(here, twin, &format!("{place}/{index}"));
-            }
-        } else if let (Some(here_number), Some(twin_number)) = (here.as_number(), twin.as_number())
-        {
-            // A float of the body is 32 bits wide; the twin prints it in up to nine digits.
-            #[allow(clippy::cast_possible_truncation)]
-            let same = if here_number.is_float() {
-                (here_number.to_f64_lossy() as f32).to_bits()
-                    == (twin_number.to_f64_lossy() as f32).to_bits()
-            } else {
-                twin_number.is_integer() && here_number.to_i64() == twin_number.to_i64()
-            };
-            if !same {
-                self.note("value", place, &format!("{} {}", short(here), short(twin)));
-            } else if here_number.is_float() && twin_number.is_float() {
-                self.float_in_both += 1;
-            } else if here_number.is_float() {
-                self.float_here_only += 1;
-            }
-        } else if here != twin {
-            self.note("value", place, &format!("{} {}", short(here), short(twin)));
-        }
-    }
-}
-
-fn parse(text: &str) -> Value {
-    crate::json::from_str_jsonc(text.trim_start_matches('\u{feff}')).unwrap()
-}
-
-/// What the decoded documents and their twins differ in, each with its count over the
-/// distinct documents of the three installs, and why.
-const EXPECTED_DIFFERENCES: &[(&str, usize)] = &[
-    // The 17 bundles (34 distinct pairs): the body has the stack size 1, the
-    // value the game reads into `max_stack_size`'s one member; the 1.26.30 twins write `{}`.
-    (
-        "here-only /minecraft:item/components/minecraft:max_stack_size/value 1",
-        34,
-    ),
-    // The three geyser effects and `sulfur_cube_particle`: the body has the
-    // billboard's `uv` and `uv_size` at their defaults, the twin has neither.
-    (
-        "here-only /particle_effect/components/minecraft:particle_appearance_billboard/uv/uv [0,0]",
-        4,
-    ),
-    (
-        "here-only /particle_effect/components/minecraft:particle_appearance_billboard/uv/uv_size [1,1]",
-        4,
-    ),
-    // `sulfur_bubble_particle` and `noxious_gas_particle`: the twin's gradient is keyed
-    // `0.0`, `0.5`, `1.0` and its colours are `#AARRGGBB` text; the body has the times as
-    // `0.000000` and each colour as red, green, blue, alpha (`#171E3942` is 0x1E, 0x39,
-    // 0x42, 0x17 over 255).
-    (
-        "here-only /particle_effect/components/minecraft:particle_appearance_tinting/color/gradient/* [0.11764706,0.22352941,0.25882354,0.09019608]",
-        1,
-    ),
-    (
-        "here-only /particle_effect/components/minecraft:particle_appearance_tinting/color/gradient/* [0.3372549,0.4862745,0.5176471,1]",
-        1,
-    ),
-    (
-        "here-only /particle_effect/components/minecraft:particle_appearance_tinting/color/gradient/* [1,1,1,0]",
-        1,
-    ),
-    (
-        "here-only /particle_effect/components/minecraft:particle_appearance_tinting/color/gradient/* [1,1,1,1]",
-        2,
-    ),
-    // A member the twin writes at its default, which a body does not tell from an absent
-    // one (the same bytes have a twin without it).
-    (
-        "twin-only /particle_effect/components/minecraft:emitter_lifetime_once/active_time 0",
-        2,
-    ),
-    // Not in the body: the bake drops `velocity`.
-    (
-        "twin-only /particle_effect/components/minecraft:emitter_local_space/velocity true",
-        3,
-    ),
-    (
-        "twin-only /particle_effect/components/minecraft:emitter_shape_box/surface_only false",
-        1,
-    ),
-    (
-        "twin-only /particle_effect/components/minecraft:particle_appearance_tinting/color/gradient/* \"#00FFFFFF\"",
-        1,
-    ),
-    (
-        "twin-only /particle_effect/components/minecraft:particle_appearance_tinting/color/gradient/* \"#171E3942\"",
-        1,
-    ),
-    (
-        "twin-only /particle_effect/components/minecraft:particle_appearance_tinting/color/gradient/* \"#FF567C84\"",
-        1,
-    ),
-    (
-        "twin-only /particle_effect/components/minecraft:particle_appearance_tinting/color/gradient/* \"#ffffffff\"",
-        2,
-    ),
-    (
-        "twin-only /particle_effect/components/minecraft:particle_motion_collision/coefficient_of_restitution 0",
-        2,
-    ),
-    (
-        "twin-only /particle_effect/components/minecraft:particle_motion_dynamic/linear_acceleration [0,0,0]",
-        2,
-    ),
-    // The one camera: the body has the float `-0.0` and the decoded text keeps its sign; the
-    // twin has `-0`, an integer token, which is read as 0.
-    (
-        "value /minecraft:camera_entity/components/minecraft:camera_offset/entity/* 0 0",
-        1,
-    ),
-    // `sulfur_cube_particle` of the second install: the body has each expression with its Molang
-    // version (13), the twin is the file as its author wrote it, plain text.
-    (
-        "value /particle_effect/components/minecraft:emitter_shape_point/direction/* {\"expression\":\"Math.Random(-1.0, 1.0)\",\"version\"… \"Math.Random(-1.0, 1.0)\"",
-        2,
-    ),
-    (
-        "value /particle_effect/components/minecraft:emitter_shape_point/direction/* {\"expression\":\"Math.Random(0.0, 1.0)\",\"version\":… \"Math.Random(0.0, 1.0)\"",
-        1,
-    ),
-    (
-        "value /particle_effect/components/minecraft:emitter_shape_point/offset/* {\"expression\":\"Math.random(-0.25f, 0.25f)\",\"vers… \"Math.random(-0.25f, 0.25f)\"",
-        3,
-    ),
-    (
-        "value /particle_effect/components/minecraft:particle_appearance_billboard/size/* {\"expression\":\"(variable.particle_random_1 * 0.0… \"(variable.particle_random_1 * 0.04 + 0.04)\"",
-        2,
-    ),
-    (
-        "value /particle_effect/components/minecraft:particle_appearance_billboard/uv/uv/* {\"expression\":\"4 * (variable.particle_random_1*3… \"4 * (variable.particle_random_1*3)\"",
-        1,
-    ),
-    (
-        "value /particle_effect/components/minecraft:particle_appearance_billboard/uv/uv/* {\"expression\":\"4 * (variable.particle_random_2*3… \"4 * (variable.particle_random_2*3)\"",
-        1,
-    ),
-    (
-        "value /particle_effect/components/minecraft:particle_appearance_billboard/uv/uv_size/* {\"expression\":\"4\",\"version\":13} \"4\"",
-        2,
-    ),
-    (
-        "value /particle_effect/components/minecraft:particle_initial_speed {\"expression\":\"Math.random(1, 4)\",\"version\":13} \"Math.random(1, 4)\"",
-        1,
-    ),
-    (
-        "value /particle_effect/components/minecraft:particle_lifetime_expression/max_lifetime {\"expression\":\"0.2f / (Math.random(0.0f, 1.0f) *… \"0.2f / (Math.random(0.0f, 1.0f) * 0.9f + 0.1f)\"",
-        1,
-    ),
-];
-
-#[test]
-fn every_vanilla_document_decodes_to_what_its_twin_has() {
-    let Some(documents) = baked() else {
-        return;
+/// Every file whose name ends in `suffix` below `$BEDROCK_ADDON_CORPUS/<top>` for each of
+/// `tops`, sorted; `None` (with a message) when the variable is unset or a directory is missing,
+/// so the test is skipped.
+fn game_files(tops: &[&str], suffix: &str) -> Option<Vec<PathBuf>> {
+    let Some(root) = std::env::var_os("BEDROCK_ADDON_CORPUS") else {
+        eprintln!("skipped: BEDROCK_ADDON_CORPUS is unset");
+        return None;
     };
-    // install, payload key → documents, with a twin
-    let mut counts: BTreeMap<(&str, String), (usize, usize)> = BTreeMap::new();
-    let mut distinct = BTreeSet::new();
-    let mut differences = Differences::default();
-    let mut differing = BTreeSet::new();
-    for document in &documents {
-        let text = to_json_text(&document.bytes)
-            .unwrap_or_else(|error| panic!("{}: {error}", document.place()));
-        let count = counts
-            .entry((document.install, document.key()))
-            .or_default();
-        count.0 += 1;
-        let Some(twin) = &document.twin else {
-            eprintln!("no twin: {}", document.place());
-            continue;
-        };
-        count.1 += 1;
-        if !distinct.insert((document.bytes.clone(), twin.clone())) {
-            continue;
+    let mut files = Vec::new();
+    for top in tops {
+        let dir = PathBuf::from(&root).join(top);
+        if !dir.is_dir() {
+            eprintln!("skipped: {} is missing", dir.display());
+            return None;
         }
-        let before = differences.lines.len();
-        differences.compare(&parse(&text), &parse(twin), "");
-        if differences.lines.len() > before {
-            differing.insert(document.name.clone());
+        let mut stack = vec![dir];
+        while let Some(dir) = stack.pop() {
+            for entry in std::fs::read_dir(&dir).unwrap() {
+                let path = entry.unwrap().path();
+                if path.is_dir() {
+                    stack.push(path);
+                } else if path
+                    .file_name()
+                    .and_then(|name| name.to_str())
+                    .is_some_and(|name| name.ends_with(suffix))
+                {
+                    files.push(path);
+                }
+            }
         }
     }
-    for ((install, key), (documents, twins)) in &counts {
-        eprintln!("{install}: {key}: {documents} documents decoded, {twins} with a twin");
-    }
-    eprintln!(
-        "{} distinct pairs; {} numbers a float in both, {} a float here and without a \
-         fraction in the twin; {} documents differ from their twin: {differing:?}",
-        distinct.len(),
-        differences.float_in_both,
-        differences.float_here_only,
-        differing.len(),
-    );
-    let mut found: BTreeMap<&str, usize> = BTreeMap::new();
-    for line in &differences.lines {
-        *found.entry(line).or_default() += 1;
-    }
-    for (line, count) in &found {
-        eprintln!("    ({line:?}, {count}),");
-    }
-    let found: Vec<(&str, usize)> = found.into_iter().collect();
-    assert_eq!(found, EXPECTED_DIFFERENCES);
+    files.sort();
+    Some(files)
 }
 
 /// The family readers on the decoded text and on the twin.
-#[cfg(all(
-    feature = "voxel_shape",
-    feature = "camera",
-    feature = "item",
-    feature = "particle",
-    feature = "trade"
-))]
 mod readers {
     use std::collections::{BTreeMap, BTreeSet};
     use std::fmt::Debug;

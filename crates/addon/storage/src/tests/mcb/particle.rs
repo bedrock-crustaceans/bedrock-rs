@@ -1,8 +1,8 @@
 //! `particle_effect` bodies.
 
 use super::{Body, assert_unsupported, document};
-use crate::storage::StorageError;
-use crate::storage::mcb::to_json_text;
+use crate::StorageError;
+use crate::mcb::to_json_text;
 
 const VERSION: (u16, u16, u32) = (1, 26, 10);
 
@@ -528,7 +528,7 @@ fn a_nan_in_a_body_both_forms_read_alike_is_the_non_finite_fault() {
         matches!(
             body,
             Err(StorageError::Mcb {
-                fault: crate::storage::McbFault::NonFiniteFloat
+                fault: crate::McbFault::NonFiniteFloat
             })
         ),
         "{body:?}"
@@ -545,15 +545,15 @@ fn a_nan_in_a_body_both_forms_read_alike_is_the_non_finite_fault() {
     assert!(matches!(
         infinite,
         Err(StorageError::Mcb {
-            fault: crate::storage::McbFault::NonFiniteFloat
+            fault: crate::McbFault::NonFiniteFloat
         })
     ));
 }
 
-/// The JSON text of the MCB fixture `name` (`tests/fixtures/storage/mcb/`).
+/// The JSON text of the MCB fixture `name` (`tests/fixtures/mcb/`).
 fn bake(name: &str) -> Result<String, StorageError> {
     let path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("tests/fixtures/storage/mcb")
+        .join("tests/fixtures/mcb")
         .join(name);
     to_json_text(&std::fs::read(path).unwrap())
 }
@@ -582,7 +582,7 @@ fn the_freezing_effects_baked_at_1_26_50_decode() {
         let decoded = name.replace(".json", ".decoded.json");
         let pinned = std::fs::read_to_string(
             std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-                .join("tests/fixtures/storage/mcb")
+                .join("tests/fixtures/mcb")
                 .join(&decoded),
         )
         .unwrap();

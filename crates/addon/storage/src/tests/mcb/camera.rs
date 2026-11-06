@@ -1,7 +1,7 @@
 //! `minecraft:camera_entity` bodies.
 
 use super::{Body, assert_unsupported, document};
-use crate::storage::mcb::to_json_text;
+use crate::mcb::to_json_text;
 
 const VERSION: (u16, u16, u32) = (1, 26, 10);
 

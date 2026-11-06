@@ -17,8 +17,8 @@ rustdoc-args = ["--cfg", "docsrs"]
 [features]
 default = ["zip", "encrypted", "molang", "nbt", "full"]
 # infrastructure
-zip = ["dep:zip"]                        # in-memory decoding and encoding of .mcpack/.zip/.mcaddon/.mctemplate
-encrypted = ["zip", "dep:aes", "dep:cfb8", "dep:ctr"]   # marketplace content keys
+zip = ["bedrock_addon_storage/zip"]      # in-memory decoding and encoding of .mcpack/.zip/.mcaddon/.mctemplate
+encrypted = ["zip", "bedrock_addon_storage/encrypted"]   # marketplace content keys
 molang = ["bedrock_addon_core/molang", "bedrock_addon_shared_visual/molang", "bedrock_addon_family_animation?/molang", "bedrock_addon_family_animation_controller?/molang", "bedrock_addon_family_attachable?/molang", "bedrock_addon_family_biome?/molang", "bedrock_addon_family_block?/molang", "bedrock_addon_family_client_entity?/molang", "bedrock_addon_family_entity?/molang", "bedrock_addon_family_feature?/molang", "bedrock_addon_family_feature_rules?/molang", "bedrock_addon_family_geometry?/molang", "bedrock_addon_family_item?/molang", "bedrock_addon_family_particle?/molang", "bedrock_addon_family_recipe?/molang", "bedrock_addon_family_render_controller?/molang", "bedrock_addon_family_sounds_json?/molang", "bedrock_addon_family_spawn_groups?/molang", "bedrock_addon_family_spawn_rules?/molang"]   # load-time Molang compile check
 nbt = ["dep:nbtx", "bedrock_addon_family_block?/nbt", "bedrock_addon_family_entity?/nbt", "bedrock_addon_family_item?/nbt"]                       # Block::to_network_nbt, Item::network_properties, …
 
@@ -164,6 +164,7 @@ bedrock_addon_shared_scatter = { path = "../shared/scatter", optional = true }
 bedrock_addon_shared_shapes = { path = "../shared/shapes" }
 bedrock_addon_shared_spawn = { path = "../shared/spawn", optional = true }
 bedrock_addon_shared_visual = { path = "../shared/visual" }
+bedrock_addon_storage = { path = "../storage", default-features = false }
 bedrock_addon_derive = { path = "../derive" }
 bedrock_addon_family_aim_assist = { path = "../families/aim_assist", optional = true }
 bedrock_addon_family_animation = { path = "../families/animation", optional = true }
@@ -232,16 +233,15 @@ facet-value = { workspace = true }
 indexmap = { workspace = true }
 bytes = { workspace = true }
 uuid = { workspace = true }
-brarchive = { workspace = true }
-zip = { workspace = true, optional = true }
-aes = { workspace = true, optional = true }
-cfb8 = { workspace = true, optional = true }
-ctr = { workspace = true, optional = true }
 nbtx = { workspace = true, optional = true }
 
 [dev-dependencies]
 # The cost tests (`test_cost`), in the unit tests and the test binaries.
 bedrock_addon_core = { path = "../core", features = ["test-cost"] }
+# The tests build archives, zips and encrypted packs by hand.
+brarchive = { workspace = true }
+zip = { workspace = true }
+aes = { workspace = true }
 
 [[example]]
 name = "in_memory_pack"

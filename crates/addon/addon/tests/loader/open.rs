@@ -62,7 +62,10 @@ fn every_vanilla_manifest_opens_as_a_pack_with_from_files() {
 #[cfg(feature = "zip")]
 /// The entries of a zip's `unzip -Z1` listing that are files.
 fn listing(zip: &str) -> Vec<String> {
-    let text = String::from_utf8(fixture(&format!("storage/zip_listings/{zip}.txt"))).unwrap();
+    let text = String::from_utf8(fixture(&format!(
+        "../../../storage/tests/fixtures/zip_listings/{zip}.txt"
+    )))
+    .unwrap();
     text.lines()
         .filter(|line| !line.ends_with('/') && !line.is_empty())
         .map(str::to_owned)
@@ -98,15 +101,16 @@ fn shallowest(entries: &[String]) -> Result<String, usize> {
 #[cfg(feature = "zip")]
 #[test]
 fn every_zip_pack_opens_with_from_archive_by_the_shallowest_manifest() {
-    let mut zips: Vec<String> = std::fs::read_dir(fixtures().join("storage/zip_packs"))
-        .unwrap()
-        .map(|entry| entry.unwrap().file_name().to_string_lossy().into_owned())
-        .collect();
+    let mut zips: Vec<String> =
+        std::fs::read_dir(fixtures().join("../../../storage/tests/fixtures/zip_packs"))
+            .unwrap()
+            .map(|entry| entry.unwrap().file_name().to_string_lossy().into_owned())
+            .collect();
     zips.sort();
     assert_eq!(zips.len(), 23);
     let mut single = 0;
     for zip in zips {
-        let bytes = fixture(&format!("storage/zip_packs/{zip}"));
+        let bytes = fixture(&format!("../../../storage/tests/fixtures/zip_packs/{zip}"));
         let entries = listing(&zip);
         let result = Pack::from_archive(bytes.clone(), &OpenOptions::default());
         match shallowest(&entries) {
@@ -155,7 +159,7 @@ fn every_zip_pack_opens_with_from_archive_by_the_shallowest_manifest() {
 #[test]
 fn an_archive_pack_reads_its_files_inflated() {
     let pack = Pack::from_archive(
-        fixture("storage/zip_packs/11b.zip"),
+        fixture("../../../storage/tests/fixtures/zip_packs/11b.zip"),
         &OpenOptions::default(),
     )
     .unwrap();
@@ -178,13 +182,16 @@ fn an_archive_pack_reads_its_files_inflated() {
 #[test]
 fn bytes_that_are_not_an_archive_are_no_pack() {
     for (file, fault) in [
-        ("storage/synthetic/not_a_zip.zip", ZipFault::Malformed),
         (
-            "storage/synthetic/empty_zip_zero_entries.zip",
+            "../../../storage/tests/fixtures/synthetic/not_a_zip.zip",
             ZipFault::Malformed,
         ),
         (
-            "storage/synthetic/truncated_2bytes.bin",
+            "../../../storage/tests/fixtures/synthetic/empty_zip_zero_entries.zip",
+            ZipFault::Malformed,
+        ),
+        (
+            "../../../storage/tests/fixtures/synthetic/truncated_2bytes.bin",
             ZipFault::Malformed,
         ),
     ] {
@@ -195,7 +202,7 @@ fn bytes_that_are_not_an_archive_are_no_pack() {
         );
     }
     let truncated = Pack::from_archive(
-        fixture("storage/synthetic/truncated_near_full.bin"),
+        fixture("../../../storage/tests/fixtures/synthetic/truncated_near_full.bin"),
         &OpenOptions::default(),
     );
     assert!(
@@ -344,7 +351,7 @@ const SYNTHETIC_IDENTITY: &str = "00000000-0000-4000-8000-00000000c0de";
 
 /// The synthetic encrypted pack with a valid plaintext manifest of ours.
 fn synthetic_files() -> Vec<(PackPath, Bytes)> {
-    let dir = "storage/encrypted_synthetic";
+    let dir = "../../../storage/tests/fixtures/encrypted_synthetic";
     vec![
         (
             path("manifest.json"),
@@ -433,7 +440,7 @@ fn a_wrong_key_leaves_the_assets_undecryptable() {
 
 #[test]
 fn the_vanilla_encrypted_test_pack_opens_without_a_key() {
-    let dir = fixtures().join("storage/encrypted/testPack");
+    let dir = fixtures().join("../../../storage/tests/fixtures/encrypted/testPack");
     let mut files = Vec::new();
     for relative in [
         "manifest.json",
@@ -474,7 +481,7 @@ fn a_whole_file_encrypted_archive_opens_with_its_key_from_the_options() {
     )]
     .into_iter()
     .collect();
-    let bytes = fixture("storage/encrypted_archive/whole.mcpack");
+    let bytes = fixture("../../../storage/tests/fixtures/encrypted_archive/whole.mcpack");
     // It hides `synthetic/valid_reference.zip`, whose manifest is `{"format_version":2}`.
     let with_key = Pack::from_archive(
         bytes.clone(),
@@ -497,7 +504,7 @@ fn a_whole_file_encrypted_archive_opens_with_its_key_from_the_options() {
 #[test]
 fn the_baked_pack_reads_through_its_brarchive_layer() {
     let pack = Pack::from_archive(
-        fixture("storage/zip_packs/bakedPack.zip"),
+        fixture("../../../storage/tests/fixtures/zip_packs/bakedPack.zip"),
         &OpenOptions::default(),
     )
     .unwrap();
@@ -551,7 +558,8 @@ fn a_whole_file_encrypted_archive_zips_back_to_its_ciphertext() {
     .unwrap()
     .to_archive()
     .unwrap();
-    let header = &fixture("storage/encrypted_archive/whole.mcpack")[..0x100];
+    let header =
+        &fixture("../../../storage/tests/fixtures/encrypted_archive/whole.mcpack")[..0x100];
     let mut encrypted = header.to_vec();
     encrypted.extend(cfb8_encrypt(PACK_KEY, &plain));
     let pack = Pack::from_archive(encrypted.clone(), &options).unwrap();

@@ -83,7 +83,8 @@ mod encrypted_archive {
 
     /// `zip` behind the encryption header of `whole.mcpack`, and options holding its key.
     fn encrypted(zip: &[u8]) -> (Vec<u8>, OpenOptions) {
-        let header = &fixture("storage/encrypted_archive/whole.mcpack")[..0x100];
+        let header =
+            &fixture("../../../storage/tests/fixtures/encrypted_archive/whole.mcpack")[..0x100];
         let mut bytes = header.to_vec();
         bytes.extend(cfb8_encrypt(PACK_KEY, zip));
         let keys: ContentKeys = [(

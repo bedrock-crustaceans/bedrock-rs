@@ -1,5 +1,6 @@
 //! The public face of `storage`: pack paths, content keys and the storage error. The container
-//! formats themselves are crate-private and tested beside their code (`src/storage/tests/`).
+//! formats themselves are internal to `bedrock_addon_storage` and tested beside their code
+//! there (`crates/addon/storage/src/tests/`).
 
 use bedrock_addon::storage::{
     ContentIdentity, ContentKey, ContentKeys, PackPath, PathRejected, StorageError,

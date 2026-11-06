@@ -34,23 +34,23 @@ use super::{McbFault, StorageError};
 // `minecraft:item` is the form its item files carry. The payload key's length is one
 // byte.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub(crate) struct McbHeader<'a> {
+pub struct McbHeader<'a> {
     /// `format_version` major.
-    pub(crate) major: u16,
+    pub major: u16,
     /// `format_version` minor.
-    pub(crate) minor: u16,
+    pub minor: u16,
     /// `format_version` patch.
-    pub(crate) patch: u32,
+    pub patch: u32,
     /// The document's payload key (`minecraft:item`, `particle_effect`, …).
-    pub(crate) payload_key: &'a str,
+    pub payload_key: &'a str,
     /// Where the body starts.
-    pub(crate) body_offset: usize,
+    pub body_offset: usize,
 }
 
 impl<'a> McbHeader<'a> {
     /// Reads the header of `bytes`; `Mcb { Header }` when the magic is missing or the header is
     /// cut short or its key is not UTF-8.
-    pub(crate) fn parse(bytes: &'a [u8]) -> Result<McbHeader<'a>, StorageError> {
+    pub fn parse(bytes: &'a [u8]) -> Result<McbHeader<'a>, StorageError> {
         const HEADER: StorageError = StorageError::Mcb {
             fault: McbFault::Header,
         };
@@ -74,7 +74,7 @@ impl<'a> McbHeader<'a> {
     }
 
     /// The `format_version` text, `major.minor.patch`.
-    pub(crate) fn format_version(&self) -> String {
+    pub fn format_version(&self) -> String {
         format!("{}.{}.{}", self.major, self.minor, self.patch)
     }
 }
@@ -83,7 +83,7 @@ impl<'a> McbHeader<'a> {
 // No known layout holds a null or a 64-bit float; the writer is ready for both.
 #[allow(dead_code)]
 #[derive(Clone, Debug, PartialEq)]
-pub(crate) enum McbValue {
+pub enum McbValue {
     /// `null`.
     Null,
     /// A boolean.
@@ -107,7 +107,7 @@ pub(crate) enum McbValue {
 /// The JSON text of an MCB document: `{"format_version":"<version>","<payload key>":<body>}`.
 /// Fails with `Mcb { Header }` for a bad header, `Mcb { UnsupportedBody }` for a body that is
 /// not one of the known layouts, and `Mcb { NonFiniteFloat }` for a float JSON cannot write.
-pub(crate) fn to_json_text(bytes: &[u8]) -> Result<String, StorageError> {
+pub fn to_json_text(bytes: &[u8]) -> Result<String, StorageError> {
     let header = McbHeader::parse(bytes)?;
     let body = bytes.get(header.body_offset..).ok_or(reader::UNSUPPORTED)?;
     let body = decode_body(&header, body)?;
@@ -151,7 +151,7 @@ fn decode_body(header: &McbHeader<'_>, body: &[u8]) -> Result<McbValue, StorageE
 
 /// `value` as compact JSON text. A float keeps a fraction or an exponent (`1.0`, `-0.0`,
 /// `1e300`) and an integer never gets one; a NaN or infinite float is `Mcb { NonFiniteFloat }`.
-pub(crate) fn write_json(value: &McbValue) -> Result<String, StorageError> {
+pub fn write_json(value: &McbValue) -> Result<String, StorageError> {
     let mut out = String::new();
     write_value(&mut out, value)?;
     Ok(out)

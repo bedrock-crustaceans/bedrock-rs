@@ -70,7 +70,7 @@ fn the_files_a_copy_leaves_out_need_not_be_resident() {
 }
 
 /// `ruby.json` (88 bytes), `main.js` (empty), `sapphire.json` (39 bytes).
-const SMALL: &[u8] = include_bytes!("../../../tests/fixtures/storage/brarchive/small.brarchive");
+const SMALL: &[u8] = include_bytes!("../../../../storage/tests/fixtures/brarchive/small.brarchive");
 
 #[test]
 fn an_archive_the_pack_does_not_read_through_is_copied_as_a_file() {

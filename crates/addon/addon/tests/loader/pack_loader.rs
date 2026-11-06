@@ -131,7 +131,7 @@ mod encrypted {
 
     fn encrypted(order: Order) -> Responder {
         let mut responder = folder(order);
-        let dir = "storage/encrypted_synthetic";
+        let dir = "../../../storage/tests/fixtures/encrypted_synthetic";
         responder
             .file(
                 1,
