@@ -5,7 +5,7 @@
 use std::collections::BTreeMap;
 
 use bedrock_addon::diagnostic::Severity;
-use bedrock_addon::families::script::config::{
+use bedrock_addon::families::server_config::{
     CommandPermissionLevel, CommandsConfig, ConfigFolder, NetModuleConfig, PackPermissions,
     PackScriptConfig, ScriptConfig, ScriptConfigFiles, SecretString, ServerNet,
 };

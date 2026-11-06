@@ -1,9 +1,15 @@
-// The script configuration of a dedicated server: the `config/`
-// folder (`permissions.json`, `variables.json` and `secrets.json` per folder, and
-// `commands.json`) and the script keys of `server.properties`. None of it is in a pack: the
-// server's administrator writes it, a driver reads the files (`bedrock_addon_std`) and the
-// functions here parse their contents. The module's rustdoc is on its declaration in
-// `lib.rs`.
+//! Dedicated server script configuration (`ScriptConfig`, `ScriptConfigFiles`, `ConfigFolder`, `PackScriptConfig`, `CommandsConfig`, `ServerProperties`, `ScriptProperties`).
+//!
+//! The script configuration of a dedicated server: the `config/`
+//! folder (`permissions.json`, `variables.json` and `secrets.json` per folder, and
+//! `commands.json`) and the script keys of `server.properties`. None of it is in a pack: the
+//! server's administrator writes it, a driver reads the files (`bedrock_addon_std`) and the
+//! functions here parse their contents.
+//!
+//! The readers stay hand walks: the server's config files are read from their slices with the
+//! server's own texts.
+
+#![cfg_attr(docsrs, feature(doc_cfg))]
 
 mod commands;
 mod duplicates;

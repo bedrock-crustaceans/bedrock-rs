@@ -196,7 +196,8 @@ A `Registry` and a `Files` answer for the effective copy of each definition (`ge
 | `persona` | persona pieces (`families::persona::PersonaPiece::load_all(&pack)`) | none |
 | `poi` | point-of-interest types and tags | `bp.poi()` |
 | `behavior_tree` | behavior trees | `bp.behavior_trees()` |
-| `script` | script modules and the script files of each pack, one `ScriptBundle` a pack, with the plugin its script module starts; module metadata (`families::script::meta`) and the server's script configuration (`families::script::config`), which are no pack content | `both.scripts()` |
+| `script` | script modules and the script files of each pack, one `ScriptBundle` a pack, with the plugin its script module starts; module metadata (`families::script::meta`), which is no pack content | `both.scripts()` |
+| `server_config` | the server's script configuration (`families::server_config`: the `config/` folder and `server.properties`), which is no pack content; turns on `script` | none |
 
 A component of a block, an item, a biome or an entity is read by its type: `block.components.get::<LightEmission>()`. The entity components vanilla itself still parses at run time (`minecraft:health`, `minecraft:movement`, `minecraft:type_family` among them) have no type: `components.iter()` gives each as a `ComponentRef::Dynamic` with its JSON as written, as the [`entity_components`](examples/entity_components.rs) example shows.
 
@@ -435,7 +436,7 @@ Linking the game's own packs with their app data needs no host for blocks, items
 
 A rule that asks the pass for the bytes of a file (the header of a flipbook image, for example) gets them only when they are loaded: for a file that is indexed and not resident it gets none, and one `FileNotLoaded` information says so (nothing says so with `lints: false`). The lookup of a localisation key reads `.lang` files itself and says nothing of one that is not loaded: a key it cannot judge for that reason is left unjudged.
 
-Three rules about scripts and saved settings take an input that is no stack content, so they are functions of their own and not part of `link()`: `families::script::config::ScriptConfig::unmatched_folders` (a `config/` folder that no script which starts uses: it takes the plugins of the stack, `stack.scripts().iter().filter_map(|bundle| bundle.plugin.as_ref())`, so the folder of a module whose script does not start is reported too; `unmatched_folders_of_modules` takes every script module of the stack by its identity, started or not), `ScriptConfig::parse` (a permission level for a name that is no command) and `pack::settings::unmatched_entries` (a saved setting for a pack the world does not have). The first and the last return findings of `Phase::Link`.
+Three rules about scripts and saved settings take an input that is no stack content, so they are functions of their own and not part of `link()`: `families::server_config::ScriptConfig::unmatched_folders` (a `config/` folder that no script which starts uses: it takes the plugins of the stack, `stack.scripts().iter().filter_map(|bundle| bundle.plugin.as_ref())`, so the folder of a module whose script does not start is reported too; `unmatched_folders_of_modules` takes every script module of the stack by its identity, started or not), `ScriptConfig::parse` (a permission level for a name that is no command) and `pack::settings::unmatched_entries` (a saved setting for a pack the world does not have). The first and the last return findings of `Phase::Link`.
 
 The [`diagnostics_gate`](examples/diagnostics_gate.rs) example is a CI gate over a load and a link.
 

@@ -4,7 +4,7 @@
 use std::collections::BTreeMap;
 
 use bedrock_addon::diagnostic::{DiagnosticCode, Diagnostics, Severity, Span};
-use bedrock_addon::families::script::config::{
+use bedrock_addon::families::server_config::{
     AutoAttach, ContentLogLevel, PROPERTIES_LINE_MAX, PropertyLine, ScriptProperties,
     ServerProperties,
 };

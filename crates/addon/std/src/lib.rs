@@ -32,7 +32,8 @@
 //! - `zip`: `load_archive`, `Driver::pack_archive`, `write_archive`.
 //! - `encrypted`: key sidecars (`keys::read_sidecar_key`, `Options::sidecar_keys`).
 //! - `script`: `read_script_config`, `read_script_config_files`, `read_server_properties`
-//!   (turns on `bedrock_addon`'s `script` module, where their types live).
+//!   (turns on `bedrock_addon`'s `script` and `server_config` modules; their types live in
+//!   `server_config`).
 //!
 //! # Threads and stacks
 //!

@@ -1523,8 +1523,9 @@ fn script_eval_without_a_script_and_a_script_without_it_are_no_finding() {
 }
 
 #[test]
+#[cfg(feature = "server_config")]
 fn s10_the_permission_list_of_a_discovery_is_the_configuration_s_for_the_module() {
-    use bedrock_addon::families::script::config::{ConfigFolder, ScriptConfig, ScriptConfigFiles};
+    use bedrock_addon::families::server_config::{ConfigFolder, ScriptConfig, ScriptConfigFiles};
     // The script module's own folder when the server has one, else `default`: the effective
     // list of `ScriptConfig::for_module`, handed to the discovery as its gate.
     let text = legacy(

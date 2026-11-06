@@ -2,7 +2,7 @@
 //! sc11–sc15, sc17–sc32, sc46; validation F1–F6, M1–M9, V1–V2, S1–S2).
 
 use bedrock_addon::diagnostic::{DiagnosticCode, Severity, Span};
-use bedrock_addon::families::script::config::{
+use bedrock_addon::families::server_config::{
     CommandPermissionLevel, ConfigFolder, ConfigSource, ScriptConfig, ScriptConfigFiles,
     UnreadableFile,
 };
@@ -284,7 +284,7 @@ fn nested(arrays: usize) -> ScriptConfig {
 #[test]
 fn f6_a_file_nested_128_levels_loads_and_one_nested_129_is_refused() {
     // On the test's own thread: the reader holds a file at the limit on any thread a load
-    // runs on (a megabyte: `script::config::tests`, in-crate).
+    // runs on (a megabyte: `server_config`'s `tests`, in-crate).
     // 128 levels: the root object and 127 arrays.
     let at_the_limit = nested(127);
     assert!(at_the_limit.diagnostics().is_empty());

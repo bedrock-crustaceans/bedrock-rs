@@ -179,6 +179,10 @@ pub use bedrock_addon_family_render_controller as render_controller;
 #[cfg_attr(docsrs, doc(cfg(feature = "script")))]
 #[doc(inline)]
 pub use bedrock_addon_family_script as script;
+#[cfg(feature = "server_config")]
+#[cfg_attr(docsrs, doc(cfg(feature = "server_config")))]
+#[doc(inline)]
+pub use bedrock_addon_family_server_config as server_config;
 #[cfg(feature = "server_sound_definitions")]
 #[cfg_attr(docsrs, doc(cfg(feature = "server_sound_definitions")))]
 #[doc(inline)]

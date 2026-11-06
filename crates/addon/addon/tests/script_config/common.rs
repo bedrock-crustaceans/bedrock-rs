@@ -1,4 +1,4 @@
-//! The fixtures of `families/script_config`: a small server root per row (`config/…`,
+//! The fixtures of `families/server_config`: a small server root per row (`config/…`,
 //! `server.properties`), `expected.toml` with every finding (code, severity, phase, file, path
 //! and, where the server has one, its text) and, for the rows that need a stack, `stack.toml`.
 
@@ -7,14 +7,14 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use bedrock_addon::diagnostic::{Diagnostic, Diagnostics, Phase};
-use bedrock_addon::families::script::config::{
-    COMMANDS_FILE, CONFIG_DIR, ConfigFolder, PERMISSIONS_FILE, PROPERTIES_FILE, PluginVerdict,
-    SECRETS_FILE, ScriptConfig, ScriptConfigFiles, ScriptProperties, ServerProperties,
-    VARIABLES_FILE,
-};
 use bedrock_addon::families::script::{
     CatalogEntry, CatalogModule, ModuleCatalog, ScriptContext, ScriptDiscovery, ScriptFiles,
     ScriptModule, ScriptPlugin, ScriptVersion,
+};
+use bedrock_addon::families::server_config::{
+    COMMANDS_FILE, CONFIG_DIR, ConfigFolder, PERMISSIONS_FILE, PROPERTIES_FILE, PluginVerdict,
+    SECRETS_FILE, ScriptConfig, ScriptConfigFiles, ScriptProperties, ServerProperties,
+    VARIABLES_FILE,
 };
 use bedrock_addon::load::LoadContext;
 use bedrock_addon::storage::PackPath;

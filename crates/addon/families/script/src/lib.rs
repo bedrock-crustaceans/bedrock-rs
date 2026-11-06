@@ -1,12 +1,10 @@
 //! Scripting: `ScriptModule`, `ScriptBundle`.
 //!
-//! The readers stay hand walks: a module is JavaScript, and the server's config files are read from
-//! their slices with the server's own texts. Only the game metadata (`meta`) is a facet read.
+//! The readers stay hand walks: a module is JavaScript. Only the game metadata (`meta`) is a
+//! facet read.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
-/// Dedicated server script configuration (`ScriptConfig`, `ScriptConfigFiles`, `ConfigFolder`, `PackScriptConfig`, `CommandsConfig`, `ServerProperties`, `ScriptProperties`).
-pub mod config;
 /// Script module metadata (`ModuleMetadata`, `ModuleVersion`, `Privilege`, …).
 pub mod meta;
 mod module;

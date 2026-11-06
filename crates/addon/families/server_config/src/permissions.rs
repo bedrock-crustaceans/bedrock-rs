@@ -5,9 +5,9 @@
 use facet_json::RawJson;
 use indexmap::IndexMap;
 
-use crate::meta;
 use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath};
 use bedrock_addon_core::json::JsonSlice;
+use bedrock_addon_family_script::meta;
 
 use super::read::{Sink, Twice, array, object, raw_value, span, string, value, with_root};
 use super::{

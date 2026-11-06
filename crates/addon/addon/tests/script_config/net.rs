@@ -2,7 +2,7 @@
 //! validation N1–N7, N9).
 
 use bedrock_addon::diagnostic::{DiagnosticCode, Severity, Span};
-use bedrock_addon::families::script::config::{
+use bedrock_addon::families::server_config::{
     ConfigFolder, NetModuleConfig, ScriptConfig, ScriptConfigFiles, ServerNet,
 };
 use bytes::Bytes;

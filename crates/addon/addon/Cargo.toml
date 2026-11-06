@@ -42,6 +42,7 @@ loot = ["dep:bedrock_addon_family_loot"]
 poi = ["dep:bedrock_addon_family_poi"]
 recipe = ["dep:bedrock_addon_family_recipe"]
 script = ["dep:bedrock_addon_family_script"]
+server_config = ["dep:bedrock_addon_family_server_config", "script"]  # a dedicated server's script configuration, held against the script modules
 server_sound_definitions = ["dep:bedrock_addon_family_server_sound_definitions"]
 spawn_groups = ["dep:bedrock_addon_family_spawn_groups", "dep:bedrock_addon_shared_spawn"]
 spawn_rules = ["dep:bedrock_addon_family_spawn_rules", "dep:bedrock_addon_shared_spawn"]
@@ -106,6 +107,7 @@ full = [
     "poi",
     "recipe",
     "script",
+    "server_config",
     "server_sound_definitions",
     "spawn_groups",
     "spawn_rules",
@@ -205,6 +207,7 @@ bedrock_addon_family_poi = { path = "../families/poi", optional = true }
 bedrock_addon_family_recipe = { path = "../families/recipe", optional = true }
 bedrock_addon_family_render_controller = { path = "../families/render_controller", optional = true }
 bedrock_addon_family_script = { path = "../families/script", optional = true }
+bedrock_addon_family_server_config = { path = "../families/server_config", optional = true }
 bedrock_addon_family_server_sound_definitions = { path = "../families/server_sound_definitions", optional = true }
 bedrock_addon_family_skin = { path = "../families/skin", optional = true }
 bedrock_addon_family_sound_definitions = { path = "../families/sound_definitions", optional = true }

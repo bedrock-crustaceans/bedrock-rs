@@ -1,11 +1,11 @@
-//! `script::config` (`families/script_config`): the BDS `config/` folder and `server.properties`.
+//! `server_config` (`families/server_config`): the BDS `config/` folder and `server.properties`.
 //!
 //! Every row of the folder's fixtures is a server root under
 //! `tests/fixtures/script/script_config/<row>/` with the findings it must give in
 //! `expected.toml`; each mirrors a probe run on BDS 1.26.36.1.
 
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]
-#![cfg(feature = "script")]
+#![cfg(feature = "server_config")]
 
 #[path = "script_config/common.rs"]
 mod common;

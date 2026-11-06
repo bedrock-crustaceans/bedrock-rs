@@ -19,7 +19,7 @@ default = ["rayon", "zip", "encrypted", "script"]
 rayon = ["dep:rayon"]                    # Strategy::Rayon: jobs and reads on a rayon pool with RECOMMENDED_JOB_STACK
 zip = ["bedrock_addon/zip"]              # load_archive, write_archive
 encrypted = ["bedrock_addon/encrypted"]  # key sidecars
-script = ["bedrock_addon/script"]
+script = ["bedrock_addon/script", "bedrock_addon/server_config"]  # read_script_config, read_server_properties
 
 [dependencies]
 # Content-module features are the user's choice on `bedrock_addon` and unify.
@@ -31,7 +31,7 @@ rayon = { workspace = true, optional = true }
 [dev-dependencies]
 tempfile = { workspace = true }
 uuid = { workspace = true }
-bedrock_addon = { path = "../addon", default-features = false, features = ["aim_assist", "animation", "animation_controller", "atomic_client_entity", "attachable", "behavior_tree", "biome", "biomes_client", "block", "block_culling", "blocks_json", "camera", "client_biome", "client_entity", "crafting_catalog", "credits", "ddui", "deferred_settings", "dialogue", "dimension", "entity", "feature", "feature_rules", "flipbooks", "fog", "font", "function", "geometry", "item", "jigsaw", "json_ui", "lang", "languages", "legacy_path_mapping", "loading_messages", "loot", "material", "molang", "music", "particle", "persona", "poi", "recipe", "render_controller", "script", "server_sound_definitions", "skin", "sound_definitions", "sound_file", "sounds_json", "spawn_groups", "spawn_rules", "splashes", "structure", "texture_atlas", "texture_file", "texture_list", "texture_set", "trade", "ui_texture_info", "voxel_shape"] }
+bedrock_addon = { path = "../addon", default-features = false, features = ["aim_assist", "animation", "animation_controller", "atomic_client_entity", "attachable", "behavior_tree", "biome", "biomes_client", "block", "block_culling", "blocks_json", "camera", "client_biome", "client_entity", "crafting_catalog", "credits", "ddui", "deferred_settings", "dialogue", "dimension", "entity", "feature", "feature_rules", "flipbooks", "fog", "font", "function", "geometry", "item", "jigsaw", "json_ui", "lang", "languages", "legacy_path_mapping", "loading_messages", "loot", "material", "molang", "music", "particle", "persona", "poi", "recipe", "render_controller", "script", "server_config", "server_sound_definitions", "skin", "sound_definitions", "sound_file", "sounds_json", "spawn_groups", "spawn_rules", "splashes", "structure", "texture_atlas", "texture_file", "texture_list", "texture_set", "trade", "ui_texture_info", "voxel_shape"] }
 facet-json = { workspace = true }
 
 [[example]]

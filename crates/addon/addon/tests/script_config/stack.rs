@@ -4,7 +4,7 @@
 
 use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
 use bedrock_addon::families::script::ScriptPlugin;
-use bedrock_addon::families::script::config::{
+use bedrock_addon::families::server_config::{
     ConfigFolder, ConfigSource, PackPermissions, ScriptConfig, ScriptConfigFiles,
 };
 use bedrock_addon::version::FormatVersion;

@@ -18,12 +18,12 @@ use std::path::{Path, PathBuf};
 #[cfg(unix)]
 use bedrock_addon::diagnostic::DiagnosticCode;
 use bedrock_addon::diagnostic::{Diagnostics, Severity};
-use bedrock_addon::families::script::config::{
-    CommandPermissionLevel, ConfigSource, ScriptConfig, ScriptProperties, ServerNet,
-};
 use bedrock_addon::families::script::{
     CatalogEntry, CatalogModule, ModuleCatalog, ScriptContext, ScriptDiscovery, ScriptFiles,
     ScriptModule, ScriptPlugin, ScriptVersion,
+};
+use bedrock_addon::families::server_config::{
+    CommandPermissionLevel, ConfigSource, ScriptConfig, ScriptProperties, ServerNet,
 };
 use bedrock_addon_std::{
     ReadError, read_script_config, read_script_config_files, read_server_properties,

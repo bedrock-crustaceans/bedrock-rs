@@ -79,8 +79,8 @@ Each reader reads files with `std::fs` and hands the bytes to the pure parser of
 | `read_world_packs(world_dir)` | `world_behavior_packs.json` and `world_resource_packs.json`; a missing file is an empty list | `pack::WorldPacks` | |
 | `read_app_data(dir)` | the definitions outside packs (`definitions/attachables`, `definitions/features`, `definitions/feature_rules`, `definitions/spawn_groups`) and the game's `credits/credits.json`, for `LoadOptions::app_data` | `load::AppData` | |
 | `read_saved_settings(path)` | a saved pack-settings file (`world_behavior_pack_settings.json`, `global_resource_pack_settings.json`); a missing file is the empty document | `pack::settings::SavedSettings` | |
-| `read_script_config(config_dir)` | a dedicated server's `config/` folder; a missing folder is an empty configuration | `script::config::ScriptConfig` | `script` |
-| `read_server_properties(path)` | `server.properties` | `script::config::ServerProperties` | `script` |
+| `read_script_config(config_dir)` | a dedicated server's `config/` folder; a missing folder is an empty configuration | `server_config::ScriptConfig` | `script` |
+| `read_server_properties(path)` | `server.properties` | `server_config::ServerProperties` | `script` |
 
 `read_saved_settings_document` returns the same settings as a document with the warnings the file gave (`None` for a file that is not there), and, with the `script` feature, `read_script_config_files` returns the files of `config/` unparsed. With the `encrypted` feature, `keys::read_sidecar_key` reads the content key beside a pack (`ruby.mcpack.key`), and `Options::sidecar_keys` makes the driver look there before it asks `Options::keys`.
 
@@ -127,7 +127,7 @@ All four are on by default.
 | `rayon` | `Strategy::Rayon` and `Strategy::RayonPool`: jobs and reads on a rayon pool built with `RECOMMENDED_JOB_STACK` | |
 | `zip` | `load_archive`, `Driver::pack_archive`, `write_archive` | `bedrock_addon/zip` |
 | `encrypted` | key sidecars (`keys::read_sidecar_key`, `Options::sidecar_keys`) | `bedrock_addon/encrypted` |
-| `script` | `read_script_config`, `read_script_config_files`, `read_server_properties` | `bedrock_addon/script` |
+| `script` | `read_script_config`, `read_script_config_files`, `read_server_properties` | `bedrock_addon/script`, `bedrock_addon/server_config` |
 
 ## Examples
 

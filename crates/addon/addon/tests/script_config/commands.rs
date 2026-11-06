@@ -1,7 +1,7 @@
 //! `config/commands.json` (fixtures sc33–sc36, sc48; validation C1–C4, C6).
 
 use bedrock_addon::diagnostic::{DiagnosticCode, Severity, Span};
-use bedrock_addon::families::script::config::{
+use bedrock_addon::families::server_config::{
     CommandPermissionLevel, CommandsConfig, ScriptConfig, ScriptConfigFiles, UnreadableFile,
 };
 use bedrock_addon::json::Value;

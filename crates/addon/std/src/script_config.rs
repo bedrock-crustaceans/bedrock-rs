@@ -6,7 +6,7 @@ use std::fs;
 use std::io::ErrorKind;
 use std::path::Path;
 
-use bedrock_addon::families::script::config::{
+use bedrock_addon::families::server_config::{
     ConfigFolder, ScriptConfig, ScriptConfigFiles, ServerProperties, UnreadableFile,
 };
 use bytes::Bytes;

@@ -622,37 +622,27 @@ fn plugin(
     header: Uuid,
     module: Uuid,
     dependencies: Vec<(String, bool)>,
-) -> crate::ScriptPlugin {
-    use crate::{ResolvedDependency, ScriptPath, ScriptRuntime, ScriptVersion};
-    crate::ScriptPlugin {
-        pack_name: name.to_owned(),
-        pack_uuid: header,
-        module_uuid: module,
-        module_version: ScriptVersion::new(1, 0, 0),
-        name: format!("{name} - 1.0.0"),
-        runtime: ScriptRuntime::JavaScript,
-        entry: "scripts/main.js".to_owned(),
-        main: ScriptPath::new("main.js"),
-        dependencies: dependencies
-            .into_iter()
-            .map(|(module_name, optional)| ResolvedDependency {
-                module_name,
-                module_uuid: None,
-                requested: ScriptVersion::new(1, 0, 0),
-                resolved: ScriptVersion::new(1, 0, 0),
-                optional,
-            })
-            .collect(),
-        script_eval: false,
-        is_package_origin: false,
-        min_engine_version: None,
-    }
+) -> bedrock_addon_family_script::ScriptPlugin {
+    use bedrock_addon_family_script::{ResolvedDependency, ScriptPlugin, ScriptVersion};
+    // `ScriptPlugin::new` sets the runtime, the entry, the main file and the flags this
+    // plugin has; the name and the dependencies are set by hand.
+    let mut plugin = ScriptPlugin::new(name, header, module, ScriptVersion::new(1, 0, 0));
+    plugin.name = format!("{name} - 1.0.0");
+    plugin.dependencies = dependencies
+        .into_iter()
+        .map(|(module_name, optional)| {
+            let mut dependency = ResolvedDependency::new(module_name, ScriptVersion::new(1, 0, 0));
+            dependency.optional = optional;
+            dependency
+        })
+        .collect();
+    plugin
 }
 
 #[test]
 #[allow(clippy::too_many_lines, reason = "one stack and one step per check")]
 fn the_stack_checks_are_linear() {
-    use crate::ScriptPlugin;
+    use bedrock_addon_family_script::ScriptPlugin;
     struct Stack {
         config: ScriptConfig,
         plugins: Vec<ScriptPlugin>,
@@ -867,10 +857,10 @@ fn a_context_carries_the_permission_list_the_configuration_gives_the_module() {
         ],
         ..ScriptConfigFiles::default()
     });
-    let gates = crate::ScriptContext {
+    let gates = bedrock_addon_family_script::ScriptContext {
         beta_apis: true,
         is_package_origin: true,
-        ..crate::ScriptContext::default()
+        ..bedrock_addon_family_script::ScriptContext::default()
     };
     // The module's own folder, and every other gate as it was given.
     let cx = config.context(gates, own);

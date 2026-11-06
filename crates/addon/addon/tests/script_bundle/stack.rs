@@ -1034,11 +1034,12 @@ fn a_load_asks_for_the_scripts_of_a_pack_whose_module_runs_and_of_no_other() {
 
 /// The script modules of a stack that a server configuration is held against: the way from
 /// a stack to `ScriptConfig::unmatched_folders`.
+#[cfg(feature = "server_config")]
 fn config_folders_told(
     stack: &PackStack<Behavior>,
     folders: &[&str],
 ) -> Vec<(String, Severity, Option<uuid::Uuid>)> {
-    use bedrock_addon::families::script::config::{ConfigFolder, ScriptConfig, ScriptConfigFiles};
+    use bedrock_addon::families::server_config::{ConfigFolder, ScriptConfig, ScriptConfigFiles};
     let config = ScriptConfig::parse(&ScriptConfigFiles {
         folders: folders
             .iter()
@@ -1069,6 +1070,7 @@ fn config_folders_told(
 // named after the pack's header UUID is the mistake D3 warns of, plugin or no plugin, and the
 // folder named after the module is the module's.
 #[test]
+#[cfg(feature = "server_config")]
 fn a_config_folder_is_held_against_a_script_module_whose_plugin_does_not_start() {
     let header = uuid::Uuid::from_u128(7);
     let module = uuid::Uuid::from_u128(1_000_007);

@@ -18,7 +18,7 @@ use super::{
     CONFIG_DIR, DEFAULT_DIR, PAYLOAD_SIZE_SINCE, PERMISSIONS_FILE, PackScriptConfig,
     SERVER_NET_MODULE, ScriptConfig, ServerNet, WILDCARD_MODULE,
 };
-use crate::{ScriptContext, ScriptModuleRef, ScriptPlugin};
+use bedrock_addon_family_script::{ScriptContext, ScriptModuleRef, ScriptPlugin};
 
 /// What the dependency filter decided for one script module.
 #[derive(Clone, Debug, PartialEq)]
@@ -54,7 +54,7 @@ impl ScriptConfig {
     /// server's error; an optional one is dropped and the plugin runs without it.
     ///
     /// `plugin` is what discovery made of a pack's script module
-    /// ([`ScriptBundle::plugin`](crate::ScriptBundle::plugin) on a stack, which is
+    /// ([`ScriptBundle::plugin`](bedrock_addon_family_script::ScriptBundle::plugin) on a stack, which is
     /// discovered without a permission list). A discovery that was itself given the list
     /// ([`context`](Self::context)) has
     /// already applied it: its plugins pass here, and the refusals are its findings.
@@ -174,7 +174,7 @@ impl ScriptConfig {
     /// pack's configuration by the module's UUID before it starts anything.
     ///
     /// On a stack, `stack.scripts().iter().filter_map(|bundle| bundle.module)` is every
-    /// script module of the world; a [`ScriptModule`](crate::ScriptModule) read from
+    /// script module of the world; a [`ScriptModule`](bedrock_addon_family_script::ScriptModule) read from
     /// a manifest gives its identity too.
     pub fn unmatched_folders_of_modules(
         &self,

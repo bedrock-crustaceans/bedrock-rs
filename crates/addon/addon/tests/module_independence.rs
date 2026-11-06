@@ -1,9 +1,10 @@
 //! A family lifted into its own crate (`crates/addon/families/<name>/`, the package
 //! `bedrock_addon_family_<name>`, which `families/mod.rs` re-exports) depends on no
 //! `bedrock_addon` crate but core, the derive and the shared crates (and support's
-//! `biome_json`, for the three biome families until it goes): its manifest names no other,
-//! and its sources do not either. The compiler enforces the rest (a family crate cannot name `crate::pack`,
-//! `crate::storage`, another family or `bedrock_addon`'s `load`).
+//! `biome_json`, for the three biome families until it goes, and script for `server_config`,
+//! the one family on a family): its manifest names no other, and its sources do not either.
+//! The compiler enforces the rest (a family crate cannot name `crate::pack`, `crate::storage`,
+//! another family or `bedrock_addon`'s `load`).
 //!
 //! The second rule: library code never reads the text of a finding's path.
 //!
@@ -85,18 +86,72 @@ const SUPPORT: &str = "bedrock_addon_support";
 /// `support_allowance_is_biome_json_s` goes red when `biome_json` goes and this list stays.
 const BIOME_JSON_ALLOWANCE: [&str; 3] = ["biome", "biomes_client", "client_biome"];
 
+/// The one family that may depend on another family: `server_config` on script. The server's
+/// configuration is held against script modules: its dependency filter
+/// (`ScriptConfig::filter`) takes the plugin discovery made, its unmatched-folder rule takes
+/// the modules' identities, its permission list goes into the gates of a discovery
+/// (`ScriptConfig::context`), and its near-miss note asks script's module table whether a name
+/// is a module. Script names nothing of it, so the edge runs one way; a shared crate holding
+/// the four would be a script crate of its own (the module table alone is two thousand lines).
+const SCRIPT_ALLOWANCE: (&str, &str) = ("server_config", "bedrock_addon_family_script");
+
+/// What `server_config`'s library may name of script: the module table (`meta::module`), the
+/// gates of a discovery, a module's identity and a plugin.
+const SCRIPT_ITEMS: [&str; 4] = ["meta", "ScriptContext", "ScriptModuleRef", "ScriptPlugin"];
+
+/// What `server_config`'s tests may name of script besides [`SCRIPT_ITEMS`]: the parts of a
+/// plugin built by hand.
+const SCRIPT_TEST_ITEMS: [&str; 2] = ["ResolvedDependency", "ScriptVersion"];
+
 /// Whether the lifted family `family` may depend on the `bedrock_addon*` crate `name`: itself,
 /// core, the derive (six families derive their component tables with it), the shared crates,
-/// and support for the families of [`BIOME_JSON_ALLOWANCE`].
+/// support for the families of [`BIOME_JSON_ALLOWANCE`], and script for `server_config`
+/// ([`SCRIPT_ALLOWANCE`]).
 fn family_may_name(family: &str, name: &str) -> bool {
     name == format!("bedrock_addon_family_{family}")
         || shared_may_name(name)
         || (name == SUPPORT && BIOME_JSON_ALLOWANCE.contains(&family))
+        || (family, name) == SCRIPT_ALLOWANCE
+}
+
+/// The items a path names below its crate: the first segment after the crate's `::`
+/// (`meta` of `meta::module`), or each first segment of a group (`{A, b::C}`).
+fn items_named(path: &str) -> Vec<&str> {
+    fn first(segment: &str) -> &str {
+        let segment = segment.trim();
+        let end = segment
+            .find(|c: char| !is_ident(c))
+            .unwrap_or(segment.len());
+        &segment[..end]
+    }
+    let Some(group) = path.trim_start().strip_prefix('{') else {
+        return vec![first(path)];
+    };
+    let mut items = Vec::new();
+    let (mut depth, mut start) = (0_usize, 0);
+    for (at, c) in group.char_indices() {
+        match c {
+            '{' => depth += 1,
+            '}' if depth == 0 => {
+                items.push(first(&group[start..at]));
+                break;
+            }
+            '}' => depth -= 1,
+            ',' if depth == 0 => {
+                items.push(first(&group[start..at]));
+                start = at + 1;
+            }
+            _ => {}
+        }
+    }
+    items.retain(|item| !item.is_empty());
+    items
 }
 
 /// What a lifted family crate depends on or names that it may not: any `bedrock_addon*` crate
 /// but itself, core, the derive and the shared crates (and `biome_json` of support for the
-/// families of [`BIOME_JSON_ALLOWANCE`]), in its manifest (`manifest`) or its sources
+/// families of [`BIOME_JSON_ALLOWANCE`], and the [`SCRIPT_ITEMS`] of script for
+/// `server_config`, its tests also the [`SCRIPT_TEST_ITEMS`]), in its manifest (`manifest`) or its sources
 /// (`sources`, each with its path below the crate's `src/`).
 fn lifted_violations(family: &str, manifest: &str, sources: &[(String, String)]) -> Vec<String> {
     let mut violations = Vec::new();
@@ -123,9 +178,20 @@ fn lifted_violations(family: &str, manifest: &str, sources: &[(String, String)])
                     .next()
                     .is_some_and(is_ident);
             let allowed = family_may_name(family, &name) && (name != SUPPORT || biome_json);
+            let line = code[..index].matches('\n').count() + 1;
             if !allowed {
-                let line = code[..index].matches('\n').count() + 1;
                 violations.push(format!("{family}/src/{relative}:{line} names {name}::"));
+            } else if (family, name.as_str()) == SCRIPT_ALLOWANCE {
+                let tests = is_test_file(Path::new(relative));
+                for item in items_named(path) {
+                    let allowed = SCRIPT_ITEMS.contains(&item)
+                        || (tests && SCRIPT_TEST_ITEMS.contains(&item));
+                    if !allowed {
+                        violations.push(format!(
+                            "{family}/src/{relative}:{line} names {name}::{item}"
+                        ));
+                    }
+                }
             }
         }
     }
@@ -279,7 +345,8 @@ fn lifted_families_depend_on_no_other_family_and_not_on_bedrock_addon() {
         violations.is_empty(),
         "a lifted family depends on bedrock_addon_core, bedrock_addon_derive and the \
          bedrock_addon_shared_* crates only (and biome_json of bedrock_addon_support for the \
-         biome_json allowance):\n{}",
+         biome_json allowance, and SCRIPT_ITEMS of bedrock_addon_family_script for \
+         server_config):\n{}",
         violations.join("\n")
     );
 }
@@ -330,6 +397,106 @@ fn the_lifted_scan_reads_manifests_and_paths() {
         lifted_violations("biome", manifest, &sources),
         ["biome/src/lib.rs:2 names bedrock_addon_support::"]
     );
+    // `server_config` may depend on script and name the items of `SCRIPT_ITEMS`, its tests
+    // also those of `SCRIPT_TEST_ITEMS`: nothing else of script, and no other family.
+    let manifest = "[package]\nname = \"bedrock_addon_family_server_config\"\n\n[dependencies]\n\
+        bedrock_addon_family_script = { path = \"../script\" }\n\
+        bedrock_addon_family_lang = { path = \"../lang\" }\n";
+    let sources = [
+        (
+            "lib.rs".to_owned(),
+            "use bedrock_addon_family_script::meta;\n\
+             use bedrock_addon_family_script::{ScriptContext, ScriptModuleRef, ScriptPlugin};\n\
+             fn f() -> bedrock_addon_family_script::ScriptBundle { todo!() }\n\
+             use bedrock_addon_family_script::{ScriptPlugin, meta::module, ScriptVersion};\n\
+             use bedrock_addon_family_script::bundle::{ScriptBundle as B};\n"
+                .to_owned(),
+        ),
+        (
+            "tests.rs".to_owned(),
+            "use bedrock_addon_family_script::{ResolvedDependency, ScriptPlugin, ScriptVersion};\n\
+             fn g() { bedrock_addon_family_script::ScriptBundle::default(); }\n"
+                .to_owned(),
+        ),
+    ];
+    assert_eq!(
+        lifted_violations("server_config", manifest, &sources),
+        [
+            "server_config/Cargo.toml:6 depends on bedrock_addon_family_lang",
+            "server_config/src/lib.rs:3 names bedrock_addon_family_script::ScriptBundle",
+            "server_config/src/lib.rs:4 names bedrock_addon_family_script::ScriptVersion",
+            "server_config/src/lib.rs:5 names bedrock_addon_family_script::bundle",
+            "server_config/src/tests.rs:2 names bedrock_addon_family_script::ScriptBundle",
+        ]
+    );
+    // The allowance is server_config's alone.
+    let manifest = "[package]\nname = \"bedrock_addon_family_lang\"\n\n[dependencies]\n\
+        bedrock_addon_family_script = { path = \"../script\" }\n";
+    let sources = [(
+        "lib.rs".to_owned(),
+        "use bedrock_addon_family_script::ScriptPlugin;\n".to_owned(),
+    )];
+    assert_eq!(
+        lifted_violations("lang", manifest, &sources),
+        [
+            "lang/Cargo.toml:5 depends on bedrock_addon_family_script",
+            "lang/src/lib.rs:1 names bedrock_addon_family_script::",
+        ]
+    );
+}
+
+/// `server_config` depends on script and holds the server's configuration, which script's
+/// library no longer names: the day `server_config` stops naming script, the allowance goes
+/// with it.
+#[test]
+fn script_allowance_is_server_config_s() {
+    if !lifted_dir().is_dir() {
+        // A crate packaged alone has no sibling to scan.
+        return;
+    }
+    let (family, script) = SCRIPT_ALLOWANCE;
+    assert!(
+        lifted_families().iter().any(|name| name == family),
+        "{family} is no lifted family: drop SCRIPT_ALLOWANCE"
+    );
+    let dir = lifted_dir().join(family);
+    let manifest = fs::read_to_string(dir.join("Cargo.toml")).unwrap();
+    assert!(
+        manifest_dependencies(&manifest)
+            .iter()
+            .any(|(_, name)| name == script),
+        "{family} no longer depends on {script}: drop SCRIPT_ALLOWANCE"
+    );
+    let mut files = Vec::new();
+    rust_files(&dir.join("src"), &mut files);
+    assert!(
+        files.iter().any(
+            |file| code_of(&fs::read_to_string(file).unwrap()).contains(&format!("{script}::"))
+        ),
+        "{family} no longer names {script}: drop SCRIPT_ALLOWANCE"
+    );
+    // The edge runs one way: script names nothing of the configuration.
+    assert!(
+        !lifted_dir().join("script/src/config").exists(),
+        "script/src/config is back: the server's configuration is the {family} family's"
+    );
+    let manifest = fs::read_to_string(lifted_dir().join("script/Cargo.toml")).unwrap();
+    assert!(
+        !manifest_dependencies(&manifest)
+            .iter()
+            .any(|(_, name)| name == &format!("bedrock_addon_family_{family}")),
+        "script depends on {family}"
+    );
+    let mut files = Vec::new();
+    rust_files(&lifted_dir().join("script/src"), &mut files);
+    for file in files {
+        let code = code_of(&fs::read_to_string(&file).unwrap());
+        assert!(
+            !code.contains("config::") && !code.contains("ScriptConfig"),
+            "{} names the server's configuration",
+            file.display()
+        );
+    }
 }
 
 /// The families whose shared bodies moved out of `bedrock_addon_support` into core or a
@@ -1102,7 +1269,7 @@ fn the_scan_for_path_text_sees_the_call_and_nothing_else() {
     // The unit tests are no part of the library, and test files are no library.
     let code = "fn f() {}\n#[cfg(test)]\nmod tests { fn g(d: D) { d.json_path.to_string(); } }";
     assert_eq!(path_text_reads(&library_part(code)), [0usize; 0]);
-    assert!(is_test_file(Path::new("script/config/tests.rs")));
+    assert!(is_test_file(Path::new("server_config/tests.rs")));
     assert!(is_test_file(Path::new("pack/link/tests_findings.rs")));
     assert!(is_test_file(Path::new(
         "pack/stack/accessors/tests/forms.rs"

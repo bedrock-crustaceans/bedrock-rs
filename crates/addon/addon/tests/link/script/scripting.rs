@@ -1,8 +1,11 @@
 //! 20 S1 to S10: the script module of a manifest, its files, and the server's configuration.
 
 use bedrock_addon::diagnostic::{Diagnostic, DiagnosticDetail, Phase, ReferenceHint, Severity};
-use bedrock_addon::families::script::config::{ConfigFolder, ScriptConfig, ScriptConfigFiles};
-use bedrock_addon::families::script::{ScriptBundle, ScriptPlugin};
+use bedrock_addon::families::script::ScriptBundle;
+#[cfg(feature = "server_config")]
+use bedrock_addon::families::script::ScriptPlugin;
+#[cfg(feature = "server_config")]
+use bedrock_addon::families::server_config::{ConfigFolder, ScriptConfig, ScriptConfigFiles};
 use bedrock_addon::load::LoadOptions;
 use bedrock_addon::pack::{LinkOptions, OpenOptions, Pack, PackOrigin, StackSet};
 use bedrock_addon::storage::PackPath;
@@ -438,6 +441,7 @@ fn s7_an_at_name_is_checked_against_the_modules_the_plugin_got() {
 }
 
 /// The plugins of the world's behaviour stack: the way from a stack to the scripts that run.
+#[cfg(feature = "server_config")]
 fn plugins(set: &StackSet) -> Vec<&ScriptPlugin> {
     set.behavior
         .scripts()
@@ -447,6 +451,7 @@ fn plugins(set: &StackSet) -> Vec<&ScriptPlugin> {
 }
 
 /// A server configuration whose folders `folders` each hold a `permissions.json`.
+#[cfg(feature = "server_config")]
 fn config(folders: &[(&str, &str)]) -> ScriptConfig {
     ScriptConfig::parse(&ScriptConfigFiles {
         folders: folders
@@ -461,9 +466,11 @@ fn config(folders: &[(&str, &str)]) -> ScriptConfig {
     })
 }
 
+#[cfg(feature = "server_config")]
 const ALLOW_SERVER: &str = r#"{"allowed_modules": ["@minecraft/server"]}"#;
 
 #[test]
+#[cfg(feature = "server_config")]
 fn s8_a_config_folder_no_script_module_of_the_stack_uses_is_told_from_the_stack_s_plugins() {
     let set = world(vec![
         script_pack(1, MAIN, SERVER, &[("scripts/main.js", "")]),
@@ -559,6 +566,7 @@ fn s8_a_config_folder_no_script_module_of_the_stack_uses_is_told_from_the_stack_
 }
 
 #[test]
+#[cfg(feature = "server_config")]
 fn s9_a_module_the_configuration_does_not_allow_is_refused_once_by_the_configuration() {
     let set = world(vec![script_pack(
         1,
@@ -612,6 +620,7 @@ fn s9_a_module_the_configuration_does_not_allow_is_refused_once_by_the_configura
 }
 
 #[test]
+#[cfg(feature = "server_config")]
 fn s10_a_permission_level_for_no_command_is_a_note_of_the_file_s_own_reading() {
     let config = ScriptConfig::parse(&ScriptConfigFiles {
         commands: Some(bytes::Bytes::from_static(

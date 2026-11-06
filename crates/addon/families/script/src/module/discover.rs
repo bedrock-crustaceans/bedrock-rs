@@ -167,10 +167,9 @@ pub struct ResolvedDependency {
 /// It is what discovery made of a pack's [`ScriptModule`], and it answers for that module
 /// wherever one is asked about: it is the [`ScriptHost`] a pack's [`ScriptBundle`] is scanned
 /// against, and the plugin a server's configuration is filtered for
-/// ([`ScriptConfig::filter`]).
+/// (`ScriptConfig::filter` of the `server_config` family).
 ///
 /// [`ScriptBundle`]: crate::ScriptBundle
-/// [`ScriptConfig::filter`]: crate::config::ScriptConfig::filter
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[non_exhaustive]
 pub struct ScriptPlugin {
@@ -207,7 +206,7 @@ impl ScriptPlugin {
     /// `scripts/main.js`, depends on no native module, has no `script_eval` and is a pack of
     /// a world; its name is `<pack name> - <module version>`. Every field is public: set
     /// what differs (the [`dependencies`](Self::dependencies) a configuration is to be
-    /// [filtered](crate::config::ScriptConfig::filter) for, say).
+    /// filtered for by `server_config`'s `ScriptConfig::filter`, say).
     ///
     /// A stack's plugins come from discovery
     /// ([`ScriptBundle::plugin`](crate::ScriptBundle::plugin)); this is for a caller
