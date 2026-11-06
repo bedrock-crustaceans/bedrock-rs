@@ -12,7 +12,7 @@ mod simplified;
 mod texts;
 mod validate;
 
-pub use bedrock_addon_support::spawn::{
+pub use bedrock_addon_shared_spawn::{
     AboveBlockFilter, Condition, DelayFilter, DensityLimit, Difficulty, DifficultyFilter, Herd,
     HerdInfo, MobEventFilter, MobSpawnRules, OneOrMany, Permutation, PopulationControl,
     RangeFilter, VillageFilter, Weight, WorldAgeFilter,
@@ -40,8 +40,8 @@ use bedrock_addon_core::versioning::{
     RangeModel, Reading, Scalars, Single, StructIndex, ValidateCx, VersionStruct, Versioned,
     file_version, write_envelope,
 };
-use bedrock_addon_support::spawn::legacy::{RULES_KEY, V1_8_0};
-use bedrock_addon_support::spawn::load::{
+use bedrock_addon_shared_spawn::legacy::{RULES_KEY, V1_8_0};
+use bedrock_addon_shared_spawn::load::{
     FileLoad, Parsed, combine, contribution, load_family, load_file, origin,
 };
 
@@ -308,7 +308,7 @@ fn parse_rules_file(file: &WalkFile, cx: &LoadContext) -> Parsed<SpawnRules> {
     )
 }
 
-/// The loader of `bp.spawn_rules()`, the family's own over support's spawn kit (a standard
+/// The loader of `bp.spawn_rules()`, the family's own over `bedrock_addon_shared_spawn`'s kit (a standard
 /// document without a known pool loads but is not registered, `Parsed::Unregistered`): `spawn_rules/**/*.json` of every behaviour pack, packs
 /// bottom-up, the higher pack's rules for an entity replacing the lower's (a later document with
 /// the same identifier replaces the earlier one).

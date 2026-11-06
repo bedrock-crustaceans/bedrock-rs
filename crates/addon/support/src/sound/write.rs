@@ -98,7 +98,7 @@ pub fn float(x: f32) -> Result<Value, EncodeError> {
     if x.is_infinite() {
         return Ok(Value::from(if x > 0.0 { f64::MAX } else { f64::MIN }));
     }
-    crate::animation::write::float(x)
+    bedrock_addon_shared_animation::write::float(x)
 }
 
 /// `result`, with the path of its error put below the member `key`.

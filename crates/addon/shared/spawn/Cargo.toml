@@ -1,0 +1,22 @@
+[package]
+name = "bedrock_addon_shared_spawn"
+description = "What the spawn_rules and spawn_groups content families of bedrock_addon share: the 1.8.0 spawn condition and its filters, the spawn rules a condition gives, the hand-written readers, writers and texts, and the steps of loading one spawn file; sans-IO"
+version.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[features]
+# The load-time Molang compile check of the conditions' `tags` members.
+molang = ["bedrock_addon_core/molang"]
+
+[dependencies]
+bedrock_addon_core = { path = "../../core" }
+bedrock_addon_shared_shapes = { path = "../shapes" }
+facet-value = { workspace = true }

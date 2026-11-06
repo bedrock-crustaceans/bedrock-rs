@@ -4,7 +4,7 @@ use super::{AnimationFile, OneOrMany};
 use bedrock_addon_core::diagnostic::DiagnosticCode;
 use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::load::LoadContext;
-use bedrock_addon_support::animation::validate::{command_version_unset, events, push};
+use bedrock_addon_shared_animation::validate::{command_version_unset, events, push};
 
 /// The crate's own findings on a loaded animation file: bones that collide after lower-casing
 /// (`DuplicateBone`), unrecognized `@` event strings, and events in a pack without

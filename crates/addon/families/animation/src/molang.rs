@@ -2,7 +2,7 @@
 
 use super::{AnimationFile, Channel, Keyframe, OneOrMany};
 use bedrock_addon_core::molang::{Molang, MolangFieldSpec, MolangFields, MolangVisitor, Step};
-use bedrock_addon_support::animation::molang::{ANIMATION_EVENT, ANIMATION_VALUE, event, particle};
+use bedrock_addon_shared_animation::molang::{ANIMATION_EVENT, ANIMATION_VALUE, event, particle};
 
 fn molang3(visitor: &mut MolangVisitor<'_>, spec: &MolangFieldSpec, values: &mut [Molang; 3]) {
     for (index, value) in values.iter_mut().enumerate() {

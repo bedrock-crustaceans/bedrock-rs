@@ -66,3 +66,35 @@ fn the_check_steps_into_the_array_form_only() {
     assert_eq!(checked(&mut many), ["entries/1/level"]);
     assert_eq!(Holder::triggers(), ["on_hit", "on_hit[]"]);
 }
+
+#[test]
+fn one_or_many_converts_from_a_vec() {
+    assert_eq!(OneOrMany::from(vec![3, 4]), OneOrMany::Many(vec![3, 4]));
+}
+
+#[test]
+fn one_or_many_iterates_by_value_and_by_reference() {
+    let one = OneOrMany::One(1);
+    let many = OneOrMany::Many(vec![1, 2]);
+    assert_eq!((&one).into_iter().copied().collect::<Vec<_>>(), [1]);
+    assert_eq!(many.iter().copied().collect::<Vec<_>>(), [1, 2]);
+    assert_eq!(one.len(), 1);
+    assert_eq!(many.len(), 2);
+    assert_eq!(many.into_iter().sum::<i32>(), 3);
+}
+
+#[test]
+fn one_or_many_reads_as_a_slice_and_converts_from_a_vec() {
+    let one = OneOrMany::One(7);
+    assert_eq!(one.as_slice(), [7]);
+    let many = OneOrMany::from(vec![1, 2, 3]);
+    assert_eq!(many, OneOrMany::Many(vec![1, 2, 3]));
+    assert_eq!(many.as_slice(), [1, 2, 3]);
+    let mut seen = Vec::new();
+    for value in &many {
+        seen.push(*value);
+    }
+    assert_eq!(seen, [1, 2, 3]);
+    assert_eq!((&one).into_iter().count(), 1);
+    assert_eq!(many.iter().sum::<i32>(), 6);
+}

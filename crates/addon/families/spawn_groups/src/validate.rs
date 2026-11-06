@@ -4,9 +4,9 @@
 use super::SpawnGroup;
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
 use bedrock_addon_core::versioning::ValidateCx;
-use bedrock_addon_support::spawn::legacy::GROUPS_KEY;
-use bedrock_addon_support::spawn::read::finding;
-use bedrock_addon_support::spawn::validate::{molang, path};
+use bedrock_addon_shared_spawn::legacy::GROUPS_KEY;
+use bedrock_addon_shared_spawn::read::finding;
+use bedrock_addon_shared_spawn::validate::{molang, path};
 
 /// A spawn group without conditions loads and is never registered (vanilla is silent about it, so
 /// the crate reports an `EmptyDocument` information).

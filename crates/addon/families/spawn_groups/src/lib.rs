@@ -8,7 +8,7 @@
 mod legacy;
 mod validate;
 
-pub use bedrock_addon_support::spawn::{
+pub use bedrock_addon_shared_spawn::{
     AboveBlockFilter, Condition, DelayFilter, DensityLimit, Difficulty, DifficultyFilter, Herd,
     HerdInfo, MobEventFilter, MobSpawnRules, OneOrMany, Permutation, PopulationControl,
     RangeFilter, VillageFilter, Weight, WorldAgeFilter,
@@ -29,8 +29,8 @@ use bedrock_addon_core::versioning::{
     BelowFloor, DocumentRead, Envelope, EnvelopeCheck, Family, Loaded, MissingVersion,
     NoComponents, Single, ValidateCx,
 };
-use bedrock_addon_support::spawn::legacy::{GROUPS_KEY, V1_8_0};
-use bedrock_addon_support::spawn::load::{
+use bedrock_addon_shared_spawn::legacy::{GROUPS_KEY, V1_8_0};
+use bedrock_addon_shared_spawn::load::{
     FileLoad, Parsed, combine, contribution, load_family, load_family_as_written, load_file, origin,
 };
 
@@ -77,7 +77,7 @@ impl SpawnGroup {
         self.conditions
             .iter()
             .flatten()
-            .map(|c| c.rules_with(bedrock_addon_support::spawn::condition::SPAWN_GROUPS))
+            .map(|c| c.rules_with(bedrock_addon_shared_spawn::condition::SPAWN_GROUPS))
             .collect()
     }
 }

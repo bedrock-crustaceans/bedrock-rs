@@ -16,7 +16,7 @@ use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::shared::Filter;
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{ParseCx, VersionStruct, Versioned, write_payload};
-use bedrock_addon_support::spawn::read::finding;
+use bedrock_addon_shared_spawn::read::finding;
 
 /// Spawn rules in the simplified shape (format 1.21.60 and later, with the Simplified Spawn Rules
 /// experiment on): where an entity spawns is a named placement, and each condition is a weight

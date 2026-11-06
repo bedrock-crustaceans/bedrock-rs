@@ -19,9 +19,9 @@ use bedrock_addon_core::molang::{
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::version::known;
 use bedrock_addon_core::versioning::{ParseCx, Upgrade, UpgradeCx, VersionStruct, Versioned};
-use bedrock_addon_support::animation::event::command_version;
-use bedrock_addon_support::animation::read::read_particle;
-use bedrock_addon_support::animation::walk::{
+use bedrock_addon_shared_animation::event::command_version;
+use bedrock_addon_shared_animation::read::read_particle;
+use bedrock_addon_shared_animation::walk::{
     CHILD_NOT_VALID, Group, Kind, Node, Pattern, Walk, text,
 };
 
@@ -512,7 +512,7 @@ impl MolangFields for AnimationControllerFile {
                         visitor.enter(Step::Index(index));
                         visitor.field(
                             t.target.as_str(),
-                            &bedrock_addon_support::animation::molang::CONTROLLER_TRANSITION_1_8,
+                            &bedrock_addon_shared_animation::molang::CONTROLLER_TRANSITION_1_8,
                             &mut t.condition,
                         );
                         visitor.leave();

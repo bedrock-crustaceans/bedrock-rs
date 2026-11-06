@@ -38,7 +38,7 @@ fn particle_kept() {
     assert_eq!(MolangFieldSpec::KEPT, literal);
 }
 
-/// Schema-validated, compiled when empty, rejecting: `support/src/animation/molang.rs`
+/// Schema-validated, compiled when empty, rejecting: `shared/animation/src/molang.rs`
 /// `ANIMATION_VALUE`, `families/render_controller/src/molang.rs` `SCHEMA_VALUE`,
 /// `families/geometry/src/molang.rs` `BINDING` (three crates).
 #[test]

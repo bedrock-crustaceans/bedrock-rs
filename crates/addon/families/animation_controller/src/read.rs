@@ -17,15 +17,15 @@ use bedrock_addon_core::molang::{MolangSource, RawVersion};
 use bedrock_addon_core::vanilla::ActorType;
 use bedrock_addon_core::version::{ENGINE_VERSION, SemVersion};
 use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
-use bedrock_addon_shared_shapes::TrueOnly;
-use bedrock_addon_support::animation::event::command_version;
-use bedrock_addon_support::animation::molang::{MolangRun, run};
-use bedrock_addon_support::animation::read::{
+use bedrock_addon_shared_animation::event::command_version;
+use bedrock_addon_shared_animation::molang::{MolangRun, run};
+use bedrock_addon_shared_animation::read::{
     Parsed, format_version, input_of, read_particle, read_sound, text_of,
 };
-use bedrock_addon_support::animation::walk::{
+use bedrock_addon_shared_animation::walk::{
     Group, Hit, Kind, Node, Pattern, UNKNOWN_OPTION_TYPE, Walk, text,
 };
+use bedrock_addon_shared_shapes::TrueOnly;
 
 /// The 1.8 schema's `format_version` minimum and the controller floor.
 pub(crate) const V1_8_0: SemVersion = SemVersion::new(1, 8, 0);

@@ -11,12 +11,12 @@ use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::pack_identity::PackType;
 use bedrock_addon_core::version::{ENGINE_VERSION, SemVersion};
-use bedrock_addon_support::animation::event::command_version;
-use bedrock_addon_support::animation::molang::{MolangRun, run};
-use bedrock_addon_support::animation::read::{
+use bedrock_addon_shared_animation::event::command_version;
+use bedrock_addon_shared_animation::molang::{MolangRun, run};
+use bedrock_addon_shared_animation::read::{
     Parsed, format_version, input_of, read_particle, read_sound, text_of,
 };
-use bedrock_addon_support::animation::walk::{
+use bedrock_addon_shared_animation::walk::{
     Group, Hit, Kind, NOT_ALLOWED_KEYS, NOT_ALLOWED_REGEX, Node, Pattern, Walk, text,
 };
 

@@ -8,7 +8,7 @@ use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{ParseCx, VersionStruct, Versioned};
-use bedrock_addon_support::spawn::legacy::{
+use bedrock_addon_shared_spawn::legacy::{
     Flavor, GROUPS_KEY, V1_8_0, description_value, read, visit_conditions, write,
 };
 

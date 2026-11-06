@@ -5,9 +5,9 @@ use super::texts;
 use super::{SimplifiedSpawnRules, StandardSpawnRules};
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity, VanillaText};
 use bedrock_addon_core::versioning::ValidateCx;
-use bedrock_addon_support::spawn::legacy::RULES_KEY;
-use bedrock_addon_support::spawn::read::finding;
-use bedrock_addon_support::spawn::validate::{molang, path};
+use bedrock_addon_shared_spawn::legacy::RULES_KEY;
+use bedrock_addon_shared_spawn::read::finding;
+use bedrock_addon_shared_spawn::validate::{molang, path};
 
 /// Standard spawn rules: a missing or empty `population_control` is a `MissingRequiredField`
 /// information (vanilla: silent), an unknown one an `InvalidEnumValue` information with the

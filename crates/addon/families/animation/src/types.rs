@@ -5,7 +5,7 @@ use indexmap::IndexMap;
 use bedrock_addon_core::molang::Molang;
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::version::known;
-use bedrock_addon_support::animation::walk::atof;
+use bedrock_addon_shared_animation::walk::atof;
 
 use super::{EventString, ParticleEffect, SoundEffect};
 

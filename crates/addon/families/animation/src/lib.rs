@@ -5,8 +5,9 @@
 //! one type serves both stacks; what differs is runtime: the registry each side keeps, the Molang
 //! query catalogue the compile check uses, and a few diagnostics of the crate's own.
 //!
-//! The reader stays a schema walk on `support`'s animation walker, because vanilla checks the files
-//! against its animation schema with a loader of its own rather than reading a typed struct.
+//! The reader stays a schema walk on `bedrock_addon_shared_animation`'s walker, because vanilla
+//! checks the files against its animation schema with a loader of its own rather than reading a
+//! typed struct.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
@@ -24,11 +25,11 @@ use bedrock_addon_core::json::{EncodeError, WriteStyle};
 use bedrock_addon_core::load::{self, CollectionLoader, FileCopy, LoadContext, StackCx, Walk};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::known;
-use bedrock_addon_support::animation::read::{side_of, whole};
-use bedrock_addon_support::animation::registry::combine;
-use bedrock_addon_support::animation::write::file_path;
+use bedrock_addon_shared_animation::read::{side_of, whole};
+use bedrock_addon_shared_animation::registry::combine;
+use bedrock_addon_shared_animation::write::file_path;
 
-pub use bedrock_addon_support::animation::{EventString, ParticleEffect, SoundEffect};
+pub use bedrock_addon_shared_animation::{EventString, ParticleEffect, SoundEffect};
 pub use types::{
     Animation, AnimationFile, AxisElement, Bone, Channel, Keyframe, KeyframeParts, LerpMode,
     LoopMode, OneOrMany, RelativeTo,
@@ -89,24 +90,3 @@ fn combine_animations(
 #[doc(hidden)]
 pub const LOADER: CollectionLoader<Registry<Animation>, FileCopy<AnimationFile>> =
     load::merged::<AnimationFile, _>(ANIMATION_WALK, combine_animations);
-
-#[cfg(test)]
-mod tests {
-    use super::OneOrMany;
-
-    #[test]
-    fn one_or_many_reads_as_a_slice_and_converts_from_a_vec() {
-        let one = OneOrMany::One(7);
-        assert_eq!(one.as_slice(), [7]);
-        let many = OneOrMany::from(vec![1, 2, 3]);
-        assert_eq!(many, OneOrMany::Many(vec![1, 2, 3]));
-        assert_eq!(many.as_slice(), [1, 2, 3]);
-        let mut seen = Vec::new();
-        for value in &many {
-            seen.push(*value);
-        }
-        assert_eq!(seen, [1, 2, 3]);
-        assert_eq!((&one).into_iter().count(), 1);
-        assert_eq!(many.iter().sum::<i32>(), 6);
-    }
-}

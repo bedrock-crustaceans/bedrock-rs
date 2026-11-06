@@ -291,6 +291,94 @@ fn the_lifted_scan_reads_manifests_and_paths() {
     );
 }
 
+/// The families whose shared bodies moved out of `bedrock_addon_support` into a `shared/*`
+/// crate: they depend on core and the shared crates, and on support no more.
+const ON_SHARED_CRATES: [&str; 4] = [
+    "animation",
+    "animation_controller",
+    "spawn_groups",
+    "spawn_rules",
+];
+
+/// Where a family of [`ON_SHARED_CRATES`] depends on or names `bedrock_addon_support`, in its
+/// manifest (`manifest`) or its sources (`sources`, each with its path below the crate's `src/`).
+fn support_violations(family: &str, manifest: &str, sources: &[(String, String)]) -> Vec<String> {
+    const SUPPORT: &str = "bedrock_addon_support";
+    let mut violations = Vec::new();
+    for (line, name) in manifest_dependencies(manifest) {
+        if name == SUPPORT {
+            violations.push(format!("{family}/Cargo.toml:{line} depends on {name}"));
+        }
+    }
+    for (relative, source) in sources {
+        let code = code_of(source).replace("r#", "");
+        for (index, _) in code.match_indices(SUPPORT) {
+            let before = code[..index].chars().next_back().is_some_and(is_ident);
+            let rest = &code[index + SUPPORT.len()..];
+            let after = rest.chars().next().is_some_and(is_ident);
+            if !before && !after && rest.trim_start().starts_with("::") {
+                let line = code[..index].matches('\n').count() + 1;
+                violations.push(format!("{family}/src/{relative}:{line} names {SUPPORT}::"));
+            }
+        }
+    }
+    violations
+}
+
+/// The families of [`ON_SHARED_CRATES`] read their shared bodies from the shared crates.
+#[test]
+fn families_on_shared_crates_do_not_depend_on_support() {
+    let mut violations = Vec::new();
+    for family in ON_SHARED_CRATES {
+        let dir = lifted_dir().join(family);
+        if !dir.is_dir() {
+            // A crate packaged alone has no sibling to scan.
+            continue;
+        }
+        let manifest = fs::read_to_string(dir.join("Cargo.toml")).unwrap();
+        let mut files = Vec::new();
+        rust_files(&dir.join("src"), &mut files);
+        let sources: Vec<(String, String)> = files
+            .iter()
+            .map(|file| {
+                let relative = file.strip_prefix(dir.join("src")).unwrap();
+                (
+                    relative.display().to_string(),
+                    fs::read_to_string(file).unwrap(),
+                )
+            })
+            .collect();
+        violations.extend(support_violations(family, &manifest, &sources));
+    }
+    assert!(
+        violations.is_empty(),
+        "these families depend on bedrock_addon_core and the shared crates, not on \
+         bedrock_addon_support:\n{}",
+        violations.join("\n")
+    );
+}
+
+#[test]
+fn the_support_scan_reads_manifests_and_paths() {
+    let manifest = "[package]\nname = \"bedrock_addon_family_spawn_rules\"\n\n[dependencies]\n\
+        bedrock_addon_core = { path = \"../../core\" }\nbedrock_addon_support = { path = \"x\" }\n\
+        bedrock_addon_shared_spawn = { path = \"y\" }\n";
+    let sources = [(
+        "lib.rs".to_owned(),
+        "use bedrock_addon_shared_spawn::Condition;\n\
+         // bedrock_addon_support::spawn in a comment\nuse bedrock_addon_support::spawn::X;\n\
+         fn f() { bedrock_addon_support_more::x(); }"
+            .to_owned(),
+    )];
+    assert_eq!(
+        support_violations("spawn_rules", manifest, &sources),
+        [
+            "spawn_rules/Cargo.toml:6 depends on bedrock_addon_support",
+            "spawn_rules/src/lib.rs:3 names bedrock_addon_support::",
+        ]
+    );
+}
+
 /// The directory of the shared crates: `crates/addon/shared/`.
 fn shared_dir() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../shared")

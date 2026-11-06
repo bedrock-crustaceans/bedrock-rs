@@ -5,8 +5,9 @@
 //! type serves both stacks; what differs is runtime: the registry each side keeps, the Molang
 //! query catalogue the compile check uses, and a few diagnostics of the crate's own.
 //!
-//! The reader stays a schema walk on `support`'s animation walker, because vanilla checks the files
-//! against its controller schema with a loader of its own rather than reading a typed struct.
+//! The reader stays a schema walk on `bedrock_addon_shared_animation`'s walker, because vanilla
+//! checks the files against its controller schema with a loader of its own rather than reading a
+//! typed struct.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
@@ -29,13 +30,13 @@ use bedrock_addon_core::load::{self, CollectionLoader, FileCopy, LoadContext, St
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::known;
 use bedrock_addon_core::version::{FormatVersion, SemVersion};
-use bedrock_addon_support::animation::read::{side_of, version_info, whole};
-use bedrock_addon_support::animation::registry::combine;
-use bedrock_addon_support::animation::write::file_path;
+use bedrock_addon_shared_animation::read::{side_of, version_info, whole};
+use bedrock_addon_shared_animation::registry::combine;
+use bedrock_addon_shared_animation::write::file_path;
 use history::Any;
 use read::{V1_8_0, V1_10_0};
 
-pub use bedrock_addon_support::animation::{EventString, ParticleEffect, SoundEffect};
+pub use bedrock_addon_shared_animation::{EventString, ParticleEffect, SoundEffect};
 pub use types::{
     AnimationController, AnimationControllerFile, BlendTransition, State, StateAnimation,
     StateVariable, Transition,

@@ -6,7 +6,7 @@ use facet_value::VArray;
 use super::{Animation, AnimationFile, AxisElement, Bone, Channel, Keyframe, LoopMode, OneOrMany};
 use bedrock_addon_core::json::{EncodeError, Value};
 use bedrock_addon_core::molang::Molang;
-use bedrock_addon_support::animation::write::{
+use bedrock_addon_shared_animation::write::{
     Object, event, float, list, map, molang, particle, sound, string, version,
 };
 

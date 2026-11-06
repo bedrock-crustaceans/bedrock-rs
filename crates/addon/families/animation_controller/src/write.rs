@@ -4,7 +4,7 @@
 use super::history::v1_8_0;
 use super::{AnimationController, AnimationControllerFile, BlendTransition, State, StateAnimation};
 use bedrock_addon_core::json::{EncodeError, Value};
-use bedrock_addon_support::animation::write::{
+use bedrock_addon_shared_animation::write::{
     Object, event, float, floats, list, map, molang, particle, sound, string, version,
 };
 

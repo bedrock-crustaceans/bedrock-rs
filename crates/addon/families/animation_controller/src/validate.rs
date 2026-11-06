@@ -6,8 +6,8 @@ use super::{AnimationControllerFile, State};
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::version::SemVersion;
-use bedrock_addon_support::animation::validate::{command_version_unset, events};
-use bedrock_addon_support::animation::walk::{atof, text};
+use bedrock_addon_shared_animation::validate::{command_version_unset, events};
+use bedrock_addon_shared_animation::walk::{atof, text};
 
 /// `Error: state %s not found - defaulting to using state %d`.
 pub(crate) const STATE_NOT_FOUND: &str = "Error: state {} not found - defaulting to using state {}";

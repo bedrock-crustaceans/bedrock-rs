@@ -130,19 +130,6 @@ fn the_closing_lines_and_shared_findings() {
             Location::default()
         )]
     );
-    same(
-        &crate::spawn::load::closing("closing"),
-        &Diagnostic::new(
-            fixed("closing"),
-            Severity::Error,
-            Phase::Validate,
-            Location::default(),
-        ),
-    );
-    same(
-        &crate::spawn::load::error(code()),
-        &long(Severity::Error, Phase::Parse, Location::default()),
-    );
     let origin = unversioned_origin(pack(), PackSide::Behavior);
     same(
         &crate::puv::shadowed(&origin),
@@ -157,17 +144,6 @@ fn the_closing_lines_and_shared_findings() {
         same(
             &crate::shape::finding(code(), severity, at()),
             &long(severity, Phase::Parse, here(at())),
-        );
-        let mut d = Diagnostics::default();
-        crate::spawn::read::finding(code(), severity, &at(), &mut d);
-        crate::animation::validate::push(&mut d, code(), severity, at());
-        let told: Vec<_> = d.iter().cloned().collect();
-        assert_eq!(
-            told,
-            [
-                long(severity, Phase::Parse, here(at())),
-                long(severity, Phase::Validate, here(at()))
-            ]
         );
     }
 }

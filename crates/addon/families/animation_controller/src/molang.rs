@@ -2,7 +2,7 @@
 
 use super::{AnimationControllerFile, State};
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor, Step};
-use bedrock_addon_support::animation::molang::{
+use bedrock_addon_shared_animation::molang::{
     CONTROLLER_EVENT, CONTROLLER_TRANSITION, CONTROLLER_VALUE, event, particle,
 };
 

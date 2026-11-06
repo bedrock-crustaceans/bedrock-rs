@@ -1101,24 +1101,3 @@ fn permutation_value(p: &Permutation) -> Value {
     put_extra(&mut m, &p.extra);
     Value::from(m)
 }
-
-#[cfg(test)]
-mod one_or_many_tests {
-    use super::OneOrMany;
-
-    #[test]
-    fn one_or_many_converts_from_a_vec() {
-        assert_eq!(OneOrMany::from(vec![3, 4]), OneOrMany::Many(vec![3, 4]));
-    }
-
-    #[test]
-    fn one_or_many_iterates_by_value_and_by_reference() {
-        let one = OneOrMany::One(1);
-        let many = OneOrMany::Many(vec![1, 2]);
-        assert_eq!((&one).into_iter().copied().collect::<Vec<_>>(), [1]);
-        assert_eq!(many.iter().copied().collect::<Vec<_>>(), [1, 2]);
-        assert_eq!(one.len(), 1);
-        assert_eq!(many.len(), 2);
-        assert_eq!(many.into_iter().sum::<i32>(), 3);
-    }
-}
