@@ -105,8 +105,8 @@ pub(crate) fn merge_atlas(
     let mut layers = Vec::new();
     let mut clamp = Diagnostics::default();
     for copy in copies {
-        diagnostics.extend(copy.findings);
-        clamp.extend(copy.clamp);
+        diagnostics.append(copy.findings);
+        clamp.append(copy.clamp);
         layers.extend(copy.layer);
     }
     // Top first, as `Merged::layers` promises and as the game folds them.

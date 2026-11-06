@@ -8,7 +8,7 @@ use std::sync::Arc;
 
 use indexmap::IndexMap;
 
-use super::combine::{CombineRule, Combined, Contribution, rank};
+use super::combine::{CombineRule, Combined, Contribution, Standing, rank};
 use super::layered::{Layered, Slot};
 use super::registry;
 use super::{Definition, Document, Origin, Rejected};
@@ -302,7 +302,7 @@ impl<T: Definition> RegistryBuilder<T> {
                         .claims
                         .entry(id)
                         .or_insert_with(|| rejected.origin.clone());
-                    if rank(&rejected.origin.pack) < rank(&claim.pack) {
+                    if Standing::is_above(&rejected.origin.pack, &claim.pack) {
                         *claim = rejected.origin.clone();
                     }
                 }
@@ -377,7 +377,7 @@ fn apply_claims<T: Definition>(
         let Some(effective) = &slot.effective else {
             continue;
         };
-        if rank(&claim.pack) >= rank(&effective.origin().pack) {
+        if !Standing::is_above(&claim.pack, &effective.origin().pack) {
             continue;
         }
         match combiner.rule.base() {
@@ -422,7 +422,7 @@ fn claim_beta<T: Definition>(
         let Some(effective) = &slot.effective else {
             continue;
         };
-        if rank(&claim.pack) >= rank(&effective.origin().pack) {
+        if !Standing::is_above(&claim.pack, &effective.origin().pack) {
             continue;
         }
         slot.shadowed.extend(slot.effective.take());
@@ -446,7 +446,7 @@ fn cross_beta<T: Definition>(stable: &mut Combiner<T>, beta: &mut Combiner<T::Be
         else {
             continue;
         };
-        if rank(&beta_document.origin().pack) < rank(&stable_document.origin().pack) {
+        if Standing::is_above(&beta_document.origin().pack, &stable_document.origin().pack) {
             stable_slot.shadowed.extend(stable_slot.effective.take());
         } else {
             beta_slot.shadowed.extend(beta_slot.effective.take());

@@ -452,7 +452,7 @@ fn highest<T: Merge<Key = String> + Clone + Default>(
                 }
                 layers.push(layer);
             }
-            Err(rejected) if top => diagnostics.extend(rejected.diagnostics),
+            Err(rejected) if top => diagnostics.append(rejected.diagnostics),
             Err(_) => {}
         }
     }

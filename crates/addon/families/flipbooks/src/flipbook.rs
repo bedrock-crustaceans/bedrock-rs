@@ -415,7 +415,7 @@ pub(crate) fn merge_flipbooks(copies: Vec<FlipbookCopy>) -> Merged<Flipbooks, Ra
     let mut places = HashMap::new();
     let mut origins: IndexMap<FlipbookKey, Origin> = IndexMap::new();
     for copy in copies {
-        diagnostics.extend(copy.findings);
+        diagnostics.append(copy.findings);
         if let Some(layer) = copy.layer {
             merge_copy(&mut root, &mut places, &layer.json, |key| {
                 origins.insert(key, layer.origin.clone());

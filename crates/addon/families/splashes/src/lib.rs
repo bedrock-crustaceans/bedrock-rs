@@ -203,7 +203,7 @@ fn combine_splashes(parsed: Vec<FileCopy<Splashes>>, _: &StackCx<'_>) -> Merged<
                 last = Some(layer.origin().clone());
                 layers.push(layer);
             }
-            Err(rejected) => diagnostics.extend(rejected.diagnostics),
+            Err(rejected) => diagnostics.append(rejected.diagnostics),
         }
         lower = true;
     }

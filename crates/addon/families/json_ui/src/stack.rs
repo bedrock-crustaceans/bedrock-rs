@@ -493,7 +493,7 @@ fn merge_stack(parsed: Vec<UiCopy>, has_ui: bool) -> Merged<UiDefinitions, RawLa
     let mut report = Report::default();
     // What reading each copy that takes part found, lowest pack first.
     for copy in by_path.values_mut().flatten() {
-        report.diagnostics.extend(std::mem::take(&mut copy.found));
+        report.diagnostics.append(std::mem::take(&mut copy.found));
     }
     let mut layers: Vec<RawLayer> = Vec::new();
     let mut origins: IndexMap<String, Origin> = IndexMap::new();

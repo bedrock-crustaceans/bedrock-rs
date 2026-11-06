@@ -1,5 +1,5 @@
-//! Where the members an upgrade step moved came from, so that what reads a step's output
-//! names a member by the path the FILE has.
+//! The moves an upgrade step made, each from an old place to a new one, so that what reads a
+//! step's output names a member by the path the FILE has.
 
 use std::borrow::Cow;
 use std::collections::HashMap;
@@ -16,7 +16,7 @@ use super::JsonPath;
 /// for each finding, the moves made before it, so that it is at the member as the file has it. A
 /// finding told before a move is about the document as it was then and is left alone.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub(crate) struct Origins(Vec<Move>);
+pub(crate) struct Moves(Vec<Move>);
 
 /// One move: the member now at `to` was at `from`; `told` findings had been told.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -26,14 +26,14 @@ struct Move {
     from: JsonPath,
 }
 
-/// The moves of an [`Origins`] by the place they moved a member to.
+/// The moves of an [`Moves`] by the place they moved a member to.
 #[derive(Clone, Debug)]
-pub(crate) struct ByPlace<'a>(HashMap<Cow<'a, JsonPath>, Vec<usize>>);
+pub(crate) struct ByDestination<'a>(HashMap<Cow<'a, JsonPath>, Vec<usize>>);
 
-impl ByPlace<'_> {
+impl ByDestination<'_> {
     /// The index with paths of its own: kept beside the moves it is of.
-    pub(crate) fn into_owned(self) -> ByPlace<'static> {
-        ByPlace(
+    pub(crate) fn into_owned(self) -> ByDestination<'static> {
+        ByDestination(
             self.0
                 .into_iter()
                 .map(|(to, moves)| (Cow::Owned(to.into_owned()), moves))
@@ -42,7 +42,7 @@ impl ByPlace<'_> {
     }
 }
 
-impl Origins {
+impl Moves {
     /// No move.
     #[cfg(test)]
     pub fn new() -> Self {
@@ -95,12 +95,12 @@ impl Origins {
 
     /// The path the member at `at` (a path of the upgraded document) has in the file: every
     /// move undone, the latest first. A path no move touched is itself.
-    pub fn source_of(&self, at: &JsonPath) -> JsonPath {
-        self.undo(&self.by_place(), at, usize::MAX)
+    pub fn undo_all(&self, at: &JsonPath) -> JsonPath {
+        self.undo(&self.by_destination(), at, usize::MAX)
     }
 
     /// The moves by the place they moved a member to, each list in the order made.
-    pub(crate) fn by_place(&self) -> ByPlace<'_> {
+    pub(crate) fn by_destination(&self) -> ByDestination<'_> {
         let mut index: HashMap<Cow<'_, JsonPath>, Vec<usize>> = HashMap::new();
         for (number, made) in self.0.iter().enumerate() {
             index
@@ -108,14 +108,19 @@ impl Origins {
                 .or_default()
                 .push(number);
         }
-        ByPlace(index)
+        ByDestination(index)
     }
 
     /// `at`, the path of the finding of index `finding`, with every move made before that
     /// finding undone: the latest move to `at` or to a member above it, then the latest
     /// before that one to where it came from, and so on. Each round costs the depth of the
     /// path, whatever the number of moves.
-    pub(crate) fn undo(&self, index: &ByPlace<'_>, at: &JsonPath, finding: usize) -> JsonPath {
+    pub(crate) fn undo(
+        &self,
+        index: &ByDestination<'_>,
+        at: &JsonPath,
+        finding: usize,
+    ) -> JsonPath {
         let mut at = at.clone();
         // The moves are in the order made, so those before the finding are the first ones.
         let mut before = self.0.partition_point(|made| made.told <= finding);
@@ -159,48 +164,48 @@ mod tests {
 
     #[test]
     fn a_moved_member_is_named_as_the_file_has_it() {
-        let mut origins = Origins::new();
+        let mut origins = Moves::new();
         origins.moved(path(&["c", "old"]), path(&["c", "new"]), 0);
         assert_eq!(
-            origins.source_of(&path(&["c", "new", "size", "1"])),
+            origins.undo_all(&path(&["c", "new", "size", "1"])),
             path(&["c", "old", "size", "1"])
         );
-        assert_eq!(origins.source_of(&path(&["c", "new"])), path(&["c", "old"]));
+        assert_eq!(origins.undo_all(&path(&["c", "new"])), path(&["c", "old"]));
         // A sibling and a member that only begins alike are not moved.
         assert_eq!(
-            origins.source_of(&path(&["c", "other"])),
+            origins.undo_all(&path(&["c", "other"])),
             path(&["c", "other"])
         );
-        assert_eq!(origins.source_of(&path(&["c"])), path(&["c"]));
+        assert_eq!(origins.undo_all(&path(&["c"])), path(&["c"]));
         assert_eq!(
-            origins.source_of(&path(&["c", "newer"])),
+            origins.undo_all(&path(&["c", "newer"])),
             path(&["c", "newer"])
         );
     }
 
     #[test]
     fn moves_are_undone_latest_first_and_the_inner_one_wins() {
-        let mut origins = Origins::new();
+        let mut origins = Moves::new();
         // Step 1: `a` becomes `b`; step 2: `b` becomes `c`, its scalar the member `c/value`.
         origins.moved(path(&["a"]), path(&["b"]), 0);
         origins.moved(path(&["b"]), path(&["c"]), 0);
         origins.moved(path(&["b"]), path(&["c", "value"]), 0);
         assert_eq!(
-            origins.source_of(&path(&["c", "value", "0"])),
+            origins.undo_all(&path(&["c", "value", "0"])),
             path(&["a", "0"])
         );
-        assert_eq!(origins.source_of(&path(&["c"])), path(&["a"]));
+        assert_eq!(origins.undo_all(&path(&["c"])), path(&["a"]));
         // An index is no key of the same spelling.
-        let mut indexed = Origins::new();
+        let mut indexed = Moves::new();
         indexed.moved(path(&["list"]), path(&["wrapped", "0"]), 0);
         assert_eq!(
-            indexed.source_of(&path(&["wrapped", "0", "x"])),
+            indexed.undo_all(&path(&["wrapped", "0", "x"])),
             path(&["list", "x"])
         );
         let mut keyed = JsonPath::new();
         keyed.push("wrapped");
         keyed.push("0");
-        assert_eq!(indexed.source_of(&keyed), keyed);
+        assert_eq!(indexed.undo_all(&keyed), keyed);
     }
 
     #[test]

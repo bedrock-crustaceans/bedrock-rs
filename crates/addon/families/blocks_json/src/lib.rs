@@ -184,7 +184,7 @@ impl Content for BlocksJson {
             applied,
         } = resolve::read(bytes, cx.is_base_game_pack);
         for application in applied {
-            diagnostics.extend(application.diagnostics);
+            diagnostics.append(application.diagnostics);
         }
         diagnostics.locate(&origin);
         match file {

@@ -206,7 +206,7 @@ fn combine_loading(
                 }
                 layers.push(layer);
             }
-            Err(rejected) if top => diagnostics.extend(rejected.diagnostics),
+            Err(rejected) if top => diagnostics.append(rejected.diagnostics),
             Err(_) => {}
         }
     }

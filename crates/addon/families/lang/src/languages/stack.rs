@@ -202,7 +202,7 @@ fn combine_languages(parsed: Vec<TextsFile>, cx: &StackCx<'_>) -> Merged<Languag
                 value.names.append(&layer.names);
                 layers.push(layer);
             }
-            TextsFile::Layer(Err(rejected)) => diagnostics.extend(rejected.diagnostics),
+            TextsFile::Layer(Err(rejected)) => diagnostics.append(rejected.diagnostics),
             TextsFile::Lang {
                 origin,
                 language,

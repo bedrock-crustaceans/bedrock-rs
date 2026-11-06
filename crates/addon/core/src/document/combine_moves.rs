@@ -175,3 +175,83 @@ fn merged_keeps_the_places_of_a_layer_and_a_failed_copy() {
         kept(merged.held_diagnostics());
     }
 }
+
+/// A document of pack `pack`, whose upgrade moved `old<pack>-<tag>` to `new<pack>-<tag>`.
+fn moved_in(pack: usize, tag: &str) -> Document<Moved> {
+    let v = FormatVersion::new(1, 0, 0);
+    let mut diagnostics = Diagnostics::default();
+    diagnostics.moved(
+        path(&format!("old{pack}-{tag}")),
+        path(&format!("new{pack}-{tag}")),
+    );
+    diagnostics.push(Diagnostic::new(
+        DiagnosticCode::InvalidValue { text: None },
+        Severity::Warning,
+        Phase::Upgrade,
+        Location::new(None, None, path(&format!("new{pack}-{tag}")), None),
+    ));
+    diagnostics.name_as_the_file_has_it();
+    let pack_ref = PackRef::new(
+        pack,
+        PackIdVersion::new(
+            Uuid::from_u128(pack as u128 + 1),
+            SemVersion::new(1, 0, 0),
+            PackType::Behavior,
+        ),
+        format!("pack {pack}"),
+    );
+    let origin = Origin::new(
+        pack_ref,
+        PackSide::Behavior,
+        PackPath::from_static("blocks/moved.json"),
+        None,
+        Vec::new(),
+    );
+    Document::new(
+        Moved,
+        origin,
+        VersionInfo::new(Some(v), false, v, v, false),
+        diagnostics,
+    )
+}
+
+/// Characterization (a question for the maintainers): a `FieldMerge` keeps the places of ONE
+/// of the two documents it merges, the lower pack's (the first pushed within one pack), and
+/// drops those of the other, though it keeps the findings of both. `Diagnostics::append`
+/// would union them, and apply the places of one file to the paths of another. No link rule
+/// asks a merged document for a place today.
+#[test]
+fn a_field_merge_keeps_the_places_of_the_lower_document_only() {
+    // (pack of the first pushed, pack of the second, the tag of the document whose places stay)
+    for (first, second, base) in [(1, 0, "a"), (0, 0, "a"), (0, 1, "b")] {
+        let registry = RegistryBuilder::combine(
+            [
+                Contribution::Stable(Id::from_static("demo:moved"), moved_in(first, "a")),
+                Contribution::Stable(Id::from_static("demo:moved"), moved_in(second, "b")),
+            ],
+            CombineRule::FieldMerge { merge: |_, _| {} },
+            CombineRule::FieldMerge { merge: |_, _| {} },
+            &LoadOptions::default(),
+        );
+        let merged = registry
+            .get(&Id::from_static("demo:moved"))
+            .expect("the merge is effective")
+            .diagnostics();
+        assert_eq!(merged.len(), 2, "the findings of both are kept");
+        let name = |tag: &str, prefix: &str| {
+            let pack = if tag == "a" { first } else { second };
+            path(&format!("{prefix}{pack}-{tag}"))
+        };
+        let other = if base == "a" { "b" } else { "a" };
+        assert_eq!(
+            merged.place_of(&name(base, "new")),
+            name(base, "old"),
+            "({first}, {second}): the base's place stays"
+        );
+        assert_eq!(
+            merged.place_of(&name(other, "new")),
+            name(other, "new"),
+            "({first}, {second}): the other document's place is dropped"
+        );
+    }
+}

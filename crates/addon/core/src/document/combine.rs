@@ -306,6 +306,50 @@ pub(crate) fn rank(pack: &PackRef) -> usize {
     pack.index().unwrap_or(usize::MAX)
 }
 
+/// Where one pack stands against another in the stack: the one comparison of ranks that every
+/// combine and every claim decides by.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Standing {
+    /// Higher in the stack: earlier in priority.
+    Above,
+    /// The same pack.
+    Level,
+    /// Lower in the stack.
+    Below,
+}
+
+impl Standing {
+    /// Where `pack` stands against `other`.
+    pub(crate) fn of(pack: &PackRef, other: &PackRef) -> Self {
+        match rank(pack).cmp(&rank(other)) {
+            Ordering::Less => Self::Above,
+            Ordering::Equal => Self::Level,
+            Ordering::Greater => Self::Below,
+        }
+    }
+
+    /// Whether `pack` is strictly above `other`.
+    pub(crate) fn is_above(pack: &PackRef, other: &PackRef) -> bool {
+        Self::of(pack, other) == Self::Above
+    }
+
+    /// Where the pack of `pack` stands against that of `other`, by the documents' origins.
+    pub(crate) fn of_documents<T>(incoming: &Document<T>, existing: &Document<T>) -> Self {
+        Self::of(&incoming.origin().pack, &existing.origin().pack)
+    }
+}
+
+/// Which end of the stack wins a conflict between two packs.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Side {
+    /// The higher pack wins; within one pack the later definition, with
+    /// [`Notice::duplicate`] at the earlier one.
+    Top,
+    /// The lower pack wins; within one pack the earlier definition, with
+    /// [`Notice::duplicate`] at the later one.
+    Bottom,
+}
+
 /// The outcome of combining an incoming definition with the effective one: the new effective
 /// one, and the one it drops (listed in `layers`), if any.
 pub(crate) struct Combined<T> {
@@ -325,28 +369,34 @@ impl<T> CombineRule<T> {
         let Some(existing) = existing else {
             return self.first(incoming, diagnostics);
         };
-        let higher = rank(&incoming.origin().pack) < rank(&existing.origin().pack);
-        let same_pack = rank(&incoming.origin().pack) == rank(&existing.origin().pack);
+        let standing = Standing::of_documents(&incoming, &existing);
         match self {
             Self::TopWins { shadowed: notice } => {
-                let (winner, other) = top_wins(existing, incoming, notice.as_ref(), diagnostics);
+                let (winner, other) = resolve(
+                    Side::Top,
+                    standing,
+                    existing,
+                    incoming,
+                    notice.as_ref(),
+                    diagnostics,
+                );
                 keep(winner, other)
             }
             Self::TopWinsFallback { .. } | Self::ClaimBeforeValidate { .. } => {
-                let (winner, other) = top_wins(existing, incoming, None, diagnostics);
+                let (winner, other) =
+                    resolve(Side::Top, standing, existing, incoming, None, diagnostics);
                 keep(winner, other)
             }
             Self::BottomWins { shadowed } => {
-                if same_pack {
-                    diagnostics.push(Notice::duplicate().at(incoming.origin()));
-                    keep(existing, incoming)
-                } else if higher {
-                    notify(shadowed.as_ref(), &incoming, diagnostics);
-                    keep(existing, incoming)
-                } else {
-                    notify(shadowed.as_ref(), &existing, diagnostics);
-                    keep(incoming, existing)
-                }
+                let (winner, other) = resolve(
+                    Side::Bottom,
+                    standing,
+                    existing,
+                    incoming,
+                    shadowed.as_ref(),
+                    diagnostics,
+                );
+                keep(winner, other)
             }
             Self::LastLoadedWins { replaced } => {
                 notify(replaced.as_ref(), &existing, diagnostics);
@@ -363,10 +413,7 @@ impl<T> CombineRule<T> {
                 }
             }
             Self::FieldMerge { merge } => {
-                let merged = if higher || same_pack {
-                    // The incoming definition is the higher one: written over the existing.
-                    merge_into(existing, incoming, *merge)
-                } else {
+                let merged = if standing == Standing::Below {
                     // The incoming definition is lower: it is the base the existing one is
                     // written over; the provenance stays the higher one's.
                     let (base, lower_origin, _, lower_diagnostics, unknown) = incoming.into_parts();
@@ -381,6 +428,9 @@ impl<T> CombineRule<T> {
                         document.origin_mut().add_contributor(pack);
                     }
                     document
+                } else {
+                    // The incoming definition is the higher one: written over the existing.
+                    merge_into(existing, incoming, *merge)
                 };
                 Combined {
                     effective: Some(merged),
@@ -388,7 +438,8 @@ impl<T> CombineRule<T> {
                 }
             }
             Self::Accumulate { accumulate } => {
-                let (mut winner, other) = top_wins(existing, incoming, None, diagnostics);
+                let (mut winner, other) =
+                    resolve(Side::Top, standing, existing, incoming, None, diagnostics);
                 accumulate(winner.value_mut(), other.value());
                 winner.origin_mut().add_contributor(&other.origin().pack);
                 for pack in &other.origin().contributors {
@@ -397,7 +448,7 @@ impl<T> CombineRule<T> {
                 keep(winner, other)
             }
             Self::Tied { rule, within_pack } => {
-                if same_pack {
+                if standing == Standing::Level {
                     within_pack.decide(existing, incoming, diagnostics)
                 } else {
                     rule.combine(Some(existing), incoming, diagnostics)
@@ -424,28 +475,36 @@ impl<T> CombineRule<T> {
     }
 }
 
-/// `(winner, other)`: the higher-priority definition wins; within one pack the later one, with
-/// a `DuplicateIdentifier` information ([`Notice::duplicate`]).
-fn top_wins<T>(
+/// `(winner, loser)` of two definitions of one identifier, decided by where `incoming` stands
+/// against `existing`: the one step every ranked rule resolves through.
+///
+/// Between two packs the winner is the one `side` favours, and `notice` is raised at the loser.
+/// Within one pack ([`Standing::Level`]) `Top` takes the later definition with a
+/// [`Notice::duplicate`] at the earlier one, and `Bottom` keeps the earlier one with the
+/// duplicate notice at the later one.
+fn resolve<T>(
+    side: Side,
+    standing: Standing,
     existing: Document<T>,
     incoming: Document<T>,
     notice: Option<&Notice>,
     diagnostics: &mut Diagnostics,
 ) -> (Document<T>, Document<T>) {
-    match rank(&incoming.origin().pack).cmp(&rank(&existing.origin().pack)) {
-        Ordering::Equal => {
-            diagnostics.push(Notice::duplicate().at(existing.origin()));
-            (incoming, existing)
-        }
-        Ordering::Less => {
-            notify(notice, &existing, diagnostics);
-            (incoming, existing)
-        }
-        Ordering::Greater => {
-            notify(notice, &incoming, diagnostics);
-            (existing, incoming)
-        }
+    let incoming_wins = match (side, standing) {
+        (Side::Top, Standing::Above | Standing::Level) | (Side::Bottom, Standing::Below) => true,
+        (Side::Top, Standing::Below) | (Side::Bottom, Standing::Above | Standing::Level) => false,
+    };
+    let (winner, loser) = if incoming_wins {
+        (incoming, existing)
+    } else {
+        (existing, incoming)
+    };
+    if standing == Standing::Level {
+        diagnostics.push(Notice::duplicate().at(loser.origin()));
+    } else {
+        notify(notice, &loser, diagnostics);
     }
+    (winner, loser)
 }
 
 fn keep<T>(effective: Document<T>, dropped: Document<T>) -> Combined<T> {
@@ -500,4 +559,33 @@ pub enum FilesRule {
         /// Raised at a failing higher copy when a lower one is effective.
         fallback: Option<Notice>,
     },
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::pack_identity::{PackIdVersion, PackType};
+    use crate::version::SemVersion;
+
+    fn pack(index: usize) -> PackRef {
+        PackRef::new(
+            index,
+            PackIdVersion::new(
+                uuid::Uuid::from_u128(index as u128 + 1),
+                SemVersion::new(1, 0, 0),
+                PackType::Behavior,
+            ),
+            format!("pack {index}"),
+        )
+    }
+
+    #[test]
+    fn standing_is_the_rank_comparison_read_from_the_first_pack() {
+        assert_eq!(Standing::of(&pack(0), &pack(1)), Standing::Above);
+        assert_eq!(Standing::of(&pack(1), &pack(1)), Standing::Level);
+        assert_eq!(Standing::of(&pack(2), &pack(1)), Standing::Below);
+        assert!(Standing::is_above(&pack(0), &pack(1)));
+        assert!(!Standing::is_above(&pack(1), &pack(1)));
+        assert!(!Standing::is_above(&pack(2), &pack(1)));
+    }
 }

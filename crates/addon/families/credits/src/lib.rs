@@ -174,7 +174,7 @@ fn combine_credits(parsed: Vec<FileCopy<Credits>>, _: &StackCx<'_>) -> Merged<Cr
                 value = layer.value().clone();
                 layers.push(layer);
             }
-            Err(rejected) => diagnostics.extend(rejected.diagnostics),
+            Err(rejected) => diagnostics.append(rejected.diagnostics),
         }
     }
     Merged::new(value, IndexMap::new(), layers, diagnostics)
