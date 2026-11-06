@@ -42,10 +42,12 @@ impl StackReport<'_> {
             .filter(move |diagnostic| diagnostic.severity >= severity)
     }
 
-    /// At least one error-level finding.
+    /// At least one error-level finding that rejects: a kept error does not count, as in
+    /// [`Diagnostics::has_errors`](bedrock_addon_core::diagnostic::Diagnostics::has_errors)
+    /// and [`PackReport::has_errors`](bedrock_addon_core::diagnostic::PackReport::has_errors).
+    /// A kept error is still in [`at_least`](Self::at_least)`(Severity::Error)`.
     pub fn has_errors(&self) -> bool {
-        self.iter()
-            .any(|diagnostic| diagnostic.severity == Severity::Error)
+        self.iter().any(Diagnostic::rejects)
     }
 
     /// Findings grouped by pack, in stack order; findings that name no pack are left out.
@@ -197,6 +199,28 @@ mod tests {
             files,
             [("z.json", 1), ("a.json", 1), ("b.json", 2), ("a.json", 1)]
         );
+    }
+
+    /// Only a kept error: an error in the game's content log, after which the game keeps the
+    /// document. It rejects nothing, so the stack has no error that stops a load.
+    #[test]
+    fn a_report_of_only_kept_errors_has_no_errors() {
+        let findings = [
+            finding(Some(pack(0)), Some("a.json"), None, Severity::Error).into_kept(),
+            finding(None, None, None, Severity::Warning),
+        ];
+        let report = StackReport::new(findings.iter().collect());
+        assert!(!report.has_errors());
+        assert_eq!(report.at_least(Severity::Error).count(), 1);
+    }
+
+    #[test]
+    fn a_report_with_a_rejecting_error_has_errors() {
+        let findings = [
+            finding(Some(pack(0)), Some("a.json"), None, Severity::Error).into_kept(),
+            finding(Some(pack(0)), Some("b.json"), None, Severity::Error),
+        ];
+        assert!(StackReport::new(findings.iter().collect()).has_errors());
     }
 
     #[test]
