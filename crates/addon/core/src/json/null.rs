@@ -36,7 +36,7 @@
 //!
 //!   The blanking follows the struct shapes only. It does not enter a proxied shape (a range
 //!   written `{"min": null, "max": 3}`, a Molang field, a strict wrapper: the proxy receives
-//!   the `null` as written) nor a flattened field (only the envelope shell has one). A family
+//!   the `null` as written); a flattened struct's members are the struct's own. A family
 //!   with such a member whose inside is read through `JsonCpp` handles it itself: in the proxy's
 //!   conversion (read a `null` bound as the bound left out), or by taking the `null` members
 //!   out of that object before the typed read; and states which it chose.
@@ -124,8 +124,8 @@ pub fn tell_null_members(found: &[JsonPath], at: &JsonPath, d: &mut Diagnostics)
 
 /// Every struct member of `json`, read as `shape`, written as `null` (rule N1's absent
 /// members), in document order. Map entries, list elements and the inside of untyped values
-/// are not members; the inside of a proxied shape or of a flattened field is not walked
-/// (module documentation).
+/// are not members; the inside of a proxied shape is not walked, and a flattened struct's
+/// members are the struct's own (module documentation).
 pub fn null_members(shape: &'static Shape, json: &Value) -> Vec<JsonPath> {
     member_paths(shape, json)
         .iter()

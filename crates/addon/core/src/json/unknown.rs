@@ -1,10 +1,9 @@
 //! Unknown members: the keys of a document no field of its typed struct takes.
 //!
-//! Version structs have no `#[facet(flatten)]` field, so facet skips an
-//! unknown key silently. This walk compares the struct shapes with a `Value` read from the same
-//! text: field names come from `effective_name()` (and `alias`), fields with
-//! `should_skip_deserializing()` take no key, and every other key is reported with its JSON path
-//! (`UnrecognizedField`). `keep_unknown_members` also keeps each one of a struct that keeps
+//! facet skips an unknown key silently. This walk compares the struct shapes with a `Value`
+//! read from the same text: field names come from `effective_name()` (and `alias`), fields
+//! with `should_skip_deserializing()` take no key, a flattened struct's fields are the
+//! struct's own, and every other key is reported with its JSON path (`UnrecognizedField`). `keep_unknown_members` also keeps each one of a struct that keeps
 //! its unknown members in a document's `Unknown` table, by the path of its object.
 //!
 //! Which struct keeps them ([`keeps`]): one marked with `#[facet(skip)] extra: Extra`, or whose
@@ -859,32 +858,75 @@ fn walk_object<'m, 'f>(
     for (key, item) in object {
         let key = key.as_str();
         cursor.path.push_key(key);
-        match find_field(fields, key) {
-            Lookup::Field(index, field) => {
-                if item.is_null() {
-                    cursor.null_members.push(cursor.path.clone());
-                }
-                if field.proxy().is_none() {
-                    with_step(cursor, Some(to_step(index)), |cursor| {
-                        cursor.field_rule = rule_of(field.attributes.iter());
-                        walk_value(field.shape(), item, typed_field(index), cursor, out);
-                        cursor.field_rule = None;
-                    });
-                }
-            }
-            Lookup::Flattened => {}
-            Lookup::Unknown => out.push(Unknown {
-                path: cursor.path.clone(),
-                key: Some(key.to_owned()),
-                value: item.clone(),
-                route: cursor.route.clone().filter(|_| keeps),
-                told,
-            }),
-        }
+        walk_member(
+            fields,
+            to_step,
+            typed_field,
+            (key, item),
+            (keeps, told),
+            cursor,
+            out,
+        );
         cursor.path.pop();
     }
     // A list or a map below the field holds more objects the field's word is for.
     cursor.field_rule = held;
+}
+
+/// The member `key` (whose value is `item`, at the cursor's path) of an object read as the
+/// named `fields`: [`walk_object`]'s step for one key. A key a flattened struct field takes is
+/// walked as that struct's member, one route step deeper and at the same JSON path: a
+/// flattened field adds no JSON level. `keeps` and `told` are the object's, the flattened
+/// struct's members being the object's own.
+fn walk_member<'m, 'f>(
+    fields: &'static [Field],
+    to_step: &dyn Fn(usize) -> Step,
+    typed_field: &dyn Fn(usize) -> Typed<'m, 'f>,
+    (key, item): (&str, &Value),
+    (keeps, told): (bool, UnknownRule),
+    cursor: &mut Cursor,
+    out: &mut Vec<Unknown>,
+) {
+    match find_field(fields, key) {
+        Lookup::Field(index, field) => {
+            if item.is_null() {
+                cursor.null_members.push(cursor.path.clone());
+            }
+            if field.proxy().is_none() {
+                with_step(cursor, Some(to_step(index)), |cursor| {
+                    cursor.field_rule = rule_of(field.attributes.iter());
+                    walk_value(field.shape(), item, typed_field(index), cursor, out);
+                    cursor.field_rule = None;
+                });
+            }
+        }
+        Lookup::Flattened(index, flattened) => {
+            // A flattened map takes every key as an entry it holds as written.
+            let Some(inner) = struct_fields(flattened.shape()) else {
+                return;
+            };
+            let typed_inner = typed_field(index).and_then(|t| t.into_struct().ok());
+            let typed_inner = |inner: usize| typed_inner.and_then(|f| f.field(inner).ok());
+            with_step(cursor, Some(to_step(index)), |cursor| {
+                walk_member(
+                    inner,
+                    &Step::Field,
+                    &typed_inner,
+                    (key, item),
+                    (keeps, told),
+                    cursor,
+                    out,
+                );
+            });
+        }
+        Lookup::Unknown => out.push(Unknown {
+            path: cursor.path.clone(),
+            key: Some(key.to_owned()),
+            value: item.clone(),
+            route: cursor.route.clone().filter(|_| keeps),
+            told,
+        }),
+    }
 }
 
 /// Whether a struct keeps its unknown members in the document's table: it is marked with an
@@ -912,8 +954,9 @@ fn rule_of<'a>(mut attributes: impl Iterator<Item = &'a facet::Attr>) -> Option<
 enum Lookup {
     /// To the field at this index.
     Field(usize, &'static Field),
-    /// Into a flattened field (only the envelope shell has one).
-    Flattened,
+    /// Into the flattened field at this index: a struct one of whose fields takes the key, or
+    /// a map.
+    Flattened(usize, &'static Field),
     /// Nowhere.
     Unknown,
 }
@@ -930,7 +973,7 @@ fn find_field(fields: &'static [Field], key: &str) -> Lookup {
                     .is_some_and(|inner| !matches!(find_field(inner, key), Lookup::Unknown)),
             };
             if takes {
-                return Lookup::Flattened;
+                return Lookup::Flattened(index, field);
             }
             continue;
         }
@@ -1187,7 +1230,7 @@ fn key_shape(arm: &ObjectArm, key: &str) -> Option<&'static Shape> {
     fn in_fields(fields: &'static [Field], key: &str) -> Option<&'static Shape> {
         match find_field(fields, key) {
             Lookup::Field(_, field) => Some(field.shape()),
-            Lookup::Flattened => fields
+            Lookup::Flattened(..) => fields
                 .iter()
                 .filter(|f| f.is_flattened() && !f.should_skip_deserializing())
                 .find_map(|f| in_fields(struct_fields(f.shape())?, key)),

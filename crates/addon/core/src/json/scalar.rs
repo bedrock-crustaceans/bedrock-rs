@@ -652,10 +652,9 @@ impl std::ops::Deref for RefusedScalar {
 /// written (rule N1 aside) and the pre-pass tells what the post-hoc misread walk told. A text
 /// that is no JSON is the typed read's to report.
 ///
-/// A flattened struct (`#[facet(flatten)]`) is not walked: its plain scalars are facet's under
-/// every profile, read and converted as written and never told, so a `Strict` slice whose
-/// struct flattens one does not judge them. Members behind a proxy (the strict wrappers) judge
-/// themselves.
+/// A flattened struct's (`#[facet(flatten)]`) members are judged as the struct's own, at their
+/// paths (the flattened field adds no step). A flattened map's entries are facet's. Members
+/// behind a proxy (the strict wrappers) judge themselves.
 ///
 /// # Errors
 ///

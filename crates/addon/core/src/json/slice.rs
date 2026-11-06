@@ -595,6 +595,11 @@ fn walk_path(
                 let Some(field) = field_of(shape, variant, index as usize) else {
                     return (members, None);
                 };
+                // A flattened field's members are its parent's: no JSON level.
+                if variant.is_none() && field.is_flattened() {
+                    shape = field.shape();
+                    continue;
+                }
                 // The one field of a newtype variant is the variant's value itself
                 // (`Box(BoundingBox)` of an untagged enum reads the object, `{"Tag": value}`
                 // of an externally tagged one has its key from the variant): no JSON level.

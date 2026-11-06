@@ -965,7 +965,7 @@ mod prepass {
         assert!(read.absent.is_empty());
     }
 
-    /// A struct with a flattened one, as the envelope shell has.
+    /// A struct with a flattened one.
     #[derive(Debug, Facet)]
     struct WithFlattened {
         #[facet(default)]
@@ -982,15 +982,24 @@ mod prepass {
         on: bool,
     }
 
-    /// The pre-pass does not walk a flattened struct: under the strict rule its plain scalars
-    /// are facet's, read and converted as written, and nothing is told of them. Pinned as it
-    /// is today (a slice whose struct flattens one, entity's conversion among them, sees it).
+    /// The pre-pass walks a flattened struct's members as the struct's own: under the strict
+    /// rule a string for its number is refused there, at the member's path (the flattened
+    /// field adds no step), as the struct's own member is.
     #[test]
-    fn a_flattened_structs_scalars_are_not_judged() {
+    fn a_flattened_structs_scalars_are_judged() {
         let text = r#"{"own": 1, "n": "7", "on": true}"#;
-        let read = parse_with_rules::<WithFlattened>(JsonSlice::new(text), None, STRICT)
-            .expect("the flattened string is read");
+        assert!(matches!(
+            parse_with_rules::<WithFlattened>(JsonSlice::new(text), None, STRICT),
+            Err(ScalarFailure::Read(error)) if error.relative_path().to_string() == "n"
+        ));
+        let read = parse_with_rules::<WithFlattened>(
+            JsonSlice::new(r#"{"own": 1, "n": 7, "on": true}"#),
+            None,
+            STRICT,
+        )
+        .expect("the flattened members are read");
         assert_eq!(read.value.inner.n, 7);
+        assert!(read.value.inner.on);
         assert!(read.told.is_empty(), "{:?}", read.told);
         // The struct's own member is judged.
         let own = r#"{"own": "1", "n": 7}"#;
