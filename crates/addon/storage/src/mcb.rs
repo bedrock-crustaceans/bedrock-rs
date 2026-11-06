@@ -13,6 +13,15 @@
 //! pack ships beside its archive); there is one module per payload. A body is decoded only
 //! where those pairs show what every byte is; any other body is `UnsupportedBody`, which the pack layer turns into
 //! `unsupported_file_format`.
+//!
+//! The decoder is picked by the table `ROWS`: payload key, the versions vanilla bakes it at,
+//! decoder. It is not a per-family hook (`Family::MCB`, as the rework plan had it), on purpose:
+//! a document is decoded before it is routed, by its own header key (the stack's read path
+//! has no collection at hand, the writer's copy of a pack has no family at all), a decoder
+//! yields an `McbValue` and needs its baked versions, which a family's version chain does not
+//! carry, and a table assembled from the enabled families would stop decoding the documents
+//! of a family whose feature is off. Splitting the rows out to the families is behaviour-bearing
+//! for that last reason and is not done here.
 
 mod camera;
 mod catalog;
@@ -120,33 +129,92 @@ pub fn to_json_text(bytes: &[u8]) -> Result<String, StorageError> {
     ]))
 }
 
+/// A body decoder: the bytes after the header to the value of the payload key.
+type Decoder = fn(&[u8]) -> Result<McbValue, StorageError>;
+
+/// One payload the game bakes: its key, the format versions vanilla bakes it at (one layout
+/// for all of them), and the decoder of that layout.
+struct McbRow {
+    payload_key: &'static str,
+    versions: &'static [(u16, u16, u32)],
+    decode: Decoder,
+}
+
+/// Every payload with a known layout.
+const ROWS: &[McbRow] = &[
+    McbRow {
+        payload_key: "minecraft:voxel_shape",
+        versions: &[(1, 21, 110)],
+        decode: voxel::decode,
+    },
+    McbRow {
+        payload_key: "tiers",
+        versions: &[(1, 26, 10)],
+        decode: trade::decode,
+    },
+    // Items are baked at 1.26.30, 1.26.40 and 1.26.50 with one layout.
+    McbRow {
+        payload_key: "minecraft:item",
+        versions: &[(1, 26, 30), (1, 26, 40), (1, 26, 50)],
+        decode: item::decode,
+    },
+    McbRow {
+        payload_key: "minecraft:camera_entity",
+        versions: &[(1, 26, 10)],
+        decode: camera::decode,
+    },
+    // The Drop 4 experiment's freezing effects are baked at 1.26.50 under the one effect document.
+    McbRow {
+        payload_key: "particle_effect",
+        versions: &[(1, 20, 80), (1, 26, 10), (1, 26, 30), (1, 26, 50)],
+        decode: particle::decode,
+    },
+    // POI documents are baked at 1.26.40.
+    McbRow {
+        payload_key: "minecraft:poi_block",
+        versions: &[(1, 26, 40)],
+        decode: poi::decode_type,
+    },
+    McbRow {
+        payload_key: "minecraft:poi_tag",
+        versions: &[(1, 26, 40)],
+        decode: poi::decode_tag,
+    },
+    // The crafting catalogue is baked at several versions; the older ones share the 1.21.60 layout.
+    McbRow {
+        payload_key: "minecraft:crafting_items_catalog",
+        versions: &[
+            (1, 21, 60),
+            (1, 21, 70),
+            (1, 21, 110),
+            (1, 26, 10),
+            (1, 26, 30),
+            (1, 26, 40),
+            (1, 26, 50),
+        ],
+        decode: catalog::decode,
+    },
+];
+
+/// The decoder of `payload_key` at `version`, if vanilla bakes it there.
+fn decoder_for(payload_key: &str, version: (u16, u16, u32)) -> Option<Decoder> {
+    ROWS.iter()
+        .find(|row| row.payload_key == payload_key && row.versions.contains(&version))
+        .map(|row| row.decode)
+}
+
 /// The body of a document with `header`: the value of its payload key.
 ///
 /// A layout is known for a payload at the format versions vanilla bakes it at (the header's
 /// version is the document's `format_version`, and a body does not say which layout it is
 /// in), so any other payload or version is unsupported.
 fn decode_body(header: &McbHeader<'_>, body: &[u8]) -> Result<McbValue, StorageError> {
-    match (
+    let decode = decoder_for(
         header.payload_key,
         (header.major, header.minor, header.patch),
-    ) {
-        ("minecraft:voxel_shape", (1, 21, 110)) => voxel::decode(body),
-        ("tiers", (1, 26, 10)) => trade::decode(body),
-        // Items are baked at 1.26.30, 1.26.40 and 1.26.50 with one layout.
-        ("minecraft:item", (1, 26, 30 | 40 | 50)) => item::decode(body),
-        ("minecraft:camera_entity", (1, 26, 10)) => camera::decode(body),
-        // The Drop 4 experiment's freezing effects are baked at 1.26.50 under the one effect document.
-        ("particle_effect", (1, 20, 80) | (1, 26, 10 | 30 | 50)) => particle::decode(body),
-        // POI documents are baked at 1.26.40.
-        ("minecraft:poi_block", (1, 26, 40)) => poi::decode_type(body),
-        ("minecraft:poi_tag", (1, 26, 40)) => poi::decode_tag(body),
-        // The crafting catalogue is baked at several versions; the older ones share the 1.21.60 layout.
-        (
-            "minecraft:crafting_items_catalog",
-            (1, 21, 60 | 70 | 110) | (1, 26, 10 | 30 | 40 | 50),
-        ) => catalog::decode(body),
-        _ => Err(reader::UNSUPPORTED),
-    }
+    )
+    .ok_or(reader::UNSUPPORTED)?;
+    decode(body)
 }
 
 /// `value` as compact JSON text. A float keeps a fraction or an exponent (`1.0`, `-0.0`,
@@ -231,4 +299,78 @@ fn write_string(out: &mut String, text: &str) {
         }
     }
     out.push('"');
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The dispatch as it was written before the table: the oracle the table is held to.
+    fn by_match(payload_key: &str, version: (u16, u16, u32)) -> Option<Decoder> {
+        match (payload_key, version) {
+            ("minecraft:voxel_shape", (1, 21, 110)) => Some(voxel::decode),
+            ("tiers", (1, 26, 10)) => Some(trade::decode),
+            ("minecraft:item", (1, 26, 30 | 40 | 50)) => Some(item::decode),
+            ("minecraft:camera_entity", (1, 26, 10)) => Some(camera::decode),
+            ("particle_effect", (1, 20, 80) | (1, 26, 10 | 30 | 50)) => Some(particle::decode),
+            ("minecraft:poi_block", (1, 26, 40)) => Some(poi::decode_type),
+            ("minecraft:poi_tag", (1, 26, 40)) => Some(poi::decode_tag),
+            (
+                "minecraft:crafting_items_catalog",
+                (1, 21, 60 | 70 | 110) | (1, 26, 10 | 30 | 40 | 50),
+            ) => Some(catalog::decode),
+            _ => None,
+        }
+    }
+
+    /// Every key and version the match names, crossed, plus a key and versions it does not
+    /// name: the table picks the decoder the match picked, or none where it picked none.
+    #[test]
+    fn the_table_picks_the_decoder_the_match_picked() {
+        let keys = [
+            "minecraft:voxel_shape",
+            "tiers",
+            "minecraft:item",
+            "minecraft:camera_entity",
+            "particle_effect",
+            "minecraft:poi_block",
+            "minecraft:poi_tag",
+            "minecraft:crafting_items_catalog",
+            "minecraft:block",
+        ];
+        let versions = [
+            (1, 20, 80),
+            (1, 21, 60),
+            (1, 21, 70),
+            (1, 21, 110),
+            (1, 26, 10),
+            (1, 26, 20),
+            (1, 26, 30),
+            (1, 26, 40),
+            (1, 26, 50),
+            (1, 26, 60),
+        ];
+        let mut named = 0;
+        for key in keys {
+            for version in versions {
+                let expected = by_match(key, version);
+                let found = decoder_for(key, version);
+                named += usize::from(expected.is_some());
+                match (expected, found) {
+                    (None, None) => {}
+                    (Some(expected), Some(found)) => assert!(
+                        std::ptr::fn_addr_eq(expected, found),
+                        "{key} {version:?}: another decoder"
+                    ),
+                    _ => panic!(
+                        "{key} {version:?}: the match decodes {}, the table {}",
+                        expected.is_some(),
+                        found.is_some()
+                    ),
+                }
+            }
+        }
+        // 1 + 1 + 3 + 1 + 4 + 1 + 1 + 7 pairs.
+        assert_eq!(named, 19);
+    }
 }
