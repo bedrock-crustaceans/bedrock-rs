@@ -161,9 +161,11 @@ impl ScriptModule {
     /// The script side of `manifest`; `None` when it has no `script` or `client_script`
     /// module.
     ///
-    /// Paths count the manifest's modules and dependencies as [`Manifest`] holds them.
+    /// Paths are those of the file [`Manifest::parse`] read, as [`parse`](Self::parse) gives
+    /// them; on a manifest built by hand a dependency's path counts the dependencies
+    /// [`Manifest`] holds.
     pub fn from_manifest(manifest: &Manifest) -> Option<ScriptModule> {
-        Self::build(manifest, PackPath::from_static("manifest.json"), false)
+        Self::build(manifest, PackPath::from_static("manifest.json"))
     }
 
     /// Reads the script side of the manifest at `path` (vanilla's stage 1), with the
@@ -314,7 +316,7 @@ impl ScriptModule {
         let module = if refused {
             None
         } else {
-            Self::build(manifest, path.clone(), true)
+            Self::build(manifest, path.clone())
         };
         Stage1 {
             module,
@@ -323,10 +325,9 @@ impl ScriptModule {
         }
     }
 
-    /// The script side of `manifest`, read from `file`. With `in_file`, a dependency's path is
-    /// its place in the file (the manifest's `places`); otherwise it counts the dependencies
-    /// [`Manifest`] holds.
-    fn build(manifest: &Manifest, file: PackPath, in_file: bool) -> Option<ScriptModule> {
+    /// The script side of `manifest`, read from `file`. A dependency's path is its place in the
+    /// file (the manifest's `places`).
+    fn build(manifest: &Manifest, file: PackPath) -> Option<ScriptModule> {
         let module_path = |index: usize| {
             let mut at = JsonPath::new();
             if manifest.original_format == ManifestFormat::V0 {
@@ -339,15 +340,10 @@ impl ScriptModule {
         };
         // A manifest built by hand has no places; its dependencies are where it holds them.
         let dependency_path = |index: usize| {
-            manifest
-                .places
-                .dependencies
-                .get(index)
-                .filter(|_| in_file)
-                .map_or_else(
-                    || JsonPath::new().child("dependencies").index(index),
-                    |place| place.at.clone(),
-                )
+            manifest.places.dependencies.get(index).map_or_else(
+                || JsonPath::new().child("dependencies").index(index),
+                |place| place.at.clone(),
+            )
         };
         let mut scripts = manifest
             .modules

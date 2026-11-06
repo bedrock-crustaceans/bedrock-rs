@@ -534,7 +534,7 @@ fn paths_are_the_files_when_the_legacy_reader_drops_an_element() {
         "dependencies/3"
     );
 
-    // From the manifest alone the places are the manifest's.
+    // From the manifest alone the places are the file's too: the manifest keeps them.
     let manifest = Manifest::parse(
         &PackPath::from_static("manifest.json"),
         text.as_bytes(),
@@ -542,10 +542,10 @@ fn paths_are_the_files_when_the_legacy_reader_drops_an_element() {
     )
     .expect("loads");
     let viewed = ScriptModule::from_manifest(&manifest).expect("a script module");
-    assert_eq!(viewed.dependencies[0].path.to_string(), "dependencies/1");
+    assert_eq!(viewed.dependencies[0].path.to_string(), "dependencies/2");
     assert_eq!(
         viewed.uuid_dependencies[0].path.to_string(),
-        "dependencies/2"
+        "dependencies/3"
     );
     // And everything else is the same value.
     assert_eq!(
