@@ -77,7 +77,7 @@ pub use clamp_text::{
 pub use coerce::{Coerce, Coercing, IsIntRule, WideInt};
 // hidden: API not yet reviewed
 #[doc(hidden)]
-pub use duplicates::{last_wins, last_wins_except};
+pub use duplicates::{Winner, blank_repeats, first_wins, last_wins, last_wins_except};
 pub use envelope::{EnvelopeVersion, RootProbe, probe_envelope};
 // hidden: API not yet reviewed
 #[doc(hidden)]

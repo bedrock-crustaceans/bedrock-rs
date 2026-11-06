@@ -4,9 +4,11 @@
 
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 
+use bedrock_addon_core::diagnostic::JsonPath;
 use bedrock_addon_core::diagnostic::{DiagnosticCode, code_for_deserialize_error_kind};
 use bedrock_addon_core::json::{
-    JsonSlice, MAX_JSON_DEPTH, Value, from_str_jsonc, last_wins, last_wins_except, parse_at,
+    JsonSlice, MAX_JSON_DEPTH, Value, Winner, blank_repeats, first_wins, from_str_jsonc, last_wins,
+    last_wins_except, parse_at,
 };
 use facet::Facet;
 
@@ -383,5 +385,32 @@ fn a_wide_object_is_scanned_in_linear_time() {
     assert_eq!(
         object.get("k99999").unwrap().as_number().unwrap().to_i64(),
         Some(99_999)
+    );
+}
+
+#[test]
+fn first_wins_blanks_a_later_copy_from_the_comma_before_it() {
+    let text = r#"{"a": 1, "b": 2, "a": {"x": 1}, "c": 3}"#;
+    assert_eq!(
+        first_wins(text),
+        format!(r#"{{"a": 1, "b": 2{}, "c": 3}}"#, " ".repeat(15))
+    );
+    assert_eq!(
+        value(&first_wins(text)),
+        value(r#"{"a": 1, "b": 2, "c": 3}"#)
+    );
+}
+
+#[test]
+fn blank_repeats_asks_the_winner_of_each_object_by_its_path() {
+    let text = r#"{"f": {"k": 1, "k": 2}, "l": {"k": 1, "k": 2}, "s": [{"k": 1, "k": 2}]}"#;
+    let winner = |path: &JsonPath| match path.to_string().as_str() {
+        "f" => Winner::First,
+        "s/0" => Winner::Keep,
+        _ => Winner::Last,
+    };
+    assert_eq!(
+        blank_repeats(text, &winner),
+        r#"{"f": {"k": 1        }, "l": {        "k": 2}, "s": [{"k": 1, "k": 2}]}"#
     );
 }

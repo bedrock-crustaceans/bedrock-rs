@@ -310,7 +310,7 @@ pub(super) fn with_root(
     }
     let clean = match twice {
         Twice::Last => json::last_wins(text),
-        Twice::First => super::duplicates::first_wins(text),
+        Twice::First => json::first_wins(text),
     };
     if twice == Twice::First
         && matches!(clean, std::borrow::Cow::Owned(_))

@@ -7,7 +7,7 @@ use std::fmt::Write as _;
 use bytes::Bytes;
 use uuid::Uuid;
 
-use super::duplicates::first_wins;
+use bedrock_addon_core::json::first_wins;
 use indexmap::IndexMap;
 
 use super::{
