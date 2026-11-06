@@ -3,7 +3,10 @@
 //! they hand out, progress and limits. The core's `LoadOptions`, `LoadContext`, `RootId`,
 //! `Place`, `ListDepth`, `ReadRange`, `Limits`, … are re-exported here, their one documented path.
 
-pub use bedrock_addon_core::load::*;
+pub use bedrock_addon_core::load::{
+    AppData, BiomeRenderIdentifiers, BuiltIns, Experiment, Experiments, Limits, ListDepth,
+    LoadContext, LoadOptions, Place, RECOMMENDED_JOB_STACK, ReadRange, RootId,
+};
 
 mod io;
 mod job;
