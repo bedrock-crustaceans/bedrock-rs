@@ -637,3 +637,40 @@ fn a_refusal_without_an_extent_has_the_span_of_the_value_it_names() {
     assert_eq!(error.path.to_string(), "level");
     assert_eq!(under(error.span), r#""level""#);
 }
+
+#[test]
+fn first_byte_looks_past_white_space_and_comments() {
+    let first = |text| JsonSlice::new(text).first_byte();
+    assert_eq!(first(" // a\n /* b */ [1]"), Some(b'['));
+    assert_eq!(first("\u{a0}{}"), Some(b'{'));
+    assert_eq!(first("/* never ends {"), None);
+    assert_eq!(first("  "), None);
+    assert!(JsonSlice::new("/* x */ {}").opens_an_object());
+}
+
+#[test]
+fn span_reached_is_the_span_of_the_deepest_value_the_path_reaches() {
+    use bedrock_addon_core::diagnostic::JsonPath;
+    use bedrock_addon_core::json::{span_at, span_reached};
+    let text = r#"{"a": {"b": [10, 20]}, "c": 1}"#;
+    let slice = JsonSlice { text, offset: 5 };
+    let covered = |span: bedrock_addon_core::diagnostic::Span| {
+        &text[span.offset as usize - 5..(span.offset + span.len) as usize - 5]
+    };
+    let mut path = JsonPath::new();
+    path.push("a");
+    path.push("b");
+    path.push_index(1);
+    assert_eq!(covered(span_reached(slice, &path)), "20");
+    assert_eq!(span_at(slice, &path), Some(span_reached(slice, &path)));
+    let mut missing = JsonPath::new();
+    missing.push("a");
+    missing.push("x");
+    assert_eq!(span_at(slice, &missing), None);
+    assert_eq!(covered(span_reached(slice, &missing)), r#"{"b": [10, 20]}"#);
+    let mut wrong_kind = JsonPath::new();
+    wrong_kind.push("c");
+    wrong_kind.push_index(0);
+    assert_eq!(covered(span_reached(slice, &wrong_kind)), "1");
+    assert_eq!(covered(span_reached(slice, &JsonPath::new())), text);
+}

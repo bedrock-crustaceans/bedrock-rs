@@ -3,9 +3,6 @@
 //! an error and the file is skipped. The reader goes through the whole file and reports every
 //! one of them, each at its own place.
 
-use facet_json::RawJson;
-use indexmap::IndexMap;
-
 use super::style::{
     BorderImageRepeat, BoxSize, FormLabelStyle, FormPanelStyle, FormTextFieldStyle, StyleColor,
     StyleComponents, StyleDescription, UiStyle,
@@ -15,7 +12,7 @@ use super::{
     Layout, RootAttribs, RootDescription, UiComposition, UiRoot,
 };
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, JsonPathSegment, Severity, Span, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, Span, VanillaText,
 };
 use bedrock_addon_core::id::Id;
 use bedrock_addon_core::id::syntax::has_namespace;
@@ -27,21 +24,6 @@ use bedrock_addon_shared_shapes::color::hex_bytes;
 
 /// The client's text for an identifier that is not `namespace:name`.
 const NAMESPACE_TEXT: &str = "string must be prefixed with a namespace (eg. namespace:value)";
-
-/// The first byte of `text` that is neither white space nor inside a comment.
-fn first_token(text: &str) -> Option<u8> {
-    let mut rest = text.trim_start();
-    loop {
-        if let Some(comment) = rest.strip_prefix("//") {
-            rest = comment.split_once('\n').map_or("", |(_, after)| after);
-        } else if let Some(comment) = rest.strip_prefix("/*") {
-            rest = comment.split_once("*/").map_or("", |(_, after)| after);
-        } else {
-            return rest.bytes().next();
-        }
-        rest = rest.trim_start();
-    }
-}
 
 /// Where `slice` is in the file.
 fn span_of(slice: JsonSlice<'_>) -> Span {
@@ -443,7 +425,7 @@ fn integer_token(text: &str) -> bool {
 
 /// The first token of `node`'s text.
 fn token(node: &Node<'_>) -> Option<u8> {
-    node.text().and_then(|slice| first_token(slice.text))
+    node.text().and_then(|slice| slice.first_byte())
 }
 
 impl Reader<'_> {
@@ -841,31 +823,4 @@ pub(crate) fn composition(
             layout: layout?,
         })
     })
-}
-
-/// Where the file `document` writes the value at `path`; `None` when a step of the path is
-/// not there. One read of each level on the way.
-pub(crate) fn span_at(document: JsonSlice<'_>, path: &JsonPath) -> Option<Span> {
-    let mut current = document;
-    for step in path.segments() {
-        current = match (first_token(current.text)?, step) {
-            (b'{', JsonPathSegment::Key(key)) => {
-                let members = bedrock_addon_core::json::from_str_borrowed_jsonc::<
-                    IndexMap<String, RawJson<'_>>,
-                >(current.text)
-                .ok()?;
-                current.nested(members.get(key)?)?
-            }
-            (b'[', JsonPathSegment::Index(index)) => {
-                let elements =
-                    bedrock_addon_core::json::from_str_borrowed_jsonc::<Vec<RawJson<'_>>>(
-                        current.text,
-                    )
-                    .ok()?;
-                current.nested(elements.get(index)?)?
-            }
-            _ => return None,
-        };
-    }
-    Some(span_of(current))
 }

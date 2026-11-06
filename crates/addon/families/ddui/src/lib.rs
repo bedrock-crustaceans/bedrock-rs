@@ -452,7 +452,8 @@ fn place(diagnostics: &mut Diagnostics, document: JsonSlice<'_>) {
     let found = std::mem::take(diagnostics);
     for mut finding in found {
         if finding.location.span.is_none() && !finding.location.json_path.is_empty() {
-            finding.location.span = read::span_at(document, &finding.location.json_path);
+            finding.location.span =
+                bedrock_addon_core::json::span_at(document, &finding.location.json_path);
         }
         diagnostics.push(finding);
     }
@@ -500,7 +501,7 @@ fn parse_file<F: Family, T>(
         for member in [F::PAYLOAD_KEY, "attribs", "extension_point"] {
             at.push(member);
         }
-        (name, read::span_at(document, &at))
+        (name, bedrock_addon_core::json::span_at(document, &at))
     });
     let outcome = finish(parsed, cx);
     let mut diagnostics = outcome.diagnostics;

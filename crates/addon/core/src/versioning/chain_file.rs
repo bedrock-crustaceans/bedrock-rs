@@ -99,21 +99,6 @@ pub fn last_wins(text: &str) -> Option<Value> {
     crate::json::from_str_jsonc::<Value>(&crate::json::last_wins(text)).ok()
 }
 
-/// The first byte of `text` that is neither white space nor inside a comment.
-fn first_token(text: &str) -> Option<u8> {
-    let mut rest = text.trim_start();
-    loop {
-        if let Some(comment) = rest.strip_prefix("//") {
-            rest = comment.split_once('\n').map_or("", |(_, after)| after);
-        } else if let Some(comment) = rest.strip_prefix("/*") {
-            rest = comment.split_once("*/").map_or("", |(_, after)| after);
-        } else {
-            return rest.bytes().next();
-        }
-        rest = rest.trim_start();
-    }
-}
-
 /// The typed parse of `slice` after its JSON passed `shape` (the whole of `checked`, which
 /// `slice` is, or is the member `key` of). `None` with the findings when either fails.
 pub fn typed<'a, T: for<'f> Facet<'f>>(
@@ -216,9 +201,9 @@ fn typed_as<'a, T: for<'f> Facet<'f>>(
     // The failing value's own place in the file; facet's span only for a failure that names
     // no member (the whole slice when the text read was the rewritten one).
     let span = if !failure.path.is_empty() {
-        span_in(slice, &failure.path)
+        crate::json::span_reached(slice, &failure.path)
     } else if rewritten.is_some() {
-        span_in(slice, &JsonPath::new())
+        crate::json::span_reached(slice, &JsonPath::new())
     } else {
         failure.span
     };
@@ -233,7 +218,7 @@ fn coerced_finding(checked: JsonSlice<'_>, at: &JsonPath, place: &JsonPath) -> D
     let path = at.join(place);
     Diagnostic::info(DiagnosticCode::ValueRewritten { text: None })
         .at(path)
-        .span(span_in(checked, place))
+        .span(crate::json::span_reached(checked, place))
         .detail(crate::diagnostic::DiagnosticDetail::Note(
             shape::SCALAR_READ_AS_BOUND_TYPE,
         ))
@@ -250,41 +235,6 @@ fn typed_failure(
     let mut finding = shape::error(code, path);
     finding.location.span = Some(span);
     finding
-}
-
-/// The place in the file of the value at `path` below `slice`: the last value of each member
-/// on the way (the one that stands). When a step cannot be taken (a missing member, a key the
-/// path does not spell unambiguously), the span is the deepest value reached.
-fn span_in(slice: JsonSlice<'_>, path: &JsonPath) -> Span {
-    use crate::diagnostic::JsonPathSegment;
-    use facet_json::RawJson;
-    use indexmap::IndexMap;
-    let mut current = slice;
-    // The path's own segments, not its `Display` split on `/` (a key may hold one).
-    for step in path.segments() {
-        let next = match (first_token(current.text), step) {
-            (Some(b'{'), JsonPathSegment::Key(key)) => {
-                crate::json::from_str_borrowed_jsonc::<IndexMap<String, RawJson<'_>>>(current.text)
-                    .ok()
-                    .and_then(|members| current.nested(members.get(key)?))
-            }
-            (Some(b'['), JsonPathSegment::Index(index)) => {
-                crate::json::from_str_borrowed_jsonc::<Vec<RawJson<'_>>>(current.text)
-                    .ok()
-                    .and_then(|elements| current.nested(elements.get(index)?))
-            }
-            _ => None,
-        };
-        match next {
-            Some(next) => current = next,
-            None => break,
-        }
-    }
-    let narrow = |n: usize| u32::try_from(n).unwrap_or(u32::MAX);
-    Span {
-        offset: narrow(current.offset),
-        len: narrow(current.text.len()),
-    }
 }
 
 /// `{"format_version": version, key: payload}`: the whole document of a family read whole.

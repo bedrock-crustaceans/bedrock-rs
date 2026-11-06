@@ -106,17 +106,7 @@ impl<'a> Node<'a> {
 
     /// The first byte of the value that is neither white space nor inside a comment.
     fn first_token(&self) -> Option<u8> {
-        let mut rest = self.slice.text.trim_start();
-        loop {
-            if let Some(comment) = rest.strip_prefix("//") {
-                rest = comment.split_once('\n').map_or("", |(_, after)| after);
-            } else if let Some(comment) = rest.strip_prefix("/*") {
-                rest = comment.split_once("*/").map_or("", |(_, after)| after);
-            } else {
-                return rest.bytes().next();
-            }
-            rest = rest.trim_start();
-        }
+        self.slice.first_byte()
     }
 
     /// The value is a JSON `null`, which reads as an absent member (core's rule).

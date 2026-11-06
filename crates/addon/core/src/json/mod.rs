@@ -106,7 +106,7 @@ pub use scalar::{
 };
 // hidden: API not yet reviewed
 #[doc(hidden)]
-pub use slice::{JsonSlice, SliceError, parse_at, span_at};
+pub use slice::{JsonSlice, SliceError, parse_at, span_at, span_reached};
 // Hidden: what still holds a wrapper is listed, with the gap it waits on, in `strict`'s
 // module doc.
 #[doc(hidden)]

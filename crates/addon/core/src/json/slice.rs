@@ -35,6 +35,14 @@ impl<'a> JsonSlice<'a> {
     /// Whether the text, after whitespace and comments, opens an object: the object form of a
     /// component that also reads a bare value.
     pub fn opens_an_object(&self) -> bool {
+        self.first_byte() == Some(b'{')
+    }
+
+    /// The first byte of the text that is neither white space nor inside a comment: what
+    /// kind of value it holds, by a look at its start. White space is `str::trim_start`'s
+    /// (Unicode's, wider than JSON's: a peek, not a read); a `/*` comment without an end runs
+    /// to the end of the text. `None` for a text of white space and comments only.
+    pub fn first_byte(&self) -> Option<u8> {
         let mut rest = self.text;
         loop {
             rest = rest.trim_start();
@@ -43,7 +51,7 @@ impl<'a> JsonSlice<'a> {
             } else if let Some(after) = rest.strip_prefix("/*") {
                 rest = after.split_once("*/").map_or("", |(_, tail)| tail);
             } else {
-                return rest.starts_with('{');
+                return rest.bytes().next();
             }
         }
     }
@@ -439,24 +447,44 @@ pub fn span_at(slice: JsonSlice<'_>, path: &JsonPath) -> Option<Span> {
 
 /// The span of the value `members` names in `slice`; `None` when a step is not found.
 fn locate(slice: JsonSlice<'_>, members: &JsonPath) -> Option<Span> {
-    use indexmap::IndexMap;
     let mut current = slice;
     for step in members.segments() {
-        let next = match step {
-            JsonPathSegment::Key(key) => {
-                crate::json::from_str_borrowed_jsonc::<IndexMap<String, RawJson<'_>>>(current.text)
-                    .ok()
-                    .and_then(|object| current.nested(object.get(key)?))
-            }
-            JsonPathSegment::Index(index) => {
-                crate::json::from_str_borrowed_jsonc::<Vec<RawJson<'_>>>(current.text)
-                    .ok()
-                    .and_then(|array| current.nested(array.get(index)?))
-            }
-        };
-        current = next?;
+        current = enter(current, step)?;
     }
     Some(rebase(current, None))
+}
+
+/// The span of the value at `path` below `slice`, the last value of each member on the way
+/// (the one that stands); when a step cannot be taken (a member that is not there, a key
+/// the path does not spell unambiguously, a value of another kind), the span of the deepest
+/// value reached. [`span_at`] for a finding that is to have a place whatever its path says.
+pub fn span_reached(slice: JsonSlice<'_>, path: &JsonPath) -> Span {
+    let mut current = slice;
+    for segment in path.segments() {
+        match enter(current, segment) {
+            Some(next) => current = next,
+            None => break,
+        }
+    }
+    rebase(current, None)
+}
+
+/// The value one step below `slice`: its member `key` (the last of that key), or its element
+/// `index`. One read of the level.
+fn enter<'a>(slice: JsonSlice<'a>, segment: JsonPathSegment<'_>) -> Option<JsonSlice<'a>> {
+    use indexmap::IndexMap;
+    match segment {
+        JsonPathSegment::Key(key) => {
+            crate::json::from_str_borrowed_jsonc::<IndexMap<String, RawJson<'_>>>(slice.text)
+                .ok()
+                .and_then(|object| slice.nested(object.get(key)?))
+        }
+        JsonPathSegment::Index(index) => {
+            crate::json::from_str_borrowed_jsonc::<Vec<RawJson<'_>>>(slice.text)
+                .ok()
+                .and_then(|array| slice.nested(array.get(index)?))
+        }
+    }
 }
 
 /// facet's span moved by the slice offset; the whole slice when there is none.
