@@ -222,6 +222,12 @@ impl<T: Refer> Refer for Option<T> {
     }
 }
 
+impl<T: Refer> Refer for Box<T> {
+    fn refer<'a>(&'a self, out: &mut References<'a>) {
+        (**self).refer(out);
+    }
+}
+
 impl<T: Refer> Refer for Vec<T> {
     fn refer<'a>(&'a self, out: &mut References<'a>) {
         for (index, inner) in self.iter().enumerate() {

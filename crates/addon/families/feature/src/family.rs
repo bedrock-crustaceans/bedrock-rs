@@ -7,13 +7,15 @@ use std::convert::Infallible;
 use std::marker::PhantomData;
 
 use crate::{blocks, carver, history, placement, scatter, structure, tree};
+use bedrock_addon_core::diagnostic::Diagnostics;
 use bedrock_addon_core::id::FeatureId;
-use bedrock_addon_core::json::{EncodeError, Value};
+use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::load::DocumentSource;
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
-    BeyondWidth, Envelope, Family, InputKind, Loaded, MissingVersion, NoComponents, Reading,
-    Scalars, StructIndex, ValidateCx, VersionChain, VersionStruct,
+    BeyondWidth, Envelope, Family, InputKind, Loaded, MissingVersion, NoComponents, ParseCx,
+    Reading, Scalars, StructIndex, ValidateCx, VersionChain, VersionStruct, Versioned,
+    write_payload,
 };
 
 /// Format 1.13.0, the initial release (`[1.13.0, 1.21.10)`) and the floor of every feature
@@ -138,34 +140,6 @@ impl<T: FeatureType> Family for Fam<T> {
     }
 }
 
-/// The value of a `Feature` variant, held inline or (`Feature::Tree`) boxed.
-trait Held<T> {
-    /// The value, moved out.
-    fn into_inner(self) -> T;
-    /// The value.
-    fn inner(&self) -> &T;
-}
-
-impl<T> Held<T> for T {
-    fn into_inner(self) -> T {
-        self
-    }
-
-    fn inner(&self) -> &T {
-        self
-    }
-}
-
-impl<T> Held<T> for Box<T> {
-    fn into_inner(self) -> T {
-        *self
-    }
-
-    fn inner(&self) -> &T {
-        self
-    }
-}
-
 /// A computation generic over the feature type, picked by payload key.
 pub(crate) trait TypeFn<R> {
     /// Runs for the type `T`.
@@ -182,19 +156,16 @@ pub(crate) trait FeatureFn<R> {
 /// `FeatureType` impl (key, `internal`, `since_engine`, `floor`), the `VersionStruct` of its
 /// newest struct where it parses strictly (`strict = version`, by [`strict_struct!`]), the
 /// dispatch by payload key and `Feature`'s per-type accessors. A row is
-/// `Variant(Type) = "key", Chain [Version(Struct), …]` and its keys in that order; a variant
-/// that holds its type boxed says so, `Variant(Type => Box<Type>)`.
+/// `Variant(Type) = "key", Chain [Version(Struct), …]` and its keys in that order.
 macro_rules! feature_types {
     (@or $value:expr ; $default:expr) => { $value };
     (@or ; $default:expr) => { $default };
-    (@held $ty:ty) => { $ty };
-    (@held $ty:ty, $held:ty) => { $held };
     (
         $(#[$enum_meta:meta])*
         pub enum Feature;
         $(
             $(#[$doc:meta])*
-            $variant:ident($ty:ty $(=> $held:ty)?) = $key:literal,
+            $variant:ident($ty:ty) = $key:literal,
                 $chain:ident [ $($v:ident($t:ty)),+ ]
                 $(, strict = $strict:expr)?
                 $(, internal = $internal:literal)?
@@ -206,7 +177,7 @@ macro_rules! feature_types {
         pub enum Feature {
             $(
                 $(#[$doc])*
-                $variant(feature_types!(@held $ty $(, $held)?)),
+                $variant($ty),
             )*
         }
 
@@ -265,7 +236,7 @@ macro_rules! feature_types {
 
                 fn try_from(any: history::Any) -> Result<Self, history::Any> {
                     match any {
-                        history::Any::Latest(Feature::$variant(value)) => Ok(Held::into_inner(value)),
+                        history::Any::Latest(Feature::$variant(value)) => Ok(value),
                         other => Err(other),
                     }
                 }
@@ -317,7 +288,7 @@ macro_rules! feature_types {
             fn refer<'a>(&'a self, out: &mut crate::molang::References<'a>) {
                 match self {
                     $( Feature::$variant(value) => {
-                        crate::molang::Refer::refer(Held::<$ty>::inner(value), out)
+                        crate::molang::Refer::refer(value, out)
                     } )*
                 }
             }
@@ -454,13 +425,13 @@ feature_types! {
     SurfaceRelativeThreshold(placement::SurfaceRelativeThresholdFeature) = "minecraft:surface_relative_threshold_feature",
         SurfaceRelativeThresholdChain [V1_13_0(placement::SurfaceRelativeThresholdFeature)],
         strict = V1_13_0;
-    /// `minecraft:tree_feature`. Boxed: a `TreeFeature` holds every trunk and canopy shape
-    /// inline (some 17 KB, four times the next type), and an unoptimised build keeps a copy of
-    /// a `Feature` in each frame that moves one; held inline it took a 1 MiB thread past its
-    /// stack on the base game's load.
-    Tree(tree::TreeFeature => Box<tree::TreeFeature>) = "minecraft:tree_feature",
-        TreeChain [V1_13_0(tree::TreeFeature)],
-        strict = V1_13_0;
+    /// `minecraft:tree_feature`. Boxed, in the variant and through its chain: a `TreeFeature`
+    /// holds every trunk and canopy shape inline (some 17 KB, four times the next type), and an
+    /// unoptimised build keeps copies of the value in each frame of the load that moves one;
+    /// held inline it took a 768 KiB thread past its stack. The chain's struct is read as a
+    /// plain `TreeFeature` and boxed after (the impls below the rows).
+    Tree(Box<tree::TreeFeature>) = "minecraft:tree_feature",
+        TreeChain [V1_13_0(Box<tree::TreeFeature>)];
     /// `minecraft:underwater_cave_carver_feature`.
     UnderwaterCaveCarver(carver::UnderwaterCaveCarverFeature) = "minecraft:underwater_cave_carver_feature",
         UnderwaterCaveCarverChain [V1_13_0(carver::UnderwaterCaveCarverFeature)];
@@ -471,4 +442,32 @@ feature_types! {
     WeightedRandom(placement::WeightedRandomFeature) = "minecraft:weighted_random_feature",
         WeightedRandomChain [V1_13_0(placement::WeightedRandomFeature)],
         strict = V1_13_0;
+}
+
+impl Versioned for Box<tree::TreeFeature> {
+    const VERSION: FormatVersion = V1_13_0;
+}
+
+impl VersionStruct for Box<tree::TreeFeature> {
+    fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
+        // The door reads the plain struct, as for every other type; only the value the chain
+        // carries is boxed.
+        let tree = crate::read::parse_strict::<tree::TreeFeature>(payload, cx, d)?;
+        Some(Box::new(tree))
+    }
+
+    fn write(&self) -> Result<Value, EncodeError> {
+        write_payload(&**self)
+    }
+}
+
+/// The rules of a boxed type are the type's.
+impl<T: Rules> Rules for Box<T> {
+    fn rules(&mut self, check: &mut ValidateCx<'_>) {
+        (**self).rules(check);
+    }
+
+    fn older_form(&self) -> Option<Result<(FormatVersion, Value), EncodeError>> {
+        (**self).older_form()
+    }
 }
