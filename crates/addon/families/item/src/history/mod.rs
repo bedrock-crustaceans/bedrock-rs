@@ -38,91 +38,115 @@ use crate::Item;
 pub mod v1_10_0;
 pub mod v1_26_30;
 
-/// Declares the module of one component format.
-macro_rules! format_module {
-    ($(#[$meta:meta])* $module:ident = ($major:literal, $minor:literal, $patch:literal)) => {
-        $(#[$meta])*
-        pub mod $module {
-            /// The item document of this format version.
-            pub type Item = super::ItemDocument<{ super::pack($major, $minor, $patch) }>;
-        }
-    };
+/// 1.16.100 (and 1.17.0–1.19.82): the dynamic map of every registered component, with the
+/// pre-1.18 `food`, `durability` and `repairable` shapes.
+pub mod v1_16_100 {
+    /// The item document of this format version.
+    pub type Item = super::ItemDocument<{ super::pack(1, 16, 100) }>;
 }
 
-format_module! {
-    /// 1.16.100 (and 1.17.0–1.19.82): the dynamic map of every registered component, with the
-    /// pre-1.18 `food`, `durability` and `repairable` shapes.
-    v1_16_100 = (1, 16, 100)
+/// 1.19.83: `food`, `durability` and `repairable` in their post-1.18 shape.
+pub mod v1_19_83 {
+    /// The item document of this format version.
+    pub type Item = super::ItemDocument<{ super::pack(1, 19, 83) }>;
 }
-format_module! {
-    /// 1.19.83: `food`, `durability` and `repairable` in their post-1.18 shape.
-    v1_19_83 = (1, 19, 83)
+
+/// 1.20.0: the typed `description` with `category`.
+pub mod v1_20_0 {
+    /// The item document of this format version.
+    pub type Item = super::ItemDocument<{ super::pack(1, 20, 0) }>;
 }
-format_module! {
-    /// 1.20.0: the typed `description` with `category`.
-    v1_20_0 = (1, 20, 0)
+
+/// 1.20.20: `description.menu_category`, `glint`; `armor` removed.
+pub mod v1_20_20 {
+    /// The item document of this format version.
+    pub type Item = super::ItemDocument<{ super::pack(1, 20, 20) }>;
 }
-format_module! {
-    /// 1.20.20: `description.menu_category`, `glint`; `armor` removed.
-    v1_20_20 = (1, 20, 20)
+
+/// 1.20.30: the fixed component set; `food` without `on_consume`.
+pub mod v1_20_30 {
+    /// The item document of this format version.
+    pub type Item = super::ItemDocument<{ super::pack(1, 20, 30) }>;
 }
-format_module! {
-    /// 1.20.30: the fixed component set; `food` without `on_consume`.
-    v1_20_30 = (1, 20, 30)
+
+/// 1.20.40: `on_use`, `on_use_on`, `weapon`, `render_offsets` removed.
+pub mod v1_20_40 {
+    /// The item document of this format version.
+    pub type Item = super::ItemDocument<{ super::pack(1, 20, 40) }>;
 }
-format_module! {
-    /// 1.20.40: `on_use`, `on_use_on`, `weapon`, `render_offsets` removed.
-    v1_20_40 = (1, 20, 40)
+
+/// 1.20.50: `use_modifiers` and `tags`; `chargeable` and `use_duration` removed.
+pub mod v1_20_50 {
+    /// The item document of this format version.
+    pub type Item = super::ItemDocument<{ super::pack(1, 20, 50) }>;
 }
-format_module! {
-    /// 1.20.50: `use_modifiers` and `tags`; `chargeable` and `use_duration` removed.
-    v1_20_50 = (1, 20, 50)
+
+/// 1.20.60: `icon.textures`; unknown members are reported from here on.
+pub mod v1_20_60 {
+    /// The item document of this format version.
+    pub type Item = super::ItemDocument<{ super::pack(1, 20, 60) }>;
 }
-format_module! {
-    /// 1.20.60: `icon.textures`; unknown members are reported from here on.
-    v1_20_60 = (1, 20, 60)
+
+/// 1.20.80: `custom_components` as a list of names.
+pub mod v1_20_80 {
+    /// The item document of this format version.
+    pub type Item = super::ItemDocument<{ super::pack(1, 20, 80) }>;
 }
-format_module! {
-    /// 1.20.80: `custom_components` as a list of names.
-    v1_20_80 = (1, 20, 80)
+
+/// 1.21.10: `damage_absorption`, `durability_sensor`.
+pub mod v1_21_10 {
+    /// The item document of this format version.
+    pub type Item = super::ItemDocument<{ super::pack(1, 21, 10) }>;
 }
-format_module! {
-    /// 1.21.10: `damage_absorption`, `durability_sensor`.
-    v1_21_10 = (1, 21, 10)
+
+/// 1.21.30: `bundle_interaction`, `dyeable`, `rarity`, `storage_item`.
+pub mod v1_21_30 {
+    /// The item document of this format version.
+    pub type Item = super::ItemDocument<{ super::pack(1, 21, 30) }>;
 }
-format_module! {
-    /// 1.21.30: `bundle_interaction`, `dyeable`, `rarity`, `storage_item`.
-    v1_21_30 = (1, 21, 30)
+
+/// 1.21.40: `block_placer.replace_block_item`.
+pub mod v1_21_40 {
+    /// The item document of this format version.
+    pub type Item = super::ItemDocument<{ super::pack(1, 21, 40) }>;
 }
-format_module! {
-    /// 1.21.40: `block_placer.replace_block_item`.
-    v1_21_40 = (1, 21, 40)
+
+/// 1.21.50: `compostable`.
+pub mod v1_21_50 {
+    /// The item document of this format version.
+    pub type Item = super::ItemDocument<{ super::pack(1, 21, 50) }>;
 }
-format_module! {
-    /// 1.21.50: `compostable`.
-    v1_21_50 = (1, 21, 50)
+
+/// 1.21.60: namespaced `menu_category.group`, `custom_components` entries, the storage
+/// weight components.
+pub mod v1_21_60 {
+    /// The item document of this format version.
+    pub type Item = super::ItemDocument<{ super::pack(1, 21, 60) }>;
 }
-format_module! {
-    /// 1.21.60: namespaced `menu_category.group`, `custom_components` entries, the storage
-    /// weight components.
-    v1_21_60 = (1, 21, 60)
+
+/// 1.21.80: `icon` rebound.
+pub mod v1_21_80 {
+    /// The item document of this format version.
+    pub type Item = super::ItemDocument<{ super::pack(1, 21, 80) }>;
 }
-format_module! {
-    /// 1.21.80: `icon` rebound.
-    v1_21_80 = (1, 21, 80)
+
+/// 1.21.90: `kinetic_weapon`, `piercing_weapon`, `fire_resistant`, `swing_duration`,
+/// `swing_sounds`, `wearable.hides_player_location`; keyed custom components.
+pub mod v1_21_90 {
+    /// The item document of this format version.
+    pub type Item = super::ItemDocument<{ super::pack(1, 21, 90) }>;
 }
-format_module! {
-    /// 1.21.90: `kinetic_weapon`, `piercing_weapon`, `fire_resistant`, `swing_duration`,
-    /// `swing_sounds`, `wearable.hides_player_location`; keyed custom components.
-    v1_21_90 = (1, 21, 90)
+
+/// 1.21.110: `menu_category.category` retyped (default `none`).
+pub mod v1_21_110 {
+    /// The item document of this format version.
+    pub type Item = super::ItemDocument<{ super::pack(1, 21, 110) }>;
 }
-format_module! {
-    /// 1.21.110: `menu_category.category` retyped (default `none`).
-    v1_21_110 = (1, 21, 110)
-}
-format_module! {
-    /// 1.26.0: `damage` 0–32767, `block_placer.aligned_placement`.
-    v1_26_0 = (1, 26, 0)
+
+/// 1.26.0: `damage` 0–32767, `block_placer.aligned_placement`.
+pub mod v1_26_0 {
+    /// The item document of this format version.
+    pub type Item = super::ItemDocument<{ super::pack(1, 26, 0) }>;
 }
 
 /// The item family of the version-chain machinery (hidden: only the loaders name it).

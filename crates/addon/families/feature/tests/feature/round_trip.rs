@@ -206,7 +206,7 @@ fn the_history_path_writes_as_read_and_upgrades_to_the_same_feature() {
     let as_written = Feature::parse_as_written(&path, json.as_bytes(), &cx()).unwrap();
     assert!(matches!(
         as_written.value(),
-        history::FeatureHistory::ScatterV1_13_0(_)
+        history::FeatureHistory::Scatter(history::ScatterHistory::V1_13_0(_))
     ));
     let text = as_written.to_json().unwrap();
     assert!(text.contains(r#""format_version": "1.13.0""#));
@@ -225,7 +225,7 @@ fn a_document_at_its_newest_struct_is_latest_in_history() {
     let as_written = Feature::parse_as_written(&path, json.as_bytes(), &cx()).unwrap();
     assert!(matches!(
         as_written.value(),
-        history::FeatureHistory::Latest(Feature::Ore(_))
+        history::FeatureHistory::Ore(history::OreHistory::V1_13_0(_))
     ));
     assert_eq!(as_written.value().identifier().as_str(), "demo:x");
 }

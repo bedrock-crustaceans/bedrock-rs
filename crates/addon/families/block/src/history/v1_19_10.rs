@@ -1,21 +1,21 @@
 //! Format 1.19.10: the unwrapped components (`collision_box`, `light_emission`,
 //! `queued_ticking`, …).
 
-use super::legacy::{Legacy, input_check_failed, number};
+use super::legacy::{BlockPayload, input_check_failed, number};
 use super::ops::{clamp, real};
 use bedrock_addon_core::diagnostic::{Diagnostic, JsonPath, Phase};
 use bedrock_addon_core::json::Value;
-use bedrock_addon_core::versioning::{Upgrade, UpgradeCx, Versioned};
+use bedrock_addon_core::versioning::{Legacy, LegacyStep, UpgradeCx, Versioned};
 
 /// A block document of `[1.19.10, 1.19.20)`.
-pub type Block = Legacy<1, 19, 10>;
+pub type Block = Legacy<BlockPayload, 1, 19, 10>;
 
 /// Vanilla's 1.19.20 fixers.
-impl Upgrade for Block {
+impl LegacyStep<1, 19, 10> for BlockPayload {
     type Next = super::v1_19_20::Block;
 
-    fn upgrade(self, cx: &mut UpgradeCx<'_>) -> Self::Next {
-        let mut block: Self::Next = self.retag();
+    fn step(this: Block, cx: &mut UpgradeCx<'_>) -> Self::Next {
+        let mut block = this.0;
         let to = <Self::Next as Versioned>::VERSION;
         let d = &mut *cx.diagnostics;
         // Input check on the base: `friction` in 0.1..=1.0.
@@ -113,6 +113,6 @@ impl Upgrade for Block {
             |v| v,
             d,
         );
-        block
+        Legacy(block)
     }
 }

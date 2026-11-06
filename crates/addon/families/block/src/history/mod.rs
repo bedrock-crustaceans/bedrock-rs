@@ -3,8 +3,9 @@
 //!
 //! The chain is `v1_16_0 → v1_16_100 → v1_18_0 → v1_19_10 → v1_19_20 → v1_19_30 → v1_19_40 →
 //! v1_19_80 → v1_20_10 → v1_20_60 → v1_21_30 → v1_21_60 → v1_21_90 → v1_26_0 → v1_26_20 →
-//! v1_26_60`; each `vX_Y_Z::Block` parses `[X.Y.Z, next)` and its `Upgrade` impl is that
-//! version's fixer. The 1.26.20 document (`v1_26_20`) is the first cereal one; a document
+//! v1_26_60`; each `vX_Y_Z::Block` parses `[X.Y.Z, next)` and its step is that version's fixer
+//! (below 1.26.20 the struct is `Legacy<BlockPayload, X, Y, Z>` and the step
+//! `LegacyStep<X, Y, Z>` on [`BlockPayload`]). The 1.26.20 document (`v1_26_20`) is the first cereal one; a document
 //! from 1.26.60 up to the engine version parses as [`super::Block`] and runs no step.
 //! Below 1.16.0 a document is not loaded. Blocks have no struct for an unreleased format.
 
@@ -27,7 +28,7 @@ pub mod v1_21_90;
 pub mod v1_26_0;
 pub mod v1_26_20;
 
-pub use legacy::{Legacy, LegacyPermutation};
+pub use legacy::{BlockPayload, LegacyPermutation};
 
 pub(crate) use legacy::to_object;
 

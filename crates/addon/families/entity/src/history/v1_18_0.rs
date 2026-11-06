@@ -1,25 +1,29 @@
 //! Format 1.18.0: the struct and the step to 1.18.10.
 
-super::legacy_struct!(1, 18, 0);
-
 use bedrock_addon_core::diagnostic::JsonPath;
 use bedrock_addon_core::vanilla::ActorType;
-use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
+use bedrock_addon_core::versioning::{Legacy, LegacyStep, UpgradeCx};
 
-use super::ops::{Members, Told, group, json, same, section_a};
+use super::Payload;
+use super::fragments;
+use super::ops::{Members, Told, group, same, section_a};
+
+/// An entity document as written in format 1.18.0 (up to the next struct's version): its
+/// payload as written.
+pub type Entity = Legacy<Payload, 1, 18, 0>;
 
 /// 1.18.0 → 1.18.10 (gate 1.18.10).
-impl Upgrade for Entity {
+impl LegacyStep<1, 18, 0> for Payload {
     type Next = super::v1_18_10::Entity;
 
-    fn upgrade(self, cx: &mut UpgradeCx<'_>) -> Self::Next {
-        let mut payload = self.0;
+    fn step(this: Entity, cx: &mut UpgradeCx<'_>) -> Self::Next {
+        let mut payload = this.0;
         if section_a(&payload, cx) && cx.actor_type == ActorType::Ocelot {
             let mut told = Told::default();
             ocelot(&mut payload, &mut told);
             told.report(cx);
         }
-        super::v1_18_10::Entity(payload)
+        Legacy(payload)
     }
 }
 
@@ -36,11 +40,7 @@ fn ocelot(payload: &mut Payload, told: &mut Told) {
         return;
     }
     if let Some(group) = group(payload, "minecraft:wild_child_ocelot_spawn") {
-        let constant = json(
-            r#"{"entities": {"min_wait_time": 0, "max_wait_time": 0, "num_to_spawn": 2, "single_use": true,
-                "spawn_entity": "minecraft:ocelot", "spawn_event": "minecraft:entity_born", "spawn_method": "born",
-                "spawn_sound": "", "filters": [{"test": "random_chance", "value": 7}]}}"#,
-        );
+        let constant = fragments::ocelot_spawn();
         // A `spawn_entity` the file's group has is replaced, as the fixer replaces it, and
         // noted when it held something else.
         if group

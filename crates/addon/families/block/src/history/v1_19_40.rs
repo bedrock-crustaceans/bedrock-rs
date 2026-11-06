@@ -1,20 +1,20 @@
 //! Format 1.19.40: `light_dampening`, `menu_category.is_hidden_in_commands`.
 
-use super::legacy::{Legacy, component_path, fixed};
+use super::legacy::{BlockPayload, component_path, fixed};
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Phase};
 use bedrock_addon_core::json::Value;
-use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
+use bedrock_addon_core::versioning::{Legacy, LegacyStep, UpgradeCx};
 
 /// A block document of `[1.19.40, 1.19.80)`.
-pub type Block = Legacy<1, 19, 40>;
+pub type Block = Legacy<BlockPayload, 1, 19, 40>;
 
 /// `part_visibility` is removed with vanilla's two messages;
 /// `rotation [x, y, z]` becomes `transformation {rotation}`.
-impl Upgrade for Block {
+impl LegacyStep<1, 19, 40> for BlockPayload {
     type Next = super::v1_19_80::Block;
 
-    fn upgrade(self, cx: &mut UpgradeCx<'_>) -> Self::Next {
-        let mut block: Self::Next = self.retag();
+    fn step(this: Block, cx: &mut UpgradeCx<'_>) -> Self::Next {
+        let mut block = this.0;
         let mut removed = Vec::new();
         for (section, map) in block.sections_mut() {
             if map.shift_remove("minecraft:part_visibility").is_some() {
@@ -53,6 +53,6 @@ impl Upgrade for Block {
             "rotation",
             cx.diagnostics,
         );
-        block
+        Legacy(block)
     }
 }

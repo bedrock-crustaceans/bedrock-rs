@@ -4,7 +4,7 @@
 use bedrock_addon_derive::Components;
 use facet::Facet;
 
-use super::{has, insert, legacy_document, note_component, v1_21_70};
+use super::{ClientBiomePayload, has, insert, note_component, v1_21_70};
 use crate::color::Color255Rgb;
 use crate::component::{
     Checked, ClientBiomeComponent, DryFoliageColor, FoliageAppearance, FoliageColor,
@@ -17,13 +17,11 @@ use bedrock_addon_core::id::SoundEventName;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::version::FormatVersion;
-use bedrock_addon_core::versioning::{Upgrade, UpgradeCx, write_payload};
+use bedrock_addon_core::versioning::{Legacy, LegacyStep, UpgradeCx, write_payload};
 
-legacy_document! {
-    /// A client biome of format `[1.21.40, 1.21.70)`, read with its envelope: vanilla reads
-    /// `format_version` and `minecraft:client_biome` as members of one strict struct.
-    version = (1, 21, 40), set = Component
-}
+/// A client biome of format `[1.21.40, 1.21.70)`, read with its envelope: vanilla reads
+/// `format_version` and `minecraft:client_biome` as members of one strict struct.
+pub type ClientBiome = Legacy<ClientBiomePayload<Component>, 1, 21, 40>;
 
 /// The key of `minecraft:ambient_sounds`.
 const AMBIENT_SOUNDS: &str = "minecraft:ambient_sounds";
@@ -196,12 +194,13 @@ fn from_table<T>(
 /// (`foliage_appearance` and `biome_music` into types that only gain members), then an
 /// override of a vanilla biome gets the foliage, grass and dry-foliage colours 1.21.60 and
 /// 1.21.70 moved from code into data.
-impl Upgrade for ClientBiome {
+impl LegacyStep<1, 21, 40> for ClientBiomePayload<Component> {
     type Next = v1_21_70::ClientBiome;
 
-    fn upgrade(self, cx: &mut UpgradeCx<'_>) -> v1_21_70::ClientBiome {
-        let mut components = self.components;
-        let identifier = self.description.identifier.as_str().to_owned();
+    fn step(this: ClientBiome, cx: &mut UpgradeCx<'_>) -> v1_21_70::ClientBiome {
+        let biome = this.0;
+        let mut components = biome.components;
+        let identifier = biome.description.identifier.as_str().to_owned();
         if cx.original_version < COLOR_UPGRADE_BEFORE {
             from_table(
                 &mut components,
@@ -232,10 +231,10 @@ impl Upgrade for ClientBiome {
                 cx,
             );
         }
-        v1_21_70::ClientBiome {
-            format_version: self.format_version,
-            description: self.description,
+        Legacy(ClientBiomePayload {
+            format_version: biome.format_version,
+            description: biome.description,
             components,
-        }
+        })
     }
 }

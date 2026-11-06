@@ -1,25 +1,32 @@
 //! Format 1.21.130: the struct and the step to 1.26.0.
 
-super::legacy_struct!(1, 21, 130);
-
+use bedrock_addon_core::json::Value;
+use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::version::known;
-use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
+use bedrock_addon_core::versioning::ops::empty_object;
+use bedrock_addon_core::versioning::{Legacy, LegacyStep, UpgradeCx, Versioned};
 use std::collections::HashMap;
 
 use facet_value::VObject;
 
-use super::ops::{Members, Removed, Told, half, json, overwrite, removed, section_b, sections};
+use super::Payload;
+use super::fragments;
+use super::ops::{Members, Removed, Told, half, overwrite, removed, section_b, sections};
 use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath};
+
+/// An entity document as written in format 1.21.130 (up to the next struct's version): its
+/// payload as written.
+pub type Entity = Legacy<Payload, 1, 21, 130>;
 
 /// The step's version, for its findings.
 const V1_26_0: FormatVersion = known::V1_26_0;
 
 /// 1.21.130 → 1.26.0.
-impl Upgrade for Entity {
+impl LegacyStep<1, 21, 130> for Payload {
     type Next = super::v1_26_0::Entity;
 
-    fn upgrade(self, cx: &mut UpgradeCx<'_>) -> Self::Next {
-        let mut payload = self.0;
+    fn step(this: Entity, cx: &mut UpgradeCx<'_>) -> Self::Next {
+        let mut payload = this.0;
         // The conversions of this step whose legacy reader is one of the game's schema-driven
         // readers.
         super::ops::schema_conversions(&mut payload, super::v1_26_0::Entity::VERSION, cx);
@@ -63,7 +70,7 @@ impl Upgrade for Entity {
             }
         }
         told.report(cx);
-        super::v1_26_0::Entity(payload)
+        Legacy(payload)
     }
 }
 
@@ -110,18 +117,14 @@ fn section_b_1260(members: &mut dyn Members, at: &JsonPath, told: &mut Told) -> 
         overwrite(
             jump,
             "regular_skip_data",
-            json(
-                r#"{"distance_scale": 0.8, "height": 0.1, "jump_delay": 20, "animation_duration": 3}"#,
-            ),
+            fragments::regular_skip_data(),
             &at,
             told,
         );
         overwrite(
             jump,
             "fast_skip_data",
-            json(
-                r#"{"distance_scale": 1.75, "height": 0.15, "jump_delay": 1, "animation_duration": 1}"#,
-            ),
+            fragments::fast_skip_data(),
             &at,
             told,
         );
@@ -251,7 +254,7 @@ fn breedable_split(members: &mut dyn Members, at: &JsonPath, told: &mut Told) {
             let event = entry
                 .get("breed_event")
                 .cloned()
-                .unwrap_or_else(|| json("{}"));
+                .unwrap_or_else(empty_object);
             let event_at = entry_at.child("breed_event");
             if events.get(mate.as_str()).is_some_and(|had| *had != event)
                 && let Some(earlier) = gave_event.get(mate.as_str())

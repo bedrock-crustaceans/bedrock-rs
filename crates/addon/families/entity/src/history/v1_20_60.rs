@@ -1,18 +1,21 @@
 //! Format 1.20.60: the struct and the step to 1.20.70.
 
-super::legacy_struct!(1, 20, 60);
-
-use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
+use bedrock_addon_core::versioning::{Legacy, LegacyStep, UpgradeCx};
 use facet_value::VArray;
 
+use super::Payload;
 use super::ops::{section_b, sections};
 
+/// An entity document as written in format 1.20.60 (up to the next struct's version): its
+/// payload as written.
+pub type Entity = Legacy<Payload, 1, 20, 60>;
+
 /// 1.20.60 → 1.20.70 (gate 1.20.70).
-impl Upgrade for Entity {
+impl LegacyStep<1, 20, 60> for Payload {
     type Next = super::v1_20_70::Entity;
 
-    fn upgrade(self, cx: &mut UpgradeCx<'_>) -> Self::Next {
-        let mut payload = self.0;
+    fn step(this: Entity, cx: &mut UpgradeCx<'_>) -> Self::Next {
+        let mut payload = this.0;
         // B: each `entity_sensor.subsensors[].range` that is a number `r` becomes `[r, r]`
         // (horizontal, vertical).
         if section_b(&payload, cx) {
@@ -39,6 +42,6 @@ impl Upgrade for Entity {
                 }
             }
         }
-        super::v1_20_70::Entity(payload)
+        Legacy(payload)
     }
 }

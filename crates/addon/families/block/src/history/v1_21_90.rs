@@ -1,20 +1,20 @@
 //! Format 1.21.90: keyed custom components; `ordered_v1_custom_components`.
 
-use super::legacy::Legacy;
+use super::legacy::BlockPayload;
 use super::ops::edit_object;
 use bedrock_addon_core::json::Value;
-use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
+use bedrock_addon_core::versioning::{Legacy, LegacyStep, UpgradeCx};
 
 /// A block document of `[1.21.90, 1.26.0)`.
-pub type Block = Legacy<1, 21, 90>;
+pub type Block = Legacy<BlockPayload, 1, 21, 90>;
 
 /// `liquid_detection.detection_rules[0].use_liquid_clipping`
 /// is set to `true` when absent (only the first rule).
-impl Upgrade for Block {
+impl LegacyStep<1, 21, 90> for BlockPayload {
     type Next = super::v1_26_0::Block;
 
-    fn upgrade(self, _: &mut UpgradeCx<'_>) -> Self::Next {
-        let mut block: Self::Next = self.retag();
+    fn step(this: Block, _: &mut UpgradeCx<'_>) -> Self::Next {
+        let mut block = this.0;
         for (_, map) in block.sections_mut() {
             let Some(detection) = map.get_mut("minecraft:liquid_detection") else {
                 continue;
@@ -33,6 +33,6 @@ impl Upgrade for Block {
                 }
             });
         }
-        block
+        Legacy(block)
     }
 }

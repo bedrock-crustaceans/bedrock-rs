@@ -1,24 +1,29 @@
 //! Format 1.26.30: the struct and the step to 1.26.40.
 
-super::legacy_struct!(1, 26, 30);
-
 use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath, VanillaText};
+use bedrock_addon_core::json::Value;
+use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::version::known;
-use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
+use bedrock_addon_core::versioning::{Legacy, LegacyStep, UpgradeCx, Versioned};
 use facet_value::VObject;
 
+use super::Payload;
 use super::ops::{Members, Removed, Told, finding, kept, note, removed, sections};
 use crate::component::name_projectile_aliases;
+
+/// An entity document as written in format 1.26.30 (up to the next struct's version): its
+/// payload as written.
+pub type Entity = Legacy<Payload, 1, 26, 30>;
 
 /// The step's version, for its findings.
 const V1_26_40: FormatVersion = known::V1_26_40;
 
 /// 1.26.30 → 1.26.40.
-impl Upgrade for Entity {
+impl LegacyStep<1, 26, 30> for Payload {
     type Next = super::v1_26_40::Entity;
 
-    fn upgrade(self, cx: &mut UpgradeCx<'_>) -> Self::Next {
-        let mut payload = self.0;
+    fn step(this: Entity, cx: &mut UpgradeCx<'_>) -> Self::Next {
+        let mut payload = this.0;
         // The conversions of this step whose legacy reader is one of the game's schema-driven
         // readers.
         super::ops::schema_conversions(&mut payload, super::v1_26_40::Entity::VERSION, cx);
@@ -104,7 +109,7 @@ impl Upgrade for Entity {
             }
         }
         told.report(cx);
-        super::v1_26_40::Entity(payload)
+        Legacy(payload)
     }
 }
 

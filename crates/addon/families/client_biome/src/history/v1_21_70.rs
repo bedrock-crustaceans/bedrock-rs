@@ -2,7 +2,7 @@
 //! render-configuration identifiers; identifiers may still leave out the namespace.
 
 use super::v1_21_40::Component;
-use super::{change, find, has, insert, legacy_document, note_identifier, v1_21_90};
+use super::{ClientBiomePayload, change, find, has, insert, note_identifier, v1_21_90};
 use crate::component::{
     AtmosphereIdentifier, BiomeMusic, ColorGradingIdentifier, LightingIdentifier, WaterIdentifier,
 };
@@ -14,12 +14,10 @@ use bedrock_addon_core::id::{
 };
 use bedrock_addon_core::load::{BiomeRenderIdentifiers, LoadContext};
 use bedrock_addon_core::version::{BaseGameVersion, FormatVersion, SemVersion};
-use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
+use bedrock_addon_core::versioning::{Legacy, LegacyStep, UpgradeCx};
 
-legacy_document! {
-    /// A client biome of format `[1.21.70, 1.21.90)`.
-    version = (1, 21, 70), set = Component
-}
+/// A client biome of format `[1.21.70, 1.21.90)`.
+pub type ClientBiome = Legacy<ClientBiomePayload<Component>, 1, 21, 70>;
 
 /// The version below which a document gets the atmosphere, colour-grading and water identifiers.
 const RENDER_UPGRADE_BEFORE: FormatVersion = FormatVersion::new(1, 21, 70);
@@ -145,12 +143,13 @@ fn music_definition(identifier: &str, world: &BaseGameVersion) -> Option<&'stati
 /// The step to 1.21.90: an identifier without a
 /// namespace gets `minecraft:`; then the renderer's four identifiers and the music definition
 /// that older vanilla files left to code are inserted.
-impl Upgrade for ClientBiome {
+impl LegacyStep<1, 21, 70> for ClientBiomePayload<Component> {
     type Next = v1_21_90::ClientBiome;
 
-    fn upgrade(self, cx: &mut UpgradeCx<'_>) -> v1_21_90::ClientBiome {
-        let mut description = self.description;
-        let mut components = self.components;
+    fn step(this: ClientBiome, cx: &mut UpgradeCx<'_>) -> v1_21_90::ClientBiome {
+        let biome = this.0;
+        let mut description = biome.description;
+        let mut components = biome.components;
         if !description.identifier.as_str().contains(':') {
             description.identifier =
                 BiomeId::parse(format!("minecraft:{}", description.identifier.as_str()));
@@ -210,10 +209,10 @@ impl Upgrade for ClientBiome {
                 ),
             }
         }
-        v1_21_90::ClientBiome {
-            format_version: self.format_version,
+        Legacy(ClientBiomePayload {
+            format_version: biome.format_version,
             description,
             components,
-        }
+        })
     }
 }

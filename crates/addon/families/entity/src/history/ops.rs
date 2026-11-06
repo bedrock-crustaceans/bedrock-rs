@@ -9,112 +9,18 @@ use bedrock_addon_core::json::Value;
 use bedrock_addon_core::vanilla::ActorType;
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::version::known;
+use bedrock_addon_core::versioning::ops;
+pub(crate) use bedrock_addon_core::versioning::ops::jsoncpp::{
+    Misread, float_of, int_of, number_of,
+};
+pub(crate) use bedrock_addon_core::versioning::ops::{Members, f32_value, same, single_to_array};
 use bedrock_addon_core::versioning::{Family, UpgradeCx};
-use facet_value::{VArray, VObject};
+use facet_value::VObject;
 use indexmap::IndexMap;
 
 use super::Payload;
 use crate::Entity;
 use crate::game_schema;
-
-/// The members of a JSON object: `components` (an `IndexMap`) or a group (a `VObject`).
-pub(crate) trait Members {
-    /// The member `key`.
-    fn get(&self, key: &str) -> Option<&Value>;
-    /// The member `key`, mutably.
-    fn get_mut(&mut self, key: &str) -> Option<&mut Value>;
-    /// Sets `key`: in place when present, appended otherwise.
-    fn set(&mut self, key: &str, value: Value);
-    /// Removes `key`, keeping the order of the others.
-    fn take(&mut self, key: &str) -> Option<Value>;
-    /// The keys, in order.
-    fn keys(&self) -> Vec<String>;
-
-    /// Whether `key` is present.
-    fn has(&self, key: &str) -> bool {
-        self.get(key).is_some()
-    }
-
-    /// Renames `old` to `new` at `old`'s position; an existing `new` is replaced.
-    fn rename(&mut self, old: &str, new: &str) {
-        let Some(value) = self.get(old).cloned() else {
-            return;
-        };
-        let keys = self.keys();
-        let mut entries: Vec<(String, Value)> = Vec::with_capacity(keys.len());
-        for key in keys {
-            if key == new {
-                continue;
-            }
-            let member = if key == old {
-                (new.to_owned(), value.clone())
-            } else {
-                let member = self.get(&key).cloned().unwrap_or(Value::NULL);
-                (key, member)
-            };
-            entries.push(member);
-        }
-        for key in self.keys() {
-            self.take(&key);
-        }
-        for (key, value) in entries {
-            self.set(&key, value);
-        }
-    }
-
-    /// The component `key` as an object, mutably.
-    fn object(&mut self, key: &str) -> Option<&mut VObject> {
-        self.get_mut(key)?.as_object_mut()
-    }
-
-    /// Inserts `key` when absent; returns whether it did. A `null` member is an absent
-    /// member: it is taken out first, so the member stands where the
-    /// one of a document without it stands.
-    fn insert_absent(&mut self, key: &str, value: Value) -> bool {
-        if self.get(key).is_some_and(|member| !member.is_null()) {
-            return false;
-        }
-        self.take(key);
-        self.set(key, value);
-        true
-    }
-}
-
-impl Members for IndexMap<String, Value> {
-    fn get(&self, key: &str) -> Option<&Value> {
-        IndexMap::get(self, key)
-    }
-    fn get_mut(&mut self, key: &str) -> Option<&mut Value> {
-        IndexMap::get_mut(self, key)
-    }
-    fn set(&mut self, key: &str, value: Value) {
-        self.insert(key.to_owned(), value);
-    }
-    fn take(&mut self, key: &str) -> Option<Value> {
-        self.shift_remove(key)
-    }
-    fn keys(&self) -> Vec<String> {
-        IndexMap::keys(self).cloned().collect()
-    }
-}
-
-impl Members for VObject {
-    fn get(&self, key: &str) -> Option<&Value> {
-        VObject::get(self, key)
-    }
-    fn get_mut(&mut self, key: &str) -> Option<&mut Value> {
-        VObject::get_mut(self, key)
-    }
-    fn set(&mut self, key: &str, value: Value) {
-        self.insert(key, value);
-    }
-    fn take(&mut self, key: &str) -> Option<Value> {
-        self.remove(key)
-    }
-    fn keys(&self) -> Vec<String> {
-        VObject::keys(self).map(|k| k.as_str().to_owned()).collect()
-    }
-}
 
 /// One components section: `components` or a group.
 pub(crate) struct PayloadSection<'a> {
@@ -261,11 +167,7 @@ pub(crate) fn finding(cx: &mut UpgradeCx<'_>, code: DiagnosticCode, at: &JsonPat
 /// A kept error of a step at `at` (below the payload): a level-3 line of the game after which
 /// the entity loads: a kept error.
 pub(crate) fn kept(cx: &mut UpgradeCx<'_>, code: DiagnosticCode, at: &JsonPath) {
-    let path = JsonPath::new()
-        .child(<Entity as Family>::PAYLOAD_KEY)
-        .join(at);
-    cx.diagnostics
-        .push_kept_error(Diagnostic::error(code).at(path).phase(Phase::Upgrade));
+    ops::kept(cx.diagnostics, code, rooted(at));
 }
 
 /// A note of a step at `at` (below the payload): INFO, a value the game itself discards at
@@ -276,15 +178,14 @@ pub(crate) fn note(cx: &mut UpgradeCx<'_>, code: DiagnosticCode, at: &JsonPath) 
 
 /// A finding of a step at `at` (below the payload).
 fn finding_of(cx: &mut UpgradeCx<'_>, code: DiagnosticCode, severity: Severity, at: &JsonPath) {
-    let path = JsonPath::new()
+    ops::tell(cx.diagnostics, code, severity, rooted(at));
+}
+
+/// A path below the payload, rooted at the payload key.
+fn rooted(at: &JsonPath) -> JsonPath {
+    JsonPath::new()
         .child(<Entity as Family>::PAYLOAD_KEY)
-        .join(at);
-    cx.diagnostics.push(
-        Diagnostic::error(code)
-            .at(path)
-            .phase(Phase::Upgrade)
-            .severity(severity),
-    );
+        .join(at)
 }
 
 /// What a step has to tell, gathered while the payload is borrowed and reported after, in the order
@@ -352,11 +253,6 @@ impl Told {
 
     /// Reports the findings and records the moves, in their order.
     pub(crate) fn report(self, cx: &mut UpgradeCx<'_>) {
-        let rooted = |at: &JsonPath| {
-            JsonPath::new()
-                .child(<Entity as Family>::PAYLOAD_KEY)
-                .join(at)
-        };
         for event in self.0 {
             match event {
                 Event::Finding(code, severity, at) => finding_of(cx, code, severity, &at),
@@ -365,10 +261,6 @@ impl Told {
         }
     }
 }
-
-/// What is to tell of a value read as another: the code, and INFO where the game reads it
-/// so, a warning where the value is the crate's own.
-pub(crate) type Misread = (DiagnosticCode, Severity);
 
 /// Vanilla's component rename in one section (at `section`): `old` becomes `new` at `old`'s
 /// position. A
@@ -405,65 +297,14 @@ pub(crate) fn rename_member(
     at: &JsonPath,
     told: &mut Told,
 ) -> bool {
-    let Some(value) = object.remove(old) else {
+    let Some(renamed) = ops::move_member(object, old, new) else {
         return false;
     };
-    overwrite(object, new, value, at, told);
+    if renamed.replaced {
+        told.dropped(at.child(new));
+    }
     told.moved(at.child(old), at.child(new));
     true
-}
-
-/// What vanilla's `asInt` makes of a member, and what is to tell of it: a value that is no
-/// number is 0 (`InvalidType`); a number with a fraction is truncated and one beyond an int
-/// saturates (`InvalidValue`). `null` is 0 with nothing to tell (the callers take a `null`
-/// member as an absent one).
-pub(crate) fn int_of(value: &Value) -> (i32, Option<Misread>) {
-    let Some(number) = value.as_number() else {
-        let code = (!value.is_null())
-            .then_some((DiagnosticCode::InvalidType { text: None }, Severity::Info));
-        return (0, code);
-    };
-    let number = number.to_f64_lossy();
-    #[allow(clippy::cast_possible_truncation, reason = "vanilla reads an int")]
-    let int = number as i32;
-    #[allow(clippy::float_cmp, reason = "exactly the int, not a number near it")]
-    let exact = f64::from(int) == number;
-    // The game truncates a fraction and says nothing; a number beyond an int reaches jsoncpp's
-    // `asInt` assert at most (no content-log line): both are informations of the crate's own.
-    (
-        int,
-        (!exact).then_some((DiagnosticCode::InvalidValue { text: None }, Severity::Info)),
-    )
-}
-
-/// What vanilla's `asFloat` / `asDouble` makes of a member: its number, or 0 for a value that
-/// is no number (`InvalidType`, INFO; nothing to tell of a `null`).
-pub(crate) fn number_of(value: &Value) -> (f64, Option<Misread>) {
-    match value.as_number() {
-        Some(number) => (number.to_f64_lossy(), None),
-        None => (
-            0.0,
-            (!value.is_null())
-                .then_some((DiagnosticCode::InvalidType { text: None }, Severity::Info)),
-        ),
-    }
-}
-
-/// What vanilla's `asFloat` makes of a member, as [`number_of`]; a number beyond a float is the
-/// largest finite float of its sign (`InvalidValue`, an information: the bound is the crate's own,
-/// jsoncpp's `asFloat` gives the infinity without a line, like `int_of` for a number beyond an
-/// int), so no arithmetic of a step is infinite.
-pub(crate) fn float_of(value: &Value) -> (f32, Option<Misread>) {
-    let (number, code) = number_of(value);
-    #[allow(clippy::cast_possible_truncation, reason = "vanilla's f32")]
-    let float = number as f32;
-    if float.is_infinite() {
-        return (
-            f32::MAX.copysign(float),
-            Some((DiagnosticCode::InvalidValue { text: None }, Severity::Info)),
-        );
-    }
-    (float, code)
 }
 
 /// The member `name` of `object` (at `at`) as one half of a range a step builds, taken out:
@@ -490,15 +331,6 @@ pub(crate) fn half(
     Some(value)
 }
 
-/// Whether two JSON values are the same value: numbers by what they spell (`1` is `1.0`).
-#[allow(clippy::float_cmp, reason = "the same number, not one near it")]
-pub(crate) fn same(a: &Value, b: &Value) -> bool {
-    match (a.as_number(), b.as_number()) {
-        (Some(a), Some(b)) => a.to_f64_lossy() == b.to_f64_lossy(),
-        _ => a == b,
-    }
-}
-
 /// Sets `key` of `object` to `value`, as the step does whatever the document has there; a
 /// member of the document that held another value is told as dropped at `at` (the object's
 /// path), a `null` one not.
@@ -509,19 +341,9 @@ pub(crate) fn overwrite(
     at: &JsonPath,
     told: &mut Told,
 ) {
-    if object
-        .get(key)
-        .is_some_and(|had| !had.is_null() && !same(had, &value))
-    {
+    if ops::overwrite(object, key, value) {
         told.dropped(at.child(key));
     }
-    object.insert(key, value);
-}
-
-/// A constant fragment written as JSON text in the step.
-pub(crate) fn json(text: &str) -> Value {
-    // The fragments are literals of this module; a parse failure is a bug the step tests catch.
-    bedrock_addon_core::json::from_str::<Value>(text).unwrap_or(Value::NULL)
 }
 
 /// Whether the entity's type is one of `types`.
@@ -532,11 +354,6 @@ pub(crate) fn is(cx: &UpgradeCx<'_>, types: &[ActorType]) -> bool {
 /// The type id's category bits: `id & mask == mask`.
 pub(crate) fn has_bits(cx: &UpgradeCx<'_>, mask: u32) -> bool {
     cx.actor_type.id() & mask == mask
-}
-
-/// A JSON number from an `f32` constant, widened as vanilla widens it.
-pub(crate) fn f32_value(value: f32) -> Value {
-    Value::from(f64::from(value))
 }
 
 /// The version at or below which a payload without `components` gets no fixer op at all.
@@ -567,16 +384,4 @@ pub(crate) fn single_to_array_at(object: &mut VObject, key: &str, at: &JsonPath,
         told.moved(member.clone(), member.index(0));
     }
     single_to_array(object, key);
-}
-
-/// A member that is present and not an array becomes a
-/// one-element array.
-pub(crate) fn single_to_array(object: &mut VObject, key: &str) {
-    if let Some(member) = object.get_mut(key)
-        && !member.is_array()
-    {
-        let mut list = VArray::new();
-        list.push(member.clone());
-        *member = list.into();
-    }
 }

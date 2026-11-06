@@ -1,25 +1,31 @@
 //! Format 1.19.0: the struct and the step to 1.19.50.
 
-super::legacy_struct!(1, 19, 0);
-
+use bedrock_addon_core::json::Value;
 use bedrock_addon_core::vanilla::ActorType;
-use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
+use bedrock_addon_core::versioning::ops::empty_object;
+use bedrock_addon_core::versioning::{Legacy, LegacyStep, UpgradeCx};
 use facet_value::VArray;
 
-use super::ops::{Members, Told, components, group, json, section_a, section_b, sections};
+use super::Payload;
+use super::fragments;
+use super::ops::{Members, Told, components, group, section_a, section_b, sections};
 use bedrock_addon_core::diagnostic::JsonPath;
 
+/// An entity document as written in format 1.19.0 (up to the next struct's version): its
+/// payload as written.
+pub type Entity = Legacy<Payload, 1, 19, 0>;
+
 /// 1.19.0 → 1.19.50 (gate 1.19.50).
-impl Upgrade for Entity {
+impl LegacyStep<1, 19, 0> for Payload {
     type Next = super::v1_19_50::Entity;
 
-    fn upgrade(self, cx: &mut UpgradeCx<'_>) -> Self::Next {
-        let mut payload = self.0;
+    fn step(this: Entity, cx: &mut UpgradeCx<'_>) -> Self::Next {
+        let mut payload = this.0;
         if section_a(&payload, cx) {
             slime_area_attack(&mut payload, cx.actor_type);
             if cx.actor_type == ActorType::Enderman {
                 components(&mut payload)
-                    .insert_absent("minecraft:variable_max_auto_step", json(AUTO_STEP));
+                    .insert_absent("minecraft:variable_max_auto_step", fragments::auto_step());
             }
             let horses = [
                 ActorType::Horse,
@@ -42,7 +48,7 @@ impl Upgrade for Entity {
                     if let Some(object) = section.members.object(goal) {
                         append_all_of(
                             object,
-                            &[r#"{"test": "is_daytime", "value": true}"#],
+                            vec![fragments::is_daytime()],
                             &section.at.child(goal),
                             &mut told,
                         );
@@ -51,12 +57,9 @@ impl Upgrade for Entity {
             }
             told.report(cx);
         }
-        super::v1_19_50::Entity(payload)
+        Legacy(payload)
     }
 }
-
-/// `variable_max_auto_step` as the step writes it.
-const AUTO_STEP: &str = r#"{"base_value": 1.0625, "jump_prevented_value": 0.5625}"#;
 
 /// Appends `entries` to `filters.all_of`, creating `filters` and `all_of` as needed. A `filters`
 /// that is no object gets nothing, and an `all_of` that is no array is replaced by the list of the
@@ -64,11 +67,11 @@ const AUTO_STEP: &str = r#"{"base_value": 1.0625, "jump_prevented_value": 0.5625
 /// one.
 pub(super) fn append_all_of(
     object: &mut facet_value::VObject,
-    entries: &[&str],
+    entries: Vec<Value>,
     at: &JsonPath,
     told: &mut Told,
 ) {
-    object.insert_absent("filters", json("{}"));
+    object.insert_absent("filters", empty_object());
     let Some(filters) = object.get_mut("filters").and_then(|f| f.as_object_mut()) else {
         told.wrong_type(at.child("filters"));
         return;
@@ -81,7 +84,7 @@ pub(super) fn append_all_of(
     }
     if let Some(all_of) = filters.get_mut("all_of").and_then(|a| a.as_array_mut()) {
         for entry in entries {
-            all_of.push(json(entry));
+            all_of.push(entry);
         }
     }
 }
@@ -104,22 +107,13 @@ fn slime_area_attack(payload: &mut Payload, actor: ActorType) {
         ),
         _ => return,
     };
-    let filters: Vec<String> = families
-        .iter()
-        .map(|family| {
-            format!(r#"{{"test": "is_family", "subject": "other", "value": "{family}"}}"#)
-        })
-        .collect();
     for (name, damage) in sizes {
         let Some(group) = group(payload, name) else {
             continue;
         };
         group.insert_absent(
             "minecraft:area_attack",
-            json(&format!(
-                r#"{{"damage_range": 0.15, "damage_per_tick": {damage}, "damage_cooldown": 0.0, "cause": "entity_attack", "entity_filter": {{"any_of": [{}]}}}}"#,
-                filters.join(", ")
-            )),
+            fragments::slime_area_attack(*damage, families),
         );
     }
 }
@@ -135,7 +129,7 @@ fn input_ground_controlled(payload: &mut Payload, cx: &mut UpgradeCx<'_>) {
         if !members.has("minecraft:input_ground_controlled") {
             continue;
         }
-        members.insert_absent("minecraft:variable_max_auto_step", json(AUTO_STEP));
+        members.insert_absent("minecraft:variable_max_auto_step", fragments::auto_step());
         if let Some(step) = members.object("minecraft:variable_max_auto_step") {
             if let Some(base) = step.get("base_value").cloned() {
                 let kept = step.insert_absent("controlled_value", base.clone());

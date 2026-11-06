@@ -1,17 +1,20 @@
 //! Format 1.21.89: the struct and the step to 1.21.90.
 
-super::legacy_struct!(1, 21, 89);
+use bedrock_addon_core::versioning::{Legacy, LegacyStep, UpgradeCx};
 
-use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
-
+use super::Payload;
 use super::ops::{Members, section_b, sections};
 
+/// An entity document as written in format 1.21.89 (up to the next struct's version): its
+/// payload as written.
+pub type Entity = Legacy<Payload, 1, 21, 89>;
+
 /// 1.21.89 → 1.21.90.
-impl Upgrade for Entity {
+impl LegacyStep<1, 21, 89> for Payload {
     type Next = super::v1_21_90::Entity;
 
-    fn upgrade(self, cx: &mut UpgradeCx<'_>) -> Self::Next {
-        let mut payload = self.0;
+    fn step(this: Entity, cx: &mut UpgradeCx<'_>) -> Self::Next {
+        let mut payload = this.0;
         // B, `leashable`: `can_be_cut` and `can_be_stolen` `false` when absent; every preset
         // gets `hard_distance: 6.0`, `max_distance: 10.0` and `spring_type: "bouncy"` when
         // absent. (C: `behavior.breed` becomes typed, which the last step's lenient read does.)
@@ -33,6 +36,6 @@ impl Upgrade for Entity {
                 }
             }
         }
-        super::v1_21_90::Entity(payload)
+        Legacy(payload)
     }
 }

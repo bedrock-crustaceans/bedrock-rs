@@ -3,7 +3,7 @@
 
 use facet::Facet;
 
-use super::FeatureHistory;
+use crate::family::HistoryJson;
 use crate::molang::{SCATTER_LEGACY, Walk, member};
 use crate::read::{parse_strict, parse_strict_with};
 use crate::scatter::walk_params;
@@ -300,55 +300,31 @@ impl Upgrade for SnapToSurfaceFeature {
     }
 }
 
-// ---- the public history enum -------------------------------------------------------------------
+// ---- written as read ------------------------------------------------------------------------
 
-impl From<ScatterFeature> for FeatureHistory {
-    fn from(value: ScatterFeature) -> Self {
-        FeatureHistory::ScatterV1_13_0(value)
+/// An older struct writes its document in format 1.13.0.
+fn older_json<T: VersionStruct>(value: &T, key: &'static str) -> Result<String, EncodeError> {
+    let payload = value.write()?;
+    let mut root = facet_value::VObject::new();
+    root.insert("format_version", Value::from(VERSION.to_string()));
+    root.insert(key, payload);
+    bedrock_addon_core::json::to_json(&Value::from(root))
+}
+
+impl HistoryJson for ScatterFeature {
+    fn history_json(&self, key: &'static str) -> Result<String, EncodeError> {
+        older_json(self, key)
     }
 }
 
-impl TryFrom<FeatureHistory> for ScatterFeature {
-    type Error = FeatureHistory;
-
-    fn try_from(any: FeatureHistory) -> Result<Self, FeatureHistory> {
-        match any {
-            FeatureHistory::ScatterV1_13_0(value) => Ok(value),
-            other => Err(other),
-        }
+impl HistoryJson for SingleBlockFeature {
+    fn history_json(&self, key: &'static str) -> Result<String, EncodeError> {
+        older_json(self, key)
     }
 }
 
-impl From<SingleBlockFeature> for FeatureHistory {
-    fn from(value: SingleBlockFeature) -> Self {
-        FeatureHistory::SingleBlockV1_13_0(value)
-    }
-}
-
-impl TryFrom<FeatureHistory> for SingleBlockFeature {
-    type Error = FeatureHistory;
-
-    fn try_from(any: FeatureHistory) -> Result<Self, FeatureHistory> {
-        match any {
-            FeatureHistory::SingleBlockV1_13_0(value) => Ok(value),
-            other => Err(other),
-        }
-    }
-}
-
-impl From<SnapToSurfaceFeature> for FeatureHistory {
-    fn from(value: SnapToSurfaceFeature) -> Self {
-        FeatureHistory::SnapToSurfaceV1_13_0(value)
-    }
-}
-
-impl TryFrom<FeatureHistory> for SnapToSurfaceFeature {
-    type Error = FeatureHistory;
-
-    fn try_from(any: FeatureHistory) -> Result<Self, FeatureHistory> {
-        match any {
-            FeatureHistory::SnapToSurfaceV1_13_0(value) => Ok(value),
-            other => Err(other),
-        }
+impl HistoryJson for SnapToSurfaceFeature {
+    fn history_json(&self, key: &'static str) -> Result<String, EncodeError> {
+        older_json(self, key)
     }
 }

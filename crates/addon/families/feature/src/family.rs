@@ -87,7 +87,7 @@ pub(crate) trait FeatureType: Rules + VersionStruct + Send + Sync + 'static {
     const SINCE_ENGINE: Option<FormatVersion>;
     /// The type's lowest format version (the row's `floor`, 1.13.0 when it names none).
     const FLOOR: FormatVersion;
-    /// The type's chain of version structs.
+    /// The type's chain of version structs, its history (`history::OreHistory`).
     type Chain: VersionChain<Fam<Self>>;
     /// The feature of this type.
     fn into_feature(self) -> Feature;
@@ -98,7 +98,22 @@ pub(crate) trait FeatureType: Rules + VersionStruct + Send + Sync + 'static {
         clippy::result_large_err,
         reason = "the value is handed back whole, once per document"
     )]
-    fn from_history(any: history::FeatureHistory) -> Result<Self::Chain, history::FeatureHistory>;
+    fn from_history(value: history::FeatureHistory)
+    -> Result<Self::Chain, history::FeatureHistory>;
+}
+
+/// How a struct of a type's history writes its document as read: a newest struct as
+/// [`Feature`] writes it ([`newest_json`]), an older one in its own format.
+pub(crate) trait HistoryJson {
+    /// The document, envelope included; `key` is the type's payload key.
+    fn history_json(&self, key: &'static str) -> Result<String, EncodeError>;
+}
+
+/// A newest struct writes as its feature.
+impl<T: FeatureType> HistoryJson for T {
+    fn history_json(&self, _: &'static str) -> Result<String, EncodeError> {
+        crate::newest_json(self)
+    }
 }
 
 /// The family of one feature type (hidden: only the loaders name it).
@@ -182,9 +197,9 @@ macro_rules! feature_types {
         $(
             bedrock_addon_core::version_chain! {
                 family = Fam<$ty>;
-                /// The type's document parsed by the struct its `format_version` selects.
+                #[doc = concat!("A `", $key, "` document parsed by the struct its `format_version` selects.")]
                 #[derive(Clone, Debug, PartialEq)]
-                pub(crate) enum $chain {
+                pub enum $chain {
                     $(
                         #[doc = stringify!($v)]
                         $v($t),
@@ -193,6 +208,15 @@ macro_rules! feature_types {
             }
 
             $( strict_struct!($ty, $strict); )?
+
+            impl $chain {
+                /// The feature's identifier (`description.identifier`).
+                pub fn identifier(&self) -> &FeatureId {
+                    match self {
+                        $( Self::$v(value) => &value.description.identifier, )+
+                    }
+                }
+            }
 
             impl FeatureType for $ty {
                 const KEY: &'static str = $key;
@@ -207,39 +231,79 @@ macro_rules! feature_types {
                 }
 
                 fn to_history(chain: $chain) -> history::FeatureHistory {
-                    match chain {
-                        $( $chain::$v(value) => history::FeatureHistory::from(value), )+
-                    }
+                    history::FeatureHistory::$variant(chain)
                 }
 
-                fn from_history(any: history::FeatureHistory) -> Result<$chain, history::FeatureHistory> {
-                    $(
-                        let any = match <$t as TryFrom<history::FeatureHistory>>::try_from(any) {
-                            Ok(value) => return Ok($chain::$v(value)),
-                            Err(any) => any,
-                        };
-                    )+
-                    Err(any)
-                }
-            }
-
-            impl From<$ty> for history::FeatureHistory {
-                fn from(value: $ty) -> Self {
-                    history::FeatureHistory::Latest(Feature::$variant(value.into()))
-                }
-            }
-
-            impl TryFrom<history::FeatureHistory> for $ty {
-                type Error = history::FeatureHistory;
-
-                fn try_from(any: history::FeatureHistory) -> Result<Self, history::FeatureHistory> {
-                    match any {
-                        history::FeatureHistory::Latest(Feature::$variant(value)) => Ok(value),
+                fn from_history(
+                    value: history::FeatureHistory,
+                ) -> Result<$chain, history::FeatureHistory> {
+                    match value {
+                        history::FeatureHistory::$variant(chain) => Ok(chain),
                         other => Err(other),
                     }
                 }
             }
         )*
+
+        /// A feature document parsed by the struct its `format_version` selects, not upgraded:
+        /// the history of its type, one variant per feature type.
+        #[derive(Clone, Debug, PartialEq)]
+        #[non_exhaustive]
+        #[allow(
+            clippy::large_enum_variant,
+            reason = "the variants are the types callers match on; a document is built once and stored"
+        )]
+        pub enum FeatureHistory {
+            $(
+                #[doc = concat!("A `", $key, "` document.")]
+                $variant($chain),
+            )*
+        }
+
+        impl FeatureHistory {
+            /// The payload key of the document's feature type.
+            pub fn type_key(&self) -> &'static str {
+                match self {
+                    $( Self::$variant(_) => $key, )*
+                }
+            }
+
+            /// The feature's identifier (`description.identifier`).
+            pub fn identifier(&self) -> &FeatureId {
+                match self {
+                    $( Self::$variant(history) => history.identifier(), )*
+                }
+            }
+
+            /// The version of the struct that parsed the document.
+            pub fn parsed_version(&self) -> FormatVersion {
+                match self {
+                    $( Self::$variant(history) => history.parsed_version(), )*
+                }
+            }
+
+            /// Writes the document in its struct's own version (a round trip without the
+            /// upgrade): a newest struct as [`Feature`] writes it, an older one in its format.
+            ///
+            /// # Errors
+            ///
+            /// Returns an [`EncodeError`] when a value cannot be written as JSON.
+            pub fn to_json(&self) -> Result<String, EncodeError> {
+                match self {
+                    $(
+                        Self::$variant(history) => match history {
+                            $( $chain::$v(value) => HistoryJson::history_json(value, $key), )+
+                        },
+                    )*
+                }
+            }
+        }
+
+        /// The per-type histories, re-exported by [`history`].
+        pub mod histories {
+            pub use super::{FeatureHistory, $($chain),*};
+        }
+
         /// Runs `f` for the feature type of the payload key `key`; `None` for a key vanilla
         /// does not register.
         ///
@@ -332,96 +396,96 @@ feature_types! {
 
     /// `minecraft:aggregate_feature`.
     Aggregate(placement::AggregateFeature) = "minecraft:aggregate_feature",
-        AggregateChain [V1_13_0(placement::AggregateFeature)],
+        AggregateHistory [V1_13_0(placement::AggregateFeature)],
         strict = V1_13_0;
     /// `minecraft:beards_and_shavers` (base-game packs only).
     BeardsAndShavers(structure::BeardsAndShaversFeature) = "minecraft:beards_and_shavers",
-        BeardsAndShaversChain [V1_13_0(structure::BeardsAndShaversFeature)],
+        BeardsAndShaversHistory [V1_13_0(structure::BeardsAndShaversFeature)],
         strict = V1_13_0, internal = true;
     /// `minecraft:cave_carver_feature`.
     CaveCarver(carver::CaveCarverFeature) = "minecraft:cave_carver_feature",
-        CaveCarverChain [V1_13_0(carver::CaveCarverFeature)];
+        CaveCarverHistory [V1_13_0(carver::CaveCarverFeature)];
     /// `minecraft:conditional_list`.
     ConditionalList(placement::ConditionalListFeature) = "minecraft:conditional_list",
-        ConditionalListChain [V1_13_0(placement::ConditionalListFeature)],
+        ConditionalListHistory [V1_13_0(placement::ConditionalListFeature)],
         strict = V1_13_0;
     /// `minecraft:fossil_feature`.
     Fossil(blocks::FossilFeature) = "minecraft:fossil_feature",
-        FossilChain [V1_13_0(blocks::FossilFeature)],
+        FossilHistory [V1_13_0(blocks::FossilFeature)],
         strict = V1_13_0;
     /// `minecraft:geode_feature`.
     Geode(blocks::GeodeFeature) = "minecraft:geode_feature",
-        GeodeChain [V1_13_0(blocks::GeodeFeature)],
+        GeodeHistory [V1_13_0(blocks::GeodeFeature)],
         strict = V1_13_0;
     /// `minecraft:growing_plant_feature`.
     GrowingPlant(blocks::GrowingPlantFeature) = "minecraft:growing_plant_feature",
-        GrowingPlantChain [V1_13_0(blocks::GrowingPlantFeature)];
+        GrowingPlantHistory [V1_13_0(blocks::GrowingPlantFeature)];
     /// `minecraft:height_difference_filter_feature` (engine 1.26.30).
     HeightDifferenceFilter(placement::HeightDifferenceFilterFeature) = "minecraft:height_difference_filter_feature",
-        HeightDifferenceFilterChain [V1_13_0(placement::HeightDifferenceFilterFeature)],
+        HeightDifferenceFilterHistory [V1_13_0(placement::HeightDifferenceFilterFeature)],
         strict = V1_13_0, since_engine = placement::HEIGHT_DIFFERENCE_ENGINE;
     /// `minecraft:horizontal_tree_decoration_feature` (engine 1.26.40).
     HorizontalTreeDecoration(blocks::HorizontalTreeDecorationFeature) = "minecraft:horizontal_tree_decoration_feature",
-        HorizontalTreeDecorationChain [V1_13_0(blocks::HorizontalTreeDecorationFeature)],
+        HorizontalTreeDecorationHistory [V1_13_0(blocks::HorizontalTreeDecorationFeature)],
         strict = V1_13_0, since_engine = blocks::HORIZONTAL_TREE_DECORATION_ENGINE;
     /// `minecraft:multi_block_feature` (engine 1.26.40).
     MultiBlock(blocks::MultiBlockFeature) = "minecraft:multi_block_feature",
-        MultiBlockChain [V1_26_40(blocks::MultiBlockFeature)],
+        MultiBlockHistory [V1_26_40(blocks::MultiBlockFeature)],
         strict = blocks::MULTI_BLOCK_FORMAT, since_engine = blocks::MULTI_BLOCK_FORMAT, floor = blocks::MULTI_BLOCK_FORMAT;
     /// `minecraft:multiface_feature`.
     Multiface(blocks::MultifaceFeature) = "minecraft:multiface_feature",
-        MultifaceChain [V1_13_0(blocks::MultifaceFeature)],
+        MultifaceHistory [V1_13_0(blocks::MultifaceFeature)],
         strict = V1_13_0;
     /// `minecraft:multipart_block_column_feature` (format 1.26.40).
     MultipartBlockColumn(blocks::MultipartBlockColumnFeature) = "minecraft:multipart_block_column_feature",
-        MultipartBlockColumnChain [V1_26_40(blocks::MultipartBlockColumnFeature)],
+        MultipartBlockColumnHistory [V1_26_40(blocks::MultipartBlockColumnFeature)],
         strict = blocks::MULTI_BLOCK_FORMAT, since_engine = blocks::MULTI_BLOCK_FORMAT, floor = blocks::MULTI_BLOCK_FORMAT;
     /// `minecraft:nether_cave_carver_feature`.
     NetherCaveCarver(carver::NetherCaveCarverFeature) = "minecraft:nether_cave_carver_feature",
-        NetherCaveCarverChain [V1_13_0(carver::NetherCaveCarverFeature)];
+        NetherCaveCarverHistory [V1_13_0(carver::NetherCaveCarverFeature)];
     /// `minecraft:ore_feature`.
     Ore(blocks::OreFeature) = "minecraft:ore_feature",
-        OreChain [V1_13_0(blocks::OreFeature)],
+        OreHistory [V1_13_0(blocks::OreFeature)],
         strict = V1_13_0;
     /// `minecraft:partially_exposed_blob_feature`.
     PartiallyExposedBlob(blocks::PartiallyExposedBlobFeature) = "minecraft:partially_exposed_blob_feature",
-        PartiallyExposedBlobChain [V1_13_0(blocks::PartiallyExposedBlobFeature)];
+        PartiallyExposedBlobHistory [V1_13_0(blocks::PartiallyExposedBlobFeature)];
     /// `minecraft:rect_layout` (base-game packs only).
     RectLayout(placement::RectLayoutFeature) = "minecraft:rect_layout",
-        RectLayoutChain [V1_13_0(placement::RectLayoutFeature)],
+        RectLayoutHistory [V1_13_0(placement::RectLayoutFeature)],
         strict = V1_13_0, internal = true;
     /// `minecraft:scan_surface` (base-game packs only).
     ScanSurface(placement::ScanSurfaceFeature) = "minecraft:scan_surface",
-        ScanSurfaceChain [V1_13_0(placement::ScanSurfaceFeature)],
+        ScanSurfaceHistory [V1_13_0(placement::ScanSurfaceFeature)],
         strict = V1_13_0, internal = true;
     /// `minecraft:scatter_feature`.
     Scatter(scatter::ScatterFeature) = "minecraft:scatter_feature",
-        ScatterChain [V1_13_0(history::v1_13_0::ScatterFeature), V1_21_10(scatter::ScatterFeature)];
+        ScatterHistory [V1_13_0(history::v1_13_0::ScatterFeature), V1_21_10(scatter::ScatterFeature)];
     /// `minecraft:sculk_patch_feature` (base-game packs only).
     SculkPatch(blocks::SculkPatchFeature) = "minecraft:sculk_patch_feature",
-        SculkPatchChain [V1_13_0(blocks::SculkPatchFeature)],
+        SculkPatchHistory [V1_13_0(blocks::SculkPatchFeature)],
         strict = V1_13_0, internal = true;
     /// `minecraft:search_feature`.
     Search(placement::SearchFeature) = "minecraft:search_feature",
-        SearchChain [V1_13_0(placement::SearchFeature)],
+        SearchHistory [V1_13_0(placement::SearchFeature)],
         strict = V1_13_0;
     /// `minecraft:sequence_feature`.
     Sequence(placement::SequenceFeature) = "minecraft:sequence_feature",
-        SequenceChain [V1_13_0(placement::SequenceFeature)],
+        SequenceHistory [V1_13_0(placement::SequenceFeature)],
         strict = V1_13_0;
     /// `minecraft:single_block_feature`.
     SingleBlock(blocks::SingleBlockFeature) = "minecraft:single_block_feature",
-        SingleBlockChain [V1_13_0(history::v1_13_0::SingleBlockFeature), V1_21_40(blocks::SingleBlockFeature)];
+        SingleBlockHistory [V1_13_0(history::v1_13_0::SingleBlockFeature), V1_21_40(blocks::SingleBlockFeature)];
     /// `minecraft:snap_to_surface_feature`.
     SnapToSurface(structure::SnapToSurfaceFeature) = "minecraft:snap_to_surface_feature",
-        SnapToSurfaceChain [V1_13_0(history::v1_13_0::SnapToSurfaceFeature), V1_26_50(structure::SnapToSurfaceFeature)];
+        SnapToSurfaceHistory [V1_13_0(history::v1_13_0::SnapToSurfaceFeature), V1_26_50(structure::SnapToSurfaceFeature)];
     /// `minecraft:structure_template_feature`.
     StructureTemplate(structure::StructureTemplateFeature) = "minecraft:structure_template_feature",
-        StructureTemplateChain [V1_13_0(structure::StructureTemplateFeature)],
+        StructureTemplateHistory [V1_13_0(structure::StructureTemplateFeature)],
         strict = V1_13_0;
     /// `minecraft:surface_relative_threshold_feature`.
     SurfaceRelativeThreshold(placement::SurfaceRelativeThresholdFeature) = "minecraft:surface_relative_threshold_feature",
-        SurfaceRelativeThresholdChain [V1_13_0(placement::SurfaceRelativeThresholdFeature)],
+        SurfaceRelativeThresholdHistory [V1_13_0(placement::SurfaceRelativeThresholdFeature)],
         strict = V1_13_0;
     /// `minecraft:tree_feature`. Boxed, in the variant and through its chain: a `TreeFeature`
     /// holds every trunk and canopy shape inline (some 17 KB, four times the next type), and an
@@ -429,16 +493,16 @@ feature_types! {
     /// held inline it took a 768 KiB thread past its stack. The chain's struct is read as a
     /// plain `TreeFeature` and boxed after (core's `Box` impls).
     Tree(Box<tree::TreeFeature>) = "minecraft:tree_feature",
-        TreeChain [V1_13_0(Box<tree::TreeFeature>)];
+        TreeHistory [V1_13_0(Box<tree::TreeFeature>)];
     /// `minecraft:underwater_cave_carver_feature`.
     UnderwaterCaveCarver(carver::UnderwaterCaveCarverFeature) = "minecraft:underwater_cave_carver_feature",
-        UnderwaterCaveCarverChain [V1_13_0(carver::UnderwaterCaveCarverFeature)];
+        UnderwaterCaveCarverHistory [V1_13_0(carver::UnderwaterCaveCarverFeature)];
     /// `minecraft:vegetation_patch_feature`.
     VegetationPatch(blocks::VegetationPatchFeature) = "minecraft:vegetation_patch_feature",
-        VegetationPatchChain [V1_13_0(blocks::VegetationPatchFeature)];
+        VegetationPatchHistory [V1_13_0(blocks::VegetationPatchFeature)];
     /// `minecraft:weighted_random_feature`.
     WeightedRandom(placement::WeightedRandomFeature) = "minecraft:weighted_random_feature",
-        WeightedRandomChain [V1_13_0(placement::WeightedRandomFeature)],
+        WeightedRandomHistory [V1_13_0(placement::WeightedRandomFeature)],
         strict = V1_13_0;
 }
 

@@ -1,26 +1,32 @@
 //! Format 1.21.20: the struct and the step to 1.21.40.
 
-super::legacy_struct!(1, 21, 20);
-
+use bedrock_addon_core::json::Value;
 use bedrock_addon_core::vanilla::ActorType;
-use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
+use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::versioning::ops::empty_object;
+use bedrock_addon_core::versioning::{Legacy, LegacyStep, UpgradeCx};
 use facet_value::VObject;
 
+use super::Payload;
 use super::ops::{
-    Members, Removed, Told, components, is, json, removed, rename, rename_member, section_a,
-    section_b, sections,
+    Members, Removed, Told, components, is, removed, rename, rename_member, section_a, section_b,
+    sections,
 };
 use bedrock_addon_core::diagnostic::JsonPath;
+
+/// An entity document as written in format 1.21.20 (up to the next struct's version): its
+/// payload as written.
+pub type Entity = Legacy<Payload, 1, 21, 20>;
 
 /// The step's version, for its findings.
 const V1_21_40: FormatVersion = FormatVersion::new(1, 21, 40);
 
 /// 1.21.20 → 1.21.40 (gate 1.21.40).
-impl Upgrade for Entity {
+impl LegacyStep<1, 21, 20> for Payload {
     type Next = super::v1_21_40::Entity;
 
-    fn upgrade(self, cx: &mut UpgradeCx<'_>) -> Self::Next {
-        let mut payload = self.0;
+    fn step(this: Entity, cx: &mut UpgradeCx<'_>) -> Self::Next {
+        let mut payload = this.0;
         if section_a(&payload, cx) {
             use ActorType as T;
             let bound = [
@@ -35,10 +41,10 @@ impl Upgrade for Entity {
                 T::SmallFireball,
             ];
             if is(cx, &bound) {
-                components(&mut payload).insert_absent("minecraft:dimension_bound", json("{}"));
+                components(&mut payload).insert_absent("minecraft:dimension_bound", empty_object());
             }
             if cx.actor_type == T::FishingHook {
-                components(&mut payload).insert_absent("minecraft:transient", json("{}"));
+                components(&mut payload).insert_absent("minecraft:transient", empty_object());
             }
         }
         if section_b(&payload, cx) {
@@ -80,7 +86,7 @@ impl Upgrade for Entity {
             }
             told.report(cx);
         }
-        super::v1_21_40::Entity(payload)
+        Legacy(payload)
     }
 }
 

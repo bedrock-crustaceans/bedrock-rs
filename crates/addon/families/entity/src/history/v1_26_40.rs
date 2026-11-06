@@ -2,28 +2,32 @@
 //! `using_door_annotation` op that runs once after the last step on the payload, and
 //! the step's five upgrader ops.
 
-super::legacy_struct!(1, 26, 40);
-
 use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath, VanillaText};
+use bedrock_addon_core::json::Value;
+use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::version::known;
-use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
+use bedrock_addon_core::versioning::{Legacy, LegacyStep, UpgradeCx};
 use facet_value::VObject;
 
 use bedrock_addon_core::vanilla::ActorType;
 
-use super::ops::{
-    Members, Told, components, finding, group, is, json, section_a, section_b, sections,
-};
+use super::Payload;
+use super::fragments;
+use super::ops::{Members, Told, components, finding, group, is, section_a, section_b, sections};
+
+/// An entity document as written in format 1.26.40 (up to the next struct's version): its
+/// payload as written.
+pub type Entity = Legacy<Payload, 1, 26, 40>;
 
 /// The version from which `using_door_annotation` is written `true`.
 const DOOR_ANNOTATION_TRUE: FormatVersion = known::V1_10_0;
 
 /// 1.26.40 → 1.26.50.
-impl Upgrade for Entity {
+impl LegacyStep<1, 26, 40> for Payload {
     type Next = super::v1_26_50::Entity;
 
-    fn upgrade(self, cx: &mut UpgradeCx<'_>) -> Self::Next {
-        let mut payload = self.0;
+    fn step(this: Entity, cx: &mut UpgradeCx<'_>) -> Self::Next {
+        let mut payload = this.0;
         let mut invalid: Vec<(String, JsonPath)> = Vec::new();
         for section in sections(&mut payload) {
             // `behavior.ranged_attack`'s `attack_range` / `in_range_movement_mode` conversion is
@@ -215,10 +219,6 @@ fn is_lightweight(type_family: Option<&Value>) -> bool {
         })
 }
 
-/// The teleport filter the 1.26.50 fixer builds: one
-/// `is_family` test of `other` per projectile family, under `none_of`.
-const ENDERMAN_PROJECTILE_FILTER: &str = r#"{"none_of": [{"test": "is_family", "subject": "other", "value": "splash_potion"}, {"test": "is_family", "subject": "other", "value": "lingering_potion"}, {"test": "is_family", "subject": "other", "value": "snowball"}, {"test": "is_family", "subject": "other", "value": "xp_bottle"}]}"#;
-
 /// The legacy fixer's section A for `minecraft:enderman` below 1.26.50: upgrade of
 /// `minecraft:teleport` gives each `teleport` `teleports_on_projectile_hit: true` and the
 /// projectile filter, each when absent.
@@ -226,7 +226,7 @@ fn enderman_teleport(payload: &mut Payload) {
     for section in sections(payload) {
         if let Some(teleport) = section.members.object("minecraft:teleport") {
             teleport.insert_absent("teleports_on_projectile_hit", true.into());
-            teleport.insert_absent("projectile_filter", json(ENDERMAN_PROJECTILE_FILTER));
+            teleport.insert_absent("projectile_filter", fragments::enderman_projectile_filter());
         }
     }
 }

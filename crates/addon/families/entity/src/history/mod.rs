@@ -13,8 +13,9 @@
 //! step files: A holds the per-type and generic rewrites (skipped when the payload has
 //! `do_not_upgrade` or the document is at the engine version), B the component upgrades that
 //! always run, and C the conversions to typed structs.
-// One file per struct; the shared struct is `Payload`.
+// One file per struct; the shared struct is `Payload`, each older struct `Legacy<Payload, ..>`.
 
+mod fragments;
 mod ops;
 
 pub mod v1_10_0;
@@ -63,11 +64,14 @@ use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
 };
 use bedrock_addon_core::id::EntityId;
-use bedrock_addon_core::json::{JsonSlice, Value};
+use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::molang::{MolangContext, pass_one};
 use bedrock_addon_core::schema;
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput};
-use bedrock_addon_core::versioning::{Family, Identity, ParseCx, UpgradeCx, parse_payload};
+use bedrock_addon_core::versioning::ops::{members, to_object};
+use bedrock_addon_core::versioning::{
+    Family, Identity, Legacy, LegacyPayload, ParseCx, UpgradeCx, parse_payload,
+};
 use facet::Facet;
 use indexmap::IndexMap;
 
@@ -236,17 +240,13 @@ fn object_member(
     Err(Invalid)
 }
 
-/// An object's members, in order.
-pub(crate) fn members(object: &facet_value::VObject) -> IndexMap<String, Value> {
-    object
-        .iter()
-        .map(|(k, v)| (k.as_str().to_owned(), v.clone()))
-        .collect()
-}
+// The components of the older versions are kept as JSON: no Molang field is typed yet.
+bedrock_addon_core::impl_no_molang!(Payload);
 
-impl Payload {
+/// Each older struct is the payload at its version ([`Legacy<Payload, A, B, C>`](Legacy)).
+impl LegacyPayload for Payload {
     /// Parses a payload as the struct of `version` holds it.
-    pub(crate) fn parse(
+    fn parse(
         payload: JsonSlice<'_>,
         version: FormatVersion,
         cx: &ParseCx<'_>,
@@ -322,25 +322,25 @@ impl Payload {
         })
     }
 
+    /// The payload as JSON, the same at every version.
+    fn write(&self, _: FormatVersion) -> Result<Value, EncodeError> {
+        Ok(self.to_value())
+    }
+}
+
+impl Payload {
     /// The payload as JSON.
-    pub(crate) fn write(&self) -> Value {
+    pub(crate) fn to_value(&self) -> Value {
         let mut object = facet_value::VObject::new();
         object.insert("description", self.description.clone());
-        let map = |members: &IndexMap<String, Value>| {
-            let mut object = facet_value::VObject::new();
-            for (key, value) in members {
-                object.insert(key.as_str(), value.clone());
-            }
-            Value::from(object)
-        };
         if let Some(components) = &self.components {
-            object.insert("components", map(components));
+            object.insert("components", to_object(components));
         }
         if let Some(groups) = &self.component_groups {
-            object.insert("component_groups", map(groups));
+            object.insert("component_groups", to_object(groups));
         }
         if let Some(events) = &self.events {
-            object.insert("events", map(events));
+            object.insert("events", to_object(events));
         }
         if let Some(brain) = &self.brain {
             object.insert("brain", brain.clone());
@@ -365,7 +365,7 @@ pub(crate) fn into_latest(payload: &Payload, cx: &mut UpgradeCx<'_>) -> Entity {
     let at = JsonPath::new().child(<Entity as Family>::PAYLOAD_KEY);
     // The payload's unknown members are read again with it: the newest struct keeps those it
     // does not know, where it keeps them.
-    let mut written = payload.write();
+    let mut written = payload.to_value();
     if let Some(object) = written.as_object_mut() {
         for (key, value) in cx.diagnostics.unknown_mut().take_all(&at) {
             object.insert(&*key, value);
@@ -416,94 +416,50 @@ fn placeholder(payload: &Payload) -> Entity {
     Entity::new(EntityId::parse(identifier))
 }
 
-/// Declares the struct of one older version: the [`Payload`] as that version's slice holds it.
-macro_rules! legacy_struct {
-    ($major:literal, $minor:literal, $patch:literal) => {
-        use bedrock_addon_core::diagnostic::Diagnostics;
-        use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
-        use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
-        use bedrock_addon_core::version::FormatVersion;
-        use bedrock_addon_core::versioning::{ParseCx, VersionStruct, Versioned};
-
-        use super::Payload;
-
-        #[doc = concat!(
-                    "An entity document as written in format ", $major, ".", $minor, ".", $patch,
-                    " (up to the next struct's version): its payload as written."
-                )]
-        #[derive(Clone, Debug, Default, PartialEq)]
-        pub struct Entity(pub Payload);
-
-        impl Versioned for Entity {
-            const VERSION: FormatVersion = FormatVersion::new($major, $minor, $patch);
-        }
-
-        impl VersionStruct for Entity {
-            fn parse(
-                payload: JsonSlice<'_>,
-                cx: &ParseCx<'_>,
-                d: &mut Diagnostics,
-            ) -> Option<Self> {
-                Payload::parse(payload, Self::VERSION, cx, d).map(Self)
-            }
-
-            fn write(&self) -> Result<Value, EncodeError> {
-                Ok(self.0.write())
-            }
-        }
-
-        /// The components of this version are kept as JSON: no Molang field is typed yet.
-        impl MolangFields for Entity {
-            fn visit_molang(&mut self, _: &mut MolangVisitor<'_>) {}
-        }
-    };
-}
-pub(crate) use legacy_struct;
-
 impl EntityHistory {
     /// The payload of an older struct; `None` for the newest and the beta struct.
     pub(crate) fn payload(&self) -> Option<&Payload> {
         match self {
-            EntityHistory::V1_8_0(v1_8_0::Entity(payload))
-            | EntityHistory::V1_10_0(v1_10_0::Entity(payload))
-            | EntityHistory::V1_11_0(v1_11_0::Entity(payload))
-            | EntityHistory::V1_12_0(v1_12_0::Entity(payload))
-            | EntityHistory::V1_13_0(v1_13_0::Entity(payload))
-            | EntityHistory::V1_15_0(v1_15_0::Entity(payload))
-            | EntityHistory::V1_16_0(v1_16_0::Entity(payload))
-            | EntityHistory::V1_16_100(v1_16_100::Entity(payload))
-            | EntityHistory::V1_16_200(v1_16_200::Entity(payload))
-            | EntityHistory::V1_17_10(v1_17_10::Entity(payload))
-            | EntityHistory::V1_17_20(v1_17_20::Entity(payload))
-            | EntityHistory::V1_18_0(v1_18_0::Entity(payload))
-            | EntityHistory::V1_18_10(v1_18_10::Entity(payload))
-            | EntityHistory::V1_18_20(v1_18_20::Entity(payload))
-            | EntityHistory::V1_18_30(v1_18_30::Entity(payload))
-            | EntityHistory::V1_19_0(v1_19_0::Entity(payload))
-            | EntityHistory::V1_19_50(v1_19_50::Entity(payload))
-            | EntityHistory::V1_19_60(v1_19_60::Entity(payload))
-            | EntityHistory::V1_20_0(v1_20_0::Entity(payload))
-            | EntityHistory::V1_20_60(v1_20_60::Entity(payload))
-            | EntityHistory::V1_20_70(v1_20_70::Entity(payload))
-            | EntityHistory::V1_20_80(v1_20_80::Entity(payload))
-            | EntityHistory::V1_21_0(v1_21_0::Entity(payload))
-            | EntityHistory::V1_21_10(v1_21_10::Entity(payload))
-            | EntityHistory::V1_21_20(v1_21_20::Entity(payload))
-            | EntityHistory::V1_21_40(v1_21_40::Entity(payload))
-            | EntityHistory::V1_21_60(v1_21_60::Entity(payload))
-            | EntityHistory::V1_21_70(v1_21_70::Entity(payload))
-            | EntityHistory::V1_21_80(v1_21_80::Entity(payload))
-            | EntityHistory::V1_21_89(v1_21_89::Entity(payload))
-            | EntityHistory::V1_21_90(v1_21_90::Entity(payload))
-            | EntityHistory::V1_21_100(v1_21_100::Entity(payload))
-            | EntityHistory::V1_21_110(v1_21_110::Entity(payload))
-            | EntityHistory::V1_21_120(v1_21_120::Entity(payload))
-            | EntityHistory::V1_21_130(v1_21_130::Entity(payload))
-            | EntityHistory::V1_26_0(v1_26_0::Entity(payload))
-            | EntityHistory::V1_26_10(v1_26_10::Entity(payload))
-            | EntityHistory::V1_26_20(v1_26_20::Entity(payload))
-            | EntityHistory::V1_26_30(v1_26_30::Entity(payload))
-            | EntityHistory::V1_26_40(v1_26_40::Entity(payload)) => Some(payload),
+            EntityHistory::V1_8_0(Legacy(payload))
+            | EntityHistory::V1_10_0(Legacy(payload))
+            | EntityHistory::V1_11_0(Legacy(payload))
+            | EntityHistory::V1_12_0(Legacy(payload))
+            | EntityHistory::V1_13_0(Legacy(payload))
+            | EntityHistory::V1_15_0(Legacy(payload))
+            | EntityHistory::V1_16_0(Legacy(payload))
+            | EntityHistory::V1_16_100(Legacy(payload))
+            | EntityHistory::V1_16_200(Legacy(payload))
+            | EntityHistory::V1_17_10(Legacy(payload))
+            | EntityHistory::V1_17_20(Legacy(payload))
+            | EntityHistory::V1_18_0(Legacy(payload))
+            | EntityHistory::V1_18_10(Legacy(payload))
+            | EntityHistory::V1_18_20(Legacy(payload))
+            | EntityHistory::V1_18_30(Legacy(payload))
+            | EntityHistory::V1_19_0(Legacy(payload))
+            | EntityHistory::V1_19_50(Legacy(payload))
+            | EntityHistory::V1_19_60(Legacy(payload))
+            | EntityHistory::V1_20_0(Legacy(payload))
+            | EntityHistory::V1_20_60(Legacy(payload))
+            | EntityHistory::V1_20_70(Legacy(payload))
+            | EntityHistory::V1_20_80(Legacy(payload))
+            | EntityHistory::V1_21_0(Legacy(payload))
+            | EntityHistory::V1_21_10(Legacy(payload))
+            | EntityHistory::V1_21_20(Legacy(payload))
+            | EntityHistory::V1_21_40(Legacy(payload))
+            | EntityHistory::V1_21_60(Legacy(payload))
+            | EntityHistory::V1_21_70(Legacy(payload))
+            | EntityHistory::V1_21_80(Legacy(payload))
+            | EntityHistory::V1_21_89(Legacy(payload))
+            | EntityHistory::V1_21_90(Legacy(payload))
+            | EntityHistory::V1_21_100(Legacy(payload))
+            | EntityHistory::V1_21_110(Legacy(payload))
+            | EntityHistory::V1_21_120(Legacy(payload))
+            | EntityHistory::V1_21_130(Legacy(payload))
+            | EntityHistory::V1_26_0(Legacy(payload))
+            | EntityHistory::V1_26_10(Legacy(payload))
+            | EntityHistory::V1_26_20(Legacy(payload))
+            | EntityHistory::V1_26_30(Legacy(payload))
+            | EntityHistory::V1_26_40(Legacy(payload)) => Some(payload),
             EntityHistory::V1_26_50(_) | EntityHistory::V1_26_60(_) | EntityHistory::Beta(_) => {
                 None
             }

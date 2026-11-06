@@ -1,12 +1,12 @@
 //! Format 1.21.60: `menu_category.group` is namespaced.
 
-use super::legacy::{Legacy, component_path, misread, strings_told};
+use super::legacy::{BlockPayload, component_path, misread, strings_told};
 use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, Phase};
 use bedrock_addon_core::json::Value;
-use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
+use bedrock_addon_core::versioning::{Legacy, LegacyStep, UpgradeCx};
 
 /// A block document of `[1.21.60, 1.21.90)`.
-pub type Block = Legacy<1, 21, 60>;
+pub type Block = Legacy<BlockPayload, 1, 21, 60>;
 
 /// The v1 list.
 const LIST: &str = "minecraft:custom_components";
@@ -15,18 +15,18 @@ const LIST: &str = "minecraft:custom_components";
 /// components with empty parameters, the names kept in order in
 /// `ordered_v1_custom_components` (the document's for the base, the permutation's for a
 /// permutation).
-impl Upgrade for Block {
+impl LegacyStep<1, 21, 60> for BlockPayload {
     type Next = super::v1_21_90::Block;
 
-    fn upgrade(self, cx: &mut UpgradeCx<'_>) -> Self::Next {
-        let mut block: Self::Next = self.retag();
+    fn step(this: Block, cx: &mut UpgradeCx<'_>) -> Self::Next {
+        let mut block = this.0;
         let names = convert(&mut block.components, None, cx.diagnostics);
         block.ordered_v1_custom_components.extend(names);
         for (index, permutation) in block.permutations.iter_mut().enumerate() {
             let names = convert(&mut permutation.components, Some(index), cx.diagnostics);
             permutation.ordered_v1_custom_components.extend(names);
         }
-        block
+        Legacy(block)
     }
 }
 

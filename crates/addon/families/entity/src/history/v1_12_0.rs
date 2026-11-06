@@ -1,34 +1,41 @@
 //! Format 1.12.0: the struct and the step to 1.13.0: section A's
 //! 1.13 entity rewrite and section B's trigger reshaping.
 
-super::legacy_struct!(1, 12, 0);
-
+use bedrock_addon_core::json::Value;
 use bedrock_addon_core::vanilla::ActorType;
-use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
+use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::versioning::ops::empty_object;
+use bedrock_addon_core::versioning::{Legacy, LegacyStep, UpgradeCx};
 use facet_value::{VArray, VObject};
 
+use super::Payload;
+use super::fragments;
 use super::ops::{
-    Members, Removed, Told, components, f32_value, group, has_bits, is, json, number_of, overwrite,
+    Members, Removed, Told, components, f32_value, group, has_bits, is, number_of, overwrite,
     removed, section_a, section_b, sections,
 };
 use bedrock_addon_core::diagnostic::JsonPath;
+
+/// An entity document as written in format 1.12.0 (up to the next struct's version): its
+/// payload as written.
+pub type Entity = Legacy<Payload, 1, 12, 0>;
 
 /// The step's version, for its findings.
 const V1_13_0: FormatVersion = FormatVersion::new(1, 13, 0);
 
 /// 1.12.0 → 1.13.0 (gate 1.13.0).
-impl Upgrade for Entity {
+impl LegacyStep<1, 12, 0> for Payload {
     type Next = super::v1_13_0::Entity;
 
-    fn upgrade(self, cx: &mut UpgradeCx<'_>) -> Self::Next {
-        let mut payload = self.0;
+    fn step(this: Entity, cx: &mut UpgradeCx<'_>) -> Self::Next {
+        let mut payload = this.0;
         if section_a(&payload, cx) {
             section_a_113(&mut payload, cx);
         }
         if section_b(&payload, cx) {
             section_b_113(&mut payload, cx);
         }
-        super::v1_13_0::Entity(payload)
+        Legacy(payload)
     }
 }
 
@@ -115,7 +122,7 @@ fn section_a_113(payload: &mut Payload, cx: &mut UpgradeCx<'_>) {
     let components = components(payload);
     // 1. `persistent`.
     if is(cx, PERSISTENT) {
-        components.insert_absent("minecraft:persistent", json("{}"));
+        components.insert_absent("minecraft:persistent", empty_object());
     }
     // 2. `pushable`, each member on its own.
     let pushable = if is(cx, NOT_PUSHABLE) {
@@ -126,7 +133,7 @@ fn section_a_113(payload: &mut Payload, cx: &mut UpgradeCx<'_>) {
         Some(true)
     };
     if let Some(is_pushable) = pushable {
-        components.insert_absent("minecraft:pushable", json("{}"));
+        components.insert_absent("minecraft:pushable", empty_object());
         if let Some(object) = components.object("minecraft:pushable") {
             object.insert_absent("is_pushable", is_pushable.into());
             object.insert_absent("is_pushable_by_piston", true.into());
@@ -150,7 +157,7 @@ fn section_a_113(payload: &mut Payload, cx: &mut UpgradeCx<'_>) {
         && (has_bits(cx, MOB) || is(cx, &[T::Arrow, T::Boat]));
     if lava {
         // The entry is the fixer's own: nothing of the file's goes when it is not taken.
-        let _ = append_condition(components, LAVA);
+        let _ = append_condition(components, fragments::lava_condition());
     }
     // 5. Per-type extras.
     flocking(components, cx.actor_type);
@@ -160,15 +167,9 @@ fn section_a_113(payload: &mut Payload, cx: &mut UpgradeCx<'_>) {
         told.report(cx);
     }
     if cx.actor_type == T::SnowGolem {
-        let _ = append_condition(components, TEMPERATURE);
-        let _ = append_condition(components, RAIN);
-        components.insert_absent(
-            "minecraft:trail",
-            json(&format!(
-                r#"{{"block_type": "snow_layer", "spawn_filter": {{"test": "is_temperature_value", "operator": "<", "value": {}}}}}"#,
-                f64::from(0.81_f32)
-            )),
-        );
+        let _ = append_condition(components, fragments::temperature_condition());
+        let _ = append_condition(components, fragments::rain_condition());
+        components.insert_absent("minecraft:trail", fragments::snow_trail());
     }
     // 6. `experience_reward`.
     experience_reward(payload, cx.actor_type);
@@ -190,21 +191,14 @@ fn section_a_113(payload: &mut Payload, cx: &mut UpgradeCx<'_>) {
     }
 }
 
-/// The lava damage entry.
-const LAVA: &str = r#"{"filters": {"test": "in_lava", "subject": "self", "operator": "==", "value": true}, "cause": "lava", "damage_per_tick": 4}"#;
-/// The snow golem's temperature entry.
-const TEMPERATURE: &str = r#"{"filters": {"test": "is_temperature_value", "operator": ">", "value": 1.0}, "cause": "temperature", "damage_per_tick": 1}"#;
-/// The rain entry (the snow golem's, and `hurt_when_wet`'s replacement).
-const RAIN: &str = r#"{"filters": {"test": "in_water_or_rain", "operator": "==", "value": true}, "cause": "drowning", "damage_per_tick": 1}"#;
-
 /// Appends `entry` to `minecraft:hurt_on_condition.damage_conditions`: the container is
 /// created when absent; an existing `hurt_on_condition` without a `damage_conditions` list
 /// gets nothing. Returns whether the entry was appended.
-fn append_condition(section: &mut dyn Members, entry: &str) -> bool {
+fn append_condition(section: &mut dyn Members, entry: Value) -> bool {
     if !section.has("minecraft:hurt_on_condition") {
         section.set(
             "minecraft:hurt_on_condition",
-            json(r#"{"damage_conditions": []}"#),
+            fragments::damage_conditions(),
         );
     }
     let Some(conditions) = section
@@ -214,14 +208,14 @@ fn append_condition(section: &mut dyn Members, entry: &str) -> bool {
     else {
         return false;
     };
-    conditions.push(json(entry));
+    conditions.push(entry);
     true
 }
 
 /// `minecraft:behavior.target_when_pushed` for the iron golem. Returns whether an
 /// `entity_types` that is no array (and not `null`) was replaced.
 fn target_when_pushed(components: &mut dyn Members) -> bool {
-    components.insert_absent("minecraft:behavior.target_when_pushed", json("{}"));
+    components.insert_absent("minecraft:behavior.target_when_pushed", empty_object());
     let Some(goal) = components.object("minecraft:behavior.target_when_pushed") else {
         return false;
     };
@@ -235,12 +229,7 @@ fn target_when_pushed(components: &mut dyn Members) -> bool {
         goal.insert("entity_types", VArray::new());
     }
     if let Some(types) = goal.get_mut("entity_types").and_then(|t| t.as_array_mut()) {
-        types.push(json(
-            r#"{"minecraft:filters": {"minecraft:all_of": [
-                {"test": "is_family", "subject": "other", "value": "monster"},
-                {"test": "is_family", "subject": "other", "operator": "!=", "value": "creeper"}
-            ]}}"#,
-        ));
+        types.push(fragments::iron_golem_target());
     }
     replaced
 }
@@ -334,7 +323,7 @@ fn flocking(components: &mut dyn Members, actor: ActorType) {
         ),
         _ => return,
     };
-    components.insert_absent("minecraft:flocking", json("{}"));
+    components.insert_absent("minecraft:flocking", empty_object());
     let Some(flocking) = components.object("minecraft:flocking") else {
         return;
     };
@@ -368,10 +357,7 @@ fn flocking(components: &mut dyn Members, actor: ActorType) {
 fn turtle_lightning(components: &mut dyn Members, told: &mut Told) {
     let at = JsonPath::new().with(&["components", "minecraft:damage_sensor"]);
     let Some(sensor) = components.get_mut("minecraft:damage_sensor") else {
-        components.set(
-            "minecraft:damage_sensor",
-            json(r#"{"triggers": [{"cause": "lightning", "deals_damage": true, "damage_multiplier": 2000.0}]}"#),
-        );
+        components.set("minecraft:damage_sensor", fragments::lightning_sensor());
         return;
     };
     normalise_damage_sensor(sensor, &at, told);
@@ -400,9 +386,7 @@ fn turtle_lightning(components: &mut dyn Members, told: &mut Told) {
                 overwrite(trigger, "damage_multiplier", 2000.0.into(), &at, told);
             }
         }
-        None => triggers.push(json(
-            r#"{"cause": "lightning", "deals_damage": true, "damage_multiplier": 2000.0}"#,
-        )),
+        None => triggers.push(fragments::lightning_trigger()),
     }
 }
 
@@ -624,7 +608,7 @@ fn pufferfish(payload: &mut Payload, told: &mut Told) {
             }
         }
     }
-    let fragment = json(PUFFERFISH);
+    let fragment = fragments::pufferfish();
     let Some(fragment) = fragment.as_object() else {
         return;
     };
@@ -656,14 +640,8 @@ fn pufferfish(payload: &mut Payload, told: &mut Told) {
     }
     // Inserted when absent (op 7).
     let components = components(payload);
-    components.insert_absent(
-        "minecraft:movement",
-        json(&format!(r#"{{"value": {}}}"#, f64::from(0.13_f32))),
-    );
-    components.insert_absent(
-        "minecraft:underwater_movement",
-        json(&format!(r#"{{"value": {}}}"#, f64::from(0.13_f32))),
-    );
+    components.insert_absent("minecraft:movement", fragments::slow_movement());
+    components.insert_absent("minecraft:underwater_movement", fragments::slow_movement());
 }
 
 /// Whether a group or an event the fixer takes out holds anything of the author's: `null`,
@@ -673,57 +651,6 @@ fn holds_something(value: &Value) -> bool {
         || value.as_object().is_some_and(VObject::is_empty)
         || value.as_array().is_some_and(VArray::is_empty))
 }
-
-/// The pufferfish fragment; `A` and `M` are the filters it uses.
-const PUFFERFISH: &str = r#"{
-  "component_groups": {
-    "minecraft:normal_puff": {
-      "minecraft:variant": {"value": 0},
-      "minecraft:entity_sensor": {"sensor_range": 1.5, "minimum_count": 1, "event": "minecraft:to_full_puff", "event_filters": {"any_of": [
-        {"test": "is_family", "subject": "other", "value": "mob"},
-        {"test": "is_family", "subject": "other", "value": "armor_stand"},
-        {"all_of": [{"test": "is_family", "subject": "other", "value": "player"}, {"none_of": {"test": "has_ability", "subject": "other", "value": "instabuild"}}]}
-      ]}}
-    },
-    "minecraft:half_puff_inflate": {
-      "minecraft:variant": {"value": 1},
-      "minecraft:timer": {"looping": false, "time": 0.05000000074505806, "randomInterval": false, "time_down_event": {"event": "minecraft:on_full_puff"}}
-    },
-    "minecraft:half_puff_deflate": {
-      "minecraft:variant": {"value": 1},
-      "minecraft:timer": {"looping": false, "time": 1, "randomInterval": false, "time_down_event": {"event": "minecraft:on_normal_puff"}}
-    },
-    "minecraft:start_deflate": {
-      "minecraft:timer": {"looping": false, "time": 10, "randomInterval": false, "time_down_event": {"event": "minecraft:on_deflate"}}
-    },
-    "minecraft:full_puff": {
-      "minecraft:variant": {"value": 2},
-      "minecraft:area_attack": {"damage_range": 0.20000000298023224, "damage_per_tick": 2, "cause": "contact", "entity_filter": {"any_of": [
-        {"test": "is_family", "subject": "other", "value": "monster"},
-        {"test": "is_family", "subject": "other", "value": "player"}
-      ]}},
-      "minecraft:mob_effect": {"effect_range": 0.20000000298023224, "mob_effect": "poison", "effect_time": 10, "entity_filter": {"any_of": [
-        {"test": "is_family", "subject": "other", "value": "monster"},
-        {"test": "is_family", "subject": "other", "value": "player"}
-      ]}}
-    },
-    "minecraft:deflate_sensor": {
-      "minecraft:entity_sensor": {"sensor_range": 10.0, "require_all": true, "event": "minecraft:from_full_puff", "event_filters": {"none_of": [
-        {"test": "is_family", "subject": "other", "value": "mob"},
-        {"test": "is_family", "subject": "other", "value": "armor_stand"},
-        {"all_of": [{"test": "is_family", "subject": "other", "value": "player"}, {"none_of": {"test": "has_ability", "subject": "other", "value": "instabuild"}}]}
-      ]}}
-    }
-  },
-  "events": {
-    "minecraft:entity_spawned": {"add": {"component_groups": ["minecraft:normal_puff"]}},
-    "minecraft:to_full_puff": {"add": {"component_groups": ["minecraft:half_puff_inflate"]}, "remove": {"component_groups": ["minecraft:normal_puff"]}},
-    "minecraft:on_full_puff": {"add": {"component_groups": ["minecraft:full_puff", "minecraft:deflate_sensor"]}, "remove": {"component_groups": ["minecraft:half_puff_inflate"]}},
-    "minecraft:from_full_puff": {"add": {"component_groups": ["minecraft:start_deflate"]}, "remove": {"component_groups": ["minecraft:deflate_sensor"]}},
-    "minecraft:on_deflate": {"add": {"component_groups": ["minecraft:half_puff_deflate"]}, "remove": {"component_groups": ["minecraft:full_puff", "minecraft:start_deflate"]}},
-    "minecraft:on_normal_puff": {"add": {"component_groups": ["minecraft:normal_puff"]}, "remove": {"component_groups": ["minecraft:half_puff_deflate"]}}
-  }
-}"#;
 
 /// `type_family.family` gets `"mob"`: appended to an array (even when present); a string `s`
 /// becomes `[s, "mob"]` (vanilla nests a second `type_family`, a bug this crate does not copy).
@@ -773,7 +700,7 @@ fn section_b_113(payload: &mut Payload, cx: &mut UpgradeCx<'_>) {
             // the section takes it: a component that makes no entry is told as removed,
             // whatever it held, and a member beside the `value` of one that does is told
             // at the component the file has.
-            if wet_true && append_condition(members, RAIN) {
+            if wet_true && append_condition(members, fragments::rain_condition()) {
                 for key in wet.as_object().into_iter().flat_map(VObject::keys) {
                     if key.as_str() != "value" {
                         told.unknown(at.child(key.as_str()));
@@ -859,7 +786,7 @@ fn fall_damage(
         told.read(number_of(member), || member_at.clone())
     });
     if !members.has("minecraft:damage_sensor") {
-        members.set("minecraft:damage_sensor", json(r#"{"triggers": []}"#));
+        members.set("minecraft:damage_sensor", fragments::no_triggers());
     }
     let Some(sensor) = members.get_mut("minecraft:damage_sensor") else {
         return;
@@ -1050,21 +977,19 @@ fn scheduler_113(
 }
 /// `spawn_entity`: every entry gets the `rider_count` filter.
 fn spawn_entity_113(spawn: &mut Value, at: &JsonPath, told: &mut Told) {
-    const RIDERS: &str =
-        r#"{"test": "rider_count", "subject": "self", "operator": "==", "value": 0}"#;
     let mut add = |entry: &mut VObject, entry_at: JsonPath| match entry.get_mut("filters") {
         None => {
-            entry.insert("filters", json(RIDERS));
+            entry.insert("filters", fragments::no_riders());
         }
         Some(filters) if filters.is_array() => {
             if let Some(list) = filters.as_array_mut() {
-                list.push(json(RIDERS));
+                list.push(fragments::no_riders());
             }
         }
         Some(filters) => {
             let mut all = VArray::new();
             all.push(filters.clone());
-            all.push(json(RIDERS));
+            all.push(fragments::no_riders());
             let mut group = VObject::new();
             group.insert("all_of", all);
             *filters = group.into();

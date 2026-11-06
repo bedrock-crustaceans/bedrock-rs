@@ -1,27 +1,33 @@
 //! Format 1.16.0: the struct and the step to 1.16.100.
 
-super::legacy_struct!(1, 16, 0);
-
 use bedrock_addon_core::diagnostic::JsonPath;
 use bedrock_addon_core::vanilla::ActorType;
+use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::version::known;
-use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
+use bedrock_addon_core::versioning::ops::empty_object;
+use bedrock_addon_core::versioning::{Legacy, LegacyStep, UpgradeCx};
 use facet_value::VArray;
 
+use super::Payload;
+use super::fragments;
 use super::ops::{
-    Members, Removed, Told, components, f32_value, float_of, json, overwrite, removed, rename,
-    section_a, section_b, sections,
+    Members, Removed, Told, components, f32_value, float_of, overwrite, removed, rename, section_a,
+    section_b, sections,
 };
+
+/// An entity document as written in format 1.16.0 (up to the next struct's version): its
+/// payload as written.
+pub type Entity = Legacy<Payload, 1, 16, 0>;
 
 /// The step's version, for its findings.
 const V1_16_100: FormatVersion = known::V1_16_100;
 
 /// 1.16.0 → 1.16.100 (gate 1.16.100).
-impl Upgrade for Entity {
+impl LegacyStep<1, 16, 0> for Payload {
     type Next = super::v1_16_100::Entity;
 
-    fn upgrade(self, cx: &mut UpgradeCx<'_>) -> Self::Next {
-        let mut payload = self.0;
+    fn step(this: Entity, cx: &mut UpgradeCx<'_>) -> Self::Next {
+        let mut payload = this.0;
         if section_a(&payload, cx) {
             restriction_split(&mut payload, cx);
             if cx.actor_type == ActorType::Boat {
@@ -33,7 +39,7 @@ impl Upgrade for Entity {
         if section_b(&payload, cx) {
             rewrites(&mut payload, cx);
         }
-        super::v1_16_100::Entity(payload)
+        Legacy(payload)
     }
 }
 
@@ -59,7 +65,7 @@ fn restriction_split(payload: &mut Payload, cx: &mut UpgradeCx<'_>) {
         } else if guardian {
             const NEW: &str = "minecraft:behavior.move_towards_home_restriction";
             rename(members, &section.at, OLD, NEW, &mut told);
-            members.insert_absent("minecraft:home", json(r#"{"restriction_radius": 16}"#));
+            members.insert_absent("minecraft:home", fragments::home());
         } else {
             members.take(OLD);
             gone.push(section.at.child(OLD));
@@ -79,8 +85,8 @@ fn boat(payload: &mut Payload, told: &mut Told) {
         .components
         .as_ref()
         .and_then(|c| c.get("minecraft:rideable").cloned())
-        .unwrap_or_else(|| json("{}"));
-    let fragment = json(BOAT);
+        .unwrap_or_else(empty_object);
+    let fragment = fragments::boat();
     let Some(fragment) = fragment.as_object() else {
         return;
     };
@@ -134,41 +140,6 @@ fn boat(payload: &mut Payload, told: &mut Told) {
         }
     }
 }
-
-/// The boat fragment.
-const BOAT: &str = r#"{
-  "component_groups": {
-    "minecraft:floating": {
-      "minecraft:buoyant": {"liquid_blocks": ["minecraft:water", "minecraft:flowing_water"], "simulate_waves": true}
-    },
-    "minecraft:can_ride": {},
-    "minecraft:above_bubble_column_down": {
-      "minecraft:buoyant": {"liquid_blocks": ["minecraft:water", "minecraft:flowing_water"], "simulate_waves": false, "drag_down_on_buoyancy_removed": 0.7}
-    },
-    "minecraft:above_bubble_column_up": {
-      "minecraft:buoyant": {"liquid_blocks": ["minecraft:water", "minecraft:flowing_water"], "simulate_waves": false, "drag_down_on_buoyancy_removed": 0.7}
-    }
-  },
-  "components": {
-    "minecraft:buoyant": {"liquid_blocks": ["minecraft:water", "minecraft:flowing_water"], "simulate_waves": false, "drag_down_on_buoyancy_removed": 0.7},
-    "minecraft:timer": {"looping": false, "time": 3, "time_down_event": {"event": "minecraft:sink", "target": "self"}},
-    "minecraft:out_of_control": {},
-    "minecraft:inside_block_notifier": {"block_list": [
-      {"block": {"name": "minecraft:bubble_column", "states": {"drag_down": true}},
-       "entered_block_event": {"event": "minecraft:entered_bubble_column_down", "target": "self"},
-       "exited_block_event": {"event": "minecraft:exited_bubble_column", "target": "self"}},
-      {"block": {"name": "minecraft:bubble_column", "states": {"drag_down": false}},
-       "entered_block_event": {"event": "minecraft:entered_bubble_column_up", "target": "self"},
-       "exited_block_event": {"event": "minecraft:exited_bubble_column", "target": "self"}}
-    ]}
-  },
-  "events": {
-    "minecraft:entered_bubble_column_down": {"add": {"component_groups": ["minecraft:above_bubble_column_down"]}, "remove": {"component_groups": ["minecraft:floating"]}},
-    "minecraft:entered_bubble_column_up": {"add": {"component_groups": ["minecraft:above_bubble_column_up"]}, "remove": {"component_groups": ["minecraft:floating"]}},
-    "minecraft:exited_bubble_column": {"add": {"component_groups": ["minecraft:floating", "minecraft:can_ride"]}, "remove": {"component_groups": ["minecraft:above_bubble_column_down", "minecraft:above_bubble_column_up"]}},
-    "minecraft:sink": {"remove": {"component_groups": ["minecraft:floating", "minecraft:can_ride", "minecraft:above_bubble_column_down", "minecraft:above_bubble_column_up"]}}
-  }
-}"#;
 
 /// B, every section: `drop_item_for.max_dist` → `target_range`, `explore_outskirts.wait_time`
 /// (ticks) → `max_wait_time` (seconds), `economy_trade_table.use_legacy_price_formula`, and

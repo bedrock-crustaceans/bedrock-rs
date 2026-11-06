@@ -1,19 +1,24 @@
 //! Format 1.15.0: the struct and the step to 1.16.0, all section A.
 
-super::legacy_struct!(1, 15, 0);
-
+use bedrock_addon_core::json::Value;
 use bedrock_addon_core::vanilla::ActorType;
-use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
+use bedrock_addon_core::versioning::{Legacy, LegacyStep, UpgradeCx};
 use facet_value::VObject;
 
-use super::ops::{Members, Told, components, has_bits, is, json, section_a, sections};
+use super::Payload;
+use super::fragments;
+use super::ops::{Members, Told, components, has_bits, is, section_a, sections};
+
+/// An entity document as written in format 1.15.0 (up to the next struct's version): its
+/// payload as written.
+pub type Entity = Legacy<Payload, 1, 15, 0>;
 
 /// 1.15.0 → 1.16.0 (gate 1.16.0).
-impl Upgrade for Entity {
+impl LegacyStep<1, 15, 0> for Payload {
     type Next = super::v1_16_0::Entity;
 
-    fn upgrade(self, cx: &mut UpgradeCx<'_>) -> Self::Next {
-        let mut payload = self.0;
+    fn step(this: Entity, cx: &mut UpgradeCx<'_>) -> Self::Next {
+        let mut payload = this.0;
         if section_a(&payload, cx) {
             let mut told = Told::default();
             instant_despawn(&mut payload, &mut told);
@@ -27,10 +32,10 @@ impl Upgrade for Entity {
                 breathable.insert_absent("breathes_lava", false.into());
             }
             if let Some(panic) = components.object("minecraft:behavior.panic") {
-                panic.insert_absent("damage_sources", json(r#"["fire", "fire_tick", "magma"]"#));
+                panic.insert_absent("damage_sources", fragments::panic_damage_sources());
             }
         }
-        super::v1_16_0::Entity(payload)
+        Legacy(payload)
     }
 }
 
@@ -100,16 +105,6 @@ fn eligible(cx: &UpgradeCx<'_>) -> bool {
             || cx.actor_type == T::Bat)
 }
 
-/// Entries of the default despawn filters.
-const NOT_PERSISTENT: &str = r#"{"test": "is_persistent", "value": false}"#;
-/// Entries of the default despawn filters.
-const INACTIVE: &str = r#"{"test": "inactivity_timer", "subject": "self", "value": 600}"#;
-/// Entries of the default despawn filters.
-const RANDOM: &str = r#"{"test": "random_chance", "value": 50}"#;
-/// Entries of the default despawn filters.
-const FAR: &str = r#"{"test": "distance_to_nearest_player", "operator": ">", "value": 54}"#;
-/// Entries of the default despawn filters.
-const DAY: &str = r#"{"test": "is_daytime", "value": true}"#;
 /// The default `despawn` of an eligible type without `persistent` or `despawn` in
 /// `components`.
 fn default_despawn(payload: &mut Payload, cx: &UpgradeCx<'_>) {
@@ -133,37 +128,39 @@ fn default_despawn(payload: &mut Payload, cx: &UpgradeCx<'_>) {
     if components.has("minecraft:persistent") || components.has("minecraft:despawn") {
         return;
     }
-    let entries: Vec<&str> = if is(cx, &[T::Pufferfish, T::Salmon, T::Tropicalfish, T::Cod]) {
+    let entries = if is(cx, &[T::Pufferfish, T::Salmon, T::Tropicalfish, T::Cod]) {
         vec![
-            NOT_PERSISTENT,
-            r#"{"test": "distance_to_nearest_player", "operator": ">", "value": 40}"#,
+            fragments::not_persistent(),
+            fragments::fish_far_from_players(),
         ]
     } else if cx.actor_type == T::Drowned {
-        vec![NOT_PERSISTENT, DAY, INACTIVE, RANDOM, FAR]
+        vec![
+            fragments::not_persistent(),
+            fragments::is_daytime(),
+            fragments::inactive(),
+            fragments::random_chance_50(),
+            fragments::far_from_players(),
+        ]
     } else if has_bits(cx, 0xb00) {
         vec![
-            NOT_PERSISTENT,
-            r#"{"test": "light_level", "operator": ">=", "value": 8}"#,
-            DAY,
-            INACTIVE,
-            RANDOM,
-            FAR,
-            r#"{"test": "surface_mob", "value": true}"#,
+            fragments::not_persistent(),
+            fragments::light_at_least_8(),
+            fragments::is_daytime(),
+            fragments::inactive(),
+            fragments::random_chance_50(),
+            fragments::far_from_players(),
+            fragments::surface_mob(),
         ]
     } else {
         vec![
-            NOT_PERSISTENT,
-            r#"{"test": "light_level", "operator": "<", "value": 8}"#,
-            INACTIVE,
-            RANDOM,
-            FAR,
+            fragments::not_persistent(),
+            fragments::light_below_8(),
+            fragments::inactive(),
+            fragments::random_chance_50(),
+            fragments::far_from_players(),
         ]
     };
-    let all_of = format!("[{}]", entries.join(", "));
-    components.set(
-        "minecraft:despawn",
-        json(&format!(r#"{{"filters": [{{"all_of": {all_of}}}]}}"#)),
-    );
+    components.set("minecraft:despawn", fragments::despawn(entries));
 }
 
 /// `set_persistent: true` when absent in the attack goals of every section

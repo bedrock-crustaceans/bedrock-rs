@@ -21,12 +21,19 @@ pub mod v1_21_90;
 use super::component::ClientBiomeComponent;
 use super::read::PAYLOAD_KEY;
 use super::{Beta, ClientBiome};
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, Phase};
+use bedrock_addon_core::diagnostic::Diagnostics;
+use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath};
 use bedrock_addon_core::document::{
     Component, ComponentMap, ComponentRef, ComponentSet, Document, Rejected,
 };
+use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::load::LoadContext;
-use bedrock_addon_core::versioning::UpgradeCx;
+use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
+use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::versioning::{LegacyPayload, ParseCx, UpgradeCx, ops};
+
+use crate::read::{ComponentEra, strict, whole};
+use crate::write::{document, object};
 
 use v1_21_40::Component as OlderComponent;
 
@@ -57,8 +64,11 @@ bedrock_addon_core::version_chain! {
     }
     beta = /// `"format_version": "beta"`.
     Beta(Beta);
-    molang = none;
 }
+
+// The newest struct and the beta struct have no Molang field either (the older ones' impl is
+// their payload's).
+bedrock_addon_core::impl_no_molang!(ClientBiome, Beta);
 
 /// Runs the remaining upgrade steps of a document [`ClientBiome::parse_as_written`] gave: the
 /// same result [`ClientBiome::parse`](bedrock_addon_core::document::Content::parse) gives for its file. A
@@ -76,50 +86,44 @@ pub fn upgrade(
     crate::upgrade_document(document, cx)
 }
 
-/// One struct of a format below 1.21.130: the whole document, with the components of `$set`.
-macro_rules! legacy_document {
-    ($(#[$doc:meta])* version = ($major:literal, $minor:literal, $patch:literal), set = $set:ty) => {
-        $(#[$doc])*
-        #[derive(Clone, Debug, PartialEq)]
-        pub struct ClientBiome {
-            /// The document's `format_version`, as written (JSON `format_version`, a string).
-            pub format_version: String,
-            /// The biome's name (JSON `minecraft:client_biome/description`).
-            pub description: $crate::Description,
-            /// The components (JSON `minecraft:client_biome/components`).
-            pub components: ::bedrock_addon_core::document::ComponentMap<$set>,
-        }
-
-        impl ::bedrock_addon_core::versioning::Versioned for ClientBiome {
-            const VERSION: ::bedrock_addon_core::version::FormatVersion =
-                ::bedrock_addon_core::version::FormatVersion::new($major, $minor, $patch);
-        }
-
-        impl ::bedrock_addon_core::versioning::VersionStruct for ClientBiome {
-            fn parse(
-                document: ::bedrock_addon_core::json::JsonSlice<'_>,
-                cx: &::bedrock_addon_core::versioning::ParseCx<'_>,
-                d: &mut ::bedrock_addon_core::diagnostic::Diagnostics,
-            ) -> Option<Self> {
-                use $crate::read::{strict, whole};
-                use ::bedrock_addon_core::versioning::Versioned;
-                let read = strict(cx, d, |d| whole::<$set>(document, Self::VERSION, cx, d))?;
-                Some(Self {
-                    format_version: read.format_version,
-                    description: read.payload.description,
-                    components: read.payload.components,
-                })
-            }
-
-            fn write(&self) -> Result<::bedrock_addon_core::json::Value, ::bedrock_addon_core::json::EncodeError> {
-                use $crate::write::{document, object};
-                let payload = object(&self.description, &self.components)?;
-                Ok(document(&self.format_version, payload.into()))
-            }
-        }
-    };
+/// A client-biome document of a format below 1.21.130: the whole document, with the components
+/// of the set `S` of its era. Each struct is `Legacy<ClientBiomePayload<S>, ..>` at its format.
+#[derive(Clone, Debug, PartialEq)]
+pub struct ClientBiomePayload<S: ComponentSet> {
+    /// The document's `format_version`, as written (JSON `format_version`, a string).
+    pub format_version: String,
+    /// The biome's name (JSON `minecraft:client_biome/description`).
+    pub description: crate::Description,
+    /// The components (JSON `minecraft:client_biome/components`).
+    pub components: ComponentMap<S>,
 }
-pub(crate) use legacy_document;
+
+/// The components of the older formats have no Molang field.
+impl<S: ComponentSet> MolangFields for ClientBiomePayload<S> {
+    fn visit_molang(&mut self, _: &mut MolangVisitor<'_>) {}
+}
+
+/// Each older struct reads the whole document, envelope included, in one strict struct.
+impl<S: ComponentEra> LegacyPayload for ClientBiomePayload<S> {
+    fn parse(
+        document: JsonSlice<'_>,
+        version: FormatVersion,
+        cx: &ParseCx<'_>,
+        d: &mut Diagnostics,
+    ) -> Option<Self> {
+        let read = strict(cx, d, |d| whole::<S>(document, version, cx, d))?;
+        Some(Self {
+            format_version: read.format_version,
+            description: read.payload.description,
+            components: read.payload.components,
+        })
+    }
+
+    fn write(&self, _: FormatVersion) -> Result<Value, EncodeError> {
+        let payload = object(&self.description, &self.components)?;
+        Ok(document(&self.format_version, payload.into()))
+    }
+}
 
 /// The path of the component `name` in a client-biome file.
 fn component_path(name: &str) -> JsonPath {
@@ -128,8 +132,7 @@ fn component_path(name: &str) -> JsonPath {
 
 /// An info finding of a step about the component `name` (vanilla is silent).
 fn note(cx: &mut UpgradeCx<'_>, code: DiagnosticCode, at: JsonPath) {
-    cx.diagnostics
-        .push(Diagnostic::info(code).at(at).phase(Phase::Upgrade));
+    ops::note(cx.diagnostics, code, at);
 }
 
 /// The key of a map entry.

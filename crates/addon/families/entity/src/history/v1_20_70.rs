@@ -1,18 +1,22 @@
 //! Format 1.20.70: the struct and the step to 1.20.80.
 
-super::legacy_struct!(1, 20, 70);
-
+use bedrock_addon_core::json::Value;
 use bedrock_addon_core::vanilla::ActorType;
-use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
+use bedrock_addon_core::versioning::{Legacy, LegacyStep, UpgradeCx};
 
+use super::Payload;
 use super::ops::{Members, section_a, section_b, sections};
 
+/// An entity document as written in format 1.20.70 (up to the next struct's version): its
+/// payload as written.
+pub type Entity = Legacy<Payload, 1, 20, 70>;
+
 /// 1.20.70 → 1.20.80 (gate 1.20.80).
-impl Upgrade for Entity {
+impl LegacyStep<1, 20, 70> for Payload {
     type Next = super::v1_20_80::Entity;
 
-    fn upgrade(self, cx: &mut UpgradeCx<'_>) -> Self::Next {
-        let mut payload = self.0;
+    fn step(this: Entity, cx: &mut UpgradeCx<'_>) -> Self::Next {
+        let mut payload = this.0;
         // A, all types: `description.spawn_category` when
         // absent; nothing when `description` is not an object.
         if section_a(&payload, cx)
@@ -29,7 +33,7 @@ impl Upgrade for Entity {
                 }
             }
         }
-        super::v1_20_80::Entity(payload)
+        Legacy(payload)
     }
 }
 

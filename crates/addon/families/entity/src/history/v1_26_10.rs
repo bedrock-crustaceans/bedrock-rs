@@ -1,12 +1,19 @@
 //! Format 1.26.10: the struct and the step to 1.26.20.
 
-super::legacy_struct!(1, 26, 10);
-
 use bedrock_addon_core::diagnostic::JsonPath;
+use bedrock_addon_core::json::Value;
 use bedrock_addon_core::vanilla::ActorType;
-use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
+use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::versioning::ops::empty_object;
+use bedrock_addon_core::versioning::{Legacy, LegacyStep, UpgradeCx, Versioned};
 
-use super::ops::{Members, Told, components, json, rename, section_a, section_b, sections};
+use super::Payload;
+use super::fragments;
+use super::ops::{Members, Told, components, rename, section_a, section_b, sections};
+
+/// An entity document as written in format 1.26.10 (up to the next struct's version): its
+/// payload as written.
+pub type Entity = Legacy<Payload, 1, 26, 10>;
 
 /// The format version of the game's iron-golem knockback upgrade flag: the iron golem's
 /// knockback constants changed.
@@ -19,23 +26,23 @@ const MOVE_TO_POSITION: &str = "minecraft:memory_behavior.move_to_position";
 const LEGACY_MOVE_TO_POSITION: &str = "minecraft:memory_behavior.move_to_position.legacy";
 
 /// 1.26.10 → 1.26.20.
-impl Upgrade for Entity {
+impl LegacyStep<1, 26, 10> for Payload {
     type Next = super::v1_26_20::Entity;
 
-    fn upgrade(self, cx: &mut UpgradeCx<'_>) -> Self::Next {
-        let mut payload = self.0;
+    fn step(this: Entity, cx: &mut UpgradeCx<'_>) -> Self::Next {
+        let mut payload = this.0;
         // The conversions of this step whose legacy reader is one of the game's schema-driven
         // readers.
         super::ops::schema_conversions(&mut payload, super::v1_26_20::Entity::VERSION, cx);
         if section_a(&payload, cx) {
             // All identifiers: `uses_legacy_friction {}` when absent ("automatically added to
             // all entities with a format_version lower than 1.26.20").
-            components(&mut payload).insert_absent("minecraft:uses_legacy_friction", json("{}"));
+            components(&mut payload)
+                .insert_absent("minecraft:uses_legacy_friction", empty_object());
             if let Some(rules) = knockback_rules(cx) {
                 // The crate's own information, since the fixer does it: a component of the document
                 // that the fixer replaces by another value is told.
                 const RULES: &str = "minecraft:apply_knockback_rules";
-                let rules = json(&rules);
                 let components = components(&mut payload);
                 if components
                     .get(RULES)
@@ -61,10 +68,7 @@ impl Upgrade for Entity {
                     &mut told,
                 );
                 if let Some(goal) = members.object("minecraft:behavior.follow_target_leader") {
-                    goal.insert_absent(
-                        "leader_filters",
-                        json(r#"{"test": "has_component", "subject": "other", "value": "minecraft:is_illager_captain"}"#),
-                    );
+                    goal.insert_absent("leader_filters", fragments::captain_leader_filter());
                     goal.insert_absent("search_cooldown", 1.into());
                 }
             }
@@ -83,14 +87,14 @@ impl Upgrade for Entity {
             );
         }
         told.report(cx);
-        super::v1_26_20::Entity(payload)
+        Legacy(payload)
     }
 }
 
 /// A, vanilla: the component written unconditionally. The
 /// 1.26.20 horizontal powers (2.0 / 1.3 / 1.5 / 1.0) are written × 0.4, because this crate's
 /// runtime applies `horizontal_power` unscaled, as the game's 1.26.40 does.
-fn knockback_rules(cx: &UpgradeCx<'_>) -> Option<String> {
+fn knockback_rules(cx: &UpgradeCx<'_>) -> Option<Value> {
     let (h, v, cap, water) = match cx.actor_type {
         ActorType::IronGolem if cx.original_version < IRON_GOLEM_KNOCKBACK => {
             (0.8, 1.6, 0.8, false)
@@ -100,7 +104,5 @@ fn knockback_rules(cx: &UpgradeCx<'_>) -> Option<String> {
         ActorType::Egg => (0.4, 0.12, 0.12, false),
         _ => return None,
     };
-    Some(format!(
-        r#"{{"presets": [{{"horizontal_power": {h}, "vertical_power": {v}, "vertical_velocity_cap": {cap}, "check_if_target_is_immersed_in_water": {water}}}]}}"#
-    ))
+    Some(fragments::knockback_rules(h, v, cap, water))
 }

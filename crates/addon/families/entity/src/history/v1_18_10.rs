@@ -1,17 +1,20 @@
 //! Format 1.18.10: the struct and the step to 1.18.20.
 
-super::legacy_struct!(1, 18, 10);
+use bedrock_addon_core::versioning::{Legacy, LegacyStep, UpgradeCx};
 
-use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
-
+use super::Payload;
 use super::ops::{Told, section_b, sections, single_to_array_at};
 
+/// An entity document as written in format 1.18.10 (up to the next struct's version): its
+/// payload as written.
+pub type Entity = Legacy<Payload, 1, 18, 10>;
+
 /// 1.18.10 → 1.18.20 (gate 1.18.20).
-impl Upgrade for Entity {
+impl LegacyStep<1, 18, 10> for Payload {
     type Next = super::v1_18_20::Entity;
 
-    fn upgrade(self, cx: &mut UpgradeCx<'_>) -> Self::Next {
-        let mut payload = self.0;
+    fn step(this: Entity, cx: &mut UpgradeCx<'_>) -> Self::Next {
+        let mut payload = this.0;
         // B, `behavior.go_home`: a single `on_home` and `on_failed` member becomes a
         // one-element array.
         if section_b(&payload, cx) {
@@ -25,6 +28,6 @@ impl Upgrade for Entity {
             }
             told.report(cx);
         }
-        super::v1_18_20::Entity(payload)
+        Legacy(payload)
     }
 }

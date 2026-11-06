@@ -2,15 +2,15 @@
 
 use indexmap::IndexMap;
 
-use super::legacy::{Legacy, component_path, fixed, string};
+use super::legacy::{BlockPayload, component_path, fixed, string};
 use super::ops::{dropped_field, edit_object};
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, Phase};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::version::FormatVersion;
-use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
+use bedrock_addon_core::versioning::{Legacy, LegacyStep, UpgradeCx};
 
 /// A block document of `[1.20.10, 1.20.60)`.
-pub type Block = Legacy<1, 20, 10>;
+pub type Block = Legacy<BlockPayload, 1, 20, 10>;
 
 /// The full-block geometry a unit cube becomes.
 pub(crate) const FULL_BLOCK: &str = "minecraft:geometry.full_block";
@@ -21,11 +21,11 @@ pub(crate) const PROPERTY_RENAME: FormatVersion = FormatVersion::new(1, 20, 20);
 
 /// the unit cube becomes full-block geometry, then (gated on an
 /// original version below 1.20.20) the game's conversion of `properties` into states.
-impl Upgrade for Block {
+impl LegacyStep<1, 20, 10> for BlockPayload {
     type Next = super::v1_20_60::Block;
 
-    fn upgrade(self, cx: &mut UpgradeCx<'_>) -> Self::Next {
-        let mut block: Self::Next = self.retag();
+    fn step(this: Block, cx: &mut UpgradeCx<'_>) -> Self::Next {
+        let mut block = this.0;
         // Op 1, per section: `unit_cube` adds `geometry: full_block`; with a geometry of its
         // own, the geometry is replaced (the game logs an error and goes on, so this is a kept error).
         let mut both = Vec::new();
@@ -56,7 +56,7 @@ impl Upgrade for Block {
             let at = JsonPath::new().with(&["minecraft:block", "description", "properties"]);
             dropped_field(&at, None, cx.diagnostics);
         }
-        block
+        Legacy(block)
     }
 }
 
@@ -64,7 +64,7 @@ impl Upgrade for Block {
 /// that is no object has no member to copy: it is discarded, and told (the crate's own
 /// finding).
 fn convert_properties(
-    block: &mut super::v1_20_60::Block,
+    block: &mut BlockPayload,
     d: &mut bedrock_addon_core::diagnostic::Diagnostics,
 ) {
     let properties = block.description.shift_remove("properties");

@@ -2,21 +2,21 @@
 
 use indexmap::IndexMap;
 
-use super::legacy::{Legacy, component_path};
+use super::legacy::{BlockPayload, component_path};
 use super::ops::{dropped_field, edit_object, is_opaque};
 use bedrock_addon_core::json::Value;
-use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
+use bedrock_addon_core::versioning::{Legacy, LegacyStep, UpgradeCx};
 
 /// A block document of `[1.20.60, 1.21.30)`.
-pub type Block = Legacy<1, 20, 60>;
+pub type Block = Legacy<BlockPayload, 1, 20, 60>;
 
 /// `destructible_by_mining.item_specific_speeds` is removed;
 /// `redstone_conductivity` is synthesised, as the game's legacy-compatibility load does.
-impl Upgrade for Block {
+impl LegacyStep<1, 20, 60> for BlockPayload {
     type Next = super::v1_21_30::Block;
 
-    fn upgrade(self, cx: &mut UpgradeCx<'_>) -> Self::Next {
-        let mut block: Self::Next = self.retag();
+    fn step(this: Block, cx: &mut UpgradeCx<'_>) -> Self::Next {
+        let mut block = this.0;
         let mut removed = Vec::new();
         for (section, map) in block.sections_mut() {
             let Some(mining) = map.get_mut("minecraft:destructible_by_mining") else {
@@ -34,14 +34,14 @@ impl Upgrade for Block {
             dropped_field(&at, None, cx.diagnostics);
         }
         synthesize_redstone_conductivity(&mut block);
-        block
+        Legacy(block)
     }
 }
 
 /// `v = !mi || (unit_cube && is_opaque(mi))`: the base gets a conductor when `v`; a
 /// permutation (falling back to the base's `material_instances` and `unit_cube`) gets
 /// `{redstone_conductor: v}` when its `v` differs from the base's.
-pub(crate) fn synthesize_redstone_conductivity(block: &mut super::v1_21_30::Block) {
+pub(crate) fn synthesize_redstone_conductivity(block: &mut BlockPayload) {
     const NAME: &str = "minecraft:redstone_conductivity";
     let conducts =
         |mi: Option<&Value>, unit_cube: bool| mi.is_none() || (unit_cube && is_opaque(mi));

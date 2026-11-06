@@ -2,7 +2,7 @@
 //! format whose `ambient_sounds.addition` is a plain sound.
 
 use super::v1_21_40::{AmbientSounds as OlderAmbientSounds, Component};
-use super::{insert, legacy_document, note_component, v1_21_120};
+use super::{ClientBiomePayload, insert, note_component, v1_21_120};
 use crate::component::{AmbientSounds, ClientBiomeComponent, SoundAddition};
 use bedrock_addon_core::diagnostic::DiagnosticCode;
 use bedrock_addon_core::document::{Component as _, ComponentMap, ComponentRef};
@@ -10,12 +10,10 @@ use bedrock_addon_core::id::SoundEventName;
 use bedrock_addon_core::id::syntax::split_namespace;
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::version::known;
-use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
+use bedrock_addon_core::versioning::{Legacy, LegacyStep, UpgradeCx};
 
-legacy_document! {
-    /// A client biome of format `[1.21.110, 1.21.120)`.
-    version = (1, 21, 110), set = Component
-}
+/// A client biome of format `[1.21.110, 1.21.120)`.
+pub type ClientBiome = Legacy<ClientBiomePayload<Component>, 1, 21, 110>;
 
 /// The version below which a document gets the underwater ambient sounds: the next struct's
 /// version, so every document that reaches the step is below it.
@@ -61,15 +59,16 @@ fn is_vanilla(identifier: &str) -> bool {
 /// vanilla biome gets the game's underwater ambience (and the component, when it has none);
 /// another biome's sounds also play under water, as they did before 1.21.120. Every document
 /// that reaches this step is below 1.21.120, so the underwater sounds always apply.
-impl Upgrade for ClientBiome {
+impl LegacyStep<1, 21, 110> for ClientBiomePayload<Component> {
     type Next = v1_21_120::ClientBiome;
 
-    fn upgrade(self, cx: &mut UpgradeCx<'_>) -> v1_21_120::ClientBiome {
-        let vanilla = is_vanilla(self.description.identifier.as_str());
+    fn step(this: ClientBiome, cx: &mut UpgradeCx<'_>) -> v1_21_120::ClientBiome {
+        let biome = this.0;
+        let vanilla = is_vanilla(biome.description.identifier.as_str());
         let early = cx.original_version < UNDERWATER_AMBIENT_SOUNDS_COMPONENT_BEFORE;
         let mut components: ComponentMap<ClientBiomeComponent> = ComponentMap::new();
         let mut converted = false;
-        for entry in self.components.iter() {
+        for entry in biome.components.iter() {
             match entry {
                 ComponentRef::Typed {
                     value: Component::AmbientSounds(older),
@@ -130,11 +129,11 @@ impl Upgrade for ClientBiome {
             underwater_ambience(&mut sounds);
             insert(&mut components, sounds, cx);
         }
-        v1_21_120::ClientBiome {
-            format_version: self.format_version,
-            description: self.description,
+        Legacy(ClientBiomePayload {
+            format_version: biome.format_version,
+            description: biome.description,
             components,
-        }
+        })
     }
 }
 

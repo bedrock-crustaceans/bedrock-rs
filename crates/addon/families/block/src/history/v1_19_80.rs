@@ -1,21 +1,21 @@
 //! Format 1.19.80: `transformation` replaces `rotation`; `geometry` takes the object form with
 //! `bone_visibility`.
 
-use super::legacy::{Legacy, component_path, text};
+use super::legacy::{BlockPayload, component_path, text};
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Phase};
-use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
+use bedrock_addon_core::versioning::{Legacy, LegacyStep, UpgradeCx};
 
 /// A block document of `[1.19.80, 1.20.10)`.
-pub type Block = Legacy<1, 19, 80>;
+pub type Block = Legacy<BlockPayload, 1, 19, 80>;
 
 /// `geometry.bone_visibility` entries that are a string, an
 /// object or an array are removed ("Only boolean values are supported for bone visibilities in
 /// format versions before 1.20.10."); booleans, numbers and `null` are kept.
-impl Upgrade for Block {
+impl LegacyStep<1, 19, 80> for BlockPayload {
     type Next = super::v1_20_10::Block;
 
-    fn upgrade(self, cx: &mut UpgradeCx<'_>) -> Self::Next {
-        let mut block: Self::Next = self.retag();
+    fn step(this: Block, cx: &mut UpgradeCx<'_>) -> Self::Next {
+        let mut block = this.0;
         let mut removed = Vec::new();
         for (section, map) in block.sections_mut() {
             let Some(geometry) = map.get_mut("minecraft:geometry") else {
@@ -49,6 +49,6 @@ impl Upgrade for Block {
                     ),
                 }).at(at.clone()).phase(Phase::Upgrade));
         }
-        block
+        Legacy(block)
     }
 }

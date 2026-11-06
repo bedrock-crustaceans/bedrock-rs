@@ -3,7 +3,7 @@
 
 use indexmap::IndexMap;
 
-use super::legacy::{Legacy, component_path, fixed, string, text, to_object};
+use super::legacy::{BlockPayload, component_path, fixed, string, text, to_object};
 use super::ops::{dropped_field, geometry_identifier, is_opaque};
 use super::v1_20_10::FULL_BLOCK;
 use crate::component::BlockComponent;
@@ -19,10 +19,10 @@ use bedrock_addon_core::molang::{
     Admission, Molang, MolangFieldMut, MolangVersion, RawVersion, visit_fields,
 };
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput, known};
-use bedrock_addon_core::versioning::{ParseCx, Upgrade, UpgradeCx};
+use bedrock_addon_core::versioning::{Legacy, LegacyStep, ParseCx, UpgradeCx};
 
 /// A block document of `[1.26.0, 1.26.20)`.
-pub type Block = Legacy<1, 26, 0>;
+pub type Block = Legacy<BlockPayload, 1, 26, 0>;
 
 /// The seven legacy trigger components.
 const TRIGGERS: [&str; 7] = [
@@ -55,30 +55,31 @@ const STATES_STRICT_FROM: FormatVersion = FormatVersion::new(1, 19, 70);
 
 /// The conversion of a legacy document (the game's upgrader plus its legacy-compatibility
 /// pass), with the gates the legacy loader applies on the way: the result is parsed as the 1.26.20 document.
-impl Upgrade for Block {
+impl LegacyStep<1, 26, 0> for BlockPayload {
     type Next = super::v1_26_20::Block;
 
-    fn upgrade(mut self, cx: &mut UpgradeCx<'_>) -> Self::Next {
+    fn step(this: Block, cx: &mut UpgradeCx<'_>) -> Self::Next {
+        let mut block = this.0;
         // The root's own unknown members are not carried: the 1.26.20 block has none.
         cx.diagnostics.unknown_mut().take_all(&JsonPath::new());
         let lcf = LoadRequirement::LegacyCreatorFeatures.satisfied(cx.load);
         let original = cx.original_version;
-        drop_crate_members(&mut self, cx.diagnostics);
+        drop_crate_members(&mut block, cx.diagnostics);
         if !lcf {
-            gates(&mut self, original, cx.diagnostics);
+            gates(&mut block, original, cx.diagnostics);
         }
-        for (section, map) in self.sections_mut() {
+        for (section, map) in block.sections_mut() {
             convert_tags(map, section, cx.diagnostics);
         }
         // The chest obstruction reads `unit_cube` before its deprecation removes it (fixture
         // s13c: a 1.26.0 opaque unit cube is `always`).
         if original < CHEST_OBSTRUCTION_BEFORE {
-            synthesize_chest_obstruction(&mut self);
+            synthesize_chest_obstruction(&mut block);
         }
-        deprecations(&mut self, original, cx.diagnostics);
+        deprecations(&mut block, original, cx.diagnostics);
         let mut skipped = Vec::new();
         let mut sidecars: Vec<IndexMap<String, Value>> = Vec::new();
-        for (section, map) in self.sections_mut() {
+        for (section, map) in block.sections_mut() {
             if let Some(sidecar) = side_car(map, section, lcf, cx.diagnostics) {
                 sidecars.push(sidecar);
             } else {
@@ -86,11 +87,11 @@ impl Upgrade for Block {
                 sidecars.push(IndexMap::new());
             }
         }
-        drop_skipped(&mut self, &mut sidecars, &skipped, cx.diagnostics);
-        conditions(&self, cx.diagnostics);
-        lower_category(&mut self);
+        drop_skipped(&mut block, &mut sidecars, &skipped, cx.diagnostics);
+        conditions(&block, cx.diagnostics);
+        lower_category(&mut block);
         // `events` that is no object holds no event; the crate tells it at the member.
-        if self
+        if block
             .events
             .as_ref()
             .is_some_and(|events| !events.is_object())
@@ -101,7 +102,7 @@ impl Upgrade for Block {
             );
         }
         let mut handlers = IndexMap::new();
-        if lcf && let Some(events) = self.events.take().as_ref().and_then(super::legacy::object) {
+        if lcf && let Some(events) = block.events.take().as_ref().and_then(super::legacy::object) {
             for (name, node) in events {
                 if !strings_where_expected(&node) {
                     // The game's event reader rejects a node that holds a non-string value.
@@ -123,8 +124,8 @@ impl Upgrade for Block {
                 handlers.insert(name, handler);
             }
         }
-        let payload = payload(&self, &sidecars, &handlers, cx.diagnostics.unknown_mut());
-        convert(&payload, &self, cx)
+        let payload = payload(&block, &sidecars, &handlers, cx.diagnostics.unknown_mut());
+        convert(&payload, &block, cx)
     }
 }
 
@@ -133,7 +134,7 @@ impl Upgrade for Block {
 /// them). A member of that name in a legacy FILE is not what the conversion makes: it is
 /// taken out, so that it is not read in the place of the file's own components and events,
 /// and told as the unknown member it is.
-fn drop_crate_members(block: &mut Block, d: &mut Diagnostics) {
+fn drop_crate_members(block: &mut BlockPayload, d: &mut Diagnostics) {
     let payload = JsonPath::new().with(&["minecraft:block"]);
     for key in ["deprecated", "deprecated_event_handlers"] {
         if d.unknown_mut().take(&payload, key).is_some() {
@@ -163,7 +164,7 @@ fn drop_crate_members(block: &mut Block, d: &mut Diagnostics) {
 /// file has them at: what is told of one from here on (the reading of the converted block,
 /// the checks, the link pass) is told there.
 fn drop_skipped(
-    block: &mut Block,
+    block: &mut BlockPayload,
     sidecars: &mut Vec<IndexMap<String, Value>>,
     skipped: &[Option<usize>],
     d: &mut Diagnostics,
@@ -202,7 +203,7 @@ fn drop_skipped(
 /// The gates without the legacy creator features: states before 1.19.60 dropped, states in
 /// `[1.19.60, 1.19.70)` reject the block, permutations at 1.19.60 skipped, legacy events
 /// cleared, legacy triggers unrecognized.
-fn gates(block: &mut Block, original: FormatVersion, d: &mut Diagnostics) {
+fn gates(block: &mut BlockPayload, original: FormatVersion, d: &mut Diagnostics) {
     let description = |key: &str| JsonPath::new().with(&["minecraft:block", "description", key]);
     let has_states = block
         .description
@@ -262,7 +263,7 @@ fn gates(block: &mut Block, original: FormatVersion, d: &mut Diagnostics) {
 
 /// `unit_cube` from 1.20.60 and the v1 `custom_components` list from 1.21.90: "{} component is
 /// not valid from {} onward.", removed (no side-car).
-fn deprecations(block: &mut Block, original: FormatVersion, d: &mut Diagnostics) {
+fn deprecations(block: &mut BlockPayload, original: FormatVersion, d: &mut Diagnostics) {
     let rules = [
         ("minecraft:unit_cube", UNIT_CUBE_DEPRECATED),
         ("minecraft:custom_components", CUSTOM_COMPONENTS_DEPRECATED),
@@ -294,7 +295,7 @@ fn deprecations(block: &mut Block, original: FormatVersion, d: &mut Diagnostics)
 /// `chest_obstruction` for each section without one: `always` for an opaque full unit cube,
 /// `never` otherwise; a permutation falls back to the base (TOML `callback
 /// synthesize_chest_obstruction`).
-pub(crate) fn synthesize_chest_obstruction(block: &mut Block) {
+pub(crate) fn synthesize_chest_obstruction(block: &mut BlockPayload) {
     const NAME: &str = "minecraft:chest_obstruction";
     let base = block.components.clone();
     let rule = |map: &IndexMap<String, Value>| {
@@ -493,7 +494,7 @@ fn convert_tags(map: &mut IndexMap<String, Value>, section: Option<usize>, d: &m
 
 /// The legacy parse reads `menu_category.category` case-insensitively (the
 /// 1.19.40 fixer keeps the author's case, `ConvertMode::Lenient`).
-fn lower_category(block: &mut Block) {
+fn lower_category(block: &mut BlockPayload) {
     let Some(menu) = block.description.get_mut("menu_category") else {
         return;
     };
@@ -509,7 +510,7 @@ fn lower_category(block: &mut Block) {
 
 /// A legacy permutation condition must be a string: "permutation condition must be a string
 /// value", and the block is not registered.
-fn conditions(block: &Block, d: &mut Diagnostics) {
+fn conditions(block: &BlockPayload, d: &mut Diagnostics) {
     for (index, permutation) in block.permutations.iter().enumerate() {
         if permutation
             .condition
@@ -608,7 +609,7 @@ fn event_node(node: &Value, from: &JsonPath, to: &JsonPath, d: &mut Diagnostics)
 /// The unknown members of the payload and of each permutation are taken out of `unknown` into
 /// it: reading it as 1.26.20 keeps them again, where the newest structs keep them.
 fn payload(
-    block: &Block,
+    block: &BlockPayload,
     sidecars: &[IndexMap<String, Value>],
     handlers: &IndexMap<String, Value>,
     unknown: &mut Unknown,
@@ -664,7 +665,11 @@ fn payload(
 /// Parses the converted payload as the 1.26.20 document (its findings without spans: the text
 /// is the crate's own), gives its Molang strings the legacy context version and marks the synthesised
 /// components.
-fn convert(payload: &Value, legacy: &Block, cx: &mut UpgradeCx<'_>) -> super::v1_26_20::Block {
+fn convert(
+    payload: &Value,
+    legacy: &BlockPayload,
+    cx: &mut UpgradeCx<'_>,
+) -> super::v1_26_20::Block {
     let identifier = legacy
         .description
         .get("identifier")
@@ -813,7 +818,7 @@ mod tests {
     /// What `convert` makes of `payload` for the legacy block `demo:x`: the block and the
     /// step's findings.
     fn converted(payload: &Value) -> (crate::Block, Diagnostics) {
-        let mut legacy = Block::default();
+        let mut legacy = BlockPayload::default();
         legacy
             .description
             .insert("identifier".to_owned(), Value::from("demo:x"));

@@ -1,20 +1,24 @@
 //! Format 1.19.50: the struct and the step to 1.19.60.
 
-super::legacy_struct!(1, 19, 50);
-
 use bedrock_addon_core::diagnostic::JsonPath;
 use bedrock_addon_core::vanilla::ActorType;
-use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
+use bedrock_addon_core::versioning::{Legacy, LegacyStep, UpgradeCx};
 
-use super::ops::{Members, Told, components, json, section_a, section_b, sections};
+use super::Payload;
+use super::fragments;
+use super::ops::{Members, Told, components, section_a, section_b, sections};
 use super::v1_19_0::append_all_of;
 
+/// An entity document as written in format 1.19.50 (up to the next struct's version): its
+/// payload as written.
+pub type Entity = Legacy<Payload, 1, 19, 50>;
+
 /// 1.19.50 → 1.19.60 (gate 1.19.60).
-impl Upgrade for Entity {
+impl LegacyStep<1, 19, 50> for Payload {
     type Next = super::v1_19_60::Entity;
 
-    fn upgrade(self, cx: &mut UpgradeCx<'_>) -> Self::Next {
-        let mut payload = self.0;
+    fn step(this: Entity, cx: &mut UpgradeCx<'_>) -> Self::Next {
+        let mut payload = this.0;
         if section_a(&payload, cx) && cx.actor_type == ActorType::Witch {
             // The 1.19.60 witch fragment is one constant. The crate's own
             // information, since the fixer does it: a component of the document that the
@@ -22,10 +26,12 @@ impl Upgrade for Entity {
             let mut told = Told::default();
             let components = components(&mut payload);
             for (key, fragment) in [
-                ("minecraft:shooter", SHOOTER),
-                ("minecraft:behavior.drink_potion", DRINK_POTION),
+                ("minecraft:shooter", fragments::witch_shooter()),
+                (
+                    "minecraft:behavior.drink_potion",
+                    fragments::witch_drink_potion(),
+                ),
             ] {
-                let fragment = json(fragment);
                 if components
                     .get(key)
                     .is_some_and(|had| !had.is_null() && *had != fragment)
@@ -45,9 +51,9 @@ impl Upgrade for Entity {
                 {
                     append_all_of(
                         goal,
-                        &[
-                            r#"{"test": "in_water", "value": false}"#,
-                            r#"{"any_of": [{"test": "on_ground", "value": true}, {"test": "is_sleeping", "value": true}]}"#,
+                        vec![
+                            fragments::not_in_water(),
+                            fragments::on_ground_or_sleeping(),
                         ],
                         &section.at.child("minecraft:behavior.trade_with_player"),
                         &mut told,
@@ -56,21 +62,6 @@ impl Upgrade for Entity {
             }
             told.report(cx);
         }
-        super::v1_19_60::Entity(payload)
+        Legacy(payload)
     }
 }
-
-/// The witch's shooter. The filter JSON follows vanilla's own witch file.
-const SHOOTER: &str = r#"{"def": "minecraft:splash_potion", "power": 0.75, "aux_val": 23, "sound": "throw", "magic": true, "projectiles": [
-  {"aux_val": 17, "filters": {"all_of": [{"test": "target_distance", "subject": "self", "operator": ">=", "value": 8}, {"none_of": [{"test": "has_mob_effect", "subject": "other", "value": "slowness"}]}]}},
-  {"aux_val": 25, "filters": {"all_of": [{"test": "actor_health", "subject": "other", "operator": ">=", "value": 8}, {"none_of": [{"test": "has_mob_effect", "subject": "other", "value": "poison"}]}]}},
-  {"aux_val": 34, "chance": 0.25, "filters": {"all_of": [{"test": "target_distance", "subject": "self", "operator": "<=", "value": 3}, {"none_of": [{"test": "has_mob_effect", "subject": "other", "value": "weakness"}]}]}}
-]}"#;
-
-/// The witch's potion goal.
-const DRINK_POTION: &str = r#"{"priority": 1, "speed_modifier": -0.25, "potions": [
-  {"id": 19, "chance": 0.15, "filters": {"test": "is_underwater", "subject": "self", "value": true}},
-  {"id": 12, "chance": 0.15, "filters": {"any_of": [{"test": "on_fire", "subject": "self", "value": true}, {"test": "on_hot_block", "subject": "self", "value": true}]}},
-  {"id": 21, "chance": 0.05, "filters": {"test": "is_missing_health", "subject": "self", "value": true}},
-  {"id": 14, "chance": 0.25, "filters": {"all_of": [{"test": "has_target", "subject": "self", "value": true}, {"test": "target_distance", "subject": "self", "operator": ">=", "value": 11}]}}
-]}"#;

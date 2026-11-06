@@ -1,7 +1,7 @@
 //! The legacy block document (`[1.16.0, 1.26.20)`): what vanilla's legacy slice sees, JSON
 //! members whose shapes its fixers rewrite version by version before the one hand-written parser
-//! reads them. One generic struct serves every legacy
-//! version; each `vX_Y_Z::Block` is it at that version.
+//! reads them. One payload serves every legacy version; each `vX_Y_Z::Block` is it at that
+//! version (`Legacy<BlockPayload, X, Y, Z>`).
 
 use indexmap::IndexMap;
 
@@ -11,16 +11,18 @@ use bedrock_addon_core::diagnostic::{
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
 use bedrock_addon_core::version::FormatVersion;
-use bedrock_addon_core::versioning::{ParseCx, VersionStruct, Versioned};
+use bedrock_addon_core::versioning::ops;
+pub(crate) use bedrock_addon_core::versioning::ops::{number, rename_key, same, string, to_object};
+use bedrock_addon_core::versioning::{LegacyPayload, ParseCx};
 
-/// A block document below 1.26.20, at the version `MAJOR.MINOR.PATCH`: the payload's members as
-/// JSON, in the shapes of that version.
+/// A block document below 1.26.20: the payload's members as JSON, in the shapes of the version
+/// of the struct that holds it (`Legacy<BlockPayload, A, B, C>`).
 ///
 /// `description`, the `components` of the base and of each permutation, and the legacy `events`
 /// are held as written; each upgrade step rewrites them as vanilla's JSON fixer of that version
 /// does. The 1.26.20 step parses the result into [`Block`](crate::Block).
 #[derive(Clone, Debug, Default, PartialEq)]
-pub struct Legacy<const MAJOR: u16, const MINOR: u16, const PATCH: u16> {
+pub struct BlockPayload {
     /// `description`: `identifier`, `menu_category`, `states`, `traits`, … as written.
     pub description: IndexMap<String, Value>,
     /// The base `components`, in file order; a duplicate key keeps its first value.
@@ -51,33 +53,12 @@ pub struct LegacyPermutation {
     pub ordered_v1_custom_components: Vec<String>,
 }
 
-impl<const MAJOR: u16, const MINOR: u16, const PATCH: u16> Versioned
-    for Legacy<MAJOR, MINOR, PATCH>
-{
-    const VERSION: FormatVersion = FormatVersion::new(MAJOR, MINOR, PATCH);
-}
-
-impl<const MAJOR: u16, const MINOR: u16, const PATCH: u16> MolangFields
-    for Legacy<MAJOR, MINOR, PATCH>
-{
+impl MolangFields for BlockPayload {
     /// The legacy members are JSON; their Molang is read when the 1.26.20 step parses them.
     fn visit_molang(&mut self, _: &mut MolangVisitor<'_>) {}
 }
 
-impl<const MAJOR: u16, const MINOR: u16, const PATCH: u16> Legacy<MAJOR, MINOR, PATCH> {
-    /// The same members at another version: the start of every step.
-    pub(crate) fn retag<const A: u16, const B: u16, const C: u16>(self) -> Legacy<A, B, C> {
-        Legacy {
-            description: self.description,
-            components: self.components,
-            permutations: self.permutations,
-            events: self.events,
-            ordered_v1_custom_components: self.ordered_v1_custom_components,
-            synthesized: self.synthesized,
-            category_from: self.category_from,
-        }
-    }
-
+impl BlockPayload {
     /// Every component section: the base first, then each permutation's, as `(index, map)`.
     pub(crate) fn sections_mut(
         &mut self,
@@ -146,7 +127,7 @@ impl<const MAJOR: u16, const MINOR: u16, const PATCH: u16> Legacy<MAJOR, MINOR, 
         }
     }
 
-    /// [`Legacy::rename_component`] where the value becomes the member `member` of the new
+    /// [`BlockPayload::rename_component`] where the value becomes the member `member` of the new
     /// component (`destroy_time: 3` → `destructible_by_mining: {seconds_to_destroy: 3}`).
     pub(crate) fn wrap_component(
         &mut self,
@@ -172,25 +153,13 @@ impl<const MAJOR: u16, const MINOR: u16, const PATCH: u16> Legacy<MAJOR, MINOR, 
 /// A member of the file that a step replaces by what it makes of another, as the game's own
 /// fixer does without a word: `DroppedField`, severity INFO: the game says nothing, so the finding is the crate's own.
 pub(crate) fn replaced(at: &JsonPath, d: &mut Diagnostics) {
-    d.push(
-        Diagnostic::info(DiagnosticCode::DroppedField { text: None })
-            .at(at.clone())
-            .phase(Phase::Upgrade),
-    );
+    ops::note(d, DiagnosticCode::DroppedField { text: None }, at.clone());
 }
 
-/// Whether two JSON values are the same value: numbers by what they spell (`1` is `1.0`).
-#[allow(clippy::float_cmp, reason = "the same number, not one near it")]
-pub(crate) fn same(a: &Value, b: &Value) -> bool {
-    match (number(a), number(b)) {
-        (Some(a), Some(b)) => a == b,
-        _ => a == b,
-    }
-}
-
-/// Renames the member `old` of the component `name` (held in `members`) to `new`, as
-/// [`rename_key`]; a `new` the file has with another value is told as replaced, and the
-/// move is recorded.
+/// Renames the member `old` of the component `name` (held in `members`) to `new`: block's
+/// rename, core's [`ops::rename_member_in_place`] (H1: a `null` old is absent and goes, the
+/// renamed member stands where `old` stood); a `new` the file has with another value is told
+/// as replaced, and the move is recorded.
 pub(crate) fn rename_member(
     members: &mut IndexMap<String, Value>,
     section: Option<usize>,
@@ -199,46 +168,17 @@ pub(crate) fn rename_member(
     new: &str,
     d: &mut Diagnostics,
 ) {
-    // A `null` member is an absent member: nothing is renamed, nothing replaced.
-    if members.get(old).is_some_and(Value::is_null) {
-        members.shift_remove(old);
-    }
-    let Some(value) = members.get(old) else {
+    let Some(renamed) = ops::rename_member_in_place(members, old, new) else {
         return;
     };
     let mut to = component_path(section, name);
     to.push(new);
-    if members
-        .get(new)
-        .is_some_and(|had| !had.is_null() && !same(had, value))
-    {
+    if renamed.replaced {
         replaced(&to, d);
     }
-    // The file's own `new` goes first, so that the renamed member stands where `old` stood.
-    members.shift_remove(new);
-    rename_key(members, old, new, &mut |v| v);
     let mut from = component_path(section, name);
     from.push(old);
     d.moved(from, to);
-}
-
-/// Renames `old` to `new` in `map`, keeping its position. A `new` the map already has goes
-/// first (the renamed member is the one kept): the caller tells of it.
-pub(crate) fn rename_key(
-    map: &mut IndexMap<String, Value>,
-    old: &str,
-    new: &str,
-    convert: &mut impl FnMut(Value) -> Value,
-) {
-    if !map.contains_key(old) {
-        return;
-    }
-    map.shift_remove(new);
-    let Some((index, _, value)) = map.shift_remove_full(old) else {
-        return;
-    };
-    let value = convert(value);
-    map.shift_insert(index.min(map.len()), new.to_owned(), value);
 }
 
 /// The JSON path of component `name` in section `section` (`None`: the base).
@@ -318,33 +258,9 @@ pub(crate) fn input_check_failed(
     );
 }
 
-/// A number of a JSON value.
-pub(crate) fn number(value: &Value) -> Option<f64> {
-    value.as_number().map(facet_value::VNumber::to_f64_lossy)
-}
-
-/// A string of a JSON value.
-pub(crate) fn string(value: &Value) -> Option<&str> {
-    value.as_string().map(facet_value::VString::as_str)
-}
-
 /// A JSON object as an ordered map.
 pub(crate) fn object(value: &Value) -> Option<IndexMap<String, Value>> {
-    value.as_object().map(|object| {
-        object
-            .iter()
-            .map(|(k, v)| (k.as_str().to_owned(), v.clone()))
-            .collect()
-    })
-}
-
-/// An ordered map as a JSON object.
-pub(crate) fn to_object(map: &IndexMap<String, Value>) -> Value {
-    let mut object = facet_value::VObject::new();
-    for (k, v) in map {
-        object.insert(k.as_str(), v.clone());
-    }
-    object.into()
+    value.as_object().map(ops::members)
 }
 
 // ---- reading -----------------------------------------------------------------------------
@@ -361,12 +277,16 @@ const PERMUTATIONS_OBJECTS: &str = "Permutations requires an array of objects";
 const STATES_OBJECT: &str = "Block description states must be an object";
 const PERMUTATION_OBJECT: &str = " -> minecraft:block -> permutations:  every permutation should be an object containing a 'components' member object";
 
-impl<const MAJOR: u16, const MINOR: u16, const PATCH: u16> VersionStruct
-    for Legacy<MAJOR, MINOR, PATCH>
-{
+/// Each legacy struct is the payload at its version.
+impl LegacyPayload for BlockPayload {
     /// Reads the whole document (the raw-text path below 1.26.20) or the payload alone
-    /// (as the step-file harness hands it).
-    fn parse(text: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
+    /// (as the step-file harness hands it); every legacy version reads it the same way.
+    fn parse(
+        text: JsonSlice<'_>,
+        _: FormatVersion,
+        cx: &ParseCx<'_>,
+        d: &mut Diagnostics,
+    ) -> Option<Self> {
         // A document without the payload key is read as the payload itself; its unknown
         // members are kept where it is written, below the payload key.
         let below = cx.at.child("minecraft:block");
@@ -398,16 +318,16 @@ impl<const MAJOR: u16, const MINOR: u16, const PATCH: u16> VersionStruct
 
     /// The whole document: `format_version` (the struct's version), the payload and the other
     /// root members.
-    fn write(&self) -> Result<Value, EncodeError> {
+    fn write(&self, version: FormatVersion) -> Result<Value, EncodeError> {
         let mut root = facet_value::VObject::new();
-        root.insert("format_version", Self::VERSION.to_string());
+        root.insert("format_version", version.to_string());
         root.insert("minecraft:block", self.payload_json());
         // The unknown members are the document's, written from its table.
         Ok(root.into())
     }
 }
 
-impl<const MAJOR: u16, const MINOR: u16, const PATCH: u16> Legacy<MAJOR, MINOR, PATCH> {
+impl BlockPayload {
     /// Reads the payload object `text`, its findings below `base` and its unknown members
     /// below `kept` (the payload's place in the written document).
     fn parse_payload(

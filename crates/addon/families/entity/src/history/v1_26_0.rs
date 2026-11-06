@@ -1,19 +1,24 @@
 //! Format 1.26.0: the struct and the step to 1.26.10.
 
-super::legacy_struct!(1, 26, 0);
-
-use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
+use bedrock_addon_core::json::Value;
+use bedrock_addon_core::versioning::ops::empty_object;
+use bedrock_addon_core::versioning::{Legacy, LegacyStep, UpgradeCx, Versioned};
 use facet_value::VObject;
 
-use super::ops::{Told, finding, json, overwrite, same, section_b, sections};
+use super::Payload;
+use super::ops::{Told, finding, overwrite, same, section_b, sections};
 use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath};
 
+/// An entity document as written in format 1.26.0 (up to the next struct's version): its
+/// payload as written.
+pub type Entity = Legacy<Payload, 1, 26, 0>;
+
 /// 1.26.0 → 1.26.10.
-impl Upgrade for Entity {
+impl LegacyStep<1, 26, 0> for Payload {
     type Next = super::v1_26_10::Entity;
 
-    fn upgrade(self, cx: &mut UpgradeCx<'_>) -> Self::Next {
-        let mut payload = self.0;
+    fn step(this: Entity, cx: &mut UpgradeCx<'_>) -> Self::Next {
+        let mut payload = this.0;
         // The conversions of this step whose legacy reader is one of the game's schema-driven
         // readers.
         super::ops::schema_conversions(&mut payload, super::v1_26_10::Entity::VERSION, cx);
@@ -70,7 +75,7 @@ impl Upgrade for Entity {
                         if !holds(member) {
                             continue;
                         }
-                        let empty = json("{}");
+                        let empty = empty_object();
                         if members
                             .get(component)
                             .is_some_and(|had| !had.is_null() && !same(had, &empty))
@@ -86,6 +91,6 @@ impl Upgrade for Entity {
             }
             told.report(cx);
         }
-        super::v1_26_10::Entity(payload)
+        Legacy(payload)
     }
 }

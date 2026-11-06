@@ -1,26 +1,32 @@
 //! Format 1.13.0: the struct and the step to 1.15.0.
 
-super::legacy_struct!(1, 13, 0);
-
 use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath, VanillaText};
+use bedrock_addon_core::json::Value;
 use bedrock_addon_core::vanilla::ActorType;
-use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
+use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::versioning::ops::empty_object;
+use bedrock_addon_core::versioning::{Legacy, LegacyStep, UpgradeCx};
 use facet_value::VObject;
 
+use super::Payload;
 use super::ops::{
-    Members, Removed, Told, components, f32_value, finding, int_of, json, removed, section_a,
-    section_b, sections,
+    Members, Removed, Told, components, f32_value, finding, int_of, removed, section_a, section_b,
+    sections,
 };
+
+/// An entity document as written in format 1.13.0 (up to the next struct's version): its
+/// payload as written.
+pub type Entity = Legacy<Payload, 1, 13, 0>;
 
 /// The step's version, for its findings.
 const V1_15_0: FormatVersion = FormatVersion::new(1, 15, 0);
 
 /// 1.13.0 → 1.15.0 (gate 1.15.0).
-impl Upgrade for Entity {
+impl LegacyStep<1, 13, 0> for Payload {
     type Next = super::v1_15_0::Entity;
 
-    fn upgrade(self, cx: &mut UpgradeCx<'_>) -> Self::Next {
-        let mut payload = self.0;
+    fn step(this: Entity, cx: &mut UpgradeCx<'_>) -> Self::Next {
+        let mut payload = this.0;
         if section_a(&payload, cx) {
             removals(&mut payload, cx);
             per_type(&mut payload, cx);
@@ -54,7 +60,7 @@ impl Upgrade for Entity {
             }
             told.report(cx);
         }
-        super::v1_15_0::Entity(payload)
+        Legacy(payload)
     }
 }
 
@@ -109,7 +115,7 @@ fn per_type(payload: &mut Payload, cx: &mut UpgradeCx<'_>) {
     let actor = cx.actor_type;
     let components = components(payload);
     if actor == T::Dolphin {
-        components.insert_absent("minecraft:behavior.swim_with_entity", json("{}"));
+        components.insert_absent("minecraft:behavior.swim_with_entity", empty_object());
     }
     if actor == T::Silverfish {
         let first = components

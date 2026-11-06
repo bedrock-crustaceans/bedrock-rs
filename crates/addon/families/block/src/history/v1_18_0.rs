@@ -3,14 +3,14 @@
 
 use indexmap::IndexMap;
 
-use super::legacy::{Legacy, component_path, input_check_failed, number};
+use super::legacy::{BlockPayload, component_path, input_check_failed, number};
 use super::ops::{clamp, int, missing_field, number_member, real, unwrap, whole};
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, Phase, VanillaText};
 use bedrock_addon_core::json::Value;
-use bedrock_addon_core::versioning::{Upgrade, UpgradeCx, Versioned};
+use bedrock_addon_core::versioning::{Legacy, LegacyStep, UpgradeCx, Versioned};
 
 /// A block document of `[1.18.0, 1.19.10)`.
-pub type Block = Legacy<1, 18, 0>;
+pub type Block = Legacy<BlockPayload, 1, 18, 0>;
 
 /// The 1.19.10 unwraps: component, the member holding its value.
 const UNWRAPS: [(&str, &str); 9] = [
@@ -26,15 +26,15 @@ const UNWRAPS: [(&str, &str); 9] = [
 ];
 
 /// Vanilla's 1.19.10 fixers.
-impl Upgrade for Block {
+impl LegacyStep<1, 18, 0> for BlockPayload {
     type Next = super::v1_19_10::Block;
 
     #[allow(
         clippy::too_many_lines,
         reason = "one op after another, in the order of the fixers"
     )]
-    fn upgrade(self, cx: &mut UpgradeCx<'_>) -> Self::Next {
-        let mut block: Self::Next = self.retag();
+    fn step(this: Block, cx: &mut UpgradeCx<'_>) -> Self::Next {
+        let mut block = this.0;
         let to = <Self::Next as Versioned>::VERSION;
         // Input checks on the base.
         if let Some(emission) = block.components.get("minecraft:block_light_emission")
@@ -178,7 +178,7 @@ impl Upgrade for Block {
             missing_field(section, "minecraft:ticking", field, d);
         }
         block.rename_component("minecraft:ticking", "minecraft:queued_ticking", |v| v, d);
-        block
+        Legacy(block)
     }
 }
 

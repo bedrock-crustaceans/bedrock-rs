@@ -108,6 +108,15 @@ impl Content for Feature {
     }
 }
 
+/// The document of a type's newest struct as [`Feature`] writes it ([`Content::to_json`]).
+pub(crate) fn newest_json<T: FeatureType>(value: &T) -> Result<String, EncodeError> {
+    let document = WholeDocument.call(value)?;
+    let mut out = Vec::new();
+    write_json(&document, &mut out, WriteStyle::default())?;
+    // The JSON writer emits only UTF-8.
+    Ok(String::from_utf8(out).unwrap_or_default())
+}
+
 /// A feature's document: `{"format_version": <its type's newest struct>, "<key>": payload}`,
 /// the envelope of its type's family (whose payload key is the type's).
 struct WholeDocument;

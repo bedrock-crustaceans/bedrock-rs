@@ -1,17 +1,21 @@
 //! Format 1.21.90: the struct and the step to 1.21.100.
 
-super::legacy_struct!(1, 21, 90);
+use bedrock_addon_core::versioning::{Legacy, LegacyStep, UpgradeCx, Versioned};
 
-use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
+use super::Payload;
+use super::fragments;
+use super::ops::{Told, overwrite, rename, section_b, sections};
 
-use super::ops::{Told, json, overwrite, rename, section_b, sections};
+/// An entity document as written in format 1.21.90 (up to the next struct's version): its
+/// payload as written.
+pub type Entity = Legacy<Payload, 1, 21, 90>;
 
 /// 1.21.90 → 1.21.100.
-impl Upgrade for Entity {
+impl LegacyStep<1, 21, 90> for Payload {
     type Next = super::v1_21_100::Entity;
 
-    fn upgrade(self, cx: &mut UpgradeCx<'_>) -> Self::Next {
-        let mut payload = self.0;
+    fn step(this: Entity, cx: &mut UpgradeCx<'_>) -> Self::Next {
+        let mut payload = this.0;
         // The conversions of this step whose legacy reader is one of the game's schema-driven
         // readers.
         super::ops::schema_conversions(&mut payload, super::v1_21_100::Entity::VERSION, cx);
@@ -30,8 +34,8 @@ impl Upgrade for Entity {
                 );
                 if let Some(goal) = members.object("minecraft:behavior.enderman_leave_block") {
                     let at = section.at.child("minecraft:behavior.enderman_leave_block");
-                    overwrite(goal, "xz_range", json("[-1, 1]"), &at, &mut told);
-                    overwrite(goal, "y_range", json("[0, 2]"), &at, &mut told);
+                    overwrite(goal, "xz_range", fragments::xz_range(), &at, &mut told);
+                    overwrite(goal, "y_range", fragments::y_range_2(), &at, &mut told);
                     overwrite(goal, "chance", 0.0005.into(), &at, &mut told);
                 }
                 rename(
@@ -43,11 +47,11 @@ impl Upgrade for Entity {
                 );
                 if let Some(goal) = members.object("minecraft:behavior.enderman_take_block") {
                     let at = section.at.child("minecraft:behavior.enderman_take_block");
-                    overwrite(goal, "xz_range", json("[-1, 1]"), &at, &mut told);
-                    overwrite(goal, "y_range", json("[0, 3]"), &at, &mut told);
+                    overwrite(goal, "xz_range", fragments::xz_range(), &at, &mut told);
+                    overwrite(goal, "y_range", fragments::y_range_3(), &at, &mut told);
                     overwrite(goal, "chance", 0.05.into(), &at, &mut told);
                     overwrite(goal, "requires_line_of_sight", false.into(), &at, &mut told);
-                    overwrite(goal, "blocks", json(TAKE_BLOCKS), &at, &mut told);
+                    overwrite(goal, "blocks", fragments::take_blocks(), &at, &mut told);
                 }
                 rename(
                     members,
@@ -59,14 +63,6 @@ impl Upgrade for Entity {
             }
             told.report(cx);
         }
-        super::v1_21_100::Entity(payload)
+        Legacy(payload)
     }
 }
-
-/// The legacy enderman-holdable blocks.
-const TAKE_BLOCKS: &str = r#"["minecraft:grass_block", "minecraft:dirt", "minecraft:coarse_dirt", "minecraft:podzol",
-  "minecraft:sand", "minecraft:red_sand", "minecraft:gravel", "minecraft:crimson_roots", "minecraft:warped_roots",
-  "minecraft:dandelion", "minecraft:poppy", "minecraft:brown_mushroom", "minecraft:red_mushroom",
-  "minecraft:crimson_fungus", "minecraft:warped_fungus", "minecraft:tnt", "minecraft:cactus", "minecraft:clay",
-  "minecraft:pumpkin", "minecraft:carved_pumpkin", "minecraft:melon_block", "minecraft:mycelium",
-  "minecraft:warped_nylium", "minecraft:crimson_nylium", "minecraft:dirt_with_roots", "minecraft:cactus_flower"]"#;

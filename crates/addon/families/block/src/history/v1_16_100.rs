@@ -1,21 +1,21 @@
 //! Format 1.16.100: the full legacy description (with `properties`) and every legacy
 //! component shape.
 
-use super::legacy::{Legacy, component_path, input_check_failed, misread, number};
+use super::legacy::{BlockPayload, component_path, input_check_failed, misread, number};
 use super::ops::{clamp, edit_object, int, number_member, whole};
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Phase};
 use bedrock_addon_core::json::Value;
-use bedrock_addon_core::versioning::{Upgrade, UpgradeCx, Versioned};
+use bedrock_addon_core::versioning::{Legacy, LegacyStep, UpgradeCx, Versioned};
 
 /// A block document of `[1.16.100, 1.18.0)`.
-pub type Block = Legacy<1, 16, 100>;
+pub type Block = Legacy<BlockPayload, 1, 16, 100>;
 
 /// Vanilla's 1.18.0 fixers.
-impl Upgrade for Block {
+impl LegacyStep<1, 16, 100> for BlockPayload {
     type Next = super::v1_18_0::Block;
 
-    fn upgrade(self, cx: &mut UpgradeCx<'_>) -> Self::Next {
-        let mut block: Self::Next = self.retag();
+    fn step(this: Block, cx: &mut UpgradeCx<'_>) -> Self::Next {
+        let mut block = this.0;
         let to = <Self::Next as Versioned>::VERSION;
         // Input checks on the base: `crafting_table.grid_size` is 3; `block_light_absorption`
         // is a number in 0..=16, a bool, or the object form.
@@ -81,7 +81,7 @@ impl Upgrade for Block {
         // `block_light_absorption` → `block_light_filter`: a number truncated and clamped to
         // 0..=15 (the object form's `filter_level` too); a bool is 1 / 0 (the crate's own reading of a bool).
         if !block.has_anywhere("minecraft:block_light_absorption") {
-            return block;
+            return Legacy(block);
         }
         // The crate's own findings: a bool read as 1 / 0 is told as a value of another type, a number
         // with a fraction as a value the level does not hold; the level is what it was.
@@ -117,7 +117,7 @@ impl Upgrade for Block {
                 clamp_filter(value, section, cx.diagnostics);
             }
         }
-        block
+        Legacy(block)
     }
 }
 

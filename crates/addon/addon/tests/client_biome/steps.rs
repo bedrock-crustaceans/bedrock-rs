@@ -311,14 +311,14 @@ mod absent_only {
         Precipitation, WaterIdentifier,
     };
     use bedrock_addon::families::client_biome::history::{
-        v1_21_40, v1_21_70, v1_21_100, v1_21_110,
+        ClientBiomePayload, v1_21_40, v1_21_70, v1_21_100, v1_21_110,
     };
     use bedrock_addon::families::client_biome::{Color255Rgb, Description};
     use bedrock_addon::id::Id;
     use bedrock_addon::load::LoadContext;
     use bedrock_addon::vanilla::ActorType;
     use bedrock_addon::version::FormatVersion;
-    use bedrock_addon::versioning::{Upgrade, UpgradeCx};
+    use bedrock_addon::versioning::{Legacy, Upgrade, UpgradeCx};
 
     /// A map holding `components`, as the author's.
     fn map(components: Vec<ClientBiomeComponent>) -> ComponentMap<v1_21_40::Component> {
@@ -359,11 +359,11 @@ mod absent_only {
     #[test]
     fn the_1_21_70_step_keeps_a_dry_foliage_color() {
         let own = DryFoliageColor::new(Color255Rgb::Hex("#010203".to_owned()));
-        let step = v1_21_40::ClientBiome {
+        let step: v1_21_40::ClientBiome = Legacy(ClientBiomePayload {
             format_version: "1.21.60".to_owned(),
             description: Description::new(Id::parse("minecraft:pale_garden")),
             components: map(vec![own.clone().into()]),
-        };
+        });
         let (next, diagnostics) = run(step, (1, 21, 60));
         assert_eq!(
             entries(&next.components),
@@ -380,11 +380,11 @@ mod absent_only {
             ColorGradingIdentifier::new(Id::parse("mine:c")).into(),
             WaterIdentifier::new(Id::parse("mine:w")).into(),
         ];
-        let step = v1_21_70::ClientBiome {
+        let step: v1_21_70::ClientBiome = Legacy(ClientBiomePayload {
             format_version: "1.21.60".to_owned(),
             description: Description::new(Id::parse("myns:glade")),
             components: map(own.clone()),
-        };
+        });
         let (next, _) = run(step, (1, 21, 60));
         assert_eq!(
             entries(&next.components),
@@ -416,11 +416,11 @@ mod absent_only {
             ash: Some(9.0),
             ..Precipitation::default()
         };
-        let step = v1_21_100::ClientBiome {
+        let step: v1_21_100::ClientBiome = Legacy(ClientBiomePayload {
             format_version: "1.21.100".to_owned(),
             description: Description::new(Id::parse("minecraft:basalt_deltas")),
             components: map(vec![own.clone().into()]),
-        };
+        });
         let (next, diagnostics) = run(step, (1, 21, 100));
         assert_eq!(next.components, map(vec![own.into()]));
         assert!(diagnostics.is_empty());
@@ -435,10 +435,12 @@ mod absent_only {
             loop_sound: Some(Id::parse("l")),
             ..AmbientSounds::default()
         };
-        let step = |identifier: &str| v1_21_110::ClientBiome {
-            format_version: "1.21.110".to_owned(),
-            description: Description::new(Id::parse(identifier)),
-            components: map(vec![sounds.clone().into()]),
+        let step = |identifier: &str| -> v1_21_110::ClientBiome {
+            Legacy(ClientBiomePayload {
+                format_version: "1.21.110".to_owned(),
+                description: Description::new(Id::parse(identifier)),
+                components: map(vec![sounds.clone().into()]),
+            })
         };
         let (vanilla, _) = run(step("minecraft:river"), (1, 21, 110));
         assert_eq!(vanilla.components.len(), 1);
@@ -469,31 +471,31 @@ mod absent_only {
         use bedrock_addon::families::client_biome::history::v1_21_90;
         let empty = |identifier: &str| (Description::new(Id::parse(identifier)), map(Vec::new()));
         let (description, components) = empty("minecraft:pale_garden");
-        let dry = v1_21_40::ClientBiome {
+        let dry: v1_21_40::ClientBiome = Legacy(ClientBiomePayload {
             format_version: "1.21.70".to_owned(),
             description,
             components,
-        };
+        });
         assert!(run(dry.clone(), (1, 21, 70)).0.components.is_empty());
         assert_eq!(
             entries(&run(dry, (1, 21, 69)).0.components),
             [("minecraft:dry_foliage_color".to_owned(), true)]
         );
         let (description, components) = empty("minecraft:roofed_forest");
-        let shade = v1_21_90::ClientBiome {
+        let shade: v1_21_90::ClientBiome = Legacy(ClientBiomePayload {
             format_version: "1.21.100".to_owned(),
             description,
             components,
-        };
+        });
         assert!(run(shade.clone(), (1, 21, 100)).0.components.is_empty());
         assert_eq!(run(shade, (1, 21, 99)).0.components.len(), 1);
         for identifier in ["minecraft:basalt_deltas", "minecraft:ocean"] {
             let (description, components) = empty(identifier);
-            let step = v1_21_100::ClientBiome {
+            let step: v1_21_100::ClientBiome = Legacy(ClientBiomePayload {
                 format_version: "1.21.110".to_owned(),
                 description,
                 components,
-            };
+            });
             assert!(
                 run(step.clone(), (1, 21, 110)).0.components.is_empty(),
                 "{identifier}"
@@ -510,11 +512,11 @@ mod absent_only {
             ..AmbientSounds::default()
         };
         for components in [map(Vec::new()), map(vec![sounds.clone().into()])] {
-            let step = v1_21_110::ClientBiome {
+            let step: v1_21_110::ClientBiome = Legacy(ClientBiomePayload {
                 format_version: "1.21.120".to_owned(),
                 description: description.clone(),
                 components,
-            };
+            });
             let (at, diagnostics) = run(step.clone(), (1, 21, 120));
             assert!(
                 at.components

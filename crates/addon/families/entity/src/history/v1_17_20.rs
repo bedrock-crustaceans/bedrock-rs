@@ -1,17 +1,21 @@
 //! Format 1.17.20: the struct and the step to 1.18.0.
 
-super::legacy_struct!(1, 17, 20);
+use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::versioning::{Legacy, LegacyStep, UpgradeCx};
 
-use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
-
+use super::Payload;
 use super::ops::{Removed, removed, section_a, sections};
 
+/// An entity document as written in format 1.17.20 (up to the next struct's version): its
+/// payload as written.
+pub type Entity = Legacy<Payload, 1, 17, 20>;
+
 /// 1.17.20 → 1.18.0 (gate 1.18.0).
-impl Upgrade for Entity {
+impl LegacyStep<1, 17, 20> for Payload {
     type Next = super::v1_18_0::Entity;
 
-    fn upgrade(self, cx: &mut UpgradeCx<'_>) -> Self::Next {
-        let mut payload = self.0;
+    fn step(this: Entity, cx: &mut UpgradeCx<'_>) -> Self::Next {
+        let mut payload = this.0;
         // A, every section: `rideable.controlling_seat` is removed; from 1.18.0 the controlling
         // seat is always seat 0.
         if section_a(&payload, cx) {
@@ -33,6 +37,6 @@ impl Upgrade for Entity {
                 );
             }
         }
-        super::v1_18_0::Entity(payload)
+        Legacy(payload)
     }
 }

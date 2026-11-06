@@ -1,17 +1,15 @@
 //! Format 1.21.100: `grass_appearance.grass_is_shaded`.
 
 use super::v1_21_40::Component;
-use super::{change, find, has, insert, legacy_document, v1_21_110};
+use super::{ClientBiomePayload, change, find, has, insert, v1_21_110};
 use crate::component::{BiomeMusic, Precipitation};
 use bedrock_addon_core::document::Component as _;
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::version::known;
-use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
+use bedrock_addon_core::versioning::{Legacy, LegacyStep, UpgradeCx};
 
-legacy_document! {
-    /// A client biome of format `[1.21.100, 1.21.110)`.
-    version = (1, 21, 100), set = Component
-}
+/// A client biome of format `[1.21.100, 1.21.110)`.
+pub type ClientBiome = Legacy<ClientBiomePayload<Component>, 1, 21, 100>;
 
 /// The version below which a document gets the precipitation component and the underwater
 /// music: the next struct's version, so every document that reaches the step is below it.
@@ -53,12 +51,13 @@ const UNDERWATER_MUSIC: [&str; 13] = [
 /// The step to 1.21.110: `biome_music` moves into the type with `underwater_music`; the nether
 /// biomes get their particles and the water biomes their underwater music. Every document that
 /// reaches this step is below 1.21.110, so both always apply.
-impl Upgrade for ClientBiome {
+impl LegacyStep<1, 21, 100> for ClientBiomePayload<Component> {
     type Next = v1_21_110::ClientBiome;
 
-    fn upgrade(self, cx: &mut UpgradeCx<'_>) -> v1_21_110::ClientBiome {
-        let mut components = self.components;
-        let identifier = self.description.identifier.as_str();
+    fn step(this: ClientBiome, cx: &mut UpgradeCx<'_>) -> v1_21_110::ClientBiome {
+        let biome = this.0;
+        let mut components = biome.components;
+        let identifier = biome.description.identifier.as_str();
         let early = cx.original_version < PARTICLES_AND_UNDERWATER_MUSIC_BEFORE;
         if early
             && !has(&components, Precipitation::NAME)
@@ -85,10 +84,10 @@ impl Upgrade for ClientBiome {
                 ),
             }
         }
-        v1_21_110::ClientBiome {
-            format_version: self.format_version,
-            description: self.description,
+        Legacy(ClientBiomePayload {
+            format_version: biome.format_version,
+            description: biome.description,
             components,
-        }
+        })
     }
 }

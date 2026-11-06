@@ -1,23 +1,23 @@
 //! Format 1.19.30: `display_name` is a literal or a localisation key.
 
-use super::legacy::{Legacy, string, text};
+use super::legacy::{BlockPayload, string, text};
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, Phase};
 use bedrock_addon_core::json::Value;
-use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
+use bedrock_addon_core::versioning::{Legacy, LegacyStep, UpgradeCx};
 
 /// A block document of `[1.19.30, 1.19.40)`.
-pub type Block = Legacy<1, 19, 30>;
+pub type Block = Legacy<BlockPayload, 1, 19, 30>;
 
 /// The categories vanilla keeps as written.
 const VALID: [&str; 4] = ["construction", "nature", "equipment", "items"];
 
 /// `block_light_filter` → `light_dampening`; the menu category
 /// rules (vanilla's 1.19.40 fixer).
-impl Upgrade for Block {
+impl LegacyStep<1, 19, 30> for BlockPayload {
     type Next = super::v1_19_40::Block;
 
-    fn upgrade(self, cx: &mut UpgradeCx<'_>) -> Self::Next {
-        let mut block: Self::Next = self.retag();
+    fn step(this: Block, cx: &mut UpgradeCx<'_>) -> Self::Next {
+        let mut block = this.0;
         block.rename_component(
             "minecraft:block_light_filter",
             "minecraft:light_dampening",
@@ -26,10 +26,10 @@ impl Upgrade for Block {
         );
         let category_from = block.category_from;
         let Some(menu) = block.description.get_mut("menu_category") else {
-            return block;
+            return Legacy(block);
         };
         let Some(mut object) = super::legacy::object(menu) else {
-            return block;
+            return Legacy(block);
         };
         // The category of a file below 1.19.20 was a `minecraft:creative_category`
         // component of the base or of a permutation: the finding is at the member the file
@@ -117,6 +117,6 @@ impl Upgrade for Block {
         }
         object.insert("is_hidden_in_commands".to_owned(), hidden);
         *menu = super::to_object(&object);
-        block
+        Legacy(block)
     }
 }
