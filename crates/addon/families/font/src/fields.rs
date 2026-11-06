@@ -5,8 +5,9 @@
 use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::Value;
+use bedrock_addon_core::json::build::Object;
+use bedrock_addon_core::json::kit::fixed_path::{as_int, as_real, raw_member, reader};
 use bedrock_addon_core::json::kit::{Disposition, Node};
-use bedrock_addon_support::fixed_path::{Object, as_int, as_real, raw_member, reader};
 
 /// What a member turned out to be.
 #[derive(Debug)]

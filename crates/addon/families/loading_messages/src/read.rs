@@ -8,10 +8,11 @@ use bedrock_addon_core::diagnostic::{
 };
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::Value;
-use bedrock_addon_core::json::kit::{Node, Read};
-use bedrock_addon_support::fixed_path::{
-    Authored, Object, array, iterated, kept_unknown, reader, to_text,
+use bedrock_addon_core::json::build::{Object, array};
+use bedrock_addon_core::json::kit::fixed_path::{
+    Authored, iterated, kept_unknown, reader, to_text,
 };
+use bedrock_addon_core::json::kit::{Node, Read};
 
 /// `InvalidValue` without a vanilla text: a finding of the crate's own.
 const INVALID: DiagnosticCode = DiagnosticCode::InvalidValue { text: None };
@@ -316,8 +317,8 @@ impl LoadingMessages {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use bedrock_addon_core::json::jsoncpp::read;
     use bedrock_addon_core::test_cost::assert_linear_at;
-    use bedrock_addon_support::jsoncpp::read;
 
     /// A list is read in time linear in its elements.
     #[test]
@@ -354,13 +355,15 @@ mod tests {
 #[cfg(test)]
 mod kept_root_tests {
     use super::*;
-    use bedrock_addon_support::fixed_path::testing::{assert_kept_root_written_linearly, list};
+    use bedrock_addon_core::json::kit::fixed_path::testing::{
+        assert_kept_root_written_linearly, list,
+    };
 
     /// The root kept beside the fields is left out of equality: a loaded value that kept one
     /// equals the value built by hand with the same fields, and is still written as authored.
     #[test]
     fn a_kept_root_is_left_out_of_equality() {
-        let root = bedrock_addon_support::jsoncpp::read(
+        let root = bedrock_addon_core::json::jsoncpp::read(
             br#"{"beginner_loading_messages": ["a"], "mid_game_loading_messages": 5}"#,
         )
         .expect("JSON");

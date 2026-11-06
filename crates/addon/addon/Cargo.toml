@@ -158,7 +158,6 @@ bedrock_addon_core = { path = "../core" }
 bedrock_addon_shared_biome_env = { path = "../shared/biome_env" }
 bedrock_addon_shared_shapes = { path = "../shared/shapes" }
 bedrock_addon_shared_visual = { path = "../shared/visual" }
-bedrock_addon_support = { path = "../support" }
 bedrock_addon_derive = { path = "../derive" }
 bedrock_addon_family_aim_assist = { path = "../families/aim_assist", optional = true }
 bedrock_addon_family_animation = { path = "../families/animation", optional = true }

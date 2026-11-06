@@ -6,9 +6,11 @@ use indexmap::IndexMap;
 
 use super::fields::{Fields, Written};
 use super::{Emoticon, EmoticonList};
+use bedrock_addon_core::diagnostic::builders::{invalid, malformed};
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
 use bedrock_addon_core::json::Value;
-use bedrock_addon_support::fixed_path::{Authored, array, invalid, malformed};
+use bedrock_addon_core::json::build::array;
+use bedrock_addon_core::json::kit::fixed_path::Authored;
 
 /// The game's assert for an emoticon file it cannot use.
 pub(super) const MALFORMED: &str = "Malformed JSON";
@@ -159,8 +161,8 @@ impl EmoticonList {
 mod tests {
     use super::*;
     use bedrock_addon_core::diagnostic::Diagnostics;
+    use bedrock_addon_core::json::jsoncpp::read;
     use bedrock_addon_core::test_cost::assert_linear_at;
-    use bedrock_addon_support::jsoncpp::read;
 
     /// The emoticon list is read in time linear in its entries, every name its own.
     #[test]
@@ -186,14 +188,17 @@ mod tests {
 #[cfg(test)]
 mod kept_root_tests {
     use super::*;
-    use bedrock_addon_support::fixed_path::testing::{assert_kept_root_written_linearly, list};
+    use bedrock_addon_core::json::kit::fixed_path::testing::{
+        assert_kept_root_written_linearly, list,
+    };
 
     /// The root kept beside the fields is left out of equality: a loaded value that kept one
     /// equals the value built by hand with the same fields, and is still written as authored.
     #[test]
     fn a_kept_root_is_left_out_of_equality() {
-        let root = bedrock_addon_support::jsoncpp::read(br#"[{"name": "a", "code": "0xE000"}, 3]"#)
-            .expect("JSON");
+        let root =
+            bedrock_addon_core::json::jsoncpp::read(br#"[{"name": "a", "code": "0xE000"}, 3]"#)
+                .expect("JSON");
         let loaded = EmoticonList::from_value(&root, &mut Diagnostics::default());
         assert_eq!(*loaded.written, Some(root.clone()));
         let built = EmoticonList {

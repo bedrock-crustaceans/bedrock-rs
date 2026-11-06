@@ -27,15 +27,15 @@ use bedrock_addon_core::document::unversioned::{lone, version_at};
 use bedrock_addon_core::document::{
     Content, Document, JsonContent, Merge, Merged, Origin, Placed, RawLayer, Rejected,
 };
+use bedrock_addon_core::json::jsoncpp::fork;
 use bedrock_addon_core::json::{EncodeError, Value, WriteStyle};
-use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk};
-use bedrock_addon_core::pack_identity::{PackPath, PackSide};
-use bedrock_addon_core::version::ENGINE_VERSION;
-use bedrock_addon_support::sound::fork;
-use bedrock_addon_support::sound::merge::{
+use bedrock_addon_core::load::sound::{
     SoundCopy, layers, located, not_json, parse_copy, path_member, read_json, readable,
     write_document,
 };
+use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk};
+use bedrock_addon_core::pack_identity::{PackPath, PackSide};
+use bedrock_addon_core::version::ENGINE_VERSION;
 #[doc(hidden)]
 pub use events::is_level_sound_event;
 use indexmap::IndexMap;

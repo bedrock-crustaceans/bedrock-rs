@@ -54,11 +54,11 @@ use bedrock_addon_core::load::{self, CollectionLoader, LoadContext, Walk, WalkFi
 use bedrock_addon_core::pack_identity::{PackPath, PackSide};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::version::known;
+use bedrock_addon_core::versioning::chain_file::{self as file, closing_line};
 use bedrock_addon_core::versioning::{
     BelowFloor, Envelope, EnvelopeCheck, Family, Identity, InputKind, Loaded, MissingVersion,
     NoComponents, Reading, StructIndex, UnknownMask, ValidateCx, Versioned, parse_document,
 };
-use bedrock_addon_support::chain_file::{self as file, closing_line};
 use history::{
     EntityFamily, EntityHistory, ListFamily, ListHistory, PresetFamily, PresetHistory,
     SplineFamily, SplineHistory,
@@ -271,7 +271,7 @@ impl Family for ListFamily {
         // The required bind of `format_version`.
         missing: MissingVersion::Reject {
             text: Some(VanillaText::Fixed(
-                bedrock_addon_support::shape::MISSING_REQUIRED,
+                bedrock_addon_core::versioning::shape::MISSING_REQUIRED,
             )),
         },
         ..Envelope::DEFAULT

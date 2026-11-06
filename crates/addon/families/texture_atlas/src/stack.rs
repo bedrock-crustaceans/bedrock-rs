@@ -11,9 +11,9 @@ use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, Js
 use bedrock_addon_core::document::{Merge, Merged, Origin, RawLayer, UnknownMembers, unversioned};
 use bedrock_addon_core::id::AtlasKey;
 use bedrock_addon_core::json::Value;
+use bedrock_addon_core::json::jsoncpp::lenient::read_lenient;
 use bedrock_addon_core::load::WalkFile;
-use bedrock_addon_support::texture::files::{ATLAS_IMAGE, StackFiles};
-use bedrock_addon_support::texture::jsoncpp::read_lenient;
+use bedrock_addon_shared_shapes::texture::files::{ATLAS_IMAGE, StackFiles};
 
 impl bedrock_addon_core::__private::Sealed for TextureAtlas {}
 

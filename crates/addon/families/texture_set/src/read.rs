@@ -7,12 +7,12 @@ use facet_value::{VArray, VObject};
 use super::history::{TextureSetHistory, v1_16_100};
 use super::texts;
 use super::types::{LayerKind, LayerValue, Rgb, Rgba, TextureName, TextureSet};
+use bedrock_addon_core::diagnostic::texts::{fixed, formatted};
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
+use bedrock_addon_core::json::jsoncpp::lenient::read_lenient;
 use bedrock_addon_core::json::{Value, strip_bom};
 use bedrock_addon_core::version::{FormatVersion, SemVersion, known};
 use bedrock_addon_shared_shapes::color::parse_hex;
-use bedrock_addon_support::texture::jsoncpp::read_lenient;
-use bedrock_addon_support::texture::texts::{fixed, formatted};
 
 /// The member that holds the version.
 const FORMAT_VERSION: &str = "format_version";

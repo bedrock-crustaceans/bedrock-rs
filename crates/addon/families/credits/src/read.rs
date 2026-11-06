@@ -7,8 +7,9 @@ use bedrock_addon_core::diagnostic::{
 };
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::Value;
+use bedrock_addon_core::json::build::{Object, array};
 use bedrock_addon_core::json::kit::Written;
-use bedrock_addon_support::fixed_path::{Authored, Object, array, raw_member, to_text};
+use bedrock_addon_core::json::kit::fixed_path::{Authored, raw_member, to_text};
 
 // The game's asserts on its own file are developer asserts and write no content-log line, so
 // the crate reports them as informations with the game's texts.
@@ -227,8 +228,8 @@ pub fn check_starter_seeds(bytes: &[u8]) -> Diagnostics {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use bedrock_addon_core::json::jsoncpp::read;
     use bedrock_addon_core::test_cost::assert_linear_at;
-    use bedrock_addon_support::jsoncpp::read;
 
     /// The credits are read in time linear in their sections.
     #[test]
@@ -258,13 +259,16 @@ mod tests {
 #[cfg(test)]
 mod kept_root_tests {
     use super::*;
-    use bedrock_addon_support::fixed_path::testing::{assert_kept_root_written_linearly, list};
+    use bedrock_addon_core::json::kit::fixed_path::testing::{
+        assert_kept_root_written_linearly, list,
+    };
 
     /// The root kept beside the fields is left out of equality: a loaded value that kept one
     /// equals the value built by hand with the same fields, and is still written as authored.
     #[test]
     fn a_kept_root_is_left_out_of_equality() {
-        let root = bedrock_addon_support::jsoncpp::read(br#"[{"section": "A"}, 5]"#).expect("JSON");
+        let root =
+            bedrock_addon_core::json::jsoncpp::read(br#"[{"section": "A"}, 5]"#).expect("JSON");
         let loaded = Credits::from_value(&root, &mut Diagnostics::default());
         assert_eq!(*loaded.written, Some(root.clone()));
         let built = Credits {

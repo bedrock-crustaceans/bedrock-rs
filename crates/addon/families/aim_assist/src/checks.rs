@@ -8,7 +8,7 @@ use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, VanillaText,
 };
 use bedrock_addon_core::versioning::ValidateCx;
-use bedrock_addon_support::shape::{child, element, error, in_range, violation};
+use bedrock_addon_core::versioning::shape::{child, element, error, in_range, violation};
 
 /// One priority: a number in `[0, 100]`. A negative number is cereal's "invalid numeric
 /// value"; a number above 100 is a range violation.

@@ -5,7 +5,7 @@ use super::{CoordinateDistribution, CoordinateRange, FeatureRule, ScatterChance,
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, Phase, VanillaText};
 use bedrock_addon_core::molang::{Molang, MolangSource};
 use bedrock_addon_core::versioning::ValidateCx;
-use bedrock_addon_support::scatter::percent_in_range;
+use bedrock_addon_shared_scatter::percent_in_range;
 
 /// The rules on a loaded rule.
 pub(crate) fn validate(rule: &mut FeatureRule, cx: &mut ValidateCx<'_>) {

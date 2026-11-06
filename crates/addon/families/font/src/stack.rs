@@ -8,10 +8,10 @@ use bedrock_addon_core::pack_identity::{PackPath, PackRef};
 use indexmap::IndexMap;
 
 use super::{FontEntry, FontFormat, FontMetadata, Fonts};
+use bedrock_addon_core::diagnostic::builders::file_finding;
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Severity,
 };
-use bedrock_addon_support::fixed_path::file_finding;
 
 /// The page prefix of the game's built-in MSDF fonts (`SmoothFontLatin`, `SmoothSmall`).
 pub const SMOOTH_PREFIX: &str = "font/smooth/smooth_";
@@ -274,7 +274,7 @@ fn tried(paths: impl IntoIterator<Item = String>) -> DiagnosticDetail {
 
 /// The files of `pack` below the directory `directory`, by key.
 fn below<'a>(pack: &'a StackPack, directory: &'a str) -> impl Iterator<Item = &'a ListedFile> {
-    bedrock_addon_support::fixed_path::below(pack, directory)
+    bedrock_addon_core::json::kit::fixed_path::below(pack, directory)
 }
 
 /// Checks a file named `glyph_…` directly in a font directory that is no page name the game

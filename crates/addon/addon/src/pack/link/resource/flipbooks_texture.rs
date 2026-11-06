@@ -22,8 +22,8 @@ use crate::families::flipbooks::{Flipbook, FlipbookKey, Flipbooks};
 use crate::families::texture_atlas::{AtlasItem, TextureAtlas};
 use crate::families::texture_file::{ImageFormat, ImageInfo};
 use crate::id::{AtlasKey, Kind, kind};
-use crate::support::texture::files::{Found, IMAGE, StackFiles};
-use crate::support::texture::texts::{fixed, formatted};
+use bedrock_addon_core::diagnostic::texts::{fixed, formatted};
+use bedrock_addon_shared_shapes::texture::files::{Found, IMAGE, StackFiles};
 
 /// What the link pass tells the checker about an image file: the header of the file at a path
 /// of a pack, or `None` when the pass did not read it or it is no image. The checker asks only
@@ -476,7 +476,7 @@ mod checker {
     use crate::diagnostic::Severity::{self, Error, Info, Warning};
     use crate::families::texture_file::{ImageFormat, ImageInfo};
     use crate::families::{flipbooks, texture_atlas, texture_file};
-    use crate::support::texture::image::png_header;
+    use bedrock_addon_shared_shapes::texture::image::png_header;
 
     const FLIPBOOKS: &str = "textures/flipbook_textures.json";
     const TERRAIN: &str = "textures/terrain_texture.json";

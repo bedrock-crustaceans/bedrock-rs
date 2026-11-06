@@ -21,16 +21,18 @@ use bedrock_addon_core::json::Value;
 use bedrock_addon_core::json::kit::Written;
 
 use crate::stack::Index;
+use bedrock_addon_core::diagnostic::builders::malformed;
 use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath, JsonPathSegment, VanillaText};
 use bedrock_addon_core::document::{
     Content, Document, JsonContent, Merge, Origin, Placed, Rejected, unversioned,
 };
+use bedrock_addon_core::json::build::json_text;
+use bedrock_addon_core::json::jsoncpp::read;
+use bedrock_addon_core::json::kit::fixed_path::Authored;
 use bedrock_addon_core::json::{EncodeError, WriteStyle};
 use bedrock_addon_core::load::Reported;
 use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackSide};
-use bedrock_addon_support::fixed_path::{Authored, json_text, malformed};
-use bedrock_addon_support::jsoncpp::read;
 pub use binary::{GlyphRemapping, RemapEntry, check_glyph_sheet, png_size};
 pub use stack::{FontFile, MsdfPage, SMOOTH_PREFIX, remapping_path};
 

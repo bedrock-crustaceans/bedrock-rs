@@ -6,11 +6,11 @@ use super::{CameraPreset, texts};
 use super::{V1_19_50, V1_26_50};
 use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
-use bedrock_addon_core::versioning::{ParseCx, VersionStruct, Versioned, write_payload};
-use bedrock_addon_support::chain_file::{self as file, document};
-use bedrock_addon_support::shape::{
+use bedrock_addon_core::versioning::chain_file::{self as file, document};
+use bedrock_addon_core::versioning::shape::{
     Member, Shape, child, element, in_range, namespace_name, opt, req, violation,
 };
+use bedrock_addon_core::versioning::{ParseCx, VersionStruct, Versioned, write_payload};
 
 /// A pair of numbers.
 pub(crate) const VEC2: Shape = Shape::Array(&Shape::Float, 2);

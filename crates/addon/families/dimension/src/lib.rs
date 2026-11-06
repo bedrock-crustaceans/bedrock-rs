@@ -27,7 +27,6 @@ use bedrock_addon_core::versioning::{
     BelowFloor, BeyondWidth, Envelope, EnvelopeCheck, Family, InputKind, Loaded, MissingVersion,
     NoComponents, Reading, Scalars, StructIndex, UnknownMask, ValidateCx,
 };
-use bedrock_addon_support::puv::shadowed;
 use history::{DimensionFamily, DimensionHistory};
 use indexmap::IndexMap;
 
@@ -36,6 +35,14 @@ pub use types::{
     Clouds, DefaultBiome, Dimension, DimensionBounds, DimensionComponents, DimensionDescription,
     DimensionHeight, Generation, GeneratorType,
 };
+
+/// `ShadowedDefinition` (info) at a dropped document: a later file of the same pack that
+/// defines a dimension the pack already defined.
+fn shadowed(origin: &Origin) -> Diagnostic {
+    Diagnostic::info(DiagnosticCode::ShadowedDefinition { text: None })
+        .phase(Phase::Validate)
+        .in_file(origin)
+}
 
 /// The first format version vanilla reads.
 pub(crate) const FLOOR: FormatVersion = FormatVersion::new(1, 18, 0);

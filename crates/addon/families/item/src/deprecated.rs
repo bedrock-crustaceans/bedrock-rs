@@ -120,7 +120,7 @@ impl ItemDeprecatedData {
                 "custom_components_v1" => out.custom_components_v1 = Some(member.clone()),
                 "legacy_on_dig_trigger" => {
                     // (With the sign of a negative zero where the digger reads it so.)
-                    let text = bedrock_addon_support::signed_zero::text_for::<Digger>(member)
+                    let text = bedrock_addon_core::json::signed_zero::text_for::<Digger>(member)
                         .unwrap_or_default();
                     match bedrock_addon_core::json::from_str_jsonc::<Digger>(&text) {
                         Ok(digger) => {

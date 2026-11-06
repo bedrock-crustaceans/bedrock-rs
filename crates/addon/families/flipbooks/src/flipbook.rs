@@ -12,13 +12,13 @@ use bedrock_addon_core::document::{
     UnknownMembers, unversioned,
 };
 use bedrock_addon_core::id::AtlasKey;
+use bedrock_addon_core::json::jsoncpp::lenient::{
+    as_bool, as_int, int_is_coerced, non_null, read_lenient, to_text,
+};
 use bedrock_addon_core::json::{EncodeError, Value, WriteStyle, write_json};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::load::WalkFile;
 use bedrock_addon_core::pack_identity::{PackPath, PackSide};
-use bedrock_addon_support::texture::jsoncpp::{
-    as_bool, as_int, int_is_coerced, non_null, read_lenient, to_text,
-};
 
 /// The file's path in a resource pack.
 pub(crate) const PATH: &str = "textures/flipbook_textures.json";

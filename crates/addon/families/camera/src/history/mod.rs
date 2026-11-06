@@ -72,7 +72,7 @@ pub fn upgrade(
     document: Document<PresetHistory>,
     cx: &LoadContext,
 ) -> Result<Document<CameraPreset>, Rejected> {
-    bedrock_addon_support::chain_file::upgrade::<PresetFamily>(
+    bedrock_addon_core::versioning::chain_file::upgrade::<PresetFamily>(
         document,
         bedrock_addon_core::diagnostic::JsonPath::new(),
         cx,

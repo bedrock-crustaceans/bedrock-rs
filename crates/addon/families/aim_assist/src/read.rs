@@ -5,10 +5,10 @@ use super::history::v1_21_50;
 use super::{AimAssistCategories, AimAssistPreset};
 use bedrock_addon_core::diagnostic::Diagnostics;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
+use bedrock_addon_core::versioning::chain_file as file;
+use bedrock_addon_core::versioning::chain_file::document;
+use bedrock_addon_core::versioning::shape::{self, Member, Shape, opt, req};
 use bedrock_addon_core::versioning::{ParseCx, VersionStruct, Versioned, write_payload};
-use bedrock_addon_support::chain_file as file;
-use bedrock_addon_support::chain_file::document;
-use bedrock_addon_support::shape::{self, Member, Shape, opt, req};
 
 /// A list of strings (`vector<Reference<…>>`, `vector<string>`).
 const STRINGS: Shape = Shape::List(&Shape::Str);

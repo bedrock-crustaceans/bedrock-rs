@@ -4,8 +4,8 @@
 use indexmap::IndexMap;
 
 use super::GlyphPage;
+use bedrock_addon_core::diagnostic::builders::{invalid, malformed};
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
-use bedrock_addon_support::fixed_path::{invalid, malformed};
 
 /// The size of a metrics file: the header and 256 advances.
 const FONTDATA_SIZE: usize = 4 + 256 * 4;

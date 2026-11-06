@@ -5,10 +5,11 @@ use super::{ConditionalSplashes, SplashClient, SplashRequires, Splashes};
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::Value;
-use bedrock_addon_core::json::kit::{Disposition, Members, Node, Read, Written};
-use bedrock_addon_support::fixed_path::{
-    Authored, Object, array, iterated, kept_unknown, raw_member, reader, to_text,
+use bedrock_addon_core::json::build::{Object, array};
+use bedrock_addon_core::json::kit::fixed_path::{
+    Authored, iterated, kept_unknown, raw_member, reader, to_text,
 };
+use bedrock_addon_core::json::kit::{Disposition, Members, Node, Read, Written};
 
 /// `InvalidValue` without a vanilla text: a finding of the crate's own.
 const INVALID: DiagnosticCode = DiagnosticCode::InvalidValue { text: None };
@@ -286,13 +287,15 @@ impl SplashRequires {
 #[cfg(test)]
 mod kept_root_tests {
     use super::*;
-    use bedrock_addon_support::fixed_path::testing::{assert_kept_root_written_linearly, list};
+    use bedrock_addon_core::json::kit::fixed_path::testing::{
+        assert_kept_root_written_linearly, list,
+    };
 
     /// The root kept beside the fields is left out of equality: a loaded value that kept one
     /// equals the value built by hand with the same fields, and is still written as authored.
     #[test]
     fn a_kept_root_is_left_out_of_equality() {
-        let root = bedrock_addon_support::jsoncpp::read(b"[1]").expect("JSON");
+        let root = bedrock_addon_core::json::jsoncpp::read(b"[1]").expect("JSON");
         let loaded = Splashes::from_value(&root, &mut Diagnostics::default());
         assert_eq!(*loaded.written, Some(root.clone()));
         assert_eq!(loaded, Splashes::default());

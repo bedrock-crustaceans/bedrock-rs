@@ -6,18 +6,20 @@
 
 mod read;
 
+use bedrock_addon_core::diagnostic::builders::file_finding;
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::document::{
     Content, Document, JsonContent, Merge, Merged, Origin, Placed, Rejected, unversioned,
 };
 use bedrock_addon_core::json::Value;
+use bedrock_addon_core::json::build::json_text;
+use bedrock_addon_core::json::jsoncpp::read;
 use bedrock_addon_core::json::kit::Written;
+use bedrock_addon_core::json::kit::fixed_path::Authored;
 use bedrock_addon_core::json::{EncodeError, WriteStyle};
 use bedrock_addon_core::load::{self, CollectionLoader, FileCopy, LoadContext, StackCx, Walk};
 use bedrock_addon_core::pack_identity::{PackPath, PackSide};
-use bedrock_addon_support::fixed_path::{Authored, file_finding, json_text};
-use bedrock_addon_support::jsoncpp::read;
 use indexmap::IndexMap;
 
 /// The path of the splash texts, in every resource pack.

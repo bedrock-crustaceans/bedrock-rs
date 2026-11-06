@@ -13,19 +13,19 @@ use bedrock_addon_core::document::{
 };
 use bedrock_addon_core::id::MusicDefinitionId;
 use bedrock_addon_core::json::Value;
+use bedrock_addon_core::json::jsoncpp::fork;
 use bedrock_addon_core::json::kit::Written;
+use bedrock_addon_core::json::kit::sound::read::{boolean, float, string};
+use bedrock_addon_core::json::kit::sound::report::{Reporter, check_unknown};
+use bedrock_addon_core::json::kit::sound::write::{self, Object, Present, present};
 use bedrock_addon_core::json::{EncodeError, WriteStyle};
-use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk};
-use bedrock_addon_core::pack_identity::{PackPath, PackSide};
-use bedrock_addon_core::version::ENGINE_VERSION;
-use bedrock_addon_support::sound::fork;
-use bedrock_addon_support::sound::merge::{
+use bedrock_addon_core::load::sound::{
     SoundCopy, layers, located, not_json, parse_copy, path_member, read_json, readable,
     write_document,
 };
-use bedrock_addon_support::sound::read::{boolean, float, string};
-use bedrock_addon_support::sound::report::{Reporter, check_unknown};
-use bedrock_addon_support::sound::write::{self, Object, Present, present};
+use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk};
+use bedrock_addon_core::pack_identity::{PackPath, PackSide};
+use bedrock_addon_core::version::ENGINE_VERSION;
 
 /// Vanilla's text for a definition under the empty name.
 const NO_NAME: &str = "Cannot define a music definition with no name.";

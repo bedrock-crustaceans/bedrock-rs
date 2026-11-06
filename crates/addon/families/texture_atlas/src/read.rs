@@ -9,17 +9,17 @@ use super::types::{
     AtlasItem, AtlasKind, AtlasTextures, Color, Face, Isotropic, MAX_WEIGHT, MIN_WEIGHT,
     TextureAtlas, TextureElement, TextureLayer, Tint, TintMapColor, VariationEntry, face_is_read,
 };
+use bedrock_addon_core::diagnostic::texts::{fixed, formatted};
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity, VanillaText,
 };
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::AtlasKey;
 use bedrock_addon_core::json::Value;
-use bedrock_addon_support::texture::jsoncpp::{
+use bedrock_addon_core::json::jsoncpp::lenient::{
     as_bool, as_float, as_int, float_is_clamped, int_is_coerced, is_empty, non_null,
     strtouint32_hex, to_text,
 };
-use bedrock_addon_support::texture::texts::{fixed, formatted};
 
 /// The members of the root that vanilla's own files write and nothing reads.
 const IGNORED: [&str; 2] = ["resource_pack_name", "format_version"];

@@ -619,7 +619,7 @@ impl Lists {
 /// not write (it nests past `MAX_JSON_DEPTH`, which no file read through the door does) is
 /// no goal: `InvalidValue`, a warning at the goal, which is dropped.
 fn lenient_text<T: Goal>(json: &Value, d: &mut Diagnostics) -> Option<String> {
-    let text = bedrock_addon_support::signed_zero::text_for::<T>(json);
+    let text = bedrock_addon_core::json::signed_zero::text_for::<T>(json);
     if text.is_none() {
         d.push(
             // The game writes no content-log line for this, so the crate reports an

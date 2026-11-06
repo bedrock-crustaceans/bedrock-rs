@@ -14,12 +14,11 @@ rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
 nbt = ["dep:nbtx"]
-molang = ["bedrock_addon_core/molang", "bedrock_addon_support/molang"]
+molang = ["bedrock_addon_core/molang"]
 
 [dependencies]
 bedrock_addon_core = { path = "../../core" }
 bedrock_addon_shared_shapes = { path = "../../shared/shapes" }
-bedrock_addon_support = { path = "../../support" }
 bedrock_addon_derive = { path = "../../derive" }
 facet = { workspace = true }
 facet-json = { workspace = true }

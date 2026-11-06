@@ -38,7 +38,7 @@ use crate::stack::{LintPack, capability_lints, check_layer_images, texture_path}
 use bedrock_addon_core::document::unversioned::origin_of;
 use bedrock_addon_core::load::{Accept, CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackSide};
-use bedrock_addon_support::texture::files::{
+use bedrock_addon_shared_shapes::texture::files::{
     IndexedFile, StackFiles, is_texture_file, listed_files,
 };
 #[doc(hidden)]

@@ -36,11 +36,11 @@ use bedrock_addon_core::load::{self, CollectionLoader, LoadContext, StackCx, Wal
 use bedrock_addon_core::load::{DocumentSource, Reported};
 use bedrock_addon_core::pack_identity::{PackPath, PackSide};
 use bedrock_addon_core::version::{FormatVersion, known};
+use bedrock_addon_core::versioning::chain_file as file;
 use bedrock_addon_core::versioning::{
     BelowFloor, Envelope, EnvelopeCheck, Family, Identity, InputKind, Loaded, MissingVersion,
     NoComponents, Reading, StructIndex, ValidateCx, Versioned, parse_document,
 };
-use bedrock_addon_support::chain_file as file;
 use history::{CategoriesFamily, CategoriesHistory, PresetFamily, PresetHistory};
 
 /// The aim-assist documents of the behaviour packs (`bp.aim_assist()`): two collections loaded

@@ -461,7 +461,7 @@ impl Reader<'_> {
             return None;
         };
         let nearest = narrow(number.to_f64_lossy());
-        if bedrock_addon_support::lossy::narrows(number.to_f64_lossy()) {
+        if bedrock_addon_core::json::lossy::narrows(number.to_f64_lossy()) {
             // Held as a float, as in the game, and written so: noted.
             self.push(Diagnostic::info(DiagnosticCode::LossyConversion).at(at.clone()));
         }

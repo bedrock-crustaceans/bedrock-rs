@@ -23,12 +23,12 @@ use bedrock_addon_core::document::Document;
 use crate::list::PackLint;
 use bedrock_addon_core::document::Origin;
 use bedrock_addon_core::document::unversioned;
+use bedrock_addon_core::json::jsoncpp::lenient::read_lenient;
 use bedrock_addon_core::load::{Accept, CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
-use bedrock_addon_support::texture::files::{
+use bedrock_addon_shared_shapes::texture::files::{
     IndexedFile, StackFiles, is_texture_file, listed_files,
 };
-use bedrock_addon_support::texture::jsoncpp::read_lenient;
 pub use list::{TextureClaim, TextureList, TextureListMode, TextureListRoot, scan_claims};
 
 /// The texture lists of a resource stack (`rp.texture_lists()`).

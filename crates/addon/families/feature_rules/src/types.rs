@@ -6,7 +6,7 @@ use bedrock_addon_core::id::{FeatureId, FeatureRuleId};
 use bedrock_addon_core::schema::Schema;
 use bedrock_addon_core::shared::Filter;
 use bedrock_addon_core::version::FormatVersion;
-use bedrock_addon_support::scatter::ScatterParams;
+use bedrock_addon_shared_scatter::ScatterParams;
 
 /// A feature rule (`minecraft:feature_rules`): which feature it places, in which placement pass,
 /// over which biomes, and how the positions are scattered.

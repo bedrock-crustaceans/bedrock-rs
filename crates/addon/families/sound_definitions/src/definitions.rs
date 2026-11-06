@@ -6,13 +6,13 @@ use indexmap::IndexMap;
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, Severity, VanillaText};
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::SoundEventName;
+use bedrock_addon_core::json::jsoncpp::fork::{self, Stored};
 use bedrock_addon_core::json::kit::Written;
+use bedrock_addon_core::json::kit::sound::read::{boolean, float, integer, real, string};
+use bedrock_addon_core::json::kit::sound::report::{Reporter, check_unknown};
+use bedrock_addon_core::json::kit::sound::write::{self, Object, Present, present};
 use bedrock_addon_core::json::{EncodeError, Value};
 use bedrock_addon_core::version::SemVersion;
-use bedrock_addon_support::sound::fork::{self, Stored};
-use bedrock_addon_support::sound::read::{boolean, float, integer, real, string};
-use bedrock_addon_support::sound::report::{Reporter, check_unknown};
-use bedrock_addon_support::sound::write::{self, Object, Present, present};
 
 /// Vanilla's text for a merged root that is no object.
 pub(crate) const CONTENTS_MALFORMED: &str = "sound_definitions.json contents is malformed";

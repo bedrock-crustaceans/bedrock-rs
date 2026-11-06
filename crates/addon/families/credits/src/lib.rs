@@ -14,13 +14,14 @@ use bedrock_addon_core::diagnostic::{
 };
 use bedrock_addon_core::document::unversioned::{document, lone, reject};
 use bedrock_addon_core::document::{Content, Document, Merge, Merged, Origin, Placed, Rejected};
+use bedrock_addon_core::json::build::{json_string, json_text};
+use bedrock_addon_core::json::jsoncpp::read;
+use bedrock_addon_core::json::kit::fixed_path::Authored;
 use bedrock_addon_core::json::{EncodeError, WriteStyle};
 use bedrock_addon_core::load::{
     self, AppDataPlace, CollectionLoader, FileCopy, LoadContext, StackCx, Walk,
 };
 use bedrock_addon_core::pack_identity::{PackPath, PackSide};
-use bedrock_addon_support::fixed_path::{Authored, json_string, json_text};
-use bedrock_addon_support::jsoncpp::read;
 use indexmap::IndexMap;
 pub use read::check_starter_seeds;
 

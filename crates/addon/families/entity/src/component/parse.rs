@@ -515,7 +515,7 @@ pub(super) fn json_text<T: Typed>(object: &VObject, mode: ConvertMode) -> Option
     let value = Value::from(object.clone());
     match mode {
         ConvertMode::Strict => to_json(&value).ok(),
-        ConvertMode::Lenient => bedrock_addon_support::signed_zero::text_for::<T>(&value),
+        ConvertMode::Lenient => bedrock_addon_core::json::signed_zero::text_for::<T>(&value),
     }
 }
 

@@ -9,13 +9,13 @@ use super::{
     BUILT_IN_FONTS, FontAlias, FontAliasRef, FontEntry, FontFormat, FontMetadata, FontRange,
     PageSpec,
 };
+use bedrock_addon_core::diagnostic::builders::{invalid, invalid_text};
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, VanillaText,
 };
 use bedrock_addon_core::json::Value;
-use bedrock_addon_support::fixed_path::{
-    Authored, array, as_int, as_real, invalid, invalid_text, iterated,
-};
+use bedrock_addon_core::json::build::array;
+use bedrock_addon_core::json::kit::fixed_path::{Authored, as_int, as_real, iterated};
 
 // The reader's texts, as the game writes them.
 /// A file that is not JSON.
@@ -653,8 +653,8 @@ impl FontMetadata {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use bedrock_addon_core::json::jsoncpp::read;
     use bedrock_addon_core::test_cost::assert_linear_at;
-    use bedrock_addon_support::jsoncpp::read;
 
     /// Every format reads back from its own `font_format` text, and nothing else names one.
     #[test]
@@ -718,13 +718,15 @@ mod tests {
 #[cfg(test)]
 mod kept_root_tests {
     use super::*;
-    use bedrock_addon_support::fixed_path::testing::{assert_kept_root_written_linearly, list};
+    use bedrock_addon_core::json::kit::fixed_path::testing::{
+        assert_kept_root_written_linearly, list,
+    };
 
     /// The root kept beside the fields is left out of equality: a loaded value that kept one
     /// equals the value built by hand with the same fields, and is still written as authored.
     #[test]
     fn a_kept_root_is_left_out_of_equality() {
-        let root = bedrock_addon_support::jsoncpp::read(
+        let root = bedrock_addon_core::json::jsoncpp::read(
             br#"{"version": 1, "fonts": [{"font_format": "ttf", "font_name": "t", "font_file": "font/t"}, 5]}"#,
         )
         .expect("JSON");

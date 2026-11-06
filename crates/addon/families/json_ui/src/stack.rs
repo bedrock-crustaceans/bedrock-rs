@@ -23,8 +23,8 @@ use bedrock_addon_core::diagnostic::{
 use bedrock_addon_core::document::{
     Content, Document, Merge, Merged, Origin, Placed, RawLayer, Rejected, unversioned,
 };
+use bedrock_addon_core::json::jsoncpp::read;
 use bedrock_addon_core::json::{EncodeError, Value, WriteStyle, write_json};
-use bedrock_addon_support::jsoncpp::read;
 
 /// The directory the listed files live in.
 const UI: &str = "ui";

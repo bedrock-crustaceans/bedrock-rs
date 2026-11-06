@@ -6,10 +6,10 @@ use indexmap::IndexMap;
 use super::events::{LEGACY_AMBIENT_EVENTS, is_level_sound_event};
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, Severity, VanillaText};
 use bedrock_addon_core::json::Value;
+use bedrock_addon_core::json::jsoncpp::fork::{self, Stored};
+use bedrock_addon_core::json::kit::sound::read::{integer, string};
+use bedrock_addon_core::json::kit::sound::report::{Reporter, check_unknown};
 use bedrock_addon_core::molang::{MolangSource, RawVersion};
-use bedrock_addon_support::sound::fork::{self, Stored};
-use bedrock_addon_support::sound::read::{integer, string};
-use bedrock_addon_support::sound::report::{Reporter, check_unknown};
 
 /// Vanilla's text for a table without its `events` object.
 const EXPECTED_EVENTS: &str = "Expected \"events\" object";

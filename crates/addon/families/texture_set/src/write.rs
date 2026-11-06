@@ -6,10 +6,10 @@ use facet_value::{VArray, VObject};
 use super::read::{Schema, V1_21_30, read_layers};
 use super::types::{LayerKind, LayerValue, Rgb, Rgba, TextureName, TextureSet};
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
+use bedrock_addon_core::json::jsoncpp::lenient::read_lenient;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{ParseCx, VersionStruct, Versioned};
-use bedrock_addon_support::texture::jsoncpp::read_lenient;
 
 impl Versioned for TextureSet {
     const VERSION: FormatVersion = V1_21_30;

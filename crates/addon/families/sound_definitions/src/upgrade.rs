@@ -5,8 +5,8 @@ use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, VanillaText,
 };
 use bedrock_addon_core::json::Value;
+use bedrock_addon_core::json::jsoncpp::fork::{self, Stored};
 use bedrock_addon_core::version::{FormatVersion, SemVersion, known};
-use bedrock_addon_support::sound::fork::{self, Stored};
 use facet_value::VObject;
 
 /// The first version with the `{ format_version, sound_definitions }` envelope.

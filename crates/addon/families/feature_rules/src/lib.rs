@@ -44,7 +44,7 @@ pub(crate) const READING: Reading = Reading::DOCUMENT
     .with_beyond_width(BeyondWidth::Error)
     .with_keeps_unknown(true);
 
-pub use bedrock_addon_support::scatter::{
+pub use bedrock_addon_shared_scatter::{
     CoordinateDistribution, CoordinateEvalOrder, CoordinateRange, RandomDistribution,
     ScatterChance, ScatterFraction, ScatterParams,
 };

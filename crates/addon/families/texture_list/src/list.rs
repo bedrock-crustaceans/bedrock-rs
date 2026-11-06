@@ -12,12 +12,12 @@ use bedrock_addon_core::diagnostic::{
 };
 use bedrock_addon_core::document::unversioned;
 use bedrock_addon_core::document::{Content, Document, JsonContent, Placed, Rejected};
+use bedrock_addon_core::json::jsoncpp::lenient::{root_end, skip_trivia, string_end};
 use bedrock_addon_core::json::{EncodeError, Value, WriteStyle, strip_bom, write_json};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
-use bedrock_addon_support::texture::files::{PackFiles, TEXTURE_SET, VERBATIM_OR_IMAGE};
-use bedrock_addon_support::texture::image::ImageFormat;
-use bedrock_addon_support::texture::jsoncpp::{root_end, skip_trivia, string_end};
+use bedrock_addon_shared_shapes::texture::files::{PackFiles, TEXTURE_SET, VERBATIM_OR_IMAGE};
+use bedrock_addon_shared_shapes::texture::image::ImageFormat;
 
 /// The file's path in a resource pack.
 pub(crate) const PATH: &str = "textures/textures_list.json";
@@ -514,7 +514,7 @@ impl PackLint<'_> {
             // information with the game's text.
             let args = [PATH.to_owned(), self.files.pack.name().to_owned()];
             let code = DiagnosticCode::MissingRequiredField {
-                text: bedrock_addon_support::texture::texts::formatted(
+                text: bedrock_addon_core::diagnostic::texts::formatted(
                     texts::NO_LIST_IN_BASE_PACK,
                     args,
                 ),

@@ -16,10 +16,10 @@ use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
     ParseCx, Upgrade, UpgradeCx, VersionStruct, Versioned, write_payload,
 };
-use bedrock_addon_shared_shapes::BlockDescriptor;
-use bedrock_addon_support::scatter::{
+use bedrock_addon_shared_scatter::{
     CoordinateEvalOrder, CoordinateRange, ScatterChance, ScatterParams,
 };
+use bedrock_addon_shared_shapes::BlockDescriptor;
 
 /// The version of the structs of this module.
 pub(crate) const VERSION: FormatVersion = FormatVersion::new(1, 13, 0);

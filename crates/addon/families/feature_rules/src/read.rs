@@ -12,7 +12,7 @@ use bedrock_addon_core::json::{
 };
 use bedrock_addon_core::molang::{Molang, MolangFields, MolangVisitor};
 use bedrock_addon_core::versioning::{ParseCx, parse_payload};
-use bedrock_addon_support::scatter::{
+use bedrock_addon_shared_scatter::{
     CoordinateDistribution, CoordinateEvalOrder, CoordinateRange, ScatterChance, ScatterFraction,
     ScatterParams,
 };

@@ -16,20 +16,22 @@ use bedrock_addon_core::diagnostic::{
 };
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::Value;
-use bedrock_addon_support::jsoncpp::{member, number};
+use bedrock_addon_core::json::jsoncpp::{member, number};
 
 use bedrock_addon_core::diagnostic::Severity;
+use bedrock_addon_core::diagnostic::builders::file_finding;
+use bedrock_addon_core::diagnostic::builders::malformed;
 use bedrock_addon_core::document::unversioned::{document, lone, reject};
 use bedrock_addon_core::document::{Content, Document, JsonContent, Origin, Rejected};
 use bedrock_addon_core::document::{Files, FilesBuilder, FilesRule};
+use bedrock_addon_core::json::build::json_text;
+use bedrock_addon_core::json::jsoncpp::read;
+use bedrock_addon_core::json::kit::fixed_path::below;
 use bedrock_addon_core::json::{EncodeError, WriteStyle};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::load::{self, CollectionLoader, FileCopy, StackCx, Walk};
 use bedrock_addon_core::pack_identity::PackRef;
 use bedrock_addon_core::pack_identity::{PackPath, PackSide};
-use bedrock_addon_support::fixed_path::{below, file_finding};
-use bedrock_addon_support::fixed_path::{json_text, malformed};
-use bedrock_addon_support::jsoncpp::read;
 use indexmap::IndexMap;
 use std::collections::HashSet;
 
@@ -529,7 +531,7 @@ mod tests {
     use bedrock_addon_core::test_cost::assert_linear_at;
 
     fn read(text: &str) -> (UiTextureInfo, Diagnostics) {
-        let root = bedrock_addon_support::jsoncpp::read(text.as_bytes()).unwrap();
+        let root = bedrock_addon_core::json::jsoncpp::read(text.as_bytes()).unwrap();
         let mut d = Diagnostics::default();
         (UiTextureInfo::from_value(&root, &mut d), d)
     }

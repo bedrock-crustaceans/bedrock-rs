@@ -29,16 +29,16 @@ use bedrock_addon_core::document::{
     Content, Document, Merge, Merged, Origin, Placed, RawLayer, Rejected, VersionInfo,
 };
 use bedrock_addon_core::id::SoundEventName;
+use bedrock_addon_core::json::jsoncpp::fork;
 use bedrock_addon_core::json::{EncodeError, Value, WriteStyle};
+use bedrock_addon_core::load::sound::{
+    SoundCopy, layers, located, not_json, parse_copy, path_member, read_json, readable,
+    write_document,
+};
 use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk};
 use bedrock_addon_core::pack_identity::{PackPath, PackSide};
 use bedrock_addon_core::version::{ENGINE_VERSION, SemVersion};
 use bedrock_addon_core::versioning::Versioned;
-use bedrock_addon_support::sound::fork;
-use bedrock_addon_support::sound::merge::{
-    SoundCopy, layers, located, not_json, parse_copy, path_member, read_json, readable,
-    write_document,
-};
 pub use definitions::{
     CATEGORIES, ExternalEventParameter, SoundAction, SoundDefinition, SoundDefinitions, SoundEntry,
     SoundEntryForm,

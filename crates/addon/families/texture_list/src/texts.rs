@@ -12,6 +12,6 @@ const TEMPLATES: &[(&str, usize)] = &[(NO_LIST_IN_BASE_PACK, 2)];
 mod tests {
     #[test]
     fn every_template_has_as_many_holes_as_its_call_site_has_arguments() {
-        bedrock_addon_support::texture::texts::assert_arity(super::TEMPLATES);
+        bedrock_addon_core::diagnostic::texts::assert_arity(super::TEMPLATES);
     }
 }

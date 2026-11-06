@@ -4,11 +4,11 @@ use super::read::{VEC2, VEC3, each_ranged, ranged};
 use super::{CameraComponents, CameraEntity, texts};
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, JsonPath};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
-use bedrock_addon_core::versioning::{ParseCx, VersionStruct, write_payload};
-use bedrock_addon_support::chain_file as file;
-use bedrock_addon_support::shape::{
+use bedrock_addon_core::versioning::chain_file as file;
+use bedrock_addon_core::versioning::shape::{
     self, Member, Shape, child, error, namespace_name, opt, req, violation,
 };
+use bedrock_addon_core::versioning::{ParseCx, VersionStruct, write_payload};
 
 /// A component without members.
 const EMPTY: Shape = Shape::Object(&[]);

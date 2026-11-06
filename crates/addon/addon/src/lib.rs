@@ -171,17 +171,6 @@ pub use bedrock_addon_shared_visual as visual;
 pub mod load;
 pub mod pack;
 pub mod storage;
-// The link pass's two users of the support crate: the flipbook textures and the sound
-// definitions of `sounds.json`.
-#[cfg(any(
-    all(
-        feature = "flipbooks",
-        feature = "texture_atlas",
-        feature = "texture_file"
-    ),
-    all(feature = "sounds_json", feature = "sound_definitions"),
-))]
-pub(crate) use bedrock_addon_support as support;
 #[cfg(test)]
 mod test_cost;
 

@@ -11,7 +11,7 @@ use super::super::{At, Findings, LinkCx, kinds, unknown_sound};
 use crate::families::sound_definitions::SoundDefinitions;
 use crate::families::sounds_json::SoundBindings;
 use crate::id::SoundEventName;
-use crate::support::sound::merge::path_member;
+use bedrock_addon_core::load::sound::path_member;
 
 /// Every sound a binding names is a sound definition of the merged `sound_definitions.json`.
 pub(super) fn run(cx: &LinkCx<'_>, out: &mut Findings) {

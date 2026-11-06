@@ -3,10 +3,12 @@
 use super::{CameraList, texts};
 use bedrock_addon_core::diagnostic::Diagnostics;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
+use bedrock_addon_core::versioning::chain_file as file;
+use bedrock_addon_core::versioning::chain_file::document;
+use bedrock_addon_core::versioning::shape::{
+    self, Member, Shape, child, namespace_name, req, violation,
+};
 use bedrock_addon_core::versioning::{ParseCx, VersionStruct, write_payload};
-use bedrock_addon_support::chain_file as file;
-use bedrock_addon_support::chain_file::document;
-use bedrock_addon_support::shape::{self, Member, Shape, child, namespace_name, req, violation};
 
 /// The list payload: both members required.
 const LIST: &[Member] = &[

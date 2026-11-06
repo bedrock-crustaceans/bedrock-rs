@@ -14,4 +14,4 @@ rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
 bedrock_addon_core = { path = "../../core" }
-bedrock_addon_support = { path = "../../support" }
+bedrock_addon_shared_shapes = { path = "../../shared/shapes" }

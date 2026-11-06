@@ -6,8 +6,8 @@ use indexmap::IndexMap;
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::AtlasKey;
 use bedrock_addon_core::json::Value;
+use bedrock_addon_core::json::jsoncpp::lenient::strtouint32_hex;
 use bedrock_addon_shared_shapes::OneOrMany;
-use bedrock_addon_support::texture::jsoncpp::strtouint32_hex;
 
 /// Which of the two atlas files a [`TextureAtlas`] is.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]

@@ -12,10 +12,10 @@ use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics};
 use bedrock_addon_core::document::{
     Content, Document, JsonContent, Placed, Rejected, UnknownMembers, unversioned,
 };
+use bedrock_addon_core::json::jsoncpp::lenient::read_lenient;
 use bedrock_addon_core::json::{EncodeError, Value, WriteStyle, write_json};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::pack_identity::{PackPath, PackSide};
-use bedrock_addon_support::texture::jsoncpp::read_lenient;
 
 impl Content for TextureAtlas {
     const NAME: &'static str = "texture atlas";

@@ -14,7 +14,6 @@ rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
 bedrock_addon_core = { path = "../../core" }
-bedrock_addon_support = { path = "../../support" }
 facet = { workspace = true }
 facet-value = { workspace = true }
 indexmap = { workspace = true }

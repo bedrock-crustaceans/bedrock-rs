@@ -20,12 +20,12 @@ mod write;
 
 use bedrock_addon_core::diagnostic::Diagnostic;
 use bedrock_addon_core::document::{Merged, RawLayer};
-use bedrock_addon_support::texture::files::StackFiles;
+use bedrock_addon_shared_shapes::texture::files::StackFiles;
 
 use crate::stack::{AtlasCopy, merge_atlas, parse_copy};
 use bedrock_addon_core::load::Reported;
 use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
-use bedrock_addon_support::texture::files::listed_files;
+use bedrock_addon_shared_shapes::texture::files::listed_files;
 pub use types::{
     AtlasItem, AtlasKind, AtlasTextures, Color, Face, Isotropic, MAX_WEIGHT, MIN_WEIGHT,
     ResolvedLayer, TextureAtlas, TextureElement, TextureLayer, Tint, TintMapColor, VariationEntry,

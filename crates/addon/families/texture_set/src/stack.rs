@@ -6,6 +6,7 @@ use indexmap::IndexMap;
 use super::texts;
 use super::types::TextureSet;
 use super::{locate, payload_at};
+use bedrock_addon_core::diagnostic::texts::fixed;
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
 };
@@ -13,10 +14,9 @@ use bedrock_addon_core::document::{Document, Rejected};
 use bedrock_addon_core::load::StackPack;
 use bedrock_addon_core::pack_identity::PackPath;
 use bedrock_addon_core::version::SemVersion;
-use bedrock_addon_support::texture::files::{
+use bedrock_addon_shared_shapes::texture::files::{
     PackFiles, StackFiles, TEXTURE_SET, VERBATIM_OR_IMAGE,
 };
-use bedrock_addon_support::texture::texts::fixed;
 
 /// One pack's copy of a texture set: the document, or why the client shows the missing
 /// texture instead.

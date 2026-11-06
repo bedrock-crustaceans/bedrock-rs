@@ -15,7 +15,7 @@ use bedrock_addon_core::molang::{Molang, MolangFieldSpec, MolangFields, MolangVi
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::ValidateCx;
 use bedrock_addon_core::versioning::{ParseCx, VersionStruct, Versioned, write_payload};
-use bedrock_addon_support::scatter::{CoordinateRange, ScatterChance, ScatterParams};
+use bedrock_addon_shared_scatter::{CoordinateRange, ScatterChance, ScatterParams};
 
 /// The format of the `distribution` layout.
 pub(crate) const SCATTER_FORMAT: FormatVersion = FormatVersion::new(1, 21, 10);

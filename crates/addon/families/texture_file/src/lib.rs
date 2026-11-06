@@ -9,13 +9,13 @@
 
 use bedrock_addon_core::pack_identity::{PackPath, PackRef};
 
-use bedrock_addon_support::texture::files::{StackFiles, TEXTURE_SET, VERBATIM_OR_IMAGE};
+use bedrock_addon_shared_shapes::texture::files::{StackFiles, TEXTURE_SET, VERBATIM_OR_IMAGE};
 
 use bedrock_addon_core::diagnostic::Diagnostic;
 use bedrock_addon_core::load::Reported;
 use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
-use bedrock_addon_support::texture::files::listed_files;
-pub use bedrock_addon_support::texture::image::{ImageFormat, ImageInfo};
+use bedrock_addon_shared_shapes::texture::files::listed_files;
+pub use bedrock_addon_shared_shapes::texture::image::{ImageFormat, ImageInfo};
 
 /// The file the client loads for a texture path.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -132,7 +132,7 @@ impl TextureFiles {
 }
 
 /// An image hit as a source.
-fn image_source(image: &bedrock_addon_support::texture::files::Found<'_>) -> TextureSource {
+fn image_source(image: &bedrock_addon_shared_shapes::texture::files::Found<'_>) -> TextureSource {
     TextureSource::Image {
         stack_index: image.stack_index,
         file: image.key.to_owned(),

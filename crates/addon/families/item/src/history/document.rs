@@ -1800,7 +1800,7 @@ pub(crate) fn written_components(
 /// `Value` it built.
 pub(crate) fn retype<T: for<'a> Facet<'a>>(value: &Value) -> Option<T> {
     // (A real negative zero keeps its sign where `T` reads the text with it.)
-    let text = bedrock_addon_support::signed_zero::text_for::<T>(value)?;
+    let text = bedrock_addon_core::json::signed_zero::text_for::<T>(value)?;
     bedrock_addon_core::json::from_str_jsonc::<T>(&text).ok()
 }
 

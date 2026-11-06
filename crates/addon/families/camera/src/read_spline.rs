@@ -4,11 +4,11 @@ use super::read::VEC3;
 use super::{CameraSpline, Spline, texts};
 use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
-use bedrock_addon_core::versioning::{ParseCx, VersionStruct, write_payload};
-use bedrock_addon_support::chain_file as file;
-use bedrock_addon_support::shape::{
+use bedrock_addon_core::versioning::chain_file as file;
+use bedrock_addon_core::versioning::shape::{
     self, Member, Shape, child, element, namespace_name, opt, req, violation,
 };
+use bedrock_addon_core::versioning::{ParseCx, VersionStruct, write_payload};
 
 /// One control point.
 const CONTROL_POINT: &[Member] = &[req("position", VEC3)];

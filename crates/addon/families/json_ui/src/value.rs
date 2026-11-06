@@ -3,7 +3,7 @@
 
 use bedrock_addon_core::json::Value;
 
-pub(crate) use bedrock_addon_support::jsoncpp::{member, number};
+pub(crate) use bedrock_addon_core::json::jsoncpp::{member, number};
 
 /// The members of `value` in the order jsoncpp iterates an object: by key, bytewise (its
 /// objects are a `std::map`). Empty for anything but an object.
