@@ -1,6 +1,6 @@
 [package]
 name = "bedrock_addon_support"
-description = "Helpers more than one bedrock_addon content family shares that are no vocabulary of bedrock_addon_core: JSON readers, texture and sound rules; no I/O"
+description = "The digit-key path builder the three biome families of bedrock_addon share until its behaviour-bearing removal; no I/O"
 version.workspace = true
 edition.workspace = true
 license = "Apache-2.0"
@@ -13,17 +13,5 @@ all-features = true
 # Shows which feature each item needs.
 rustdoc-args = ["--cfg", "docsrs"]
 
-[features]
-# Core's load-time Molang compile check. Nothing in this crate is gated on it since the spawn and
-# animation helpers moved to their shared crates; the families that still name it keep it.
-molang = ["bedrock_addon_core/molang"]
-
 [dependencies]
 bedrock_addon_core = { path = "../core" }
-bedrock_addon_shared_scatter = { path = "../shared/scatter" }
-bedrock_addon_shared_shapes = { path = "../shared/shapes" }
-facet = { workspace = true }
-facet-json = { workspace = true }
-facet-value = { workspace = true }
-indexmap = { workspace = true }
-thiserror = { workspace = true }

@@ -1,14 +1,9 @@
-//! Helpers more than one family shares that are no vocabulary of `bedrock_addon_core` and have no
-//! `shared/*` crate yet: a family imports the core, the shared crates and this crate and nothing
-//! else (`bedrock_addon/tests/module_independence.rs`).
+//! What the three biome families (`biome`, `client_biome`, `biomes_client`) still share outside
+//! core and the shared crates: [`biome_json::child`], the digit-key path builder of their
+//! findings. Its deletion is behaviour-bearing (a step of digits stops being an array index),
+//! so it stays here, pinned by its tests, until that change lands; every other helper this
+//! crate held now lives in `bedrock_addon_core` or a `bedrock_addon_shared_*` crate.
+//! `bedrock_addon/tests/module_independence.rs` lets those three families, and no other,
+//! depend on this crate, and only for `biome_json`.
 
 pub mod biome_json;
-pub mod chain_file;
-pub mod fixed_path;
-pub mod jsoncpp;
-pub mod lossy;
-pub mod scatter;
-pub mod shape;
-pub mod signed_zero;
-pub mod sound;
-pub mod texture;

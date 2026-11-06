@@ -1,7 +1,8 @@
 //! A family lifted into its own crate (`crates/addon/families/<name>/`, the package
 //! `bedrock_addon_family_<name>`, which `families/mod.rs` re-exports) depends on no
-//! `bedrock_addon` and no other family: its manifest names neither, and its sources do not
-//! either. The compiler enforces the rest (a family crate cannot name `crate::pack`,
+//! `bedrock_addon` crate but core, the derive and the shared crates (and support's
+//! `biome_json`, for the three biome families until it goes): its manifest names no other,
+//! and its sources do not either. The compiler enforces the rest (a family crate cannot name `crate::pack`,
 //! `crate::storage`, another family or `bedrock_addon`'s `load`).
 //!
 //! The second rule: library code never reads the text of a finding's path.
@@ -75,15 +76,32 @@ fn manifest_dependencies(manifest: &str) -> Vec<(usize, String)> {
     names
 }
 
-/// What a lifted family crate depends on or names that it may not: `bedrock_addon` or another
-/// family, in its manifest (`manifest`) or its sources (`sources`, each with its path below the
-/// crate's `src/`).
+/// The support crate, which holds `biome_json` and nothing else.
+const SUPPORT: &str = "bedrock_addon_support";
+
+/// The families that still depend on [`SUPPORT`], for its `biome_json` alone: the digit-key
+/// path builder of the biome documents, whose deletion is behaviour-bearing and not yet
+/// landed. They may name `bedrock_addon_support::biome_json` and nothing else of it;
+/// `support_allowance_is_biome_json_s` goes red when `biome_json` goes and this list stays.
+const BIOME_JSON_ALLOWANCE: [&str; 3] = ["biome", "biomes_client", "client_biome"];
+
+/// Whether the lifted family `family` may depend on the `bedrock_addon*` crate `name`: itself,
+/// core, the derive (six families derive their component tables with it), the shared crates,
+/// and support for the families of [`BIOME_JSON_ALLOWANCE`].
+fn family_may_name(family: &str, name: &str) -> bool {
+    name == format!("bedrock_addon_family_{family}")
+        || shared_may_name(name)
+        || (name == SUPPORT && BIOME_JSON_ALLOWANCE.contains(&family))
+}
+
+/// What a lifted family crate depends on or names that it may not: any `bedrock_addon*` crate
+/// but itself, core, the derive and the shared crates (and `biome_json` of support for the
+/// families of [`BIOME_JSON_ALLOWANCE`]), in its manifest (`manifest`) or its sources
+/// (`sources`, each with its path below the crate's `src/`).
 fn lifted_violations(family: &str, manifest: &str, sources: &[(String, String)]) -> Vec<String> {
-    let own = format!("bedrock_addon_family_{family}");
     let mut violations = Vec::new();
     for (line, name) in manifest_dependencies(manifest) {
-        let other_family = name.starts_with("bedrock_addon_family_") && name != own;
-        if name == "bedrock_addon" || other_family {
+        if name.starts_with("bedrock_addon") && !family_may_name(family, &name) {
             violations.push(format!("{family}/Cargo.toml:{line} depends on {name}"));
         }
     }
@@ -96,11 +114,16 @@ fn lifted_violations(family: &str, manifest: &str, sources: &[(String, String)])
             let rest = &code[index + "bedrock_addon".len()..];
             let end = rest.find(|c: char| !is_ident(c)).unwrap_or(rest.len());
             let name = format!("bedrock_addon{}", &rest[..end]);
-            if !rest[end..].trim_start().starts_with("::") {
+            let Some(path) = rest[end..].trim_start().strip_prefix("::") else {
                 continue;
-            }
-            let other_family = name.starts_with("bedrock_addon_family_") && name != own;
-            if name == "bedrock_addon" || other_family {
+            };
+            let biome_json = path.trim_start().starts_with("biome_json")
+                && !path.trim_start()["biome_json".len()..]
+                    .chars()
+                    .next()
+                    .is_some_and(is_ident);
+            let allowed = family_may_name(family, &name) && (name != SUPPORT || biome_json);
+            if !allowed {
                 let line = code[..index].matches('\n').count() + 1;
                 violations.push(format!("{family}/src/{relative}:{line} names {name}::"));
             }
@@ -254,8 +277,9 @@ fn lifted_families_depend_on_no_other_family_and_not_on_bedrock_addon() {
     }
     assert!(
         violations.is_empty(),
-        "a lifted family depends on bedrock_addon_core, bedrock_addon_support and \
-         bedrock_addon_derive only:\n{}",
+        "a lifted family depends on bedrock_addon_core, bedrock_addon_derive and the \
+         bedrock_addon_shared_* crates only (and biome_json of bedrock_addon_support for the \
+         biome_json allowance):\n{}",
         violations.join("\n")
     );
 }
@@ -271,12 +295,14 @@ fn the_lifted_scan_reads_manifests_and_paths() {
         bedrock_addon_core = { path = \"../../core\" }\nbedrock_addon = { path = \"x\" }\n\
         [target.'cfg(unix)'.dependencies]\nbedrock_addon_family_lang.workspace = true\n\
         [dependencies.bedrock_addon_family_block]\npath = \"../block\"\n[features]\n\
-        bedrock_addon = []\n";
+        bedrock_addon = []\n[dev-dependencies]\nbedrock_addon_support = { path = \"y\" }\n\
+        bedrock_addon_shared_shapes = { path = \"z\" }\nbedrock_addon_derive = { path = \"w\" }\n";
     let sources = [(
         "lib.rs".to_owned(),
         "use bedrock_addon_core::id::Id; use bedrock_addon::pack::X;\n\
          // bedrock_addon::pack in a comment\nuse bedrock_addon_family_fog::A;\n\
-         fn f() { bedrock_addon_family_item::Item::new(); }"
+         fn f() { bedrock_addon_family_item::Item::new(); }\n\
+         fn g() { bedrock_addon_support::x(); bedrock_addon_shared_scatter::y(); bedrock_addon_derive::z(); }"
             .to_owned(),
     )];
     assert_eq!(
@@ -285,22 +311,62 @@ fn the_lifted_scan_reads_manifests_and_paths() {
             "fog/Cargo.toml:6 depends on bedrock_addon",
             "fog/Cargo.toml:8 depends on bedrock_addon_family_lang",
             "fog/Cargo.toml:9 depends on bedrock_addon_family_block",
+            "fog/Cargo.toml:14 depends on bedrock_addon_support",
             "fog/src/lib.rs:1 names bedrock_addon::",
             "fog/src/lib.rs:4 names bedrock_addon_family_item::",
+            "fog/src/lib.rs:5 names bedrock_addon_support::",
         ]
+    );
+    // A family of the biome_json allowance may depend on support and name its biome_json, and
+    // nothing else of it.
+    let manifest = "[package]\nname = \"bedrock_addon_family_biome\"\n\n[dependencies]\n\
+        bedrock_addon_support = { path = \"../../support\" }\n";
+    let sources = [(
+        "lib.rs".to_owned(),
+        "use bedrock_addon_support::biome_json::child;\nuse bedrock_addon_support::jsoncpp::read;\n"
+            .to_owned(),
+    )];
+    assert_eq!(
+        lifted_violations("biome", manifest, &sources),
+        ["biome/src/lib.rs:2 names bedrock_addon_support::"]
     );
 }
 
 /// The families whose shared bodies moved out of `bedrock_addon_support` into core or a
-/// `shared/*` crate: they depend on core and the shared crates, and on support no more.
-const ON_SHARED_CRATES: [&str; 7] = [
+/// `shared/*` crate: they depend on core and the shared crates, and on support no more. Every
+/// family but those of [`BIOME_JSON_ALLOWANCE`] that ever depended on support (`lang` shares
+/// nothing: it has no shared crate).
+const ON_SHARED_CRATES: [&str; 30] = [
+    "aim_assist",
     "animation",
     "animation_controller",
+    "camera",
+    "credits",
+    "dimension",
+    "entity",
+    "feature",
+    "feature_rules",
+    "flipbooks",
     "fog",
+    "font",
     "geometry",
+    "item",
+    "json_ui",
+    "legacy_path_mapping",
+    "loading_messages",
+    "music",
     "render_controller",
+    "sound_definitions",
+    "sounds_json",
     "spawn_groups",
     "spawn_rules",
+    "splashes",
+    "texture_atlas",
+    "texture_file",
+    "texture_list",
+    "texture_set",
+    "trade",
+    "ui_texture_info",
 ];
 
 /// Where a family of [`ON_SHARED_CRATES`] depends on or names `bedrock_addon_support`, in its
@@ -380,6 +446,42 @@ fn the_support_scan_reads_manifests_and_paths() {
             "spawn_rules/src/lib.rs:3 names bedrock_addon_support::",
         ]
     );
+}
+
+/// The support crate holds `biome_json` for the families of [`BIOME_JSON_ALLOWANCE`], and each
+/// of them still uses it: the day `biome_json` goes, or a family stops naming it, the
+/// allowance goes with it.
+#[test]
+fn support_allowance_is_biome_json_s() {
+    if !lifted_dir().is_dir() {
+        // A crate packaged alone has no sibling to scan.
+        return;
+    }
+    // The support crate going whole is the likely way `biome_json` goes: that is red too.
+    let support = Path::new(env!("CARGO_MANIFEST_DIR")).join("../support/src");
+    assert!(
+        support.join("biome_json.rs").is_file(),
+        "support's biome_json is gone: drop BIOME_JSON_ALLOWANCE and support with it"
+    );
+    for family in BIOME_JSON_ALLOWANCE {
+        let dir = lifted_dir().join(family);
+        let manifest = fs::read_to_string(dir.join("Cargo.toml")).unwrap();
+        assert!(
+            manifest_dependencies(&manifest)
+                .iter()
+                .any(|(_, name)| name == SUPPORT),
+            "{family} no longer depends on {SUPPORT}: drop it from BIOME_JSON_ALLOWANCE"
+        );
+        let mut files = Vec::new();
+        rust_files(&dir.join("src"), &mut files);
+        assert!(
+            files
+                .iter()
+                .any(|file| code_of(&fs::read_to_string(file).unwrap())
+                    .contains("bedrock_addon_support::biome_json")),
+            "{family} no longer names {SUPPORT}::biome_json: drop it from BIOME_JSON_ALLOWANCE"
+        );
+    }
 }
 
 /// The directory of the shared crates: `crates/addon/shared/`.

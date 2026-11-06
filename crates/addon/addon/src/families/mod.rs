@@ -1,6 +1,6 @@
 //! One module per game document family, each behind the feature of its name: the behaviour
 //! pack's definitions, the resource pack's, and the few families the game reads from elsewhere.
-//! A family imports the core vocabulary and `crate::support`, never another family; what one
+//! A family imports the core vocabulary and the shared crates, never another family; what one
 //! family needs to know of another's loaded definitions it asks the stack.
 
 #[cfg(feature = "aim_assist")]

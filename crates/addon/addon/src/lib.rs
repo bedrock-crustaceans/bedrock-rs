@@ -72,8 +72,8 @@
 //! - `families`: one module per game document family (`families::block`,
 //!   `families::attachable`, `families::fog`, …), each behind the feature of its name and each
 //!   described on its own page. A family imports the core vocabulary and nothing else of the
-//!   crate; what two families share that is no vocabulary lives in the crate `bedrock_addon_support`
-//!   (`support`).
+//!   crate; what two families share that is no vocabulary lives in a `bedrock_addon_shared_*`
+//!   crate (re-exported under `shared`).
 //!
 //! The first nine are the shared vocabulary, defined in `bedrock_addon_core` and documented
 //! here.

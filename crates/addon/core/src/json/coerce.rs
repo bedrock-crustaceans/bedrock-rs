@@ -3,11 +3,11 @@
 //!
 //! The tree holds two `isInt` rules, both quoted as jsoncpp's, and the game has not been asked
 //! which a given member follows: [`IsIntRule::Token`] (a real token is a real even when it is
-//! integral: `support/fixed_path.rs`, `shared::read`, the strict wrappers, recipe) and
+//! integral: `json::kit::fixed_path`, `shared::read`, the strict wrappers, recipe) and
 //! [`IsIntRule::Integral`] (an integral real counts: `ui_texture_info`, loot, feature, whose
 //! evidence is vanilla's geode feature writing `2.0`). `asInt` agrees everywhere but on an
 //! integer token past `i64`: [`WideInt::LowWord`] (texture, persona, entity) or
-//! [`WideInt::Zero`] (`support/sound/fork.rs`). So there is no default profile: a reader names
+//! [`WideInt::Zero`] (`json::jsoncpp::fork`). So there is no default profile: a reader names
 //! the one its copy followed.
 
 use super::Value;
