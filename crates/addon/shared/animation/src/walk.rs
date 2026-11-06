@@ -750,4 +750,52 @@ mod tests {
         assert!(!p.matches("animation:foo"));
         assert!(!p.matches("animation.a b"));
     }
+
+    /// The keys `object` hands its callback, in the order it hands them, and the findings.
+    fn walked(text: &str, groups: &[Group], read: Hit) -> (bool, Vec<String>, Vec<String>) {
+        let mut walk = Walk::new();
+        let mut keys = Vec::new();
+        let ok = walk.object(Node::root(text).unwrap(), groups, |_, _, key, _| {
+            keys.push(key.to_owned());
+            read
+        });
+        let findings = walk
+            .diagnostics
+            .iter()
+            .map(|d| format!("{:?} {} at {}", d.severity, d.code, d.location.json_path))
+            .collect();
+        (ok, keys, findings)
+    }
+
+    /// W1: the members of an object are walked in the file's order.
+    #[test]
+    fn members_are_walked_in_document_order() {
+        let groups = [Group::name("a"), Group::name("b"), Group::name("c")];
+        let (ok, keys, _) = walked(r#"{"b": 1, "a": 2, "c": 3}"#, &groups, Hit::Ok);
+        assert!(ok);
+        assert_eq!(keys, ["b", "a", "c"]);
+    }
+
+    /// W2: a member whose read fails fails the object, though it raised no finding, and the
+    /// required check is then not made.
+    #[test]
+    fn a_member_failed_without_a_finding_fails_the_object_and_skips_the_required_check() {
+        let groups = [Group::name("a"), Group::required("b")];
+        let (ok, keys, findings) = walked(r#"{"a": 1}"#, &groups, Hit::Failed);
+        assert!(!ok);
+        assert_eq!(keys, ["a"]);
+        assert!(findings.is_empty(), "{findings:?}");
+    }
+
+    /// W3: a number a float does not hold is read without a `LossyConversion` information.
+    #[test]
+    fn a_float_that_narrows_is_not_told_as_lossy() {
+        let mut walk = Walk::new();
+        walk.enter("x");
+        assert_eq!(
+            walk.float(Node::root("0.123456789012").unwrap()),
+            Some(0.123_456_79)
+        );
+        assert!(walk.diagnostics.is_empty());
+    }
 }

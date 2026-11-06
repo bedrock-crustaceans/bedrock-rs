@@ -522,4 +522,63 @@ mod tests {
             "340282346638528859811704183484516925440.000000"
         );
     }
+
+    /// The keys `object` hands its callback, in the order it hands them, and the findings.
+    fn walked(text: &str, groups: &[Group], read: bool) -> (bool, Vec<String>, Vec<String>) {
+        let mut walk = Walk::default();
+        let mut keys = Vec::new();
+        let node = Node::of(JsonSlice::new(text)).unwrap();
+        let ok = walk.object(node, groups, |_, _, key, _| {
+            keys.push(key.to_owned());
+            read
+        });
+        let findings = walk
+            .diagnostics
+            .iter()
+            .map(|d| format!("{:?} {} at {}", d.severity, d.code, d.location.json_path))
+            .collect();
+        (ok, keys, findings)
+    }
+
+    /// W1: the members of an object are walked in the sorted order of their keys' bytes.
+    #[test]
+    fn members_are_walked_in_sorted_key_order() {
+        let groups = [Group::name("b"), Group::name("a"), Group::name("B")];
+        let (ok, keys, _) = walked(r#"{"b": 1, "a": 2, "B": 3}"#, &groups, true);
+        assert!(ok);
+        assert_eq!(keys, ["B", "a", "b"]);
+    }
+
+    /// W2: a member whose read fails fails the object, though it raised no finding, and the
+    /// required check is then not made.
+    #[test]
+    fn a_member_failed_without_a_finding_fails_the_object_and_skips_the_required_check() {
+        let groups = [Group::name("a"), Group::required("b")];
+        let (ok, keys, findings) = walked(r#"{"a": 1}"#, &groups, false);
+        assert!(!ok);
+        assert_eq!(keys, ["a"]);
+        assert!(findings.is_empty(), "{findings:?}");
+    }
+
+    /// W3: a number a float does not hold is read with a `LossyConversion` information.
+    #[test]
+    fn a_float_that_narrows_is_told_as_lossy() {
+        let mut walk = Walk::default();
+        walk.enter("x");
+        let node = Node::of(JsonSlice::new("0.123456789012")).unwrap();
+        assert_eq!(walk.float(node), Some(0.123_456_79));
+        let findings: Vec<_> = walk
+            .diagnostics
+            .iter()
+            .map(|d| {
+                format!(
+                    "{:?} {} at {}",
+                    d.severity,
+                    d.code.name(),
+                    d.location.json_path
+                )
+            })
+            .collect();
+        assert_eq!(findings, ["Info LossyConversion at x"]);
+    }
 }

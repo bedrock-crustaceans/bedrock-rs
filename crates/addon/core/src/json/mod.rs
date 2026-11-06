@@ -40,6 +40,9 @@ mod envelope;
 pub(crate) mod extra;
 mod finite;
 pub mod kit;
+#[doc(hidden)]
+pub mod lossy;
+pub mod node_tree;
 mod null;
 mod path;
 mod prepared;

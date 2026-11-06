@@ -182,3 +182,40 @@ fn a_molang_number_beyond_f32_is_read_as_the_largest_finite_float_deviation() {
     let document = loaded(animation(text, &rp(1, 21, 0)));
     assert!(find(document.diagnostics(), "InvalidValue", Severity::Info).is_none());
 }
+
+/// W1: the members of an animation are read in the file's order: the findings follow it.
+#[test]
+fn members_are_read_in_document_order() {
+    let text = r#"{"format_version": "1.8.0", "animations": {"animation.x": {"animation_length": "x", "blend_weight": {}}}}"#;
+    let d = super::common::rejected(animation(text, &rp(1, 21, 0)));
+    let told: Vec<_> = d
+        .iter()
+        .filter(|f| f.code.name() == "InvalidType")
+        .map(|f| f.location.json_path.to_string())
+        .collect();
+    assert_eq!(
+        told,
+        [
+            "animations/animation.x/animation_length",
+            "animations/animation.x/blend_weight"
+        ],
+        "{:?}",
+        lines(&d)
+    );
+}
+
+/// W3: a number a float does not hold is read without a `LossyConversion` information, where
+/// the render controller, fog and geometry walks tell one.
+#[test]
+fn a_float_that_narrows_is_not_told_as_lossy() {
+    let text = r#"{"format_version": "1.8.0", "animations": {"animation.x": {"animation_length": 0.123456789012}}}"#;
+    let document = loaded(animation(text, &rp(1, 21, 0)));
+    assert!(
+        document
+            .diagnostics()
+            .iter()
+            .all(|f| f.code.name() != "LossyConversion"),
+        "{:?}",
+        lines(document.diagnostics())
+    );
+}

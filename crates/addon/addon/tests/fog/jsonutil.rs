@@ -511,3 +511,50 @@ fn an_element_of_a_legacy_colour_behind_the_third_is_noted_as_dropped() {
         "{written}"
     );
 }
+
+/// W1: below 1.26.20 the members of an object are read in the sorted order of their keys
+/// (jsoncpp's `std::map`), not in the file's: the findings follow that order.
+#[test]
+fn members_are_read_in_sorted_key_order() {
+    let members = air(
+        r##""render_distance_type": 7, "fog_start": "a", "fog_end": 1.0, "fog_color": "#ABD2FF""##,
+    );
+    let d = rejected(parse(&doc("1.21.90", &members), &pack()));
+    let told: Vec<_> = d
+        .iter()
+        .filter(|f| f.code.name() == "InvalidType")
+        .map(|f| f.location.json_path.to_string())
+        .collect();
+    assert_eq!(
+        told,
+        [
+            "minecraft:fog_settings/distance/air/fog_start",
+            "minecraft:fog_settings/distance/air/render_distance_type"
+        ],
+        "{:?}",
+        lines(&d)
+    );
+}
+
+/// W3: below 1.26.20 a number a float does not hold is read with a `LossyConversion`
+/// information at the number.
+#[test]
+fn a_float_that_narrows_is_told_as_lossy() {
+    let members = air(&AIR.replace("0.9", "0.123456789012"));
+    let document = loaded(parse(&doc("1.21.90", &members), &pack()));
+    let told: Vec<_> = document
+        .diagnostics()
+        .iter()
+        .filter(|f| f.code.name() == "LossyConversion")
+        .map(|f| (f.severity, f.location.json_path.to_string()))
+        .collect();
+    assert_eq!(
+        told,
+        [(
+            Severity::Info,
+            "minecraft:fog_settings/distance/air/fog_start".to_owned()
+        )],
+        "{:?}",
+        lines(document.diagnostics())
+    );
+}

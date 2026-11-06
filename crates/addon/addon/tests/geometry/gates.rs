@@ -1615,3 +1615,51 @@ fn a_keyed_file_of_1_12_0_is_read_by_the_keyed_reader_with_its_version() {
     let modern = r#"{ "format_version": "1.12.0", "minecraft:geometry": [ { "description": { "identifier": "geometry.x" } } ] }"#;
     assert!(load_keyed_file(&path, modern.as_bytes(), &rp()).is_err());
 }
+
+/// W1: the members of an object are read in the file's order: the findings follow it.
+#[test]
+fn members_are_read_in_document_order() {
+    let d = rejected(load(&with_bone(
+        "1.19.30",
+        r#", "pivot": "x", "inflate": "y""#,
+    )));
+    let told: Vec<_> = d
+        .iter()
+        .filter(|f| f.code.name() == "InvalidType")
+        .map(|f| f.location.json_path.to_string())
+        .collect();
+    assert_eq!(
+        told,
+        [
+            "minecraft:geometry/0/bones/0/pivot",
+            "minecraft:geometry/0/bones/0/inflate"
+        ],
+        "{:?}",
+        crate::common::lines(&d)
+    );
+}
+
+/// W3: a number a float does not hold is read with a `LossyConversion` information at the
+/// number.
+#[test]
+fn a_float_that_narrows_is_told_as_lossy() {
+    let document = loaded(load(&with_bone(
+        "1.19.30",
+        r#", "inflate": 0.123456789012"#,
+    )));
+    let told: Vec<_> = document
+        .diagnostics()
+        .iter()
+        .filter(|f| f.code.name() == "LossyConversion")
+        .map(|f| (f.severity, f.location.json_path.to_string()))
+        .collect();
+    assert_eq!(
+        told,
+        [(
+            Severity::Info,
+            "minecraft:geometry/0/bones/0/inflate".to_owned()
+        )],
+        "{:?}",
+        crate::common::lines(document.diagnostics())
+    );
+}
