@@ -16,6 +16,7 @@ use bedrock_addon_core::schema;
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::version::known;
 use bedrock_addon_core::versioning::{ConvertMode, ParseCx, parse_payload};
+use bedrock_addon_shared_biome_env::read_component;
 
 /// The first version read from the `minecraft:biome` payload alone (below it the whole
 /// document, envelope included, is read as one struct).
@@ -118,18 +119,10 @@ pub(crate) fn components(
         let bound = meta.is_some_and(|m| m.released.is_some_and(|r| version >= r));
         match meta {
             Some(meta) if bound => {
-                let mut found = Diagnostics::default();
-                let value = (meta.parse)(slice, ConvertMode::Strict, cx, &mut found);
-                let kept = found.take_unknown();
-                for mut diagnostic in found {
-                    let mut full = path.clone();
-                    full.append(&diagnostic.location.json_path);
-                    diagnostic.location.json_path = full;
-                    d.push(diagnostic);
-                }
+                let value = read_component(&path, d, |found| {
+                    (meta.parse)(slice, ConvertMode::Strict, cx, found)
+                });
                 if let Some(value) = value {
-                    // The component's unknown members, below its key.
-                    d.unknown_mut().absorb(&path, kept);
                     builder_bound(&value, version, &path, d);
                     map.insert_typed(value, false);
                 }
@@ -166,4 +159,48 @@ fn builder_bound(
 /// refusing error the game gives for an unknown member.
 fn unrecognized(path: JsonPath) -> Diagnostic {
     Diagnostic::warn(DiagnosticCode::UnrecognizedComponent { text: None }).at(path)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use bedrock_addon_core::document::ComponentRef;
+
+    /// An unknown component key is told and left out of the map (`client_biome` keeps it as an
+    /// unknown entry); the strict mask refuses the document either way, so only this read
+    /// shows the difference.
+    #[test]
+    fn an_unknown_component_key_is_dropped_from_the_map() {
+        let text = r#"{"demo:nothing": {"a": 1}, "minecraft:tags": {"tags": ["x"]}}"#;
+        let slice = JsonSlice::new(text);
+        let entries: IndexMap<String, RawJson<'_>> =
+            bedrock_addon_core::json::parse_at(slice).expect("an object");
+        let mut d = Diagnostics::default();
+        let at = JsonPath::of_keys(["minecraft:biome", "components"]);
+        let map = components(
+            &entries,
+            slice,
+            &at,
+            V1_26_30,
+            &LoadContext::detached(),
+            &mut d,
+        );
+        let kept: Vec<String> = map
+            .iter()
+            .map(|entry| match entry {
+                ComponentRef::Typed { name, .. } => format!("typed {name}"),
+                ComponentRef::Unknown { name, .. } => format!("unknown {name}"),
+                _ => "other".to_owned(),
+            })
+            .collect();
+        assert_eq!(kept, ["typed minecraft:tags"]);
+        let told: Vec<String> = d
+            .iter()
+            .map(|f| format!("{:?} {}", f.code, f.location.json_path))
+            .collect();
+        assert_eq!(
+            told,
+            ["UnrecognizedComponent { text: None } minecraft:biome/components/demo:nothing"]
+        );
+    }
 }

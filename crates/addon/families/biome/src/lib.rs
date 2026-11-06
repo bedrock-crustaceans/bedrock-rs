@@ -7,14 +7,13 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
 pub mod component;
-mod environment;
 pub mod history;
 mod read;
 mod texts;
 mod validate;
 mod write;
 
-pub use environment::{
+pub use bedrock_addon_shared_biome_env::{
     BoolAttribute, BoolOperation, ColorAttribute, ColorOperation, EnvironmentAttributes,
     FloatAttribute, FloatOperation,
 };
@@ -37,10 +36,10 @@ use crate::texts::{DUPLICATE, WORLD_GATE, fixed, text as formatted};
 use std::borrow::Cow;
 
 use crate::component::{
-    Adjustment, AdjustmentMaterials, BiomeReplacement, Builder, CappedSurface, ColorRgba,
-    GrassTint, Humidity, MapTints, MesaSurface, NoiseBlockSpecifier, NoiseDescriptor,
-    NoiseGradientSurface, OverworldSurface, ReplaceBiomes, SubsurfaceBuilder, SurfaceBuilder,
-    SwampSurface, Tags, TopSlide,
+    Adjustment, AdjustmentMaterials, BiomeReplacement, Builder, CappedSurface, GrassTint, Humidity,
+    MapTints, MesaSurface, NoiseBlockSpecifier, NoiseDescriptor, NoiseGradientSurface,
+    OverworldSurface, ReplaceBiomes, SubsurfaceBuilder, SurfaceBuilder, SwampSurface, Tags,
+    TopSlide,
 };
 use bedrock_addon_core::__private::Sealed;
 use bedrock_addon_core::diagnostic::{
@@ -869,27 +868,6 @@ impl Adjustment {
     }
 }
 
-impl BoolAttribute {
-    /// `value`, combined by `operation`.
-    pub fn new(value: bool, operation: BoolOperation) -> Self {
-        Self { value, operation }
-    }
-}
-
-impl ColorAttribute {
-    /// `value`, combined by `operation`.
-    pub fn new(value: ColorRgba, operation: ColorOperation) -> Self {
-        Self { value, operation }
-    }
-}
-
-impl FloatAttribute {
-    /// `value`, combined by `operation`.
-    pub fn new(value: f32, operation: FloatOperation) -> Self {
-        Self { operation, value }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1002,23 +980,6 @@ mod tests {
             }
             .into(),
         );
-    }
-
-    #[test]
-    fn the_attribute_constructors_read_back() {
-        let attributes = crate::EnvironmentAttributes {
-            experimental_bool_attr: Some(BoolAttribute::new(true, BoolOperation::Xor)),
-            experimental_color_attr: Some(ColorAttribute::new(
-                ColorRgba::Array([1, 2, 3, 4]),
-                ColorOperation::Multiply,
-            )),
-            experimental_float_attr_1: Some(FloatAttribute::new(0.5, FloatOperation::Maximum)),
-            ..Default::default()
-        };
-        let text = bedrock_addon_core::json::to_json(&attributes).expect("writes");
-        let read: crate::EnvironmentAttributes =
-            bedrock_addon_core::json::from_str(&text).expect("reads");
-        assert_eq!(read, attributes);
     }
 }
 

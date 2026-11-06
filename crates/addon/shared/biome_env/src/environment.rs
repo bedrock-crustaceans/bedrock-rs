@@ -1,12 +1,13 @@
-//! `minecraft:client_biome.environment_attributes` of the beta document: experimental
-//! attributes, each a value and how it combines with the layers below it.
+//! `environment_attributes` of the beta document (`minecraft:biome` and
+//! `minecraft:client_biome` alike): experimental attributes, each a value and how it combines
+//! with the layers below it.
 
 use facet::Facet;
 
-use super::color::Color255Rgba;
 use bedrock_addon_core::schema::{self, Schema};
+use bedrock_addon_shared_shapes::HexOr;
 
-/// The environment attributes of a beta client biome: exactly the four experimental keys
+/// The environment attributes of a beta biome or client biome: the four experimental keys
 /// below, each optional.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
@@ -40,7 +41,7 @@ pub struct BoolAttribute {
 #[facet(schema::unknown = "keep")]
 pub struct ColorAttribute {
     /// JSON `value`: `"#RRGGBBAA"` or `[r, g, b, a]`.
-    pub value: Color255Rgba,
+    pub value: HexOr<[i32; 4]>,
     /// JSON `operation`.
     pub operation: ColorOperation,
 }
@@ -100,4 +101,46 @@ pub enum FloatOperation {
     Multiply,
     Minimum,
     Maximum,
+}
+
+impl BoolAttribute {
+    /// `value`, combined by `operation`.
+    pub fn new(value: bool, operation: BoolOperation) -> Self {
+        Self { value, operation }
+    }
+}
+
+impl ColorAttribute {
+    /// `value`, combined by `operation`.
+    pub fn new(value: HexOr<[i32; 4]>, operation: ColorOperation) -> Self {
+        Self { value, operation }
+    }
+}
+
+impl FloatAttribute {
+    /// `value`, combined by `operation`.
+    pub fn new(value: f32, operation: FloatOperation) -> Self {
+        Self { operation, value }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_attribute_constructors_read_back() {
+        let attributes = EnvironmentAttributes {
+            experimental_bool_attr: Some(BoolAttribute::new(true, BoolOperation::Xor)),
+            experimental_color_attr: Some(ColorAttribute::new(
+                HexOr::Array([1, 2, 3, 4]),
+                ColorOperation::Multiply,
+            )),
+            experimental_float_attr_1: Some(FloatAttribute::new(0.5, FloatOperation::Maximum)),
+            ..Default::default()
+        };
+        let text = bedrock_addon_core::json::to_json(&attributes).expect("writes");
+        let read: EnvironmentAttributes = bedrock_addon_core::json::from_str(&text).expect("reads");
+        assert_eq!(read, attributes);
+    }
 }

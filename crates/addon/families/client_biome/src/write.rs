@@ -8,30 +8,13 @@ use super::history::ClientBiomeFamily;
 use super::read::{ComponentEra, MODERN, PAYLOAD_KEY, beta_payload, payload, strict};
 use super::{Beta, ClientBiome, Description};
 use bedrock_addon_core::diagnostic::Diagnostics;
-use bedrock_addon_core::document::{ComponentMap, ComponentRef, UnknownMembers};
+use bedrock_addon_core::document::{ComponentMap, UnknownMembers};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value, WriteStyle, write_json};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
-    BETA_VERSION, ParseCx, VersionStruct, Versioned, write_envelope, write_payload,
+    BETA_VERSION, ParseCx, VersionStruct, Versioned, write_envelope,
 };
-
-/// A component map as a JSON object, in map order; keys no table knows are written back as
-/// they were read.
-fn components<C: ComponentEra>(map: &ComponentMap<C>) -> Result<Value, EncodeError> {
-    let mut object = VObject::new();
-    for entry in map.iter() {
-        let (name, json) = match entry {
-            ComponentRef::Typed { name, value, .. } => (name.to_owned(), value.write()?),
-            ComponentRef::Custom(c) => (c.name.clone(), c.parameters.clone()),
-            ComponentRef::Dynamic { name, json } | ComponentRef::Unknown { name, json } => {
-                (name.to_owned(), json.clone())
-            }
-            _ => continue,
-        };
-        object.insert(name, json);
-    }
-    Ok(object.into())
-}
+use bedrock_addon_shared_biome_env::{beta_object, payload_object, write_components};
 
 /// The payload object: `description` and `components`; the writer adds the document's unknown
 /// members after them.
@@ -39,10 +22,8 @@ pub(crate) fn object<C: ComponentEra>(
     description: &Description,
     map: &ComponentMap<C>,
 ) -> Result<VObject, EncodeError> {
-    let mut object = VObject::new();
-    object.insert("description", write_payload(description)?);
-    object.insert("components", components(map)?);
-    Ok(object)
+    // Keys no table knows are written back as they were read.
+    payload_object(description, write_components(map, C::write)?)
 }
 
 /// The whole document: `format_version` and the payload (the writer adds the root's unknown
@@ -93,15 +74,14 @@ impl VersionStruct for Beta {
 
     fn write(&self) -> Result<Value, EncodeError> {
         // `environment_attributes` follows `components`, before the unknown members.
-        let mut written = VObject::new();
-        let object = object(&self.description, &self.components)?;
-        for (key, value) in &object {
-            written.insert(key.as_str(), value.clone());
-        }
-        if let Some(attributes) = &self.environment_attributes {
-            written.insert("environment_attributes", write_payload(attributes)?);
-        }
-        Ok(written.into())
+        beta_object(
+            &self.description,
+            write_components(
+                &self.components,
+                <ClientBiomeComponent as ComponentEra>::write,
+            )?,
+            self.environment_attributes.as_ref(),
+        )
     }
 }
 

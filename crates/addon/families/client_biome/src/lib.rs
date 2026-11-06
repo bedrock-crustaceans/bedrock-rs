@@ -9,7 +9,6 @@ pub mod component;
 pub mod history;
 
 mod color;
-mod environment;
 mod read;
 #[cfg(test)]
 mod tests;
@@ -17,11 +16,11 @@ mod texts;
 mod validate;
 mod write;
 
-pub use color::{Color255Rgb, Color255Rgba};
-pub use environment::{
+pub use bedrock_addon_shared_biome_env::{
     BoolAttribute, BoolOperation, ColorAttribute, ColorOperation, EnvironmentAttributes,
     FloatAttribute, FloatOperation,
 };
+pub use color::{Color255Rgb, Color255Rgba};
 
 use bedrock_addon_core::document::ComponentMap;
 use bedrock_addon_core::id::BiomeId;

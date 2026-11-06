@@ -143,13 +143,21 @@ pub use bedrock_addon_core::json;
 pub use bedrock_addon_core::manifest;
 #[doc(inline)]
 pub use bedrock_addon_core::molang;
-/// Value types several content modules use: core's ranges, filters and event triggers, and the
-/// shapes of `bedrock_addon_shared_shapes` (descriptors, menu categories, colours, ...).
+/// Value types several content modules use: core's ranges, filters and event triggers, the
+/// shapes of `bedrock_addon_shared_shapes` (descriptors, menu categories, colours, ...) and,
+/// under [`biome_env`](shared::biome_env), what the two biome documents share.
 pub mod shared {
     #[doc(inline)]
     pub use bedrock_addon_core::shared::*;
     #[doc(inline)]
     pub use bedrock_addon_shared_shapes::*;
+    /// What the biome and client-biome documents share: the beta document's environment
+    /// attributes and the `{description, components}` payload frame
+    /// (`bedrock_addon_shared_biome_env`).
+    pub mod biome_env {
+        #[doc(inline)]
+        pub use bedrock_addon_shared_biome_env::*;
+    }
 }
 #[doc(inline)]
 pub use bedrock_addon_core::vanilla;

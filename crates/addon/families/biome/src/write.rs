@@ -9,9 +9,8 @@ use bedrock_addon_core::document::ComponentMap;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
 use bedrock_addon_core::version::FormatVersion;
-use bedrock_addon_core::versioning::{
-    BETA_VERSION, ParseCx, VersionStruct, Versioned, write_payload,
-};
+use bedrock_addon_core::versioning::{BETA_VERSION, ParseCx, VersionStruct, Versioned};
+use bedrock_addon_shared_biome_env::{beta_object, payload_object};
 
 use super::component::BiomeComponent;
 
@@ -21,10 +20,7 @@ pub(crate) fn object(
     description: &Description,
     components: &ComponentMap<BiomeComponent>,
 ) -> Result<Value, EncodeError> {
-    let mut object = facet_value::VObject::new();
-    object.insert("description", write_payload(description)?);
-    object.insert("components", write_components(components)?);
-    Ok(object.into())
+    Ok(payload_object(description, write_components(components)?)?.into())
 }
 
 impl Versioned for Biome {
@@ -66,13 +62,11 @@ impl VersionStruct for Beta {
     }
 
     fn write(&self) -> Result<Value, EncodeError> {
-        let mut object = facet_value::VObject::new();
-        object.insert("description", write_payload(&self.description)?);
-        object.insert("components", write_components(&self.components)?);
-        if let Some(attributes) = &self.environment_attributes {
-            object.insert("environment_attributes", write_payload(attributes)?);
-        }
-        Ok(object.into())
+        beta_object(
+            &self.description,
+            write_components(&self.components)?,
+            self.environment_attributes.as_ref(),
+        )
     }
 }
 

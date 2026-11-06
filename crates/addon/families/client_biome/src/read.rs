@@ -21,6 +21,7 @@ use bedrock_addon_core::version::known;
 use bedrock_addon_core::versioning::{
     BETA_VERSION, ConvertMode, FieldGate, ParseCx, check_fields_released, parse_payload,
 };
+use bedrock_addon_shared_biome_env::read_component;
 
 /// The first version read from the `minecraft:client_biome` payload alone (below it the whole
 /// document, envelope included, is read as one struct).
@@ -306,21 +307,11 @@ fn components<C: ComponentEra>(
         if gated(key, &json, version, &path, d) {
             continue;
         }
-        let mut found = Diagnostics::default();
-        let value = match C::read_own(key, slice, &mut found) {
+        let value = read_component(&path, d, |found| match C::read_own(key, slice, found) {
             Some(own) => own,
-            None => (meta.parse)(slice, ConvertMode::Strict, cx, &mut found).map(C::from),
-        };
-        let kept = found.take_unknown();
-        for mut diagnostic in found {
-            let mut full = path.clone();
-            full.append(&diagnostic.location.json_path);
-            diagnostic.location.json_path = full;
-            d.push(diagnostic);
-        }
+            None => (meta.parse)(slice, ConvertMode::Strict, cx, found).map(C::from),
+        });
         if let Some(value) = value {
-            // The component's unknown members, below its key.
-            d.unknown_mut().absorb(&path, kept);
             map.insert_typed(value, false);
         }
     }
@@ -385,5 +376,50 @@ fn use_version(what: &'static str, name: &str, version: FormatVersion) -> Diagno
             name: name.to_owned(),
             version,
         }),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use bedrock_addon_core::document::ComponentRef;
+
+    /// An unknown component key is told and kept in the map as an unknown entry (biome drops
+    /// it); the strict mask refuses the document either way, so only this read shows the
+    /// difference.
+    #[test]
+    fn an_unknown_component_key_is_kept_as_an_unknown_entry() {
+        let text = r#"{"demo:nothing": {"a": 1}}"#;
+        let slice = JsonSlice::new(text);
+        let entries: IndexMap<String, RawJson<'_>> =
+            bedrock_addon_core::json::parse_at(slice).expect("an object");
+        let mut d = Diagnostics::default();
+        let at = JsonPath::of_keys(["minecraft:client_biome", "components"]);
+        let map: ComponentMap<ClientBiomeComponent> = components(
+            &entries,
+            slice,
+            &at,
+            MODERN,
+            &LoadContext::detached(),
+            &mut d,
+        );
+        let kept: Vec<String> = map
+            .iter()
+            .map(|entry| match entry {
+                ComponentRef::Typed { name, .. } => format!("typed {name}"),
+                ComponentRef::Unknown { name, json } => format!("unknown {name} {json:?}"),
+                _ => "other".to_owned(),
+            })
+            .collect();
+        assert_eq!(kept.len(), 1);
+        assert!(kept[0].starts_with("unknown demo:nothing"), "{kept:?}");
+        let told: Vec<String> = d
+            .iter()
+            .map(|f| format!("{:?} {}", f.code, f.location.json_path))
+            .collect();
+        assert_eq!(
+            told,
+            ["UnrecognizedComponent { text: None } minecraft:client_biome/components/demo:nothing"]
+        );
     }
 }

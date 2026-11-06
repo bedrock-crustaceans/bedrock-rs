@@ -155,6 +155,7 @@ script-syntax = ["script", "bedrock_addon_family_script?/script-syntax"]   # ful
 
 [dependencies]
 bedrock_addon_core = { path = "../core" }
+bedrock_addon_shared_biome_env = { path = "../shared/biome_env" }
 bedrock_addon_shared_shapes = { path = "../shared/shapes" }
 bedrock_addon_support = { path = "../support" }
 bedrock_addon_derive = { path = "../derive" }

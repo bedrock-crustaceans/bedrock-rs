@@ -596,3 +596,22 @@ fn the_format_hint_reads_the_last_copy_of_a_doubled_payload() {
         .collect();
     assert_eq!(hints, [false], "{d:#?}");
 }
+
+/// biome checks no colour: a `map_tints` colour that is no hex text, or an array channel
+/// outside 0..=255, loads and is told nothing (client_biome's colour rule, `is_rgb` and
+/// `clamped_channels`, is that family's own).
+#[test]
+fn a_map_tints_colour_is_not_checked() {
+    let text = biome(
+        "1.26.30",
+        "test:tinted",
+        r##""minecraft:map_tints": {"grass": {"type": "tint", "tint": "#zz"}, "foliage": [300, -1, 2]}"##,
+    );
+    let document = loads(&text, &context());
+    let told: Vec<String> = document
+        .diagnostics()
+        .iter()
+        .map(|d| format!("{:?} {}", d.code, d.location.json_path))
+        .collect();
+    assert!(told.is_empty(), "{told:#?}");
+}

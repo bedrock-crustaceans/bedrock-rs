@@ -30,7 +30,7 @@ use facet::Facet;
 
 use super::history::BiomeFamily;
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
-use bedrock_addon_core::document::{ComponentMap, ComponentRef};
+use bedrock_addon_core::document::ComponentMap;
 use bedrock_addon_core::json::NullRule;
 use bedrock_addon_core::json::{
     EncodeError, JsonSlice, ScalarFailure, ScalarRead, Value, keep_unknown_members,
@@ -196,19 +196,7 @@ fn written<'f, T: Facet<'f>>(component: &T) -> Result<Value, EncodeError> {
 
 /// A component map as a JSON object, in map order.
 pub(crate) fn write_components(map: &ComponentMap<BiomeComponent>) -> Result<Value, EncodeError> {
-    let mut object = facet_value::VObject::new();
-    for entry in map.iter() {
-        let (name, json) = match entry {
-            ComponentRef::Typed { name, value, .. } => (name.to_owned(), value.write_component()?),
-            ComponentRef::Custom(c) => (c.name.clone(), c.parameters.clone()),
-            ComponentRef::Dynamic { name, json } | ComponentRef::Unknown { name, json } => {
-                (name.to_owned(), json.clone())
-            }
-            _ => continue,
-        };
-        object.insert(name, json);
-    }
-    Ok(object.into())
+    bedrock_addon_shared_biome_env::write_components(map, BiomeComponent::write_component)
 }
 
 /// `surface_material_adjustments.adjustments[].height_range[0..1]`: a number, bool or string
