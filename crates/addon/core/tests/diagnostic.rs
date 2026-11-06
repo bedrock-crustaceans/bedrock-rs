@@ -192,6 +192,45 @@ fn extend_appends_in_order() {
     ));
 }
 
+/// A kept error then a rejecting one: the game keeps the document after the first, so the
+/// error that decides about the document is the second.
+fn kept_then_rejecting() -> Diagnostics {
+    let mut diagnostics = Diagnostics::default();
+    diagnostics.push_kept_error(finding(
+        DiagnosticCode::InvalidValue { text: None },
+        Severity::Error,
+    ));
+    diagnostics.push(finding(
+        DiagnosticCode::MissingRequiredField { text: None },
+        Severity::Error,
+    ));
+    diagnostics
+}
+
+#[test]
+fn first_error_skips_a_kept_error() {
+    let diagnostics = kept_then_rejecting();
+    let first = diagnostics.first_error().expect("a rejecting error");
+    assert!(first.rejects(), "the first error is the first that rejects");
+    assert!(matches!(
+        first.code,
+        DiagnosticCode::MissingRequiredField { .. }
+    ));
+}
+
+#[test]
+fn first_error_of_only_kept_errors_is_none() {
+    let mut diagnostics = Diagnostics::default();
+    diagnostics.push_kept_error(finding(
+        DiagnosticCode::InvalidValue { text: None },
+        Severity::Error,
+    ));
+    assert!(!diagnostics.has_errors());
+    assert!(diagnostics.first_error().is_none());
+    // The kept error stays visible at its severity.
+    assert_eq!(diagnostics.at_least(Severity::Error).count(), 1);
+}
+
 #[test]
 fn summary_with_no_findings() {
     assert_eq!(Diagnostics::default().summary().to_string(), "no findings");

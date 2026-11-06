@@ -86,7 +86,7 @@ impl Diagnostics {
 
     /// At least one error-level finding that rejects: a kept error does not
     /// count here, though it is an error everywhere findings are counted
-    /// ([`at_least`](Self::at_least), [`first_error`](Self::first_error), the severity).
+    /// ([`at_least`](Self::at_least), the severity).
     pub fn has_errors(&self) -> bool {
         self.list().iter().any(Diagnostic::rejects)
     }
@@ -330,9 +330,11 @@ impl Diagnostics {
         held.moves.retold(&kept);
     }
 
-    /// The first error-level finding, if any.
+    /// The first error-level finding that rejects, if any: a kept error is passed by, as
+    /// [`has_errors`](Self::has_errors) passes it, so the answer is `Some` exactly when
+    /// `has_errors` is. A kept error is still found by [`at_least`](Self::at_least).
     pub fn first_error(&self) -> Option<&Diagnostic> {
-        self.list().iter().find(|d| d.severity == Severity::Error)
+        self.list().iter().find(|d| d.rejects())
     }
 
     /// For error messages: the first error, else the most severe finding, else "no findings".
