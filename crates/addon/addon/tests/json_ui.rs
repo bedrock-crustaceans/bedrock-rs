@@ -9,8 +9,7 @@
 #![cfg(feature = "json_ui")]
 
 // The crate's one protocol for cost tests, and this binary's one lock.
-#[path = "../src/test_cost.rs"]
-mod cost;
+use bedrock_addon_core::test_cost as cost;
 
 #[path = "json_ui/common.rs"]
 mod common;

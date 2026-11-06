@@ -16,3 +16,6 @@ rustdoc-args = ["--cfg", "docsrs"]
 bedrock_addon_core = { path = "../../core" }
 indexmap = { workspace = true }
 nbtx = { workspace = true }
+
+[dev-dependencies]
+bedrock_addon_core = { path = "../../core", features = ["test-cost"] }

@@ -25,3 +25,6 @@ indexmap = { workspace = true }
 oxc_parser = { workspace = true, optional = true }
 thiserror = { workspace = true }
 uuid = { workspace = true }
+
+[dev-dependencies]
+bedrock_addon_core = { path = "../../core", features = ["test-cost"] }

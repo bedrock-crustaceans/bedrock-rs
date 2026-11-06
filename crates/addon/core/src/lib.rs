@@ -109,6 +109,7 @@ pub mod molang;
 pub mod pack_identity;
 pub mod schema;
 pub mod shared;
+#[cfg(any(test, feature = "test-cost"))]
 #[doc(hidden)]
 pub mod test_cost;
 pub mod vanilla;

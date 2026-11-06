@@ -17,3 +17,6 @@ bedrock_addon_core = { path = "../../core" }
 facet-json = { workspace = true }
 facet-value = { workspace = true }
 indexmap = { workspace = true }
+
+[dev-dependencies]
+bedrock_addon_core = { path = "../../core", features = ["test-cost"] }

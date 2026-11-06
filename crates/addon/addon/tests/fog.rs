@@ -3,8 +3,7 @@
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 #![cfg(feature = "fog")]
 
-#[path = "../src/test_cost.rs"]
-mod cost;
+use bedrock_addon_core::test_cost as cost;
 
 #[path = "render_controller/common.rs"]
 mod common;

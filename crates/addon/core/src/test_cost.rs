@@ -20,10 +20,12 @@
 //! whole test stays in seconds. A test whose larger input would take minutes lowers `n`, never
 //! the factor.
 //!
-//! The in-crate tests reach this file as `crate::test_cost`; an integration-test binary
-//! includes the same file (`#[path = "../src/test_cost.rs"] mod cost;`), so that each test
-//! binary has the one lock. `bedrock_addon` and `bedrock_addon_core` each hold this file, the
-//! same text in both.
+//! There is one copy of this file, here, compiled for the unit tests of this crate and behind
+//! the `test-cost` feature for everything else. The in-crate tests reach it as
+//! `crate::test_cost`; an integration-test binary, here or in another crate, names
+//! `bedrock_addon_core::test_cost` and turns the feature on in its `[dev-dependencies]`
+//! (`bedrock_addon_core = { path = "...", features = ["test-cost"] }`). A test binary links the
+//! library once, so it has the one lock.
 
 #![allow(
     clippy::disallowed_methods,

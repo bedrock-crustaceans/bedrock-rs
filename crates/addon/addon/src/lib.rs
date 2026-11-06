@@ -198,7 +198,7 @@ pub mod load;
 pub mod pack;
 pub mod storage;
 #[cfg(test)]
-mod test_cost;
+use bedrock_addon_core::test_cost;
 
 /// One module per game document family, each behind the feature of its name.
 pub mod families;

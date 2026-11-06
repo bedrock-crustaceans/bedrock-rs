@@ -235,6 +235,10 @@ cfb8 = { workspace = true, optional = true }
 ctr = { workspace = true, optional = true }
 nbtx = { workspace = true, optional = true }
 
+[dev-dependencies]
+# The cost tests (`test_cost`), in the unit tests and the test binaries.
+bedrock_addon_core = { path = "../core", features = ["test-cost"] }
+
 [[example]]
 name = "in_memory_pack"
 required-features = ["block"]

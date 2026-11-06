@@ -17,6 +17,9 @@ rustdoc-args = ["--cfg", "docsrs"]
 [features]
 # The load-time Molang compile check.
 molang = ["molang/compiler", "molang/stdlib", "molang/cache"]
+# The cost-test protocol (`bedrock_addon_core::test_cost`), for dev-dependencies only: it reads the
+# clock, which the library never does. The crate's own tests have it without the feature.
+test-cost = []
 
 [dependencies]
 thiserror = { workspace = true }
@@ -42,6 +45,8 @@ bedrock_addon_vanilla = { path = "../vanilla" }
 stacker = { workspace = true } # facet reads a typed target by a call of itself for each level; this gives that read the stack the text's depth can take, on the thread that reads (no `Send` bound, no thread)
 
 [dev-dependencies]
+# The integration tests reach `test_cost` through the library, with the feature on.
+bedrock_addon_core = { path = ".", features = ["test-cost"] }
 # The version-chain tests derive a toy family's component enum (a dev-only cycle: the derive's
 # tests depend on core).
 bedrock_addon_derive = { path = "../derive" }

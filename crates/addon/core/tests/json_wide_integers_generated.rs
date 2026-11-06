@@ -11,8 +11,7 @@
 use std::borrow::Cow;
 
 // The crate's one protocol for cost tests, and this binary's one lock.
-#[path = "../src/test_cost.rs"]
-mod cost;
+use bedrock_addon_core::test_cost as cost;
 
 use bedrock_addon_core::diagnostic::code_for_deserialize_error_kind;
 use bedrock_addon_core::json::{

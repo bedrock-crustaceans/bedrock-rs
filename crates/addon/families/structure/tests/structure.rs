@@ -4,8 +4,7 @@
 
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 
-#[path = "../../../addon/tests/../src/test_cost.rs"]
-mod cost;
+use bedrock_addon_core::test_cost as cost;
 
 #[path = "structure/common.rs"]
 mod common;

@@ -6,10 +6,6 @@
 #![allow(clippy::float_cmp, reason = "the readers give exact values")]
 #![cfg(feature = "sound_definitions")]
 
-// The crate's one protocol for cost tests, and this binary's one lock.
-#[path = "../src/test_cost.rs"]
-mod cost;
-
 #[path = "common/sound_packs.rs"]
 mod common;
 #[path = "sound_definitions/definitions.rs"]
