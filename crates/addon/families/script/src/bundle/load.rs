@@ -27,7 +27,9 @@ use crate::{
     ScriptTarget,
 };
 use bedrock_addon_core::load::Reported;
-use bedrock_addon_core::manifest::{CapabilityRegistry, CapabilityValidation, TrustLevel};
+use bedrock_addon_core::manifest::{
+    CapabilityRegistry, CapabilityValidation, StackPackManifest, TrustLevel,
+};
 
 /// The pack's manifest.
 const MANIFEST: &str = "manifest.json";

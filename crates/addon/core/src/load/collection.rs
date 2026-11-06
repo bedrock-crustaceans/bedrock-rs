@@ -31,7 +31,6 @@ use super::{ListDepth, LoadContext, LoadOptions};
 use crate::diagnostic::{Diagnostic, VanillaText};
 use crate::document::{Content, Definition, Files, Merge, Merged, Registry};
 use crate::id::{Id, Kind};
-use crate::manifest::Manifest;
 use crate::pack_identity::{PackOrigin, PackPath, PackRef, PackSide};
 use crate::version::{ENGINE_VERSION, SemVersion};
 
@@ -582,17 +581,18 @@ pub struct StackPack {
     /// The pack's own files the active subpack shadows
     /// ([`shadowed_files`](Self::shadowed_files)).
     shadowed: Listing,
-    /// The manifest the pack was opened with ([`manifest`](Self::manifest)).
-    manifest: Option<OpenedManifest>,
+    /// The document the pack was opened with ([`opened`](Self::opened)).
+    opened: Option<Opened>,
 }
 
-/// The manifest a stack pack was opened with; shared, and shown as the pack's identity only.
+/// The document a stack pack was opened with, of a type core does not name; shared, and
+/// shown as a fixed word only.
 #[derive(Clone)]
-struct OpenedManifest(Arc<Manifest>);
+struct Opened(Arc<dyn Any + Send + Sync>);
 
-impl fmt::Debug for OpenedManifest {
+impl fmt::Debug for Opened {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "manifest of {:?}", self.0.identity())
+        f.write_str("opened document")
     }
 }
 
@@ -626,7 +626,7 @@ impl StackPack {
             capabilities: Vec::new(),
             files: Listing::default(),
             shadowed: Listing::default(),
-            manifest: None,
+            opened: None,
         }
     }
 
@@ -698,20 +698,22 @@ impl StackPack {
         self
     }
 
-    /// This entry with the manifest the pack was opened with (built by `bedrock_addon`'s
-    /// loaders).
+    /// This entry with the document the pack was opened with (built by `bedrock_addon`'s
+    /// loaders: the pack's manifest). Shared, not copied; one document per entry, a second
+    /// call replaces the first.
     #[must_use]
-    pub fn with_manifest(mut self, manifest: Arc<Manifest>) -> Self {
-        self.manifest = Some(OpenedManifest(manifest));
+    pub fn with_opened<T: Any + Send + Sync>(mut self, opened: Arc<T>) -> Self {
+        self.opened = Some(Opened(opened));
         self
     }
 
-    /// The manifest the pack was opened with, as [`Manifest::parse`] read it when the pack was
-    /// opened (with the host's capabilities): a `combine` that needs more of the manifest than
-    /// the entry's own fields reads it here instead of parsing `manifest.json` again. `None`
-    /// for an entry built by hand.
-    pub fn manifest(&self) -> Option<&Manifest> {
-        self.manifest.as_ref().map(|manifest| &*manifest.0)
+    /// The document the pack was opened with, if it is a `T`: the loaders put the pack's
+    /// manifest here, as it was read when the pack was opened, so a `combine` that needs more
+    /// of it than the entry's own fields reads it here instead of parsing the file again.
+    /// `None` for an entry built by hand, and for any other `T`. The manifest crate's
+    /// extension trait names the one type the loaders store.
+    pub fn opened<T: Any>(&self) -> Option<&T> {
+        self.opened.as_ref()?.0.downcast_ref()
     }
 
     /// This entry with the names of the manifest's `capabilities` (built by

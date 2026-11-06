@@ -288,6 +288,29 @@ fn a_stack_pack_lists_the_files_its_active_subpack_shadows_apart() {
     assert!(!debug.contains("list.json"), "{debug}");
 }
 
+#[test]
+fn a_stack_pack_keeps_the_document_it_was_opened_with_by_type() {
+    let entry = StackPack::new(pack(0), PackOrigin::Dev, LoadContext::detached());
+    assert_eq!(
+        entry.opened::<u32>(),
+        None,
+        "an entry built by hand has no opened document"
+    );
+    let opened = std::sync::Arc::new(42u32);
+    let with = entry.with_opened(opened.clone());
+    assert_eq!(
+        with.opened::<u32>(),
+        Some(&42),
+        "the opened document reads back by its type"
+    );
+    assert_eq!(with.opened::<u64>(), None, "another type reads nothing");
+    // The entry shares the document; it does not copy it.
+    assert!(std::ptr::eq(
+        with.opened::<u32>().unwrap(),
+        std::sync::Arc::as_ptr(&opened)
+    ));
+}
+
 /// The stack of the tests: three packs, top first, with these `min_engine_version`s.
 fn stack(versions: [Option<(u16, u16, u16)>; 3]) -> Vec<StackPack> {
     versions

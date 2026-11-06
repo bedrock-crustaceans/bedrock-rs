@@ -28,10 +28,11 @@ use crate::__private::Sealed;
 use crate::diagnostic::JsonPath;
 use crate::document::{Content, Document, Rejected, UnknownMembers};
 use crate::json::{EncodeError, WriteStyle};
-use crate::load::LoadContext;
+use crate::load::{LoadContext, StackPack};
 use crate::pack_identity::{PackIdVersion, PackPath, PackSide, PackType};
 use crate::version::{BaseGameVersion, ENGINE_VERSION, MinEngineVersion, SemVersion};
 use indexmap::IndexMap;
+use std::sync::Arc;
 use uuid::Uuid;
 
 use crate::pack_identity::PackScope;
@@ -402,5 +403,30 @@ impl Content for Manifest {
 
     fn to_json(&self) -> Result<String, EncodeError> {
         Manifest::to_json(self)
+    }
+}
+
+/// The manifest a [`StackPack`] was opened with. Core keeps the opened document without
+/// naming its type ([`StackPack::opened`]); this trait names it.
+pub trait StackPackManifest: Sized {
+    /// This entry with the manifest the pack was opened with (built by `bedrock_addon`'s
+    /// loaders).
+    #[must_use]
+    fn with_manifest(self, manifest: Arc<Manifest>) -> Self;
+
+    /// The manifest the pack was opened with, as [`Manifest::parse`] read it when the pack was
+    /// opened (with the host's capabilities): a `combine` that needs more of the manifest than
+    /// the entry's own fields reads it here instead of parsing `manifest.json` again. `None`
+    /// for an entry built by hand.
+    fn manifest(&self) -> Option<&Manifest>;
+}
+
+impl StackPackManifest for StackPack {
+    fn with_manifest(self, manifest: Arc<Manifest>) -> Self {
+        self.with_opened(manifest)
+    }
+
+    fn manifest(&self) -> Option<&Manifest> {
+        self.opened::<Manifest>()
     }
 }

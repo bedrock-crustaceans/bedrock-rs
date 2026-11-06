@@ -47,6 +47,7 @@ use bedrock_addon_core::pack_identity::{
 
 use super::Pack;
 use super::report::StackReport;
+use crate::manifest::StackPackManifest;
 
 mod sealed {
     pub trait Sealed {}
