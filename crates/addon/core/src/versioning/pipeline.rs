@@ -227,9 +227,9 @@ pub fn parse_as_written<F: Family>(document: JsonSlice<'_>, cx: &LoadContext) ->
     // Every copy of a member written twice is clamped; the warning is for the copy the
     // family keeps.
     let mut clamped = if F::ENVELOPE.clamps_beyond_double {
-        crate::json::clamp_beyond_double_first_kept(
+        crate::json::clamp_tokens(
             cleaned,
-            F::ENVELOPE.duplicates_kept_in,
+            &crate::json::ClampPlan::doubles().first_kept_in(F::ENVELOPE.duplicates_kept_in),
             &JsonPath::new(),
             &mut beyond,
         )
@@ -352,8 +352,7 @@ fn clamp_floats<F: Family>(
     };
     let text = crate::json::clamp_tokens(
         cleaned,
-        &width,
-        F::ENVELOPE.duplicates_kept_in,
+        &crate::json::ClampPlan::widths(&width).first_kept_in(F::ENVELOPE.duplicates_kept_in),
         &JsonPath::new(),
         &mut told,
     )?;

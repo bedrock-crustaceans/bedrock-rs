@@ -82,7 +82,7 @@ impl ClampedText {
 
     /// Ends a load that read [`Self::text`] at file offset `offset`: the findings `d` it made
     /// are given their places in the file as written ([`Self::restore_spans`]), then come
-    /// the warnings `beyond` of the clamp itself ([`clamp_beyond_double`]).
+    /// the warnings `beyond` of the clamp itself ([`clamp_tokens`]).
     ///
     /// A number is told once: a warning of the clamp is left out where the reader
     /// has given a finding that speaks of the same number ([`spoken_for`]). The member there
@@ -213,7 +213,7 @@ impl<'d> Told<'d> {
     }
 }
 
-/// For each warning of `beyond` (the clamp's, [`clamp_beyond_double`]; none of them in `d`),
+/// For each warning of `beyond` (the clamp's, [`clamp_tokens`]; none of them in `d`),
 /// whether a finding of `d` speaks of the same number: one at the number's
 /// JSON path that is about the value (not about a member name the reader does not know), or
 /// one at a member around the number that says the member is not kept (an error); in the
@@ -363,57 +363,94 @@ pub fn clamp_text(
     })
 }
 
-/// [`clamp_text`] for a document whose every number is kept at the width of a double, by a
-/// reader that reads its members typed from the text and keeps what it does not read (unknown
-/// members, members held as JSON) for write-back: every number of `slice` that no double
-/// holds (`1e999`, an integer of 400 digits) is replaced by the largest finite double of its
-/// sign, with an `InvalidValue` warning at its path below `at`, on the number as written.
-/// `None` when the text has no such number, which a scan of its tokens says: no
-/// value is built for a text without one.
-///
-/// Of a member written twice every copy's number is replaced, and the warning is given for
-/// the last copy, the one the readers keep ([`clamp_tokens`]).
-pub fn clamp_beyond_double(
-    slice: JsonSlice<'_>,
-    at: &JsonPath,
-    d: &mut Diagnostics,
-) -> Option<ClampedText> {
-    clamp_beyond_double_first_kept(slice, &[], at, d)
+/// Where [`clamp_tokens`] replaces a number: the width that holds the number at each path,
+/// and the objects of which the first copy of a member written twice is the one read.
+#[derive(Clone, Copy)]
+pub struct ClampPlan<'a> {
+    width: &'a dyn Fn(&[JsonPathSegment<'_>]) -> Option<Width>,
+    first_kept_in: &'a [&'a str],
+    /// Every number is held at the width of a double, so only a number no double holds is
+    /// replaced: a text without one is looked at once, not walked.
+    doubles: bool,
 }
 
-/// [`clamp_beyond_double`] for a reader that keeps the FIRST copy of a member written twice
-/// inside the object value of a member named in `first_kept_in` ([`clamp_tokens`]): the
-/// versioned load's, with `Envelope::duplicates_kept_in`.
-pub fn clamp_beyond_double_first_kept(
-    slice: JsonSlice<'_>,
-    first_kept_in: &[&str],
-    at: &JsonPath,
-    d: &mut Diagnostics,
-) -> Option<ClampedText> {
-    if !holds_beyond_double(slice.text) {
-        return None;
+/// [`ClampPlan::doubles`]' width.
+#[allow(
+    clippy::unnecessary_wraps,
+    reason = "the signature of a plan's width, which says `None` where no number is held"
+)]
+fn double(_: &[JsonPathSegment<'_>]) -> Option<Width> {
+    Some(Width::Double)
+}
+
+impl<'a> ClampPlan<'a> {
+    /// The width `width` gives for each path from the root: `None` where the schema declares
+    /// no number (the number stays as written, for the typed reader to judge). It is asked
+    /// only for a number whose nearest `f32` is an infinity; under [`Width::Double`] a number a
+    /// double holds is left.
+    #[must_use]
+    pub fn widths(width: &'a dyn Fn(&[JsonPathSegment<'_>]) -> Option<Width>) -> Self {
+        Self {
+            width,
+            first_kept_in: &[],
+            doubles: false,
+        }
     }
-    clamp_tokens(slice, &|_| Some(Width::Double), first_kept_in, at, d)
+
+    /// Every number of the document at the width of a double, for a reader that reads its
+    /// members typed from the text and keeps what it does not read (unknown members, members
+    /// held as JSON) for write-back: every number no double holds (`1e999`, an integer of 400
+    /// digits) is replaced by the largest finite double of its sign. A text without such a
+    /// number is not walked (one look at its tokens says so) and no value is built for it.
+    #[must_use]
+    pub fn doubles() -> ClampPlan<'static> {
+        ClampPlan {
+            width: &double,
+            first_kept_in: &[],
+            doubles: true,
+        }
+    }
+
+    /// Of a member written twice inside the object value of a member named in `keys`, the
+    /// FIRST copy is the one read, whose warning is given: the versioned load's, with
+    /// `Envelope::duplicates_kept_in` (a legacy block's `components`, of which the family keeps
+    /// the first). Elsewhere the last copy is.
+    #[must_use]
+    pub fn first_kept_in(self, keys: &'a [&'a str]) -> Self {
+        Self {
+            first_kept_in: keys,
+            ..self
+        }
+    }
 }
 
-/// What [`clamp_text`] does, by one walk of the tokens of `slice` instead of a value and a
-/// search for each number: so it sees every copy of a member written twice, where a value
-/// holds one. Every number beyond the width `width` gives for its path is replaced.
+/// The text of `slice` with every number beyond the width `plan` gives for its path replaced
+/// by the largest finite number of its sign and width, each with an `InvalidValue` warning at
+/// its path below `at`, on the number as written; by one walk of the tokens of `slice`, so it
+/// sees every copy of a member written twice, where a value holds one.
 /// The warning is given for the copy a reader keeps: the last of a member written twice,
-/// but the FIRST inside the object value of a member named in `first_kept_in`,
-/// whose duplicates the family reads itself (`Envelope::duplicates_kept_in`: a legacy block's
-/// `components`, of which it keeps the first). A number in a copy that is not kept is
-/// replaced without a word: no reader holds it.
+/// but the first inside the objects of [`ClampPlan::first_kept_in`], whose duplicates the
+/// family reads itself. A number in a copy that is not kept is replaced without a word: no
+/// reader holds it. Only the number's own characters are replaced, so every other character
+/// keeps its place but for the difference in length, which [`ClampedText::written_span`]
+/// takes back.
 ///
 /// `None` when no number is replaced, and for a text that is not well-formed (the parser
 /// reports that). The work is linear in the text.
 pub fn clamp_tokens(
     slice: JsonSlice<'_>,
-    width: &dyn Fn(&[JsonPathSegment<'_>]) -> Option<Width>,
-    first_kept_in: &[&str],
+    plan: &ClampPlan<'_>,
     at: &JsonPath,
     d: &mut Diagnostics,
 ) -> Option<ClampedText> {
+    if plan.doubles && !holds_beyond_double(slice.text) {
+        return None;
+    }
+    let ClampPlan {
+        width,
+        first_kept_in,
+        ..
+    } = *plan;
     let hits = Walk {
         text: slice.text,
         width,
@@ -1036,9 +1073,9 @@ mod tests {
     /// The clamped text and the warnings as `(path, token under the span)`.
     fn clamped(text: &str, first_kept_in: &[&str]) -> (String, Vec<(String, String)>) {
         let mut found = Diagnostics::default();
-        let clamped = clamp_beyond_double_first_kept(
+        let clamped = clamp_tokens(
             JsonSlice::new(text),
-            first_kept_in,
+            &ClampPlan::doubles().first_kept_in(first_kept_in),
             &JsonPath::new(),
             &mut found,
         )
@@ -1119,7 +1156,12 @@ mod tests {
         // A text that is not well-formed is the parser's to report.
         let mut d = Diagnostics::default();
         for text in ["{\"a\": [1e999}", "[1e999", "{\"a\" 1e999]"] {
-            let none = clamp_beyond_double(JsonSlice::new(text), &JsonPath::new(), &mut d);
+            let none = clamp_tokens(
+                JsonSlice::new(text),
+                &ClampPlan::doubles(),
+                &JsonPath::new(),
+                &mut d,
+            );
             assert!(none.is_none(), "{text}");
         }
     }
@@ -1142,8 +1184,13 @@ mod tests {
             let text = document(n, "-1e999");
             let mut found = Diagnostics::default();
             let (clamped, took) = timed(|| {
-                clamp_beyond_double(JsonSlice::new(&text), &JsonPath::new(), &mut found)
-                    .expect("numbers to clamp")
+                clamp_tokens(
+                    JsonSlice::new(&text),
+                    &ClampPlan::doubles(),
+                    &JsonPath::new(),
+                    &mut found,
+                )
+                .expect("numbers to clamp")
             });
             assert_eq!(found.len(), 2 * n);
             assert_eq!(
@@ -1161,8 +1208,14 @@ mod tests {
         assert_linear_timed_at("core clamp_beyond_double, nothing to clamp", 20_000, |n| {
             let text = document(n, "1e300");
             let mut found = Diagnostics::default();
-            let (clamped, took) =
-                timed(|| clamp_beyond_double(JsonSlice::new(&text), &JsonPath::new(), &mut found));
+            let (clamped, took) = timed(|| {
+                clamp_tokens(
+                    JsonSlice::new(&text),
+                    &ClampPlan::doubles(),
+                    &JsonPath::new(),
+                    &mut found,
+                )
+            });
             assert!(clamped.is_none() && found.is_empty());
             took
         });

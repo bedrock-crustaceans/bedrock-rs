@@ -409,16 +409,13 @@ impl<'a> Lexer<'a> {
                     self.at += 2 + line;
                 }
                 Some([b'/', b'*', rest @ ..]) if self.rules.comments => {
-                    match rest.windows(2).position(|pair| pair == b"*/") {
-                        Some(n) => {
-                            whole(self.at..self.at + n + 4);
-                            self.at += n + 4;
-                        }
-                        None => {
-                            let slash = self.at;
-                            self.at = bytes.len();
-                            return Some(slash);
-                        }
+                    if let Some(n) = rest.windows(2).position(|pair| pair == b"*/") {
+                        whole(self.at..self.at + n + 4);
+                        self.at += n + 4;
+                    } else {
+                        let slash = self.at;
+                        self.at = bytes.len();
+                        return Some(slash);
                     }
                 }
                 _ => return None,

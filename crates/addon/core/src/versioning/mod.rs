@@ -380,10 +380,10 @@ pub struct Envelope {
     pub below_floor: BelowFloor,
     /// Whether a number of the document that no double holds (`1e999`, an integer of 400
     /// digits) is read as the largest finite double of its sign, with an `InvalidValue`
-    /// warning at the number (`json::clamp_beyond_double`). For a family that keeps what it
-    /// does not read (unknown members, members held as JSON) for write-back: an infinity kept
-    /// there has no JSON spelling, and the loaded document could not be written. Default
-    /// `false`, which leaves the number to the family's readers.
+    /// warning at the number (`json::clamp_tokens` with `ClampPlan::doubles`). For a family
+    /// that keeps what it does not read (unknown members, members held as JSON) for
+    /// write-back: an infinity kept there has no JSON spelling, and the loaded document could
+    /// not be written. Default `false`, which leaves the number to the family's readers.
     pub clamps_beyond_double: bool,
     /// Members whose object value keeps the members written twice in it, at any depth: the
     /// family's own rule reads them (block: `components`). Everywhere else the last value of a

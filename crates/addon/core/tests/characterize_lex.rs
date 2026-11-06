@@ -11,13 +11,13 @@ use std::fmt::Write as _;
 use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
 use bedrock_addon_core::json::jsoncpp::lenient;
 use bedrock_addon_core::json::{
-    JsonSlice, Prepared, Value, Width, check_depth, clamp_beyond_double, clamp_non_finite,
-    clamp_text, clamp_tokens, from_str_jsonc, last_wins, last_wins_except, scan, span_at,
+    ClampPlan, JsonSlice, Prepared, Value, Width, check_depth, clamp_non_finite, clamp_text,
+    clamp_tokens, from_str_jsonc, last_wins, last_wins_except, scan, span_at,
 };
 
 include!("fixtures/characterize_lex/texts.rs");
 
-fn cow(text: &Cow<'_, str>) -> String {
+fn cow(text: Cow<'_, str>) -> String {
     match text {
         Cow::Borrowed(_) => "borrowed".to_owned(),
         Cow::Owned(text) if text.len() > 120 => format!("owned({} bytes)", text.len()),
@@ -59,11 +59,11 @@ fn characterize(name: &str, text: &str, out: &mut String) {
     let _ = writeln!(out, "scan(no comments) {:?}", scan(bytes, false));
     let _ = writeln!(out, "check_depth(128)  {:?}", check_depth(bytes, 128));
     let _ = writeln!(out, "check_depth(3)    {:?}", check_depth(bytes, 3));
-    let _ = writeln!(out, "last_wins         {}", cow(&last_wins(text)));
+    let _ = writeln!(out, "last_wins         {}", cow(last_wins(text)));
     let _ = writeln!(
         out,
         "last_wins_except  {}",
-        cow(&last_wins_except(text, &["a", "k"]))
+        cow(last_wins_except(text, &["a", "k"]))
     );
     let _ = writeln!(out, "lenient.root_end  {:?}", lenient::root_end(text));
     let _ = writeln!(
@@ -103,7 +103,8 @@ fn characterize(name: &str, text: &str, out: &mut String) {
     let float = |_: &[bedrock_addon_core::diagnostic::JsonPathSegment<'_>]| Some(Width::Float);
     for (label, first_kept_in) in [("clamp_tokens", &[][..]), ("clamp_tokens(a)", &["a"][..])] {
         let mut d = Diagnostics::default();
-        let clamped = clamp_tokens(slice, &float, first_kept_in, &at, &mut d);
+        let plan = ClampPlan::widths(&float).first_kept_in(first_kept_in);
+        let clamped = clamp_tokens(slice, &plan, &at, &mut d);
         let _ = writeln!(
             out,
             "{label:<17} {:?} [{}]",
@@ -112,7 +113,7 @@ fn characterize(name: &str, text: &str, out: &mut String) {
         );
     }
     let mut d = Diagnostics::default();
-    let clamped = clamp_beyond_double(slice, &at, &mut d);
+    let clamped = clamp_tokens(slice, &ClampPlan::doubles(), &at, &mut d);
     let _ = writeln!(
         out,
         "clamp_double      {:?} [{}]",

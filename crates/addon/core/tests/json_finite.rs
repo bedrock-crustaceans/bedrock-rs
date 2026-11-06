@@ -350,7 +350,16 @@ mod clamp_beyond_double {
     use bedrock_addon_core::diagnostic::{
         Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, Span,
     };
-    use bedrock_addon_core::json::{JsonSlice, clamp_beyond_double};
+    use bedrock_addon_core::json::{ClampPlan, ClampedText, JsonSlice, clamp_tokens};
+
+    /// The clamp of a document read at the width of a double.
+    fn clamp_beyond_double(
+        slice: JsonSlice<'_>,
+        at: &JsonPath,
+        d: &mut Diagnostics,
+    ) -> Option<ClampedText> {
+        clamp_tokens(slice, &ClampPlan::doubles(), at, d)
+    }
 
     #[test]
     fn a_text_without_a_number_beyond_a_double_is_left_alone() {

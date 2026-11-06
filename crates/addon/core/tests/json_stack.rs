@@ -13,8 +13,8 @@ use std::process::{Command, Stdio};
 
 use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
 use bedrock_addon_core::json::{
-    EncodeError, JsonSlice, MAX_JSON_DEPTH, Unrepresentable, UnsafeText, Value, Width, WriteStyle,
-    check_depth, clamp_beyond_double, clamp_non_finite, clamp_tokens, from_slice_jsonc, from_str,
+    ClampPlan, EncodeError, JsonSlice, MAX_JSON_DEPTH, Unrepresentable, UnsafeText, Value, Width,
+    WriteStyle, check_depth, clamp_non_finite, clamp_tokens, from_slice_jsonc, from_str,
     from_str_borrowed_jsonc, from_str_jsonc, keep_unknown_members, last_wins, last_wins_except,
     parse_at, probe_envelope, scan, span_at, to_facet_json, to_json, trailing_content,
     unknown_members, write_json,
@@ -250,11 +250,10 @@ const READERS: &[Reader] = &[
             let _ = last_wins_except(text, &["a"]);
             let _ = trailing_content(text);
             let mut d = Diagnostics::default();
-            let _ = clamp_beyond_double(slice, &JsonPath::new(), &mut d);
+            let _ = clamp_tokens(slice, &ClampPlan::doubles(), &JsonPath::new(), &mut d);
             let _ = clamp_tokens(
                 slice,
-                &|_| Some(Width::Float),
-                &[],
+                &ClampPlan::widths(&|_| Some(Width::Float)),
                 &JsonPath::new(),
                 &mut d,
             );

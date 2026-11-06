@@ -44,6 +44,7 @@ mod duplicates;
 mod envelope;
 pub(crate) mod extra;
 mod finite;
+mod finite_bytes;
 // hidden: API not yet reviewed
 #[doc(hidden)]
 pub mod jsoncpp;
@@ -71,8 +72,7 @@ mod write;
 // hidden: API not yet reviewed
 #[doc(hidden)]
 pub use clamp_text::{
-    ClampedText, Width, clamp_beyond_double, clamp_beyond_double_first_kept, clamp_text,
-    clamp_tokens, drop_spoken_for, spoken_for,
+    ClampPlan, ClampedText, Width, clamp_text, clamp_tokens, drop_spoken_for, spoken_for,
 };
 pub use coerce::{Coerce, Coercing, IsIntRule, WideInt};
 // hidden: API not yet reviewed
@@ -82,6 +82,7 @@ pub use envelope::{EnvelopeVersion, RootProbe, probe_envelope};
 // hidden: API not yet reviewed
 #[doc(hidden)]
 pub use finite::{Clamped, clamp_non_finite, clamp_non_finite_warned};
+pub use finite_bytes::FiniteBytes;
 // hidden: API not yet reviewed
 #[doc(hidden)]
 pub use null::{

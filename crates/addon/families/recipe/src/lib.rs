@@ -124,7 +124,7 @@ fn parse_file(
     let mut diagnostics = diagnostics;
     // An ingredient's `data` reports a number beyond `f32` itself, at the number's own path, so
     // the clamp is not reported a second time.
-    finite.settle_unless_said(&mut diagnostics, None);
+    finite.settle(&mut diagnostics, None);
     diagnostics.locate(&origin);
     let result = match value {
         Some(value) if !diagnostics.has_errors() => {

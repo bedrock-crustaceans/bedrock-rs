@@ -14,7 +14,8 @@ use super::Value;
 use super::lex::{Kind, Lexer, Rules, Structure, key_text};
 use super::slice::JsonSlice;
 use crate::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, Span,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, JsonPathSegment, Location, Phase, Severity,
+    Span,
 };
 
 /// A number [`clamp_non_finite`] replaced.
@@ -74,7 +75,7 @@ pub fn clamp_non_finite(value: &mut Value, source: Option<JsonSlice<'_>>) -> Vec
     // the way into a node and popped on the way out, so the walk is linear in the value
     // however deep it is; a path is copied only for a number that is replaced.
     let mut at = JsonPath::new();
-    let mut open: Vec<Step<'_>> = vec![Step::Enter(value, Segment::Root)];
+    let mut open: Vec<Step<'_>> = vec![Step::Enter(value, None)];
     while let Some(step) = open.pop() {
         let (value, segment) = match step {
             Step::Leave => {
@@ -84,11 +85,11 @@ pub fn clamp_non_finite(value: &mut Value, source: Option<JsonSlice<'_>>) -> Vec
             Step::Enter(value, segment) => (value, segment),
         };
         match segment {
-            Segment::Root => {}
-            Segment::Key(key) => at.push(key),
-            Segment::Index(index) => at.push_index(index),
+            None => {}
+            Some(JsonPathSegment::Key(key)) => at.push(key),
+            Some(JsonPathSegment::Index(index)) => at.push_index(index),
         }
-        if !matches!(segment, Segment::Root) {
+        if segment.is_some() {
             open.push(Step::Leave);
         }
         let bound = value
@@ -104,7 +105,7 @@ pub fn clamp_non_finite(value: &mut Value, source: Option<JsonSlice<'_>>) -> Vec
             let first = open.len();
             if let Some(array) = value.as_array_mut() {
                 for (index, element) in array.as_mut_slice().iter_mut().enumerate() {
-                    open.push(Step::Enter(element, Segment::Index(index)));
+                    open.push(Step::Enter(element, Some(JsonPathSegment::Index(index))));
                 }
             }
             open[first..].reverse();
@@ -112,7 +113,10 @@ pub fn clamp_non_finite(value: &mut Value, source: Option<JsonSlice<'_>>) -> Vec
             let first = open.len();
             if let Some(object) = value.as_object_mut() {
                 for (key, member) in object.iter_mut() {
-                    open.push(Step::Enter(member, Segment::Key(key.as_str())));
+                    open.push(Step::Enter(
+                        member,
+                        Some(JsonPathSegment::Key(key.as_str())),
+                    ));
                 }
             }
             open[first..].reverse();
@@ -132,21 +136,11 @@ pub fn clamp_non_finite(value: &mut Value, source: Option<JsonSlice<'_>>) -> Vec
 
 /// A step of the walk of [`clamp_non_finite`].
 enum Step<'value> {
-    /// Visit a node, reached from its parent by the segment.
-    Enter(&'value mut Value, Segment<'value>),
+    /// Visit a node, reached from its parent by the segment (`None` for the value the walk
+    /// started at).
+    Enter(&'value mut Value, Option<JsonPathSegment<'value>>),
     /// The node the walk entered last has been walked: step out of its segment.
     Leave,
-}
-
-/// How a node is reached from its parent.
-#[derive(Clone, Copy)]
-enum Segment<'value> {
-    /// The value the walk started at.
-    Root,
-    /// A member of an object.
-    Key(&'value str),
-    /// An element of an array.
-    Index(usize),
 }
 
 /// Whether no number of `value` is an infinity.
