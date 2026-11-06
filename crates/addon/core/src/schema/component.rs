@@ -28,6 +28,7 @@ pub struct ComponentRow {
 }
 
 /// The row named `name` of `rows` (sorted by name), for the derived `schema_row`.
+// hidden: emitted by the schema derives
 #[doc(hidden)]
 pub fn find_row(rows: &'static [ComponentRow], name: &str) -> Option<&'static ComponentRow> {
     rows.binary_search_by(|row| row.name.cmp(name))
@@ -54,6 +55,7 @@ pub trait ShorthandRows {
 }
 
 /// The shape of `T`, in a const: what `#[derive(Components)]` lists a payload by.
+// hidden: emitted by the schema derives
 #[doc(hidden)]
 #[must_use]
 pub const fn shape_of<T: facet::Facet<'static>>() -> &'static facet::Shape {

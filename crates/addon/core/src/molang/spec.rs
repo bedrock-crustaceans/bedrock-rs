@@ -6,6 +6,7 @@ use crate::diagnostic::Severity;
 
 /// One Molang field of a family's document: its reader and version source (pass 1), and its
 /// query admission, operations, empty-text rule, failure outcome and error severity (pass 2).
+// hidden: Molang pass machinery of the crate family, outside SemVer
 #[doc(hidden)]
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct MolangFieldSpec {
@@ -154,6 +155,7 @@ impl Default for MolangFieldSpec {
 }
 
 /// Which queries an expression may call.
+// hidden: Molang pass machinery of the crate family, outside SemVer
 #[doc(hidden)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Admission {
@@ -169,14 +171,17 @@ pub enum Admission {
 }
 
 /// The queries an entity property default may call.
+// hidden: Molang pass machinery of the crate family, outside SemVer
 #[doc(hidden)]
 pub const PROPERTY_DEFAULT_QUERIES: &[&str] = &["query.had_component_group"];
 
 /// The queries a legacy block permutation condition or `bone_visibility` may call.
+// hidden: Molang pass machinery of the crate family, outside SemVer
 #[doc(hidden)]
 pub const BLOCK_STATE_QUERIES: &[&str] = &["query.block_state"];
 
 /// Which operations an expression may use (vanilla's side-effect restriction).
+// hidden: Molang pass machinery of the crate family, outside SemVer
 #[doc(hidden)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum OpsRule {
@@ -189,6 +194,7 @@ pub enum OpsRule {
 }
 
 /// What an empty text does.
+// hidden: Molang pass machinery of the crate family, outside SemVer
 #[doc(hidden)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum EmptyRule {
@@ -205,6 +211,7 @@ pub enum EmptyRule {
 }
 
 /// What the family does with a field whose expression is rejected.
+// hidden: Molang pass machinery of the crate family, outside SemVer
 #[doc(hidden)]
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum MolangFailure {
@@ -220,6 +227,7 @@ pub enum MolangFailure {
 }
 
 /// What the compile pass found for one field.
+// hidden: Molang pass machinery of the crate family, outside SemVer
 #[doc(hidden)]
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum MolangOutcome {

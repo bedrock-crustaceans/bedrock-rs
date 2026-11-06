@@ -31,6 +31,7 @@ pub fn formatted<const N: usize>(template: &'static str, args: [String; N]) -> O
 
 /// Whether every template has as many holes as its call site gives it arguments: the check of
 /// a family's `TEMPLATES`.
+// hidden: API not yet reviewed
 #[doc(hidden)]
 pub fn assert_arity(templates: &[(&str, usize)]) {
     for (template, arguments) in templates {

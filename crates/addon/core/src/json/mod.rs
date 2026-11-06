@@ -32,6 +32,7 @@
 //!   through `to_facet_json`: no other module calls a facet-json writer, as none calls a
 //!   parser (its writers call themselves for each level of a value).
 
+// hidden: API not yet reviewed
 #[doc(hidden)]
 pub mod build;
 mod clamp_text;
@@ -41,9 +42,11 @@ mod duplicates;
 mod envelope;
 pub(crate) mod extra;
 mod finite;
+// hidden: API not yet reviewed
 #[doc(hidden)]
 pub mod jsoncpp;
 pub mod kit;
+// hidden: API not yet reviewed
 #[doc(hidden)]
 pub mod lossy;
 pub mod node_tree;
@@ -52,6 +55,7 @@ mod path;
 mod prepared;
 mod read; // the only caller of facet-json's parsers
 mod scalar;
+// hidden: API not yet reviewed
 #[doc(hidden)]
 pub mod signed_zero;
 mod slice;
@@ -61,23 +65,28 @@ mod text;
 mod unknown;
 mod write;
 
+// hidden: API not yet reviewed
 #[doc(hidden)]
 pub use clamp_text::{
     ClampedText, Width, clamp_beyond_double, clamp_beyond_double_first_kept, clamp_text,
     clamp_tokens, drop_spoken_for, spoken_for,
 };
 pub use coerce::{Coerce, Coercing, IsIntRule, WideInt};
+// hidden: API not yet reviewed
 #[doc(hidden)]
 pub use duplicates::{last_wins, last_wins_except};
 pub use envelope::{EnvelopeVersion, RootProbe, probe_envelope};
+// hidden: API not yet reviewed
 #[doc(hidden)]
 pub use finite::{Clamped, clamp_non_finite, clamp_non_finite_warned};
+// hidden: API not yet reviewed
 #[doc(hidden)]
 pub use null::{
     NULL_MEMBER_READ_AS_ABSENT, NullRule, null_members, nulls_read, parse_at_null_absent,
     reject_nulls, remove_null_members, tell_null_members,
 };
 pub use prepared::{PrepareError, Prepared};
+// hidden: API not yet reviewed
 #[doc(hidden)]
 pub use read::{
     DOCUMENT_NUMBER_TOO_BIG, DOCUMENT_ROOT_NOT_SINGULAR, Scanned, TRAILING_CONTENT, UnsafeText,
@@ -89,6 +98,7 @@ pub use scalar::{
     ScalarRules, ScalarShape, Scalars, StrictError, StrictIntType, Token, Verdict, judge,
     parse_with_rules,
 };
+// hidden: API not yet reviewed
 #[doc(hidden)]
 pub use slice::{JsonSlice, SliceError, parse_at, span_at};
 // Hidden: what still holds a wrapper is listed, with the gap it waits on, in `strict`'s
@@ -98,15 +108,18 @@ pub use strict::{
     ReaderMode, StrictBool, StrictFloat, StrictFloatType, StrictInt, StrictString, with_reader_mode,
 };
 pub use text::MAX_JSON_DEPTH;
+// hidden: API not yet reviewed
 #[doc(hidden)]
 pub use text::{TooDeep, blank_bom, check_depth, strip_bom};
 pub(crate) use unknown::door_unknown_members;
+// hidden: API not yet reviewed
 #[doc(hidden)]
 pub use unknown::{
     BEYOND_FLOAT_MEMBER, Misread, Misreading, keep_members, keep_members_and_range_members,
     keep_unknown_members, keep_unknown_members_with, too_deep_to_walk, unknown_members,
 };
 pub use write::{Precedence, merge_unknown, merge_unknown_with};
+// hidden: API not yet reviewed
 #[doc(hidden)]
 pub use write::{
     UNKNOWN_MEMBER_NOT_WRITTEN, to_facet_json, to_facet_json_signed, to_json, write_json,

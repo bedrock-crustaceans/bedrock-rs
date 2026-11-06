@@ -60,12 +60,15 @@ pub enum RangeForm {
 /// The end types of a [`Range`]: `i32` and `f32`.
 pub trait RangeEnd: Copy + Default + PartialOrd + sealed::Sealed {
     /// Reads one end; `member` names it in the error.
+    // hidden: methods of a public trait, which cannot be narrowed; only core implements them
     #[doc(hidden)]
     fn read_end(member: &'static str, value: &Value) -> Result<Self, ShapeError>;
     /// Writes one end.
+    // hidden: methods of a public trait, which cannot be narrowed; only core implements them
     #[doc(hidden)]
     fn write_end(self) -> Result<Value, ShapeError>;
     /// Reads the array form.
+    // hidden: methods of a public trait, which cannot be narrowed; only core implements them
     #[doc(hidden)]
     fn read_array(array: &VArray) -> Result<(Self, Self), ShapeError>;
 }

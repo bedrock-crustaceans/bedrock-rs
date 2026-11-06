@@ -18,7 +18,6 @@ const MAX_SEGMENT_BYTES: usize = 255;
 /// are left out, as the identifier compares without them. A malformed identifier (the loader
 /// keeps them as written) still gives a valid path: a `.` or `..` segment becomes `_`, and so
 /// does each `:` and ASCII control character.
-#[doc(hidden)]
 pub fn default_path<K: Kind>(directory: &str, id: &Id<K>) -> PackPath {
     let Parts {
         mut folders,
@@ -38,10 +37,9 @@ pub fn default_path<K: Kind>(directory: &str, id: &Id<K>) -> PackPath {
 ///
 /// The path is not one per identifier: `minecraft:a/b` and `minecraft:a_b` are both
 /// `<directory>/a_b.json` (and, as with [`default_path`], two identifiers that differ only
-/// in what [`sanitise`] replaces). A writer that places two such documents by their default
+/// in what the path rules replace (`.` and `..`, `:`, control characters)). A writer that places two such documents by their default
 /// paths writes one file over the other; the path is a default, and the caller that holds
 /// both gives one of them another.
-#[doc(hidden)]
 pub fn default_path_flat_for_vanilla<K: Kind>(directory: &str, id: &Id<K>) -> PackPath {
     let Parts {
         mut folders,
@@ -75,7 +73,6 @@ pub fn default_path_flat_for_vanilla<K: Kind>(directory: &str, id: &Id<K>) -> Pa
 /// `minecraft:x` written bare. A writer that places two such documents by their default
 /// paths writes one file over the other; the path is a default, and the caller that holds
 /// both gives one of them another.
-#[doc(hidden)]
 pub fn default_path_flat<K: Kind>(directory: &str, id: &Id<K>) -> PackPath {
     let Parts {
         mut folders,

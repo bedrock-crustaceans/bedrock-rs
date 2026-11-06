@@ -189,7 +189,6 @@ impl LoadContext {
     ///
     /// The Beta APIs and Upcoming Creator Features toggles and their experiments are one
     /// setting each: either one turns on both.
-    #[doc(hidden)]
     pub fn for_pack(
         options: &LoadOptions,
         pack_uuid: Uuid,

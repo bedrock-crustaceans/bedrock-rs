@@ -20,6 +20,7 @@
 //!   against its ops.
 
 mod chain;
+// hidden: API not yet reviewed
 #[doc(hidden)]
 pub mod chain_file;
 mod component;
@@ -32,13 +33,16 @@ mod payload;
 mod pipeline;
 mod range;
 mod reading;
+// hidden: macro and test support of the version chains
 #[doc(hidden)]
 pub mod shape;
 mod single;
+// hidden: macro and test support of the version chains
 #[doc(hidden)]
 pub mod testing;
 mod write;
 
+// hidden: macro support: the paths `version_chain!` expands to
 #[doc(hidden)]
 pub mod __macro;
 
@@ -671,6 +675,7 @@ pub trait VersionChain<F: Family>: Sized {
     }
     /// Hands the loaded value's Molang walk to `visit` (pass 2 of [`load`]); a hand-written
     /// chain walks nothing.
+    // hidden: macro and test support of the version chains
     #[doc(hidden)]
     #[allow(unused_variables)]
     fn with_molang(loaded: &mut Loaded<F>, visit: &mut dyn FnMut(&mut dyn MolangFields)) {}

@@ -5,6 +5,7 @@
 use super::{JsonPath, JsonPathSegment, VanillaText};
 
 /// What the game's validator says of a reference it cannot resolve.
+// hidden: the game's validator wording, used by the families' readers
 #[doc(hidden)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Validator {
@@ -18,6 +19,7 @@ pub enum Validator {
 /// The validator's breadcrumb of `path` from its segment `from` on, as the reference's
 /// context writes it: ` -> <key>` for a member, `[<i>]` for an element, the leading space
 /// trimmed (`-> components -> minecraft:placement_filter -> conditions[0] -> block_filter[0]`).
+// hidden: the game's validator wording, used by the families' readers
 #[doc(hidden)]
 #[must_use]
 pub fn breadcrumb(path: &JsonPath, from: usize) -> String {
@@ -42,6 +44,7 @@ pub fn breadcrumb(path: &JsonPath, from: usize) -> String {
 /// colon, two spaces and the miss (the game writes every one when it finishes loading linked
 /// assets, at the error level, area Json, and drops nothing: the crate's severity stays the rule's
 /// own grading).
+// hidden: the game's validator wording, used by the families' readers
 #[doc(hidden)]
 #[must_use]
 pub fn validator_text(says: Validator, path: &JsonPath, from: usize, name: &str) -> VanillaText {

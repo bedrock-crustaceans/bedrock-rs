@@ -8,6 +8,7 @@ use crate::version::{FormatVersionInput, MinEngineVersion, SemVersion, engine_ve
 /// `min_engine_version` to one): `None`, an absent or invalid version, is
 /// `MolangVersion::Invalid` (−1). Format-1 manifests pass their substitute
 /// (`MinEngineVersion::format_1`), which maps to 0. Sub-packs use the parent's.
+// hidden: Molang pass machinery of the crate family, outside SemVer
 #[doc(hidden)]
 pub fn pack_molang_version(min_engine_version: Option<&MinEngineVersion>) -> RawVersion {
     min_engine_version
@@ -18,6 +19,7 @@ pub fn pack_molang_version(min_engine_version: Option<&MinEngineVersion>) -> Raw
 /// A document's `format_version` mapped as an engine version (vanilla reads the document's
 /// version as a minimum engine version): a pre-release tag sorts below its release, and the
 /// `"beta"` literal is the beta sentinel 9999.9999.9999-beta, so the newest version.
+// hidden: Molang pass machinery of the crate family, outside SemVer
 #[doc(hidden)]
 pub fn format_molang_version(version: &FormatVersionInput) -> RawVersion {
     let Some(numbers) = version.version else {
@@ -40,6 +42,7 @@ const CONTROLLER_ENGINE_FIX: SemVersion = SemVersion::new(1, 20, 50);
 /// The inputs a field's version is chosen from, once per document: the pack's version, whether
 /// the pack predates the controller fix, the document's version, the version a merge injected,
 /// and the world's experiments for the compile pass.
+// hidden: Molang pass machinery of the crate family, outside SemVer
 #[doc(hidden)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct MolangContext {
@@ -92,6 +95,7 @@ impl MolangContext {
 }
 
 /// Where a field's version comes from; one per field spec.
+// hidden: Molang pass machinery of the crate family, outside SemVer
 #[doc(hidden)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum MolangVersionSource {

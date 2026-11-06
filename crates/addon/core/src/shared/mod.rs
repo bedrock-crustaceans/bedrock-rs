@@ -11,6 +11,7 @@
 mod event;
 mod filter;
 mod range;
+// hidden: reader plumbing of the crate family (the game's jsoncpp contract)
 #[doc(hidden)]
 pub mod read;
 
@@ -29,6 +30,7 @@ use crate::document::UnknownMembers;
 /// game reads with cereal (a filter, an event trigger, a block descriptor's proxy), whose
 /// unknown member is logged at level 2 by the unstrict reader; a `Strict` slice makes it an
 /// error.
+// hidden: reader plumbing of the crate family (the game's jsoncpp contract)
 #[doc(hidden)]
 pub fn unrecognized(extra: &UnknownMembers, at: &JsonPath, out: &mut Diagnostics) {
     unrecognized_except(extra, at, &[], Severity::Warning, out);
@@ -37,6 +39,7 @@ pub fn unrecognized(extra: &UnknownMembers, at: &JsonPath, out: &mut Diagnostics
 /// [`unrecognized`] for the members of `extra` other than `skip` (members another finding
 /// already reports), at `severity` (an information for a type the game reads from a
 /// plain JSON value, which ignores the rest in silence).
+// hidden: reader plumbing of the crate family (the game's jsoncpp contract)
 #[doc(hidden)]
 pub fn unrecognized_except(
     extra: &UnknownMembers,
@@ -64,6 +67,7 @@ mod sealed {
 }
 
 /// A finding of a reader rule at `at`: vanilla logs these while it parses.
+// hidden: reader plumbing of the crate family (the game's jsoncpp contract)
 #[doc(hidden)]
 pub fn finding(code: DiagnosticCode, severity: Severity, at: &JsonPath) -> Diagnostic {
     Diagnostic::new(

@@ -14,12 +14,14 @@ mod context;
 mod experiment;
 mod limits;
 mod place;
+// hidden: sound-definition loading, built for the families that read sounds; API not yet reviewed
 #[doc(hidden)]
 pub mod sound;
 
 pub use app_data::AppData;
 pub use collection::ListedFile;
 pub use collection::NamedFiles;
+// hidden: collection machinery a `Family` author names; built only through `load::constructors`
 #[doc(hidden)]
 pub use collection::{
     Accept, AppDataPlace, CollectionLoader, Registered, Registration, Reported, StackCx, StackPack,

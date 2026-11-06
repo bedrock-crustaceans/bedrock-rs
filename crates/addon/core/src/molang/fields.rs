@@ -25,6 +25,7 @@ use crate::diagnostic::{
 ///     }
 /// }
 /// ```
+// hidden: Molang pass machinery of the crate family, outside SemVer
 #[doc(hidden)]
 pub trait MolangFields {
     /// Hands every Molang field to `visitor`.
@@ -32,6 +33,7 @@ pub trait MolangFields {
 }
 
 /// One step into a JSON document: a member key or an array index.
+// hidden: Molang pass machinery of the crate family, outside SemVer
 #[doc(hidden)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Step<'s> {
@@ -54,6 +56,7 @@ impl From<usize> for Step<'_> {
 }
 
 /// A Molang field's value, as the visitor hands it out.
+// hidden: Molang pass machinery of the crate family, outside SemVer
 #[doc(hidden)]
 #[derive(Debug)]
 pub enum MolangFieldMut<'a> {
@@ -66,6 +69,7 @@ pub enum MolangFieldMut<'a> {
 }
 
 /// One Molang field: where it is, its spec and its value.
+// hidden: Molang pass machinery of the crate family, outside SemVer
 #[doc(hidden)]
 #[derive(Debug)]
 pub struct MolangField<'a> {
@@ -78,6 +82,7 @@ pub struct MolangField<'a> {
 }
 
 /// What [`MolangFields::visit_molang`] reports to: keeps the JSON path while the walk descends.
+// hidden: Molang pass machinery of the crate family, outside SemVer
 #[doc(hidden)]
 pub struct MolangVisitor<'v> {
     path: JsonPath,
@@ -185,6 +190,7 @@ impl MolangVisitor<'_> {
 }
 
 /// A field slot the visitor understands: a Molang value, source or list, or a container of them.
+// hidden: Molang pass machinery of the crate family, outside SemVer
 #[doc(hidden)]
 pub trait MolangSlot {
     /// Emits every value in the slot with `spec`.
@@ -316,6 +322,7 @@ impl<T: MolangFields> MolangFields for std::collections::BTreeMap<String, T> {
 
 /// Calls `visit` for every Molang field of `document`, with paths below `base`; a field with
 /// no spec of its own takes [`MolangFieldSpec::DEFAULT`].
+// hidden: Molang pass machinery of the crate family, outside SemVer
 #[doc(hidden)]
 pub fn visit_fields<T: MolangFields + ?Sized>(
     document: &mut T,
@@ -327,6 +334,7 @@ pub fn visit_fields<T: MolangFields + ?Sized>(
 
 /// [`visit_fields`] with `default_spec` the spec of every field that has none of its own
 /// ([`MolangVisitor::field_default`]): the family's default.
+// hidden: Molang pass machinery of the crate family, outside SemVer
 #[doc(hidden)]
 pub fn visit_fields_under<T: MolangFields + ?Sized>(
     document: &mut T,
@@ -343,6 +351,7 @@ pub fn visit_fields_under<T: MolangFields + ?Sized>(
 }
 
 /// What pass 1 found in a document.
+// hidden: Molang pass machinery of the crate family, outside SemVer
 #[doc(hidden)]
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 #[non_exhaustive]
@@ -358,6 +367,7 @@ pub struct MolangPass {
 /// from the field's version source. Afterwards no expression of a field that passed is without
 /// a version. Runs in both builds, so reader errors and versions are the same with and without
 /// the `molang` feature.
+// hidden: Molang pass machinery of the crate family, outside SemVer
 #[doc(hidden)]
 pub fn pass_one<T: MolangFields + ?Sized>(
     document: &mut T,
@@ -395,6 +405,7 @@ pub fn pass_one<T: MolangFields + ?Sized>(
 }
 
 /// How many expressions `document` holds (a list counts each element).
+// hidden: Molang pass machinery of the crate family, outside SemVer
 #[doc(hidden)]
 pub fn count_sources<T: MolangFields + ?Sized>(document: &mut T) -> u32 {
     let mut sources = 0;
@@ -411,6 +422,7 @@ pub fn count_sources<T: MolangFields + ?Sized>(document: &mut T) -> u32 {
 /// What stands in for the compile pass without the `molang` feature
 /// (`MolangNotChecked`): one info at `base` naming how many expressions `document` holds, if
 /// it holds any. No failure rule is applied. Returns the count.
+// hidden: Molang pass machinery of the crate family, outside SemVer
 #[doc(hidden)]
 pub fn not_checked<T: MolangFields + ?Sized>(
     document: &mut T,
@@ -467,6 +479,7 @@ pub(super) fn at(base: &Location, path: &JsonPath) -> Location {
 ///
 /// bedrock_addon_core::impl_no_molang!(VoxelShape);
 /// ```
+// hidden: macro support, named by the expansion of the exported macro
 #[doc(hidden)]
 #[macro_export]
 macro_rules! impl_no_molang {

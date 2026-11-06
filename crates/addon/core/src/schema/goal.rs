@@ -26,6 +26,7 @@ pub type VersionedParseFn<C> =
 /// The `schema::fallback` integer of the field `name` among `fields`: what a goal row's
 /// `GoalMeta::priority` answers for an absent `priority`. A `const fn`, so a goal struct whose
 /// `priority` declares no integer fallback fails to compile where the row's impl is emitted.
+// hidden: emitted by the schema derives
 #[doc(hidden)]
 pub const fn int_fallback(fields: &[super::FieldRow], name: &str) -> i64 {
     let mut index = 0;

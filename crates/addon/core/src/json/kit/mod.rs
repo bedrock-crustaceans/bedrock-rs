@@ -72,8 +72,10 @@ use crate::diagnostic::{
 };
 use crate::versioning::{NullHandling, Reading, Scalars, UnknownMask};
 
+// hidden: API not yet reviewed
 #[doc(hidden)]
 pub mod fixed_path;
+// hidden: API not yet reviewed
 #[doc(hidden)]
 pub mod sound;
 #[cfg(test)]

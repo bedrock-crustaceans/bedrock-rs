@@ -12,12 +12,14 @@ use facet_value::{VArray, VObject};
 ///
 /// Vanilla's own writer folds constant expressions and writes every other one as the object
 /// form; a writer that must match it converts first.
+// hidden: Molang pass machinery of the crate family, outside SemVer
 #[doc(hidden)]
 pub fn write(value: &Molang) -> Result<Value, Unrepresentable> {
     scalar_value(value.write())
 }
 
 /// The JSON value of a value-or-array field: one value, or an array of the elements' values.
+// hidden: Molang pass machinery of the crate family, outside SemVer
 #[doc(hidden)]
 pub fn write_list(list: &MolangList) -> Result<Value, Unrepresentable> {
     match list {

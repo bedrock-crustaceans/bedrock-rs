@@ -151,6 +151,9 @@ pub fn below<'a>(pack: &'a StackPack, directory: &'a str) -> impl Iterator<Item 
 }
 
 /// What a family's test needs to measure that writing a value that keeps its root is linear.
+/// It measures with [`crate::test_cost`], so it is there under the same `test-cost` feature.
+// hidden: test support: what a family's test measures a linear write with
+#[cfg(any(test, feature = "test-cost"))]
 #[doc(hidden)]
 pub mod testing {
     use super::{Authored, Diagnostics};

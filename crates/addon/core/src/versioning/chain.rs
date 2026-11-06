@@ -116,6 +116,7 @@
 /// assert!(outcome.version.upgraded);
 /// # }
 /// ```
+// hidden: macro support: named by the expansion of the exported macro
 #[doc(hidden)]
 #[macro_export]
 macro_rules! version_chain {

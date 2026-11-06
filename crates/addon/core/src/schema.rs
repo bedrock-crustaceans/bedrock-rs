@@ -26,6 +26,7 @@ mod walk;
 #[doc(inline)]
 pub use bedrock_addon_schema::*;
 
+// hidden: emitted by the schema derives
 #[doc(hidden)]
 pub use component::find_row;
 pub use component::shape_of;
@@ -34,13 +35,16 @@ pub use component::{
     shorthand_shape,
 };
 pub use cx::{SchemaCx, Verdict};
+// hidden: emitted by the schema derives
 #[doc(hidden)]
 pub use goal::int_fallback;
 pub use goal::{GoalMeta, VersionedParseFn};
 pub use grading::{Grading, grade};
 pub use rows::{Bound, BoundOp, FieldKind, FieldRow, Limit, Lit, UnknownRule};
+// hidden: schema support the families' hand-written rows name; API not yet reviewed
 #[doc(hidden)]
 pub use sides::{Side, Sides};
+// hidden: emitted by the schema derives; hand-written rows name it too
 #[doc(hidden)]
 pub use walk::{Number, SchemaFields, member};
 pub use walk::{Schema, UnknownName};

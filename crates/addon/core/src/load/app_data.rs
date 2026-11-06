@@ -49,20 +49,17 @@ impl AppData {
     }
 
     /// The file at `path`, if present.
-    #[doc(hidden)]
     pub fn get(&self, path: &PackPath) -> Option<&Bytes> {
         self.files.get(path)
     }
 
     /// Every file, ordered bytewise by path.
-    #[doc(hidden)]
     pub fn iter(&self) -> impl Iterator<Item = (&PackPath, &Bytes)> + '_ {
         self.files.iter()
     }
 
     /// The files at any depth below `directory` (`definitions/spawn_groups`), ordered bytewise
     /// by path.
-    #[doc(hidden)]
     pub fn files_under<'a>(
         &'a self,
         directory: &'a str,
@@ -75,13 +72,11 @@ impl AppData {
     }
 
     /// How many files.
-    #[doc(hidden)]
     pub fn len(&self) -> usize {
         self.files.len()
     }
 
     /// No files.
-    #[doc(hidden)]
     pub fn is_empty(&self) -> bool {
         self.files.is_empty()
     }

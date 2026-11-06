@@ -60,6 +60,7 @@ macro_rules! diagnostic_codes {
             /// The game's text the code carries in its `text` field, if it has the field and a
             /// text in it: what tells a finding with the game's words from one with only its
             /// kind's.
+            // hidden: the families tell a finding with the game's words from one without
             #[doc(hidden)]
             #[must_use]
             #[allow(

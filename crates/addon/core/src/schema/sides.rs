@@ -6,6 +6,7 @@ use super::walk::Number;
 use crate::diagnostic::cereal::NumericRange;
 
 /// Which side of a field's range a value broke.
+// hidden: schema support the families' hand-written rows name; API not yet reviewed
 #[doc(hidden)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Side {
@@ -18,6 +19,7 @@ pub enum Side {
 /// A field's lower and upper bound, each absent where the field states none (or where a
 /// cross-field limit names an absent member with nothing it stands for), and whether each is
 /// exclusive.
+// hidden: schema support the families' hand-written rows name; API not yet reviewed
 #[doc(hidden)]
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Sides<T> {

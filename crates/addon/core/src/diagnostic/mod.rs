@@ -2,7 +2,6 @@
 //! log line. Tests match on `code` variants, never on text.
 
 mod builder;
-#[doc(hidden)]
 pub mod builders;
 pub mod cereal;
 mod code;
@@ -12,6 +11,7 @@ mod event;
 mod facet;
 mod origin;
 pub mod testing;
+// hidden: API not yet reviewed
 #[doc(hidden)]
 pub mod texts;
 pub mod validator;
@@ -20,6 +20,7 @@ pub use code::{DiagnosticCode, NotFoundHint, VanillaText};
 pub use def::{Class, Code, CodeDef, Kind};
 pub use deprecated::ENUM_VALUE_DEPRECATED;
 pub use event::EVENT_BOTH_RANDOMIZE_AND_SEQUENCE;
+// hidden: reader plumbing: maps the facet error kinds to codes for the crate family's readers
 #[doc(hidden)]
 pub use facet::code_for_deserialize_error_kind;
 use origin::Origins;
@@ -437,7 +438,6 @@ impl JsonPath {
     }
 
     /// The first `length` segments of the path.
-    #[doc(hidden)]
     #[must_use]
     pub fn prefix(&self, length: usize) -> JsonPath {
         JsonPath {

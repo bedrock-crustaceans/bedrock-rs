@@ -46,6 +46,7 @@ pub trait Schema {
 /// leaf types (numbers, `bool`, `char`, `String`, `json::Value`, the Molang values; what a family names with
 /// `impl_schema_leaf!`), identifiers (`Id<K>`), `EventTrigger` (a trigger at its own path), and
 /// `Option`, `Vec`, fixed-length arrays and `IndexMap<String, _>` of them.
+// hidden: emitted by the schema derives
 #[doc(hidden)]
 pub trait SchemaFields {
     /// `Schema::check`, or nothing for a leaf.
@@ -189,6 +190,7 @@ impl SchemaFields for crate::shared::EventTrigger {
 }
 
 /// `prefix.key`, or `key` at the root: the pattern of the member `key` below `prefix`.
+// hidden: emitted by the schema derives
 #[doc(hidden)]
 pub fn member(prefix: &str, key: &str) -> String {
     if prefix.is_empty() {
@@ -207,6 +209,7 @@ pub fn member(prefix: &str, key: &str) -> String {
 ///
 /// bedrock_addon_core::impl_schema_leaf!(Opaque);
 /// ```
+// hidden: macro support: named by the expansion of the exported macro
 #[doc(hidden)]
 #[macro_export]
 macro_rules! impl_schema_leaf {
@@ -245,6 +248,7 @@ crate::impl_schema_leaf!(
 
 /// A number a bound compares: the derive converts the value and the limit with `to_f64` for
 /// the finding's text.
+// hidden: schema support the families' hand-written rows name; API not yet reviewed
 #[doc(hidden)]
 pub trait Number: PartialOrd + Copy {
     /// The value as an `f64` (rounded where the type is wider).

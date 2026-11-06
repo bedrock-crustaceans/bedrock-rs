@@ -80,24 +80,30 @@ pub enum MolangList {
 
 // Internal to the crate family: the readers, the field specs and the two passes.
 #[cfg(feature = "molang")]
+// hidden: Molang pass machinery of the crate family, outside SemVer
 #[doc(hidden)]
 pub use check::{FieldOutcome, check_fields};
+// hidden: Molang pass machinery of the crate family, outside SemVer
 #[doc(hidden)]
 pub use fields::{
     MolangField, MolangFieldMut, MolangFields, MolangPass, MolangSlot, MolangVisitor, Step,
     count_sources, not_checked, pass_one, visit_fields, visit_fields_under,
 };
+// hidden: Molang pass machinery of the crate family, outside SemVer
 #[doc(hidden)]
 pub use read::{
     beyond_f32, beyond_f32_warning, json_scalar, read, read_finite, read_list, settle, settle_list,
 };
+// hidden: Molang pass machinery of the crate family, outside SemVer
 #[doc(hidden)]
 pub use spec::{
     Admission, BLOCK_STATE_QUERIES, EmptyRule, MolangFailure, MolangFieldSpec, MolangOutcome,
     OpsRule, PROPERTY_DEFAULT_QUERIES,
 };
+// hidden: Molang pass machinery of the crate family, outside SemVer
 #[doc(hidden)]
 pub use version::{MolangContext, MolangVersionSource, format_molang_version, pack_molang_version};
+// hidden: Molang pass machinery of the crate family, outside SemVer
 #[doc(hidden)]
 pub(crate) use write::ConstToken;
 pub use write::{write, write_list};

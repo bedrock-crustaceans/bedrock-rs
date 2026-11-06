@@ -17,6 +17,7 @@ use crate::json::Value;
 ///
 /// An integer literal outside `i64` / `u64` reaches a `Value` as a string of its digits, so it is
 /// read as a Molang string, not a constant (an accepted loss).
+// hidden: Molang pass machinery of the crate family, outside SemVer
 #[doc(hidden)]
 pub fn json_scalar(value: &Value) -> JsonScalar {
     if let Some(number) = value.as_number() {
@@ -57,6 +58,7 @@ pub fn json_scalar(value: &Value) -> JsonScalar {
 ///
 /// `ReadField::NoExpression` and `ReadField::ExpressionArray` arise only under
 /// `ReaderKind::ScalarOrArray`; [`read_list`] reads such a field whole.
+// hidden: Molang pass machinery of the crate family, outside SemVer
 #[doc(hidden)]
 pub fn read(
     value: &Value,
@@ -75,6 +77,7 @@ pub fn read(
 /// `ReaderKind::StrictVersioned` refuses such a number with `NumberOutOfRange`, as molang does;
 /// nothing is clamped there. A typed `Molang` member never sees such a number as a constant:
 /// facet refuses it (`json::clamp_text` rewrites the text first where a family wants the clamp).
+// hidden: Molang pass machinery of the crate family, outside SemVer
 #[doc(hidden)]
 pub fn read_finite(
     json: JsonScalar,
@@ -95,6 +98,7 @@ pub fn read_finite(
 
 /// Whether the nearest `f32` of `number` is an infinity, and then whether it is below zero.
 /// A NaN, which no JSON text spells, is not.
+// hidden: Molang pass machinery of the crate family, outside SemVer
 #[doc(hidden)]
 #[must_use]
 pub fn beyond_f32(number: f64) -> Option<bool> {
@@ -110,6 +114,7 @@ pub fn beyond_f32(number: f64) -> Option<bool> {
 /// `InvalidValue` information of the parse phase at `at`, on the number's token when `span`
 /// is known. The clamp is the crate's own, for the write-back; the
 /// game's readers hold the infinity in silence.
+// hidden: Molang pass machinery of the crate family, outside SemVer
 #[doc(hidden)]
 #[must_use]
 pub fn beyond_f32_warning(at: JsonPath, span: Option<Span>) -> Diagnostic {
@@ -124,6 +129,7 @@ pub fn beyond_f32_warning(at: JsonPath, span: Option<Span>) -> Diagnostic {
 /// Reads a value-or-array field (`ReaderKind::ScalarOrArray`) whole: `null` is `None`, an array
 /// is read element by element, recursively. A `null` element or any object is rejected: the
 /// list has no slot for them, as its facet impl does not.
+// hidden: Molang pass machinery of the crate family, outside SemVer
 #[doc(hidden)]
 pub fn read_list(
     value: &Value,
@@ -157,6 +163,7 @@ fn read_element(value: &Value, context_version: RawVersion) -> Result<MolangList
 /// Pass 1 for a typed `Molang` field: whether `reader` accepts the value facet produced
 /// (`MolangValueRepr::check`), then the context version for a string form; an object form keeps
 /// its own.
+// hidden: Molang pass machinery of the crate family, outside SemVer
 #[doc(hidden)]
 pub fn settle(
     value: &mut Molang,
@@ -170,6 +177,7 @@ pub fn settle(
 
 /// Pass 1 for a typed value-or-array field: every element is checked under
 /// `ReaderKind::ScalarOrArray` and takes `context_version`.
+// hidden: Molang pass machinery of the crate family, outside SemVer
 #[doc(hidden)]
 pub fn settle_list(list: &mut MolangList, context_version: RawVersion) -> Result<(), ReprError> {
     match list {

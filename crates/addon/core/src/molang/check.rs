@@ -81,6 +81,7 @@ impl MolangCheck {
     /// The compile options of a field: its side's catalogue at the pack's version (which
     /// `compile_source` replaces by the source's own), its admission and operations, the world's
     /// experiments; `keep_source` off and every deviation on.
+    // hidden: Molang pass machinery of the crate family, outside SemVer
     #[doc(hidden)]
     pub fn options(
         &self,
@@ -113,6 +114,7 @@ impl MolangCheck {
 
     /// Checks one `Molang` field at `location`: a constant or a bool needs no compile; an
     /// expression is checked as [`MolangCheck::check_source`] checks it.
+    // hidden: Molang pass machinery of the crate family, outside SemVer
     #[doc(hidden)]
     pub fn check(
         &self,
@@ -132,6 +134,7 @@ impl MolangCheck {
     /// Checks one value-or-array field: every element, under the field's options, its findings at
     /// the element's index below `location` (vanilla logs a failing element by itself). The field
     /// fails when an element fails.
+    // hidden: Molang pass machinery of the crate family, outside SemVer
     #[doc(hidden)]
     pub fn check_list(
         &self,
@@ -186,6 +189,7 @@ impl MolangCheck {
 
     /// Compiles one expression under its field's [`check_options`](Self::check_options) through
     /// the cache; nothing is reported.
+    // hidden: Molang pass machinery of the crate family, outside SemVer
     #[doc(hidden)]
     pub fn compile(
         &self,
@@ -210,6 +214,7 @@ impl MolangCheck {
     /// expression that calls `query.get_pack_setting`, `query.is_pack_setting_enabled` or
     /// `query.is_pack_setting_selected` gets one `MolangLint` warning (the compiler's
     /// client-only note about the first of them): those queries fail in a behaviour pack.
+    // hidden: Molang pass machinery of the crate family, outside SemVer
     #[doc(hidden)]
     pub fn check_source(
         &self,
@@ -237,6 +242,7 @@ impl MolangCheck {
     /// the findings quote `written` (the text as the file holds it), and `rules` say what the
     /// family reports beyond the shared mapping. Returns the outcome and the compile, `None` for
     /// no expression.
+    // hidden: Molang pass machinery of the crate family, outside SemVer
     #[doc(hidden)]
     #[allow(clippy::too_many_arguments, reason = "one member's whole context")]
     pub fn check_source_with(
@@ -268,6 +274,7 @@ impl MolangCheck {
 
 /// What a pass 2 reports beyond the shared mapping of [`molang_diagnostic`]. The load's own
 /// rules are [`ReportRules::LOAD`]; a family whose game loader logs differently says so here.
+// hidden: Molang pass machinery of the crate family, outside SemVer
 #[doc(hidden)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct ReportRules {
@@ -295,6 +302,7 @@ impl ReportRules {
 }
 
 /// The code of the server-side information for an expression molang cannot evaluate.
+// hidden: Molang pass machinery of the crate family, outside SemVer
 #[doc(hidden)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum RenderNote {
@@ -521,6 +529,7 @@ pub(crate) fn molang_diagnostic(
 }
 
 /// A field the compile pass did not pass: its path and outcome.
+// hidden: Molang pass machinery of the crate family, outside SemVer
 #[doc(hidden)]
 #[derive(Clone, Debug, PartialEq)]
 #[non_exhaustive]
@@ -534,6 +543,7 @@ pub struct FieldOutcome {
 /// Pass 2 over a document: every Molang field of `document` checked on `side`, its
 /// findings at the field's path below `base`. Returns the fields whose outcome is not `Ok`, in
 /// document order, for the family to apply their failure rules.
+// hidden: Molang pass machinery of the crate family, outside SemVer
 #[doc(hidden)]
 pub fn check_fields<T: MolangFields + ?Sized>(
     document: &mut T,

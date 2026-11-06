@@ -97,6 +97,7 @@ struct ReadmeDoctests;
 // The paths the derives emit, `::bedrock_addon_core::schema::…`, resolve inside this crate too.
 extern crate self as bedrock_addon_core;
 
+// hidden: macro support: the paths the derives and macros expand to
 #[doc(hidden)]
 pub mod __private;
 pub mod diagnostic;
@@ -109,6 +110,7 @@ pub mod molang;
 pub mod pack_identity;
 pub mod schema;
 pub mod shared;
+// hidden: test support: the cost measure of the crate family's tests
 #[cfg(any(test, feature = "test-cost"))]
 #[doc(hidden)]
 pub mod test_cost;
