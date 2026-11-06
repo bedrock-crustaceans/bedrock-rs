@@ -57,6 +57,6 @@ pub struct TimeMarker {
     pub name: String,
     #[endianness(var)]
     pub time: i32,
-    #[endianness(var)]
+    #[endianness(le)]
     pub period: Option<i32>,
 }

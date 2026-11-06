@@ -22,6 +22,7 @@ pub enum HeightMapDataType {
     HasData = 1,
     AllTooHigh = 2,
     AllTooLow = 3,
+    Copied = 4,
 }
 
 #[derive(ProtoCodec, Clone, Debug, PartialEq)]
