@@ -7,23 +7,22 @@
 
 use std::collections::HashSet;
 
-use crate::diagnostic::{DiagnosticCode as Code, VanillaText};
+use crate::diagnostic::{DiagnosticCode as Code, JsonPath, VanillaText};
 use crate::document::UnknownMembers;
 use crate::json::Value;
 use crate::pack_identity::PackType;
-use crate::version::{ENGINE_VERSION, MinEngineVersion, SemVersion};
+use crate::version::MinEngineVersion;
 use uuid::Uuid;
 
 use super::capability::CapabilityRegistry;
-use super::legacy::{base_game_version, check_capability, metadata, modules_consistent, pack_type};
-use super::read::{Sink, child, item, member, pack_scope, relaxed_version_text, text};
-use super::{
-    Capability, Dependency, Header, Manifest, ManifestFormat, MemoryTier, Module, ModuleType,
-    NativeModuleVersion, RelaxedSemVersion, Subpack, ids, setting,
+use super::legacy::{base_game_version, capability_list, metadata, modules_consistent, pack_type};
+use super::read::{
+    Profile, Sink, below, dependency_place, member, pack_scope, path, relaxed_version_text, text,
 };
-
-/// The lowest `min_engine_version` a behaviour or resource pack may declare.
-const LOWEST_ENGINE: SemVersion = SemVersion::new(1, 13, 0);
+use super::{
+    Dependency, DependencyPlace, Header, Manifest, ManifestFormat, ManifestPlaces, MemoryTier,
+    Module, ModuleType, NativeModuleVersion, RelaxedSemVersion, Subpack, setting,
+};
 
 /// Reads a manifest whose `format_version` is 3.0.0 or above. `None` when it has no usable
 /// value (every such case has left an error).
@@ -32,14 +31,14 @@ pub(super) fn read(
     capabilities: &CapabilityRegistry,
     sink: &mut Sink<'_>,
 ) -> Option<Manifest> {
+    sink.set_profile(Profile::Comprehensive);
     if root.as_object().is_none() {
-        sink.error(Code::InvalidType { text: None }, "");
+        sink.error(Code::InvalidType { text: None }, &JsonPath::new());
         return None;
     }
-    unknown_members(
-        sink,
+    sink.unknown(
         root,
-        "",
+        &JsonPath::new(),
         &[
             "format_version",
             "header",
@@ -56,16 +55,19 @@ pub(super) fn read(
     let modules = modules(sink, root);
     let pack_type = pack_type(&modules);
     let header = header(sink, root, pack_type);
-    let dependencies = dependencies(sink, root);
-    let capability_list = capability_list(sink, root, header.as_ref(), pack_type, capabilities);
+    let (dependencies, dependency_places) = dependencies(sink, root);
+    // Without a header the pack's UUID is the nil one.
+    let pack_uuid = header.as_ref().map_or_else(Uuid::nil, |header| header.uuid);
+    let capability_list = capability_list(sink, root, pack_uuid, pack_type, capabilities);
     let settings = setting::read(
         sink,
         root,
         header.as_ref().and_then(|h| h.min_engine_version.as_ref()),
     );
     let subpacks = subpacks(sink, root);
-    let metadata = metadata(sink, root, "metadata", true);
-    let has_education_metadata = boolean(sink, root, "has_education_metadata", "", false);
+    let metadata = metadata(sink, root, &path(&["metadata"]));
+    let has_education_metadata =
+        sink.boolean(root, "has_education_metadata", &JsonPath::new(), false);
     if sink.has_errors() {
         return None;
     }
@@ -81,6 +83,9 @@ pub(super) fn read(
         settings,
         has_education_metadata,
         extra: UnknownMembers::default(),
+        places: ManifestPlaces {
+            dependencies: dependency_places,
+        },
     })
 }
 
@@ -89,7 +94,10 @@ pub(super) fn read(
 /// already read it as 3.0.0.
 fn format_version(sink: &mut Sink<'_>, root: &Value) {
     let Some(value) = member(root, "format_version") else {
-        sink.error(Code::MissingRequiredField { text: None }, "format_version");
+        sink.error(
+            Code::MissingRequiredField { text: None },
+            &path(&["format_version"]),
+        );
         return;
     };
     let fits = value
@@ -98,145 +106,16 @@ fn format_version(sink: &mut Sink<'_>, root: &Value) {
         .and_then(facet_value::VNumber::to_u64)
         .is_some_and(|number| number < 256);
     if !fits {
-        sink.error(Code::InvalidType { text: None }, "format_version");
+        sink.error(Code::InvalidType { text: None }, &path(&["format_version"]));
     }
-}
-
-/// Reports every member of `object` outside `allowed` as an unrecognised field (an error: the
-/// manifest is read with a strict mask).
-pub(super) fn unknown_members(sink: &mut Sink<'_>, object: &Value, at: &str, allowed: &[&str]) {
-    let Some(object) = object.as_object() else {
-        return;
-    };
-    for (key, _) in object {
-        if !allowed.contains(&key.as_str()) {
-            sink.error(
-                Code::UnrecognizedField { text: None },
-                &child(at, key.as_str()),
-            );
-        }
-    }
-}
-
-/// The object member `key`, or `None` with an error when it is not an object.
-fn object<'v>(
-    sink: &mut Sink<'_>,
-    container: &'v Value,
-    key: &str,
-    at: &str,
-    required: bool,
-) -> Option<&'v Value> {
-    let at = child(at, key);
-    let Some(value) = member(container, key) else {
-        if required {
-            sink.error(Code::MissingRequiredField { text: None }, &at);
-        }
-        return None;
-    };
-    if value.as_object().is_none() {
-        sink.error(Code::InvalidType { text: None }, &at);
-        return None;
-    }
-    Some(value)
-}
-
-/// The array member `key`, or `None` with an error when it is not an array.
-fn array<'v>(
-    sink: &mut Sink<'_>,
-    container: &'v Value,
-    key: &str,
-    at: &str,
-    required: bool,
-) -> Option<&'v [Value]> {
-    let at = child(at, key);
-    let Some(value) = member(container, key) else {
-        if required {
-            sink.error(Code::MissingRequiredField { text: None }, &at);
-        }
-        return None;
-    };
-    let Some(array) = value.as_array() else {
-        sink.error(Code::InvalidType { text: None }, &at);
-        return None;
-    };
-    Some(array.as_slice())
-}
-
-/// A string member; wrong type is an error, so is an absent one when `required`.
-pub(super) fn string(
-    sink: &mut Sink<'_>,
-    container: &Value,
-    key: &str,
-    at: &str,
-    required: bool,
-) -> Option<String> {
-    let at = child(at, key);
-    let Some(value) = member(container, key) else {
-        if required {
-            sink.error(Code::MissingRequiredField { text: None }, &at);
-        }
-        return None;
-    };
-    let read = text(value).map(str::to_owned);
-    if read.is_none() {
-        sink.error(Code::InvalidType { text: None }, &at);
-    }
-    read
-}
-
-/// A boolean member; wrong type is an error, so is an absent one when `required`.
-fn boolean(
-    sink: &mut Sink<'_>,
-    container: &Value,
-    key: &str,
-    at: &str,
-    required: bool,
-) -> Option<bool> {
-    let at = child(at, key);
-    let Some(value) = member(container, key) else {
-        if required {
-            sink.error(Code::MissingRequiredField { text: None }, &at);
-        }
-        return None;
-    };
-    let read = value.as_bool();
-    if read.is_none() {
-        sink.error(Code::InvalidType { text: None }, &at);
-    }
-    read
-}
-
-/// A required UUID string; a malformed or nil one is an error and is replaced by its hash.
-fn uuid(sink: &mut Sink<'_>, container: &Value, at: &str) -> Option<Uuid> {
-    let raw = string(sink, container, "uuid", at, true)?;
-    if let Some(uuid) = ids::parse(&raw) {
-        return Some(uuid);
-    }
-    sink.error(Code::MalformedPropertyUuid, &child(at, "uuid"));
-    Some(ids::salvage(&raw))
-}
-
-/// A required version string (partial versions are filled with zeros;
-/// no wildcard). An array is the wrong type.
-fn version(sink: &mut Sink<'_>, container: &Value, at: &str) -> Option<SemVersion> {
-    let raw = string(sink, container, "version", at, true)?;
-    let parsed = relaxed_version_text(&raw);
-    if parsed.is_none() {
-        sink.error(
-            Code::MalformedPropertyVersion { text: None },
-            &child(at, "version"),
-        );
-    }
-    parsed
 }
 
 fn header(sink: &mut Sink<'_>, root: &Value, pack_type: PackType) -> Option<Header> {
-    const AT: &str = "header";
-    let header = object(sink, root, "header", "", true)?;
-    unknown_members(
-        sink,
+    let at = path(&["header"]);
+    let header = sink.object(root, "header", &JsonPath::new(), true)?;
+    sink.unknown(
         header,
-        AT,
+        &at,
         &[
             "name",
             "description",
@@ -251,27 +130,36 @@ fn header(sink: &mut Sink<'_>, root: &Value, pack_type: PackType) -> Option<Head
             "pack_optimization_version",
         ],
     );
-    let name = string(sink, header, "name", AT, true).inspect(|name| {
+    let name = sink.string(header, "name", &at, true).inspect(|name| {
         if name.is_empty() {
             // An empty `name` is reported through `manifestvalidation.noname` from format 2; the
             // name stays empty and only reports show the placeholder. The format-3 reader has
             // no report entry for it, so the game says nothing and the crate reports an
             // information.
-            sink.note(Code::EmptyProperty, "header/name");
+            sink.note(Code::EmptyProperty, &at.child("name"));
         }
     });
-    let description = string(sink, header, "description", AT, false);
-    let uuid = uuid(sink, header, AT);
-    let version = version(sink, header, AT);
+    let description = sink.string(header, "description", &at, false);
+    let uuid = sink.uuid(header, "uuid", &at, false);
+    let version = sink.version(header, "version", &at, false);
     let min_engine_version = min_engine_version(sink, header, pack_type);
     let base_game_version =
         if member(header, "base_game_version").is_some_and(|v| text(v).is_none()) {
-            sink.error(Code::InvalidType { text: None }, "header/base_game_version");
+            sink.error(
+                Code::InvalidType { text: None },
+                &at.child("base_game_version"),
+            );
             None
         } else {
-            base_game_version(sink, header, pack_type, true, "header/base_game_version")
+            base_game_version(
+                sink,
+                header,
+                pack_type,
+                true,
+                &at.child("base_game_version"),
+            )
         };
-    let scope_text = string(sink, header, "pack_scope", AT, false);
+    let scope_text = sink.string(header, "pack_scope", &at, false);
     let mut extra = UnknownMembers::default();
     let pack_scope = pack_scope(
         sink,
@@ -279,27 +167,28 @@ fn header(sink: &mut Sink<'_>, root: &Value, pack_type: PackType) -> Option<Head
         Code::InvalidValue { text: None },
         &mut extra,
     );
-    let platform_locked = boolean(sink, header, "platform_locked", AT, false);
-    let allow_random_seed = boolean(sink, header, "allow_random_seed", AT, false);
-    let lock_template_options = boolean(sink, header, "lock_template_options", AT, false);
+    let platform_locked = sink.boolean(header, "platform_locked", &at, false);
+    let allow_random_seed = sink.boolean(header, "allow_random_seed", &at, false);
+    let lock_template_options = sink.boolean(header, "lock_template_options", &at, false);
     let lock_template_options = match (pack_type == PackType::WorldTemplate, lock_template_options)
     {
         (true, None) if member(header, "lock_template_options").is_none() => {
             sink.error(
                 Code::MissingProperty { text: None },
-                "header/lock_template_options",
+                &at.child("lock_template_options"),
             );
             None
         }
         (false, Some(_)) => {
             // A `lock_template_options` on a pack that is not a world template is a pack-report
             // warning, which counts as the level-2 class.
-            sink.warning(Code::IgnoredProperty, "header/lock_template_options");
+            sink.warning(Code::IgnoredProperty, &at.child("lock_template_options"));
             None
         }
         (_, value) => value,
     };
-    let pack_optimization_version = string(sink, header, "pack_optimization_version", AT, false)
+    let pack_optimization_version = sink
+        .string(header, "pack_optimization_version", &at, false)
         .and_then(|raw| RelaxedSemVersion::from_text(&raw));
     Some(Header {
         name: name?,
@@ -324,72 +213,52 @@ fn min_engine_version(
     header: &Value,
     pack_type: PackType,
 ) -> Option<MinEngineVersion> {
-    const AT: &str = "header/min_engine_version";
+    let at = path(&["header", "min_engine_version"]);
     let enforced = matches!(pack_type, PackType::Behavior | PackType::Resource);
     let Some(value) = member(header, "min_engine_version") else {
         if enforced {
-            sink.error(Code::MissingProperty { text: None }, AT);
+            sink.error(Code::MissingProperty { text: None }, &at);
         }
         return None;
     };
     let Some(raw) = text(value) else {
-        sink.error(Code::InvalidType { text: None }, AT);
+        sink.error(Code::InvalidType { text: None }, &at);
         return None;
     };
     if !enforced {
         // A `min_engine_version` on a pack that does not enforce one (the legacy reader
         // reports it too) is a pack-report warning, which counts as the level-2 class. The
         // report does not identify the member.
-        sink.warning(Code::IgnoredProperty, AT);
+        sink.warning(Code::IgnoredProperty, &at);
         return None;
     }
     let Some(version) = relaxed_version_text(raw) else {
-        sink.error(Code::MalformedPropertyVersion { text: None }, AT);
+        sink.error(Code::MalformedPropertyVersion { text: None }, &at);
         return None;
     };
-    let engine = SemVersion::from(ENGINE_VERSION);
-    if version > engine {
-        sink.error(
-            Code::VersionTooHigh {
-                version: version.to_string(),
-                limit: engine.to_string(),
-            },
-            AT,
-        );
-        return None;
-    }
-    if version < LOWEST_ENGINE {
-        sink.error(
-            Code::VersionTooLow {
-                version: version.to_string(),
-                limit: LOWEST_ENGINE.to_string(),
-            },
-            AT,
-        );
-        return None;
-    }
-    Some(MinEngineVersion { version })
+    sink.engine_bounds(&version, &at)
+        .then_some(MinEngineVersion { version })
 }
 
 fn modules(sink: &mut Sink<'_>, root: &Value) -> Vec<Module> {
     const AT: &str = "modules";
-    let Some(elements) = array(sink, root, AT, "", true) else {
+    let list = path(&[AT]);
+    let Some(elements) = sink.array(root, AT, &JsonPath::new(), true) else {
         return Vec::new();
     };
     if elements.is_empty() {
         // The schema needs at least one module, and the game asserts that one exists.
-        sink.error(Code::InvalidValue { text: None }, AT);
+        sink.error(Code::InvalidValue { text: None }, &list);
     }
     let mut modules = Vec::new();
     let mut seen = HashSet::new();
     for (index, element) in elements.iter().enumerate() {
-        let at = item(AT, index);
+        let at = list.index(index);
         if element.as_object().is_none() {
             sink.error(Code::InvalidType { text: None }, &at);
             continue;
         }
-        unknown_members(
-            sink,
+        sink.unknown(
             element,
             &at,
             &[
@@ -401,7 +270,7 @@ fn modules(sink: &mut Sink<'_>, root: &Value) -> Vec<Module> {
                 "language",
             ],
         );
-        let type_name = string(sink, element, "type", &at, true);
+        let type_name = sink.string(element, "type", &at, true);
         let module_type = type_name.and_then(|name| {
             let ty = ModuleType::from_name(&name).filter(|ty| *ty != ModuleType::Invalid);
             if ty.is_none() {
@@ -409,20 +278,20 @@ fn modules(sink: &mut Sink<'_>, root: &Value) -> Vec<Module> {
                 let text = Some(VanillaText::ManifestInvalidValue {
                     path: "modules/type".to_owned(),
                 });
-                sink.error(Code::InvalidProperty { text }, &child(&at, "type"));
+                sink.error(Code::InvalidProperty { text }, &below(&at, "type"));
             }
             ty
         });
-        let uuid = uuid(sink, element, &at);
-        let version = version(sink, element, &at);
-        let description = string(sink, element, "description", &at, false);
-        let language = string(sink, element, "language", &at, false);
-        let entry = string(sink, element, "entry", &at, false);
+        let uuid = sink.uuid(element, "uuid", &at, false);
+        let version = sink.version(element, "version", &at, false);
+        let description = sink.string(element, "description", &at, false);
+        let language = sink.string(element, "language", &at, false);
+        let entry = sink.string(element, "entry", &at, false);
         if let Some(uuid) = uuid
             && !seen.insert(uuid)
         {
             // The game's comprehensive-manifest check reports "duplicate module uuid found: …".
-            sink.error(Code::DuplicateUuid, &child(&at, "uuid"));
+            sink.error(Code::DuplicateUuid, &below(&at, "uuid"));
         }
         if let (Some(module_type), Some(uuid), Some(version)) = (module_type, uuid, version) {
             modules.push(Module {
@@ -437,37 +306,40 @@ fn modules(sink: &mut Sink<'_>, root: &Value) -> Vec<Module> {
         }
     }
     if !modules_consistent(&modules) {
-        sink.error(Code::MultipleModules, AT);
+        sink.error(Code::MultipleModules, &list);
     }
     modules
 }
 
-fn dependencies(sink: &mut Sink<'_>, root: &Value) -> Vec<Dependency> {
+fn dependencies(sink: &mut Sink<'_>, root: &Value) -> (Vec<Dependency>, Vec<DependencyPlace>) {
     const AT: &str = "dependencies";
-    let Some(elements) = array(sink, root, AT, "", false) else {
-        return Vec::new();
+    let list = path(&[AT]);
+    let Some(elements) = sink.array(root, AT, &JsonPath::new(), false) else {
+        return (Vec::new(), Vec::new());
     };
     let mut dependencies = Vec::new();
+    let mut places = Vec::new();
     for (index, element) in elements.iter().enumerate() {
-        let at = item(AT, index);
+        let at = list.index(index);
         if element.as_object().is_none() {
             sink.error(Code::InvalidType { text: None }, &at);
             continue;
         }
         if member(element, "module_name").is_none() {
-            unknown_members(sink, element, &at, &["uuid", "version"]);
-            let uuid = uuid(sink, element, &at);
-            let version = version(sink, element, &at);
+            sink.unknown(element, &at, &["uuid", "version"]);
+            let uuid = sink.uuid(element, "uuid", &at, false);
+            let version = sink.version(element, "version", &at, false);
             if let (Some(uuid), Some(version)) = (uuid, version) {
                 dependencies.push(Dependency::Pack { uuid, version });
+                places.push(dependency_place(element, at, false));
             }
             continue;
         }
         // Format 3 rejects `module_name` together with `uuid` on one element
         // (`UnrecognizedField`).
-        unknown_members(sink, element, &at, &["module_name", "version", "optional"]);
-        let module_name = string(sink, element, "module_name", &at, true);
-        let optional = boolean(sink, element, "optional", &at, false);
+        sink.unknown(element, &at, &["module_name", "version", "optional"]);
+        let module_name = sink.string(element, "module_name", &at, true);
+        let optional = sink.boolean(element, "optional", &at, false);
         let version = script_module_version(sink, element, &at, module_name.as_deref());
         if let (Some(module_name), Some(version)) = (module_name, version) {
             dependencies.push(Dependency::NativeModule {
@@ -475,9 +347,10 @@ fn dependencies(sink: &mut Sink<'_>, root: &Value) -> Vec<Dependency> {
                 version,
                 optional,
             });
+            places.push(dependency_place(element, at, true));
         }
     }
-    dependencies
+    (dependencies, places)
 }
 
 /// A script-module dependency's `version`: `alpha`, `beta`, `internal` or a relaxed version
@@ -486,10 +359,10 @@ fn dependencies(sink: &mut Sink<'_>, root: &Value) -> Vec<Dependency> {
 fn script_module_version(
     sink: &mut Sink<'_>,
     element: &Value,
-    at: &str,
+    at: &JsonPath,
     module_name: Option<&str>,
 ) -> Option<NativeModuleVersion> {
-    let raw = string(sink, element, "version", at, true)?;
+    let raw = sink.string(element, "version", at, true)?;
     match raw.as_str() {
         "alpha" => Some(NativeModuleVersion::LatestAlpha),
         "beta" => Some(NativeModuleVersion::LatestBeta),
@@ -505,7 +378,7 @@ fn script_module_version(
                 });
                 sink.error(
                     Code::MalformedPropertyVersion { text },
-                    &child(at, "version"),
+                    &below(at, "version"),
                 );
             }
             parsed
@@ -513,53 +386,27 @@ fn script_module_version(
     }
 }
 
-fn capability_list(
-    sink: &mut Sink<'_>,
-    root: &Value,
-    header: Option<&Header>,
-    pack_type: PackType,
-    registry: &CapabilityRegistry,
-) -> Vec<Capability> {
-    const AT: &str = "capabilities";
-    let Some(elements) = array(sink, root, AT, "", false) else {
-        return Vec::new();
-    };
-    let mut capabilities = Vec::new();
-    for (index, element) in elements.iter().enumerate() {
-        let at = item(AT, index);
-        let Some(name) = text(element) else {
-            sink.error(Code::InvalidType { text: None }, &at);
-            continue;
-        };
-        let capability = Capability::from_name(name);
-        let uuid = header.map_or_else(Uuid::nil, |header| header.uuid);
-        check_capability(sink, registry, &capability, uuid, pack_type, &at);
-        capabilities.push(capability);
-    }
-    capabilities
-}
-
 fn subpacks(sink: &mut Sink<'_>, root: &Value) -> Vec<Subpack> {
     const AT: &str = "subpacks";
-    let Some(elements) = array(sink, root, AT, "", false) else {
+    let list = path(&[AT]);
+    let Some(elements) = sink.array(root, AT, &JsonPath::new(), false) else {
         return Vec::new();
     };
     let mut subpacks = Vec::new();
     for (index, element) in elements.iter().enumerate() {
-        let at = item(AT, index);
+        let at = list.index(index);
         if element.as_object().is_none() {
             sink.error(Code::InvalidType { text: None }, &at);
             continue;
         }
-        unknown_members(
-            sink,
+        sink.unknown(
             element,
             &at,
             &["folder_name", "memory_performance_tier", "name"],
         );
-        let folder_name = string(sink, element, "folder_name", &at, true);
-        let name = string(sink, element, "name", &at, true);
-        let tier_at = child(&at, "memory_performance_tier");
+        let folder_name = sink.string(element, "folder_name", &at, true);
+        let name = sink.string(element, "name", &at, true);
+        let tier_at = below(&at, "memory_performance_tier");
         let memory_tier = match member(element, "memory_performance_tier") {
             None => {
                 sink.error(Code::MissingRequiredField { text: None }, &tier_at);

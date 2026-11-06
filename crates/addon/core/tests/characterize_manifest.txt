@@ -1,0 +1,3668 @@
+## legacy string valid
+format V2/V2 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 21, patch: 0, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 2,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ]
+}
+
+
+## legacy string null optional
+format V2/V2 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 21, patch: 0, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 2,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ]
+}
+
+
+## legacy string wrong type
+WrongTypeProperty { text: None } | Error | Parse | `header/description` ["header", "description"]
+rejected
+
+## legacy string empty optional
+format V2/V2 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 21, patch: 0, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 2,
+  "header": {
+    "name": "P",
+    "description": "",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ]
+}
+
+
+## legacy name absent v2
+MissingProperty { text: None } | Error | Parse | `header/name` ["header", "name"]
+rejected
+
+## legacy name null v2
+MissingProperty { text: None } | Error | Parse | `header/name` ["header", "name"]
+rejected
+
+## legacy name empty v2
+EmptyProperty | Info | Parse | `header/name` ["header", "name"]
+format V2/V2 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 21, patch: 0, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 2,
+  "header": {
+    "name": "",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ]
+}
+
+
+## legacy name wrong type v2
+WrongTypeProperty { text: None } | Error | Parse | `header/name` ["header", "name"]
+rejected
+
+## legacy name empty v1
+format V1/V1 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 2, patch: 5, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 1,
+  "header": {
+    "name": "",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": [
+      1,
+      0,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ]
+}
+
+
+## legacy name absent v1
+format V1/V1 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 2, patch: 5, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 1,
+  "header": {
+    "name": "",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": [
+      1,
+      0,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ]
+}
+
+
+## legacy name empty v0
+DeprecatedMember { text: Some(Fixed("Pack Manifest version 0 is deprecated, please include format_version 2 in your manifest.json.")) } | Warning | Parse | `format_version` ["format_version"]
+EmptyProperty | Warning | Parse | `header/name` ["header", "name"]
+UnusualFormatVersion | Info | Upgrade | `` []
+format V1/V0 pack Resource min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 2, patch: 5, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 1,
+  "header": {
+    "name": "11111111-1111-1111-1111-111111111111",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": [
+      1,
+      0,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "resources",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ]
+}
+
+
+## legacy name absent v0
+DeprecatedMember { text: Some(Fixed("Pack Manifest version 0 is deprecated, please include format_version 2 in your manifest.json.")) } | Warning | Parse | `format_version` ["format_version"]
+UnusualFormatVersion | Info | Upgrade | `` []
+format V1/V0 pack Resource min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 2, patch: 5, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 1,
+  "header": {
+    "name": "11111111-1111-1111-1111-111111111111",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": [
+      1,
+      0,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "resources",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ]
+}
+
+
+## legacy subpack folder empty
+EmptyProperty | Error | Parse | `subpacks/0/folder_name` ["subpacks", #0, "folder_name"]
+rejected
+
+## legacy subpack folder null
+MissingProperty { text: None } | Error | Parse | `subpacks/0/folder_name` ["subpacks", #0, "folder_name"]
+rejected
+
+## legacy boolean null
+format V2/V2 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 21, patch: 0, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 2,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ]
+}
+
+
+## legacy boolean wrong type
+WrongTypeProperty { text: None } | Error | Parse | `header/platform_locked` ["header", "platform_locked"]
+WrongTypeProperty { text: None } | Error | Parse | `header/allow_random_seed` ["header", "allow_random_seed"]
+rejected
+
+## legacy boolean root
+WrongTypeProperty { text: None } | Error | Parse | `has_education_metadata` ["has_education_metadata"]
+rejected
+
+## legacy boolean root valid
+format V2/V2 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 21, patch: 0, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 2,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ],
+  "has_education_metadata": true
+}
+
+
+## legacy uuid absent
+MissingProperty { text: None } | Error | Parse | `header/uuid` ["header", "uuid"]
+rejected
+
+## legacy uuid null
+MissingProperty { text: None } | Error | Parse | `header/uuid` ["header", "uuid"]
+rejected
+
+## legacy uuid wrong type
+WrongTypeProperty { text: None } | Error | Parse | `header/uuid` ["header", "uuid"]
+rejected
+
+## legacy uuid empty
+EmptyProperty | Error | Parse | `header/uuid` ["header", "uuid"]
+rejected
+
+## legacy uuid malformed
+MalformedPropertyUuid | Error | Parse | `header/uuid` ["header", "uuid"]
+rejected
+
+## legacy uuid malformed v0
+DeprecatedMember { text: Some(Fixed("Pack Manifest version 0 is deprecated, please include format_version 2 in your manifest.json.")) } | Warning | Parse | `format_version` ["format_version"]
+MalformedPropertyUuid | Warning | Parse | `header/pack_id` ["header", "pack_id"]
+UnusualFormatVersion | Info | Upgrade | `` []
+format V1/V0 pack Resource min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 2, patch: 5, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 1,
+  "header": {
+    "name": "P",
+    "uuid": "f6c7ba89-561a-35c4-8cee-2a6a30edd561",
+    "version": [
+      1,
+      0,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "resources",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ]
+}
+
+
+## legacy module uuid malformed v0
+DeprecatedMember { text: Some(Fixed("Pack Manifest version 0 is deprecated, please include format_version 2 in your manifest.json.")) } | Warning | Parse | `format_version` ["format_version"]
+MalformedPropertyUuid | Error | Parse | `header/modules/0/uuid` ["header", "modules", #0, "uuid"]
+UnusualFormatVersion | Info | Upgrade | `` []
+rejected
+
+## legacy version absent
+MissingProperty { text: None } | Error | Parse | `header/version` ["header", "version"]
+rejected
+
+## legacy version absent v0
+DeprecatedMember { text: Some(Fixed("Pack Manifest version 0 is deprecated, please include format_version 2 in your manifest.json.")) } | Warning | Parse | `format_version` ["format_version"]
+MissingProperty { text: None } | Warning | Parse | `header/packs_version` ["header", "packs_version"]
+UnusualFormatVersion | Info | Upgrade | `` []
+format V1/V0 pack Resource min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 2, patch: 5, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 1,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": [
+      0,
+      0,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "resources",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ]
+}
+
+
+## legacy version partial
+MalformedPropertyVersion { text: Some(ManifestNotSemVer { path: "/header/version" }) } | Error | Parse | `header/version` ["header", "version"]
+rejected
+
+## legacy version string
+format V2/V2 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 21, patch: 0, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 2,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": "1.2.3-beta",
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ]
+}
+
+
+## legacy version partial v0
+DeprecatedMember { text: Some(Fixed("Pack Manifest version 0 is deprecated, please include format_version 2 in your manifest.json.")) } | Warning | Parse | `format_version` ["format_version"]
+MalformedPropertyVersion { text: None } | Warning | Parse | `header/packs_version` ["header", "packs_version"]
+UnusualFormatVersion | Info | Upgrade | `` []
+format V1/V0 pack Resource min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 2, patch: 5, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 1,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": [
+      1,
+      0,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "resources",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ]
+}
+
+
+## legacy version short array
+WrongTypeProperty { text: Some(ManifestWrongType { path: "/header/version" }) } | Error | Parse | `header/version` ["header", "version"]
+rejected
+
+## legacy version short array v0
+DeprecatedMember { text: Some(Fixed("Pack Manifest version 0 is deprecated, please include format_version 2 in your manifest.json.")) } | Warning | Parse | `format_version` ["format_version"]
+WrongTypeProperty { text: None } | Warning | Parse | `header/packs_version` ["header", "packs_version"]
+UnusualFormatVersion | Info | Upgrade | `` []
+format V1/V0 pack Resource min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 2, patch: 5, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 1,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": [
+      0,
+      0,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "resources",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ]
+}
+
+
+## legacy version coerced elements
+InvalidType { text: None } | Info | Parse | `header/version/1` ["header", "version", #1]
+InvalidValue { text: None } | Info | Parse | `header/version/2` ["header", "version", #2]
+InvalidType { text: None } | Info | Parse | `header/min_engine_version/2` ["header", "min_engine_version", #2]
+format V2/V2 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 21, patch: 1, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 2,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": [
+      1,
+      0,
+      2
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      1
+    ]
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ]
+}
+
+
+## legacy version wrong type
+WrongTypeProperty { text: Some(ManifestWrongType { path: "/header/version" }) } | Error | Parse | `header/version` ["header", "version"]
+rejected
+
+## legacy module version wrong
+MalformedPropertyVersion { text: Some(ManifestNotSemVer { path: "/modules/0/version" }) } | Error | Parse | `modules/0/version` ["modules", #0, "version"]
+rejected
+
+## legacy header absent
+MissingProperty { text: None } | Error | Parse | `header` ["header"]
+rejected
+
+## legacy header null
+MissingProperty { text: None } | Error | Parse | `header` ["header"]
+rejected
+
+## legacy header wrong type
+WrongTypeProperty { text: None } | Error | Parse | `header` ["header"]
+rejected
+
+## legacy header unknown members
+format V2/V2 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 21, patch: 0, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 2,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ],
+    "x": 1,
+    "0": 2,
+    "": 3,
+    "+5": 4,
+    "a/b~c": 5
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ]
+}
+
+
+## legacy root unknown members
+format V2/V2 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 21, patch: 0, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 2,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ],
+  "x": 1,
+  "0": 2,
+  "": 3
+}
+
+
+## legacy pack_scope
+format V2/V2 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 21, patch: 0, pre_release: "", build: "", any: false } }) scope Some(World)
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 2,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ],
+    "pack_scope": "world"
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ]
+}
+
+
+## legacy pack_scope unknown
+InvalidProperty { text: None } | Info | Parse | `header/pack_scope` ["header", "pack_scope"]
+format V2/V2 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 21, patch: 0, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 2,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ],
+    "pack_scope": "nope"
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ]
+}
+
+
+## legacy pack_scope wrong type
+WrongTypeProperty { text: None } | Error | Parse | `header/pack_scope` ["header", "pack_scope"]
+rejected
+
+## legacy pack_optimization_version
+format V2/V2 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 21, patch: 0, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 2,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ],
+    "pack_optimization_version": "1.2"
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ]
+}
+
+
+## legacy pack_optimization_version array
+InvalidValue { text: None } | Info | Parse | `header/pack_optimization_version/1` ["header", "pack_optimization_version", #1]
+format V2/V2 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 21, patch: 0, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 2,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ],
+    "pack_optimization_version": [
+      1,
+      2,
+      3
+    ]
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ]
+}
+
+
+## legacy pack_optimization_version bad
+format V2/V2 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 21, patch: 0, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 2,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ]
+}
+
+
+## legacy base_game_version on data
+IgnoredProperty | Warning | Parse | `header/base_game_version` ["header", "base_game_version"]
+format V2/V2 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 21, patch: 0, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 2,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ]
+}
+
+
+## legacy base_game_version template
+format V2/V2 pack WorldTemplate min_engine None scope None
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 2,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "base_game_version": "*",
+    "lock_template_options": true
+  },
+  "modules": [
+    {
+      "type": "world_template",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ]
+}
+
+
+## legacy base_game_version template absent
+MissingProperty { text: None } | Error | Parse | `header/base_game_version` ["header", "base_game_version"]
+rejected
+
+## legacy base_game_version template low
+VersionTooLow { version: "1.0.0", limit: "1.13.0" } | Error | Parse | `header/base_game_version` ["header", "base_game_version"]
+rejected
+
+## legacy base_game_version template bad
+MalformedPropertyVersion { text: None } | Error | Parse | `header/base_game_version` ["header", "base_game_version"]
+rejected
+
+## legacy min_engine absent v2
+MissingProperty { text: None } | Error | Parse | `header/min_engine_version` ["header", "min_engine_version"]
+rejected
+
+## legacy min_engine string v2
+MalformedPropertyVersion { text: None } | Error | Parse | `header/min_engine_version` ["header", "min_engine_version"]
+rejected
+
+## legacy min_engine too high
+VersionTooHigh { version: "9.0.0", limit: "1.26.60" } | Error | Parse | `header/min_engine_version` ["header", "min_engine_version"]
+rejected
+
+## legacy min_engine too low
+VersionTooLow { version: "1.1.0", limit: "1.13.0" } | Error | Parse | `header/min_engine_version` ["header", "min_engine_version"]
+rejected
+
+## legacy min_engine absent v1
+format V1/V1 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 2, patch: 5, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 1,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": [
+      1,
+      0,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ]
+}
+
+
+## legacy min_engine default v1
+format V1/V1 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 2, patch: 5, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 1,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      2,
+      5
+    ]
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ]
+}
+
+
+## legacy min_engine capped v1
+MinEngineVersionCapFormatVersion1 | Warning | Parse | `header/min_engine_version` ["header", "min_engine_version"]
+format V1/V1 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 12, patch: 0, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 1,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      20,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ]
+}
+
+
+## legacy min_engine low v1
+format V1/V1 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 1, patch: 0, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 1,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      1,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ]
+}
+
+
+## legacy min_engine on skin pack
+IgnoredProperty | Warning | Parse | `header/min_engine_version` ["header", "min_engine_version"]
+format V2/V2 pack Skins min_engine None scope None
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 2,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": [
+      1,
+      0,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "skin_pack",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ]
+}
+
+
+## legacy min_engine on skin pack v1
+MinEngineVersionCapFormatVersion1 | Warning | Parse | `header/min_engine_version` ["header", "min_engine_version"]
+format V1/V1 pack Skins min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 12, patch: 0, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 1,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "skin_pack",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ]
+}
+
+
+## legacy lock absent template
+MissingProperty { text: None } | Error | Parse | `header/lock_template_options` ["header", "lock_template_options"]
+rejected
+
+## legacy lock on data
+IgnoredProperty | Warning | Parse | `header/lock_template_options` ["header", "lock_template_options"]
+format V2/V2 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 21, patch: 0, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 2,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ]
+}
+
+
+## legacy lock on data v1
+format V1/V1 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 2, patch: 5, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 1,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "lock_template_options": true
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ]
+}
+
+
+## legacy lock wrong type
+WrongTypeProperty { text: None } | Error | Parse | `header/lock_template_options` ["header", "lock_template_options"]
+rejected
+
+## legacy lock null template
+MissingProperty { text: None } | Error | Parse | `header/lock_template_options` ["header", "lock_template_options"]
+rejected
+
+## legacy modules absent
+WrongTypeProperty { text: None } | Error | Parse | `modules` ["modules"]
+rejected
+
+## legacy modules null
+WrongTypeProperty { text: None } | Error | Parse | `modules` ["modules"]
+rejected
+
+## legacy modules wrong type
+WrongTypeProperty { text: None } | Error | Parse | `modules` ["modules"]
+rejected
+
+## legacy modules empty
+IgnoredProperty | Warning | Parse | `header/min_engine_version` ["header", "min_engine_version"]
+format V2/V2 pack Invalid min_engine None scope None
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 2,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": [
+      1,
+      0,
+      0
+    ]
+  },
+  "modules": []
+}
+
+
+## legacy modules element wrong type
+WrongTypeProperty { text: None } | Error | Parse | `modules/0` ["modules", #0]
+rejected
+
+## legacy module type invalid
+InvalidProperty { text: Some(ManifestInvalidValue { path: "/modules/0/type" }) } | Error | Parse | `modules/0/type` ["modules", #0, "type"]
+rejected
+
+## legacy module type absent
+InvalidProperty { text: Some(ManifestInvalidValue { path: "/modules/0/type" }) } | Error | Parse | `modules/0/type` ["modules", #0, "type"]
+rejected
+
+## legacy module type invalid v0
+DeprecatedMember { text: Some(Fixed("Pack Manifest version 0 is deprecated, please include format_version 2 in your manifest.json.")) } | Warning | Parse | `format_version` ["format_version"]
+InvalidProperty { text: None } | Warning | Parse | `header/modules/0/type` ["header", "modules", #0, "type"]
+UnusualFormatVersion | Info | Upgrade | `` []
+format V1/V0 pack Resource min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 2, patch: 5, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 1,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": [
+      1,
+      0,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "resources",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ]
+}
+
+
+## legacy modules inconsistent
+MultipleModules | Error | Parse | `modules` ["modules"]
+rejected
+
+## legacy modules inconsistent v0
+DeprecatedMember { text: Some(Fixed("Pack Manifest version 0 is deprecated, please include format_version 2 in your manifest.json.")) } | Warning | Parse | `format_version` ["format_version"]
+MultipleModules | Warning | Parse | `header/modules` ["header", "modules"]
+UnusualFormatVersion | Info | Upgrade | `` []
+format V1/V0 pack Resource min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 2, patch: 5, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 1,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": [
+      1,
+      0,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "resources",
+      "uuid": "55555555-5555-5555-5555-555555555555",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ]
+}
+
+
+## legacy modules absent v0
+DeprecatedMember { text: Some(Fixed("Pack Manifest version 0 is deprecated, please include format_version 2 in your manifest.json.")) } | Warning | Parse | `format_version` ["format_version"]
+MissingModules | Warning | Parse | `header/modules` ["header", "modules"]
+UnusualFormatVersion | Info | Upgrade | `` []
+format V1/V0 pack Resource min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 2, patch: 5, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 1,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": [
+      1,
+      0,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "resources",
+      "uuid": "704523b8-8e6e-37a3-ccef-b24f1b5e6d0e",
+      "version": [
+        0,
+        0,
+        0
+      ]
+    }
+  ]
+}
+
+
+## legacy module unknown members
+format V2/V2 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 21, patch: 0, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 2,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": [
+        1,
+        0,
+        0
+      ],
+      "0": 1,
+      "": 2,
+      "x": 3
+    }
+  ]
+}
+
+
+## legacy module uuid is the header's
+DuplicateUuid | Error | Parse | `header/uuid` ["header", "uuid"]
+rejected
+
+## legacy module uuid is the header's v0
+DeprecatedMember { text: Some(Fixed("Pack Manifest version 0 is deprecated, please include format_version 2 in your manifest.json.")) } | Warning | Parse | `format_version` ["format_version"]
+DuplicateUuid | Warning | Parse | `header/pack_id` ["header", "pack_id"]
+UnusualFormatVersion | Info | Upgrade | `` []
+format V1/V0 pack Resource min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 2, patch: 5, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 1,
+  "header": {
+    "name": "P",
+    "uuid": "38c6cbd2-8bf1-3507-0d07-0980dd1fb595",
+    "version": [
+      1,
+      0,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "resources",
+      "uuid": "11111111-1111-1111-1111-111111111111",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ]
+}
+
+
+## legacy modules error stops the read
+InvalidProperty { text: Some(ManifestInvalidValue { path: "/modules/0/type" }) } | Error | Parse | `modules/0/type` ["modules", #0, "type"]
+rejected
+
+## legacy script modules
+format V2/V2 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 21, patch: 0, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 2,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    },
+    {
+      "type": "script",
+      "uuid": "44444444-4444-4444-4444-444444444444",
+      "version": [
+        1,
+        0,
+        0
+      ],
+      "language": "javascript",
+      "entry": "scripts/main.js"
+    }
+  ]
+}
+
+
+## legacy dependencies wrong type
+WrongTypeProperty { text: None } | Error | Parse | `dependencies` ["dependencies"]
+rejected
+
+## legacy dependencies null
+format V2/V2 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 21, patch: 0, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 2,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ]
+}
+
+
+## legacy dependency element wrong type
+WrongTypeProperty { text: None } | Error | Parse | `dependencies/0` ["dependencies", #0]
+rejected
+
+## legacy dependency pack
+format V2/V2 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 21, patch: 0, pre_release: "", build: "", any: false } }) scope None
+dependencies [Pack { uuid: 33333333-3333-3333-3333-333333333333, version: SemVersion { major: 1, minor: 0, patch: 0, pre_release: "", build: "", any: false } }]
+subpacks []
+settings []
+{
+  "format_version": 2,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "uuid": "33333333-3333-3333-3333-333333333333",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ]
+}
+
+
+## legacy dependency pack no version
+MissingProperty { text: None } | Error | Parse | `dependencies/0/version` ["dependencies", #0, "version"]
+rejected
+
+## legacy dependency module_name and uuid
+InvalidProperty { text: None } | Warning | Parse | `dependencies/0` ["dependencies", #0]
+format V2/V2 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 21, patch: 0, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 2,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ]
+}
+
+
+## legacy dependency module_name null
+format V2/V2 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 21, patch: 0, pre_release: "", build: "", any: false } }) scope None
+dependencies [Pack { uuid: 11111111-1111-1111-1111-111111111111, version: SemVersion { major: 1, minor: 0, patch: 0, pre_release: "", build: "", any: false } }]
+subpacks []
+settings []
+{
+  "format_version": 2,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "uuid": "11111111-1111-1111-1111-111111111111",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ]
+}
+
+
+## legacy dependency module_name uuid null
+format V2/V2 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 21, patch: 0, pre_release: "", build: "", any: false } }) scope None
+dependencies [NativeModule { module_name: "@minecraft/server", version: Version(SemVersion { major: 1, minor: 0, patch: 0, pre_release: "", build: "", any: false }), optional: None }]
+subpacks []
+settings []
+{
+  "format_version": 2,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "module_name": "@minecraft/server",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ]
+}
+
+
+## legacy dependency native selector
+format V2/V2 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 21, patch: 0, pre_release: "", build: "", any: false } }) scope None
+dependencies [NativeModule { module_name: "@minecraft/server", version: LatestBeta, optional: None }]
+subpacks []
+settings []
+{
+  "format_version": 2,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "module_name": "@minecraft/server",
+      "version": "beta"
+    }
+  ]
+}
+
+
+## legacy dependency native version
+format V2/V2 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 21, patch: 0, pre_release: "", build: "", any: false } }) scope None
+dependencies [NativeModule { module_name: "@minecraft/server", version: Version(SemVersion { major: 1, minor: 2, patch: 0, pre_release: "", build: "", any: false }), optional: None }]
+subpacks []
+settings []
+{
+  "format_version": 2,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "module_name": "@minecraft/server",
+      "version": [
+        1,
+        2,
+        0
+      ]
+    }
+  ]
+}
+
+
+## legacy dependency native array
+format V2/V2 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 21, patch: 0, pre_release: "", build: "", any: false } }) scope None
+dependencies [NativeModule { module_name: "@minecraft/server", version: Version(SemVersion { major: 1, minor: 2, patch: 0, pre_release: "", build: "", any: false }), optional: None }]
+subpacks []
+settings []
+{
+  "format_version": 2,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "module_name": "@minecraft/server",
+      "version": [
+        1,
+        2,
+        0
+      ]
+    }
+  ]
+}
+
+
+## legacy dependency native relaxed
+MalformedPropertyVersion { text: Some(ManifestNotSemVer { path: "/dependencies/0/version" }) } | Error | Parse | `dependencies/0/version` ["dependencies", #0, "version"]
+rejected
+
+## legacy dependency native no version
+MissingProperty { text: None } | Error | Parse | `dependencies/0/version` ["dependencies", #0, "version"]
+rejected
+
+## legacy dependency native name empty
+EmptyProperty | Error | Parse | `dependencies/0/module_name` ["dependencies", #0, "module_name"]
+rejected
+
+## legacy dependency native name wrong type
+WrongTypeProperty { text: None } | Error | Parse | `dependencies/0/module_name` ["dependencies", #0, "module_name"]
+rejected
+
+## legacy dependency optional
+format V2/V2 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 21, patch: 0, pre_release: "", build: "", any: false } }) scope None
+dependencies [NativeModule { module_name: "@minecraft/server", version: Version(SemVersion { major: 1, minor: 0, patch: 0, pre_release: "", build: "", any: false }), optional: None }]
+subpacks []
+settings []
+{
+  "format_version": 2,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "module_name": "@minecraft/server",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ]
+}
+
+
+## legacy dependency unknown member
+format V2/V2 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 21, patch: 0, pre_release: "", build: "", any: false } }) scope None
+dependencies [NativeModule { module_name: "@minecraft/server", version: Version(SemVersion { major: 1, minor: 0, patch: 0, pre_release: "", build: "", any: false }), optional: None }]
+subpacks []
+settings []
+{
+  "format_version": 2,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "module_name": "@minecraft/server",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ]
+}
+
+
+## legacy capabilities
+WrongTypeProperty { text: None } | Error | Parse | `capabilities/0` ["capabilities", #0]
+InvalidCapability { name: "nope" } | Info | Validate | `capabilities/2` ["capabilities", #2]
+rejected
+
+## legacy capabilities wrong type
+WrongTypeProperty { text: None } | Error | Parse | `capabilities` ["capabilities"]
+rejected
+
+## legacy subpacks
+format V2/V2 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 21, patch: 0, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks [Subpack { name: "A", folder_name: "a", memory_tier: Tier4 }, Subpack { name: "B", folder_name: "b", memory_tier: Tier2 }]
+settings []
+{
+  "format_version": 2,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ],
+  "subpacks": [
+    {
+      "folder_name": "a",
+      "name": "A",
+      "memory_tier": 24
+    },
+    {
+      "folder_name": "b",
+      "name": "B",
+      "memory_tier": 12
+    }
+  ]
+}
+
+
+## legacy subpack memory_tier negative
+InvalidProperty { text: None } | Error | Parse | `subpacks/0/memory_tier` ["subpacks", #0, "memory_tier"]
+rejected
+
+## legacy subpack performance tier high
+InvalidProperty { text: None } | Error | Parse | `subpacks/0/memory_performance_tier` ["subpacks", #0, "memory_performance_tier"]
+rejected
+
+## legacy subpack no tier
+WrongTypeProperty { text: None } | Info | Parse | `subpacks/0/memory_tier` ["subpacks", #0, "memory_tier"]
+format V2/V2 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 21, patch: 0, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks [Subpack { name: "A", folder_name: "a", memory_tier: Tier0 }]
+settings []
+{
+  "format_version": 2,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ],
+  "subpacks": [
+    {
+      "folder_name": "a",
+      "name": "A",
+      "memory_tier": 0
+    }
+  ]
+}
+
+
+## legacy subpack tier wrong type
+WrongTypeProperty { text: None } | Info | Parse | `subpacks/0/memory_tier` ["subpacks", #0, "memory_tier"]
+format V2/V2 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 21, patch: 0, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks [Subpack { name: "A", folder_name: "a", memory_tier: Tier0 }]
+settings []
+{
+  "format_version": 2,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ],
+  "subpacks": [
+    {
+      "folder_name": "a",
+      "name": "A",
+      "memory_tier": 0
+    }
+  ]
+}
+
+
+## legacy subpacks element wrong type
+WrongTypeProperty { text: None } | Error | Parse | `subpacks/0` ["subpacks", #0]
+rejected
+
+## legacy subpacks wrong type
+WrongTypeProperty { text: None } | Error | Parse | `subpacks` ["subpacks"]
+rejected
+
+## legacy subpack missing names
+MissingProperty { text: None } | Error | Parse | `subpacks/0/folder_name` ["subpacks", #0, "folder_name"]
+MissingProperty { text: None } | Error | Parse | `subpacks/0/name` ["subpacks", #0, "name"]
+rejected
+
+## legacy subpack unknown member
+format V2/V2 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 21, patch: 0, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks [Subpack { name: "A", folder_name: "a", memory_tier: Tier0 }]
+settings []
+{
+  "format_version": 2,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ],
+  "subpacks": [
+    {
+      "folder_name": "a",
+      "name": "A",
+      "memory_tier": 0
+    }
+  ]
+}
+
+
+## legacy settings
+LegacySettingIgnored | Info | Parse | `settings/1` ["settings", #1]
+LegacySettingIgnored | Info | Parse | `settings/3` ["settings", #3]
+format V2/V2 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 21, patch: 0, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks []
+settings [Label { text: "hi" }]
+{
+  "format_version": 2,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ],
+  "settings": [
+    {
+      "type": "label",
+      "text": "hi"
+    }
+  ]
+}
+
+
+## legacy settings wrong type
+WrongTypeProperty { text: None } | Error | Parse | `settings` ["settings"]
+rejected
+
+## legacy metadata
+format V2/V2 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 21, patch: 0, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 2,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ],
+  "metadata": {
+    "authors": [
+      "a"
+    ],
+    "license": "MIT",
+    "url": "u",
+    "product_type": "addon",
+    "generated_with": {
+      "t": [
+        "1.0",
+        [
+          1,
+          2,
+          3
+        ]
+      ]
+    }
+  }
+}
+
+
+## legacy metadata null members
+format V2/V2 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 21, patch: 0, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 2,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ],
+  "metadata": {}
+}
+
+
+## legacy metadata wrong types
+WrongTypeProperty { text: None } | Error | Parse | `metadata/url` ["metadata", "url"]
+WrongTypeProperty { text: None } | Error | Parse | `metadata/license` ["metadata", "license"]
+InvalidProperty { text: None } | Error | Parse | `metadata/product_type` ["metadata", "product_type"]
+WrongTypeProperty { text: None } | Info | Parse | `metadata/authors` ["metadata", "authors"]
+WrongTypeProperty { text: None } | Error | Parse | `metadata/generated_with` ["metadata", "generated_with"]
+rejected
+
+## legacy metadata authors element
+WrongTypeProperty { text: None } | Info | Parse | `metadata/authors` ["metadata", "authors"]
+format V2/V2 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 21, patch: 0, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 2,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ],
+  "metadata": {}
+}
+
+
+## legacy metadata generated_with
+WrongTypeProperty { text: None } | Error | Parse | `metadata/generated_with/1` ["metadata", "generated_with", #1]
+IgnoredProperty | Warning | Parse | `metadata/generated_with/0` ["metadata", "generated_with", #0]
+IgnoredProperty | Warning | Parse | `metadata/generated_with/1` ["metadata", "generated_with", #1]
+IgnoredProperty | Warning | Parse | `metadata/generated_with/2` ["metadata", "generated_with", #2]
+rejected
+
+## legacy metadata unknown members
+MemberNotKept { text: None } | Info | Parse | `metadata/x` ["metadata", "x"]
+MemberNotKept { text: None } | Info | Parse | `metadata/0` ["metadata", #0]
+MemberNotKept { text: None } | Info | Parse | `metadata` ["metadata"]
+MemberNotKept { text: None } | Info | Parse | `metadata/5` ["metadata", #5]
+format V2/V2 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 21, patch: 0, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 2,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ],
+  "metadata": {}
+}
+
+
+## legacy metadata wrong type
+WrongTypeProperty { text: None } | Error | Parse | `metadata` ["metadata"]
+rejected
+
+## legacy metadata null
+format V2/V2 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 21, patch: 0, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 2,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ]
+}
+
+
+## legacy metadata v0
+DeprecatedMember { text: Some(Fixed("Pack Manifest version 0 is deprecated, please include format_version 2 in your manifest.json.")) } | Warning | Parse | `format_version` ["format_version"]
+WrongTypeProperty { text: None } | Info | Parse | `header/metadata/authors` ["header", "metadata", "authors"]
+MemberNotKept { text: None } | Info | Parse | `header/metadata/x` ["header", "metadata", "x"]
+UnusualFormatVersion | Info | Upgrade | `` []
+format V1/V0 pack Resource min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 2, patch: 5, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 1,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": [
+      1,
+      0,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "resources",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ],
+  "metadata": {}
+}
+
+
+## legacy format absent
+DeprecatedMember { text: Some(Fixed("Pack Manifest version 0 is deprecated, please include format_version 2 in your manifest.json.")) } | Warning | Parse | `format_version` ["format_version"]
+MissingProperty { text: None } | Error | Parse | `header/pack_id` ["header", "pack_id"]
+MissingProperty { text: None } | Warning | Parse | `header/packs_version` ["header", "packs_version"]
+rejected
+
+## legacy format null
+MalformedFormatVersion { text: None } | Error | Parse | `format_version` ["format_version"]
+rejected
+
+## legacy format real
+WrongTypeProperty { text: None } | Info | Parse | `format_version` ["format_version"]
+MinEngineVersionCapFormatVersion1 | Warning | Parse | `header/min_engine_version` ["header", "min_engine_version"]
+format V1/V1 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 12, patch: 0, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 1,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ]
+}
+
+
+## legacy format bool
+MalformedFormatVersion { text: None } | Error | Parse | `format_version` ["format_version"]
+rejected
+
+## legacy format string
+WrongTypeProperty { text: None } | Info | Parse | `format_version` ["format_version"]
+DeprecatedMember { text: Some(Fixed("Pack Manifest version 0 is deprecated, please include format_version 2 in your manifest.json.")) } | Warning | Parse | `format_version` ["format_version"]
+MissingProperty { text: None } | Error | Parse | `header/pack_id` ["header", "pack_id"]
+MissingProperty { text: None } | Warning | Parse | `header/packs_version` ["header", "packs_version"]
+rejected
+
+## legacy format string version
+WrongTypeProperty { text: None } | Info | Parse | `format_version` ["format_version"]
+DeprecatedMember { text: Some(Fixed("Pack Manifest version 0 is deprecated, please include format_version 2 in your manifest.json.")) } | Warning | Parse | `format_version` ["format_version"]
+MissingProperty { text: None } | Error | Parse | `header/pack_id` ["header", "pack_id"]
+MissingProperty { text: None } | Warning | Parse | `header/packs_version` ["header", "packs_version"]
+rejected
+
+## legacy format array
+WrongTypeProperty { text: None } | Info | Parse | `format_version` ["format_version"]
+DeprecatedMember { text: Some(Fixed("Pack Manifest version 0 is deprecated, please include format_version 2 in your manifest.json.")) } | Warning | Parse | `format_version` ["format_version"]
+MissingProperty { text: None } | Error | Parse | `header/pack_id` ["header", "pack_id"]
+MissingProperty { text: None } | Warning | Parse | `header/packs_version` ["header", "packs_version"]
+rejected
+
+## legacy format negative
+MalformedFormatVersion { text: None } | Error | Parse | `format_version` ["format_version"]
+rejected
+
+## legacy format prerelease 3
+WrongTypeProperty { text: None } | Info | Parse | `format_version` ["format_version"]
+DeprecatedMember { text: Some(Fixed("Pack Manifest version 0 is deprecated, please include format_version 2 in your manifest.json.")) } | Warning | Parse | `format_version` ["format_version"]
+MissingProperty { text: None } | Error | Parse | `header/pack_id` ["header", "pack_id"]
+MissingProperty { text: None } | Warning | Parse | `header/packs_version` ["header", "packs_version"]
+rejected
+
+## format beyond 3
+UnsupportedVersion { text: Some(NoParserForVersion { version: "4.0.0" }) } | Error | Parse | `format_version` ["format_version"]
+rejected
+
+## format malformed
+MalformedFormatVersion { text: None } | Error | Parse | `format_version` ["format_version"]
+rejected
+
+## legacy root wrong type
+DeprecatedMember { text: Some(Fixed("Pack Manifest version 0 is deprecated, please include format_version 2 in your manifest.json.")) } | Warning | Parse | `format_version` ["format_version"]
+MissingProperty { text: None } | Error | Parse | `header` ["header"]
+rejected
+
+## legacy read order
+MalformedPropertyUuid | Error | Parse | `header/uuid` ["header", "uuid"]
+WrongTypeProperty { text: None } | Error | Parse | `header/name` ["header", "name"]
+WrongTypeProperty { text: None } | Error | Parse | `header/platform_locked` ["header", "platform_locked"]
+MalformedPropertyVersion { text: Some(ManifestNotSemVer { path: "/header/version" }) } | Error | Parse | `header/version` ["header", "version"]
+rejected
+
+## v3 valid
+format V3/V3 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 21, patch: 0, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 3,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": "1.0.0",
+    "min_engine_version": "1.21.0"
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": "1.0.0"
+    }
+  ]
+}
+
+
+## v3 root unknown members
+UnrecognizedField { text: None } | Error | Parse | `x` ["x"]
+UnrecognizedField { text: None } | Error | Parse | `0` [#0]
+UnrecognizedField { text: None } | Error | Parse | `` []
+UnrecognizedField { text: None } | Error | Parse | `5` [#5]
+UnrecognizedField { text: None } | Error | Parse | `a~1b~0c` ["a/b~c"]
+rejected
+
+## v3 header unknown members
+UnrecognizedField { text: None } | Error | Parse | `header/x` ["header", "x"]
+UnrecognizedField { text: None } | Error | Parse | `header/0` ["header", #0]
+UnrecognizedField { text: None } | Error | Parse | `header` ["header"]
+UnrecognizedField { text: None } | Error | Parse | `header/5` ["header", #5]
+UnrecognizedField { text: None } | Error | Parse | `header/a~1b~0c` ["header", "a/b~c"]
+rejected
+
+## v3 module unknown members
+UnrecognizedField { text: None } | Error | Parse | `modules/0/0` ["modules", #0, #0]
+UnrecognizedField { text: None } | Error | Parse | `modules/0` ["modules", #0]
+UnrecognizedField { text: None } | Error | Parse | `modules/0/x` ["modules", #0, "x"]
+rejected
+
+## v3 dependency unknown members
+UnrecognizedField { text: None } | Error | Parse | `dependencies/0/0` ["dependencies", #0, #0]
+UnrecognizedField { text: None } | Error | Parse | `dependencies/0` ["dependencies", #0]
+rejected
+
+## v3 native dependency unknown members
+UnrecognizedField { text: None } | Error | Parse | `dependencies/0/uuid` ["dependencies", #0, "uuid"]
+UnrecognizedField { text: None } | Error | Parse | `dependencies/0/0` ["dependencies", #0, #0]
+rejected
+
+## v3 subpack unknown members
+UnrecognizedField { text: None } | Error | Parse | `subpacks/0/memory_tier` ["subpacks", #0, "memory_tier"]
+UnrecognizedField { text: None } | Error | Parse | `subpacks/0/0` ["subpacks", #0, #0]
+rejected
+
+## v3 metadata unknown members
+UnrecognizedField { text: None } | Error | Parse | `metadata/x` ["metadata", "x"]
+UnrecognizedField { text: None } | Error | Parse | `metadata/0` ["metadata", #0]
+UnrecognizedField { text: None } | Error | Parse | `metadata` ["metadata"]
+rejected
+
+## v3 string null
+InvalidType { text: None } | Error | Parse | `header/description` ["header", "description"]
+rejected
+
+## v3 string wrong type
+InvalidType { text: None } | Error | Parse | `header/description` ["header", "description"]
+rejected
+
+## v3 string empty optional
+format V3/V3 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 21, patch: 0, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 3,
+  "header": {
+    "name": "P",
+    "description": "",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": "1.0.0",
+    "min_engine_version": "1.21.0"
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": "1.0.0"
+    }
+  ]
+}
+
+
+## v3 name absent
+MissingRequiredField { text: None } | Error | Parse | `header/name` ["header", "name"]
+rejected
+
+## v3 name empty
+EmptyProperty | Info | Parse | `header/name` ["header", "name"]
+format V3/V3 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 21, patch: 0, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 3,
+  "header": {
+    "name": "",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": "1.0.0",
+    "min_engine_version": "1.21.0"
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": "1.0.0"
+    }
+  ]
+}
+
+
+## v3 name null
+InvalidType { text: None } | Error | Parse | `header/name` ["header", "name"]
+rejected
+
+## v3 boolean null
+InvalidType { text: None } | Error | Parse | `header/platform_locked` ["header", "platform_locked"]
+rejected
+
+## v3 boolean wrong type
+InvalidType { text: None } | Error | Parse | `header/platform_locked` ["header", "platform_locked"]
+InvalidType { text: None } | Error | Parse | `header/allow_random_seed` ["header", "allow_random_seed"]
+rejected
+
+## v3 boolean root
+InvalidType { text: None } | Error | Parse | `has_education_metadata` ["has_education_metadata"]
+rejected
+
+## v3 boolean root valid
+format V3/V3 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 21, patch: 0, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 3,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": "1.0.0",
+    "min_engine_version": "1.21.0"
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": "1.0.0"
+    }
+  ],
+  "has_education_metadata": false
+}
+
+
+## v3 uuid absent
+MissingRequiredField { text: None } | Error | Parse | `header/uuid` ["header", "uuid"]
+rejected
+
+## v3 uuid null
+InvalidType { text: None } | Error | Parse | `header/uuid` ["header", "uuid"]
+rejected
+
+## v3 uuid wrong type
+InvalidType { text: None } | Error | Parse | `header/uuid` ["header", "uuid"]
+rejected
+
+## v3 uuid empty
+MalformedPropertyUuid | Error | Parse | `header/uuid` ["header", "uuid"]
+rejected
+
+## v3 uuid malformed
+MalformedPropertyUuid | Error | Parse | `header/uuid` ["header", "uuid"]
+rejected
+
+## v3 version relaxed
+format V3/V3 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 21, patch: 0, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 3,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": "1.2.0",
+    "min_engine_version": "1.21.0"
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": "1.0.0"
+    }
+  ]
+}
+
+
+## v3 version malformed
+MalformedPropertyVersion { text: None } | Error | Parse | `header/version` ["header", "version"]
+rejected
+
+## v3 version any
+MalformedPropertyVersion { text: None } | Error | Parse | `header/version` ["header", "version"]
+rejected
+
+## v3 version array
+InvalidType { text: None } | Error | Parse | `header/version` ["header", "version"]
+rejected
+
+## v3 version absent
+MissingRequiredField { text: None } | Error | Parse | `header/version` ["header", "version"]
+rejected
+
+## v3 version null
+InvalidType { text: None } | Error | Parse | `header/version` ["header", "version"]
+rejected
+
+## v3 header absent
+MissingRequiredField { text: None } | Error | Parse | `header` ["header"]
+rejected
+
+## v3 header null
+InvalidType { text: None } | Error | Parse | `header` ["header"]
+rejected
+
+## v3 pack_scope unknown
+InvalidValue { text: None } | Info | Parse | `header/pack_scope` ["header", "pack_scope"]
+format V3/V3 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 21, patch: 0, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 3,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": "1.0.0",
+    "min_engine_version": "1.21.0",
+    "pack_scope": "nope"
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": "1.0.0"
+    }
+  ]
+}
+
+
+## v3 pack_scope
+format V3/V3 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 21, patch: 0, pre_release: "", build: "", any: false } }) scope Some(Global)
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 3,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": "1.0.0",
+    "min_engine_version": "1.21.0",
+    "pack_scope": "global"
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": "1.0.0"
+    }
+  ]
+}
+
+
+## v3 pack_optimization_version
+format V3/V3 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 21, patch: 0, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 3,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": "1.0.0",
+    "min_engine_version": "1.21.0",
+    "pack_optimization_version": "1.2"
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": "1.0.0"
+    }
+  ]
+}
+
+
+## v3 pack_optimization_version bad
+InvalidType { text: None } | Error | Parse | `header/pack_optimization_version` ["header", "pack_optimization_version"]
+rejected
+
+## v3 base_game_version wrong type
+InvalidType { text: None } | Error | Parse | `header/base_game_version` ["header", "base_game_version"]
+rejected
+
+## v3 base_game_version on data
+IgnoredProperty | Warning | Parse | `header/base_game_version` ["header", "base_game_version"]
+format V3/V3 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 21, patch: 0, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 3,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": "1.0.0",
+    "min_engine_version": "1.21.0"
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": "1.0.0"
+    }
+  ]
+}
+
+
+## v3 base_game_version template
+format V3/V3 pack WorldTemplate min_engine None scope None
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 3,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": "1.0.0",
+    "base_game_version": "1.21.0",
+    "lock_template_options": false
+  },
+  "modules": [
+    {
+      "type": "world_template",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": "1.0.0"
+    }
+  ]
+}
+
+
+## v3 lock absent template
+MissingProperty { text: None } | Error | Parse | `header/lock_template_options` ["header", "lock_template_options"]
+rejected
+
+## v3 lock null template
+InvalidType { text: None } | Error | Parse | `header/lock_template_options` ["header", "lock_template_options"]
+rejected
+
+## v3 lock on data
+IgnoredProperty | Warning | Parse | `header/lock_template_options` ["header", "lock_template_options"]
+format V3/V3 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 21, patch: 0, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 3,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": "1.0.0",
+    "min_engine_version": "1.21.0"
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": "1.0.0"
+    }
+  ]
+}
+
+
+## v3 lock wrong type on data
+InvalidType { text: None } | Error | Parse | `header/lock_template_options` ["header", "lock_template_options"]
+rejected
+
+## v3 min_engine absent
+MissingProperty { text: None } | Error | Parse | `header/min_engine_version` ["header", "min_engine_version"]
+rejected
+
+## v3 min_engine array
+InvalidType { text: None } | Error | Parse | `header/min_engine_version` ["header", "min_engine_version"]
+rejected
+
+## v3 min_engine malformed
+MalformedPropertyVersion { text: None } | Error | Parse | `header/min_engine_version` ["header", "min_engine_version"]
+rejected
+
+## v3 min_engine relaxed
+format V3/V3 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 21, patch: 0, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 3,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": "1.0.0",
+    "min_engine_version": "1.21.0"
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": "1.0.0"
+    }
+  ]
+}
+
+
+## v3 min_engine too high
+VersionTooHigh { version: "9.0.0", limit: "1.26.60" } | Error | Parse | `header/min_engine_version` ["header", "min_engine_version"]
+rejected
+
+## v3 min_engine too low
+VersionTooLow { version: "1.0.0", limit: "1.13.0" } | Error | Parse | `header/min_engine_version` ["header", "min_engine_version"]
+rejected
+
+## v3 min_engine null
+InvalidType { text: None } | Error | Parse | `header/min_engine_version` ["header", "min_engine_version"]
+rejected
+
+## v3 min_engine on skin pack
+IgnoredProperty | Warning | Parse | `header/min_engine_version` ["header", "min_engine_version"]
+format V3/V3 pack Skins min_engine None scope None
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 3,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": "1.0.0"
+  },
+  "modules": [
+    {
+      "type": "skin_pack",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": "1.0.0"
+    }
+  ]
+}
+
+
+## v3 modules absent
+MissingRequiredField { text: None } | Error | Parse | `modules` ["modules"]
+IgnoredProperty | Warning | Parse | `header/min_engine_version` ["header", "min_engine_version"]
+rejected
+
+## v3 modules null
+InvalidType { text: None } | Error | Parse | `modules` ["modules"]
+IgnoredProperty | Warning | Parse | `header/min_engine_version` ["header", "min_engine_version"]
+rejected
+
+## v3 modules empty
+InvalidValue { text: None } | Error | Parse | `modules` ["modules"]
+IgnoredProperty | Warning | Parse | `header/min_engine_version` ["header", "min_engine_version"]
+rejected
+
+## v3 modules wrong type
+InvalidType { text: None } | Error | Parse | `modules` ["modules"]
+IgnoredProperty | Warning | Parse | `header/min_engine_version` ["header", "min_engine_version"]
+rejected
+
+## v3 modules element wrong type
+InvalidType { text: None } | Error | Parse | `modules/0` ["modules", #0]
+rejected
+
+## v3 module type invalid
+InvalidProperty { text: Some(ManifestInvalidValue { path: "modules/type" }) } | Error | Parse | `modules/0/type` ["modules", #0, "type"]
+IgnoredProperty | Warning | Parse | `header/min_engine_version` ["header", "min_engine_version"]
+rejected
+
+## v3 module type absent
+MissingRequiredField { text: None } | Error | Parse | `modules/0/type` ["modules", #0, "type"]
+IgnoredProperty | Warning | Parse | `header/min_engine_version` ["header", "min_engine_version"]
+rejected
+
+## v3 module uuid duplicate
+DuplicateUuid | Error | Parse | `modules/1/uuid` ["modules", #1, "uuid"]
+rejected
+
+## v3 modules inconsistent
+MultipleModules | Error | Parse | `modules` ["modules"]
+rejected
+
+## v3 module uuid is the header's
+format V3/V3 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 21, patch: 0, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 3,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": "1.0.0",
+    "min_engine_version": "1.21.0"
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "11111111-1111-1111-1111-111111111111",
+      "version": "1.0.0"
+    }
+  ]
+}
+
+
+## v3 module members
+format V3/V3 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 21, patch: 0, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 3,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": "1.0.0",
+    "min_engine_version": "1.21.0"
+  },
+  "modules": [
+    {
+      "type": "script",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": "1.0.0",
+      "description": "d",
+      "language": "javascript",
+      "entry": "scripts/main.js"
+    }
+  ]
+}
+
+
+## v3 dependencies wrong type
+InvalidType { text: None } | Error | Parse | `dependencies` ["dependencies"]
+rejected
+
+## v3 dependencies null
+InvalidType { text: None } | Error | Parse | `dependencies` ["dependencies"]
+rejected
+
+## v3 dependency element wrong type
+InvalidType { text: None } | Error | Parse | `dependencies/0` ["dependencies", #0]
+rejected
+
+## v3 dependency pack
+format V3/V3 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 21, patch: 0, pre_release: "", build: "", any: false } }) scope None
+dependencies [Pack { uuid: 33333333-3333-3333-3333-333333333333, version: SemVersion { major: 1, minor: 0, patch: 0, pre_release: "", build: "", any: false } }]
+subpacks []
+settings []
+{
+  "format_version": 3,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": "1.0.0",
+    "min_engine_version": "1.21.0"
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": "1.0.0"
+    }
+  ],
+  "dependencies": [
+    {
+      "uuid": "33333333-3333-3333-3333-333333333333",
+      "version": "1.0.0"
+    }
+  ]
+}
+
+
+## v3 dependency pack array version
+InvalidType { text: None } | Error | Parse | `dependencies/0/version` ["dependencies", #0, "version"]
+rejected
+
+## v3 dependency module_name null
+InvalidType { text: None } | Error | Parse | `dependencies/0/module_name` ["dependencies", #0, "module_name"]
+rejected
+
+## v3 dependency native selectors
+format V3/V3 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 21, patch: 0, pre_release: "", build: "", any: false } }) scope None
+dependencies [NativeModule { module_name: "a", version: LatestAlpha, optional: None }, NativeModule { module_name: "b", version: LatestBeta, optional: None }, NativeModule { module_name: "c", version: LatestInternal, optional: None }]
+subpacks []
+settings []
+{
+  "format_version": 3,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": "1.0.0",
+    "min_engine_version": "1.21.0"
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": "1.0.0"
+    }
+  ],
+  "dependencies": [
+    {
+      "module_name": "a",
+      "version": "alpha"
+    },
+    {
+      "module_name": "b",
+      "version": "beta"
+    },
+    {
+      "module_name": "c",
+      "version": "internal"
+    }
+  ]
+}
+
+
+## v3 dependency native relaxed
+format V3/V3 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 21, patch: 0, pre_release: "", build: "", any: false } }) scope None
+dependencies [NativeModule { module_name: "@minecraft/server", version: Version(SemVersion { major: 2, minor: 0, patch: 0, pre_release: "", build: "", any: false }), optional: None }]
+subpacks []
+settings []
+{
+  "format_version": 3,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": "1.0.0",
+    "min_engine_version": "1.21.0"
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": "1.0.0"
+    }
+  ],
+  "dependencies": [
+    {
+      "module_name": "@minecraft/server",
+      "version": "2.0.0"
+    }
+  ]
+}
+
+
+## v3 dependency native any
+MalformedPropertyVersion { text: Some(DependencyInvalidVersion { module: "@minecraft/server", version: "0.0.0" }) } | Error | Parse | `dependencies/0/version` ["dependencies", #0, "version"]
+rejected
+
+## v3 dependency native malformed
+MalformedPropertyVersion { text: Some(DependencyInvalidVersion { module: "@minecraft/server", version: "0.0.0" }) } | Error | Parse | `dependencies/0/version` ["dependencies", #0, "version"]
+rejected
+
+## v3 dependency native array
+InvalidType { text: None } | Error | Parse | `dependencies/0/version` ["dependencies", #0, "version"]
+rejected
+
+## v3 dependency native no version
+MissingRequiredField { text: None } | Error | Parse | `dependencies/0/version` ["dependencies", #0, "version"]
+rejected
+
+## v3 dependency native name wrong type
+InvalidType { text: None } | Error | Parse | `dependencies/0/module_name` ["dependencies", #0, "module_name"]
+rejected
+
+## v3 dependency optional
+format V3/V3 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 21, patch: 0, pre_release: "", build: "", any: false } }) scope None
+dependencies [NativeModule { module_name: "@minecraft/server", version: Version(SemVersion { major: 1, minor: 0, patch: 0, pre_release: "", build: "", any: false }), optional: Some(true) }]
+subpacks []
+settings []
+{
+  "format_version": 3,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": "1.0.0",
+    "min_engine_version": "1.21.0"
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": "1.0.0"
+    }
+  ],
+  "dependencies": [
+    {
+      "module_name": "@minecraft/server",
+      "version": "1.0.0",
+      "optional": true
+    }
+  ]
+}
+
+
+## v3 dependency optional wrong type
+InvalidType { text: None } | Error | Parse | `dependencies/0/optional` ["dependencies", #0, "optional"]
+rejected
+
+## v3 dependency optional null
+InvalidType { text: None } | Error | Parse | `dependencies/0/optional` ["dependencies", #0, "optional"]
+rejected
+
+## v3 capabilities
+InvalidType { text: None } | Error | Parse | `capabilities/0` ["capabilities", #0]
+InvalidCapability { name: "nope" } | Info | Validate | `capabilities/2` ["capabilities", #2]
+rejected
+
+## v3 capabilities wrong type
+InvalidType { text: None } | Error | Parse | `capabilities` ["capabilities"]
+rejected
+
+## v3 capabilities null
+InvalidType { text: None } | Error | Parse | `capabilities` ["capabilities"]
+rejected
+
+## v3 subpacks
+format V3/V3 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 21, patch: 0, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks [Subpack { name: "A", folder_name: "a", memory_tier: Tier5 }]
+settings []
+{
+  "format_version": 3,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": "1.0.0",
+    "min_engine_version": "1.21.0"
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": "1.0.0"
+    }
+  ],
+  "subpacks": [
+    {
+      "folder_name": "a",
+      "name": "A",
+      "memory_performance_tier": 5
+    }
+  ]
+}
+
+
+## v3 subpack tier absent
+MissingRequiredField { text: None } | Error | Parse | `subpacks/0/memory_performance_tier` ["subpacks", #0, "memory_performance_tier"]
+rejected
+
+## v3 subpack tier wrong type
+InvalidType { text: None } | Error | Parse | `subpacks/0/memory_performance_tier` ["subpacks", #0, "memory_performance_tier"]
+rejected
+
+## v3 subpack tier high
+InvalidValue { text: None } | Error | Parse | `subpacks/0/memory_performance_tier` ["subpacks", #0, "memory_performance_tier"]
+rejected
+
+## v3 subpack tier negative
+InvalidValue { text: None } | Error | Parse | `subpacks/0/memory_performance_tier` ["subpacks", #0, "memory_performance_tier"]
+rejected
+
+## v3 subpack names missing
+MissingRequiredField { text: None } | Error | Parse | `subpacks/0/folder_name` ["subpacks", #0, "folder_name"]
+MissingRequiredField { text: None } | Error | Parse | `subpacks/0/name` ["subpacks", #0, "name"]
+rejected
+
+## v3 subpack names empty
+format V3/V3 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 21, patch: 0, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks [Subpack { name: "", folder_name: "", memory_tier: Tier1 }]
+settings []
+{
+  "format_version": 3,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": "1.0.0",
+    "min_engine_version": "1.21.0"
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": "1.0.0"
+    }
+  ],
+  "subpacks": [
+    {
+      "folder_name": "",
+      "name": "",
+      "memory_performance_tier": 1
+    }
+  ]
+}
+
+
+## v3 subpacks element wrong type
+InvalidType { text: None } | Error | Parse | `subpacks/0` ["subpacks", #0]
+rejected
+
+## v3 subpacks wrong type
+InvalidType { text: None } | Error | Parse | `subpacks` ["subpacks"]
+rejected
+
+## v3 settings
+format V3/V3 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 21, patch: 0, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks []
+settings [Label { text: "hi" }, Toggle { name: "a:b", text: "t", default: true }]
+{
+  "format_version": 3,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": "1.0.0",
+    "min_engine_version": "1.21.0"
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": "1.0.0"
+    }
+  ],
+  "settings": [
+    {
+      "type": "label",
+      "text": "hi"
+    },
+    {
+      "type": "toggle",
+      "name": "a:b",
+      "text": "t",
+      "default": true
+    }
+  ]
+}
+
+
+## v3 settings empty
+InvalidValue { text: None } | Error | Parse | `settings` ["settings"]
+rejected
+
+## v3 settings wrong type
+InvalidType { text: None } | Error | Parse | `settings` ["settings"]
+rejected
+
+## v3 settings null
+InvalidType { text: None } | Error | Parse | `settings` ["settings"]
+rejected
+
+## v3 settings misfit
+InvalidType { text: None } | Error | Parse | `settings/0` ["settings", #0]
+MissingRequiredField { text: None } | Error | Parse | `settings/1/text` ["settings", #1, "text"]
+InvalidEnumValue { text: None } | Error | Parse | `settings/2/type` ["settings", #2, "type"]
+UnrecognizedField { text: None } | Error | Parse | `settings/3/0` ["settings", #3, #0]
+InvalidType { text: None } | Error | Parse | `settings/4` ["settings", #4]
+rejected
+
+## v3 settings constraints
+InvalidValue { text: None } | Error | Parse | `settings/0/name` ["settings", #0, "name"]
+InvalidValue { text: None } | Error | Parse | `settings/0/options` ["settings", #0, "options"]
+InvalidValue { text: None } | Error | Parse | `settings/0/options/0/name` ["settings", #0, "options", #0, "name"]
+InvalidValue { text: None } | Error | Parse | `settings/0/default` ["settings", #0, "default"]
+InvalidValue { text: None } | Error | Parse | `settings/1/step` ["settings", #1, "step"]
+InvalidValue { text: Some(SliderMaxNotAboveMin { name: "a:s" }) } | Error | Validate | `settings/1` ["settings", #1]
+InvalidValue { text: Some(SliderStepTooLarge { name: "a:s", step: "0" }) } | Error | Validate | `settings/1` ["settings", #1]
+InvalidValue { text: Some(SliderDefaultOutOfRange { name: "a:s", default: "5" }) } | Error | Validate | `settings/1` ["settings", #1]
+rejected
+
+## v3 settings multiselect
+InvalidValue { text: Some(MultiselectDefaultNotInOptions { name: "a:m", default: "z" }) } | Error | Validate | `settings/0` ["settings", #0]
+FieldSinceEngine { since: FormatVersion { major: 1, minor: 26, patch: 50 } } | Info | Validate | `settings/0` ["settings", #0]
+InvalidValue { text: Some(DuplicatePackSettingName { name: "a:m" }) } | Error | Validate | `settings/1` ["settings", #1]
+rejected
+
+## v3 metadata
+IgnoredProperty | Warning | Parse | `metadata/generated_with/t/1` ["metadata", "generated_with", "t", #1]
+format V3/V3 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 21, patch: 0, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 3,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": "1.0.0",
+    "min_engine_version": "1.21.0"
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": "1.0.0"
+    }
+  ],
+  "metadata": {
+    "authors": [
+      "a"
+    ],
+    "license": "MIT",
+    "url": "u",
+    "product_type": "",
+    "generated_with": {
+      "t": [
+        "1.0"
+      ]
+    }
+  }
+}
+
+
+## v3 metadata null members
+InvalidType { text: None } | Error | Parse | `metadata/url` ["metadata", "url"]
+InvalidType { text: None } | Error | Parse | `metadata/license` ["metadata", "license"]
+InvalidType { text: None } | Error | Parse | `metadata/product_type` ["metadata", "product_type"]
+InvalidType { text: None } | Error | Parse | `metadata/authors` ["metadata", "authors"]
+InvalidType { text: None } | Error | Parse | `metadata/generated_with` ["metadata", "generated_with"]
+rejected
+
+## v3 metadata wrong types
+InvalidType { text: None } | Error | Parse | `metadata/url` ["metadata", "url"]
+InvalidType { text: None } | Error | Parse | `metadata/license` ["metadata", "license"]
+InvalidProperty { text: None } | Error | Parse | `metadata/product_type` ["metadata", "product_type"]
+InvalidType { text: None } | Error | Parse | `metadata/authors` ["metadata", "authors"]
+InvalidType { text: None } | Error | Parse | `metadata/generated_with` ["metadata", "generated_with"]
+rejected
+
+## v3 metadata generated_with
+InvalidType { text: None } | Error | Parse | `metadata/generated_with/1` ["metadata", "generated_with", #1]
+IgnoredProperty | Warning | Parse | `metadata/generated_with/0` ["metadata", "generated_with", #0]
+IgnoredProperty | Warning | Parse | `metadata/generated_with/1` ["metadata", "generated_with", #1]
+rejected
+
+## v3 metadata wrong type
+InvalidType { text: None } | Error | Parse | `metadata` ["metadata"]
+rejected
+
+## v3 metadata null
+InvalidType { text: None } | Error | Parse | `metadata` ["metadata"]
+rejected
+
+## v3 format string
+InvalidType { text: None } | Error | Parse | `format_version` ["format_version"]
+rejected
+
+## v3 format array
+InvalidType { text: None } | Error | Parse | `format_version` ["format_version"]
+rejected
+
+## v3 format real
+InvalidType { text: None } | Error | Parse | `format_version` ["format_version"]
+rejected
+
+## v3 root wrong type
+MissingRequiredField { text: None } | Error | Parse | `modules` ["modules"]
+MissingRequiredField { text: None } | Error | Parse | `header` ["header"]
+rejected
+
+## v3 read order
+UnrecognizedField { text: None } | Error | Parse | `q` ["q"]
+InvalidProperty { text: Some(ManifestInvalidValue { path: "modules/type" }) } | Error | Parse | `modules/0/type` ["modules", #0, "type"]
+UnrecognizedField { text: None } | Error | Parse | `header/z` ["header", "z"]
+InvalidType { text: None } | Error | Parse | `header/name` ["header", "name"]
+MalformedPropertyUuid | Error | Parse | `header/uuid` ["header", "uuid"]
+MalformedPropertyVersion { text: None } | Error | Parse | `header/version` ["header", "version"]
+InvalidValue { text: None } | Info | Parse | `header/pack_scope` ["header", "pack_scope"]
+InvalidType { text: None } | Error | Parse | `header/platform_locked` ["header", "platform_locked"]
+InvalidType { text: None } | Error | Parse | `dependencies/0` ["dependencies", #0]
+InvalidType { text: None } | Error | Parse | `capabilities/0` ["capabilities", #0]
+InvalidType { text: None } | Error | Parse | `settings/0` ["settings", #0]
+InvalidType { text: None } | Error | Parse | `subpacks/0` ["subpacks", #0]
+InvalidType { text: None } | Error | Parse | `metadata/license` ["metadata", "license"]
+InvalidType { text: None } | Error | Parse | `has_education_metadata` ["has_education_metadata"]
+rejected
+
+## syntax error
+MalformedInput { message: "unexpected end of input, expected field name or '}'", text: None } | Error | Parse | `` []
+rejected
+
+## empty text
+EmptyDocument { text: None } | Error | Parse | `` []
+rejected
+
+## duplicate members
+format V2/V2 pack Behavior min_engine Some(MinEngineVersion { version: SemVersion { major: 1, minor: 21, patch: 0, pre_release: "", build: "", any: false } }) scope None
+dependencies []
+subpacks []
+settings []
+{
+  "format_version": 2,
+  "header": {
+    "name": "P",
+    "uuid": "11111111-1111-1111-1111-111111111111",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "22222222-2222-2222-2222-222222222222",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ]
+}
+
+

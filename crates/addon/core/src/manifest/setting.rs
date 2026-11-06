@@ -3,11 +3,11 @@
 
 use std::collections::HashSet;
 
-use crate::diagnostic::{DiagnosticCode as Code, Phase, Severity, VanillaText};
+use crate::diagnostic::{DiagnosticCode as Code, JsonPath, Phase, Severity, VanillaText};
 use crate::json::Value;
 use crate::version::{FormatVersion, MinEngineVersion, SemVersion};
 
-use super::read::{Sink, child, item, member, text};
+use super::read::{Sink, below, member, path, text};
 
 /// One `settings[]` entry: a pack setting's definition (the saved values are `pack::settings`).
 ///
@@ -147,23 +147,24 @@ pub(super) fn read(
     min_engine: Option<&MinEngineVersion>,
 ) -> Vec<Setting> {
     const AT: &str = "settings";
+    let list = path(&[AT]);
     let Some(value) = member(root, AT) else {
         return Vec::new();
     };
     let Some(elements) = value.as_array().map(facet_value::VArray::as_slice) else {
-        sink.error(Code::InvalidType { text: None }, AT);
+        sink.error(Code::InvalidType { text: None }, &list);
         return Vec::new();
     };
     // An empty list is refused with "expected array with at least 1 elements", and more than
     // 50 settings are refused before any element is read. The crate reports both as
     // `InvalidValue`.
     if elements.is_empty() || elements.len() > MAX_SETTINGS {
-        sink.error(Code::InvalidValue { text: None }, AT);
+        sink.error(Code::InvalidValue { text: None }, &list);
         return Vec::new();
     }
     let mut settings = Vec::new();
     for (index, element) in elements.iter().enumerate() {
-        if let Some(setting) = setting(sink, element, &item(AT, index)) {
+        if let Some(setting) = setting(sink, element, &list.index(index)) {
             settings.push((index, setting));
         }
     }
@@ -173,7 +174,7 @@ pub(super) fn read(
 
 /// One entry: the first kind (label, slider, toggle, dropdown, multiselect) whose members the
 /// object has exactly, with the right JSON types; then the member constraints.
-fn setting(sink: &mut Sink<'_>, element: &Value, at: &str) -> Option<Setting> {
+fn setting(sink: &mut Sink<'_>, element: &Value, at: &JsonPath) -> Option<Setting> {
     if element.as_object().is_none() {
         sink.error(Code::InvalidType { text: None }, at);
         return None;
@@ -191,7 +192,7 @@ fn setting(sink: &mut Sink<'_>, element: &Value, at: &str) -> Option<Setting> {
     if type_value != Some(setting.type_name()) {
         // `type` does not choose the kind. Vanilla is silent about a mismatch; the crate
         // reports an information.
-        sink.note(Code::SettingTypeMismatch, &child(at, "type"));
+        sink.note(Code::SettingTypeMismatch, &below(at, "type"));
     }
     constraints(sink, &setting, at);
     Some(setting)
@@ -281,10 +282,10 @@ fn fit(element: &Value, kind: &str, required: &[&str], optional: &[&str]) -> Opt
 /// An entry that fits no kind: the findings of the kind its `type` names: missing
 /// members, unknown members, else a member of the wrong type. A `type` that names no kind is
 /// reported itself.
-fn report_misfit(sink: &mut Sink<'_>, element: &Value, at: &str, type_value: Option<&str>) {
+fn report_misfit(sink: &mut Sink<'_>, element: &Value, at: &JsonPath, type_value: Option<&str>) {
     let named = type_value.and_then(|t| KINDS.iter().find(|(name, _, _)| *name == t));
     let Some((_, required, optional)) = named else {
-        let type_at = child(at, "type");
+        let type_at = below(at, "type");
         match member(element, "type") {
             None => sink.error(Code::MissingRequiredField { text: None }, &type_at),
             Some(value) if text(value).is_some() => {
@@ -297,11 +298,11 @@ fn report_misfit(sink: &mut Sink<'_>, element: &Value, at: &str, type_value: Opt
     let before = sink.errors();
     for key in *required {
         if member(element, key).is_none() {
-            sink.error(Code::MissingRequiredField { text: None }, &child(at, key));
+            sink.error(Code::MissingRequiredField { text: None }, &below(at, key));
         }
     }
     let allowed: Vec<&str> = required.iter().chain(optional.iter()).copied().collect();
-    super::comprehensive::unknown_members(sink, element, at, &allowed);
+    let _ = sink.unknown(element, at, &allowed);
     if sink.errors() == before {
         // Every member is there and no other: one has the wrong type.
         sink.error(Code::InvalidType { text: None }, at);
@@ -309,9 +310,9 @@ fn report_misfit(sink: &mut Sink<'_>, element: &Value, at: &str, type_value: Opt
 }
 
 /// Member constraints of the kind: `InvalidValue` errors naming the member.
-fn constraints(sink: &mut Sink<'_>, setting: &Setting, at: &str) {
+fn constraints(sink: &mut Sink<'_>, setting: &Setting, at: &JsonPath) {
     let invalid = |sink: &mut Sink<'_>, key: &str| {
-        sink.error(Code::InvalidValue { text: None }, &child(at, key));
+        sink.error(Code::InvalidValue { text: None }, &below(at, key));
     };
     if setting.name().is_some_and(|name| !namespaced(name)) {
         // "string has invalid namespace (minecraft)" / "string must be prefixed with a
@@ -346,18 +347,18 @@ fn constraints(sink: &mut Sink<'_>, setting: &Setting, at: &str) {
 }
 
 /// 2 to 20 options, none with an empty name or text.
-fn option_constraints(sink: &mut Sink<'_>, options: &[DropdownOption], at: &str) {
-    let options_at = child(at, "options");
+fn option_constraints(sink: &mut Sink<'_>, options: &[DropdownOption], at: &JsonPath) {
+    let options_at = below(at, "options");
     if !OPTIONS.contains(&options.len()) {
         sink.error(Code::InvalidValue { text: None }, &options_at);
     }
     for (index, option) in options.iter().enumerate() {
-        let entry_at = item(&options_at, index);
+        let entry_at = options_at.index(index);
         if option.name.is_empty() {
-            sink.error(Code::InvalidValue { text: None }, &child(&entry_at, "name"));
+            sink.error(Code::InvalidValue { text: None }, &below(&entry_at, "name"));
         }
         if option.text.is_empty() {
-            sink.error(Code::InvalidValue { text: None }, &child(&entry_at, "text"));
+            sink.error(Code::InvalidValue { text: None }, &below(&entry_at, "text"));
         }
     }
 }
@@ -392,7 +393,7 @@ fn check(
 ) {
     let mut names = HashSet::new();
     for (index, setting) in settings {
-        let at = item("settings", *index);
+        let at = path(&["settings"]).index(*index);
         let fail = |sink: &mut Sink<'_>, text: VanillaText| {
             sink.push(
                 Code::InvalidValue { text: Some(text) },

@@ -37,8 +37,7 @@ use bedrock_addon_core::version::{FormatVersion, SemVersion, known};
 use uuid::Uuid;
 
 use bedrock_addon_core::manifest::{
-    Capability, CapabilityRegistry, Dependency, DependencyTexts, Manifest, ManifestFormat,
-    NativeModuleVersion, dependency_texts,
+    Capability, CapabilityRegistry, Dependency, Manifest, ManifestFormat, NativeModuleVersion,
 };
 
 /// The engine version from which a format-3 manifest may write a native-module dependency's
@@ -164,7 +163,7 @@ impl ScriptModule {
     ///
     /// Paths count the manifest's modules and dependencies as [`Manifest`] holds them.
     pub fn from_manifest(manifest: &Manifest) -> Option<ScriptModule> {
-        Self::build(manifest, PackPath::from_static("manifest.json"), None)
+        Self::build(manifest, PackPath::from_static("manifest.json"), false)
     }
 
     /// Reads the script side of the manifest at `path` (vanilla's stage 1), with the
@@ -206,7 +205,7 @@ impl ScriptModule {
             module,
             added,
             refused,
-        } = Self::stage1(&manifest, path, bytes, cx);
+        } = Self::stage1(&manifest, path, cx);
         let mut diagnostics = manifest.diagnostics().clone();
         diagnostics.extend(added);
         if refused {
@@ -230,7 +229,7 @@ impl ScriptModule {
         registry: &CapabilityRegistry,
     ) -> Stage1 {
         match Manifest::parse(path, bytes, registry) {
-            Ok(manifest) => Self::stage1(&manifest, path, bytes, cx),
+            Ok(manifest) => Self::stage1(&manifest, path, cx),
             // The pack's opening told why.
             Err(_) => Stage1 {
                 module: None,
@@ -240,32 +239,20 @@ impl ScriptModule {
         }
     }
 
-    /// Stage 1 on a manifest already read from `bytes`: the script side, and the findings
-    /// stage 1 adds to the manifest reader's own.
-    pub(crate) fn stage1(
-        manifest: &Manifest,
-        path: &PackPath,
-        bytes: &[u8],
-        cx: &LoadContext,
-    ) -> Stage1 {
-        // Format 0 reads no dependencies.
-        let texts = match manifest.original_format {
-            ManifestFormat::V0 => DependencyTexts::default(),
-            format => dependency_texts(bytes, format != ManifestFormat::V3),
-        };
+    /// Stage 1 on a manifest [`Manifest::parse`] read: the script side, and the findings stage
+    /// 1 adds to the manifest reader's own. What it reads of the text beside the value (each
+    /// dependency's place, a legacy `optional`, a relaxed `version`) is the manifest's
+    /// `places`.
+    pub(crate) fn stage1(manifest: &Manifest, path: &PackPath, cx: &LoadContext) -> Stage1 {
         let legacy = manifest.original_format != ManifestFormat::V3;
         let mut added = Diagnostics::default();
         let mut refused = false;
-        let mut finding = |code, severity, index: usize, key: &str| {
-            let at = JsonPath::new()
-                .child("dependencies")
-                .index(index)
-                .child(key);
+        let mut finding = |code, severity, place: &JsonPath, key: &str| {
             added.push(Diagnostic::new(
                 code,
                 severity,
                 Phase::Parse,
-                Location::new(None, Some(path.clone()), at, None),
+                Location::new(None, Some(path.clone()), place.child(key), None),
             ));
         };
         let pack_engine = manifest
@@ -273,23 +260,22 @@ impl ScriptModule {
             .min_engine_version
             .as_ref()
             .map(|min| min.version.format_version());
-        // The native-module dependencies the reader kept, in file order: the names of
-        // `texts.native`.
-        let mut names = manifest
+        // The native-module dependencies the reader kept, in file order, each with its place.
+        let natives = manifest
             .dependencies
             .iter()
-            .filter_map(|dependency| match dependency {
-                Dependency::NativeModule { module_name, .. } => Some(module_name.as_str()),
+            .zip(&manifest.places.dependencies)
+            .filter_map(|(dependency, place)| match dependency {
+                Dependency::NativeModule { module_name, .. } => Some((module_name.as_str(), place)),
                 Dependency::Pack { .. } => None,
             });
-        for native in &texts.native {
-            let name = names.next();
+        for (name, native) in natives {
             if legacy && native.has_optional {
                 // The legacy manifest parser has no `optional` key, so it ignores the member.
                 finding(
                     Code::IgnoredMember { text: None },
                     Severity::Info,
-                    native.index,
+                    &native.at,
                     "optional",
                 );
             }
@@ -301,13 +287,13 @@ impl ScriptModule {
                     refused = true;
                     finding(
                         Code::MalformedPropertyVersion {
-                            text: name.map(|module| VanillaText::DependencyInvalidVersion {
-                                module: module.to_owned(),
+                            text: Some(VanillaText::DependencyInvalidVersion {
+                                module: name.to_owned(),
                                 version: "0.0.0".to_owned(),
                             }),
                         },
                         Severity::Error,
-                        native.index,
+                        &native.at,
                         "version",
                     );
                 } else if pack_engine.is_some_and(|engine| engine < RELAXED_VERSION_SINCE) {
@@ -319,7 +305,7 @@ impl ScriptModule {
                             since: RELAXED_VERSION_SINCE,
                         },
                         Severity::Info,
-                        native.index,
+                        &native.at,
                         "version",
                     );
                 }
@@ -328,7 +314,7 @@ impl ScriptModule {
         let module = if refused {
             None
         } else {
-            Self::build(manifest, path.clone(), Some(&texts))
+            Self::build(manifest, path.clone(), true)
         };
         Stage1 {
             module,
@@ -337,13 +323,10 @@ impl ScriptModule {
         }
     }
 
-    /// The script side of `manifest`, read from `file`; `texts` gives the dependencies' places
-    /// in the file.
-    fn build(
-        manifest: &Manifest,
-        file: PackPath,
-        texts: Option<&DependencyTexts>,
-    ) -> Option<ScriptModule> {
+    /// The script side of `manifest`, read from `file`. With `in_file`, a dependency's path is
+    /// its place in the file (the manifest's `places`); otherwise it counts the dependencies
+    /// [`Manifest`] holds.
+    fn build(manifest: &Manifest, file: PackPath, in_file: bool) -> Option<ScriptModule> {
         let module_path = |index: usize| {
             let mut at = JsonPath::new();
             if manifest.original_format == ManifestFormat::V0 {
@@ -354,7 +337,18 @@ impl ScriptModule {
             at.push_index(index);
             at
         };
-        let dependency_path = |index: usize| JsonPath::new().child("dependencies").index(index);
+        // A manifest built by hand has no places; its dependencies are where it holds them.
+        let dependency_path = |index: usize| {
+            manifest
+                .places
+                .dependencies
+                .get(index)
+                .filter(|_| in_file)
+                .map_or_else(
+                    || JsonPath::new().child("dependencies").index(index),
+                    |place| place.at.clone(),
+                )
+        };
         let mut scripts = manifest
             .modules
             .iter()
@@ -373,7 +367,6 @@ impl ScriptModule {
             .collect();
         let mut dependencies = Vec::new();
         let mut uuid_dependencies = Vec::new();
-        let (mut natives, mut packs) = (0, 0);
         for (i, dependency) in manifest.dependencies.iter().enumerate() {
             match dependency {
                 Dependency::NativeModule {
@@ -381,27 +374,19 @@ impl ScriptModule {
                     version,
                     optional,
                 } => {
-                    let place = texts
-                        .and_then(|texts| texts.native.get(natives))
-                        .map_or(i, |native| native.index);
-                    natives += 1;
                     dependencies.push(NativeDependency {
                         module_name: module_name.clone(),
                         version: version.clone(),
                         optional: optional.unwrap_or(false),
-                        path: dependency_path(place),
+                        path: dependency_path(i),
                     });
                 }
                 Dependency::Pack { uuid, version } => {
-                    let place = texts
-                        .and_then(|texts| texts.packs.get(packs))
-                        .map_or(i, |place| *place);
-                    packs += 1;
                     if native_module_of(*uuid).is_some() {
                         uuid_dependencies.push(UuidDependency {
                             uuid: *uuid,
                             version: version.clone(),
-                            path: dependency_path(place),
+                            path: dependency_path(i),
                         });
                     }
                 }

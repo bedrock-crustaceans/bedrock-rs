@@ -12,7 +12,6 @@ mod module_type;
 mod parse;
 mod read;
 mod relaxed_version;
-mod script_module;
 mod setting;
 mod write;
 
@@ -23,11 +22,10 @@ pub use capability::{
 pub use memory_tier::MemoryTier;
 pub use module_type::ModuleType;
 pub use relaxed_version::RelaxedSemVersion;
-#[doc(hidden)]
-pub use script_module::{DependencyTexts, NativeDependencyText, dependency_texts};
 pub use setting::{DropdownOption, Setting};
 
 use crate::__private::Sealed;
+use crate::diagnostic::JsonPath;
 use crate::document::{Content, Document, Rejected, UnknownMembers};
 use crate::json::{EncodeError, WriteStyle};
 use crate::load::LoadContext;
@@ -68,6 +66,45 @@ pub struct Manifest {
     pub has_education_metadata: Option<bool>,
     /// Unknown root members of a legacy manifest, kept for write-back.
     pub extra: UnknownMembers,
+    /// Where [`Manifest::parse`] found what it kept, and what of the file the value does not
+    /// hold; empty on a manifest built by hand. Left out of equality.
+    #[doc(hidden)]
+    pub places: ManifestPlaces,
+}
+
+/// Where the manifest reader found what it kept of the file, and what of each element the
+/// value does not hold (what vanilla's script stage 1 reads from the text).
+///
+/// Every `ManifestPlaces` equals every other: a manifest equals the same manifest read from
+/// another file, or built by hand.
+#[doc(hidden)]
+#[derive(Clone, Debug, Default)]
+pub struct ManifestPlaces {
+    /// One place per entry of [`Manifest::dependencies`], in the same order; empty when the
+    /// manifest was not read from a file.
+    pub dependencies: Vec<DependencyPlace>,
+}
+
+impl PartialEq for ManifestPlaces {
+    fn eq(&self, _: &Self) -> bool {
+        true
+    }
+}
+
+/// Where one kept `dependencies[]` element is in the file, and what its text says that
+/// [`Dependency`] does not hold.
+#[doc(hidden)]
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct DependencyPlace {
+    /// The element in the file: `dependencies/<index>`, the index counting every element of
+    /// the file's array, the ones the reader dropped included.
+    pub at: JsonPath,
+    /// The element has an `optional` member, whatever its value (`null` included); the legacy
+    /// reader ignores it.
+    pub has_optional: bool,
+    /// A native module's `version` is a string of fewer than three numbers (`"2.0"`, `"2"`);
+    /// `false` for a selector, an array and a pack dependency.
+    pub relaxed: bool,
 }
 
 /// A manifest's `format_version` (vanilla `PackManifestFormat`).
@@ -304,6 +341,7 @@ impl Manifest {
             settings: Vec::new(),
             has_education_metadata: None,
             extra: UnknownMembers::default(),
+            places: ManifestPlaces::default(),
         }
     }
 

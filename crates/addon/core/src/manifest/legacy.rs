@@ -6,28 +6,26 @@
 //! modules and metadata from inside the header and skips everything else; it is upgraded to
 //! format 1, and its UUID, version and module problems are warnings instead of errors.
 
-use crate::diagnostic::{DiagnosticCode as Code, VanillaText};
-use crate::document::UnknownMembers;
+use crate::diagnostic::{DiagnosticCode as Code, JsonPath, VanillaText};
 use crate::json::Value;
 use crate::pack_identity::PackType;
-use crate::version::{BaseGameVersion, ENGINE_VERSION, MinEngineVersion, SemVersion};
+use crate::version::{BaseGameVersion, MinEngineVersion, SemVersion};
 use indexmap::IndexMap;
 use uuid::Uuid;
 
 use super::capability::{CapabilityCx, CapabilityRegistry, CapabilityValidation};
 use super::read::{
-    Sink, child, item, member, pack_scope, strict_version_text, text, version_array,
+    Profile, Sink, below, dependency_place, member, pack_scope, path, pointer, strict_version_text,
+    text, version_array,
 };
 use super::{
-    Capability, Dependency, Header, Manifest, ManifestFormat, MemoryTier, Metadata, Module,
-    ModuleType, NativeModuleVersion, RelaxedSemVersion, Setting, Subpack, ids,
+    Capability, Dependency, DependencyPlace, Header, Manifest, ManifestFormat, ManifestPlaces,
+    MemoryTier, Metadata, Module, ModuleType, NativeModuleVersion, RelaxedSemVersion, Setting,
+    Subpack, ids,
 };
 
 /// What vanilla shows for a manifest without a name (the `manifestvalidation.noname` key).
 pub(super) const NO_NAME: &str = "manifestvalidation.noname";
-
-/// The lowest `min_engine_version` a format-2 behaviour or resource pack may declare.
-const LOWEST_ENGINE: SemVersion = SemVersion::new(1, 13, 0);
 
 /// Reads a legacy manifest whose `format_version` did not route to the comprehensive reader.
 /// `None` when the manifest has no usable value (every such case has left an error).
@@ -36,6 +34,7 @@ pub(super) fn read(
     capabilities: &CapabilityRegistry,
     sink: &mut Sink<'_>,
 ) -> Option<Manifest> {
+    sink.set_profile(Profile::Legacy);
     let format = format_version(root, sink)?;
     let mut reader = Legacy {
         format,
@@ -54,7 +53,7 @@ pub(super) fn read(
             },
             crate::diagnostic::Severity::Warning,
             crate::diagnostic::Phase::Parse,
-            "format_version",
+            &path(&["format_version"]),
         );
         let manifest = reader.read_v0(root);
         if manifest.is_some() {
@@ -67,7 +66,7 @@ pub(super) fn read(
                 Code::UnusualFormatVersion,
                 crate::diagnostic::Severity::Info,
                 crate::diagnostic::Phase::Upgrade,
-                "",
+                &JsonPath::new(),
             );
         }
         manifest
@@ -87,12 +86,13 @@ fn format_version(root: &Value, sink: &mut Sink<'_>) -> Option<u8> {
     let Some(value) = member(root, "format_version").filter(|v| !v.is_null()) else {
         return Some(0);
     };
+    let at = path(&["format_version"]);
     let as_int: i64 = if let Some(number) = value.as_number() {
         if number.is_integer() {
             number.to_i64().unwrap_or(0)
         } else {
             // The coercion is parse semantics; the lint is the crate's own.
-            sink.note(Code::WrongTypeProperty { text: None }, "format_version");
+            sink.note(Code::WrongTypeProperty { text: None }, &at);
             #[allow(
                 clippy::cast_possible_truncation,
                 reason = "jsoncpp `asInt` truncates a real toward zero"
@@ -101,10 +101,10 @@ fn format_version(root: &Value, sink: &mut Sink<'_>) -> Option<u8> {
             truncated
         }
     } else if let Some(flag) = value.as_bool() {
-        sink.note(Code::WrongTypeProperty { text: None }, "format_version");
+        sink.note(Code::WrongTypeProperty { text: None }, &at);
         i64::from(flag)
     } else {
-        sink.note(Code::WrongTypeProperty { text: None }, "format_version");
+        sink.note(Code::WrongTypeProperty { text: None }, &at);
         0
     };
     #[allow(
@@ -116,12 +116,12 @@ fn format_version(root: &Value, sink: &mut Sink<'_>) -> Option<u8> {
     if format >= 3 {
         // The game reports an error at `format_version` before dispatching, so nothing is
         // parsed.
-        sink.error(Code::InvalidProperty { text: None }, "format_version");
+        sink.error(Code::InvalidProperty { text: None }, &at);
         return None;
     }
     if i64::from(format) != as_int {
         // A lint of the coercion, the crate's own.
-        sink.note(Code::InvalidProperty { text: None }, "format_version");
+        sink.note(Code::InvalidProperty { text: None }, &at);
     }
     Some(format)
 }
@@ -153,7 +153,7 @@ impl Legacy<'_, '_> {
     /// Format 1 and 2: modules, header, then the rest, each reading from the root.
     fn read_v12(&mut self, root: &Value, capabilities: &CapabilityRegistry) -> Option<Manifest> {
         let errors = self.sink.errors();
-        let modules = self.modules(root, "");
+        let modules = self.modules(root, &JsonPath::new());
         // An error from the modules skips the header and the rest.
         if self.sink.errors() > errors {
             return None;
@@ -161,13 +161,15 @@ impl Legacy<'_, '_> {
         let pack_type = pack_type(&modules);
         let HeaderParts { mut header, object } = self.header(root, "uuid", "version")?;
         self.header_tail(&mut header, object, pack_type);
-        let dependencies = self.dependencies(root);
-        let metadata = self.metadata(root, "metadata");
+        let (dependencies, dependency_places) = self.dependencies(root);
+        let metadata = self.metadata(root, &path(&["metadata"]));
         let settings = self.settings(root);
         let subpacks = self.subpacks(root);
-        let capability_list = self.capabilities(root, &header, pack_type, capabilities);
+        let capability_list =
+            capability_list(self.sink, root, header.uuid, pack_type, capabilities);
         let has_education_metadata =
-            self.boolean(root, "has_education_metadata", "has_education_metadata");
+            self.sink
+                .boolean(root, "has_education_metadata", &JsonPath::new(), false);
         self.duplicate_uuids(&mut header, &modules);
         let (format, original_format) = self.manifest_format();
         Some(Manifest {
@@ -181,8 +183,9 @@ impl Legacy<'_, '_> {
             subpacks,
             settings,
             has_education_metadata,
-            extra: extra(
+            extra: self.sink.unknown(
                 root,
+                &JsonPath::new(),
                 &[
                     "format_version",
                     "header",
@@ -195,6 +198,9 @@ impl Legacy<'_, '_> {
                     "has_education_metadata",
                 ],
             ),
+            places: ManifestPlaces {
+                dependencies: dependency_places,
+            },
         })
     }
 
@@ -207,7 +213,7 @@ impl Legacy<'_, '_> {
         if self.sink.errors() > errors {
             return None;
         }
-        let mut modules = self.modules(object, "header");
+        let mut modules = self.modules(object, &path(&["header"]));
         if modules.is_empty() && member(object, "modules").is_none_or(Value::is_null) {
             // Lenient path for a manifest without modules: vanilla adds one resources module,
             // and its UUID is a hash.
@@ -218,8 +224,9 @@ impl Legacy<'_, '_> {
             ));
         }
         let pack_type = pack_type(&modules);
-        header.extra = extra(
+        header.extra = self.sink.unknown(
             object,
+            &path(&["header"]),
             &[
                 "name",
                 "description",
@@ -239,7 +246,7 @@ impl Legacy<'_, '_> {
         // The format-0/1 `min_engine_version` default and cap apply once the pack type is
         // known.
         self.header_tail(&mut header, object, pack_type);
-        let metadata = self.metadata(object, "header/metadata");
+        let metadata = self.metadata(object, &path(&["header", "metadata"]));
         self.duplicate_uuids(&mut header, &modules);
         let (format, original_format) = self.manifest_format();
         Some(Manifest {
@@ -253,122 +260,11 @@ impl Legacy<'_, '_> {
             subpacks: Vec::new(),
             settings: Vec::new(),
             has_education_metadata: None,
-            extra: extra(root, &["format_version", "header"]),
+            extra: self
+                .sink
+                .unknown(root, &JsonPath::new(), &["format_version", "header"]),
+            places: ManifestPlaces::default(),
         })
-    }
-
-    // ---- primitives ----
-
-    /// A string member: wrong type is always an error; absent and empty are errors only when
-    /// `required`. `None` unless a string was read.
-    fn string(&mut self, object: &Value, key: &str, at: &str, required: bool) -> Option<String> {
-        let at = child(at, key);
-        match member(object, key).filter(|v| !v.is_null()) {
-            None => {
-                if required {
-                    self.sink.error(Code::MissingProperty { text: None }, &at);
-                }
-                None
-            }
-            Some(value) => match text(value) {
-                None => {
-                    self.sink.error(Code::WrongTypeProperty { text: None }, &at);
-                    None
-                }
-                Some("") => {
-                    if required {
-                        // An empty required string is reported as `empty_property:%s;`
-                        // (skipped for an optional member), and the pack is rejected, so
-                        // it is an error.
-                        self.sink.error(Code::EmptyProperty, &at);
-                    }
-                    Some(String::new())
-                }
-                Some(text) => Some(text.to_owned()),
-            },
-        }
-    }
-
-    /// An optional boolean member; wrong type is an error.
-    fn boolean(&mut self, object: &Value, key: &str, at: &str) -> Option<bool> {
-        let value = member(object, key).filter(|v| !v.is_null())?;
-        if let Some(flag) = value.as_bool() {
-            Some(flag)
-        } else {
-            self.sink.error(Code::WrongTypeProperty { text: None }, at);
-            None
-        }
-    }
-
-    /// The pack UUID: absent, wrong type and empty are errors and give no UUID; a
-    /// malformed or nil text is replaced by its hash (an error, a warning when upgrading).
-    fn uuid(&mut self, object: &Value, key: &str, at: &str, upgraded: bool) -> Option<Uuid> {
-        let at = child(at, key);
-        let Some(value) = member(object, key).filter(|v| !v.is_null()) else {
-            // Vanilla gives a pack with no UUID a random one; the crate reports
-            // `missing_property` and rejects the manifest instead.
-            self.sink.error(Code::MissingProperty { text: None }, &at);
-            return None;
-        };
-        let Some(raw) = text(value) else {
-            self.sink.error(Code::WrongTypeProperty { text: None }, &at);
-            return None;
-        };
-        if raw.is_empty() {
-            // An empty UUID is read through the same string reader as `string` above and
-            // reported the same way, as an error.
-            self.sink.error(Code::EmptyProperty, &at);
-            return None;
-        }
-        if let Some(uuid) = ids::parse(raw) {
-            return Some(uuid);
-        }
-        self.sink
-            .error_or_upgraded(Code::MalformedPropertyUuid, upgraded, &at);
-        Some(ids::salvage(raw))
-    }
-
-    /// A version member: the string form first, then the array form.
-    fn version(
-        &mut self,
-        object: &Value,
-        key: &str,
-        at: &str,
-        upgraded: bool,
-    ) -> Option<SemVersion> {
-        let at = child(at, key);
-        let Some(value) = member(object, key).filter(|v| !v.is_null()) else {
-            if upgraded {
-                self.sink.warning(Code::MissingProperty { text: None }, &at);
-                return Some(SemVersion::new(0, 0, 0));
-            }
-            self.sink.error(Code::MissingProperty { text: None }, &at);
-            return None;
-        };
-        if let Some(raw) = text(value) {
-            return match strict_version_text(raw) {
-                Some(version) => Some(version),
-                None if upgraded => {
-                    self.sink
-                        .warning(Code::MalformedPropertyVersion { text: None }, &at);
-                    Some(SemVersion::new(1, 0, 0))
-                }
-                None => {
-                    let text = Some(VanillaText::ManifestNotSemVer { path: pointer(&at) });
-                    self.sink
-                        .error(Code::MalformedPropertyVersion { text }, &at);
-                    None
-                }
-            };
-        }
-        if let Some(version) = self.sink.version_array(value, &at) {
-            return Some(version);
-        }
-        // An array of the wrong length or with an unconvertible element, or another type.
-        let text = (!upgraded).then(|| VanillaText::ManifestWrongType { path: pointer(&at) });
-        self.sink
-            .error_or_upgraded(Code::WrongTypeProperty { text }, upgraded, &at);
-        upgraded.then(|| SemVersion::new(0, 0, 0))
     }
 
     // ---- header ----
@@ -380,25 +276,18 @@ impl Legacy<'_, '_> {
         uuid_key: &str,
         version_key: &str,
     ) -> Option<HeaderParts<'v>> {
-        let Some(object) = member(container, "header").filter(|v| !v.is_null()) else {
-            self.sink
-                .error(Code::MissingProperty { text: None }, "header");
-            return None;
-        };
-        if object.as_object().is_none() {
-            self.sink
-                .error(Code::WrongTypeProperty { text: None }, "header");
-            return None;
-        }
+        let at = path(&["header"]);
+        let object = self
+            .sink
+            .object(container, "header", &JsonPath::new(), true)?;
         let upgraded = self.upgraded;
-        let uuid = self.uuid(object, uuid_key, "header", upgraded);
+        let uuid = self.sink.uuid(object, uuid_key, &at, upgraded);
         let name = self.name(object, uuid);
-        let description = self.string(object, "description", "header", false);
-        let platform_locked = self.boolean(object, "platform_locked", "header/platform_locked");
-        let allow_random_seed =
-            self.boolean(object, "allow_random_seed", "header/allow_random_seed");
-        let scope_text = self.string(object, "pack_scope", "header", false);
-        let version = self.version(object, version_key, "header", upgraded);
+        let description = self.sink.string(object, "description", &at, false);
+        let platform_locked = self.sink.boolean(object, "platform_locked", &at, false);
+        let allow_random_seed = self.sink.boolean(object, "allow_random_seed", &at, false);
+        let scope_text = self.sink.string(object, "pack_scope", &at, false);
+        let version = self.sink.version(object, version_key, &at, upgraded);
         // Read only when present, without findings; kept only when valid.
         let pack_optimization_version =
             member(object, "pack_optimization_version").and_then(|value| {
@@ -406,13 +295,14 @@ impl Legacy<'_, '_> {
                     .and_then(RelaxedSemVersion::from_text)
                     .or_else(|| {
                         self.sink
-                            .version_array(value, "header/pack_optimization_version")
+                            .version_array(value, &at.child("pack_optimization_version"))
                             .map(RelaxedSemVersion::new)
                     })
             });
         let (uuid, version) = (uuid?, version?);
-        let mut extra = extra(
+        let mut extra = self.sink.unknown(
             object,
+            &at,
             &[
                 "name",
                 "description",
@@ -460,10 +350,11 @@ impl Legacy<'_, '_> {
         // adds an `empty_property:%s,%s;` warning for the header's name, and the game gives
         // no report entry for the other branch. A pack-report entry carries no content-log
         // level, so it counts as the level-2 class.
-        let read = self.string(
+        let at = path(&["header"]);
+        let read = self.sink.string(
             object,
             "name",
-            "header",
+            &at,
             self.format >= 2 && member(object, "name").is_none_or(Value::is_null),
         );
         match read {
@@ -472,7 +363,7 @@ impl Legacy<'_, '_> {
                 // The game's noname branch adds no report entry, so the crate keeps format 1's
                 // message as an information at most.
                 if self.format >= 2 && member(object, "name").is_some_and(|v| text(v) == Some("")) {
-                    self.sink.note(Code::EmptyProperty, "header/name");
+                    self.sink.note(Code::EmptyProperty, &at.child("name"));
                 }
                 // Kept empty, so it is written back empty; only reports show the placeholder.
                 Some(String::new())
@@ -480,7 +371,7 @@ impl Legacy<'_, '_> {
             _ => {
                 if member(object, "name").is_some_and(|v| text(v) == Some("")) {
                     // The format-0 branch's `empty_property` warning for the name.
-                    self.sink.warning(Code::EmptyProperty, "header/name");
+                    self.sink.warning(Code::EmptyProperty, &at.child("name"));
                 }
                 uuid.map(|uuid| uuid.hyphenated().to_string())
             }
@@ -504,12 +395,12 @@ impl Legacy<'_, '_> {
         object: &Value,
         pack_type: PackType,
     ) -> Option<MinEngineVersion> {
-        const AT: &str = "header/min_engine_version";
+        let at = path(&["header", "min_engine_version"]);
         let enforced = matches!(pack_type, PackType::Behavior | PackType::Resource);
         let Some(value) = member(object, "min_engine_version").filter(|v| !v.is_null()) else {
             return match (self.format >= 2, enforced) {
                 (true, true) => {
-                    self.sink.error(Code::MissingProperty { text: None }, AT);
+                    self.sink.error(Code::MissingProperty { text: None }, &at);
                     None
                 }
                 (false, true) => Some(MinEngineVersion::FORMAT_1_DEFAULT),
@@ -519,44 +410,26 @@ impl Legacy<'_, '_> {
         if self.format >= 2 && !enforced {
             // `ignored_property:%s;` is a pack-report warning with no content-log level, so
             // it counts as the level-2 class.
-            self.sink.warning(Code::IgnoredProperty, AT);
+            self.sink.warning(Code::IgnoredProperty, &at);
             return None;
         }
         // The legacy parser accepts only the array form; a string like "1.20.0" is
         // `malformed_property_version`.
-        let Some(version) = self.sink.version_array(value, AT) else {
+        let Some(version) = self.sink.version_array(value, &at) else {
             self.sink
-                .error(Code::MalformedPropertyVersion { text: None }, AT);
+                .error(Code::MalformedPropertyVersion { text: None }, &at);
             return None;
         };
         if self.format >= 2 {
-            let engine = SemVersion::from(ENGINE_VERSION);
-            if version > engine {
-                self.sink.error(
-                    Code::VersionTooHigh {
-                        version: version.to_string(),
-                        limit: engine.to_string(),
-                    },
-                    AT,
-                );
-                return None;
-            }
-            if version < LOWEST_ENGINE {
-                self.sink.error(
-                    Code::VersionTooLow {
-                        version: version.to_string(),
-                        limit: LOWEST_ENGINE.to_string(),
-                    },
-                    AT,
-                );
-                return None;
-            }
-            return Some(MinEngineVersion { version });
+            return self
+                .sink
+                .engine_bounds(&version, &at)
+                .then_some(MinEngineVersion { version });
         }
         let version = MinEngineVersion { version };
         if version.exceeds_format_1_cap() {
             self.sink
-                .warning(Code::MinEngineVersionCapFormatVersion1, AT);
+                .warning(Code::MinEngineVersionCapFormatVersion1, &at);
             return Some(MinEngineVersion::FORMAT_1_CAP);
         }
         Some(version)
@@ -574,28 +447,30 @@ impl Legacy<'_, '_> {
             object,
             pack_type,
             self.format >= 2,
-            "header/base_game_version",
+            &path(&["header", "base_game_version"]),
         )
     }
 
     /// `lock_template_options`: required by format-2 world templates, ignored with a warning
     /// on other format-2 packs.
     fn lock_template_options(&mut self, object: &Value, pack_type: PackType) -> Option<bool> {
-        const AT: &str = "header/lock_template_options";
+        let at = path(&["header", "lock_template_options"]);
         let template = pack_type == PackType::WorldTemplate;
         let present = member(object, "lock_template_options").is_some_and(|v| !v.is_null());
         if !present {
             if self.format >= 2 && template {
-                self.sink.error(Code::MissingProperty { text: None }, AT);
+                self.sink.error(Code::MissingProperty { text: None }, &at);
             }
             return None;
         }
-        let value = self.boolean(object, "lock_template_options", AT)?;
+        let value =
+            self.sink
+                .boolean(object, "lock_template_options", &path(&["header"]), false)?;
         if template || self.format < 2 {
             Some(value)
         } else {
             // A pack-report warning, which counts as the level-2 class.
-            self.sink.warning(Code::IgnoredProperty, AT);
+            self.sink.warning(Code::IgnoredProperty, &at);
             None
         }
     }
@@ -603,8 +478,8 @@ impl Legacy<'_, '_> {
     // ---- modules ----
 
     /// The modules of `container.modules`.
-    fn modules(&mut self, container: &Value, at: &str) -> Vec<Module> {
-        let at = child(at, "modules");
+    fn modules(&mut self, container: &Value, at: &JsonPath) -> Vec<Module> {
+        let at = below(at, "modules");
         let Some(value) = member(container, "modules").filter(|v| !v.is_null()) else {
             if self.upgraded {
                 self.sink.warning(Code::MissingModules, &at);
@@ -620,7 +495,7 @@ impl Legacy<'_, '_> {
         };
         let mut modules = Vec::new();
         for (index, element) in elements.as_slice().iter().enumerate() {
-            let at = item(&at, index);
+            let at = at.index(index);
             if element.as_object().is_none() {
                 self.sink.error(Code::WrongTypeProperty { text: None }, &at);
                 continue;
@@ -641,18 +516,21 @@ impl Legacy<'_, '_> {
         modules
     }
 
-    fn module(&mut self, object: &Value, at: &str) -> Option<Module> {
+    fn module(&mut self, object: &Value, at: &JsonPath) -> Option<Module> {
         // The module UUID and version are read strictly on every path.
-        let uuid = self.uuid(object, "uuid", at, false);
-        let version = self.version(object, "version", at, false);
-        let description = self.string(object, "description", at, false);
-        let language = self.string(object, "language", at, false);
-        let entry = self.string(object, "entry", at, false);
-        let type_name = self.string(object, "type", at, false).unwrap_or_default();
+        let uuid = self.sink.uuid(object, "uuid", at, false);
+        let version = self.sink.version(object, "version", at, false);
+        let description = self.sink.string(object, "description", at, false);
+        let language = self.sink.string(object, "language", at, false);
+        let entry = self.sink.string(object, "entry", at, false);
+        let type_name = self
+            .sink
+            .string(object, "type", at, false)
+            .unwrap_or_default();
         let module_type = match ModuleType::from_name(&type_name) {
             Some(ty) if ty != ModuleType::Invalid => Some(ty),
             _ => {
-                let at = child(at, "type");
+                let at = below(at, "type");
                 if self.upgraded {
                     // `packupgradewarning.invalidpacktype`: substituted by `resources`.
                     self.sink.warning(Code::InvalidProperty { text: None }, &at);
@@ -671,8 +549,9 @@ impl Legacy<'_, '_> {
             description,
             entry,
             language,
-            extra: extra(
+            extra: self.sink.unknown(
                 object,
+                at,
                 &[
                     "type",
                     "uuid",
@@ -687,34 +566,36 @@ impl Legacy<'_, '_> {
 
     // ---- the rest of format 1 and 2 ----
 
-    fn dependencies(&mut self, root: &Value) -> Vec<Dependency> {
-        const AT: &str = "dependencies";
+    fn dependencies(&mut self, root: &Value) -> (Vec<Dependency>, Vec<DependencyPlace>) {
+        let list = path(&["dependencies"]);
         // An absent `dependencies` is no finding.
-        let Some(value) = member(root, AT).filter(|v| !v.is_null()) else {
-            return Vec::new();
-        };
-        let Some(elements) = value.as_array() else {
-            self.sink.error(Code::WrongTypeProperty { text: None }, AT);
-            return Vec::new();
+        let Some(elements) = self
+            .sink
+            .array(root, "dependencies", &JsonPath::new(), false)
+        else {
+            return (Vec::new(), Vec::new());
         };
         let mut dependencies = Vec::new();
-        for (index, element) in elements.as_slice().iter().enumerate() {
-            let at = item(AT, index);
+        let mut places = Vec::new();
+        for (index, element) in elements.iter().enumerate() {
+            let at = list.index(index);
             if element.as_object().is_none() {
                 self.sink.error(Code::WrongTypeProperty { text: None }, &at);
                 continue;
             }
             if let Some(dependency) = self.dependency(element, &at) {
+                let native = matches!(dependency, Dependency::NativeModule { .. });
+                places.push(dependency_place(element, at, native));
                 dependencies.push(dependency);
             }
         }
-        dependencies
+        (dependencies, places)
     }
 
-    fn dependency(&mut self, object: &Value, at: &str) -> Option<Dependency> {
+    fn dependency(&mut self, object: &Value, at: &JsonPath) -> Option<Dependency> {
         if member(object, "module_name").is_none_or(Value::is_null) {
-            let uuid = self.uuid(object, "uuid", at, false);
-            let version = self.version(object, "version", at, false);
+            let uuid = self.sink.uuid(object, "uuid", at, false);
+            let version = self.sink.version(object, "version", at, false);
             return Some(Dependency::Pack {
                 uuid: uuid?,
                 version: version?,
@@ -726,12 +607,12 @@ impl Legacy<'_, '_> {
             self.sink.warning(Code::InvalidProperty { text: None }, at);
             return None;
         }
-        let module_name = self.string(object, "module_name", at, true)?;
+        let module_name = self.sink.string(object, "module_name", at, true)?;
         let version = match member(object, "version").and_then(text) {
             Some("alpha") => NativeModuleVersion::LatestAlpha,
             Some("beta") => NativeModuleVersion::LatestBeta,
             Some("internal") => NativeModuleVersion::LatestInternal,
-            _ => NativeModuleVersion::Version(self.version(object, "version", at, false)?),
+            _ => NativeModuleVersion::Version(self.sink.version(object, "version", at, false)?),
         };
         Some(Dependency::NativeModule {
             module_name,
@@ -740,22 +621,18 @@ impl Legacy<'_, '_> {
         })
     }
 
-    fn metadata(&mut self, container: &Value, at: &str) -> Option<Metadata> {
-        metadata(self.sink, container, at, false)
+    fn metadata(&mut self, container: &Value, at: &JsonPath) -> Option<Metadata> {
+        metadata(self.sink, container, at)
     }
 
     /// Legacy `settings`: only labels are kept; other elements are dropped with a warning.
     fn settings(&mut self, root: &Value) -> Vec<Setting> {
-        const AT: &str = "settings";
-        let Some(value) = member(root, AT).filter(|v| !v.is_null()) else {
-            return Vec::new();
-        };
-        let Some(elements) = value.as_array() else {
-            self.sink.error(Code::WrongTypeProperty { text: None }, AT);
+        let list = path(&["settings"]);
+        let Some(elements) = self.sink.array(root, "settings", &JsonPath::new(), false) else {
             return Vec::new();
         };
         let mut settings = Vec::new();
-        for (index, element) in elements.as_slice().iter().enumerate() {
+        for (index, element) in elements.iter().enumerate() {
             if element.as_object().is_none() {
                 continue;
             }
@@ -768,32 +645,34 @@ impl Legacy<'_, '_> {
                 }),
                 // A dropped element gets `LegacySettingIgnored`, the crate's own information;
                 // vanilla drops them silently.
-                None => self.sink.note(Code::LegacySettingIgnored, &item(AT, index)),
+                None => self
+                    .sink
+                    .note(Code::LegacySettingIgnored, &list.index(index)),
             }
         }
         settings
     }
 
     fn subpacks(&mut self, root: &Value) -> Vec<Subpack> {
-        const AT: &str = "subpacks";
-        let Some(value) = member(root, AT).filter(|v| !v.is_null()) else {
-            return Vec::new();
-        };
-        let Some(elements) = value.as_array() else {
-            self.sink.error(Code::WrongTypeProperty { text: None }, AT);
+        let list = path(&["subpacks"]);
+        let Some(elements) = self.sink.array(root, "subpacks", &JsonPath::new(), false) else {
             return Vec::new();
         };
         let mut subpacks = Vec::new();
-        for (index, element) in elements.as_slice().iter().enumerate() {
-            let at = item(AT, index);
+        for (index, element) in elements.iter().enumerate() {
+            let at = list.index(index);
             if element.as_object().is_none() {
                 self.sink.error(Code::WrongTypeProperty { text: None }, &at);
                 continue;
             }
             let folder_name = self
+                .sink
                 .string(element, "folder_name", &at, true)
                 .unwrap_or_default();
-            let name = self.string(element, "name", &at, true).unwrap_or_default();
+            let name = self
+                .sink
+                .string(element, "name", &at, true)
+                .unwrap_or_default();
             let memory_tier = self.memory_tier(element, &at);
             subpacks.push(Subpack {
                 name,
@@ -805,7 +684,7 @@ impl Legacy<'_, '_> {
     }
 
     /// `memory_tier` (a memory size mapped to a tier) or `memory_performance_tier` (0..5).
-    fn memory_tier(&mut self, object: &Value, at: &str) -> MemoryTier {
+    fn memory_tier(&mut self, object: &Value, at: &JsonPath) -> MemoryTier {
         let integer = |key: &str| {
             member(object, key)
                 .and_then(Value::as_number)
@@ -821,7 +700,7 @@ impl Legacy<'_, '_> {
             if size < 0 {
                 self.sink.error(
                     Code::InvalidProperty { text: None },
-                    &child(at, "memory_tier"),
+                    &below(at, "memory_tier"),
                 );
             }
             return MemoryTier::from_legacy_size(size);
@@ -833,7 +712,7 @@ impl Legacy<'_, '_> {
                 .unwrap_or_else(|| {
                     self.sink.error(
                         Code::InvalidProperty { text: None },
-                        &child(at, "memory_performance_tier"),
+                        &below(at, "memory_performance_tier"),
                     );
                     MemoryTier::Tier0
                 });
@@ -841,45 +720,9 @@ impl Legacy<'_, '_> {
         // The game has no pack-report warning for this, so the crate reports an information.
         self.sink.note(
             Code::WrongTypeProperty { text: None },
-            &child(at, "memory_tier"),
+            &below(at, "memory_tier"),
         );
         MemoryTier::Tier0
-    }
-
-    fn capabilities(
-        &mut self,
-        root: &Value,
-        header: &Header,
-        pack_type: PackType,
-        registry: &CapabilityRegistry,
-    ) -> Vec<Capability> {
-        const AT: &str = "capabilities";
-        let Some(value) = member(root, AT).filter(|v| !v.is_null()) else {
-            return Vec::new();
-        };
-        let Some(elements) = value.as_array() else {
-            self.sink.error(Code::WrongTypeProperty { text: None }, AT);
-            return Vec::new();
-        };
-        let mut capabilities = Vec::new();
-        for (index, element) in elements.as_slice().iter().enumerate() {
-            let Some(name) = text(element) else {
-                self.sink
-                    .error(Code::WrongTypeProperty { text: None }, &item(AT, index));
-                continue;
-            };
-            let capability = Capability::from_name(name);
-            check_capability(
-                self.sink,
-                registry,
-                &capability,
-                header.uuid,
-                pack_type,
-                &item(AT, index),
-            );
-            capabilities.push(capability);
-        }
-        capabilities
     }
 
     /// A module whose UUID equals the header's. Format 1 and 2: an
@@ -892,9 +735,11 @@ impl Legacy<'_, '_> {
             }
             if self.upgraded {
                 header.uuid = ids::hash(&header.uuid.hyphenated().to_string());
-                self.sink.warning(Code::DuplicateUuid, "header/pack_id");
+                self.sink
+                    .warning(Code::DuplicateUuid, &path(&["header", "pack_id"]));
             } else {
-                self.sink.error(Code::DuplicateUuid, "header/uuid");
+                self.sink
+                    .error(Code::DuplicateUuid, &path(&["header", "uuid"]));
             }
         }
     }
@@ -931,6 +776,34 @@ pub(super) fn modules_consistent(modules: &[Module]) -> bool {
     true
 }
 
+/// `capabilities`: each element a capability name, checked against `registry` for the pack
+/// `pack_uuid` of `pack_type`; an element that is not a string is the wrong type.
+pub(super) fn capability_list(
+    sink: &mut Sink<'_>,
+    root: &Value,
+    pack_uuid: Uuid,
+    pack_type: PackType,
+    registry: &CapabilityRegistry,
+) -> Vec<Capability> {
+    let list = path(&["capabilities"]);
+    let Some(elements) = sink.array(root, "capabilities", &JsonPath::new(), false) else {
+        return Vec::new();
+    };
+    let mut capabilities = Vec::new();
+    for (index, element) in elements.iter().enumerate() {
+        let at = list.index(index);
+        let Some(name) = text(element) else {
+            let code = sink.wrong_type();
+            sink.error(code, &at);
+            continue;
+        };
+        let capability = Capability::from_name(name);
+        check_capability(sink, registry, &capability, pack_uuid, pack_type, &at);
+        capabilities.push(capability);
+    }
+    capabilities
+}
+
 /// Checks one capability against the registry: a capability the registry does not grant is a
 /// warning; the name stays in the manifest.
 pub(super) fn check_capability(
@@ -939,7 +812,7 @@ pub(super) fn check_capability(
     capability: &Capability,
     pack_uuid: Uuid,
     pack_type: PackType,
-    at: &str,
+    at: &JsonPath,
 ) {
     let cx = CapabilityCx {
         capability,
@@ -968,7 +841,7 @@ pub(super) fn base_game_version(
     object: &Value,
     pack_type: PackType,
     from_format_2: bool,
-    at: &str,
+    at: &JsonPath,
 ) -> Option<BaseGameVersion> {
     let template = pack_type == PackType::WorldTemplate;
     let Some(value) = member(object, "base_game_version").filter(|v| !v.is_null()) else {
@@ -991,28 +864,10 @@ pub(super) fn base_game_version(
         sink.warning(Code::IgnoredProperty, at);
         return None;
     }
-    if let Some(semver) = version.version.as_ref().filter(|v| !v.is_any()) {
-        let engine = SemVersion::from(ENGINE_VERSION);
-        if *semver > engine {
-            sink.error(
-                Code::VersionTooHigh {
-                    version: semver.to_string(),
-                    limit: engine.to_string(),
-                },
-                at,
-            );
-            return None;
-        }
-        if *semver < LOWEST_ENGINE {
-            sink.error(
-                Code::VersionTooLow {
-                    version: semver.to_string(),
-                    limit: LOWEST_ENGINE.to_string(),
-                },
-                at,
-            );
-            return None;
-        }
+    if let Some(semver) = version.version.as_ref().filter(|v| !v.is_any())
+        && !sink.engine_bounds(semver, at)
+    {
+        return None;
     }
     Some(version)
 }
@@ -1027,80 +882,66 @@ const METADATA_MEMBERS: [&str; 5] = [
 ];
 
 /// The `metadata` object: `url`, `license`, `product_type` (`""` or `addon`), `generated_with`
-/// (versions that do not parse are dropped with a warning) and `authors`. `strict` (format 3):
-/// unknown members are errors, and a member written as `null` is a type error; otherwise
-/// `null` is absent.
-pub(super) fn metadata(
-    sink: &mut Sink<'_>,
-    container: &Value,
-    at: &str,
-    strict: bool,
-) -> Option<Metadata> {
-    let value = member(container, "metadata").filter(|v| strict || !v.is_null())?;
+/// (versions that do not parse are dropped with a warning) and `authors`, by the sink's
+/// profile: the comprehensive document reads a member written `null` as one of the wrong type
+/// and refuses unknown members; the legacy parser reads `null` as absent, reads no `authors`
+/// and drops unknown members.
+pub(super) fn metadata(sink: &mut Sink<'_>, container: &Value, at: &JsonPath) -> Option<Metadata> {
+    let strict = sink.profile() == Profile::Comprehensive;
+    let value = sink.present(container, "metadata")?;
     if value.as_object().is_none() {
-        let code = if strict {
-            Code::InvalidType { text: None }
-        } else {
-            Code::WrongTypeProperty { text: None }
-        };
+        let code = sink.wrong_type();
         sink.error(code, at);
         return None;
     }
-    let wrong_type = |sink: &mut Sink<'_>, at: &str| {
-        let code = if strict {
-            Code::InvalidType { text: None }
-        } else {
-            Code::WrongTypeProperty { text: None }
-        };
+    let wrong_type = |sink: &mut Sink<'_>, at: &JsonPath| {
+        let code = sink.wrong_type();
         sink.error(code, at);
     };
     let string = |sink: &mut Sink<'_>, key: &str| -> Option<String> {
-        let value = member(value, key).filter(|v| strict || !v.is_null())?;
+        let value = sink.present(value, key)?;
         let read = text(value).map(str::to_owned);
         if read.is_none() {
-            wrong_type(sink, &child(at, key));
+            wrong_type(sink, &below(at, key));
         }
         read
     };
     let url = string(sink, "url");
     let license = string(sink, "license");
     let product_type = string(sink, "product_type");
-    if let Some(product) = product_type
+    if product_type
         .as_deref()
-        .filter(|p| !p.is_empty() && *p != "addon")
+        .is_some_and(|p| !p.is_empty() && p != "addon")
     {
-        let _ = product;
         sink.error(
             Code::InvalidProperty { text: None },
-            &child(at, "product_type"),
+            &below(at, "product_type"),
         );
     }
-    let authors = member(value, "authors")
-        .filter(|v| strict || !v.is_null())
-        .and_then(|authors| {
-            let list: Option<Vec<String>> = authors.as_array().and_then(|a| {
-                a.as_slice()
-                    .iter()
-                    .map(|v| text(v).map(str::to_owned))
-                    .collect()
-            });
-            if list.is_none() {
-                // Vanilla's legacy parser does not read `authors`, so a wrong shape is an
-                // information from the crate there and an error in the strict format.
-                if strict {
-                    wrong_type(sink, &child(at, "authors"));
-                } else {
-                    sink.note(
-                        Code::WrongTypeProperty { text: None },
-                        &child(at, "authors"),
-                    );
-                }
-            }
-            list
+    let authors = sink.present(value, "authors").and_then(|authors| {
+        let list: Option<Vec<String>> = authors.as_array().and_then(|a| {
+            a.as_slice()
+                .iter()
+                .map(|v| text(v).map(str::to_owned))
+                .collect()
         });
-    let generated_with = generated_with(sink, value, at, strict);
+        if list.is_none() {
+            // Vanilla's legacy parser does not read `authors`, so a wrong shape is an
+            // information from the crate there and an error in the strict format.
+            if strict {
+                wrong_type(sink, &below(at, "authors"));
+            } else {
+                sink.note(
+                    Code::WrongTypeProperty { text: None },
+                    &below(at, "authors"),
+                );
+            }
+        }
+        list
+    });
+    let generated_with = generated_with(sink, value, at);
     if strict {
-        super::comprehensive::unknown_members(sink, value, at, &METADATA_MEMBERS);
+        let _ = sink.unknown(value, at, &METADATA_MEMBERS);
     } else if let Some(object) = value.as_object() {
         // The legacy parser reads no other member, and `Metadata` has no place for one: it
         // is not written back, which the load says at the member (the crate's own
@@ -1111,7 +952,7 @@ pub(super) fn metadata(
                     Code::MemberNotKept { text: None },
                     crate::diagnostic::Severity::Info,
                     crate::diagnostic::Phase::Parse,
-                    &child(at, key.as_str()),
+                    &below(at, key.as_str()),
                 );
             }
         }
@@ -1125,35 +966,17 @@ pub(super) fn metadata(
     })
 }
 
-/// The members of `object` outside `known`, in document order, for write-back.
-pub(super) fn extra(object: &Value, known: &[&str]) -> UnknownMembers {
-    let mut extra = UnknownMembers::default();
-    if let Some(object) = object.as_object() {
-        for (key, value) in object {
-            if !known.contains(&key.as_str()) {
-                extra.insert(key.as_str().to_owned(), value.clone());
-            }
-        }
-    }
-    extra
-}
-
 /// `metadata/generated_with`: tool name → versions; a version that does not parse is dropped
-/// with a warning.
+/// with a warning. The legacy parser also reads a version's array form.
 fn generated_with(
     sink: &mut Sink<'_>,
     metadata: &Value,
-    at: &str,
-    strict: bool,
+    at: &JsonPath,
 ) -> Option<IndexMap<String, Vec<RelaxedSemVersion>>> {
-    let tools = member(metadata, "generated_with").filter(|v| strict || !v.is_null())?;
-    let at = child(at, "generated_with");
-    let wrong_type = |sink: &mut Sink<'_>, at: &str| {
-        let code = if strict {
-            Code::InvalidType { text: None }
-        } else {
-            Code::WrongTypeProperty { text: None }
-        };
+    let tools = sink.present(metadata, "generated_with")?;
+    let at = below(at, "generated_with");
+    let wrong_type = |sink: &mut Sink<'_>, at: &JsonPath| {
+        let code = sink.wrong_type();
         sink.error(code, at);
     };
     let Some(object) = tools.as_object() else {
@@ -1162,7 +985,7 @@ fn generated_with(
     };
     let mut map = IndexMap::new();
     for (tool, versions) in object {
-        let at = child(&at, tool.as_str());
+        let at = below(&at, tool.as_str());
         let Some(list) = versions.as_array() else {
             wrong_type(sink, &at);
             continue;
@@ -1171,19 +994,17 @@ fn generated_with(
         for (index, version) in list.as_slice().iter().enumerate() {
             let parsed = text(version)
                 .and_then(RelaxedSemVersion::from_text)
-                .or_else(|| {
-                    if strict {
-                        None
-                    } else {
-                        sink.version_array(version, &item(&at, index))
-                            .map(RelaxedSemVersion::new)
-                    }
+                .or_else(|| match sink.profile() {
+                    Profile::Comprehensive => None,
+                    Profile::Legacy => sink
+                        .version_array(version, &at.index(index))
+                        .map(RelaxedSemVersion::new),
                 });
             match parsed {
                 Some(parsed) => kept.push(parsed),
                 // An unparsable version is an `ignored_property` pack-report warning, which
                 // counts as the level-2 class.
-                None => sink.warning(Code::IgnoredProperty, &item(&at, index)),
+                None => sink.warning(Code::IgnoredProperty, &at.index(index)),
             }
         }
         map.insert(tool.as_str().to_owned(), kept);
@@ -1209,10 +1030,4 @@ fn keep_written_min_engine_version(header: &mut Header, object: &Value) {
             .extra
             .insert("min_engine_version".to_owned(), written.clone());
     }
-}
-
-/// The element at `at` as the legacy reader's messages name it: a JSON pointer
-/// (`/dependencies/0/version`).
-fn pointer(at: &str) -> String {
-    format!("/{at}")
 }

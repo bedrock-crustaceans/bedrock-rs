@@ -1,7 +1,7 @@
 //! `Manifest::parse`: the text, the reader the `format_version` selects, and the document.
 
 use crate::diagnostic::{
-    DiagnosticCode as Code, Span, VanillaText, code_for_deserialize_error_kind,
+    DiagnosticCode as Code, JsonPath, Span, VanillaText, code_for_deserialize_error_kind,
 };
 use crate::document::{Document, Origin, Rejected, VersionInfo};
 use crate::json::{MAX_JSON_DEPTH, Value, check_depth, strip_bom};
@@ -51,7 +51,7 @@ fn read(
                 message: "JSON nesting deeper than the limit".to_owned(),
                 text: None,
             },
-            "",
+            &JsonPath::new(),
         );
         return None;
     }
@@ -82,7 +82,7 @@ fn read(
         PickedVersion::Malformed => {
             sink.error(
                 Code::MalformedFormatVersion { text: None },
-                "format_version",
+                &JsonPath::of_keys(["format_version"]),
             );
             return None;
         }
@@ -104,7 +104,7 @@ fn read(
                         Code::UnsupportedVersion {
                             text: Some(VanillaText::NoParserForVersion { version: shown }),
                         },
-                        "format_version",
+                        &JsonPath::of_keys(["format_version"]),
                     );
                     return None;
                 }

@@ -580,7 +580,6 @@ use super::{
     CatalogEntry, CatalogModule, ModuleCatalog, NativeDependency, ScriptContext, ScriptDiscovery,
     ScriptFiles, ScriptModule, ScriptTarget,
 };
-use bedrock_addon_core::manifest::dependency_texts;
 use bedrock_addon_core::test_cost;
 
 /// The `i`-th of many distinct releases of major `major`.
@@ -809,36 +808,6 @@ fn a_chain_and_a_cycle_of_requirements_are_walked_once() {
         5_000,
         |n| chain_catalog(n, true),
         walk,
-    );
-}
-
-#[test]
-fn reading_the_dependency_texts_is_linear() {
-    test_cost::assert_linear_at(
-        "dependency_texts, n dependencies",
-        5_000,
-        |n| {
-            let dependencies: Vec<String> = (0..n)
-                .map(|i| {
-                    format!(
-                        r#"{{ "module_name": "@demo/m{i}", "version": "2.{}", "optional": true }}"#,
-                        i % 7
-                    )
-                })
-                .collect();
-            format!(r#"{{ "dependencies": [{}] }}"#, dependencies.join(","))
-        },
-        |text| {
-            let texts = dependency_texts(text.as_bytes(), false);
-            assert!(
-                texts
-                    .native
-                    .iter()
-                    .all(|native| native.relaxed && native.has_optional)
-            );
-            assert!(texts.packs.is_empty());
-            texts.native.len()
-        },
     );
 }
 

@@ -10,11 +10,12 @@ use crate::pack_identity::PackType;
 use crate::version::{MinEngineVersion, SemVersion};
 use facet_value::{VArray, VNumber, VObject};
 
-use super::read::{json_path, version_array};
+use super::read::{path, version_array};
 use super::{
     Dependency, Header, Manifest, ManifestFormat, Metadata, Module, NativeModuleVersion,
     RelaxedSemVersion, Setting, Subpack,
 };
+use crate::diagnostic::JsonPath;
 
 /// Writes `manifest` as JSON text to `out`. On failure nothing is appended.
 pub(super) fn write(
@@ -27,17 +28,17 @@ pub(super) fn write(
 }
 
 /// Data this format cannot hold.
-fn not_representable(at: &str) -> EncodeError {
+fn not_representable(at: JsonPath) -> EncodeError {
     EncodeError::NotRepresentable {
-        at: json_path(at),
+        at,
         what: Unrepresentable::Unsupported,
     }
 }
 
 /// A non-finite number.
-fn non_finite(at: &str, value: f32) -> EncodeError {
+fn non_finite(at: JsonPath, value: f32) -> EncodeError {
     EncodeError::NotRepresentable {
-        at: json_path(at),
+        at,
         what: if value.is_nan() {
             Unrepresentable::NaN
         } else if value > 0.0 {
@@ -104,11 +105,11 @@ fn to_value(manifest: &Manifest) -> Result<Value, EncodeError> {
     if !manifest.settings.is_empty() {
         let mut list = VArray::new();
         for (index, setting) in manifest.settings.iter().enumerate() {
-            let at = format!("settings/{index}");
+            let at = path(&["settings"]).index(index);
             if !v3 && !matches!(setting, Setting::Label { .. }) {
                 // A v1/v2 manifest carrying data only v3 can hold (settings beyond labels) is
                 // `NotRepresentable`.
-                return Err(not_representable(&at));
+                return Err(not_representable(at));
             }
             list.push(setting_value(setting, &at)?);
         }
@@ -184,12 +185,12 @@ fn header(
         EngineMember::Default => {}
         EngineMember::Used => {
             if let Some(engine) = &header.min_engine_version {
-                let at = "header/min_engine_version";
+                let at = || path(&["header", "min_engine_version"]);
                 if v3 {
                     object.insert(MIN_ENGINE_VERSION, Value::from(engine.version.to_string()));
                 } else if engine.version.is_any() || engine.version.is_pre_release() {
                     // The legacy reader takes only the array form.
-                    return Err(not_representable(at));
+                    return Err(not_representable(at()));
                 } else {
                     object.insert(MIN_ENGINE_VERSION, array(&engine.version));
                 }
@@ -200,14 +201,14 @@ fn header(
         let value = match &base.version {
             Some(base) if base.is_any() => Value::from("*"),
             Some(base) => version(base, v3),
-            None => return Err(not_representable("header/base_game_version")),
+            None => return Err(not_representable(path(&["header", "base_game_version"]))),
         };
         object.insert("base_game_version", value);
     }
     if let Some(scope) = header.pack_scope {
         let name = scope
             .json_name()
-            .ok_or_else(|| not_representable("header/pack_scope"))?;
+            .ok_or_else(|| not_representable(path(&["header", "pack_scope"])))?;
         object.insert("pack_scope", Value::from(name));
     }
     if let Some(flag) = header.platform_locked {
@@ -278,7 +279,9 @@ fn dependency_value(dependency: &Dependency, v3: bool, index: usize) -> Result<V
             if let Some(flag) = optional {
                 if !v3 {
                     // The legacy reader never reads `optional`.
-                    return Err(not_representable(&format!("dependencies/{index}/optional")));
+                    return Err(not_representable(
+                        path(&["dependencies"]).index(index).child("optional"),
+                    ));
                 }
                 object.insert("optional", Value::from(*flag));
             }
@@ -330,7 +333,7 @@ fn subpack_value(subpack: &Subpack, v3: bool) -> Value {
     Value::from(object)
 }
 
-fn setting_value(setting: &Setting, at: &str) -> Result<Value, EncodeError> {
+fn setting_value(setting: &Setting, at: &JsonPath) -> Result<Value, EncodeError> {
     let mut object = VObject::new();
     object.insert("type", Value::from(setting.type_name()));
     if let Some(name) = setting.name() {
@@ -338,7 +341,7 @@ fn setting_value(setting: &Setting, at: &str) -> Result<Value, EncodeError> {
     }
     let number = |key: &str, value: f32| -> Result<Value, EncodeError> {
         if !value.is_finite() {
-            return Err(non_finite(&format!("{at}/{key}"), value));
+            return Err(non_finite(at.child(key), value));
         }
         // The shortest text that reads back to the same `f32`, as an `f64` real.
         let shortest: f64 = value.to_string().parse().unwrap_or(f64::from(value));
