@@ -5,7 +5,7 @@ use super::DistanceType;
 use super::texts::{COLOR_FORMAT, COLOR_SHAPE, DISTANCE_PATTERNS, EXPECTED_NUMBER, INTEGRAL};
 use crate::history::v1_21_90::{
     CoeffColorJu, Coefficients, Density, DensitySetting, Description, Distance, FogColorJu,
-    FogDocument, FogSetting, HenyeyGreensteinG, HgSetting, InitFog, MediaCoefficients,
+    FogPayload, FogSetting, HenyeyGreensteinG, HgSetting, InitFog, MediaCoefficients,
     TransitionFog, Volumetric,
 };
 use bedrock_addon_core::diagnostic::{
@@ -36,7 +36,7 @@ pub(crate) fn read_document(
     era: Era,
     at: &JsonPath,
     d: &mut Diagnostics,
-) -> Option<FogDocument> {
+) -> Option<FogPayload> {
     let mut walk = Walk::with_path(at);
     let read = Node::of(document).and_then(|root| root_node(&mut walk, root, era));
     let failed = walk.diagnostics.has_errors();
@@ -67,7 +67,7 @@ fn is_object(walk: &mut Walk, node: Node<'_>) -> bool {
     false
 }
 
-fn root_node(walk: &mut Walk, root: Node<'_>, era: Era) -> Option<FogDocument> {
+fn root_node(walk: &mut Walk, root: Node<'_>, era: Era) -> Option<FogPayload> {
     if !is_object(walk, root) {
         return None;
     }
@@ -90,7 +90,7 @@ fn root_node(walk: &mut Walk, root: Node<'_>, era: Era) -> Option<FogDocument> {
         }
     });
     let (description, distance, volumetric) = settings.filter(|_| ok)?;
-    Some(FogDocument {
+    Some(FogPayload {
         format_version: format_version?,
         description,
         distance,

@@ -3,11 +3,13 @@
 //!
 //! The chain is `v1_16_100 → v1_21_0 → v1_21_90 → v1_26_20`. A file from 1.16.100 up to 1.26.20
 //! parses as the struct of its range, each a root of the game's strict older schema (an
-//! unknown member fails the file); the first two steps are plain copies and the third converts
-//! to the newest shape. Exactly 1.26.20 parses as [`FogSettings`] itself; nothing above it and
+//! unknown member fails the file) and each the one [`FogPayload`] at its version; the
+//! first two steps hand the payload on (`retag`) and the third converts to the newest shape. Exactly 1.26.20 parses as [`FogSettings`] itself; nothing above it and
 //! nothing below 1.16.100 is read. A pre-release such as `1.26.20-beta.1` sorts below its
 //! release and takes the older struct.
 
+mod payload;
+pub use payload::FogPayload;
 pub mod v1_16_100;
 pub mod v1_21_0;
 pub mod v1_21_90;
@@ -36,8 +38,10 @@ bedrock_addon_core::version_chain! {
         /// Format 1.26.20: the newest settings.
         V1_26_20(FogSettings),
     }
-    molang = none;
 }
+
+// The newest settings have no Molang field (the older structs' impl is their payload's).
+bedrock_addon_core::impl_no_molang!(FogSettings);
 
 /// Runs the remaining upgrade steps and the checks of a document
 /// [`FogSettings::parse_as_written`](bedrock_addon_core::document::JsonDocument::parse_as_written) gave: the same result

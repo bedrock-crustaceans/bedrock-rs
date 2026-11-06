@@ -1,9 +1,6 @@
 //! Fog settings at `[1.21.90, 1.26.20)`: the strict schema's third root, which adds
 //! `volumetric.henyey_greenstein_g`, and the step to the cereal shape of 1.26.20.
 
-use facet_value::VObject;
-
-use super::{v1_16_100, v1_21_0};
 use crate::{
     ColorNorm, FogColor, FogDescription, FogDistanceCollection, FogDistanceSetting, FogSettings,
     FogTransitionSetting, FogVolumetricCollection, FogVolumetricDensityCollection,
@@ -11,100 +8,20 @@ use crate::{
     FogVolumetricHenyeyGreensteinGSetting, FogVolumetricMediaCoeffsCollection,
     FogVolumetricMediaCoeffsSetting, FogWaterDistanceSetting, Keyframed,
 };
-use crate::{Era, float, object_with, read_document};
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, Phase};
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::FogId;
-use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
-use bedrock_addon_core::version::{FormatVersion, known};
-use bedrock_addon_core::versioning::{ParseCx, Upgrade, UpgradeCx, VersionStruct, Versioned};
+use bedrock_addon_core::versioning::{Legacy, LegacyStep, UpgradeCx};
 
-pub use super::v1_21_0::{
+pub use super::payload::{
     CoeffColorJu, Coefficients, Density, DensitySetting, Description, Distance, DistanceType,
-    FogColorJu, FogSetting, InitFog, MediaCoefficients, TransitionFog,
+    FogColorJu, FogPayload, FogSetting, HenyeyGreensteinG, HgSetting, InitFog, MediaCoefficients,
+    TransitionFog, Volumetric,
 };
 
-/// The whole document, as [`v1_21_0::FogDocument`] with this version's `volumetric`.
-#[derive(Clone, Debug, PartialEq)]
-pub struct FogDocument {
-    /// `format_version`, as written.
-    pub format_version: String,
-    /// `minecraft:fog_settings.description`.
-    pub description: Description,
-    /// `minecraft:fog_settings.distance`.
-    pub distance: Option<Distance>,
-    /// `minecraft:fog_settings.volumetric`.
-    pub volumetric: Option<Volumetric>,
-}
-
-/// `volumetric`, with `henyey_greenstein_g`.
-#[derive(Clone, Debug, Default, PartialEq)]
-pub struct Volumetric {
-    /// `density`.
-    pub density: Option<Density>,
-    /// `media_coefficients`.
-    pub media_coefficients: Option<MediaCoefficients>,
-    /// `henyey_greenstein_g`: new at 1.21.90.
-    pub henyey_greenstein_g: Option<HenyeyGreensteinG>,
-}
-
+/// The whole document at 1.21.90: [`FogPayload`] read with the third root, which adds
 /// `volumetric.henyey_greenstein_g`.
-#[derive(Clone, Debug, Default, PartialEq)]
-pub struct HenyeyGreensteinG {
-    /// `air`.
-    pub air: Option<HgSetting>,
-    /// `water`.
-    pub water: Option<HgSetting>,
-}
-
-/// The scattering direction of one medium.
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub struct HgSetting {
-    /// `henyey_greenstein_g`: required, −1 to 1.
-    pub henyey_greenstein_g: f32,
-}
-
-impl Versioned for FogDocument {
-    const VERSION: FormatVersion = known::V1_21_90;
-}
-
-impl VersionStruct for FogDocument {
-    fn parse(document: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        read_document(document, Era::V1_21_90, &cx.at, d)
-    }
-
-    fn write(&self) -> Result<Value, EncodeError> {
-        let mut settings = VObject::new();
-        settings.insert("description", v1_16_100::description(&self.description));
-        if let Some(distance) = &self.distance {
-            settings.insert("distance", v1_16_100::distance(distance)?);
-        }
-        if let Some(volumetric) = &self.volumetric {
-            let mut object = v1_21_0::volumetric(&v1_21_0::Volumetric {
-                density: volumetric.density.clone(),
-                media_coefficients: volumetric.media_coefficients.clone(),
-            })?;
-            if let Some(hg) = &volumetric.henyey_greenstein_g {
-                let entry = |setting: Option<HgSetting>| {
-                    setting
-                        .map(|s| {
-                            object_with([(
-                                "henyey_greenstein_g",
-                                Some(float(s.henyey_greenstein_g)?),
-                            )])
-                        })
-                        .transpose()
-                };
-                object.insert(
-                    "henyey_greenstein_g",
-                    object_with([("air", entry(hg.air)?), ("water", entry(hg.water)?)])?,
-                );
-            }
-            settings.insert("volumetric", Value::from(object));
-        }
-        Ok(v1_16_100::document(&self.format_version, settings))
-    }
-}
+pub type FogDocument = Legacy<FogPayload, 1, 21, 90>;
 
 // ---- the step to the cereal shape --------------------------------------------------------------
 
@@ -221,18 +138,19 @@ fn hg(setting: HgSetting) -> FogVolumetricHenyeyGreensteinGSetting {
 // Vanilla has no upgrader for fog files: each era's parser writes the runtime definition
 // itself. The step gives the cereal value whose runtime definition equals the one the strict
 // schema parser builds.
-impl Upgrade for FogDocument {
+impl LegacyStep<1, 21, 90> for FogPayload {
     type Next = FogSettings;
 
-    fn upgrade(self, cx: &mut UpgradeCx<'_>) -> Self::Next {
+    fn step(this: FogDocument, cx: &mut UpgradeCx<'_>) -> Self::Next {
+        let fog = this.0;
         // Op 1: `format_version` is not copied; `UpgradeCx::original_version` keeps it.
         FogSettings {
             // Op 2.
             description: FogDescription {
-                identifier: FogId::parse(self.description.identifier),
+                identifier: FogId::parse(fog.description.identifier),
                 extra: UnknownMembers::default(),
             },
-            distance: self.distance.map(|d| FogDistanceCollection {
+            distance: fog.distance.map(|d| FogDistanceCollection {
                 air: entry("air", d.air, cx),
                 weather: entry("weather", d.weather, cx),
                 water: d.water.map(water),
@@ -241,7 +159,7 @@ impl Upgrade for FogDocument {
                 powder_snow: entry("powder_snow", d.powder_snow, cx),
                 extra: UnknownMembers::default(),
             }),
-            volumetric: self.volumetric.map(|v| FogVolumetricCollection {
+            volumetric: fog.volumetric.map(|v| FogVolumetricCollection {
                 density: v.density.map(|d| FogVolumetricDensityCollection {
                     air: d.air.map(density),
                     weather: d.weather.map(density),

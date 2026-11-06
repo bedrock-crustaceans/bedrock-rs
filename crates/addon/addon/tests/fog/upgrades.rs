@@ -6,7 +6,9 @@ use bedrock_addon::families::fog::history::{self, FogHistory, v1_16_100};
 use bedrock_addon::families::fog::{ColorNorm, DistanceType, FogColor, FogSettings, Keyframed};
 use bedrock_addon::storage::PackPath;
 
-use super::common::{clean, count, expect, find, fixture, lines, loaded, rejected, round_trip};
+use super::common::{
+    clean, count, expect, expect_at, find, fixture, lines, loaded, rejected, round_trip,
+};
 use super::support::{
     AIR, FAMILY, V1_16_100, V1_21_0, V1_21_90, V1_26_20, air, base_game, density, doc, pack, parse,
     refused,
@@ -555,5 +557,57 @@ fn settings_the_newest_parser_refuses_are_refused_in_the_older_schema_too() {
         assert!(text.contains(r#""format_version": "1.26.20""#), "{text}");
         let again = loaded(parse(&text, &pack()));
         assert_eq!(again.value(), document.value());
+    }
+}
+
+/// H4: each older era's read refuses a member a later era adds (an unknown member fails the
+/// strict schema), on the history path too, so a document an era holds never has one and the
+/// one shape all three eras are read in loses nothing between them.
+#[test]
+fn h4_an_era_refuses_the_members_a_later_era_adds() {
+    let weather =
+        r#""volumetric": {"density": {"weather": {"max_density": 0.5, "uniform": true}}}"#;
+    let hg = r#""volumetric": {"henyey_greenstein_g": {"air": {"henyey_greenstein_g": -0.5}}}"#;
+    for (version, members, member, path) in [
+        (
+            "1.20.80",
+            weather,
+            "weather",
+            "minecraft:fog_settings/volumetric/density/weather",
+        ),
+        (
+            "1.16.100",
+            hg,
+            "henyey_greenstein_g",
+            "minecraft:fog_settings/volumetric/henyey_greenstein_g",
+        ),
+        (
+            "1.21.80",
+            hg,
+            "henyey_greenstein_g",
+            "minecraft:fog_settings/volumetric/henyey_greenstein_g",
+        ),
+    ] {
+        let d = rejected(FogSettings::parse_as_written(
+            &PackPath::from_static("fogs/x.json"),
+            doc(version, members).as_bytes(),
+            &pack(),
+        ));
+        expect_at(
+            &d,
+            "UnrecognizedField",
+            Severity::Error,
+            &format!("child '{member}' not valid here."),
+            path,
+        );
+    }
+    // The era that adds each member reads it.
+    for (version, members, parsed_as) in [("1.21.0", weather, V1_21_0), ("1.21.90", hg, V1_21_90)] {
+        let written = loaded(FogSettings::parse_as_written(
+            &PackPath::from_static("fogs/x.json"),
+            doc(version, members).as_bytes(),
+            &pack(),
+        ));
+        assert_eq!(written.parsed_version(), parsed_as, "{version}");
     }
 }
