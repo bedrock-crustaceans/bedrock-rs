@@ -12,9 +12,10 @@ use bedrock_addon_core::load::{
 };
 use bedrock_addon_core::pack_identity::{PackPath, PackSide};
 
-pub use crate::pack::stack::Collection;
+use super::Collection;
 
-use super::job::Erased;
+/// A job's result or a parsed value, type-erased: the loader that issued the job downcasts it.
+pub(crate) type Erased = Box<dyn Any + Send + Sync>;
 
 /// The most collections a [`CollectionSet`] holds.
 const CAPACITY: usize = 128;

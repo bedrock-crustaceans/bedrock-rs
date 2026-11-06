@@ -265,7 +265,7 @@ impl PackWriter {
     /// when the manifest's format cannot hold it.
     ///
     /// An archive [`Pack::from_archive`] refuses under the default
-    /// [`Limits`](crate::load::Limits) is not written: `Zip` with the reader's
+    /// [`Limits`](bedrock_addon_core::load::Limits) is not written: `Zip` with the reader's
     /// `LimitExceeded` for a file whose path is longer than 255 bytes, more files than an
     /// archive may have entries, a file or the files together beyond their sizes. The limits
     /// are the archive's: [`PackWriter::files`] and [`PackWriter::into_pack`] take such a

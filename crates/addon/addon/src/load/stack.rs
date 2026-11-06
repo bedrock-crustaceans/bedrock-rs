@@ -15,16 +15,15 @@ use bedrock_addon_core::load::{
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bytes::Bytes;
 
-use super::collection::ErasedCollection;
 use super::io::{Charge, Expect, Io};
-use super::job::{Cancel, Erased, JobDone, JobId, JobKind};
+use super::job::{Cancel, JobDone, JobId, JobKind};
 use super::pack::{internal_error, read_error};
 use super::{Input, Loader, LoaderError, Output, Progress, Residency, Sans, StackOptions, Stage};
 use crate::pack::open::storage_finding;
 use crate::pack::stack::{
     ENTRIES, WalkItem, WalkSource, pack_files, provider, then_items, walk_file, walk_items,
 };
-use crate::pack::stack::{PackStack, Side};
+use crate::pack::stack::{Erased, ErasedCollection, PackStack, Side};
 use crate::pack::{FileSlot, Pack, StackSet};
 use crate::storage::brarchive::{Brarchive, archive_dir};
 

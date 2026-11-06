@@ -2,6 +2,7 @@
 //! the `StackSet` of a world.
 
 mod accessors;
+mod collection;
 pub(crate) mod compose;
 #[cfg(all(feature = "lang", feature = "languages"))]
 mod texts;
@@ -12,6 +13,14 @@ mod walk;
 
 pub use accessors::Collection;
 pub(crate) use accessors::{ENTRIES, provider};
+pub use collection::CollectionSet;
+#[allow(
+    unused_imports,
+    reason = "the accessor lines of the enabled families use it; with no family feature on it is unused"
+)]
+pub(crate) use collection::{
+    Erased, ErasedCollection, Loaded, erased_combine, erased_parse, erased_then, install,
+};
 #[cfg(all(feature = "texture_file", feature = "texture_set"))]
 pub use textures::{LayerImage, TextureFile};
 pub use vanilla::VANILLA_EXPERIMENTAL_PACKS;
@@ -38,7 +47,6 @@ use bedrock_addon_core::pack_identity::{
 
 use super::Pack;
 use super::report::StackReport;
-use crate::load::ErasedCollection;
 
 mod sealed {
     pub trait Sealed {}

@@ -1,9 +1,10 @@
 //! Jobs: the CPU work a loader hands out, run by the caller anywhere and fed back.
 
-use std::any::Any;
 use std::fmt;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+
+use crate::pack::stack::Erased;
 
 /// One unit of CPU work a loader hands out. Owns everything it needs (shared `Bytes`, an
 /// `Arc` of the load context and the Molang check), so it is `Send + 'static` and can run on
@@ -19,9 +20,6 @@ pub struct Job {
 
 /// The work of a job: a closure over owned inputs whose result the loader downcasts.
 pub(crate) type Work = Box<dyn FnOnce(&Cancel) -> Erased + Send + Sync>;
-
-/// A job's result or a parsed value, type-erased: the loader that issued the job downcasts it.
-pub(crate) type Erased = Box<dyn Any + Send + Sync>;
 
 impl Job {
     /// A job of `kind` over `weight` input bytes.

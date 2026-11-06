@@ -9,7 +9,9 @@ use bedrock_addon_core::load::{
 };
 use bedrock_addon_core::pack_identity::{PackOrigin, PackPath, PackSide};
 
-use crate::load::{ErasedCollection, Reported};
+use bedrock_addon_core::load::Reported;
+
+use crate::pack::stack::ErasedCollection;
 use crate::pack::stack::{WalkSource, prepare, walk_items};
 use crate::pack::tests::pack_from;
 use crate::pack::{Behavior, Pack, PackStack, Resource, Side};

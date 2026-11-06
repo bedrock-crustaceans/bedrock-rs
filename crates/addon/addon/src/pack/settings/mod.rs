@@ -43,12 +43,12 @@ use crate::document::{Document, Origin, Rejected};
 use crate::json::{
     EnvelopeVersion, JsonSlice, MAX_JSON_DEPTH, RootProbe, check_depth, probe_envelope, strip_bom,
 };
-use crate::load::LoadContext;
 use crate::version::{FormatVersion, FormatVersionInput};
 use crate::versioning::{
     BelowFloor, Envelope, EnvelopeCheck, Family, Identity, Loaded, MissingVersion, NoComponents,
     RangeModel, Selection, ValidateCx, Versioned, finish, parse_as_written, select,
 };
+use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 
 use history::{PackSettingsFamily, PackSettingsHistory};

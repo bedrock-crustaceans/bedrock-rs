@@ -13,12 +13,12 @@ use bedrock_addon_core::load::{
 use bedrock_addon_core::pack_identity::{PackOrigin, PackPath, PackRef, PackSide};
 use bytes::Bytes;
 
-use super::collection::{ErasedCollection, Loaded};
-use super::job::Erased;
 use super::{
     DirEntry, EntryKind, Input, JobKind, Loader, Output, PackLoader, Request, Residency, Sans,
     StackLoader, StackOptions,
 };
+use crate::pack::stack::Erased;
+use crate::pack::stack::{ErasedCollection, Loaded};
 use crate::pack::stack::{PackInstance, PackStack};
 use crate::pack::{OpenOptions, Pack, StackSet};
 

@@ -41,12 +41,12 @@ use std::hash::Hash;
 use std::sync::OnceLock;
 
 use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics};
-use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
+use bedrock_addon_core::load::{CollectionLoader, LoadContext, Reported, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackSide};
 use indexmap::IndexMap;
 
 use super::{PackStack, Side, read_item, walk_items};
-use crate::load::{Erased, Loaded, Reported};
+use crate::pack::stack::{Erased, Loaded};
 // What the accessor lines name: the document collections and the family modules, which
 // are whichever families the features compile in.
 #[allow(
@@ -434,7 +434,7 @@ macro_rules! accessors {
     ) => {
         accessors! { @line $mode [$($done)*] $side {
             $name, [$(#[doc = $doc])*], $variant, ($($feature)?), $loader,
-            (::std::sync::OnceLock<$crate::load::Loaded<::std::vec::Vec<$element>>>),
+            (::std::sync::OnceLock<$crate::pack::stack::Loaded<::std::vec::Vec<$element>>>),
             (slice $element)
         } $($rest)* }
     };
@@ -447,7 +447,7 @@ macro_rules! accessors {
     ) => {
         accessors! { @line $mode [$($done)*] $side {
             $name, [$(#[doc = $doc])*], $variant, ($($feature)?), $loader,
-            (::std::sync::OnceLock<$crate::load::Loaded<$collection>>),
+            (::std::sync::OnceLock<$crate::pack::stack::Loaded<$collection>>),
             (plain $collection)
         } $($rest)* }
     };
@@ -608,7 +608,7 @@ macro_rules! accessors {
 
         /// One entry per accessor and side compiled in, in list order (behaviour side first):
         /// what a `StackLoader` drives.
-        pub(crate) static ENTRIES: &[&dyn $crate::load::ErasedCollection] = &[
+        pub(crate) static ENTRIES: &[&dyn $crate::pack::stack::ErasedCollection] = &[
             $($(
                 $(#[cfg(feature = $entry_feature)])?
                 &entry::$entry::<$crate::pack::$entry_side>(::std::marker::PhantomData),
@@ -635,14 +635,14 @@ macro_rules! accessors {
     };
     (@entry $kind:ident $host:ident, Both, $name:ident, $variant:ident, $($line:tt)*) => {
         accessors! {
-            @entry_body [impl<S: $crate::pack::Side> $crate::load::ErasedCollection for $variant<S>]
+            @entry_body [impl<S: $crate::pack::Side> $crate::pack::stack::ErasedCollection for $variant<S>]
             (S) $kind $host, $name, $variant, $($line)*
         }
     };
     (@entry $kind:ident $host:ident, $side:ident, $name:ident, $variant:ident, $($line:tt)*) => {
         accessors! {
             @entry_body
-            [impl $crate::load::ErasedCollection for $variant<$crate::pack::$side>]
+            [impl $crate::pack::stack::ErasedCollection for $variant<$crate::pack::$side>]
             ($crate::pack::$side) $kind $host, $name, $variant, $($line)*
         }
     };
@@ -655,7 +655,7 @@ macro_rules! accessors {
 
         $(#[cfg(feature = $feature)])?
         $($impl)* {
-            fn collection(&self) -> ::std::option::Option<$crate::load::Collection> {
+            fn collection(&self) -> ::std::option::Option<$crate::pack::stack::Collection> {
                 accessors!(@collection $kind $variant)
             }
             fn side(&self) -> $crate::pack::PackSide {
@@ -671,7 +671,7 @@ macro_rules! accessors {
                 &self,
                 file: &::bedrock_addon_core::load::WalkFile,
                 cx: &::bedrock_addon_core::load::LoadContext,
-            ) -> $crate::load::Erased {
+            ) -> $crate::pack::stack::Erased {
                 $crate::pack::stack::accessors::erased_keyed_parse(
                     $loader,
                     $key_of,
@@ -681,9 +681,9 @@ macro_rules! accessors {
             }
             fn combine(
                 &self,
-                parsed: Vec<$crate::load::Erased>,
+                parsed: Vec<$crate::pack::stack::Erased>,
                 cx: &::bedrock_addon_core::load::StackCx<'_>,
-            ) -> $crate::load::Erased {
+            ) -> $crate::pack::stack::Erased {
                 $crate::pack::stack::accessors::erased_keyed_combine(
                     $loader,
                     $key_of,
@@ -694,7 +694,7 @@ macro_rules! accessors {
             fn install(
                 &self,
                 stack: &dyn ::std::any::Any,
-                value: $crate::load::Erased,
+                value: $crate::pack::stack::Erased,
                 findings: ::bedrock_addon_core::diagnostic::Diagnostics,
             ) {
                 if let Some(stack) = stack.downcast_ref::<$host<accessors!(@type $side)>>() {
@@ -739,7 +739,7 @@ macro_rules! accessors {
 
         $(#[cfg(feature = $feature)])?
         $($impl)* {
-            fn collection(&self) -> ::std::option::Option<$crate::load::Collection> {
+            fn collection(&self) -> ::std::option::Option<$crate::pack::stack::Collection> {
                 accessors!(@collection $kind $variant)
             }
             fn side(&self) -> $crate::pack::PackSide {
@@ -760,39 +760,39 @@ macro_rules! accessors {
                     self.side(),
                 )
                 .get()?;
-                $crate::load::Reported::registered(&loaded.value)
+                ::bedrock_addon_core::load::Reported::registered(&loaded.value)
             }
             fn has_then(&self) -> bool {
                 $loader.then.is_some()
             }
             fn then(
                 &self,
-                parsed: &[$crate::load::Erased],
+                parsed: &[$crate::pack::stack::Erased],
             ) -> Vec<::bedrock_addon_core::pack_identity::PackPath> {
-                $crate::load::erased_then($loader, parsed)
+                $crate::pack::stack::erased_then($loader, parsed)
             }
             fn parse(
                 &self,
                 file: &::bedrock_addon_core::load::WalkFile,
                 cx: &::bedrock_addon_core::load::LoadContext,
-            ) -> $crate::load::Erased {
-                $crate::load::erased_parse($loader, file, cx)
+            ) -> $crate::pack::stack::Erased {
+                $crate::pack::stack::erased_parse($loader, file, cx)
             }
             fn combine(
                 &self,
-                parsed: Vec<$crate::load::Erased>,
+                parsed: Vec<$crate::pack::stack::Erased>,
                 cx: &::bedrock_addon_core::load::StackCx<'_>,
-            ) -> $crate::load::Erased {
-                $crate::load::erased_combine($loader, parsed, cx)
+            ) -> $crate::pack::stack::Erased {
+                $crate::pack::stack::erased_combine($loader, parsed, cx)
             }
             fn install(
                 &self,
                 stack: &dyn ::std::any::Any,
-                value: $crate::load::Erased,
+                value: $crate::pack::stack::Erased,
                 findings: ::bedrock_addon_core::diagnostic::Diagnostics,
             ) {
                 if let Some(stack) = stack.downcast_ref::<$host<accessors!(@type $side)>>() {
-                    $crate::load::install(
+                    $crate::pack::stack::install(
                         $crate::pack::stack::accessors::Sided::of(
                             &stack.caches.$name,
                             self.side(),
@@ -825,7 +825,7 @@ macro_rules! accessors {
                 });
                 if let Some(loaded) = loaded {
                     out.extend(loaded.findings.iter());
-                    out.extend($crate::load::Reported::reported(&loaded.value));
+                    out.extend(::bedrock_addon_core::load::Reported::reported(&loaded.value));
                 }
             }
             fn debug(&self, stack: &dyn ::std::any::Any) -> Option<String> {
@@ -1133,8 +1133,8 @@ providers! {
 pub(crate) fn provider(
     kind: &str,
     side: PackSide,
-    entries: &[&'static dyn crate::load::ErasedCollection],
-) -> Option<&'static dyn crate::load::ErasedCollection> {
+    entries: &[&'static dyn crate::pack::stack::ErasedCollection],
+) -> Option<&'static dyn crate::pack::stack::ErasedCollection> {
     let (_, collection) = PROVIDERS.iter().find(|(name, _)| *name == kind)?;
     entries
         .iter()

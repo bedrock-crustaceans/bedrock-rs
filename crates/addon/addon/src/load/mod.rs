@@ -5,7 +5,6 @@
 
 pub use bedrock_addon_core::load::*;
 
-mod collection;
 mod io;
 mod job;
 mod pack;
@@ -14,19 +13,7 @@ mod stack;
 #[cfg(test)]
 mod tests;
 
-pub use collection::{Collection, CollectionSet};
-#[allow(
-    unused_imports,
-    reason = "the accessor lines of the enabled families use it; with no family feature on it is unused"
-)]
-pub(crate) use collection::{
-    ErasedCollection, Loaded, erased_combine, erased_parse, erased_then, install,
-};
-#[allow(
-    unused_imports,
-    reason = "the accessor lines of the enabled families use it; with no family feature on it is unused"
-)]
-pub(crate) use job::Erased;
+pub use crate::pack::stack::{Collection, CollectionSet};
 pub use job::{Job, JobDone, JobId, JobKind};
 pub use pack::PackLoader;
 pub(crate) use pack::strip;

@@ -17,10 +17,11 @@ use bytes::Bytes;
 
 use super::Stage as ProgressStage;
 use super::io::{Charge, Expect, Io};
-use super::job::{Erased, JobDone, JobId, JobKind};
+use super::job::{JobDone, JobId, JobKind};
 use super::{DirEntry, EntryKind, Input, KeyRequest, Loader, LoaderError, Output, Progress, Sans};
 use crate::manifest::Manifest;
 use crate::pack::open::{Encryption, LockReason, Store};
+use crate::pack::stack::Erased;
 use crate::pack::{FileSlot, OpenError, OpenOptions, Pack, PackFiles, PackInner};
 use crate::storage::brarchive::archive_dir;
 use crate::storage::contents::ContentsJson;

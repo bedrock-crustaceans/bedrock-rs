@@ -562,9 +562,9 @@ fn drive_in_memory(
 }
 
 /// The part of `bytes` a read of `range` asks for.
-fn prefix(bytes: Bytes, range: Option<crate::load::ReadRange>) -> Bytes {
+fn prefix(bytes: Bytes, range: Option<bedrock_addon_core::load::ReadRange>) -> Bytes {
     match range {
-        Some(crate::load::ReadRange::Prefix(n)) => {
+        Some(bedrock_addon_core::load::ReadRange::Prefix(n)) => {
             let n = (n as usize).min(bytes.len());
             bytes.slice(..n)
         }
