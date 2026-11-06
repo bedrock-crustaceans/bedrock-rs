@@ -8,6 +8,9 @@ use super::{
     LerpMode, LoopMode, OneOrMany, RelativeTo,
 };
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath};
+use bedrock_addon_core::json::node_tree::{
+    Group, Hit, Kind, NOT_ALLOWED_KEYS, NOT_ALLOWED_REGEX, Node, Pattern, Walk, text,
+};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::pack_identity::PackType;
 use bedrock_addon_core::version::{ENGINE_VERSION, SemVersion};
@@ -16,21 +19,22 @@ use bedrock_addon_shared_animation::molang::{MolangRun, run};
 use bedrock_addon_shared_animation::read::{
     Parsed, format_version, input_of, read_particle, read_sound, text_of,
 };
-use bedrock_addon_shared_animation::walk::{
-    Group, Hit, Kind, NOT_ALLOWED_KEYS, NOT_ALLOWED_REGEX, Node, Pattern, Walk, text,
-};
+use bedrock_addon_shared_animation::walk::{AXIS, RULES, TIME};
 
 /// The animation schema's `format_version` minimum.
 pub(crate) const ANIMATION_MINIMUM: SemVersion = SemVersion::new(1, 8, 0);
 
 /// The animation key pattern.
-pub(crate) const ANIMATION_KEY: Pattern =
-    Pattern::Prefixed("animation.", r"animation\.[a-zA-Z0-9_.-]+");
+pub(crate) const ANIMATION_KEY: Pattern = Pattern::Prefixed {
+    prefix: "animation.",
+    extra: b"_.-",
+    regex: r"animation\.[a-zA-Z0-9_.-]+",
+};
 
 /// Reads one animation file (`animations/**/*.json`) of a pack with context `cx`.
 pub(crate) fn parse_file(bytes: &[u8], cx: &LoadContext) -> Parsed<AnimationFile> {
     let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
-    let mut walk = Walk::new();
+    let mut walk = Walk::new(RULES, &JsonPath::new());
     let text = match text_of(bytes) {
         Ok(text) => text,
         Err(finding) => {
@@ -231,7 +235,7 @@ fn read_bones(walk: &mut Walk, node: Node<'_>) -> Option<IndexMap<String, Bone>>
     let mut bones = IndexMap::new();
     let ok = walk.object(
         node,
-        &[Group::pattern(Pattern::Identifier, true)],
+        &[Group::pattern(Pattern::IDENTIFIER, true)],
         |walk, _, key, v| {
             read_bone(walk, v)
                 .map(|b| bones.insert(key.to_owned(), b))
@@ -338,13 +342,13 @@ fn read_channel(
                 Kind::Number | Kind::Bool | Kind::String => walk
                     .molang(element)
                     .map(|m| elements.push(AxisElement::Positional(m)))
-                    .is_some(),
+                    .into(),
                 Kind::Object if rotation => read_axes(walk, element)
                     .map(|axes| elements.push(AxisElement::Axes(axes)))
-                    .is_some(),
+                    .into(),
                 _ => {
                     walk.bad_type("ExpressionNode", element);
-                    false
+                    Hit::Failed
                 }
             });
             if !ok {
@@ -376,35 +380,27 @@ fn read_axes(
     node: Node<'_>,
 ) -> Option<IndexMap<String, bedrock_addon_core::molang::Molang>> {
     let mut axes = IndexMap::new();
-    let ok = walk.object(
-        node,
-        &[Group::pattern(Pattern::Axis, true)],
-        |walk, _, key, v| {
-            walk.molang(v)
-                .map(|m| axes.insert(key.to_owned(), m))
-                .into()
-        },
-    );
+    let ok = walk.object(node, &[Group::pattern(AXIS, true)], |walk, _, key, v| {
+        walk.molang(v)
+            .map(|m| axes.insert(key.to_owned(), m))
+            .into()
+    });
     ok.then_some(axes)
 }
 
 fn read_keyframes(walk: &mut Walk, node: Node<'_>) -> Option<IndexMap<String, Keyframe>> {
     let mut frames = IndexMap::new();
-    let ok = walk.object(
-        node,
-        &[Group::pattern(Pattern::Time, true)],
-        |walk, _, key, v| {
-            let frame = match v.kind() {
-                Kind::Array => walk.molang3(v).map(Keyframe::Vec3),
-                Kind::Object => read_keyframe_parts(walk, v).map(Keyframe::Split),
-                _ => {
-                    walk.bad_type("array, object", v);
-                    None
-                }
-            };
-            frame.map(|f| frames.insert(key.to_owned(), f)).into()
-        },
-    );
+    let ok = walk.object(node, &[Group::pattern(TIME, true)], |walk, _, key, v| {
+        let frame = match v.kind() {
+            Kind::Array => walk.molang3(v).map(Keyframe::Vec3),
+            Kind::Object => read_keyframe_parts(walk, v).map(Keyframe::Split),
+            _ => {
+                walk.bad_type("array, object", v);
+                None
+            }
+        };
+        frame.map(|f| frames.insert(key.to_owned(), f)).into()
+    });
     ok.then_some(frames)
 }
 
@@ -455,31 +451,27 @@ fn read_timed<T>(
         return None;
     }
     let mut map = IndexMap::new();
-    let ok = walk.object(
-        node,
-        &[Group::pattern(Pattern::Time, false)],
-        |walk, _, key, v| {
-            let entry = match v.kind() {
-                Kind::Object => each(walk, v).map(OneOrMany::One),
-                Kind::Array => {
-                    let mut list = Vec::new();
-                    let ok = walk.array(v, |walk, _, element| {
-                        if element.kind() != Kind::Object {
-                            walk.bad_type("object", element);
-                            return false;
-                        }
-                        each(walk, element).map(|e| list.push(e)).is_some()
-                    });
-                    ok.then_some(OneOrMany::Many(list))
-                }
-                _ => {
-                    walk.bad_type("object, array", v);
-                    None
-                }
-            };
-            entry.map(|e| map.insert(key.to_owned(), e)).into()
-        },
-    );
+    let ok = walk.object(node, &[Group::pattern(TIME, false)], |walk, _, key, v| {
+        let entry = match v.kind() {
+            Kind::Object => each(walk, v).map(OneOrMany::One),
+            Kind::Array => {
+                let mut list = Vec::new();
+                let ok = walk.array(v, |walk, _, element| {
+                    if element.kind() != Kind::Object {
+                        walk.bad_type("object", element);
+                        return Hit::Failed;
+                    }
+                    each(walk, element).map(|e| list.push(e)).into()
+                });
+                ok.then_some(OneOrMany::Many(list))
+            }
+            _ => {
+                walk.bad_type("object, array", v);
+                None
+            }
+        };
+        entry.map(|e| map.insert(key.to_owned(), e)).into()
+    });
     ok.then_some(map)
 }
 
@@ -493,29 +485,25 @@ fn read_timeline(
         return None;
     }
     let mut map = IndexMap::new();
-    let ok = walk.object(
-        node,
-        &[Group::pattern(Pattern::Time, false)],
-        |walk, _, key, v| {
-            let entry = match v.kind() {
-                Kind::String => walk
-                    .string(v)
-                    .map(|s| OneOrMany::One(EventString::classify(&s, commands))),
-                Kind::Array => walk.strings(v).map(|list| {
-                    OneOrMany::Many(
-                        list.iter()
-                            .map(|s| EventString::classify(s, commands))
-                            .collect(),
-                    )
-                }),
-                _ => {
-                    walk.bad_type("string, array", v);
-                    None
-                }
-            };
-            entry.map(|e| map.insert(key.to_owned(), e)).into()
-        },
-    );
+    let ok = walk.object(node, &[Group::pattern(TIME, false)], |walk, _, key, v| {
+        let entry = match v.kind() {
+            Kind::String => walk
+                .string(v)
+                .map(|s| OneOrMany::One(EventString::classify(&s, commands))),
+            Kind::Array => walk.strings(v).map(|list| {
+                OneOrMany::Many(
+                    list.iter()
+                        .map(|s| EventString::classify(s, commands))
+                        .collect(),
+                )
+            }),
+            _ => {
+                walk.bad_type("string, array", v);
+                None
+            }
+        };
+        entry.map(|e| map.insert(key.to_owned(), e)).into()
+    });
     ok.then_some(map)
 }
 

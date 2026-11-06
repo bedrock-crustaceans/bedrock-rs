@@ -15,6 +15,11 @@ use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, JsonPathSegment, Phase, Severity, Span,
     VanillaText,
 };
+use bedrock_addon_core::json::node_tree::{
+    ABOVE_MAX_VERSION, ARRAY_TOO_LARGE, ARRAY_TOO_SMALL, BELOW_MIN_VERSION, Failure, Group, Hit,
+    Kind, Lossy, Names, Node, Order, Pattern, REQUIRED_CHILD, Rules, UNKNOWN_OPTION_TYPE,
+    VALUE_NOT_ALLOWED, Validation, Walk, text,
+};
 use bedrock_addon_core::json::{
     JsonSlice, MAX_JSON_DEPTH, Value, check_depth, last_wins, parse_at,
 };
@@ -24,10 +29,6 @@ use bedrock_addon_core::molang::{Molang, MolangSource, RawVersion};
 use bedrock_addon_core::pack_identity::PackPath;
 use bedrock_addon_core::version::{FormatVersionInput, SemVersion};
 use bedrock_addon_shared_shapes::TrueOnly;
-use bedrock_addon_support::schema_walk::{
-    ABOVE_MAX_VERSION, ARRAY_TOO_LARGE, ARRAY_TOO_SMALL, BELOW_MIN_VERSION, Group, Kind, Node,
-    Pattern, REQUIRED_CHILD, UNKNOWN_OPTION_TYPE, VALUE_NOT_ALLOWED, Walk, text,
-};
 
 /// The schema's `format_version` minimum and the family's floor.
 pub(crate) const V1_8_0: SemVersion = SemVersion::new(1, 8, 0);
@@ -39,13 +40,34 @@ const ERROR_PARSING: &str = "error parsing {}:\n{}";
 /// The text for a controller without a `textures` member.
 const MUST_CONTAIN_TEXTURES: &str = "Render controller must contain textures.";
 
+/// The rules of the game's render controller schema: names as written, the members of an
+/// object in sorted key order (jsoncpp's `std::map`), strict, an object failed by any member,
+/// and a lossy float told.
+pub(crate) const RULES: Rules = Rules {
+    names: Names::Exact,
+    order: Order::Sorted,
+    validation: Validation::Strict,
+    failure: Failure::MemberFailed,
+    lossy: Lossy::Told,
+};
+
 /// The controller key pattern.
-const CONTROLLER_KEY: Pattern = Pattern::Prefixed(
-    "controller.render.",
-    r"controller\.render\.[a-zA-Z0-9_.:-]+",
-);
+const CONTROLLER_KEY: Pattern = Pattern::Prefixed {
+    prefix: "controller.render.",
+    extra: b"_.:-",
+    regex: r"controller\.render\.[a-zA-Z0-9_.:-]+",
+};
 /// The array name pattern of every `arrays` kind.
-const ARRAY_KEY: Pattern = Pattern::Prefixed("array.", r"array\.[a-zA-Z0-9_.:-]+");
+const ARRAY_KEY: Pattern = Pattern::Prefixed {
+    prefix: "array.",
+    extra: b"_.:-",
+    regex: r"array\.[a-zA-Z0-9_.:-]+",
+};
+/// `[a-zA-Z0-9_.:*]+`: a bone pattern.
+const BONE: Pattern = Pattern::Charset {
+    extra: b"_.:*",
+    regex: "[a-zA-Z0-9_.:*]+",
+};
 
 /// What reading one file gave.
 pub(crate) struct Parsed {
@@ -205,7 +227,7 @@ fn parse_folded(path: &PackPath, bytes: &[u8], cx: &LoadContext) -> Parsed {
         return malformed("not a JSON value".to_owned());
     };
 
-    let mut walk = Walk::with_path(&JsonPath::new());
+    let mut walk = Walk::new(RULES, &JsonPath::new());
     let mut drafts = Drafts::default();
     let written = read_root(&mut walk, root, &mut drafts);
     let marked = std::mem::take(&mut walk.marked);
@@ -394,10 +416,10 @@ fn read_root(walk: &mut Walk, root: Node<'_>, drafts: &mut Drafts) -> Option<Sem
         if group == 0 {
             // A member that is present counts as found even when its value fails.
             version = Some(format_version(walk, node));
-            matches!(version, Some(Some(_)))
+            matches!(version, Some(Some(_))).into()
         } else {
             controllers = true;
-            read_controllers(walk, node, drafts)
+            read_controllers(walk, node, drafts).into()
         }
     });
     if !ok {
@@ -503,10 +525,10 @@ fn read_controllers(walk: &mut Walk, node: Node<'_>, drafts: &mut Drafts) -> boo
         |walk, _, key, v| {
             if v.kind() != Kind::Object {
                 walk.bad_type("object", v);
-                return false;
+                return Hit::Failed;
             }
             mark_capitals(walk, key, v);
-            read_controller(walk, v, key, drafts)
+            read_controller(walk, v, key, drafts).into()
         },
     )
 }
@@ -559,12 +581,12 @@ fn read_controller(walk: &mut Walk, node: Node<'_>, key: &str, drafts: &mut Draf
         0 => walk
             .bool(v)
             .map(|x| c.rebuild_animation_matrices = Some(x))
-            .is_some(),
-        1 => read_arrays(walk, v).map(|x| c.arrays = Some(x)).is_some(),
-        2 => walk.string(v).map(|x| geometry = Some(x)).is_some(),
+            .into(),
+        1 => read_arrays(walk, v).map(|x| c.arrays = Some(x)).into(),
+        2 => walk.string(v).map(|x| geometry = Some(x)).into(),
         3 => read_bones(walk, v, Walk::molang)
             .map(|x| c.part_visibility = x)
-            .is_some(),
+            .into(),
         4 => read_bones(walk, v, |walk, v| {
             let value = walk.molang(v)?;
             // The schema takes a number here and the controller parser then
@@ -597,35 +619,35 @@ fn read_controller(walk: &mut Walk, node: Node<'_>, key: &str, drafts: &mut Draf
                 c.materials.push((pattern, source(text)));
             }
         })
-        .is_some(),
-        5 => read_strings(walk, v).map(|x| textures = Some(x)).is_some(),
-        6 => read_color(walk, v).map(|x| c.color = Some(x)).is_some(),
+        .into(),
+        5 => read_strings(walk, v).map(|x| textures = Some(x)).into(),
+        6 => read_color(walk, v).map(|x| c.color = Some(x)).into(),
         7 => read_color(walk, v)
             .map(|x| c.overlay_color = Some(x))
-            .is_some(),
+            .into(),
         8 => read_color(walk, v)
             .map(|x| c.on_fire_color = Some(x))
-            .is_some(),
+            .into(),
         9 => read_color(walk, v)
             .map(|x| c.is_hurt_color = Some(x))
-            .is_some(),
-        10 => read_uv_anim(walk, v).map(|x| c.uv_anim = Some(x)).is_some(),
+            .into(),
+        10 => read_uv_anim(walk, v).map(|x| c.uv_anim = Some(x)).into(),
         11 => walk
             .molang(v)
             .map(|x| c.light_color_multiplier = Some(x))
-            .is_some(),
-        12 => walk.bool(v).map(|x| c.ignore_lighting = Some(x)).is_some(),
+            .into(),
+        12 => walk.bool(v).map(|x| c.ignore_lighting = Some(x)).into(),
         _ => match walk.bool(v) {
             Some(true) => {
                 c.filter_lighting = Some(TrueOnly);
-                true
+                Hit::Ok
             }
             Some(false) => {
                 // The node's allowed-value set is `{true}`.
                 walk.invalid(VALUE_NOT_ALLOWED, &["false"], v);
-                false
+                Hit::Failed
             }
-            None => false,
+            None => Hit::Failed,
         },
     });
     let (true, Some(geometry)) = (ok, geometry) else {
@@ -653,7 +675,7 @@ fn no_element(walk: &mut Walk, node: Node<'_>) {
 fn read_strings(walk: &mut Walk, node: Node<'_>) -> Option<Vec<MolangSource>> {
     let mut list = Vec::new();
     let ok = walk.array(node, |walk, _, element| {
-        walk.string(element).map(|s| list.push(source(s))).is_some()
+        walk.string(element).map(|s| list.push(source(s))).into()
     });
     if ok && list.is_empty() {
         no_element(walk, node);
@@ -677,21 +699,21 @@ fn read_arrays(walk: &mut Walk, node: Node<'_>) -> Option<RenderControllerArrays
     let ok = walk.object(node, &groups, |walk, group, _, v| {
         if v.kind() != Kind::Object {
             walk.bad_type("object", v);
-            return false;
+            return Hit::Failed;
         }
         let mut map = IndexMap::new();
         let ok = walk.object(v, &[Group::pattern(ARRAY_KEY, true)], |walk, _, name, v| {
             mark_capitals(walk, name, v);
             read_strings(walk, v)
                 .map(|list| map.insert(name.to_owned(), list))
-                .is_some()
+                .into()
         });
         match group {
             0 => arrays.geometries = map,
             1 => arrays.materials = map,
             _ => arrays.textures = map,
         }
-        ok
+        ok.into()
     });
     ok.then_some(arrays)
 }
@@ -709,17 +731,18 @@ fn read_bones(
         elements += 1;
         if element.kind() != Kind::Object {
             walk.bad_type("object", element);
-            return false;
+            return Hit::Failed;
         }
         walk.object(
             element,
-            &[Group::pattern(Pattern::Bone, true)],
+            &[Group::pattern(BONE, true)],
             |walk, _, pattern, v| {
                 value(walk, v)
                     .map(|m| list.push((BonePattern(pattern.to_owned()), m)))
-                    .is_some()
+                    .into()
             },
         )
+        .into()
     });
     if ok && elements == 0 {
         no_element(walk, node);
@@ -742,7 +765,7 @@ fn read_color(walk: &mut Walk, node: Node<'_>) -> Option<Rgba> {
     ];
     let ok = walk.object(node, &groups, |walk, group, _, v| {
         let Some(value) = walk.molang(v) else {
-            return false;
+            return Hit::Failed;
         };
         match group {
             0 => color.r = Some(value),
@@ -750,7 +773,7 @@ fn read_color(walk: &mut Walk, node: Node<'_>) -> Option<Rgba> {
             2 => color.b = Some(value),
             _ => color.a = Some(value),
         }
-        true
+        Hit::Ok
     });
     ok.then_some(color)
 }
@@ -771,7 +794,7 @@ fn read_uv_anim(walk: &mut Walk, node: Node<'_>) -> Option<UvAnim> {
         } else {
             scale = pair;
         }
-        read
+        read.into()
     });
     match (ok, offset, scale) {
         (true, Some(offset), Some(scale)) => Some(UvAnim { offset, scale }),

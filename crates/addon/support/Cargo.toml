@@ -1,6 +1,6 @@
 [package]
 name = "bedrock_addon_support"
-description = "Helpers more than one bedrock_addon content family shares that are no vocabulary of bedrock_addon_core: schema walks, JSON readers, texture and sound rules; no I/O"
+description = "Helpers more than one bedrock_addon content family shares that are no vocabulary of bedrock_addon_core: JSON readers, texture and sound rules; no I/O"
 version.workspace = true
 edition.workspace = true
 license = "Apache-2.0"

@@ -26,10 +26,11 @@ fn a_finding_below_a_controller_names_it() {
 /// What `read_pair` makes of `text` at the member `offset`: whether it read a pair, and its findings as
 /// `name at path: text`, in the order they are told.
 fn pair(text: &str) -> (bool, Vec<String>) {
-    use bedrock_addon_support::schema_walk::{Node, Walk};
-    let mut walk = Walk::with_path(&bedrock_addon_core::diagnostic::JsonPath::of_keys([
-        "offset",
-    ]));
+    use bedrock_addon_core::json::node_tree::{Node, Walk};
+    let mut walk = Walk::new(
+        super::read::RULES,
+        &bedrock_addon_core::diagnostic::JsonPath::of_keys(["offset"]),
+    );
     let node = Node::of(bedrock_addon_core::json::JsonSlice::new(text)).unwrap();
     let read = read_pair(&mut walk, node).is_some();
     let findings = walk

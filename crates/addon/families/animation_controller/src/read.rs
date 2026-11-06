@@ -9,9 +9,12 @@ use super::{
     StateAnimation, StateVariable, Transition,
 };
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
 };
 use bedrock_addon_core::json::JsonSlice;
+use bedrock_addon_core::json::node_tree::{
+    Group, Hit, Kind, Node, Pattern, UNKNOWN_OPTION_TYPE, Walk, text,
+};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::molang::{MolangSource, RawVersion};
 use bedrock_addon_core::vanilla::ActorType;
@@ -22,9 +25,7 @@ use bedrock_addon_shared_animation::molang::{MolangRun, run};
 use bedrock_addon_shared_animation::read::{
     Parsed, format_version, input_of, read_particle, read_sound, text_of,
 };
-use bedrock_addon_shared_animation::walk::{
-    Group, Hit, Kind, Node, Pattern, UNKNOWN_OPTION_TYPE, Walk, text,
-};
+use bedrock_addon_shared_animation::walk::{RULES, TIME};
 use bedrock_addon_shared_shapes::TrueOnly;
 
 /// The 1.8 schema's `format_version` minimum and the controller floor.
@@ -37,10 +38,11 @@ pub(crate) const V1_17_30: SemVersion = SemVersion::new(1, 17, 30);
 pub(crate) const V1_18_10: SemVersion = SemVersion::new(1, 18, 10);
 
 /// The controller key pattern.
-pub(crate) const CONTROLLER_KEY: Pattern = Pattern::Prefixed(
-    "controller.animation.",
-    r"controller\.animation\.[a-zA-Z0-9_.-]+",
-);
+pub(crate) const CONTROLLER_KEY: Pattern = Pattern::Prefixed {
+    prefix: "controller.animation.",
+    extra: b"_.-",
+    regex: r"controller\.animation\.[a-zA-Z0-9_.-]+",
+};
 
 /// `Error: ill-formatted/missing "format_version" field. Skipping.`
 const ILL_FORMATTED: &str = "Error: ill-formatted/missing \"format_version\" field. Skipping.";
@@ -136,18 +138,18 @@ fn read_version(walk: &mut Walk, node: Node<'_>) -> Option<SemVersion> {
 
 /// The unsigned integer elements of an array, without findings.
 fn walk_quiet(walk: &mut Walk, node: Node<'_>, out: &mut Vec<u16>) {
-    let mut scratch = Walk::new();
+    let mut scratch = Walk::new(RULES, &JsonPath::new());
     let _ = walk;
     scratch.array(node, |_, _, element| {
         if element.kind() != Kind::Number {
-            return false;
+            return Hit::Failed;
         }
         match element.text().parse::<u16>() {
             Ok(n) => {
                 out.push(n);
-                true
+                Hit::Ok
             }
-            Err(_) => false,
+            Err(_) => Hit::Failed,
         }
     });
     if out.len() != 3 || scratch.diagnostics.has_errors() {
@@ -186,7 +188,7 @@ pub(crate) fn parse_as_written(
     Diagnostics,
 ) {
     let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
-    let mut walk = Walk::new();
+    let mut walk = Walk::new(RULES, &JsonPath::new());
     let text = match text_of(bytes) {
         Ok(text) => text,
         Err(finding) => {
@@ -383,7 +385,7 @@ pub(crate) fn read_controllers<S>(
                     let mut map = IndexMap::new();
                     let ok = walk.object(
                         v,
-                        &[Group::pattern(Pattern::Identifier, true)],
+                        &[Group::pattern(Pattern::IDENTIFIER, true)],
                         |walk, _, name, v| {
                             if v.kind() != Kind::Object {
                                 walk.bad_type("object", v);
@@ -495,7 +497,7 @@ fn read_variables(walk: &mut Walk, node: Node<'_>) -> Option<IndexMap<String, St
     let mut map = IndexMap::new();
     let ok = walk.object(
         node,
-        &[Group::pattern(Pattern::Identifier, true)],
+        &[Group::pattern(Pattern::IDENTIFIER, true)],
         |walk, _, name, v| {
             if v.kind() != Kind::Object {
                 walk.bad_type("object", v);
@@ -512,7 +514,7 @@ fn read_variables(walk: &mut Walk, node: Node<'_>) -> Option<IndexMap<String, St
                     walk.bad_type("object", v);
                     return Hit::Failed;
                 }
-                walk.float_map(v, Pattern::Time, true)
+                walk.float_map(v, TIME, true)
                     .map(|c| remap_curve = Some(c))
                     .into()
             });
@@ -534,12 +536,12 @@ fn read_state_animations(walk: &mut Walk, node: Node<'_>) -> Option<Vec<StateAni
         Kind::String => walk
             .string(element)
             .map(|s| list.push(StateAnimation::Name(s)))
-            .is_some(),
+            .into(),
         Kind::Object => {
             let mut weights = IndexMap::new();
             let ok = walk.object(
                 element,
-                &[Group::pattern(Pattern::Identifier, true)],
+                &[Group::pattern(Pattern::IDENTIFIER, true)],
                 |walk, _, name, v| {
                     walk.molang(v)
                         .map(|m| weights.insert(name.to_owned(), m))
@@ -549,11 +551,11 @@ fn read_state_animations(walk: &mut Walk, node: Node<'_>) -> Option<Vec<StateAni
             if ok {
                 list.push(StateAnimation::Weighted(weights));
             }
-            ok
+            ok.into()
         }
         _ => {
             walk.bad_type("string, object", element);
-            false
+            Hit::Failed
         }
     });
     ok.then_some(list)
@@ -564,14 +566,14 @@ fn read_transitions(walk: &mut Walk, node: Node<'_>) -> Option<Vec<Transition>> 
     let ok = walk.array(node, |walk, _, element| {
         if element.kind() != Kind::Object {
             walk.bad_type("object", element);
-            return false;
+            return Hit::Failed;
         }
         if !walk.child_count(element, 1) {
-            return false;
+            return Hit::Failed;
         }
         walk.object(
             element,
-            &[Group::pattern(Pattern::Identifier, true)],
+            &[Group::pattern(Pattern::IDENTIFIER, true)],
             |walk, _, target, v| {
                 walk.string(v)
                     .map(|condition| {
@@ -583,6 +585,7 @@ fn read_transitions(walk: &mut Walk, node: Node<'_>) -> Option<Vec<Transition>> 
                     .into()
             },
         )
+        .into()
     });
     ok.then_some(list)
 }
@@ -592,7 +595,7 @@ fn read_blend_transition(walk: &mut Walk, node: Node<'_>) -> Option<BlendTransit
         Kind::Number => walk.float(node).map(BlendTransition::Seconds),
         // The object option's keys are `[a-zA-Z0-9_.-]+`, not time keys.
         Kind::Object => walk
-            .float_map(node, Pattern::Identifier, true)
+            .float_map(node, Pattern::IDENTIFIER, true)
             .map(BlendTransition::Curve),
         _ => {
             walk.bad_type("float, object", node);
@@ -611,9 +614,9 @@ pub(crate) fn read_objects<T>(
     let ok = walk.array(node, |walk, _, element| {
         if element.kind() != Kind::Object {
             walk.bad_type("object", element);
-            return false;
+            return Hit::Failed;
         }
-        each(walk, element).map(|x| list.push(x)).is_some()
+        each(walk, element).map(|x| list.push(x)).into()
     });
     ok.then_some(list)
 }

@@ -12,9 +12,21 @@ use bedrock_addon_core::diagnostic::{
     DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
 };
 use bedrock_addon_core::json::JsonSlice;
+use bedrock_addon_core::json::node_tree::{
+    Failure, Group, Hit, Kind, Lossy, NOT_ALLOWED_REGEX, Names, Node, OUTSIDE_RANGE, Order, Rules,
+    Validation, Walk, percent_f,
+};
 use bedrock_addon_shared_shapes::color::is_hex;
-use bedrock_addon_support::schema_walk::{
-    Group, Kind, NOT_ALLOWED_REGEX, Node, OUTSIDE_RANGE, Walk, percent_f,
+
+/// The rules of the game's `fog_description_schema`: names as written, the members of an object
+/// in sorted key order (jsoncpp's `std::map`), strict, an object failed by any member, and a
+/// lossy float told.
+const RULES: Rules = Rules {
+    names: Names::Exact,
+    order: Order::Sorted,
+    validation: Validation::Strict,
+    failure: Failure::MemberFailed,
+    lossy: Lossy::Told,
 };
 
 /// Which root of the schema reads a document.
@@ -37,7 +49,7 @@ pub(crate) fn read_document(
     at: &JsonPath,
     d: &mut Diagnostics,
 ) -> Option<FogPayload> {
-    let mut walk = Walk::with_path(at);
+    let mut walk = Walk::new(RULES, at);
     let read = Node::of(document).and_then(|root| root_node(&mut walk, root, era));
     let failed = walk.diagnostics.has_errors();
     d.extend(walk.diagnostics);
@@ -80,13 +92,13 @@ fn root_node(walk: &mut Walk, root: Node<'_>, era: Era) -> Option<FogPayload> {
             // dispatcher never routes a lower one here.
             if v.kind() != Kind::String {
                 walk.bad_type("SemVersion", v);
-                return false;
+                return Hit::Failed;
             }
-            walk.string(v).map(|s| format_version = Some(s)).is_some()
+            walk.string(v).map(|s| format_version = Some(s)).into()
         } else {
             settings_node(walk, v, era)
                 .map(|s| settings = Some(s))
-                .is_some()
+                .into()
         }
     });
     let (description, distance, volumetric) = settings.filter(|_| ok)?;
@@ -115,11 +127,11 @@ fn settings_node(walk: &mut Walk, node: Node<'_>, era: Era) -> Option<Settings> 
     let ok = walk.object(node, &members, |walk, group, _, v| match group {
         0 => description_node(walk, v)
             .map(|x| description = Some(x))
-            .is_some(),
-        1 => distance_node(walk, v).map(|x| distance = Some(x)).is_some(),
+            .into(),
+        1 => distance_node(walk, v).map(|x| distance = Some(x)).into(),
         _ => volumetric_node(walk, v, era)
             .map(|x| volumetric = Some(x))
-            .is_some(),
+            .into(),
     });
     ok.then_some((description?, distance, volumetric))
 }
@@ -145,15 +157,15 @@ fn description_node(walk: &mut Walk, node: Node<'_>) -> Option<Description> {
     let mut identifier = None;
     let ok = walk.object(node, &groups(&[("identifier", true)]), |walk, _, _, v| {
         let Some(text) = walk.string(v) else {
-            return false;
+            return Hit::Failed;
         };
         if !is_namespaced(&text) {
             // The node's own message is not recorded; the file fails with the closing line.
             walk.error(DiagnosticCode::InvalidValue { text: None }, v.span());
-            return false;
+            return Hit::Failed;
         }
         identifier = Some(text);
-        true
+        Hit::Ok
     });
     ok.then_some(Description {
         identifier: identifier?,
@@ -175,7 +187,7 @@ fn distance_node(walk: &mut Walk, node: Node<'_>) -> Option<Distance> {
     ]);
     let ok = walk.object(node, &members, |walk, group, _, v| {
         let Some(setting) = fog_setting(walk, v) else {
-            return false;
+            return Hit::Failed;
         };
         let slot = match group {
             0 => &mut distance.air,
@@ -186,7 +198,7 @@ fn distance_node(walk: &mut Walk, node: Node<'_>) -> Option<Distance> {
             _ => &mut distance.powder_snow,
         };
         *slot = Some(setting);
-        true
+        Hit::Ok
     });
     ok.then_some(distance)
 }
@@ -424,11 +436,9 @@ fn fog_setting(walk: &mut Walk, node: Node<'_>) -> Option<FogSetting> {
     members.push(("transition_fog", false));
     let ok = walk.object(node, &groups(&members), |walk, group, _, v| {
         if group < 4 {
-            base.read(walk, group, v)
+            base.read(walk, group, v).into()
         } else {
-            transition(walk, v)
-                .map(|x| transition_fog = Some(x))
-                .is_some()
+            transition(walk, v).map(|x| transition_fog = Some(x)).into()
         }
     });
     ok.then_some(FogSetting {
@@ -446,7 +456,7 @@ fn init_fog(walk: &mut Walk, node: Node<'_>) -> Option<InitFog> {
     }
     let mut base = Base::default();
     let ok = walk.object(node, &groups(&BASE_MEMBERS), |walk, group, _, v| {
-        base.read(walk, group, v)
+        base.read(walk, group, v).into()
     });
     ok.then_some(InitFog {
         fog_color: base.fog_color?,
@@ -471,14 +481,14 @@ fn transition(walk: &mut Walk, node: Node<'_>) -> Option<TransitionFog> {
         ("max_seconds", true),
     ]);
     let ok = walk.object(node, &members, |walk, group, _, v| match group {
-        0 => init_fog(walk, v).map(|x| init = Some(x)).is_some(),
+        0 => init_fog(walk, v).map(|x| init = Some(x)).into(),
         // The percents are [0, 1]; the seconds have a minimum of 0 only.
         1 | 3 => ranged(walk, v, 0.0, 1.0)
             .map(|x| numbers[group - 1] = Some(x))
-            .is_some(),
+            .into(),
         _ => ranged(walk, v, 0.0, f32::MAX)
             .map(|x| numbers[group - 1] = Some(x))
-            .is_some(),
+            .into(),
     });
     let [min_percent, mid_seconds, mid_percent, max_seconds] = numbers;
     ok.then_some(TransitionFog {
@@ -503,13 +513,13 @@ fn volumetric_node(walk: &mut Walk, node: Node<'_>, era: Era) -> Option<Volumetr
     let ok = walk.object(node, &groups(&members), |walk, group, _, v| match group {
         0 => density_node(walk, v, era)
             .map(|x| volumetric.density = Some(x))
-            .is_some(),
+            .into(),
         1 => media_node(walk, v)
             .map(|x| volumetric.media_coefficients = Some(x))
-            .is_some(),
+            .into(),
         _ => hg_node(walk, v)
             .map(|x| volumetric.henyey_greenstein_g = Some(x))
-            .is_some(),
+            .into(),
     });
     ok.then_some(volumetric)
 }
@@ -531,7 +541,7 @@ fn density_node(walk: &mut Walk, node: Node<'_>, era: Era) -> Option<Density> {
     }
     let ok = walk.object(node, &groups(&members), |walk, group, _, v| {
         let Some(setting) = density_setting(walk, v) else {
-            return false;
+            return Hit::Failed;
         };
         let slot = match group {
             0 => &mut density.air,
@@ -541,7 +551,7 @@ fn density_node(walk: &mut Walk, node: Node<'_>, era: Era) -> Option<Density> {
             _ => &mut density.weather,
         };
         *slot = Some(setting);
-        true
+        Hit::Ok
     });
     ok.then_some(density)
 }
@@ -563,14 +573,14 @@ fn density_setting(walk: &mut Walk, node: Node<'_>) -> Option<DensitySetting> {
     let ok = walk.object(node, &members, |walk, group, _, v| match group {
         0 => ranged(walk, v, 0.0, 1.0)
             .map(|x| max_density = Some(x))
-            .is_some(),
+            .into(),
         1 => ranged(walk, v, -64.0, 320.0)
             .map(|x| max_density_height = Some(x))
-            .is_some(),
+            .into(),
         2 => ranged(walk, v, -64.0, 320.0)
             .map(|x| zero_density_height = Some(x))
-            .is_some(),
-        _ => walk.bool(v).map(|x| uniform = Some(x)).is_some(),
+            .into(),
+        _ => walk.bool(v).map(|x| uniform = Some(x)).into(),
     });
     ok.then_some(DensitySetting {
         max_density: max_density?,
@@ -588,7 +598,7 @@ fn media_node(walk: &mut Walk, node: Node<'_>) -> Option<MediaCoefficients> {
     let members = groups(&[("air", false), ("water", false), ("cloud", false)]);
     let ok = walk.object(node, &members, |walk, group, _, v| {
         if !is_object(walk, v) {
-            return false;
+            return Hit::Failed;
         }
         let mut scattering = None;
         let mut absorption = None;
@@ -601,10 +611,10 @@ fn media_node(walk: &mut Walk, node: Node<'_>) -> Option<MediaCoefficients> {
             } else {
                 absorption = color;
             }
-            read
+            read.into()
         });
         let (true, Some(scattering), Some(absorption)) = (ok, scattering, absorption) else {
-            return false;
+            return Hit::Failed;
         };
         let slot = match group {
             0 => &mut media.air,
@@ -615,7 +625,7 @@ fn media_node(walk: &mut Walk, node: Node<'_>) -> Option<MediaCoefficients> {
             scattering,
             absorption,
         });
-        true
+        Hit::Ok
     });
     ok.then_some(media)
 }
@@ -628,15 +638,15 @@ fn hg_node(walk: &mut Walk, node: Node<'_>) -> Option<HenyeyGreensteinG> {
     let members = groups(&[("air", false), ("water", false)]);
     let ok = walk.object(node, &members, |walk, group, _, v| {
         if !is_object(walk, v) {
-            return false;
+            return Hit::Failed;
         }
         let mut g = None;
         let member = groups(&[("henyey_greenstein_g", true)]);
         let ok = walk.object(v, &member, |walk, _, _, v| {
-            ranged(walk, v, -1.0, 1.0).map(|x| g = Some(x)).is_some()
+            ranged(walk, v, -1.0, 1.0).map(|x| g = Some(x)).into()
         });
         let (true, Some(g)) = (ok, g) else {
-            return false;
+            return Hit::Failed;
         };
         let setting = Some(HgSetting {
             henyey_greenstein_g: g,
@@ -646,7 +656,7 @@ fn hg_node(walk: &mut Walk, node: Node<'_>) -> Option<HenyeyGreensteinG> {
         } else {
             hg.water = setting;
         }
-        true
+        Hit::Ok
     });
     ok.then_some(hg)
 }

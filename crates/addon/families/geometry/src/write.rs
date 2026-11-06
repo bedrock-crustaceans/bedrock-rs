@@ -5,8 +5,8 @@ use facet_value::{VArray, VObject};
 use indexmap::IndexMap;
 
 use super::history::{v0_0_0, v1_8_0};
-use super::schema_walk::has_geometry_name;
 use super::types::LATEST;
+use super::walk::has_geometry_name;
 use super::{
     Bone, BoneLegacy, Cube, CubeUv, Description, FaceUv, Faces, Geometry, GeometryFile,
     GeometryLegacy, ItemDisplayTransform, ItemDisplayTransforms, Locator, PolyMesh, Polys,

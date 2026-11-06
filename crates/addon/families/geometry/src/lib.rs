@@ -5,8 +5,9 @@
 //! `format_version`, upgraded in place to the newest shape, and each geometry is registered by
 //! its identifier.
 //!
-//! The reader stays a schema walk on the family's walker (`schema_walk`), because vanilla validates
-//! each file against the JSON schema of its `format_version` rather than reading a typed struct.
+//! The reader stays a schema walk on core's node-tree walker (`json::node_tree`, under the rules
+//! of `walk`), because vanilla validates each file against the JSON schema of its
+//! `format_version` rather than reading a typed struct.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
@@ -15,9 +16,10 @@ pub mod history;
 mod inherit;
 mod molang;
 mod read;
-mod schema_walk;
+mod texts;
 mod types;
 mod validate;
+mod walk;
 mod write;
 
 #[cfg(test)]

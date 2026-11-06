@@ -5,8 +5,9 @@
 //! `shelf` member logs the "can only be used in a file version 1.26.40 or higher" text and
 //! fails the file; otherwise an object `fixed` is copied to `shelf` as it is.
 
-use super::super::schema_walk::{SHELF_TOO_OLD, text};
+use super::super::texts::SHELF_TOO_OLD;
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, Phase};
+use bedrock_addon_core::json::node_tree::text;
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{Upgrade, UpgradeCx, Versioned};
 

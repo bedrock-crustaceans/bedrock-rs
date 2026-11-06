@@ -5,7 +5,8 @@
 //! one type serves both stacks; what differs is runtime: the registry each side keeps, the Molang
 //! query catalogue the compile check uses, and a few diagnostics of the crate's own.
 //!
-//! The reader stays a schema walk on `bedrock_addon_shared_animation`'s walker, because vanilla
+//! The reader stays a schema walk on core's `json::node_tree` walker under
+//! `bedrock_addon_shared_animation`'s rules, because vanilla
 //! checks the files against its animation schema with a loader of its own rather than reading a
 //! typed struct.
 

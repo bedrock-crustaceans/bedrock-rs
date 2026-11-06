@@ -8,10 +8,11 @@
 use indexmap::IndexMap;
 
 use super::super::read::{LocatorForm, read_locators, read_render_group_id};
-use super::super::schema_walk::{Group, Hit, JsonKind, Node, Pattern, SchemaWalk};
+use super::super::walk::{GEOMETRY, Leaves};
 use super::super::{GeometryLegacy, Locator};
 use super::{settle, v1_8_0, walk_for};
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase};
+use bedrock_addon_core::json::node_tree::{Group, Hit, Kind, Node, Walk};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::{ParseCx, Upgrade, UpgradeCx, VersionStruct, Versioned};
@@ -117,9 +118,9 @@ pub struct Cube {
 /// The root of a file older than 1.12.0: `format_version`, `debug` and at least one
 /// `geometry.<name>` member, each read by `read`.
 pub(crate) fn read_root<'a, G>(
-    walk: &mut SchemaWalk,
+    walk: &mut Walk,
     root: Node<'a>,
-    mut read: impl FnMut(&mut SchemaWalk, Node<'a>) -> Option<G>,
+    mut read: impl FnMut(&mut Walk, Node<'a>) -> Option<G>,
 ) -> Option<(Option<bool>, IndexMap<String, G>)> {
     let mut debug = None;
     let mut geometries = IndexMap::new();
@@ -128,7 +129,7 @@ pub(crate) fn read_root<'a, G>(
         // never missing.
         Group::name("format_version"),
         Group::name("debug"),
-        Group::pattern(Pattern::Geometry, true),
+        Group::pattern(GEOMETRY, true),
     ];
     let ok = walk.object(root, &groups, |walk, group, key, node| match group {
         0 => Hit::Ok,
@@ -151,10 +152,10 @@ pub(crate) const SHARED_GEOMETRY_MEMBERS: [Group; 6] = [
     Group::name("cape"),
 ];
 
-fn read_flag(walk: &mut SchemaWalk, node: Node<'_>) -> Option<Flag> {
+fn read_flag(walk: &mut Walk, node: Node<'_>) -> Option<Flag> {
     match node.kind() {
-        JsonKind::Bool => walk.bool(node).map(Flag::Bool),
-        JsonKind::String => walk.string(node).map(Flag::Text),
+        Kind::Bool => walk.bool(node).map(Flag::Bool),
+        Kind::String => walk.string(node).map(Flag::Text),
         _ => {
             walk.bad_type("bool, string", node);
             None
@@ -162,7 +163,7 @@ fn read_flag(walk: &mut SchemaWalk, node: Node<'_>) -> Option<Flag> {
     }
 }
 
-fn read_geometry(walk: &mut SchemaWalk, node: Node<'_>) -> Option<Geometry> {
+fn read_geometry(walk: &mut Walk, node: Node<'_>) -> Option<Geometry> {
     let mut g = Geometry::default();
     let mut groups = SHARED_GEOMETRY_MEMBERS.to_vec();
     groups.push(Group::name("preserve_model_pose"));
@@ -189,7 +190,7 @@ fn read_geometry(walk: &mut SchemaWalk, node: Node<'_>) -> Option<Geometry> {
     ok.then_some(g)
 }
 
-fn read_bone(walk: &mut SchemaWalk, node: Node<'_>) -> Option<Bone> {
+fn read_bone(walk: &mut Walk, node: Node<'_>) -> Option<Bone> {
     let mut b = Bone::default();
     let groups = [
         Group::required("name"),
@@ -231,7 +232,7 @@ fn read_bone(walk: &mut SchemaWalk, node: Node<'_>) -> Option<Bone> {
     ok.then_some(b)
 }
 
-fn read_cube(walk: &mut SchemaWalk, node: Node<'_>) -> Option<Cube> {
+fn read_cube(walk: &mut Walk, node: Node<'_>) -> Option<Cube> {
     let mut c = Cube::default();
     let groups = [
         Group::name("origin"),

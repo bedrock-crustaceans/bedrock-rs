@@ -12,6 +12,9 @@ use super::super::{
     Transition as LatestTransition,
 };
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase};
+use bedrock_addon_core::json::node_tree::{
+    CHILD_NOT_VALID, Group, Hit, Kind, Node, Pattern, Walk, text,
+};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::molang::{
     Molang, MolangFields, MolangSource, MolangVisitor, RawVersion, Step,
@@ -21,9 +24,7 @@ use bedrock_addon_core::version::known;
 use bedrock_addon_core::versioning::{ParseCx, Upgrade, UpgradeCx, VersionStruct, Versioned};
 use bedrock_addon_shared_animation::event::command_version;
 use bedrock_addon_shared_animation::read::read_particle;
-use bedrock_addon_shared_animation::walk::{
-    CHILD_NOT_VALID, Group, Kind, Node, Pattern, Walk, text,
-};
+use bedrock_addon_shared_animation::walk::{RULES, TIME};
 
 /// A 1.8 controller file: `{"format_version", "animation_controllers"}` with the 1.8 state shape.
 #[derive(Clone, Debug, PartialEq)]
@@ -184,24 +185,24 @@ fn read_curve_sets(walk: &mut Walk, node: Node<'_>) -> Option<Vec<CurveSet>> {
     let ok = walk.array(node, |walk, _, element| {
         if element.kind() != Kind::Object {
             walk.bad_type("object", element);
-            return false;
+            return Hit::Failed;
         }
         if !walk.child_count(element, 1) {
-            return false;
+            return Hit::Failed;
         }
         walk.object(
             element,
-            &[Group::pattern(Pattern::Identifier, true)],
+            &[Group::pattern(Pattern::IDENTIFIER, true)],
             |walk, _, animation, v| {
                 let mut curves = Vec::new();
                 let ok = walk.array(v, |walk, _, curve| {
                     if curve.kind() != Kind::Object {
                         walk.bad_type("object", curve);
-                        return false;
+                        return Hit::Failed;
                     }
-                    walk.float_map(curve, Pattern::Time, false)
+                    walk.float_map(curve, TIME, false)
                         .map(|c| curves.push(c))
-                        .is_some()
+                        .into()
                 });
                 if ok {
                     list.push(CurveSet {
@@ -212,6 +213,7 @@ fn read_curve_sets(walk: &mut Walk, node: Node<'_>) -> Option<Vec<CurveSet>> {
                 ok.into()
             },
         )
+        .into()
     });
     ok.then_some(list)
 }
@@ -221,14 +223,14 @@ fn read_transitions(walk: &mut Walk, node: Node<'_>) -> Option<Vec<Transition>> 
     let ok = walk.array(node, |walk, _, element| {
         if element.kind() != Kind::Object {
             walk.bad_type("object", element);
-            return false;
+            return Hit::Failed;
         }
         if !walk.child_count(element, 1) {
-            return false;
+            return Hit::Failed;
         }
         walk.object(
             element,
-            &[Group::pattern(Pattern::Identifier, true)],
+            &[Group::pattern(Pattern::IDENTIFIER, true)],
             |walk, _, target, v| {
                 walk.molang(v)
                     .map(|condition| {
@@ -240,6 +242,7 @@ fn read_transitions(walk: &mut Walk, node: Node<'_>) -> Option<Vec<Transition>> 
                     .into()
             },
         )
+        .into()
     });
     ok.then_some(list)
 }
@@ -530,7 +533,7 @@ impl MolangFields for AnimationControllerFile {
 
 impl VersionStruct for AnimationControllerFile {
     fn parse(payload: JsonSlice<'_>, _: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        let mut walk = Walk::new();
+        let mut walk = Walk::new(RULES, &JsonPath::new());
         let file = Node::of(payload).and_then(|root| read_file(&mut walk, root));
         let failed = walk.diagnostics.has_errors();
         d.extend(walk.diagnostics);
@@ -544,7 +547,7 @@ impl VersionStruct for AnimationControllerFile {
 
 impl VersionStruct for Latest {
     fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        let mut walk = Walk::new();
+        let mut walk = Walk::new(RULES, &JsonPath::new());
         let commands = command_version(cx.load.min_engine_version.as_ref());
         let written = bedrock_addon_core::version::SemVersion::new(
             cx.original_version.major,

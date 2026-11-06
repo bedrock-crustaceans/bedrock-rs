@@ -72,6 +72,16 @@ fn walked(
 // ---- patterns ----
 
 #[test]
+fn data_types_are_comparable_and_hashable() {
+    fn assert_hashable<T: Eq + std::hash::Hash>() {}
+    assert_hashable::<Pattern>();
+    assert_hashable::<Group>();
+    assert_hashable::<Kind>();
+    assert_hashable::<Rules>();
+    assert_eq!(Pattern::IDENTIFIER, Pattern::IDENTIFIER);
+}
+
+#[test]
 fn prefixed_names_match_in_full_and_as_written() {
     let p = Pattern::Prefixed {
         prefix: "controller.render.",

@@ -8,7 +8,8 @@ use indexmap::IndexMap;
 use super::super::read::{
     LocatorForm, read_locators, read_poly_mesh, read_render_group_id, read_texture_mesh,
 };
-use super::super::schema_walk::{ABOVE_MAX_VERSION, CAPE_DROPPED, Group, Node, SchemaWalk, text};
+use super::super::texts::CAPE_DROPPED;
+use super::super::walk::Leaves;
 use super::super::{
     Bone as NewBone, BoneLegacy, Cube as NewCube, CubeUv, Description, Geometry as NewGeometry,
     GeometryLegacy, Locator, PolyMesh, TextureMesh,
@@ -18,6 +19,7 @@ use super::{settle, v1_12_0, walk_for};
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Span,
 };
+use bedrock_addon_core::json::node_tree::{ABOVE_MAX_VERSION, Group, Node, Walk, text};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::{ParseCx, Upgrade, UpgradeCx, VersionStruct, Versioned};
@@ -115,7 +117,7 @@ pub struct Cube {
 
 // ---- reading -------------------------------------------------------------------------------------
 
-fn read_geometry(walk: &mut SchemaWalk, node: Node<'_>) -> Option<Geometry> {
+fn read_geometry(walk: &mut Walk, node: Node<'_>) -> Option<Geometry> {
     let mut g = Geometry::default();
     let mut groups = SHARED_GEOMETRY_MEMBERS.to_vec();
     groups.push(Group::name("debug"));
@@ -142,7 +144,7 @@ fn read_geometry(walk: &mut SchemaWalk, node: Node<'_>) -> Option<Geometry> {
     ok.then_some(g)
 }
 
-fn read_bone(walk: &mut SchemaWalk, node: Node<'_>) -> Option<Bone> {
+fn read_bone(walk: &mut Walk, node: Node<'_>) -> Option<Bone> {
     let mut b = Bone::default();
     let groups = [
         Group::required("name"),
@@ -193,7 +195,7 @@ fn read_bone(walk: &mut SchemaWalk, node: Node<'_>) -> Option<Bone> {
     ok.then_some(b)
 }
 
-fn read_cube(walk: &mut SchemaWalk, node: Node<'_>) -> Option<Cube> {
+fn read_cube(walk: &mut Walk, node: Node<'_>) -> Option<Cube> {
     let mut c = Cube::default();
     let groups = [
         Group::name("origin"),

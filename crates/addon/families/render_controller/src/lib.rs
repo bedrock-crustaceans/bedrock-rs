@@ -3,8 +3,9 @@
 //! Vanilla reads them with an ad-hoc loader behind one strict schema built at 1.8.0 whatever the
 //! file's `format_version` says, so there is one struct and no upgrade step.
 //!
-//! The reader stays a schema walk on `support`'s walker, because vanilla checks every file against
-//! its one 1.8.0 schema with an ad-hoc loader rather than reading a typed struct.
+//! The reader stays a schema walk on core's node-tree walker (`json::node_tree`), because vanilla
+//! checks every file against its one 1.8.0 schema with an ad-hoc loader rather than reading a
+//! typed struct.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 

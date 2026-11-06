@@ -15,15 +15,16 @@ use crate::GeometryFile;
 use crate::history::v1_8_0::MAX_FORMAT_VERSION as KEYED_MAXIMUM;
 use crate::history::{GeometryHistory, VERSIONS};
 use crate::molang;
-use crate::schema_walk::{
-    DID_NOT_VALIDATE, EXCEEDS_GAME_VERSION, INTERNAL_BLOCKS_FLOOR, JsonKind, NOT_AN_OBJECT, Node,
-    PARSE_ERROR, SchemaWalk, VERSION_NOT_VALID, text,
+use crate::texts::{
+    DID_NOT_VALIDATE, EXCEEDS_GAME_VERSION, INTERNAL_BLOCKS_FLOOR, NOT_AN_OBJECT, VERSION_NOT_VALID,
 };
 use crate::validate::{Place, first_bad_identifier, parse_time};
+use crate::walk::rules;
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
 };
 use bedrock_addon_core::document::{Document, Origin, Rejected, VersionInfo};
+use bedrock_addon_core::json::node_tree::{Kind, Node, PARSE_ERROR, Walk, text};
 use bedrock_addon_core::json::{
     JsonSlice, MAX_JSON_DEPTH, Value, check_depth, parse_at, strip_bom,
 };
@@ -113,7 +114,7 @@ fn read_version(
     root: Node<'_>,
     diagnostics: &mut Diagnostics,
 ) -> (Option<FormatVersion>, FormatVersion, String) {
-    let walk = SchemaWalk::new(true, &JsonPath::new());
+    let walk = Walk::new(rules(true), &JsonPath::new());
     let node = walk
         .members(root)
         .unwrap_or_default()
@@ -126,12 +127,12 @@ fn read_version(
         }));
         return (None, DEFAULT_VERSION, "1.0".to_owned());
     };
-    let as_written = if node.kind() == JsonKind::String {
+    let as_written = if node.kind() == Kind::String {
         parse_at::<String>(JsonSlice::new(node.text())).unwrap_or_default()
     } else {
         node.text().to_owned()
     };
-    let version = (node.kind() == JsonKind::String)
+    let version = (node.kind() == Kind::String)
         .then(|| SemVersion::parse(&as_written))
         .flatten()
         // `"beta"` and a wildcard are no version the game's version parser reads.
@@ -172,8 +173,8 @@ pub(crate) fn read_written(
         return Outcome::Failed;
     };
     match root.kind() {
-        JsonKind::Null => return Outcome::Empty,
-        JsonKind::Object => {}
+        Kind::Null => return Outcome::Empty,
+        Kind::Object => {}
         _ => {
             diagnostics.push(Diagnostic::error(DiagnosticCode::MalformedInput {
                 message: "the root is not an object".to_owned(),

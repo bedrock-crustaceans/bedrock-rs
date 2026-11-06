@@ -186,7 +186,7 @@ fn a_molang_number_beyond_f32_is_read_as_the_largest_finite_float_deviation() {
 /// W1: the members of an animation are read in the file's order: the findings follow it.
 #[test]
 fn members_are_read_in_document_order() {
-    let text = r#"{"format_version": "1.8.0", "animations": {"animation.x": {"animation_length": "x", "blend_weight": {}}}}"#;
+    let text = r#"{"format_version": "1.8.0", "animations": {"animation.x": {"blend_weight": {}, "animation_length": "x"}}}}"#;
     let d = super::common::rejected(animation(text, &rp(1, 21, 0)));
     let told: Vec<_> = d
         .iter()
@@ -196,8 +196,8 @@ fn members_are_read_in_document_order() {
     assert_eq!(
         told,
         [
-            "animations/animation.x/animation_length",
-            "animations/animation.x/blend_weight"
+            "animations/animation.x/blend_weight",
+            "animations/animation.x/animation_length"
         ],
         "{:?}",
         lines(&d)

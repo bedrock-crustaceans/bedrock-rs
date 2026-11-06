@@ -143,11 +143,6 @@ impl<'a> Node<'a> {
         }
     }
 
-    /// The value as an untyped JSON value (an unknown member kept for write-back).
-    pub fn value(&self) -> Option<Value> {
-        parse_at::<Value>(self.slice).ok()
-    }
-
     fn nested(&self, raw: &RawJson<'a>) -> Option<Node<'a>> {
         self.slice.nested(raw).map(|slice| Node { slice })
     }
@@ -167,7 +162,8 @@ fn same_value(a: Node<'_>, b: Node<'_>) -> bool {
 /// literal name and a prefix compare as the walk's [`Names`] say.
 ///
 /// Two patterns are equal when they are one pattern; a [`Custom`](Self::Custom) one compares
-/// its function by address, which is the same for one `const` pattern however often it is named.
+/// its function by address. Rust does not promise one address per function, so that equality is
+/// best-effort and serves only the hashability bound; no walk decides anything by it.
 #[allow(
     unpredictable_function_pointer_comparisons,
     reason = "a `Custom` pattern is a loader's `const`, compared with itself"
@@ -240,7 +236,7 @@ impl Pattern {
 }
 
 /// `[a-zA-Z0-9<extra>]+`, in full.
-pub fn charset(key: &str, extra: &[u8]) -> bool {
+fn charset(key: &str, extra: &[u8]) -> bool {
     !key.is_empty()
         && key
             .bytes()
@@ -284,7 +280,8 @@ impl Group {
 pub enum Hit {
     /// The member was read.
     Ok,
-    /// The member failed (its finding is reported).
+    /// The member failed; under [`Failure::MemberFailed`] its finding was pushed, under
+    /// [`Failure::ErrorRaised`] the raised error counts instead.
     Failed,
     /// The member's only option refused it by its predicate: vanilla's search moves on and
     /// ends with "child '%s' not valid here.".
@@ -473,7 +470,7 @@ impl Walk {
 
     /// "child '<key>' not valid here." at the member, or under [`Validation::Lenient`] its
     /// removal as an information.
-    pub fn unknown(&mut self, key: &str, node: Node<'_>) {
+    fn unknown(&mut self, key: &str, node: Node<'_>) {
         self.enter(key);
         match self.rules.validation {
             Validation::Strict => self.error(

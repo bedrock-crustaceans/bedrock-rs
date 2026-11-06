@@ -21,9 +21,10 @@ pub mod v1_8_0;
 
 use super::GeometryFile;
 use super::read::{Era, read_file};
-use super::schema_walk::{Node, SchemaWalk};
+use super::walk::rules;
 use bedrock_addon_core::diagnostic::Diagnostics;
 use bedrock_addon_core::document::{Document, Rejected};
+use bedrock_addon_core::json::node_tree::{Node, Walk};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value, WriteStyle};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
@@ -52,12 +53,12 @@ pub const VERSIONS: [FormatVersion; 8] = [
 pub const STRICT_FROM: FormatVersion = FormatVersion::new(1, 19, 30);
 
 /// The walk of a struct's parse: lenient below 1.19.30.
-pub(crate) fn walk_for(cx: &ParseCx<'_>) -> SchemaWalk {
-    SchemaWalk::new(cx.original_version < STRICT_FROM, &cx.at)
+pub(crate) fn walk_for(cx: &ParseCx<'_>) -> Walk {
+    Walk::new(rules(cx.original_version < STRICT_FROM), &cx.at)
 }
 
 /// Hands a walk's findings over; `value` when the walk raised no error.
-pub(crate) fn settle<T>(walk: SchemaWalk, value: Option<T>, d: &mut Diagnostics) -> Option<T> {
+pub(crate) fn settle<T>(walk: Walk, value: Option<T>, d: &mut Diagnostics) -> Option<T> {
     let failed = walk.diagnostics.has_errors();
     d.extend(walk.diagnostics);
     value.filter(|_| !failed)

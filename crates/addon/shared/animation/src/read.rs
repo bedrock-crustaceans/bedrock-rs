@@ -3,9 +3,9 @@
 //! document a parsed file becomes.
 
 use super::types::{ParticleEffect, SoundEffect};
-use super::walk::{Group, Hit, Kind, Node, PARSE_ERROR, Walk, text};
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics};
 use bedrock_addon_core::document::{Document, Origin, Rejected, VersionInfo};
+use bedrock_addon_core::json::node_tree::{Group, Hit, Kind, Node, PARSE_ERROR, Walk, text};
 use bedrock_addon_core::json::{
     JsonSlice, MAX_JSON_DEPTH, Value, check_depth, parse_at, strip_bom,
 };

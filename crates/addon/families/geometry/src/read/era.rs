@@ -7,15 +7,17 @@
 
 use indexmap::IndexMap;
 
-use crate::schema_walk::{
-    ARRAY_TOO_SMALL, Group, Hit, INVALID_UV_ROTATION, JsonKind, NO_NAMESPACE_CUSTOM,
-    NOT_ALLOWED_REGEX, Node, OUTSIDE_RANGE, Pattern, SchemaWalk, has_geometry_name, text,
-};
+use crate::texts::{INVALID_UV_ROTATION, NO_NAMESPACE_CUSTOM};
+use crate::walk::{Leaves, has_geometry_name};
 use crate::{
     Bone, Cube, CubeUv, Description, FaceUv, Faces, Geometry, ItemDisplayTransform,
     ItemDisplayTransforms, Locator, PolyMesh, Polys, TextureMesh,
 };
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon_core::json::node_tree::{
+    ARRAY_TOO_LARGE, ARRAY_TOO_SMALL, Group, Hit, Kind, NOT_ALLOWED_REGEX, Node, OUTSIDE_RANGE,
+    Pattern, Walk, text,
+};
 use bedrock_addon_core::version::{FormatVersion, known};
 
 /// What the schema of a file's era declares beyond the 1.12 members.
@@ -70,7 +72,7 @@ pub(crate) struct Modern {
 }
 
 /// The schema walk of a whole file of 1.12.0 or later.
-pub(crate) fn read_file(walk: &mut SchemaWalk, root: Node<'_>, era: Era) -> Option<Modern> {
+pub(crate) fn read_file(walk: &mut Walk, root: Node<'_>, era: Era) -> Option<Modern> {
     let mut debug = None;
     let mut geometries = None;
     let groups = [
@@ -90,7 +92,7 @@ pub(crate) fn read_file(walk: &mut SchemaWalk, root: Node<'_>, era: Era) -> Opti
     ok.then_some(Modern { debug, geometries })
 }
 
-fn read_geometries(walk: &mut SchemaWalk, node: Node<'_>, era: Era) -> Option<Vec<Geometry>> {
+fn read_geometries(walk: &mut Walk, node: Node<'_>, era: Era) -> Option<Vec<Geometry>> {
     let list = walk.list(node, |walk, element| read_geometry(walk, element, era))?;
     if walk.elements(node).is_some_and(|e| e.is_empty()) {
         // The array node's minimum of one element, counted on the list as written: a list
@@ -107,7 +109,7 @@ fn read_geometries(walk: &mut SchemaWalk, node: Node<'_>, era: Era) -> Option<Ve
     Some(list)
 }
 
-fn read_geometry(walk: &mut SchemaWalk, node: Node<'_>, era: Era) -> Option<Geometry> {
+fn read_geometry(walk: &mut Walk, node: Node<'_>, era: Era) -> Option<Geometry> {
     let mut g = Geometry::default();
     let mut groups = vec![
         Group::required("description"),
@@ -133,7 +135,7 @@ fn read_geometry(walk: &mut SchemaWalk, node: Node<'_>, era: Era) -> Option<Geom
     ok.then_some(g)
 }
 
-fn read_description(walk: &mut SchemaWalk, node: Node<'_>, era: Era) -> Option<Description> {
+fn read_description(walk: &mut Walk, node: Node<'_>, era: Era) -> Option<Description> {
     let mut d = Description::default();
     let groups = [
         Group::required("identifier"),
@@ -169,7 +171,7 @@ fn read_description(walk: &mut SchemaWalk, node: Node<'_>, era: Era) -> Option<D
 /// and the geometry name somewhere in the text) or, from 1.19.30,
 /// `isValidOptionalNamespaceGeometryIdentifier` (the name after an optional `namespace:`). A
 /// failing validator fails the file in either mode.
-fn read_identifier(walk: &mut SchemaWalk, node: Node<'_>, era: Era) -> Option<String> {
+fn read_identifier(walk: &mut Walk, node: Node<'_>, era: Era) -> Option<String> {
     let identifier = walk.string(node)?;
     let name = if era.namespace {
         identifier
@@ -210,7 +212,7 @@ const BONE_MEMBERS: [Group; 13] = [
     Group::name("binding"),
 ];
 
-fn read_bone(walk: &mut SchemaWalk, node: Node<'_>, era: Era) -> Option<Bone> {
+fn read_bone(walk: &mut Walk, node: Node<'_>, era: Era) -> Option<Bone> {
     let mut b = Bone::default();
     let groups = &BONE_MEMBERS[..if era.binding { 13 } else { 12 }];
     let ok = walk.object(node, groups, |walk, group, _, v| match group {
@@ -245,7 +247,7 @@ fn read_bone(walk: &mut SchemaWalk, node: Node<'_>, era: Era) -> Option<Bone> {
 
 /// `render_group_id`: an int of at least 0 (the int node's inline minimum); a lower value fails
 /// the file.
-pub(crate) fn read_render_group_id(walk: &mut SchemaWalk, node: Node<'_>) -> Option<u32> {
+pub(crate) fn read_render_group_id(walk: &mut Walk, node: Node<'_>) -> Option<u32> {
     let value = walk.int(node)?;
     let Ok(id) = u32::try_from(value) else {
         walk.error(
@@ -262,7 +264,7 @@ pub(crate) fn read_render_group_id(walk: &mut SchemaWalk, node: Node<'_>) -> Opt
     Some(id)
 }
 
-fn read_cube(walk: &mut SchemaWalk, node: Node<'_>, era: Era) -> Option<Cube> {
+fn read_cube(walk: &mut Walk, node: Node<'_>, era: Era) -> Option<Cube> {
     let mut c = Cube::default();
     let groups = [
         Group::name("origin"),
@@ -285,10 +287,10 @@ fn read_cube(walk: &mut SchemaWalk, node: Node<'_>, era: Era) -> Option<Cube> {
     ok.then_some(c)
 }
 
-fn read_cube_uv(walk: &mut SchemaWalk, node: Node<'_>, era: Era) -> Option<CubeUv> {
+fn read_cube_uv(walk: &mut Walk, node: Node<'_>, era: Era) -> Option<CubeUv> {
     match node.kind() {
-        JsonKind::Array => walk.texels(node).map(CubeUv::Box),
-        JsonKind::Object => {
+        Kind::Array => walk.texels(node).map(CubeUv::Box),
+        Kind::Object => {
             let mut faces = Faces::default();
             let groups = [
                 Group::name("north"),
@@ -320,7 +322,7 @@ fn read_cube_uv(walk: &mut SchemaWalk, node: Node<'_>, era: Era) -> Option<CubeU
     }
 }
 
-fn read_face(walk: &mut SchemaWalk, node: Node<'_>, era: Era) -> Option<FaceUv> {
+fn read_face(walk: &mut Walk, node: Node<'_>, era: Era) -> Option<FaceUv> {
     let mut face = FaceUv::default();
     let groups = [
         Group::required("uv"),
@@ -346,9 +348,9 @@ fn read_face(walk: &mut SchemaWalk, node: Node<'_>, era: Era) -> Option<FaceUv> 
 
 /// `uv_rotation` (`Geometry::_parseUvRotation`): 0, 90, 180 or 270 as an integer; anything else
 /// is reported with vanilla's text and the face is not rotated.
-fn read_uv_rotation(walk: &mut SchemaWalk, node: Node<'_>) -> Option<i32> {
+fn read_uv_rotation(walk: &mut Walk, node: Node<'_>) -> Option<i32> {
     // An integer JSON value (`isInt` / `isUInt`) is compared as the number it is.
-    let quarter = (node.kind() == JsonKind::Number)
+    let quarter = (node.kind() == Kind::Number)
         .then(|| node.text().parse::<i32>().ok())
         .flatten()
         .filter(|turn| matches!(turn, 0 | 90 | 180 | 270));
@@ -377,14 +379,14 @@ pub(crate) enum LocatorForm {
 
 /// `locators`: names matching `[a-zA-Z0-9_.-]+`.
 pub(crate) fn read_locators(
-    walk: &mut SchemaWalk,
+    walk: &mut Walk,
     node: Node<'_>,
     form: LocatorForm,
 ) -> Option<IndexMap<String, Locator>> {
     let mut map = IndexMap::new();
     let ok = walk.object(
         node,
-        &[Group::pattern(Pattern::Identifier, false)],
+        &[Group::pattern(Pattern::IDENTIFIER, false)],
         |walk, _, key, v| {
             read_locator(walk, v, form)
                 .map(|locator| map.insert(key.to_owned(), locator))
@@ -405,7 +407,7 @@ enum Vector {
 /// A locator vector. Vanilla declares these arrays without a size; the crate reports a length
 /// other than three and leaves the locator out. `None`
 /// is a value that is not an array of numbers.
-fn read_locator_vector(walk: &mut SchemaWalk, node: Node<'_>) -> Option<Vector> {
+fn read_locator_vector(walk: &mut Walk, node: Node<'_>) -> Option<Vector> {
     let values = walk.float_list(node)?;
     let vector: Result<[f32; 3], _> = values.try_into();
     if let Ok(vector) = vector {
@@ -419,13 +421,13 @@ fn read_locator_vector(walk: &mut SchemaWalk, node: Node<'_>) -> Option<Vector> 
     Some(Vector::WrongLength)
 }
 
-fn read_locator(walk: &mut SchemaWalk, node: Node<'_>, form: LocatorForm) -> Option<Locator> {
+fn read_locator(walk: &mut Walk, node: Node<'_>, form: LocatorForm) -> Option<Locator> {
     match (node.kind(), form) {
-        (JsonKind::Array, _) => match read_locator_vector(walk, node)? {
+        (Kind::Array, _) => match read_locator_vector(walk, node)? {
             Vector::Read(at) => Some(Locator::Position(at)),
             Vector::WrongLength => None,
         },
-        (JsonKind::Object, LocatorForm::Pre18 | LocatorForm::Modern) => {
+        (Kind::Object, LocatorForm::Pre18 | LocatorForm::Modern) => {
             let mut offset = None;
             let mut rotation = None;
             let mut ignore_inherited_scale = None;
@@ -479,7 +481,7 @@ fn read_locator(walk: &mut SchemaWalk, node: Node<'_>, form: LocatorForm) -> Opt
 }
 
 /// `poly_mesh` (every schema from 1.8.0).
-pub(crate) fn read_poly_mesh(walk: &mut SchemaWalk, node: Node<'_>) -> Option<PolyMesh> {
+pub(crate) fn read_poly_mesh(walk: &mut Walk, node: Node<'_>) -> Option<PolyMesh> {
     let mut normalized_uvs = None;
     let mut positions = None;
     let mut normals = None;
@@ -495,17 +497,11 @@ pub(crate) fn read_poly_mesh(walk: &mut SchemaWalk, node: Node<'_>) -> Option<Po
     let ok = walk.object(node, &groups, |walk, group, _, v| match group {
         0 => walk.bool(v).map(|x| normalized_uvs = Some(x)).into(),
         1 => walk
-            .list(v, SchemaWalk::floats)
+            .list(v, Walk::floats)
             .map(|x| positions = Some(x))
             .into(),
-        2 => walk
-            .list(v, SchemaWalk::floats)
-            .map(|x| normals = Some(x))
-            .into(),
-        3 => walk
-            .list(v, SchemaWalk::floats)
-            .map(|x| uvs = Some(x))
-            .into(),
+        2 => walk.list(v, Walk::floats).map(|x| normals = Some(x)).into(),
+        3 => walk.list(v, Walk::floats).map(|x| uvs = Some(x)).into(),
         _ => read_polys(walk, v).map(|x| polys = Some(x)).into(),
     });
     let polys = polys?;
@@ -518,9 +514,9 @@ pub(crate) fn read_poly_mesh(walk: &mut SchemaWalk, node: Node<'_>) -> Option<Po
     })
 }
 
-fn read_polys(walk: &mut SchemaWalk, node: Node<'_>) -> Option<Polys> {
+fn read_polys(walk: &mut Walk, node: Node<'_>) -> Option<Polys> {
     match node.kind() {
-        JsonKind::String => {
+        Kind::String => {
             let value = walk.string(node)?;
             // The valid values are regexes searched in the value.
             if !(value.contains("tri_list") || value.contains("quad_list")) {
@@ -534,14 +530,14 @@ fn read_polys(walk: &mut SchemaWalk, node: Node<'_>) -> Option<Polys> {
             }
             Some(Polys::List(value))
         }
-        JsonKind::Array => walk
+        Kind::Array => walk
             .list(node, |walk, poly| {
-                let vertices = walk.list(poly, SchemaWalk::indices)?;
+                let vertices = walk.list(poly, Walk::indices)?;
                 let n = vertices.len();
                 let (template, bound) = match n {
                     0..3 => (ARRAY_TOO_SMALL, "3"),
                     3..=4 => return Some(vertices),
-                    _ => (crate::schema_walk::ARRAY_TOO_LARGE, "4"),
+                    _ => (ARRAY_TOO_LARGE, "4"),
                 };
                 walk.error(
                     DiagnosticCode::InvalidValue {
@@ -560,7 +556,7 @@ fn read_polys(walk: &mut SchemaWalk, node: Node<'_>) -> Option<Polys> {
 }
 
 /// One `texture_meshes` element (every schema from 1.8.0).
-pub(crate) fn read_texture_mesh(walk: &mut SchemaWalk, node: Node<'_>) -> Option<TextureMesh> {
+pub(crate) fn read_texture_mesh(walk: &mut Walk, node: Node<'_>) -> Option<TextureMesh> {
     let mut m = TextureMesh::default();
     let groups = [
         Group::required("texture"),
@@ -583,11 +579,7 @@ pub(crate) fn read_texture_mesh(walk: &mut SchemaWalk, node: Node<'_>) -> Option
 
 /// `item_display_transforms`: one optional object per name of `ItemTransforms::mTypeNames`
 /// (nine names, ten with `shelf`); any other key is undeclared.
-fn read_transforms(
-    walk: &mut SchemaWalk,
-    node: Node<'_>,
-    era: Era,
-) -> Option<ItemDisplayTransforms> {
+fn read_transforms(walk: &mut Walk, node: Node<'_>, era: Era) -> Option<ItemDisplayTransforms> {
     let mut transforms = ItemDisplayTransforms::default();
     let groups = ItemDisplayTransforms::NAMES.map(Group::name);
     let groups = &groups[..if era.shelf { 10 } else { 9 }];
@@ -599,11 +591,7 @@ fn read_transforms(
     ok.then_some(transforms)
 }
 
-fn read_transform(
-    walk: &mut SchemaWalk,
-    node: Node<'_>,
-    gui: bool,
-) -> Option<ItemDisplayTransform> {
+fn read_transform(walk: &mut Walk, node: Node<'_>, gui: bool) -> Option<ItemDisplayTransform> {
     let mut t = ItemDisplayTransform::default();
     let groups = [
         Group::name("translation"),

@@ -11,7 +11,6 @@ pub mod jsoncpp;
 pub mod lossy;
 pub mod puv;
 pub mod scatter;
-pub mod schema_walk;
 pub mod shape;
 pub mod signed_zero;
 pub mod sound;
@@ -36,9 +35,6 @@ mod tests {
 
     #[test]
     fn data_types_are_comparable_and_hashable() {
-        assert_hashable::<crate::schema_walk::Pattern>();
-        assert_hashable::<crate::schema_walk::Group>();
-        assert_hashable::<crate::schema_walk::Kind>();
         assert_hashable::<crate::sound::fork::Stored>();
         assert_eq_type::<crate::texture::files::PackFiles>();
         assert_eq_type::<crate::texture::files::StackFiles>();

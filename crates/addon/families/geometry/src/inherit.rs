@@ -6,12 +6,13 @@ use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
 use crate::read::{MOBS, detached_origin};
-use crate::schema_walk::{PARENT_NOT_DEFINED, text};
+use crate::texts::PARENT_NOT_DEFINED;
 use crate::validate::missing_bone_parents;
 use crate::{FileContribution, Geometry, Inherited};
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, Phase};
 use bedrock_addon_core::document::{Contribution, Document, Notice, Rejected};
 use bedrock_addon_core::id::GeometryId;
+use bedrock_addon_core::json::node_tree::text;
 use bedrock_addon_core::pack_identity::PackPath;
 
 /// What a geometry gives the geometries that inherit from it.

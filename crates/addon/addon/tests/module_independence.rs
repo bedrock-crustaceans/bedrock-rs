@@ -291,11 +291,14 @@ fn the_lifted_scan_reads_manifests_and_paths() {
     );
 }
 
-/// The families whose shared bodies moved out of `bedrock_addon_support` into a `shared/*`
-/// crate: they depend on core and the shared crates, and on support no more.
-const ON_SHARED_CRATES: [&str; 4] = [
+/// The families whose shared bodies moved out of `bedrock_addon_support` into core or a
+/// `shared/*` crate: they depend on core and the shared crates, and on support no more.
+const ON_SHARED_CRATES: [&str; 7] = [
     "animation",
     "animation_controller",
+    "fog",
+    "geometry",
+    "render_controller",
     "spawn_groups",
     "spawn_rules",
 ];

@@ -3,13 +3,15 @@
 //!.
 
 use super::read::{V1_12_0, V1_19_30};
-use super::schema_walk::{
+use super::texts::{
     BONE_LOWER_CASED, BONE_PARENT_MISSING, BOUNDS_CLAMPED, EMBEDDED_TOO_OLD,
     NEEDS_MINECRAFT_NAMESPACE, NO_NAMESPACE_CUSTOM, NO_NAMESPACE_INTERNAL, NO_POLYS_SECTION,
-    NOT_QUADS, NOT_TRIANGLES, PARENT_IS_SELF, TRANSFORM_OUT_OF_BOUNDS, has_geometry_name, text,
+    NOT_QUADS, NOT_TRIANGLES, PARENT_IS_SELF, TRANSFORM_OUT_OF_BOUNDS,
 };
+use super::walk::has_geometry_name;
 use super::{Bone, CubeUv, Geometry, GeometryFile, ItemDisplayTransform, PolyMesh, Polys};
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase};
+use bedrock_addon_core::json::node_tree::text;
 use bedrock_addon_core::version::{FormatVersion, known};
 
 /// From this file version the `embedded` transform is read.
