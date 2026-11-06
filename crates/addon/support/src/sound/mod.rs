@@ -1,9 +1,7 @@
-//! What the sound families share: the JSON rules of the game's JSON reader (a jsoncpp variant)
-//! the three resource-pack documents are read with, the reporting while one is read, the merge
-//! of their copies across the stack, and the writing of their typed values.
+//! What the sound families share: core's [`jsoncpp::fork`](bedrock_addon_core::json::jsoncpp::fork),
+//! [`load::sound`](bedrock_addon_core::load::sound) and
+//! [`kit::sound`](bedrock_addon_core::json::kit::sound), kept at these paths for their users.
 
 pub mod fork;
-pub mod merge;
-pub mod read;
-pub mod report;
-pub mod write;
+pub use bedrock_addon_core::json::kit::sound::{read, report, write};
+pub use bedrock_addon_core::load::sound as merge;

@@ -121,7 +121,7 @@ fn word16(bytes: &[u8], at: usize, big: bool) -> Option<u32> {
 // colour with a `tRNS` chunk, so that the game counts the chunk there, as a decoder does, is
 // inferred.
 fn png(bytes: &[u8]) -> Option<ImageInfo> {
-    let header = bedrock_addon_shared_shapes::png::header(bytes)?;
+    let header = crate::png::header(bytes)?;
     let color_type = header.color_type;
     let samples = match color_type {
         0 => 1,

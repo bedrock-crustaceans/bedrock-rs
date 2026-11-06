@@ -32,6 +32,8 @@
 //!   through `to_facet_json`: no other module calls a facet-json writer, as none calls a
 //!   parser (its writers call themselves for each level of a value).
 
+#[doc(hidden)]
+pub mod build;
 mod clamp_text;
 mod coerce;
 pub(crate) use clamp_text::first_beyond_double;
@@ -39,6 +41,8 @@ mod duplicates;
 mod envelope;
 pub(crate) mod extra;
 mod finite;
+#[doc(hidden)]
+pub mod jsoncpp;
 pub mod kit;
 #[doc(hidden)]
 pub mod lossy;
@@ -48,6 +52,8 @@ mod path;
 mod prepared;
 mod read; // the only caller of facet-json's parsers
 mod scalar;
+#[doc(hidden)]
+pub mod signed_zero;
 mod slice;
 mod stack;
 mod strict;

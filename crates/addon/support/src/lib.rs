@@ -15,31 +15,3 @@ pub mod shape;
 pub mod signed_zero;
 pub mod sound;
 pub mod texture;
-
-#[cfg(test)]
-mod tests {
-    use std::fmt::Debug;
-
-    fn assert_debug<T: Debug>() {}
-    fn assert_hashable<T: Eq + std::hash::Hash>() {}
-    fn assert_eq_type<T: Eq>() {}
-    fn assert_comparable<T: Clone + PartialEq>() {}
-
-    #[test]
-    fn public_types_implement_debug() {
-        assert_debug::<crate::shape::Shape>();
-        assert_debug::<crate::shape::Member>();
-        assert_debug::<crate::fixed_path::Object>();
-        assert_debug::<crate::sound::report::Reporter<'static>>();
-    }
-
-    #[test]
-    fn data_types_are_comparable_and_hashable() {
-        assert_hashable::<crate::sound::fork::Stored>();
-        assert_eq_type::<crate::texture::files::PackFiles>();
-        assert_eq_type::<crate::texture::files::StackFiles>();
-        assert_eq_type::<crate::texture::files::Found<'static>>();
-        assert_comparable::<crate::texture::jsoncpp::Lenient>();
-        assert_comparable::<crate::texture::files::StackFiles>();
-    }
-}

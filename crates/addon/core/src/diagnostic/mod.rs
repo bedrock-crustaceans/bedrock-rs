@@ -2,6 +2,8 @@
 //! log line. Tests match on `code` variants, never on text.
 
 mod builder;
+#[doc(hidden)]
+pub mod builders;
 pub mod cereal;
 mod code;
 mod def;
@@ -10,6 +12,8 @@ mod event;
 mod facet;
 mod origin;
 pub mod testing;
+#[doc(hidden)]
+pub mod texts;
 pub mod validator;
 
 pub use code::{DiagnosticCode, NotFoundHint, VanillaText};

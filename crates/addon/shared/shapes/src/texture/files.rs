@@ -123,3 +123,17 @@ pub fn listed_files(stack: &StackCx<'_>) -> StackFiles {
         packs: packs.collect(),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    fn assert_eq_type<T: Eq>() {}
+    fn assert_comparable<T: Clone + PartialEq>() {}
+
+    #[test]
+    fn data_types_are_comparable() {
+        assert_eq_type::<super::PackFiles>();
+        assert_eq_type::<super::StackFiles>();
+        assert_eq_type::<super::Found<'static>>();
+        assert_comparable::<super::StackFiles>();
+    }
+}

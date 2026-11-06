@@ -7,10 +7,10 @@
 //! which of its known members it was read with ([`Present`]), and its writer writes those and
 //! every other member whose value is not what an absent member reads as.
 
-use bedrock_addon_core::diagnostic::JsonPath;
-use bedrock_addon_core::document::UnknownMembers;
-use bedrock_addon_core::json::kit::Written;
-use bedrock_addon_core::json::{EncodeError, Value};
+use crate::diagnostic::JsonPath;
+use crate::document::UnknownMembers;
+use crate::json::kit::Written;
+use crate::json::{EncodeError, Value};
 use facet_value::VObject;
 
 /// The known members an object was read with, left out of equality (two values with the
@@ -98,7 +98,7 @@ pub fn float(x: f32) -> Result<Value, EncodeError> {
     if x.is_infinite() {
         return Ok(Value::from(if x > 0.0 { f64::MAX } else { f64::MIN }));
     }
-    bedrock_addon_shared_animation::write::float(x)
+    crate::json::build::float(x)
 }
 
 /// `result`, with the path of its error put below the member `key`.
@@ -121,12 +121,11 @@ pub fn in_element<T>(index: usize, result: Result<T, EncodeError>) -> Result<T, 
 
 /// `error`, at its path below `at`.
 fn below(at: &JsonPath, error: EncodeError) -> EncodeError {
-    match error {
-        EncodeError::NotRepresentable { at: inner, what } => EncodeError::NotRepresentable {
-            at: at.join(&inner),
-            what,
-        },
-        other => other,
+    // Within core the enum has its one variant only.
+    let EncodeError::NotRepresentable { at: inner, what } = error;
+    EncodeError::NotRepresentable {
+        at: at.join(&inner),
+        what,
     }
 }
 
@@ -153,7 +152,7 @@ mod tests {
     use super::*;
 
     fn json(text: &str) -> Value {
-        bedrock_addon_core::json::from_str_jsonc(text).expect("JSON")
+        crate::json::from_str_jsonc(text).expect("JSON")
     }
 
     #[test]
@@ -197,7 +196,7 @@ mod tests {
     #[test]
     fn a_float_is_its_shortest_real() {
         let text = |x: f32| {
-            let text = bedrock_addon_core::json::to_json(&float(x).expect("finite")).unwrap();
+            let text = crate::json::to_json(&float(x).expect("finite")).unwrap();
             text.trim().to_owned()
         };
         assert_eq!(text(0.1), "0.1");

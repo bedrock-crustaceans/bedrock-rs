@@ -72,6 +72,10 @@ use crate::diagnostic::{
 };
 use crate::versioning::{NullHandling, Reading, Scalars, UnknownMask};
 
+#[doc(hidden)]
+pub mod fixed_path;
+#[doc(hidden)]
+pub mod sound;
 #[cfg(test)]
 mod tests;
 mod written;

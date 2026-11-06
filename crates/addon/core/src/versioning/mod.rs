@@ -20,6 +20,8 @@
 //!   against its ops.
 
 mod chain;
+#[doc(hidden)]
+pub mod chain_file;
 mod component;
 mod document;
 mod file;
@@ -30,6 +32,8 @@ mod payload;
 mod pipeline;
 mod range;
 mod reading;
+#[doc(hidden)]
+pub mod shape;
 mod single;
 #[doc(hidden)]
 pub mod testing;

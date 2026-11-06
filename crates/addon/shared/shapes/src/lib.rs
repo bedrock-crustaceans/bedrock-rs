@@ -19,6 +19,8 @@
 //!   member, and its two lists' entries [`ControllerUse`] and [`AnimateEntry`].
 //! - [`one_or_many`]: [`OneOrMany`], one value or an array of them, as written.
 //! - [`png`]: the PNG header ([`png::header`], [`png_size`]).
+//! - [`texture`]: the files of a stack as the texture rules see them ([`texture::files`]) and
+//!   the headers of the image formats the game reads ([`texture::image`]).
 //! - [`vec`](mod@vec): [`Vec3`] and [`Vec2`], a vector as an array or an object, as written.
 
 pub mod color;
@@ -30,6 +32,7 @@ pub mod menu;
 pub mod named;
 pub mod one_or_many;
 pub mod png;
+pub mod texture;
 pub mod vec;
 
 pub use color::{Channels, HexOr};

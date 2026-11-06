@@ -1,10 +1,10 @@
 //! The scalar members of a sound document as the game's reader reads them: each with its
 //! coercion and the warning when the member has another JSON type.
 
-use super::fork::{self, Stored};
 use super::report::Reporter;
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
-use bedrock_addon_core::json::Value;
+use crate::diagnostic::{DiagnosticCode, Severity};
+use crate::json::Value;
+use crate::json::jsoncpp::fork::{self, Stored};
 
 /// A float member read with `asFloat(default)`; a string, array or object reads as 0.0 with a
 /// warning.

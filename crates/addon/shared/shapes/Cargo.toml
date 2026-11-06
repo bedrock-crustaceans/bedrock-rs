@@ -1,6 +1,6 @@
 [package]
 name = "bedrock_addon_shared_shapes"
-description = "The small value shapes several bedrock_addon content families share (descriptors, menu categories, colours, one-or-many lists, vectors, true-only flags, keyframed values, the event tree, the PNG header), re-exported as bedrock_addon::shared; sans-IO"
+description = "The small value shapes several bedrock_addon content families share (descriptors, menu categories, colours, one-or-many lists, vectors, true-only flags, keyframed values, the event tree, the PNG header, the texture files and image headers), re-exported as bedrock_addon::shared; sans-IO"
 version.workspace = true
 edition.workspace = true
 license = "Apache-2.0"

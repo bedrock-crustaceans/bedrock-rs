@@ -20,7 +20,7 @@ molang = ["bedrock_addon_core/molang"]
 
 [dependencies]
 bedrock_addon_core = { path = "../core" }
-bedrock_addon_shared_animation = { path = "../shared/animation" }   # the sound writer's float (sound/write.rs)
+bedrock_addon_shared_scatter = { path = "../shared/scatter" }
 bedrock_addon_shared_shapes = { path = "../shared/shapes" }
 facet = { workspace = true }
 facet-json = { workspace = true }

@@ -1,11 +1,9 @@
 //! Reporting while a merged sound document is read: findings at the JSON path the reader is
 //! at, and the members no reader names.
 
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity,
-};
-use bedrock_addon_core::document::UnknownMembers;
-use bedrock_addon_core::json::Value;
+use crate::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity};
+use crate::document::UnknownMembers;
+use crate::json::Value;
 
 /// Collects the findings of a read, each at the path the reader stands on.
 #[derive(Debug)]
@@ -100,4 +98,13 @@ pub fn check_unknown(
         extra.insert(key.to_owned(), member.clone());
     }
     extra
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn public_types_implement_debug() {
+        fn assert_debug<T: std::fmt::Debug>() {}
+        assert_debug::<super::Reporter<'static>>();
+    }
 }

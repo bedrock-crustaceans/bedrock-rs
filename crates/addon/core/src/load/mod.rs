@@ -14,6 +14,8 @@ mod context;
 mod experiment;
 mod limits;
 mod place;
+#[doc(hidden)]
+pub mod sound;
 
 pub use app_data::AppData;
 pub use collection::ListedFile;

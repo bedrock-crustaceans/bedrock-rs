@@ -3,17 +3,15 @@
 //! file read on its own that is no JSON. Each family's loader walks its one file
 //! (`Walk::exact_files`) with [`parse_copy`] as its parse.
 
-use bedrock_addon_core::load::{LoadContext, WalkFile};
+use crate::load::{LoadContext, WalkFile};
 
-use bedrock_addon_core::diagnostic::{
+use crate::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, JsonPathSegment, Severity, VanillaText,
 };
-use bedrock_addon_core::document::{Origin, RawLayer, Rejected, unversioned};
-use bedrock_addon_core::json::{
-    EncodeError, MAX_JSON_DEPTH, Value, WriteStyle, check_depth, write_json,
-};
+use crate::document::{Origin, RawLayer, Rejected, unversioned};
+use crate::json::{EncodeError, MAX_JSON_DEPTH, Value, WriteStyle, check_depth, write_json};
 
-use crate::jsoncpp::ReadError;
+use crate::json::jsoncpp::ReadError;
 
 /// Vanilla's text for a lowest copy that is no JSON: the merge is given up.
 const BASE_UNPARSABLE: &str = "Could not parse file at the top of the stack: {}.";
@@ -39,13 +37,13 @@ pub struct SoundCopy {
 /// A [`ReadError`] for nesting past the limit, bytes that are no UTF-8, or text that is no JSON.
 pub fn read_json(bytes: &[u8]) -> Result<Value, ReadError> {
     // The BOM is blanked, not cut, so every offset is an offset into the file as written.
-    let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
+    let bytes = &*crate::json::blank_bom(bytes);
     // Depth before UTF-8, as the merge reads: a text both too deep and not UTF-8 is
     // `TooDeep` (`json::Prepared` would say `NotUtf8`).
     check_depth(bytes, MAX_JSON_DEPTH)?;
     let text = std::str::from_utf8(bytes)?;
-    Ok(bedrock_addon_core::json::from_str_jsonc::<Value>(
-        &bedrock_addon_core::json::last_wins(text),
+    Ok(crate::json::from_str_jsonc::<Value>(
+        &crate::json::last_wins(text),
     )?)
 }
 
@@ -150,7 +148,7 @@ pub fn parse_copy(file: &WalkFile, cx: &LoadContext) -> SoundCopy {
     // The copy is read with the numbers no double holds clamped, so neither its
     // layer nor the merged document keeps an infinity; the warning names this pack's
     // file.
-    let finite = bedrock_addon_core::document::FiniteText::of(&file.bytes);
+    let finite = crate::document::FiniteText::of(&file.bytes);
     let json = read_json(finite.bytes());
     let mut found = Diagnostics::default();
     finite.settle(&mut found, Some(&origin));
@@ -159,5 +157,76 @@ pub fn parse_copy(file: &WalkFile, cx: &LoadContext) -> SoundCopy {
         json,
         found,
         molang_version: cx.molang_version.0,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::diagnostic::{Location, Phase};
+    use crate::pack_identity::{PackPath, PackRef, PackSide};
+
+    fn long(severity: Severity, phase: Phase, location: Location) -> Diagnostic {
+        Diagnostic::new(
+            DiagnosticCode::InvalidValue { text: None },
+            severity,
+            phase,
+            location,
+        )
+    }
+
+    fn here(at: JsonPath) -> Location {
+        Location::new(None, None, at, None)
+    }
+
+    fn path() -> PackPath {
+        PackPath::from_static("font/glyph_E0.json")
+    }
+
+    fn in_file(at: JsonPath) -> Location {
+        Location::new(Some(pack()), Some(path()), at, None)
+    }
+
+    fn pack() -> PackRef {
+        PackRef::app_data()
+    }
+
+    fn unversioned_origin(pack: PackRef, side: PackSide) -> Origin {
+        Origin::new(pack, side, path(), None, Vec::new())
+    }
+
+    /// `located` gives each finding the pack and file and moves it into the list, by
+    /// push: the place of a move the findings held is not carried over.
+    #[test]
+    fn sound_located_pushes_without_the_places() {
+        let mut found = Diagnostics::default();
+        found.moved(JsonPath::of_keys(["old"]), JsonPath::of_keys(["new"]));
+        found.push(long(
+            Severity::Warning,
+            Phase::Upgrade,
+            here(JsonPath::of_keys(["new"])),
+        ));
+        found.name_as_the_file_has_it();
+        assert_eq!(
+            found.place_of(&JsonPath::of_keys(["new"])),
+            JsonPath::of_keys(["old"])
+        );
+        let origin = unversioned_origin(pack(), PackSide::Resource);
+        let mut into = Diagnostics::default();
+        located(found, &origin, &mut into);
+        let told: Vec<_> = into.iter().cloned().collect();
+        assert_eq!(
+            told,
+            [long(
+                Severity::Warning,
+                Phase::Upgrade,
+                in_file(JsonPath::of_keys(["old"]))
+            )]
+        );
+        assert_eq!(
+            into.place_of(&JsonPath::of_keys(["new"])),
+            JsonPath::of_keys(["new"]),
+            "the place is not carried over"
+        );
     }
 }

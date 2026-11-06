@@ -19,25 +19,9 @@ pub fn refused(what: Unrepresentable) -> EncodeError {
     }
 }
 
-/// An `f32` in the shortest decimal form that reads back as the same `f32`.
-///
-/// # Errors
-///
-/// `EncodeError::NotRepresentable` when `x` is NaN or infinite.
-pub fn float(x: f32) -> Result<Value, EncodeError> {
-    if x.is_nan() {
-        return Err(refused(Unrepresentable::NaN));
-    }
-    if x.is_infinite() {
-        return Err(refused(if x > 0.0 {
-            Unrepresentable::Infinity
-        } else {
-            Unrepresentable::NegativeInfinity
-        }));
-    }
-    let shortest = x.to_string().parse::<f64>().unwrap_or(f64::from(x));
-    Ok(Value::from(shortest))
-}
+/// An `f32` in the shortest decimal form that reads back as the same `f32`: core's
+/// [`build::float`](bedrock_addon_core::json::build::float), which the sound writer shares.
+pub use bedrock_addon_core::json::build::float;
 
 /// A Molang value as a JSON value (a constant is a number, anything else is its source).
 ///

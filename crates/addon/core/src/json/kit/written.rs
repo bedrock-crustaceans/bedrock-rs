@@ -10,7 +10,7 @@ use super::Value;
 /// types, splashes, credits; skin's is its own): those that keep the root as written where
 /// their fields cannot say it (an element the game skips, a value of a type it ignores) and
 /// write it back while the fields still read the same. The protocol that fills and writes the
-/// slot is `bedrock_addon_support::fixed_path::Authored` (`from_value` keeps the root,
+/// slot is [`fixed_path::Authored`](super::fixed_path::Authored) (`from_value` keeps the root,
 /// `to_value` writes it while a re-read of it equals the value); this is the type of the slot
 /// it fills. It dereferences to the `Option`, so `Authored::written_mut` keeps its signature:
 /// `&mut self.written` is the `&mut Option<Value>` it returns.
