@@ -31,6 +31,7 @@ use super::{ListDepth, LoadContext, LoadOptions};
 use crate::diagnostic::{Diagnostic, VanillaText};
 use crate::document::{Content, Definition, Files, Merge, Merged, Registry};
 use crate::id::{Id, Kind};
+use crate::manifest::Manifest;
 use crate::pack_identity::{PackOrigin, PackPath, PackRef, PackSide};
 use crate::version::{ENGINE_VERSION, SemVersion};
 
@@ -581,6 +582,18 @@ pub struct StackPack {
     /// The pack's own files the active subpack shadows
     /// ([`shadowed_files`](Self::shadowed_files)).
     shadowed: Listing,
+    /// The manifest the pack was opened with ([`manifest`](Self::manifest)).
+    manifest: Option<OpenedManifest>,
+}
+
+/// The manifest a stack pack was opened with; shared, and shown as the pack's identity only.
+#[derive(Clone)]
+struct OpenedManifest(Arc<Manifest>);
+
+impl fmt::Debug for OpenedManifest {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "manifest of {:?}", self.0.identity())
+    }
 }
 
 /// One file of a stack pack as the stack reads it.
@@ -613,6 +626,7 @@ impl StackPack {
             capabilities: Vec::new(),
             files: Listing::default(),
             shadowed: Listing::default(),
+            manifest: None,
         }
     }
 
@@ -682,6 +696,22 @@ impl StackPack {
     pub fn with_description(mut self, description: Option<&str>) -> Self {
         self.description = description.map(Box::from);
         self
+    }
+
+    /// This entry with the manifest the pack was opened with (built by `bedrock_addon`'s
+    /// loaders).
+    #[must_use]
+    pub fn with_manifest(mut self, manifest: Arc<Manifest>) -> Self {
+        self.manifest = Some(OpenedManifest(manifest));
+        self
+    }
+
+    /// The manifest the pack was opened with, as [`Manifest::parse`] read it when the pack was
+    /// opened (with the host's capabilities): a `combine` that needs more of the manifest than
+    /// the entry's own fields reads it here instead of parsing `manifest.json` again. `None`
+    /// for an entry built by hand.
+    pub fn manifest(&self) -> Option<&Manifest> {
+        self.manifest.as_ref().map(|manifest| &*manifest.0)
     }
 
     /// This entry with the names of the manifest's `capabilities` (built by

@@ -325,7 +325,8 @@ fn stack_pack(index: usize, instance: &PackInstance, options: &LoadOptions) -> S
     }
     let entry = StackPack::new(pack, instance.origin, context)
         .with_description(facts.description.as_deref())
-        .with_capabilities(facts.capabilities.iter().map(AsRef::as_ref));
+        .with_capabilities(facts.capabilities.iter().map(AsRef::as_ref))
+        .with_manifest(instance.pack.shared_manifest());
     listed(entry, instance)
 }
 

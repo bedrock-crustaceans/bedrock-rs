@@ -1,8 +1,8 @@
 //! Loading the bundles of a stack: the walk of each pack's `manifest.json` and
 //! `scripts/**/*.js`, one bundle per pack.
 //!
-//! This is where the three parts of scripting meet. Each pack's manifest is read once, by
-//! the script module's own reader (`ScriptModule`, vanilla's stage 1); one discovery serves
+//! This is where the three parts of scripting meet. Each pack's manifest is the one the pack
+//! was opened with, and the script module's stage 1 (`ScriptModule`) reads it; one discovery serves
 //! the stack, the highest pack first (stages 2 and 3: the entry, the gates on each
 //! dependency, the versions the catalog serves); and the plugin it makes of a pack is what
 //! the pack's files are scanned against. A rule the module and the bundle both state (one
@@ -21,6 +21,7 @@ use bedrock_addon_core::pack_identity::{PackPath, PackSide, PackType};
 
 use super::scan::{Member, Module, Parts, build, is_js, member, missing_main};
 use super::{EntryRef, ScanOptions, ScriptBundle, ScriptPath, ScriptRoot};
+use crate::module::Stage1;
 use crate::{
     ModuleCatalog, ScriptContext, ScriptDiscovery, ScriptFiles, ScriptModule, ScriptRuntime,
     ScriptTarget,
@@ -61,19 +62,20 @@ pub struct Walked(File);
 /// What a file of the walk is.
 #[derive(Debug)]
 enum File {
-    /// A pack's manifest: its script side, as stage 1 read it.
+    /// A pack's manifest, for stage 1 to read in `combine`, where the pack's opened manifest
+    /// is in view.
     Manifest {
         /// The pack's place in the stack.
         pack: Option<usize>,
         /// The stack's side.
         side: PackSide,
-        /// The pack's script module; `None` for a manifest without one, and for one stage 1
-        /// refuses.
-        module: Option<Box<ScriptModule>>,
-        /// What stage 1 adds to the manifest reader's findings.
-        findings: Diagnostics,
-        /// Stage 1 refuses the manifest: vanilla does not load the pack at all.
-        refused: bool,
+        /// The file's path in its pack.
+        path: PackPath,
+        /// The context the file was walked with.
+        cx: Box<LoadContext>,
+        /// The file's bytes, read again only for a path that is not the root `manifest.json`
+        /// or an entry built by hand, which has no opened manifest.
+        bytes: bytes::Bytes,
     },
     /// A script file.
     Member {
@@ -84,8 +86,9 @@ enum File {
     },
 }
 
-/// A registry every vanilla capability passes: the manifest was already accepted when its pack
-/// was opened, with the host's own registry.
+/// A registry every vanilla capability passes, for the manifest of a stack entry built by hand
+/// (which has no opened manifest): a pack's manifest is accepted when the pack is opened, with
+/// the host's own registry.
 fn accepting() -> CapabilityRegistry {
     let mut registry = CapabilityRegistry::empty();
     for name in [
@@ -111,17 +114,31 @@ fn parse_walk_file(file: &WalkFile, cx: &LoadContext) -> Walked {
             member: Box::new(member(name, &file.path, &file.bytes)),
         });
     }
-    // The pack's own findings about its manifest were told when it was opened: of the script
-    // side only what stage 1 adds is kept.
-    let stage1 = ScriptModule::read(&file.path, &file.bytes, cx, &accepting());
     Walked(File::Manifest {
         pack,
         side: file.side,
-        module: stage1.module.map(Box::new),
-        findings: stage1.added,
-        refused: stage1.refused,
+        path: file.path.clone(),
+        cx: Box::new(cx.clone()),
+        bytes: file.bytes.clone(),
     })
 }
+
+/// Stage 1 on the manifest of `entry` at `path`, walked with `cx`. The pack's own findings
+/// about its manifest were told when it was opened: of the script side only what stage 1 adds
+/// is kept. The opened manifest is the pack's root `manifest.json`; a file of another path (a
+/// `manifest.json` of the active subpack, standing in by its key) and the manifest of an entry
+/// built by hand (which has no opened manifest) are read from the walked bytes.
+fn stage1(entry: &StackPack, path: &PackPath, cx: &LoadContext, bytes: &[u8]) -> Stage1 {
+    match entry.manifest() {
+        Some(manifest) if path.as_str() == ROOT_MANIFEST => {
+            ScriptModule::stage1(manifest, path, cx)
+        }
+        _ => ScriptModule::read(path, bytes, cx, &accepting()),
+    }
+}
+
+/// The path of the manifest a pack is opened with.
+const ROOT_MANIFEST: &str = "manifest.json";
 
 /// What the walk read of one pack.
 #[derive(Default)]
@@ -160,24 +177,28 @@ fn members_of(entry: &StackPack, read: Vec<Member>) -> (Vec<Member>, Vec<PackPat
     (members, others)
 }
 
-/// What the walk read, by the pack's place in a stack of `count` packs.
-fn by_pack(parsed: Vec<Walked>, count: usize) -> Vec<OfPack> {
+/// What the walk read, by the pack's place in the stack of `entries`, with stage 1 read of
+/// each manifest.
+fn by_pack(parsed: Vec<Walked>, entries: &[StackPack]) -> Vec<OfPack> {
     let mut packs: Vec<OfPack> = Vec::new();
-    packs.resize_with(count, OfPack::default);
+    packs.resize_with(entries.len(), OfPack::default);
     for Walked(file) in parsed {
         match file {
             File::Manifest {
                 pack,
                 side,
-                module,
-                findings,
-                refused,
+                path,
+                cx,
+                bytes,
             } => {
-                if let Some(of_pack) = pack.and_then(|index| packs.get_mut(index)) {
+                if let Some((of_pack, entry)) =
+                    pack.and_then(|index| Some((packs.get_mut(index)?, entries.get(index)?)))
+                {
+                    let read = stage1(entry, &path, &cx, &bytes);
                     of_pack.side = Some(side);
-                    of_pack.module = module.map(|module| *module);
-                    of_pack.findings = findings;
-                    of_pack.refused = refused;
+                    of_pack.module = read.module;
+                    of_pack.findings = read.added;
+                    of_pack.refused = read.refused;
                 }
             }
             File::Member { pack, member } => {
@@ -193,7 +214,7 @@ fn by_pack(parsed: Vec<Walked>, count: usize) -> Vec<OfPack> {
 /// One bundle per pack that has a script module or a file below `scripts/`, the highest pack
 /// first.
 fn combine(parsed: Vec<Walked>, stack: &StackCx<'_>) -> Vec<ScriptBundle> {
-    let packs = by_pack(parsed, stack.packs.len());
+    let packs = by_pack(parsed, stack.packs);
     // One discovery for the stack, the highest pack first: a `script` module is a behaviour
     // pack's and a `client_script` module a resource pack's, so a stack is one target and
     // its modules are discovered together.

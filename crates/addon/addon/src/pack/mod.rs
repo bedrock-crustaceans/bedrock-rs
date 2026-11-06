@@ -53,7 +53,7 @@ pub struct Pack {
 /// The shared part of a [`Pack`]: the manifest, what composition reads of it, the file index
 /// with the resident bytes, the report and the location. Built by the pack loader (`open.rs`).
 pub(crate) struct PackInner {
-    manifest: Manifest,
+    manifest: Arc<Manifest>,
     facts: PackFacts,
     files: PackFiles,
     report: PackReport,
@@ -63,11 +63,12 @@ pub(crate) struct PackInner {
 impl PackInner {
     /// A pack from its parts; what composition reads is taken from `manifest` once, here.
     pub(crate) fn new(
-        manifest: Manifest,
+        manifest: impl Into<Arc<Manifest>>,
         files: PackFiles,
         report: PackReport,
         location: Place,
     ) -> Self {
+        let manifest = manifest.into();
         Self {
             facts: PackFacts::of(&manifest),
             manifest,
@@ -270,6 +271,11 @@ impl Pack {
     /// The parsed manifest, upgraded to the comprehensive (format 3) model.
     pub fn manifest(&self) -> &Manifest {
         &self.inner.manifest
+    }
+
+    /// The parsed manifest, shared with whoever else holds it (a stack's entry of the pack).
+    pub(crate) fn shared_manifest(&self) -> Arc<Manifest> {
+        Arc::clone(&self.inner.manifest)
     }
 
     /// `(uuid, version)` of the header, the identity a stack refers to.

@@ -309,6 +309,11 @@ fn a_base_game_pack_imports_the_bindings_a_world_s_pack_may_not() {
 
 /// A world with one behaviour pack at root 1 that has a subpack `sp`, selected by the world.
 fn world_with_subpack() -> (Responder, WorldPacks) {
+    world_with_subpack_and(&[])
+}
+
+/// [`world_with_subpack`] with `extra` files (path below root 1, bytes) in the pack too.
+fn world_with_subpack_and(extra: &[(&str, &[u8])]) -> (Responder, WorldPacks) {
     let subpacks = r#",
     "dependencies": [{ "module_name": "@minecraft/server", "version": "2.0.0" }],
     "subpacks": [{ "folder_name": "sp", "name": "sp", "memory_tier": 0 }]"#;
@@ -341,6 +346,9 @@ fn world_with_subpack() -> (Responder, WorldPacks) {
             "bp/subpacks/other/scripts/never.js",
             &b"export {};\n"[..],
         );
+    for (path, bytes) in extra {
+        responder.file(1, path, bytes.to_vec());
+    }
     let entry = format!(
         r#"[{{"pack_id": "{}", "version": [1, 0, 0], "subpack": "sp"}}]"#,
         uuid::Uuid::from_u128(1)
@@ -352,7 +360,12 @@ fn world_with_subpack() -> (Responder, WorldPacks) {
 /// The stacks of the world, the collections `collections` loaded by a `StackLoader` in
 /// `order`, every file of the packs kept resident.
 fn loaded(order: Order, collections: CollectionSet) -> StackSet {
-    let (mut responder, world) = world_with_subpack();
+    loaded_with(order, collections, &[])
+}
+
+/// [`loaded`] with `extra` files in the pack.
+fn loaded_with(order: Order, collections: CollectionSet, extra: &[(&str, &[u8])]) -> StackSet {
+    let (mut responder, world) = world_with_subpack_and(extra);
     let mut repository = RepositoryLoader::new(
         vec![Source::Directory {
             root: RootId(1),
@@ -428,6 +441,50 @@ fn a_stack_loader_gives_the_bundles_of_the_lazy_accessor_in_every_order() {
         );
         assert_eq!(set.resource.scripts().len(), 0);
     }
+}
+
+/// A `manifest.json` of the active subpack stands in for the pack's by its key, as every
+/// subpack file does, and stage 1 reads the file the walk handed over: the subpack's bytes,
+/// placed at the subpack's path. (Whether the game reads a subpack's manifest at all is an
+/// open question; this pins what the loader did before it read the opened manifest.)
+#[test]
+fn a_subpack_s_manifest_stands_in_for_the_pack_s_and_stage_1_reads_its_bytes() {
+    let sub_manifest = manifest(
+        "subpacked",
+        1,
+        &[("data", None), ("script", Some("scripts/main.js"))],
+        r#",
+    "dependencies": [{ "module_name": "@minecraft/server", "version": "2.0.0", "optional": true }]"#,
+    );
+    let set = loaded_with(
+        Order::Issue,
+        CollectionSet::only([Collection::Scripts]),
+        &[("bp/subpacks/sp/manifest.json", &sub_manifest)],
+    );
+    let bundles = set.behavior.scripts();
+    assert_eq!(bundles.len(), 1);
+    let found: Vec<(&str, Option<&str>, String)> = bundles[0]
+        .findings()
+        .filter(|f| f.code.name() == "IgnoredMember")
+        .map(|f| {
+            (
+                f.code.name(),
+                f.location
+                    .path
+                    .as_ref()
+                    .map(bedrock_addon::storage::PackPath::as_str),
+                f.location.json_path.to_string(),
+            )
+        })
+        .collect();
+    assert_eq!(
+        found,
+        [(
+            "IgnoredMember",
+            Some("subpacks/sp/manifest.json"),
+            "dependencies/0/optional".to_owned()
+        )]
+    );
 }
 
 #[test]
@@ -1076,4 +1133,95 @@ fn a_config_folder_is_held_against_a_script_module_whose_plugin_does_not_start()
     .expect("a behaviour pack");
     assert_eq!(plain.scripts().len(), 1);
     assert_eq!(plain.scripts()[0].module, None);
+}
+
+// ---- stage 1 reads the manifest the pack was opened with ----
+
+/// The bundle findings of one behaviour pack whose manifest is `manifest`, opened with the
+/// capabilities `capabilities` grants, and whether its plugin starts.
+fn told_of(
+    manifest: Vec<u8>,
+    capabilities: bedrock_addon::manifest::CapabilityRegistry,
+) -> (Vec<Told>, bool) {
+    let files = files(manifest, &[("scripts/main.js", b"")])
+        .into_iter()
+        .map(|(path, bytes)| {
+            (
+                bedrock_addon::storage::PackPath::new(&path).expect("a pack path"),
+                bytes,
+            )
+        });
+    let options = OpenOptions {
+        origin: PackOrigin::User,
+        capabilities,
+        ..OpenOptions::default()
+    };
+    let pack = bedrock_addon::pack::Pack::from_files(files, &options)
+        .unwrap_or_else(|error| panic!("{error}"));
+    let stack =
+        PackStack::<Behavior>::of([pack], LoadOptions::default()).expect("a behaviour pack");
+    let bundles = stack.scripts();
+    assert_eq!(bundles.len(), 1);
+    (told(&bundles[0]), bundles[0].graph.is_some())
+}
+
+#[test]
+fn stage_1_places_a_legacy_finding_in_the_file_past_a_dropped_element() {
+    let dependencies = r#"{ "module_name": "@minecraft/server", "uuid": "b26a4d4c-afdf-4690-88f8-931846312678", "version": "2.0.0" },
+        { "module_name": "@minecraft/server", "version": "2.0.0", "optional": null },
+        { "module_name": "@demo/unknown", "version": "1.0.0" }"#;
+    let told = told_of(
+        manifest_of("dropped", 40, &script_module(41, MAIN_JS), dependencies),
+        bedrock_addon::manifest::CapabilityRegistry::default(),
+    );
+    // The dropped first element still counts: the `optional` and the unknown module are
+    // told at the file's second and third elements.
+    assert_eq!(
+        told,
+        (
+            vec![
+                finding("IgnoredMember", Severity::Info, "dependencies/1/optional"),
+                finding("UnresolvedReference", Severity::Error, "dependencies/2"),
+            ],
+            false
+        )
+    );
+}
+
+#[test]
+fn stage_1_places_a_relaxed_version_in_the_file_past_a_pack_dependency() {
+    let manifest = format!(
+        r#"{{
+    "format_version": 3,
+    "header": {{ "name": "relaxed", "description": "", "uuid": "{}", "version": "1.0.0",
+        "min_engine_version": "1.26.0" }},
+    "modules": [{{ "type": "script", "uuid": "{}", "version": "1.0.0",
+        "entry": "scripts/main.js" }}],
+    "capabilities": ["script_eval"],
+    "dependencies": [
+        {{ "uuid": "33333333-3333-3333-3333-333333333333", "version": "1.0.0" }},
+        {{ "module_name": "@minecraft/server", "version": "2.0" }}
+    ]
+}}"#,
+        uuid::Uuid::from_u128(50),
+        uuid::Uuid::from_u128(51),
+    )
+    .into_bytes();
+    // A host that grants no capability: the pack's own findings say so when it is opened,
+    // and stage 1 adds nothing about it.
+    let told = told_of(
+        manifest,
+        bedrock_addon::manifest::CapabilityRegistry::empty(),
+    );
+    assert_eq!(
+        told,
+        (
+            vec![finding(
+                "FieldSinceEngine",
+                Severity::Info,
+                "dependencies/1/version"
+            )],
+            true
+        )
+    );
 }

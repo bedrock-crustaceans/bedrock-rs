@@ -449,7 +449,7 @@ impl Pack {
         let mut report = inner.report.clone();
         report.diagnostics.extend(findings);
         Pack::from_inner(PackInner::new(
-            inner.manifest.clone(),
+            std::sync::Arc::clone(&inner.manifest),
             files,
             report,
             inner.location.clone(),
@@ -469,7 +469,7 @@ impl Pack {
             }
         }
         Pack::from_inner(PackInner::new(
-            inner.manifest.clone(),
+            std::sync::Arc::clone(&inner.manifest),
             files,
             inner.report.clone(),
             inner.location.clone(),
@@ -498,7 +498,7 @@ impl Pack {
             report.diagnostics.extend(findings);
         }
         Pack::from_inner(PackInner::new(
-            inner.manifest.clone(),
+            std::sync::Arc::clone(&inner.manifest),
             files,
             report,
             inner.location.clone(),
