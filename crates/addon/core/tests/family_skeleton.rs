@@ -51,7 +51,7 @@ mod by_macro {
     bedrock_addon_core::version_chain! {
         family = GlintChain;
         #[derive(Clone, Debug, PartialEq)]
-        pub enum Any {
+        pub enum History {
             V1_0_0(Glint),
         }
         molang = none;
@@ -64,7 +64,7 @@ mod by_macro {
         type Latest = Glint;
         type Beta = NoBeta<kind::Block>;
         type Component = NoComponents;
-        type Any = Any;
+        type History = History;
     }
 }
 
@@ -112,7 +112,7 @@ mod raw_below_2 {
 
     bedrock_addon_core::version_chain! {
         family = RawGlintChain;
-        pub enum Any {
+        pub enum History {
             V1_0_0(Glint),
         }
     }
@@ -128,7 +128,7 @@ mod raw_below_2 {
         type Latest = Glint;
         type Beta = NoBeta<kind::Block>;
         type Component = NoComponents;
-        type Any = Any;
+        type History = History;
     }
 }
 
@@ -147,7 +147,7 @@ fn write_envelope_puts_the_version_first_and_the_payload_under_the_family_key() 
     assert_eq!(
         text(&written),
         document_json::<by_macro::GlintChain>(v, &payload).unwrap(),
-        "the envelope the generated `Any::to_json` writes"
+        "the envelope the generated `History::to_json` writes"
     );
     let compact: String = text(&written).split_whitespace().collect();
     assert_eq!(
@@ -237,7 +237,7 @@ mod single {
         type Latest = Glint;
         type Beta = NoBeta<kind::Block>;
         type Component = NoComponents;
-        type Any = Single<Self>;
+        type History = Single<Self>;
 
         /// The closing line of a failed file, once.
         fn close(
@@ -278,7 +278,7 @@ fn single_has_one_version_and_no_beta() {
     use bedrock_addon_core::versioning::{Single, VersionChain};
     assert_eq!(
         <Single<single::GlintFamily> as VersionChain<single::GlintFamily>>::VERSIONS,
-        <by_macro::Any as VersionChain<by_macro::GlintChain>>::VERSIONS
+        <by_macro::History as VersionChain<by_macro::GlintChain>>::VERSIONS
     );
     const { assert!(!<Single<single::GlintFamily> as VersionChain<single::GlintFamily>>::HAS_BETA) };
 }
@@ -416,7 +416,7 @@ impl Family for EmberFamily {
     type Latest = Ember;
     type Beta = NoBeta<kind::Block>;
     type Component = NoComponents;
-    type Any = bedrock_addon_core::versioning::Single<Self>;
+    type History = bedrock_addon_core::versioning::Single<Self>;
 }
 
 impl JsonDocument for Ember {
@@ -665,7 +665,7 @@ impl Family for CinderFamily {
     type Latest = Cinder;
     type Beta = NoBeta<kind::Block>;
     type Component = NoComponents;
-    type Any = bedrock_addon_core::versioning::Single<Self>;
+    type History = bedrock_addon_core::versioning::Single<Self>;
 }
 
 impl JsonDocument for Cinder {
@@ -1186,7 +1186,7 @@ impl Family for FlareFamily {
     type Latest = Flare;
     type Beta = FlareBeta;
     type Component = NoComponents;
-    type Any = FlareAny;
+    type History = FlareAny;
 
     /// Records each close and whether the file failed, so a test sees how it was closed.
     fn close(
@@ -1587,7 +1587,7 @@ mod beam {
 
     bedrock_addon_core::version_chain! {
         family = ByMacro;
-        pub enum Any {
+        pub enum History {
             V1_0_0(Beam),
         }
     }
@@ -1603,12 +1603,12 @@ mod beam {
                 type Latest = Beam;
                 type Beta = NoBeta<kind::Block>;
                 type Component = NoComponents;
-                type Any = $any;
+                type History = $any;
             }
         };
     }
 
-    family!(ByMacro, Any);
+    family!(ByMacro, History);
     family!(OnSingle, bedrock_addon_core::versioning::Single<Self>);
 }
 

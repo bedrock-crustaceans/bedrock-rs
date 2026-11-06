@@ -108,18 +108,18 @@ fn parse_as_written_then_upgrade_is_the_load() {
     use bedrock_addon_core::load::LoadContext;
     use bedrock_addon_core::pack_identity::PackPath;
     use bedrock_addon_family_crafting_catalog::CraftingCatalog;
-    use bedrock_addon_family_crafting_catalog::history::CatalogAny;
+    use bedrock_addon_family_crafting_catalog::history::CatalogHistory;
     let path = PackPath::from_static(PATH);
     let cx = LoadContext::detached();
     for (version, older) in [("1.21.60", true), ("1.26.50", false)] {
         let text = fixture("cat01_all_categories.json").replace("1.21.60", version);
         let written = CraftingCatalog::parse_as_written(&path, text.as_bytes(), &cx).unwrap();
         assert_eq!(
-            matches!(written.value(), CatalogAny::V1_21_60(_)),
+            matches!(written.value(), CatalogHistory::V1_21_60(_)),
             older,
             "{version}"
         );
-        let upgraded = CatalogAny::upgrade(written, &cx).unwrap();
+        let upgraded = CatalogHistory::upgrade(written, &cx).unwrap();
         assert_eq!(upgraded.value(), loads(&text).value(), "{version}");
     }
 }

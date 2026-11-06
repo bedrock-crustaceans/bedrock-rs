@@ -160,7 +160,7 @@ impl Family for PoiTypeFamily {
     type Latest = PoiType;
     type Beta = NoBeta<kind::PoiType>;
     type Component = NoComponents;
-    type Any = Single<Self>;
+    type History = Single<Self>;
 
     fn validate(v: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {
         if let Loaded::Stable(value) = v {
@@ -226,7 +226,7 @@ impl Family for PoiTagFamily {
     type Latest = PoiTag;
     type Beta = NoBeta<kind::PoiTag>;
     type Component = NoComponents;
-    type Any = Single<Self>;
+    type History = Single<Self>;
 
     fn validate(v: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {
         if let Loaded::Stable(value) = v {
@@ -390,7 +390,7 @@ fn as_written<F: Family>(
     path: &PackPath,
     bytes: &[u8],
     cx: &LoadContext,
-) -> Result<Document<F::Any>, Rejected> {
+) -> Result<Document<F::History>, Rejected> {
     let origin = Origin::file(PackRef::app_data(), PackSide::Behavior, path.clone());
     if !enabled(cx) {
         return Err(unread(origin, gate_closed()));
@@ -412,7 +412,7 @@ fn as_written<F: Family>(
 /// `history::upgrade_type`/`upgrade_tag` of family `F`: rebuilds the parse stage from the
 /// document and finishes it, gated as the whole load is.
 pub(crate) fn upgrade<F: Family>(
-    document: Document<F::Any>,
+    document: Document<F::History>,
     cx: &LoadContext,
 ) -> Result<Document<F::Latest>, Rejected> {
     if !enabled(cx) {

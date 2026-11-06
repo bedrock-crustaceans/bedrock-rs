@@ -89,7 +89,7 @@ impl Family for FeatureRuleFamily {
     type Latest = FeatureRule;
     type Beta = NoBeta<kind::FeatureRule>;
     type Component = NoComponents;
-    type Any = Single<Self>;
+    type History = Single<Self>;
 
     fn validate(v: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {
         if let Loaded::Stable(rule) = v {

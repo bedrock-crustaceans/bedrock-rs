@@ -2,7 +2,7 @@
 
 use bedrock_addon::diagnostic::Severity;
 use bedrock_addon::document::JsonDocument as _;
-use bedrock_addon::families::fog::history::{self, Any, v1_16_100};
+use bedrock_addon::families::fog::history::{self, FogHistory, v1_16_100};
 use bedrock_addon::families::fog::{ColorNorm, DistanceType, FogColor, FogSettings, Keyframed};
 use bedrock_addon::storage::PackPath;
 
@@ -12,7 +12,7 @@ use super::support::{
     refused,
 };
 
-fn as_written(text: &str) -> bedrock_addon::document::Document<Any> {
+fn as_written(text: &str) -> bedrock_addon::document::Document<FogHistory> {
     loaded(FogSettings::parse_as_written(
         &PackPath::from_static("fogs/x.json"),
         text.as_bytes(),
@@ -25,7 +25,7 @@ fn u01_identity_1_16_100() {
     let text = fixture(FAMILY, "default_fog_setting.json");
     let written = as_written(&text);
     assert_eq!(written.parsed_version(), V1_16_100);
-    let Any::V1_16_100(old) = written.value() else {
+    let FogHistory::V1_16_100(old) = written.value() else {
         panic!("{:?}", written.value());
     };
     assert_eq!(old.format_version, "1.16.100");
@@ -75,7 +75,10 @@ fn payload_of(text: &str) -> bedrock_addon::json::Value {
 fn identity_of_a_vanilla_1_16_100_file(name: &str, text: &str) {
     let written = as_written(text);
     assert_eq!(written.parsed_version(), V1_16_100, "{name}");
-    assert!(matches!(written.value(), Any::V1_16_100(_)), "{name}");
+    assert!(
+        matches!(written.value(), FogHistory::V1_16_100(_)),
+        "{name}"
+    );
     // The document in its own shape reads back as the same value.
     let own = written.to_json().unwrap();
     assert_eq!(as_written(&own).value(), written.value(), "{name}");
@@ -485,7 +488,7 @@ fn u08_negative_fog_end_both_eras() {
 /// Settings upgraded from an older file may break a rule only the 1.26.20 parser has. Written
 /// at 1.26.20 the game and this loader would refuse them, so the writer writes them in the
 /// older schema, where they read back as themselves; the document in its own shape
-/// (`history::Any`) writes too.
+/// (`history::FogHistory`) writes too.
 #[test]
 fn settings_the_newest_parser_refuses_are_refused_in_the_older_schema_too() {
     // The rules V15 and V17–V20 are the typed nodes' own in every era: a file

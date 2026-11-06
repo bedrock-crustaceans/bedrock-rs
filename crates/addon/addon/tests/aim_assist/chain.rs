@@ -4,7 +4,7 @@
 use bedrock_addon::document::{Content, JsonDocument};
 use bedrock_addon::families::aim_assist::AimAssistPreset;
 use bedrock_addon::families::aim_assist::history::{
-    self, Any, CategoriesAny, CategoriesFamily, PresetFamily,
+    self, CategoriesFamily, CategoriesHistory, PresetFamily, PresetHistory,
 };
 use bedrock_addon::json::Value;
 use bedrock_addon::load::LoadContext;
@@ -63,7 +63,7 @@ fn selects<F: Family>(version: &str) -> Selection {
 
 #[test]
 fn the_preset_chain_is_1_21_50_then_1_21_120() {
-    let versions = <Any as VersionChain<PresetFamily>>::VERSIONS;
+    let versions = <PresetHistory as VersionChain<PresetFamily>>::VERSIONS;
     assert_eq!(
         versions,
         [
@@ -108,12 +108,12 @@ fn the_step_moves_the_exclusion_list_into_blocks_and_copies_it_to_entities() {
 
 #[test]
 fn the_chains_are_the_plans() {
-    const HAS_BETA: bool = <Any as VersionChain<PresetFamily>>::HAS_BETA;
+    const HAS_BETA: bool = <PresetHistory as VersionChain<PresetFamily>>::HAS_BETA;
 
     check_chain::<PresetFamily>().expect("presets");
     check_chain::<CategoriesFamily>().expect("categories");
     assert_eq!(
-        <CategoriesAny as VersionChain<CategoriesFamily>>::VERSIONS,
+        <CategoriesHistory as VersionChain<CategoriesFamily>>::VERSIONS,
         [FormatVersion::new(1, 21, 50)]
     );
     assert_eq!(PresetFamily::PAYLOAD_KEY, "minecraft:aim_assist_preset");
@@ -188,7 +188,7 @@ fn the_history_path_writes_as_read_and_upgrades_to_the_same_preset() {
     let cx = LoadContext::detached();
     let written = AimAssistPreset::parse_as_written(&path, text.as_bytes(), &cx).unwrap();
     assert_eq!(written.version().parsed_as, FormatVersion::new(1, 21, 50));
-    let Any::V1_21_50(old) = written.value() else {
+    let PresetHistory::V1_21_50(old) = written.value() else {
         panic!("v1_21_50")
     };
     assert_eq!(old.exclusion_list.as_ref().unwrap()[0], "minecraft:stone");

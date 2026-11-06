@@ -60,7 +60,7 @@ pub fn ranges(
 /// The struct of family `F` that a stable document version selects (the literal `"beta"`
 /// selects no stable struct and is `Unsupported` here).
 pub fn select<F: Family>(input: &FormatVersionInput) -> Selection {
-    let versions = <F::Any as VersionChain<F>>::VERSIONS;
+    let versions = <F::History as VersionChain<F>>::VERSIONS;
     select_versions(versions, F::FLOOR, F::RANGE_MODEL, None, input)
 }
 
@@ -144,7 +144,7 @@ pub enum ChainError {
 ///
 /// Returns the first `ChainError` found in the chain.
 pub fn check_chain<F: Family>() -> Result<(), ChainError> {
-    let versions = <F::Any as VersionChain<F>>::VERSIONS;
+    let versions = <F::History as VersionChain<F>>::VERSIONS;
     if let Some(pair) = versions.windows(2).find(|pair| pair[0] >= pair[1]) {
         return Err(ChainError::NotAscending { at: pair[1] });
     }

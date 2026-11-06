@@ -5,7 +5,7 @@
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{Family, RangeModel, VersionChain};
 use bedrock_addon_family_block_culling::CullingRules;
-use bedrock_addon_family_block_culling::history::{Any, CullingFamily};
+use bedrock_addon_family_block_culling::history::{CullingFamily, CullingHistory};
 
 use super::common::{
     base_game, document, error, errors, failed_to_parse, fixture, loads, missing_object, rejects,
@@ -252,7 +252,7 @@ fn v12_a_version_that_is_not_one() {
 #[test]
 fn the_chain_is_two_structs_closed_at_the_newest() {
     assert_eq!(
-        <Any as VersionChain<CullingFamily>>::VERSIONS,
+        <CullingHistory as VersionChain<CullingFamily>>::VERSIONS,
         [FormatVersion::new(1, 20, 60), FormatVersion::new(1, 21, 80)]
     );
     assert_eq!(CullingFamily::FLOOR, FormatVersion::new(1, 20, 60));

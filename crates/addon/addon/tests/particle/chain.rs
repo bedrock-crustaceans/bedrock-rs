@@ -3,7 +3,7 @@
 use bedrock_addon::document::JsonDocument as _;
 use bedrock_addon::families::particle::ParticleEffect;
 use bedrock_addon::families::particle::component::ParticleComponent;
-use bedrock_addon::families::particle::history::{self, Any, ParticleFamily, v1_10_0};
+use bedrock_addon::families::particle::history::{self, ParticleFamily, ParticleHistory, v1_10_0};
 use bedrock_addon::json::Value;
 use bedrock_addon::version::{ENGINE_VERSION, FormatVersion, FormatVersionInput};
 use bedrock_addon::versioning::testing::{Checks, Run, step_output};
@@ -142,14 +142,14 @@ fn the_step_keys_the_curves_by_name() {
 #[test]
 fn the_chain_has_the_two_structs_of_the_plan() {
     assert_eq!(
-        <Any as VersionChain<ParticleFamily>>::VERSIONS,
+        <ParticleHistory as VersionChain<ParticleFamily>>::VERSIONS,
         [FormatVersion::new(1, 10, 0), FormatVersion::new(1, 20, 80)]
     );
 }
 
 #[test]
 fn the_chain_is_the_plans() {
-    const HAS_BETA: bool = <Any as VersionChain<ParticleFamily>>::HAS_BETA;
+    const HAS_BETA: bool = <ParticleHistory as VersionChain<ParticleFamily>>::HAS_BETA;
     check_chain::<ParticleFamily>().expect("the chain is well formed");
     let has_beta = HAS_BETA;
     assert!(!has_beta);
@@ -271,7 +271,7 @@ fn history_parses_as_written_and_upgrades_to_the_same_document() {
         let written = ParticleEffect::parse_as_written(&path(), text.as_bytes(), &cx).unwrap();
         assert!(!written.version().upgraded);
         match written.value() {
-            Any::V1_10_0(effect) => {
+            ParticleHistory::V1_10_0(effect) => {
                 assert!(legacy, "{version}");
                 assert_eq!(effect.format_version.to_string(), version);
                 assert_eq!(effect.components.len(), 4);
@@ -283,7 +283,7 @@ fn history_parses_as_written_and_upgrades_to_the_same_document() {
                 };
                 assert_eq!(point.direction, None);
             }
-            Any::V1_20_80(_) => assert!(!legacy, "{version}"),
+            ParticleHistory::V1_20_80(_) => assert!(!legacy, "{version}"),
         }
         let upgraded = history::upgrade(written, &cx).unwrap();
         let direct = loaded(&text);
@@ -306,7 +306,7 @@ fn the_1_10_0_struct_writes_its_own_document() {
         r#""minecraft:emitter_shape_sphere": {"radius": "variable.r"}"#,
     );
     let written = ParticleEffect::parse_as_written(&path(), text.as_bytes(), &context()).unwrap();
-    let Any::V1_10_0(effect) = written.value() else {
+    let ParticleHistory::V1_10_0(effect) = written.value() else {
         panic!();
     };
     assert_eq!(effect.write().unwrap(), json(&text));

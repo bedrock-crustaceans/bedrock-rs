@@ -1,6 +1,6 @@
 //! Unit tests of the module's private parts.
 
-use super::history::{Any, PackSettingsFamily};
+use super::history::{PackSettingsFamily, PackSettingsHistory};
 use crate::version::FormatVersion;
 use crate::version::FormatVersionInput;
 use crate::versioning::{RangeModel, Selection, VersionChain, check_chain, select_versions};
@@ -8,7 +8,7 @@ use crate::versioning::{RangeModel, Selection, VersionChain, check_chain, select
 fn selects(text: &str) -> Selection {
     let input = FormatVersionInput::parse(text).expect("a version");
     select_versions(
-        <Any as VersionChain<PackSettingsFamily>>::VERSIONS,
+        <PackSettingsHistory as VersionChain<PackSettingsFamily>>::VERSIONS,
         FormatVersion::new(1, 21, 100),
         RangeModel::ClosedToLatest,
         None,
@@ -20,7 +20,7 @@ fn selects(text: &str) -> Selection {
 fn the_chain_is_contiguous_from_the_floor_to_latest() {
     check_chain::<PackSettingsFamily>().expect("a well-formed chain");
     assert_eq!(
-        <Any as VersionChain<PackSettingsFamily>>::VERSIONS,
+        <PackSettingsHistory as VersionChain<PackSettingsFamily>>::VERSIONS,
         [
             FormatVersion::new(1, 21, 100),
             FormatVersion::new(1, 26, 40)

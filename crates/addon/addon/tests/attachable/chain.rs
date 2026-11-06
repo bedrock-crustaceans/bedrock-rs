@@ -4,7 +4,7 @@
 use bedrock_addon::diagnostic::Severity;
 use bedrock_addon::document::JsonDocument as _;
 use bedrock_addon::families::attachable::Attachable;
-use bedrock_addon::families::attachable::history::{self, Any};
+use bedrock_addon::families::attachable::history::{self, AttachableHistory};
 use bedrock_addon::json::Value;
 use bedrock_addon::storage::PackPath;
 use bedrock_addon::version::FormatVersion;
@@ -87,7 +87,7 @@ fn a10_without_the_list_the_step_only_stamps_the_version() {
         before.as_bytes(),
         &cx(),
     ));
-    let Any::V1_8_0(old) = written.value().clone() else {
+    let AttachableHistory::V1_8_0(old) = written.value().clone() else {
         panic!("{:?}", written.value());
     };
     // As written, it is the before-document.

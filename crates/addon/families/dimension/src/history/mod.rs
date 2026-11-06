@@ -25,7 +25,7 @@ bedrock_addon_core::version_chain! {
     family = DimensionFamily;
     /// A dimension document parsed by the struct its `format_version` selects, not upgraded.
     #[derive(Clone, Debug, PartialEq)]
-    pub enum Any {
+    pub enum DimensionHistory {
         /// Format 1.18.0 up to 1.26.50.
         V1_18_0(v1_18_0::Dimension),
         /// Format 1.26.50 and later: the newest document.
@@ -44,19 +44,22 @@ bedrock_addon_core::version_chain! {
 ///
 /// Returns [`Rejected`](bedrock_addon_core::document::Rejected) when the upgrade step, or the
 /// checks that follow it, find an error that stops the document from loading.
-pub fn upgrade(document: Document<Any>, cx: &LoadContext) -> Result<Document<Dimension>, Rejected> {
+pub fn upgrade(
+    document: Document<DimensionHistory>,
+    cx: &LoadContext,
+) -> Result<Document<Dimension>, Rejected> {
     upgrade_document(document, cx)
 }
 
 /// `history::upgrade`: rebuilds the parse stage from the document and finishes it.
 pub(crate) fn upgrade_document(
-    document: Document<Any>,
+    document: Document<DimensionHistory>,
     cx: &LoadContext,
 ) -> Result<Document<Dimension>, Rejected> {
     let (value, origin, version, diagnostics) = document.into_parsed_parts();
     let identifier = match &value {
-        Any::V1_18_0(d) => d.description.identifier.as_str().to_owned(),
-        Any::V1_26_50(d) => d.description.identifier.as_str().to_owned(),
+        DimensionHistory::V1_18_0(d) => d.description.identifier.as_str().to_owned(),
+        DimensionHistory::V1_26_50(d) => d.description.identifier.as_str().to_owned(),
     };
     let written = FormatVersionInput {
         version: Some(version.effective),

@@ -139,7 +139,7 @@ impl Family for Entity {
     fn reading(index: StructIndex, _: DocumentSource) -> Reading {
         let strict = match index {
             StructIndex::Stable(i) => {
-                let versions = <history::Any as VersionChain<Entity>>::VERSIONS;
+                let versions = <history::EntityHistory as VersionChain<Entity>>::VERSIONS;
                 versions.get(i).is_some_and(|v| *v >= STRICT_SLICES)
             }
             // The beta slice is read strictly, as every slice after the legacy one.
@@ -155,7 +155,7 @@ impl Family for Entity {
     type Latest = Entity;
     type Beta = Beta;
     type Component = EntityComponent;
-    type Any = history::Any;
+    type History = history::EntityHistory;
 
     fn components() -> &'static ComponentTable<Self> {
         EntityComponent::TABLE
@@ -256,10 +256,10 @@ impl Entity {
     ///
     /// [`Rejected`] when the upgrade steps and the checks leave no entity to keep, or the
     /// document is a beta one (which has no stable struct); it carries every finding.
-    // This is `history::Any::upgrade`, placed on `Entity` because only the document has the
+    // This is `history::EntityHistory::upgrade`, placed on `Entity` because only the document has the
     // origin.
     pub fn upgrade(
-        written: Document<history::Any>,
+        written: Document<history::EntityHistory>,
         cx: &LoadContext,
     ) -> Result<Document<Entity>, Rejected> {
         let (any, origin, version, mut found) = written.into_parsed_parts();
@@ -352,7 +352,7 @@ impl JsonDocument for Entity {
         path: &PackPath,
         bytes: &[u8],
         cx: &LoadContext,
-    ) -> Result<Document<history::Any>, Rejected> {
+    ) -> Result<Document<history::EntityHistory>, Rejected> {
         let origin = detached_origin(path);
         let text = decode(bytes, &origin)?;
         let parsed = parse_as_written::<Entity>(text.slice(), cx);

@@ -119,7 +119,7 @@ pub mod v1_26_0 {
 chain! {
     latest = WaterSettings;
     /// A water-settings file parsed by the struct its `format_version` selects, not upgraded.
-    enum Any {
+    enum WaterHistory {
         /// Format 1.21.40.
         V1_21_40(v1_21_40::WaterSettings),
         /// Format 1.21.80.

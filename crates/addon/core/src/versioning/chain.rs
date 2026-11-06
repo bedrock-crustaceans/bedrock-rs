@@ -1,11 +1,12 @@
-//! `version_chain!`: a family's `history::Any` and its `VersionChain` impl.
+//! `version_chain!`: a family's history enum (`history::<Name>History`) and its `VersionChain`
+//! impl.
 
-/// Emits a family's chain: the `Any` enum (one variant per struct, oldest first, then the beta
+/// Emits a family's chain: the history enum (`<Name>History`, one variant per struct, oldest first, then the beta
 /// struct), its [`VersionChain`](crate::versioning::VersionChain) impl (`VERSIONS`, `HAS_BETA`,
 /// `parse` by the range model, `parse_struct` dispatch with Molang pass 1, the walk Molang
 /// pass 2 takes, `upgrade_to_end` through the adjacent [`Upgrade`](crate::versioning::Upgrade)
 /// impls) and two inherent methods: `parsed_version(&self) -> FormatVersion` (the struct's
-/// version; named so that `Document<history::Any>`'s own `version` does not hide it) and
+/// version; named so that `Document<history::GlowHistory>`'s own `version` does not hide it) and
 /// `to_json(&self) -> Result<String, EncodeError>` (the document in the struct's own version,
 /// envelope included).
 ///
@@ -47,7 +48,7 @@
 ///     bedrock_addon_core::version_chain! {
 ///         family = Glow;
 ///         /// The struct the file's `format_version` selected.
-///         pub enum Any {
+///         pub enum GlowHistory {
 ///             V1_0_0(V1),
 ///             V1_1_0(super::GlowDoc),
 ///         }
@@ -101,7 +102,7 @@
 ///     type Latest = GlowDoc;
 ///     type Beta = std::convert::Infallible;
 ///     type Component = NoComponents;
-///     type Any = history::Any;
+///     type History = history::GlowHistory;
 ///     fn components() -> &'static ComponentTable<Self> {
 ///         &ComponentTable::EMPTY
 ///     }

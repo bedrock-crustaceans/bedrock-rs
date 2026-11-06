@@ -5,7 +5,7 @@ use bedrock_addon::diagnostic::{Diagnostics, Severity};
 use bedrock_addon::document::JsonDocument as _;
 use bedrock_addon::families::client_entity::ClientEntity;
 use bedrock_addon::families::client_entity::history::{
-    self, Any, ClientEntityFamily, v1_8_0, v1_10_0,
+    self, ClientEntityFamily, ClientEntityHistory, v1_8_0, v1_10_0,
 };
 use bedrock_addon::json::Value;
 use bedrock_addon::load::LoadContext;
@@ -230,11 +230,11 @@ fn the_1_10_step_lower_cases_the_named_scripts_below_1_18_20() {
 fn the_chain_is_contiguous_and_ends_at_1_26_0() {
     use bedrock_addon::versioning::Family;
 
-    const HAS_BETA: bool = <Any as VersionChain<ClientEntityFamily>>::HAS_BETA;
+    const HAS_BETA: bool = <ClientEntityHistory as VersionChain<ClientEntityFamily>>::HAS_BETA;
 
     check_chain::<ClientEntityFamily>().expect("the chain is well formed");
     assert_eq!(
-        <Any as VersionChain<ClientEntityFamily>>::VERSIONS,
+        <ClientEntityHistory as VersionChain<ClientEntityFamily>>::VERSIONS,
         [
             FormatVersion::new(1, 8, 0),
             FormatVersion::new(1, 10, 0),
@@ -288,9 +288,9 @@ fn one_step(text: &str, cx: &LoadContext) -> (Value, Diagnostics) {
         diagnostics: &mut diagnostics,
     };
     let value = match written.into_value() {
-        Any::V1_8_0(entity) => entity.upgrade(&mut upgrade).write(),
-        Any::V1_10_0(entity) => entity.upgrade(&mut upgrade).write(),
-        Any::V1_26_0(entity) => entity.write(),
+        ClientEntityHistory::V1_8_0(entity) => entity.upgrade(&mut upgrade).write(),
+        ClientEntityHistory::V1_10_0(entity) => entity.upgrade(&mut upgrade).write(),
+        ClientEntityHistory::V1_26_0(entity) => entity.write(),
     };
     (value.unwrap(), diagnostics)
 }
@@ -475,7 +475,7 @@ fn a_document_parses_as_written_and_upgrades_to_what_parse_gives() {
         before.as_bytes(),
         &cx(),
     ));
-    assert!(matches!(written.value(), Any::V1_8_0(_)));
+    assert!(matches!(written.value(), ClientEntityHistory::V1_8_0(_)));
     assert_eq!(written.parsed_version(), FormatVersion::new(1, 8, 0));
     // Written back in its own version, it is the document it was read from.
     assert_eq!(json(&written.to_json().unwrap()), json(&before));

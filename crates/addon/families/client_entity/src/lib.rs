@@ -53,7 +53,7 @@ use bedrock_addon_core::versioning::{
 };
 use bedrock_addon_shared_visual::{MergeStep, merge_step};
 
-use crate::history::{Any, ClientEntityFamily};
+use crate::history::{ClientEntityFamily, ClientEntityHistory};
 use crate::read::text;
 use bedrock_addon_core::versioning::Versioned;
 
@@ -215,7 +215,7 @@ impl Family for ClientEntityFamily {
     type Latest = ClientEntity;
     type Beta = NoBeta<kind::Entity>;
     type Component = NoComponents;
-    type Any = Any;
+    type History = ClientEntityHistory;
     const ENVELOPE: Envelope = Envelope {
         // Vanilla's root schema declares `format_version`, `minecraft:client_entity` and
         // `minecraft:attachable`; a third member is "child '%s' not valid here.", not an envelope
@@ -278,7 +278,7 @@ impl JsonDocument for ClientEntity {
         path: &PackPath,
         bytes: &[u8],
         cx: &LoadContext,
-    ) -> Result<Document<Any>, Rejected> {
+    ) -> Result<Document<ClientEntityHistory>, Rejected> {
         let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
         let origin = origin(PackRef::app_data(), PackSide::Resource, path);
         let text = admit(bytes, root_of(bytes).as_ref(), &origin, cx)?;
@@ -330,7 +330,7 @@ impl Definition for ClientEntity {
 
 /// `history::upgrade`: rebuilds the parse stage from the document and finishes it.
 pub(crate) fn upgrade_document(
-    document: Document<Any>,
+    document: Document<ClientEntityHistory>,
     cx: &LoadContext,
 ) -> Result<Document<ClientEntity>, Rejected> {
     let (value, origin, version, mut diagnostics) = document.into_parsed_parts();
@@ -341,9 +341,9 @@ pub(crate) fn upgrade_document(
         *rows.unknown_mut() = unknown;
     }
     let identifier = match &value {
-        Any::V1_8_0(entity) => entity.description.identifier.as_str(),
-        Any::V1_10_0(entity) => entity.description.identifier.as_str(),
-        Any::V1_26_0(entity) => entity.description.identifier.as_str(),
+        ClientEntityHistory::V1_8_0(entity) => entity.description.identifier.as_str(),
+        ClientEntityHistory::V1_10_0(entity) => entity.description.identifier.as_str(),
+        ClientEntityHistory::V1_26_0(entity) => entity.description.identifier.as_str(),
     };
     let identity = Identity {
         identifier: Some(identifier.to_owned()),

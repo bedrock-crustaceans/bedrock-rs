@@ -443,7 +443,7 @@ pub trait Content: Sealed + Sized + Send + Sync + 'static {
 
 /// A value that writes a whole document, with a document's unknown members: what a
 /// [`Document`] must hold for [`Document::write_json`] and [`Document::to_json`]. Every
-/// [`Content`] is one, and so is a chain's `Any` (the document as it was read,
+/// [`Content`] is one, and so is a chain's history enum (the document as it was read,
 /// [`Document::to_json`] of a `parse_as_written`).
 pub trait WriteWith {
     /// The document, with the members of `unknown` after the known members of the object at

@@ -88,11 +88,11 @@ pub fn finish_file<F: Family>(
 
 /// A document parsed by the struct its `format_version` selects, not upgraded: what
 /// [`parse_as_written`] gives and [`finish`] takes. The typed `parse_as_written` and
-/// `history::Any::upgrade` of a family's document are built on the pair. Another crate builds
+/// `history::<Name>History::upgrade` of a family's document are built on the pair. Another crate builds
 /// one with [`from_value`](Self::from_value).
 pub struct Parsed<F: Family> {
     /// The chain value, or `None` when the document was rejected (then `diagnostics` says why).
-    pub value: Option<F::Any>,
+    pub value: Option<F::History>,
     /// What the file said about its version and which struct parsed it (`upgraded` is set by
     /// [`finish`]).
     pub version: VersionInfo,
@@ -122,7 +122,7 @@ impl<F: Family> Parsed<F> {
     /// until [`with_identity`](Self::with_identity) and [`with_actor`](Self::with_actor) say
     /// otherwise.
     pub fn from_value(
-        value: Option<F::Any>,
+        value: Option<F::History>,
         version: VersionInfo,
         written: FormatVersionInput,
         at: JsonPath,
@@ -167,7 +167,7 @@ impl<F: Family> Parsed<F> {
 
 impl<F: Family> fmt::Debug for Parsed<F>
 where
-    F::Any: fmt::Debug,
+    F::History: fmt::Debug,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Parsed")
@@ -282,7 +282,7 @@ fn read<F: Family>(
     clamped: Option<&crate::json::ClampedText>,
     as_written: &str,
     cx: &LoadContext,
-) -> (Run, Option<F::Any>) {
+) -> (Run, Option<F::History>) {
     let mut run = Run {
         diagnostics: Diagnostics::default(),
         version: VersionInfo::new(None, false, F::FLOOR, F::FLOOR, false),
@@ -382,7 +382,7 @@ pub fn finish<F: Family>(parsed: Parsed<F>, cx: &LoadContext) -> LoadOutcome<F> 
     } = parsed;
     let original_version = version.effective;
     let value = value.and_then(|any| {
-        let versions = <F::Any as VersionChain<F>>::VERSIONS;
+        let versions = <F::History as VersionChain<F>>::VERSIONS;
         version.upgraded = !version.beta && versions.last() != Some(&version.parsed_as);
         let identifier = identity.identifier.clone().unwrap_or_default();
         let mut upgrade = UpgradeCx {
@@ -479,15 +479,14 @@ fn molang_pass_two<F: Family>(
         Side::Server
     };
     let mut failures = Vec::new();
-    <F::Any as VersionChain<F>>::with_molang(
-        loaded,
-        &mut |fields: &mut dyn MolangFields| match &cx.molang {
+    <F::History as VersionChain<F>>::with_molang(loaded, &mut |fields: &mut dyn MolangFields| {
+        match &cx.molang {
             Some(check) => failures = check_fields(fields, check, side, &molang, &base, d),
             None => {
                 not_checked(fields, &base, d);
             }
-        },
-    );
+        }
+    });
     failures
 }
 
@@ -503,7 +502,7 @@ fn molang_pass_two<F: Family>(
 ) {
     let _ = (written, cx);
     let base = Location::new(None, None, at.clone(), None);
-    <F::Any as VersionChain<F>>::with_molang(loaded, &mut |fields: &mut dyn MolangFields| {
+    <F::History as VersionChain<F>>::with_molang(loaded, &mut |fields: &mut dyn MolangFields| {
         not_checked(fields, &base, d);
     });
 }
@@ -600,7 +599,7 @@ impl Run {
         document: JsonSlice<'_>,
         as_written: &str,
         cx: &LoadContext,
-    ) -> Option<F::Any> {
+    ) -> Option<F::History> {
         let envelope = self.envelope::<F>(document)?;
         let (read, as_written) = match F::ENVELOPE.input.version_input() {
             VersionInput::Root => (
@@ -627,7 +626,7 @@ impl Run {
         let (written, index) = self.struct_index::<F>(written, &as_written, payload, object, cx)?;
         self.written = written;
 
-        let versions = <F::Any as VersionChain<F>>::VERSIONS;
+        let versions = <F::History as VersionChain<F>>::VERSIONS;
         self.version.parsed_as = match index {
             StructIndex::Stable(i) => versions.get(i).copied().unwrap_or(F::FLOOR),
             StructIndex::Beta => BETA_VERSION,
@@ -670,7 +669,7 @@ impl Run {
             original_version: self.version.effective,
             at: self.at.clone(),
         };
-        let value = F::Any::parse_struct(payload, index, &parse, &mut self.diagnostics);
+        let value = F::History::parse_struct(payload, index, &parse, &mut self.diagnostics);
         if reading.error_mask() == ErrorMask::Strict {
             self.unknown_members_are_errors();
         }
@@ -837,7 +836,7 @@ impl Run {
                 self.version.parsed_as = BETA_VERSION;
                 // The slice is selected before the permission is checked: a family without a
                 // beta struct has no parser for `beta`.
-                if !<F::Any as VersionChain<F>>::HAS_BETA {
+                if !<F::History as VersionChain<F>>::HAS_BETA {
                     self.diagnostics.push(unsupported("beta", version_at()));
                     return None;
                 }
@@ -921,7 +920,7 @@ impl Run {
         let at = version_at();
         match select::<F>(written) {
             Selection::Struct(i) => {
-                let count = <F::Any as VersionChain<F>>::VERSIONS.len();
+                let count = <F::History as VersionChain<F>>::VERSIONS.len();
                 let routed = F::route(payload, *written, cx).filter(|&r| r < count);
                 Some(StructIndex::Stable(routed.unwrap_or(i)))
             }

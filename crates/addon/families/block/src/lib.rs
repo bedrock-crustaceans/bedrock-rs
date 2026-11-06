@@ -39,7 +39,7 @@ use bedrock_addon_core::versioning::{
     InputKind, Loaded, Reading, Scalars, StructIndex, ValidateCx, VersionChain,
 };
 use component::BlockComponent;
-use history::{Any, BlockFamily};
+use history::{BlockFamily, BlockHistory};
 use read::{CEREAL, read_file};
 
 /// The floor: below 1.16.0 the game's upgrades discard most components, so the crate rejects the
@@ -53,7 +53,7 @@ impl Family for BlockFamily {
     type Latest = Block;
     type Beta = NoBeta<kind::Block>;
     type Component = BlockComponent;
-    type Any = Any;
+    type History = BlockHistory;
     const ENVELOPE: Envelope = Envelope {
         // Every block file is read as a document whose version path and size limits are the
         // file's own.
@@ -120,7 +120,7 @@ pub(crate) fn reading_of(cereal: bool) -> Reading {
 
 fn is_cereal(index: StructIndex) -> bool {
     match index {
-        StructIndex::Stable(i) => <Any as VersionChain<BlockFamily>>::VERSIONS
+        StructIndex::Stable(i) => <BlockHistory as VersionChain<BlockFamily>>::VERSIONS
             .get(i)
             .is_some_and(|version| *version >= CEREAL),
         StructIndex::Beta => false,
@@ -211,7 +211,7 @@ mod tests {
     /// `Reading` is the one place that says how block reads its scalars.
     #[test]
     fn a_slice_reads_its_components_by_its_reading() {
-        let stable = <Any as VersionChain<BlockFamily>>::VERSIONS.len();
+        let stable = <BlockHistory as VersionChain<BlockFamily>>::VERSIONS.len();
         let indices = (0..stable)
             .map(StructIndex::Stable)
             .chain([StructIndex::Beta]);

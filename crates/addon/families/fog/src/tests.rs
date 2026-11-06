@@ -10,10 +10,11 @@ use bedrock_addon_core::versioning::{
 
 #[test]
 fn the_chain_is_1_16_100_to_1_26_20_closed_at_its_newest_struct() {
-    let versions: Vec<String> = <<FogFamily as Family>::Any as VersionChain<FogFamily>>::VERSIONS
-        .iter()
-        .map(ToString::to_string)
-        .collect();
+    let versions: Vec<String> =
+        <<FogFamily as Family>::History as VersionChain<FogFamily>>::VERSIONS
+            .iter()
+            .map(ToString::to_string)
+            .collect();
     assert_eq!(versions, ["1.16.100", "1.21.0", "1.21.90", "1.26.20"]);
     assert_eq!(FogFamily::FLOOR, FLOOR);
     assert_eq!(FogFamily::RANGE_MODEL, RangeModel::ClosedToLatest);
@@ -24,7 +25,7 @@ fn the_chain_is_1_16_100_to_1_26_20_closed_at_its_newest_struct() {
     assert_eq!(FogFamily::ENVELOPE.check, EnvelopeCheck::From(LATEST));
     assert_eq!(FogFamily::PAYLOAD_KEY, "minecraft:fog_settings");
     assert_eq!(super::LOADER.walk.directories, ["fogs"]);
-    let has_beta = <<FogFamily as Family>::Any as VersionChain<FogFamily>>::HAS_BETA;
+    let has_beta = <<FogFamily as Family>::History as VersionChain<FogFamily>>::HAS_BETA;
     assert_eq!(has_beta, std::hint::black_box(false));
 }
 
@@ -47,7 +48,7 @@ fn invalid_format_version_rule() {
 
 #[test]
 fn the_gate_table_names_the_chain_s_versions_and_the_keyframe_engine() {
-    let versions = <<FogFamily as Family>::Any as VersionChain<FogFamily>>::VERSIONS;
+    let versions = <<FogFamily as Family>::History as VersionChain<FogFamily>>::VERSIONS;
     for gate in FOG_FIELD_GATES {
         assert!(versions.contains(&gate.released), "{}", gate.path);
         if let Some(removed) = gate.removed {

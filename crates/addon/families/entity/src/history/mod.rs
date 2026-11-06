@@ -78,7 +78,7 @@ bedrock_addon_core::version_chain! {
     family = Entity;
     /// The struct the file's `format_version` selected.
     #[derive(Clone, Debug, PartialEq)]
-    pub enum Any {
+    pub enum EntityHistory {
         /// [1.8.0, 1.10.0), the floor.
         V1_8_0(v1_8_0::Entity),
         /// [1.10.0, 1.11.0).
@@ -460,58 +460,60 @@ macro_rules! legacy_struct {
 }
 pub(crate) use legacy_struct;
 
-impl Any {
+impl EntityHistory {
     /// The payload of an older struct; `None` for the newest and the beta struct.
     pub(crate) fn payload(&self) -> Option<&Payload> {
         match self {
-            Any::V1_8_0(v1_8_0::Entity(payload))
-            | Any::V1_10_0(v1_10_0::Entity(payload))
-            | Any::V1_11_0(v1_11_0::Entity(payload))
-            | Any::V1_12_0(v1_12_0::Entity(payload))
-            | Any::V1_13_0(v1_13_0::Entity(payload))
-            | Any::V1_15_0(v1_15_0::Entity(payload))
-            | Any::V1_16_0(v1_16_0::Entity(payload))
-            | Any::V1_16_100(v1_16_100::Entity(payload))
-            | Any::V1_16_200(v1_16_200::Entity(payload))
-            | Any::V1_17_10(v1_17_10::Entity(payload))
-            | Any::V1_17_20(v1_17_20::Entity(payload))
-            | Any::V1_18_0(v1_18_0::Entity(payload))
-            | Any::V1_18_10(v1_18_10::Entity(payload))
-            | Any::V1_18_20(v1_18_20::Entity(payload))
-            | Any::V1_18_30(v1_18_30::Entity(payload))
-            | Any::V1_19_0(v1_19_0::Entity(payload))
-            | Any::V1_19_50(v1_19_50::Entity(payload))
-            | Any::V1_19_60(v1_19_60::Entity(payload))
-            | Any::V1_20_0(v1_20_0::Entity(payload))
-            | Any::V1_20_60(v1_20_60::Entity(payload))
-            | Any::V1_20_70(v1_20_70::Entity(payload))
-            | Any::V1_20_80(v1_20_80::Entity(payload))
-            | Any::V1_21_0(v1_21_0::Entity(payload))
-            | Any::V1_21_10(v1_21_10::Entity(payload))
-            | Any::V1_21_20(v1_21_20::Entity(payload))
-            | Any::V1_21_40(v1_21_40::Entity(payload))
-            | Any::V1_21_60(v1_21_60::Entity(payload))
-            | Any::V1_21_70(v1_21_70::Entity(payload))
-            | Any::V1_21_80(v1_21_80::Entity(payload))
-            | Any::V1_21_89(v1_21_89::Entity(payload))
-            | Any::V1_21_90(v1_21_90::Entity(payload))
-            | Any::V1_21_100(v1_21_100::Entity(payload))
-            | Any::V1_21_110(v1_21_110::Entity(payload))
-            | Any::V1_21_120(v1_21_120::Entity(payload))
-            | Any::V1_21_130(v1_21_130::Entity(payload))
-            | Any::V1_26_0(v1_26_0::Entity(payload))
-            | Any::V1_26_10(v1_26_10::Entity(payload))
-            | Any::V1_26_20(v1_26_20::Entity(payload))
-            | Any::V1_26_30(v1_26_30::Entity(payload))
-            | Any::V1_26_40(v1_26_40::Entity(payload)) => Some(payload),
-            Any::V1_26_50(_) | Any::V1_26_60(_) | Any::Beta(_) => None,
+            EntityHistory::V1_8_0(v1_8_0::Entity(payload))
+            | EntityHistory::V1_10_0(v1_10_0::Entity(payload))
+            | EntityHistory::V1_11_0(v1_11_0::Entity(payload))
+            | EntityHistory::V1_12_0(v1_12_0::Entity(payload))
+            | EntityHistory::V1_13_0(v1_13_0::Entity(payload))
+            | EntityHistory::V1_15_0(v1_15_0::Entity(payload))
+            | EntityHistory::V1_16_0(v1_16_0::Entity(payload))
+            | EntityHistory::V1_16_100(v1_16_100::Entity(payload))
+            | EntityHistory::V1_16_200(v1_16_200::Entity(payload))
+            | EntityHistory::V1_17_10(v1_17_10::Entity(payload))
+            | EntityHistory::V1_17_20(v1_17_20::Entity(payload))
+            | EntityHistory::V1_18_0(v1_18_0::Entity(payload))
+            | EntityHistory::V1_18_10(v1_18_10::Entity(payload))
+            | EntityHistory::V1_18_20(v1_18_20::Entity(payload))
+            | EntityHistory::V1_18_30(v1_18_30::Entity(payload))
+            | EntityHistory::V1_19_0(v1_19_0::Entity(payload))
+            | EntityHistory::V1_19_50(v1_19_50::Entity(payload))
+            | EntityHistory::V1_19_60(v1_19_60::Entity(payload))
+            | EntityHistory::V1_20_0(v1_20_0::Entity(payload))
+            | EntityHistory::V1_20_60(v1_20_60::Entity(payload))
+            | EntityHistory::V1_20_70(v1_20_70::Entity(payload))
+            | EntityHistory::V1_20_80(v1_20_80::Entity(payload))
+            | EntityHistory::V1_21_0(v1_21_0::Entity(payload))
+            | EntityHistory::V1_21_10(v1_21_10::Entity(payload))
+            | EntityHistory::V1_21_20(v1_21_20::Entity(payload))
+            | EntityHistory::V1_21_40(v1_21_40::Entity(payload))
+            | EntityHistory::V1_21_60(v1_21_60::Entity(payload))
+            | EntityHistory::V1_21_70(v1_21_70::Entity(payload))
+            | EntityHistory::V1_21_80(v1_21_80::Entity(payload))
+            | EntityHistory::V1_21_89(v1_21_89::Entity(payload))
+            | EntityHistory::V1_21_90(v1_21_90::Entity(payload))
+            | EntityHistory::V1_21_100(v1_21_100::Entity(payload))
+            | EntityHistory::V1_21_110(v1_21_110::Entity(payload))
+            | EntityHistory::V1_21_120(v1_21_120::Entity(payload))
+            | EntityHistory::V1_21_130(v1_21_130::Entity(payload))
+            | EntityHistory::V1_26_0(v1_26_0::Entity(payload))
+            | EntityHistory::V1_26_10(v1_26_10::Entity(payload))
+            | EntityHistory::V1_26_20(v1_26_20::Entity(payload))
+            | EntityHistory::V1_26_30(v1_26_30::Entity(payload))
+            | EntityHistory::V1_26_40(v1_26_40::Entity(payload)) => Some(payload),
+            EntityHistory::V1_26_50(_) | EntityHistory::V1_26_60(_) | EntityHistory::Beta(_) => {
+                None
+            }
         }
     }
 }
 
 /// What the steps of a parsed document read besides its struct: its identity and whether it
 /// carries the skip key.
-pub(crate) fn identity(any: &Any) -> (Identity, bool) {
+pub(crate) fn identity(any: &EntityHistory) -> (Identity, bool) {
     let text = |value: Option<&Value>| {
         value
             .and_then(Value::as_string)
@@ -526,8 +528,10 @@ pub(crate) fn identity(any: &Any) -> (Identity, bool) {
         return (identity, payload.do_not_upgrade.is_some());
     }
     let entity = match any {
-        Any::V1_26_50(v1_26_50::Entity(entity)) | Any::V1_26_60(entity) => entity,
-        Any::Beta(beta) => &beta.0,
+        EntityHistory::V1_26_50(v1_26_50::Entity(entity)) | EntityHistory::V1_26_60(entity) => {
+            entity
+        }
+        EntityHistory::Beta(beta) => &beta.0,
         _ => return (Identity::default(), false),
     };
     let description = &entity.description;

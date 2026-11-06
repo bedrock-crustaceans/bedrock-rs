@@ -117,7 +117,7 @@ fn the_1_21_40_struct_keeps_the_alpha_as_written() {
         &LoadContext::detached(),
     )
     .unwrap();
-    let history::lighting::Any::V1_21_40(old) = document.value() else {
+    let history::lighting::LightingHistory::V1_21_40(old) = document.value() else {
         panic!("{:?}", document.value())
     };
     assert_eq!(
@@ -1369,7 +1369,7 @@ fn the_1_21_40_atmosphere_struct_writes_what_it_read() {
     .unwrap();
     assert!(matches!(
         document.value(),
-        history::atmosphere::Any::V1_21_40(_)
+        history::atmosphere::AtmosphereHistory::V1_21_40(_)
     ));
     assert_eq!(json(&document.to_json().unwrap()), json(&text));
     let upgraded = history::atmosphere::upgrade(document, &LoadContext::detached()).unwrap();
@@ -1695,7 +1695,7 @@ fn the_1_21_40_grading_struct_writes_what_it_read() {
     .unwrap();
     assert!(matches!(
         document.value(),
-        history::color_grading::Any::V1_21_40(_)
+        history::color_grading::ColorGradingHistory::V1_21_40(_)
     ));
     assert_eq!(json(&document.to_json().unwrap()), json(&text));
     let upgraded = history::color_grading::upgrade(document, &LoadContext::detached()).unwrap();

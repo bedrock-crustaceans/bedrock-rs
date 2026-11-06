@@ -125,7 +125,7 @@ macro_rules! keep_toy {
             bedrock_addon_core::version_chain! {
                 family = $name;
                 /// One struct.
-                pub enum Any {
+                pub enum History {
                     V1_0_0(Payload),
                 }
             }
@@ -137,7 +137,7 @@ macro_rules! keep_toy {
             type Latest = Payload;
             type Beta = std::convert::Infallible;
             type Component = ToyComponent;
-            type Any = $module::Any;
+            type History = $module::History;
             fn components() -> &'static ComponentTable<Self> {
                 &ComponentTable::EMPTY
             }

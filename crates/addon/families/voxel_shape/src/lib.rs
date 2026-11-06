@@ -72,7 +72,7 @@ impl Family for VoxelShapeFamily {
     type Latest = VoxelShape;
     type Beta = NoBeta<kind::VoxelShape>;
     type Component = NoComponents;
-    type Any = Single<Self>;
+    type History = Single<Self>;
 
     fn validate(v: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {
         if let Loaded::Stable(shape) = v {

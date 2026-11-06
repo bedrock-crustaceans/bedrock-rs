@@ -29,7 +29,7 @@ macro_rules! reading_toy {
             bedrock_addon_core::version_chain! {
                 family = $name;
                 /// The toy's chain for another family.
-                pub enum Any {
+                pub enum History {
                     V1_0_0(v1_0_0::Toy),
                     V1_1_0(crate::toy::v1_1_0::Toy),
                     V1_2_0(Toy120),
@@ -44,7 +44,7 @@ macro_rules! reading_toy {
             type Latest = Toy120;
             type Beta = ToyBeta;
             type Component = ToyComponent;
-            type Any = $module::Any;
+            type History = $module::History;
             fn components() -> &'static ComponentTable<Self> {
                 &ComponentTable::EMPTY
             }

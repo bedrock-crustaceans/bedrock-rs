@@ -11,11 +11,11 @@ use bedrock_addon_family_ddui::history::{CompositionFamily, RootFamily};
 #[test]
 fn the_chains_hold_the_one_struct() {
     assert_eq!(
-        <<RootFamily as Family>::Any as VersionChain<RootFamily>>::VERSIONS,
+        <<RootFamily as Family>::History as VersionChain<RootFamily>>::VERSIONS,
         [FORMAT_VERSION]
     );
     assert_eq!(
-        <<CompositionFamily as Family>::Any as VersionChain<CompositionFamily>>::VERSIONS,
+        <<CompositionFamily as Family>::History as VersionChain<CompositionFamily>>::VERSIONS,
         [FORMAT_VERSION]
     );
 }
@@ -30,8 +30,8 @@ fn the_chains_are_contiguous_closed_at_their_one_struct_and_without_beta() {
     assert_eq!(RootFamily::RANGE_MODEL, RangeModel::ClosedToLatest);
     assert_eq!(CompositionFamily::RANGE_MODEL, RangeModel::ClosedToLatest);
     let beta = [
-        <<RootFamily as Family>::Any as VersionChain<RootFamily>>::HAS_BETA,
-        <<CompositionFamily as Family>::Any as VersionChain<CompositionFamily>>::HAS_BETA,
+        <<RootFamily as Family>::History as VersionChain<RootFamily>>::HAS_BETA,
+        <<CompositionFamily as Family>::History as VersionChain<CompositionFamily>>::HAS_BETA,
     ];
     assert_eq!(beta, [false, false]);
     assert_eq!(RootFamily::PAYLOAD_KEY, "minecraft:ui-root");

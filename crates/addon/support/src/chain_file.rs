@@ -43,7 +43,7 @@ pub fn closing_line(diagnostics: &mut Diagnostics, text: &'static str) {
 /// `Rejected` when the upgrade or the family's checks leave no value; it carries the located
 /// findings.
 pub fn upgrade<F: Family>(
-    document: Document<F::Any>,
+    document: Document<F::History>,
     at: JsonPath,
     cx: &LoadContext,
 ) -> Result<Document<F::Latest>, Rejected> {

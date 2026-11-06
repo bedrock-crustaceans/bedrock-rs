@@ -575,10 +575,10 @@ fn s14_the_stack_stores_styles_by_identifier() {
 /// `parse_as_written` gives the beta struct.
 #[test]
 fn s15_parse_as_written_gives_the_beta_struct() {
-    use bedrock_addon::families::ddui::history::StyleAny;
+    use bedrock_addon::families::ddui::history::StyleHistory;
     let text = style_json(r#""minecraft:form_label": {}"#);
     let path = PackPath::from_static("ddui/styling/test.json");
     let written = UiStyle::parse_as_written(&path, text.as_bytes(), &cx(E60, false)).unwrap();
-    let StyleAny::Beta(value) = written.value();
+    let StyleHistory::Beta(value) = written.value();
     assert_eq!(value, loads(style(&text)).value());
 }

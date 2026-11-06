@@ -17,7 +17,7 @@ bedrock_addon_core::version_chain! {
     /// A culling-rules document parsed by the struct its `format_version` selects, not
     /// upgraded.
     #[derive(Clone, Debug, PartialEq)]
-    pub enum Any {
+    pub enum CullingHistory {
         /// Format 1.20.60 up to 1.21.80.
         V1_20_60(v1_20_60::CullingRules),
         /// Format 1.21.80: the newest document.

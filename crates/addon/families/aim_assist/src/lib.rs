@@ -41,7 +41,7 @@ use bedrock_addon_core::versioning::{
     NoComponents, Reading, StructIndex, ValidateCx, Versioned, parse_document,
 };
 use bedrock_addon_support::chain_file as file;
-use history::{Any, CategoriesAny, CategoriesFamily, PresetFamily};
+use history::{CategoriesFamily, CategoriesHistory, PresetFamily, PresetHistory};
 
 /// The aim-assist documents of the behaviour packs (`bp.aim_assist()`): two collections loaded
 /// and used together.
@@ -98,7 +98,7 @@ impl Family for PresetFamily {
     type Latest = AimAssistPreset;
     type Beta = NoBeta<kind::AimAssistPreset>;
     type Component = NoComponents;
-    type Any = Any;
+    type History = PresetHistory;
 
     fn identity(payload: JsonSlice<'_>) -> Identity {
         file::identity(payload, "identifier")
@@ -132,7 +132,7 @@ impl Family for CategoriesFamily {
     type Latest = AimAssistCategories;
     type Beta = Infallible;
     type Component = NoComponents;
-    type Any = CategoriesAny;
+    type History = CategoriesHistory;
 
     fn identity(_: JsonSlice<'_>) -> Identity {
         Identity::default()

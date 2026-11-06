@@ -3,7 +3,7 @@
 
 use indexmap::IndexMap;
 
-use super::history::{Any, v1_8_0};
+use super::history::{AnimationControllerHistory, v1_8_0};
 use super::{
     AnimationController, AnimationControllerFile, BlendTransition, EventString, State,
     StateAnimation, StateVariable, Transition,
@@ -180,7 +180,11 @@ pub(crate) fn parse_file(bytes: &[u8], cx: &LoadContext) -> Parsed<AnimationCont
 pub(crate) fn parse_as_written(
     bytes: &[u8],
     cx: &LoadContext,
-) -> (Option<Any>, Option<SemVersion>, Diagnostics) {
+) -> (
+    Option<AnimationControllerHistory>,
+    Option<SemVersion>,
+    Diagnostics,
+) {
     let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
     let mut walk = Walk::new();
     let text = match text_of(bytes) {
@@ -208,9 +212,9 @@ pub(crate) fn parse_as_written(
     }
     let commands = command_version(cx.min_engine_version.as_ref());
     let any = if version < V1_10_0 {
-        v1_8_0::read_file(&mut walk, root).map(Any::V1_8_0)
+        v1_8_0::read_file(&mut walk, root).map(AnimationControllerHistory::V1_8_0)
     } else {
-        read_file(&mut walk, root, commands, &version).map(Any::V1_10_0)
+        read_file(&mut walk, root, commands, &version).map(AnimationControllerHistory::V1_10_0)
     };
     non_canonical(&mut walk);
     let any = any.filter(|_| !walk.diagnostics.has_errors());
@@ -252,14 +256,14 @@ pub(crate) fn controller_format_version(
 
 /// Runs the 1.8 step when the file is a 1.8 file.
 pub(crate) fn upgrade(
-    any: Any,
+    any: AnimationControllerHistory,
     written: &SemVersion,
     cx: &LoadContext,
     diagnostics: &mut Diagnostics,
 ) -> Option<AnimationControllerFile> {
     match any {
-        Any::V1_10_0(file) => Some(file),
-        Any::V1_8_0(old) => {
+        AnimationControllerHistory::V1_10_0(file) => Some(file),
+        AnimationControllerHistory::V1_8_0(old) => {
             let mut found = Diagnostics::default();
             let file = old.upgrade(&mut UpgradeCx {
                 load: cx,

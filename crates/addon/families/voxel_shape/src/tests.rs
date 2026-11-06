@@ -12,10 +12,11 @@ fn the_chain_is_one_struct_from_1_21_110_to_the_engine() {
     assert_eq!(check_chain::<VoxelShapeFamily>(), Ok(()));
     assert_eq!(FLOOR, FormatVersion::new(1, 21, 110));
     assert_eq!(
-        <<VoxelShapeFamily as Family>::Any as VersionChain<VoxelShapeFamily>>::VERSIONS,
+        <<VoxelShapeFamily as Family>::History as VersionChain<VoxelShapeFamily>>::VERSIONS,
         [FLOOR]
     );
-    let has_beta = <<VoxelShapeFamily as Family>::Any as VersionChain<VoxelShapeFamily>>::HAS_BETA;
+    let has_beta =
+        <<VoxelShapeFamily as Family>::History as VersionChain<VoxelShapeFamily>>::HAS_BETA;
     assert!(!has_beta);
     assert_eq!(VoxelShapeFamily::FLOOR, FLOOR);
     assert_eq!(VoxelShapeFamily::RANGE_MODEL, RangeModel::ClosedToEngine);

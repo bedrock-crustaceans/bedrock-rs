@@ -1418,7 +1418,7 @@ fn a_legacy_document_is_written_as_a_1_20_80_document() {
 /// An unknown member may hold any value; one nested deeper than a file may be has no text.
 #[test]
 fn an_unknown_member_nested_past_the_limit_has_no_text() {
-    use bedrock_addon::families::particle::history::Any;
+    use bedrock_addon::families::particle::history::ParticleHistory;
     let nested = |depth: usize| {
         let mut value = Value::from(1_i64);
         for _ in 0..depth {
@@ -1444,21 +1444,21 @@ fn an_unknown_member_nested_past_the_limit_has_no_text() {
             ParticleEffect::parse_as_written(&super::common::path(), legacy.as_bytes(), &context())
                 .unwrap();
         match document.into_value() {
-            Any::V1_10_0(effect) => effect,
-            other @ Any::V1_20_80(_) => panic!("{other:?}"),
+            ParticleHistory::V1_10_0(effect) => effect,
+            other @ ParticleHistory::V1_20_80(_) => panic!("{other:?}"),
         }
     };
     let mut old = read();
     old.extra.insert("deep".to_owned(), nested(126));
-    let text = Any::V1_10_0(old.clone()).to_json().unwrap();
+    let text = ParticleHistory::V1_10_0(old.clone()).to_json().unwrap();
     let again =
         ParticleEffect::parse_as_written(&super::common::path(), text.as_bytes(), &context())
             .unwrap();
-    assert_eq!(again.value(), &Any::V1_10_0(read()));
+    assert_eq!(again.value(), &ParticleHistory::V1_10_0(read()));
     old.extra.insert("deep".to_owned(), nested(127));
     // The writer of core refuses it where the text would pass the limit: the array
     // 126 arrays below the member.
-    match Any::V1_10_0(old).to_json() {
+    match ParticleHistory::V1_10_0(old).to_json() {
         Err(EncodeError::NotRepresentable { at, what }) => {
             assert_eq!(what, Unrepresentable::TooDeep);
             assert_eq!(

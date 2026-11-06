@@ -8,7 +8,7 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
 /// The catalogue as written at each format: the two structs of the chain and the document a
-/// file parses to before its step ([`CatalogAny`](history::CatalogAny)).
+/// file parses to before its step ([`CatalogHistory`](history::CatalogHistory)).
 pub mod history;
 mod link;
 mod merge;
@@ -41,7 +41,7 @@ use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 pub(crate) use bedrock_addon_core::version::known::V1_26_50;
 
-use crate::history::CatalogAny;
+use crate::history::CatalogHistory;
 use crate::read::parse_catalog;
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
@@ -225,7 +225,7 @@ impl Family for CatalogFamily {
     type Latest = CraftingCatalog;
     type Beta = std::convert::Infallible;
     type Component = NoComponents;
-    type Any = CatalogAny;
+    type History = CatalogHistory;
     const ENVELOPE: Envelope = Envelope {
         // The game reads the file as a whole document: the version is the one its JSON reader picks
         // from the text, the size limits apply, and a `null` where a value is read counts as the
@@ -294,7 +294,7 @@ impl JsonDocument for CraftingCatalog {
     }
 
     /// Parses the catalogue file without upgrading it: the struct its `format_version` selects,
-    /// with vanilla's envelope checks on a document it refused; [`CatalogAny::upgrade`] runs the
+    /// with vanilla's envelope checks on a document it refused; [`CatalogHistory::upgrade`] runs the
     /// rest of the load. Nothing is closed (the family has no close).
     ///
     /// # Errors
@@ -306,7 +306,7 @@ impl JsonDocument for CraftingCatalog {
         path: &PackPath,
         bytes: &[u8],
         cx: &LoadContext,
-    ) -> Result<Document<CatalogAny>, Rejected> {
+    ) -> Result<Document<CatalogHistory>, Rejected> {
         let origin = Origin::file(PackRef::app_data(), PackSide::Behavior, path.clone());
         let Ok(prepared) = Prepared::new(bytes) else {
             return Err(unreadable(origin));
@@ -404,9 +404,9 @@ fn vanilla_checks(diagnostics: &mut Diagnostics, document: JsonSlice<'_>) {
     }
 }
 
-/// `CatalogAny::upgrade`: rebuilds the parse stage from the document and finishes it.
+/// `CatalogHistory::upgrade`: rebuilds the parse stage from the document and finishes it.
 pub(crate) fn upgrade_document(
-    document: Document<CatalogAny>,
+    document: Document<CatalogHistory>,
     cx: &LoadContext,
 ) -> Result<Document<CraftingCatalog>, Rejected> {
     let (value, origin, version, diagnostics) = document.into_parsed_parts();

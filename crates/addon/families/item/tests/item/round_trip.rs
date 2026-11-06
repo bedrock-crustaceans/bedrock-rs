@@ -1,6 +1,6 @@
 //! The round-trip level for items: Value (parse, write, parse equal) at the
 //! newest version, Upgraded for older documents, and writing as written through
-//! `history::Any::to_json`; plus construction, `default_path` and the network NBT.
+//! `history::ItemHistory::to_json`; plus construction, `default_path` and the network NBT.
 
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
 use bedrock_addon_core::document::JsonDocument;
@@ -207,7 +207,7 @@ fn a_document_is_written_as_written_through_history() {
     assert!(written.contains("\"1.20.40\""), "{written}");
     assert!(written.contains("minecraft:use_duration"), "{written}");
     let upgraded =
-        bedrock_addon_family_item::history::Any::upgrade(document, &third_party()).unwrap();
+        bedrock_addon_family_item::history::ItemHistory::upgrade(document, &third_party()).unwrap();
     assert_eq!(*upgraded.value(), *loads(&old, &third_party()).value());
 }
 
@@ -288,7 +288,7 @@ fn network_properties_carry_the_components_and_item_properties() {
 fn as_written(
     bytes: &[u8],
 ) -> Result<
-    bedrock_addon_core::document::Document<bedrock_addon_family_item::history::Any>,
+    bedrock_addon_core::document::Document<bedrock_addon_family_item::history::ItemHistory>,
     bedrock_addon_core::document::Rejected,
 > {
     Item::parse_as_written(
@@ -1380,7 +1380,8 @@ fn upgrade_keeps_the_unknown_members_a_parse_keeps() {
         );
         let document = Item::parse_as_written(&path, old.as_bytes(), &third_party()).unwrap();
         let upgraded =
-            bedrock_addon_family_item::history::Any::upgrade(document, &third_party()).unwrap();
+            bedrock_addon_family_item::history::ItemHistory::upgrade(document, &third_party())
+                .unwrap();
         assert_eq!(*upgraded.value(), *parsed.value(), "{version}");
         assert_eq!(upgraded.unknown(), parsed.unknown(), "{version}");
     }

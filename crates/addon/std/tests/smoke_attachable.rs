@@ -398,7 +398,7 @@ fn the_client_install_a_layers_its_packs_over_the_app_data() {
 /// version, `item` conditions among them.
 #[test]
 fn every_attachable_molang_occurrence_loads_with_its_text_and_version() {
-    use bedrock_addon::families::attachable::history::Any;
+    use bedrock_addon::families::attachable::history::AttachableHistory;
 
     let pairs_file = skip!(game_files::MOLANG_PAIRS);
     let install_b = skip!(game_files::CLIENT_INSTALL_B);
@@ -409,9 +409,13 @@ fn every_attachable_molang_occurrence_loads_with_its_text_and_version() {
         let diagnostics = written.diagnostics().clone();
         let mut members = pairs::Members::new();
         match written.into_value() {
-            Any::V1_8_0(mut attachable) => pairs::members(&mut attachable, None, &mut members),
-            Any::V1_10_0(mut attachable) => pairs::members(&mut attachable, None, &mut members),
-            Any::V1_26_0(mut attachable) => {
+            AttachableHistory::V1_8_0(mut attachable) => {
+                pairs::members(&mut attachable, None, &mut members)
+            }
+            AttachableHistory::V1_10_0(mut attachable) => {
+                pairs::members(&mut attachable, None, &mut members)
+            }
+            AttachableHistory::V1_26_0(mut attachable) => {
                 // From 1.26.0 `initialize` / `pre_animation` hold plain strings, which carry
                 // no Molang version (the load context supplies it, not the document): were a
                 // vanilla file to use them, its

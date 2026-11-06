@@ -13,7 +13,7 @@ use std::borrow::Cow;
 
 use crate::GeometryFile;
 use crate::history::v1_8_0::MAX_FORMAT_VERSION as KEYED_MAXIMUM;
-use crate::history::{Any, VERSIONS};
+use crate::history::{GeometryHistory, VERSIONS};
 use crate::molang;
 use crate::schema_walk::{
     DID_NOT_VALIDATE, EXCEEDS_GAME_VERSION, INTERNAL_BLOCKS_FLOOR, JsonKind, NOT_AN_OBJECT, Node,
@@ -55,7 +55,7 @@ fn did_not_validate(diagnostics: &mut Diagnostics) {
 
 /// What the envelope of a file gave: the struct of its version, not upgraded.
 pub(crate) struct Envelope {
-    pub(crate) any: Any,
+    pub(crate) any: GeometryHistory,
     /// `format_version` as the file has it; `None` when absent or unreadable.
     pub(crate) written: Option<FormatVersion>,
     /// The version the file is read as.
@@ -222,7 +222,7 @@ pub(crate) fn read_written(
         original_version: effective,
         at: JsonPath::new(),
     };
-    let Some(any) = Any::parse(slice, &parse, diagnostics) else {
+    let Some(any) = GeometryHistory::parse(slice, &parse, diagnostics) else {
         did_not_validate(diagnostics);
         return Outcome::Failed;
     };
@@ -261,7 +261,7 @@ pub(crate) struct Finished {
 /// The steps from the file's struct to the newest one, then the identifier loop and the
 /// parse-time checks. `None` when a step or the `binding` compile fails the file.
 pub(crate) fn finish(
-    any: Any,
+    any: GeometryHistory,
     effective: FormatVersion,
     place: Place,
     cx: &LoadContext,
@@ -319,7 +319,7 @@ pub(crate) fn version_info(
     written: Option<FormatVersion>,
     effective: FormatVersion,
 ) -> VersionInfo {
-    let parsed_as = VERSIONS[Any::index_of(effective)];
+    let parsed_as = VERSIONS[GeometryHistory::index_of(effective)];
     VersionInfo::new(
         written,
         false,

@@ -8,7 +8,7 @@ use facet::Facet;
 use facet_json::RawJson;
 use indexmap::IndexMap;
 
-use super::history::{MetadataAny, MetadataFamily, v1_21_50};
+use super::history::{MetadataFamily, MetadataHistory, v1_21_50};
 use super::{
     BlockEntityModifier, BlockPredicate, CappedDelegate, IntProvider, IntProviderType,
     JigsawMetadata, JigsawStructure, MetadataRegistry, PoolElement, PositionPredicate, Processor,
@@ -519,7 +519,7 @@ pub(crate) fn parse_metadata(
     };
     let effective = input.version.unwrap_or(V1_21_50);
     let parsed_as =
-        <MetadataAny as bedrock_addon_core::versioning::VersionChain<MetadataFamily>>::VERSIONS
+        <MetadataHistory as bedrock_addon_core::versioning::VersionChain<MetadataFamily>>::VERSIONS
             .get(index)
             .copied()
             .unwrap_or(effective);

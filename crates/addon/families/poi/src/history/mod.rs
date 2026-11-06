@@ -21,11 +21,11 @@ pub struct PoiTagFamily;
 
 /// A `minecraft:poi_block` document parsed by the struct its `format_version` selects: the one
 /// type struct (format 1.26.40 and later).
-pub type PoiTypeAny = Single<PoiTypeFamily>;
+pub type PoiTypeHistory = Single<PoiTypeFamily>;
 
 /// A `minecraft:poi_tag` document parsed by the struct its `format_version` selects: the one
 /// tag struct (format 1.26.40 and later).
-pub type PoiTagAny = Single<PoiTagFamily>;
+pub type PoiTagHistory = Single<PoiTagFamily>;
 
 /// Runs the rest of the load on a document [`PoiType::parse_as_written`] gave: the same result
 /// `Content::parse` gives for its file.
@@ -37,7 +37,7 @@ pub type PoiTagAny = Single<PoiTagFamily>;
 /// Returns [`Rejected`] when a check refuses the document, or the `poi` experiment is off; it
 /// carries every finding about the file.
 pub fn upgrade_type(
-    document: Document<PoiTypeAny>,
+    document: Document<PoiTypeHistory>,
     cx: &LoadContext,
 ) -> Result<Document<PoiType>, Rejected> {
     super::upgrade::<PoiTypeFamily>(document, cx)
@@ -50,7 +50,7 @@ pub fn upgrade_type(
 /// Returns [`Rejected`] when a check refuses the document, or the `poi` experiment is off; it
 /// carries every finding about the file.
 pub fn upgrade_tag(
-    document: Document<PoiTagAny>,
+    document: Document<PoiTagHistory>,
     cx: &LoadContext,
 ) -> Result<Document<PoiTag>, Rejected> {
     super::upgrade::<PoiTagFamily>(document, cx)

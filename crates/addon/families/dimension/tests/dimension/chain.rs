@@ -8,7 +8,7 @@ use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::testing::{Checks, Run, step_output};
 use bedrock_addon_core::versioning::{VersionChain, VersionStruct};
 use bedrock_addon_family_dimension::Dimension;
-use bedrock_addon_family_dimension::history::{self, Any};
+use bedrock_addon_family_dimension::history::{self, DimensionHistory};
 
 use super::common::*;
 
@@ -72,7 +72,7 @@ fn the_bounds_of_the_file_become_a_height_of_min_and_the_distance_to_max() {
 
 #[test]
 fn the_chain_is_1_18_0_then_1_26_50() {
-    let versions = <Any as VersionChain<_>>::VERSIONS;
+    let versions = <DimensionHistory as VersionChain<_>>::VERSIONS;
     assert_eq!(
         versions,
         [FormatVersion::new(1, 18, 0), FormatVersion::new(1, 26, 50)]

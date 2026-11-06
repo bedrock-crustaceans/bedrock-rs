@@ -21,7 +21,7 @@ bedrock_addon_core::version_chain! {
     family = TextureSetFamily;
     /// A texture set parsed by the struct its `format_version` selects, not upgraded.
     #[derive(Clone, Debug, PartialEq)]
-    pub enum Any {
+    pub enum TextureSetHistory {
         /// Format 1.16.100 exactly: four layers.
         V1_16_100(v1_16_100::TextureSet),
         /// Format 1.21.30 exactly: the newest document.
@@ -39,7 +39,7 @@ bedrock_addon_core::version_chain! {
 /// Returns [`Rejected`](bedrock_addon_core::document::Rejected) when the upgrade step, or the
 /// checks that follow it, find an error that stops the document from loading.
 pub fn upgrade(
-    document: Document<Any>,
+    document: Document<TextureSetHistory>,
     cx: &LoadContext,
 ) -> Result<Document<TextureSet>, Rejected> {
     upgrade_document(document, cx)

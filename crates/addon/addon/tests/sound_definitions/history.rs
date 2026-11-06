@@ -4,7 +4,7 @@
 use bedrock_addon::diagnostic::Diagnostics;
 use bedrock_addon::document::{Content, Placed};
 use bedrock_addon::families::sound_definitions::SoundDefinitions;
-use bedrock_addon::families::sound_definitions::history::{self, Any};
+use bedrock_addon::families::sound_definitions::history::{self, SoundDefinitionsHistory};
 use bedrock_addon::json::Value;
 use bedrock_addon::load::LoadContext;
 use bedrock_addon::storage::PackPath;
@@ -164,7 +164,9 @@ fn the_chain_is_contiguous_without_floor_or_ceiling() {
         [v(1, 0, 0), v(1, 14, 0), v(1, 20, 20), v(1, 26, 50)]
     );
     assert!(history::VERSIONS.windows(2).all(|pair| pair[0] < pair[1]));
-    let select = |major, minor, patch| Any::select(&SemVersion::new(major, minor, patch));
+    let select = |major, minor, patch| {
+        SoundDefinitionsHistory::select(&SemVersion::new(major, minor, patch))
+    };
     // No floor: everything below 1.14.0 is the versionless struct.
     assert_eq!(select(0, 0, 0), v(1, 0, 0));
     assert_eq!(select(0, 9, 0), v(1, 0, 0));
@@ -180,11 +182,11 @@ fn the_chain_is_contiguous_without_floor_or_ceiling() {
     assert_eq!(select(9, 0, 0), v(1, 26, 50));
     // A prerelease of a step's version orders before it.
     assert_eq!(
-        Any::select(&SemVersion::parse("1.20.20-beta.1").unwrap()),
+        SoundDefinitionsHistory::select(&SemVersion::parse("1.20.20-beta.1").unwrap()),
         v(1, 14, 0)
     );
     assert_eq!(
-        Any::select(&SemVersion::parse("1.26.50-beta.1").unwrap()),
+        SoundDefinitionsHistory::select(&SemVersion::parse("1.26.50-beta.1").unwrap()),
         v(1, 20, 20)
     );
 }
@@ -193,7 +195,7 @@ fn path(text: &str) -> PackPath {
     PackPath::new(text).unwrap()
 }
 
-fn as_written(text: &str) -> bedrock_addon::document::Document<Any> {
+fn as_written(text: &str) -> bedrock_addon::document::Document<SoundDefinitionsHistory> {
     SoundDefinitions::parse_as_written(
         &path("sounds/sound_definitions.json"),
         text.as_bytes(),

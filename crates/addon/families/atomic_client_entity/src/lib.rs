@@ -340,7 +340,7 @@ bedrock_addon_core::version_chain! {
     /// An atomic client entity document as parsed: the beta struct is the only one.
     #[doc(hidden)]
     #[derive(Clone, Debug, PartialEq)]
-    pub enum Any {}
+    pub enum AtomicHistory {}
     beta =
         /// `"format_version": "beta"`.
         Beta(AtomicClientEntity);
@@ -359,7 +359,7 @@ impl Family for AtomicFamily {
     // The one component is a member of `Components`; the generic component checks run on a
     // stable struct only, which this family does not have.
     type Component = NoComponents;
-    type Any = Any;
+    type History = AtomicHistory;
     const ENVELOPE: Envelope = Envelope {
         // The game reads the file through the document-input reader of the cereal-based families:
         // the version is read from the document, and a member written `null` fails its type (the

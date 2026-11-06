@@ -24,7 +24,7 @@ bedrock_addon_core::version_chain! {
     /// A client entity document parsed by the struct its `format_version` selects, not
     /// upgraded.
     #[derive(Clone, Debug, PartialEq)]
-    pub enum Any {
+    pub enum ClientEntityHistory {
         /// Format 1.8.0 up to 1.10.0.
         V1_8_0(v1_8_0::ClientEntity),
         /// Format 1.10.0 up to 1.26.0.
@@ -44,7 +44,7 @@ bedrock_addon_core::version_chain! {
 /// Returns [`Rejected`](bedrock_addon_core::document::Rejected) when the upgrade step, or the
 /// checks that follow it, find an error that stops the document from loading.
 pub fn upgrade(
-    document: Document<Any>,
+    document: Document<ClientEntityHistory>,
     cx: &LoadContext,
 ) -> Result<Document<ClientEntity>, Rejected> {
     crate::upgrade_document(document, cx)

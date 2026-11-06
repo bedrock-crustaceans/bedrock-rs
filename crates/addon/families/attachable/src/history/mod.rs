@@ -24,7 +24,7 @@ bedrock_addon_core::version_chain! {
     /// An attachable document parsed by the struct its `format_version` selects, not
     /// upgraded.
     #[derive(Clone, Debug, PartialEq)]
-    pub enum Any {
+    pub enum AttachableHistory {
         /// Format 1.8.0 up to 1.10.0.
         V1_8_0(v1_8_0::Attachable),
         /// Format 1.10.0 up to 1.26.0.
@@ -36,7 +36,7 @@ bedrock_addon_core::version_chain! {
 
 /// Runs the remaining upgrade steps of a document [`Attachable::parse_as_written`](bedrock_addon_core::document::JsonDocument::parse_as_written) gave: the
 /// same result [`Attachable::parse`](bedrock_addon_core::document::Content::parse) gives for its file
-/// (`history::Any::upgrade`, realised over the document, which holds the
+/// (`history::AttachableHistory::upgrade`, realised over the document, which holds the
 /// origin).
 ///
 /// # Errors
@@ -44,7 +44,7 @@ bedrock_addon_core::version_chain! {
 /// Returns [`Rejected`] when an upgrade step or a check refuses the document; it carries every
 /// finding about the file.
 pub fn upgrade(
-    document: Document<Any>,
+    document: Document<AttachableHistory>,
     cx: &LoadContext,
 ) -> Result<Document<Attachable>, Rejected> {
     crate::upgrade_document(document, cx)

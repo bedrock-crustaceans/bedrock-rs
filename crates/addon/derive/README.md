@@ -144,9 +144,9 @@ fn parse_friction(
 }
 
 pub struct Block;
-pub enum BlockAny {}
+pub enum BlockHistory {}
 
-impl VersionChain<Block> for BlockAny {
+impl VersionChain<Block> for BlockHistory {
     const VERSIONS: &'static [FormatVersion] = &[];
     fn parse(_: JsonSlice<'_>, _: FormatVersion, _: &LoadContext, _: &mut Diagnostics) -> Option<Self> {
         None
@@ -163,7 +163,7 @@ impl Family for Block {
     type Latest = NoStable;
     type Beta = Infallible;
     type Component = BlockComponent;
-    type Any = BlockAny;
+    type History = BlockHistory;
     fn components() -> &'static ComponentTable<Self> {
         BlockComponent::TABLE
     }

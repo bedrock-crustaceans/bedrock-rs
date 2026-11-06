@@ -38,7 +38,7 @@ pub mod v1_21_40 {
 chain! {
     latest = ColorGradingSettings;
     /// A colour-grading file parsed by the struct its `format_version` selects, not upgraded.
-    enum Any {
+    enum ColorGradingHistory {
         /// Format 1.21.40.
         V1_21_40(v1_21_40::ColorGradingSettings),
         /// Format 1.21.90: the newest colour-grading settings.

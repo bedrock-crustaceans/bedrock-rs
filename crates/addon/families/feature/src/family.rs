@@ -7,15 +7,13 @@ use std::convert::Infallible;
 use std::marker::PhantomData;
 
 use crate::{blocks, carver, history, placement, scatter, structure, tree};
-use bedrock_addon_core::diagnostic::Diagnostics;
 use bedrock_addon_core::id::FeatureId;
-use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
+use bedrock_addon_core::json::{EncodeError, Value};
 use bedrock_addon_core::load::DocumentSource;
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
-    BeyondWidth, Envelope, Family, InputKind, Loaded, MissingVersion, NoComponents, ParseCx,
-    Reading, Scalars, StructIndex, ValidateCx, VersionChain, VersionStruct, Versioned,
-    write_payload,
+    BeyondWidth, Envelope, Family, InputKind, Loaded, MissingVersion, NoComponents, Reading,
+    Scalars, StructIndex, ValidateCx, VersionChain, VersionStruct,
 };
 
 /// Format 1.13.0, the initial release (`[1.13.0, 1.21.10)`) and the floor of every feature
@@ -94,13 +92,13 @@ pub(crate) trait FeatureType: Rules + VersionStruct + Send + Sync + 'static {
     /// The feature of this type.
     fn into_feature(self) -> Feature;
     /// A chain value as the public history enum.
-    fn to_history(chain: Self::Chain) -> history::Any;
+    fn to_history(chain: Self::Chain) -> history::FeatureHistory;
     /// The chain value a history value of this type holds; the value back otherwise.
     #[allow(
         clippy::result_large_err,
         reason = "the value is handed back whole, once per document"
     )]
-    fn from_history(any: history::Any) -> Result<Self::Chain, history::Any>;
+    fn from_history(any: history::FeatureHistory) -> Result<Self::Chain, history::FeatureHistory>;
 }
 
 /// The family of one feature type (hidden: only the loaders name it).
@@ -113,7 +111,7 @@ impl<T: FeatureType> Family for Fam<T> {
     type Latest = T;
     type Beta = Infallible;
     type Component = NoComponents;
-    type Any = T::Chain;
+    type History = T::Chain;
     const ENVELOPE: Envelope = Envelope {
         // The client reads a feature through a jsoncpp input: the version comes from the root
         // member, and rule N1 holds (a member written as `null` is absent);
@@ -208,15 +206,15 @@ macro_rules! feature_types {
                     Feature::$variant(self.into())
                 }
 
-                fn to_history(chain: $chain) -> history::Any {
+                fn to_history(chain: $chain) -> history::FeatureHistory {
                     match chain {
-                        $( $chain::$v(value) => history::Any::from(value), )+
+                        $( $chain::$v(value) => history::FeatureHistory::from(value), )+
                     }
                 }
 
-                fn from_history(any: history::Any) -> Result<$chain, history::Any> {
+                fn from_history(any: history::FeatureHistory) -> Result<$chain, history::FeatureHistory> {
                     $(
-                        let any = match <$t as TryFrom<history::Any>>::try_from(any) {
+                        let any = match <$t as TryFrom<history::FeatureHistory>>::try_from(any) {
                             Ok(value) => return Ok($chain::$v(value)),
                             Err(any) => any,
                         };
@@ -225,18 +223,18 @@ macro_rules! feature_types {
                 }
             }
 
-            impl From<$ty> for history::Any {
+            impl From<$ty> for history::FeatureHistory {
                 fn from(value: $ty) -> Self {
-                    history::Any::Latest(Feature::$variant(value.into()))
+                    history::FeatureHistory::Latest(Feature::$variant(value.into()))
                 }
             }
 
-            impl TryFrom<history::Any> for $ty {
-                type Error = history::Any;
+            impl TryFrom<history::FeatureHistory> for $ty {
+                type Error = history::FeatureHistory;
 
-                fn try_from(any: history::Any) -> Result<Self, history::Any> {
+                fn try_from(any: history::FeatureHistory) -> Result<Self, history::FeatureHistory> {
                     match any {
-                        history::Any::Latest(Feature::$variant(value)) => Ok(value),
+                        history::FeatureHistory::Latest(Feature::$variant(value)) => Ok(value),
                         other => Err(other),
                     }
                 }
@@ -429,7 +427,7 @@ feature_types! {
     /// holds every trunk and canopy shape inline (some 17 KB, four times the next type), and an
     /// unoptimised build keeps copies of the value in each frame of the load that moves one;
     /// held inline it took a 768 KiB thread past its stack. The chain's struct is read as a
-    /// plain `TreeFeature` and boxed after (the impls below the rows).
+    /// plain `TreeFeature` and boxed after (core's `Box` impls).
     Tree(Box<tree::TreeFeature>) = "minecraft:tree_feature",
         TreeChain [V1_13_0(Box<tree::TreeFeature>)];
     /// `minecraft:underwater_cave_carver_feature`.
@@ -444,22 +442,9 @@ feature_types! {
         strict = V1_13_0;
 }
 
-impl Versioned for Box<tree::TreeFeature> {
-    const VERSION: FormatVersion = V1_13_0;
-}
-
-impl VersionStruct for Box<tree::TreeFeature> {
-    fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        // The door reads the plain struct, as for every other type; only the value the chain
-        // carries is boxed.
-        let tree = crate::read::parse_strict::<tree::TreeFeature>(payload, cx, d)?;
-        Some(Box::new(tree))
-    }
-
-    fn write(&self) -> Result<Value, EncodeError> {
-        write_payload(&**self)
-    }
-}
+// The tree's struct parses strictly and writes plainly; the chain's `Box<TreeFeature>` is it
+// through core's `Box` impls (read as the plain struct, then boxed).
+strict_struct!(tree::TreeFeature, V1_13_0);
 
 /// The rules of a boxed type are the type's.
 impl<T: Rules> Rules for Box<T> {

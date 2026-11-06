@@ -3,7 +3,7 @@
 
 use bedrock_addon::diagnostic::Severity;
 use bedrock_addon::families::geometry::history::{
-    self, Any, VERSIONS, v0_0_0, v1_8_0, v1_12_0, v1_14_0, v1_16_0, v1_19_30, v1_21_0,
+    self, GeometryHistory, VERSIONS, v0_0_0, v1_8_0, v1_12_0, v1_14_0, v1_16_0, v1_19_30, v1_21_0,
 };
 use bedrock_addon::families::geometry::{CubeUv, GeometryFile, Locator};
 use bedrock_addon::json::Value;
@@ -223,7 +223,7 @@ fn the_chain_is_the_eight_structs_of_the_plan() {
     assert_eq!(history::STRICT_FROM, v(1, 19, 30));
 }
 
-fn written(version: &str) -> bedrock_addon::document::Document<Any> {
+fn written(version: &str) -> bedrock_addon::document::Document<GeometryHistory> {
     let legacy = FormatVersion::new(1, 12, 0)
         > bedrock_addon::version::SemVersion::parse(version)
             .unwrap()
@@ -284,7 +284,7 @@ fn a_file_parsed_as_written_writes_its_own_shape_and_upgrades_to_the_loaded_file
         text.as_bytes(),
         &rp(),
     ));
-    assert!(matches!(document.value(), Any::V1_8_0(_)));
+    assert!(matches!(document.value(), GeometryHistory::V1_8_0(_)));
     assert_eq!(
         json(&document.to_json().unwrap()),
         json(text),

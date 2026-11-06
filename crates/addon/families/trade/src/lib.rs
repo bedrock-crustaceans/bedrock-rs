@@ -34,7 +34,7 @@ use bedrock_addon_core::versioning::{
     NoComponents, ParseCx, Parsed, Reading, StructIndex, ValidateCx, VersionChain, VersionStruct,
     finish, parse_as_written, write_envelope, write_payload,
 };
-use history::{Any, TradeFamily, v0};
+use history::{TradeFamily, TradeHistory, v0};
 use read::CEREAL;
 
 pub use types::{Group, ItemList, Quantity, Tier, Trade, TradeItem, TradeTable};
@@ -52,7 +52,7 @@ impl Family for TradeFamily {
     type Latest = TradeTable;
     type Beta = std::convert::Infallible;
     type Component = NoComponents;
-    type Any = Any;
+    type History = TradeHistory;
     const ENVELOPE: Envelope = Envelope {
         // The game reads a table as a whole document: the version is the one its JSON reader picks
         // from the text, the size limits apply, and rule N2 holds at the cereal slice.
@@ -133,7 +133,7 @@ impl JsonDocument for TradeTable {
         path: &PackPath,
         bytes: &[u8],
         cx: &LoadContext,
-    ) -> Result<Document<Any>, Rejected> {
+    ) -> Result<Document<TradeHistory>, Rejected> {
         let origin = Origin::file(PackRef::app_data(), PackSide::Behavior, path.clone());
         let parsed = match parse_stage(bytes, cx) {
             Ok(parsed) => parsed,
@@ -150,13 +150,13 @@ impl JsonDocument for TradeTable {
 
 /// `history::upgrade`: rebuilds the parse stage from the document and finishes it.
 pub(crate) fn upgrade_document(
-    document: Document<Any>,
+    document: Document<TradeHistory>,
     cx: &LoadContext,
 ) -> Result<Document<TradeTable>, Rejected> {
     let (value, origin, version, diagnostics) = document.into_parsed_parts();
     let at = match value {
-        Any::V0(_) => JsonPath::new(),
-        Any::V1_21_30(_) => payload_at(),
+        TradeHistory::V0(_) => JsonPath::new(),
+        TradeHistory::V1_21_30(_) => payload_at(),
     };
     let written = FormatVersionInput {
         version: Some(version.effective),
@@ -245,7 +245,7 @@ fn legacy(document: JsonSlice<'_>, cx: &LoadContext) -> Parsed<TradeFamily> {
         at: JsonPath::new(),
     };
     let mut diagnostics = Diagnostics::default();
-    let value = <Any as VersionChain<TradeFamily>>::parse_struct(
+    let value = <TradeHistory as VersionChain<TradeFamily>>::parse_struct(
         document,
         StructIndex::Stable(0),
         &parse,

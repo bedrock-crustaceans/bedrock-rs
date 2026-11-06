@@ -145,7 +145,7 @@ impl VersionStruct for GeometryFile {
 /// A geometry file parsed by the struct its `format_version` selects, not upgraded.
 #[derive(Clone, Debug, PartialEq)]
 #[non_exhaustive]
-pub enum Any {
+pub enum GeometryHistory {
     /// Below 1.8.0.
     V0_0_0(v0_0_0::GeometryFile),
     /// 1.8.0 up to 1.12.0.
@@ -164,7 +164,7 @@ pub enum Any {
     V1_26_40(GeometryFile),
 }
 
-impl Any {
+impl GeometryHistory {
     /// The index in [`VERSIONS`] of the struct that parses a file of `version`.
     pub(crate) fn index_of(version: FormatVersion) -> usize {
         VERSIONS
@@ -244,7 +244,7 @@ impl Any {
     }
 }
 
-impl MolangFields for Any {
+impl MolangFields for GeometryHistory {
     fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
         match self {
             Self::V0_0_0(_) | Self::V1_8_0(_) => {}
@@ -268,7 +268,7 @@ impl MolangFields for Any {
 /// Returns [`Rejected`] when an upgrade step or a check refuses the document; it carries every
 /// finding about the file.
 pub fn upgrade(
-    document: Document<Any>,
+    document: Document<GeometryHistory>,
     cx: &LoadContext,
 ) -> Result<Document<GeometryFile>, Rejected> {
     super::upgrade_document(document, cx)

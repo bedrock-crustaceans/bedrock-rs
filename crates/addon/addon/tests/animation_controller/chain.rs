@@ -2,7 +2,7 @@
 //! what the step carries.
 
 use bedrock_addon::families::animation_controller::AnimationControllerFile;
-use bedrock_addon::families::animation_controller::history::{Any, v1_8_0};
+use bedrock_addon::families::animation_controller::history::{AnimationControllerHistory, v1_8_0};
 use bedrock_addon::version::FormatVersion;
 use bedrock_addon::versioning::Versioned;
 
@@ -36,11 +36,26 @@ fn range_selection_floor_and_ceiling() {
         .unwrap()
         .into_value()
     };
-    assert!(matches!(as_written("1.8.0"), Any::V1_8_0(_)));
-    assert!(matches!(as_written("1.9.9"), Any::V1_8_0(_)));
-    assert!(matches!(as_written("1.10.0-beta.1"), Any::V1_8_0(_)));
-    assert!(matches!(as_written("1.10.0"), Any::V1_10_0(_)));
-    assert!(matches!(as_written("1.26.50"), Any::V1_10_0(_)));
+    assert!(matches!(
+        as_written("1.8.0"),
+        AnimationControllerHistory::V1_8_0(_)
+    ));
+    assert!(matches!(
+        as_written("1.9.9"),
+        AnimationControllerHistory::V1_8_0(_)
+    ));
+    assert!(matches!(
+        as_written("1.10.0-beta.1"),
+        AnimationControllerHistory::V1_8_0(_)
+    ));
+    assert!(matches!(
+        as_written("1.10.0"),
+        AnimationControllerHistory::V1_10_0(_)
+    ));
+    assert!(matches!(
+        as_written("1.26.50"),
+        AnimationControllerHistory::V1_10_0(_)
+    ));
     rejected(controller(&file("1.7.9"), &cx));
     rejected(controller(&file("1.26.61"), &cx));
     let upgraded = bedrock_addon::families::animation_controller::history::upgrade(

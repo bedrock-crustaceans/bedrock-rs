@@ -43,7 +43,7 @@ use bedrock_addon_core::versioning::{
     Identity, InputKind, Loaded, Parsed, Reading, StructIndex, finish, parse_as_written,
 };
 use component::ParticleComponent;
-use history::{Any, ParticleFamily};
+use history::{ParticleFamily, ParticleHistory};
 use read::CEREAL;
 use read::{Opt, object};
 use write::PAYLOAD_KEY;
@@ -165,7 +165,7 @@ impl Family for ParticleFamily {
     // Particles have no experimental-build struct, so there is no second text to read.
     type Beta = NoBeta<kind::Particle>;
     type Component = ParticleComponent;
-    type Any = Any;
+    type History = ParticleHistory;
 
     fn components() -> &'static ComponentTable<Self> {
         ParticleComponent::TABLE
@@ -191,7 +191,7 @@ impl JsonDocument for ParticleEffect {
         let text = prepared.as_str();
         let document = JsonSlice::new(text);
         let mut parsed = parse_as_written::<ParticleFamily>(document, cx);
-        if matches!(parsed.value, Some(Any::V1_10_0(_))) {
+        if matches!(parsed.value, Some(ParticleHistory::V1_10_0(_))) {
             parsed.at.push(PAYLOAD_KEY);
         }
         let identifier = parsed.identity.identifier.clone();
@@ -218,7 +218,7 @@ impl JsonDocument for ParticleEffect {
         path: &PackPath,
         bytes: &[u8],
         cx: &LoadContext,
-    ) -> Result<Document<Any>, Rejected> {
+    ) -> Result<Document<ParticleHistory>, Rejected> {
         let origin = origin(PackRef::app_data(), PackSide::Resource, path);
         let Ok(prepared) = Prepared::new(bytes) else {
             return Err(reject(origin, malformed()));
@@ -269,13 +269,13 @@ impl JsonDefinition for ParticleEffect {
 /// The body of `history::upgrade`: rebuilds the parse stage from the document and finishes
 /// it.
 pub(crate) fn upgrade_document(
-    document: Document<Any>,
+    document: Document<ParticleHistory>,
     cx: &LoadContext,
 ) -> Result<Document<ParticleEffect>, Rejected> {
     let (value, origin, version, diagnostics) = document.into_parsed_parts();
     let identifier = match &value {
-        Any::V1_10_0(effect) => &effect.description.identifier,
-        Any::V1_20_80(effect) => &effect.description.identifier,
+        ParticleHistory::V1_10_0(effect) => &effect.description.identifier,
+        ParticleHistory::V1_20_80(effect) => &effect.description.identifier,
     };
     // What is found on the upgraded value is below the payload key in both cases.
     let at = JsonPath::new().child(PAYLOAD_KEY);

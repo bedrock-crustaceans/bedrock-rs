@@ -153,7 +153,7 @@ impl Feature {
         path: &PackPath,
         bytes: &[u8],
         cx: &LoadContext,
-    ) -> Result<Document<history::Any>, Rejected> {
+    ) -> Result<Document<history::FeatureHistory>, Rejected> {
         parse_file_as_written(path, bytes, cx)
     }
 }

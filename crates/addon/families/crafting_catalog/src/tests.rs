@@ -563,7 +563,7 @@ fn the_chain_is_two_structs_from_the_floor() {
     use bedrock_addon_core::versioning::{
         Family, RangeModel, VersionChain, Versioned, check_chain,
     };
-    type Chain = <crate::CatalogFamily as Family>::Any;
+    type Chain = <crate::CatalogFamily as Family>::History;
     assert!(check_chain::<crate::CatalogFamily>().is_ok());
     assert_eq!(
         <Chain as VersionChain<crate::CatalogFamily>>::VERSIONS,

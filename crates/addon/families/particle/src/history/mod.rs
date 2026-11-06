@@ -22,7 +22,7 @@ bedrock_addon_core::version_chain! {
     family = ParticleFamily;
     /// A particle document parsed by the struct its `format_version` selects, not upgraded.
     #[derive(Clone, Debug, PartialEq)]
-    pub enum Any {
+    pub enum ParticleHistory {
         /// Format 1.10.0 up to, not including, 1.20.80.
         V1_10_0(v1_10_0::ParticleEffect),
         /// Format 1.20.80 and later: the newest document.
@@ -38,7 +38,7 @@ bedrock_addon_core::version_chain! {
 /// Returns [`Rejected`] when an upgrade step or a check refuses the document; it carries every
 /// finding about the file.
 pub fn upgrade(
-    document: Document<Any>,
+    document: Document<ParticleHistory>,
     cx: &LoadContext,
 ) -> Result<Document<ParticleEffect>, Rejected> {
     super::upgrade_document(document, cx)

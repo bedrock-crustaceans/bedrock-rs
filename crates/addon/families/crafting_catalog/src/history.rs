@@ -25,7 +25,7 @@ bedrock_addon_core::version_chain! {
     family = CatalogFamily;
     /// A catalogue document parsed by the struct its `format_version` selects, not upgraded.
     #[derive(Clone, Debug, PartialEq)]
-    pub enum CatalogAny {
+    pub enum CatalogHistory {
         /// Format 1.21.60 up to 1.26.50, the unstrict slice.
         V1_21_60(CatalogV1_21_60),
         /// Format 1.26.50 up to the engine, the strict slice.
@@ -34,7 +34,7 @@ bedrock_addon_core::version_chain! {
     molang = none;
 }
 
-impl CatalogAny {
+impl CatalogHistory {
     /// Runs the rest of the load on a document [`CraftingCatalog::parse_as_written`](bedrock_addon_core::document::JsonDocument::parse_as_written) gave: the
     /// same result [`Content::parse`](bedrock_addon_core::document::Content::parse) gives for its file.
     ///

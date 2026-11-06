@@ -819,7 +819,10 @@ fn b04_parse_as_written_then_upgrade_equals_parse() {
     let text = fixture("b04_1_21_110_floor/plains.biome.json");
     let written = Biome::parse_as_written(&super::common::path(), text.as_bytes(), &context())
         .expect("parses");
-    assert!(matches!(written.value(), history::Any::V1_21_110(_)));
+    assert!(matches!(
+        written.value(),
+        history::BiomeHistory::V1_21_110(_)
+    ));
     let upgraded = history::upgrade(written, &context()).expect("upgrades");
     let parsed = loads(&text, &context());
     assert_eq!(upgraded.value(), parsed.value());

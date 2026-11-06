@@ -30,7 +30,7 @@ use indexmap::IndexMap;
 pub use validate::blocks as block_references;
 
 use crate::component::child;
-use crate::history::{Any, BiomeFamily};
+use crate::history::{BiomeFamily, BiomeHistory};
 use crate::read::CEREAL;
 use crate::texts::{DUPLICATE, WORLD_GATE, fixed, text as formatted};
 use std::borrow::Cow;
@@ -150,7 +150,7 @@ impl Family for BiomeFamily {
     type Latest = Biome;
     type Beta = Beta;
     type Component = BiomeComponent;
-    type Any = Any;
+    type History = BiomeHistory;
 
     /// [`reading`] for every slice.
     fn reading(_: StructIndex, _: DocumentSource) -> Reading {
@@ -229,7 +229,7 @@ impl JsonDocument for Biome {
         path: &PackPath,
         bytes: &[u8],
         cx: &LoadContext,
-    ) -> Result<Document<Any>, Rejected> {
+    ) -> Result<Document<BiomeHistory>, Rejected> {
         let origin = origin(PackRef::app_data(), PackSide::Behavior, path);
         let (_, parsed) = parse(&origin, bytes, cx)?;
         let mut diagnostics = parsed.diagnostics;
@@ -314,7 +314,7 @@ impl Placed for Beta {
 
 /// `history::upgrade`: rebuilds the parse stage from the document and finishes it.
 pub(crate) fn upgrade_document(
-    document: Document<Any>,
+    document: Document<BiomeHistory>,
     cx: &LoadContext,
 ) -> Result<Document<Biome>, Rejected> {
     let (value, origin, version, mut found) = document.into_parsed_parts();
@@ -360,13 +360,13 @@ pub(crate) fn upgrade_document(
 }
 
 /// The identifier of a parsed document, as written.
-fn identifier_of(value: &Any) -> &str {
+fn identifier_of(value: &BiomeHistory) -> &str {
     match value {
-        Any::V1_21_110(b) => b.description.identifier.as_str(),
-        Any::V1_21_120(b) => b.description.identifier.as_str(),
-        Any::V1_26_0(b) => b.description.identifier.as_str(),
-        Any::V1_26_30(b) => b.description.identifier.as_str(),
-        Any::Beta(b) => b.description.identifier.as_str(),
+        BiomeHistory::V1_21_110(b) => b.description.identifier.as_str(),
+        BiomeHistory::V1_21_120(b) => b.description.identifier.as_str(),
+        BiomeHistory::V1_26_0(b) => b.description.identifier.as_str(),
+        BiomeHistory::V1_26_30(b) => b.description.identifier.as_str(),
+        BiomeHistory::Beta(b) => b.description.identifier.as_str(),
     }
 }
 

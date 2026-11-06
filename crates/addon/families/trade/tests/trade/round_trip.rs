@@ -7,7 +7,7 @@ use bedrock_addon_core::id::ItemId;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::pack_identity::PackPath;
 use bedrock_addon_core::version::FormatVersion;
-use bedrock_addon_family_trade::history::{self, Any, v0};
+use bedrock_addon_family_trade::history::{self, TradeHistory, v0};
 use bedrock_addon_family_trade::{Group, ItemList, Quantity, Tier, Trade, TradeItem, TradeTable};
 
 use super::common::{above_info, cx, doc, fixture, loads, with};
@@ -362,7 +362,7 @@ fn a_legacy_file_parses_as_written_and_upgrades_to_what_parse_gives() {
     let as_written = TradeTable::parse_as_written(&path(), text.as_bytes(), &cx()).unwrap();
     assert_eq!(as_written.version().parsed_as, FormatVersion::new(0, 0, 0));
     assert_eq!(as_written.value().parsed_version(), v0::VERSION);
-    let Any::V0(legacy) = as_written.value() else {
+    let TradeHistory::V0(legacy) = as_written.value() else {
         panic!("not the legacy struct: {:?}", as_written.value());
     };
     // The struct is the document as written: flat trades, no total_exp_required.
@@ -411,7 +411,7 @@ fn a_stamped_legacy_file_keeps_its_version_when_written_in_its_own_shape() {
 fn a_1_21_30_file_parses_as_the_newest_struct_and_upgrade_runs_no_step() {
     let text = fixture("t07_cleric_trades_1_26_10.json");
     let as_written = TradeTable::parse_as_written(&path(), text.as_bytes(), &cx()).unwrap();
-    assert!(matches!(as_written.value(), Any::V1_21_30(_)));
+    assert!(matches!(as_written.value(), TradeHistory::V1_21_30(_)));
     assert_eq!(
         as_written.value().parsed_version(),
         FormatVersion::new(1, 21, 30)
@@ -472,7 +472,7 @@ fn a_legacy_documents_unknown_members_are_written_back_in_its_own_shape() {
         super::common::found_at(d, "UnrecognizedField", Severity::Info, at);
     }
     assert!(above_info(d).is_empty());
-    let Any::V0(legacy) = as_written.value() else {
+    let TradeHistory::V0(legacy) = as_written.value() else {
         panic!("not the legacy struct");
     };
     let trades = &legacy.tiers[0].groups.as_ref().unwrap()[0].trades[0];

@@ -12,8 +12,8 @@ use indexmap::IndexMap;
 
 use super::Item;
 use super::LOADER;
-use super::history::Any;
 use super::history::ItemFamily;
+use super::history::ItemHistory;
 use super::history::{GateRow, gate_with, release_threshold};
 use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
 use bedrock_addon_core::json::Value;
@@ -33,11 +33,11 @@ fn v(major: u16, minor: u16, patch: u16) -> FormatVersion {
 #[test]
 fn the_chain_is_contiguous_from_0_0_0_to_the_engine() {
     assert_eq!(check_chain::<ItemFamily>(), Ok(()));
-    let versions = <Any as VersionChain<ItemFamily>>::VERSIONS;
+    let versions = <ItemHistory as VersionChain<ItemFamily>>::VERSIONS;
     assert_eq!(versions.len(), 21);
     assert_eq!(versions.first(), Some(&v(1, 10, 0)));
     assert_eq!(versions.last(), Some(&v(1, 26, 50)));
-    let has_beta = <Any as VersionChain<ItemFamily>>::HAS_BETA;
+    let has_beta = <ItemHistory as VersionChain<ItemFamily>>::HAS_BETA;
     assert!(has_beta, "the chain has a beta struct");
     assert_eq!(
         <ItemFamily as bedrock_addon_core::versioning::Family>::RANGE_MODEL,
@@ -48,7 +48,7 @@ fn the_chain_is_contiguous_from_0_0_0_to_the_engine() {
 #[test]
 fn each_version_selects_its_struct() {
     let index = |version| match select::<ItemFamily>(&input(version)) {
-        Selection::Struct(i) => Some(<Any as VersionChain<ItemFamily>>::VERSIONS[i]),
+        Selection::Struct(i) => Some(<ItemHistory as VersionChain<ItemFamily>>::VERSIONS[i]),
         _ => None,
     };
     // the floor is 0.0.0: everything below 1.16.100 is the legacy struct

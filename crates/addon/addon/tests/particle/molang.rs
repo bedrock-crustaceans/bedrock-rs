@@ -69,7 +69,8 @@ fn p25_molang_forms() {
         &cx,
     )
     .unwrap();
-    let bedrock_addon::families::particle::history::Any::V1_10_0(legacy) = written.into_value()
+    let bedrock_addon::families::particle::history::ParticleHistory::V1_10_0(legacy) =
+        written.into_value()
     else {
         panic!();
     };

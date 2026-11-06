@@ -234,7 +234,7 @@ fn the_1_21_40_colour_grading_step_adds_the_temperature_switched_off() {
 #[test]
 fn the_chains_hold_the_structs_of_the_plan() {
     assert_eq!(
-        <lighting::Any as VersionChain<lighting::Family>>::VERSIONS,
+        <lighting::LightingHistory as VersionChain<lighting::Family>>::VERSIONS,
         [
             v(1, 21, 40),
             v(1, 21, 60),
@@ -244,7 +244,7 @@ fn the_chains_hold_the_structs_of_the_plan() {
         ]
     );
     assert_eq!(
-        <water::Any as VersionChain<water::Family>>::VERSIONS,
+        <water::WaterHistory as VersionChain<water::Family>>::VERSIONS,
         [
             v(1, 21, 40),
             v(1, 21, 80),
@@ -254,27 +254,27 @@ fn the_chains_hold_the_structs_of_the_plan() {
         ]
     );
     assert_eq!(
-        <atmosphere::Any as VersionChain<atmosphere::Family>>::VERSIONS,
+        <atmosphere::AtmosphereHistory as VersionChain<atmosphere::Family>>::VERSIONS,
         [v(1, 21, 40), v(1, 26, 20)]
     );
     assert_eq!(
-        <color_grading::Any as VersionChain<color_grading::Family>>::VERSIONS,
+        <color_grading::ColorGradingHistory as VersionChain<color_grading::Family>>::VERSIONS,
         [v(1, 21, 40), v(1, 21, 90)]
     );
     assert_eq!(
-        <cubemap::Any as VersionChain<cubemap::Family>>::VERSIONS,
+        <cubemap::CubemapHistory as VersionChain<cubemap::Family>>::VERSIONS,
         [v(1, 21, 130)]
     );
     assert_eq!(
-        <shadows::Any as VersionChain<shadows::Family>>::VERSIONS,
+        <shadows::ShadowsHistory as VersionChain<shadows::Family>>::VERSIONS,
         [v(1, 21, 80)]
     );
     assert_eq!(
-        <pbr_fallback::Any as VersionChain<pbr_fallback::Family>>::VERSIONS,
+        <pbr_fallback::PbrFallbackHistory as VersionChain<pbr_fallback::Family>>::VERSIONS,
         [v(1, 21, 40)]
     );
     assert_eq!(
-        <local_lighting::Any as VersionChain<local_lighting::Family>>::VERSIONS,
+        <local_lighting::LocalLightingHistory as VersionChain<local_lighting::Family>>::VERSIONS,
         [v(1, 21, 120)]
     );
 }
@@ -289,7 +289,7 @@ fn selects<F: Family>(version: &str) -> Selection {
 #[track_caller]
 fn chain<F: Family>(key: &str, directory: &str, floor: FormatVersion, versions: &[&str])
 where
-    F::Any: VersionChain<F>,
+    F::History: VersionChain<F>,
 {
     check_chain::<F>().expect(key);
     assert_eq!(F::PAYLOAD_KEY, key);
@@ -304,7 +304,7 @@ where
     assert_eq!(F::RANGE_MODEL, RangeModel::ExactOnly);
     assert!(matches!(F::ENVELOPE.missing, MissingVersion::Reject { .. }));
     assert_eq!(F::ENVELOPE.check, EnvelopeCheck::Always);
-    let has_beta = <F::Any as VersionChain<F>>::HAS_BETA;
+    let has_beta = <F::History as VersionChain<F>>::HAS_BETA;
     assert!(!has_beta, "Beta = Infallible");
     for (index, version) in versions.iter().enumerate() {
         assert_eq!(

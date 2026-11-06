@@ -52,7 +52,7 @@ pub(crate) const BROADCAST_RANGE_SINCE: FormatVersion =
 pub struct MetadataFamily;
 
 /// The file parsed by the one struct, not upgraded.
-pub(crate) type MetadataAny = Single<MetadataFamily>;
+pub(crate) type MetadataHistory = Single<MetadataFamily>;
 
 impl Family for MetadataFamily {
     const NAME: &'static str = "server_sound_definitions";
@@ -77,7 +77,7 @@ impl Family for MetadataFamily {
     // No Beta slice: `"beta"` has no parser.
     type Beta = std::convert::Infallible;
     type Component = NoComponents;
-    type Any = Single<Self>;
+    type History = Single<Self>;
 
     /// The document-input profile, its scalars read strictly: a member takes its own JSON type
     /// alone, and a number beyond its float is a type error.
@@ -136,7 +136,7 @@ impl JsonDocument for SoundMetadataFile {
         path: &PackPath,
         bytes: &[u8],
         cx: &LoadContext,
-    ) -> Result<Document<MetadataAny>, Rejected> {
+    ) -> Result<Document<MetadataHistory>, Rejected> {
         with_last_wins(bytes, |text| {
             parse_document_as_written::<MetadataFamily>(PackSide::Behavior, path, text, cx)
         })
@@ -297,10 +297,10 @@ mod tests {
         // One slice at 1.26.60 with the strict mask, then the engine version closes it; there
         // is no beta slice.
         assert_eq!(
-            <MetadataAny as VersionChain<MetadataFamily>>::VERSIONS,
+            <MetadataHistory as VersionChain<MetadataFamily>>::VERSIONS,
             [FormatVersion::new(1, 26, 60)]
         );
-        const { assert!(!<MetadataAny as VersionChain<MetadataFamily>>::HAS_BETA) };
+        const { assert!(!<MetadataHistory as VersionChain<MetadataFamily>>::HAS_BETA) };
         assert_eq!(MetadataFamily::ENVELOPE.input, InputKind::Document);
         assert_eq!(
             MetadataFamily::reading(StructIndex::Stable(0), DocumentSource::Json).null_rule(),

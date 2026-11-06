@@ -3,7 +3,8 @@
 
 use bedrock_addon::document::{Content, JsonDocument};
 use bedrock_addon::families::camera::history::{
-    self, Any, EntityAny, EntityFamily, ListAny, ListFamily, PresetFamily, SplineAny, SplineFamily,
+    self, EntityFamily, EntityHistory, ListFamily, ListHistory, PresetFamily, PresetHistory,
+    SplineFamily, SplineHistory,
 };
 use bedrock_addon::families::camera::{
     ALLOWED_MC_INHERIT, CameraList, CameraPreset, CameraSpline, VANILLA_CAMERAS,
@@ -25,7 +26,7 @@ fn selects<F: Family>(version: &str) -> Selection {
 
 #[test]
 fn the_preset_chain_is_1_19_50_then_1_26_50() {
-    let versions = <Any as VersionChain<PresetFamily>>::VERSIONS;
+    let versions = <PresetHistory as VersionChain<PresetFamily>>::VERSIONS;
     assert_eq!(
         versions,
         [FormatVersion::new(1, 19, 50), FormatVersion::new(1, 26, 50)]
@@ -70,22 +71,22 @@ fn the_preset_step_copies_every_member_and_sets_the_apply_inherited_flag() {
 
 #[test]
 fn the_chains_are_the_plans() {
-    const HAS_BETA: bool = <Any as VersionChain<PresetFamily>>::HAS_BETA;
+    const HAS_BETA: bool = <PresetHistory as VersionChain<PresetFamily>>::HAS_BETA;
 
     check_chain::<PresetFamily>().expect("presets");
     check_chain::<ListFamily>().expect("lists");
     check_chain::<SplineFamily>().expect("splines");
     check_chain::<EntityFamily>().expect("camera entities");
     assert_eq!(
-        <ListAny as VersionChain<ListFamily>>::VERSIONS,
+        <ListHistory as VersionChain<ListFamily>>::VERSIONS,
         [FormatVersion::new(1, 19, 50)]
     );
     assert_eq!(
-        <SplineAny as VersionChain<SplineFamily>>::VERSIONS,
+        <SplineHistory as VersionChain<SplineFamily>>::VERSIONS,
         [FormatVersion::new(1, 26, 0)]
     );
     assert_eq!(
-        <EntityAny as VersionChain<EntityFamily>>::VERSIONS,
+        <EntityHistory as VersionChain<EntityFamily>>::VERSIONS,
         [FormatVersion::new(0, 0, 0)]
     );
     assert_eq!(PresetFamily::PAYLOAD_KEY, "minecraft:camera_preset");
@@ -175,7 +176,7 @@ fn the_history_path_writes_as_read_and_upgrades_to_the_same_preset() {
     let cx = LoadContext::detached();
     let written = CameraPreset::parse_as_written(&path, text.as_bytes(), &cx).unwrap();
     assert_eq!(written.version().parsed_as, FormatVersion::new(1, 19, 50));
-    assert!(matches!(written.value(), Any::V1_19_50(_)));
+    assert!(matches!(written.value(), PresetHistory::V1_19_50(_)));
     // The history value is written at the version it was read at, and reads back the same.
     let rewritten = written.to_json().unwrap();
     assert!(

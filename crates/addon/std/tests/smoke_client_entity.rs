@@ -280,7 +280,7 @@ fn is_plain_script_element(pointer: &str) -> bool {
 #[test]
 fn every_client_entity_molang_occurrence_loads_with_its_text_and_version() {
     use bedrock_addon::diagnostic::Diagnostics;
-    use bedrock_addon::families::client_entity::history::Any;
+    use bedrock_addon::families::client_entity::history::ClientEntityHistory;
 
     let pairs_file = skip!(game_files::MOLANG_PAIRS);
     let install_b = skip!(game_files::CLIENT_INSTALL_B);
@@ -297,13 +297,17 @@ fn every_client_entity_molang_occurrence_loads_with_its_text_and_version() {
         let written = ClientEntity::parse_as_written(&file.at, file.text.as_bytes(), &file.cx)
             .map_err(|rejected| rejected.diagnostics)?;
         let mut members = pairs::Members::new();
-        if matches!(written.value(), Any::V1_26_0(_)) {
+        if matches!(written.value(), ClientEntityHistory::V1_26_0(_)) {
             plain.insert(file.path.to_path_buf());
         }
         match written.into_value() {
-            Any::V1_8_0(mut entity) => pairs::members(&mut entity, None, &mut members),
-            Any::V1_10_0(mut entity) => pairs::members(&mut entity, None, &mut members),
-            Any::V1_26_0(mut entity) => {
+            ClientEntityHistory::V1_8_0(mut entity) => {
+                pairs::members(&mut entity, None, &mut members)
+            }
+            ClientEntityHistory::V1_10_0(mut entity) => {
+                pairs::members(&mut entity, None, &mut members)
+            }
+            ClientEntityHistory::V1_26_0(mut entity) => {
                 // From 1.26.0 the elements are plain strings (`visual::Scripts`): the loaded
                 // document holds no Molang version for them, so none the loader assigned can
                 // be read back. The text is the document's; the version is the load

@@ -65,7 +65,7 @@ use bedrock_addon_core::versioning::{
     Single, StructIndex, UnknownMask, ValidateCx,
 };
 use history::{
-    MetadataAny, MetadataFamily, PoolFamily, ProcessorListFamily, StructureFamily,
+    MetadataFamily, MetadataHistory, PoolFamily, ProcessorListFamily, StructureFamily,
     StructureSetFamily,
 };
 use read::{V1_21_20, parse_metadata};
@@ -161,7 +161,7 @@ impl Family for StructureFamily {
     type Latest = JigsawStructure;
     type Beta = NoBeta<kind::JigsawStructure>;
     type Component = NoComponents;
-    type Any = Single<Self>;
+    type History = Single<Self>;
 
     fn reading(_: StructIndex, _: DocumentSource) -> Reading {
         JSON_READING
@@ -212,7 +212,7 @@ impl Family for PoolFamily {
     type Latest = TemplatePool;
     type Beta = NoBeta<kind::TemplatePool>;
     type Component = NoComponents;
-    type Any = Single<Self>;
+    type History = Single<Self>;
 
     fn reading(_: StructIndex, _: DocumentSource) -> Reading {
         JSON_READING
@@ -263,7 +263,7 @@ impl Family for StructureSetFamily {
     type Latest = StructureSet;
     type Beta = NoBeta<kind::StructureSet>;
     type Component = NoComponents;
-    type Any = Single<Self>;
+    type History = Single<Self>;
 
     fn reading(_: StructIndex, _: DocumentSource) -> Reading {
         JSON_READING
@@ -314,7 +314,7 @@ impl Family for ProcessorListFamily {
     type Latest = ProcessorList;
     type Beta = NoBeta<kind::ProcessorList>;
     type Component = NoComponents;
-    type Any = Single<Self>;
+    type History = Single<Self>;
 
     fn reading(_: StructIndex, _: DocumentSource) -> Reading {
         JSON_READING
@@ -364,7 +364,7 @@ impl Family for MetadataFamily {
     type Latest = MetadataRegistry;
     type Beta = Infallible;
     type Component = NoComponents;
-    type Any = MetadataAny;
+    type History = MetadataHistory;
 
     /// The first-run profile, its scalars read strictly: a member takes its own JSON type alone,
     /// and a number beyond its type is a type error.

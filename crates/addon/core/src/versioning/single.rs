@@ -16,7 +16,7 @@ use crate::molang::MolangFields;
 use crate::version::FormatVersion;
 
 /// The chain of a family with one format version and no beta struct: the newest struct is the
-/// only one and nothing upgrades. A family names it as `type Any = Single<Self>;` instead of a
+/// only one and nothing upgrades. A family names it as `type History = Single<Self>;` instead of a
 /// `version_chain!` of one variant.
 ///
 /// It reads and writes as that `version_chain!` does: `VERSIONS` is the newest struct's version,

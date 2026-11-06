@@ -115,17 +115,17 @@ fn the_1_20_60_struct_is_what_the_file_holds_before_the_step() {
     use bedrock_addon_core::json::JsonSlice;
     use bedrock_addon_core::load::LoadContext;
     use bedrock_addon_core::versioning::VersionChain;
-    use bedrock_addon_family_block_culling::history::{Any, CullingFamily};
+    use bedrock_addon_family_block_culling::history::{CullingFamily, CullingHistory};
     let payload = r#"{"description": {"identifier": "a:b"}, "rules": [{"geometry_part": {"bone": "x"}, "direction": "up"}]}"#;
     let mut d = Diagnostics::default();
-    let parsed = <Any as VersionChain<CullingFamily>>::parse(
+    let parsed = <CullingHistory as VersionChain<CullingFamily>>::parse(
         JsonSlice::new(payload),
         FormatVersion::new(1, 21, 79),
         &LoadContext::detached(),
         &mut d,
     );
     assert!(d.is_empty(), "{d:#?}");
-    let Some(Any::V1_20_60(document)) = parsed else {
+    let Some(CullingHistory::V1_20_60(document)) = parsed else {
         panic!("1.21.79 is the 1.20.60 struct's: {parsed:#?}");
     };
     assert_eq!(
@@ -135,15 +135,18 @@ fn the_1_20_60_struct_is_what_the_file_holds_before_the_step() {
             direction: Facing::Up,
         }]
     );
-    let parsed = <Any as VersionChain<CullingFamily>>::parse(
+    let parsed = <CullingHistory as VersionChain<CullingFamily>>::parse(
         JsonSlice::new(payload),
         FormatVersion::new(1, 21, 80),
         &LoadContext::detached(),
         &mut d,
     );
-    assert!(matches!(parsed, Some(Any::V1_21_80(_))), "{parsed:#?}");
+    assert!(
+        matches!(parsed, Some(CullingHistory::V1_21_80(_))),
+        "{parsed:#?}"
+    );
     assert_eq!(
-        <Any as VersionChain<CullingFamily>>::VERSIONS,
+        <CullingHistory as VersionChain<CullingFamily>>::VERSIONS,
         [FormatVersion::new(1, 20, 60), FormatVersion::new(1, 21, 80)]
     );
 }

@@ -8,9 +8,10 @@
 //! `tests/document/root_types.txt` (their `struct` bodies and every `impl` block whose self type
 //! is the root type), so every family's root types are covered as soon as they are listed.
 //!
-//! Methods a macro generates (`version_chain!` emits `history::Any`'s, `#[derive(Components)]`
+//! Methods a macro generates (`version_chain!` emits the history enum's, `#[derive(Components)]`
 //! its conversions) are not in the source text, so this scan cannot see them; the generated methods
-//! are checked separately. The accessor of `history::Any` is `parsed_version` for that reason.
+//! are checked separately. The accessor of a history enum (`history::<Name>History`) is `parsed_version` for that
+//! reason.
 
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 

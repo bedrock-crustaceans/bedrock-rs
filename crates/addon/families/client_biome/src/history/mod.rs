@@ -39,7 +39,7 @@ bedrock_addon_core::version_chain! {
     family = ClientBiomeFamily;
     /// A client-biome document parsed by the struct its `format_version` selects, not upgraded.
     #[derive(Clone, Debug, PartialEq)]
-    pub enum Any {
+    pub enum ClientBiomeHistory {
         /// Format 1.21.40: the first format, read from the whole document.
         V1_21_40(v1_21_40::ClientBiome),
         /// Format 1.21.70.
@@ -70,7 +70,7 @@ bedrock_addon_core::version_chain! {
 /// checks that follow it, find an error that stops the document from loading, including a beta
 /// document.
 pub fn upgrade(
-    document: Document<Any>,
+    document: Document<ClientBiomeHistory>,
     cx: &LoadContext,
 ) -> Result<Document<ClientBiome>, Rejected> {
     crate::upgrade_document(document, cx)

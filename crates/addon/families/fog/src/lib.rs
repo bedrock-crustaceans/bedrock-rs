@@ -26,7 +26,7 @@ use bedrock_addon_shared_shapes::{HexOr, Keyframes};
 pub(crate) use jsonutil::{Era, read_document};
 pub(crate) use write::{color_ju, float, norm_ju, object_with};
 
-use crate::history::{Any, FogFamily};
+use crate::history::{FogFamily, FogHistory};
 use crate::texts::{
     EMPTY_AFTER_PARSE, EMPTY_RESOURCE, FAILED_TO_VALIDATE, INVALID_VERSION, NO_IDENTIFIER,
     PARSE_ERROR, UNSUPPORTED_VERSION,
@@ -306,7 +306,7 @@ impl Family for FogFamily {
     type Latest = FogSettings;
     type Beta = NoBeta<kind::Fog>;
     type Component = NoComponents;
-    type Any = Any;
+    type History = FogHistory;
     const ENVELOPE: Envelope = Envelope {
         // Below 1.26.20 the strict schema root reads the whole document (a third root member is an
         // unknown member of it); from 1.26.20 `MinecraftDocumentInput` wants exactly two members.
@@ -494,7 +494,7 @@ fn as_written(text: &str, cx: &LoadContext) -> Parsed<FogFamily> {
     diagnostics.push(
         Diagnostic::info(DiagnosticCode::PrereleaseFormatVersion { version: written }).at(at),
     );
-    let versions = <Any as VersionChain<FogFamily>>::VERSIONS;
+    let versions = <FogHistory as VersionChain<FogFamily>>::VERSIONS;
     let parsed_as = versions.get(V1_21_90).copied().unwrap_or(FLOOR);
     let parse = ParseCx {
         load: cx,
@@ -502,7 +502,7 @@ fn as_written(text: &str, cx: &LoadContext) -> Parsed<FogFamily> {
         original_version: LATEST,
         at: JsonPath::new(),
     };
-    let value = <Any as VersionChain<FogFamily>>::parse_struct(
+    let value = <FogHistory as VersionChain<FogFamily>>::parse_struct(
         document,
         StructIndex::Stable(V1_21_90),
         &parse,
@@ -556,7 +556,7 @@ impl JsonDocument for FogSettings {
         path: &PackPath,
         bytes: &[u8],
         cx: &LoadContext,
-    ) -> Result<Document<Any>, Rejected> {
+    ) -> Result<Document<FogHistory>, Rejected> {
         let origin = Origin::file(PackRef::app_data(), PackSide::Resource, path.clone());
         let text = match gates(bytes) {
             Ok(text) => text,
@@ -628,7 +628,7 @@ impl JsonDefinition for FogSettings {
 /// finding about the file.
 #[doc(hidden)]
 pub fn upgrade_document(
-    document: Document<Any>,
+    document: Document<FogHistory>,
     cx: &LoadContext,
 ) -> Result<Document<FogSettings>, Rejected> {
     let (value, origin, version, diagnostics) = document.into_parsed_parts();

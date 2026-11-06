@@ -7,7 +7,7 @@
 use bedrock_addon::diagnostic::Severity;
 use bedrock_addon::document::JsonDocument as _;
 use bedrock_addon::families::client_entity::ClientEntity;
-use bedrock_addon::families::client_entity::history::Any;
+use bedrock_addon::families::client_entity::history::ClientEntityHistory;
 use bedrock_addon::json::EncodeError;
 use bedrock_addon::load::LoadContext;
 use bedrock_addon::storage::PackPath;
@@ -592,9 +592,9 @@ fn check(source: &str, shape: Shape, cx: &LoadContext, counts: &mut Counts) {
     let path = PackPath::from_static(PATH);
     if let Ok(written) = ClientEntity::parse_as_written(&path, source.as_bytes(), cx) {
         let value = match written.value() {
-            Any::V1_8_0(entity) => entity.write(),
-            Any::V1_10_0(entity) => entity.write(),
-            Any::V1_26_0(entity) => entity.write(),
+            ClientEntityHistory::V1_8_0(entity) => entity.write(),
+            ClientEntityHistory::V1_10_0(entity) => entity.write(),
+            ClientEntityHistory::V1_26_0(entity) => entity.write(),
         };
         let text = bedrock_addon::json::to_json(&value.unwrap()).unwrap();
         let again =

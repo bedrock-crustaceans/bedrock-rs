@@ -51,7 +51,7 @@ use crate::versioning::{
 };
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 
-use history::{Any, PackSettingsFamily};
+use history::{PackSettingsFamily, PackSettingsHistory};
 
 /// The closing error of a file that failed to load; `{}` is the file's path.
 const LOAD_FAILED: &str = "Pack Settings failed to load [{}]";
@@ -78,7 +78,7 @@ impl Family for PackSettingsFamily {
     type Latest = SavedSettings;
     type Beta = Infallible;
     type Component = NoComponents;
-    type Any = Any;
+    type History = PackSettingsHistory;
 
     /// The document has no `description`.
     fn identity(_: JsonSlice<'_>) -> Identity {

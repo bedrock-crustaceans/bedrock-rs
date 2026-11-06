@@ -4,7 +4,7 @@
 //! `v1_16_100` … `v1_26_0` are the component formats, each an instance of
 //! [`ItemDocument`](crate::history::ItemDocument); `v1_26_30` is the first modern format
 //! (its sound members bind level sound events); the newest format, 1.26.50, is
-//! [`crate::Item`]. [`Any`] is the struct a file's
+//! [`crate::Item`]. [`ItemHistory`] is the struct a file's
 //! `format_version` selected, from `Item::parse_as_written`.
 
 mod component;
@@ -134,7 +134,7 @@ bedrock_addon_core::version_chain! {
     /// The struct an item file's `format_version` selected (the legacy item format for a
     /// document that is not component based).
     #[derive(Clone, Debug, PartialEq)]
-    pub enum Any {
+    pub enum ItemHistory {
         /// The legacy item format.
         V1_10_0(v1_10_0::Item),
         /// The 1.16.100 format.
@@ -182,7 +182,7 @@ bedrock_addon_core::version_chain! {
     Beta(crate::Beta);
 }
 
-impl Any {
+impl ItemHistory {
     /// Runs the remaining upgrade steps on a document
     /// [`Item::parse_as_written`](bedrock_addon_core::document::JsonDocument::parse_as_written)
     /// gave: the chain's checks `Item::parse` runs, without its resource-pack rule (an item at
@@ -193,7 +193,10 @@ impl Any {
     ///
     /// Returns [`Rejected`] when the document is a beta one, or a remaining upgrade step leaves an
     /// error finding.
-    pub fn upgrade(document: Document<Any>, cx: &LoadContext) -> Result<Document<Item>, Rejected> {
+    pub fn upgrade(
+        document: Document<ItemHistory>,
+        cx: &LoadContext,
+    ) -> Result<Document<Item>, Rejected> {
         let (any, origin, version, diagnostics) = document.into_parsed_parts();
         let identity = versioning::Identity {
             identifier: Some(any.identifier().to_owned()),
@@ -226,28 +229,28 @@ impl Any {
     /// The identifier the document names.
     pub fn identifier(&self) -> &str {
         match self {
-            Any::V1_10_0(v) => &v.description.identifier,
-            Any::V1_16_100(v) => &v.description.identifier,
-            Any::V1_19_83(v) => &v.description.identifier,
-            Any::V1_20_0(v) => &v.description.identifier,
-            Any::V1_20_20(v) => &v.description.identifier,
-            Any::V1_20_30(v) => &v.description.identifier,
-            Any::V1_20_40(v) => &v.description.identifier,
-            Any::V1_20_50(v) => &v.description.identifier,
-            Any::V1_20_60(v) => &v.description.identifier,
-            Any::V1_20_80(v) => &v.description.identifier,
-            Any::V1_21_10(v) => &v.description.identifier,
-            Any::V1_21_30(v) => &v.description.identifier,
-            Any::V1_21_40(v) => &v.description.identifier,
-            Any::V1_21_50(v) => &v.description.identifier,
-            Any::V1_21_60(v) => &v.description.identifier,
-            Any::V1_21_80(v) => &v.description.identifier,
-            Any::V1_21_90(v) => &v.description.identifier,
-            Any::V1_21_110(v) => &v.description.identifier,
-            Any::V1_26_0(v) => &v.description.identifier,
-            Any::V1_26_30(v) => v.description.identifier.as_str(),
-            Any::V1_26_50(v) => v.description.identifier.as_str(),
-            Any::Beta(v) => v.description.identifier.as_str(),
+            ItemHistory::V1_10_0(v) => &v.description.identifier,
+            ItemHistory::V1_16_100(v) => &v.description.identifier,
+            ItemHistory::V1_19_83(v) => &v.description.identifier,
+            ItemHistory::V1_20_0(v) => &v.description.identifier,
+            ItemHistory::V1_20_20(v) => &v.description.identifier,
+            ItemHistory::V1_20_30(v) => &v.description.identifier,
+            ItemHistory::V1_20_40(v) => &v.description.identifier,
+            ItemHistory::V1_20_50(v) => &v.description.identifier,
+            ItemHistory::V1_20_60(v) => &v.description.identifier,
+            ItemHistory::V1_20_80(v) => &v.description.identifier,
+            ItemHistory::V1_21_10(v) => &v.description.identifier,
+            ItemHistory::V1_21_30(v) => &v.description.identifier,
+            ItemHistory::V1_21_40(v) => &v.description.identifier,
+            ItemHistory::V1_21_50(v) => &v.description.identifier,
+            ItemHistory::V1_21_60(v) => &v.description.identifier,
+            ItemHistory::V1_21_80(v) => &v.description.identifier,
+            ItemHistory::V1_21_90(v) => &v.description.identifier,
+            ItemHistory::V1_21_110(v) => &v.description.identifier,
+            ItemHistory::V1_26_0(v) => &v.description.identifier,
+            ItemHistory::V1_26_30(v) => v.description.identifier.as_str(),
+            ItemHistory::V1_26_50(v) => v.description.identifier.as_str(),
+            ItemHistory::Beta(v) => v.description.identifier.as_str(),
         }
     }
 }

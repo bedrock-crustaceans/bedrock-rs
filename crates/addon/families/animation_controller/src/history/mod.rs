@@ -18,14 +18,14 @@ use bedrock_addon_core::version::known;
 /// A controller file parsed by the struct its `format_version` selects, not upgraded.
 #[derive(Clone, Debug, PartialEq)]
 #[non_exhaustive]
-pub enum Any {
+pub enum AnimationControllerHistory {
     /// Format 1.8.0 up to 1.10.0.
     V1_8_0(v1_8_0::AnimationControllerFile),
     /// Format 1.10.0 and later: the newest document.
     V1_10_0(AnimationControllerFile),
 }
 
-impl Any {
+impl AnimationControllerHistory {
     /// The version of the struct that parsed the file.
     pub fn parsed_version(&self) -> FormatVersion {
         match self {
@@ -61,7 +61,7 @@ impl Any {
 /// Returns [`Rejected`](bedrock_addon_core::document::Rejected) when the upgrade step, or the
 /// checks that follow it, find an error that stops the document from loading.
 pub fn upgrade(
-    document: Document<Any>,
+    document: Document<AnimationControllerHistory>,
     cx: &LoadContext,
 ) -> Result<Document<AnimationControllerFile>, Rejected> {
     super::upgrade_document(document, cx)

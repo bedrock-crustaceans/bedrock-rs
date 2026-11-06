@@ -61,7 +61,7 @@ use bedrock_addon_core::versioning::{
     MissingVersion, NoComponents, NoStable, ParseCx, Parsed, RangeModel, Single, ValidateCx,
     VersionStruct, Versioned, finish, no_parser_version, parse_as_written, write_envelope,
 };
-use history::{CompositionFamily, RootFamily, StyleAny, StyleFamily};
+use history::{CompositionFamily, RootFamily, StyleFamily, StyleHistory};
 
 /// The one `format_version` roots and compositions are read at.
 pub const FORMAT_VERSION: FormatVersion = known::V1_21_130;
@@ -156,7 +156,7 @@ impl Family for RootFamily {
     type Latest = UiRoot;
     type Beta = NoBeta<kind::UiRoot>;
     type Component = NoComponents;
-    type Any = Single<Self>;
+    type History = Single<Self>;
 
     fn validate(v: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {
         if let Loaded::Stable(root) = v {
@@ -182,7 +182,7 @@ impl Family for CompositionFamily {
     type Latest = UiComposition;
     type Beta = NoBeta<kind::UiComposition>;
     type Component = NoComponents;
-    type Any = Single<Self>;
+    type History = Single<Self>;
 
     fn validate(v: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {
         if let Loaded::Stable(composition) = v {
@@ -201,7 +201,7 @@ fn composition_point(any: &Single<CompositionFamily>) -> Option<String> {
 }
 
 /// The extension point of a document that asks for none.
-fn no_point<F: Family>(_: &F::Any) -> Option<String> {
+fn no_point<F: Family>(_: &F::History) -> Option<String> {
     None
 }
 
@@ -231,7 +231,7 @@ impl Family for StyleFamily {
     // Every pack may load the beta version, with or without the Beta APIs toggle.
     const BETA_PERMISSION: BetaPermission = BetaPermission::Always;
     type Component = NoComponents;
-    type Any = StyleAny;
+    type History = StyleHistory;
     const ENVELOPE: Envelope = Envelope {
         // The same document input as for roots: the version as it reads it, and rule N2.
         input: InputKind::Document,
@@ -482,7 +482,7 @@ fn parse_file<F: Family, T>(
     bytes: &[u8],
     cx: &LoadContext,
     take: fn(Loaded<F>) -> Option<T>,
-    point: fn(&F::Any) -> Option<String>,
+    point: fn(&F::History) -> Option<String>,
 ) -> (Option<String>, Result<Document<T>, Rejected>, AskedPoint) {
     let Ok(prepared) = Prepared::new(bytes) else {
         let mut diagnostics = unreadable::<F>();
@@ -548,7 +548,7 @@ fn as_written<F: Family>(
     path: &PackPath,
     bytes: &[u8],
     cx: &LoadContext,
-) -> Result<Document<F::Any>, Rejected> {
+) -> Result<Document<F::History>, Rejected> {
     let origin = Origin::file(PackRef::app_data(), PackSide::Resource, path.clone());
     let Ok(prepared) = Prepared::new(bytes) else {
         let mut diagnostics = unreadable::<F>();
@@ -686,7 +686,7 @@ impl UiStyle {
         path: &PackPath,
         bytes: &[u8],
         cx: &LoadContext,
-    ) -> Result<Document<StyleAny>, Rejected> {
+    ) -> Result<Document<StyleHistory>, Rejected> {
         as_written::<StyleFamily>(path, bytes, cx)
     }
 }

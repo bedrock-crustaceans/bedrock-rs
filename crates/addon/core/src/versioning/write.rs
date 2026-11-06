@@ -14,7 +14,7 @@ use crate::version::FormatVersion;
 /// the whole text at `version`) the payload is the document, and it is returned unchanged:
 /// a raw-text struct writes its own root, root members included, so `extras` is not written.
 ///
-/// This is the envelope the generated `Any::to_json` writes (`__macro::document_json`), as a
+/// This is the envelope the generated history enum's `to_json` writes (`__macro::document_json`), as a
 /// [`Value`].
 ///
 /// The envelopes the families still build by hand in this shape, version first, one payload

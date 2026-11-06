@@ -5,7 +5,7 @@ use bedrock_addon_core::version::{ENGINE_VERSION, FormatVersion, FormatVersionIn
 use bedrock_addon_core::versioning::{
     Family, RangeModel, Selection, VersionChain, check_chain, select,
 };
-use bedrock_addon_family_spawn_groups::{GroupAny, GroupFamily};
+use bedrock_addon_family_spawn_groups::{GroupFamily, GroupHistory};
 
 fn engine() -> String {
     ENGINE_VERSION.to_string()
@@ -19,10 +19,10 @@ fn selects<F: Family>(version: &str) -> Selection {
 fn the_chain_is_one_struct_without_beta() {
     check_chain::<GroupFamily>().unwrap();
     assert_eq!(
-        <GroupAny as VersionChain<GroupFamily>>::VERSIONS,
+        <GroupHistory as VersionChain<GroupFamily>>::VERSIONS,
         [FormatVersion::new(1, 8, 0)]
     );
-    const { assert!(!<GroupAny as VersionChain<GroupFamily>>::HAS_BETA) };
+    const { assert!(!<GroupHistory as VersionChain<GroupFamily>>::HAS_BETA) };
 }
 
 #[test]

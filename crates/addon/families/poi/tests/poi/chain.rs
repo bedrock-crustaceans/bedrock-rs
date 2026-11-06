@@ -6,7 +6,9 @@ use bedrock_addon_core::versioning::{
     EnvelopeCheck, Family, MissingVersion, RangeModel, Selection, VersionChain, Versioned,
     check_chain, select,
 };
-use bedrock_addon_family_poi::history::{PoiTagAny, PoiTagFamily, PoiTypeAny, PoiTypeFamily};
+use bedrock_addon_family_poi::history::{
+    PoiTagFamily, PoiTagHistory, PoiTypeFamily, PoiTypeHistory,
+};
 use bedrock_addon_family_poi::{PoiTag, PoiType};
 
 /// A version input.
@@ -19,11 +21,11 @@ fn one_struct_from_1_26_40_to_the_engine<F: Family>() {
     assert_eq!(F::RANGE_MODEL, RangeModel::ClosedToEngine);
     assert_eq!(F::FLOOR, FormatVersion::new(1, 26, 40));
     assert_eq!(
-        <F::Any as VersionChain<F>>::VERSIONS,
+        <F::History as VersionChain<F>>::VERSIONS,
         [FormatVersion::new(1, 26, 40)]
     );
     assert!(
-        !<F::Any as VersionChain<F>>::HAS_BETA,
+        !<F::History as VersionChain<F>>::HAS_BETA,
         "Latest = Beta in vanilla: no beta struct"
     );
     assert_eq!(select::<F>(&version("1.26.40")), Selection::Struct(0));
@@ -102,11 +104,11 @@ fn the_chain_enums_hold_the_newest_struct() {
     use bedrock_addon_core::id::{PoiTagId, PoiTypeId};
     use bedrock_addon_core::versioning::Single;
     let forge = PoiType::new(PoiTypeId::from_static("test:forge"), Vec::new());
-    let chain: PoiTypeAny = Single(forge.clone());
+    let chain: PoiTypeHistory = Single(forge.clone());
     let Single(inner) = chain;
     assert_eq!(inner, forge);
     let civic = PoiTag::new(PoiTagId::from_static("test:civic"));
-    let chain: PoiTagAny = Single(civic.clone());
+    let chain: PoiTagHistory = Single(civic.clone());
     let Single(inner) = chain;
     assert_eq!(inner, civic);
 }

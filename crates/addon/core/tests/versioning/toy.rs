@@ -715,7 +715,7 @@ pub mod history {
         family = Toy;
         /// The struct the file's `format_version` selected.
         #[derive(Clone, Debug, PartialEq)]
-        pub enum Any {
+        pub enum ToyHistory {
             V1_0_0(v1_0_0::Toy),
             V1_1_0(v1_1_0::Toy),
             V1_2_0(Toy120),
@@ -732,7 +732,7 @@ impl Family for Toy {
     type Latest = Toy120;
     type Beta = ToyBeta;
     type Component = ToyComponent;
-    type Any = history::Any;
+    type History = history::ToyHistory;
 
     fn components() -> &'static ComponentTable<Self> {
         ToyComponent::TABLE

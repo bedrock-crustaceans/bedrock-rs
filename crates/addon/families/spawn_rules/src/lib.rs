@@ -141,11 +141,11 @@ pub struct SimplifiedFamily;
 
 /// A standard spawn-rules document as written: the one struct, the newest.
 #[doc(hidden)]
-pub type Any = Single<SpawnFamily>;
+pub type SpawnHistory = Single<SpawnFamily>;
 
 /// A simplified spawn-rules document as written: the one struct, the newest.
 #[doc(hidden)]
-pub type SimplifiedAny = Single<SimplifiedFamily>;
+pub type SimplifiedHistory = Single<SimplifiedFamily>;
 
 impl Family for SpawnFamily {
     const NAME: &'static str = "spawn rules";
@@ -168,7 +168,7 @@ impl Family for SpawnFamily {
     type Latest = StandardSpawnRules;
     type Beta = std::convert::Infallible;
     type Component = NoComponents;
-    type Any = Single<Self>;
+    type History = Single<Self>;
 
     fn validate(v: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {
         if let Loaded::Stable(rules) = v {
@@ -196,7 +196,7 @@ impl Family for SimplifiedFamily {
     type Latest = SimplifiedSpawnRules;
     type Beta = std::convert::Infallible;
     type Component = NoComponents;
-    type Any = Single<Self>;
+    type History = Single<Self>;
 
     fn reading(_: StructIndex, _: DocumentSource) -> Reading {
         SIMPLIFIED_READING

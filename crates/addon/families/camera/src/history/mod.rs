@@ -39,7 +39,7 @@ bedrock_addon_core::version_chain! {
     family = PresetFamily;
     /// A camera preset parsed by the struct its `format_version` selects, not upgraded.
     #[derive(Clone, Debug, PartialEq)]
-    pub enum Any {
+    pub enum PresetHistory {
         /// Format 1.19.50 up to 1.26.50 (vanilla's legacy slice).
         V1_19_50(v1_19_50::CameraPreset),
         /// Format 1.26.50 and later: the newest preset.
@@ -49,15 +49,15 @@ bedrock_addon_core::version_chain! {
 
 /// A camera list parsed by the struct its `format_version` selects: the one list struct
 /// (format 1.19.50 and later).
-pub type ListAny = Single<ListFamily>;
+pub type ListHistory = Single<ListFamily>;
 
 /// A camera spline file parsed by the struct its `format_version` selects: the one spline
 /// struct (format 1.26.0 and later).
-pub type SplineAny = Single<SplineFamily>;
+pub type SplineHistory = Single<SplineFamily>;
 
 /// A camera entity document parsed by the struct its `format_version` selects: the one camera
 /// entity struct (every format version up to the engine's).
-pub type EntityAny = Single<EntityFamily>;
+pub type EntityHistory = Single<EntityFamily>;
 
 /// Runs the remaining upgrade step of a preset [`CameraPreset::parse_as_written`] gave: the
 /// same result [`CameraPreset::parse`](bedrock_addon_core::document::Content::parse) gives for
@@ -69,7 +69,7 @@ pub type EntityAny = Single<EntityFamily>;
 /// Returns [`Rejected`](bedrock_addon_core::document::Rejected) when the upgrade step, or the
 /// checks that follow it, find an error that stops the document from loading.
 pub fn upgrade(
-    document: Document<Any>,
+    document: Document<PresetHistory>,
     cx: &LoadContext,
 ) -> Result<Document<CameraPreset>, Rejected> {
     bedrock_addon_support::chain_file::upgrade::<PresetFamily>(

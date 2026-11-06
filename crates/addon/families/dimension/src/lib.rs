@@ -28,7 +28,7 @@ use bedrock_addon_core::versioning::{
     NoComponents, Reading, Scalars, StructIndex, UnknownMask, ValidateCx,
 };
 use bedrock_addon_support::puv::shadowed;
-use history::{Any, DimensionFamily};
+use history::{DimensionFamily, DimensionHistory};
 use indexmap::IndexMap;
 
 pub(crate) use read::{RootV1, constraints, parse_root, slice_null_rule};
@@ -79,7 +79,7 @@ impl Family for DimensionFamily {
     type Latest = Dimension;
     type Beta = NoBeta<kind::Dimension>;
     type Component = NoComponents;
-    type Any = Any;
+    type History = DimensionHistory;
 
     fn validate(v: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {
         if let Loaded::Stable(dimension) = v {

@@ -6,13 +6,13 @@ use bedrock_addon_core::json::Value;
 use bedrock_addon_core::molang::{MolangVersion, RawVersion, format_molang_version};
 use bedrock_addon_core::pack_identity::PackPath;
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput};
-use bedrock_addon_family_item::history::Any;
+use bedrock_addon_family_item::history::ItemHistory;
 use bedrock_addon_family_item::{Item, ItemFormat};
 
 use super::common::*;
 
 /// The struct a document is parsed by, as written.
-fn written_as(json: &str, cx: &bedrock_addon_core::load::LoadContext) -> Any {
+fn written_as(json: &str, cx: &bedrock_addon_core::load::LoadContext) -> ItemHistory {
     match Item::parse_as_written(&PackPath::from_static("items/x.json"), json.as_bytes(), cx) {
         Ok(document) => document.into_value(),
         Err(rejected) => panic!("rejected: {:#?}", rejected.diagnostics),
@@ -104,7 +104,7 @@ fn versions_after_1_16_100_and_before_1_17_0_are_the_legacy_format() {
     for version in ["1.16.99", "1.16.101", "1.16.999"] {
         let json = item(version, "minecraft:x", "");
         assert!(
-            matches!(written_as(&json, &allowlisted()), Any::V1_10_0(_)),
+            matches!(written_as(&json, &allowlisted()), ItemHistory::V1_10_0(_)),
             "{version}"
         );
     }
@@ -114,7 +114,7 @@ fn versions_after_1_16_100_and_before_1_17_0_are_the_legacy_format() {
         "minecraft:x",
         r#""minecraft:food": {"nutrition": 1, "saturation_modifier": "good"}"#,
     );
-    let Any::V1_10_0(legacy) = written_as(&json, &allowlisted()) else {
+    let ItemHistory::V1_10_0(legacy) = written_as(&json, &allowlisted()) else {
         panic!("not the legacy format");
     };
     let food = legacy.components.food.unwrap();
@@ -127,21 +127,21 @@ fn component_documents_route_by_version_and_components() {
     for version in ["1.16.100", "1.17.0"] {
         let json = item(version, "minecraft:x", stack);
         assert!(
-            matches!(written_as(&json, &allowlisted()), Any::V1_16_100(_)),
+            matches!(written_as(&json, &allowlisted()), ItemHistory::V1_16_100(_)),
             "{version}"
         );
     }
     for components in ["", r#""minecraft:foil": true"#] {
         let json = item("1.21.0", "demo:x", components);
         assert!(
-            matches!(written_as(&json, &third_party()), Any::V1_10_0(_)),
+            matches!(written_as(&json, &third_party()), ItemHistory::V1_10_0(_)),
             "1.21.0 with {components:?}"
         );
     }
     let json = item("1.21.0", "demo:x", r#""tag:demo:x": {}"#);
     assert!(matches!(
         written_as(&json, &third_party()),
-        Any::V1_20_80(_)
+        ItemHistory::V1_20_80(_)
     ));
 }
 

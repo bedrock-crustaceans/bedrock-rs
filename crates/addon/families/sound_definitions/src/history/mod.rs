@@ -4,7 +4,7 @@
 //! read).
 //!
 //! Vanilla's steps are a JSON fixer, so the older structs hold the document as JSON and each
-//! step rewrites it. Which struct reads a file is decided by [`Any::select`]: a
+//! step rewrites it. Which struct reads a file is decided by [`SoundDefinitionsHistory::select`]: a
 //! `format_version` that is missing or does not read as a version counts
 //! as 1.13.0, the versionless root, and there is no newest version.
 
@@ -80,7 +80,7 @@ impl VersionStruct for SoundDefinitions {
     clippy::large_enum_variant,
     reason = "the newest struct is the typed value; boxing it would change the variant's public type"
 )]
-pub enum Any {
+pub enum SoundDefinitionsHistory {
     /// Below 1.14.0, or without a readable `format_version`.
     V1_0_0(v1_0_0::SoundDefinitions),
     /// From 1.14.0 up to 1.20.20.
@@ -91,7 +91,7 @@ pub enum Any {
     V1_26_50(SoundDefinitions),
 }
 
-impl Any {
+impl SoundDefinitionsHistory {
     /// The version of the struct that reads a file whose gate version is `version` (1.13.0
     /// for a file without a readable `format_version`): the newest struct at or below it.
     /// There is no ceiling.
@@ -120,7 +120,7 @@ impl Any {
         }
     }
 
-    /// The version of the struct that read the file (named so that `Document<Any>`'s own
+    /// The version of the struct that read the file (named so that `Document<SoundDefinitionsHistory>`'s own
     /// `version` does not hide it).
     pub fn parsed_version(&self) -> FormatVersion {
         match self {

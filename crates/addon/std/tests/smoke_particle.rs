@@ -26,7 +26,7 @@ use std::path::{Path, PathBuf};
 use bedrock_addon::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, Severity};
 use bedrock_addon::document::{Content, JsonDocument as _};
 use bedrock_addon::families::particle::ParticleEffect;
-use bedrock_addon::families::particle::history::Any;
+use bedrock_addon::families::particle::history::ParticleHistory;
 use bedrock_addon::load::{LoadContext, LoadOptions, StackOptions};
 use bedrock_addon::molang::{MolangCheck, MolangFieldMut, MolangFields, SourceForm, visit_fields};
 use bedrock_addon::pack::{PackOrigin, PackRepository, PackType};
@@ -438,11 +438,11 @@ fn molang_pairs_particle_molang_loads_with_its_text_and_version() {
         payload.push("particle_effect");
         let curves = match written.into_value() {
             // The 1.10.0 struct is the whole document: its walk starts at the root.
-            Any::V1_10_0(mut effect) => {
+            ParticleHistory::V1_10_0(mut effect) => {
                 self::members(&mut effect, &JsonPath::new(), &mut members);
                 effect.curves
             }
-            Any::V1_20_80(mut effect) => {
+            ParticleHistory::V1_20_80(mut effect) => {
                 self::members(&mut effect, &payload, &mut members);
                 effect.curves
             }

@@ -13,13 +13,13 @@
 //! Cubemaps (1.21.130), shadows (1.21.80), PBR fallback (1.21.40) and local lights (1.21.120)
 //! have one struct each.
 
-/// Declares a payload's hidden chain family, its `Any` (the `version_chain!` enum, or `Single`
+/// Declares a payload's hidden chain family, its history (the `version_chain!` enum, or `Single`
 /// for a payload of one struct) and its `upgrade`.
 macro_rules! chain {
     (
         latest = $latest:ty;
         $(#[$meta:meta])*
-        enum Any { $( $(#[$vmeta:meta])* $variant:ident($ty:ty) ),+ $(,)? }
+        enum $history:ident { $( $(#[$vmeta:meta])* $variant:ident($ty:ty) ),+ $(,)? }
     ) => {
         /// The payload's family of the version-chain machinery (hidden: only the loaders name
         /// it).
@@ -31,7 +31,7 @@ macro_rules! chain {
             family = Family;
             $(#[$meta])*
             #[derive(Clone, Debug, PartialEq)]
-            pub enum Any {
+            pub enum $history {
                 $( $(#[$vmeta])* $variant($ty), )+
             }
             molang = none;
@@ -46,7 +46,7 @@ macro_rules! chain {
         /// Returns [`Rejected`](bedrock_addon_core::document::Rejected) when the upgrade step, or the
         /// checks that follow it, find an error that stops the document from loading.
         pub fn upgrade(
-            document: ::bedrock_addon_core::document::Document<Any>,
+            document: ::bedrock_addon_core::document::Document<$history>,
             cx: &::bedrock_addon_core::load::LoadContext,
         ) -> Result<::bedrock_addon_core::document::Document<$latest>, ::bedrock_addon_core::document::Rejected> {
             $crate::file::upgrade::<Family>(document, cx)
@@ -55,7 +55,7 @@ macro_rules! chain {
     (
         latest = $latest:ty;
         $(#[$meta:meta])*
-        single;
+        single $history:ident;
     ) => {
         /// The payload's family of the version-chain machinery (hidden: only the loaders name
         /// it).
@@ -64,7 +64,7 @@ macro_rules! chain {
         pub struct Family;
 
         $(#[$meta])*
-        pub type Any = ::bedrock_addon_core::versioning::Single<Family>;
+        pub type $history = ::bedrock_addon_core::versioning::Single<Family>;
 
         ::bedrock_addon_core::impl_no_molang!($latest);
 
@@ -76,7 +76,7 @@ macro_rules! chain {
         /// Returns [`Rejected`](bedrock_addon_core::document::Rejected) when the checks find an
         /// error that stops the document from loading.
         pub fn upgrade(
-            document: ::bedrock_addon_core::document::Document<Any>,
+            document: ::bedrock_addon_core::document::Document<$history>,
             cx: &::bedrock_addon_core::load::LoadContext,
         ) -> Result<::bedrock_addon_core::document::Document<$latest>, ::bedrock_addon_core::document::Rejected> {
             $crate::file::upgrade::<Family>(document, cx)
@@ -94,7 +94,7 @@ pub mod cubemap {
     chain! {
         latest = crate::CubemapSettings;
         /// A cubemap-settings file as parsed: the one struct, at 1.21.130.
-        single;
+        single CubemapHistory;
     }
 }
 
@@ -103,7 +103,7 @@ pub mod shadows {
     chain! {
         latest = crate::ShadowSettings;
         /// A shadow-settings file as parsed: the one struct, at 1.21.80.
-        single;
+        single ShadowsHistory;
     }
 }
 
@@ -112,7 +112,7 @@ pub mod pbr_fallback {
     chain! {
         latest = crate::PbrFallbackSettings;
         /// A PBR-fallback file as parsed: the one struct, at 1.21.40.
-        single;
+        single PbrFallbackHistory;
     }
 }
 
@@ -121,6 +121,6 @@ pub mod local_lighting {
     chain! {
         latest = crate::LocalLightSettings;
         /// A local-light file as parsed: the one struct, at 1.21.120.
-        single;
+        single LocalLightingHistory;
     }
 }

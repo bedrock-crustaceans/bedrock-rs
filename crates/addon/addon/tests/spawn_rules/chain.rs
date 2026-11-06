@@ -1,7 +1,9 @@
 //! The two single-struct chains: contiguity, the range models' selection, floors and ceilings, no
 //! beta; and the history enums' own-version write.
 
-use bedrock_addon::families::spawn_rules::{Any, SimplifiedAny, SimplifiedFamily, SpawnFamily};
+use bedrock_addon::families::spawn_rules::{
+    SimplifiedFamily, SimplifiedHistory, SpawnFamily, SpawnHistory,
+};
 use bedrock_addon::version::{ENGINE_VERSION, FormatVersion, FormatVersionInput};
 use bedrock_addon::versioning::{
     Family, RangeModel, Selection, Single, VersionChain, check_chain, select,
@@ -22,15 +24,15 @@ fn every_chain_is_one_struct_without_beta() {
     check_chain::<SpawnFamily>().unwrap();
     check_chain::<SimplifiedFamily>().unwrap();
     assert_eq!(
-        <Any as VersionChain<SpawnFamily>>::VERSIONS,
+        <SpawnHistory as VersionChain<SpawnFamily>>::VERSIONS,
         [FormatVersion::new(1, 8, 0)]
     );
     assert_eq!(
-        <SimplifiedAny as VersionChain<SimplifiedFamily>>::VERSIONS,
+        <SimplifiedHistory as VersionChain<SimplifiedFamily>>::VERSIONS,
         [FormatVersion::new(1, 21, 60)]
     );
-    const { assert!(!<Any as VersionChain<SpawnFamily>>::HAS_BETA) };
-    const { assert!(!<SimplifiedAny as VersionChain<SimplifiedFamily>>::HAS_BETA) };
+    const { assert!(!<SpawnHistory as VersionChain<SpawnFamily>>::HAS_BETA) };
+    const { assert!(!<SimplifiedHistory as VersionChain<SimplifiedFamily>>::HAS_BETA) };
 }
 
 #[test]
@@ -73,7 +75,7 @@ fn the_history_enum_writes_its_own_version() {
         &legacy(r#"{"minecraft:weight": {"default": 3}}"#),
         &context(),
     );
-    let any: Any = Single(standard(&document).clone());
+    let any: SpawnHistory = Single(standard(&document).clone());
     assert_eq!(any.parsed_version(), FormatVersion::new(1, 8, 0));
     let text = any.to_json().unwrap();
     assert!(

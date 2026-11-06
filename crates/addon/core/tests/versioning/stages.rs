@@ -47,7 +47,7 @@ fn parse_as_written_gives_the_struct_the_version_selects() {
         r#"{"description": {"identifier": "minecraft:pig"}, "old_speed": 1.0}"#,
     );
     let parsed = parse_as_written::<Toy>(JsonSlice::new(&text), &cx);
-    let Some(history::Any::V1_0_0(floor)) = &parsed.value else {
+    let Some(history::ToyHistory::V1_0_0(floor)) = &parsed.value else {
         panic!("the floor struct: {:?}", parsed.diagnostics);
     };
     assert_eq!(floor.old_speed, Some(1.0));
@@ -149,7 +149,7 @@ pub mod payload_versioned {
     bedrock_addon_core::version_chain! {
         family = PayloadVersioned;
         /// The toy's chain with a payload version.
-        pub enum Any {
+        pub enum History {
             V1_0_0(v1_0_0::Toy),
             V1_1_0(v1_1_0::Toy),
             V1_2_0(Toy120),
@@ -164,7 +164,7 @@ impl Family for PayloadVersioned {
     type Latest = Toy120;
     type Beta = ToyBeta;
     type Component = ToyComponent;
-    type Any = payload_versioned::Any;
+    type History = payload_versioned::History;
     fn components() -> &'static ComponentTable<Self> {
         &ComponentTable::EMPTY
     }

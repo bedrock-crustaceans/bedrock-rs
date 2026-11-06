@@ -221,7 +221,7 @@ pub fn reading_table<F: super::Family>() -> String {
             one(DocumentSource::Mcb)
         )
     };
-    let versions = <F::Any as VersionChain<F>>::VERSIONS;
+    let versions = <F::History as VersionChain<F>>::VERSIONS;
     let mut start = 0;
     while start < versions.len() {
         let line = reading(StructIndex::Stable(start));
@@ -236,7 +236,7 @@ pub fn reading_table<F: super::Family>() -> String {
         );
         start = end + 1;
     }
-    if <F::Any as VersionChain<F>>::HAS_BETA {
+    if <F::History as VersionChain<F>>::HAS_BETA {
         let _ = writeln!(out, "beta: {}", reading(StructIndex::Beta));
     }
     out

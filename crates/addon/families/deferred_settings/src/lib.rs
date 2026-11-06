@@ -334,7 +334,7 @@ impl Family for history::lighting::Family {
     type Latest = LightingSettings;
     type Beta = Infallible;
     type Component = NoComponents;
-    type Any = history::lighting::Any;
+    type History = history::lighting::LightingHistory;
 
     fn validate(v: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {
         if let Loaded::Stable(value) = v {
@@ -356,7 +356,7 @@ impl JsonDocument for LightingSettings {
         path: &PackPath,
         bytes: &[u8],
         cx: &LoadContext,
-    ) -> Result<Document<history::lighting::Any>, Rejected> {
+    ) -> Result<Document<history::lighting::LightingHistory>, Rejected> {
         file::as_written::<Self::Family>(path, bytes, cx, None)
     }
 }
@@ -413,7 +413,7 @@ impl Family for history::atmosphere::Family {
     type Latest = AtmosphereSettings;
     type Beta = Infallible;
     type Component = NoComponents;
-    type Any = history::atmosphere::Any;
+    type History = history::atmosphere::AtmosphereHistory;
 
     fn validate(v: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {
         if let Loaded::Stable(value) = v {
@@ -435,7 +435,7 @@ impl JsonDocument for AtmosphereSettings {
         path: &PackPath,
         bytes: &[u8],
         cx: &LoadContext,
-    ) -> Result<Document<history::atmosphere::Any>, Rejected> {
+    ) -> Result<Document<history::atmosphere::AtmosphereHistory>, Rejected> {
         file::as_written::<Self::Family>(path, bytes, cx, Some(V1_26_20))
     }
 }
@@ -465,7 +465,7 @@ impl Family for history::water::Family {
     type Latest = WaterSettings;
     type Beta = Infallible;
     type Component = NoComponents;
-    type Any = history::water::Any;
+    type History = history::water::WaterHistory;
 
     fn validate(v: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {
         if let Loaded::Stable(value) = v {
@@ -487,7 +487,7 @@ impl JsonDocument for WaterSettings {
         path: &PackPath,
         bytes: &[u8],
         cx: &LoadContext,
-    ) -> Result<Document<history::water::Any>, Rejected> {
+    ) -> Result<Document<history::water::WaterHistory>, Rejected> {
         file::as_written::<Self::Family>(path, bytes, cx, Some(V1_26_20))
     }
 }
@@ -517,7 +517,7 @@ impl Family for history::color_grading::Family {
     type Latest = ColorGradingSettings;
     type Beta = Infallible;
     type Component = NoComponents;
-    type Any = history::color_grading::Any;
+    type History = history::color_grading::ColorGradingHistory;
 
     fn validate(v: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {
         if let Loaded::Stable(value) = v {
@@ -539,7 +539,7 @@ impl JsonDocument for ColorGradingSettings {
         path: &PackPath,
         bytes: &[u8],
         cx: &LoadContext,
-    ) -> Result<Document<history::color_grading::Any>, Rejected> {
+    ) -> Result<Document<history::color_grading::ColorGradingHistory>, Rejected> {
         file::as_written::<Self::Family>(path, bytes, cx, None)
     }
 }
@@ -573,7 +573,7 @@ impl Family for history::cubemap::Family {
     type Latest = CubemapSettings;
     type Beta = Infallible;
     type Component = NoComponents;
-    type Any = history::cubemap::Any;
+    type History = history::cubemap::CubemapHistory;
 
     fn validate(v: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {
         if let Loaded::Stable(value) = v {
@@ -595,7 +595,7 @@ impl JsonDocument for CubemapSettings {
         path: &PackPath,
         bytes: &[u8],
         cx: &LoadContext,
-    ) -> Result<Document<history::cubemap::Any>, Rejected> {
+    ) -> Result<Document<history::cubemap::CubemapHistory>, Rejected> {
         file::as_written::<Self::Family>(path, bytes, cx, None)
     }
 }
@@ -625,7 +625,7 @@ impl Family for history::shadows::Family {
     type Latest = ShadowSettings;
     type Beta = Infallible;
     type Component = NoComponents;
-    type Any = history::shadows::Any;
+    type History = history::shadows::ShadowsHistory;
 }
 
 impl JsonDocument for ShadowSettings {
@@ -641,7 +641,7 @@ impl JsonDocument for ShadowSettings {
         path: &PackPath,
         bytes: &[u8],
         cx: &LoadContext,
-    ) -> Result<Document<history::shadows::Any>, Rejected> {
+    ) -> Result<Document<history::shadows::ShadowsHistory>, Rejected> {
         file::as_written::<Self::Family>(path, bytes, cx, None)
     }
 }
@@ -664,7 +664,7 @@ impl Family for history::pbr_fallback::Family {
     type Latest = PbrFallbackSettings;
     type Beta = Infallible;
     type Component = NoComponents;
-    type Any = history::pbr_fallback::Any;
+    type History = history::pbr_fallback::PbrFallbackHistory;
 }
 
 impl JsonDocument for PbrFallbackSettings {
@@ -680,7 +680,7 @@ impl JsonDocument for PbrFallbackSettings {
         path: &PackPath,
         bytes: &[u8],
         cx: &LoadContext,
-    ) -> Result<Document<history::pbr_fallback::Any>, Rejected> {
+    ) -> Result<Document<history::pbr_fallback::PbrFallbackHistory>, Rejected> {
         file::as_written::<Self::Family>(path, bytes, cx, None)
     }
 }
@@ -703,7 +703,7 @@ impl Family for history::local_lighting::Family {
     type Latest = LocalLightSettings;
     type Beta = Infallible;
     type Component = NoComponents;
-    type Any = history::local_lighting::Any;
+    type History = history::local_lighting::LocalLightingHistory;
 }
 
 impl JsonDocument for LocalLightSettings {
@@ -719,7 +719,7 @@ impl JsonDocument for LocalLightSettings {
         path: &PackPath,
         bytes: &[u8],
         cx: &LoadContext,
-    ) -> Result<Document<history::local_lighting::Any>, Rejected> {
+    ) -> Result<Document<history::local_lighting::LocalLightingHistory>, Rejected> {
         file::as_written::<Self::Family>(path, bytes, cx, None)
     }
 }

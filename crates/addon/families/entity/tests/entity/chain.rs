@@ -21,7 +21,7 @@ fn v(text: &str) -> FormatVersion {
 #[test]
 fn the_chain_has_42_contiguous_structs_from_the_floor() {
     check_chain::<Entity>().expect("a well-formed chain");
-    let versions = <history::Any as VersionChain<Entity>>::VERSIONS;
+    let versions = <history::EntityHistory as VersionChain<Entity>>::VERSIONS;
     let expected = [
         "1.8.0", "1.10.0", "1.11.0", "1.12.0", "1.13.0", "1.15.0", "1.16.0", "1.16.100",
         "1.16.200", "1.17.10", "1.17.20", "1.18.0", "1.18.10", "1.18.20", "1.18.30", "1.19.0",
@@ -32,13 +32,13 @@ fn the_chain_has_42_contiguous_structs_from_the_floor() {
     ];
     assert_eq!(versions.len(), 42);
     assert_eq!(versions, expected.map(v).as_slice());
-    const { assert!(<history::Any as VersionChain<Entity>>::HAS_BETA) };
+    const { assert!(<history::EntityHistory as VersionChain<Entity>>::HAS_BETA) };
 }
 
 #[test]
 fn a_version_selects_the_struct_whose_range_holds_it() {
     let pick = |text: &str| select::<Entity>(&FormatVersionInput::parse(text).unwrap());
-    let versions = <history::Any as VersionChain<Entity>>::VERSIONS;
+    let versions = <history::EntityHistory as VersionChain<Entity>>::VERSIONS;
     let index = |text: &str| versions.iter().position(|x| *x == v(text)).unwrap();
     assert_eq!(pick("1.8.0"), Selection::Struct(index("1.8.0")));
     assert_eq!(pick("1.9.5"), Selection::Struct(index("1.8.0")));
@@ -57,7 +57,10 @@ fn a_version_selects_the_struct_whose_range_holds_it() {
 fn parse_as_written_keeps_the_struct_of_the_file() {
     let text = doc("1.16.0", MINIMAL);
     let parsed = parse_as_written::<Entity>(JsonSlice::new(&text), &cx());
-    assert!(matches!(parsed.value, Some(history::Any::V1_16_0(_))));
+    assert!(matches!(
+        parsed.value,
+        Some(history::EntityHistory::V1_16_0(_))
+    ));
     assert_eq!(parsed.version.parsed_as, v("1.16.0"));
 }
 
@@ -190,7 +193,7 @@ fn a_prerelease_version_selects_the_struct_below_its_release() {
 
 #[test]
 fn every_struct_round_trips_its_own_version() {
-    for version in <history::Any as VersionChain<Entity>>::VERSIONS {
+    for version in <history::EntityHistory as VersionChain<Entity>>::VERSIONS {
         let text = doc(&version.to_string(), MINIMAL);
         let parsed = parse_as_written::<Entity>(JsonSlice::new(&text), &cx());
         let any = parsed
@@ -226,11 +229,17 @@ fn parse_as_written_then_upgrade_equals_parse() {
 fn a_1_26_50_document_is_its_own_slice_below_the_newest_1_26_60() {
     let text = doc("1.26.50", MINIMAL);
     let parsed = parse_as_written::<Entity>(JsonSlice::new(&text), &cx());
-    assert!(matches!(parsed.value, Some(history::Any::V1_26_50(_))));
+    assert!(matches!(
+        parsed.value,
+        Some(history::EntityHistory::V1_26_50(_))
+    ));
     assert_eq!(parsed.version.parsed_as, v("1.26.50"));
     let text = doc("1.26.60", MINIMAL);
     let parsed = parse_as_written::<Entity>(JsonSlice::new(&text), &cx());
-    assert!(matches!(parsed.value, Some(history::Any::V1_26_60(_))));
+    assert!(matches!(
+        parsed.value,
+        Some(history::EntityHistory::V1_26_60(_))
+    ));
     assert_eq!(parsed.version.parsed_as, v("1.26.60"));
     for version in ["1.26.50", "1.26.60"] {
         let loaded = outcome(&doc(version, MINIMAL), &cx());

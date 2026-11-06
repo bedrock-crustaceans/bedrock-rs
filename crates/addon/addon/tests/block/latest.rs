@@ -318,7 +318,7 @@ fn the_newest_struct_is_1_26_60() {
     .expect("parses");
     assert!(matches!(
         written.value(),
-        bedrock_addon::families::block::history::Any::V1_26_20(_)
+        bedrock_addon::families::block::history::BlockHistory::V1_26_20(_)
     ));
     // As written: the one object, with `origin` and `size`.
     let again = written.to_json().expect("its own shape");

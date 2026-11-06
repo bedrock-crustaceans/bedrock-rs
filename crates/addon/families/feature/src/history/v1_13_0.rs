@@ -3,7 +3,7 @@
 
 use facet::Facet;
 
-use super::Any;
+use super::FeatureHistory;
 use crate::molang::{SCATTER_LEGACY, Walk, member};
 use crate::read::{parse_strict, parse_strict_with};
 use crate::scatter::walk_params;
@@ -302,52 +302,52 @@ impl Upgrade for SnapToSurfaceFeature {
 
 // ---- the public history enum -------------------------------------------------------------------
 
-impl From<ScatterFeature> for Any {
+impl From<ScatterFeature> for FeatureHistory {
     fn from(value: ScatterFeature) -> Self {
-        Any::ScatterV1_13_0(value)
+        FeatureHistory::ScatterV1_13_0(value)
     }
 }
 
-impl TryFrom<Any> for ScatterFeature {
-    type Error = Any;
+impl TryFrom<FeatureHistory> for ScatterFeature {
+    type Error = FeatureHistory;
 
-    fn try_from(any: Any) -> Result<Self, Any> {
+    fn try_from(any: FeatureHistory) -> Result<Self, FeatureHistory> {
         match any {
-            Any::ScatterV1_13_0(value) => Ok(value),
+            FeatureHistory::ScatterV1_13_0(value) => Ok(value),
             other => Err(other),
         }
     }
 }
 
-impl From<SingleBlockFeature> for Any {
+impl From<SingleBlockFeature> for FeatureHistory {
     fn from(value: SingleBlockFeature) -> Self {
-        Any::SingleBlockV1_13_0(value)
+        FeatureHistory::SingleBlockV1_13_0(value)
     }
 }
 
-impl TryFrom<Any> for SingleBlockFeature {
-    type Error = Any;
+impl TryFrom<FeatureHistory> for SingleBlockFeature {
+    type Error = FeatureHistory;
 
-    fn try_from(any: Any) -> Result<Self, Any> {
+    fn try_from(any: FeatureHistory) -> Result<Self, FeatureHistory> {
         match any {
-            Any::SingleBlockV1_13_0(value) => Ok(value),
+            FeatureHistory::SingleBlockV1_13_0(value) => Ok(value),
             other => Err(other),
         }
     }
 }
 
-impl From<SnapToSurfaceFeature> for Any {
+impl From<SnapToSurfaceFeature> for FeatureHistory {
     fn from(value: SnapToSurfaceFeature) -> Self {
-        Any::SnapToSurfaceV1_13_0(value)
+        FeatureHistory::SnapToSurfaceV1_13_0(value)
     }
 }
 
-impl TryFrom<Any> for SnapToSurfaceFeature {
-    type Error = Any;
+impl TryFrom<FeatureHistory> for SnapToSurfaceFeature {
+    type Error = FeatureHistory;
 
-    fn try_from(any: Any) -> Result<Self, Any> {
+    fn try_from(any: FeatureHistory) -> Result<Self, FeatureHistory> {
         match any {
-            Any::SnapToSurfaceV1_13_0(value) => Ok(value),
+            FeatureHistory::SnapToSurfaceV1_13_0(value) => Ok(value),
             other => Err(other),
         }
     }

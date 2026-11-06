@@ -3,7 +3,7 @@
 
 use bedrock_addon::document::Content;
 use bedrock_addon::families::client_biome::ClientBiome;
-use bedrock_addon::families::client_biome::history::{self, Any, ClientBiomeFamily};
+use bedrock_addon::families::client_biome::history::{self, ClientBiomeFamily, ClientBiomeHistory};
 use bedrock_addon::version::{ENGINE_VERSION, FormatVersion, FormatVersionInput};
 use bedrock_addon::versioning::{
     EnvelopeCheck, Family, MissingVersion, RangeModel, Selection, VersionChain, check_chain, select,
@@ -29,7 +29,7 @@ fn selects(version: &str) -> Selection {
 
 #[test]
 fn the_chain_is_contiguous_and_ends_at_1_21_130_with_a_beta_struct() {
-    const HAS_BETA: bool = <Any as VersionChain<ClientBiomeFamily>>::HAS_BETA;
+    const HAS_BETA: bool = <ClientBiomeHistory as VersionChain<ClientBiomeFamily>>::HAS_BETA;
 
     check_chain::<ClientBiomeFamily>().expect("the chain is well formed");
     let versions: Vec<_> = VERSIONS
@@ -37,7 +37,7 @@ fn the_chain_is_contiguous_and_ends_at_1_21_130_with_a_beta_struct() {
         .map(|&(a, b, c)| FormatVersion::new(a, b, c))
         .collect();
     assert_eq!(
-        <Any as VersionChain<ClientBiomeFamily>>::VERSIONS,
+        <ClientBiomeHistory as VersionChain<ClientBiomeFamily>>::VERSIONS,
         versions.as_slice()
     );
     let has_beta = HAS_BETA;
@@ -99,20 +99,34 @@ fn each_version_selects_the_struct_whose_range_holds_it() {
 }
 
 /// A version and the test of the struct it selects.
-type Case = (&'static str, fn(&Any) -> bool);
+type Case = (&'static str, fn(&ClientBiomeHistory) -> bool);
 
 /// `parse_as_written` gives the struct the version selects, which writes the document back in
 /// its own version; `history::upgrade` then gives what `parse` gives.
 #[test]
 fn history_parses_without_upgrading_and_upgrades_on_request() {
     let cases: [Case; 7] = [
-        ("1.21.40", |any| matches!(any, Any::V1_21_40(_))),
-        ("1.21.70", |any| matches!(any, Any::V1_21_70(_))),
-        ("1.21.90", |any| matches!(any, Any::V1_21_90(_))),
-        ("1.21.100", |any| matches!(any, Any::V1_21_100(_))),
-        ("1.21.110", |any| matches!(any, Any::V1_21_110(_))),
-        ("1.21.120", |any| matches!(any, Any::V1_21_120(_))),
-        ("1.21.130", |any| matches!(any, Any::V1_21_130(_))),
+        ("1.21.40", |any| {
+            matches!(any, ClientBiomeHistory::V1_21_40(_))
+        }),
+        ("1.21.70", |any| {
+            matches!(any, ClientBiomeHistory::V1_21_70(_))
+        }),
+        ("1.21.90", |any| {
+            matches!(any, ClientBiomeHistory::V1_21_90(_))
+        }),
+        ("1.21.100", |any| {
+            matches!(any, ClientBiomeHistory::V1_21_100(_))
+        }),
+        ("1.21.110", |any| {
+            matches!(any, ClientBiomeHistory::V1_21_110(_))
+        }),
+        ("1.21.120", |any| {
+            matches!(any, ClientBiomeHistory::V1_21_120(_))
+        }),
+        ("1.21.130", |any| {
+            matches!(any, ClientBiomeHistory::V1_21_130(_))
+        }),
     ];
     let cx = context();
     for (version, is_variant) in cases {
@@ -149,7 +163,7 @@ fn history_parses_without_upgrading_and_upgrades_on_request() {
 fn a_legacy_struct_keeps_its_root() {
     let text = r#"{"format_version": "1.21.45", "minecraft:client_biome": {"description": {"identifier": "plains"}, "components": {}}}"#;
     let as_written = ClientBiome::parse_as_written(&path(), text.as_bytes(), &context()).unwrap();
-    let Any::V1_21_40(biome) = as_written.value() else {
+    let ClientBiomeHistory::V1_21_40(biome) = as_written.value() else {
         panic!("a 1.21.40 struct");
     };
     assert_eq!(biome.format_version, "1.21.45");
@@ -167,7 +181,7 @@ fn a_beta_document_is_the_beta_struct_and_is_not_upgraded() {
     );
     for cx in [beta_apis(), base_game()] {
         let as_written = ClientBiome::parse_as_written(&path(), text.as_bytes(), &cx).unwrap();
-        assert!(matches!(as_written.value(), Any::Beta(_)));
+        assert!(matches!(as_written.value(), ClientBiomeHistory::Beta(_)));
         assert_eq!(json(&as_written.to_json().unwrap()), json(&text));
         // The stable document has no parser for it.
         assert!(history::upgrade(as_written, &cx).is_err());

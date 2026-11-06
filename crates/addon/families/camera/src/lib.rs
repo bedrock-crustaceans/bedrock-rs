@@ -60,7 +60,8 @@ use bedrock_addon_core::versioning::{
 };
 use bedrock_addon_support::chain_file::{self as file, closing_line};
 use history::{
-    Any, EntityAny, EntityFamily, ListAny, ListFamily, PresetFamily, SplineAny, SplineFamily,
+    EntityFamily, EntityHistory, ListFamily, ListHistory, PresetFamily, PresetHistory,
+    SplineFamily, SplineHistory,
 };
 
 /// The camera documents of the behaviour packs (`bp.cameras()`): three collections loaded and
@@ -231,7 +232,7 @@ impl Family for PresetFamily {
     type Latest = CameraPreset;
     type Beta = NoBeta<kind::CameraPreset>;
     type Component = NoComponents;
-    type Any = Any;
+    type History = PresetHistory;
 
     fn identity(payload: JsonSlice<'_>) -> Identity {
         file::identity(payload, "identifier")
@@ -262,7 +263,7 @@ impl Family for ListFamily {
     type Latest = CameraList;
     type Beta = NoBeta<kind::CameraList>;
     type Component = NoComponents;
-    type Any = ListAny;
+    type History = ListHistory;
     const ENVELOPE: Envelope = Envelope {
         // A plain strict load of the whole file, which binds `format_version` and the payload
         // itself: no envelope, and a third root member is an unknown member.
@@ -333,7 +334,7 @@ impl Family for SplineFamily {
     type Latest = CameraSpline;
     type Beta = Infallible;
     type Component = NoComponents;
-    type Any = SplineAny;
+    type History = SplineHistory;
 
     fn identity(_: JsonSlice<'_>) -> Identity {
         Identity::default()
@@ -359,7 +360,7 @@ impl Family for EntityFamily {
     type Latest = CameraEntity;
     type Beta = Infallible;
     type Component = NoComponents;
-    type Any = EntityAny;
+    type History = EntityHistory;
     const ENVELOPE: Envelope = Envelope {
         // The input is a document, as for presets.
         input: InputKind::Document,

@@ -28,7 +28,7 @@ use bedrock_addon_core::versioning::{VersionStruct, Versioned};
     clippy::large_enum_variant,
     reason = "the variants are the types callers match on; a document is built once and stored"
 )]
-pub enum Any {
+pub enum FeatureHistory {
     /// A `minecraft:scatter_feature` below format 1.21.10.
     ScatterV1_13_0(v1_13_0::ScatterFeature),
     /// A `minecraft:single_block_feature` below format 1.21.40.
@@ -39,7 +39,7 @@ pub enum Any {
     Latest(Feature),
 }
 
-impl Any {
+impl FeatureHistory {
     /// The payload key of the document's feature type.
     pub fn type_key(&self) -> &'static str {
         match self {
@@ -108,6 +108,9 @@ impl super::FeatureFn<FormatVersion> for LatestVersion {
 ///
 /// Returns [`Rejected`] when an upgrade step or a check refuses the document; it carries every
 /// finding about the file.
-pub fn upgrade(document: Document<Any>, cx: &LoadContext) -> Result<Document<Feature>, Rejected> {
+pub fn upgrade(
+    document: Document<FeatureHistory>,
+    cx: &LoadContext,
+) -> Result<Document<Feature>, Rejected> {
     upgrade_document(document, cx)
 }

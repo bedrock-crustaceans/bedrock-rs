@@ -18,7 +18,7 @@ bedrock_addon_core::version_chain! {
     /// A saved-settings document parsed by the struct its `format_version` selects, not
     /// upgraded.
     #[derive(Clone, Debug, PartialEq)]
-    pub enum Any {
+    pub enum PackSettingsHistory {
         /// Format 1.21.100 up to 1.26.40.
         V1_21_100(v1_21_100::SavedSettings),
         /// Format 1.26.40: the newest document.

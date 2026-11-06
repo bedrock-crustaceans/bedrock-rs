@@ -56,12 +56,12 @@ pub fn parse_selected<F: Family>(
     v: FormatVersion,
     cx: &LoadContext,
     d: &mut Diagnostics,
-) -> Option<F::Any> {
-    parse_selected_as::<F, F::Any>(payload, v, cx, d)
+) -> Option<F::History> {
+    parse_selected_as::<F, F::History>(payload, v, cx, d)
 }
 
 /// [`parse_selected`] into the chain `C`, for a chain that is not written by the macro
-/// (`Single`), which cannot name itself as `F::Any`.
+/// (`Single`), which cannot name itself as `F::History`.
 pub fn parse_selected_as<F: Family, C: VersionChain<F>>(
     payload: JsonSlice<'_>,
     v: FormatVersion,
@@ -103,7 +103,7 @@ pub fn document_json<F: Family>(
     crate::json::to_json(&document_value::<F>(version, payload.clone()))
 }
 
-/// [`document_json`] with a document's unknown members, for `Document<Any>::write_json`.
+/// [`document_json`] with a document's unknown members, for `Document<History>::write_json`.
 ///
 /// # Errors
 ///

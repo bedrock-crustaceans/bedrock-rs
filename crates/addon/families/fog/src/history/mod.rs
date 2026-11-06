@@ -26,7 +26,7 @@ bedrock_addon_core::version_chain! {
     family = FogFamily;
     /// Fog settings parsed by the struct their `format_version` selects, not upgraded.
     #[derive(Clone, Debug, PartialEq)]
-    pub enum Any {
+    pub enum FogHistory {
         /// Format 1.16.100 up to 1.21.0.
         V1_16_100(v1_16_100::FogDocument),
         /// Format 1.21.0 up to 1.21.90.
@@ -42,14 +42,14 @@ bedrock_addon_core::version_chain! {
 /// Runs the remaining upgrade steps and the checks of a document
 /// [`FogSettings::parse_as_written`](bedrock_addon_core::document::JsonDocument::parse_as_written) gave: the same result
 /// [`FogSettings::parse`](bedrock_addon_core::document::Content::parse) gives for its file (that is
-/// `history::Any::upgrade`, over the document, which holds the origin).
+/// `history::FogHistory::upgrade`, over the document, which holds the origin).
 ///
 /// # Errors
 ///
 /// Returns [`Rejected`] when an upgrade step or a check refuses the document; it carries every
 /// finding about the file.
 pub fn upgrade(
-    document: Document<Any>,
+    document: Document<FogHistory>,
     cx: &LoadContext,
 ) -> Result<Document<FogSettings>, Rejected> {
     crate::upgrade_document(document, cx)

@@ -32,7 +32,7 @@ use bedrock_addon_core::versioning::{
 
 pub use types::{LayerKind, LayerValue, Rgb, Rgba, TextureName, TextureSet};
 
-use crate::history::{Any, TextureSetFamily};
+use crate::history::{TextureSetFamily, TextureSetHistory};
 use crate::read::{PAYLOAD, Schema, V1_16_100, read};
 use crate::stack::{LintPack, capability_lints, check_layer_images, texture_path};
 use bedrock_addon_core::document::unversioned::origin_of;
@@ -56,7 +56,7 @@ impl Family for TextureSetFamily {
     type Latest = TextureSet;
     type Beta = std::convert::Infallible;
     type Component = NoComponents;
-    type Any = Any;
+    type History = TextureSetHistory;
     const ENVELOPE: Envelope = Envelope {
         // A missing version is an error here ("Invalid 'format_version' in JSON file").
         missing: MissingVersion::REJECT,
@@ -95,7 +95,7 @@ impl JsonDocument for TextureSet {
         path: &PackPath,
         bytes: &[u8],
         _: &LoadContext,
-    ) -> Result<Document<Any>, Rejected> {
+    ) -> Result<Document<TextureSetHistory>, Rejected> {
         let origin = lone(path);
         let mut diagnostics = Diagnostics::default();
         let read = read(bytes, path.as_str(), &mut diagnostics);
@@ -135,7 +135,11 @@ pub fn payload_at() -> JsonPath {
 }
 
 /// The chain's parse stage of a value already read at `version`.
-fn parsed(value: Any, version: VersionInfo, diagnostics: Diagnostics) -> Parsed<TextureSetFamily> {
+fn parsed(
+    value: TextureSetHistory,
+    version: VersionInfo,
+    diagnostics: Diagnostics,
+) -> Parsed<TextureSetFamily> {
     let written = FormatVersionInput {
         version: Some(version.effective),
         beta_literal: false,
@@ -161,7 +165,7 @@ fn finished(
 
 /// Rebuilds the parse stage from the document and finishes it.
 pub(crate) fn upgrade_document(
-    document: Document<Any>,
+    document: Document<TextureSetHistory>,
     cx: &LoadContext,
 ) -> Result<Document<TextureSet>, Rejected> {
     let (value, origin, version, diagnostics) = document.into_parsed_parts();

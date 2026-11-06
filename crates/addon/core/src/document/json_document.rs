@@ -141,7 +141,7 @@ pub trait JsonDocument: VersionStruct + Send + Sync + 'static {
         path: &PackPath,
         bytes: &[u8],
         cx: &LoadContext,
-    ) -> Result<Document<<Self::Family as Family>::Any>, Rejected> {
+    ) -> Result<Document<<Self::Family as Family>::History>, Rejected> {
         parse_document_as_written::<Self::Family>(first_side(Self::SIDES), path, bytes, cx)
     }
 }

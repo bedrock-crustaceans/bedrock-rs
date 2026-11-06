@@ -55,7 +55,7 @@ macro_rules! toy_variant {
             bedrock_addon_core::version_chain! {
                 family = $name;
                 /// The toy's chain for another family.
-                pub enum Any {
+                pub enum History {
                     V1_0_0(v1_0_0::Toy),
                     V1_1_0(crate::toy::v1_1_0::Toy),
                     V1_2_0(Toy120),
@@ -70,7 +70,7 @@ macro_rules! toy_variant {
             type Latest = Toy120;
             type Beta = $beta;
             type Component = ToyComponent;
-            type Any = $module::Any;
+            type History = $module::History;
             fn components() -> &'static ComponentTable<Self> {
                 &ComponentTable::EMPTY
             }
@@ -205,7 +205,7 @@ pub mod stable {
     bedrock_addon_core::version_chain! {
         family = Stable;
         /// The toy's chain without the beta struct.
-        pub enum Any {
+        pub enum History {
             V1_0_0(v1_0_0::Toy),
             V1_1_0(crate::toy::v1_1_0::Toy),
             V1_2_0(Toy120),
@@ -219,7 +219,7 @@ impl Family for Stable {
     type Latest = Toy120;
     type Beta = std::convert::Infallible;
     type Component = ToyComponent;
-    type Any = stable::Any;
+    type History = stable::History;
     fn components() -> &'static ComponentTable<Self> {
         &ComponentTable::EMPTY
     }
@@ -268,7 +268,7 @@ macro_rules! raw_family {
             bedrock_addon_core::version_chain! {
                 family = $name;
                 /// One raw struct.
-                pub enum Any {
+                pub enum History {
                     V1_0_0(RawRoot),
                 }
                 $(molang = $molang;)?
@@ -285,7 +285,7 @@ macro_rules! raw_family {
             type Latest = RawRoot;
             type Beta = std::convert::Infallible;
             type Component = ToyComponent;
-            type Any = $module::Any;
+            type History = $module::History;
             fn components() -> &'static ComponentTable<Self> {
                 &ComponentTable::EMPTY
             }
@@ -1498,7 +1498,7 @@ pub mod gated {
     bedrock_addon_core::version_chain! {
         family = Gated;
         /// The toy's chain with a gated beta struct.
-        pub enum Any {
+        pub enum History {
             V1_0_0(v1_0_0::Toy),
             V1_1_0(crate::toy::v1_1_0::Toy),
             V1_2_0(Toy120),
@@ -1513,7 +1513,7 @@ impl Family for Gated {
     type Latest = Toy120;
     type Beta = GatedBeta;
     type Component = ToyComponent;
-    type Any = gated::Any;
+    type History = gated::History;
     fn components() -> &'static ComponentTable<Self> {
         &ComponentTable::EMPTY
     }

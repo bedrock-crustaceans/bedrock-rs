@@ -94,7 +94,7 @@ pub struct GroupFamily;
 
 /// A spawn-group document as written: the one struct, the newest.
 #[doc(hidden)]
-pub type GroupAny = Single<GroupFamily>;
+pub type GroupHistory = Single<GroupFamily>;
 
 impl Family for GroupFamily {
     const NAME: &'static str = "spawn group";
@@ -116,7 +116,7 @@ impl Family for GroupFamily {
     type Latest = SpawnGroup;
     type Beta = NoBeta<kind::SpawnGroup>;
     type Component = NoComponents;
-    type Any = Single<Self>;
+    type History = Single<Self>;
 
     fn validate(v: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {
         if let Loaded::Stable(group) = v {
@@ -169,7 +169,7 @@ impl JsonDocument for SpawnGroup {
         path: &PackPath,
         bytes: &[u8],
         cx: &LoadContext,
-    ) -> Result<Document<GroupAny>, Rejected> {
+    ) -> Result<Document<GroupHistory>, Rejected> {
         let origin = origin(PackRef::app_data(), PackSide::Behavior, path);
         let (_, result) = load_file(&origin, bytes, FAILED_GROUPS, |text, origin| {
             load_family_as_written::<GroupFamily>(text, cx, origin)

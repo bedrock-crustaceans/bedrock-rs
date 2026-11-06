@@ -9,7 +9,7 @@
 
 use bedrock_addon::document::{Document, JsonDocument as _};
 use bedrock_addon::families::attachable::Attachable;
-use bedrock_addon::families::attachable::history::Any;
+use bedrock_addon::families::attachable::history::AttachableHistory;
 use bedrock_addon::json::EncodeError;
 use bedrock_addon::load::LoadContext;
 use bedrock_addon::storage::PackPath;
@@ -791,9 +791,9 @@ fn check(source: &str, cx: &LoadContext, counts: &mut Counts) {
     let path = PackPath::from_static(PATH);
     if let Ok(written) = Attachable::parse_as_written(&path, source.as_bytes(), cx) {
         let value = match written.value() {
-            Any::V1_8_0(attachable) => attachable.write(),
-            Any::V1_10_0(attachable) => attachable.write(),
-            Any::V1_26_0(attachable) => attachable.write(),
+            AttachableHistory::V1_8_0(attachable) => attachable.write(),
+            AttachableHistory::V1_10_0(attachable) => attachable.write(),
+            AttachableHistory::V1_26_0(attachable) => attachable.write(),
         };
         let text = bedrock_addon::json::to_json(&value.unwrap()).unwrap();
         let again =

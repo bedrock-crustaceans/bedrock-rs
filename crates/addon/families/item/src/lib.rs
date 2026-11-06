@@ -57,7 +57,7 @@ use bedrock_addon_core::versioning::{
 use indexmap::IndexMap;
 
 use component::ItemComponent;
-use history::{Any, ItemFamily};
+use history::{ItemFamily, ItemHistory};
 use read::{V1_16_100, is_component_based, json_path_texts, numeric_version, prepare, read_item};
 /// The directory item files live in.
 const DIRECTORY: &str = "items";
@@ -70,7 +70,7 @@ impl Family for ItemFamily {
     type Latest = Item;
     type Beta = Beta;
     type Component = ItemComponent;
-    type Any = Any;
+    type History = ItemHistory;
     const COMPONENT_NOUN: &'static str = "item component";
 
     const ENVELOPE: Envelope = Envelope {
@@ -199,7 +199,7 @@ const FIRST_MODERN_SLICE: FormatVersion = known::V1_26_30;
 fn is_modern(index: StructIndex) -> bool {
     match index {
         StructIndex::Beta => true,
-        StructIndex::Stable(i) => <Any as versioning::VersionChain<ItemFamily>>::VERSIONS
+        StructIndex::Stable(i) => <ItemHistory as versioning::VersionChain<ItemFamily>>::VERSIONS
             .get(i)
             .is_some_and(|version| *version >= FIRST_MODERN_SLICE),
     }
@@ -366,7 +366,7 @@ impl JsonDocument for Item {
         path: &PackPath,
         bytes: &[u8],
         cx: &LoadContext,
-    ) -> Result<Document<Any>, Rejected> {
+    ) -> Result<Document<ItemHistory>, Rejected> {
         // A leading byte-order mark is blanked, so spans are offsets into the file as written.
         let origin = Origin::file(PackRef::app_data(), PackSide::Behavior, path.clone());
         let prepared = match prepare(bytes) {

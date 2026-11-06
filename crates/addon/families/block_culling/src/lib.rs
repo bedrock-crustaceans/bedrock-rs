@@ -35,7 +35,7 @@ use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
     Envelope, EnvelopeCheck, Family, Loaded, MissingVersion, NoComponents, RangeModel, ValidateCx,
 };
-use history::{Any, CullingFamily};
+use history::{CullingFamily, CullingHistory};
 use texts::{FAILED_INTERNAL, FAILED_TO_PARSE, MISSING_OBJECT, formatted};
 
 pub use types::{Condition, CullingRule, CullingRules, Description, Facing, GeometryPart, Rule};
@@ -56,7 +56,7 @@ impl Family for CullingFamily {
     type Latest = CullingRules;
     type Beta = NoBeta<kind::CullingRules>;
     type Component = NoComponents;
-    type Any = Any;
+    type History = CullingHistory;
     const ENVELOPE: Envelope = Envelope {
         // The game reads the document with the floor 1.20.60:
         // below it (or without a version) the text is kept raw and the envelope is never looked at

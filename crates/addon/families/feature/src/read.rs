@@ -301,7 +301,7 @@ struct ParseType<'a>(Stage<'a>);
 
 impl
     TypeFn<(
-        Option<history::Any>,
+        Option<history::FeatureHistory>,
         bedrock_addon_core::document::VersionInfo,
         Diagnostics,
     )> for ParseType<'_>
@@ -309,7 +309,7 @@ impl
     fn call<T: FeatureType>(
         self,
     ) -> (
-        Option<history::Any>,
+        Option<history::FeatureHistory>,
         bedrock_addon_core::document::VersionInfo,
         Diagnostics,
     ) {
@@ -444,7 +444,7 @@ pub(crate) fn parse_file_as_written(
     path: &PackPath,
     bytes: &[u8],
     cx: &LoadContext,
-) -> Result<Document<history::Any>, Rejected> {
+) -> Result<Document<history::FeatureHistory>, Rejected> {
     let origin = Origin::file(PackRef::app_data(), PackSide::Behavior, path.clone());
     let prepared = Prepared::new(bytes);
     let (text, root, _) = match identify(&prepared, path, FileSource::Pack) {
@@ -473,7 +473,7 @@ pub(crate) fn parse_file_as_written(
 
 /// The upgrade of a document `parse_as_written` gave.
 struct UpgradeType<'a> {
-    any: history::Any,
+    any: history::FeatureHistory,
     version: bedrock_addon_core::document::VersionInfo,
     diagnostics: Diagnostics,
     cx: &'a LoadContext,
@@ -530,7 +530,7 @@ impl
 
 /// Rebuilds the parse stage from the document and finishes it.
 pub(crate) fn upgrade_document(
-    document: Document<history::Any>,
+    document: Document<history::FeatureHistory>,
     cx: &LoadContext,
 ) -> Result<Document<Feature>, Rejected> {
     let (any, origin, version, diagnostics) = document.into_parsed_parts();

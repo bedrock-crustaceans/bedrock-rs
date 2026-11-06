@@ -106,6 +106,32 @@ Manifest
 # held in `Registry::beta()` documents
 Beta
 
-# `history::Any`, held in `Document` by `parse_as_written`; its version accessor
-# is `parsed_version`, not `version`, so it does not hide `Document`'s
-Any
+# the history enums (`history::<Name>History`), held in `Document` by `parse_as_written`; their
+# version accessor is `parsed_version`, not `version`, so it does not hide `Document`'s
+PackSettingsHistory
+EntityHistory
+BlockHistory
+ItemHistory
+BiomeHistory
+ClientBiomeHistory
+FeatureHistory
+FogHistory
+DimensionHistory
+TradeHistory
+TextureSetHistory
+ParticleHistory
+AttachableHistory
+ClientEntityHistory
+PresetHistory
+CullingHistory
+CatalogHistory
+MetadataHistory
+StyleHistory
+AtomicHistory
+LightingHistory
+AtmosphereHistory
+WaterHistory
+ColorGradingHistory
+GeometryHistory
+AnimationControllerHistory
+SoundDefinitionsHistory

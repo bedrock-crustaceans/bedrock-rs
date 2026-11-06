@@ -6,7 +6,7 @@ use bedrock_addon_core::version::{ENGINE_VERSION, FormatVersion, FormatVersionIn
 use bedrock_addon_core::versioning::{
     EnvelopeCheck, Family, MissingVersion, RangeModel, Selection, VersionChain, check_chain, select,
 };
-use bedrock_addon_family_trade::history::{Any, TradeFamily};
+use bedrock_addon_family_trade::history::{TradeFamily, TradeHistory};
 
 use super::common::{above_info, doc, loads, rejects, with};
 
@@ -24,10 +24,10 @@ fn selects(version: &str) -> Selection {
 fn the_chain_is_v0_then_v1_21_30_with_no_beta() {
     check_chain::<TradeFamily>().expect("the chain is well formed");
     assert_eq!(
-        <Any as VersionChain<TradeFamily>>::VERSIONS,
+        <TradeHistory as VersionChain<TradeFamily>>::VERSIONS,
         [FormatVersion::new(0, 0, 0), FormatVersion::new(1, 21, 30)]
     );
-    let has_beta = <Any as VersionChain<TradeFamily>>::HAS_BETA;
+    let has_beta = <TradeHistory as VersionChain<TradeFamily>>::HAS_BETA;
     assert!(!has_beta, "Beta = Infallible");
 }
 

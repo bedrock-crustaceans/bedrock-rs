@@ -4,7 +4,7 @@
 
 use facet_value::{VArray, VObject};
 
-use super::history::{Any, v1_16_100};
+use super::history::{TextureSetHistory, v1_16_100};
 use super::texts;
 use super::types::{LayerKind, LayerValue, Rgb, Rgba, TextureName, TextureSet};
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
@@ -65,7 +65,7 @@ impl Schema {
 /// What reading a file gave: the struct its version selects, when every rule passed.
 pub(super) struct Read {
     /// The layers as written, by the struct of the file's version.
-    pub(super) value: Option<Any>,
+    pub(super) value: Option<TextureSetHistory>,
     /// The schema the version selected, when it selected one.
     pub(super) schema: Option<Schema>,
 }
@@ -208,13 +208,13 @@ pub(super) fn read(bytes: &[u8], file: &str, d: &mut Diagnostics) -> Read {
         return none(Some(schema));
     }
     let value = match schema {
-        Schema::V1_16_100 => Any::V1_16_100(v1_16_100::TextureSet {
+        Schema::V1_16_100 => TextureSetHistory::V1_16_100(v1_16_100::TextureSet {
             color: layers.color,
             normal: layers.normal,
             heightmap: layers.heightmap,
             metalness_emissive_roughness: layers.metalness_emissive_roughness,
         }),
-        Schema::V1_21_30 => Any::V1_21_30(layers),
+        Schema::V1_21_30 => TextureSetHistory::V1_21_30(layers),
     };
     Read {
         value: Some(value),

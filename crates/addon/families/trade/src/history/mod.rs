@@ -25,7 +25,7 @@ bedrock_addon_core::version_chain! {
     family = TradeFamily;
     /// A trade table parsed by the struct its `format_version` selects, not upgraded.
     #[derive(Clone, Debug, PartialEq)]
-    pub enum Any {
+    pub enum TradeHistory {
         /// No `format_version`, or one below 1.21.30: vanilla's legacy parser.
         V0(v0::TradeTable),
         /// Format 1.21.30 and later: the newest document.
@@ -46,7 +46,7 @@ bedrock_addon_core::impl_no_molang!(v0::TradeTable);
 /// Returns [`Rejected`] when an upgrade step or a check refuses the document; it carries every
 /// finding about the file.
 pub fn upgrade(
-    document: Document<Any>,
+    document: Document<TradeHistory>,
     cx: &LoadContext,
 ) -> Result<Document<TradeTable>, Rejected> {
     upgrade_document(document, cx)

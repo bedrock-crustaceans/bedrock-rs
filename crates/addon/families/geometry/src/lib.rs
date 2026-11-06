@@ -34,7 +34,7 @@ use bedrock_addon_core::id::{GeometryId, kind};
 use bedrock_addon_core::json::{EncodeError, WriteStyle};
 use bedrock_addon_core::load::{Accept, CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
-use history::Any;
+use history::GeometryHistory;
 use inherit::inherit;
 use read::{
     BLOCKS, ENTITY, MOBS, Outcome, detached_origin, finish, load, place_of, read_written,
@@ -99,7 +99,7 @@ impl GeometryFile {
         path: &PackPath,
         bytes: &[u8],
         cx: &LoadContext,
-    ) -> Result<Document<Any>, Rejected> {
+    ) -> Result<Document<GeometryHistory>, Rejected> {
         let origin = detached_origin(path);
         let mut diagnostics = Diagnostics::default();
         let outcome = read_written(path, bytes, cx, false, &mut diagnostics);
@@ -123,7 +123,7 @@ impl GeometryFile {
 
 /// `history::upgrade`: the steps and the checks on a document `parse_as_written` gave.
 pub(crate) fn upgrade_document(
-    document: Document<Any>,
+    document: Document<GeometryHistory>,
     cx: &LoadContext,
 ) -> Result<Document<GeometryFile>, Rejected> {
     let origin = document.origin().clone();

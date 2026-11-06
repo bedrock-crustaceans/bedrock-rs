@@ -131,7 +131,7 @@ chain! {
     latest = LightingSettings;
     /// A lighting-settings file parsed by the struct its `format_version` selects, not
     /// upgraded.
-    enum Any {
+    enum LightingHistory {
         /// Format 1.21.40.
         V1_21_40(v1_21_40::LightingSettings),
         /// Format 1.21.60.

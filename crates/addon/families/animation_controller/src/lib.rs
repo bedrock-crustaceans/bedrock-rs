@@ -33,7 +33,7 @@ use bedrock_addon_core::version::{FormatVersion, SemVersion};
 use bedrock_addon_shared_animation::read::{side_of, version_info, whole};
 use bedrock_addon_shared_animation::registry::combine;
 use bedrock_addon_shared_animation::write::file_path;
-use history::Any;
+use history::AnimationControllerHistory;
 use read::{V1_8_0, V1_10_0};
 
 pub use bedrock_addon_shared_animation::{EventString, ParticleEffect, SoundEffect};
@@ -100,7 +100,7 @@ impl AnimationControllerFile {
         path: &PackPath,
         bytes: &[u8],
         cx: &LoadContext,
-    ) -> Result<Document<Any>, Rejected> {
+    ) -> Result<Document<AnimationControllerHistory>, Rejected> {
         let origin = Origin::file(PackRef::app_data(), side_of(cx), path.clone());
         let (any, written, diagnostics) = read::parse_as_written(bytes, cx);
         let diagnostics = diagnostics.located(&origin);
@@ -121,7 +121,7 @@ impl AnimationControllerFile {
 
 /// `history::upgrade`: the step and the checks on a document `parse_as_written` gave.
 pub(crate) fn upgrade_document(
-    document: Document<Any>,
+    document: Document<AnimationControllerHistory>,
     cx: &LoadContext,
 ) -> Result<Document<AnimationControllerFile>, Rejected> {
     let origin = document.origin().clone();
@@ -130,7 +130,7 @@ pub(crate) fn upgrade_document(
     let written = version
         .written
         .map_or(V1_8_0, |v| SemVersion::new(v.major, v.minor, v.patch));
-    let upgraded = matches!(document.value(), Any::V1_8_0(_));
+    let upgraded = matches!(document.value(), AnimationControllerHistory::V1_8_0(_));
     let file = read::upgrade(document.into_value(), &written, cx, &mut diagnostics)
         .and_then(|file| read::finish(file, &written, cx, &mut diagnostics));
     let diagnostics = diagnostics.located(&origin);

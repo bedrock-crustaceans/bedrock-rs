@@ -5,7 +5,7 @@ use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
 use bedrock_addon::document::{Content, JsonDocument};
 use bedrock_addon::families::block::Block;
 use bedrock_addon::families::block::component::{Friction, LightEmission};
-use bedrock_addon::families::block::history::{self, Any, BlockFamily};
+use bedrock_addon::families::block::history::{self, BlockFamily, BlockHistory};
 use bedrock_addon::load::{LoadContext, LoadOptions};
 use bedrock_addon::storage::PackPath;
 use bedrock_addon::version::{ENGINE_VERSION, FormatVersion, FormatVersionInput};
@@ -40,7 +40,7 @@ fn selects(version: &str) -> Selection {
 
 #[test]
 fn the_chain_is_contiguous_and_ends_at_1_26_60() {
-    const HAS_BETA: bool = <Any as VersionChain<BlockFamily>>::HAS_BETA;
+    const HAS_BETA: bool = <BlockHistory as VersionChain<BlockFamily>>::HAS_BETA;
 
     check_chain::<BlockFamily>().expect("the chain is well formed");
     let versions: Vec<_> = VERSIONS
@@ -48,7 +48,7 @@ fn the_chain_is_contiguous_and_ends_at_1_26_60() {
         .map(|&(a, b, c)| FormatVersion::new(a, b, c))
         .collect();
     assert_eq!(
-        <Any as VersionChain<BlockFamily>>::VERSIONS,
+        <BlockHistory as VersionChain<BlockFamily>>::VERSIONS,
         versions.as_slice()
     );
     let has_beta = HAS_BETA;
@@ -206,7 +206,7 @@ fn parse_as_written_keeps_the_old_struct_and_upgrade_gives_the_parse_result() {
     let path = PackPath::from_static("blocks/demo/x.json");
     let cx = context();
     let written = Block::parse_as_written(&path, text.as_bytes(), &cx).expect("parses");
-    assert!(matches!(written.value(), Any::V1_16_0(_)));
+    assert!(matches!(written.value(), BlockHistory::V1_16_0(_)));
     assert_eq!(written.parsed_version(), FormatVersion::new(1, 16, 0));
     // Written in its own version, unchanged.
     let own: bedrock_addon::json::Value =

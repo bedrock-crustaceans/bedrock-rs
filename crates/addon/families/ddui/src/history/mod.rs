@@ -22,11 +22,11 @@ pub struct CompositionFamily;
 
 /// A root parsed by the struct its `format_version` selects: there is one (format 1.21.130
 /// exactly).
-pub type RootAny = Single<RootFamily>;
+pub type RootHistory = Single<RootFamily>;
 
 /// A composition parsed by the struct its `format_version` selects: there is one (format
 /// 1.21.130 exactly).
-pub type CompositionAny = Single<CompositionFamily>;
+pub type CompositionHistory = Single<CompositionFamily>;
 
 bedrock_addon_core::impl_no_molang!(UiRoot, UiComposition);
 
@@ -39,7 +39,7 @@ bedrock_addon_core::version_chain! {
     family = StyleFamily;
     /// A form style as parsed: the beta struct is the only one.
     #[derive(Clone, Debug, PartialEq)]
-    pub enum StyleAny {}
+    pub enum StyleHistory {}
     beta =
         /// `"format_version": "beta"`.
         Beta(UiStyle);

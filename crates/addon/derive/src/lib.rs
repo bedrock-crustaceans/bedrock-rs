@@ -165,8 +165,8 @@ use syn::{DeriveInput, parse_macro_input};
 ///     Some(Glint(true).into())
 /// }
 /// # pub struct Item;
-/// # pub enum ItemAny {}
-/// # impl VersionChain<Item> for ItemAny {
+/// # pub enum ItemHistory {}
+/// # impl VersionChain<Item> for ItemHistory {
 /// #     const VERSIONS: &'static [FormatVersion] = &[];
 /// #     fn parse(_: JsonSlice<'_>, _: FormatVersion, _: &LoadContext, _: &mut Diagnostics) -> Option<Self> { None }
 /// #     fn upgrade_to_end(self, _: &mut UpgradeCx<'_>) -> Loaded<Item> { match self {} }
@@ -179,7 +179,7 @@ use syn::{DeriveInput, parse_macro_input};
 /// #   type Latest = NoStable;
 /// #   type Beta = Infallible;
 ///     type Component = ItemComponent;
-/// #   type Any = ItemAny;
+/// #   type History = ItemHistory;
 ///     fn components() -> &'static ComponentTable<Self> {
 ///         ItemComponent::TABLE
 ///     }

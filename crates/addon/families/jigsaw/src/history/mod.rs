@@ -36,13 +36,13 @@ pub struct ProcessorListFamily;
 #[derive(Clone, Copy, Debug)]
 pub struct MetadataFamily;
 
-// The four JSON families have one struct each: their chain is `Single` (`Family::Any`).
+// The four JSON families have one struct each: their chain is `Single` (`Family::History`).
 
 bedrock_addon_core::version_chain! {
     family = MetadataFamily;
     /// A metadata registry parsed by the struct its version selects.
     #[derive(Clone, Debug, PartialEq)]
-    pub enum MetadataAny {
+    pub enum MetadataHistory {
         /// `[1.21.50, 1.21.80)`.
         V1_21_50(v1_21_50::MetadataRegistry),
         /// 1.21.80 and later: the newest registry.

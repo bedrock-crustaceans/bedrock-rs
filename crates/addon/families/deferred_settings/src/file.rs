@@ -284,7 +284,7 @@ fn foreign_payload<F: Family>(
     if written.beta_literal {
         return mismatch();
     }
-    let versions = <F::Any as VersionChain<F>>::VERSIONS;
+    let versions = <F::History as VersionChain<F>>::VERSIONS;
     match select::<F>(written) {
         Selection::Struct(index) => {
             let required = versions
@@ -419,7 +419,7 @@ pub(crate) fn as_written<F: Family>(
     bytes: &[u8],
     cx: &LoadContext,
     required: PayloadRequired,
-) -> Result<Document<F::Any>, Rejected> {
+) -> Result<Document<F::History>, Rejected> {
     let origin = Origin::file(PackRef::app_data(), PackSide::Resource, path.clone());
     let Ok(prepared) = Prepared::new(bytes) else {
         return Err(unreadable(origin));
@@ -436,7 +436,7 @@ pub(crate) fn as_written<F: Family>(
 /// The body of `history::upgrade` for payload `F`: rebuilds the parse stage from the document
 /// and finishes it.
 pub(crate) fn upgrade<F: Family>(
-    document: Document<F::Any>,
+    document: Document<F::History>,
     cx: &LoadContext,
 ) -> Result<Document<F::Latest>, Rejected> {
     let (value, origin, version, diagnostics) = document.into_parsed_parts();

@@ -1,7 +1,7 @@
 //! The toy family through `version_chain!` and `#[derive(Components)]`, the derive and the
 //! version chain working together: the generated chain, the upgrade walk, section-A
 //! suppression, the routing hook, Molang pass 1, the effective version and the generated
-//! `history::Any` methods.
+//! `history::ToyHistory` methods.
 
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::document::{ComponentMap, ComponentRef, Document, Origin, VersionInfo};
@@ -38,10 +38,10 @@ fn latest(outcome: &bedrock_addon_core::versioning::LoadOutcome<Toy>) -> &Toy120
 fn the_toy_chain_is_well_formed() {
     assert_eq!(check_chain::<Toy>(), Ok(()));
     assert_eq!(
-        <history::Any as VersionChain<Toy>>::VERSIONS,
+        <history::ToyHistory as VersionChain<Toy>>::VERSIONS,
         [V100, V110, V120]
     );
-    const { assert!(<history::Any as VersionChain<Toy>>::HAS_BETA) };
+    const { assert!(<history::ToyHistory as VersionChain<Toy>>::HAS_BETA) };
     assert!(Toy::components().is_sorted());
     assert!(Toy::components().get("toy:speed").is_some());
 }
@@ -131,7 +131,7 @@ pub mod routed {
     bedrock_addon_core::version_chain! {
         family = Routed;
         /// The toy's chain with a routing hook.
-        pub enum Any {
+        pub enum History {
             V1_0_0(v1_0_0::Toy),
             V1_1_0(v1_1_0::Toy),
             V1_2_0(Toy120),
@@ -146,7 +146,7 @@ impl Family for Routed {
     type Latest = Toy120;
     type Beta = ToyBeta;
     type Component = ToyComponent;
-    type Any = routed::Any;
+    type History = routed::History;
     fn components() -> &'static ComponentTable<Self> {
         &ComponentTable::EMPTY
     }
@@ -242,7 +242,7 @@ fn the_chain_parses_a_struct_without_upgrading_it() {
     let envelope = bedrock_addon_core::json::probe_envelope(JsonSlice::new(&text)).unwrap();
     let payload = envelope.payload("minecraft:toy").unwrap();
     let mut d = Diagnostics::default();
-    let any = <history::Any as VersionChain<Toy>>::parse(
+    let any = <history::ToyHistory as VersionChain<Toy>>::parse(
         payload,
         FormatVersion::new(1, 1, 5),
         &LoadContext::detached(),
@@ -258,7 +258,7 @@ fn the_chain_parses_a_struct_without_upgrading_it() {
     assert_eq!(reread, original);
     // An unsupported version is reported.
     let mut d = Diagnostics::default();
-    let none = <history::Any as VersionChain<Toy>>::parse(
+    let none = <history::ToyHistory as VersionChain<Toy>>::parse(
         payload,
         FormatVersion::new(0, 1, 0),
         &LoadContext::detached(),
@@ -281,7 +281,7 @@ fn the_chain_parses_a_struct_without_upgrading_it() {
     );
     let envelope = bedrock_addon_core::json::probe_envelope(JsonSlice::new(&text)).unwrap();
     let mut d = Diagnostics::default();
-    let none = <history::Any as VersionChain<Toy>>::parse(
+    let none = <history::ToyHistory as VersionChain<Toy>>::parse(
         envelope.payload("minecraft:toy").unwrap(),
         FormatVersion::new(1, 1, 0),
         &LoadContext::detached(),
@@ -296,7 +296,7 @@ fn the_chain_parses_a_struct_without_upgrading_it() {
 
 #[test]
 fn a_beta_struct_is_written_with_the_beta_literal() {
-    let any = history::Any::Beta(ToyBeta::default());
+    let any = history::ToyHistory::Beta(ToyBeta::default());
     let written: Value = facet_json::from_str(&any.to_json().unwrap()).unwrap();
     let version = written.as_object().unwrap().get("format_version").unwrap();
     assert_eq!(
@@ -309,7 +309,7 @@ fn a_beta_struct_is_written_with_the_beta_literal() {
     );
 }
 
-/// `Document<history::Any>` derefs to `Document`'s own methods
+/// `Document<history::ToyHistory>` derefs to `Document`'s own methods
 /// first, so no generated method may be named like one of them.
 #[test]
 fn no_generated_method_is_named_like_a_document_method() {
@@ -336,7 +336,7 @@ fn no_generated_method_is_named_like_a_document_method() {
     );
     let info = VersionInfo::new(Some(V110), false, V110, V110, false);
     let document = Document::new(
-        history::Any::V1_0_0(v1_0_0::Toy::default()),
+        history::ToyHistory::V1_0_0(v1_0_0::Toy::default()),
         origin,
         info.clone(),
         Diagnostics::default(),
@@ -373,7 +373,7 @@ pub mod beta_only {
     bedrock_addon_core::version_chain! {
         family = BetaOnly;
         /// Only the beta struct.
-        pub enum Any {}
+        pub enum History {}
         beta = Beta(ToyBeta);
     }
 }
@@ -389,7 +389,7 @@ impl Family for BetaOnly {
     type Latest = NoStable;
     type Beta = ToyBeta;
     type Component = NoComponents;
-    type Any = beta_only::Any;
+    type History = beta_only::History;
     // No `components`: the trait's default is the empty table.
 }
 
@@ -408,14 +408,14 @@ impl Family for ForgotTable {
     type Latest = Toy120;
     type Beta = std::convert::Infallible;
     type Component = ToyComponent;
-    type Any = forgot_table::Any;
+    type History = forgot_table::History;
 }
 pub mod forgot_table {
     use super::*;
     bedrock_addon_core::version_chain! {
         family = ForgotTable;
         /// The toy's chain, for a family without its table.
-        pub enum Any {
+        pub enum History {
             V1_0_0(v1_0_0::Toy),
             V1_1_0(v1_1_0::Toy),
             V1_2_0(Toy120),
@@ -454,7 +454,7 @@ fn a_family_without_components_reads_the_empty_table_without_a_panic() {
 #[test]
 fn a_beta_only_family_loads_only_beta_documents() {
     assert_eq!(check_chain::<BetaOnly>(), Ok(()));
-    assert!(<beta_only::Any as VersionChain<BetaOnly>>::VERSIONS.is_empty());
+    assert!(<beta_only::History as VersionChain<BetaOnly>>::VERSIONS.is_empty());
     let cx = LoadContext::detached();
     let outcome = load_with::<BetaOnly>(
         r#"{"format_version": "beta", "minecraft:toy": {"description": {"identifier": "demo:x"}}}"#,
@@ -490,7 +490,7 @@ impl Family for FloorAbove {
     type Latest = Toy120;
     type Beta = std::convert::Infallible;
     type Component = ToyComponent;
-    type Any = floor_above::Any;
+    type History = floor_above::History;
     fn components() -> &'static ComponentTable<Self> {
         &ComponentTable::EMPTY
     }
@@ -500,7 +500,7 @@ pub mod floor_above {
     bedrock_addon_core::version_chain! {
         family = FloorAbove;
         /// The toy's chain under a floor above its first struct.
-        pub enum Any {
+        pub enum History {
             V1_0_0(v1_0_0::Toy),
             V1_1_0(v1_1_0::Toy),
             V1_2_0(Toy120),

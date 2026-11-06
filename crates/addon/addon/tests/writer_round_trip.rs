@@ -18,7 +18,7 @@
 //!   order with the same number tokens, compared through `bedrock_addon::json`;
 //! * **Upgraded** (a document of an older format version in a Value row): it is written at
 //!   the newest version and reads back as the value the first load gave; and written as it
-//!   was read (`history::Any::to_json`) it reads back at its own version, equal;
+//!   was read (`history::<Name>History::to_json`) it reads back at its own version, equal;
 //! * **Lines**: the file differs from what was read only in the named ways (`.lang`: CRLF
 //!   as LF; a function: comments, blank lines and CRLF gone), each counted and required to
 //!   occur;
@@ -296,7 +296,7 @@ fn first_difference(a: &str, b: &str) -> String {
     format!("\n read    …{}…\n written …{}…", cut(a), cut(b))
 }
 
-/// A document written as it was read (`history::Any::to_json`) and read again.
+/// A document written as it was read (`history::<Name>History::to_json`) and read again.
 #[derive(Clone, Debug, PartialEq)]
 pub enum AsWritten {
     Rejected,

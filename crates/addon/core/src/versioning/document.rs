@@ -204,7 +204,7 @@ pub fn parse_document_as_written<F: Family>(
     path: &PackPath,
     bytes: &[u8],
     cx: &LoadContext,
-) -> Result<Document<F::Any>, Rejected> {
+) -> Result<Document<F::History>, Rejected> {
     let origin = Origin::file(PackRef::app_data(), side, path.clone());
     // The BOM is blanked, not cut, so every span is an offset into the file as written.
     let Ok(prepared) = Prepared::new(bytes) else {

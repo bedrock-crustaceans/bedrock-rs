@@ -6,7 +6,7 @@ use facet_json::RawJson;
 use indexmap::IndexMap;
 
 use super::component::{BlockComponent, DeprecatedComponents, DeprecatedDefinitionEvent};
-use super::history::{Any, BlockFamily};
+use super::history::{BlockFamily, BlockHistory};
 use super::{Block, Description, Permutation};
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
@@ -571,7 +571,7 @@ impl MolangFields for Block {
 
 /// `history::upgrade`: rebuilds the parse stage from the document and finishes it.
 pub(crate) fn upgrade_document(
-    document: Document<Any>,
+    document: Document<BlockHistory>,
     cx: &LoadContext,
 ) -> Result<Document<Block>, Rejected> {
     let (value, origin, version, diagnostics) = document.into_parsed_parts();
@@ -599,24 +599,24 @@ pub(crate) fn upgrade_document(
 }
 
 /// The identifier of a parsed document, as written.
-fn identifier_of(value: &Any) -> String {
+fn identifier_of(value: &BlockHistory) -> String {
     match value {
-        Any::V1_26_60(block) => block.description.identifier.as_str().to_owned(),
-        Any::V1_26_20(b) => b.block.description.identifier.as_str().to_owned(),
-        Any::V1_16_0(b) => legacy_identifier(&b.description),
-        Any::V1_16_100(b) => legacy_identifier(&b.description),
-        Any::V1_18_0(b) => legacy_identifier(&b.description),
-        Any::V1_19_10(b) => legacy_identifier(&b.description),
-        Any::V1_19_20(b) => legacy_identifier(&b.description),
-        Any::V1_19_30(b) => legacy_identifier(&b.description),
-        Any::V1_19_40(b) => legacy_identifier(&b.description),
-        Any::V1_19_80(b) => legacy_identifier(&b.description),
-        Any::V1_20_10(b) => legacy_identifier(&b.description),
-        Any::V1_20_60(b) => legacy_identifier(&b.description),
-        Any::V1_21_30(b) => legacy_identifier(&b.description),
-        Any::V1_21_60(b) => legacy_identifier(&b.description),
-        Any::V1_21_90(b) => legacy_identifier(&b.description),
-        Any::V1_26_0(b) => legacy_identifier(&b.description),
+        BlockHistory::V1_26_60(block) => block.description.identifier.as_str().to_owned(),
+        BlockHistory::V1_26_20(b) => b.block.description.identifier.as_str().to_owned(),
+        BlockHistory::V1_16_0(b) => legacy_identifier(&b.description),
+        BlockHistory::V1_16_100(b) => legacy_identifier(&b.description),
+        BlockHistory::V1_18_0(b) => legacy_identifier(&b.description),
+        BlockHistory::V1_19_10(b) => legacy_identifier(&b.description),
+        BlockHistory::V1_19_20(b) => legacy_identifier(&b.description),
+        BlockHistory::V1_19_30(b) => legacy_identifier(&b.description),
+        BlockHistory::V1_19_40(b) => legacy_identifier(&b.description),
+        BlockHistory::V1_19_80(b) => legacy_identifier(&b.description),
+        BlockHistory::V1_20_10(b) => legacy_identifier(&b.description),
+        BlockHistory::V1_20_60(b) => legacy_identifier(&b.description),
+        BlockHistory::V1_21_30(b) => legacy_identifier(&b.description),
+        BlockHistory::V1_21_60(b) => legacy_identifier(&b.description),
+        BlockHistory::V1_21_90(b) => legacy_identifier(&b.description),
+        BlockHistory::V1_26_0(b) => legacy_identifier(&b.description),
     }
 }
 

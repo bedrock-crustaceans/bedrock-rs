@@ -15,7 +15,7 @@ chain! {
     latest = AtmosphereSettings;
     /// An atmosphere-settings file parsed by the struct its `format_version` selects, not
     /// upgraded.
-    enum Any {
+    enum AtmosphereHistory {
         /// Format 1.21.40.
         V1_21_40(v1_21_40::AtmosphereSettings),
         /// Format 1.26.20: the newest atmosphere settings.

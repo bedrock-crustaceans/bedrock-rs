@@ -23,7 +23,7 @@ pub mod closing {
     bedrock_addon_core::version_chain! {
         family = Closing;
         /// The toy's chain for the closing family.
-        pub enum Any {
+        pub enum History {
             V1_0_0(v1_0_0::Toy),
             V1_1_0(crate::toy::v1_1_0::Toy),
             V1_2_0(Toy120),
@@ -41,7 +41,7 @@ impl Family for Closing {
     type Latest = Toy120;
     type Beta = ToyBeta;
     type Component = ToyComponent;
-    type Any = closing::Any;
+    type History = closing::History;
     fn components() -> &'static ComponentTable<Self> {
         &ComponentTable::EMPTY
     }
@@ -101,7 +101,7 @@ pub mod floored {
     bedrock_addon_core::version_chain! {
         family = Floored;
         /// The toy's chain for the floored family.
-        pub enum Any {
+        pub enum History {
             V1_0_0(v1_0_0::Toy),
             V1_1_0(crate::toy::v1_1_0::Toy),
             V1_2_0(Toy120),
@@ -121,7 +121,7 @@ impl Family for Floored {
     type Latest = Toy120;
     type Beta = ToyBeta;
     type Component = ToyComponent;
-    type Any = floored::Any;
+    type History = floored::History;
     fn components() -> &'static ComponentTable<Self> {
         &ComponentTable::EMPTY
     }
@@ -250,7 +250,7 @@ pub mod always {
     bedrock_addon_core::version_chain! {
         family = Always;
         /// The toy's chain for the always-closing family.
-        pub enum Any {
+        pub enum History {
             V1_0_0(v1_0_0::Toy),
             V1_1_0(crate::toy::v1_1_0::Toy),
             V1_2_0(Toy120),
@@ -266,7 +266,7 @@ impl Family for Always {
     type Latest = Toy120;
     type Beta = ToyBeta;
     type Component = ToyComponent;
-    type Any = always::Any;
+    type History = always::History;
     fn components() -> &'static ComponentTable<Self> {
         &ComponentTable::EMPTY
     }

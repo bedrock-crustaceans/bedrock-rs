@@ -24,7 +24,7 @@ bedrock_addon_core::version_chain! {
     family = BiomeFamily;
     /// A biome document parsed by the struct its `format_version` selects, not upgraded.
     #[derive(Clone, Debug, PartialEq)]
-    pub enum Any {
+    pub enum BiomeHistory {
         /// Format 1.21.110: read from the whole document.
         V1_21_110(v1_21_110::Biome),
         /// Format 1.21.120.
@@ -40,12 +40,15 @@ bedrock_addon_core::version_chain! {
 
 /// Runs the remaining upgrade steps of a document [`Biome::parse_as_written`](bedrock_addon_core::document::JsonDocument::parse_as_written) gave: the same
 /// result [`Biome::parse`](bedrock_addon_core::document::Content::parse) gives for its file
-/// (`history::Any::upgrade`, realised over the document, which holds the origin of the file).
+/// (`history::BiomeHistory::upgrade`, realised over the document, which holds the origin of the file).
 /// A beta document is rejected here (it is a [`Beta`]).
 ///
 /// # Errors
 ///
 /// Returns [`Rejected`] when the document is a beta one, or a remaining upgrade step leaves an error finding.
-pub fn upgrade(document: Document<Any>, cx: &LoadContext) -> Result<Document<Biome>, Rejected> {
+pub fn upgrade(
+    document: Document<BiomeHistory>,
+    cx: &LoadContext,
+) -> Result<Document<Biome>, Rejected> {
     crate::upgrade_document(document, cx)
 }

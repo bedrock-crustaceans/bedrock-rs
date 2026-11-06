@@ -27,7 +27,7 @@ bedrock_addon_core::version_chain! {
     family = PresetFamily;
     /// An aim-assist preset parsed by the struct its `format_version` selects, not upgraded.
     #[derive(Clone, Debug, PartialEq)]
-    pub enum Any {
+    pub enum PresetHistory {
         /// Format 1.21.50 up to 1.21.120.
         V1_21_50(v1_21_50::AimAssistPreset),
         /// Format 1.21.120 and later: the newest preset.
@@ -37,7 +37,7 @@ bedrock_addon_core::version_chain! {
 
 /// An aim-assist categories file parsed by the struct its `format_version` selects: the one
 /// categories struct (format 1.21.50 and later).
-pub type CategoriesAny = Single<CategoriesFamily>;
+pub type CategoriesHistory = Single<CategoriesFamily>;
 
 /// Runs the remaining upgrade step of a preset [`AimAssistPreset::parse_as_written`] gave: the same
 /// result [`AimAssistPreset::parse`](bedrock_addon_core::document::Content::parse) gives for its
@@ -48,7 +48,7 @@ pub type CategoriesAny = Single<CategoriesFamily>;
 /// Returns [`Rejected`](bedrock_addon_core::document::Rejected) when the upgrade step, or the
 /// checks that follow it, find an error that stops the document from loading.
 pub fn upgrade(
-    document: Document<Any>,
+    document: Document<PresetHistory>,
     cx: &LoadContext,
 ) -> Result<Document<AimAssistPreset>, Rejected> {
     bedrock_addon_support::chain_file::upgrade::<PresetFamily>(

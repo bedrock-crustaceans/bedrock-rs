@@ -45,7 +45,7 @@ impl Family for Toy {
     type Latest = NoStable;
     type Beta = Infallible;
     type Component = Shorthands;
-    type Any = ToyAny;
+    type History = ToyAny;
 
     fn components() -> &'static ComponentTable<Self> {
         Shorthands::TABLE
@@ -141,7 +141,7 @@ impl Family for Other {
     type Latest = NoStable;
     type Beta = Infallible;
     type Component = Misshapen;
-    type Any = OtherAny;
+    type History = OtherAny;
 
     fn components() -> &'static ComponentTable<Self> {
         Misshapen::TABLE

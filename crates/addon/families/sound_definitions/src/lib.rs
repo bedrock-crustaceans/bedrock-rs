@@ -78,7 +78,7 @@ fn at_the_root(mut finding: Diagnostic) -> Diagnostic {
 }
 
 /// Whether the file `json` has no wrapper: its `format_version` is no version from 1.14.0 on,
-/// so the versionless struct reads it (`history::Any::read`) and its root's members are the
+/// so the versionless struct reads it (`history::SoundDefinitionsHistory::read`) and its root's members are the
 /// definitions.
 fn has_no_wrapper(json: &Value) -> bool {
     upgrade::gate_version(json) < SemVersion::from(upgrade::V1_14_0)
@@ -267,10 +267,10 @@ impl Content for SoundDefinitions {
             let mut found = any.diagnostics().clone();
             let mut steps = Diagnostics::default();
             let json = match any.value() {
-                history::Any::V1_0_0(value) => &value.definitions,
-                history::Any::V1_14_0(value) => &value.document,
-                history::Any::V1_20_20(value) => &value.document,
-                history::Any::V1_26_50(value) => value.json(),
+                history::SoundDefinitionsHistory::V1_0_0(value) => &value.definitions,
+                history::SoundDefinitionsHistory::V1_14_0(value) => &value.document,
+                history::SoundDefinitionsHistory::V1_20_20(value) => &value.document,
+                history::SoundDefinitionsHistory::V1_26_50(value) => value.json(),
             };
             // The same findings a stack gives its lowest copy.
             let upgraded = prepare_definitions(json, None, &mut steps);
@@ -278,7 +278,7 @@ impl Content for SoundDefinitions {
             // A file without the wrapper has its definitions at the root: a finding of the
             // steps and of the reading, which name them in the upgraded document, is at the
             // member as the file has it.
-            let steps = if matches!(any.value(), history::Any::V1_0_0(_)) {
+            let steps = if matches!(any.value(), history::SoundDefinitionsHistory::V1_0_0(_)) {
                 steps.into_iter().map(at_the_root).collect()
             } else {
                 steps
@@ -316,7 +316,7 @@ impl SoundDefinitions {
         path: &PackPath,
         bytes: &[u8],
         _cx: &LoadContext,
-    ) -> Result<Document<history::Any>, Rejected> {
+    ) -> Result<Document<history::SoundDefinitionsHistory>, Rejected> {
         let origin = lone(path);
         let json = match read_json(bytes) {
             Ok(json) => json,
@@ -325,7 +325,7 @@ impl SoundDefinitions {
         let written = upgrade::version_member(&json);
         let gate = upgrade::gate_version(&json).format_version();
         // The newest struct's own findings come from `Content::parse`, once.
-        let any = history::Any::read(json, &mut Diagnostics::default());
+        let any = history::SoundDefinitionsHistory::read(json, &mut Diagnostics::default());
         let version = VersionInfo::new(
             written.map(|version| version.format_version()),
             false,

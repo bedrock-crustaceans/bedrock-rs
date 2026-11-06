@@ -113,7 +113,7 @@ pub fn load_family_as_written<F: Family>(
     text: &str,
     cx: &LoadContext,
     origin: &Origin,
-) -> (Option<String>, Result<Document<F::Any>, Rejected>) {
+) -> (Option<String>, Result<Document<F::History>, Rejected>) {
     let parsed = parse_as_written::<F>(JsonSlice::new(text), cx);
     let identifier = parsed.identity.identifier.clone();
     let mut diagnostics = parsed.diagnostics;

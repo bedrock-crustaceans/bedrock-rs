@@ -29,7 +29,7 @@ use component::ClientBiomeComponent;
 use indexmap::IndexSet;
 
 use crate::component::child;
-use crate::history::{Any, ClientBiomeFamily, identifier_path};
+use crate::history::{ClientBiomeFamily, ClientBiomeHistory, identifier_path};
 use crate::read::{MODERN, PAYLOAD_KEY};
 use crate::texts::{
     CANNOT_LOAD, FAILED_TO_LOAD, INVALID_FILE, LEGACY_ROOT, LEGACY_SYNTAX, NO_VERSION_STRING,
@@ -130,7 +130,7 @@ impl Family for ClientBiomeFamily {
     type Latest = ClientBiome;
     type Beta = Beta;
     type Component = ClientBiomeComponent;
-    type Any = Any;
+    type History = ClientBiomeHistory;
     const ENVELOPE: Envelope = Envelope {
         // The game reads every file as a document: the version is the first textual
         // `format_version` (a number is read as its text) and the size limits apply.
@@ -279,7 +279,7 @@ impl ClientBiome {
         path: &PackPath,
         bytes: &[u8],
         cx: &LoadContext,
-    ) -> Result<Document<Any>, Rejected> {
+    ) -> Result<Document<ClientBiomeHistory>, Rejected> {
         let origin = origin(PackRef::app_data(), path);
         let parsed = parse(&origin, bytes, cx)?;
         let mut diagnostics = parsed.diagnostics;
@@ -293,7 +293,7 @@ impl ClientBiome {
 
 /// `history::upgrade`: rebuilds the parse stage from the document and finishes it.
 pub(crate) fn upgrade_document(
-    document: Document<Any>,
+    document: Document<ClientBiomeHistory>,
     cx: &LoadContext,
 ) -> Result<Document<ClientBiome>, Rejected> {
     let (value, origin, version, mut found) = document.into_parsed_parts();
@@ -338,16 +338,16 @@ pub(crate) fn upgrade_document(
 }
 
 /// The identifier of a parsed document, as written.
-fn identifier_of(value: &Any) -> &str {
+fn identifier_of(value: &ClientBiomeHistory) -> &str {
     match value {
-        Any::V1_21_40(b) => b.description.identifier.as_str(),
-        Any::V1_21_70(b) => b.description.identifier.as_str(),
-        Any::V1_21_90(b) => b.description.identifier.as_str(),
-        Any::V1_21_100(b) => b.description.identifier.as_str(),
-        Any::V1_21_110(b) => b.description.identifier.as_str(),
-        Any::V1_21_120(b) => b.description.identifier.as_str(),
-        Any::V1_21_130(b) => b.description.identifier.as_str(),
-        Any::Beta(b) => b.description.identifier.as_str(),
+        ClientBiomeHistory::V1_21_40(b) => b.description.identifier.as_str(),
+        ClientBiomeHistory::V1_21_70(b) => b.description.identifier.as_str(),
+        ClientBiomeHistory::V1_21_90(b) => b.description.identifier.as_str(),
+        ClientBiomeHistory::V1_21_100(b) => b.description.identifier.as_str(),
+        ClientBiomeHistory::V1_21_110(b) => b.description.identifier.as_str(),
+        ClientBiomeHistory::V1_21_120(b) => b.description.identifier.as_str(),
+        ClientBiomeHistory::V1_21_130(b) => b.description.identifier.as_str(),
+        ClientBiomeHistory::Beta(b) => b.description.identifier.as_str(),
     }
 }
 

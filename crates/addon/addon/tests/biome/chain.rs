@@ -5,7 +5,7 @@
 use bedrock_addon::diagnostic::{DiagnosticCode, Severity, VanillaText};
 use bedrock_addon::document::{Content, JsonDocument as _};
 use bedrock_addon::families::biome::Biome;
-use bedrock_addon::families::biome::history::{self, Any, BiomeFamily};
+use bedrock_addon::families::biome::history::{self, BiomeFamily, BiomeHistory};
 use bedrock_addon::version::{ENGINE_VERSION, FormatVersion, FormatVersionInput};
 use bedrock_addon::versioning::{
     Family, MissingVersion, RangeModel, Selection, VersionChain, check_chain, select,
@@ -26,7 +26,7 @@ fn selects(version: &str) -> Selection {
 
 #[test]
 fn the_chain_is_contiguous_and_ends_at_1_26_30_with_a_beta_struct() {
-    const HAS_BETA: bool = <Any as VersionChain<BiomeFamily>>::HAS_BETA;
+    const HAS_BETA: bool = <BiomeHistory as VersionChain<BiomeFamily>>::HAS_BETA;
 
     check_chain::<BiomeFamily>().expect("the chain is well formed");
     let versions: Vec<_> = VERSIONS
@@ -34,7 +34,7 @@ fn the_chain_is_contiguous_and_ends_at_1_26_30_with_a_beta_struct() {
         .map(|&(a, b, c)| FormatVersion::new(a, b, c))
         .collect();
     assert_eq!(
-        <Any as VersionChain<BiomeFamily>>::VERSIONS,
+        <BiomeHistory as VersionChain<BiomeFamily>>::VERSIONS,
         versions.as_slice()
     );
     let has_beta = HAS_BETA;
@@ -156,7 +156,7 @@ fn every_struct_writes_its_own_version_and_reads_back() {
         r#"{"description": {"identifier": "test:b"}, "components": {}}"#,
     );
     let written = Biome::parse_as_written(&path(), beta.as_bytes(), &base_game()).expect("parses");
-    assert!(matches!(written.value(), Any::Beta(_)));
+    assert!(matches!(written.value(), BiomeHistory::Beta(_)));
     assert!(
         written
             .to_json()

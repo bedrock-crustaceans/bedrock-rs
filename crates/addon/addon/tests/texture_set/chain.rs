@@ -4,7 +4,9 @@
 
 use bedrock_addon::diagnostic::Severity::Warning;
 use bedrock_addon::document::{Content, JsonDocument};
-use bedrock_addon::families::texture_set::history::{self, Any, TextureSetFamily, v1_16_100};
+use bedrock_addon::families::texture_set::history::{
+    self, TextureSetFamily, TextureSetHistory, v1_16_100,
+};
 use bedrock_addon::families::texture_set::{
     LayerKind, LayerValue, Rgb, Rgba, TextureName, TextureSet,
 };
@@ -40,10 +42,10 @@ fn parse(text: &str) -> TextureSet {
 
 #[test]
 fn the_chain_is_v1_16_100_then_v1_21_30_with_no_beta() {
-    const HAS_BETA: bool = <Any as VersionChain<TextureSetFamily>>::HAS_BETA;
+    const HAS_BETA: bool = <TextureSetHistory as VersionChain<TextureSetFamily>>::HAS_BETA;
     check_chain::<TextureSetFamily>().expect("the chain is well formed");
     assert_eq!(
-        <Any as VersionChain<TextureSetFamily>>::VERSIONS,
+        <TextureSetHistory as VersionChain<TextureSetFamily>>::VERSIONS,
         [V16, V21]
     );
     let has_beta = HAS_BETA;
@@ -178,7 +180,7 @@ fn parse_as_written_gives_the_struct_of_the_file_s_version() {
     );
     let written =
         TextureSet::parse_as_written(&path(), old.as_bytes(), &LoadContext::detached()).unwrap();
-    let Any::V1_16_100(set) = written.value() else {
+    let TextureSetHistory::V1_16_100(set) = written.value() else {
         panic!("{:?}", written.value());
     };
     assert_eq!(
@@ -200,7 +202,7 @@ fn parse_as_written_gives_the_struct_of_the_file_s_version() {
     let new = doc("1.21.30", r#""color": "stone""#);
     let written =
         TextureSet::parse_as_written(&path(), new.as_bytes(), &LoadContext::detached()).unwrap();
-    assert!(matches!(written.value(), Any::V1_21_30(_)));
+    assert!(matches!(written.value(), TextureSetHistory::V1_21_30(_)));
     let rejected =
         TextureSet::parse_as_written(&path(), b"{", &LoadContext::detached()).expect_err("no JSON");
     assert_eq!(rejected.origin.path.as_str(), STONE_SET);
