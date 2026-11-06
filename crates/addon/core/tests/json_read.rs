@@ -11,7 +11,7 @@
 use std::fmt::Write as _;
 use std::process::{Command, Stdio};
 
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Span, code_for_deserialize_error_kind};
+use bedrock_addon_core::diagnostic::{Span, code_for_deserialize_error_kind, codes};
 use bedrock_addon_core::json::{
     JsonSlice, MAX_JSON_DEPTH, Scanned, UnsafeText, Value, from_slice_jsonc, from_str,
     from_str_borrowed_jsonc, from_str_jsonc, last_wins, parse_at, probe_envelope, scan,
@@ -134,9 +134,10 @@ fn fixture(name: &str) -> Vec<u8> {
 
 /// The message of the `MalformedInput` a refused text is reported as.
 fn malformed(error: &facet_json::DeserializeError) -> String {
-    match code_for_deserialize_error_kind(&error.kind, error.path.is_some(), false) {
-        DiagnosticCode::MalformedInput { message, .. } => message,
-        other => panic!("not MalformedInput: {other:?}"),
+    let code = code_for_deserialize_error_kind(&error.kind, error.path.is_some(), false);
+    match code.args_of(&codes::SYNTAX) {
+        Some(message) => message[0].clone(),
+        None => panic!("not MalformedInput: {code:?}"),
     }
 }
 

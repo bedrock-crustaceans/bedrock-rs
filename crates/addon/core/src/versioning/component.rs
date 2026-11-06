@@ -11,9 +11,9 @@ use super::{
     ComponentTable, ContextArea, ConvertMode, ExperimentalField, Family, FieldGate, FieldMeta,
     UnknownMask,
 };
+use crate::diagnostic::codes as core_codes;
 use crate::diagnostic::{
     Class, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
-    VanillaText,
 };
 use crate::document::{ComponentMap, ComponentRef, ComponentSet, CustomComponent};
 use crate::json::{JsonSlice, NullRule, ScalarRead, Value, parse_with_rules, reject_nulls};
@@ -259,7 +259,7 @@ pub fn parse_component_map<'a, F: Family>(
                 // The game says nothing here, so the crate reports a read that failed without a
                 // finding of its own as an information.
                 None => d.push(Diagnostic::new(
-                    DiagnosticCode::DroppedComponent { text: None },
+                    DiagnosticCode::from(&core_codes::DROPPED_COMPONENT),
                     Severity::Info,
                     Phase::Parse,
                     Location::new(None, None, path, Some(span_of(slice))),
@@ -363,9 +363,7 @@ pub fn validate_components<F: Family>(
         if !released && let Some(failed) = meta.requires.iter().find(|r| !r.satisfied(cx)) {
             passed = false;
             d.push(finding(
-                DiagnosticCode::MissingToggles {
-                    text: requirement_text(*failed, what, name, meta.released),
-                },
+                requirement_code(*failed, what, name, meta.released),
                 gate_severity,
                 path.clone(),
             ));
@@ -373,27 +371,23 @@ pub fn validate_components<F: Family>(
         if let Some(since) = meta.deprecated_since
             && original_version >= since
         {
-            let text = meta.deprecated_message.map_or_else(
-                || VanillaText::Deprecated {
-                    member: name.to_owned(),
-                    version: original_version,
+            let code = meta.deprecated_message.map_or_else(
+                || {
+                    core_codes::DEPRECATED_IN_FORMAT
+                        .with([name.to_owned(), original_version.to_string()])
                 },
-                VanillaText::Fixed,
+                |message| core_codes::DEPRECATED_MEMBER_WORDED.with([message]),
             );
             // `minecraft:foot_size` at 1.16.100: the game logs the not-in-schema line at
             // level 2 and keeps the actor.
-            d.push(finding(
-                DiagnosticCode::DeprecatedMember { text: Some(text) },
-                unknown_severity,
-                path.clone(),
-            ));
+            d.push(finding(code.into(), unknown_severity, path.clone()));
             dropped.push(name.to_owned());
         }
         if matches!(meta.area, ContextArea::Vanilla | ContextArea::Internal)
             && !cx.is_base_game_pack
         {
             d.push(finding(
-                DiagnosticCode::UnrecognizedComponent { text: None },
+                DiagnosticCode::from(&core_codes::UNRECOGNIZED_COMPONENT),
                 unknown_severity,
                 path.clone(),
             ));
@@ -406,10 +400,9 @@ pub fn validate_components<F: Family>(
             // fixer, and no block row has `supersedes`; an entity's rename logs nothing. The
             // crate reports the dropped older version as an information.
             d.push(finding(
-                DiagnosticCode::DuplicateComponentVersion {
-                    old: old.to_owned(),
-                    new: name.to_owned(),
-                },
+                core_codes::DUPLICATE_COMPONENT_VERSION
+                    .with([old, name, name, old])
+                    .into(),
                 Severity::Info,
                 path,
             ));
@@ -479,13 +472,13 @@ pub fn check_experimental_fields(
             path.push(part);
         }
         d.push(Diagnostic::new(
-            DiagnosticCode::MissingToggles {
-                text: Some(VanillaText::TurnOnToggle {
-                    what: "field",
-                    name: format!("{owner}.{}", field.name),
-                    toggle: field.experiment.save_name().unwrap_or_default(),
-                }),
-            },
+            core_codes::TURN_ON_TOGGLE
+                .with([
+                    "field".to_owned(),
+                    format!("{owner}.{}", field.name),
+                    field.experiment.save_name().unwrap_or_default().to_owned(),
+                ])
+                .into(),
             Severity::Error,
             Phase::Parse,
             Location::new(None, None, path, None),
@@ -496,13 +489,9 @@ pub fn check_experimental_fields(
 
 /// "To use %s '%s', use json format version %s or higher".
 fn use_format_version(what: &'static str, name: &str, version: FormatVersion) -> DiagnosticCode {
-    DiagnosticCode::UnsupportedVersion {
-        text: Some(VanillaText::UseFormatVersion {
-            what,
-            name: name.to_owned(),
-            version,
-        }),
-    }
+    core_codes::USE_FORMAT_VERSION
+        .with([what.to_owned(), name.to_owned(), version.to_string()])
+        .into()
 }
 
 /// `FieldSinceEngine` warnings for every field of `fields` that `present` finds in a
@@ -530,50 +519,54 @@ pub fn check_fields_since_engine(
         // The game has no line for a field newer than the pack, so the crate reports it as an
         // information.
         d.push(finding(
-            DiagnosticCode::FieldSinceEngine {
-                since: field.since_engine,
-            },
+            core_codes::FIELD_SINCE_ENGINE
+                .with([field.since_engine.to_string()])
+                .into(),
             Severity::Info,
             path,
         ));
     }
 }
 
-/// The text of a failed requirement: the legacy creator features name the version
+/// The code of a failed requirement: the legacy creator features name the version
 /// that needs none; an experiment names its toggle, and the version from which none is
-/// needed when the component has one.
-fn requirement_text(
+/// needed when the component has one. A requirement with no line of the game's (the base
+/// game pack, a creator feature never released) is the plain [`core_codes::MISSING_TOGGLES`].
+fn requirement_code(
     requirement: LoadRequirement,
     what: &'static str,
     name: &str,
     released: Option<FormatVersion>,
-) -> Option<VanillaText> {
-    let toggle = |experiment: Experiment| experiment.save_name().unwrap_or_default();
+) -> DiagnosticCode {
+    let toggle = |experiment: Experiment| experiment.save_name().unwrap_or_default().to_owned();
     let experiment = match requirement {
         LoadRequirement::LegacyCreatorFeatures => {
-            return released.map(|version| VanillaText::UseFormatVersion {
-                what,
-                name: name.to_owned(),
-                version,
-            });
+            return released.map_or_else(
+                || DiagnosticCode::from(&core_codes::MISSING_TOGGLES),
+                |version| {
+                    core_codes::TOGGLE_USE_FORMAT_VERSION
+                        .with([what.to_owned(), name.to_owned(), version.to_string()])
+                        .into()
+                },
+            );
         }
-        LoadRequirement::BaseGamePack => return None,
+        LoadRequirement::BaseGamePack => return DiagnosticCode::from(&core_codes::MISSING_TOGGLES),
         LoadRequirement::BetaFeatures => Experiment::BetaApis,
         LoadRequirement::Experiment(experiment) => experiment,
     };
-    Some(match released {
-        Some(version) => VanillaText::TurnOnToggleBefore {
-            what,
-            name: name.to_owned(),
-            version,
-            toggle: toggle(experiment),
-        },
-        None => VanillaText::TurnOnToggle {
-            what,
-            name: name.to_owned(),
-            toggle: toggle(experiment),
-        },
-    })
+    match released {
+        Some(version) => core_codes::TURN_ON_TOGGLE_BEFORE
+            .with([
+                what.to_owned(),
+                name.to_owned(),
+                version.to_string(),
+                toggle(experiment),
+            ])
+            .into(),
+        None => core_codes::TURN_ON_TOGGLE
+            .with([what.to_owned(), name.to_owned(), toggle(experiment)])
+            .into(),
+    }
 }
 
 /// The key of a map entry, for the `supersedes` lookup.

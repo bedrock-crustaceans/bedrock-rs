@@ -9,25 +9,7 @@
 //! game's log masks except the unknown member and the unknown component, which only the strict
 //! mask makes one. Each constructor documents the text it produces and the condition it reports.
 
-use super::{DiagnosticCode, VanillaText};
-
-/// `template` with `args`.
-#[allow(
-    clippy::unnecessary_wraps,
-    reason = "the `text` member of every code is an `Option`"
-)]
-fn formatted(template: &'static str, args: Vec<String>) -> Option<VanillaText> {
-    Some(VanillaText::Formatted { template, args })
-}
-
-/// A fixed text.
-#[allow(
-    clippy::unnecessary_wraps,
-    reason = "the `text` member of every code is an `Option`"
-)]
-const fn fixed(text: &'static str) -> Option<VanillaText> {
-    Some(VanillaText::Fixed(text))
-}
+use super::{DiagnosticCode, VanillaText, codes};
 
 /// A number as cereal writes it into a message: without a fraction as an integer, otherwise
 /// as C++'s `std::to_string(double)` does, with `%f` (six decimals). Every numeric constraint
@@ -58,19 +40,15 @@ pub const MEMBER_NOT_IN_SCHEMA_TEXT: &str =
 /// `this member was found in the input, but is not present in the Schema`: an unknown member of
 /// an object.
 #[must_use]
-pub const fn member_not_in_schema() -> DiagnosticCode {
-    DiagnosticCode::UnrecognizedField {
-        text: fixed(MEMBER_NOT_IN_SCHEMA_TEXT),
-    }
+pub fn member_not_in_schema() -> DiagnosticCode {
+    DiagnosticCode::from(&codes::MEMBER_NOT_IN_SCHEMA)
 }
 
 /// `this component was found in the input, but is not present in the Schema`: an unknown
 /// component.
 #[must_use]
-pub const fn component_not_in_schema() -> DiagnosticCode {
-    DiagnosticCode::UnrecognizedComponent {
-        text: fixed("this component was found in the input, but is not present in the Schema"),
-    }
+pub fn component_not_in_schema() -> DiagnosticCode {
+    DiagnosticCode::from(&codes::COMPONENT_NOT_IN_SCHEMA)
 }
 
 /// The text of [`missing_required_field`].
@@ -78,30 +56,21 @@ pub const MISSING_REQUIRED_FIELD_TEXT: &str = "missing required field";
 
 /// `missing required field`: an object lacks a member its schema requires.
 #[must_use]
-pub const fn missing_required_field() -> DiagnosticCode {
-    DiagnosticCode::MissingRequiredField {
-        text: fixed(MISSING_REQUIRED_FIELD_TEXT),
-    }
+pub fn missing_required_field() -> DiagnosticCode {
+    DiagnosticCode::from(&codes::REQUIRED_FIELD_MISSING)
 }
 
 /// `expected an object`: something else stands where an object is required.
 #[must_use]
-pub const fn expected_object() -> DiagnosticCode {
-    DiagnosticCode::InvalidType {
-        text: fixed("expected an object"),
-    }
+pub fn expected_object() -> DiagnosticCode {
+    DiagnosticCode::from(&codes::EXPECTED_OBJECT)
 }
 
 /// `too few input components, expected at least <min>`: a component storage holds fewer
 /// components than its schema demands.
 #[must_use]
 pub fn too_few_components(min: usize) -> DiagnosticCode {
-    DiagnosticCode::InvalidValue {
-        text: formatted(
-            "too few input components, expected at least {}",
-            vec![min.to_string()],
-        ),
-    }
+    codes::TOO_FEW_COMPONENTS.with([min.to_string()]).into()
 }
 
 // ---- enums --------------------------------------------------------------------------------
@@ -109,10 +78,8 @@ pub fn too_few_components(min: usize) -> DiagnosticCode {
 /// `invalid enum value`: the line the game logs after [`enum_expects`] or
 /// [`enum_expects_string`].
 #[must_use]
-pub const fn invalid_enum_value() -> DiagnosticCode {
-    DiagnosticCode::InvalidEnumValue {
-        text: fixed("invalid enum value"),
-    }
+pub fn invalid_enum_value() -> DiagnosticCode {
+    DiagnosticCode::from(&codes::INVALID_ENUM_LINE)
 }
 
 /// How many of an enum's names [`enum_expects`] lists before `, ... (<n> others)`.
@@ -138,24 +105,16 @@ pub fn enum_expects(bound: &str, names: &[&str], found: &str) -> DiagnosticCode 
         list.push_str(&(names.len() - ENUM_NAMES_SHOWN).to_string());
         list.push_str(" others)");
     }
-    DiagnosticCode::InvalidEnumValue {
-        text: formatted(
-            "This value is bound to '{}' and expects one of the following strings: {}. Found: '{}'",
-            vec![bound.to_owned(), list, found.to_owned()],
-        ),
-    }
+    codes::ENUM_EXPECTS
+        .with([bound.to_owned(), list, found.to_owned()])
+        .into()
 }
 
 /// `This value is bound to '<bound>' and expects a "named value" (i.e. a string)`: an enum given
 /// something other than a string.
 #[must_use]
 pub fn enum_expects_string(bound: &str) -> DiagnosticCode {
-    DiagnosticCode::InvalidType {
-        text: formatted(
-            "This value is bound to '{}' and expects a \"named value\" (i.e. a string)",
-            vec![bound.to_owned()],
-        ),
-    }
+    codes::ENUM_EXPECTS_STRING.with([bound]).into()
 }
 
 // ---- scalars, ranges, sizes ---------------------------------------------------------------
@@ -165,10 +124,8 @@ pub const INVALID_NUMERIC_VALUE_TEXT: &str = "invalid numeric value";
 
 /// `invalid numeric value`: no number (or boolean) where one is expected.
 #[must_use]
-pub const fn invalid_numeric_value() -> DiagnosticCode {
-    DiagnosticCode::InvalidType {
-        text: fixed(INVALID_NUMERIC_VALUE_TEXT),
-    }
+pub fn invalid_numeric_value() -> DiagnosticCode {
+    DiagnosticCode::from(&codes::INVALID_NUMERIC_VALUE)
 }
 
 /// The bounds of a numeric constraint: each bound is absent when the constraint has none (the
@@ -271,8 +228,29 @@ impl NumericRange {
     /// The finding's code: `InvalidValue` with [`Self::text`].
     #[must_use]
     pub fn code(&self) -> DiagnosticCode {
-        DiagnosticCode::InvalidValue {
-            text: Some(self.text()),
+        let bound = |exclusive: bool, strict: &str, loose: &str, at: f64| {
+            format!("{}{}", if exclusive { strict } else { loose }, number(at))
+        };
+        match (self.min, self.max) {
+            (Some(min), Some(max)) => codes::OUTSIDE_ACCEPTED_RANGE
+                .with([format!(
+                    "{}{}, {}{}",
+                    if self.exclusive_min { '(' } else { '[' },
+                    number(min),
+                    number(max),
+                    if self.exclusive_max { ')' } else { ']' },
+                )])
+                .into(),
+            (None, Some(max)) => codes::NUMBER_BOUND
+                .with([bound(self.exclusive_max, "< ", "<= ", max)])
+                .into(),
+            (Some(min), None) => codes::NUMBER_BOUND
+                .with([bound(self.exclusive_min, "> ", ">= ", min)])
+                .into(),
+            // No bound: no constraint fails; the game's text would end after "number".
+            (None, None) => codes::INVALID_VALUE_WORDED
+                .with(["the input must be a number"])
+                .into(),
         }
     }
 }
@@ -281,12 +259,9 @@ impl NumericRange {
 /// as [`number`] writes them.
 #[must_use]
 pub fn not_multiple_of(value: f64, step: f64) -> DiagnosticCode {
-    DiagnosticCode::InvalidValue {
-        text: formatted(
-            "{} is not multiple of {}",
-            vec![number(value), number(step)],
-        ),
-    }
+    codes::NOT_MULTIPLE_OF
+        .with([number(value), number(step)])
+        .into()
 }
 
 /// The template of [`string_mismatch`] (one argument: the regex).
@@ -295,101 +270,68 @@ pub const STRING_MISMATCH_TEXT: &str = "expected string to match the \"{}\" rege
 /// `expected string to match the "<regex>" regex`: a string breaks a pattern constraint.
 #[must_use]
 pub fn string_mismatch(regex: &str) -> DiagnosticCode {
-    DiagnosticCode::InvalidValue {
-        text: formatted(STRING_MISMATCH_TEXT, vec![regex.to_owned()]),
-    }
+    codes::STRING_MISMATCH.with([regex]).into()
 }
 
 /// `expected array with at least <n> elements`; the text says `elements` whatever `n` is.
 #[must_use]
 pub fn array_too_small(min: usize) -> DiagnosticCode {
-    DiagnosticCode::InvalidValue {
-        text: formatted(
-            "expected array with at least {} elements",
-            vec![min.to_string()],
-        ),
-    }
+    codes::ARRAY_AT_LEAST.with([min.to_string()]).into()
 }
 
 /// `expected object with at least <n> elements`, for a map or object under a minimum-size
 /// constraint.
 #[must_use]
 pub fn object_too_small(min: usize) -> DiagnosticCode {
-    DiagnosticCode::InvalidValue {
-        text: formatted(
-            "expected object with at least {} elements",
-            vec![min.to_string()],
-        ),
-    }
+    codes::OBJECT_AT_LEAST.with([min.to_string()]).into()
 }
 
 /// `No duplicates allowed`: an array with a unique-items constraint holds a repeat.
 #[must_use]
-pub const fn no_duplicates() -> DiagnosticCode {
-    DiagnosticCode::InvalidValue {
-        text: fixed("No duplicates allowed"),
-    }
+pub fn no_duplicates() -> DiagnosticCode {
+    DiagnosticCode::from(&codes::NO_DUPLICATES)
 }
 
 /// `key <key> is not allowed`: a component storage holds a key its constraint forbids.
 #[must_use]
 pub fn key_not_allowed(key: &str) -> DiagnosticCode {
-    DiagnosticCode::InvalidValue {
-        text: formatted("key {} is not allowed", vec![key.to_owned()]),
-    }
+    codes::KEY_NOT_ALLOWED.with([key]).into()
 }
 
 /// `too many input elements, expected no more than <max>`: the size cap of a vector; the same
 /// text ends the maximum size of a sequence container constraint.
 #[must_use]
 pub fn too_many_elements(max: usize) -> DiagnosticCode {
-    DiagnosticCode::InvalidValue {
-        text: formatted(
-            "too many input elements, expected no more than {}",
-            vec![max.to_string()],
-        ),
-    }
+    codes::TOO_MANY_ELEMENTS.with([max.to_string()]).into()
 }
 
 /// `too many characters, expected no more than <max>`: the size cap of a string.
 #[must_use]
 pub fn too_many_characters(max: usize) -> DiagnosticCode {
-    DiagnosticCode::InvalidValue {
-        text: formatted(
-            "too many characters, expected no more than {}",
-            vec![max.to_string()],
-        ),
-    }
+    codes::TOO_MANY_CHARACTERS.with([max.to_string()]).into()
 }
 
 /// `too many input elements for an associative container`: the size cap of a map.
 #[must_use]
-pub const fn too_many_map_elements() -> DiagnosticCode {
-    DiagnosticCode::InvalidValue {
-        text: fixed("too many input elements for an associative container"),
-    }
+pub fn too_many_map_elements() -> DiagnosticCode {
+    DiagnosticCode::from(&codes::TOO_MANY_MAP_ELEMENTS)
 }
 
 // ---- the Minecraft Document envelope ------------------------------------------------------
 
 /// `The payload of the Minecraft Document is missing`.
 #[must_use]
-pub const fn payload_missing() -> DiagnosticCode {
-    DiagnosticCode::MissingPayload {
-        text: fixed("The payload of the Minecraft Document is missing"),
-    }
+pub fn payload_missing() -> DiagnosticCode {
+    DiagnosticCode::from(&codes::PAYLOAD_MISSING)
 }
 
 /// `The payload key does not match the expected one. Expected: '<expected>'. Actual:
 /// '<actual>'.` The crate files it as the missing payload it is to the family.
 #[must_use]
 pub fn payload_key_mismatch(expected: &str, actual: &str) -> DiagnosticCode {
-    DiagnosticCode::MissingPayload {
-        text: formatted(
-            "The payload key does not match the expected one. Expected: '{}'. Actual: '{}'.",
-            vec![expected.to_owned(), actual.to_owned()],
-        ),
-    }
+    codes::PAYLOAD_UNDER_OTHER_KEY
+        .with([expected, actual])
+        .into()
 }
 
 // ---- the older schema tree ----------------------------------------------------------------
@@ -400,31 +342,23 @@ pub const REQUIRED_CHILD_TEXT: &str = "Required child {} not found";
 /// `Required child <name> not found`, logged at level 3.
 #[must_use]
 pub fn required_child(name: &str) -> DiagnosticCode {
-    DiagnosticCode::MissingRequiredField {
-        text: formatted(REQUIRED_CHILD_TEXT, vec![name.to_owned()]),
-    }
+    codes::REQUIRED_CHILD.with([name]).into()
 }
 
 /// `Node has too few children (<actual> < <min>)`, logged at level 3.
 #[must_use]
 pub fn too_few_children(actual: usize, min: usize) -> DiagnosticCode {
-    DiagnosticCode::InvalidValue {
-        text: formatted(
-            "Node has too few children ({} < {})",
-            vec![actual.to_string(), min.to_string()],
-        ),
-    }
+    codes::TOO_FEW_CHILDREN
+        .with([actual.to_string(), min.to_string()])
+        .into()
 }
 
 /// `Node has too many children (<actual> > <max>)`, logged at level 3.
 #[must_use]
 pub fn too_many_children(actual: usize, max: usize) -> DiagnosticCode {
-    DiagnosticCode::InvalidValue {
-        text: formatted(
-            "Node has too many children ({} > {})",
-            vec![actual.to_string(), max.to_string()],
-        ),
-    }
+    codes::TOO_MANY_CHILDREN
+        .with([actual.to_string(), max.to_string()])
+        .into()
 }
 
 /// The template of [`unknown_child_option`] (one argument: the allowed types).
@@ -434,20 +368,13 @@ pub const UNKNOWN_CHILD_OPTION_TEXT: &str = "unknown child schema option type.  
 /// two spaces before `Allowed`.
 #[must_use]
 pub fn unknown_child_option(allowed: &str) -> DiagnosticCode {
-    DiagnosticCode::InvalidType {
-        text: formatted(UNKNOWN_CHILD_OPTION_TEXT, vec![allowed.to_owned()]),
-    }
+    codes::UNKNOWN_CHILD_OPTION.with([allowed]).into()
 }
 
 /// `Version <version> below min required version (<min>)`: a version below the node's minimum.
 #[must_use]
 pub fn version_below_min(version: &str, min: &str) -> DiagnosticCode {
-    DiagnosticCode::UnsupportedVersion {
-        text: formatted(
-            "Version {} below min required version ({})",
-            vec![version.to_owned(), min.to_owned()],
-        ),
-    }
+    codes::VERSION_BELOW_MIN.with([version, min]).into()
 }
 
 #[cfg(test)]

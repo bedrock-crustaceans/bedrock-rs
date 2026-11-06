@@ -268,9 +268,10 @@ mod compiled {
 /// The Molang lints of `d` as `<severity> <molang code> <path>`.
 #[cfg(feature = "molang")]
 fn lints(d: &bedrock_addon::diagnostic::Diagnostics) -> Vec<String> {
-    use bedrock_addon::diagnostic::{DiagnosticCode, DiagnosticDetail};
+    use bedrock_addon::diagnostic::DiagnosticDetail;
     d.iter()
-        .filter(|f| matches!(f.code, DiagnosticCode::MolangLint { .. }))
+        // By legacy name: the variant and the definitions that were it.
+        .filter(|f| matches!(f.code.name(), "MolangLint"))
         .map(|f| {
             let code = match f.detail.as_deref() {
                 Some(DiagnosticDetail::Molang(m)) => format!("{:?}", m.code()),

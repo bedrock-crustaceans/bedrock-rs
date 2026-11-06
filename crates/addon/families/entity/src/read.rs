@@ -228,7 +228,8 @@ impl<'c, 'd> Reader<'c, 'd> {
             // An unknown member is the slice's finding, not the failure's.
             if finding.severity == Severity::Error
                 && !finding.kept
-                && !matches!(finding.code, DiagnosticCode::UnrecognizedField { .. })
+                // By legacy name: the variant and the definitions that were it.
+                && !matches!(finding.code.name(), "UnrecognizedField")
             {
                 *finding = finding.clone().into_kept();
             }
@@ -384,7 +385,8 @@ pub(crate) fn read_entity(
         let mut index = 0;
         r.d.retain(|finding| {
             let told_before = index >= before
-                && matches!(finding.code, DiagnosticCode::UnrecognizedField { .. })
+                // By legacy name: the variant and the definitions that were it.
+                && matches!(finding.code.name(), "UnrecognizedField")
                 && finding.location.json_path.len() == at.len() + 1
                 && finding.location.json_path.starts_with(at);
             index += 1;
@@ -648,7 +650,8 @@ pub(crate) fn read_components(
         }
         let unknown: Vec<JsonPath> = found
             .iter()
-            .filter(|f| matches!(f.code, DiagnosticCode::UnrecognizedField { .. }))
+            // By legacy name: the variant and the definitions that were it.
+            .filter(|f| matches!(f.code.name(), "UnrecognizedField"))
             .map(|f| f.location.json_path.clone())
             .collect();
         let value = match value {
@@ -687,10 +690,12 @@ pub(crate) fn read_components(
                 finding.phase = Phase::Upgrade;
                 // The legacy schema reader validated the component in its step and tells a required child of its own; the typed struct's requirement is not its.
                 if schema_converted(typed_key)
-                    && matches!(
+                    && (matches!(
                         finding.code,
                         DiagnosticCode::MissingRequiredField { text: None }
-                    )
+                    ) || finding
+                        .code
+                        .is(&bedrock_addon_core::diagnostic::codes::MISSING_REQUIRED_FIELD))
                 {
                     continue;
                 }
@@ -905,10 +910,11 @@ fn schema_converted(key: &str) -> bool {
 /// the goals' checks carry. A schema-driven reader tells its own lines in its validation and
 /// numeric checks (`schema`), before this read: what the read still tells is the crate's.
 fn legacy_reader_is_silent(code: &DiagnosticCode) -> bool {
-    matches!(
-        code,
-        DiagnosticCode::UnrecognizedField { .. } | DiagnosticCode::InvalidValue { text: None }
-    )
+    // By legacy name: the variant and the definitions that were it; the plain `InvalidValue`
+    // is the variant without a text or core's own definition of it.
+    matches!(code.name(), "UnrecognizedField")
+        || matches!(code, DiagnosticCode::InvalidValue { text: None })
+        || code.is(&bedrock_addon_core::diagnostic::codes::INVALID_VALUE)
 }
 
 /// The member a step inserted with the value the goal's member gate leaves: the
@@ -932,8 +938,8 @@ fn step_inserted_member(
 
 /// Whether `finding` is the member gate's `UnrecognizedField` for `member` of the component.
 fn is_gate_finding(finding: &Diagnostic, member: &str) -> bool {
-    matches!(finding.code, DiagnosticCode::UnrecognizedField { .. })
-        && finding.location.json_path.is_key(member)
+    // By legacy name: the variant and the definitions that were it.
+    matches!(finding.code.name(), "UnrecognizedField") && finding.location.json_path.is_key(member)
 }
 
 /// The struct version that reads `pickup_items.stop_if_holding_item`.
@@ -1565,11 +1571,15 @@ pub(crate) fn decode<'a>(bytes: &'a [u8], origin: &Origin) -> Result<Prepared<'a
 pub(crate) fn place(mut found: Diagnostics, version: &VersionInfo, origin: &Origin) -> Diagnostics {
     if let Some(written) = version.written.filter(|v| *v > ENGINE_VERSION) {
         for diagnostic in found.iter_mut() {
-            if let DiagnosticCode::UnsupportedVersion { text } = &mut diagnostic.code {
-                *text = Some(VanillaText::ActorAboveEngine {
-                    version: written.to_string(),
-                    engine: ENGINE_VERSION,
-                });
+            // By legacy name: the variant and the definitions that were it (the pipeline's
+            // "no parser" line), told again in the resource pack's words.
+            if diagnostic.code.name() == "UnsupportedVersion" {
+                diagnostic.code = DiagnosticCode::UnsupportedVersion {
+                    text: Some(VanillaText::ActorAboveEngine {
+                        version: written.to_string(),
+                        engine: ENGINE_VERSION,
+                    }),
+                };
             }
         }
     }

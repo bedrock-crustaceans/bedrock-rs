@@ -1,7 +1,7 @@
 //! Both ends of every range and both halves of every compound rule of the reader, the runtime
 //! values and the save algorithm, beyond what the fixture rows pin.
 
-use bedrock_addon::diagnostic::{DiagnosticCode as C, Diagnostics, Severity, VanillaText};
+use bedrock_addon::diagnostic::{DiagnosticCode as C, Diagnostics, Severity, codes};
 use bedrock_addon::manifest::{DropdownOption, Setting};
 use bedrock_addon::pack::settings::{
     FileState, GLOBAL_FILE, PackSettings, SavedSettings, SetError, SettingValue, Settings,
@@ -94,16 +94,7 @@ fn d5a_a_syntax_error_carries_the_document_json_text() {
     ] {
         let found = refused_text(WORLD, text);
         let first = found.iter().next().unwrap();
-        assert!(
-            matches!(
-                first.code,
-                C::MalformedInput {
-                    text: Some(VanillaText::DocumentJson { .. }),
-                    ..
-                }
-            ),
-            "{text}: {found:#?}"
-        );
+        assert!(first.is(&codes::DOCUMENT_JSON), "{text}: {found:#?}");
         closes(&found, WORLD);
     }
 }
@@ -146,9 +137,9 @@ fn an_array_version_below_the_floor_is_named_in_dotted_form_and_gets_no_array_in
     let version = found
         .iter()
         .find_map(|d| match &d.code {
-            C::UnsupportedVersion {
-                text: Some(VanillaText::NoParserForVersion { version }),
-            } => Some(version.clone()),
+            C::Specific { code } if code.is(&codes::NO_PARSER_FOR_VERSION) => {
+                Some(code.args()[0].clone())
+            }
             _ => None,
         })
         .expect("no parser");
@@ -178,7 +169,8 @@ fn a_list_value_under_an_array_version_of_the_old_struct_is_a_type_error() {
 fn mismatch(found: &Diagnostics) -> bool {
     found
         .iter()
-        .any(|d| matches!(d.code, C::PayloadKeyMismatch))
+        // By legacy name: the variant and the definitions that were it.
+        .any(|d| matches!(d.code.name(), "PayloadKeyMismatch"))
 }
 
 #[test]
@@ -205,7 +197,8 @@ fn a_foreign_payload_key_loads_under_an_array_version_and_in_either_member_order
         let warning = loaded
             .diagnostics()
             .iter()
-            .find(|d| matches!(d.code, C::PayloadKeyMismatch))
+            // By legacy name: the variant and the definitions that were it.
+            .find(|d| matches!(d.code.name(), "PayloadKeyMismatch"))
             .unwrap();
         let span = warning.location.span.unwrap();
         let start = usize::try_from(span.offset).unwrap();
@@ -221,7 +214,8 @@ fn a_foreign_payload_key_with_an_escaped_quote_is_found_whole() {
     let warning = loaded
         .diagnostics()
         .iter()
-        .find(|d| matches!(d.code, C::PayloadKeyMismatch))
+        // By legacy name: the variant and the definitions that were it.
+        .find(|d| matches!(d.code.name(), "PayloadKeyMismatch"))
         .unwrap();
     assert_eq!(warning.location.json_path.to_string(), "a\"b");
     let span = warning.location.span.unwrap();
@@ -338,7 +332,8 @@ fn three_entries_of_one_pack_warn_twice_and_distinct_packs_never() {
     let paths: Vec<String> = loaded
         .diagnostics()
         .iter()
-        .filter(|d| matches!(d.code, C::DuplicateIdentifier { .. }))
+        // By legacy name: the variant and the definitions that were it.
+        .filter(|d| matches!(d.code.name(), "DuplicateIdentifier"))
         .map(|d| d.location.json_path.to_string())
         .collect();
     assert_eq!(

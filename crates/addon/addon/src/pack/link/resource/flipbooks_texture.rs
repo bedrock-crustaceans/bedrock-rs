@@ -80,7 +80,8 @@ pub(super) fn run(cx: &LinkCx<'_>, out: &mut Findings) {
 
 /// Whether `finding` is the checker's "the terrain atlas lacks this tile".
 fn lacks_a_tile(finding: &Diagnostic) -> bool {
-    matches!(finding.code, DiagnosticCode::UnresolvedReference { .. })
+    // By legacy name: the variant and the definitions that were it.
+    matches!(finding.code.name(), "UnresolvedReference")
         && matches!(
             finding.detail.as_deref(),
             Some(DiagnosticDetail::Reference { kind, .. }) if *kind == kinds::ATLAS_KEY
@@ -90,7 +91,8 @@ fn lacks_a_tile(finding: &Diagnostic) -> bool {
 /// Whether `finding` is the checker's "the terrain atlas lacks this tile" for a tile the host
 /// answers for.
 fn names_a_tile_of_the_game(cx: &LinkCx<'_>, finding: &Diagnostic) -> bool {
-    if !matches!(finding.code, DiagnosticCode::UnresolvedReference { .. }) {
+    // By legacy name: the variant and the definitions that were it.
+    if !matches!(finding.code.name(), "UnresolvedReference") {
         return false;
     }
     match finding.detail.as_deref() {

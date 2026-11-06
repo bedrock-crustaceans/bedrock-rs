@@ -1,7 +1,7 @@
 //! The checks vanilla's loader runs before it parses the payload, in
 //! vanilla's order: a valid version, the floor, the payload key, the engine.
 
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, Severity};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, Severity, codes};
 
 use super::common::*;
 
@@ -27,7 +27,8 @@ fn missing_version(json: &str) -> Diagnostics {
     let found = rejects(json);
     let error = one_error(&found);
     assert!(
-        matches!(error.code, DiagnosticCode::MissingFormatVersion { .. }),
+        // By legacy name: the variant and the definitions that were it.
+        matches!(error.code.name(), "MissingFormatVersion"),
         "{json}: {found:#?}"
     );
     assert_eq!(error.code.to_string(), FORMAT_VERSION_TEXT, "{json}");
@@ -41,7 +42,8 @@ fn a_number_format_version_is_read_as_its_text() {
     let found = rejects(&root(&format!(r#""format_version": 1, {PAYLOAD}"#)));
     let error = one_error(&found);
     assert!(
-        matches!(error.code, DiagnosticCode::UnsupportedVersion { .. }),
+        // By legacy name: the variant and the definitions that were it.
+        matches!(error.code.name(), "UnsupportedVersion"),
         "{found:#?}"
     );
     assert_eq!(
@@ -72,10 +74,8 @@ fn l1a_every_unreadable_format_version_is_the_missing_version_error() {
         // Vanilla's "Malformed format version" goes to the document's own logger only: a note.
         let notes = notes(&found);
         assert_eq!(notes.len(), 1, "{version}: {found:#?}");
-        assert!(matches!(
-            notes[0].code,
-            DiagnosticCode::MalformedFormatVersion { .. }
-        ));
+        // By legacy name: the variant and the definitions that were it.
+        assert!(matches!(notes[0].code.name(), "MalformedFormatVersion"));
         assert_eq!(notes[0].severity, Severity::Info);
     }
 }
@@ -85,10 +85,8 @@ fn l1a_a_third_root_member_is_the_missing_version_error_with_the_envelope_text_a
     let found = missing_version(&fixture("cat04b_envelope_edges/third_root_member.json"));
     let notes = notes(&found);
     assert_eq!(notes.len(), 1, "{found:#?}");
-    assert!(matches!(
-        notes[0].code,
-        DiagnosticCode::MalformedInput { .. }
-    ));
+    // By legacy name: the variant and the definitions that were it.
+    assert!(matches!(notes[0].code.name(), "MalformedInput"));
     assert_eq!(notes[0].severity, Severity::Info);
     assert_eq!(
         notes[0].code.to_string(),
@@ -101,10 +99,7 @@ fn l1a_a_json_syntax_error_is_the_missing_version_error_with_the_reader_s_text_a
     let found = missing_version(r#"{"format_version": "1.21.60", "#);
     let notes = notes(&found);
     assert_eq!(notes.len(), 1, "{found:#?}");
-    assert!(matches!(
-        notes[0].code,
-        DiagnosticCode::MalformedInput { .. }
-    ));
+    assert!(notes[0].code.is(&codes::DOCUMENT_JSON));
     assert_eq!(notes[0].severity, Severity::Info);
     assert!(
         notes[0]
@@ -121,10 +116,8 @@ fn l1a_a_root_that_is_no_object_or_no_text_is_the_missing_version_error() {
     }
     let found = CraftingCatalogBytes(b"{\"format_version\": \"1.21.60\", \xff}").rejected();
     let error = one_error(&found);
-    assert!(matches!(
-        error.code,
-        DiagnosticCode::MissingFormatVersion { .. }
-    ));
+    // By legacy name: the variant and the definitions that were it.
+    assert!(matches!(error.code.name(), "MissingFormatVersion"));
     assert_eq!(error.code.to_string(), FORMAT_VERSION_TEXT);
 }
 
@@ -166,7 +159,8 @@ fn l2_the_floor_is_checked_before_the_shape_and_the_payload_key() {
         let found = rejects(&root(&members));
         let error = one_error(&found);
         assert!(
-            matches!(error.code, DiagnosticCode::UnsupportedVersion { .. }),
+            // By legacy name: the variant and the definitions that were it.
+            matches!(error.code.name(), "UnsupportedVersion"),
             "{members}: {found:#?}"
         );
         assert_eq!(error.code.to_string(), FORMAT_VERSION_TEXT, "{members}");
@@ -184,7 +178,8 @@ fn l4_the_payload_key_is_checked_before_the_engine_version() {
         let found = rejects(&root(&members));
         let error = one_error(&found);
         assert!(
-            matches!(error.code, DiagnosticCode::MissingRequiredField { .. }),
+            // By legacy name: the variant and the definitions that were it.
+            matches!(error.code.name(), "MissingRequiredField"),
             "{members}: {found:#?}"
         );
         assert_eq!(error.code.to_string(), PAYLOAD_TEXT, "{members}");
@@ -236,7 +231,8 @@ fn the_beta_literal_is_unsupported_where_beta_documents_are_allowed() {
     .diagnostics;
     let error = one_error(&found);
     assert!(
-        matches!(error.code, DiagnosticCode::UnsupportedVersion { .. }),
+        // By legacy name: the variant and the definitions that were it.
+        matches!(error.code.name(), "UnsupportedVersion"),
         "{found:#?}"
     );
     assert_eq!(

@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 use bedrock_addon_core::__private::Sealed;
 use bedrock_addon_core::diagnostic::{
-    DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
+    DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, codes,
 };
 use bedrock_addon_core::document::{
     CombineRule, Content, Contribution, Definition, Document, EngineVersionDecision, NoBeta,
@@ -309,7 +309,7 @@ fn two_definitions_in_one_pack_are_a_duplicate_and_the_later_wins() {
     assert_eq!(
         codes(&registry),
         [(
-            DiagnosticCode::DuplicateIdentifier { text: None },
+            DiagnosticCode::from(&codes::DUPLICATE_IDENTIFIER),
             Severity::Info,
             Some(0)
         )]
@@ -381,7 +381,7 @@ fn bottom_wins_keeps_the_lowest_and_reports_the_higher() {
     assert_eq!(
         codes(&registry),
         [(
-            DiagnosticCode::ShadowedDefinition { text: None },
+            DiagnosticCode::from(&codes::SHADOWED_DEFINITION),
             Severity::Info,
             Some(0)
         )]
@@ -399,7 +399,7 @@ fn bottom_wins_keeps_the_first_of_one_pack() {
     assert_eq!(
         codes(&registry),
         [(
-            DiagnosticCode::DuplicateIdentifier { text: None },
+            DiagnosticCode::from(&codes::DUPLICATE_IDENTIFIER),
             Severity::Info,
             Some(0)
         )]
@@ -420,7 +420,7 @@ fn last_loaded_wins_whatever_the_priority() {
     assert_eq!(
         codes(&registry),
         [(
-            DiagnosticCode::DuplicateIdentifier { text: None },
+            DiagnosticCode::from(&codes::DUPLICATE_IDENTIFIER),
             Severity::Info,
             Some(0)
         )]
@@ -882,7 +882,7 @@ fn diagnostics_are_in_walk_order_documents_rejected_and_combine_time() {
                 None
             ),
             (
-                DiagnosticCode::ShadowedDefinition { text: None },
+                DiagnosticCode::from(&codes::SHADOWED_DEFINITION),
                 Severity::Info,
                 Some(0)
             ),

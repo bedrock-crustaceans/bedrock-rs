@@ -2,7 +2,7 @@
 //! `dimensions/*.json` (exactly `json`, not recursive) from the last stack entry to the first,
 //! and the first file walked wins.
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon::diagnostic::Severity;
 use bedrock_addon::id::DimensionId;
 use bedrock_addon::load::LoadOptions;
 use bedrock_addon::pack::{Behavior, PackStack};
@@ -22,7 +22,8 @@ fn shadowed(stack: &PackStack<Behavior>) -> Vec<(Severity, String)> {
     stack
         .dimensions()
         .diagnostics()
-        .filter(|f| matches!(f.code, DiagnosticCode::ShadowedDefinition { .. }))
+        // By legacy name: the variant and the definitions that were it.
+        .filter(|f| matches!(f.code.name(), "ShadowedDefinition"))
         .map(|f| {
             (
                 f.severity,
@@ -130,10 +131,8 @@ fn dim18_a_pack_definition_replaces_a_script_registered_dimension() {
     assert!(dimensions.get(&overworld()).is_some());
     let found: Vec<_> = dimensions.diagnostics().collect();
     assert_eq!(found.len(), 1, "{found:#?}");
-    assert!(matches!(
-        found[0].code,
-        DiagnosticCode::ShadowedDefinition { .. }
-    ));
+    // By legacy name: the variant and the definitions that were it.
+    assert!(matches!(found[0].code.name(), "ShadowedDefinition"));
     assert_eq!(found[0].severity, Severity::Warning);
     assert_eq!(
         found[0].code.to_string(),
@@ -182,7 +181,8 @@ fn dim18_a_pack_definition_replaces_a_script_registered_dimension() {
         stack
             .dimensions()
             .diagnostics()
-            .all(|f| !matches!(f.code, DiagnosticCode::ShadowedDefinition { .. }))
+            // By legacy name: the variant and the definitions that were it.
+            .all(|f| !matches!(f.code.name(), "ShadowedDefinition"))
     );
 
     // Without the registration the custom dimension loads, and nothing is said.
@@ -214,7 +214,8 @@ fn a_rejected_file_names_the_identifier_of_its_last_copy() {
     let found: Vec<_> = dimensions.diagnostics().collect();
     assert_eq!(found.len(), 1, "{found:#?}");
     assert!(
-        matches!(found[0].code, DiagnosticCode::MissingRequiredField { .. }),
+        // By legacy name: the variant and the definitions that were it.
+        matches!(found[0].code.name(), "MissingRequiredField"),
         "{found:#?}"
     );
 }

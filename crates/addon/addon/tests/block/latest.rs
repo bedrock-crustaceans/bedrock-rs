@@ -22,15 +22,18 @@ fn at<'d>(
 }
 
 fn unrecognized_field(c: &DiagnosticCode) -> bool {
-    matches!(c, DiagnosticCode::UnrecognizedField { .. })
+    // By legacy name: the variant and the definitions that were it.
+    matches!(c.name(), "UnrecognizedField")
 }
 
 fn unrecognized_component(c: &DiagnosticCode) -> bool {
-    matches!(c, DiagnosticCode::UnrecognizedComponent { .. })
+    // By legacy name: the variant and the definitions that were it.
+    matches!(c.name(), "UnrecognizedComponent")
 }
 
 fn invalid_type(c: &DiagnosticCode) -> bool {
-    matches!(c, DiagnosticCode::InvalidType { .. })
+    // By legacy name: the variant and the definitions that were it.
+    matches!(c.name(), "InvalidType")
 }
 
 /// A base-game context (the game's test blocks are `minecraft:` blocks).
@@ -138,7 +141,8 @@ fn a_null_member_of_a_legacy_block_is_the_legacy_reader_s() {
 #[test]
 fn the_members_of_ours_reject_a_cereal_block() {
     let deprecated_member =
-        |c: &DiagnosticCode| matches!(c, DiagnosticCode::DeprecatedMember { .. });
+        // By legacy name: the variant and the definitions that were it.
+        |c: &DiagnosticCode| matches!(c.name(), "DeprecatedMember");
     for (member, code, path) in [
         (
             r#""deprecated": {}"#,
@@ -865,7 +869,8 @@ fn a_container_and_its_rules() {
     let d = rejected(&container("{}"), &ucf());
     assert!(
         d.iter().any(
-            |f| matches!(f.code, DiagnosticCode::MissingRequiredField { .. })
+            // By legacy name: the variant and the definitions that were it.
+            |f| matches!(f.code.name(), "MissingRequiredField")
                 && f.severity == Severity::Error
                 && f.location
                     .json_path
@@ -1138,7 +1143,8 @@ fn a_cereal_constraint_fails_the_block_at_the_member() {
         let d = rejected(&newest(&bad), &ucf());
         assert!(
             d.iter()
-                .any(|f| matches!(f.code, DiagnosticCode::InvalidValue { .. })
+                // By legacy name: the variant and the definitions that were it.
+                .any(|f| matches!(f.code.name(), "InvalidValue")
                     && f.severity == Severity::Error
                     && f.location.json_path.to_string() == format!("minecraft:block/{path}")),
             "{bad}: {d:#?}"
@@ -1184,15 +1190,18 @@ fn errors_at<'d>(
 }
 
 fn invalid_value(c: &DiagnosticCode) -> bool {
-    matches!(c, DiagnosticCode::InvalidValue { .. })
+    // By legacy name: the variant and the definitions that were it.
+    matches!(c.name(), "InvalidValue")
 }
 
 fn missing_toggles(c: &DiagnosticCode) -> bool {
-    matches!(c, DiagnosticCode::MissingToggles { .. })
+    // By legacy name: the variant and the definitions that were it.
+    matches!(c.name(), "MissingToggles")
 }
 
 fn deprecated(c: &DiagnosticCode) -> bool {
-    matches!(c, DiagnosticCode::DeprecatedMember { .. })
+    // By legacy name: the variant and the definitions that were it.
+    matches!(c.name(), "DeprecatedMember")
 }
 
 /// The game's box type sorts each axis, so a box whose `min` is
@@ -1834,10 +1843,7 @@ fn a_failed_component_read_rejects_a_block_under_both_slices() {
 }
 
 fn code_name_of(code: &DiagnosticCode) -> String {
-    format!("{code:?}")
-        .chars()
-        .take_while(char::is_ascii_alphanumeric)
-        .collect()
+    code.name().to_owned()
 }
 
 // The Cereal constraints carry the game's generic texts.
@@ -1959,7 +1965,8 @@ fn the_crafting_table_and_culling_layer_constraints_as_the_game_reads_them() {
         let d = rejected(&newest(&components), &ucf());
         assert!(
             d.iter()
-                .any(|f| matches!(f.code, DiagnosticCode::InvalidValue { .. })
+                // By legacy name: the variant and the definitions that were it.
+                .any(|f| matches!(f.code.name(), "InvalidValue")
                     && f.severity == Severity::Error
                     && f.location.json_path.to_string()
                         == format!("minecraft:block/components/{path}")

@@ -248,10 +248,7 @@ fn places(document: &str, more: &[(&'static str, &'static str, &'static str)]) -
 
 /// The variant name of a finding's code.
 fn code(finding: &Diagnostic) -> String {
-    format!("{:?}", finding.code)
-        .chars()
-        .take_while(char::is_ascii_alphanumeric)
-        .collect()
+    finding.code.name().to_owned()
 }
 
 /// Whether `finding` is at the number: at its path, or at the end of it where the family's

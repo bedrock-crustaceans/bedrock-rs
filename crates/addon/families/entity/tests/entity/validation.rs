@@ -1455,7 +1455,8 @@ fn an_unknown_component_has_the_game_text_at_the_component() {
     let found: Vec<_> = after
         .diagnostics
         .iter()
-        .filter(|f| matches!(f.code, DiagnosticCode::UnrecognizedComponent { .. }))
+        // By legacy name: the variant and the definitions that were it.
+        .filter(|f| matches!(f.code.name(), "UnrecognizedComponent"))
         .map(|f| {
             (
                 f.severity,
@@ -1479,7 +1480,8 @@ fn an_unknown_component_has_the_game_text_at_the_component() {
         earlier
             .diagnostics
             .iter()
-            .all(|f| !matches!(f.code, DiagnosticCode::UnrecognizedComponent { .. })),
+            // By legacy name: the variant and the definitions that were it.
+            .all(|f| !matches!(f.code.name(), "UnrecognizedComponent")),
         "{:#?}",
         earlier.diagnostics
     );

@@ -12,6 +12,7 @@
 //! `f32` is rejected by facet under every reader, marked `"facet": "narrower"`.
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 
+use bedrock_addon_core::diagnostic::codes;
 use std::sync::Arc;
 
 use bedrock_addon_core::diagnostic::{DiagnosticCode, code_for_deserialize_error_kind};
@@ -164,8 +165,8 @@ fn lacks_an_object_form_member(value: &Value) -> bool {
 /// The code a reader error becomes (the crate's Molang detail mapping).
 fn reader_code(error: &ReprError) -> DiagnosticCode {
     match error {
-        ReprError::NumberOutOfRange { .. } => DiagnosticCode::InvalidValue { text: None },
-        _ => DiagnosticCode::InvalidType { text: None },
+        ReprError::NumberOutOfRange { .. } => DiagnosticCode::from(&codes::INVALID_VALUE),
+        _ => DiagnosticCode::from(&codes::INVALID_TYPE),
     }
 }
 
@@ -241,7 +242,7 @@ fn the_reader_matrix_agrees_three_ways() {
                 ));
             }
             let facet = typed(json, reader, context);
-            let invalid_type = DiagnosticCode::InvalidType { text: None };
+            let invalid_type = DiagnosticCode::from(&codes::INVALID_TYPE);
             match (&facet, &want) {
                 // facet refuses a number not finite as an `f32` through molang's proxy, which the
                 // crate maps to `InvalidType`; the strict reader on a `Value` says `InvalidValue`.
@@ -250,7 +251,7 @@ fn the_reader_matrix_agrees_three_ways() {
                 // object-form struct (`MissingRequiredField`); on a `Value` it is just not the
                 // object form (`InvalidType`).
                 (Err(code), Err(_))
-                    if **code == (DiagnosticCode::MissingRequiredField { text: None })
+                    if **code == (DiagnosticCode::from(&codes::MISSING_REQUIRED_FIELD))
                         && lacks_an_object_form_member(&value) => {}
                 (Err(code), Err(error)) if **code == reader_code(error) => {}
                 (Err(code), Ok(_)) if narrower && **code == invalid_type => {}

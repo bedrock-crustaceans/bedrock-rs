@@ -7,7 +7,7 @@
     clippy::disallowed_types,
     reason = "tests read fixtures and call facet-json directly"
 )]
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, JsonPath, Severity};
+use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::shared::ShapeError;
 use bedrock_addon_shared_shapes::{BlockDescriptor, BlockSpecifier, ItemDescriptor};
@@ -38,7 +38,7 @@ fn error<T: TryFrom<Value, Error = ShapeError> + std::fmt::Debug>(json: &str) ->
 fn unrecognized_at(found: &Diagnostics, severity: Severity) -> Vec<JsonPath> {
     found
         .iter()
-        .filter(|d| matches!(d.code, DiagnosticCode::UnrecognizedField { text: None }))
+        .filter(|d| d.is(&bedrock_addon_core::diagnostic::codes::UNRECOGNIZED_FIELD))
         .inspect(|d| assert_eq!(d.severity, severity))
         .map(|d| d.location.json_path.clone())
         .collect()

@@ -11,7 +11,7 @@
 use std::sync::Arc;
 
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Location, Severity,
+    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Location, Severity, codes,
 };
 use bedrock_addon_core::molang::{
     self, Admission, BLOCK_STATE_QUERIES, CompileCache, DiagCode, EmptyRule, ExperimentMask,
@@ -88,9 +88,9 @@ fn messages(diagnostics: &Diagnostics) -> Vec<LanguageMessage> {
 fn invalid_molang(diagnostics: &Diagnostics) -> Vec<(&str, Severity)> {
     diagnostics
         .iter()
-        .filter_map(|d| match &d.code {
-            DiagnosticCode::InvalidMolang { expression } => Some((expression.as_str(), d.severity)),
-            _ => None,
+        .filter_map(|d| {
+            let expression = d.code.args_of(&codes::INVALID_MOLANG)?;
+            Some((expression[0].as_str(), d.severity))
         })
         .collect()
 }
@@ -191,9 +191,7 @@ fn an_unevaluable_expression_in_a_behaviour_pack_is_linted() {
     assert_eq!(
         found,
         [(
-            &DiagnosticCode::MolangLint {
-                expression: "geometry.default".into()
-            },
+            &DiagnosticCode::from(codes::MOLANG_LINT.with(["geometry.default"])),
             Severity::Info
         )]
     );
@@ -246,7 +244,7 @@ fn a_kept_field_reports_its_rejection_as_a_kept_error() {
     let errors: Vec<(Severity, bool)> = checked
         .diagnostics
         .iter()
-        .filter(|d| matches!(d.code, DiagnosticCode::InvalidMolang { .. }))
+        .filter(|d| d.code.name() == "InvalidMolang")
         .map(|d| (d.severity, d.kept))
         .collect();
     assert!(!errors.is_empty());
@@ -360,7 +358,7 @@ fn a_client_only_query_on_the_server_is_an_info_lint() {
     let lints: Vec<(DiagCode, Severity)> = checked
         .diagnostics
         .iter()
-        .filter(|d| matches!(d.code, DiagnosticCode::MolangLint { .. }))
+        .filter(|d| d.code.name() == "MolangLint")
         .filter_map(|d| match d.detail.as_deref() {
             Some(DiagnosticDetail::Molang(m)) => Some((m.code(), d.severity)),
             _ => None,
@@ -377,7 +375,7 @@ fn lints_of(text: &str, side: Side) -> Vec<(DiagCode, Severity)> {
     checked
         .diagnostics
         .iter()
-        .filter(|d| matches!(d.code, DiagnosticCode::MolangLint { .. }))
+        .filter(|d| d.code.name() == "MolangLint")
         .filter_map(|d| match d.detail.as_deref() {
             Some(DiagnosticDetail::Molang(m)) => Some((m.code(), d.severity)),
             _ => None,
@@ -564,8 +562,7 @@ fn an_empty_text_is_rejected_when_compiled() {
         checked
             .diagnostics
             .iter()
-            .all(|d| matches!(d.code, DiagnosticCode::MolangLint { .. })
-                && d.severity == Severity::Info)
+            .all(|d| d.code.name() == "MolangLint" && d.severity == Severity::Info)
     );
 }
 

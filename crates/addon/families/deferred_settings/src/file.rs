@@ -1,6 +1,7 @@
 //! One settings file through its payload's version chain: the text checks, the public parse
 //! stage and the document or its rejection.
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, VanillaText,
 };
@@ -319,20 +320,24 @@ fn version_texts(diagnostics: &mut Diagnostics, envelope: &Envelope) {
     let shown = envelope.shown.as_deref();
     let found = std::mem::take(diagnostics);
     for mut finding in found {
+        let text = Some(VanillaText::Fixed(MALFORMED_VERSION));
         if envelope.beta_literal {
-            if let DiagnosticCode::UnsupportedVersion { text }
-            | DiagnosticCode::BetaFeaturesNotEnabled { text } = &mut finding.code
-            {
-                *text = Some(VanillaText::Fixed(MALFORMED_VERSION));
+            // By legacy name: the variant and the definitions that were it.
+            match finding.code.name() {
+                "UnsupportedVersion" => {
+                    finding.code = DiagnosticCode::UnsupportedVersion { text };
+                }
+                "BetaFeaturesNotEnabled" => {
+                    finding.code = DiagnosticCode::BetaFeaturesNotEnabled { text };
+                }
+                _ => {}
             }
-        } else if let DiagnosticCode::UnsupportedVersion { text: Some(text) } = &mut finding.code {
+        } else if finding.code.is(&core_codes::NO_PARSER_FOR_VERSION)
+            && let Some(shown) = shown
+        {
             // Below the first struct the pipeline says no parser is available
             // (`ENVELOPE.below_floor`), as above the last; both print the version as shown.
-            if let VanillaText::NoParserForVersion { version } = text
-                && let Some(shown) = shown
-            {
-                shown.clone_into(version);
-            }
+            finding.code = core_codes::NO_PARSER_FOR_VERSION.with([shown]).into();
         }
         diagnostics.push(finding);
     }

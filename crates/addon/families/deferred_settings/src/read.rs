@@ -642,7 +642,8 @@ pub(crate) fn keyframes<'a, T>(
         let mistyped = read.is_err()
             && own
                 .iter()
-                .any(|f| matches!(f.code, DiagnosticCode::InvalidType { .. }));
+                // By legacy name: the variant and the definitions that were it.
+                .any(|f| matches!(f.code.name(), "InvalidType"));
         if mistyped {
             return Err(node.error(
                 DiagnosticCode::InvalidType {

@@ -8,11 +8,13 @@
 //! are the family's, through [`Read::push`].
 
 use super::*;
+use crate::diagnostic::codes as core_codes;
 
 /// An information with `code` at `node`, spanning it.
 fn information(read: &mut Read<'_>, node: &Node<'_>) {
-    let mut finding =
-        Diagnostic::info(DiagnosticCode::InvalidValue { text: None }).at(node.path().clone());
+    let mut finding = Diagnostic::of(&core_codes::INVALID_VALUE)
+        .severity(Severity::Info)
+        .at(node.path().clone());
     finding.location.span = node.span();
     read.push(finding);
 }

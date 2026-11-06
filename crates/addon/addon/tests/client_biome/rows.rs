@@ -76,9 +76,10 @@ fn cb01_plains_1_21_40_oracle() {
     assert_eq!(sounds.underwater_mood(), "");
     assert!(loaded.version().upgraded);
     assert_eq!(
+        // By legacy name: the variant and the definitions that were it.
         count(loaded.diagnostics(), |c| matches!(
-            c,
-            Code::IdentifierNamespaced
+            c.name(),
+            "IdentifierNamespaced"
         )),
         1
     );
@@ -122,7 +123,8 @@ fn cb02_swampland_tables() {
         assert!(inserted.contains(&name), "{name} is synthesized");
         assert!(has_at(
             loaded.diagnostics(),
-            |c| matches!(c, Code::SynthesizedComponent),
+            // By legacy name: the variant and the definitions that were it.
+            |c| matches!(c.name(), "SynthesizedComponent"),
             Severity::Info,
             &format!("/minecraft:client_biome/components/{name}"),
         ));
@@ -147,24 +149,27 @@ fn cb03_swampland_bare() {
         assert_eq!(component(&loaded, name), None, "{name}");
         assert!(has_at(
             loaded.diagnostics(),
-            |c| matches!(c, Code::UpgradeTableMissedBareIdentifier),
+            // By legacy name: the variant and the definitions that were it.
+            |c| matches!(c.name(), "UpgradeTableMissedBareIdentifier"),
             Severity::Info,
             &format!("/minecraft:client_biome/components/{name}"),
         ));
     }
     assert_eq!(
+        // By legacy name: the variant and the definitions that were it.
         count(loaded.diagnostics(), |c| matches!(
-            c,
-            Code::UpgradeTableMissedBareIdentifier
+            c.name(),
+            "UpgradeTableMissedBareIdentifier"
         )),
         3
     );
     // A bare name no table has misses nothing.
     let plain = loads(&biome("1.21.40", "plains", WATER), &context());
     assert_eq!(
+        // By legacy name: the variant and the definitions that were it.
         count(plain.diagnostics(), |c| matches!(
-            c,
-            Code::UpgradeTableMissedBareIdentifier
+            c.name(),
+            "UpgradeTableMissedBareIdentifier"
         )),
         0
     );
@@ -586,7 +591,8 @@ fn cb09_music_keeps_existing() {
     );
     assert!(has_at(
         filled.diagnostics(),
-        |c| matches!(c, Code::SynthesizedComponent),
+        // By legacy name: the variant and the definitions that were it.
+        |c| matches!(c.name(), "SynthesizedComponent"),
         Severity::Info,
         "/minecraft:client_biome/components/minecraft:biome_music",
     ));
@@ -1056,7 +1062,8 @@ fn cb18_all_vanilla_1_21_40() {
 // ---- F.2 -----------------------------------------------------------------------------------
 
 fn unsupported(code: &Code) -> bool {
-    matches!(code, Code::UnsupportedVersion { .. })
+    // By legacy name: the variant and the definitions that were it.
+    matches!(code.name(), "UnsupportedVersion")
 }
 
 /// `cb20_below_floor`: from 1.0.0 to the floor the legacy parser refuses in its own words.
@@ -1131,7 +1138,8 @@ fn cb23_beta_literal_deviation() {
     assert!(
         has(
             &refused,
-            |c| matches!(c, Code::BetaFeaturesNotEnabled { .. }),
+            // By legacy name: the variant and the definitions that were it.
+            |c| matches!(c.name(), "BetaFeaturesNotEnabled"),
             Severity::Error,
             "Using a beta format_version is only allowed for base packs or when the BetaApis toggle is enabled.",
         ),
@@ -1204,7 +1212,8 @@ fn cb23a_beta_attr_invalid() {
     assert!(
         has_at(
             &missing,
-            |c| matches!(c, Code::MissingRequiredField { .. }),
+            // By legacy name: the variant and the definitions that were it.
+            |c| matches!(c.name(), "MissingRequiredField"),
             Severity::Error,
             "/minecraft:client_biome/environment_attributes/minecraft:experimental_bool_attr/operation",
         ),
@@ -1215,14 +1224,16 @@ fn cb23a_beta_attr_invalid() {
         r##""minecraft:experimental_color_attr": {"value": "#FFFFFFFF", "operation": "minimum"}"##,
     );
     assert!(
-        count(&color, |c| matches!(c, Code::InvalidEnumValue { .. })) == 1,
+        // By legacy name: the variant and the definitions that were it.
+        count(&color, |c| matches!(c.name(), "InvalidEnumValue")) == 1,
         "{:?}",
         texts(&color)
     );
     let float =
         failure(r#""minecraft:experimental_float_attr_1": {"value": 0.5, "operation": "xor"}"#);
     assert_eq!(
-        count(&float, |c| matches!(c, Code::InvalidEnumValue { .. })),
+        // By legacy name: the variant and the definitions that were it.
+        count(&float, |c| matches!(c.name(), "InvalidEnumValue")),
         1
     );
     // `minimum` is a float operation and `xor` a bool one.
@@ -1243,7 +1254,8 @@ fn cb23a_beta_attr_invalid() {
     .expect_err("refused");
     assert!(has_at(
         &unknown.diagnostics,
-        |c| matches!(c, Code::UnrecognizedField { .. }),
+        // By legacy name: the variant and the definitions that were it.
+        |c| matches!(c.name(), "UnrecognizedField"),
         Severity::Error,
         "/minecraft:client_biome/environment_attributes/minecraft:other",
     ));
@@ -1278,7 +1290,8 @@ fn cb24_missing_version() {
     assert!(
         has(
             &found,
-            |c| matches!(c, Code::MissingFormatVersion { .. }),
+            // By legacy name: the variant and the definitions that were it.
+            |c| matches!(c.name(), "MissingFormatVersion"),
             Severity::Error,
             "no valid version passed by the caller or found in the input",
         ),
@@ -1299,7 +1312,8 @@ fn cb25_cb26_malformed_version() {
     assert!(
         has(
             &numeric,
-            |c| matches!(c, Code::UnsupportedVersion { .. }),
+            // By legacy name: the variant and the definitions that were it.
+            |c| matches!(c.name(), "UnsupportedVersion"),
             Severity::Error,
             "biomes/demo.client_biome.json: Cannot load client_biome with format_version 1.21.0",
         ),
@@ -1314,7 +1328,8 @@ fn cb25_cb26_malformed_version() {
         assert!(
             has(
                 &found,
-                |c| matches!(c, Code::MalformedFormatVersion { .. }),
+                // By legacy name: the variant and the definitions that were it.
+                |c| matches!(c.name(), "MalformedFormatVersion"),
                 Severity::Error,
                 "no valid version passed by the caller or found in the input",
             ),
@@ -1334,7 +1349,8 @@ fn cb26b_legacy_syntax_error() {
     };
     let found = rejected(&broken("1.21.40"), &context());
     let error = errors(&found)[0];
-    assert!(matches!(error.code, Code::MalformedInput { .. }));
+    // By legacy name: the variant and the definitions that were it.
+    assert!(matches!(error.code.name(), "MalformedInput"));
     assert!(
         error
             .code
@@ -1380,7 +1396,8 @@ fn cb26d_legacy_root_not_object() {
     assert!(
         has(
             &found,
-            |c| matches!(c, Code::MalformedInput { .. }),
+            // By legacy name: the variant and the definitions that were it.
+            |c| matches!(c.name(), "MalformedInput"),
             Severity::Error,
             &format!(
                 "failed to parse client biome file {PATH} into a json document, root value needs to be a json object"
@@ -1409,7 +1426,8 @@ fn cb27_between_120_and_130() {
         );
         assert!(has_at(
             loaded.diagnostics(),
-            |c| matches!(c, Code::UnusualFormatVersion),
+            // By legacy name: the variant and the definitions that were it.
+            |c| matches!(c.name(), "UnusualFormatVersion"),
             Severity::Info,
             "/format_version",
         ));
@@ -1417,9 +1435,10 @@ fn cb27_between_120_and_130() {
     for version in ["1.21.120", "1.21.130", "1.21.110"] {
         let loaded = loads(&biome(version, "myns:glade", ""), &context());
         assert_eq!(
+            // By legacy name: the variant and the definitions that were it.
             count(loaded.diagnostics(), |c| matches!(
-                c,
-                Code::UnusualFormatVersion
+                c.name(),
+                "UnusualFormatVersion"
             )),
             0,
             "{version}"
@@ -1436,9 +1455,10 @@ fn a_prerelease_takes_the_legacy_path() {
         bedrock_addon::version::FormatVersion::new(1, 21, 120)
     );
     assert_eq!(
+        // By legacy name: the variant and the definitions that were it.
         count(loaded.diagnostics(), |c| matches!(
-            c,
-            Code::PrereleaseFormatVersion { .. }
+            c.name(),
+            "PrereleaseFormatVersion"
         )),
         1
     );
@@ -1463,7 +1483,8 @@ fn cb28_bare_identifier_1_21_90() {
         assert!(
             has_at(
                 &found,
-                |c| matches!(c, Code::NamespaceRule { .. }),
+                // By legacy name: the variant and the definitions that were it.
+                |c| matches!(c.name(), "NamespaceRule"),
                 Severity::Error,
                 "/minecraft:client_biome/description/identifier",
             ) && has(&found, |_| true, Severity::Error, NAMESPACE_TEXT),
@@ -1483,7 +1504,8 @@ fn cb29_uppercase_1_21_40() {
         assert!(
             has(
                 &found,
-                |c| matches!(c, Code::InvalidValue { .. }),
+                // By legacy name: the variant and the definitions that were it.
+                |c| matches!(c.name(), "InvalidValue"),
                 Severity::Error,
                 "identifier has an upper case letter",
             ),
@@ -1516,7 +1538,8 @@ fn cb31_water_empty() {
         assert!(
             has(
                 &found,
-                |c| matches!(c, Code::InvalidValue { .. }),
+                // By legacy name: the variant and the definitions that were it.
+                |c| matches!(c.name(), "InvalidValue"),
                 Severity::Error,
                 "No surface color or opacity specified. Specify one or remove the component.",
             ),
@@ -1672,7 +1695,8 @@ fn cb34_unknown_component() {
         assert!(
             has_at(
                 &found,
-                |c| matches!(c, Code::UnrecognizedComponent { .. }),
+                // By legacy name: the variant and the definitions that were it.
+                |c| matches!(c.name(), "UnrecognizedComponent"),
                 Severity::Error,
                 "/minecraft:client_biome/components/minecraft:foo",
             ),
@@ -1698,7 +1722,8 @@ fn unknown_members_refuse_the_client_biome() {
         assert!(
             has_at(
                 &found,
-                |c| matches!(c, Code::UnrecognizedField { .. }),
+                // By legacy name: the variant and the definitions that were it.
+                |c| matches!(c.name(), "UnrecognizedField"),
                 Severity::Error,
                 at
             ),
@@ -1713,7 +1738,8 @@ fn unknown_members_refuse_the_client_biome() {
     );
     assert!(has_at(
         &legacy,
-        |c| matches!(c, Code::UnrecognizedField { .. }),
+        // By legacy name: the variant and the definitions that were it.
+        |c| matches!(c.name(), "UnrecognizedField"),
         Severity::Error,
         "/note",
     ));
@@ -1734,7 +1760,8 @@ fn cb35_string_addition_1_21_120() {
     assert!(
         has_at(
             &found,
-            |c| matches!(c, Code::InvalidType { .. }),
+            // By legacy name: the variant and the definitions that were it.
+            |c| matches!(c.name(), "InvalidType"),
             Severity::Error,
             "/minecraft:client_biome/components/minecraft:ambient_sounds/addition",
         ),
@@ -1752,7 +1779,8 @@ fn cb35_string_addition_1_21_120() {
     assert!(
         has_at(
             &older,
-            |c| matches!(c, Code::InvalidType { .. }),
+            // By legacy name: the variant and the definitions that were it.
+            |c| matches!(c.name(), "InvalidType"),
             Severity::Error,
             "/minecraft:client_biome/components/minecraft:ambient_sounds/addition",
         ),
@@ -1779,7 +1807,8 @@ fn cb36_chance_range() {
             assert!(
                 has_at(
                     &found,
-                    |c| matches!(c, Code::InvalidValue { .. }),
+                    // By legacy name: the variant and the definitions that were it.
+                    |c| matches!(c.name(), "InvalidValue"),
                     Severity::Error,
                     &format!(
                         "/minecraft:client_biome/components/minecraft:ambient_sounds/{member}/chance"
@@ -1812,7 +1841,8 @@ fn cb37_empty_asset() {
         assert!(
             has_at(
                 &found,
-                |c| matches!(c, Code::InvalidValue { .. }),
+                // By legacy name: the variant and the definitions that were it.
+                |c| matches!(c.name(), "InvalidValue"),
                 Severity::Error,
                 &format!(
                     "/minecraft:client_biome/components/minecraft:ambient_sounds/{member}/asset"
@@ -1833,7 +1863,8 @@ fn cb37_empty_asset() {
             &context(),
         );
         assert_eq!(
-            count(&found, |c| matches!(c, Code::MissingRequiredField { .. })),
+            // By legacy name: the variant and the definitions that were it.
+            count(&found, |c| matches!(c.name(), "MissingRequiredField")),
             1
         );
     }
@@ -1896,7 +1927,8 @@ fn the_rejections_name_their_code_severity_and_member() {
         let found = load_beta(&text, &beta_apis()).unwrap_err().diagnostics;
         one(
             &found,
-            |c| matches!(c, Code::InvalidEnumValue { .. }),
+            // By legacy name: the variant and the definitions that were it.
+            |c| matches!(c.name(), "InvalidEnumValue"),
             &format!("minecraft:client_biome/environment_attributes/{attribute}/operation"),
         );
     }
@@ -1904,7 +1936,8 @@ fn the_rejections_name_their_code_severity_and_member() {
     let found = rejected(&biome("1.21.40", "Glade", ""), &context());
     one(
         &found,
-        |c| matches!(c, Code::InvalidValue { .. }),
+        // By legacy name: the variant and the definitions that were it.
+        |c| matches!(c.name(), "InvalidValue"),
         "minecraft:client_biome/description/identifier",
     );
     // cb31
@@ -1918,7 +1951,8 @@ fn the_rejections_name_their_code_severity_and_member() {
     );
     one(
         &found,
-        |c| matches!(c, Code::InvalidValue { .. }),
+        // By legacy name: the variant and the definitions that were it.
+        |c| matches!(c.name(), "InvalidValue"),
         "minecraft:client_biome/components/minecraft:water_appearance",
     );
     // cb32
@@ -1932,7 +1966,8 @@ fn the_rejections_name_their_code_severity_and_member() {
     );
     one(
         &found,
-        |c| matches!(c, Code::UnsupportedVersion { .. }),
+        // By legacy name: the variant and the definitions that were it.
+        |c| matches!(c.name(), "UnsupportedVersion"),
         "minecraft:client_biome/components/minecraft:precipitation",
     );
     // cb38: the envelope's finding is the document's.
@@ -1941,7 +1976,8 @@ fn the_rejections_name_their_code_severity_and_member() {
         &context(),
     );
     assert_eq!(errors(&found).len(), 1, "{:?}", texts(&found));
-    one(&found, |c| matches!(c, Code::MalformedInput { .. }), "");
+    // By legacy name: the variant and the definitions that were it.
+    one(&found, |c| matches!(c.name(), "MalformedInput"), "");
 }
 
 /// cb17 / cb23b, the other half: vanilla's 1.26 stamps load because the last range ends at

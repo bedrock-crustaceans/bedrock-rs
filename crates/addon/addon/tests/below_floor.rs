@@ -27,7 +27,7 @@
     feature = "server_sound_definitions",
 ))]
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Diagnostics, Severity, VanillaText};
+use bedrock_addon::diagnostic::{DiagnosticCode, Diagnostics, Severity, VanillaText, codes};
 use bedrock_addon::document::{Content, Document, Rejected};
 use bedrock_addon::load::{Experiment, Experiments, LoadContext, LoadOptions};
 use bedrock_addon::pack::PackType;
@@ -45,24 +45,25 @@ fn told<T>(outcome: &Result<Document<T>, Rejected>) -> String {
     let mut lines = Vec::new();
     for finding in findings {
         match &finding.code {
+            DiagnosticCode::Specific { code } if code.is(&codes::NO_PARSER_FOR_VERSION) => {
+                lines.push(format!("no parser {:?}", code.args()[0]));
+            }
+            DiagnosticCode::Specific { code } if code.is(&codes::USE_FORMAT_VERSION) => {
+                lines.push(format!("use format version {}", code.args()[2]));
+            }
+            DiagnosticCode::Specific { code } if code.is(&codes::UNSUPPORTED_VERSION_WORDED) => {
+                lines.push(format!("fixed {:?}", code.args()[0]));
+            }
             DiagnosticCode::UnsupportedVersion { text } => lines.push(match text {
-                Some(VanillaText::NoParserForVersion { version }) => {
-                    format!("no parser {version:?}")
-                }
-                Some(VanillaText::UseFormatVersion { version, .. }) => {
-                    format!("use format version {version}")
-                }
                 Some(VanillaText::Fixed(text)) => format!("fixed {text:?}"),
                 Some(VanillaText::Formatted { template, .. }) => format!("formatted {template:?}"),
                 other => format!("unsupported {other:?}"),
             }),
-            DiagnosticCode::MalformedFormatVersion { .. } => lines.push("malformed".to_owned()),
+            // By legacy name: the variant and the definitions that were it.
+            code if code.name() == "MalformedFormatVersion" => lines.push("malformed".to_owned()),
             _ => {}
         }
-        assert!(
-            !matches!(finding.code, DiagnosticCode::UnsupportedVersion { .. })
-                || finding.severity == Severity::Error
-        );
+        assert!(finding.code.name() != "UnsupportedVersion" || finding.severity == Severity::Error);
     }
     if outcome.is_ok() {
         lines.push("loaded".to_owned());

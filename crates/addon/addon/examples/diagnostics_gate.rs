@@ -19,7 +19,7 @@
 
 mod common;
 
-use bedrock_addon::diagnostic::{Diagnostic, DiagnosticCode, DiagnosticDetail, Phase, Severity};
+use bedrock_addon::diagnostic::{Diagnostic, DiagnosticDetail, Phase, Severity};
 use bedrock_addon::pack::{LinkOptions, StackSet};
 use bedrock_addon::storage::PackPath;
 
@@ -55,7 +55,8 @@ fn ci_gate(stacks: &StackSet) -> Verdict {
     // A code is matched as data, never by its text.
     let deprecated = report
         .iter()
-        .filter(|finding| matches!(finding.code, DiagnosticCode::DeprecatedMember { .. }))
+        // By legacy name: the variant and the definitions that were it.
+        .filter(|finding| matches!(finding.code.name(), "DeprecatedMember"))
         .count();
     eprintln!("{deprecated} deprecated member(s) upgraded");
     let rejected: Vec<PackPath> = stacks
@@ -120,10 +121,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .collect::<Vec<_>>()
         .try_into()
         .expect("one error");
-    assert!(matches!(
-        error.code,
-        DiagnosticCode::MissingRequiredField { .. }
-    ));
+    // By legacy name: the variant and the definitions that were it.
+    assert!(matches!(error.code.name(), "MissingRequiredField"));
     assert_ne!(error.phase, Phase::Link);
     assert_eq!(
         error.location.path,
@@ -136,10 +135,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let said: Vec<_> = links
         .iter()
         .map(|finding| {
-            assert!(matches!(
-                finding.code,
-                DiagnosticCode::UnresolvedReference { .. }
-            ));
+            // By legacy name: the variant and the definitions that were it.
+            assert!(matches!(finding.code.name(), "UnresolvedReference"));
             assert_eq!(finding.phase, Phase::Link);
             (finding.severity, reference(finding).expect("a reference"))
         })

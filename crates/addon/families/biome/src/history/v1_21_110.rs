@@ -121,8 +121,9 @@ impl Upgrade for Biome {
 
 /// Whether `finding` tells of an unknown member or component.
 fn is_unknown_member(finding: &Diagnostic) -> bool {
+    // By legacy name: the variant and the definitions that were it.
     matches!(
-        finding.code,
-        DiagnosticCode::UnrecognizedField { .. } | DiagnosticCode::UnrecognizedComponent { .. }
+        finding.code.name(),
+        "UnrecognizedField" | "UnrecognizedComponent"
     )
 }

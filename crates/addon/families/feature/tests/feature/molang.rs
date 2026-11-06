@@ -59,7 +59,7 @@ fn f26_the_four_forms_of_iterations_are_read() {
 mod compiled {
     use std::sync::Arc;
 
-    use bedrock_addon_core::diagnostic::{DiagnosticCode, DiagnosticDetail, Diagnostics, Severity};
+    use bedrock_addon_core::diagnostic::{DiagnosticDetail, Diagnostics, Severity};
     use bedrock_addon_core::load::LoadContext;
     use bedrock_addon_core::molang::molang::stdlib;
     use bedrock_addon_core::molang::{
@@ -251,8 +251,8 @@ mod compiled {
         let d = rejects(&condition, &base_checking(old));
         assert!(
             d.iter()
-                .any(|f| matches!(f.code, DiagnosticCode::InvalidMolang { .. })
-                    && f.severity == Severity::Error)
+                // By legacy name: the variant and the definitions that were it.
+                .any(|f| matches!(f.code.name(), "InvalidMolang") && f.severity == Severity::Error)
         );
         assert!(molang(&d).contains(&(DiagCode::UnknownQuery, Severity::Error)));
     }
@@ -262,8 +262,9 @@ mod compiled {
 #[test]
 fn without_the_molang_feature_expressions_are_not_checked() {
     let document = loads(&scatter(r#""q.is_baby""#, "0"), &cx());
-    assert!(document.diagnostics().iter().any(|f| matches!(
-        f.code,
-        bedrock_addon_core::diagnostic::DiagnosticCode::MolangNotChecked { fields: 1 }
-    )));
+    assert!(document.diagnostics().iter().any(|f| {
+        f.code
+            .args_of(&bedrock_addon_core::diagnostic::codes::MOLANG_NOT_CHECKED)
+            .is_some_and(|a| a[0] == "1")
+    }));
 }

@@ -128,10 +128,7 @@ impl Outcome {
         let mut counts = BTreeMap::new();
         for (_, found) in &self.scripts {
             for diagnostic in found.diagnostics() {
-                let name: String = format!("{:?}", diagnostic.code)
-                    .chars()
-                    .take_while(char::is_ascii_alphanumeric)
-                    .collect();
+                let name: String = diagnostic.code.name().to_owned();
                 *counts.entry(name).or_insert(0) += 1;
             }
         }

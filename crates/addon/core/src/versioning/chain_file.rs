@@ -6,9 +6,9 @@
 use facet::Facet;
 
 use super::shape::{self, Shape};
+use crate::diagnostic::codes as core_codes;
 use crate::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Span, VanillaText,
-    code_for_deserialize_error_kind,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Span, code_for_deserialize_error_kind,
 };
 use crate::document::{Document, Rejected};
 use crate::json::{JsonSlice, ScalarFailure, Value, parse_with_rules, probe_envelope};
@@ -30,9 +30,9 @@ pub const fn strict(reading: Reading) -> Reading {
 
 /// The closing line `text` of a failed file.
 pub fn closing_line(diagnostics: &mut Diagnostics, text: &'static str) {
-    diagnostics.push(Diagnostic::error(DiagnosticCode::DocumentRejected {
-        text: Some(VanillaText::Fixed(text)),
-    }));
+    diagnostics.push(Diagnostic::of(
+        core_codes::DOCUMENT_REJECTED_WORDED.with([text]),
+    ));
 }
 
 /// `history::upgrade` of family `F`: rebuilds the parse stage from the document and finishes
@@ -139,7 +139,7 @@ fn typed_as<'a, T: for<'f> Facet<'f>>(
 ) -> Option<T> {
     let Some(mut json) = last_wins(checked.text) else {
         d.push(shape::error(
-            DiagnosticCode::InvalidType { text: None },
+            DiagnosticCode::from(&core_codes::INVALID_TYPE),
             cx.at.clone(),
         ));
         return None;
@@ -216,7 +216,7 @@ fn typed_as<'a, T: for<'f> Facet<'f>>(
 /// silence.
 fn coerced_finding(checked: JsonSlice<'_>, at: &JsonPath, place: &JsonPath) -> Diagnostic {
     let path = at.join(place);
-    Diagnostic::info(DiagnosticCode::ValueRewritten { text: None })
+    Diagnostic::of(&core_codes::VALUE_REWRITTEN)
         .at(path)
         .span(crate::json::span_reached(checked, place))
         .detail(crate::diagnostic::DiagnosticDetail::Note(
@@ -258,9 +258,7 @@ mod tests {
         assert_eq!(
             lines,
             [Diagnostic::new(
-                DiagnosticCode::DocumentRejected {
-                    text: Some(VanillaText::Fixed("closing")),
-                },
+                DiagnosticCode::from(core_codes::DOCUMENT_REJECTED_WORDED.with(["closing"])),
                 Severity::Error,
                 Phase::Parse,
                 Location::default()

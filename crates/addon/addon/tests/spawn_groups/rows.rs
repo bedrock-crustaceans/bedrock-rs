@@ -46,15 +46,18 @@ fn one(body: &str) -> (i32, MobSpawnRules, Diagnostics) {
 }
 
 fn invalid_type(code: &DiagnosticCode) -> bool {
-    matches!(code, DiagnosticCode::InvalidType { .. })
+    // By legacy name: the variant and the definitions that were it.
+    matches!(code.name(), "InvalidType")
 }
 
 fn invalid_value(code: &DiagnosticCode) -> bool {
-    matches!(code, DiagnosticCode::InvalidValue { .. })
+    // By legacy name: the variant and the definitions that were it.
+    matches!(code.name(), "InvalidValue")
 }
 
 fn missing_field(code: &DiagnosticCode) -> bool {
-    matches!(code, DiagnosticCode::MissingRequiredField { .. })
+    // By legacy name: the variant and the definitions that were it.
+    matches!(code.name(), "MissingRequiredField")
 }
 
 #[test]
@@ -161,7 +164,8 @@ fn sg16_permute() {
         vec![(1, EntityId::parse("test:test_permute_2"))]
     );
     let unknown = with(&d, |c| {
-        matches!(c, DiagnosticCode::UnrecognizedField { .. })
+        // By legacy name: the variant and the definitions that were it.
+        matches!(c.name(), "UnrecognizedField")
     });
     assert_eq!(
         paths(&unknown),
@@ -437,7 +441,8 @@ fn sg30_below_floor() {
     assert!(
         has_text(
             &d,
-            |c| matches!(c, DiagnosticCode::UnsupportedVersion { .. }),
+            // By legacy name: the variant and the definitions that were it.
+            |c| matches!(c.name(), "UnsupportedVersion"),
             Severity::Error,
             "unsupported version: no parser available for version 1.7.0"
         ),
@@ -460,7 +465,8 @@ fn sg32_missing_version() {
     assert!(
         has_text(
             &d,
-            |c| matches!(c, DiagnosticCode::MissingFormatVersion { .. }),
+            // By legacy name: the variant and the definitions that were it.
+            |c| matches!(c.name(), "MissingFormatVersion"),
             Severity::Error,
             "no valid version passed by the caller or found in the input"
         ),
@@ -476,7 +482,8 @@ fn sg33_malformed_version() {
         assert!(
             has_text(
                 &d,
-                |c| matches!(c, DiagnosticCode::MalformedFormatVersion { .. }),
+                // By legacy name: the variant and the definitions that were it.
+                |c| matches!(c.name(), "MalformedFormatVersion"),
                 Severity::Error,
                 "Malformed format version"
             ),
@@ -524,7 +531,8 @@ fn sg36_wrong_payload_key() {
     assert!(
         has_text(
             &d,
-            |c| matches!(c, DiagnosticCode::MissingPayload { .. }),
+            // By legacy name: the variant and the definitions that were it.
+            |c| matches!(c.name(), "MissingPayload"),
             Severity::Error,
             "Missing identifier in spawn rule file"
         ),
@@ -539,7 +547,8 @@ fn sg37_root_not_object() {
     assert!(
         has_text(
             &d,
-            |c| matches!(c, DiagnosticCode::MalformedInput { .. }),
+            // By legacy name: the variant and the definitions that were it.
+            |c| matches!(c.name(), "MalformedInput"),
             Severity::Error,
             "Spawn rules json was not formatted as an object"
         ),
@@ -549,7 +558,8 @@ fn sg37_root_not_object() {
     assert!(
         has_text(
             &d,
-            |c| matches!(c, DiagnosticCode::MissingFormatVersion { .. }),
+            // By legacy name: the variant and the definitions that were it.
+            |c| matches!(c.name(), "MissingFormatVersion"),
             Severity::Error,
             "no valid version passed by the caller or found in the input"
         ),
@@ -619,7 +629,8 @@ fn sg38_no_conditions_deviation() {
         r#"{"format_version": "1.11.0", "minecraft:spawn_groups": {"description": {"identifier": "x:g"}, "conditions": []}}"#,
     );
     let empty = with(document.diagnostics(), |c| {
-        matches!(c, DiagnosticCode::EmptyDocument { .. })
+        // By legacy name: the variant and the definitions that were it.
+        matches!(c.name(), "EmptyDocument")
     });
     assert_eq!(empty[0].severity, Severity::Info);
 }

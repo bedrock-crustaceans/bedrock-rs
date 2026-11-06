@@ -7,7 +7,7 @@
 //! reports one with [`Diagnostic::deprecated_member`] or [`Diagnostic::deprecated_enum_value`]
 //! and does not read the value.
 
-use super::{Diagnostic, DiagnosticCode, JsonPath, Location, Phase, Severity, VanillaText};
+use super::{Diagnostic, DiagnosticCode, JsonPath, Location, Phase, Severity, codes};
 
 /// Vanilla's text for a deprecated enum value.
 pub const ENUM_VALUE_DEPRECATED: &str = "enum value is deprecated";
@@ -17,11 +17,7 @@ impl Diagnostic {
     /// the document; the member's value is not read.
     pub fn deprecated_member(member: &str, at: JsonPath) -> Self {
         Self::new(
-            DiagnosticCode::DeprecatedMember {
-                text: Some(VanillaText::MemberDeprecated {
-                    member: member.to_owned(),
-                }),
-            },
+            codes::MEMBER_DEPRECATED.with([member]).into(),
             Severity::Error,
             Phase::Parse,
             Location::new(None, None, at, None),
@@ -32,9 +28,7 @@ impl Diagnostic {
     /// rejects the document.
     pub fn deprecated_enum_value(at: JsonPath) -> Self {
         Self::new(
-            DiagnosticCode::DeprecatedMember {
-                text: Some(VanillaText::Fixed(ENUM_VALUE_DEPRECATED)),
-            },
+            DiagnosticCode::from(&codes::ENUM_VALUE_DEPRECATED),
             Severity::Error,
             Phase::Parse,
             Location::new(None, None, at, None),
@@ -60,10 +54,7 @@ mod tests {
             Severity::Error,
             "0x200 is in both error masks"
         );
-        assert!(matches!(
-            finding.code,
-            DiagnosticCode::DeprecatedMember { .. }
-        ));
+        assert!(finding.is(&codes::MEMBER_DEPRECATED));
         assert_eq!(
             finding.code.to_string(),
             r#"member "__DEP_fnctns" is deprecated"#

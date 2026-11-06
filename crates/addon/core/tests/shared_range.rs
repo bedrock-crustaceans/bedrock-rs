@@ -6,7 +6,7 @@
 #[path = "shared/common.rs"]
 mod common;
 
-use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath, Severity};
+use bedrock_addon_core::diagnostic::{JsonPath, Severity, codes};
 use bedrock_addon_core::shared::{FloatRange, IntRange, Range, RangeForm};
 use common::{compact, read, round_trip};
 
@@ -61,10 +61,7 @@ fn d1_max_below_min_is_swapped_with_an_info() {
     assert!(range.swapped);
     let found = range.check(&JsonPath::new());
     let finding = found.iter().next().expect("one finding");
-    assert!(matches!(
-        finding.code,
-        DiagnosticCode::InvalidValue { text: None }
-    ));
+    assert!(finding.is(&codes::INVALID_VALUE));
     assert_eq!(finding.severity, Severity::Info);
     assert_eq!(found.len(), 1);
     // Written back in the document's order.

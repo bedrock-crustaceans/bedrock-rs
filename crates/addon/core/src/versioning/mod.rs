@@ -67,7 +67,7 @@ pub use write::write_envelope;
 
 use std::fmt;
 
-use crate::diagnostic::{Diagnostics, JsonPath, Severity, VanillaText};
+use crate::diagnostic::{CodeDef, Diagnostics, JsonPath, Severity, codes};
 use crate::document::ComponentSet;
 use crate::json::{EncodeError, JsonSlice, Value};
 use crate::load::{LoadContext, LoadRequirement};
@@ -348,32 +348,35 @@ pub struct Identity {
 /// payload gives none, `Family::payload_version`).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum MissingVersion {
-    /// Parse the document at the family's floor, telling a `MissingFormatVersion` with `text`
-    /// at `severity`; `None` tells nothing (trading). The default tells the crate's own
-    /// information, with no text of the game.
+    /// Parse the document at the family's floor, telling `code` (a definition that `was`
+    /// `MissingFormatVersion`) at `severity`; `None` tells nothing (trading). The default tells
+    /// the crate's own information, [`codes::MISSING_FORMAT_VERSION`].
     Floor {
-        /// The text of the finding; `None` for none of the game's.
-        text: Option<VanillaText>,
-        /// The severity of the finding; `None` for no finding, and then `text` is not read:
-        /// `Floor { text: Some(..), severity: None }` tells nothing, like `text: None`.
+        /// The finding's definition.
+        code: &'static CodeDef<0>,
+        /// The severity of the finding; `None` for no finding, and then `code` is not read.
         severity: Option<Severity>,
     },
-    /// Reject the document with a `MissingFormatVersion` error.
+    /// Reject the document with an error of `code` (a definition that `was`
+    /// `MissingFormatVersion`). The default is the game's version-check line
+    /// ([`codes::NO_VALID_VERSION`]: "no valid version passed by the caller or found in the
+    /// input").
     Reject {
-        /// The error's text; `None` gives the game's version-check text ("no valid version
-        /// passed by the caller or found in the input", `VanillaText::NoValidVersion`).
-        text: Option<VanillaText>,
+        /// The error's definition.
+        code: &'static CodeDef<0>,
     },
 }
 
 impl MissingVersion {
     /// The default: parsed at the floor with the crate's own information.
     pub const FLOOR: Self = Self::Floor {
-        text: None,
+        code: &codes::MISSING_FORMAT_VERSION,
         severity: Some(Severity::Info),
     };
     /// Rejected with the game's version-check text.
-    pub const REJECT: Self = Self::Reject { text: None };
+    pub const REJECT: Self = Self::Reject {
+        code: &codes::NO_VALID_VERSION,
+    };
 }
 
 /// What a family fixes about each of its files, before a struct is selected: the input kind,

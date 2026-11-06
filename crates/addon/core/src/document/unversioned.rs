@@ -93,7 +93,7 @@ fn locate(diagnostics: &mut Diagnostics, origin: &Origin) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::diagnostic::{DiagnosticCode, JsonPath, Location, Phase, Severity};
+    use crate::diagnostic::{JsonPath, Location, Phase, Severity};
     use crate::json::Value;
 
     fn path(text: &str) -> PackPath {
@@ -102,10 +102,7 @@ mod tests {
 
     fn finding() -> Diagnostic {
         Diagnostic::new(
-            DiagnosticCode::MalformedInput {
-                message: "not JSON".to_owned(),
-                text: None,
-            },
+            crate::diagnostic::builders::syntax("not JSON").into(),
             Severity::Error,
             Phase::Parse,
             Location::default(),

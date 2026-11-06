@@ -6,7 +6,7 @@
 //! were read), `DroppedField` for `reject`, `IgnoredMember` for `ignore`. A member inside a map
 //! value is never kept, whatever its struct says, as before.
 
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, JsonPath, Severity};
+use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::document::{Extra, Unknown};
 use bedrock_addon_core::json::{
     EncodeError, Indent, JsonSlice, Value, WriteStyle, write_json_with,
@@ -201,10 +201,9 @@ fn kept(unknown: &Unknown) -> Vec<String> {
 fn told(d: &Diagnostics) -> Vec<String> {
     d.iter()
         .map(|f| {
-            let code = match f.code {
-                DiagnosticCode::UnrecognizedField { .. } => "UnrecognizedField",
-                DiagnosticCode::DroppedField { .. } => "DroppedField",
-                DiagnosticCode::IgnoredMember { .. } => "IgnoredMember",
+            // By legacy name: the variant and the definitions that were it.
+            let code = match f.code.name() {
+                name @ ("UnrecognizedField" | "DroppedField" | "IgnoredMember") => name,
                 _ => "other",
             };
             format!("{} {code} {:?}", f.location.json_path, f.severity)

@@ -44,7 +44,7 @@ fn a_number_is_a_constant_and_is_not_compiled() {
 mod compiled {
     use std::sync::Arc;
 
-    use bedrock_addon_core::diagnostic::{DiagnosticCode, DiagnosticDetail, Diagnostics, Severity};
+    use bedrock_addon_core::diagnostic::{DiagnosticDetail, Diagnostics, Severity};
     use bedrock_addon_core::load::LoadContext;
     use bedrock_addon_core::molang::{DiagCode, MolangCheck, MolangVersion, RawVersion};
     use bedrock_addon_shared_shapes::ItemDescriptor;
@@ -79,7 +79,8 @@ mod compiled {
         );
         assert!(
             d.iter()
-                .any(|f| matches!(f.code, DiagnosticCode::InvalidMolang { .. }))
+                // By legacy name: the variant and the definitions that were it.
+                .any(|f| matches!(f.code.name(), "InvalidMolang"))
         );
         let fine = r#""context.other->query.remaining_durability + 0.05 * context.other->query.max_durability""#;
         let (_, d) = repair_amount(&repairable(fine), &checking());
@@ -92,7 +93,8 @@ mod compiled {
         let (_, d) = repair_amount(&repairable(r#""'a' + 1""#), &checking());
         let finding = d
             .iter()
-            .find(|f| matches!(f.code, DiagnosticCode::InvalidMolang { .. }))
+            // By legacy name: the variant and the definitions that were it.
+            .find(|f| matches!(f.code.name(), "InvalidMolang"))
             .unwrap();
         assert_eq!((finding.severity, finding.kept), (Severity::Error, true));
     }

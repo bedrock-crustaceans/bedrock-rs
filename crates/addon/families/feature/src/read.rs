@@ -124,10 +124,13 @@ pub(crate) fn parse_strict_with<'a, T: Facet<'a>>(
         }
         Err(ScalarFailure::Read(error)) => {
             let mut finding = slice_error(error, &cx.at);
-            if let DiagnosticCode::InvalidValue { text } = &mut finding.code {
+            // By legacy name: the variant and the definitions that were it.
+            if finding.code.name() == "InvalidValue" {
                 let key = last_key(&finding.location.json_path);
                 if let Some((_, message)) = texts.iter().find(|(k, _)| *k == key) {
-                    *text = Some(VanillaText::Fixed(message));
+                    finding.code = DiagnosticCode::InvalidValue {
+                        text: Some(VanillaText::Fixed(message)),
+                    };
                 }
             }
             d.push(finding);
@@ -157,16 +160,17 @@ pub(crate) fn parse_strict_with<'a, T: Facet<'a>>(
 fn slice_error(error: SliceError, base: &JsonPath) -> Diagnostic {
     error.into_diagnostic(base, |code, error| {
         let at = || base.join(error.relative_path());
-        match code {
+        // By legacy name: the variant and the definitions that were it.
+        match code.name() {
             // The client's enum members reject an unknown name as a value.
-            DiagnosticCode::InvalidEnumValue { .. } => DiagnosticCode::InvalidValue { text: None },
-            DiagnosticCode::MissingRequiredField { .. } => DiagnosticCode::MissingRequiredField {
+            "InvalidEnumValue" => DiagnosticCode::InvalidValue { text: None },
+            "MissingRequiredField" => DiagnosticCode::MissingRequiredField {
                 text: Some(formatted(REQUIRED_CHILD, &[&last_key(&at())])),
             },
-            DiagnosticCode::UnrecognizedField { .. } => DiagnosticCode::UnrecognizedField {
+            "UnrecognizedField" => DiagnosticCode::UnrecognizedField {
                 text: Some(formatted(NOT_VALID_HERE, &[&last_key(&at())])),
             },
-            other => other,
+            _ => code,
         }
     })
 }

@@ -81,13 +81,10 @@ fn below_the_floor_is_unsupported_with_the_floor_text() {
     assert_eq!(found.len(), 1);
     assert_eq!(
         found[0].code,
-        DiagnosticCode::UnsupportedVersion {
-            text: Some(VanillaText::UseFormatVersion {
-                what: "entity",
-                name: "demo:x".to_owned(),
-                version: v("1.8.0"),
-            })
-        }
+        DiagnosticCode::from(
+            bedrock_addon_core::diagnostic::codes::USE_FORMAT_VERSION
+                .with(["entity", "demo:x", "1.8.0"])
+        )
     );
 }
 
@@ -119,9 +116,7 @@ fn a_missing_version_is_an_information_and_parses_at_the_floor_deviation() {
     assert_eq!(found[0].severity, Severity::Info);
     assert_eq!(
         found[0].code,
-        DiagnosticCode::MissingFormatVersion {
-            text: Some(VanillaText::NoFormatVersionField)
-        }
+        DiagnosticCode::from(&bedrock_addon_core::diagnostic::codes::NO_FORMAT_VERSION_FIELD)
     );
 }
 

@@ -357,7 +357,8 @@ fn reject_crate_members(root: &Value, at: &JsonPath, unknown: Severity, d: &mut 
 fn unknown_traits(d: &mut Diagnostics, start: usize, at: &JsonPath) {
     let traits = at.with(&["description", "traits"]);
     for finding in d.iter_mut().skip(start) {
-        if !matches!(finding.code, DiagnosticCode::UnrecognizedField { .. }) {
+        // By legacy name: the variant and the definitions that were it.
+        if !matches!(finding.code.name(), "UnrecognizedField") {
             continue;
         }
         let Some(name) = finding

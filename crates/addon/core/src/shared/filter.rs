@@ -5,7 +5,7 @@ use facet_value::{VArray, VObject};
 
 use super::read::{self, Failure, ROOT, ShapeError, ShapeErrorKind, fail, wrong_type};
 use super::{finding, unrecognized};
-use crate::diagnostic::{DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText};
+use crate::diagnostic::{Diagnostics, JsonPath, Severity, codes};
 use crate::document::UnknownMembers;
 use crate::json::Value;
 
@@ -294,11 +294,9 @@ impl Filter {
                     // "Filter test not found -> %s":
                     // level 3, and the test evaluates false: a kept error.
                     out.push_kept_error(finding(
-                        DiagnosticCode::UnresolvedReference {
-                            text: Some(VanillaText::FilterTestNotFound {
-                                name: test.test.clone(),
-                            }),
-                        },
+                        codes::FILTER_TEST_NOT_FOUND
+                            .with([test.test.as_str()])
+                            .into(),
                         Severity::Error,
                         path,
                     ));

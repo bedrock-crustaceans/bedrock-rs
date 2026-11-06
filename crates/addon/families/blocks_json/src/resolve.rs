@@ -546,12 +546,12 @@ fn push(
 
 /// Whether a finding of [`entry::read`] is one the client logs.
 fn has_vanilla_text(code: &DiagnosticCode) -> bool {
+    // By legacy name: the variant and the definitions that were it; the game's text is the
+    // variant's `text` or the definition's sentence.
     matches!(
-        code,
-        DiagnosticCode::InvalidType { text: Some(_) }
-            | DiagnosticCode::InvalidValue { text: Some(_) }
-            | DiagnosticCode::IgnoredMember { text: Some(_) }
-    )
+        code.name(),
+        "InvalidType" | "InvalidValue" | "IgnoredMember"
+    ) && code.vanilla().is_some()
 }
 
 /// The keys the root object of `text` holds more than once, each with the number of times, in

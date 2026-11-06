@@ -132,7 +132,7 @@ pub struct Walk {
     /// Vanilla's content-log text for a file of the walk whose bytes could not be read, with
     /// `{}` where the file's path in its pack goes; `None` for a family whose loader has no
     /// text of its own. The stack driver puts it on the file's
-    /// [`ReadError`](crate::diagnostic::DiagnosticCode::ReadError)
+    /// [`READ_ERROR_WORDED`](crate::diagnostic::codes::READ_ERROR_WORDED)
     /// ([`read_error_text`](Self::read_error_text)).
     pub read_error: Option<&'static str>,
 }

@@ -75,7 +75,11 @@ pub fn closing(text: &'static str) -> Diagnostic {
 pub fn locate(diagnostics: &mut Diagnostics, origin: &Origin) {
     // In place: the list keeps where the members of the document are in the file.
     for finding in diagnostics.iter_mut() {
-        if matches!(finding.code, DiagnosticCode::MissingPayload { text: None }) {
+        if matches!(finding.code, DiagnosticCode::MissingPayload { text: None })
+            || finding
+                .code
+                .is(&bedrock_addon_core::diagnostic::codes::MISSING_PAYLOAD)
+        {
             finding.code = bedrock_addon_core::diagnostic::cereal::payload_missing();
         }
         finding.location.pack = Some(origin.pack.clone());

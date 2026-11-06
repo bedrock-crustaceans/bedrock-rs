@@ -16,6 +16,7 @@
 
 #![allow(dead_code)]
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
 };
@@ -149,7 +150,7 @@ fn parse_kept(
     let component = parse_component::<Kept, ToyComponent>(slice, mode, cx, d)?;
     if matches!(&component, ToyComponent::Kept(kept) if kept.offset.is_none()) {
         d.push_kept_error(Diagnostic::new(
-            DiagnosticCode::MissingRequiredField { text: None },
+            DiagnosticCode::from(&core_codes::MISSING_REQUIRED_FIELD),
             Severity::Error,
             Phase::Parse,
             Location::new(None, None, JsonPath::new(), None),
@@ -405,7 +406,7 @@ pub mod v1_0_0 {
                 at.push("minecraft:toy");
                 at.push("legacy_flag");
                 cx.diagnostics.push(Diagnostic::new(
-                    DiagnosticCode::DroppedField { text: None },
+                    DiagnosticCode::from(&core_codes::DROPPED_FIELD),
                     Severity::Warning,
                     Phase::Upgrade,
                     Location::new(None, None, at, None),
@@ -759,7 +760,7 @@ impl Family for Toy {
             let mut at = cx.at.clone();
             at.push("color");
             cx.diagnostics.push(Diagnostic::new(
-                DiagnosticCode::InvalidValue { text: None },
+                DiagnosticCode::from(&core_codes::INVALID_VALUE),
                 Severity::Error,
                 Phase::Validate,
                 Location::new(None, None, at, None),

@@ -504,10 +504,8 @@ fn pm09_m14_an_unknown_member_invalidates_the_piece() {
         ]
     );
     let finding = first(&pieces, "UnrecognizedField");
-    assert!(matches!(
-        finding.code,
-        DiagnosticCode::UnrecognizedField { .. }
-    ));
+    // By legacy name: the variant and the definitions that were it.
+    assert!(matches!(finding.code.name(), "UnrecognizedField"));
 }
 
 #[test]
@@ -653,10 +651,8 @@ fn pm12_pm13_m2_a_meta_file_that_is_no_json_object_is_skipped() {
         assert!(pieces.pieces.is_empty(), "{text}");
         assert_eq!(found(&pieces), ["error MalformedInput"], "{text}");
         let finding = first(&pieces, "MalformedInput");
-        assert!(matches!(
-            finding.code,
-            DiagnosticCode::MalformedInput { .. }
-        ));
+        // By legacy name: the variant and the definitions that were it.
+        assert!(matches!(finding.code.name(), "MalformedInput"));
         assert_eq!(message(&finding), NOT_PARSED);
         assert_eq!(pieces.rejected.len(), 1);
         assert_eq!(pieces.rejected[0].origin.path.as_str(), FILE);

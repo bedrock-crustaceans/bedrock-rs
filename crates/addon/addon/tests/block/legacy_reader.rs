@@ -7,7 +7,6 @@
 //! number with `errc` 22; the strict reader's float read takes numbers only. The game's own tests load `"ambient_occlusion": false` in a
 //! `1.20.0` block .
 
-use bedrock_addon::diagnostic::DiagnosticCode;
 use bedrock_addon::families::block::component::{LightEmission, MaterialInstances};
 
 use super::common::{context, document, loads, rejected};
@@ -61,7 +60,8 @@ fn a_legacy_ambient_occlusion_string_still_rejects_the_block() {
     let d = rejected(&text, &context());
     assert!(
         d.iter()
-            .any(|f| matches!(f.code, DiagnosticCode::InvalidType { .. })),
+            // By legacy name: the variant and the definitions that were it.
+            .any(|f| matches!(f.code.name(), "InvalidType")),
         "{d:#?}"
     );
 }
@@ -72,7 +72,8 @@ fn a_cereal_ambient_occlusion_bool_is_not_taken() {
     let d = rejected(&text, &context());
     assert!(
         d.iter()
-            .any(|f| matches!(f.code, DiagnosticCode::InvalidType { .. })),
+            // By legacy name: the variant and the definitions that were it.
+            .any(|f| matches!(f.code.name(), "InvalidType")),
         "{d:#?}"
     );
 }
@@ -147,10 +148,9 @@ fn a_cereal_integer_member_takes_the_integer_tokens_only() {
         let text = with_component("1.26.20", "minecraft:light_emission", written);
         let d = rejected(&text, &context());
         assert!(
-            d.iter().any(|f| matches!(
-                f.code,
-                DiagnosticCode::InvalidType { .. } | DiagnosticCode::InvalidValue { .. }
-            )),
+            // By legacy name: the variant and the definitions that were it.
+            d.iter()
+                .any(|f| matches!(f.code.name(), "InvalidType" | "InvalidValue")),
             "{written}: {d:#?}"
         );
     }
@@ -162,7 +162,8 @@ fn a_legacy_integer_member_still_rejects_a_string() {
     let d = rejected(&text, &context());
     assert!(
         d.iter()
-            .any(|f| matches!(f.code, DiagnosticCode::InvalidType { .. })),
+            // By legacy name: the variant and the definitions that were it.
+            .any(|f| matches!(f.code.name(), "InvalidType")),
         "{d:#?}"
     );
 }
@@ -179,7 +180,8 @@ fn a_legacy_light_emission_out_of_range_after_the_read_rejects_the_block() {
         let d = rejected(&text, &context());
         assert!(
             d.iter()
-                .any(|f| matches!(f.code, DiagnosticCode::InvalidValue { .. })
+                // By legacy name: the variant and the definitions that were it.
+                .any(|f| matches!(f.code.name(), "InvalidValue")
                     && f.location
                         .json_path
                         .to_string()
@@ -198,7 +200,8 @@ fn a_legacy_friction_out_of_range_after_the_read_rejects_the_block() {
         let d = rejected(&text, &context());
         assert!(
             d.iter()
-                .any(|f| matches!(f.code, DiagnosticCode::InvalidValue { .. })
+                // By legacy name: the variant and the definitions that were it.
+                .any(|f| matches!(f.code.name(), "InvalidValue")
                     && f.location
                         .json_path
                         .to_string()

@@ -3,10 +3,10 @@
 //! is removed and the file loads) and strictly from 1.19.30 (it fails the file). This module holds
 //! the rules of that walk, the legacy geometry-name pattern and the leaves only geometry reads.
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
 use bedrock_addon_core::json::node_tree::{
-    ARRAY_TOO_LARGE, ARRAY_TOO_SMALL, Failure, Lossy, Names, Node, Order, Pattern, Rules,
-    Validation, Walk, text,
+    Failure, Lossy, Names, Node, Order, Pattern, Rules, Validation, Walk, text,
 };
 
 use crate::texts::{CHILD_REMOVED, INDEX_NOT_WHOLE, UV_TRUNCATED};
@@ -184,12 +184,12 @@ fn sized(walk: &mut Walk, n: usize, want: usize, node: Node<'_>) -> bool {
     if n == want {
         return true;
     }
-    let template = if n < want {
-        ARRAY_TOO_SMALL
+    let def = if n < want {
+        &core_codes::ARRAY_TOO_SMALL
     } else {
-        ARRAY_TOO_LARGE
+        &core_codes::ARRAY_TOO_LARGE
     };
-    walk.invalid(template, &[&n.to_string(), &want.to_string()], node);
+    walk.invalid(def.with([n.to_string(), want.to_string()]), node);
     false
 }
 

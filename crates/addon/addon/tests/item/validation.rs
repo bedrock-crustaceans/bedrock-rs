@@ -164,9 +164,10 @@ fn v04_a_lowered_engine_version_refuses_cooldown_type() {
         "minecraft:cooldown",
     ]);
     assert!(lowered.unknown().get(&at, "type").is_some());
+    // By legacy name: the variant and the definitions that were it.
     assert!(has(lowered.diagnostics(), |c| matches!(
-        c,
-        DiagnosticCode::FieldSinceEngine { .. }
+        c.name(),
+        "FieldSinceEngine"
     )));
 }
 
@@ -186,7 +187,8 @@ fn v04b_a_member_above_the_engine_version_is_an_information_and_an_unbound_one_a
     let told: Vec<_> = lowered
         .diagnostics()
         .iter()
-        .filter(|f| matches!(f.code, DiagnosticCode::FieldSinceEngine { .. }))
+        // By legacy name: the variant and the definitions that were it.
+        .filter(|f| matches!(f.code.name(), "FieldSinceEngine"))
         .collect();
     assert_eq!(told.len(), 1);
     assert_eq!(told[0].severity, Severity::Info, "{told:#?}");
@@ -197,10 +199,10 @@ fn v04b_a_member_above_the_engine_version_is_an_information_and_an_unbound_one_a
     );
     let loaded = loads(&unbound, &third_party());
     assert!(
-        loaded.diagnostics().iter().any(|f| matches!(
-            f.code,
-            DiagnosticCode::UnrecognizedField { .. }
-        ) && f.severity == Severity::Warning),
+        // By legacy name: the variant and the definitions that were it.
+        loaded.diagnostics().iter().any(
+            |f| matches!(f.code.name(), "UnrecognizedField") && f.severity == Severity::Warning
+        ),
         "{:#?}",
         loaded.diagnostics()
     );
@@ -937,17 +939,16 @@ fn rule_1_an_identifier_needs_a_namespace() {
         );
         assert!(
             d.iter()
-                .any(|f| matches!(f.code, DiagnosticCode::NamespaceRule { .. })
+                // By legacy name: the variant and the definitions that were it.
+                .any(|f| matches!(f.code.name(), "NamespaceRule")
                     && f.severity == Severity::Error
                     && f.code.to_string().contains("must include a namespace")),
             "{identifier}: {d:#?}"
         );
     }
     let legacy = rejects(&item("1.10", "ruby", ""), &third_party());
-    assert!(has(&legacy, |c| matches!(
-        c,
-        DiagnosticCode::NamespaceRule { .. }
-    )));
+    // By legacy name: the variant and the definitions that were it.
+    assert!(has(&legacy, |c| matches!(c.name(), "NamespaceRule")));
 }
 
 #[test]
@@ -1308,7 +1309,8 @@ fn a_legacy_category_that_is_no_creative_category_is_dropped_and_told() {
         .diagnostics()
         .iter()
         .filter(|f| {
-            f.phase == Phase::Upgrade && matches!(f.code, DiagnosticCode::InvalidValue { .. })
+            // By legacy name: the variant and the definitions that were it.
+            f.phase == Phase::Upgrade && matches!(f.code.name(), "InvalidValue")
         })
         .map(|f| (f.location.json_path.to_string(), f.severity))
         .collect()
@@ -1390,7 +1392,7 @@ fn a_legacy_member_a_step_drops_or_reads_as_another_value_is_told() {
         let told: Vec<String> = found
             .iter()
             .filter(|f| f.location.json_path.to_string() == at && f.severity >= Severity::Info)
-            .map(|f| format!("{:?}", f.code))
+            .map(bedrock_addon::diagnostic::testing::legacy_debug)
             .collect();
         assert!(
             told.iter().any(|name| name.starts_with(code)),
@@ -1430,7 +1432,8 @@ fn a_root_use_beta_features_that_is_no_bool_is_a_member_nothing_reads() {
     assert!(
         document.diagnostics().iter().any(|f| {
             f.location.json_path.to_string() == "use_beta_features"
-                && matches!(f.code, DiagnosticCode::UnrecognizedField { .. })
+                // By legacy name: the variant and the definitions that were it.
+                && matches!(f.code.name(), "UnrecognizedField")
         }),
         "{:#?}",
         document.diagnostics()
@@ -1580,7 +1583,8 @@ fn a_null_member_of_a_modern_item_rejects_it() {
     );
     assert!(
         d.iter().any(|f| f.severity == Severity::Error
-            && matches!(f.code, DiagnosticCode::InvalidType { .. })
+            // By legacy name: the variant and the definitions that were it.
+            && matches!(f.code.name(), "InvalidType")
             && f.location.json_path.to_string()
                 == "minecraft:item/components/minecraft:use_modifiers/start_sound"),
         "{d:#?}"

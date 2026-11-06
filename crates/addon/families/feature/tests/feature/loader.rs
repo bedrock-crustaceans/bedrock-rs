@@ -103,12 +103,11 @@ fn f12_a_missing_format_version_rejects_the_file() {
         r#"{"minecraft:ore_feature": {"description": {"identifier": "demo:x"}, "count": 1}}"#;
     let d = rejects(json, &cx());
     let finding = d.iter().find(|f| f.severity == Severity::Error).unwrap();
-    assert!(matches!(
-        finding.code,
-        DiagnosticCode::MissingFormatVersion {
-            text: Some(VanillaText::NoValidVersion)
-        }
-    ));
+    assert!(
+        finding
+            .code
+            .is(&bedrock_addon_core::diagnostic::codes::NO_VALID_VERSION)
+    );
 }
 
 #[test]
@@ -186,8 +185,17 @@ fn an_engine_gated_member_newer_than_the_packs_min_engine_version_is_warned() {
     let mut old_pack = cx();
     old_pack.min_engine_version = Some(MinEngineVersion::new(1, 26, 10));
     let document = loads(&json, &old_pack);
-    assert!(document.diagnostics().iter().any(|f| f.severity == Severity::Info
-        && matches!(f.code, DiagnosticCode::FieldSinceEngine { since } if since == FormatVersion::new(1, 26, 20))
-        && f.location.json_path.to_string().ends_with("embed_in_surface")));
+    assert!(document.diagnostics().iter().any(|f| {
+        f.severity == Severity::Info
+            && f.code
+                == DiagnosticCode::from(
+                    bedrock_addon_core::diagnostic::codes::FIELD_SINCE_ENGINE
+                        .with([FormatVersion::new(1, 26, 20).to_string()]),
+                )
+            && f.location
+                .json_path
+                .to_string()
+                .ends_with("embed_in_surface")
+    }));
     assert!(loads(&json, &cx()).diagnostics().is_empty());
 }

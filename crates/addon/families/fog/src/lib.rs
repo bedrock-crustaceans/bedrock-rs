@@ -29,7 +29,7 @@ pub(crate) use write::{color_ju, float, norm_ju, object_with};
 use crate::history::{FogFamily, FogHistory};
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    CodeDef, Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, VanillaText,
+    CodeDef, Diagnostic, DiagnosticDetail, Diagnostics, JsonPath,
 };
 use bedrock_addon_core::document::{
     CombineRule, Contribution, Document, JsonDefinition, JsonDocument, JsonPlaced, NoBeta, Notice,
@@ -310,7 +310,7 @@ impl Family for FogFamily {
         // A pre-release of 1.26.20 sorts below it.
         check: EnvelopeCheck::From(LATEST),
         missing: MissingVersion::Reject {
-            text: Some(VanillaText::Fixed(codes::INVALID_VERSION.template())),
+            code: &codes::INVALID_VERSION,
         },
         ..Envelope::DEFAULT
     };

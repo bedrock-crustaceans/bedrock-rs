@@ -151,6 +151,16 @@ pub struct CodeDef<const N: usize> {
     meta: CodeMeta,
 }
 
+/// Two definitions are the same when their ids are (a `const` definition has one address per
+/// use): what lets a value that holds a definition, a family's `Envelope`, compare.
+impl<const N: usize> PartialEq for CodeDef<N> {
+    fn eq(&self, other: &Self) -> bool {
+        self.meta.id == other.meta.id
+    }
+}
+
+impl<const N: usize> Eq for CodeDef<N> {}
+
 impl<const N: usize> CodeDef<N> {
     /// A code of the toolkit's own: `line` is the sentence `Display` renders, with no
     /// placeholder or one `{}` per argument. Add the game's sentence with
@@ -313,6 +323,26 @@ impl DiagnosticCode {
     pub fn is<const N: usize>(&self, def: &CodeDef<N>) -> bool {
         matches!(self, Self::Specific { code } if code.is(def))
     }
+
+    /// The arguments of a code of `def`; `None` for a code of another definition and for a
+    /// legacy code. What a match site that bound a legacy variant's payload asks.
+    pub fn args_of<const N: usize>(&self, def: &CodeDef<N>) -> Option<&[String]> {
+        match self {
+            Self::Specific { code } if code.is(def) => Some(code.args()),
+            _ => None,
+        }
+    }
+
+    /// The game's sentence the code renders, with its arguments; `None` when the game prints
+    /// none. A legacy code gives the game text it carries in its `text` field: so
+    /// `code.name() == "InvalidType" && code.vanilla().is_some()` asks what
+    /// `matches!(code, InvalidType { text: Some(_) })` asked, of either.
+    pub fn vanilla(&self) -> Option<String> {
+        match self {
+            Self::Specific { code } => code.vanilla(),
+            legacy => legacy.game_text().map(ToString::to_string),
+        }
+    }
 }
 
 /// A specific code, as the `Specific` variant.
@@ -367,6 +397,12 @@ impl Code {
     /// Whether this is a code of `def`, whatever its arguments.
     pub fn is<const N: usize>(&self, def: &CodeDef<N>) -> bool {
         self.meta.id == def.meta.id
+    }
+
+    /// The game's sentence, `{}` where each argument goes; `None` for a code of the toolkit's
+    /// own.
+    pub(super) fn vanilla_template(&self) -> Option<&'static str> {
+        self.meta.game
     }
 
     /// The game's sentence with the arguments in it; `None` for a code of the toolkit's own.
@@ -815,7 +851,7 @@ pub(super) fn kind_of(code: &DiagnosticCode) -> Kind {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::diagnostic::{Diagnostic, Location, Phase, VanillaText, testing};
+    use crate::diagnostic::{Diagnostic, Location, Phase, VanillaText, codes, testing};
     use std::collections::hash_map::DefaultHasher;
 
     static FILE_MISSING: CodeDef<1> = CodeDef::new(
@@ -907,6 +943,34 @@ mod tests {
             DiagnosticCode::InvalidValue { text: None }.id(),
             "InvalidValue"
         );
+    }
+
+    /// A definition compares by its id: the static and a `const` of the same id are one
+    /// definition, another id is another (what lets a family's `Envelope` holding one compare).
+    #[test]
+    fn two_definitions_are_equal_when_their_ids_are() {
+        assert_eq!(FILE_MISSING, FILE_MISSING_AGAIN);
+        assert_ne!(
+            codes::MISSING_FORMAT_VERSION,
+            codes::NO_VALID_VERSION,
+            "two ids"
+        );
+    }
+
+    /// The arguments of a code of one definition, asked of the code: none for another
+    /// definition or a legacy code.
+    #[test]
+    fn a_codes_arguments_are_given_for_its_own_definition_only() {
+        let code = DiagnosticCode::from(codes::INVALID_MOLANG.with(["1 +"]));
+        assert_eq!(
+            code.args_of(&codes::INVALID_MOLANG),
+            Some(&["1 +".to_owned()][..])
+        );
+        assert_eq!(code.args_of(&codes::MOLANG_LINT), None);
+        let legacy = DiagnosticCode::InvalidMolang {
+            expression: "1 +".to_owned(),
+        };
+        assert_eq!(legacy.args_of(&codes::INVALID_MOLANG), None);
     }
 
     #[test]

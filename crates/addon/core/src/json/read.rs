@@ -52,9 +52,8 @@ use super::lex::{Kind, Lexer, Marks, Refused, Rules, UnsafeText, scan, scan_toke
 use super::slice::JsonSlice;
 use super::stack::with_stack_for;
 use super::text::MAX_JSON_DEPTH;
-use crate::diagnostic::{
-    Diagnostic, DiagnosticCode, JsonPath, Location, Phase, Severity, Span, VanillaText,
-};
+use crate::diagnostic::codes as core_codes;
+use crate::diagnostic::{Diagnostic, DiagnosticDetail, JsonPath, Location, Phase, Severity, Span};
 
 /// What a string may have after a backslash.
 const ESCAPE: &str = "one of `\"\\/bfnrtu` after a backslash (bad escape sequence in string)";
@@ -1044,13 +1043,8 @@ pub fn document_json_refusal(document: JsonSlice<'_>) -> Option<Diagnostic> {
         _ => return None,
     };
     let offset = document.offset.saturating_add(start);
-    Some(Diagnostic::new(
-        DiagnosticCode::MalformedInput {
-            message: message.to_owned(),
-            text: Some(VanillaText::DocumentJson {
-                message: message.to_owned(),
-            }),
-        },
+    let finding = Diagnostic::new(
+        core_codes::DOCUMENT_JSON.with([message]).into(),
         Severity::Error,
         Phase::Parse,
         Location::new(
@@ -1062,7 +1056,8 @@ pub fn document_json_refusal(document: JsonSlice<'_>) -> Option<Diagnostic> {
                 len: u32::try_from(len).unwrap_or(u32::MAX),
             }),
         ),
-    ))
+    );
+    Some(finding.detail(DiagnosticDetail::Syntax(message.to_owned())))
 }
 
 /// `RapidJSON`'s text for a number too big for a double.
@@ -1084,10 +1079,7 @@ pub fn trailing_content_finding(document: JsonSlice<'_>) -> Option<Diagnostic> {
     let span = trailing_content(document.text)?;
     let offset = u32::try_from(document.offset).unwrap_or(u32::MAX);
     Some(Diagnostic::new(
-        DiagnosticCode::MalformedInput {
-            message: TRAILING_CONTENT.to_owned(),
-            text: None,
-        },
+        core_codes::SYNTAX.with([TRAILING_CONTENT]).into(),
         Severity::Info,
         Phase::Parse,
         Location::new(

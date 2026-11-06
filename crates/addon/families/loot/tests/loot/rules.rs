@@ -23,12 +23,14 @@ fn v01_a_file_that_is_not_a_json_object_is_not_loaded() {
         // is `EmptyDocument`, as in every family; vanilla's line is the same.
         let nothing = !bytes.starts_with(b"{") && !bytes.starts_with(b"\"");
         assert_eq!(
-            matches!(error.code, DiagnosticCode::EmptyDocument { .. }),
+            // By legacy name: the variant and the definitions that were it.
+            matches!(error.code.name(), "EmptyDocument"),
             nothing,
             "{error:?}"
         );
         assert_eq!(
-            matches!(error.code, DiagnosticCode::MalformedInput { .. }),
+            // By legacy name: the variant and the definitions that were it.
+            matches!(error.code.name(), "MalformedInput"),
             !nothing,
             "{error:?}"
         );
@@ -214,10 +216,7 @@ fn v03_a_min_max_object_on_an_int_range_member_is_warned_and_kept() {
     ));
     assert_eq!(found[0].severity, Severity::Info);
     assert_eq!(path(found[0]), "pools/0/conditions/0/count");
-    assert!(matches!(
-        found[1].code,
-        DiagnosticCode::InvalidValue { text: None }
-    ));
+    assert!(found[1].is(&bedrock_addon_core::diagnostic::codes::INVALID_VALUE));
     assert_eq!(found[1].severity, Severity::Info);
     assert_eq!(path(found[1]), "pools/0/conditions/0/durability");
     let ConditionKind::MatchTool {

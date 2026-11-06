@@ -113,7 +113,8 @@ fn the_engine_s_biomes_without_a_version_are_refused() {
         let found = rejected(&engine(name), &context());
         only(
             &found,
-            |c| matches!(c, DiagnosticCode::MissingFormatVersion { .. }),
+            // By legacy name: the variant and the definitions that were it.
+            |c| matches!(c.name(), "MissingFormatVersion"),
             "",
         );
     }
@@ -127,13 +128,15 @@ fn the_engine_s_biomes_below_the_floor_are_refused() {
         let found = rejected(&engine(name), &context());
         only(
             &found,
-            |c| matches!(c, DiagnosticCode::UnsupportedVersion { .. }),
+            // By legacy name: the variant and the definitions that were it.
+            |c| matches!(c.name(), "UnsupportedVersion"),
             "format_version",
         );
         assert!(
             found
                 .iter()
-                .any(|d| matches!(d.code, DiagnosticCode::BiomeFormatHint { .. })),
+                // By legacy name: the variant and the definitions that were it.
+                .any(|d| matches!(d.code.name(), "BiomeFormatHint")),
             "{name}"
         );
     }
@@ -146,7 +149,8 @@ fn the_engine_s_swamp_builder_in_the_nether_is_refused() {
     let found = rejected(&engine("case-5.json"), &context());
     only(
         &found,
-        |c| matches!(c, DiagnosticCode::InvalidValue { .. }),
+        // By legacy name: the variant and the definitions that were it.
+        |c| matches!(c.name(), "InvalidValue"),
         "minecraft:biome/components/minecraft:surface_builder/builder/type",
     );
     assert!(found.iter().any(|d| d.code.to_string()
@@ -160,7 +164,8 @@ fn the_engine_s_attributes_outside_the_beta_struct_refuse_the_biome() {
     let found = load(&engine("case-18.json"), &context()).expect_err("refused");
     only(
         &found.diagnostics,
-        |c| matches!(c, DiagnosticCode::UnrecognizedField { .. }),
+        // By legacy name: the variant and the definitions that were it.
+        |c| matches!(c.name(), "UnrecognizedField"),
         "minecraft:biome/environment_attributes",
     );
 }

@@ -269,14 +269,13 @@ fn an_empty_array_for_a_map_level_is_a_type_error_at_that_level() {
         let error = parse_at::<Maps<'_>>(JsonSlice::new(text)).unwrap_err();
         assert_eq!(error.path.to_string(), at, "{text}");
         assert!(
-            matches!(
-                bedrock_addon_core::diagnostic::code_for_deserialize_error_kind(
-                    &error.error.kind,
-                    !error.path.is_empty(),
-                    false
-                ),
-                bedrock_addon_core::diagnostic::DiagnosticCode::InvalidType { .. }
-            ),
+            bedrock_addon_core::diagnostic::code_for_deserialize_error_kind(
+                &error.error.kind,
+                !error.path.is_empty(),
+                false
+            )
+            .name()
+                == "InvalidType",
             "{text}: {}",
             error.error
         );

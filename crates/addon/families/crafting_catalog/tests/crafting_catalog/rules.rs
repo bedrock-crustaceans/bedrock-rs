@@ -1,7 +1,7 @@
 //! What fails a file once its envelope is accepted, and what only
 //! warns. Each test builds the smallest document for one rule.
 
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, Severity};
+use bedrock_addon_core::diagnostic::{Diagnostics, Severity, codes};
 
 use super::common::*;
 
@@ -290,10 +290,7 @@ fn l10_an_unknown_member_at_any_level_is_a_warning() {
         .diagnostics()
         .iter()
         .map(|f| {
-            assert!(matches!(
-                f.code,
-                DiagnosticCode::UnrecognizedField { text: None }
-            ));
+            assert!(f.code.is(&codes::UNRECOGNIZED_FIELD));
             assert_eq!(f.severity, Severity::Warning);
             f.location.json_path.to_string()
         })

@@ -66,8 +66,9 @@ fn cat03_an_unknown_member_is_a_warning_and_the_file_loads() {
     let found: Vec<_> = document.diagnostics().iter().collect();
     assert_eq!(found.len(), 1, "{found:#?}");
     assert!(matches!(
-        found[0].code,
-        DiagnosticCode::UnrecognizedField { .. }
+        // By legacy name: the variant and the definitions that were it.
+        found[0].code.name(),
+        "UnrecognizedField"
     ));
     assert_eq!(found[0].severity, Severity::Warning);
     assert_eq!(
@@ -87,10 +88,8 @@ fn cat04_a_missing_format_version_is_an_error_with_vanilla_s_text() {
         listed(&found),
         expected_list("cat04_missing_format_version.expected.json")
     );
-    assert!(matches!(
-        one_error(&found).code,
-        DiagnosticCode::MissingFormatVersion { .. }
-    ));
+    // By legacy name: the variant and the definitions that were it.
+    assert_eq!(one_error(&found).code.name(), "MissingFormatVersion");
 }
 
 #[test]
@@ -99,7 +98,8 @@ fn cat04b_an_unreadable_format_version_is_the_missing_version_error() {
         let found = rejects(&fixture(&format!("cat04b_envelope_edges/{case}.json")));
         let error = one_error(&found);
         assert!(
-            matches!(error.code, DiagnosticCode::MissingFormatVersion { .. }),
+            // By legacy name: the variant and the definitions that were it.
+            matches!(error.code.name(), "MissingFormatVersion"),
             "{case}: {found:#?}"
         );
         assert_eq!(error.code.to_string(), FORMAT_VERSION_TEXT, "{case}");
@@ -109,7 +109,8 @@ fn cat04b_an_unreadable_format_version_is_the_missing_version_error() {
     let found = rejects(&fixture("cat04b_envelope_edges/number_version.json"));
     let error = one_error(&found);
     assert!(
-        matches!(error.code, DiagnosticCode::UnsupportedVersion { .. }),
+        // By legacy name: the variant and the definitions that were it.
+        matches!(error.code.name(), "UnsupportedVersion"),
         "{found:#?}"
     );
     assert_eq!(error.code.to_string(), FORMAT_VERSION_TEXT);
@@ -143,10 +144,8 @@ fn cat05_a_payload_under_another_key_is_vanilla_s_missing_object_error() {
 fn cat06_a_payload_without_categories_is_rejected() {
     let found = rejects(&fixture("cat06_missing_categories.json"));
     let error = one_error(&found);
-    assert!(matches!(
-        error.code,
-        DiagnosticCode::MissingRequiredField { .. }
-    ));
+    // By legacy name: the variant and the definitions that were it.
+    assert!(matches!(error.code.name(), "MissingRequiredField"));
     assert_eq!(
         error.location.json_path.to_string(),
         "minecraft:crafting_items_catalog/categories"
@@ -157,7 +156,8 @@ fn cat06_a_payload_without_categories_is_rejected() {
 fn cat07_an_unknown_category_name_is_rejected() {
     let found = rejects(&fixture("cat07_bad_category_name.json"));
     let error = one_error(&found);
-    assert!(matches!(error.code, DiagnosticCode::InvalidValue { .. }));
+    // By legacy name: the variant and the definitions that were it.
+    assert!(matches!(error.code.name(), "InvalidValue"));
     assert_eq!(
         error.location.json_path.to_string(),
         "minecraft:crafting_items_catalog/categories/0/category_name"
@@ -172,7 +172,8 @@ fn cat08_a_group_name_without_a_namespace_is_rejected_with_vanilla_s_text() {
         expected_list("cat08_group_name_no_namespace.expected.json")
     );
     let error = one_error(&found);
-    assert!(matches!(error.code, DiagnosticCode::InvalidValue { .. }));
+    // By legacy name: the variant and the definitions that were it.
+    assert!(matches!(error.code.name(), "InvalidValue"));
     assert_eq!(
         error.location.json_path.to_string(),
         "minecraft:crafting_items_catalog/categories/0/groups/0/group_identifier/name"
@@ -187,7 +188,8 @@ fn cat09_an_item_name_without_a_namespace_is_rejected_with_vanilla_s_text() {
         expected_list("cat09_item_name_no_namespace.expected.json")
     );
     let error = one_error(&found);
-    assert!(matches!(error.code, DiagnosticCode::InvalidValue { .. }));
+    // By legacy name: the variant and the definitions that were it.
+    assert!(matches!(error.code.name(), "InvalidValue"));
     assert_eq!(
         error.location.json_path.to_string(),
         "minecraft:crafting_items_catalog/categories/0/groups/0/items/0"

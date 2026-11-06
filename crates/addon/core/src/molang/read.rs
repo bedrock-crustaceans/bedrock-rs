@@ -7,7 +7,9 @@ use super::{
     JsonScalar, JsonType, Molang, MolangList, MolangSource, OtherJson, RawVersion, ReadField,
     ReaderKind, ReprError, SourceForm,
 };
-use crate::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, Location, Phase, Severity, Span};
+use crate::diagnostic::{
+    Diagnostic, DiagnosticCode, JsonPath, Location, Phase, Severity, Span, codes,
+};
 use crate::json::Value;
 
 /// The JSON value of a Molang field as the crate's readers take it: a number of either tag is a
@@ -119,7 +121,7 @@ pub fn beyond_f32(number: f64) -> Option<bool> {
 #[must_use]
 pub fn beyond_f32_warning(at: JsonPath, span: Option<Span>) -> Diagnostic {
     Diagnostic::new(
-        DiagnosticCode::InvalidValue { text: None },
+        DiagnosticCode::from(&codes::INVALID_VALUE),
         Severity::Info,
         Phase::Parse,
         Location::new(None, None, at, span),

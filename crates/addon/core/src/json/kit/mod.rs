@@ -67,8 +67,9 @@ use facet_value::{VArray, VObject};
 use indexmap::IndexMap;
 
 use super::{Coerce, Coercing, JsonSlice, Value};
+use crate::diagnostic::codes as core_codes;
 use crate::diagnostic::{
-    Class, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, Span, VanillaText,
+    Class, Code, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, Span,
 };
 use crate::versioning::{NullHandling, Reading, Scalars};
 
@@ -331,26 +332,42 @@ impl<'v> Elements<'v> {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Disposition {
     /// The member is kept beside the typed value and written back
-    /// ([`DiagnosticCode::UnrecognizedField`]); [`Read::unknown`] hands it back to be kept.
+    /// ([`codes::UNRECOGNIZED_FIELD`](core_codes::UNRECOGNIZED_FIELD)); [`Read::unknown`] hands
+    /// it back to be kept.
     Keep,
     /// The member is told and not kept: nothing reads it and a written document lacks it
-    /// ([`DiagnosticCode::MemberNotKept`]).
+    /// ([`codes::MEMBER_NOT_KEPT`](core_codes::MEMBER_NOT_KEPT)).
     Report,
-    /// The member is dropped by a rule ([`DiagnosticCode::DroppedField`]).
+    /// The member is dropped by a rule ([`codes::DROPPED_FIELD`](core_codes::DROPPED_FIELD)).
     Reject,
-    /// The member is ignored, as the game ignores it ([`DiagnosticCode::IgnoredMember`]).
+    /// The member is ignored, as the game ignores it
+    /// ([`codes::IGNORED_MEMBER`](core_codes::IGNORED_MEMBER)).
     Ignore,
 }
 
 impl Disposition {
-    /// The code of an unknown member told under this disposition.
-    fn code(self, text: Option<VanillaText>) -> DiagnosticCode {
-        match self {
-            Self::Keep => DiagnosticCode::UnrecognizedField { text },
-            Self::Report => DiagnosticCode::MemberNotKept { text },
-            Self::Reject => DiagnosticCode::DroppedField { text },
-            Self::Ignore => DiagnosticCode::IgnoredMember { text },
-        }
+    /// The code of an unknown member told under this disposition: the disposition's own line,
+    /// or the family's text given whole.
+    fn code(self, text: Option<&'static str>) -> Code {
+        let (plain, worded) = match self {
+            Self::Keep => (
+                &core_codes::UNRECOGNIZED_FIELD,
+                &core_codes::UNRECOGNIZED_FIELD_WORDED,
+            ),
+            Self::Report => (
+                &core_codes::MEMBER_NOT_KEPT,
+                &core_codes::MEMBER_NOT_KEPT_WORDED,
+            ),
+            Self::Reject => (
+                &core_codes::DROPPED_FIELD,
+                &core_codes::DROPPED_FIELD_WORDED,
+            ),
+            Self::Ignore => (
+                &core_codes::IGNORED_MEMBER,
+                &core_codes::IGNORED_MEMBER_WORDED,
+            ),
+        };
+        text.map_or_else(|| plain.into(), |text| worded.with([text]))
     }
 }
 
@@ -374,9 +391,11 @@ impl Disposition {
 /// [`cereal::MEMBER_NOT_IN_SCHEMA_TEXT`]: crate::diagnostic::cereal::MEMBER_NOT_IN_SCHEMA_TEXT
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 pub struct Texts {
-    /// The text of a value of the wrong JSON type ([`DiagnosticCode::InvalidType`]).
+    /// The text of a value of the wrong JSON type
+    /// ([`codes::INVALID_TYPE`](core_codes::INVALID_TYPE)).
     pub wrong_type: Option<&'static str>,
-    /// The text of a missing required member ([`DiagnosticCode::MissingRequiredField`]).
+    /// The text of a missing required member
+    /// ([`codes::MISSING_REQUIRED_FIELD`](core_codes::MISSING_REQUIRED_FIELD)).
     pub missing: Option<&'static str>,
     /// The text of an unknown member, whatever its [`Disposition`].
     pub unknown: Option<&'static str>,
@@ -489,7 +508,7 @@ impl<'d> Read<'d> {
     /// # fn told(d: &Diagnostics) -> Vec<String> {
     /// #     d.iter().map(|f| format!("{:?} {} {}", f.severity, f.location.json_path, f.code)).collect()
     /// # }
-    /// use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode};
+    /// use bedrock_addon_core::diagnostic::{Diagnostic, codes};
     /// let json: Value = from_str_jsonc(r#"{"name": "no_namespace"}"#).unwrap();
     /// let mut found = Diagnostics::default();
     /// let mut read = Read::new(Reading::DOCUMENT, &mut found);
@@ -497,7 +516,7 @@ impl<'d> Read<'d> {
     /// let name = read.required(&members, "name").unwrap();
     /// if !read.string(&name).is_some_and(|text| text.contains(':')) {
     ///     // A rule of the family's own, at the node.
-    ///     read.push(Diagnostic::error(DiagnosticCode::InvalidValue { text: None }).at(name.path().clone()));
+    ///     read.push(Diagnostic::of(&codes::INVALID_VALUE).at(name.path().clone()));
     /// }
     /// assert!(read.failed());
     /// assert_eq!(told(&found), ["Error name invalid value"]);
@@ -539,12 +558,11 @@ impl<'d> Read<'d> {
     /// assert_eq!(told(&found), ["Error count wrong JSON type"]);
     /// ```
     pub fn wrong_type(&mut self, node: &Node<'_>) {
-        let text = self.texts.wrong_type.map(VanillaText::Fixed);
-        self.fail(
-            DiagnosticCode::InvalidType { text },
-            node.path.clone(),
-            node.span(),
+        let code = self.texts.wrong_type.map_or_else(
+            || Code::from(&core_codes::INVALID_TYPE),
+            |text| core_codes::INVALID_TYPE_WORDED.with([text]),
         );
+        self.fail(code.into(), node.path.clone(), node.span());
     }
 
     /// The members of `node`; a [wrong type](Self::wrong_type) when it is no object.
@@ -681,9 +699,12 @@ impl<'d> Read<'d> {
 
     /// Tells that the member `key` of `members` is required and missing.
     fn missing(&mut self, members: &Members<'_>, key: &str) {
-        let text = self.texts.missing.map(VanillaText::Fixed);
+        let code = self.texts.missing.map_or_else(
+            || Code::from(&core_codes::MISSING_REQUIRED_FIELD),
+            |text| core_codes::MISSING_REQUIRED_FIELD_WORDED.with([text]),
+        );
         self.fail(
-            DiagnosticCode::MissingRequiredField { text },
+            code.into(),
             members.node.path.child(key),
             members.node.span(),
         );
@@ -757,8 +778,8 @@ impl<'d> Read<'d> {
     /// assert_eq!(told(&found), ["Error x member read and not kept", "Error identifier wrong JSON type"]);
     /// ```
     pub fn unknown_member(&mut self, node: &Node<'_>, disposition: Disposition) {
-        let code = disposition.code(self.texts.unknown.map(VanillaText::Fixed));
-        let mut finding = Diagnostic::error(code)
+        let code = disposition.code(self.texts.unknown);
+        let mut finding = Diagnostic::of(code)
             .severity(self.unknown_severity)
             .at(node.path.clone());
         finding.location.span = node.span();

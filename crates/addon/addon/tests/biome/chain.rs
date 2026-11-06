@@ -2,7 +2,8 @@
 //! history without upgrade; and the deviations from the game,
 //! each pinned by a test named `deviation`.
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity, VanillaText};
+use bedrock_addon::diagnostic::Severity;
+use bedrock_addon::diagnostic::codes;
 use bedrock_addon::document::{Content, JsonDocument as _};
 use bedrock_addon::families::biome::Biome;
 use bedrock_addon::families::biome::history::{self, BiomeFamily, BiomeHistory};
@@ -71,12 +72,7 @@ fn above_the_engine_there_is_no_parser() {
     let found = rejected(&biome("1.26.61", "test:x", ""), &context());
     assert!(has(
         &found,
-        |c| matches!(
-            c,
-            DiagnosticCode::UnsupportedVersion {
-                text: Some(VanillaText::NoParserForVersion { .. })
-            }
-        ),
+        |c| c.is(&codes::NO_PARSER_FOR_VERSION),
         Severity::Error,
         "unsupported version: no parser available for version 1.26.61"
     ));
@@ -86,10 +82,14 @@ fn above_the_engine_there_is_no_parser() {
 fn a_prerelease_loads_through_the_struct_below_it_with_an_info() {
     let document = loads(&biome("1.26.0-beta.2", "test:x", ""), &context());
     assert_eq!(document.version().parsed_as, FormatVersion::new(1, 21, 120));
-    assert!(document.diagnostics().iter().any(|f| matches!(
-        f.code,
-        DiagnosticCode::PrereleaseFormatVersion { .. }
-    ) && f.severity == Severity::Info));
+    // By legacy name: the variant and the definitions that were it.
+    assert!(
+        document
+            .diagnostics()
+            .iter()
+            .any(|f| matches!(f.code.name(), "PrereleaseFormatVersion")
+                && f.severity == Severity::Info)
+    );
 }
 
 // `1.21.120-beta.1` sorts below 1.21.120, so the legacy struct
@@ -110,7 +110,8 @@ fn a_prerelease_of_1_21_120_is_read_from_the_raw_text_by_the_legacy_struct() {
     let d = rejected(&three("1.21.120-beta.1"), &context());
     assert!(
         d.iter().any(
-            |f| matches!(f.code, DiagnosticCode::UnrecognizedField { .. })
+            // By legacy name: the variant and the definitions that were it.
+            |f| matches!(f.code.name(), "UnrecognizedField")
                 && f.severity == Severity::Error
                 && f.location.json_path.to_string() == "x"
         ),
@@ -118,13 +119,15 @@ fn a_prerelease_of_1_21_120_is_read_from_the_raw_text_by_the_legacy_struct() {
     );
     assert!(
         !d.iter()
-            .any(|f| matches!(f.code, DiagnosticCode::MalformedInput { .. }))
+            // By legacy name: the variant and the definitions that were it.
+            .any(|f| matches!(f.code.name(), "MalformedInput"))
     );
     // The release itself is the checked envelope: a third root member rejects the document.
     let d = rejected(&three("1.21.120"), &context());
     assert!(
         d.iter()
-            .any(|f| matches!(f.code, DiagnosticCode::MalformedInput { .. }))
+            // By legacy name: the variant and the definitions that were it.
+            .any(|f| matches!(f.code.name(), "MalformedInput"))
     );
 }
 
@@ -204,10 +207,12 @@ fn unknown_components_and_members_refuse_a_cereal_biome() {
             &context(),
         );
         let components = with(&found, |c| {
-            matches!(c, DiagnosticCode::UnrecognizedComponent { .. })
+            // By legacy name: the variant and the definitions that were it.
+            matches!(c.name(), "UnrecognizedComponent")
         });
         let fields = with(&found, |c| {
-            matches!(c, DiagnosticCode::UnrecognizedField { .. })
+            // By legacy name: the variant and the definitions that were it.
+            matches!(c.name(), "UnrecognizedField")
         });
         assert_eq!(components.len(), 1, "{version}: {found:#?}");
         assert_eq!(
@@ -236,7 +241,8 @@ fn an_unknown_component_refuses_a_beta_biome() {
     let text = biome("beta", "test:x", r#""demo:mystery": {}"#);
     let found = load_beta(&text, &base_game()).expect_err("refused");
     let components = with(&found.diagnostics, |c| {
-        matches!(c, DiagnosticCode::UnrecognizedComponent { .. })
+        // By legacy name: the variant and the definitions that were it.
+        matches!(c.name(), "UnrecognizedComponent")
     });
     assert_eq!(components.len(), 1, "{:#?}", found.diagnostics);
     assert_eq!(components[0].severity, Severity::Error);
@@ -272,12 +278,10 @@ fn a_missing_format_version_is_an_error_deviation() {
         &context(),
     );
     assert!(
-        with(&found, |c| matches!(
-            c,
-            DiagnosticCode::MissingFormatVersion { .. }
-        ))
-        .iter()
-        .all(|d| d.severity == Severity::Error)
+        // By legacy name: the variant and the definitions that were it.
+        with(&found, |c| matches!(c.name(), "MissingFormatVersion"))
+            .iter()
+            .all(|d| d.severity == Severity::Error)
     );
     assert_eq!(found.len(), 1);
 }

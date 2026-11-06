@@ -3,7 +3,7 @@
 //! beside the member a step writes it to, a permutation that goes whole, and the findings of
 //! the typed read of a member a step moved.
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon::diagnostic::Severity;
 use bedrock_addon::load::LoadContext;
 
 use super::common::{allow_listed, context, document, loads};
@@ -23,10 +23,7 @@ fn told_in(version: &str, payload: &str, cx: &LoadContext) -> (Vec<String>, Stri
         .diagnostics()
         .iter()
         .map(|f| {
-            let code: String = format!("{:?}", f.code)
-                .chars()
-                .take_while(char::is_ascii_alphanumeric)
-                .collect();
+            let code: String = f.code.name().to_owned();
             format!("{code} {:?} at {}", f.severity, f.location.json_path)
         })
         .collect();
@@ -52,10 +49,7 @@ fn refused(version: &str, payload: &str) -> Vec<String> {
     super::common::rejected(&document(version, payload), &context())
         .iter()
         .map(|f| {
-            let code: String = format!("{:?}", f.code)
-                .chars()
-                .take_while(char::is_ascii_alphanumeric)
-                .collect();
+            let code: String = f.code.name().to_owned();
             format!("{code} {:?} at {}", f.severity, f.location.json_path)
         })
         .collect()
@@ -745,10 +739,7 @@ fn an_end_of_an_interval_range_the_side_car_refuses_is_told_at_the_end() {
         let found: Vec<String> = diagnostics
             .iter()
             .map(|f| {
-                let code: String = format!("{:?}", f.code)
-                    .chars()
-                    .take_while(char::is_ascii_alphanumeric)
-                    .collect();
+                let code: String = f.code.name().to_owned();
                 format!("{code} {:?} at {}", f.severity, f.location.json_path)
             })
             .collect();
@@ -851,7 +842,8 @@ fn a_use_beta_features_of_a_legacy_block_is_carried() {
         let d = super::common::rejected(&document("1.26.20", &payload), cx);
         assert!(
             d.iter().any(
-                |f| matches!(f.code, DiagnosticCode::UnrecognizedField { .. })
+                // By legacy name: the variant and the definitions that were it.
+                |f| matches!(f.code.name(), "UnrecognizedField")
                     && f.severity == Severity::Error
                     && f.location.json_path.to_string()
                         == "minecraft:block/description/use_beta_features"
@@ -903,7 +895,8 @@ fn a_legacy_event_with_a_sequence_or_a_randomize_is_carried() {
     );
     assert!(
         d.iter().any(
-            |f| matches!(f.code, DiagnosticCode::UnrecognizedField { .. })
+            // By legacy name: the variant and the definitions that were it.
+            |f| matches!(f.code.name(), "UnrecognizedField")
                 && f.severity == Severity::Error
                 && f.location.json_path.to_string() == "minecraft:block/deprecated_event_handlers"
         ),
@@ -958,8 +951,8 @@ fn what_is_told_of_a_legacy_event_names_the_member_of_the_file() {
     );
     assert!(
         d.iter().any(
-            |f| matches!(f.code, DiagnosticCode::UnrecognizedField { .. })
-                && f.severity == Severity::Error
+            // By legacy name: the variant and the definitions that were it.
+            |f| matches!(f.code.name(), "UnrecognizedField") && f.severity == Severity::Error
         ),
         "{d:#?}"
     );

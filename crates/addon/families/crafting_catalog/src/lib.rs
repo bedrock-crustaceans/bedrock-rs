@@ -43,6 +43,7 @@ pub(crate) use bedrock_addon_core::version::known::V1_26_50;
 
 use crate::history::CatalogHistory;
 use crate::read::parse_catalog;
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
 };
@@ -206,7 +207,7 @@ pub enum CatalogKey {
 }
 
 /// Vanilla's one text for a file without a valid `format_version`, and for one below 1.21.60.
-const VERSION_TEXT: &str = "The file cannot be processed without a valid format_version";
+const VERSION_TEXT: &str = core_codes::VERSION_NOT_PROCESSABLE.template();
 
 /// Vanilla's text for a document whose payload member is not the catalogue's.
 const PAYLOAD_TEXT: &str =
@@ -236,7 +237,7 @@ impl Family for CatalogFamily {
         clamps_beyond_double: true,
         // Vanilla's loader checks the version itself, before the versioned parse.
         missing: MissingVersion::Reject {
-            text: Some(VanillaText::Fixed(VERSION_TEXT)),
+            code: &core_codes::VERSION_NOT_PROCESSABLE,
         },
         ..Envelope::DEFAULT
     };
@@ -362,23 +363,52 @@ fn vanilla_checks(diagnostics: &mut Diagnostics, document: JsonSlice<'_>) {
         .is_some_and(|version| version > ENGINE_VERSION);
     let found = std::mem::take(diagnostics);
     for mut finding in found {
-        match &mut finding.code {
-            // Below its minimum version vanilla does not look at the shape of the root.
+        // The JSON reader's refusal: told at information level, then the version it never read.
+        if finding.is(&core_codes::DOCUMENT_JSON) {
+            finding.severity = Severity::Info;
+            diagnostics.push(finding);
+            diagnostics.push(no_valid_version());
+            continue;
+        }
+        // The pipeline's lines, on core's definitions or the legacy variants.
+        let member_count = matches!(
+            finding.code,
             DiagnosticCode::MalformedInput {
                 text: Some(VanillaText::DocumentMemberCount),
                 ..
-            } if floor => diagnostics.push(below_floor()),
-            DiagnosticCode::MalformedInput {
-                text: Some(VanillaText::DocumentMemberCount | VanillaText::DocumentJson { .. }),
-                ..
             }
-            | DiagnosticCode::MalformedFormatVersion { .. }
-            | DiagnosticCode::EmptyDocument { .. } => {
+        ) || finding.is(&core_codes::DOCUMENT_MEMBER_COUNT);
+        let use_format = matches!(
+            finding.code,
+            DiagnosticCode::UnsupportedVersion {
+                text: Some(VanillaText::UseFormatVersion { .. }),
+            }
+        ) || finding.is(&core_codes::USE_FORMAT_VERSION);
+        // the versioned parser's "no parser available for version".
+        let no_parser = match &finding.code {
+            DiagnosticCode::UnsupportedVersion {
+                text: Some(VanillaText::NoParserForVersion { version }),
+            } => Some(version.clone()),
+            DiagnosticCode::Specific { code } if code.is(&core_codes::NO_PARSER_FOR_VERSION) => {
+                code.args().first().cloned()
+            }
+            _ => None,
+        };
+        // By legacy name: the variant and the definitions that were it.
+        match finding.code.name() {
+            // Below its minimum version vanilla does not look at the shape of the root.
+            _ if member_count && floor => diagnostics.push(below_floor()),
+            "MalformedFormatVersion" | "EmptyDocument" => {
                 finding.severity = Severity::Info;
                 diagnostics.push(finding);
                 diagnostics.push(no_valid_version());
             }
-            DiagnosticCode::MissingPayload { .. } => diagnostics.push(if written.is_none() {
+            _ if member_count => {
+                finding.severity = Severity::Info;
+                diagnostics.push(finding);
+                diagnostics.push(no_valid_version());
+            }
+            "MissingPayload" => diagnostics.push(if written.is_none() {
                 no_valid_version()
             } else if floor {
                 below_floor()
@@ -387,16 +417,9 @@ fn vanilla_checks(diagnostics: &mut Diagnostics, document: JsonSlice<'_>) {
                     text: Some(VanillaText::Fixed(PAYLOAD_TEXT)),
                 })
             }),
-            DiagnosticCode::UnsupportedVersion {
-                text: Some(VanillaText::UseFormatVersion { .. }),
-            } => diagnostics.push(below_floor()),
-            // the versioned parser's "no parser available for version".
-            DiagnosticCode::UnsupportedVersion {
-                text: Some(VanillaText::NoParserForVersion { version }),
-            } if above_engine => {
-                finding.code = DiagnosticCode::FormatVersionAboveEngine {
-                    version: std::mem::take(version),
-                };
+            _ if use_format => diagnostics.push(below_floor()),
+            _ if above_engine && let Some(version) = no_parser => {
+                finding.code = DiagnosticCode::FormatVersionAboveEngine { version };
                 diagnostics.push(finding);
             }
             _ => diagnostics.push(finding),

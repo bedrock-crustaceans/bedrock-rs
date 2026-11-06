@@ -1273,6 +1273,23 @@ fn component_rules(
 fn constraint_text(code: DiagnosticCode) -> Option<VanillaText> {
     match code {
         DiagnosticCode::InvalidValue { text } => text,
+        // The multiple-of definition held its template and arguments apart.
+        code if code.is(&bedrock_addon_core::diagnostic::codes::NOT_MULTIPLE_OF) => code
+            .args_of(&bedrock_addon_core::diagnostic::codes::NOT_MULTIPLE_OF)
+            .and_then(|args| match args {
+                [value, step] => Some(VanillaText::Formatted {
+                    template: "{} is not multiple of {}",
+                    args: vec![value.clone(), step.clone()],
+                }),
+                _ => None,
+            }),
+        // By legacy name: the definitions that were `InvalidValue`, by their game sentence.
+        code if code.name() == "InvalidValue" => {
+            code.vanilla().map(|line| VanillaText::Formatted {
+                template: "{}",
+                args: vec![line],
+            })
+        }
         _ => None,
     }
 }

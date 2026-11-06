@@ -29,10 +29,7 @@ fn findings<T: Content>(path: &'static str, text: &str) -> Vec<Diagnostic> {
 
 /// The variant name of a finding's code.
 fn code(finding: &Diagnostic) -> String {
-    format!("{:?}", finding.code)
-        .chars()
-        .take_while(char::is_ascii_alphanumeric)
-        .collect()
+    finding.code.name().to_owned()
 }
 
 /// Requires the findings at `at` among `found` to be `expected`, by code and severity: what

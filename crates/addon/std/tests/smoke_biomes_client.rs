@@ -102,7 +102,9 @@ fn collect<'a>(
             finding.code,
         );
         if finding.severity == Severity::Warning {
-            outcome.warnings.push(format!("{:?}", finding.code));
+            outcome
+                .warnings
+                .push(bedrock_addon::diagnostic::testing::legacy_debug(finding));
             *outcome
                 .warnings_by_code
                 .entry(finding.code.name())

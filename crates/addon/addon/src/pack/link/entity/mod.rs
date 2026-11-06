@@ -104,10 +104,10 @@ fn unread(
     findings
         .into_iter()
         .filter(|finding| {
-            use bedrock_addon_core::diagnostic::DiagnosticCode;
+            // By legacy name: the variant and the definitions that were it.
             matches!(
-                finding.code,
-                DiagnosticCode::UnsupportedFileFormat | DiagnosticCode::FileNotLoaded
+                finding.code.name(),
+                "UnsupportedFileFormat" | "FileNotLoaded"
             )
         })
         .filter_map(|finding| finding.location.path.as_ref())

@@ -42,14 +42,14 @@ fn told(files: &[&str]) -> Vec<String> {
         .diagnostics()
         .map(|d| {
             format!(
-                "{:?}|{:?}|{}|{}|{:?}|{:?}|{:?}",
+                "{:?}|{:?}|{}|{}|{:?}|{:?}|{}",
                 d.severity,
                 d.phase,
                 d.location.pack.as_ref().map_or("-", |pack| pack.name()),
                 d.location.path.as_ref().map_or("-", |path| path.as_str()),
                 d.location.json_path,
                 d.location.span,
-                d.code,
+                bedrock_addon::diagnostic::testing::legacy_debug(d),
             )
         })
         .collect();

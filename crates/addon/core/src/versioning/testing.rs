@@ -171,7 +171,7 @@ pub fn reading_table<F: super::Family>() -> String {
     use std::fmt::Write as _;
 
     use super::{MissingVersion, StructIndex, VersionChain};
-    use crate::diagnostic::VanillaText;
+    use crate::diagnostic::testing::legacy_text_debug;
     use crate::load::DocumentSource;
 
     let mut out = String::new();
@@ -185,14 +185,22 @@ pub fn reading_table<F: super::Family>() -> String {
     );
     let _ = writeln!(out, "envelope: {:?}", envelope.check);
     let missing = match envelope.missing {
-        MissingVersion::Reject { text } => format!(
-            "rejected: {:?}",
-            text.unwrap_or(VanillaText::NoValidVersion)
-        ),
+        MissingVersion::Reject { code } => {
+            let text = legacy_text_debug(code);
+            format!(
+                "rejected: {}",
+                text.strip_prefix("Some(")
+                    .and_then(|inner| inner.strip_suffix(')'))
+                    .unwrap_or(&text)
+            )
+        }
         MissingVersion::Floor {
-            text,
+            code,
             severity: Some(severity),
-        } => format!("at the floor, told at {severity:?}: {text:?}"),
+        } => format!(
+            "at the floor, told at {severity:?}: {}",
+            legacy_text_debug(code)
+        ),
         MissingVersion::Floor { severity: None, .. } => "at the floor, silently".to_owned(),
     };
     let _ = writeln!(out, "missing version: {missing}");

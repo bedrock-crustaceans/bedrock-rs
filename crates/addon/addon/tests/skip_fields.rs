@@ -154,7 +154,6 @@ fn the_scan_tells_skip_from_its_neighbours() {
 
 #[cfg(feature = "item")]
 mod item {
-    use bedrock_addon::diagnostic::DiagnosticCode;
     use bedrock_addon::document::Content;
     use bedrock_addon::families::item::Item;
     use bedrock_addon::load::LoadContext;
@@ -175,7 +174,8 @@ mod item {
         let mut unrecognized: Vec<String> = document
             .diagnostics()
             .iter()
-            .filter(|f| matches!(f.code, DiagnosticCode::UnrecognizedField { .. }))
+            // By legacy name: the variant and the definitions that were it.
+            .filter(|f| matches!(f.code.name(), "UnrecognizedField"))
             .map(|f| f.location.json_path.to_string())
             .collect();
         unrecognized.sort();

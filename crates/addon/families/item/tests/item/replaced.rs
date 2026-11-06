@@ -21,10 +21,7 @@ fn told(version: &str, components: &str, cx: &LoadContext) -> (Vec<String>, Stri
         .diagnostics()
         .iter()
         .map(|f| {
-            let code: String = format!("{:?}", f.code)
-                .chars()
-                .take_while(char::is_ascii_alphanumeric)
-                .collect();
+            let code: String = f.code.name().to_owned();
             let at = f.location.json_path.to_string();
             let at = at.strip_prefix("minecraft:item/").unwrap_or(&at).to_owned();
             format!("{code} {:?} at {at}", f.severity)
@@ -478,10 +475,7 @@ fn told_of_payload(version: &str, rest: &str, cx: &LoadContext) -> (Vec<String>,
                 .diagnostics
                 .iter()
                 .map(|f| {
-                    let code: String = format!("{:?}", f.code)
-                        .chars()
-                        .take_while(char::is_ascii_alphanumeric)
-                        .collect();
+                    let code: String = f.code.name().to_owned();
                     let at = f.location.json_path.to_string();
                     let at = at.strip_prefix("minecraft:item/").unwrap_or(&at).to_owned();
                     format!("{code} {:?} at {at}", f.severity)
@@ -502,10 +496,7 @@ fn told_of_payload(version: &str, rest: &str, cx: &LoadContext) -> (Vec<String>,
         .diagnostics()
         .iter()
         .map(|f| {
-            let code: String = format!("{:?}", f.code)
-                .chars()
-                .take_while(char::is_ascii_alphanumeric)
-                .collect();
+            let code: String = f.code.name().to_owned();
             let at = f.location.json_path.to_string();
             let at = at.strip_prefix("minecraft:item/").unwrap_or(&at).to_owned();
             format!("{code} {:?} at {at}", f.severity)
@@ -744,12 +735,8 @@ fn a_failed_component_read_rejects_the_item_in_a_cereal_and_in_a_legacy_one() {
             "minecraft:item/components/minecraft:cooldown/category",
         ),
     ];
-    let name = |d: &bedrock_addon_core::diagnostic::Diagnostic| -> String {
-        format!("{:?}", d.code)
-            .chars()
-            .take_while(char::is_ascii_alphanumeric)
-            .collect()
-    };
+    let name =
+        |d: &bedrock_addon_core::diagnostic::Diagnostic| -> String { d.code.name().to_owned() };
     for (components, code, at) in cases {
         for version in ["1.21.0", "1.26.30", "1.26.50"] {
             let d = rejects(&item(version, "demo:x", components), &third_party());

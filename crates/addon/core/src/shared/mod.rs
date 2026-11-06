@@ -22,7 +22,7 @@ pub(crate) use range::{is_range, unread_range_members};
 pub use read::{ShapeError, ShapeErrorKind};
 
 use crate::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, codes,
 };
 use crate::document::UnknownMembers;
 
@@ -59,7 +59,7 @@ pub fn unrecognized_except(
             let mut path = at.clone();
             path.push(key);
             out.push(finding(
-                DiagnosticCode::UnrecognizedField { text: None },
+                DiagnosticCode::from(&codes::UNRECOGNIZED_FIELD),
                 severity,
                 &path,
             ));

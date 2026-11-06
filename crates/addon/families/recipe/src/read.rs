@@ -814,11 +814,13 @@ impl<'c> Reader<'c> {
                 // crate's own.
                 if rejected
                     && finding.severity < Severity::Warning
-                    && let DiagnosticCode::MolangLint { expression } = &finding.code
+                    && let Some(expression) = finding
+                        .code
+                        .args_of(&bedrock_addon_core::diagnostic::codes::MOLANG_LINT)
                 {
-                    finding.code = DiagnosticCode::InvalidMolang {
-                        expression: expression.clone(),
-                    };
+                    finding.code = bedrock_addon_core::diagnostic::codes::INVALID_MOLANG
+                        .with([expression[0].clone()])
+                        .into();
                 }
                 self.diagnostics.push(finding);
             }

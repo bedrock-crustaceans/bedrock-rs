@@ -1,7 +1,8 @@
 //! `families/pack_settings` fixtures.md "Document" rows about the version: `ps05`–`ps08b` and
 //! `ps16` (validation.md D2–D4b).
 
-use bedrock_addon::diagnostic::{DiagnosticCode as C, Diagnostics, Severity, VanillaText};
+use bedrock_addon::diagnostic::codes;
+use bedrock_addon::diagnostic::{DiagnosticCode as C, Diagnostics, Severity};
 use bedrock_addon::version::{ENGINE_VERSION, FormatVersion};
 
 use super::common::{fixture, loads, names, parse_text, refused};
@@ -9,11 +10,7 @@ use super::document::closes;
 
 /// "unsupported version: no parser available for version <version>".
 fn no_parser(version: &str) -> C {
-    C::UnsupportedVersion {
-        text: Some(VanillaText::NoParserForVersion {
-            version: version.to_owned(),
-        }),
-    }
+    C::from(codes::NO_PARSER_FOR_VERSION.with([version.to_owned()]))
 }
 
 /// The errors of a rejected file: `first`, then the closing finding.
@@ -84,13 +81,7 @@ fn ps06b_a_prerelease_of_the_floor_is_below_it() {
 #[test]
 fn ps07_missing_version_has_no_valid_version() {
     let name = "ps07_missing_version.json";
-    rejected_with(
-        &refused(name),
-        name,
-        &C::MissingFormatVersion {
-            text: Some(VanillaText::NoValidVersion),
-        },
-    );
+    rejected_with(&refused(name), name, &C::from(&codes::NO_VALID_VERSION));
 }
 
 #[test]
@@ -110,7 +101,7 @@ pub fn ps08_array_version_loads_with_an_info() {
 #[test]
 fn ps08b_malformed_version_is_malformed() {
     let name = "ps08b_malformed_version.json";
-    let malformed = C::MalformedFormatVersion { text: None };
+    let malformed = C::from(&codes::MALFORMED_FORMAT_VERSION);
     rejected_with(&refused(name), name, &malformed);
     assert_eq!(malformed.to_string(), "Malformed format version");
     let text = with_version(name, "\"1.x\"", "1.21");

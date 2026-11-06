@@ -2,9 +2,8 @@
 //! `requires` gates, deprecation, area, `supersedes`, synthesized entries bypassing them, and
 //! `FieldMeta.since_engine`.
 
-use bedrock_addon_core::diagnostic::{
-    DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
-};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::document::{ComponentMap, ComponentRef};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::version::{FormatVersion, MinEngineVersion};
@@ -90,11 +89,7 @@ fn a_failing_component_refuses_the_document() {
     let finding = outcome.diagnostics.iter().next().expect("a finding");
     // The member's finding alone: the document is refused, nothing is left to drop.
     assert_eq!(outcome.diagnostics.len(), 1, "{:?}", outcome.diagnostics);
-    assert!(
-        matches!(finding.code, DiagnosticCode::InvalidType { .. }),
-        "{:?}",
-        finding.code
-    );
+    assert!(finding.code.name() == "InvalidType", "{:?}", finding.code);
     assert_eq!(finding.severity, Severity::Error);
     assert!(!finding.kept);
     assert_eq!(
@@ -127,7 +122,7 @@ fn an_unknown_member_of_a_component_is_kept_and_reported_at_its_path() {
     assert_eq!(
         codes(&outcome),
         [(
-            DiagnosticCode::UnrecognizedField { text: None },
+            DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD),
             Severity::Warning
         )]
     );
@@ -146,25 +141,14 @@ fn before_its_release_a_component_needs_its_requirement() {
     let outcome = load_toy(&text);
     assert!(outcome.value.is_none(), "the base components fail");
     let error = outcome.diagnostics.first_error().expect("an error");
-    let DiagnosticCode::MissingToggles {
-        text:
-            Some(VanillaText::TurnOnToggleBefore {
-                name,
-                version,
-                toggle,
-                ..
-            }),
-    } = &error.code
-    else {
+    let DiagnosticCode::Specific { code } = &error.code else {
         panic!("{:?}", error.code);
     };
+    assert!(code.is(&core_codes::TURN_ON_TOGGLE_BEFORE), "{code:?}");
+    // what, name, the releasing version, the toggle
     assert_eq!(
-        (name.as_str(), *version, *toggle),
-        (
-            "toy:gated",
-            FormatVersion::new(1, 2, 0),
-            "upcoming_creator_features"
-        )
+        &code.args()[1..],
+        ["toy:gated", "1.2.0", "upcoming_creator_features"]
     );
     assert_eq!(
         error.location.json_path.to_string(),
@@ -187,12 +171,12 @@ fn an_unreleased_component_names_only_its_toggle() {
         "1.2.0",
         r#"{"toy:preview": {"on": true}}"#,
     ));
-    assert!(matches!(
-        outcome.diagnostics.first_error().map(|e| &e.code),
-        Some(DiagnosticCode::MissingToggles {
-            text: Some(VanillaText::TurnOnToggle { .. })
-        })
-    ));
+    assert!(
+        outcome
+            .diagnostics
+            .first_error()
+            .is_some_and(|e| e.code.is(&core_codes::TURN_ON_TOGGLE))
+    );
 }
 
 #[test]
@@ -202,8 +186,9 @@ fn the_legacy_creator_features_name_the_release_version() {
     assert!(
         matches!(
             &error.code,
-            DiagnosticCode::MissingToggles { text: Some(VanillaText::UseFormatVersion { version, .. }) }
-                if *version == FormatVersion::new(1, 2, 0)
+            DiagnosticCode::Specific { code }
+                if code.is(&core_codes::TOGGLE_USE_FORMAT_VERSION)
+                    && code.args()[2] == FormatVersion::new(1, 2, 0).to_string()
         ),
         "{:?}",
         error.code
@@ -226,10 +211,12 @@ fn a_synthesized_component_bypasses_the_gates() {
     let outcome = load_toy(&with_components("1.1.0", "{}"));
     assert!(outcome.value.is_some(), "{:?}", outcome.diagnostics);
     let outcome = load_toy(&with_components("1.2.0", r#"{"toy:marker": {"on": true}}"#));
-    assert!(matches!(
-        outcome.diagnostics.first_error().map(|e| &e.code),
-        Some(DiagnosticCode::MissingToggles { .. })
-    ));
+    assert!(
+        outcome
+            .diagnostics
+            .first_error()
+            .is_some_and(|e| e.code.name() == "MissingToggles")
+    );
 }
 
 /// At or above `deprecated_since` the member gets the deprecation text and is dropped.
@@ -246,12 +233,10 @@ fn a_deprecated_component_is_dropped_with_the_generic_text() {
     assert_eq!(
         codes(&outcome),
         [(
-            DiagnosticCode::DeprecatedMember {
-                text: Some(VanillaText::Deprecated {
-                    member: "toy:retired".to_owned(),
-                    version: FormatVersion::new(1, 1, 0),
-                })
-            },
+            DiagnosticCode::from(core_codes::DEPRECATED_IN_FORMAT.with([
+                "toy:retired".to_string(),
+                FormatVersion::new(1, 1, 0).to_string()
+            ])),
             Severity::Warning
         )]
     );
@@ -265,7 +250,7 @@ fn a_vanilla_only_component_is_dropped_outside_base_game_packs() {
     assert_eq!(
         codes(&outcome),
         [(
-            DiagnosticCode::UnrecognizedComponent { text: None },
+            DiagnosticCode::from(&core_codes::UNRECOGNIZED_COMPONENT),
             Severity::Warning
         )]
     );
@@ -288,10 +273,12 @@ fn two_versions_of_a_component_keep_the_newer() {
     assert_eq!(
         codes(&outcome),
         [(
-            DiagnosticCode::DuplicateComponentVersion {
-                old: "toy:old_glow".to_owned(),
-                new: "toy:glow".to_owned()
-            },
+            DiagnosticCode::from(core_codes::DUPLICATE_COMPONENT_VERSION.with([
+                "toy:old_glow",
+                "toy:glow",
+                "toy:glow",
+                "toy:old_glow"
+            ])),
             Severity::Info
         )]
     );
@@ -356,9 +343,7 @@ fn a_field_newer_than_the_packs_engine_is_reported_when_present() {
     assert_eq!(
         found,
         [(
-            DiagnosticCode::FieldSinceEngine {
-                since: FormatVersion::new(1, 21, 130)
-            },
+            DiagnosticCode::from(core_codes::FIELD_SINCE_ENGINE.with(["1.21.130"])),
             "components/minecraft:cooldown/cooldown/type".to_owned()
         )]
     );

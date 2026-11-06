@@ -241,7 +241,6 @@ fn s12_a_saved_value_for_no_setting_or_no_option_is_a_warning_of_the_load() {
 fn s13_the_setting_a_pack_setting_query_names_stays_run() {
     use std::sync::Arc;
 
-    use bedrock_addon::diagnostic::DiagnosticCode;
     use bedrock_addon::molang::MolangCheck;
     // A behaviour-pack entity whose animate condition asks for a setting no manifest of the
     // world defines.
@@ -295,7 +294,8 @@ fn s13_the_setting_a_pack_setting_query_names_stays_run() {
     // The load's lint: a warning, once for the expression.
     let lints: Vec<Severity> = in_file
         .iter()
-        .filter(|f| matches!(f.code, DiagnosticCode::MolangLint { .. }))
+        // By legacy name: the variant and the definitions that were it.
+        .filter(|f| matches!(f.code.name(), "MolangLint"))
         .map(|f| f.severity)
         .collect();
     assert_eq!(lints, [Severity::Info], "{in_file:?}");
@@ -305,7 +305,8 @@ fn s13_the_setting_a_pack_setting_query_names_stays_run() {
             f.detail.as_deref(),
             Some(DiagnosticDetail::Reference { .. })
         ) || format!("{f}").contains("nothing_defines_me")
-            && !matches!(f.code, DiagnosticCode::MolangLint { .. })
+            // By legacy name: the variant and the definitions that were it.
+            && !matches!(f.code.name(), "MolangLint")
     };
     assert_eq!(in_file.iter().copied().filter(is_reference).count(), 0);
     let linked = set.link();

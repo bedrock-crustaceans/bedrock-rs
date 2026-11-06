@@ -2221,6 +2221,488 @@ fn core_definitions() -> Vec<(Code, DiagnosticCode)> {
             Code::from(&codes::MIN_ENGINE_VERSION_CAP_FORMAT_VERSION1),
             C::MinEngineVersionCapFormatVersion1,
         ),
+        (
+            codes::DOCUMENT_JSON.with(["Number too big to be stored in double."]),
+            C::MalformedInput {
+                message: "Number too big to be stored in double.".into(),
+                text: Some(VanillaText::DocumentJson {
+                    message: "Number too big to be stored in double.".into(),
+                }),
+            },
+        ),
+        (
+            codes::CHILD_NOT_VALID.with(["k"]),
+            C::UnrecognizedField {
+                text: Some(VanillaText::Formatted {
+                    template: "child '{}' not valid here.",
+                    args: vec!["k".into()],
+                }),
+            },
+        ),
+        (
+            codes::REQUIRED_CHILD.with(["k"]),
+            C::MissingRequiredField {
+                text: Some(VanillaText::Formatted {
+                    template: "Required child {} not found",
+                    args: vec!["k".into()],
+                }),
+            },
+        ),
+        (
+            codes::VALUE_NOT_ALLOWED.with(["false"]),
+            C::InvalidValue {
+                text: Some(VanillaText::Formatted {
+                    template: "Value '{}' not allowed",
+                    args: vec!["false".into()],
+                }),
+            },
+        ),
+        (
+            codes::NOT_ALLOWED_REGEX.with(["v", "a, b"]),
+            C::InvalidValue {
+                text: Some(VanillaText::Formatted {
+                    template: "Value '{}' not allowed.  Must match at least one of the following regex patterns: {}",
+                    args: vec!["v".into(), "a, b".into()],
+                }),
+            },
+        ),
+        (
+            codes::NOT_ALLOWED_KEYS.with(["v", "a, b"]),
+            C::InvalidValue {
+                text: Some(VanillaText::Formatted {
+                    template: "Value '{}' not allowed.  Must match at least one of the following keys: {}",
+                    args: vec!["v".into(), "a, b".into()],
+                }),
+            },
+        ),
+        (
+            codes::OUTSIDE_RANGE.with(["2.000000", "0.000000", "1.000000"]),
+            C::InvalidValue {
+                text: Some(VanillaText::Formatted {
+                    template: "Value '{}' outside valid range [{}, {}]",
+                    args: vec!["2.000000".into(), "0.000000".into(), "1.000000".into()],
+                }),
+            },
+        ),
+        (
+            codes::ARRAY_TOO_SMALL.with(["1", "3"]),
+            C::InvalidValue {
+                text: Some(VanillaText::Formatted {
+                    template: "Array too small ({} < {})",
+                    args: vec!["1".into(), "3".into()],
+                }),
+            },
+        ),
+        (
+            codes::ARRAY_TOO_LARGE.with(["4", "3"]),
+            C::InvalidValue {
+                text: Some(VanillaText::Formatted {
+                    template: "Array too large ({} > {})",
+                    args: vec!["4".into(), "3".into()],
+                }),
+            },
+        ),
+        (
+            codes::PARSE_ERROR.with(["m"]),
+            C::MalformedInput {
+                message: "m".into(),
+                text: Some(VanillaText::Formatted {
+                    template: "parse error:\n{}",
+                    args: vec!["m".into()],
+                }),
+            },
+        ),
+        (
+            Code::from(&codes::BEYOND_FLOAT_MEMBER),
+            C::InvalidValue {
+                text: Some(VanillaText::Fixed(
+                    "the number is beyond the float that reads it; the member holds an infinity",
+                )),
+            },
+        ),
+        (
+            Code::from(&codes::NO_VALID_VERSION),
+            C::MissingFormatVersion {
+                text: Some(VanillaText::NoValidVersion),
+            },
+        ),
+        (
+            Code::from(&codes::NO_FORMAT_VERSION_FIELD),
+            C::MissingFormatVersion {
+                text: Some(VanillaText::NoFormatVersionField),
+            },
+        ),
+        (
+            Code::from(&codes::FORMAT_VERSION_REQUIRED),
+            C::MissingFormatVersion {
+                text: Some(VanillaText::Fixed("missing required field")),
+            },
+        ),
+        (
+            Code::from(&codes::VERSION_NOT_PROCESSABLE),
+            C::MissingFormatVersion {
+                text: Some(VanillaText::Fixed(
+                    "The file cannot be processed without a valid format_version",
+                )),
+            },
+        ),
+        (
+            Code::from(&codes::VERSION_NOT_READABLE),
+            C::MissingFormatVersion {
+                text: Some(VanillaText::Fixed(
+                    "document's version not found or not readable",
+                )),
+            },
+        ),
+        (
+            Code::from(&codes::VERSION_NOT_GIVEN_LEGACY_FIELDS),
+            C::MissingFormatVersion {
+                text: Some(VanillaText::Fixed(
+                    "Warning: The \"format_version\" field was not given. Fields from format version 1.8.0 and older will be loaded. Update your targeted \"format_version\" to use fields from newer versions.",
+                )),
+            },
+        ),
+        (
+            codes::NO_PARSER_FOR_VERSION.with(["1.99.0"]),
+            C::UnsupportedVersion {
+                text: Some(VanillaText::NoParserForVersion {
+                    version: "1.99.0".into(),
+                }),
+            },
+        ),
+        (
+            codes::USE_FORMAT_VERSION.with(["component", "minecraft:x", "1.21.40"]),
+            C::UnsupportedVersion {
+                text: Some(VanillaText::UseFormatVersion {
+                    what: "component",
+                    name: "minecraft:x".into(),
+                    version: FormatVersion::new(1, 21, 40),
+                }),
+            },
+        ),
+        (
+            codes::TOGGLE_USE_FORMAT_VERSION.with(["component", "minecraft:x", "1.21.40"]),
+            C::MissingToggles {
+                text: Some(VanillaText::UseFormatVersion {
+                    what: "component",
+                    name: "minecraft:x".into(),
+                    version: FormatVersion::new(1, 21, 40),
+                }),
+            },
+        ),
+        (
+            codes::TURN_ON_TOGGLE.with(["field", "minecraft:x.y", "Beta APIs"]),
+            C::MissingToggles {
+                text: Some(VanillaText::TurnOnToggle {
+                    what: "field",
+                    name: "minecraft:x.y".into(),
+                    toggle: "Beta APIs",
+                }),
+            },
+        ),
+        (
+            codes::TURN_ON_TOGGLE_BEFORE.with(["component", "minecraft:x", "1.21.40", "Beta APIs"]),
+            C::MissingToggles {
+                text: Some(VanillaText::TurnOnToggleBefore {
+                    what: "component",
+                    name: "minecraft:x".into(),
+                    version: FormatVersion::new(1, 21, 40),
+                    toggle: "Beta APIs",
+                }),
+            },
+        ),
+        (
+            Code::from(&codes::BETA_DOCUMENTS),
+            C::BetaFeaturesNotEnabled {
+                text: Some(VanillaText::BetaDocuments),
+            },
+        ),
+        (
+            Code::from(&codes::BETA_FORMAT_VERSION),
+            C::BetaFeaturesNotEnabled {
+                text: Some(VanillaText::BetaFormatVersion),
+            },
+        ),
+        (
+            Code::from(&codes::DOCUMENT_MEMBER_COUNT),
+            C::MalformedInput {
+                message: "3 root members".into(),
+                text: Some(VanillaText::DocumentMemberCount),
+            },
+        ),
+        (
+            codes::DOCUMENT_TOO_LARGE.with(["1000"]),
+            C::MalformedInput {
+                message: "the document is 1001 bytes long".into(),
+                text: Some(VanillaText::DocumentTooLarge { max: 1000 }),
+            },
+        ),
+        (
+            codes::DOCUMENT_NEARLY_TOO_LARGE.with(["900", "1000"]),
+            C::MalformedInput {
+                message: "the document is 900 bytes long".into(),
+                text: Some(VanillaText::DocumentNearlyTooLarge {
+                    loaded: 900,
+                    max: 1000,
+                }),
+            },
+        ),
+        (
+            codes::DEPRECATED_IN_FORMAT.with(["minecraft:foot_size", "1.16.100"]),
+            C::DeprecatedMember {
+                text: Some(VanillaText::Deprecated {
+                    member: "minecraft:foot_size".into(),
+                    version: FormatVersion::new(1, 16, 100),
+                }),
+            },
+        ),
+        (
+            codes::STACK_TOP_UNPARSABLE.with(["sounds.json"]),
+            C::MalformedInput {
+                message: "expected value".into(),
+                text: Some(VanillaText::Formatted {
+                    template: "Could not parse file at the top of the stack: {}.",
+                    args: vec!["sounds.json".into()],
+                }),
+            },
+        ),
+        (
+            codes::FILTER_TEST_NOT_FOUND.with(["is_purple"]),
+            C::UnresolvedReference {
+                text: Some(VanillaText::FilterTestNotFound {
+                    name: "is_purple".into(),
+                }),
+            },
+        ),
+        (
+            Code::from(&codes::MEMBER_NOT_IN_SCHEMA),
+            C::UnrecognizedField {
+                text: Some(VanillaText::Fixed(
+                    "this member was found in the input, but is not present in the Schema",
+                )),
+            },
+        ),
+        (
+            Code::from(&codes::COMPONENT_NOT_IN_SCHEMA),
+            C::UnrecognizedComponent {
+                text: Some(VanillaText::Fixed(
+                    "this component was found in the input, but is not present in the Schema",
+                )),
+            },
+        ),
+        (
+            Code::from(&codes::REQUIRED_FIELD_MISSING),
+            C::MissingRequiredField {
+                text: Some(VanillaText::Fixed("missing required field")),
+            },
+        ),
+        (
+            Code::from(&codes::EXPECTED_OBJECT),
+            C::InvalidType {
+                text: Some(VanillaText::Fixed("expected an object")),
+            },
+        ),
+        (
+            codes::TOO_FEW_COMPONENTS.with(["2"]),
+            C::InvalidValue {
+                text: Some(VanillaText::Formatted {
+                    template: "too few input components, expected at least {}",
+                    args: vec!["2".into()],
+                }),
+            },
+        ),
+        (
+            Code::from(&codes::INVALID_ENUM_LINE),
+            C::InvalidEnumValue {
+                text: Some(VanillaText::Fixed("invalid enum value")),
+            },
+        ),
+        (
+            codes::ENUM_EXPECTS.with(["Mode", "'a', 'b'", "c"]),
+            C::InvalidEnumValue {
+                text: Some(VanillaText::Formatted {
+                    template: "This value is bound to '{}' and expects one of the following strings: {}. Found: '{}'",
+                    args: vec!["Mode".into(), "'a', 'b'".into(), "c".into()],
+                }),
+            },
+        ),
+        (
+            codes::ENUM_EXPECTS_STRING.with(["Mode"]),
+            C::InvalidType {
+                text: Some(VanillaText::Formatted {
+                    template: "This value is bound to '{}' and expects a \"named value\" (i.e. a string)",
+                    args: vec!["Mode".into()],
+                }),
+            },
+        ),
+        (
+            Code::from(&codes::INVALID_NUMERIC_VALUE),
+            C::InvalidType {
+                text: Some(VanillaText::Fixed("invalid numeric value")),
+            },
+        ),
+        (
+            codes::OUTSIDE_ACCEPTED_RANGE.with(["[0, 1]"]),
+            C::InvalidValue {
+                text: Some(VanillaText::Formatted {
+                    template: "{}",
+                    args: vec!["the input is outside of the accepted range [0, 1]".into()],
+                }),
+            },
+        ),
+        (
+            codes::NUMBER_BOUND.with([">= 0"]),
+            C::InvalidValue {
+                text: Some(VanillaText::Formatted {
+                    template: "{}",
+                    args: vec!["the input must be a number >= 0".into()],
+                }),
+            },
+        ),
+        (
+            codes::NOT_MULTIPLE_OF.with(["3", "2"]),
+            C::InvalidValue {
+                text: Some(VanillaText::Formatted {
+                    template: "{} is not multiple of {}",
+                    args: vec!["3".into(), "2".into()],
+                }),
+            },
+        ),
+        (
+            codes::STRING_MISMATCH.with(["^a$"]),
+            C::InvalidValue {
+                text: Some(VanillaText::Formatted {
+                    template: "expected string to match the \"{}\" regex",
+                    args: vec!["^a$".into()],
+                }),
+            },
+        ),
+        (
+            codes::ARRAY_AT_LEAST.with(["1"]),
+            C::InvalidValue {
+                text: Some(VanillaText::Formatted {
+                    template: "expected array with at least {} elements",
+                    args: vec!["1".into()],
+                }),
+            },
+        ),
+        (
+            codes::OBJECT_AT_LEAST.with(["1"]),
+            C::InvalidValue {
+                text: Some(VanillaText::Formatted {
+                    template: "expected object with at least {} elements",
+                    args: vec!["1".into()],
+                }),
+            },
+        ),
+        (
+            Code::from(&codes::NO_DUPLICATES),
+            C::InvalidValue {
+                text: Some(VanillaText::Fixed("No duplicates allowed")),
+            },
+        ),
+        (
+            codes::KEY_NOT_ALLOWED.with(["x"]),
+            C::InvalidValue {
+                text: Some(VanillaText::Formatted {
+                    template: "key {} is not allowed",
+                    args: vec!["x".into()],
+                }),
+            },
+        ),
+        (
+            codes::TOO_MANY_ELEMENTS.with(["4"]),
+            C::InvalidValue {
+                text: Some(VanillaText::Formatted {
+                    template: "too many input elements, expected no more than {}",
+                    args: vec!["4".into()],
+                }),
+            },
+        ),
+        (
+            codes::TOO_MANY_CHARACTERS.with(["8"]),
+            C::InvalidValue {
+                text: Some(VanillaText::Formatted {
+                    template: "too many characters, expected no more than {}",
+                    args: vec!["8".into()],
+                }),
+            },
+        ),
+        (
+            Code::from(&codes::TOO_MANY_MAP_ELEMENTS),
+            C::InvalidValue {
+                text: Some(VanillaText::Fixed(
+                    "too many input elements for an associative container",
+                )),
+            },
+        ),
+        (
+            Code::from(&codes::PAYLOAD_MISSING),
+            C::MissingPayload {
+                text: Some(VanillaText::Fixed(
+                    "The payload of the Minecraft Document is missing",
+                )),
+            },
+        ),
+        (
+            codes::PAYLOAD_UNDER_OTHER_KEY.with(["minecraft:a", "minecraft:b"]),
+            C::MissingPayload {
+                text: Some(VanillaText::Formatted {
+                    template: "The payload key does not match the expected one. Expected: '{}'. Actual: '{}'.",
+                    args: vec!["minecraft:a".into(), "minecraft:b".into()],
+                }),
+            },
+        ),
+        (
+            codes::TOO_FEW_CHILDREN.with(["1", "2"]),
+            C::InvalidValue {
+                text: Some(VanillaText::Formatted {
+                    template: "Node has too few children ({} < {})",
+                    args: vec!["1".into(), "2".into()],
+                }),
+            },
+        ),
+        (
+            codes::TOO_MANY_CHILDREN.with(["3", "2"]),
+            C::InvalidValue {
+                text: Some(VanillaText::Formatted {
+                    template: "Node has too many children ({} > {})",
+                    args: vec!["3".into(), "2".into()],
+                }),
+            },
+        ),
+        (
+            codes::UNKNOWN_CHILD_OPTION.with(["string"]),
+            C::InvalidType {
+                text: Some(VanillaText::Formatted {
+                    template: "unknown child schema option type.  Allowed types: {}",
+                    args: vec!["string".into()],
+                }),
+            },
+        ),
+        (
+            codes::VERSION_BELOW_MIN.with(["1.0.0", "1.2.0"]),
+            C::UnsupportedVersion {
+                text: Some(VanillaText::Formatted {
+                    template: "Version {} below min required version ({})",
+                    args: vec!["1.0.0".into(), "1.2.0".into()],
+                }),
+            },
+        ),
+        (
+            codes::MEMBER_DEPRECATED.with(["__DEP_fnctns"]),
+            C::DeprecatedMember {
+                text: Some(VanillaText::MemberDeprecated {
+                    member: "__DEP_fnctns".into(),
+                }),
+            },
+        ),
+        (
+            Code::from(&codes::ENUM_VALUE_DEPRECATED),
+            C::DeprecatedMember {
+                text: Some(VanillaText::Fixed("enum value is deprecated")),
+            },
+        ),
     ]
 }
 

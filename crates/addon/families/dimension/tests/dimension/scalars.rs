@@ -304,7 +304,14 @@ fn the_bind_constraints_read_as_pinned() {
             };
             let findings: Vec<String> = diagnostics
                 .iter()
-                .map(|d| format!("{:?} {:?} {}", d.code, d.severity, d.location.json_path))
+                .map(|d| {
+                    format!(
+                        "{} {:?} {}",
+                        bedrock_addon_core::diagnostic::testing::legacy_debug(d),
+                        d.severity,
+                        d.location.json_path
+                    )
+                })
                 .collect();
             let _ = writeln!(table, "{name} {value} => [{}]", findings.join("; "));
         }

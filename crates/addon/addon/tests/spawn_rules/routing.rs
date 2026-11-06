@@ -1,7 +1,7 @@
 //! The routing between the two spawn-rules shapes and the deliberate deviations of the loader:
 //! the experiment, the version gates and the findings vanilla does not make.
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon::diagnostic::Severity;
 use bedrock_addon::families::spawn_rules::SpawnRules;
 use bedrock_addon::version::ENGINE_VERSION;
 
@@ -197,7 +197,8 @@ fn legacy_shape_at_1_21_60() {
     let d = rejected(&text, &experiment());
     assert!(
         d.iter()
-            .any(|f| matches!(f.code, DiagnosticCode::MissingRequiredField { .. }))
+            // By legacy name: the variant and the definitions that were it.
+            .any(|f| matches!(f.code.name(), "MissingRequiredField"))
     );
 }
 

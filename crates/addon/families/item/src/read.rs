@@ -2,6 +2,7 @@
 //! the load of one file (the resource-pack rule, the chain, the JSON item path's texts) and the
 //! modern formats' payload.
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
 };
@@ -162,32 +163,54 @@ pub(crate) fn json_path_texts(d: &mut Diagnostics, text: &str, cx: &LoadContext)
         if finding.severity < Severity::Error {
             continue;
         }
-        match &mut finding.code {
-            DiagnosticCode::MalformedInput {
-                text: text @ Some(VanillaText::DocumentJson { .. }),
-                ..
-            } => {
-                if root.is_some() {
-                    *text = fixed(texts::ROOT_NOT_OBJECT);
-                    invalid_object = true;
-                } else {
-                    *text = fixed(texts::INVALID_JSON_OBJECT);
-                }
+        // The JSON reader's refusal, told again in the item's words; the reader's message
+        // moves from the detail back into the code.
+        if finding.is(&core_codes::DOCUMENT_JSON) {
+            let message = finding.syntax_message().unwrap_or_default().to_owned();
+            let line = if root.is_some() {
+                invalid_object = true;
+                texts::ROOT_NOT_OBJECT
+            } else {
+                texts::INVALID_JSON_OBJECT
+            };
+            finding.code = DiagnosticCode::MalformedInput {
+                message,
+                text: fixed(line),
+            };
+            finding.detail = None;
+            continue;
+        }
+        // the versioned parser's "no parser available for version", and its version
+        let no_parser = match &finding.code {
+            DiagnosticCode::UnsupportedVersion {
+                text: Some(VanillaText::NoParserForVersion { version }),
+            } => Some(version.as_str()),
+            DiagnosticCode::Specific { code } if code.is(&core_codes::NO_PARSER_FOR_VERSION) => {
+                code.args().first().map(String::as_str)
             }
-            DiagnosticCode::MalformedFormatVersion { text } => {
-                *text = fixed(texts::VERSION_NOT_READABLE);
+            _ => None,
+        };
+        let out_of_range = no_parser.is_some_and(|version| version != "beta");
+        // By legacy name: the variant and the definitions that were it.
+        match finding.code.name() {
+            "MalformedFormatVersion" => {
+                finding.code = DiagnosticCode::MalformedFormatVersion {
+                    text: fixed(texts::VERSION_NOT_READABLE),
+                };
                 invalid_object = true;
             }
-            DiagnosticCode::MissingFormatVersion { .. } => invalid_object = true,
-            DiagnosticCode::MissingPayload { text } => *text = fixed(texts::PAYLOAD_NOT_OBJECT),
-            DiagnosticCode::UnsupportedVersion {
-                text: text @ Some(VanillaText::NoParserForVersion { .. }),
-            } => {
-                let beta = matches!(text, Some(VanillaText::NoParserForVersion { version }) if version == "beta");
-                if !beta {
-                    *text = fixed(texts::VERSION_OUT_OF_RANGE);
-                }
+            "MissingFormatVersion" => invalid_object = true,
+            "MissingPayload" => {
+                finding.code = DiagnosticCode::MissingPayload {
+                    text: fixed(texts::PAYLOAD_NOT_OBJECT),
+                };
             }
+            _ if out_of_range => {
+                finding.code = DiagnosticCode::UnsupportedVersion {
+                    text: fixed(texts::VERSION_OUT_OF_RANGE),
+                };
+            }
+            _ if no_parser.is_some() => {}
             _ if payload_not_object && finding.location.json_path == payload_at => {
                 finding.code = DiagnosticCode::MalformedInput {
                     message: "the payload is no object".to_owned(),

@@ -1,7 +1,7 @@
 //! The chain `v0 → v1_21_30`: contiguity, the range model's selection, the floor,
 //! the ceiling and the beta literal, and the envelope of each side.
 
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon_core::diagnostic::Severity;
 use bedrock_addon_core::version::{ENGINE_VERSION, FormatVersion, FormatVersionInput};
 use bedrock_addon_core::versioning::{
     EnvelopeCheck, Family, MissingVersion, RangeModel, Selection, VersionChain, check_chain, select,
@@ -130,10 +130,14 @@ fn a_version_above_the_engine_is_unsupported() {
 fn a_prerelease_of_1_21_30_is_read_by_the_legacy_parser_with_an_info() {
     let document = loads(&doc(Some("1.21.30-beta.1"), TIERS));
     assert_eq!(document.version().parsed_as, FormatVersion::new(0, 0, 0));
-    assert!(document.diagnostics().iter().any(|f| matches!(
-        f.code,
-        DiagnosticCode::PrereleaseFormatVersion { .. }
-    ) && f.severity == Severity::Info));
+    // By legacy name: the variant and the definitions that were it.
+    assert!(
+        document
+            .diagnostics()
+            .iter()
+            .any(|f| matches!(f.code.name(), "PrereleaseFormatVersion")
+                && f.severity == Severity::Info)
+    );
 }
 
 #[test]

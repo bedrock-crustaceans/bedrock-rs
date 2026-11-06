@@ -101,9 +101,25 @@ impl Diagnostic {
     /// none and the finding is the toolkit's own. A legacy code gives the game text it carries
     /// in its `text` field.
     pub fn vanilla(&self) -> Option<String> {
+        self.code.vanilla()
+    }
+
+    /// The reader's message behind a syntax finding (`MalformedInput`): the legacy code's
+    /// `message`, the [`DiagnosticDetail::Syntax`] a finding whose line is the game's carries,
+    /// or the line of [`codes::SYNTAX`] (the message as the line); empty for
+    /// [`codes::MALFORMED_INPUT`]. `None` for any other finding.
+    pub fn syntax_message(&self) -> Option<&str> {
         match &self.code {
-            DiagnosticCode::Specific { code } => code.vanilla(),
-            legacy => legacy.game_text().map(ToString::to_string),
+            DiagnosticCode::MalformedInput { message, .. } => Some(message),
+            DiagnosticCode::Specific { code } if code.name() == "MalformedInput" => {
+                match self.detail.as_deref() {
+                    Some(DiagnosticDetail::Syntax(message)) => Some(message),
+                    _ if code.is(&codes::SYNTAX) => code.args().first().map(String::as_str),
+                    _ if code.is(&codes::MALFORMED_INPUT) => Some(""),
+                    _ => None,
+                }
+            }
+            _ => None,
         }
     }
 

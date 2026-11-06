@@ -126,10 +126,13 @@ fn unknown_members_are_kept_at_their_level() {
     // Kept, and reported.
     let found = d.check(&JsonPath::new());
     assert_eq!(found.len(), 1);
-    assert!(matches!(
-        found.iter().next().unwrap().code,
-        DiagnosticCode::UnrecognizedField { text: None }
-    ));
+    assert!(
+        found
+            .iter()
+            .next()
+            .unwrap()
+            .is(&bedrock_addon_core::diagnostic::codes::UNRECOGNIZED_FIELD)
+    );
 }
 
 #[test]

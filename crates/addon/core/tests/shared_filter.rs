@@ -5,7 +5,7 @@
 #[path = "shared/common.rs"]
 mod common;
 
-use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath, Severity, VanillaText};
+use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath, Severity, codes};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::shared::{Filter, FilterGroup, FilterScalar, FilterSubject, FilterTest};
 use common::{compact, read, round_trip};
@@ -158,13 +158,10 @@ fn an_unknown_test_name_is_a_kept_error_with_vanillas_text() {
     // a kept error.
     assert_eq!(finding.severity, Severity::Error);
     assert!(finding.kept);
-    let DiagnosticCode::UnresolvedReference {
-        text: Some(VanillaText::FilterTestNotFound { name }),
-    } = &finding.code
-    else {
-        panic!("{:?}", finding.code)
-    };
-    assert_eq!(name, "is_purple");
+    assert_eq!(
+        finding.code,
+        DiagnosticCode::from(codes::FILTER_TEST_NOT_FOUND.with(["is_purple"]))
+    );
     let mut expected = at.clone();
     expected.push("all_of");
     expected.push_index(1);

@@ -9,7 +9,7 @@ use std::ops::Deref;
 
 use crate::__private::Sealed;
 use crate::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, codes,
 };
 use crate::id::Kind;
 use crate::json::{EncodeError, WriteStyle};
@@ -624,7 +624,7 @@ impl<K: Kind> Content for NoBeta<K> {
         );
         let mut diagnostics = Diagnostics::default();
         diagnostics.push(Diagnostic::new(
-            DiagnosticCode::UnsupportedVersion { text: None },
+            DiagnosticCode::from(&codes::UNSUPPORTED_VERSION),
             Severity::Error,
             Phase::Parse,
             origin.location(),
@@ -681,7 +681,7 @@ pub trait Merge: Sealed {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::diagnostic::{Diagnostic, DiagnosticCode};
+    use crate::diagnostic::{Diagnostic, codes};
 
     fn fog_origin() -> Origin {
         Origin::file(
@@ -706,8 +706,7 @@ mod tests {
         let (from, to) = (JsonPath::of_keys(["old"]), JsonPath::of_keys(["new"]));
         let mut diagnostics = Diagnostics::default();
         diagnostics.moved(from.clone(), to.clone());
-        diagnostics
-            .push(Diagnostic::error(DiagnosticCode::InvalidValue { text: None }).at(to.clone()));
+        diagnostics.push(Diagnostic::of(&codes::INVALID_VALUE).at(to.clone()));
         diagnostics.name_as_the_file_has_it();
         assert_eq!(diagnostics.place_of(&to), from);
         (diagnostics, from, to)

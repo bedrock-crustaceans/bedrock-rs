@@ -333,14 +333,20 @@ fn vanilla_envelope_texts(diagnostics: &mut Diagnostics, document: JsonSlice<'_>
     let envelope = probe_envelope(JsonSlice::new(&cleaned)).ok();
     // In place, as `Diagnostics::locate`.
     for finding in diagnostics.iter_mut() {
-        match &mut finding.code {
+        // The pipeline's member-count line, on core's definition or the legacy variant.
+        let member_count = matches!(
+            finding.code,
             DiagnosticCode::MalformedInput {
                 text: Some(VanillaText::DocumentMemberCount),
                 ..
-            } if envelope.as_ref().is_some_and(|e| e.members.is_empty()) => {
-                finding.code = bedrock_addon_core::diagnostic::cereal::payload_missing();
             }
-            _ => {}
+        ) || finding
+            .code
+            .is(&bedrock_addon_core::diagnostic::codes::DOCUMENT_MEMBER_COUNT);
+        if member_count && envelope.as_ref().is_some_and(|e| e.members.is_empty()) {
+            finding.code = bedrock_addon_core::diagnostic::cereal::payload_missing();
+            // the member count no longer stands
+            finding.detail = None;
         }
     }
 }
@@ -459,7 +465,10 @@ mod tests {
         assert_eq!(registry.rejected().len(), 2);
         let shadowed = registry
             .diagnostics()
-            .filter(|d| matches!(d.code, DiagnosticCode::ShadowedDefinition { .. }))
+            .filter(|d| {
+                d.code
+                    .is(&bedrock_addon_core::diagnostic::codes::SHADOWED_DEFINITION)
+            })
             .count();
         assert_eq!(shadowed, 2);
     }

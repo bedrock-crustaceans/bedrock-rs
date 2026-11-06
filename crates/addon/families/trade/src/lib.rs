@@ -62,7 +62,7 @@ impl Family for TradeFamily {
         check: EnvelopeCheck::From(CEREAL),
         // A missing `format_version` is 0.0.0 with no log entry.
         missing: MissingVersion::Floor {
-            text: None,
+            code: &bedrock_addon_core::diagnostic::codes::MISSING_FORMAT_VERSION,
             severity: None,
         },
         ..Envelope::DEFAULT

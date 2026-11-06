@@ -23,10 +23,7 @@ fn load<T: Content>(path: &'static str, text: &str) -> (String, Vec<(String, Str
         .diagnostics()
         .iter()
         .map(|finding: &Diagnostic| {
-            let code: String = format!("{:?}", finding.code)
-                .chars()
-                .take_while(char::is_ascii_alphanumeric)
-                .collect();
+            let code: String = finding.code.name().to_owned();
             let under = finding.location.span.map_or(String::new(), |span| {
                 let start = span.offset as usize;
                 text[start..start + span.len as usize].to_owned()

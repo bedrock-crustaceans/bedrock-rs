@@ -5,16 +5,14 @@
 
 use crate::load::{LoadContext, WalkFile};
 
+use crate::diagnostic::builders::syntax;
 use crate::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, JsonPathSegment, Severity, VanillaText,
+    Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, JsonPathSegment, Severity, codes,
 };
 use crate::document::{Origin, RawLayer, Rejected, unversioned};
 use crate::json::{EncodeError, MAX_JSON_DEPTH, Value, WriteStyle, check_depth, write_json};
 
 use crate::json::jsoncpp::ReadError;
-
-/// Vanilla's text for a lowest copy that is no JSON: the merge is given up.
-const BASE_UNPARSABLE: &str = "Could not parse file at the top of the stack: {}.";
 
 /// One pack's copy of a sound document: its JSON, or why it is none.
 #[derive(Clone, Debug)]
@@ -69,24 +67,14 @@ pub fn readable(
             Ok(json) => out.push((copy.origin, json, copy.molang_version)),
             Err(error) => {
                 let mut found = Diagnostics::default();
-                let (text, severity) = if index == 0 {
-                    (
-                        Some(VanillaText::Formatted {
-                            template: BASE_UNPARSABLE,
-                            args: vec![path.to_owned()],
-                        }),
-                        Severity::Error,
-                    )
+                // The top copy gives the merge up, in the game's words; a lower one is the
+                // crate's information.
+                found.push(if index == 0 {
+                    Diagnostic::of(codes::STACK_TOP_UNPARSABLE.with([path]))
+                        .detail(DiagnosticDetail::Syntax(error.to_string()))
                 } else {
-                    (None, Severity::Info)
-                };
-                found.push(
-                    Diagnostic::error(DiagnosticCode::MalformedInput {
-                        message: error.to_string(),
-                        text,
-                    })
-                    .severity(severity),
-                );
+                    Diagnostic::of(syntax(error.to_string())).severity(Severity::Info)
+                });
                 located(found, &copy.origin, diagnostics);
                 if index == 0 {
                     return Vec::new();
@@ -118,10 +106,7 @@ pub fn path_member(path: &JsonPath, at: usize) -> Option<String> {
 /// The rejection of a file that is no JSON.
 pub fn not_json(origin: Origin, error: &ReadError) -> Rejected {
     let mut found = Diagnostics::default();
-    found.push(Diagnostic::error(DiagnosticCode::MalformedInput {
-        message: error.to_string(),
-        text: None,
-    }));
+    found.push(Diagnostic::of(syntax(error.to_string())));
     let mut diagnostics = Diagnostics::default();
     located(found, &origin, &mut diagnostics);
     Rejected::new(origin, diagnostics)
@@ -163,12 +148,12 @@ pub fn parse_copy(file: &WalkFile, cx: &LoadContext) -> SoundCopy {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::diagnostic::{Location, Phase};
+    use crate::diagnostic::{DiagnosticCode, Location, Phase};
     use crate::pack_identity::{PackPath, PackRef, PackSide};
 
     fn long(severity: Severity, phase: Phase, location: Location) -> Diagnostic {
         Diagnostic::new(
-            DiagnosticCode::InvalidValue { text: None },
+            DiagnosticCode::from(&codes::INVALID_VALUE),
             severity,
             phase,
             location,
@@ -193,6 +178,41 @@ mod tests {
 
     fn unversioned_origin(pack: PackRef, side: PackSide) -> Origin {
         Origin::new(pack, side, path(), None, Vec::new())
+    }
+
+    /// A top copy that is no JSON gives the merge up with the game's line naming the file, and the
+    /// reader's message as the detail; a lower one is the plain syntax finding at info.
+    #[test]
+    fn an_unparsable_copy_is_told_on_its_definition() {
+        let error = read_json(b"{").unwrap_err();
+        let copy = |pack| SoundCopy {
+            origin: unversioned_origin(pack, PackSide::Resource),
+            json: Err(error.clone()),
+            found: Diagnostics::default(),
+            molang_version: 0,
+        };
+        let ok = SoundCopy {
+            json: read_json(b"{}"),
+            ..copy(pack())
+        };
+        let mut told = Diagnostics::default();
+        assert!(readable("sounds.json", vec![copy(pack())], &mut told).is_empty());
+        let top = told.iter().next().unwrap();
+        assert_eq!(
+            top.code,
+            DiagnosticCode::from(codes::STACK_TOP_UNPARSABLE.with(["sounds.json"]))
+        );
+        assert_eq!(top.severity, Severity::Error);
+        assert_eq!(top.syntax_message(), Some(error.to_string().as_str()));
+
+        let mut told = Diagnostics::default();
+        assert_eq!(
+            readable("sounds.json", vec![ok, copy(pack())], &mut told).len(),
+            1
+        );
+        let lower = told.iter().next().unwrap();
+        assert_eq!(lower.code, DiagnosticCode::from(syntax(error.to_string())));
+        assert_eq!(lower.severity, Severity::Info);
     }
 
     /// `located` gives each finding the pack and file and moves it into the list, by

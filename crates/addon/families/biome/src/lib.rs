@@ -482,7 +482,9 @@ fn floor_hint(parsed: &mut Parsed<BiomeFamily>, text: &str) {
             DiagnosticCode::UnsupportedVersion {
                 text: Some(VanillaText::NoParserForVersion { .. })
             }
-        );
+        ) || diagnostic
+            .code
+            .is(&bedrock_addon_core::diagnostic::codes::NO_PARSER_FOR_VERSION);
         found.push(diagnostic);
         if floor && let Some(hint) = hint(text, written) {
             found.push(Diagnostic::info(hint));

@@ -3,7 +3,7 @@
 
 #![allow(dead_code, reason = "some helpers serve only the `molang` build")]
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon::diagnostic::{DiagnosticCode, Severity, codes};
 use bedrock_addon::families::recipe::{Ingredient, IngredientObject};
 use bedrock_addon::load::LoadContext;
 use bedrock_addon::molang::{Molang, MolangList};
@@ -44,12 +44,16 @@ fn not_checked(
     document
         .diagnostics()
         .iter()
-        .filter_map(|d| match d.code {
-            DiagnosticCode::MolangNotChecked { fields } => {
-                assert_eq!(d.severity, Severity::Info);
-                Some(fields)
-            }
-            _ => None,
+        .filter_map(|d| {
+            // The family's own count is the legacy variant still; core's is the definition.
+            let fields = match &d.code {
+                DiagnosticCode::MolangNotChecked { fields } => *fields,
+                code => code.args_of(&bedrock_addon::diagnostic::codes::MOLANG_NOT_CHECKED)?[0]
+                    .parse()
+                    .unwrap(),
+            };
+            assert_eq!(d.severity, Severity::Info);
+            Some(fields)
         })
         .sum()
 }
@@ -60,7 +64,8 @@ fn invalid_molang(
     document
         .diagnostics()
         .iter()
-        .filter(|d| matches!(d.code, DiagnosticCode::InvalidMolang { .. }))
+        // By legacy name: the variant and the definitions that were it.
+        .filter(|d| matches!(d.code.name(), "InvalidMolang"))
         .collect()
 }
 
@@ -149,7 +154,8 @@ fn data_molang_object_is_not_a_molang_value() {
         Severity::Error,
     );
     assert!(finding.kept);
-    assert!(matches!(finding.code, DiagnosticCode::InvalidType { .. }));
+    // By legacy name: the variant and the definitions that were it.
+    assert!(matches!(finding.code.name(), "InvalidType"));
     assert_eq!(args(finding), ["7"]);
     let ingredient = &shaped(&document).key["#"];
     assert_eq!(ingredient.aux(), 0);
@@ -240,7 +246,7 @@ fn a_data_list_with_a_null_element_is_an_information() {
     let found: Vec<_> = document
         .diagnostics()
         .iter()
-        .filter(|d| matches!(d.code, DiagnosticCode::InvalidType { text: None }))
+        .filter(|d| d.code.is(&codes::INVALID_TYPE))
         .collect();
     assert_eq!(found.len(), 1, "{:#?}", document.diagnostics());
     assert_eq!(found[0].severity, Severity::Info);
@@ -254,7 +260,7 @@ fn a_data_list_is_read_but_not_a_number() {
     let finding = document
         .diagnostics()
         .iter()
-        .find(|d| matches!(d.code, DiagnosticCode::InvalidType { text: None }))
+        .find(|d| d.code.is(&codes::INVALID_TYPE))
         .unwrap_or_else(|| panic!("{:#?}", document.diagnostics()));
     // The game has no line for it: an information of ours.
     assert_eq!(finding.severity, Severity::Info);

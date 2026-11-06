@@ -8,7 +8,7 @@
 )]
 use bedrock_addon_core::__private::Sealed;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, codes,
 };
 use bedrock_addon_core::document::{
     Document, Merge, Merged, Origin, RawLayer, Rejected, VersionInfo,
@@ -154,7 +154,7 @@ fn a_strategy_can_release_an_entry_and_report() {
                     let location =
                         Location::new(Some(cx.origin().pack.clone()), None, JsonPath::new(), None);
                     cx.push_diagnostic(Diagnostic::new(
-                        DiagnosticCode::ShadowedDefinition { text: None },
+                        DiagnosticCode::from(&codes::SHADOWED_DEFINITION),
                         Severity::Info,
                         Phase::Validate,
                         location,

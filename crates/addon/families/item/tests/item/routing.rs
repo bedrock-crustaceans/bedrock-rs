@@ -1,6 +1,6 @@
 //! Format routing, the legacy format and versions as written.
 
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon_core::diagnostic::Severity;
 use bedrock_addon_core::document::JsonDocument;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::molang::{MolangVersion, RawVersion, format_molang_version};
@@ -166,10 +166,8 @@ fn a_json_item_without_a_version_is_refused() {
         ],
         "{d:#?}"
     );
-    assert!(has(&d, |c| matches!(
-        c,
-        DiagnosticCode::MissingFormatVersion { .. }
-    )));
+    // By legacy name: the variant and the definitions that were it.
+    assert!(has(&d, |c| matches!(c.name(), "MissingFormatVersion")));
 }
 
 #[test]
@@ -185,10 +183,8 @@ fn two_part_versions_are_read_as_x_y_0() {
     // format version", where the fixture names UnsupportedVersion
     let d = rejects(&item("one.two", "demo:x", ""), &third_party());
     assert!(
-        has(&d, |c| matches!(
-            c,
-            DiagnosticCode::MalformedFormatVersion { .. }
-        )),
+        // By legacy name: the variant and the definitions that were it.
+        has(&d, |c| matches!(c.name(), "MalformedFormatVersion")),
         "{d:#?}"
     );
 }

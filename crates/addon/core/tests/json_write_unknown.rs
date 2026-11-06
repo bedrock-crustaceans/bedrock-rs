@@ -8,7 +8,7 @@
     clippy::disallowed_types,
     reason = "tests read fixtures and call facet-json directly"
 )]
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, Phase, Severity};
+use bedrock_addon_core::diagnostic::{Diagnostic, JsonPath, Phase, Severity, codes};
 use bedrock_addon_core::document::Unknown;
 use bedrock_addon_core::json::{
     Indent, Value, WriteStyle, merge_unknown, write_json, write_json_with,
@@ -100,10 +100,7 @@ fn a_row_whose_object_is_gone_is_left_out_and_told() {
         .collect();
     assert_eq!(paths, ["leaves/5/q", "name/not_an_object"]);
     for finding in &told {
-        assert!(
-            matches!(finding.code, DiagnosticCode::DroppedField { .. }),
-            "{finding:?}"
-        );
+        assert!(finding.is(&codes::DROPPED_FIELD_WORDED), "{finding:?}");
         assert_eq!(finding.severity, Severity::Warning);
         assert_eq!(finding.phase, Phase::Write);
     }

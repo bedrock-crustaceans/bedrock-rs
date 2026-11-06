@@ -4,7 +4,8 @@
 use std::fmt;
 
 use super::{Family, Loaded, finish, parse_as_written, parse_file_as_written};
-use crate::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, VanillaText};
+use crate::diagnostic::builders::syntax;
+use crate::diagnostic::{Diagnostic, Diagnostics, codes};
 use crate::document::{Document, Origin, Rejected};
 use crate::json::Prepared;
 use crate::load::LoadContext;
@@ -13,10 +14,7 @@ use crate::pack_identity::{PackPath, PackRef, PackSide};
 /// The finding of an unreadable file: not UTF-8, or nested past the limit (one text for both,
 /// so the order `Prepared` checks them in does not show).
 fn malformed() -> Diagnostic {
-    Diagnostic::error(DiagnosticCode::MalformedInput {
-        message: "not UTF-8 JSON within the nesting limit".to_owned(),
-        text: None,
-    })
+    Diagnostic::of(syntax("not UTF-8 JSON within the nesting limit"))
 }
 
 /// The rejection of a file at `origin` that is no text: the malformed finding, then the
@@ -141,13 +139,9 @@ impl<F: Family> OpenBeta<F> {
 }
 
 /// The finding of a beta document read by a file kind with no beta struct: the game's
-/// versioned loader has no parser for the version `beta` (`VanillaText::NoParserForVersion`).
+/// versioned loader has no parser for the version `beta` ([`codes::NO_PARSER_FOR_VERSION`]).
 pub fn beta_refused() -> Diagnostic {
-    Diagnostic::error(DiagnosticCode::UnsupportedVersion {
-        text: Some(VanillaText::NoParserForVersion {
-            version: "beta".to_owned(),
-        }),
-    })
+    Diagnostic::of(codes::NO_PARSER_FOR_VERSION.with(["beta"]))
 }
 
 /// Loads the file at `origin` of family `F`, upgraded to the newest struct and validated: a

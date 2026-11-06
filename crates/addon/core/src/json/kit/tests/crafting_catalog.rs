@@ -9,6 +9,7 @@
 
 use super::*;
 use crate::diagnostic::cereal;
+use crate::diagnostic::codes as core_codes;
 
 /// A value's JSON type as the catalogue's messages name it.
 fn token(value: &Value) -> &'static str {
@@ -29,10 +30,9 @@ fn expect(read: &mut Read<'_>, node: &Node<'_>, expected: &'static str) -> bool 
     if found == expected {
         return true;
     }
-    let mut finding = Diagnostic::error(DiagnosticCode::MalformedInput {
-        message: format!("expected {expected}, found {found}"),
-        text: None,
-    })
+    let mut finding = Diagnostic::of(crate::diagnostic::builders::syntax(format!(
+        "expected {expected}, found {found}"
+    )))
     .at(node.path().clone());
     finding.location.span = node.span();
     read.push(finding);
@@ -56,7 +56,7 @@ fn required<'v>(read: &mut Read<'_>, members: &Members<'v>, key: &str) -> Option
     let node = read.opt(members, key);
     if node.is_none() {
         read.push(
-            Diagnostic::error(DiagnosticCode::MissingRequiredField { text: None })
+            Diagnostic::of(&core_codes::MISSING_REQUIRED_FIELD)
                 .at(members.node().path().child(key)),
         );
     }
@@ -91,11 +91,10 @@ fn constrained(read: &mut Read<'_>, node: &Node<'_>, code: DiagnosticCode) -> Op
 }
 
 fn group_name_code() -> DiagnosticCode {
-    DiagnosticCode::InvalidValue {
-        text: Some(VanillaText::Fixed(
-            "string must be prefixed with a namespace (eg. namespace:value)",
-        )),
-    }
+    DiagnosticCode::from(
+        core_codes::INVALID_VALUE_WORDED
+            .with(["string must be prefixed with a namespace (eg. namespace:value)"]),
+    )
 }
 
 fn item_name_code() -> DiagnosticCode {
@@ -131,8 +130,7 @@ fn category(read: &mut Read<'_>, node: &Node<'_>) -> Option<(String, usize)> {
         let name = string(read, &node)?;
         let known = matches!(name, "construction" | "nature" | "equipment" | "items");
         if !known {
-            let mut finding = Diagnostic::error(DiagnosticCode::InvalidValue { text: None })
-                .at(node.path().clone());
+            let mut finding = Diagnostic::of(&core_codes::INVALID_VALUE).at(node.path().clone());
             finding.location.span = node.span();
             read.push(finding);
         }

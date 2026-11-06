@@ -3,7 +3,7 @@
 //! `format_version`, mapped; only the tag queries resolve; a rejection is a warning and the
 //! descriptor stays.
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon::diagnostic::Severity;
 use bedrock_addon::molang::{MolangVersion, RawVersion};
 use bedrock_addon::shared::BlockDescriptor;
 
@@ -53,7 +53,11 @@ fn s04_without_the_molang_feature_the_tags_are_not_checked() {
     let found: Vec<_> = document
         .diagnostics()
         .iter()
-        .filter(|d| matches!(d.code, DiagnosticCode::MolangNotChecked { fields: 1 }))
+        .filter(|d| {
+            d.code
+                .args_of(&bedrock_addon::diagnostic::codes::MOLANG_NOT_CHECKED)
+                .is_some_and(|a| a[0] == "1")
+        })
         .collect();
     assert_eq!(found.len(), 1, "{:#?}", document.diagnostics());
     assert_eq!(found[0].severity, Severity::Info);
@@ -90,8 +94,8 @@ mod compiled {
     fn rejections(d: &Diagnostics) -> usize {
         d.iter()
             .filter(|f| {
-                matches!(f.code, DiagnosticCode::InvalidMolang { .. })
-                    && f.severity >= Severity::Warning
+                // By legacy name: the variant and the definitions that were it.
+                matches!(f.code.name(), "InvalidMolang") && f.severity >= Severity::Warning
             })
             .count()
     }
@@ -127,7 +131,8 @@ mod compiled {
         let mut at: Vec<String> = loaded
             .diagnostics()
             .iter()
-            .filter(|f| matches!(f.code, DiagnosticCode::InvalidMolang { .. }))
+            // By legacy name: the variant and the definitions that were it.
+            .filter(|f| matches!(f.code.name(), "InvalidMolang"))
             .map(|f| f.location.json_path.to_string())
             .collect();
         at.dedup();
@@ -187,8 +192,8 @@ mod compiled {
         assert!(
             low.diagnostics()
                 .iter()
-                .any(|f| matches!(f.code, DiagnosticCode::InvalidMolang { .. })
-                    && f.severity == Severity::Info),
+                // By legacy name: the variant and the definitions that were it.
+                .any(|f| matches!(f.code.name(), "InvalidMolang") && f.severity == Severity::Info),
             "{:#?}",
             low.diagnostics()
         );

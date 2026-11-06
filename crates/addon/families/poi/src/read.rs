@@ -116,7 +116,8 @@ fn parse_strict<'a, T: Facet<'a>>(
         d.iter()
             .filter(|f| {
                 f.severity >= Severity::Error
-                    && !matches!(f.code, DiagnosticCode::UnrecognizedField { .. })
+                    // By legacy name: the variant and the definitions that were it.
+                    && !matches!(f.code.name(), "UnrecognizedField")
             })
             .count()
     };

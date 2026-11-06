@@ -429,8 +429,13 @@ impl Placed for AtomicClientEntity {
 fn place(found: Diagnostics, origin: &Origin) -> Diagnostics {
     let mut placed = Diagnostics::default();
     for mut finding in found {
-        let malformed = matches!(finding.code, DiagnosticCode::MalformedFormatVersion { .. });
-        if matches!(finding.code, DiagnosticCode::MissingPayload { text: None }) {
+        // By legacy name: the variant and the definitions that were it.
+        let malformed = matches!(finding.code.name(), "MalformedFormatVersion");
+        if matches!(finding.code, DiagnosticCode::MissingPayload { text: None })
+            || finding
+                .code
+                .is(&bedrock_addon_core::diagnostic::codes::MISSING_PAYLOAD)
+        {
             // A missing payload gets the game's text.
             finding.code = bedrock_addon_core::diagnostic::cereal::payload_missing();
         }

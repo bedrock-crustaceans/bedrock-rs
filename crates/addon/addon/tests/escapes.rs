@@ -8,7 +8,7 @@
 
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 
-use bedrock_addon::diagnostic::{Diagnostic, DiagnosticCode, DiagnosticDetail, Severity};
+use bedrock_addon::diagnostic::{Diagnostic, Severity};
 use bedrock_addon::document::Content;
 use bedrock_addon::load::LoadContext;
 use bedrock_addon::storage::PackPath;
@@ -19,17 +19,9 @@ struct Outcome {
     findings: Vec<Diagnostic>,
 }
 
-/// The reader's message of a syntax finding: the legacy `MalformedInput` payload, or, for a
-/// family on its own definition (fog's `parse_error`), the `DiagnosticDetail::Syntax` it carries.
+/// The reader's message of a syntax finding, wherever its code carries it.
 fn syntax_message(d: &Diagnostic) -> Option<&str> {
-    match &d.code {
-        DiagnosticCode::MalformedInput { message, .. } => Some(message),
-        code if code.name() == "MalformedInput" => match d.detail.as_deref() {
-            Some(DiagnosticDetail::Syntax(message)) => Some(message),
-            _ => None,
-        },
-        _ => None,
-    }
+    d.syntax_message()
 }
 
 impl Outcome {

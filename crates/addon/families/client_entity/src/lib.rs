@@ -188,9 +188,6 @@ const DIRECTORY: &str = "entity";
 /// The floor: every explicit version below 1.8.0 is rejected by vanilla's own schema
 const FLOOR: FormatVersion = known::V1_8_0;
 
-/// Vanilla's warning for a document without `format_version`, with the crate's floor in place
-/// of its 1.0.0.
-const VERSION_NOT_GIVEN: &str = "Warning: The \"format_version\" field was not given. Fields from format version 1.8.0 and older will be loaded. Update your targeted \"format_version\" to use fields from newer versions.";
 /// The message for a version that does not read, or one below 1.0.0.
 const UNKNOWN_VERSION: &str =
     "Unknown/unsupported version value specified in format_version field in {}";
@@ -223,7 +220,7 @@ impl Family for ClientEntityFamily {
         check: EnvelopeCheck::Never,
         // The game logs this at level 2, the class the pack report shows as a warning.
         missing: MissingVersion::Floor {
-            text: Some(VanillaText::Fixed(VERSION_NOT_GIVEN)),
+            code: &bedrock_addon_core::diagnostic::codes::VERSION_NOT_GIVEN_LEGACY_FIELDS,
             severity: Some(Severity::Warning),
         },
         ..Envelope::DEFAULT

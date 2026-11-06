@@ -8,19 +8,21 @@ mod pack_settings;
 mod particle;
 
 use super::*;
+use crate::diagnostic::codes as core_codes;
 use crate::json::{IsIntRule, WideInt};
 use crate::versioning::{MemberFailure, UnknownMask};
 
-/// A finding as the oracle captures were written: severity, path, code, span, kept.
+/// A finding as the oracle captures were written: severity, path, code, span, kept. The code
+/// is the legacy code's `Debug`, as the captures hold it.
 fn rendered(found: &Diagnostics) -> Vec<String> {
     found
         .iter()
         .map(|f| {
             format!(
-                "{:?}|{}|{:?}|{:?}|{}",
+                "{:?}|{}|{}|{:?}|{}",
                 f.severity,
                 f.location.json_path,
-                f.code,
+                crate::diagnostic::testing::legacy_debug(f),
                 f.location.span.map(|s| (s.offset, s.len)),
                 f.kept
             )
@@ -261,11 +263,7 @@ fn a_strict_reading_takes_a_scalar_of_its_own_kind_alone() {
     assert_eq!(integral, [None, None, Some(2), Some(2), None, None, None]);
     // Every refusal is a wrong type at the element: 6 + 6 + 3 + 6 + 5.
     assert_eq!(found.len(), 26);
-    assert!(
-        found
-            .iter()
-            .all(|f| matches!(f.code, DiagnosticCode::InvalidType { text: None }))
-    );
+    assert!(found.iter().all(|f| f.is(&core_codes::INVALID_TYPE)));
 }
 
 #[test]
@@ -350,15 +348,11 @@ fn members_are_walked_in_file_order_and_got_without_a_word() {
 fn a_finding_pushed_as_it_is_counts_toward_the_failure_only_when_it_rejects() {
     let mut found = Diagnostics::default();
     let mut read = Read::new(Reading::DOCUMENT, &mut found);
-    read.push(Diagnostic::info(DiagnosticCode::InvalidValue {
-        text: None,
-    }));
+    read.push(Diagnostic::of(&core_codes::INVALID_VALUE).severity(Severity::Info));
     assert!(!read.failed());
-    read.push(Diagnostic::error(DiagnosticCode::InvalidValue { text: None }).into_kept());
+    read.push(Diagnostic::of(&core_codes::INVALID_VALUE).into_kept());
     assert!(!read.failed());
-    read.push(Diagnostic::error(DiagnosticCode::InvalidValue {
-        text: None,
-    }));
+    read.push(Diagnostic::of(&core_codes::INVALID_VALUE));
     assert!(read.failed());
     assert_eq!(read.reading(), Reading::DOCUMENT);
     assert_eq!(found.len(), 3);

@@ -2,7 +2,7 @@
 //! pass and the glue text with the `molang` feature, `MolangNotChecked` without it. Rows
 //! `b21`–`b26`.
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon::diagnostic::Severity;
 use bedrock_addon::families::biome::component::SurfaceMaterialAdjustments;
 use bedrock_addon::molang::{Molang, RawVersion};
 
@@ -62,9 +62,10 @@ fn b21_forms_read(cx: &bedrock_addon::load::LoadContext) {
             }
         }
         assert!(
+            // By legacy name: the variant and the definitions that were it.
             with(document.diagnostics(), |c| matches!(
-                c,
-                DiagnosticCode::InvalidMolang { .. } | DiagnosticCode::MolangLint { .. }
+                c.name(),
+                "InvalidMolang" | "MolangLint"
             ))
             .is_empty(),
             "{range}: {:#?}",
@@ -80,7 +81,8 @@ fn b22_height_range_object_form() {
         &height_range(r#"[{"expression": "1", "version": 13}, 64]"#),
         &context(),
     );
-    let invalid = with(&found, |c| matches!(c, DiagnosticCode::InvalidType { .. }));
+    // By legacy name: the variant and the definitions that were it.
+    let invalid = with(&found, |c| matches!(c.name(), "InvalidType"));
     assert_eq!(invalid.len(), 1, "{found:#?}");
     assert_eq!(invalid[0].severity, Severity::Error);
     assert_eq!(
@@ -96,7 +98,8 @@ fn b21_height_range_forms_unchecked() {
     b21_forms_read(&context());
     let document = super::common::loads(&height_range(r#"["1 +", 64]"#), &context());
     let unchecked = with(document.diagnostics(), |c| {
-        matches!(c, DiagnosticCode::MolangNotChecked { fields: 1 })
+        c.args_of(&bedrock_addon::diagnostic::codes::MOLANG_NOT_CHECKED)
+            .is_some_and(|a| a[0] == "1")
     });
     assert_eq!(unchecked.len(), 1, "{:#?}", document.diagnostics());
     assert_eq!(unchecked[0].severity, Severity::Info);
@@ -115,7 +118,7 @@ fn constant_height_range_bounds_are_checked_without_compiling() {
 
 #[cfg(feature = "molang")]
 mod compiled {
-    use bedrock_addon::diagnostic::{DiagnosticCode, DiagnosticDetail, Diagnostics, Severity};
+    use bedrock_addon::diagnostic::{DiagnosticDetail, Diagnostics, Severity};
     use bedrock_addon::molang::DiagCode;
 
     use super::super::common::{checked, context, errors, loads, rejected, with};
@@ -137,7 +140,8 @@ mod compiled {
     fn glue_last(found: &Diagnostics, source: &str) {
         let errors = errors(found);
         let last = errors.last().expect("an error");
-        assert!(matches!(last.code, DiagnosticCode::InvalidValue { .. }));
+        // By legacy name: the variant and the definitions that were it.
+        assert!(matches!(last.code.name(), "InvalidValue"));
         assert_eq!(
             last.code.to_string(),
             format!("Expression Text: '{source}', failed to parse.")
@@ -205,9 +209,10 @@ mod compiled {
             &checked(context()),
         );
         assert!(
+            // By legacy name: the variant and the definitions that were it.
             with(document.diagnostics(), |c| matches!(
-                c,
-                DiagnosticCode::InvalidMolang { .. }
+                c.name(),
+                "InvalidMolang"
             ))
             .is_empty(),
             "{:#?}",

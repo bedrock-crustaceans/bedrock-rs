@@ -2,6 +2,7 @@
 //! a failed member, not the struct.
 
 use bedrock_addon_core::diagnostic::cereal::NumericRange;
+use bedrock_addon_core::diagnostic::codes;
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::schema::{SchemaCx, Verdict};
 use bedrock_addon_core::versioning::{MemberFailure, Reading};
@@ -29,7 +30,7 @@ fn a_refusing_slice_fails_the_owner_with_an_error_at_the_member() {
     };
     assert_eq!(finding.severity, Severity::Error);
     assert_eq!(finding.location.json_path, at(&["boss", "radius"]));
-    assert_eq!(finding.code, DiagnosticCode::InvalidValue { text: None });
+    assert_eq!(finding.code, DiagnosticCode::from(&codes::INVALID_VALUE));
 }
 
 #[test]
@@ -47,7 +48,7 @@ fn a_range_finding_has_the_game_range_text_only_where_the_family_opts_in() {
         .collect();
     assert_eq!(
         codes,
-        [range.code(), DiagnosticCode::InvalidValue { text: None }]
+        [range.code(), DiagnosticCode::from(&codes::INVALID_VALUE)]
     );
 }
 
@@ -65,10 +66,7 @@ fn default_and_tell_resets_the_member_with_an_information() {
     assert!(!cx.failed());
     let severities: Vec<Severity> = out.iter().map(|d| d.severity).collect();
     assert_eq!(severities, [Severity::Info]);
-    assert!(
-        out.iter()
-            .all(|d| matches!(d.code, DiagnosticCode::InvalidValue { text: None }))
-    );
+    assert!(out.iter().all(|d| d.is(&codes::INVALID_VALUE)));
 }
 
 #[test]

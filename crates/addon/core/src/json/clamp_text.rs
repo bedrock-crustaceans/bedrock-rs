@@ -17,7 +17,7 @@ use indexmap::IndexMap;
 use super::Value;
 use super::lex::{Kind, Lexer, Rules};
 use super::slice::{JsonSlice, parse_at};
-use crate::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, JsonPathSegment, Span};
+use crate::diagnostic::{Diagnostic, Diagnostics, JsonPath, JsonPathSegment, Span};
 use crate::molang::beyond_f32_warning;
 
 /// What holds a number.
@@ -147,13 +147,16 @@ fn same_file(theirs: &Diagnostic, ours: &Diagnostic) -> bool {
 /// is not known (`UnrecognizedField`, `UnrecognizedComponent`, `UnknownSound` for an event's
 /// key) is not: such a member is kept as written by the families that keep what they do not
 /// read, and the number in it is then the clamp's to tell.
+///
+/// The question is asked by the legacy name: each of the three names is shared by the legacy
+/// variant and every definition that [`was`](crate::diagnostic::CodeDef::was) it (core's plain
+/// and `_WORDED` ones, `core/child_not_valid` and the families' own), and the findings come
+/// from every family.
 fn speaks_of(finding: &Diagnostic, warning: &Diagnostic) -> bool {
     same_file(finding, warning)
         && !matches!(
-            finding.code,
-            DiagnosticCode::UnrecognizedField { .. }
-                | DiagnosticCode::UnrecognizedComponent { .. }
-                | DiagnosticCode::UnknownSound { .. }
+            finding.code.name(),
+            "UnrecognizedField" | "UnrecognizedComponent" | "UnknownSound"
         )
 }
 
@@ -841,7 +844,8 @@ fn locate<'a>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::diagnostic::{Location, Phase, Severity};
+    use crate::diagnostic::codes as core_codes;
+    use crate::diagnostic::{DiagnosticCode, Location, Phase, Severity};
     use crate::test_cost::{assert_linear_timed_at, timed};
 
     fn path(members: &[&str]) -> JsonPath {
@@ -877,7 +881,7 @@ mod tests {
 
     #[test]
     fn a_finding_about_the_value_at_the_number_speaks_for_it() {
-        let wrong_type = DiagnosticCode::InvalidType { text: None };
+        let wrong_type = DiagnosticCode::from(&core_codes::INVALID_TYPE);
         assert!(left_out_beside(finding(
             wrong_type.clone(),
             Severity::Warning,
@@ -901,9 +905,9 @@ mod tests {
     #[test]
     fn a_finding_that_names_an_unknown_member_does_not_speak_for_its_number() {
         for code in [
-            DiagnosticCode::UnrecognizedField { text: None },
-            DiagnosticCode::UnrecognizedComponent { text: None },
-            DiagnosticCode::UnknownSound { text: None },
+            DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD),
+            DiagnosticCode::from(&core_codes::UNRECOGNIZED_COMPONENT),
+            DiagnosticCode::from(&core_codes::UNKNOWN_SOUND),
         ] {
             assert!(
                 !left_out_beside(finding(code.clone(), Severity::Warning, &["a", "n"])),
@@ -916,7 +920,7 @@ mod tests {
     /// and the number in it is the clamp's to tell.
     #[test]
     fn a_kept_error_around_the_number_does_not_speak_for_it() {
-        let missing = DiagnosticCode::MissingRequiredField { text: None };
+        let missing = DiagnosticCode::from(&core_codes::MISSING_REQUIRED_FIELD);
         assert!(!left_out_beside(
             finding(missing, Severity::Error, &["a"]).into_kept()
         ));
@@ -924,7 +928,7 @@ mod tests {
 
     #[test]
     fn a_member_refused_around_the_number_speaks_for_it_and_the_root_does_not() {
-        let invalid = DiagnosticCode::InvalidValue { text: None };
+        let invalid = DiagnosticCode::from(&core_codes::INVALID_VALUE);
         assert!(left_out_beside(finding(
             invalid.clone(),
             Severity::Error,
@@ -933,7 +937,7 @@ mod tests {
         // A warning around the number refuses nothing (a legacy block's "Duplicate
         // component" is at the component it keeps); an error at the root is the file's.
         assert!(!left_out_beside(finding(
-            DiagnosticCode::DroppedComponent { text: None },
+            DiagnosticCode::from(&core_codes::DROPPED_COMPONENT),
             Severity::Warning,
             &["a"]
         )));
@@ -949,7 +953,7 @@ mod tests {
     fn a_finding_of_another_file_does_not_speak_for_the_number() {
         use crate::pack_identity::PackPath;
         let mut theirs = finding(
-            DiagnosticCode::InvalidType { text: None },
+            DiagnosticCode::from(&core_codes::INVALID_TYPE),
             Severity::Warning,
             &["a", "n"],
         );
@@ -970,12 +974,12 @@ mod tests {
     #[test]
     fn a_later_finding_at_the_number_takes_the_clamps_warning_back() {
         let range = finding(
-            DiagnosticCode::InvalidType { text: None },
+            DiagnosticCode::from(&core_codes::INVALID_TYPE),
             Severity::Warning,
             &["a", "n"],
         );
         let unknown = finding(
-            DiagnosticCode::UnrecognizedField { text: None },
+            DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD),
             Severity::Warning,
             &["b"],
         );
@@ -1013,12 +1017,12 @@ mod tests {
                     clamp.push(clamp_warning(&at));
                     d.push(clamp_warning(&at));
                     d.push(finding(
-                        DiagnosticCode::InvalidType { text: None },
+                        DiagnosticCode::from(&core_codes::INVALID_TYPE),
                         Severity::Warning,
                         &at,
                     ));
                     d.push(finding(
-                        DiagnosticCode::UnrecognizedField { text: None },
+                        DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD),
                         Severity::Warning,
                         &["other", member.as_str()],
                     ));

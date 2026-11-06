@@ -15,8 +15,11 @@ use super::{
     MissingVersion, ParseCx, Reading, StructIndex, UpgradeCx, ValidateCx, VersionChain,
     VersionInput,
 };
+use crate::diagnostic::builders::syntax;
+use crate::diagnostic::codes as core_codes;
 use crate::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, Span, VanillaText,
+    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Location, Phase, Severity,
+    Span,
 };
 use crate::document::VersionInfo;
 use crate::json::{EnvelopeVersion, JsonSlice, RootProbe, Value, probe_envelope};
@@ -322,14 +325,7 @@ fn clamp_floats<F: Family>(
     use crate::json::Width;
     let floats: std::collections::HashSet<JsonPath> = found
         .iter()
-        .filter(|finding| {
-            matches!(
-                &finding.code,
-                DiagnosticCode::InvalidValue {
-                    text: Some(crate::diagnostic::VanillaText::Fixed(text)),
-                } if *text == crate::json::BEYOND_FLOAT_MEMBER
-            )
-        })
+        .filter(|finding| finding.is(&crate::diagnostic::codes::BEYOND_FLOAT_MEMBER))
         .map(|finding| finding.location.json_path.clone())
         .collect();
     if floats.is_empty() {
@@ -575,11 +571,7 @@ pub fn no_parser_version(input: &FormatVersionInput, written: &str) -> String {
 /// The finding of a version no struct covers, with the game's "no parser" text.
 pub(super) fn unsupported(written: &str, at: JsonPath) -> Diagnostic {
     error(
-        DiagnosticCode::UnsupportedVersion {
-            text: Some(VanillaText::NoParserForVersion {
-                version: written.to_owned(),
-            }),
-        },
+        core_codes::NO_PARSER_FOR_VERSION.with([written]).into(),
         at,
         None,
     )
@@ -633,7 +625,7 @@ impl Run {
         };
         let Ok(written) = read else {
             self.diagnostics.push(error(
-                DiagnosticCode::MalformedFormatVersion { text: None },
+                DiagnosticCode::from(&core_codes::MALFORMED_FORMAT_VERSION),
                 version_at(),
                 None,
             ));
@@ -717,17 +709,17 @@ impl Run {
         // document is not counted and its payload is read from under the key.
         let counted = F::ENVELOPE.check != EnvelopeCheck::Uncounted;
         if counted && written.is_some() && envelope.member_count() != 2 {
-            self.diagnostics.push(error(
-                DiagnosticCode::MalformedInput {
-                    message: format!(
-                        "{} root members, not \"format_version\" and a payload member",
-                        envelope.member_count()
-                    ),
-                    text: Some(VanillaText::DocumentMemberCount),
-                },
-                JsonPath::new(),
-                Some(span_of(document)),
-            ));
+            self.diagnostics.push(
+                error(
+                    DiagnosticCode::from(&core_codes::DOCUMENT_MEMBER_COUNT),
+                    JsonPath::new(),
+                    Some(span_of(document)),
+                )
+                .detail(DiagnosticDetail::Syntax(format!(
+                    "{} root members, not \"format_version\" and a payload member",
+                    envelope.member_count()
+                ))),
+            );
             return None;
         }
         let Some(payload) = envelope.payload(F::PAYLOAD_KEY) else {
@@ -738,7 +730,7 @@ impl Run {
                 Some(actual) if counted && written.is_some() => {
                     crate::diagnostic::cereal::payload_key_mismatch(F::PAYLOAD_KEY, actual)
                 }
-                _ => DiagnosticCode::MissingPayload { text: None },
+                _ => DiagnosticCode::from(&core_codes::MISSING_PAYLOAD),
             };
             self.diagnostics
                 .push(error(code, JsonPath::new(), Some(span_of(document))));
@@ -753,7 +745,7 @@ impl Run {
                 let mut member = JsonPath::new();
                 member.push(key);
                 self.diagnostics.push(Diagnostic::new(
-                    DiagnosticCode::UnrecognizedField { text: None },
+                    DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD),
                     Severity::Info,
                     Phase::Parse,
                     Location::new(None, None, member, None),
@@ -792,20 +784,18 @@ impl Run {
         match written {
             None => {
                 match F::ENVELOPE.missing {
-                    MissingVersion::Reject { text } => {
+                    MissingVersion::Reject { code } => {
                         self.diagnostics.push(error(
-                            DiagnosticCode::MissingFormatVersion {
-                                text: Some(text.unwrap_or(VanillaText::NoValidVersion)),
-                            },
+                            DiagnosticCode::from(code),
                             JsonPath::new(),
                             None,
                         ));
                         return None;
                     }
-                    MissingVersion::Floor { text, severity } => {
+                    MissingVersion::Floor { code, severity } => {
                         if let Some(severity) = severity {
                             self.diagnostics.push(Diagnostic::new(
-                                DiagnosticCode::MissingFormatVersion { text },
+                                DiagnosticCode::from(code),
                                 severity,
                                 Phase::Parse,
                                 Location::new(None, None, JsonPath::new(), None),
@@ -837,17 +827,14 @@ impl Run {
                 let refusal = match F::beta_permission(object, cx) {
                     BetaPermission::Always => None,
                     BetaPermission::BetaApisOrBaseGame => (!cx.beta_apis && !cx.is_base_game_pack)
-                        .then_some(VanillaText::BetaFormatVersion),
+                        .then_some(&core_codes::BETA_FORMAT_VERSION),
                     BetaPermission::BetaApis => {
-                        (!cx.beta_apis).then_some(VanillaText::BetaDocuments)
+                        (!cx.beta_apis).then_some(&core_codes::BETA_DOCUMENTS)
                     }
                 };
-                if let Some(text) = refusal {
-                    self.diagnostics.push(error(
-                        DiagnosticCode::BetaFeaturesNotEnabled { text: Some(text) },
-                        version_at(),
-                        None,
-                    ));
+                if let Some(code) = refusal {
+                    self.diagnostics
+                        .push(error(DiagnosticCode::from(code), version_at(), None));
                     return None;
                 }
                 Some((written, StructIndex::Beta))
@@ -859,7 +846,7 @@ impl Run {
                 let index = self.stable::<F>(&written, &text, payload, &identity, cx)?;
                 if written.prerelease {
                     self.diagnostics.push(Diagnostic::new(
-                        DiagnosticCode::PrereleaseFormatVersion { version: text },
+                        DiagnosticCode::from(core_codes::PRERELEASE_FORMAT_VERSION.with([text])),
                         Severity::Info,
                         Phase::Parse,
                         Location::new(None, None, version_at(), None),
@@ -877,7 +864,7 @@ impl Run {
             Err(failure) => {
                 if is_blank(document.text) {
                     self.diagnostics.push(Diagnostic::new(
-                        DiagnosticCode::EmptyDocument { text: None },
+                        DiagnosticCode::from(&core_codes::EMPTY_DOCUMENT),
                         F::EMPTY_DOCUMENT,
                         Phase::Parse,
                         Location::new(None, None, JsonPath::new(), Some(span_of(document))),
@@ -885,16 +872,19 @@ impl Run {
                     return None;
                 }
                 let message = failure.error.kind.to_string();
-                let text = (F::ENVELOPE.check != EnvelopeCheck::Never).then(|| {
-                    VanillaText::DocumentJson {
-                        message: message.clone(),
-                    }
-                });
-                self.diagnostics.push(error(
-                    DiagnosticCode::MalformedInput { message, text },
-                    JsonPath::new(),
-                    Some(failure.span),
-                ));
+                let finding = if F::ENVELOPE.check == EnvelopeCheck::Never {
+                    error(syntax(message).into(), JsonPath::new(), Some(failure.span))
+                } else {
+                    error(
+                        crate::diagnostic::codes::DOCUMENT_JSON
+                            .with([message.clone()])
+                            .into(),
+                        JsonPath::new(),
+                        Some(failure.span),
+                    )
+                    .detail(DiagnosticDetail::Syntax(message))
+                };
+                self.diagnostics.push(finding);
                 None
             }
         }
@@ -924,13 +914,13 @@ impl Run {
                     // rendered the same way.
                     BelowFloor::NoParser => unsupported(&no_parser_version(written, text), at),
                     _ => error(
-                        DiagnosticCode::UnsupportedVersion {
-                            text: Some(VanillaText::UseFormatVersion {
-                                what: F::NAME,
-                                name: identity.identifier.clone().unwrap_or_default(),
-                                version: F::FLOOR,
-                            }),
-                        },
+                        core_codes::USE_FORMAT_VERSION
+                            .with([
+                                F::NAME.to_owned(),
+                                identity.identifier.clone().unwrap_or_default(),
+                                F::FLOOR.to_string(),
+                            ])
+                            .into(),
                         at,
                         None,
                     ),
@@ -976,25 +966,30 @@ fn picked_version(text: &str) -> (Result<Option<FormatVersionInput>, ()>, Envelo
 /// refused.
 fn size_finding(len: usize, max: usize, told: &mut Diagnostics) -> bool {
     use crate::load::{JsonDocumentSize, json_document_size_against};
-    let (text, severity) = match json_document_size_against(len, max) {
+    let (code, severity) = match json_document_size_against(len, max) {
         JsonDocumentSize::Within => return false,
         // "JSON document is approaching the maximum allowed size": logged at level 2, and the
         // document is read.
         JsonDocumentSize::Approaching => (
-            VanillaText::DocumentNearlyTooLarge { loaded: len, max },
+            core_codes::DOCUMENT_NEARLY_TOO_LARGE.with([len.to_string(), max.to_string()]),
             Severity::Warning,
         ),
-        JsonDocumentSize::TooLarge => (VanillaText::DocumentTooLarge { max }, Severity::Error),
+        JsonDocumentSize::TooLarge => (
+            core_codes::DOCUMENT_TOO_LARGE.with([max.to_string()]),
+            Severity::Error,
+        ),
     };
-    told.push(Diagnostic::new(
-        DiagnosticCode::MalformedInput {
-            message: format!("the document is {len} bytes long"),
-            text: Some(text),
-        },
-        severity,
-        Phase::Parse,
-        Location::new(None, None, JsonPath::new(), None),
-    ));
+    told.push(
+        Diagnostic::new(
+            code.into(),
+            severity,
+            Phase::Parse,
+            Location::new(None, None, JsonPath::new(), None),
+        )
+        .detail(DiagnosticDetail::Syntax(format!(
+            "the document is {len} bytes long"
+        ))),
+    );
     severity == Severity::Error
 }
 
@@ -1005,10 +1000,11 @@ fn rapidjson_refuses<F: Family>(document: JsonSlice<'_>, told: &mut Diagnostics)
     let Some(mut refusal) = crate::json::document_json_refusal(document) else {
         return false;
     };
+    // A family whose envelope is never checked tells the reader's message alone.
     if F::ENVELOPE.check == EnvelopeCheck::Never
-        && let DiagnosticCode::MalformedInput { text, .. } = &mut refusal.code
+        && let Some(DiagnosticDetail::Syntax(message)) = refusal.detail.take().map(|detail| *detail)
     {
-        *text = None;
+        refusal.code = syntax(message).into();
     }
     told.push(refusal);
     true
@@ -1056,7 +1052,8 @@ fn error(code: DiagnosticCode, at: JsonPath, span: Option<Span>) -> Diagnostic {
 #[cfg(test)]
 mod tests {
     use super::size_finding;
-    use crate::diagnostic::{DiagnosticCode, Diagnostics, Severity, VanillaText};
+    use crate::diagnostic::codes as core_codes;
+    use crate::diagnostic::{DiagnosticCode, Diagnostics, Severity};
     use crate::load::{JSON_DOCUMENT_WARNING_BYTES, MAX_JSON_DOCUMENT_BYTES};
 
     /// The document input's size check goes by length alone: nothing below 96 MiB, the
@@ -1074,13 +1071,13 @@ mod tests {
         assert!(!size_finding(MAX_JSON_DOCUMENT_BYTES, max, &mut told));
         let warning = told.iter().next().expect("the size warning");
         assert_eq!(warning.severity, Severity::Warning);
-        assert!(matches!(
-            &warning.code,
-            DiagnosticCode::MalformedInput {
-                text: Some(VanillaText::DocumentNearlyTooLarge { loaded, max }),
-                ..
-            } if *loaded == MAX_JSON_DOCUMENT_BYTES && *max == MAX_JSON_DOCUMENT_BYTES
-        ));
+        let limit = MAX_JSON_DOCUMENT_BYTES.to_string();
+        assert_eq!(
+            warning.code,
+            DiagnosticCode::from(
+                core_codes::DOCUMENT_NEARLY_TOO_LARGE.with([limit.clone(), limit])
+            )
+        );
         let mut told = Diagnostics::default();
         assert!(size_finding(MAX_JSON_DOCUMENT_BYTES + 1, max, &mut told));
         let error = told.first_error().expect("the size error");

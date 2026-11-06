@@ -188,8 +188,7 @@ impl Found {
 
 /// Whether the finding carries one of vanilla's texts.
 fn has_vanilla_text(f: &Diagnostic) -> bool {
-    let debug = format!("{:?}", f.code);
-    debug.contains("text: Some(")
+    f.code.vanilla().is_some()
 }
 
 /// A finding of ours (no vanilla text) in pack 0.

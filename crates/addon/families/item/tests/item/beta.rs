@@ -102,10 +102,8 @@ fn a_beta_document_needs_the_beta_apis() {
         Ok(_) => panic!("loaded"),
         Err(rejected) => rejected.diagnostics,
     };
-    assert!(has(&d, |c| matches!(
-        c,
-        DiagnosticCode::BetaFeaturesNotEnabled { .. }
-    )));
+    // By legacy name: the variant and the definitions that were it.
+    assert!(has(&d, |c| matches!(c.name(), "BetaFeaturesNotEnabled")));
     // a base-game pack may not either: the JSON path gates on the toggle alone
     // `a_json_beta_item_needs_the_beta_apis_even_in_a_base_game_pack`)
 }
@@ -187,10 +185,8 @@ fn a_json_beta_item_needs_the_beta_apis_even_in_a_base_game_pack() {
         Ok(_) => panic!("loaded"),
         Err(rejected) => rejected.diagnostics,
     };
-    assert!(has(&d, |c| matches!(
-        c,
-        DiagnosticCode::BetaFeaturesNotEnabled { .. }
-    )));
+    // By legacy name: the variant and the definitions that were it.
+    assert!(has(&d, |c| matches!(c.name(), "BetaFeaturesNotEnabled")));
     assert!(
         has_text(
             &d,
@@ -350,7 +346,8 @@ fn routing_wins_over_the_components_min_size_and_beta_meets_it() {
     assert!(
         d.iter().any(
             |f| f.severity == bedrock_addon_core::diagnostic::Severity::Error
-                && matches!(f.code, DiagnosticCode::MissingRequiredField { .. })
+                // By legacy name: the variant and the definitions that were it.
+                && matches!(f.code.name(), "MissingRequiredField")
                 && f.location.json_path.to_string() == "minecraft:item/components"
         ),
         "{d:#?}"
@@ -362,7 +359,6 @@ fn routing_wins_over_the_components_min_size_and_beta_meets_it() {
 /// read refuses one.
 #[test]
 fn a_beta_file_read_as_an_item_is_refused_in_its_file() {
-    use bedrock_addon_core::diagnostic::VanillaText;
     use bedrock_addon_core::pack_identity::PackRef;
 
     let path = PackPath::new("items/x.json").unwrap();
@@ -371,14 +367,13 @@ fn a_beta_file_read_as_an_item_is_refused_in_its_file() {
     let refusal = refused
         .diagnostics
         .iter()
-        .find(|d| matches!(d.code, DiagnosticCode::UnsupportedVersion { .. }))
+        // By legacy name: the variant and the definitions that were it.
+        .find(|d| matches!(d.code.name(), "UnsupportedVersion"))
         .unwrap_or_else(|| panic!("{:#?}", refused.diagnostics));
-    assert!(
-        matches!(
-            &refusal.code,
-            DiagnosticCode::UnsupportedVersion {
-                text: Some(VanillaText::NoParserForVersion { version })
-            } if version == "beta"
+    assert_eq!(
+        refusal.code,
+        DiagnosticCode::from(
+            bedrock_addon_core::diagnostic::codes::NO_PARSER_FOR_VERSION.with(["beta"])
         ),
         "{refusal:?}"
     );

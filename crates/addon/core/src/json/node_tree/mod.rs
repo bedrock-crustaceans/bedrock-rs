@@ -27,39 +27,38 @@ use facet_json::RawJson;
 use indexmap::IndexMap;
 
 use super::{JsonSlice, Value, parse_at};
+use crate::diagnostic::codes as core_codes;
 use crate::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, Span, VanillaText, cereal,
+    Code, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, Span, VanillaText, cereal,
 };
 use crate::molang::{JsonScalar, Molang, OtherJson, RawVersion, ReadField, ReaderKind};
 
 // ---- vanilla's schema texts -------------------------------------------------------------------
 
 /// A member no name group matches.
-pub const CHILD_NOT_VALID: &str = "child '{}' not valid here.";
+pub const CHILD_NOT_VALID: &str = core_codes::CHILD_NOT_VALID.template();
 /// A matched name whose options all refuse the value's JSON type.
 pub const UNKNOWN_OPTION_TYPE: &str = cereal::UNKNOWN_CHILD_OPTION_TEXT;
 /// A required name group without a member.
-pub const REQUIRED_CHILD: &str = cereal::REQUIRED_CHILD_TEXT;
+pub const REQUIRED_CHILD: &str = core_codes::REQUIRED_CHILD.template();
 /// A bool outside its allowed-value set.
-pub const VALUE_NOT_ALLOWED: &str = "Value '{}' not allowed";
+pub const VALUE_NOT_ALLOWED: &str = core_codes::VALUE_NOT_ALLOWED.template();
 /// The string node's valid-value regexes.
-pub const NOT_ALLOWED_REGEX: &str =
-    "Value '{}' not allowed.  Must match at least one of the following regex patterns: {}";
+pub const NOT_ALLOWED_REGEX: &str = core_codes::NOT_ALLOWED_REGEX.template();
 /// The enum node's valid keys.
-pub const NOT_ALLOWED_KEYS: &str =
-    "Value '{}' not allowed.  Must match at least one of the following keys: {}";
+pub const NOT_ALLOWED_KEYS: &str = core_codes::NOT_ALLOWED_KEYS.template();
 /// The float and int nodes' range.
-pub const OUTSIDE_RANGE: &str = "Value '{}' outside valid range [{}, {}]";
+pub const OUTSIDE_RANGE: &str = core_codes::OUTSIDE_RANGE.template();
 /// The array node's minimum element count.
-pub const ARRAY_TOO_SMALL: &str = "Array too small ({} < {})";
+pub const ARRAY_TOO_SMALL: &str = core_codes::ARRAY_TOO_SMALL.template();
 /// The array node's maximum element count.
-pub const ARRAY_TOO_LARGE: &str = "Array too large ({} > {})";
+pub const ARRAY_TOO_LARGE: &str = core_codes::ARRAY_TOO_LARGE.template();
 /// A version below the node's minimum.
 pub const BELOW_MIN_VERSION: &str = "Version {} below min required version ({})";
 /// A version above the node's maximum.
 pub const ABOVE_MAX_VERSION: &str = "Version {} greater than max allowed version ({})";
 /// The JSON reader failed on the file.
-pub const PARSE_ERROR: &str = "parse error:\n{}";
+pub const PARSE_ERROR: &str = core_codes::PARSE_ERROR.template();
 
 /// A vanilla text with its arguments, as the code fields take it.
 #[allow(
@@ -487,16 +486,15 @@ impl Walk {
     fn unknown(&mut self, key: &str, node: Node<'_>) {
         self.enter(key);
         match self.rules.validation {
-            Validation::Strict => self.error(
-                DiagnosticCode::UnrecognizedField {
-                    text: text(CHILD_NOT_VALID, &[key]),
-                },
-                node.span(),
-            ),
+            Validation::Strict => {
+                self.error(core_codes::CHILD_NOT_VALID.with([key]).into(), node.span());
+            }
+            // The crate's own text of the family, given whole (`vanilla` gives it, as the
+            // legacy text did).
             Validation::Lenient { removed } => self.push(
-                DiagnosticCode::UnrecognizedField {
-                    text: text(removed, &[key]),
-                },
+                core_codes::UNRECOGNIZED_FIELD_WORDED
+                    .with([removed.replacen("{}", key, 1)])
+                    .into(),
                 Severity::Info,
                 node.span(),
             ),
@@ -506,27 +504,19 @@ impl Walk {
 
     /// `Required child <name> not found` at the current path.
     pub fn missing(&mut self, name: &str, node: Node<'_>) {
-        self.error(
-            DiagnosticCode::MissingRequiredField {
-                text: text(REQUIRED_CHILD, &[name]),
-            },
-            node.span(),
-        );
+        self.error(core_codes::REQUIRED_CHILD.with([name]).into(), node.span());
     }
 
-    /// An `InvalidValue` error with one of vanilla's texts at the current path.
-    pub fn invalid(&mut self, template: &'static str, args: &[&str], node: Node<'_>) {
-        self.error(
-            DiagnosticCode::InvalidValue {
-                text: text(template, args),
-            },
-            node.span(),
-        );
+    /// An error with one of vanilla's lines at the current path: an `InvalidValue` of the
+    /// schema tree ([`codes::OUTSIDE_RANGE`](crate::diagnostic::codes::OUTSIDE_RANGE),
+    /// [`codes::NOT_ALLOWED_REGEX`](crate::diagnostic::codes::NOT_ALLOWED_REGEX), ...).
+    pub fn invalid(&mut self, code: Code, node: Node<'_>) {
+        self.error(code.into(), node.span());
     }
 
     /// `"Value '<value>' not allowed"` (a bool outside its set) at the current path.
     pub fn not_allowed(&mut self, value: &str, node: Node<'_>) {
-        self.invalid(VALUE_NOT_ALLOWED, &[value], node);
+        self.invalid(core_codes::VALUE_NOT_ALLOWED.with([value]), node);
     }
 
     /// The members of an object node in the file's order (of a key written twice the first
@@ -633,7 +623,7 @@ impl Walk {
             // value is the same (a `DroppedField` information of the crate's own).
             self.enter(&earlier);
             self.push(
-                DiagnosticCode::DroppedField { text: None },
+                DiagnosticCode::from(&core_codes::DROPPED_FIELD),
                 Severity::Info,
                 span,
             );
@@ -746,14 +736,18 @@ impl Walk {
             // The game holds the member as a float, and the document is written with the
             // float: digits of the file a float does not hold are noted by the crate's own
             // information.
-            self.push(DiagnosticCode::LossyConversion, Severity::Info, node.span());
+            self.push(
+                DiagnosticCode::from(&core_codes::LOSSY_CONVERSION),
+                Severity::Info,
+                node.span(),
+            );
         }
         if nearest.is_infinite() {
             // A number beyond a float is the largest finite float of its sign, with the
             // information of such a number on its token; the file loads, and the written text
             // reads back to the same value without a finding.
             self.push(
-                DiagnosticCode::InvalidValue { text: None },
+                DiagnosticCode::from(&core_codes::INVALID_VALUE),
                 Severity::Info,
                 node.span(),
             );
@@ -813,12 +807,12 @@ impl Walk {
         let elements = self.elements(node).unwrap_or_default();
         let n = elements.len();
         if n != 3 {
-            let template = if n < 3 {
-                ARRAY_TOO_SMALL
+            let def = if n < 3 {
+                &core_codes::ARRAY_TOO_SMALL
             } else {
-                ARRAY_TOO_LARGE
+                &core_codes::ARRAY_TOO_LARGE
             };
-            self.invalid(template, &[&n.to_string(), "3"], node);
+            self.invalid(def.with([n.to_string(), "3".to_owned()]), node);
             return None;
         }
         let mut values = Vec::with_capacity(3);

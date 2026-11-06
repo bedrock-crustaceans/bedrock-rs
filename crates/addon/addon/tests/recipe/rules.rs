@@ -1,7 +1,7 @@
 //! The validation rules (F.3.6) that no fixture row covers, each with its
 //! code and severity.
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon::diagnostic::{Severity, codes};
 use bedrock_addon::families::recipe::{Recipe, UnlockContext};
 use bedrock_addon::load::LoadContext;
 
@@ -49,10 +49,8 @@ fn a_root_that_is_not_an_object_is_skipped() {
         "JSON: {} root value is not a object",
         Severity::Error,
     );
-    assert!(matches!(
-        finding.code,
-        DiagnosticCode::MalformedInput { .. }
-    ));
+    // By legacy name: the variant and the definitions that were it.
+    assert!(matches!(finding.code.name(), "MalformedInput"));
 }
 
 #[test]
@@ -63,10 +61,8 @@ fn a_syntax_error_is_skipped() {
         "JSON: {} has an error: \n {}",
         Severity::Error,
     );
-    assert!(matches!(
-        finding.code,
-        DiagnosticCode::MalformedInput { .. }
-    ));
+    // By legacy name: the variant and the definitions that were it.
+    assert!(matches!(finding.code.name(), "MalformedInput"));
 }
 
 #[test]
@@ -81,10 +77,8 @@ fn a_missing_or_empty_identifier_is_skipped() {
         );
         let diagnostics = rejects(text.as_bytes(), &cx());
         let finding = one(&diagnostics, "JSON: {} has no identifier", Severity::Error);
-        assert!(matches!(
-            finding.code,
-            DiagnosticCode::MissingIdentifier { .. }
-        ));
+        // By legacy name: the variant and the definitions that were it.
+        assert!(matches!(finding.code.name(), "MissingIdentifier"));
     }
 }
 
@@ -487,7 +481,7 @@ fn unknown_members_are_kept_with_an_info() {
     let unknown: Vec<_> = document
         .diagnostics()
         .iter()
-        .filter(|d| matches!(d.code, DiagnosticCode::UnrecognizedField { text: None }))
+        .filter(|d| d.code.is(&codes::UNRECOGNIZED_FIELD))
         .collect();
     assert_eq!(unknown.len(), 2, "{:#?}", document.diagnostics());
     assert!(unknown.iter().all(|d| d.severity == Severity::Info));

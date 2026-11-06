@@ -21,8 +21,9 @@ use facet_format::{FormatSerializer, ScalarValue, SerializeError};
 use super::stack::{is_low, with_stack_for};
 use super::text::MAX_JSON_DEPTH;
 use super::{EncodeError, Indent, Unrepresentable, Value, WriteStyle};
+use crate::diagnostic::codes as core_codes;
 use crate::diagnostic::{
-    Diagnostic, DiagnosticCode, JsonPath, JsonPathSegment, Location, Phase, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, JsonPath, JsonPathSegment, Location, Phase, Severity,
 };
 use crate::document::Unknown;
 
@@ -239,9 +240,7 @@ fn write_once<'f, T: Facet<'f>>(
 /// The finding of an unknown member the writer leaves out, at its path.
 fn dropped(at: JsonPath) -> Diagnostic {
     Diagnostic::new(
-        DiagnosticCode::DroppedField {
-            text: Some(VanillaText::Fixed(UNKNOWN_MEMBER_NOT_WRITTEN)),
-        },
+        DiagnosticCode::from(core_codes::DROPPED_FIELD_WORDED.with([UNKNOWN_MEMBER_NOT_WRITTEN])),
         Severity::Warning,
         Phase::Write,
         Location::new(None, None, at, None),

@@ -1,6 +1,6 @@
 //! `instant_despawn`, `tick_world`, `spawn_on_death`, `addrider`, `home`.
 
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon_core::diagnostic::Severity;
 use bedrock_addon_core::versioning::ConvertMode;
 use bedrock_addon_family_entity::component::{
     Addrider, Home, InstantDespawn, RestrictionType, SpawnOnDeath, TickWorld,
@@ -37,7 +37,8 @@ fn tick_world_radius_outside_two_to_six_is_an_error_in_a_strict_read() {
         assert!(value.is_none(), "{text} is dropped");
         assert!(
             d.iter().any(|f| f.severity == Severity::Error
-                && matches!(f.code, DiagnosticCode::InvalidValue { .. })),
+                // By legacy name: the variant and the definitions that were it.
+                && matches!(f.code.name(), "InvalidValue")),
             "{text}: {d:?}"
         );
     }
@@ -50,7 +51,8 @@ fn tick_world_radius_outside_its_range_takes_the_default_in_the_lenient_conversi
     assert!(!value.never_despawn);
     assert!(has(
         &d,
-        |c| matches!(c, DiagnosticCode::InvalidValue { .. }),
+        // By legacy name: the variant and the definitions that were it.
+        |c| matches!(c.name(), "InvalidValue"),
         // The typed bound is the crate's own in the lenient conversion.
         Severity::Info,
         "radius"
@@ -91,7 +93,8 @@ fn addrider_entry_without_entity_type_is_missing_a_required_member() {
     assert!(value.is_none());
     assert!(
         d.iter()
-            .any(|f| matches!(f.code, DiagnosticCode::MissingRequiredField { .. })),
+            // By legacy name: the variant and the definitions that were it.
+            .any(|f| matches!(f.code.name(), "MissingRequiredField")),
         "{d:?}"
     );
 }
@@ -134,7 +137,8 @@ fn the_lenient_conversion_reads_the_legacy_single_rider() {
     assert!(strict.riders.is_empty());
     assert!(has(
         &d,
-        |c| matches!(c, DiagnosticCode::UnrecognizedField { .. }),
+        // By legacy name: the variant and the definitions that were it.
+        |c| matches!(c.name(), "UnrecognizedField"),
         Severity::Warning,
         "entity_type"
     ));

@@ -296,7 +296,7 @@ mod checked {
     /// in vanilla's files (`query.anger_level(this)`).
     #[test]
     fn a_render_controller_keeps_the_argument_count_lint_the_load_passes_over() {
-        use bedrock_addon::diagnostic::{DiagnosticCode, DiagnosticDetail};
+        use bedrock_addon::diagnostic::DiagnosticDetail;
         use bedrock_addon::molang::DiagCode;
         let document = loaded(parse(
             &with(r#""light_color_multiplier": "query.anger_level(this)""#),
@@ -305,7 +305,8 @@ mod checked {
         let arity: Vec<Severity> = document
             .diagnostics()
             .iter()
-            .filter(|d| matches!(d.code, DiagnosticCode::MolangLint { .. }))
+            // By legacy name: the variant and the definitions that were it.
+            .filter(|d| matches!(d.code.name(), "MolangLint"))
             .filter(|d| {
                 matches!(d.detail.as_deref(), Some(DiagnosticDetail::Molang(m)) if m.code() == DiagCode::QueryArity)
             })

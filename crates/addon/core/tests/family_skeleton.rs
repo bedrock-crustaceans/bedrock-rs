@@ -3,6 +3,7 @@
 
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, VanillaText};
 use bedrock_addon_core::document::NoBeta;
 use bedrock_addon_core::id::{BlockId, kind};
@@ -582,12 +583,14 @@ fn a_json_document_that_fails_is_rejected_in_its_file_and_closed_once() {
         <Glint as Content>::parse(&glint_path(), &[0xff, 0xfe, 0x00], &cx).expect_err("no text");
     let codes: Vec<_> = unreadable.diagnostics.iter().map(|d| &d.code).collect();
     assert!(
+        // By legacy name: the variant and the definitions that were it.
         matches!(
-            codes.as_slice(),
-            [
-                DiagnosticCode::MalformedInput { .. },
-                DiagnosticCode::DocumentRejected { .. }
-            ]
+            codes
+                .iter()
+                .map(|code| code.name())
+                .collect::<Vec<_>>()
+                .as_slice(),
+            ["MalformedInput", "DocumentRejected"]
         ),
         "{codes:?}"
     );
@@ -733,7 +736,7 @@ fn a_json_document_parses_as_written_without_upgrading() {
     let closings = rejected
         .diagnostics
         .iter()
-        .filter(|d| matches!(d.code, DiagnosticCode::DocumentRejected { .. }))
+        .filter(|d| d.code.name() == "DocumentRejected")
         .count();
     assert_eq!(closings, 1, "closed once");
 }
@@ -848,10 +851,9 @@ fn walked() -> Vec<WalkFile> {
 
 /// The finding of an unreadable file, as voxel shape spells it.
 fn malformed() -> Diagnostic {
-    Diagnostic::error(DiagnosticCode::MalformedInput {
-        message: "not UTF-8 JSON within the nesting limit".to_owned(),
-        text: None,
-    })
+    Diagnostic::of(bedrock_addon_core::diagnostic::builders::syntax(
+        "not UTF-8 JSON within the nesting limit",
+    ))
 }
 
 /// The hand loader's file step voxel shape had before `load::registry` (its `parse_file`),
@@ -1034,7 +1036,7 @@ fn registry_loads_a_json_definition_as_the_hand_written_loader_does() {
     assert!(
         generic
             .diagnostics()
-            .any(|d| matches!(d.code, DiagnosticCode::ShadowedDefinition { .. })),
+            .any(|d| d.code.name() == "ShadowedDefinition"),
         "the family's rule: each replaced glint noted"
     );
     assert!(GLINTS.needs.is_empty() && GLINTS.then.is_none());
@@ -1226,9 +1228,7 @@ impl JsonDocument for Flare {
                     && !cx.is_base_game_pack =>
             {
                 let mut diagnostics = flare.diagnostics().clone();
-                diagnostics.push(Diagnostic::error(DiagnosticCode::NamespaceRule {
-                    text: None,
-                }));
+                diagnostics.push(Diagnostic::of(&core_codes::NAMESPACE_RULE));
                 DocumentRead::Rejected(
                     Some(flare.description.identifier.to_string()),
                     Rejected::located(flare.origin().clone(), diagnostics),
@@ -1274,12 +1274,11 @@ fn a_stable_json_document_refuses_a_beta_file_and_closes_it_failed() {
     )
     .expect_err("the stable type reads no beta document");
     assert!(
-        rejected.diagnostics.iter().any(|d| matches!(
-            &d.code,
-            DiagnosticCode::UnsupportedVersion {
-                text: Some(VanillaText::NoParserForVersion { version })
-            } if version == "beta"
-        )),
+        rejected
+            .diagnostics
+            .iter()
+            .any(|d| d.code
+                == DiagnosticCode::from(core_codes::NO_PARSER_FOR_VERSION.with(["beta"]))),
         "the beta refusal entity's own parse pushes: {:?}",
         rejected.diagnostics
     );
@@ -1354,12 +1353,13 @@ fn a_beta_document_a_family_built_opens_and_closes_once() {
         [true],
         "closed once, as failed"
     );
-    assert!(refused.diagnostics.iter().any(|d| matches!(
-        &d.code,
-        DiagnosticCode::UnsupportedVersion {
-            text: Some(VanillaText::NoParserForVersion { version })
-        } if version == "beta"
-    )));
+    assert!(
+        refused
+            .diagnostics
+            .iter()
+            .any(|d| d.code
+                == DiagnosticCode::from(core_codes::NO_PARSER_FOR_VERSION.with(["beta"])))
+    );
     for finding in &refused.diagnostics {
         assert_eq!(finding.location.path, Some(flare_path()));
     }
@@ -1368,7 +1368,7 @@ fn a_beta_document_a_family_built_opens_and_closes_once() {
 const VANILLA_FLARE: &str = r#"{"format_version": "1.0.0", "demo:flare": {"description": {"identifier": "minecraft:sun"}, "level": 1}}"#;
 
 fn is_namespace_rule(d: &Diagnostic) -> bool {
-    matches!(d.code, DiagnosticCode::NamespaceRule { .. })
+    d.code.name() == "NamespaceRule"
 }
 
 #[test]
@@ -1543,7 +1543,7 @@ fn impl_no_molang_states_a_struct_without_molang_fields() {
         !read
             .diagnostics()
             .iter()
-            .any(|d| matches!(d.code, DiagnosticCode::MolangNotChecked { .. })),
+            .any(|d| d.code.name() == "MolangNotChecked"),
         "nothing to check"
     );
 }
@@ -1623,7 +1623,7 @@ fn single_walks_its_struct_for_molang_pass_two_as_a_chain_of_one_does() {
         single
             .diagnostics
             .iter()
-            .any(|d| matches!(d.code, DiagnosticCode::MolangNotChecked { .. })),
+            .any(|d| d.code.name() == "MolangNotChecked"),
         "pass 2 reached the condition: {:?}",
         single.diagnostics
     );

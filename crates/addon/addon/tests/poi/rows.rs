@@ -1,7 +1,8 @@
 //! The single-document rows of the fixtures (poi01–poi21; poi11 and poi22 need a stack and are
 //! in `stack.rs`), each loaded from its fixture file with the `poi` experiment on.
 
-use bedrock_addon::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, Severity, VanillaText};
+use bedrock_addon::diagnostic::codes;
+use bedrock_addon::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, Severity};
 use bedrock_addon::families::poi::{PoiDescription, PoiTag, PoiType};
 use bedrock_addon::id::{BlockId, PoiTagId, PoiTypeId};
 use bedrock_addon::pack::PackOrigin;
@@ -134,12 +135,7 @@ fn poi06_below_floor_has_no_parser() {
     let d = rejected::<PoiType>(&fixture("poi06_below_floor/poi/blocks/forge.json"));
     let error = only_error(&d);
     assert!(
-        matches!(
-            &error.code,
-            DiagnosticCode::UnsupportedVersion {
-                text: Some(VanillaText::NoParserForVersion { version })
-            } if version == "1.26.30"
-        ),
+        error.code == DiagnosticCode::from(codes::NO_PARSER_FOR_VERSION.with(["1.26.30"])),
         "{:?}",
         error.code
     );
@@ -169,12 +165,7 @@ fn poi07_above_engine_has_no_parser() {
     let d = rejected::<PoiType>(&text);
     let error = only_error(&d);
     assert!(
-        matches!(
-            &error.code,
-            DiagnosticCode::UnsupportedVersion {
-                text: Some(VanillaText::NoParserForVersion { version })
-            } if *version == above
-        ),
+        error.code == DiagnosticCode::from(codes::NO_PARSER_FOR_VERSION.with([above.clone()])),
         "{:?}",
         error.code
     );
@@ -184,16 +175,7 @@ fn poi07_above_engine_has_no_parser() {
 fn poi08_missing_version_is_rejected_with_the_puv_text() {
     let d = rejected::<PoiType>(&fixture("poi08_missing_version/poi/blocks/forge.json"));
     let error = only_error(&d);
-    assert!(
-        matches!(
-            error.code,
-            DiagnosticCode::MissingFormatVersion {
-                text: Some(VanillaText::NoValidVersion)
-            }
-        ),
-        "{:?}",
-        error.code
-    );
+    assert!(error.code.is(&codes::NO_VALID_VERSION), "{:?}", error.code);
     assert_eq!(
         error.code.to_string(),
         "no valid version passed by the caller or found in the input"
@@ -205,13 +187,7 @@ fn poi09_third_root_member_is_rejected() {
     let d = rejected::<PoiType>(&fixture("poi09_third_root_member/poi/blocks/forge.json"));
     let error = only_error(&d);
     assert!(
-        matches!(
-            error.code,
-            DiagnosticCode::MalformedInput {
-                text: Some(VanillaText::DocumentMemberCount),
-                ..
-            }
-        ),
+        error.code.is(&codes::DOCUMENT_MEMBER_COUNT),
         "{:?}",
         error.code
     );
@@ -223,7 +199,8 @@ fn poi10_unknown_payload_is_a_missing_payload_error() {
     for d in [rejected::<PoiType>(&text), rejected::<PoiTag>(&text)] {
         let error = only_error(&d);
         assert!(
-            matches!(error.code, DiagnosticCode::MissingPayload { .. }),
+            // By legacy name: the variant and the definitions that were it.
+            matches!(error.code.name(), "MissingPayload"),
             "{:?}",
             error.code
         );
@@ -240,10 +217,8 @@ fn poi10_unknown_payload_is_a_missing_payload_error() {
         .filter(|d| d.severity == Severity::Error && !is_closing(d))
         .collect();
     assert_eq!(errors.len(), 1, "{}", describe(poi.diagnostics()));
-    assert!(matches!(
-        errors[0].code,
-        DiagnosticCode::MissingPayload { .. }
-    ));
+    // By legacy name: the variant and the definitions that were it.
+    assert!(matches!(errors[0].code.name(), "MissingPayload"));
     assert_eq!(
         errors[0]
             .location
@@ -259,7 +234,8 @@ fn poi12_missing_blocks_is_rejected() {
     let d = rejected::<PoiType>(&fixture("poi12_missing_blocks/poi/blocks/forge.json"));
     let error = only_error(&d);
     assert!(
-        matches!(error.code, DiagnosticCode::MissingRequiredField { .. }),
+        // By legacy name: the variant and the definitions that were it.
+        matches!(error.code.name(), "MissingRequiredField"),
         "{:?}",
         error.code
     );
@@ -282,7 +258,8 @@ fn poi13_bad_identifier_is_rejected_for_each_spelling() {
         )));
         let error = only_error(&d);
         assert!(
-            matches!(error.code, DiagnosticCode::InvalidValue { .. }),
+            // By legacy name: the variant and the definitions that were it.
+            matches!(error.code.name(), "InvalidValue"),
             "{file}: {:?}",
             error.code
         );
@@ -299,7 +276,8 @@ fn poi14_bad_block_name_is_a_pattern_error() {
     let d = rejected::<PoiType>(&fixture("poi14_bad_block_name/poi/blocks/forge.json"));
     let error = only_error(&d);
     assert!(
-        matches!(error.code, DiagnosticCode::InvalidValue { .. }),
+        // By legacy name: the variant and the definitions that were it.
+        matches!(error.code.name(), "InvalidValue"),
         "{:?}",
         error.code
     );
@@ -336,7 +314,8 @@ fn poi16_usable_distance_range_rejects_300() {
     ));
     let error = only_error(&d);
     assert!(
-        matches!(error.code, DiagnosticCode::InvalidValue { .. }),
+        // By legacy name: the variant and the definitions that were it.
+        matches!(error.code.name(), "InvalidValue"),
         "{:?}",
         error.code
     );
@@ -351,7 +330,8 @@ fn poi17_unknown_member_is_an_error() {
     let d = rejected::<PoiType>(&fixture("poi17_unknown_member/poi/blocks/forge.json"));
     let error = only_error(&d);
     assert!(
-        matches!(error.code, DiagnosticCode::UnrecognizedField { .. }),
+        // By legacy name: the variant and the definitions that were it.
+        matches!(error.code.name(), "UnrecognizedField"),
         "{:?}",
         error.code
     );
@@ -372,7 +352,8 @@ fn poi18_empty_blocks_loads_with_an_information() {
     );
     assert_eq!(forge.diagnostics().iter().count(), 1);
     let warning = forge.diagnostics().iter().next().unwrap();
-    assert!(matches!(warning.code, DiagnosticCode::PoiNoBlocks));
+    // By legacy name: the variant and the definitions that were it.
+    assert!(matches!(warning.code.name(), "PoiNoBlocks"));
     assert_eq!(
         warning.location.json_path.to_string(),
         "minecraft:poi_block/blocks"
@@ -388,7 +369,8 @@ fn poi19_duplicate_block_in_list_loads_with_one_entry() {
     assert_eq!(forge.diagnostics().iter().count(), 1);
     let info = forge.diagnostics().iter().next().unwrap();
     assert!(
-        matches!(info.code, DiagnosticCode::NoEffect { .. }),
+        // By legacy name: the variant and the definitions that were it.
+        matches!(info.code.name(), "NoEffect"),
         "{:?}",
         info.code
     );
@@ -405,7 +387,8 @@ fn poi20_tag_bad_parent_is_a_pattern_error() {
     let d = rejected::<PoiTag>(&fixture("poi20_tag_bad_parent/poi/tags/tag.json"));
     let error = only_error(&d);
     assert!(
-        matches!(error.code, DiagnosticCode::InvalidValue { .. }),
+        // By legacy name: the variant and the definitions that were it.
+        matches!(error.code.name(), "InvalidValue"),
         "{:?}",
         error.code
     );

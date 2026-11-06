@@ -3,6 +3,7 @@
 //! suppression, the routing hook, Molang pass 1, the effective version and the generated
 //! `history::ToyHistory` methods.
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::document::{ComponentMap, ComponentRef, Document, Origin, VersionInfo};
 use bedrock_addon_core::json::{JsonSlice, Value};
@@ -72,7 +73,7 @@ fn a_floor_document_walks_every_step_to_latest() {
     assert_eq!(
         codes(&outcome),
         [(
-            DiagnosticCode::DroppedField { text: None },
+            DiagnosticCode::from(&core_codes::DROPPED_FIELD),
             Severity::Warning
         )]
     );
@@ -265,10 +266,10 @@ fn the_chain_parses_a_struct_without_upgrading_it() {
         &mut d,
     );
     assert!(none.is_none());
-    assert!(matches!(
-        d.first_error().map(|e| &e.code),
-        Some(DiagnosticCode::UnsupportedVersion { .. })
-    ));
+    assert!(
+        d.first_error()
+            .is_some_and(|e| e.code.name() == "UnsupportedVersion")
+    );
     assert_eq!(
         d.first_error().unwrap().location.json_path.to_string(),
         "format_version"
@@ -353,10 +354,12 @@ fn a_family_rule_rejects_the_document() {
         r#"{"description": {"identifier": "demo:x"}, "color": "BLACK"}"#,
     ));
     assert!(outcome.value.is_none());
-    assert!(matches!(
-        outcome.diagnostics.first_error().map(|e| &e.code),
-        Some(DiagnosticCode::InvalidValue { .. })
-    ));
+    assert!(
+        outcome
+            .diagnostics
+            .first_error()
+            .is_some_and(|e| e.code.name() == "InvalidValue")
+    );
 }
 
 #[test]
@@ -471,13 +474,13 @@ fn a_beta_only_family_loads_only_beta_documents() {
     ] {
         let outcome = load_with::<BetaOnly>(text, &cx);
         assert!(outcome.value.is_none(), "{text}");
-        assert!(matches!(
-            outcome.diagnostics.first_error().map(|e| &e.code),
-            Some(
-                DiagnosticCode::UnsupportedVersion { .. }
-                    | DiagnosticCode::MissingFormatVersion { .. }
-            )
-        ));
+        assert!(
+            outcome
+                .diagnostics
+                .first_error()
+                .is_some_and(|e| e.code.name() == "UnsupportedVersion"
+                    || e.code.name() == "MissingFormatVersion")
+        );
     }
 }
 

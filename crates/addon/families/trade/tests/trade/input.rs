@@ -5,7 +5,7 @@
 //! legacy parser then reads its own version only from a string (0.0.0 otherwise), and a member
 //! written as `null` rejects the table at the 1.21.30 cereal slice.
 
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon_core::diagnostic::Severity;
 use bedrock_addon_core::version::FormatVersion;
 
 use super::common::{doc, found_at, loads, rejects};
@@ -32,10 +32,8 @@ fn a_format_version_that_gives_no_version_is_malformed() {
         let errors: Vec<_> = d.iter().filter(|f| f.severity == Severity::Error).collect();
         assert_eq!(errors.len(), 1, "{version}: {d:#?}");
         assert!(
-            matches!(
-                errors[0].code,
-                DiagnosticCode::MalformedFormatVersion { .. }
-            ),
+            // By legacy name: the variant and the definitions that were it.
+            errors[0].code.name() == "MalformedFormatVersion",
             "{version}: {:?}",
             errors[0].code
         );

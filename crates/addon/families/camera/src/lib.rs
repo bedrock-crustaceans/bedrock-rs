@@ -40,7 +40,7 @@ mod tests;
 
 use std::convert::Infallible;
 
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, VanillaText};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics};
 use bedrock_addon_core::document::unversioned::origin_of;
 use bedrock_addon_core::document::{
     Contribution, Document, JsonDefinition, JsonDocument, JsonPlaced, NoBeta, Registry, Rejected,
@@ -249,7 +249,8 @@ impl Family for PresetFamily {
         // is 'Unrecognized field on camera preset!'.
         let unknown = diagnostics
             .iter()
-            .any(|d| matches!(d.code, DiagnosticCode::UnrecognizedField { .. }));
+            // By legacy name: the variant and the definitions that were it.
+            .any(|d| matches!(d.code.name(), "UnrecognizedField"));
         if failed && !unknown {
             closing_line(diagnostics, texts::FAILED_PRESETS);
         }
@@ -270,9 +271,7 @@ impl Family for ListFamily {
         check: EnvelopeCheck::Never,
         // The required bind of `format_version`.
         missing: MissingVersion::Reject {
-            text: Some(VanillaText::Fixed(
-                bedrock_addon_core::versioning::shape::MISSING_REQUIRED,
-            )),
+            code: &bedrock_addon_core::diagnostic::codes::FORMAT_VERSION_REQUIRED,
         },
         ..Envelope::DEFAULT
     };
@@ -291,21 +290,34 @@ impl Family for ListFamily {
     ) {
         let found = std::mem::take(diagnostics);
         for mut finding in found {
-            match &mut finding.code {
+            // A syntax finding raised on a definition comes back to `MalformedInput`, its
+            // message from the detail or the line, for the list's sentence below.
+            if finding.code.name() == "MalformedInput"
+                && !matches!(finding.code, DiagnosticCode::MalformedInput { .. })
+            {
+                let message = finding.syntax_message().unwrap_or_default().to_owned();
+                finding.code = DiagnosticCode::MalformedInput {
+                    message,
+                    text: None,
+                };
+                finding.detail = None;
+            }
+            // By legacy name: the variant and the definitions that were it.
+            if finding.code.name() == "UnsupportedVersion" {
                 // The version range is a constraint on the version string, not a slice of the
                 // chain: the game's text for it is not known, so neither generic text stands in.
-                DiagnosticCode::UnsupportedVersion { text } => *text = None,
-                // "Camera List file %s is not valid JSON: %s"
-                DiagnosticCode::MalformedInput { message, text } => {
-                    *text = texts::formatted(texts::LIST_NOT_JSON, &[path.as_str(), message]);
-                }
-                _ => {}
+                finding.code = DiagnosticCode::UnsupportedVersion { text: None };
+            }
+            // "Camera List file %s is not valid JSON: %s"
+            if let DiagnosticCode::MalformedInput { message, text } = &mut finding.code {
+                *text = texts::formatted(texts::LIST_NOT_JSON, &[path.as_str(), message]);
             }
             diagnostics.push(finding);
         }
         let not_json = diagnostics
             .iter()
-            .any(|d| matches!(d.code, DiagnosticCode::MalformedInput { .. }));
+            // By legacy name: the variant and the definitions that were it.
+            .any(|d| matches!(d.code.name(), "MalformedInput"));
         if failed && !not_json {
             closing_line(diagnostics, texts::LIST_INVALID);
         }

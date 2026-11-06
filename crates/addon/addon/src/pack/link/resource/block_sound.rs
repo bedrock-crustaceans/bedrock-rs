@@ -1,6 +1,6 @@
 //! The sound of a `blocks.json` entry against the block sound types of `sounds.json`.
 
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon_core::diagnostic::Severity;
 
 use super::super::{At, Findings, LinkCx, kinds, unknown_sound};
 use super::blocks_json::{Writers, entry_key, entry_path};
@@ -36,7 +36,8 @@ pub(super) fn run(cx: &LinkCx<'_>, out: &mut Findings) {
         // value, is that value.
         let refused = NOT_A_STRING.contains(&sound)
             && document.diagnostics().iter().any(|finding| {
-                matches!(finding.code, DiagnosticCode::InvalidType { .. })
+                // By legacy name: the variant and the definitions that were it.
+                matches!(finding.code.name(), "InvalidType")
                     && finding.location.json_path.len() > 1
                     && finding.location.json_path.last_key() == Some("sound")
             });

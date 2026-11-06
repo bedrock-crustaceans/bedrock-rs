@@ -89,13 +89,7 @@ fn errors_at_top<'a>(findings: impl Iterator<Item = &'a Diagnostic>, path: &str)
                 == Some(0)
         })
         .filter(|d| d.location.path.as_ref().map(PackPath::as_str) == Some(path))
-        .map(|d| {
-            format!("{:?}", d.code)
-                .split(|c: char| !c.is_ascii_alphanumeric())
-                .next()
-                .unwrap_or_default()
-                .to_owned()
-        })
+        .map(|d| d.code.name().to_owned())
         .collect()
 }
 

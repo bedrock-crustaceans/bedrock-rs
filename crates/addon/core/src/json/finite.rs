@@ -13,6 +13,7 @@ use std::ops::Range;
 use super::Value;
 use super::lex::{Kind, Lexer, Rules, Structure, key_text};
 use super::slice::JsonSlice;
+use crate::diagnostic::codes as core_codes;
 use crate::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, JsonPathSegment, Location, Phase, Severity,
     Span,
@@ -49,7 +50,7 @@ pub fn clamp_non_finite_warned(
         let mut path = at.clone();
         path.append(&number.path);
         d.push(Diagnostic::new(
-            DiagnosticCode::InvalidValue { text: None },
+            DiagnosticCode::from(&core_codes::INVALID_VALUE),
             Severity::Info,
             Phase::Parse,
             Location::new(None, None, path, number.span),

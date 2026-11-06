@@ -1,6 +1,7 @@
 //! Reporting while a merged sound document is read: findings at the JSON path the reader is
 //! at, and the members no reader names.
 
+use crate::diagnostic::codes as core_codes;
 use crate::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity};
 use crate::document::UnknownMembers;
 use crate::json::Value;
@@ -91,7 +92,7 @@ pub fn check_unknown(
             // the rest.
             report.at(
                 key,
-                DiagnosticCode::UnrecognizedField { text: None },
+                DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD),
                 Severity::Info,
             );
         }

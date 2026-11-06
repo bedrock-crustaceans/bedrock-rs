@@ -11,14 +11,14 @@ use super::molang::{MolangRun, run};
 use super::{
     BonePattern, RenderController, RenderControllerArrays, RenderControllerFile, Rgba, UvAnim,
 };
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, JsonPathSegment, Phase, Severity, Span,
     VanillaText,
 };
 use bedrock_addon_core::json::node_tree::{
-    ABOVE_MAX_VERSION, ARRAY_TOO_LARGE, ARRAY_TOO_SMALL, BELOW_MIN_VERSION, Failure, Group, Hit,
-    Kind, Lossy, Names, Node, Order, Pattern, REQUIRED_CHILD, Rules, UNKNOWN_OPTION_TYPE,
-    VALUE_NOT_ALLOWED, Validation, Walk, text,
+    ABOVE_MAX_VERSION, BELOW_MIN_VERSION, Failure, Group, Hit, Kind, Lossy, Names, Node, Order,
+    Pattern, REQUIRED_CHILD, Rules, UNKNOWN_OPTION_TYPE, Validation, Walk, text,
 };
 use bedrock_addon_core::json::{
     JsonSlice, MAX_JSON_DEPTH, Value, check_depth, last_wins, parse_at,
@@ -640,7 +640,7 @@ fn read_controller(walk: &mut Walk, node: Node<'_>, key: &str, drafts: &mut Draf
             }
             Some(false) => {
                 // The node's allowed-value set is `{true}`.
-                walk.invalid(VALUE_NOT_ALLOWED, &["false"], v);
+                walk.invalid(core_codes::VALUE_NOT_ALLOWED.with(["false"]), v);
                 Hit::Failed
             }
             None => Hit::Failed,
@@ -664,7 +664,11 @@ fn read_controller(walk: &mut Walk, node: Node<'_>, key: &str, drafts: &mut Draf
 /// "Required child  not found" with an empty name: an array whose required element option
 /// found no element.
 fn no_element(walk: &mut Walk, node: Node<'_>) {
-    walk.invalid(REQUIRED_CHILD, &[""], node);
+    // The required-child line told as an invalid value: the line given whole.
+    walk.invalid(
+        core_codes::INVALID_VALUE_WORDED.with([REQUIRED_CHILD.replacen("{}", "", 1)]),
+        node,
+    );
 }
 
 /// An array of at least one string, each a Molang source.
@@ -816,13 +820,13 @@ pub(super) fn read_pair(walk: &mut Walk, node: Node<'_>) -> Option<[Molang; 2]> 
         values.extend(walk.molang(element));
         walk.leave();
     }
-    let template = match n.cmp(&2) {
-        std::cmp::Ordering::Less => Some(ARRAY_TOO_SMALL),
-        std::cmp::Ordering::Greater => Some(ARRAY_TOO_LARGE),
+    let def = match n.cmp(&2) {
+        std::cmp::Ordering::Less => Some(&core_codes::ARRAY_TOO_SMALL),
+        std::cmp::Ordering::Greater => Some(&core_codes::ARRAY_TOO_LARGE),
         std::cmp::Ordering::Equal => None,
     };
-    if let Some(template) = template {
-        walk.invalid(template, &[&n.to_string(), "2"], node);
+    if let Some(def) = def {
+        walk.invalid(def.with([n.to_string(), "2".to_owned()]), node);
         return None;
     }
     values.try_into().ok()

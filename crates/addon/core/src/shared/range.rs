@@ -4,7 +4,7 @@ use facet_value::{VArray, VObject};
 
 use super::read::{self, Failure, ROOT, ShapeError, ShapeErrorKind, wrong_type};
 use super::{finding, sealed};
-use crate::diagnostic::{DiagnosticCode, Diagnostics, JsonPath, Severity};
+use crate::diagnostic::{DiagnosticCode, Diagnostics, JsonPath, Severity, codes};
 use crate::json::Value;
 
 /// An inclusive range of `T`: the game's integer and float ranges.
@@ -180,7 +180,7 @@ impl<T: RangeEnd> Range<T> {
         if self.swapped {
             // The game swaps the ends silently; the information is the crate's own.
             out.push(finding(
-                DiagnosticCode::InvalidValue { text: None },
+                DiagnosticCode::from(&codes::INVALID_VALUE),
                 Severity::Info,
                 at,
             ));

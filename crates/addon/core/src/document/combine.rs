@@ -6,7 +6,7 @@ use std::cmp::Ordering;
 use std::fmt;
 
 use super::{Definition, Document, Origin, Rejected, Unknown};
-use crate::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, Phase, Severity};
+use crate::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, Phase, Severity, codes};
 use crate::id::Id;
 use crate::pack_identity::PackRef;
 
@@ -24,7 +24,7 @@ impl Notice {
     /// `ShadowedDefinition` at info: a definition replaced, or one ignored.
     pub fn shadowed() -> Self {
         Self {
-            code: DiagnosticCode::ShadowedDefinition { text: None },
+            code: DiagnosticCode::from(&codes::SHADOWED_DEFINITION),
             severity: Severity::Info,
         }
     }
@@ -37,7 +37,7 @@ impl Notice {
     /// or a feature's "already exists").
     pub fn duplicate() -> Self {
         Self {
-            code: DiagnosticCode::DuplicateIdentifier { text: None },
+            code: DiagnosticCode::from(&codes::DUPLICATE_IDENTIFIER),
             severity: Severity::Info,
         }
     }

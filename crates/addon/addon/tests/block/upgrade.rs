@@ -102,15 +102,7 @@ where
 
 /// The codes of the findings.
 fn codes(d: &Diagnostics) -> Vec<String> {
-    d.iter()
-        .map(|f| {
-            format!("{:?}", f.code)
-                .split([' ', '{', '('])
-                .next()
-                .unwrap_or("")
-                .to_owned()
-        })
-        .collect()
+    d.iter().map(|f| f.code.name().to_owned()).collect()
 }
 
 /// How many findings have `code`.
@@ -122,7 +114,8 @@ fn count(d: &Diagnostics, code: fn(&DiagnosticCode) -> bool) -> usize {
 fn s00_1_16_0_description_flags() {
     let d = compare::<v1_16_0::Block>("s00_1_16_0_description_flags", &context());
     assert_eq!(
-        count(&d, |c| matches!(c, DiagnosticCode::DroppedField { .. })),
+        // By legacy name: the variant and the definitions that were it.
+        count(&d, |c| matches!(c.name(), "DroppedField")),
         2,
         "{d:#?}"
     );
@@ -136,10 +129,12 @@ fn s00_1_16_0_description_flags() {
     );
     let block = loads(&text, &context());
     assert_eq!(block.version().parsed_as, FormatVersion::new(1, 16, 0));
-    assert!(block.diagnostics().iter().any(|f| matches!(
-        f.code,
-        DiagnosticCode::MissingFormatVersion { .. }
-    ) && f.severity == Severity::Info));
+    // By legacy name: the variant and the definitions that were it.
+    assert!(
+        block.diagnostics().iter().any(
+            |f| matches!(f.code.name(), "MissingFormatVersion") && f.severity == Severity::Info
+        )
+    );
 }
 
 #[test]
@@ -162,7 +157,8 @@ fn absorption_input_check() {
         assert!(
             has(
                 &d,
-                |c| matches!(c, DiagnosticCode::InvalidValue { .. }),
+                // By legacy name: the variant and the definitions that were it.
+                |c| matches!(c.name(), "InvalidValue"),
                 Severity::Error,
                 "invalid component"
             ),
@@ -170,13 +166,15 @@ fn absorption_input_check() {
         );
         assert!(has(
             &d,
-            |c| matches!(c, DiagnosticCode::DocumentRejected { .. }),
+            // By legacy name: the variant and the definitions that were it.
+            |c| matches!(c.name(), "DocumentRejected"),
             Severity::Error,
             "Failed to upgrade to version '1.18.0' from document version '1.16.100'"
         ));
         assert!(has(
             &d,
-            |c| matches!(c, DiagnosticCode::DocumentRejected { .. }),
+            // By legacy name: the variant and the definitions that were it.
+            |c| matches!(c.name(), "DocumentRejected"),
             Severity::Error,
             "Final json version"
         ));
@@ -209,7 +207,8 @@ fn s02_1_18_0_unwrap_all() {
     );
     assert!(has(
         &d,
-        |c| matches!(c, DiagnosticCode::DroppedComponent { .. }),
+        // By legacy name: the variant and the definitions that were it.
+        |c| matches!(c.name(), "DroppedComponent"),
         Severity::Error,
         "Component minecraft:flammable is missing required field burn_odds, component will be discarded"
     ));
@@ -221,14 +220,16 @@ fn unwrap_missing_field() {
     assert!(
         has(
             &d,
-            |c| matches!(c, DiagnosticCode::DroppedComponent { .. }),
+            // By legacy name: the variant and the definitions that were it.
+            |c| matches!(c.name(), "DroppedComponent"),
             Severity::Error,
             "Component minecraft:loot is missing required field loot_table, component will be discarded"
         ),
         "{d:#?}"
     );
     assert_eq!(
-        count(&d, |c| matches!(c, DiagnosticCode::ClampedValue { .. })),
+        // By legacy name: the variant and the definitions that were it.
+        count(&d, |c| matches!(c.name(), "ClampedValue")),
         1,
         "{d:#?}"
     );
@@ -247,7 +248,8 @@ fn friction_input_check() {
     assert!(
         has(
             &d,
-            |c| matches!(c, DiagnosticCode::InvalidValue { .. }),
+            // By legacy name: the variant and the definitions that were it.
+            |c| matches!(c.name(), "InvalidValue"),
             Severity::Error,
             "minecraft:friction:  invalid component"
         ),
@@ -346,7 +348,8 @@ fn s05_1_19_30_menu_category_rules() {
             Some(text) => assert!(
                 has(
                     &d,
-                    |c| matches!(c, DiagnosticCode::InvalidValue { .. }),
+                    // By legacy name: the variant and the definitions that were it.
+                    |c| matches!(c.name(), "InvalidValue"),
                     Severity::Error,
                     text
                 ),
@@ -358,7 +361,8 @@ fn s05_1_19_30_menu_category_rules() {
                 assert!(
                     has(
                         &d,
-                        |c| matches!(c, DiagnosticCode::DeprecatedMember { .. }),
+                        // By legacy name: the variant and the definitions that were it.
+                        |c| matches!(c.name(), "DeprecatedMember"),
                         Severity::Info,
                         ""
                     ),
@@ -395,7 +399,8 @@ fn states_gate() {
         block
             .diagnostics()
             .iter()
-            .any(|f| matches!(f.code, DiagnosticCode::DroppedField { .. }))
+            // By legacy name: the variant and the definitions that were it.
+            .any(|f| matches!(f.code.name(), "DroppedField"))
     );
     // 1.19.60: non-empty states reject the block; empty ones pass.
     let d = rejected(
@@ -405,7 +410,8 @@ fn states_gate() {
     assert!(
         has(
             &d,
-            |c| matches!(c, DiagnosticCode::MissingToggles { .. }),
+            // By legacy name: the variant and the definitions that were it.
+            |c| matches!(c.name(), "MissingToggles"),
             Severity::Error,
             "To use custom block properties, use format version 1.19.70 or higher"
         ),
@@ -442,13 +448,15 @@ fn s06_1_19_40_rotation_part_visibility() {
     assert!(d.iter().any(|f| matches!(&f.code, DiagnosticCode::DuplicateComponentVersion { old, new } if old == "minecraft:rotation" && new == "minecraft:transformation")), "{d:#?}");
     assert!(has(
         &d,
-        |c| matches!(c, DiagnosticCode::DroppedComponent { .. }),
+        // By legacy name: the variant and the definitions that were it.
+        |c| matches!(c.name(), "DroppedComponent"),
         Severity::Info,
         "The part_visibility component has been deprecated"
     ));
     assert!(has(
         &d,
-        |c| matches!(c, DiagnosticCode::DroppedComponent { .. }),
+        // By legacy name: the variant and the definitions that were it.
+        |c| matches!(c.name(), "DroppedComponent"),
         Severity::Info,
         "The part_visibility component is no longer supported"
     ));
@@ -460,7 +468,8 @@ fn s07_1_19_80_bone_visibility_bools() {
     assert_eq!(d.len(), 1, "{d:#?}");
     assert!(has(
         &d,
-        |c| matches!(c, DiagnosticCode::DroppedField { .. }),
+        // By legacy name: the variant and the definitions that were it.
+        |c| matches!(c.name(), "DroppedField"),
         Severity::Error,
         "bone_visibility | lid: Only boolean values are supported for bone visibilities in format versions before 1.20.10."
     ));
@@ -472,7 +481,8 @@ fn s08_1_20_10_unit_cube_sections() {
     assert_eq!(d.len(), 1, "{d:#?}");
     assert!(has(
         &d,
-        |c| matches!(c, DiagnosticCode::InvalidValue { .. }),
+        // By legacy name: the variant and the definitions that were it.
+        |c| matches!(c.name(), "InvalidValue"),
         Severity::Error,
         "A block cannot have both a unit cube and a geometry component."
     ));
@@ -487,13 +497,14 @@ fn unit_cube_deprecated() {
     let block = loads(&text, &context());
     assert!(block.deprecated.unit_cube.is_none(), "no side-car");
     assert!(
-        block.diagnostics().iter().any(|f| matches!(
-            f.code,
-            DiagnosticCode::DeprecatedMember { .. }
-        ) && f
-            .code
-            .to_string()
-            .contains("minecraft:unit_cube component is not valid from 1.20.60 onward.")),
+        // By legacy name: the variant and the definitions that were it.
+        block
+            .diagnostics()
+            .iter()
+            .any(|f| matches!(f.code.name(), "DeprecatedMember")
+                && f.code
+                    .to_string()
+                    .contains("minecraft:unit_cube component is not valid from 1.20.60 onward.")),
         "{:#?}",
         block.diagnostics()
     );
@@ -541,7 +552,8 @@ fn property_to_state() {
         block
             .diagnostics()
             .iter()
-            .any(|f| matches!(f.code, DiagnosticCode::DroppedField { .. })
+            // By legacy name: the variant and the definitions that were it.
+            .any(|f| matches!(f.code.name(), "DroppedField")
                 && f.location
                     .json_path
                     .to_string()
@@ -609,7 +621,8 @@ fn custom_components_deprecated() {
         "the list is removed"
     );
     assert!(block.diagnostics().iter().any(|f| {
-        matches!(f.code, DiagnosticCode::DeprecatedMember { .. })
+        // By legacy name: the variant and the definitions that were it.
+        matches!(f.code.name(), "DeprecatedMember")
             && f.code
                 .to_string()
                 .contains("minecraft:custom_components component is not valid from 1.21.90 onward.")
@@ -628,7 +641,8 @@ fn s13_1_26_0_conversion() {
     // side-car, the triggers and `breathability` move into it.
     let d = compare::<v1_26_0::Block>("s13_1_26_0_conversion", &allow_listed());
     assert_eq!(
-        count(&d, |c| matches!(c, DiagnosticCode::DeprecatedMember { .. })),
+        // By legacy name: the variant and the definitions that were it.
+        count(&d, |c| matches!(c.name(), "DeprecatedMember")),
         3,
         "{d:#?}"
     );
@@ -678,13 +692,15 @@ fn events_without_requirement() {
     let d = &d;
     assert!(
         d.iter()
-            .any(|f| matches!(f.code, DiagnosticCode::DroppedField { .. })
+            // By legacy name: the variant and the definitions that were it.
+            .any(|f| matches!(f.code.name(), "DroppedField")
                 && f.location.json_path.to_string().ends_with("events")),
         "{d:#?}"
     );
     assert!(
         d.iter().any(
-            |f| matches!(f.code, DiagnosticCode::UnrecognizedComponent { .. })
+            // By legacy name: the variant and the definitions that were it.
+            |f| matches!(f.code.name(), "UnrecognizedComponent")
                 && f.location
                     .json_path
                     .to_string()
@@ -770,7 +786,8 @@ fn a_ticking_without_range_names_range() {
         r#"{"description": {"identifier": "demo:x"}, "components": {"minecraft:ticking": {"on_tick": {"event": "e"}}}}"#,
     );
     let (_, d) = step::<v1_18_0::Block>(&text, &context());
-    assert!(d.iter().any(|f| matches!(f.code, DiagnosticCode::DroppedComponent { .. })
+    // By legacy name: the variant and the definitions that were it.
+    assert!(d.iter().any(|f| matches!(f.code.name(), "DroppedComponent")
         && f.code.to_string()
             == "Component minecraft:ticking is missing required field range, component will be discarded"));
 }
@@ -812,7 +829,8 @@ fn only_an_object_without_the_member_is_discarded_with_the_missing_field_line() 
     let (_, d) = step::<v1_18_0::Block>(&text, &context());
     assert!(
         d.iter()
-            .any(|f| matches!(f.code, DiagnosticCode::InvalidType { .. })
+            // By legacy name: the variant and the definitions that were it.
+            .any(|f| matches!(f.code.name(), "InvalidType")
                 && f.severity == Severity::Info
                 && f.location.json_path.to_string()
                     == "minecraft:block/components/minecraft:flammable/flame_odds"),

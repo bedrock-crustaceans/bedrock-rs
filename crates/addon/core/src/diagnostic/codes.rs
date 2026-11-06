@@ -2254,6 +2254,636 @@ pub static MIN_ENGINE_VERSION_CAP_FORMAT_VERSION1: CodeDef<0> = CodeDef::new(
 )
 .was("MinEngineVersionCapFormatVersion1");
 
+// ---- the game's lines core raises on a family's behalf: the door and the schema tree ----
+
+/// The Minecraft Document reader (`RapidJSON`) refused the text: a number too big for a double,
+/// content after the root value, or another of its errors. The argument is the reader's message;
+/// the finding carries it again as its `DiagnosticDetail::Syntax`.
+pub static DOCUMENT_JSON: CodeDef<1> = CodeDef::new(
+    "core/document_json",
+    Kind::Syntax,
+    Class::Error,
+    "the Minecraft Document JSON does not parse: {}",
+)
+.game("Failed to parse the Minecraft Document JSON: {}")
+.was("MalformedInput");
+
+/// The game's older schema tree: a member no name group of its node matches. The argument is the
+/// key.
+pub static CHILD_NOT_VALID: CodeDef<1> = CodeDef::new(
+    "core/child_not_valid",
+    Kind::UnknownMember(Disposition::Kept),
+    Class::Unknown,
+    "member '{}' is not valid here",
+)
+.game("child '{}' not valid here.")
+.was("UnrecognizedField");
+
+/// The game's older schema tree: a required name group without a member. The argument is the name.
+pub static REQUIRED_CHILD: CodeDef<1> = CodeDef::new(
+    "core/required_child",
+    Kind::MissingRequired,
+    Class::Error,
+    "required member {} is missing",
+)
+.game("Required child {} not found")
+.was("MissingRequiredField");
+
+/// The game's older schema tree: a bool outside its allowed-value set. The argument is the value.
+pub static VALUE_NOT_ALLOWED: CodeDef<1> = CodeDef::new(
+    "core/value_not_allowed",
+    Kind::InvalidValue,
+    Class::Error,
+    "value '{}' is not allowed",
+)
+.game("Value '{}' not allowed")
+.was("InvalidValue");
+
+/// The game's older schema tree: a string matching none of its node's valid-value regexes. The
+/// arguments are the value and the patterns.
+pub static NOT_ALLOWED_REGEX: CodeDef<2> = CodeDef::new(
+    "core/not_allowed_regex",
+    Kind::InvalidValue,
+    Class::Error,
+    "value '{}' matches none of the patterns {}",
+)
+.game("Value '{}' not allowed.  Must match at least one of the following regex patterns: {}")
+.was("InvalidValue");
+
+/// The game's older schema tree: an enum string outside its node's keys. The arguments are the
+/// value and the keys.
+pub static NOT_ALLOWED_KEYS: CodeDef<2> = CodeDef::new(
+    "core/not_allowed_keys",
+    Kind::InvalidValue,
+    Class::Error,
+    "value '{}' is none of the keys {}",
+)
+.game("Value '{}' not allowed.  Must match at least one of the following keys: {}")
+.was("InvalidValue");
+
+/// The game's older schema tree: a float or an int outside its node's range. The arguments are the
+/// value and the bounds, as the game prints them (`%f`).
+pub static OUTSIDE_RANGE: CodeDef<3> = CodeDef::new(
+    "core/outside_range",
+    Kind::InvalidValue,
+    Class::Error,
+    "value '{}' is outside [{}, {}]",
+)
+.game("Value '{}' outside valid range [{}, {}]")
+.was("InvalidValue");
+
+/// The game's older schema tree: an array with fewer elements than its node's minimum. The
+/// arguments are the count and the minimum.
+pub static ARRAY_TOO_SMALL: CodeDef<2> = CodeDef::new(
+    "core/array_too_small",
+    Kind::InvalidValue,
+    Class::Error,
+    "array of {} elements, fewer than {}",
+)
+.game("Array too small ({} < {})")
+.was("InvalidValue");
+
+/// The game's older schema tree: an array with more elements than its node's maximum. The arguments
+/// are the count and the maximum.
+pub static ARRAY_TOO_LARGE: CodeDef<2> = CodeDef::new(
+    "core/array_too_large",
+    Kind::InvalidValue,
+    Class::Error,
+    "array of {} elements, more than {}",
+)
+.game("Array too large ({} > {})")
+.was("InvalidValue");
+
+/// The game's older schema tree: the JSON reader failed on the file. The argument is the reader's
+/// messages; the finding carries them again as its `DiagnosticDetail::Syntax`.
+pub static PARSE_ERROR: CodeDef<1> = CodeDef::new(
+    "core/parse_error",
+    Kind::Syntax,
+    Class::Error,
+    "parse error: {}",
+)
+.game("parse error:\n{}")
+.was("MalformedInput");
+
+/// A float member read a number beyond its width (`json::Misread`): by it the versioned load knows
+/// the numbers to clamp, and its own finding of the clamped number stands in its place. The crate's
+/// own sentence, held as the game's as the legacy text field held it, so `vanilla` is unchanged.
+pub static BEYOND_FLOAT_MEMBER: CodeDef<0> = CodeDef::new(
+    "core/beyond_float_member",
+    Kind::InvalidValue,
+    Class::Lint,
+    "the number is beyond the float that reads it; the member holds an infinity",
+)
+.game("the number is beyond the float that reads it; the member holds an infinity")
+.was("InvalidValue");
+
+// ---- the game's lines core raises on a family's behalf: the versioned load ----
+
+/// An absent `format_version` the versioned loader rejects (`MissingVersion::REJECT`): the version
+/// check of the loaders that do not check the version themselves.
+pub static NO_VALID_VERSION: CodeDef<0> = CodeDef::new(
+    "core/no_valid_version",
+    Kind::FormatVersion,
+    Class::Error,
+    "no valid format_version",
+)
+.game("no valid version passed by the caller or found in the input")
+.was("MissingFormatVersion");
+
+/// An absent `format_version` in the legacy parsers' words (the entity's floor).
+pub static NO_FORMAT_VERSION_FIELD: CodeDef<0> = CodeDef::new(
+    "core/no_format_version_field",
+    Kind::FormatVersion,
+    Class::Error,
+    "no format_version",
+)
+.game("no format_version field was given")
+.was("MissingFormatVersion");
+
+/// An absent `format_version` a strict bind requires (the camera list): cereal's required-member
+/// line.
+pub static FORMAT_VERSION_REQUIRED: CodeDef<0> = CodeDef::new(
+    "core/format_version_required",
+    Kind::FormatVersion,
+    Class::Error,
+    "no format_version",
+)
+.game("missing required field")
+.was("MissingFormatVersion");
+
+/// An absent `format_version` the crafting catalogue's loader rejects.
+pub static VERSION_NOT_PROCESSABLE: CodeDef<0> = CodeDef::new(
+    "core/version_not_processable",
+    Kind::FormatVersion,
+    Class::Error,
+    "no format_version",
+)
+.game("The file cannot be processed without a valid format_version")
+.was("MissingFormatVersion");
+
+/// An absent `format_version` the item's document loader rejects.
+pub static VERSION_NOT_READABLE: CodeDef<0> = CodeDef::new(
+    "core/version_not_readable",
+    Kind::FormatVersion,
+    Class::Error,
+    "no format_version",
+)
+.game("document's version not found or not readable")
+.was("MissingFormatVersion");
+
+/// An absent `format_version` the client entity and attachable loaders read at their floor, with
+/// the game's warning (the crate's floor, 1.8.0, in place of the game's 1.0.0).
+pub static VERSION_NOT_GIVEN_LEGACY_FIELDS: CodeDef<0> = CodeDef::new(
+    "core/version_not_given_legacy_fields",
+    Kind::FormatVersion,
+    Class::Error,
+    "no format_version",
+)
+.game("Warning: The \"format_version\" field was not given. Fields from format version 1.8.0 and older will be loaded. Update your targeted \"format_version\" to use fields from newer versions.")
+.was("MissingFormatVersion");
+
+/// A version no struct of the chain covers, in the versioned loader's words. The argument is the
+/// version as the input parsed it (a pre-release as written).
+pub static NO_PARSER_FOR_VERSION: CodeDef<1> = CodeDef::new(
+    "core/no_parser_for_version",
+    Kind::UnsupportedVersion,
+    Class::Error,
+    "no parser for format_version {}",
+)
+.game("unsupported version: no parser available for version {}")
+.was("UnsupportedVersion");
+
+/// A document below the family's floor, or a member below the version that brings it. The arguments
+/// are what is gated (`component`, `entity`, …), its name and the version it needs.
+pub static USE_FORMAT_VERSION: CodeDef<3> = CodeDef::new(
+    "core/use_format_version",
+    Kind::UnsupportedVersion,
+    Class::Error,
+    "{} '{}' needs format_version {} or higher",
+)
+.game("To use {} '{}', use json format version {} or higher")
+.was("UnsupportedVersion");
+
+/// A component behind the legacy creator features, released at a version the document is below. The
+/// arguments are what is gated, its name and the version that releases it.
+pub static TOGGLE_USE_FORMAT_VERSION: CodeDef<3> = CodeDef::new(
+    "core/toggle_use_format_version",
+    Kind::Toggle,
+    Class::Error,
+    "{} '{}' needs format_version {} or higher",
+)
+.game("To use {} '{}', use json format version {} or higher")
+.was("MissingToggles");
+
+/// A member or component behind an experiment the load does not have. The arguments are what is
+/// gated, its name, and the toggle as the settings screen shows it.
+pub static TURN_ON_TOGGLE: CodeDef<3> = CodeDef::new(
+    "core/turn_on_toggle",
+    Kind::Toggle,
+    Class::Error,
+    "{} '{}' needs the '{}' toggle",
+)
+.game("To use {} '{}', turn on the '{}' toggle in settings")
+.was("MissingToggles");
+
+/// A component behind an experiment below the version that releases it. The arguments are what is
+/// gated, its name, the releasing version, and the toggle.
+pub static TURN_ON_TOGGLE_BEFORE: CodeDef<4> = CodeDef::new(
+    "core/turn_on_toggle_before",
+    Kind::Toggle,
+    Class::Error,
+    "{} '{}' needs, before format_version {}, the '{}' toggle",
+)
+.game("To use {} '{}' in json formats earlier than {}, turn on the '{}' toggle in settings")
+.was("MissingToggles");
+
+/// A beta `format_version` without the Beta APIs toggle: the JSON item path's gate.
+pub static BETA_DOCUMENTS: CodeDef<0> = CodeDef::new(
+    "core/beta_documents",
+    Kind::Toggle,
+    Class::Error,
+    "beta document without the Beta APIs toggle",
+)
+.game("Turn on the Beta APIs toggle in settings to allow beta documents.")
+.was("BetaFeaturesNotEnabled");
+
+/// A beta `format_version` outside a base pack and without the Beta APIs toggle: the check of the
+/// versioned cereal loaders.
+pub static BETA_FORMAT_VERSION: CodeDef<0> = CodeDef::new(
+    "core/beta_format_version",
+    Kind::Toggle,
+    Class::Error,
+    "beta document without the Beta APIs toggle",
+)
+.game("Using a beta format_version is only allowed for base packs or when the BetaApis toggle is enabled.")
+.was("BetaFeaturesNotEnabled");
+
+/// A counted envelope whose root has other than two members. The member count rides as
+/// `DiagnosticDetail::Syntax`.
+pub static DOCUMENT_MEMBER_COUNT: CodeDef<0> = CodeDef::new(
+    "core/document_member_count",
+    Kind::Syntax,
+    Class::Error,
+    "the root is not \"format_version\" and a payload member",
+)
+.game("A Minecraft Document must have exactly two members: \"format_version\" and a payload member")
+.was("MalformedInput");
+
+/// A document input above the limit, refused. The argument is the limit in bytes; the length rides
+/// as `DiagnosticDetail::Syntax`.
+pub static DOCUMENT_TOO_LARGE: CodeDef<1> = CodeDef::new(
+    "core/document_too_large",
+    Kind::Syntax,
+    Class::Error,
+    "the document is above {} bytes",
+)
+.game("Minecraft Document JSON exceeds the maximum size of {} bytes")
+.was("MalformedInput");
+
+/// A document input near the limit, read. The arguments are the length and the limit in bytes; the
+/// length rides as `DiagnosticDetail::Syntax` too.
+pub static DOCUMENT_NEARLY_TOO_LARGE: CodeDef<2> = CodeDef::new(
+    "core/document_nearly_too_large",
+    Kind::Syntax,
+    Class::Error,
+    "the document is {} bytes long, near its limit of {} bytes",
+)
+.game("JSON document is approaching the maximum allowed size: {} bytes loaded, {} bytes maximum. Consider reducing or splitting the document where possible, or raise this issue if further increases in size are expected.")
+.was("MalformedInput");
+
+/// A component deprecated at or below the document's version. The arguments are the component and
+/// the document's version.
+pub static DEPRECATED_IN_FORMAT: CodeDef<2> = CodeDef::new(
+    "core/deprecated_in_format",
+    Kind::Deprecated,
+    Class::Error,
+    "{} is deprecated at format_version {}",
+)
+.game("{} has been deprecated and is not available in json format {}")
+.was("DeprecatedMember");
+
+// ---- the game's lines core raises on a family's behalf: the merged sound files ----
+
+/// The top copy of a merged sound file (`sounds.json`, `sound_definitions.json`) that is no JSON:
+/// the game reads none of the stack. The argument is the file's path; the reader's message rides as
+/// `DiagnosticDetail::Syntax`.
+pub static STACK_TOP_UNPARSABLE: CodeDef<1> = CodeDef::new(
+    "core/stack_top_unparsable",
+    Kind::Syntax,
+    Class::Error,
+    "cannot parse {}, the top of the stack",
+)
+.game("Could not parse file at the top of the stack: {}.")
+.was("MalformedInput");
+
+// ---- the game's lines core raises on a family's behalf: the shared readers ----
+
+/// A filter test the game does not know: logged at level 3, and the test evaluates false (a kept
+/// error). The argument is the test's name as written.
+pub static FILTER_TEST_NOT_FOUND: CodeDef<1> = CodeDef::new(
+    "core/filter_test_not_found",
+    Kind::UnresolvedReference,
+    Class::Error,
+    "no filter test '{}'",
+)
+.game("Filter test not found -> {}")
+.was("UnresolvedReference");
+
+// ---- the game's generic validation lines: cereal's schemas and constraints, the envelope, the older schema tree ----
+
+/// An unknown member of an object, in cereal's words: an error under the strict log mask only, so
+/// graded as an unknown member.
+pub static MEMBER_NOT_IN_SCHEMA: CodeDef<0> = CodeDef::new(
+    "core/member_not_in_schema",
+    Kind::UnknownMember(Disposition::Kept),
+    Class::Unknown,
+    "unknown member",
+)
+.game("this member was found in the input, but is not present in the Schema")
+.was("UnrecognizedField");
+
+/// An unknown component, in cereal's words.
+pub static COMPONENT_NOT_IN_SCHEMA: CodeDef<0> = CodeDef::new(
+    "core/component_not_in_schema",
+    Kind::UnknownMember(Disposition::Kept),
+    Class::Error,
+    "unknown component",
+)
+.game("this component was found in the input, but is not present in the Schema")
+.was("UnrecognizedComponent");
+
+/// An object lacks a member its schema requires, in cereal's words.
+pub static REQUIRED_FIELD_MISSING: CodeDef<0> = CodeDef::new(
+    "core/required_field_missing",
+    Kind::MissingRequired,
+    Class::Error,
+    "a required member is missing",
+)
+.game("missing required field")
+.was("MissingRequiredField");
+
+/// Something else stands where an object is required.
+pub static EXPECTED_OBJECT: CodeDef<0> = CodeDef::new(
+    "core/expected_object",
+    Kind::WrongType,
+    Class::Error,
+    "not an object",
+)
+.game("expected an object")
+.was("InvalidType");
+
+/// A component storage holds fewer components than its schema demands. The argument is the minimum.
+pub static TOO_FEW_COMPONENTS: CodeDef<1> = CodeDef::new(
+    "core/too_few_components",
+    Kind::InvalidValue,
+    Class::Error,
+    "fewer than {} components",
+)
+.game("too few input components, expected at least {}")
+.was("InvalidValue");
+
+/// The line the game logs after `ENUM_EXPECTS` or `ENUM_EXPECTS_STRING`.
+pub static INVALID_ENUM_LINE: CodeDef<0> = CodeDef::new(
+    "core/invalid_enum_line",
+    Kind::InvalidEnumValue,
+    Class::Error,
+    "invalid enum value",
+)
+.game("invalid enum value")
+.was("InvalidEnumValue");
+
+/// An enum given a string outside its set. The arguments are the enum's cereal name, the list of
+/// names as the game writes it (`cereal::enum_expects` builds it) and the string as written.
+pub static ENUM_EXPECTS: CodeDef<3> = CodeDef::new(
+    "core/enum_expects",
+    Kind::InvalidEnumValue,
+    Class::Error,
+    "'{}' takes one of {}, not '{}'",
+)
+.game("This value is bound to '{}' and expects one of the following strings: {}. Found: '{}'")
+.was("InvalidEnumValue");
+
+/// An enum given something other than a string. The argument is the enum's cereal name.
+pub static ENUM_EXPECTS_STRING: CodeDef<1> = CodeDef::new(
+    "core/enum_expects_string",
+    Kind::WrongType,
+    Class::Error,
+    "'{}' expects a string",
+)
+.game("This value is bound to '{}' and expects a \"named value\" (i.e. a string)")
+.was("InvalidType");
+
+/// No number (or boolean) where one is expected.
+pub static INVALID_NUMERIC_VALUE: CodeDef<0> = CodeDef::new(
+    "core/invalid_numeric_value",
+    Kind::WrongType,
+    Class::Error,
+    "not a number",
+)
+.game("invalid numeric value")
+.was("InvalidType");
+
+/// A number outside a constraint with both bounds. The argument is the range as the game writes it:
+/// `[` or `(`, the bounds as `cereal::number` writes them, `]` or `)`.
+pub static OUTSIDE_ACCEPTED_RANGE: CodeDef<1> = CodeDef::new(
+    "core/outside_accepted_range",
+    Kind::InvalidValue,
+    Class::Error,
+    "outside the range {}",
+)
+.game("the input is outside of the accepted range {}")
+.was("InvalidValue");
+
+/// A number outside a constraint with one bound. The argument is the comparison and the bound (`>=
+/// 0`, `< 16`), the bound as `cereal::number` writes it.
+pub static NUMBER_BOUND: CodeDef<1> = CodeDef::new(
+    "core/number_bound",
+    Kind::InvalidValue,
+    Class::Error,
+    "the number must be {}",
+)
+.game("the input must be a number {}")
+.was("InvalidValue");
+
+/// A number breaks a multiple-of constraint. The arguments are the number and the step, as
+/// `cereal::number` writes them.
+pub static NOT_MULTIPLE_OF: CodeDef<2> = CodeDef::new(
+    "core/not_multiple_of",
+    Kind::InvalidValue,
+    Class::Error,
+    "{} is not a multiple of {}",
+)
+.game("{} is not multiple of {}")
+.was("InvalidValue");
+
+/// A string breaks a pattern constraint. The argument is the regex.
+pub static STRING_MISMATCH: CodeDef<1> = CodeDef::new(
+    "core/string_mismatch",
+    Kind::InvalidValue,
+    Class::Error,
+    "the string does not match \"{}\"",
+)
+.game("expected string to match the \"{}\" regex")
+.was("InvalidValue");
+
+/// An array under a minimum-size constraint; the game says `elements` whatever the number. The
+/// argument is the minimum.
+pub static ARRAY_AT_LEAST: CodeDef<1> = CodeDef::new(
+    "core/array_at_least",
+    Kind::InvalidValue,
+    Class::Error,
+    "fewer than {} elements",
+)
+.game("expected array with at least {} elements")
+.was("InvalidValue");
+
+/// A map or object under a minimum-size constraint. The argument is the minimum.
+pub static OBJECT_AT_LEAST: CodeDef<1> = CodeDef::new(
+    "core/object_at_least",
+    Kind::InvalidValue,
+    Class::Error,
+    "fewer than {} members",
+)
+.game("expected object with at least {} elements")
+.was("InvalidValue");
+
+/// An array with a unique-items constraint holds a repeat.
+pub static NO_DUPLICATES: CodeDef<0> = CodeDef::new(
+    "core/no_duplicates",
+    Kind::InvalidValue,
+    Class::Error,
+    "duplicate element",
+)
+.game("No duplicates allowed")
+.was("InvalidValue");
+
+/// A component storage holds a key its constraint forbids. The argument is the key.
+pub static KEY_NOT_ALLOWED: CodeDef<1> = CodeDef::new(
+    "core/key_not_allowed",
+    Kind::InvalidValue,
+    Class::Error,
+    "key {} is not allowed",
+)
+.game("key {} is not allowed")
+.was("InvalidValue");
+
+/// The size cap of a vector or a sequence container. The argument is the maximum.
+pub static TOO_MANY_ELEMENTS: CodeDef<1> = CodeDef::new(
+    "core/too_many_elements",
+    Kind::InvalidValue,
+    Class::Error,
+    "more than {} elements",
+)
+.game("too many input elements, expected no more than {}")
+.was("InvalidValue");
+
+/// The size cap of a string. The argument is the maximum.
+pub static TOO_MANY_CHARACTERS: CodeDef<1> = CodeDef::new(
+    "core/too_many_characters",
+    Kind::InvalidValue,
+    Class::Error,
+    "more than {} characters",
+)
+.game("too many characters, expected no more than {}")
+.was("InvalidValue");
+
+/// The size cap of a map.
+pub static TOO_MANY_MAP_ELEMENTS: CodeDef<0> = CodeDef::new(
+    "core/too_many_map_elements",
+    Kind::InvalidValue,
+    Class::Error,
+    "too many members",
+)
+.game("too many input elements for an associative container")
+.was("InvalidValue");
+
+/// A Minecraft Document without its payload member.
+pub static PAYLOAD_MISSING: CodeDef<0> = CodeDef::new(
+    "core/payload_missing",
+    Kind::Envelope,
+    Class::Error,
+    "no payload",
+)
+.game("The payload of the Minecraft Document is missing")
+.was("MissingPayload");
+
+/// A payload under another key; the crate files it as the missing payload it is to the family. The
+/// arguments are the expected key and the key as written.
+pub static PAYLOAD_UNDER_OTHER_KEY: CodeDef<2> = CodeDef::new(
+    "core/payload_under_other_key",
+    Kind::Envelope,
+    Class::Error,
+    "payload expected under '{}', found under '{}'",
+)
+.game("The payload key does not match the expected one. Expected: '{}'. Actual: '{}'.")
+.was("MissingPayload");
+
+/// A node of the older schema tree with too few children, logged at level 3. The arguments are the
+/// count and the minimum.
+pub static TOO_FEW_CHILDREN: CodeDef<2> = CodeDef::new(
+    "core/too_few_children",
+    Kind::InvalidValue,
+    Class::Error,
+    "{} children, fewer than {}",
+)
+.game("Node has too few children ({} < {})")
+.was("InvalidValue");
+
+/// A node of the older schema tree with too many children, logged at level 3. The arguments are the
+/// count and the maximum.
+pub static TOO_MANY_CHILDREN: CodeDef<2> = CodeDef::new(
+    "core/too_many_children",
+    Kind::InvalidValue,
+    Class::Error,
+    "{} children, more than {}",
+)
+.game("Node has too many children ({} > {})")
+.was("InvalidValue");
+
+/// A child of the older schema tree of none of the allowed types, logged at level 3; the text has
+/// two spaces before `Allowed`. The argument is the allowed types.
+pub static UNKNOWN_CHILD_OPTION: CodeDef<1> = CodeDef::new(
+    "core/unknown_child_option",
+    Kind::WrongType,
+    Class::Error,
+    "no child type of {}",
+)
+.game("unknown child schema option type.  Allowed types: {}")
+.was("InvalidType");
+
+/// A version below a node's minimum. The arguments are the version and the minimum.
+pub static VERSION_BELOW_MIN: CodeDef<2> = CodeDef::new(
+    "core/version_below_min",
+    Kind::UnsupportedVersion,
+    Class::Error,
+    "version {} is below {}",
+)
+.game("Version {} below min required version ({})")
+.was("UnsupportedVersion");
+
+// ---- the game's lines core raises on a family's behalf: deprecated members and enum values ----
+
+/// A member its type marks deprecated: cereal skips it without reading the value, and the code is
+/// in both error masks, so the document is rejected. The argument is the member's name.
+pub static MEMBER_DEPRECATED: CodeDef<1> = CodeDef::new(
+    "core/member_deprecated",
+    Kind::Deprecated,
+    Class::Error,
+    "member '{}' is deprecated",
+)
+.game("member \"{}\" is deprecated")
+.was("DeprecatedMember");
+
+/// An enum name its map marks deprecated; in both error masks, so the document is rejected.
+pub static ENUM_VALUE_DEPRECATED: CodeDef<0> = CodeDef::new(
+    "core/enum_value_deprecated",
+    Kind::Deprecated,
+    Class::Error,
+    "enum value is deprecated",
+)
+.game("enum value is deprecated")
+.was("DeprecatedMember");
+
 /// Every definition of this module, in the order of the legacy variants.
 pub static ALL: &[&CodeMeta] = &[
     UNSUPPORTED_VERSION.meta(),
@@ -2478,4 +3108,62 @@ pub static ALL: &[&CodeMeta] = &[
     VERSION_TOO_HIGH.meta(),
     VERSION_TOO_LOW.meta(),
     MIN_ENGINE_VERSION_CAP_FORMAT_VERSION1.meta(),
+    DOCUMENT_JSON.meta(),
+    CHILD_NOT_VALID.meta(),
+    REQUIRED_CHILD.meta(),
+    VALUE_NOT_ALLOWED.meta(),
+    NOT_ALLOWED_REGEX.meta(),
+    NOT_ALLOWED_KEYS.meta(),
+    OUTSIDE_RANGE.meta(),
+    ARRAY_TOO_SMALL.meta(),
+    ARRAY_TOO_LARGE.meta(),
+    PARSE_ERROR.meta(),
+    BEYOND_FLOAT_MEMBER.meta(),
+    NO_VALID_VERSION.meta(),
+    NO_FORMAT_VERSION_FIELD.meta(),
+    FORMAT_VERSION_REQUIRED.meta(),
+    VERSION_NOT_PROCESSABLE.meta(),
+    VERSION_NOT_READABLE.meta(),
+    VERSION_NOT_GIVEN_LEGACY_FIELDS.meta(),
+    NO_PARSER_FOR_VERSION.meta(),
+    USE_FORMAT_VERSION.meta(),
+    TOGGLE_USE_FORMAT_VERSION.meta(),
+    TURN_ON_TOGGLE.meta(),
+    TURN_ON_TOGGLE_BEFORE.meta(),
+    BETA_DOCUMENTS.meta(),
+    BETA_FORMAT_VERSION.meta(),
+    DOCUMENT_MEMBER_COUNT.meta(),
+    DOCUMENT_TOO_LARGE.meta(),
+    DOCUMENT_NEARLY_TOO_LARGE.meta(),
+    DEPRECATED_IN_FORMAT.meta(),
+    STACK_TOP_UNPARSABLE.meta(),
+    FILTER_TEST_NOT_FOUND.meta(),
+    MEMBER_NOT_IN_SCHEMA.meta(),
+    COMPONENT_NOT_IN_SCHEMA.meta(),
+    REQUIRED_FIELD_MISSING.meta(),
+    EXPECTED_OBJECT.meta(),
+    TOO_FEW_COMPONENTS.meta(),
+    INVALID_ENUM_LINE.meta(),
+    ENUM_EXPECTS.meta(),
+    ENUM_EXPECTS_STRING.meta(),
+    INVALID_NUMERIC_VALUE.meta(),
+    OUTSIDE_ACCEPTED_RANGE.meta(),
+    NUMBER_BOUND.meta(),
+    NOT_MULTIPLE_OF.meta(),
+    STRING_MISMATCH.meta(),
+    ARRAY_AT_LEAST.meta(),
+    OBJECT_AT_LEAST.meta(),
+    NO_DUPLICATES.meta(),
+    KEY_NOT_ALLOWED.meta(),
+    TOO_MANY_ELEMENTS.meta(),
+    TOO_MANY_CHARACTERS.meta(),
+    TOO_MANY_MAP_ELEMENTS.meta(),
+    PAYLOAD_MISSING.meta(),
+    PAYLOAD_UNDER_OTHER_KEY.meta(),
+    TOO_FEW_CHILDREN.meta(),
+    TOO_MANY_CHILDREN.meta(),
+    UNKNOWN_CHILD_OPTION.meta(),
+    VERSION_BELOW_MIN.meta(),
+    MEMBER_DEPRECATED.meta(),
+    ENUM_VALUE_DEPRECATED.meta(),
 ];

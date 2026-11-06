@@ -4,7 +4,7 @@
 
 use bedrock_addon_core::__private::Sealed;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, codes,
 };
 use bedrock_addon_core::document::{
     CombineRule, Content, Contribution, Definition, Document, Files, FilesBuilder, FilesRule,
@@ -81,7 +81,7 @@ fn document(pack_index: usize, from: &'static str) -> Document<Toy> {
     at.push(from);
     let mut diagnostics = Diagnostics::default();
     diagnostics.push(Diagnostic::new(
-        DiagnosticCode::UnrecognizedField { text: None },
+        DiagnosticCode::from(&codes::UNRECOGNIZED_FIELD),
         Severity::Warning,
         Phase::Parse,
         Location::new(Some(pack(pack_index)), None, at, None),
@@ -100,7 +100,7 @@ fn stable(pack_index: usize, text: &'static str, from: &'static str) -> Contribu
 fn rejected(pack_index: usize, text: &'static str) -> Contribution<Toy> {
     let mut diagnostics = Diagnostics::default();
     diagnostics.push(Diagnostic::new(
-        DiagnosticCode::MissingRequiredField { text: None },
+        DiagnosticCode::from(&codes::MISSING_REQUIRED_FIELD),
         Severity::Error,
         Phase::Parse,
         Location::new(None, None, JsonPath::new(), None),
@@ -252,11 +252,11 @@ fn notices(registry: &Registry<Toy>) -> Vec<(DiagnosticCode, String)> {
 }
 
 fn shadowed() -> DiagnosticCode {
-    DiagnosticCode::ShadowedDefinition { text: None }
+    DiagnosticCode::from(&codes::SHADOWED_DEFINITION)
 }
 
 fn duplicate() -> DiagnosticCode {
-    DiagnosticCode::DuplicateIdentifier { text: None }
+    DiagnosticCode::from(&codes::DUPLICATE_IDENTIFIER)
 }
 
 fn tied(tie: PackTie, walk: Vec<Contribution<Toy>>) -> Registry<Toy> {

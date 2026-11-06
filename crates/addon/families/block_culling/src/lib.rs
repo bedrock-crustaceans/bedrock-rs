@@ -20,6 +20,7 @@ mod write;
 #[allow(clippy::disallowed_methods)] // the clock, to measure
 mod cost;
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, Phase, Severity, VanillaText,
 };
@@ -96,33 +97,62 @@ impl Family for CullingFamily {
         let mut validate = false;
         for mut finding in found {
             if finding.severity >= Severity::Error {
-                match &mut finding.code {
-                    DiagnosticCode::UnsupportedVersion { text } => {
-                        if matches!(text, Some(VanillaText::UseFormatVersion { .. })) {
-                            *text = Some(missing_object());
-                        } else {
-                            *text = Some(VanillaText::NoParserForVersion {
-                                version: document.map(written_version).unwrap_or_default(),
-                            });
-                            above = true;
-                        }
+                // By legacy name: the variant and the definitions that were it (the pipeline
+                // raises on core's definitions); the plain forms by the variant without a text
+                // or core's plain definition.
+                let root = finding.location.json_path.is_empty();
+                let use_format = matches!(
+                    &finding.code,
+                    DiagnosticCode::UnsupportedVersion {
+                        text: Some(VanillaText::UseFormatVersion { .. })
                     }
-                    DiagnosticCode::MissingFormatVersion { text }
-                    | DiagnosticCode::MalformedFormatVersion { text }
-                    | DiagnosticCode::MissingPayload { text } => *text = Some(missing_object()),
-                    DiagnosticCode::MalformedInput { .. }
-                    | DiagnosticCode::EmptyDocument { .. }
-                    | DiagnosticCode::PayloadKeyMismatch
-                    | DiagnosticCode::UnknownPayloadKey { .. }
-                        if finding.location.json_path.is_empty() =>
+                ) || finding.code.is(&core_codes::USE_FORMAT_VERSION);
+                let plain_unknown = matches!(
+                    &finding.code,
+                    DiagnosticCode::UnrecognizedField { text: None }
+                ) || finding.code.is(&core_codes::UNRECOGNIZED_FIELD);
+                match finding.code.name() {
+                    "UnsupportedVersion" if use_format => {
+                        finding.code = DiagnosticCode::UnsupportedVersion {
+                            text: Some(missing_object()),
+                        };
+                    }
+                    "UnsupportedVersion" => {
+                        finding.code = DiagnosticCode::UnsupportedVersion {
+                            text: Some(VanillaText::NoParserForVersion {
+                                version: document.map(written_version).unwrap_or_default(),
+                            }),
+                        };
+                        above = true;
+                    }
+                    "MissingFormatVersion" => {
+                        finding.code = DiagnosticCode::MissingFormatVersion {
+                            text: Some(missing_object()),
+                        };
+                    }
+                    "MalformedFormatVersion" => {
+                        finding.code = DiagnosticCode::MalformedFormatVersion {
+                            text: Some(missing_object()),
+                        };
+                    }
+                    "MissingPayload" => {
+                        finding.code = DiagnosticCode::MissingPayload {
+                            text: Some(missing_object()),
+                        };
+                    }
+                    "MalformedInput" | "EmptyDocument" | "PayloadKeyMismatch"
+                    | "UnknownPayloadKey"
+                        if root =>
                     {
                         envelope = true;
                     }
-                    DiagnosticCode::UnrecognizedField { text }
-                        if text.is_none() && finding.location.json_path.len() == 1 =>
+                    "UnrecognizedField"
+                        if plain_unknown && finding.location.json_path.len() == 1 =>
                     {
                         // A third root member: the envelope is not exactly two members.
-                        *text = Some(missing_object());
+                        finding.code = DiagnosticCode::UnrecognizedField {
+                            text: Some(missing_object()),
+                        };
                     }
                     _ if finding.phase == Phase::Validate => validate = true,
                     _ => parse = true,

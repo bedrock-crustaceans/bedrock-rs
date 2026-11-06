@@ -1,7 +1,9 @@
 //! The validation rules and the upgrade steps that no fixture row covers on
 //! its own, and both ends of every rule's range.
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText};
+use bedrock_addon::diagnostic::{
+    DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText, codes,
+};
 use bedrock_addon::families::dialogue::{ActionMode, DialogueScene, DialogueText, NpcAction};
 use bedrock_addon::id::DialogueSceneTag;
 
@@ -333,12 +335,14 @@ fn a_button_name_that_is_absent_or_null_is_missing_and_another_type_invalid() {
         assert_eq!(warnings(&diagnostics), [NO_NAME], "{button}");
         let code = &diagnostics.iter().next().unwrap().code;
         assert_eq!(
-            matches!(code, DiagnosticCode::MissingRequiredField { .. }),
+            // By legacy name: the variant and the definitions that were it.
+            matches!(code.name(), "MissingRequiredField"),
             missing,
             "{button}: {code:?}"
         );
         assert_eq!(
-            matches!(code, DiagnosticCode::InvalidType { .. }),
+            // By legacy name: the variant and the definitions that were it.
+            matches!(code.name(), "InvalidType"),
             !missing,
             "{button}: {code:?}"
         );
@@ -745,7 +749,7 @@ fn unknown_members_are_reported_as_infos_and_kept_deviation() {
         .collect();
     let info = |at: &str| {
         (
-            DiagnosticCode::UnrecognizedField { text: None },
+            DiagnosticCode::from(&codes::UNRECOGNIZED_FIELD),
             Severity::Info,
             at.to_owned(),
         )

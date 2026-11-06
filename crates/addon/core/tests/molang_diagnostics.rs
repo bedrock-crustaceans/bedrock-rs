@@ -8,7 +8,7 @@
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 
 use bedrock_addon_core::diagnostic::{
-    DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Location, Severity,
+    DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Location, Severity, codes,
 };
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::molang::{
@@ -120,11 +120,7 @@ fn check_row(check: &MolangCheck, row: &facet_value::VObject, failures: &mut Vec
             // A lint: not a parser message of the table.
             continue;
         };
-        if finding.code
-            != (DiagnosticCode::InvalidMolang {
-                expression: expr.to_owned(),
-            })
-        {
+        if finding.code != (DiagnosticCode::from(codes::INVALID_MOLANG.with([expr.to_owned()]))) {
             failures.push(format!("#{number} {expr:?}: code {:?}", finding.code));
         }
         let message_text = detail.to_string();
@@ -202,9 +198,7 @@ fn a_kept_message_is_a_kept_error() {
     assert_eq!(
         found,
         [(
-            &DiagnosticCode::InvalidMolang {
-                expression: "1e".into()
-            },
+            &DiagnosticCode::from(codes::INVALID_MOLANG.with(["1e"])),
             Severity::Error,
             true
         )]

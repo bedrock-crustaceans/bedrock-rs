@@ -393,10 +393,8 @@ fn presets(
                         // An unknown parent also gets the game's own line, besides the
                         // reference finding.
                         Some(finding)
-                            if matches!(
-                                finding.code,
-                                DiagnosticCode::UnresolvedReference { .. }
-                            ) =>
+                            // By legacy name: the variant and the definitions that were it.
+                            if matches!(finding.code.name(), "UnresolvedReference") =>
                         {
                             // Only where the direct parent is no preset of the stack: a
                             // parent the pass discarded is the chain's, not the validator's.
@@ -446,7 +444,8 @@ fn lists(
                     // Each unknown entry also gets the game's own line, besides the
                     // reference finding.
                     Some(finding)
-                        if matches!(finding.code, DiagnosticCode::UnresolvedReference { .. }) =>
+                        // By legacy name: the variant and the definitions that were it.
+                        if matches!(finding.code.name(), "UnresolvedReference") =>
                     {
                         let lines = unknown_camera_lines(&document, defined, stack);
                         let all = std::iter::once(finding).chain(lines);

@@ -116,7 +116,7 @@ fn a_legacy_expression_beyond_f32_is_written_as_authored_deviation() {
 /// event kept as written.
 #[test]
 fn an_item_event_with_randomize_and_sequence_warns_and_ignores_the_sequence() {
-    use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
+    use bedrock_addon_core::diagnostic::Severity;
 
     let both = with_events(
         r#""demo:e": {"randomize": [{"weight": 1, "swing": {}}], "sequence": [{"swing": {}}]},
@@ -128,7 +128,8 @@ fn an_item_event_with_randomize_and_sequence_warns_and_ignores_the_sequence() {
     let found: Vec<(String, Severity, String)> = document
         .diagnostics()
         .iter()
-        .filter(|f| matches!(f.code, DiagnosticCode::IgnoredMember { .. }))
+        // By legacy name: the variant and the definitions that were it.
+        .filter(|f| matches!(f.code.name(), "IgnoredMember"))
         .map(|f| {
             (
                 f.location.json_path.to_string(),
@@ -298,10 +299,10 @@ fn legacy_expressions_are_counted_without_the_molang_feature() {
     let json = with_events(r#""demo:e": {"condition": "query.is_sneaking"}"#, "");
     let d = findings(&json, &third_party());
     assert!(
-        d.iter().any(|f| matches!(
-            f.code,
-            bedrock_addon_core::diagnostic::DiagnosticCode::MolangNotChecked { fields: 1 }
-        )),
+        d.iter().any(|f| f
+            .code
+            .args_of(&bedrock_addon_core::diagnostic::codes::MOLANG_NOT_CHECKED)
+            .is_some_and(|a| a[0] == "1")),
         "{d:#?}"
     );
 }
@@ -310,7 +311,7 @@ fn legacy_expressions_are_counted_without_the_molang_feature() {
 mod compiled {
     use std::sync::Arc;
 
-    use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
+    use bedrock_addon_core::diagnostic::Severity;
     use bedrock_addon_core::load::LoadContext;
     use bedrock_addon_core::molang::MolangCheck;
 
@@ -325,7 +326,8 @@ mod compiled {
     /// The paths of the `InvalidMolang` findings, with their severities.
     fn invalid(d: &bedrock_addon_core::diagnostic::Diagnostics) -> Vec<(String, Severity)> {
         d.iter()
-            .filter(|f| matches!(f.code, DiagnosticCode::InvalidMolang { .. }))
+            // By legacy name: the variant and the definitions that were it.
+            .filter(|f| matches!(f.code.name(), "InvalidMolang"))
             .map(|f| (f.location.json_path.to_string(), f.severity))
             .collect()
     }
@@ -350,7 +352,8 @@ mod compiled {
             document
                 .diagnostics()
                 .iter()
-                .filter(|f| matches!(f.code, DiagnosticCode::InvalidMolang { .. }))
+                // By legacy name: the variant and the definitions that were it.
+                .filter(|f| matches!(f.code.name(), "InvalidMolang"))
                 .all(|f| f.kept),
             "{:#?}",
             document.diagnostics()
@@ -396,7 +399,8 @@ mod compiled {
             loads(&digger, &checking())
                 .diagnostics()
                 .iter()
-                .filter(|f| matches!(f.code, DiagnosticCode::InvalidMolang { .. }))
+                // By legacy name: the variant and the definitions that were it.
+                .filter(|f| matches!(f.code.name(), "InvalidMolang"))
                 .all(|f| f.kept),
             "a kept error"
         );
@@ -447,7 +451,8 @@ mod compiled {
             document
                 .diagnostics()
                 .iter()
-                .filter(|f| matches!(f.code, DiagnosticCode::InvalidMolang { .. }))
+                // By legacy name: the variant and the definitions that were it.
+                .filter(|f| matches!(f.code.name(), "InvalidMolang"))
                 .all(|f| f.kept),
             "kept errors: the item loads"
         );

@@ -127,7 +127,7 @@ impl Family for Entity {
         // The text is the crate's own and the game is silent (it reads an absent version as
         // 0.0.0): an information.
         missing: MissingVersion::Floor {
-            text: Some(VanillaText::NoFormatVersionField),
+            code: &bedrock_addon_core::diagnostic::codes::NO_FORMAT_VERSION_FIELD,
             severity: Some(Severity::Info),
         },
         ..Envelope::DEFAULT
@@ -234,12 +234,15 @@ fn not_in_the_schema(cx: &mut ValidateCx<'_>) {
         Severity::Warning
     };
     for finding in cx.diagnostics.iter_mut() {
-        if matches!(
+        if (matches!(
             finding.code,
             DiagnosticCode::DeprecatedMember {
                 text: Some(VanillaText::Deprecated { .. })
             }
-        ) && finding.phase == Phase::Validate
+        ) || finding
+            .code
+            .is(&bedrock_addon_core::diagnostic::codes::DEPRECATED_IN_FORMAT))
+            && finding.phase == Phase::Validate
         {
             finding.code = bedrock_addon_core::diagnostic::cereal::component_not_in_schema();
             finding.severity = severity;

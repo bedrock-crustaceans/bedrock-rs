@@ -816,7 +816,7 @@ fn the_legacy_goal_reader_s_value_texts() {
 /// refuses one.
 #[test]
 fn a_beta_file_read_on_its_own_is_refused_in_its_file() {
-    use bedrock_addon_core::diagnostic::{DiagnosticCode, VanillaText};
+    use bedrock_addon_core::diagnostic::DiagnosticCode;
     use bedrock_addon_core::pack_identity::{PackPath, PackRef};
 
     let mut context = cx();
@@ -830,14 +830,13 @@ fn a_beta_file_read_on_its_own_is_refused_in_its_file() {
     let refusal = refused
         .diagnostics
         .iter()
-        .find(|d| matches!(d.code, DiagnosticCode::UnsupportedVersion { .. }))
+        // By legacy name: the variant and the definitions that were it.
+        .find(|d| d.code.name() == "UnsupportedVersion")
         .unwrap_or_else(|| panic!("{:#?}", refused.diagnostics));
-    assert!(
-        matches!(
-            &refusal.code,
-            DiagnosticCode::UnsupportedVersion {
-                text: Some(VanillaText::NoParserForVersion { version })
-            } if version == "beta"
+    assert_eq!(
+        refusal.code,
+        DiagnosticCode::from(
+            bedrock_addon_core::diagnostic::codes::NO_PARSER_FOR_VERSION.with(["beta"])
         ),
         "{refusal:?}"
     );

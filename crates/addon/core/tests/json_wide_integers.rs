@@ -6,6 +6,7 @@
 
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 
+use bedrock_addon_core::diagnostic::codes;
 use std::borrow::Cow;
 
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Span, code_for_deserialize_error_kind};
@@ -195,7 +196,7 @@ fn a_wide_integer_in_an_integer_member_is_a_type_error_at_the_member() {
             assert!(error.path.is_some(), "`{token}`: {error:?}");
             assert_eq!(
                 code(&error),
-                DiagnosticCode::InvalidType { text: None },
+                DiagnosticCode::from(&codes::INVALID_TYPE),
                 "`{token}`: {error:?}"
             );
         }
@@ -211,7 +212,7 @@ fn a_wide_integer_is_never_a_string() {
         }
         let (spelt, _) = real_of(&token);
         let error = element::<StrictString>(&token).unwrap_err();
-        assert_eq!(code(&error), DiagnosticCode::InvalidType { text: None });
+        assert_eq!(code(&error), DiagnosticCode::from(&codes::INVALID_TYPE));
         let either: StringOrNumber = element(&token).unwrap();
         assert_eq!(either, StringOrNumber::Number(spelt), "`{token}`");
         if spelt.is_finite() {

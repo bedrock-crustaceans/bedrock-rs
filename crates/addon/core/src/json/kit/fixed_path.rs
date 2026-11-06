@@ -202,6 +202,7 @@ pub mod testing {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::diagnostic::codes as core_codes;
     use crate::diagnostic::{Diagnostic, DiagnosticCode, Location, Phase};
     use crate::json::kit::Node;
 
@@ -242,10 +243,13 @@ mod tests {
         assert_eq!(
             found,
             [
-                info(DiagnosticCode::UnrecognizedField { text: None }, child("b")),
-                info(DiagnosticCode::InvalidType { text: None }, child("a")),
                 info(
-                    DiagnosticCode::MissingRequiredField { text: None },
+                    DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD),
+                    child("b")
+                ),
+                info(DiagnosticCode::from(&core_codes::INVALID_TYPE), child("a")),
+                info(
+                    DiagnosticCode::from(&core_codes::MISSING_REQUIRED_FIELD),
                     child("c")
                 ),
             ]

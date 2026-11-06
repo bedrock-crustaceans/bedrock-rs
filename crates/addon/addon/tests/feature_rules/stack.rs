@@ -2,7 +2,7 @@
 //! every pack top-down, then the app data; the first rule of a `(pass, identifier)` pair wins and
 //! a dropped one is `ShadowedDefinition` (info; vanilla drops it silently).
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon::diagnostic::Severity;
 use bedrock_addon::families::feature_rules::PlacementPass;
 use bedrock_addon::id::FeatureRuleId;
 use bedrock_addon::load::{AppData, LoadOptions};
@@ -40,7 +40,8 @@ fn shadowed(
 ) -> Vec<(Severity, String)> {
     rules
         .diagnostics()
-        .filter(|f| matches!(f.code, DiagnosticCode::ShadowedDefinition { .. }))
+        // By legacy name: the variant and the definitions that were it.
+        .filter(|f| matches!(f.code.name(), "ShadowedDefinition"))
         .map(|f| {
             (
                 f.severity,

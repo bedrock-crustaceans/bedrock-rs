@@ -1,7 +1,8 @@
 //! The pack settings "Document" fixture rows about members and the envelope: `ps09`,
 //! `ps10`, `ps11`, `ps14`, `ps15` (rules D5–D10).
 
-use bedrock_addon::diagnostic::{DiagnosticCode as C, Diagnostics, Severity, VanillaText};
+use bedrock_addon::diagnostic::codes;
+use bedrock_addon::diagnostic::{DiagnosticCode as C, Diagnostics, Severity};
 use uuid::Uuid;
 
 use super::common::{
@@ -32,7 +33,8 @@ fn ps09_unknown_member_is_an_error_and_drops_the_file() {
         &refused(name),
         name,
         "minecraft:pack_settings/settings/0/comment",
-        |c| matches!(c, C::UnrecognizedField { .. }),
+        // By legacy name: the variant and the definitions that were it.
+        |c| matches!(c.name(), "UnrecognizedField"),
     );
 }
 
@@ -43,7 +45,8 @@ fn an_unknown_member_of_the_document_is_an_error_too() {
         &refused_text(WORLD, &text),
         WORLD,
         "minecraft:pack_settings/comment",
-        |c| matches!(c, C::UnrecognizedField { .. }),
+        // By legacy name: the variant and the definitions that were it.
+        |c| matches!(c.name(), "UnrecognizedField"),
     );
 }
 
@@ -57,7 +60,8 @@ fn a_member_named_like_a_kept_field_is_an_unknown_member() {
         &refused_text(WORLD, &text),
         WORLD,
         "minecraft:pack_settings/settings/0/extra",
-        |c| matches!(c, C::UnrecognizedField { .. }),
+        // By legacy name: the variant and the definitions that were it.
+        |c| matches!(c.name(), "UnrecognizedField"),
     );
 }
 
@@ -121,7 +125,8 @@ fn ps10_a_non_string_pack_id_is_a_type_error() {
         &found,
         name,
         "minecraft:pack_settings/settings/0/pack_id",
-        |c| matches!(c, C::InvalidType { .. }),
+        // By legacy name: the variant and the definitions that were it.
+        |c| matches!(c.name(), "InvalidType"),
     );
 }
 
@@ -149,13 +154,7 @@ pub fn ps11_duplicate_pack_id_loads_with_a_warning_and_the_first_entry_wins_devi
 fn ps14_third_root_member_is_the_envelope_error() {
     let name = "ps14_third_root_member.json";
     fails_at(&refused(name), name, "", |c| {
-        matches!(
-            c,
-            C::MalformedInput {
-                text: Some(VanillaText::DocumentMemberCount),
-                ..
-            }
-        )
+        c.is(&codes::DOCUMENT_MEMBER_COUNT)
     });
 }
 
@@ -178,7 +177,8 @@ fn ps15_findings_under_a_foreign_payload_key_keep_their_file_offsets() {
     let found = refused_text(WORLD, text);
     let typed = found
         .iter()
-        .find(|d| matches!(d.code, C::InvalidType { .. }))
+        // By legacy name: the variant and the definitions that were it.
+        .find(|d| matches!(d.code.name(), "InvalidType"))
         .expect("the type error");
     let span = typed.location.span.expect("a span");
     let start = usize::try_from(span.offset).unwrap();
@@ -203,7 +203,8 @@ fn d6_a_missing_required_member_is_an_error() {
     ] {
         let found = refused_text(WORLD, &document("\"1.21.100\"", &payload));
         fails_at(&found, WORLD, path, |c| {
-            matches!(c, C::MissingRequiredField { .. })
+            // By legacy name: the variant and the definitions that were it.
+            matches!(c.name(), "MissingRequiredField")
         });
     }
 }
@@ -213,15 +214,7 @@ fn d5a_a_missing_payload_is_the_envelope_error_not_a_missing_field() {
     // A missing `minecraft:pack_settings` is also rule D6; with one root
     // member the envelope check of D5a comes first.
     let found = refused_text(WORLD, r#"{"format_version": "1.21.100"}"#);
-    fails_at(&found, WORLD, "", |c| {
-        matches!(
-            c,
-            C::MalformedInput {
-                text: Some(VanillaText::DocumentMemberCount),
-                ..
-            }
-        )
-    });
+    fails_at(&found, WORLD, "", |c| c.is(&codes::DOCUMENT_MEMBER_COUNT));
 }
 
 #[test]
@@ -236,7 +229,8 @@ fn d8_a_null_object_or_mixed_array_value_is_a_type_error() {
             &found,
             WORLD,
             "minecraft:pack_settings/settings/0/values/banana:x",
-            |c| matches!(c, C::InvalidType { .. }),
+            // By legacy name: the variant and the definitions that were it.
+            |c| matches!(c.name(), "InvalidType"),
         );
     }
 }
@@ -255,7 +249,8 @@ fn d8_last_used_must_be_an_unsigned_integer() {
             &found,
             WORLD,
             "minecraft:pack_settings/settings/0/last_used",
-            |c| matches!(c, C::InvalidType { .. }),
+            // By legacy name: the variant and the definitions that were it.
+            |c| matches!(c.name(), "InvalidType"),
         );
     }
 }
@@ -266,7 +261,8 @@ fn d8_settings_must_be_an_array() {
         let payload = format!(r#"{{"settings": {value}}}"#);
         let found = refused_text(WORLD, &document("\"1.21.100\"", &payload));
         fails_at(&found, WORLD, "minecraft:pack_settings/settings", |c| {
-            matches!(c, C::InvalidType { .. })
+            // By legacy name: the variant and the definitions that were it.
+            matches!(c.name(), "InvalidType")
         });
     }
 }
@@ -291,6 +287,7 @@ fn d8_an_entry_values_or_payload_of_another_type_is_a_type_error_at_its_path() {
         ("null", "minecraft:pack_settings"),
     ] {
         let found = refused_text(WORLD, &document("\"1.21.100\"", payload));
-        fails_at(&found, WORLD, path, |c| matches!(c, C::InvalidType { .. }));
+        // By legacy name: the variant and the definitions that were it.
+        fails_at(&found, WORLD, path, |c| matches!(c.name(), "InvalidType"));
     }
 }

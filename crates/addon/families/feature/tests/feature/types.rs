@@ -1,6 +1,6 @@
 //! The other feature types' schema rules (fixtures f09, f13–f19, f21–f24).
 
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon_core::diagnostic::Severity;
 use bedrock_addon_family_feature::{
     BlockList, Chance, EarlyOutScheme, Feature, StepDirection, Surface,
 };
@@ -296,7 +296,8 @@ fn unknown_feature_type(d: &bedrock_addon_core::diagnostic::Diagnostics, key: &s
     assert_eq!(d.len(), 1, "{d:#?}");
     let finding = d.iter().next().unwrap();
     assert!(
-        matches!(finding.code, DiagnosticCode::UnknownPayloadKey { .. }),
+        // By legacy name: the variant and the definitions that were it.
+        matches!(finding.code.name(), "UnknownPayloadKey"),
         "{d:#?}"
     );
     assert_eq!(finding.severity, Severity::Error);

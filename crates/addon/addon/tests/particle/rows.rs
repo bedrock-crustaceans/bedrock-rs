@@ -1,7 +1,6 @@
 //! The fixtures, one test per row (the Molang rows p25–p28 are in
 //! `molang.rs`).
 
-use bedrock_addon::diagnostic::DiagnosticCode as Code;
 use bedrock_addon::families::particle::component::{
     ColorExpr, DirectionMode, EmitterLocalSpace, EmitterRateInstant, EmitterShapeBox,
     EmitterShapeCustom, EmitterShapePoint, ParticleAppearanceBillboard, ParticleAppearanceTinting,
@@ -728,8 +727,9 @@ fn a_plain_effect_loads_in_both_eras_without_a_finding() {
         assert_eq!(document.description.identifier.as_str(), "demo:spark");
     }
     assert_lacks(loaded(&effect(LEGACY, "")).diagnostics(), "component!");
-    assert!(matches!(
-        rejected("{").iter().next().map(|d| &d.code),
-        Some(Code::MalformedInput { .. })
-    ));
+    // By legacy name: the variant and the definitions that were it.
+    assert_eq!(
+        rejected("{").iter().next().map(|d| d.code.name()),
+        Some("MalformedInput")
+    );
 }

@@ -315,10 +315,7 @@ pub fn kinds(findings: &[Diagnostic]) -> Vec<String> {
 
 /// The variant name of a finding's code.
 pub fn code(finding: &Diagnostic) -> String {
-    format!("{:?}", finding.code)
-        .chars()
-        .take_while(char::is_ascii_alphanumeric)
-        .collect()
+    finding.code.name().to_owned()
 }
 
 /// The path of a finding, a segment at a time.

@@ -429,8 +429,8 @@ fn outcome(text: &str) -> String {
     for finding in diagnostics {
         let _ = writeln!(
             out,
-            "{:?} | {:?} | {:?} | {}",
-            finding.code,
+            "{} | {:?} | {:?} | {}",
+            bedrock_addon_core::diagnostic::testing::legacy_debug(finding),
             finding.severity,
             finding.phase,
             path_text(&finding.location.json_path)

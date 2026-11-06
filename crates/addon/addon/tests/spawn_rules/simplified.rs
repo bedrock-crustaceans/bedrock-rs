@@ -12,11 +12,13 @@ use super::common::{
 };
 
 fn unresolved(code: &DiagnosticCode) -> bool {
-    matches!(code, DiagnosticCode::UnresolvedReference { .. })
+    // By legacy name: the variant and the definitions that were it.
+    matches!(code.name(), "UnresolvedReference")
 }
 
 fn unrecognized(code: &DiagnosticCode) -> bool {
-    matches!(code, DiagnosticCode::UnrecognizedField { .. })
+    // By legacy name: the variant and the definitions that were it.
+    matches!(code.name(), "UnrecognizedField")
 }
 
 /// A simplified document of `x:mob` at `version` with `body` after the description.
@@ -215,7 +217,8 @@ fn s14_simplified_missing_identifier() {
         &experiment(),
     );
     let found = with(&d, |c| {
-        matches!(c, DiagnosticCode::MissingRequiredField { .. })
+        // By legacy name: the variant and the definitions that were it.
+        matches!(c.name(), "MissingRequiredField")
     });
     assert_eq!(
         paths(&found),
@@ -266,7 +269,8 @@ fn s16_simplified_constraints() {
             &modern("1.21.60", &format!(r#", "conditions": [{body}]"#)),
             &experiment(),
         );
-        let found = with(&d, |c| matches!(c, DiagnosticCode::InvalidValue { .. }));
+        // By legacy name: the variant and the definitions that were it.
+        let found = with(&d, |c| matches!(c.name(), "InvalidValue"));
         assert_eq!(paths(&found), [at], "{body}");
         assert_eq!(found[0].severity, Severity::Error);
         assert!(closes_with(&d, "Failed to load spawn rules"));
@@ -293,7 +297,8 @@ fn s17_simplified_required_weights() {
         );
         assert!(
             d.iter().any(
-                |f| matches!(f.code, DiagnosticCode::MissingRequiredField { .. })
+                // By legacy name: the variant and the definitions that were it.
+                |f| matches!(f.code.name(), "MissingRequiredField")
                     && f.severity == Severity::Error
             ),
             "{body}: {d:#?}"
@@ -319,7 +324,8 @@ fn s18_simplified_legacy_shape_at_1_21_60() {
         ]
     );
     let missing = with(&d, |c| {
-        matches!(c, DiagnosticCode::MissingRequiredField { .. })
+        // By legacy name: the variant and the definitions that were it.
+        matches!(c.name(), "MissingRequiredField")
     });
     assert_eq!(
         paths(&missing),
@@ -334,7 +340,8 @@ fn s19_simplified_envelope() {
     assert!(
         has_text(
             &d,
-            |c| matches!(c, DiagnosticCode::MalformedInput { .. }),
+            // By legacy name: the variant and the definitions that were it.
+            |c| matches!(c.name(), "MalformedInput"),
             Severity::Error,
             "A Minecraft Document must have exactly two members: \"format_version\" and a payload member"
         ),
@@ -349,7 +356,8 @@ fn s19_simplified_envelope() {
     assert!(
         has_text(
             &d,
-            |c| matches!(c, DiagnosticCode::MissingPayload { .. }),
+            // By legacy name: the variant and the definitions that were it.
+            |c| matches!(c.name(), "MissingPayload"),
             Severity::Error,
             "The payload key does not match the expected one. Expected: 'minecraft:spawn_rules'. Actual: 'minecraft:spawn_groups'."
         ),
@@ -417,7 +425,8 @@ fn s20b_simplified_at_engine() {
     assert!(
         has_text(
             &d,
-            |c| matches!(c, DiagnosticCode::UnsupportedVersion { .. }),
+            // By legacy name: the variant and the definitions that were it.
+            |c| matches!(c.name(), "UnsupportedVersion"),
             Severity::Error,
             &format!("unsupported version: no parser available for version {engine}")
         ),
@@ -526,7 +535,8 @@ fn s16b_simplified_wrong_typed_scalars_are_refused_at_their_member() {
         let d = rejected(&text, &experiment());
         let found: Vec<_> = d
             .iter()
-            .filter(|f| matches!(f.code, DiagnosticCode::InvalidType { .. }))
+            // By legacy name: the variant and the definitions that were it.
+            .filter(|f| matches!(f.code.name(), "InvalidType"))
             .collect();
         assert_eq!(found.len(), 1, "{body}: {d:#?}");
         assert_eq!(found[0].severity, Severity::Error, "{body}");

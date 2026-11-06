@@ -509,8 +509,9 @@ fn slice_error(error: SliceError, base: &JsonPath) -> Diagnostic {
     // A slice is JSON the envelope probe has read, so a failure at its root is never a syntax
     // error: the value has the wrong JSON type for its place (the `tiers` payload, a `wants` /
     // `gives` entry, a `choice` element).
+    // By legacy name: the variant and the definitions that were it.
     let mut finding = error.into_diagnostic(base, |code, error| match code {
-        DiagnosticCode::MalformedInput { .. } if !error.has_path() => {
+        code if code.name() == "MalformedInput" && !error.has_path() => {
             DiagnosticCode::InvalidType { text: None }
         }
         other => other,

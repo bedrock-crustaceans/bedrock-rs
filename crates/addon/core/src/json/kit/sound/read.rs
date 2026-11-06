@@ -2,6 +2,7 @@
 //! coercion and the warning when the member has another JSON type.
 
 use super::report::Reporter;
+use crate::diagnostic::codes as core_codes;
 use crate::diagnostic::{DiagnosticCode, Severity};
 use crate::json::Value;
 use crate::json::jsoncpp::fork::{self, Stored};
@@ -16,7 +17,7 @@ pub fn float(value: &Value, key: &str, default: f32, report: &mut Reporter<'_>) 
     ) {
         report.at(
             key,
-            DiagnosticCode::InvalidValue { text: None },
+            DiagnosticCode::from(&core_codes::INVALID_VALUE),
             Severity::Info,
         );
     }
@@ -40,7 +41,7 @@ pub fn boolean(value: &Value, key: &str, default: bool, report: &mut Reporter<'_
     if !matches!(fork::stored(member), Stored::Null | Stored::Bool) {
         report.at(
             key,
-            DiagnosticCode::InvalidValue { text: None },
+            DiagnosticCode::from(&core_codes::INVALID_VALUE),
             Severity::Info,
         );
     }
@@ -54,7 +55,7 @@ pub fn integer(value: &Value, key: &str, default: i32, report: &mut Reporter<'_>
     if !matches!(fork::stored(member), Stored::Null | Stored::Integer) {
         report.at(
             key,
-            DiagnosticCode::InvalidValue { text: None },
+            DiagnosticCode::from(&core_codes::INVALID_VALUE),
             Severity::Info,
         );
     }
@@ -68,7 +69,7 @@ pub fn string(value: &Value, key: &str, report: &mut Reporter<'_>) -> String {
     if !matches!(fork::stored(member), Stored::Null | Stored::String) {
         report.at(
             key,
-            DiagnosticCode::InvalidValue { text: None },
+            DiagnosticCode::from(&core_codes::INVALID_VALUE),
             Severity::Info,
         );
     }

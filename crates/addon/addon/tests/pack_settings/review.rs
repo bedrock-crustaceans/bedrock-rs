@@ -1,6 +1,7 @@
 //! Rules that the fixture rows and `edges.rs` did not reach.
 
-use bedrock_addon::diagnostic::{DiagnosticCode as C, Diagnostics, Severity, VanillaText};
+use bedrock_addon::diagnostic::codes;
+use bedrock_addon::diagnostic::{DiagnosticCode as C, Diagnostics, Severity};
 use bedrock_addon::pack::settings::SettingValue;
 
 use super::common::{WORLD, document, loads_text, names, one_entry, refused_text};
@@ -103,7 +104,8 @@ const EMPTY_ENTRY: &str =
 fn mismatches(found: &Diagnostics) -> usize {
     found
         .iter()
-        .filter(|d| matches!(d.code, C::PayloadKeyMismatch))
+        // By legacy name: the variant and the definitions that were it.
+        .filter(|d| matches!(d.code.name(), "PayloadKeyMismatch"))
         .count()
 }
 
@@ -124,7 +126,8 @@ fn a_comment_between_a_foreign_key_and_its_value_does_not_hide_the_key() {
         let warning = loaded
             .diagnostics()
             .iter()
-            .find(|d| matches!(d.code, C::PayloadKeyMismatch))
+            // By legacy name: the variant and the definitions that were it.
+            .find(|d| matches!(d.code.name(), "PayloadKeyMismatch"))
             .unwrap();
         let span = warning.location.span.unwrap();
         let start = usize::try_from(span.offset).unwrap();
@@ -154,11 +157,7 @@ fn a_foreign_key_under_a_version_without_a_parser_is_the_version_finding_alone()
         assert_eq!(errors.len(), 2, "{version}: {found:#?}");
         assert_eq!(
             errors[0],
-            &C::UnsupportedVersion {
-                text: Some(VanillaText::NoParserForVersion {
-                    version: written.to_owned()
-                })
-            },
+            &C::from(codes::NO_PARSER_FOR_VERSION.with([written.to_owned()])),
             "{version}"
         );
         closes(&found, WORLD);

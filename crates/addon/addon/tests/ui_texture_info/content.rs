@@ -1,7 +1,7 @@
 //! The side-file kind on its own: `Content::parse`, the round trip (the JSON as written, read
 //! back equal and rewritten identically) and what a write gives for a value built by hand.
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon::diagnostic::Severity;
 use bedrock_addon::document::{Content, Document, Rejected};
 use bedrock_addon::families::ui_texture_info::{Nineslice, SliceSize, UiTextureInfo};
 use bedrock_addon::load::LoadContext;
@@ -120,7 +120,8 @@ fn a_side_file_that_is_no_json_object_is_rejected() {
         let rejected = parse::<UiTextureInfo>("textures/ui/x.json", text).unwrap_err();
         let finding = rejected.diagnostics.iter().next().unwrap();
         assert!(
-            matches!(finding.code, DiagnosticCode::MalformedInput { .. }),
+            // By legacy name: the variant and the definitions that were it.
+            matches!(finding.code.name(), "MalformedInput"),
             "{text}"
         );
         assert_eq!(finding.severity, Severity::Error);

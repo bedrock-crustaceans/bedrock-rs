@@ -11,6 +11,7 @@
 use facet_value::VNumber;
 
 use super::*;
+use crate::diagnostic::codes as core_codes;
 use crate::id::syntax::has_namespace;
 
 const NAMESPACE_TEXT: &str = "string must be prefixed with a namespace (eg. namespace:value)";
@@ -51,9 +52,9 @@ fn description(read: &mut Read<'_>, node: &Node<'_>) -> Option<String> {
                     error(
                         read,
                         &member,
-                        DiagnosticCode::InvalidValue {
-                            text: Some(VanillaText::Fixed(NAMESPACE_TEXT)),
-                        },
+                        DiagnosticCode::from(
+                            core_codes::INVALID_VALUE_WORDED.with([NAMESPACE_TEXT]),
+                        ),
                     );
                 }
                 accepted
@@ -104,9 +105,7 @@ fn box_size(read: &mut Read<'_>, node: &Node<'_>) -> Option<Vec<i32>> {
         error(
             read,
             node,
-            DiagnosticCode::InvalidValue {
-                text: Some(VanillaText::Fixed(text)),
-            },
+            DiagnosticCode::from(core_codes::INVALID_VALUE_WORDED.with([text])),
         );
     }
     size
@@ -136,9 +135,7 @@ fn color(read: &mut Read<'_>, node: &Node<'_>) -> Option<String> {
         error(
             read,
             node,
-            DiagnosticCode::InvalidValue {
-                text: Some(VanillaText::Fixed(text)),
-            },
+            DiagnosticCode::from(core_codes::INVALID_VALUE_WORDED.with([text])),
         );
         return None;
     }
@@ -155,9 +152,7 @@ fn color(read: &mut Read<'_>, node: &Node<'_>) -> Option<String> {
             error(
                 read,
                 node,
-                DiagnosticCode::InvalidValue {
-                    text: Some(VanillaText::Fixed(text)),
-                },
+                DiagnosticCode::from(core_codes::INVALID_VALUE_WORDED.with([text])),
             );
         }
         return color.map(|bytes| format!("{bytes:?}"));
@@ -170,7 +165,7 @@ fn color(read: &mut Read<'_>, node: &Node<'_>) -> Option<String> {
 fn repeat(read: &mut Read<'_>, node: &Node<'_>) -> Option<String> {
     let name = read.string(node)?;
     if !matches!(name, "stretch" | "repeat") {
-        error(read, node, DiagnosticCode::InvalidValue { text: None });
+        error(read, node, DiagnosticCode::from(&core_codes::INVALID_VALUE));
         return None;
     }
     Some(name.to_owned())
@@ -265,7 +260,7 @@ fn style_components(read: &mut Read<'_>, node: &Node<'_>) -> Option<()> {
             error(
                 read,
                 &member,
-                DiagnosticCode::UnrecognizedComponent { text: None },
+                DiagnosticCode::from(&core_codes::UNRECOGNIZED_COMPONENT),
             );
         }
     }
@@ -274,7 +269,7 @@ fn style_components(read: &mut Read<'_>, node: &Node<'_>) -> Option<()> {
     member(read, &members, label, form_label);
     member(read, &members, textfield, form_textfield);
     if members.is_empty() {
-        error(read, node, DiagnosticCode::InvalidValue { text: None });
+        error(read, node, DiagnosticCode::from(&core_codes::INVALID_VALUE));
         return None;
     }
     Some(())

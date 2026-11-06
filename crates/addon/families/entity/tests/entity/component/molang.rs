@@ -2,7 +2,7 @@
 //! compiled, the lenient conversion's reader, the 1.26.0 fold and the
 //! deprecated array names of 1.21.110.
 
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, JsonPath, Location, Severity};
+use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath, Location, Severity};
 use bedrock_addon_core::json::JsonSlice;
 use bedrock_addon_core::molang::{
     ExperimentMask, Molang, MolangContext, MolangFields, MolangSource, pass_one,
@@ -77,7 +77,8 @@ fn m02_experience_reward_string_takes_the_pack_molang_version() {
     {
         assert!(has(
             &d,
-            |c| matches!(c, DiagnosticCode::InvalidMolang { .. }),
+            // By legacy name: the variant and the definitions that were it.
+            |c| matches!(c.name(), "InvalidMolang"),
             Severity::Error,
             "on_death"
         ));
@@ -118,7 +119,8 @@ fn m03_experience_reward_object_form_in_the_lenient_conversion_is_invalid_type()
     assert_eq!(reward.on_death, None);
     assert!(has(
         &d,
-        |c| matches!(c, DiagnosticCode::InvalidType { .. }),
+        // By legacy name: the variant and the definitions that were it.
+        |c| matches!(c.name(), "InvalidType"),
         Severity::Info,
         "on_death"
     ));
@@ -172,7 +174,8 @@ fn experience_reward_bool_is_rejected_by_the_strict_reader_of_pass_one() {
     let d = passes(&mut reward, &pack([1, 21, 100]));
     assert!(
         d.iter()
-            .any(|f| matches!(f.code, DiagnosticCode::InvalidType { .. })),
+            // By legacy name: the variant and the definitions that were it.
+            .any(|f| matches!(f.code.name(), "InvalidType")),
         "{d:?}"
     );
 }
@@ -235,7 +238,8 @@ fn v13_experience_reward_arrays_are_deprecated_names_in_1_21_110() {
     // An error: it rejects the document in both masks.
     assert!(has(
         &d,
-        |c| matches!(c, DiagnosticCode::DeprecatedMember { .. }),
+        // By legacy name: the variant and the definitions that were it.
+        |c| matches!(c.name(), "DeprecatedMember"),
         Severity::Error,
         "on_bred_array"
     ));
@@ -305,7 +309,8 @@ fn anger_level_sound_with_an_object_condition_is_dropped_by_the_lenient_conversi
     assert_eq!(anger.on_increase_sounds[0].sound, "b");
     assert!(has(
         &d,
-        |c| matches!(c, DiagnosticCode::InvalidType { .. }),
+        // By legacy name: the variant and the definitions that were it.
+        |c| matches!(c.name(), "InvalidType"),
         Severity::Info,
         "on_increase_sounds/0/condition"
     ));
@@ -367,7 +372,8 @@ fn m08_descriptor_tags_compile_at_13_with_the_tag_queries_only() {
         assert!(!d.has_errors(), "{d:?}");
         assert!(has(
             &d,
-            |c| matches!(c, DiagnosticCode::InvalidMolang { .. }),
+            // By legacy name: the variant and the definitions that were it.
+            |c| matches!(c.name(), "InvalidMolang"),
             Severity::Error,
             "blocks/0/tags"
         ));
@@ -406,7 +412,8 @@ fn a_lenient_experience_reward_string_that_does_not_compile_is_a_warning_and_the
     assert!(!d.has_errors(), "{d:?}");
     assert!(has(
         &d,
-        |c| matches!(c, DiagnosticCode::InvalidMolang { .. }),
+        // By legacy name: the variant and the definitions that were it.
+        |c| matches!(c.name(), "InvalidMolang"),
         Severity::Error,
         "on_death"
     ));
@@ -436,7 +443,8 @@ fn a_lenient_anger_sound_whose_condition_does_not_compile_is_dropped_with_a_warn
     assert_eq!(anger.on_increase_sounds.len(), 1);
     assert!(has(
         &d,
-        |c| matches!(c, DiagnosticCode::InvalidMolang { .. }),
+        // By legacy name: the variant and the definitions that were it.
+        |c| matches!(c.name(), "InvalidMolang"),
         Severity::Error,
         "on_increase_sounds/0/condition"
     ));

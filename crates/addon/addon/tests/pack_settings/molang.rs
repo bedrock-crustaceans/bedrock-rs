@@ -2,9 +2,7 @@
 //! behaviour-pack Molang are one warning per expression. The finding is the compile check's
 //! (core, over molang's `QueryClientOnly` info).
 
-use bedrock_addon::diagnostic::{
-    DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Location, Severity,
-};
+use bedrock_addon::diagnostic::{DiagnosticDetail, Diagnostics, JsonPath, Location, Severity};
 use bedrock_addon::molang::{
     DiagCode, ExperimentMask, MolangCheck, MolangContext, MolangFieldSpec, MolangOutcome,
     MolangSource, Side,
@@ -38,7 +36,8 @@ fn lints(text: &str, side: Side) -> (MolangOutcome, Vec<(DiagCode, Severity)>, u
     );
     let found = diagnostics
         .iter()
-        .filter(|d| matches!(d.code, DiagnosticCode::MolangLint { .. }))
+        // By legacy name: the variant and the definitions that were it.
+        .filter(|d| matches!(d.code.name(), "MolangLint"))
         .filter_map(|d| match d.detail.as_deref() {
             Some(DiagnosticDetail::Molang(m)) => Some((m.code(), d.severity)),
             _ => None,

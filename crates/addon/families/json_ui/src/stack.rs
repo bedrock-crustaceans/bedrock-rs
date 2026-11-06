@@ -368,7 +368,8 @@ impl Report {
         path: &[&str],
         detail: Option<DiagnosticDetail>,
     ) {
-        let phase = if matches!(code, DiagnosticCode::MalformedInput { .. }) {
+        // By legacy name: the variant and the definitions that were it.
+        let phase = if matches!(code.name(), "MalformedInput") {
             Phase::Parse
         } else {
             Phase::Validate

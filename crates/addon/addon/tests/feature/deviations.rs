@@ -180,7 +180,8 @@ fn an_unknown_child_is_named_by_its_key_as_written() {
         };
         let told: Vec<(String, String)> = found
             .iter()
-            .filter(|f| matches!(f.code, DiagnosticCode::UnrecognizedField { .. }))
+            // By legacy name: the variant and the definitions that were it.
+            .filter(|f| matches!(f.code.name(), "UnrecognizedField"))
             .map(|f| (f.location.json_path.to_string(), f.code.to_string()))
             .collect();
         assert_eq!(

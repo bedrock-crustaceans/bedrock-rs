@@ -144,12 +144,7 @@ pub fn only(pieces: &PersonaPieces) -> &PersonaPiece {
 
 /// The variant name of a finding's code.
 pub fn code_name(found: &Diagnostic) -> String {
-    let debug = format!("{:?}", found.code);
-    debug
-        .split(|c: char| !c.is_ascii_alphanumeric())
-        .next()
-        .unwrap_or_default()
-        .to_owned()
+    found.code.name().to_owned()
 }
 
 /// One finding as `<severity> <Code> <file> <json path>`.

@@ -31,8 +31,8 @@ fn first_error(found: &Diagnostics, code: impl Fn(&DiagnosticCode) -> bool, at: 
     assert!(
         errors[1..]
             .iter()
-            .all(|d| matches!(d.code, DiagnosticCode::MalformedInput { .. })
-                && d.severity == Severity::Error),
+            // By legacy name: the variant and the definitions that were it.
+            .all(|d| matches!(d.code.name(), "MalformedInput") && d.severity == Severity::Error),
         "{found:#?}"
     );
 }
@@ -108,18 +108,21 @@ fn the_engine_s_refused_client_biomes_name_their_first_error() {
     let at = "minecraft:client_biome/components";
     first_error(
         &rejected(&engine("case-10.json"), &context()),
-        |c| matches!(c, DiagnosticCode::MissingRequiredField { .. }),
+        // By legacy name: the variant and the definitions that were it.
+        |c| matches!(c.name(), "MissingRequiredField"),
         &format!("{at}/minecraft:cubemap_identifier/cubemap_identifier"),
     );
     first_error(
         &rejected(&engine("case-11.json"), &context()),
-        |c| matches!(c, DiagnosticCode::UnsupportedVersion { .. }),
+        // By legacy name: the variant and the definitions that were it.
+        |c| matches!(c.name(), "UnsupportedVersion"),
         "format_version",
     );
     for name in ["case-7.json", "case-13.json"] {
         first_error(
             &rejected(&engine(name), &context()),
-            |c| matches!(c, DiagnosticCode::InvalidType { .. }),
+            // By legacy name: the variant and the definitions that were it.
+            |c| matches!(c.name(), "InvalidType"),
             &format!("{at}/minecraft:ambient_sounds/addition"),
         );
     }
@@ -127,7 +130,8 @@ fn the_engine_s_refused_client_biomes_name_their_first_error() {
         let found = rejected(&engine(name), &context());
         first_error(
             &found,
-            |c| matches!(c, DiagnosticCode::InvalidValue { .. }),
+            // By legacy name: the variant and the definitions that were it.
+            |c| matches!(c.name(), "InvalidValue"),
             &format!("{at}/minecraft:water_appearance"),
         );
         assert_eq!(
@@ -145,7 +149,8 @@ fn the_engine_s_attributes_outside_the_beta_struct_refuse_the_client_biome() {
     let found = load(&engine("case-2.json"), &context()).expect_err("refused");
     first_error(
         &found.diagnostics,
-        |c| matches!(c, DiagnosticCode::UnrecognizedField { .. }),
+        // By legacy name: the variant and the definitions that were it.
+        |c| matches!(c.name(), "UnrecognizedField"),
         "minecraft:client_biome/environment_attributes",
     );
 }

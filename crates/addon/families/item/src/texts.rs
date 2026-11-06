@@ -65,7 +65,8 @@ pub(crate) const NOT_IN_THE_NEWEST_FORMAT: &str = "the newest format (1.26.50) d
 pub(crate) const NUMERIC_VERSION: &str =
     "the version written as a number is read from its text; it is written back as a string";
 /// The JSON path finds no readable version.
-pub(crate) const VERSION_NOT_READABLE: &str = "document's version not found or not readable";
+pub(crate) const VERSION_NOT_READABLE: &str =
+    bedrock_addon_core::diagnostic::codes::VERSION_NOT_READABLE.template();
 /// The second line the game writes after an unreadable version or a root that is no
 /// object, and the only one for a JSON syntax error.
 pub(crate) const INVALID_JSON_OBJECT: &str = "Item is an invalid json object.";

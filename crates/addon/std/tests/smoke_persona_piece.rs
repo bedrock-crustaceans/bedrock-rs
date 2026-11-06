@@ -76,12 +76,7 @@ impl PieceSource for OnDisk {
 
 /// The variant name of a finding's code.
 fn code_name(found: &Diagnostic) -> String {
-    let debug = format!("{:?}", found.code);
-    debug
-        .split(|c: char| !c.is_ascii_alphanumeric())
-        .next()
-        .unwrap_or_default()
-        .to_owned()
+    found.code.name().to_owned()
 }
 
 /// The findings of a load counted by severity and code.

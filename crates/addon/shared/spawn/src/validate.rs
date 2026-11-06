@@ -33,7 +33,8 @@ pub fn molang<T: bedrock_addon_core::molang::MolangFields>(
         .collect();
     for at in failed {
         let reported = cx.diagnostics.iter().any(|d| {
-            matches!(d.code, DiagnosticCode::InvalidMolang { .. })
+            // By legacy name: the variant and the definitions that were it.
+            matches!(d.code.name(), "InvalidMolang")
                 && d.severity >= Severity::Warning
                 && d.location.json_path == at
         });

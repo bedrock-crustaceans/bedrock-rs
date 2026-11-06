@@ -2,7 +2,7 @@
 //! helper.
 
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, codes,
 };
 use bedrock_addon_core::document::{
     Content, Document, NoBeta, Origin, Rejected, VersionInfo, default_path,
@@ -48,7 +48,7 @@ fn version_1_21_60() -> VersionInfo {
 fn a_warning() -> Diagnostics {
     let mut diagnostics = Diagnostics::default();
     diagnostics.push(Diagnostic::new(
-        DiagnosticCode::ShadowedDefinition { text: None },
+        DiagnosticCode::from(&codes::SHADOWED_DEFINITION),
         Severity::Warning,
         Phase::Validate,
         Location::new(None, None, JsonPath::new(), None),
@@ -208,9 +208,11 @@ fn no_beta_rejects_every_file() {
     let rejected = NoBeta::<kind::Block>::parse(&path, b"{}", &LoadContext::detached())
         .expect_err("a family without a beta struct parses no beta file");
     assert_eq!(rejected.origin.path, path);
-    assert!(matches!(
-        rejected.diagnostics.first_error().map(|d| &d.code),
-        Some(DiagnosticCode::UnsupportedVersion { .. })
-    ));
+    assert!(
+        rejected
+            .diagnostics
+            .first_error()
+            .is_some_and(|d| d.is(&codes::UNSUPPORTED_VERSION))
+    );
     assert!(NoBeta::<kind::Block>::SIDES.is_empty());
 }

@@ -211,15 +211,14 @@ impl Reader<'_> {
                 args: vec![code.to_string()],
             },
         ));
-        let code = match code {
-            DiagnosticCode::MissingRequiredField { .. } => {
-                DiagnosticCode::MissingRequiredField { text }
-            }
-            DiagnosticCode::UnrecognizedField { .. } => DiagnosticCode::UnrecognizedField { text },
-            DiagnosticCode::InvalidType { .. } => DiagnosticCode::InvalidType { text },
-            DiagnosticCode::InvalidEnumValue { .. } => DiagnosticCode::InvalidEnumValue { text },
-            DiagnosticCode::InvalidValue { .. } => DiagnosticCode::InvalidValue { text },
-            other => other,
+        // By legacy name: the variant and the definitions that were it.
+        let code = match code.name() {
+            "MissingRequiredField" => DiagnosticCode::MissingRequiredField { text },
+            "UnrecognizedField" => DiagnosticCode::UnrecognizedField { text },
+            "InvalidType" => DiagnosticCode::InvalidType { text },
+            "InvalidEnumValue" => DiagnosticCode::InvalidEnumValue { text },
+            "InvalidValue" => DiagnosticCode::InvalidValue { text },
+            _ => code,
         };
         self.fail(code, at);
     }

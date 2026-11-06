@@ -435,7 +435,8 @@ fn stage<F: Family>(document: JsonSlice<'_>, cx: &LoadContext) -> Stage<F> {
 fn no_parser(diagnostics: &mut Diagnostics, version: &str) {
     let found = std::mem::take(diagnostics);
     for mut finding in found {
-        if matches!(finding.code, DiagnosticCode::BetaFeaturesNotEnabled { .. }) {
+        // By legacy name: the variant and the definitions that were it.
+        if matches!(finding.code.name(), "BetaFeaturesNotEnabled") {
             finding.code = DiagnosticCode::UnsupportedVersion {
                 text: Some(VanillaText::NoParserForVersion {
                     version: version.to_owned(),

@@ -12,7 +12,7 @@ mod fixtures;
 
 use std::path::PathBuf;
 
-use ba::diagnostic::{DiagnosticCode, Phase, Severity};
+use ba::diagnostic::{Phase, Severity};
 use ba::document::{Content, Document, WriteWith};
 use ba::json::WriteStyle;
 use ba::load::LoadContext;
@@ -150,7 +150,8 @@ fn an_edited_document_without_the_object_leaves_its_unknown_members_out_and_tell
     assert_eq!(told.len(), 1, "{told:?}");
     let finding = &told[0];
     assert!(
-        matches!(finding.code, DiagnosticCode::DroppedField { .. }),
+        // By legacy name: the variant and the definitions that were it.
+        matches!(finding.code.name(), "DroppedField"),
         "{finding:?}"
     );
     assert_eq!(finding.severity, Severity::Warning);

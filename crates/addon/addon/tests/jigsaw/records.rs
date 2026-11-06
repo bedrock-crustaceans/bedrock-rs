@@ -2,7 +2,7 @@
 //! identifiers, and the other places the crate departs from the game (tests named `deviation`),
 //! and the metadata step.
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon::diagnostic::Severity;
 use bedrock_addon::document::Content;
 use bedrock_addon::families::jigsaw::history::MetadataFamily;
 use bedrock_addon::families::jigsaw::{
@@ -65,7 +65,8 @@ fn duplicate_identifier(directory: &str, key: &str, payload: &str) {
     let shadowed: Vec<(Option<usize>, String)> = stack
         .jigsaw()
         .diagnostics()
-        .filter(|d| matches!(d.code, DiagnosticCode::ShadowedDefinition { .. }))
+        // By legacy name: the variant and the definitions that were it.
+        .filter(|d| matches!(d.code.name(), "ShadowedDefinition"))
         .map(|d| {
             assert_eq!(d.severity, Severity::Info);
             (

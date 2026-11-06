@@ -276,9 +276,12 @@ fn a_wide_integer_is_in_every_family_the_real_number_it_spells() {
                 assert!(
                     !ours.findings.iter().any(|d| d.location.json_path.is_empty()
                         && d.severity >= Severity::Error
-                        && format!("{:?}", d.code).starts_with("MalformedInput")
-                        && !format!("{:?}", d.code).contains("Number too big")
-                        && !format!("{:?}", d.code).contains("the item is not loaded")),
+                        && bedrock_addon::diagnostic::testing::legacy_debug(d)
+                            .starts_with("MalformedInput")
+                        && !bedrock_addon::diagnostic::testing::legacy_debug(d)
+                            .contains("Number too big")
+                        && !bedrock_addon::diagnostic::testing::legacy_debug(d)
+                            .contains("the item is not loaded")),
                     "{shown}: {:?}",
                     ours.findings
                 );

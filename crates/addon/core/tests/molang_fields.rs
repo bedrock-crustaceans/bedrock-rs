@@ -9,7 +9,7 @@
     reason = "tests read fixtures and call facet-json directly"
 )]
 use bedrock_addon_core::diagnostic::{
-    DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
+    DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, codes,
 };
 use bedrock_addon_core::molang::{
     self, ExperimentMask, Molang, MolangContext, MolangFieldMut, MolangFieldSpec, MolangFields,
@@ -203,7 +203,7 @@ fn pass_one_reports_a_field_its_reader_refuses() {
             )
         })
         .collect();
-    let invalid_type = DiagnosticCode::InvalidType { text: None };
+    let invalid_type = DiagnosticCode::from(&codes::INVALID_TYPE);
     let expected: Vec<(String, &DiagnosticCode, Severity, Phase)> = [
         "minecraft:toy/condition",
         "minecraft:toy/script",
@@ -240,10 +240,9 @@ fn a_number_out_of_range_is_invalid_value() {
     let mut diagnostics = Diagnostics::default();
     molang::pass_one(&mut document, &context(), &base(), &mut diagnostics);
     let codes: Vec<&DiagnosticCode> = diagnostics.iter().map(|d| &d.code).collect();
-    assert!(matches!(
-        codes[..],
-        [DiagnosticCode::InvalidValue { text: None }]
-    ));
+    assert!(
+        matches!(codes[..], [code] if code.is(&bedrock_addon_core::diagnostic::codes::INVALID_VALUE))
+    );
 }
 
 /// Without the compile pass a document that holds expressions gets one
@@ -260,7 +259,10 @@ fn not_checked_names_the_number_of_expressions() {
     let [finding] = diagnostics.iter().collect::<Vec<_>>()[..] else {
         panic!("one finding: {diagnostics:?}");
     };
-    assert_eq!(finding.code, DiagnosticCode::MolangNotChecked { fields: 7 });
+    assert_eq!(
+        finding.code,
+        DiagnosticCode::from(codes::MOLANG_NOT_CHECKED.with([7.to_string()]))
+    );
     assert_eq!(finding.severity, Severity::Info);
     assert_eq!(finding.location, base());
 }
@@ -297,7 +299,12 @@ fn an_invalid_expression_loads_unchecked_without_the_compile_pass() {
     assert_eq!(pass.failed, 0);
     molang::not_checked(&mut document, &base(), &mut diagnostics);
     let codes: Vec<&DiagnosticCode> = diagnostics.iter().map(|d| &d.code).collect();
-    assert_eq!(codes, [&DiagnosticCode::MolangNotChecked { fields: 2 }]);
+    assert_eq!(
+        codes,
+        [&DiagnosticCode::from(
+            codes::MOLANG_NOT_CHECKED.with([2.to_string()])
+        )]
+    );
 }
 
 /// A field walked with `field_default` takes the walk's default spec: the one

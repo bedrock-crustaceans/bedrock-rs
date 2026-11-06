@@ -54,7 +54,8 @@ impl VersionStruct for Item {
         let mut found = Diagnostics::default();
         let shell: Option<Shell> = parse_payload(payload, cx, &mut found);
         // unknown keys are ignored silently at every version (and kept)
-        found.retain(|f| !matches!(f.code, DiagnosticCode::UnrecognizedField { .. }));
+        // By legacy name: the variant and the definitions that were it.
+        found.retain(|f| !matches!(f.code.name(), "UnrecognizedField"));
         d.extend_with_unknown(found);
         let mut shell = shell?;
         if let Err(reason) = is_component_based(payload, cx.written) {

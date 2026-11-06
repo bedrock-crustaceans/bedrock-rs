@@ -1,8 +1,9 @@
 //! `Family::close`, the post-parse hook every family may implement, a family with a beta
 //! struct included, and the closed entry points that run it once per file.
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, Location, Phase, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, Location, Phase, Severity,
 };
 use bedrock_addon_core::json::JsonSlice;
 use bedrock_addon_core::load::LoadContext;
@@ -34,6 +35,13 @@ pub mod closing {
 
 const CLOSING_LINE: &str = "Failed to load toy";
 
+/// The closing line's code.
+fn closing_code() -> DiagnosticCode {
+    core_codes::DOCUMENT_REJECTED_WORDED
+        .with([CLOSING_LINE])
+        .into()
+}
+
 impl Family for Closing {
     const NAME: &'static str = "toy";
     const PAYLOAD_KEY: &'static str = "minecraft:toy";
@@ -49,9 +57,7 @@ impl Family for Closing {
     fn close(diagnostics: &mut Diagnostics, _: Option<JsonSlice<'_>>, _: &PackPath, failed: bool) {
         if failed {
             diagnostics.push(Diagnostic::new(
-                DiagnosticCode::DocumentRejected {
-                    text: Some(VanillaText::Fixed(CLOSING_LINE)),
-                },
+                DiagnosticCode::from(core_codes::DOCUMENT_REJECTED_WORDED.with([CLOSING_LINE])),
                 Severity::Error,
                 Phase::Parse,
                 Location::default(),
@@ -75,12 +81,7 @@ fn closed<F: Family>(failed: bool) -> Diagnostics {
 fn a_family_with_a_beta_struct_closes_a_failed_load() {
     let failed = closed::<Closing>(true);
     assert_eq!(failed.len(), 1, "the failed load gets the closing line");
-    assert!(matches!(
-        failed.iter().next().map(|d| &d.code),
-        Some(DiagnosticCode::DocumentRejected {
-            text: Some(VanillaText::Fixed(CLOSING_LINE))
-        })
-    ));
+    assert_eq!(failed.iter().next().map(|d| &d.code), Some(&closing_code()));
     assert_eq!(
         closed::<Closing>(false).len(),
         0,
@@ -133,15 +134,14 @@ fn toy_at(version: &str) -> String {
     )
 }
 
-/// The `UnsupportedVersion` texts of a load.
-fn unsupported<F: Family>(text: &str) -> Vec<Option<VanillaText>> {
+/// The `UnsupportedVersion` codes of a load.
+fn unsupported<F: Family>(text: &str) -> Vec<DiagnosticCode> {
     load::<F>(JsonSlice::new(text), &LoadContext::detached())
         .diagnostics
         .iter()
-        .filter_map(|d| match &d.code {
-            DiagnosticCode::UnsupportedVersion { text } => Some(text.clone()),
-            _ => None,
-        })
+        // By legacy name: the variant and the definitions that were it.
+        .filter(|d| d.code.name() == "UnsupportedVersion")
+        .map(|d| d.code.clone())
         .collect()
 }
 
@@ -158,9 +158,9 @@ fn below_the_floor_of_a_no_parser_family_is_no_parser_with_the_version_as_parsed
     ] {
         assert_eq!(
             unsupported::<Floored>(&toy_at(written)),
-            [Some(VanillaText::NoParserForVersion {
-                version: shown.to_owned()
-            })],
+            [DiagnosticCode::from(
+                core_codes::NO_PARSER_FOR_VERSION.with([shown])
+            )],
             "{written}"
         );
     }
@@ -170,10 +170,7 @@ fn below_the_floor_of_a_no_parser_family_is_no_parser_with_the_version_as_parsed
 fn below_the_floor_of_a_default_family_is_the_floor_line() {
     let texts = unsupported::<crate::toy::Toy>(&toy_at(r#""0.9.0""#));
     assert!(
-        matches!(
-            texts.as_slice(),
-            [Some(VanillaText::UseFormatVersion { .. })]
-        ),
+        matches!(texts.as_slice(), [code] if code.is(&core_codes::USE_FORMAT_VERSION)),
         "{texts:?}"
     );
 }
@@ -181,14 +178,7 @@ fn below_the_floor_of_a_default_family_is_the_floor_line() {
 fn closing_lines(diagnostics: &Diagnostics) -> usize {
     diagnostics
         .iter()
-        .filter(|d| {
-            matches!(
-                d.code,
-                DiagnosticCode::DocumentRejected {
-                    text: Some(VanillaText::Fixed(CLOSING_LINE))
-                }
-            )
-        })
+        .filter(|d| d.code == closing_code())
         .count()
 }
 
@@ -273,9 +263,7 @@ impl Family for Always {
 
     fn close(diagnostics: &mut Diagnostics, _: Option<JsonSlice<'_>>, _: &PackPath, _: bool) {
         diagnostics.push(Diagnostic::new(
-            DiagnosticCode::DocumentRejected {
-                text: Some(VanillaText::Fixed(CLOSING_LINE)),
-            },
+            DiagnosticCode::from(core_codes::DOCUMENT_REJECTED_WORDED.with([CLOSING_LINE])),
             Severity::Info,
             Phase::Parse,
             Location::default(),

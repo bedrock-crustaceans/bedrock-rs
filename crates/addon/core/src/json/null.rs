@@ -46,6 +46,7 @@ use facet::{Facet, Peek, Shape};
 use super::Value;
 use super::slice::{JsonSlice, SliceError, parse_without, span_at};
 use super::walk::Walk;
+use crate::diagnostic::codes as core_codes;
 use crate::diagnostic::{
     Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, JsonPathSegment, Location,
     Phase, Severity,
@@ -92,7 +93,7 @@ pub fn reject_nulls<'f, T: Facet<'f>>(
         let mut full = at.clone();
         full.append(path);
         d.push(Diagnostic::new(
-            DiagnosticCode::InvalidType { text: None },
+            DiagnosticCode::from(&core_codes::INVALID_TYPE),
             Severity::Error,
             Phase::Parse,
             Location::new(None, None, full, span_at(slice, path)),
@@ -115,7 +116,7 @@ pub fn tell_null_members(found: &[JsonPath], at: &JsonPath, d: &mut Diagnostics)
         let mut full = at.clone();
         full.append(path);
         let mut finding = Diagnostic::new(
-            DiagnosticCode::ValueRewritten { text: None },
+            DiagnosticCode::from(&core_codes::VALUE_REWRITTEN),
             Severity::Info,
             Phase::Parse,
             Location::new(None, None, full, None),
@@ -285,7 +286,7 @@ mod tests {
         assert!(reject_nulls(&value, slice, &at, &mut d));
         let found: Vec<_> = d.iter().collect();
         assert_eq!(found.len(), 1, "{found:#?}");
-        assert!(matches!(found[0].code, DiagnosticCode::InvalidType { .. }));
+        assert!(found[0].is(&core_codes::INVALID_TYPE));
         assert_eq!(found[0].severity, Severity::Error);
         assert_eq!(
             found[0].location.json_path.to_string(),
@@ -331,10 +332,7 @@ mod tests {
         let error = parse_at_null_absent::<Bare>(JsonSlice::new(text)).unwrap_err();
         let code =
             crate::diagnostic::code_for_deserialize_error_kind(&error.error.kind, true, false);
-        assert!(
-            matches!(code, DiagnosticCode::MissingRequiredField { .. }),
-            "{code:?} {error:?}"
-        );
+        assert!(code.name() == "MissingRequiredField", "{code:?} {error:?}");
         assert_eq!(error.path.to_string(), "inner/required");
     }
 

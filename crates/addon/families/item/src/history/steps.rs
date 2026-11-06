@@ -145,7 +145,8 @@ fn repair_items(items: &Value, cx: &mut UpgradeCx<'_>) -> Vec<RepairItem> {
                 // warning at this path: the number is told once.
                 let said = cx.diagnostics.iter().any(|finding| {
                     finding.location.json_path == amount_at
-                        && matches!(finding.code, DiagnosticCode::InvalidValue { .. })
+                        // By legacy name: the variant and the definitions that were it.
+                        && matches!(finding.code.name(), "InvalidValue")
                 });
                 if !said {
                     tell(cx, amount_at, Severity::Info);
@@ -251,7 +252,8 @@ fn saturated_duration(legacy: &crate::legacy::LegacyItemData, cx: &mut UpgradeCx
     let at = use_duration_at();
     let said = cx.diagnostics.iter().any(|finding| {
         finding.location.json_path.starts_with(&at)
-            && matches!(finding.code, DiagnosticCode::InvalidValue { .. })
+            // By legacy name: the variant and the definitions that were it.
+            && matches!(finding.code.name(), "InvalidValue")
     });
     if !said {
         report(
@@ -279,7 +281,8 @@ fn negative_duration(legacy: &crate::legacy::LegacyItemData, cx: &mut UpgradeCx<
         let at = use_duration_at();
         let said = cx.diagnostics.iter().any(|finding| {
             finding.location.json_path.starts_with(&at)
-                && matches!(finding.code, DiagnosticCode::InvalidValue { .. })
+                // By legacy name: the variant and the definitions that were it.
+                && matches!(finding.code.name(), "InvalidValue")
         });
         if !said {
             report(
@@ -558,7 +561,8 @@ fn saturation(value: &Value, cx: &mut UpgradeCx<'_>) -> Option<f32> {
     let nearest = number as f32;
     if nearest.is_infinite() {
         let said = cx.diagnostics.iter().any(|finding| {
-            matches!(finding.code, DiagnosticCode::InvalidValue { .. })
+            // By legacy name: the variant and the definitions that were it.
+            matches!(finding.code.name(), "InvalidValue")
                 && finding.location.json_path
                     == JsonPath::of_keys([
                         "minecraft:item",

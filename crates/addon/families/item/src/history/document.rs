@@ -737,11 +737,8 @@ pub(crate) fn parse_parts(
     if !strict {
         // Not told, and kept all the same.
         found.retain(|f| {
-            !matches!(
-                f.code,
-                DiagnosticCode::UnrecognizedField { .. }
-                    | DiagnosticCode::UnrecognizedComponent { .. }
-            )
+            // By legacy name: the variant and the definitions that were it.
+            !matches!(f.code.name(), "UnrecognizedField" | "UnrecognizedComponent")
         });
     }
     d.extend_with_unknown(found);
@@ -911,9 +908,10 @@ fn side_car(
 
 /// Whether `finding` tells an unknown member or component.
 fn is_unknown_member(finding: &Diagnostic) -> bool {
+    // By legacy name: the variant and the definitions that were it.
     matches!(
-        finding.code,
-        DiagnosticCode::UnrecognizedField { .. } | DiagnosticCode::UnrecognizedComponent { .. }
+        finding.code.name(),
+        "UnrecognizedField" | "UnrecognizedComponent"
     )
 }
 

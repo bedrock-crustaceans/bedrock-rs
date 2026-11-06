@@ -4,7 +4,7 @@
 #[path = "shared/common.rs"]
 mod common;
 
-use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath, Severity};
+use bedrock_addon_core::diagnostic::{JsonPath, Severity, codes};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::shared::{EventTrigger, Filter, FilterSubject};
 use common::{compact, read, round_trip};
@@ -59,10 +59,7 @@ fn the_check_covers_the_filters() {
     let found = t.check(&JsonPath::new(), Severity::Warning);
     assert_eq!(found.len(), 1);
     let finding = found.iter().next().unwrap();
-    assert!(matches!(
-        finding.code,
-        DiagnosticCode::UnresolvedReference { .. }
-    ));
+    assert!(finding.is(&codes::FILTER_TEST_NOT_FOUND));
     let mut expected = JsonPath::new();
     expected.push("filters");
     expected.push("all_of");

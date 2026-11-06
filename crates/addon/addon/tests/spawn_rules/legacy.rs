@@ -11,19 +11,23 @@ use super::common::{
 };
 
 fn invalid_type(code: &DiagnosticCode) -> bool {
-    matches!(code, DiagnosticCode::InvalidType { .. })
+    // By legacy name: the variant and the definitions that were it.
+    matches!(code.name(), "InvalidType")
 }
 
 fn invalid_value(code: &DiagnosticCode) -> bool {
-    matches!(code, DiagnosticCode::InvalidValue { .. })
+    // By legacy name: the variant and the definitions that were it.
+    matches!(code.name(), "InvalidValue")
 }
 
 fn missing_field(code: &DiagnosticCode) -> bool {
-    matches!(code, DiagnosticCode::MissingRequiredField { .. })
+    // By legacy name: the variant and the definitions that were it.
+    matches!(code.name(), "MissingRequiredField")
 }
 
 fn invalid_enum(code: &DiagnosticCode) -> bool {
-    matches!(code, DiagnosticCode::InvalidEnumValue { .. })
+    // By legacy name: the variant and the definitions that were it.
+    matches!(code.name(), "InvalidEnumValue")
 }
 
 /// The object-form text of `key` for `x:mob`.
@@ -125,7 +129,8 @@ fn s05_below_floor() {
     assert!(
         has_text(
             &d,
-            |c| matches!(c, DiagnosticCode::UnsupportedVersion { .. }),
+            // By legacy name: the variant and the definitions that were it.
+            |c| matches!(c.name(), "UnsupportedVersion"),
             Severity::Error,
             "unsupported version: no parser available for version 1.7.0"
         ),
@@ -141,7 +146,8 @@ fn s06_permute_guaranteed_count() {
     );
     assert_eq!(rules.guaranteed, vec![(2, EntityId::parse("x:a"))]);
     let unknown = with(&d, |c| {
-        matches!(c, DiagnosticCode::UnrecognizedField { .. })
+        // By legacy name: the variant and the definitions that were it.
+        matches!(c.name(), "UnrecognizedField")
     });
     assert_eq!(
         paths(&unknown),
@@ -159,7 +165,8 @@ fn s07_bad_format_version() {
     assert!(
         has_text(
             &d,
-            |c| matches!(c, DiagnosticCode::MalformedFormatVersion { .. }),
+            // By legacy name: the variant and the definitions that were it.
+            |c| matches!(c.name(), "MalformedFormatVersion"),
             Severity::Error,
             "Malformed format version"
         ),
@@ -404,7 +411,8 @@ fn s09c_object_form_messages() {
 fn s09b_unknown_condition_key() {
     let (c, _, d) = condition(r#""minecraft:spawns_on_moon": {}"#);
     let found = with(&d, |c| {
-        matches!(c, DiagnosticCode::UnrecognizedField { .. })
+        // By legacy name: the variant and the definitions that were it.
+        matches!(c.name(), "UnrecognizedField")
     });
     assert_eq!(
         paths(&found),
@@ -778,7 +786,8 @@ fn a_root_that_is_not_an_object_is_vanillas_message() {
     assert!(
         has_text(
             &d,
-            |c| matches!(c, DiagnosticCode::MalformedInput { .. }),
+            // By legacy name: the variant and the definitions that were it.
+            |c| matches!(c.name(), "MalformedInput"),
             Severity::Error,
             "Spawn rules json was not formatted as an object"
         ),
@@ -805,7 +814,8 @@ fn write_back_keeps_what_the_author_wrote() {
     }
     // Kept members are not reported again as unknown.
     let unknown = with(document.diagnostics(), |c| {
-        matches!(c, DiagnosticCode::UnrecognizedField { .. })
+        // By legacy name: the variant and the definitions that were it.
+        matches!(c.name(), "UnrecognizedField")
     });
     assert!(unknown.is_empty(), "{unknown:#?}");
     let r = condition.to_spawn_rules();
@@ -830,7 +840,8 @@ fn unknown_root_description_and_in_object_members_deviation() {
     let text = r#"{"format_version": "1.8.0", "extra": 1, "minecraft:spawn_rules": {"description": {"identifier": "x:mob", "population_control": "animal", "note": "x"}, "conditions": [{"minecraft:weight": {"default": 2, "bonus": 1}}]}}"#;
     let document = loads(text, &context());
     let unknown = with(document.diagnostics(), |c| {
-        matches!(c, DiagnosticCode::UnrecognizedField { .. })
+        // By legacy name: the variant and the definitions that were it.
+        matches!(c.name(), "UnrecognizedField")
     });
     assert_eq!(
         paths(&unknown),

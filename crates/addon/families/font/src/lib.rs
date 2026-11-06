@@ -328,8 +328,8 @@ fn read_metadata(origin: Origin, bytes: &[u8]) -> FontFileCopy<FontMetadata> {
         );
         let said = is_scale
             && diagnostics.iter().any(|own| {
-                matches!(own.code, DiagnosticCode::ClampedValue { .. })
-                    && own.location.json_path == *at
+                // By legacy name: the variant and the definitions that were it.
+                matches!(own.code.name(), "ClampedValue") && own.location.json_path == *at
             });
         if !said {
             diagnostics.push(finding);

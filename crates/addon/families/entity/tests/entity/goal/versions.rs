@@ -332,8 +332,11 @@ fn vectors_of_the_wrong_shape_are_refused_and_both_forms_write_back() {
         d.iter()
             .map(|d| {
                 format!(
-                    "{:?} {} {:?} {:?}",
-                    d.severity, d.location.json_path, d.code, d.detail
+                    "{:?} {} {} {:?}",
+                    d.severity,
+                    d.location.json_path,
+                    bedrock_addon_core::diagnostic::testing::legacy_debug(d),
+                    d.detail
                 )
             })
             .collect()

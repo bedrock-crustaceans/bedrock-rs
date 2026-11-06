@@ -373,10 +373,10 @@ fn refuse_what_the_format_refuses<S: VersionStruct>(payload: &Value) -> Result<(
     let mut told = Diagnostics::default();
     let _ = S::parse(JsonSlice::new(&text), &parse, &mut told);
     let refused = told.iter().find(|finding| {
+        // By legacy name: the variant and the definitions that were it.
         matches!(
-            finding.code,
-            bedrock_addon_core::diagnostic::DiagnosticCode::UnrecognizedField { .. }
-                | bedrock_addon_core::diagnostic::DiagnosticCode::UnrecognizedComponent { .. }
+            finding.code.name(),
+            "UnrecognizedField" | "UnrecognizedComponent"
         ) && finding.location.json_path.starts_with(&at)
     });
     match refused {

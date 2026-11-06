@@ -724,6 +724,7 @@ mod tests {
     use indexmap::IndexMap;
 
     use super::*;
+    use crate::diagnostic::codes as core_codes;
 
     #[test]
     fn an_object_is_recognised_after_comments_and_whitespace() {
@@ -778,11 +779,7 @@ mod tests {
     fn a_blank_slice_is_an_empty_document() {
         let error = parse_at::<Inner>(JsonSlice::new(" \n ")).unwrap_err();
         let finding = error.into_diagnostic(&JsonPath::new(), |code, _| code);
-        assert!(
-            matches!(finding.code, DiagnosticCode::EmptyDocument { .. }),
-            "{:?}",
-            finding.code
-        );
+        assert!(finding.code.name() == "EmptyDocument", "{:?}", finding.code);
     }
 
     #[test]
@@ -790,10 +787,7 @@ mod tests {
         let error = parse_at::<Inner>(JsonSlice::new(r#"{"v": "x"}"#)).unwrap_err();
         let text = error.error.kind.to_string();
         let finding = error.into_diagnostic(&JsonPath::of_keys(["base"]), |code, error| {
-            assert!(
-                matches!(code, DiagnosticCode::InvalidType { .. }),
-                "{code:?}"
-            );
+            assert!(code.name() == "InvalidType", "{code:?}");
             assert_eq!(*error.relative_path(), JsonPath::of_keys(["v"]));
             assert!(error.has_path());
             assert!(!error.is_blank());
@@ -801,9 +795,9 @@ mod tests {
             assert!(error.describes(&text[..3]));
             assert!(!error.describes("no such words in it"));
             assert_eq!(error.code_with_path(error.has_path()), code);
-            DiagnosticCode::InvalidValue { text: None }
+            DiagnosticCode::from(&core_codes::INVALID_VALUE)
         });
-        assert!(matches!(finding.code, DiagnosticCode::InvalidValue { .. }));
+        assert!(finding.is(&core_codes::INVALID_VALUE));
         assert_eq!(finding.location.json_path, JsonPath::of_keys(["base", "v"]));
     }
 
@@ -814,17 +808,14 @@ mod tests {
         let text = r#"{"v": [1]}"#;
         let error = parse_at::<Inner>(JsonSlice::new(text)).unwrap_err();
         assert!(
-            matches!(
-                error.code_with_path(true),
-                DiagnosticCode::InvalidType { .. }
-            ),
+            error.code_with_path(true).name() == "InvalidType",
             "at a member, a token of the wrong kind is a type error"
         );
         let finding = error.into_diagnostic(&JsonPath::of_keys(["base"]), |_, error| {
             error.code_with_path(false)
         });
         assert!(
-            matches!(finding.code, DiagnosticCode::MalformedInput { .. }),
+            finding.code.name() == "MalformedInput",
             "graded as at the root, it is malformed input: {:?}",
             finding.code
         );

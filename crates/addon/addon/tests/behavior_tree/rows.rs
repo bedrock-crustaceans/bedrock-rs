@@ -2,7 +2,7 @@
 //! and compared with its `expected.json` and `expected.toml` (`check`), then the row's own
 //! claims are asserted.
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Phase, Severity, VanillaText};
+use bedrock_addon::diagnostic::{DiagnosticCode, Phase, Severity, VanillaText, codes};
 use bedrock_addon::diagnostic::{Diagnostics, JsonPath};
 use bedrock_addon::document::{Registry, Rejected};
 use bedrock_addon::families::behavior_tree::{BehaviorTree, Node, Param};
@@ -498,10 +498,7 @@ fn bt23_an_unknown_body_key_is_reported_and_kept() {
         Severity::Info,
         &format!("{ROOT}/minecraft:wait_ticks/ticks"),
     );
-    assert!(matches!(
-        finding.code,
-        DiagnosticCode::UnrecognizedField { text: None }
-    ));
+    assert!(finding.code.is(&codes::UNRECOGNIZED_FIELD));
     assert_eq!(findings.len(), 1);
     assert_eq!(
         tree.unknown()
@@ -650,10 +647,7 @@ fn bt21_a_subtree_and_its_data_items() {
             Severity::Info,
             &format!("{ROOT}/minecraft:subtree/data_items/{index}"),
         );
-        assert!(matches!(
-            finding.code,
-            DiagnosticCode::InvalidType { text: None }
-        ));
+        assert!(finding.code.is(&codes::INVALID_TYPE));
     }
     assert_eq!(findings.len(), 2);
     // `move` is a built-in tree: the reference resolves, and loading says nothing of it

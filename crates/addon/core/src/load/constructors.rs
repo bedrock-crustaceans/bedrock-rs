@@ -11,7 +11,7 @@
 //! `CollectionLoader { needs: &["block"], ..load::registry::<Recipe>(WALK) }`.
 
 use super::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
-use crate::diagnostic::{Diagnostic, DiagnosticCode};
+use crate::diagnostic::{Diagnostic, codes};
 use crate::document::unversioned::origin_of;
 use crate::document::{
     Content, Contribution, Document, Files, FilesBuilder, FilesRule, JsonDefinition, Registry,
@@ -101,9 +101,7 @@ fn parse_definition<D: JsonDefinition>(file: &WalkFile, cx: &LoadContext) -> Con
             Contribution::Beta(Id::parse(identifier), beta.keep())
         }
         DocumentRead::Beta(None, mut beta) => {
-            beta.push(Diagnostic::error(DiagnosticCode::MissingIdentifier {
-                text: None,
-            }));
+            beta.push(Diagnostic::of(&codes::MISSING_IDENTIFIER));
             Contribution::Rejected(None, beta.reject())
         }
         DocumentRead::Rejected(identifier, rejected) => {

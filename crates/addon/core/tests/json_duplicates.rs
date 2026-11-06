@@ -5,7 +5,7 @@
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 
 use bedrock_addon_core::diagnostic::JsonPath;
-use bedrock_addon_core::diagnostic::{DiagnosticCode, code_for_deserialize_error_kind};
+use bedrock_addon_core::diagnostic::code_for_deserialize_error_kind;
 use bedrock_addon_core::json::{
     JsonSlice, MAX_JSON_DEPTH, Value, Winner, blank_repeats, first_wins, from_str_jsonc, last_wins,
     last_wins_except, parse_at,
@@ -188,10 +188,8 @@ fn a_syntax_fault_in_a_copy_that_loses_is_the_document_s_fault() {
         );
         assert_eq!(fault.span, written.span, "`{text}` as `{cleaned}`");
         assert!(
-            matches!(
-                code_for_deserialize_error_kind(&fault.kind, fault.path.is_some(), false),
-                DiagnosticCode::MalformedInput { .. }
-            ),
+            code_for_deserialize_error_kind(&fault.kind, fault.path.is_some(), false).name()
+                == "MalformedInput",
             "`{text}`: {fault:?}"
         );
         // Kept members of a family's exception are no exception to this.

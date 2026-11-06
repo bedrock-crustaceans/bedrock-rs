@@ -4,7 +4,7 @@
 
 use std::path::PathBuf;
 
-use bedrock_addon::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics};
+use bedrock_addon::diagnostic::{Diagnostic, Diagnostics};
 use bedrock_addon::document::{Content, Document, Rejected};
 use bedrock_addon::families::particle::ParticleEffect;
 use bedrock_addon::load::{LoadContext, LoadOptions};
@@ -173,7 +173,8 @@ pub fn text(d: &Diagnostic) -> String {
 pub fn findings(diagnostics: &Diagnostics) -> Vec<String> {
     diagnostics
         .iter()
-        .filter(|d| !matches!(d.code, DiagnosticCode::MolangNotChecked { .. }))
+        // By legacy name: the variant and the definitions that were it.
+        .filter(|d| !matches!(d.code.name(), "MolangNotChecked"))
         .map(text)
         .collect()
 }

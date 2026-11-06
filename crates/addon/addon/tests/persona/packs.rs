@@ -1,6 +1,6 @@
 //! P7), M4, M5 and M7.
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon::diagnostic::Severity;
 use bedrock_addon::families::persona::{PackKind, PieceType, TESTING_PACK};
 use bedrock_addon::load::LoadOptions;
 use bedrock_addon::pack::{PackOrigin, PackRepository, PackType, WorldPacks};
@@ -101,10 +101,13 @@ fn pp03_p4_a_piece_pack_with_two_piece_folders_keeps_one() {
     ]);
     let pieces = load(&pack);
     assert_eq!(lines(&pieces), ["info IdentifierCollision pieces/b"]);
-    assert!(pieces.report().any(|found| matches!(
-        found.code,
-        DiagnosticCode::IdentifierCollision { .. }
-    ) && found.severity == Severity::Info));
+    // By legacy name: the variant and the definitions that were it.
+    assert!(
+        pieces
+            .report()
+            .any(|found| matches!(found.code.name(), "IdentifierCollision")
+                && found.severity == Severity::Info)
+    );
     let directories: Vec<&str> = pieces
         .pieces
         .iter()
@@ -300,10 +303,9 @@ fn pp05_m4_a_built_in_piece_without_a_uuid_is_skipped() {
     );
     assert!(pieces.rejected.iter().all(|rejected| {
         rejected.diagnostics.iter().any(|found| {
-            matches!(
-                found.code,
-                DiagnosticCode::InvalidValue { .. } | DiagnosticCode::MissingRequiredField { .. }
-            ) && found.severity == Severity::Error
+            // By legacy name: the variant and the definitions that were it.
+            matches!(found.code.name(), "InvalidValue" | "MissingRequiredField")
+                && found.severity == Severity::Error
         })
     }));
 }
@@ -606,7 +608,8 @@ fn pp07_p1_a_piece_pack_is_never_on_a_resource_stack() {
     let found: Vec<_> = stacks
         .selection()
         .iter()
-        .filter(|d| matches!(d.code, DiagnosticCode::PersonaPiecePack))
+        // By legacy name: the variant and the definitions that were it.
+        .filter(|d| matches!(d.code.name(), "PersonaPiecePack"))
         .collect();
     assert_eq!(found.len(), 1, "{found:?}");
     // Adding to the stack has no kind check and no line: an information.
@@ -815,7 +818,8 @@ fn pp11_p3_a_piece_pack_s_min_engine_version_is_ignored() {
             .diagnostics()
             .iter()
             .filter(|found| {
-                matches!(found.code, DiagnosticCode::IgnoredProperty)
+                // By legacy name: the variant and the definitions that were it.
+                matches!(found.code.name(), "IgnoredProperty")
                     && found.severity == Severity::Warning
             })
             .count()

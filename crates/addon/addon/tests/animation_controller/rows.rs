@@ -1096,7 +1096,6 @@ mod compiled {
     /// written.
     #[test]
     fn a_lowercase_transitions_findings_quote_the_written_text() {
-        use bedrock_addon::diagnostic::DiagnosticCode;
         let written = "Query.Is_Baby +";
         let document = loaded(controller(
             &ctrl(
@@ -1108,9 +1107,10 @@ mod compiled {
         let quoted: Vec<&str> = document
             .diagnostics()
             .iter()
-            .filter_map(|d| match &d.code {
-                DiagnosticCode::InvalidMolang { expression } => Some(expression.as_str()),
-                _ => None,
+            .filter_map(|d| {
+                d.code
+                    .args_of(&bedrock_addon::diagnostic::codes::INVALID_MOLANG)
+                    .map(|a| a[0].as_str())
             })
             .collect();
         assert!(!quoted.is_empty(), "{:?}", lines(document.diagnostics()));

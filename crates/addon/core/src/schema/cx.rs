@@ -3,7 +3,7 @@
 
 use super::grading::{Grading, grade};
 use crate::diagnostic::cereal::NumericRange;
-use crate::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
+use crate::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, codes};
 use crate::versioning::Reading;
 
 /// What a derived check does with the member after [`SchemaCx`] recorded its failure.
@@ -90,8 +90,11 @@ impl<'d> SchemaCx<'d> {
     /// (a default, a fallback, `None`, the other member); a required field has none, so under
     /// `DefaultAndTell` it fails its owner at that rule's severity instead of being accepted.
     pub fn range(&mut self, range: NumericRange, resettable: bool) -> Verdict {
-        let text = self.range_text.then(|| range.text());
-        let code = DiagnosticCode::InvalidValue { text };
+        let code = if self.range_text {
+            range.code()
+        } else {
+            DiagnosticCode::from(&codes::INVALID_VALUE)
+        };
         if resettable {
             self.fail(code)
         } else {
@@ -108,7 +111,7 @@ impl<'d> SchemaCx<'d> {
         let code = if self.range_text {
             crate::diagnostic::cereal::not_multiple_of(value, step)
         } else {
-            DiagnosticCode::InvalidValue { text: None }
+            DiagnosticCode::from(&codes::INVALID_VALUE)
         };
         if resettable {
             self.fail(code)

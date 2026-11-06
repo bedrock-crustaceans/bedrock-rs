@@ -12,8 +12,7 @@ use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::json::JsonSlice;
 use bedrock_addon_core::json::node_tree::{
-    Failure, Group, Hit, Kind, Lossy, NOT_ALLOWED_REGEX, Names, Node, OUTSIDE_RANGE, Order, Rules,
-    Validation, Walk, percent_f,
+    Failure, Group, Hit, Kind, Lossy, Names, Node, Order, Rules, Validation, Walk, percent_f,
 };
 use bedrock_addon_shared_shapes::color::is_hex;
 
@@ -212,8 +211,7 @@ fn ranged(walk: &mut Walk, node: Node<'_>, min: f32, max: f32) -> Option<f32> {
     let x = walk.float(node)?;
     if x < min || x > max {
         walk.invalid(
-            OUTSIDE_RANGE,
-            &[&percent_f(x), &percent_f(min), &percent_f(max)],
+            core_codes::OUTSIDE_RANGE.with([percent_f(x), percent_f(min), percent_f(max)]),
             node,
         );
         return None;
@@ -228,7 +226,10 @@ fn distance_type(walk: &mut Walk, node: Node<'_>) -> Option<DistanceType> {
         "fixed" => DistanceType::Fixed,
         "render" => DistanceType::Render,
         _ => {
-            walk.invalid(NOT_ALLOWED_REGEX, &[&text, DISTANCE_PATTERNS], node);
+            walk.invalid(
+                core_codes::NOT_ALLOWED_REGEX.with([text.as_str(), DISTANCE_PATTERNS]),
+                node,
+            );
             return None;
         }
     };

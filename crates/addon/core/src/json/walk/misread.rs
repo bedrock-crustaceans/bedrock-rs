@@ -1,8 +1,7 @@
 //! The scalars a typed member read as another value than the document writes.
 
-use crate::diagnostic::{
-    Diagnostic, DiagnosticCode, JsonPath, Location, Phase, Severity, VanillaText,
-};
+use crate::diagnostic::codes as core_codes;
+use crate::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, Location, Phase, Severity};
 
 /// A scalar of a document that the typed member it belongs to read as another value than the
 /// document writes: facet coerces scalars and reads a float beyond its width as an infinity
@@ -19,8 +18,7 @@ pub struct Misread {
 
 /// The text of the finding of a float member that read a number beyond its width
 /// ([`Misread::finding`]): by it the versioned load knows the numbers to clamp.
-pub const BEYOND_FLOAT_MEMBER: &str =
-    "the number is beyond the float that reads it; the member holds an infinity";
+pub const BEYOND_FLOAT_MEMBER: &str = core_codes::BEYOND_FLOAT_MEMBER.template();
 
 impl Misread {
     /// The finding that tells the misreading, at `at` followed by the scalar's path. For a
@@ -39,11 +37,9 @@ impl Misread {
         let mut path = at.clone();
         path.append(&self.path);
         let code = match self.kind {
-            Misreading::BeyondFloat => DiagnosticCode::InvalidValue {
-                text: Some(VanillaText::Fixed(BEYOND_FLOAT_MEMBER)),
-            },
-            Misreading::WrongType => DiagnosticCode::InvalidType { text: None },
-            Misreading::Defaulted => DiagnosticCode::InvalidValue { text: None },
+            Misreading::BeyondFloat => DiagnosticCode::from(&core_codes::BEYOND_FLOAT_MEMBER),
+            Misreading::WrongType => DiagnosticCode::from(&core_codes::INVALID_TYPE),
+            Misreading::Defaulted => DiagnosticCode::from(&core_codes::INVALID_VALUE),
         };
         let severity = match self.kind {
             Misreading::BeyondFloat | Misreading::Defaulted => Severity::Info,

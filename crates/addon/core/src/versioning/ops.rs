@@ -286,6 +286,7 @@ pub fn kept(d: &mut Diagnostics, code: DiagnosticCode, at: JsonPath) {
 /// The value readers of jsoncpp (`asInt`, `asFloat`, `asDouble`) as the game's fixers read a
 /// member, with what is to tell of a value they read as another.
 pub mod jsoncpp {
+    use crate::diagnostic::codes as core_codes;
     use crate::diagnostic::{DiagnosticCode, Severity};
     use crate::json::Value;
 
@@ -299,8 +300,10 @@ pub mod jsoncpp {
     /// an absent one).
     pub fn int_of(value: &Value) -> (i32, Option<Misread>) {
         let Some(number) = value.as_number() else {
-            let code = (!value.is_null())
-                .then_some((DiagnosticCode::InvalidType { text: None }, Severity::Info));
+            let code = (!value.is_null()).then_some((
+                DiagnosticCode::from(&core_codes::INVALID_TYPE),
+                Severity::Info,
+            ));
             return (0, code);
         };
         let number = number.to_f64_lossy();
@@ -313,7 +316,10 @@ pub mod jsoncpp {
         // crate's own.
         (
             int,
-            (!exact).then_some((DiagnosticCode::InvalidValue { text: None }, Severity::Info)),
+            (!exact).then_some((
+                DiagnosticCode::from(&core_codes::INVALID_VALUE),
+                Severity::Info,
+            )),
         )
     }
 
@@ -324,8 +330,10 @@ pub mod jsoncpp {
             Some(number) => (number.to_f64_lossy(), None),
             None => (
                 0.0,
-                (!value.is_null())
-                    .then_some((DiagnosticCode::InvalidType { text: None }, Severity::Info)),
+                (!value.is_null()).then_some((
+                    DiagnosticCode::from(&core_codes::INVALID_TYPE),
+                    Severity::Info,
+                )),
             ),
         }
     }
@@ -341,7 +349,10 @@ pub mod jsoncpp {
         if float.is_infinite() {
             return (
                 f32::MAX.copysign(float),
-                Some((DiagnosticCode::InvalidValue { text: None }, Severity::Info)),
+                Some((
+                    DiagnosticCode::from(&core_codes::INVALID_VALUE),
+                    Severity::Info,
+                )),
             );
         }
         (float, code)
@@ -351,6 +362,7 @@ pub mod jsoncpp {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::diagnostic::codes as core_codes;
     use crate::json::{from_str, to_json};
 
     fn json(text: &str) -> Value {
@@ -535,8 +547,14 @@ mod tests {
     #[test]
     fn the_jsoncpp_readers_read_as_jsoncpp() {
         use jsoncpp::{float_of, int_of, number_of};
-        let invalid_type = Some((DiagnosticCode::InvalidType { text: None }, Severity::Info));
-        let invalid_value = Some((DiagnosticCode::InvalidValue { text: None }, Severity::Info));
+        let invalid_type = Some((
+            DiagnosticCode::from(&core_codes::INVALID_TYPE),
+            Severity::Info,
+        ));
+        let invalid_value = Some((
+            DiagnosticCode::from(&core_codes::INVALID_VALUE),
+            Severity::Info,
+        ));
         assert_eq!(int_of(&json("3")), (3, None));
         assert_eq!(int_of(&json("3.7")), (3, invalid_value.clone()));
         assert_eq!(int_of(&json("1e12")), (i32::MAX, invalid_value.clone()));
@@ -554,25 +572,26 @@ mod tests {
         let at = JsonPath::new().child("minecraft:block");
         note(
             &mut d,
-            DiagnosticCode::DroppedField { text: None },
+            DiagnosticCode::from(&core_codes::DROPPED_FIELD),
             at.clone(),
         );
         tell(
             &mut d,
-            DiagnosticCode::InvalidType { text: None },
+            DiagnosticCode::from(&core_codes::INVALID_TYPE),
             Severity::Warning,
             at.clone(),
         );
         kept(
             &mut d,
-            DiagnosticCode::InvalidValue { text: None },
+            DiagnosticCode::from(&core_codes::INVALID_VALUE),
             at.clone(),
         );
         let expected = [
-            Diagnostic::info(DiagnosticCode::DroppedField { text: None })
+            Diagnostic::of(&core_codes::DROPPED_FIELD)
                 .at(at.clone())
                 .phase(Phase::Upgrade),
-            Diagnostic::warn(DiagnosticCode::InvalidType { text: None })
+            Diagnostic::of(&core_codes::INVALID_TYPE)
+                .severity(Severity::Warning)
                 .at(at.clone())
                 .phase(Phase::Upgrade),
         ];

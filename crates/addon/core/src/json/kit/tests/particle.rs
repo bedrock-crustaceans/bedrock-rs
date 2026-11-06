@@ -11,6 +11,7 @@
 //! an information.
 
 use super::*;
+use crate::diagnostic::codes as core_codes;
 
 /// Which particle reader reads the document.
 #[derive(Clone, Copy, PartialEq)]
@@ -36,7 +37,9 @@ fn wrong_type(era: Era, read: &mut Read<'_>, node: &Node<'_>) {
     match era {
         Era::Cereal => read.wrong_type(node),
         Era::Legacy => read.push(
-            Diagnostic::info(DiagnosticCode::InvalidValue { text: None }).at(node.path().clone()),
+            Diagnostic::of(&core_codes::INVALID_VALUE)
+                .severity(Severity::Info)
+                .at(node.path().clone()),
         ),
     }
 }
@@ -87,8 +90,7 @@ fn render_parameters(era: Era, read: &mut Read<'_>, node: &Node<'_>) -> Option<(
     read.unknown(&members, &["material", "texture"], Disposition::Keep);
     if texture.chars().count() > 256 {
         read.push(
-            Diagnostic::error(DiagnosticCode::InvalidValue { text: None })
-                .at(members.node().path().child("texture")),
+            Diagnostic::of(&core_codes::INVALID_VALUE).at(members.node().path().child("texture")),
         );
     }
     Some((material, texture))

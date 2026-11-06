@@ -4,7 +4,7 @@
 
 use std::path::PathBuf;
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon::diagnostic::Severity;
 use bedrock_addon::families::spawn_groups::SpawnGroup;
 use bedrock_addon::families::spawn_rules::Difficulty;
 use bedrock_addon::id::SpawnGroupId;
@@ -122,7 +122,8 @@ fn sg42_duplicate_identifier() {
     assert_eq!(winner.spawn_rules()[0].herds[0].min_size, 2);
     let duplicates: Vec<_> = registry
         .diagnostics()
-        .filter(|d| matches!(d.code, DiagnosticCode::DuplicateIdentifier { .. }))
+        // By legacy name: the variant and the definitions that were it.
+        .filter(|d| matches!(d.code.name(), "DuplicateIdentifier"))
         .collect();
     assert_eq!(duplicates.len(), 1);
     assert_eq!(duplicates[0].severity, Severity::Info);
@@ -170,7 +171,8 @@ fn sg43_failed_duplicate() {
         registry.rejected()[0]
             .diagnostics
             .iter()
-            .any(|d| matches!(d.code, DiagnosticCode::UnsupportedVersion { .. }))
+            // By legacy name: the variant and the definitions that were it.
+            .any(|d| matches!(d.code.name(), "UnsupportedVersion"))
     );
 }
 
@@ -209,7 +211,8 @@ fn sg38_a_group_without_conditions_is_not_registered() {
     assert!(
         registry
             .diagnostics()
-            .any(|d| matches!(d.code, DiagnosticCode::EmptyDocument { .. }))
+            // By legacy name: the variant and the definitions that were it.
+            .any(|d| matches!(d.code.name(), "EmptyDocument"))
     );
 }
 

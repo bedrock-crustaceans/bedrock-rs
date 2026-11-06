@@ -17,7 +17,7 @@ use super::{
     QueryAllowList, QueryCatalog, QuerySetMask, RawVersion, Side, SourceForm, VersionFrom,
 };
 use crate::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Location, Phase, Severity,
+    Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Location, Phase, Severity, codes,
 };
 
 /// The load-time compile check: the query catalogue of each side and the compile cache a load
@@ -363,11 +363,11 @@ fn report(
                 // The crate's own finding: the game has no line for it.
                 let expression = written.as_str().to_owned();
                 let code = match rules.render_note {
-                    RenderNote::MolangLint => DiagnosticCode::MolangLint { expression },
-                    RenderNote::InvalidMolang => DiagnosticCode::InvalidMolang { expression },
+                    RenderNote::MolangLint => codes::MOLANG_LINT.with([expression]),
+                    RenderNote::InvalidMolang => codes::INVALID_MOLANG.with([expression]),
                 };
                 diagnostics.push(Diagnostic::new(
-                    code,
+                    code.into(),
                     Severity::Info,
                     Phase::Validate,
                     location.clone(),
@@ -385,9 +385,7 @@ fn report(
                     .any(|d| d.severity >= spec.error_severity)
             {
                 diagnostics.push(Diagnostic::new(
-                    DiagnosticCode::InvalidMolang {
-                        expression: written.as_str().to_owned(),
-                    },
+                    codes::INVALID_MOLANG.with([written.as_str()]).into(),
                     spec.error_severity,
                     Phase::Validate,
                     location.clone(),
@@ -507,22 +505,20 @@ pub(crate) fn molang_diagnostic(
     let is_message = diagnostic.language_message().is_some();
     let (code, severity, kept) = match diagnostic.severity() {
         MolangSeverity::Error => (
-            DiagnosticCode::InvalidMolang { expression },
+            codes::INVALID_MOLANG.with([expression]),
             error_severity,
             false,
         ),
         MolangSeverity::Warning | MolangSeverity::Info if is_message => (
-            DiagnosticCode::InvalidMolang { expression },
+            codes::INVALID_MOLANG.with([expression]),
             Severity::Error,
             true,
         ),
-        MolangSeverity::Warning | MolangSeverity::Info => (
-            DiagnosticCode::MolangLint { expression },
-            Severity::Info,
-            false,
-        ),
+        MolangSeverity::Warning | MolangSeverity::Info => {
+            (codes::MOLANG_LINT.with([expression]), Severity::Info, false)
+        }
     };
-    let mut finding = Diagnostic::new(code, severity, Phase::Validate, location);
+    let mut finding = Diagnostic::new(code.into(), severity, Phase::Validate, location);
     finding.detail = Some(Box::new(DiagnosticDetail::Molang(diagnostic.clone())));
     if kept { finding.into_kept() } else { finding }
 }

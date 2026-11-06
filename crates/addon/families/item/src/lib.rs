@@ -88,7 +88,7 @@ impl Family for ItemFamily {
         // A JSON item without `format_version` gives no version, and the game drops it; an MCB
         // document always has one.
         missing: MissingVersion::Reject {
-            text: Some(VanillaText::Fixed(texts::VERSION_NOT_READABLE)),
+            code: &bedrock_addon_core::diagnostic::codes::VERSION_NOT_READABLE,
         },
         ..Envelope::DEFAULT
     };

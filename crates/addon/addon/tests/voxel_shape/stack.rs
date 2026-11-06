@@ -1,7 +1,7 @@
 //! `bp.voxel_shapes()`: rows vs23, vs26, vs27, the walk of
 //! `shapes/`, last load wins per identifier, and what stays with the runtime registry.
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon::diagnostic::Severity;
 use bedrock_addon::families::voxel_shape::ShapeBox;
 use bedrock_addon::id::VoxelShapeId;
 use bedrock_addon::load::LoadOptions;
@@ -107,10 +107,13 @@ fn vs23_the_higher_pack_s_shape_replaces_the_lower_one_with_an_info_deviation() 
     assert_eq!(effective.shape.boxes, [POST_BOX]);
     assert_eq!(effective.origin().pack.name(), "bp 1");
     assert_eq!(findings(&stack), [shadowed("bp 2", "shapes/shape.json")]);
-    assert!(matches!(
-        shapes.diagnostics().next().unwrap().code,
-        DiagnosticCode::ShadowedDefinition { text: None }
-    ));
+    assert!(
+        shapes
+            .diagnostics()
+            .next()
+            .unwrap()
+            .is(&bedrock_addon::diagnostic::codes::SHADOWED_DEFINITION)
+    );
     assert!(std::ptr::eq(shapes, stack.voxel_shapes()));
 }
 

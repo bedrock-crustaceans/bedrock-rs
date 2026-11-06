@@ -4,6 +4,7 @@
 //! family makes in its readers (block's and item's forced strict components, camera's coerced
 //! slice 0, dimension's version-filtered null rule): those are listed on `Family::reading`.
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::load::DocumentSource;
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::testing::slice_reading;
@@ -247,7 +248,7 @@ reading_toy!(GradedByTheSlice, graded_by_the_slice, {
     fn validate(_: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {
         let severity = cx.grade(Class::Unknown);
         cx.diagnostics.push(
-            Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None })
+            Diagnostic::of(&core_codes::UNRECOGNIZED_FIELD)
                 .severity(severity)
                 .phase(Phase::Validate),
         );
@@ -266,7 +267,7 @@ reading_toy!(ClampsByText, clamps_by_text, {
 fn invalid_values<F: Family>(outcome: &bedrock_addon_core::versioning::LoadOutcome<F>) -> usize {
     codes(outcome)
         .into_iter()
-        .filter(|(code, _)| matches!(code, DiagnosticCode::InvalidValue { .. }))
+        .filter(|(code, _)| code.name() == "InvalidValue")
         .count()
 }
 
@@ -283,7 +284,10 @@ fn the_slice_s_null_rule_comes_from_reading() {
     assert!(rejected.value.is_none(), "{:?}", rejected.diagnostics);
     assert_eq!(
         codes(&rejected),
-        [(DiagnosticCode::InvalidType { text: None }, Severity::Error)]
+        [(
+            DiagnosticCode::from(&bedrock_addon_core::diagnostic::codes::INVALID_TYPE),
+            Severity::Error
+        )]
     );
     // The knobs alone read it as the first run does.
     let first_run = load_with::<crate::toy::Toy>(text, &beta_cx());
@@ -302,7 +306,7 @@ fn the_slice_s_unknown_mask_comes_from_reading() {
     assert_eq!(
         codes(&strict),
         [(
-            DiagnosticCode::UnrecognizedField { text: None },
+            DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD),
             Severity::Error
         )]
     );
@@ -322,7 +326,7 @@ fn the_checks_grade_by_the_reading_of_the_slice_that_parsed_the_document() {
             .map(|d| (d.code.clone(), d.severity))
             .collect::<Vec<_>>()
     };
-    let unknown = DiagnosticCode::UnrecognizedField { text: None };
+    let unknown = DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD);
     assert_eq!(told("1.0.0"), [(unknown.clone(), Severity::Error)]);
     assert_eq!(told("1.2.0"), [(unknown, Severity::Warning)]);
 }

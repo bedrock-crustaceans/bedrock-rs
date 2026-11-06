@@ -133,7 +133,7 @@ fn tl17_the_appended_list_is_incomplete_only_for_an_image_neither_list_names() {
         .diagnostics()
         .map(|d| {
             let path = d.location.path.as_ref().map_or("", |p| p.as_str());
-            (format!("{:?}", d.code), path)
+            (bedrock_addon::diagnostic::testing::legacy_debug(d), path)
         })
         .collect();
     assert_eq!(found.len(), 1, "{found:?}");

@@ -7,6 +7,7 @@
     clippy::disallowed_types,
     reason = "tests read fixtures and call facet-json directly"
 )]
+use bedrock_addon_core::diagnostic::codes;
 use std::borrow::Cow;
 
 use bedrock_addon_core::diagnostic::{DiagnosticCode, code_for_deserialize_error_kind};
@@ -61,7 +62,8 @@ fn code_of(kind: &DeserializeErrorKind) -> DiagnosticCode {
 }
 
 fn is_malformed_input(code: &DiagnosticCode) -> bool {
-    matches!(code, DiagnosticCode::MalformedInput { text: None, message } if !message.is_empty())
+    code.args_of(&codes::SYNTAX)
+        .is_some_and(|message| !message[0].is_empty())
 }
 
 // ---- row 1: parser errors → MalformedInput (facet's message) ----
@@ -120,10 +122,7 @@ fn empty_file_is_empty_document() {
         matches!(kind, DeserializeErrorKind::UnexpectedEof { .. }),
         "{kind:?}"
     );
-    assert!(
-        matches!(code, DiagnosticCode::EmptyDocument { text: None }),
-        "{code:?}"
-    );
+    assert!(code.is(&codes::EMPTY_DOCUMENT), "{code:?}");
 }
 
 #[test]
@@ -133,10 +132,7 @@ fn whitespace_only_file_is_empty_document() {
         matches!(kind, DeserializeErrorKind::UnexpectedEof { .. }),
         "{kind:?}"
     );
-    assert!(
-        matches!(code, DiagnosticCode::EmptyDocument { text: None }),
-        "{code:?}"
-    );
+    assert!(code.is(&codes::EMPTY_DOCUMENT), "{code:?}");
 }
 
 // ---- row 3: DuplicateField → MalformedInput ----
@@ -159,10 +155,7 @@ fn missing_field_is_missing_required_field() {
         matches!(kind, DeserializeErrorKind::MissingField { .. }),
         "{kind:?}"
     );
-    assert!(
-        matches!(code, DiagnosticCode::MissingRequiredField { text: None }),
-        "{code:?}"
-    );
+    assert!(code.is(&codes::MISSING_REQUIRED_FIELD), "{code:?}");
 }
 
 // ---- row 5: type and shape failures → InvalidType ----
@@ -173,10 +166,7 @@ fn type_mismatch_is_invalid_type() {
         expected: <f32 as Facet>::SHAPE,
         got: Cow::Borrowed("string"),
     };
-    assert!(matches!(
-        code_of(&kind),
-        DiagnosticCode::InvalidType { text: None }
-    ));
+    assert!(code_of(&kind).is(&codes::INVALID_TYPE));
 }
 
 #[test]
@@ -185,10 +175,7 @@ fn shape_mismatch_is_invalid_type() {
         expected: <f32 as Facet>::SHAPE,
         got: <String as Facet>::SHAPE,
     };
-    assert!(matches!(
-        code_of(&kind),
-        DiagnosticCode::InvalidType { text: None }
-    ));
+    assert!(code_of(&kind).is(&codes::INVALID_TYPE));
 }
 
 #[test]
@@ -199,10 +186,7 @@ fn unexpected_token_with_path_is_invalid_type() {
         "{kind:?}"
     );
     assert!(has_path);
-    assert!(
-        matches!(code, DiagnosticCode::InvalidType { text: None }),
-        "{code:?}"
-    );
+    assert!(code.is(&codes::INVALID_TYPE), "{code:?}");
 }
 
 #[test]
@@ -212,10 +196,7 @@ fn no_matching_variant_is_invalid_type() {
         matches!(kind, DeserializeErrorKind::NoMatchingVariant { .. }),
         "{kind:?}"
     );
-    assert!(
-        matches!(code, DiagnosticCode::InvalidType { text: None }),
-        "{code:?}"
-    );
+    assert!(code.is(&codes::INVALID_TYPE), "{code:?}");
 }
 
 /// A rejection by the `molang` facet proxy, which `Reflect` includes.
@@ -227,10 +208,7 @@ fn reflect_is_invalid_type() {
         matches!(kind, DeserializeErrorKind::Reflect { .. }),
         "{kind:?}"
     );
-    assert!(
-        matches!(code, DiagnosticCode::InvalidType { text: None }),
-        "{code:?}"
-    );
+    assert!(code.is(&codes::INVALID_TYPE), "{code:?}");
 }
 
 #[test]
@@ -238,10 +216,7 @@ fn solver_is_invalid_type() {
     let kind = DeserializeErrorKind::Solver {
         message: Cow::Borrowed("No matching configuration"),
     };
-    assert!(matches!(
-        code_of(&kind),
-        DiagnosticCode::InvalidType { text: None }
-    ));
+    assert!(code_of(&kind).is(&codes::INVALID_TYPE));
 }
 
 // ---- row 6: UnknownVariant → InvalidEnumValue ----
@@ -252,10 +227,7 @@ fn unknown_variant_is_invalid_enum_value() {
         variant: Cow::Borrowed("Both"),
         enum_shape: <Side as Facet>::SHAPE,
     };
-    assert!(matches!(
-        code_of(&kind),
-        DiagnosticCode::InvalidEnumValue { text: None }
-    ));
+    assert!(code_of(&kind).is(&codes::INVALID_ENUM_VALUE));
 }
 
 /// facet-json reports an unknown name of a plain (externally tagged) enum as `UnexpectedToken`
@@ -274,10 +246,7 @@ fn unknown_enum_name_reported_as_unexpected_token_is_invalid_enum_value() {
         "{kind:?}"
     );
     assert!(has_path);
-    assert!(
-        matches!(code, DiagnosticCode::InvalidEnumValue { text: None }),
-        "{code:?}"
-    );
+    assert!(code.is(&codes::INVALID_ENUM_VALUE), "{code:?}");
 }
 
 // ---- row 7: value errors → InvalidValue ----
@@ -289,10 +258,7 @@ fn number_out_of_range_is_invalid_value() {
         matches!(kind, DeserializeErrorKind::NumberOutOfRange { .. }),
         "{kind:?}"
     );
-    assert!(
-        matches!(code, DiagnosticCode::InvalidValue { text: None }),
-        "{code:?}"
-    );
+    assert!(code.is(&codes::INVALID_VALUE), "{code:?}");
 }
 
 #[test]
@@ -300,10 +266,7 @@ fn invalid_value_is_invalid_value() {
     let kind = DeserializeErrorKind::InvalidValue {
         message: Cow::Borrowed("not a UUID"),
     };
-    assert!(matches!(
-        code_of(&kind),
-        DiagnosticCode::InvalidValue { text: None }
-    ));
+    assert!(code_of(&kind).is(&codes::INVALID_VALUE));
 }
 
 #[test]
@@ -312,10 +275,7 @@ fn validation_is_invalid_value() {
         field: "count",
         message: Cow::Borrowed("must be positive"),
     };
-    assert!(matches!(
-        code_of(&kind),
-        DiagnosticCode::InvalidValue { text: None }
-    ));
+    assert!(code_of(&kind).is(&codes::INVALID_VALUE));
 }
 
 // ---- row 8: UnknownField is not raised; if it is, it is UnrecognizedField ----
@@ -331,10 +291,7 @@ fn unknown_field_is_not_raised_for_a_plain_struct() {
         field: Cow::Borrowed("extra"),
         suggestion: None,
     };
-    assert!(matches!(
-        code_of(&kind),
-        DiagnosticCode::UnrecognizedField { text: None }
-    ));
+    assert!(code_of(&kind).is(&codes::UNRECOGNIZED_FIELD));
 }
 
 // ---- row 9: the crate's own bugs → MalformedInput with facet's text, plus a debug assertion ----
@@ -376,10 +333,7 @@ fn an_object_given_to_a_scalar_untagged_enum_is_invalid_type_and_no_panic() {
         "{kind:?}"
     );
     assert!(has_path);
-    assert!(
-        matches!(code, DiagnosticCode::InvalidType { text: None }),
-        "{code:?}"
-    );
+    assert!(code.is(&codes::INVALID_TYPE), "{code:?}");
 }
 
 #[test]
@@ -440,8 +394,8 @@ fn bug_is_malformed_input_and_a_bug() {
 #[test]
 fn malformed_input_carries_facets_message() {
     let (kind, _, code) = parse::<Friction>("{\"value\": @}");
-    let DiagnosticCode::MalformedInput { message, .. } = code else {
-        panic!("{code:?}");
-    };
-    assert_eq!(message, kind.to_string());
+    assert_eq!(
+        code,
+        DiagnosticCode::from(codes::SYNTAX.with([kind.to_string()]))
+    );
 }

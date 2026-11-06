@@ -88,10 +88,8 @@ fn rule15_unknown_names_fail_the_strict_parse() {
             .unwrap_or_else(|| panic!("{member}: {d:?}"));
         assert_eq!(found.severity, Severity::Error);
         assert!(
-            matches!(
-                found.code,
-                DiagnosticCode::InvalidType { .. } | DiagnosticCode::InvalidEnumValue { .. }
-            ),
+            // By legacy name: the variant and the definitions that were it.
+            matches!(found.code.name(), "InvalidType" | "InvalidEnumValue"),
             "{found:?}"
         );
     }
@@ -557,11 +555,9 @@ fn d5_an_unknown_filter_test_in_a_goal_is_a_warning() {
     assert!(found.kept, "the goal is kept: a kept error");
     assert_eq!(
         found.code,
-        DiagnosticCode::UnresolvedReference {
-            text: Some(VanillaText::FilterTestNotFound {
-                name: "is_teapot".to_owned()
-            })
-        }
+        DiagnosticCode::from(
+            bedrock_addon_core::diagnostic::codes::FILTER_TEST_NOT_FOUND.with(["is_teapot"])
+        )
     );
 }
 

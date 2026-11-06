@@ -5,7 +5,7 @@
 
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 
-use bedrock_addon::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics};
+use bedrock_addon::diagnostic::{Diagnostic, Diagnostics};
 use bedrock_addon::document::{Content, Document, Rejected};
 use bedrock_addon::load::LoadContext;
 use bedrock_addon::storage::PackPath;
@@ -23,7 +23,8 @@ fn findings<T>(outcome: Result<Document<T>, Rejected>) -> Diagnostics {
 #[allow(dead_code, reason = "used by the tests of the compiled families")]
 fn invalid_type_at<'a>(d: &'a Diagnostics, path: &str) -> Vec<&'a Diagnostic> {
     d.iter()
-        .filter(|f| matches!(f.code, DiagnosticCode::InvalidType { .. }))
+        // By legacy name: the variant and the definitions that were it.
+        .filter(|f| matches!(f.code.name(), "InvalidType"))
         .filter(|f| f.location.json_path.to_string() == path)
         .collect()
 }
@@ -497,7 +498,8 @@ fn a_blocks_json_entry_that_is_an_array_is_a_type_error() {
     ));
     assert!(
         d.iter()
-            .any(|f| matches!(f.code, DiagnosticCode::MalformedInput { .. })),
+            // By legacy name: the variant and the definitions that were it.
+            .any(|f| matches!(f.code.name(), "MalformedInput")),
         "{d:#?}"
     );
 }

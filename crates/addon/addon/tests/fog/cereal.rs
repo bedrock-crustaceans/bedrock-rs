@@ -1,7 +1,7 @@
 //! `c01`–`c14`; `c15` is a unit test beside
 //! the rule): a document read at 1.26.20.
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Diagnostics, Severity};
+use bedrock_addon::diagnostic::{Diagnostics, Severity, codes};
 use bedrock_addon::document::Content;
 use bedrock_addon::families::fog::{ColorNorm, DistanceType, FogColor, FogSettings, Keyframed};
 
@@ -37,10 +37,7 @@ fn c01_unknown_member_deviation() {
     let document = loaded(parse(&latest(&air(r#""fog_density": 1"#)), &pack()));
     let warning = find(document.diagnostics(), "UnrecognizedField", Severity::Info).unwrap();
     // Our own finding: no text of the game's.
-    assert!(matches!(
-        warning.code,
-        DiagnosticCode::UnrecognizedField { text: None }
-    ));
+    assert!(warning.code.is(&codes::UNRECOGNIZED_FIELD));
     assert_eq!(
         warning.location.json_path.to_string(),
         "minecraft:fog_settings/distance/air/fog_density"

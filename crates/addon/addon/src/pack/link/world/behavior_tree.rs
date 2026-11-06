@@ -1,7 +1,7 @@
 //! The tree a `minecraft:subtree` node of a behaviour tree names.
 
 use super::super::{Findings, LinkCx};
-use crate::diagnostic::{DiagnosticCode, DiagnosticDetail};
+use crate::diagnostic::DiagnosticDetail;
 use crate::families::behavior_tree;
 use crate::id::BehaviorTreeId;
 
@@ -12,7 +12,8 @@ use crate::id::BehaviorTreeId;
 pub(super) fn run(cx: &LinkCx<'_>, out: &mut Findings) {
     let trees = cx.behavior().behavior_trees();
     for finding in behavior_tree::link_subtrees(trees) {
-        let hosted = matches!(finding.code, DiagnosticCode::UnresolvedReference { .. })
+        // By legacy name: the variant and the definitions that were it.
+        let hosted = matches!(finding.code.name(), "UnresolvedReference")
             && matches!(
                 finding.detail.as_deref(),
                 Some(DiagnosticDetail::Reference { id, .. })

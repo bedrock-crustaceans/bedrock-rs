@@ -39,7 +39,8 @@ fn num_particles(effect: &ParticleEffect) -> Molang {
 /// The Molang findings: `InvalidMolang` and `MolangLint`, as `Severity path code-name`.
 fn molang_findings(d: &Diagnostics) -> Vec<String> {
     d.iter()
-        .filter(|f| matches!(f.code, Code::InvalidMolang { .. } | Code::MolangLint { .. }))
+        // By legacy name: the variant and the definitions that were it.
+        .filter(|f| matches!(f.code.name(), "InvalidMolang" | "MolangLint"))
         .map(|f| {
             format!(
                 "{:?} {} {}",

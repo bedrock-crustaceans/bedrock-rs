@@ -1,7 +1,8 @@
 //! The validation rules that judge one document (E1–E6, B1–B11, T1–T5), each pinned at
 //! both ends of its range and on each half of its condition, and the constructors.
 
-use bedrock_addon::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, Severity, VanillaText};
+use bedrock_addon::diagnostic::codes;
+use bedrock_addon::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, Severity};
 use bedrock_addon::document::{Content, Placed};
 use bedrock_addon::families::poi::{PoiTag, PoiType};
 use bedrock_addon::id::{BlockId, PoiTagId, PoiTypeId};
@@ -61,12 +62,7 @@ fn e1_the_floor_is_1_26_40_for_both_documents() {
             .collect();
         assert_eq!(errors.len(), 1, "{version}: {}", describe(d.iter()));
         assert!(
-            matches!(
-                &errors[0].code,
-                DiagnosticCode::UnsupportedVersion {
-                    text: Some(VanillaText::NoParserForVersion { version: v })
-                } if v == version
-            ),
+            errors[0].code == DiagnosticCode::from(codes::NO_PARSER_FOR_VERSION.with([version])),
             "{version}: {:?}",
             errors[0].code
         );
@@ -107,12 +103,9 @@ fn e2_the_ceiling_is_the_engine_version() {
     );
     let d = rejected::<PoiType>(&block_document(&above, FORGE));
     assert!(
-        d.iter().any(|f| matches!(
-            &f.code,
-            DiagnosticCode::UnsupportedVersion {
-                text: Some(VanillaText::NoParserForVersion { version })
-            } if *version == above
-        )),
+        d.iter()
+            .any(|f| f.code
+                == DiagnosticCode::from(codes::NO_PARSER_FOR_VERSION.with([above.clone()]))),
         "{}",
         describe(d.iter())
     );
@@ -133,12 +126,7 @@ fn e3_a_tag_without_format_version_is_rejected() {
         .filter(|f| f.severity == Severity::Error && !is_closing(f))
         .collect();
     assert_eq!(errors.len(), 1, "{}", describe(d.iter()));
-    assert!(matches!(
-        errors[0].code,
-        DiagnosticCode::MissingFormatVersion {
-            text: Some(VanillaText::NoValidVersion)
-        }
-    ));
+    assert!(errors[0].code.is(&codes::NO_VALID_VERSION));
 }
 
 #[test]
@@ -152,10 +140,8 @@ fn e4_a_malformed_format_version_is_rejected() {
             .collect();
         assert_eq!(errors.len(), 1, "{version}: {}", describe(d.iter()));
         assert!(
-            matches!(
-                errors[0].code,
-                DiagnosticCode::MalformedFormatVersion { .. }
-            ),
+            // By legacy name: the variant and the definitions that were it.
+            matches!(errors[0].code.name(), "MalformedFormatVersion"),
             "{version}: {:?}",
             errors[0].code
         );
@@ -185,7 +171,8 @@ fn e4_a_number_is_read_as_its_text() {
             .collect();
         assert_eq!(errors.len(), 1, "{version}: {}", describe(d.iter()));
         assert!(
-            matches!(errors[0].code, DiagnosticCode::UnsupportedVersion { .. }),
+            // By legacy name: the variant and the definitions that were it.
+            matches!(errors[0].code.name(), "UnsupportedVersion"),
             "{version}: {:?}",
             errors[0].code
         );
@@ -202,13 +189,7 @@ fn e5_a_tag_with_a_third_root_member_is_rejected() {
     let text = r#"{"format_version": "1.26.40", "minecraft:poi_tag": {"description": {"identifier": "test:civic"}}, "more": {}}"#;
     let d = rejected::<PoiTag>(text);
     assert!(
-        d.iter().any(|f| matches!(
-            f.code,
-            DiagnosticCode::MalformedInput {
-                text: Some(VanillaText::DocumentMemberCount),
-                ..
-            }
-        )),
+        d.iter().any(|f| f.code.is(&codes::DOCUMENT_MEMBER_COUNT)),
         "{}",
         describe(d.iter())
     );
@@ -526,7 +507,8 @@ fn b11_each_repeat_of_a_block_is_reported_and_removed() {
         .iter()
         .map(|d| {
             assert!(
-                matches!(d.code, DiagnosticCode::NoEffect { .. }),
+                // By legacy name: the variant and the definitions that were it.
+                matches!(d.code.name(), "NoEffect"),
                 "{:?}",
                 d.code
             );
@@ -833,7 +815,8 @@ fn validate_runs_the_rules_on_a_built_value() {
 fn closes_with_failed_to_load(d: &Diagnostics) {
     let last = d.iter().last().expect("a finding");
     assert!(
-        matches!(last.code, DiagnosticCode::DocumentRejected { .. }),
+        // By legacy name: the variant and the definitions that were it.
+        matches!(last.code.name(), "DocumentRejected"),
         "{}",
         describe(d.iter())
     );
@@ -842,7 +825,8 @@ fn closes_with_failed_to_load(d: &Diagnostics) {
     assert_eq!(last.code.to_string(), "Failed to load POI Type");
     let closing = d
         .iter()
-        .filter(|f| matches!(f.code, DiagnosticCode::DocumentRejected { .. }))
+        // By legacy name: the variant and the definitions that were it.
+        .filter(|f| matches!(f.code.name(), "DocumentRejected"))
         .count();
     assert_eq!(closing, 1, "one closing line");
 }
@@ -867,7 +851,8 @@ fn a_file_that_loads_or_is_gated_has_no_closing_line() {
         !loaded
             .diagnostics()
             .iter()
-            .any(|f| matches!(f.code, DiagnosticCode::DocumentRejected { .. }))
+            // By legacy name: the variant and the definitions that were it.
+            .any(|f| matches!(f.code.name(), "DocumentRejected"))
     );
     let off = context_with(&LoadOptions::default(), false);
     let gated = super::common::load_with::<PoiType>(&block(FORGE), &off).expect_err("gated");
@@ -875,6 +860,7 @@ fn a_file_that_loads_or_is_gated_has_no_closing_line() {
         !gated
             .diagnostics
             .iter()
-            .any(|f| matches!(f.code, DiagnosticCode::DocumentRejected { .. }))
+            // By legacy name: the variant and the definitions that were it.
+            .any(|f| matches!(f.code.name(), "DocumentRejected"))
     );
 }

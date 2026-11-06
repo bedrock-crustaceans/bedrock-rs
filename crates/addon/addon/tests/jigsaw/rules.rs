@@ -2,9 +2,10 @@
 //! envelope cases, the structural errors, pool-name collisions
 //! (rule 11), an empty metadata version (rule 20) and the metadata precedence (rule 23).
 
+use bedrock_addon::diagnostic::codes;
 use std::sync::Arc;
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Diagnostics, Severity, VanillaText};
+use bedrock_addon::diagnostic::{Diagnostics, Severity};
 use bedrock_addon::families::jigsaw::{JigsawStructure, ProcessorList, StructureSet, TemplatePool};
 use bedrock_addon::load::{BuiltIns, LoadOptions};
 use bedrock_addon::pack::{Behavior, PackStack};
@@ -72,13 +73,7 @@ fn rule_3_a_third_root_member_rejects_the_document() {
     );
     let d = rejected::<JigsawStructure>(PATH, &text);
     assert_eq!(errors(&d), ["MalformedInput", "DocumentRejected"]);
-    assert!(d.iter().any(|f| matches!(
-        &f.code,
-        DiagnosticCode::MalformedInput {
-            text: Some(VanillaText::DocumentMemberCount),
-            ..
-        }
-    )));
+    assert!(d.iter().any(|f| f.code.is(&codes::DOCUMENT_MEMBER_COUNT)));
 }
 
 #[test]
@@ -429,13 +424,7 @@ fn a_third_root_member_below_1_21_20_gets_the_member_count_text_deviation() {
     );
     let d = rejected::<JigsawStructure>(PATH, &text);
     assert_eq!(errors(&d), ["MalformedInput", "DocumentRejected"]);
-    assert!(d.iter().any(|f| matches!(
-        &f.code,
-        DiagnosticCode::MalformedInput {
-            text: Some(VanillaText::DocumentMemberCount),
-            ..
-        }
-    )));
+    assert!(d.iter().any(|f| f.code.is(&codes::DOCUMENT_MEMBER_COUNT)));
     assert!(
         !d.iter().any(|f| f.code.name() == "UnsupportedVersion"),
         "{d:?}"

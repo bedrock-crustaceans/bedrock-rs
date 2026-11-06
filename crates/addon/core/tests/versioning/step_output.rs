@@ -3,6 +3,7 @@
 //! what the step reported.
 
 use bedrock_addon_core::diagnostic::DiagnosticCode;
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::json::{Value, from_str};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::testing::{Checks, FailureKind, Run, step_output};
@@ -65,7 +66,7 @@ fn what_the_step_reports_comes_back_with_the_payload() {
     let output = step_output::<v1_0_0::Toy>(&input, Run::default(), &checks()).unwrap();
     let codes: Vec<&DiagnosticCode> = output.diagnostics.iter().map(|d| &d.code).collect();
     assert!(
-        matches!(codes[..], [DiagnosticCode::DroppedField { .. }]),
+        matches!(codes[..], [code] if code.is(&core_codes::DROPPED_FIELD)),
         "{codes:?}"
     );
     assert!(member(&output.payload, "legacy_flag").is_none());

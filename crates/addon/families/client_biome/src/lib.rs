@@ -39,6 +39,7 @@ use std::borrow::Cow;
 
 use crate::component::{DryFoliageColor, SkyColor, SoundAddition, WaterAppearance};
 use bedrock_addon_core::__private::Sealed;
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity, VanillaText,
 };
@@ -435,18 +436,30 @@ fn reword(parsed: &mut Parsed<ClientBiomeFamily>, text: &str, path: &str) {
     }
     for mut diagnostic in std::mem::take(&mut parsed.diagnostics) {
         let mut after = None;
-        let reworded = match &diagnostic.code {
-            // The game clears the input's version and then finds none.
-            DiagnosticCode::MalformedFormatVersion { text: None } => {
-                Some(DiagnosticCode::MalformedFormatVersion {
-                    text: Some(VanillaText::NoValidVersion),
-                })
-            }
-            // Below the floor the game refuses the version in the legacy loader's own words;
-            // below the legacy range it has no parser at all.
+        let mut detail_moved = false;
+        // The pipeline's lines, on core's definitions or the legacy variants.
+        let plain_malformed_version = matches!(
+            diagnostic.code,
+            DiagnosticCode::MalformedFormatVersion { text: None }
+        ) || diagnostic.is(&core_codes::MALFORMED_FORMAT_VERSION);
+        let use_format = matches!(
+            diagnostic.code,
             DiagnosticCode::UnsupportedVersion {
                 text: Some(VanillaText::UseFormatVersion { .. }),
-            } => written.filter(|version| *version < FLOOR).map(|version| {
+            }
+        ) || diagnostic.is(&core_codes::USE_FORMAT_VERSION);
+        let plain_missing = matches!(
+            diagnostic.code,
+            DiagnosticCode::MissingRequiredField { text: None }
+        ) || diagnostic.is(&core_codes::MISSING_REQUIRED_FIELD);
+        let reworded = match &diagnostic.code {
+            // The game clears the input's version and then finds none.
+            _ if plain_malformed_version => Some(DiagnosticCode::MalformedFormatVersion {
+                text: Some(VanillaText::NoValidVersion),
+            }),
+            // Below the floor the game refuses the version in the legacy loader's own words;
+            // below the legacy range it has no parser at all.
+            _ if use_format => written.filter(|version| *version < FLOOR).map(|version| {
                 let version_text = version.to_string();
                 if version < LEGACY_SLICE {
                     no_parser(&version_text)
@@ -459,26 +472,28 @@ fn reword(parsed: &mut Parsed<ClientBiomeFamily>, text: &str, path: &str) {
             // The game takes the first textual `format_version`: a document below 1.21.130
             // that has it only below its root reaches the legacy loader, which finds none at
             // the root.
-            DiagnosticCode::MissingRequiredField { text: None }
-                if written.is_some_and(|version| version < MODERN)
-                    && diagnostic.location.json_path.is_key("format_version") =>
+            _ if plain_missing
+                && written.is_some_and(|version| version < MODERN)
+                && diagnostic.location.json_path.is_key("format_version") =>
             {
                 Some(DiagnosticCode::MissingRequiredField {
                     text: formatted(NO_VERSION_STRING, &[path]),
                 })
             }
-            // A text the legacy loader cannot read as a JSON object.
-            DiagnosticCode::MalformedInput {
-                message,
-                text: Some(VanillaText::DocumentJson { .. }),
-            } if scanned_version(text).is_some_and(|version| version < MODERN) => {
+            // A text the legacy loader cannot read as a JSON object; the reader's message moves
+            // from the detail back into the code.
+            _ if diagnostic.is(&core_codes::DOCUMENT_JSON)
+                && scanned_version(text).is_some_and(|version| version < MODERN) =>
+            {
+                let message = diagnostic.syntax_message().unwrap_or_default().to_owned();
                 let vanilla = if bedrock_addon_core::json::from_str_jsonc::<Value>(text).is_ok() {
                     formatted(LEGACY_ROOT, &[path])
                 } else {
-                    formatted(LEGACY_SYNTAX, &[message])
+                    formatted(LEGACY_SYNTAX, &[&message])
                 };
+                detail_moved = true;
                 Some(DiagnosticCode::MalformedInput {
-                    message: message.clone(),
+                    message,
                     text: vanilla,
                 })
             }
@@ -497,6 +512,9 @@ fn reword(parsed: &mut Parsed<ClientBiomeFamily>, text: &str, path: &str) {
         };
         if let Some(code) = reworded {
             diagnostic.code = code;
+        }
+        if detail_moved {
+            diagnostic.detail = None;
         }
         found.push(diagnostic);
         found.extend(after);

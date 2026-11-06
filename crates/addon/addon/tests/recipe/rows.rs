@@ -2,7 +2,7 @@
 //! rows are in `stack.rs`, item-id and `data` rows in `ingredients.rs` and `molang.rs`, rows that
 //! need the item registry in `link.rs`.
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon::diagnostic::{DiagnosticCode, Severity, codes};
 use bedrock_addon::families::recipe::{
     Ingredient, Output, PotionMix, Recipe, Unlock, UnlockContext, input_count_allowed,
     unlock_required,
@@ -41,10 +41,8 @@ fn shaped_1_12_no_unlock_basegame_has_context_none() {
 fn shaped_1_20_10_no_unlock_is_rejected() {
     let rejected = rejected("shaped_1_20_10_no_unlock.json", &cx());
     let finding = one(&rejected.diagnostics, UNLOCK_REQUIRED, Severity::Error);
-    assert!(matches!(
-        finding.code,
-        DiagnosticCode::MissingRequiredField { .. }
-    ));
+    // By legacy name: the variant and the definitions that were it.
+    assert!(matches!(finding.code.name(), "MissingRequiredField"));
 }
 
 #[test]
@@ -124,7 +122,8 @@ fn shaped_missing_format_version_loads_as_1_0_0_with_a_kept_error() {
     let warnings: Vec<_> = document
         .diagnostics()
         .iter()
-        .filter(|d| matches!(d.code, DiagnosticCode::MissingFormatVersion { .. }))
+        // By legacy name: the variant and the definitions that were it.
+        .filter(|d| matches!(d.code.name(), "MissingFormatVersion"))
         .collect();
     assert_eq!(warnings.len(), 1, "{:#?}", document.diagnostics());
     assert_eq!(warnings[0].severity, Severity::Error);
@@ -194,7 +193,7 @@ fn shaped_assume_symmetry_default_false_and_string() {
     let infos: Vec<_> = string
         .diagnostics()
         .iter()
-        .filter(|d| matches!(d.code, DiagnosticCode::InvalidType { text: None }))
+        .filter(|d| d.code.is(&codes::INVALID_TYPE))
         .collect();
     assert_eq!(infos.len(), 1, "{:#?}", string.diagnostics());
     assert_eq!(infos[0].severity, Severity::Info);
@@ -485,7 +484,8 @@ fn smithing_trim_prec_1_20_world_is_rejected() {
 fn tags_empty_is_logged_and_the_recipe_still_parsed() {
     let document = loaded("tags_empty.json", &cx());
     let finding = one_kept(document.diagnostics(), "No tags specified");
-    assert!(matches!(finding.code, DiagnosticCode::NoEffect { .. }));
+    // By legacy name: the variant and the definitions that were it.
+    assert!(matches!(finding.code.name(), "NoEffect"));
     assert!(document.tags().is_empty());
 }
 
@@ -509,8 +509,8 @@ fn payload_key_order_picks_shaped() {
         document
             .diagnostics()
             .iter()
-            .any(|d| matches!(d.code, DiagnosticCode::IgnoredPayload)
-                && d.severity == Severity::Info)
+            // By legacy name: the variant and the definitions that were it.
+            .any(|d| matches!(d.code.name(), "IgnoredPayload") && d.severity == Severity::Info)
     );
     clean(document.diagnostics());
 }
@@ -523,10 +523,8 @@ fn no_payload_key_is_skipped_as_having_no_identifier() {
         "JSON: {} has no identifier",
         Severity::Error,
     );
-    assert!(matches!(
-        finding.code,
-        DiagnosticCode::MissingIdentifier { .. }
-    ));
+    // By legacy name: the variant and the definitions that were it.
+    assert!(matches!(finding.code.name(), "MissingIdentifier"));
     assert_eq!(args(finding), ["recipes/no_payload_key.json"]);
 }
 
@@ -548,7 +546,8 @@ fn format_version_array_loads_as_1_20_10() {
             document
                 .diagnostics()
                 .iter()
-                .any(|d| matches!(d.code, DiagnosticCode::MissingFormatVersion { .. })),
+                // By legacy name: the variant and the definitions that were it.
+                .any(|d| matches!(d.code.name(), "MissingFormatVersion")),
             "{name}: {:#?}",
             document.diagnostics()
         );

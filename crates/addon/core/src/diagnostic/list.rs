@@ -435,7 +435,7 @@ impl<'a> IntoIterator for &'a Diagnostics {
 
 #[cfg(test)]
 mod tests {
-    use super::super::DiagnosticCode;
+    use super::super::codes;
     use super::*;
 
     /// A list of findings that holds unknown members is no plain iterator of findings: the
@@ -455,9 +455,7 @@ mod tests {
     #[test]
     fn into_iter_of_a_list_without_unknown_members_gives_its_findings() {
         let mut d = Diagnostics::default();
-        d.push(Diagnostic::error(DiagnosticCode::UnrecognizedField {
-            text: None,
-        }));
+        d.push(Diagnostic::of(&codes::UNRECOGNIZED_FIELD).severity(Severity::Error));
         assert_eq!(d.into_iter().count(), 1);
     }
 }

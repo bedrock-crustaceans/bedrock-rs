@@ -1,6 +1,6 @@
 //! `admire_item`, `barter`, `trade_table`, `tamemount`, `wither_target_highest_damage`.
 
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon_core::diagnostic::Severity;
 use bedrock_addon_core::versioning::ConvertMode;
 use bedrock_addon_family_entity::component::{
     AdmireItem, Barter, EntityTypes, Tamemount, TradeTable, WitherTargetHighestDamage,
@@ -94,7 +94,8 @@ fn wither_target_highest_damage_drops_the_deprecated_target_goal_names() {
         assert!(
             has(
                 &d,
-                |c| matches!(c, DiagnosticCode::DeprecatedMember { .. }),
+                // By legacy name: the variant and the definitions that were it.
+                |c| matches!(c.name(), "DeprecatedMember"),
                 Severity::Error,
                 member
             ),

@@ -49,6 +49,12 @@ macro_rules! diagnostic_codes {
             /// Every code's name, in declaration order: the variant names, which are stable.
             pub const NAMES: &'static [&'static str] = &[$(stringify!($variant)),*];
 
+            /// Every code's name with the names of its fields, in declaration order: what
+            /// [`testing::legacy_debug`](super::testing::legacy_debug) renders a specific code
+            /// as.
+            pub(super) const FIELDS: &'static [(&'static str, &'static [&'static str])] =
+                &[$((stringify!($variant), &[$($(stringify!($field)),*)?])),*];
+
             /// The variant's name, as [`NAMES`](Self::NAMES) lists it: `"Specific"` for every
             /// specific code ([`name`](Self::name) gives a specific code's own).
             pub fn variant_name(&self) -> &'static str {

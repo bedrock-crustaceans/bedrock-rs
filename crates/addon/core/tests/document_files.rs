@@ -3,7 +3,7 @@
 
 use bedrock_addon_core::__private::Sealed;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, codes,
 };
 use bedrock_addon_core::document::{
     Content, Document, Files, FilesBuilder, FilesRule, Notice, Origin, Rejected, VersionInfo,
@@ -161,7 +161,7 @@ fn under_top_wins_fallback_a_failing_copy_falls_through() {
     let files = build(
         FilesRule::TopWinsFallback {
             fallback: Some(Notice {
-                code: DiagnosticCode::ShadowedDefinition { text: None },
+                code: DiagnosticCode::from(&codes::SHADOWED_DEFINITION),
                 severity: Severity::Info,
             }),
         },
@@ -186,7 +186,7 @@ fn under_top_wins_fallback_a_failing_copy_falls_through() {
         codes,
         [
             (DiagnosticCode::InvalidType { text: None }, Some(0)),
-            (DiagnosticCode::ShadowedDefinition { text: None }, Some(0)),
+            (DiagnosticCode::from(&codes::SHADOWED_DEFINITION), Some(0)),
         ]
     );
 }

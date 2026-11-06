@@ -1,7 +1,8 @@
 //! The modern document envelope and the version handling around it: each case with its
 //! diagnostic code, matched on variants.
 
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, Severity, VanillaText};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, Severity, codes};
 use bedrock_addon_core::document::Extra;
 use bedrock_addon_core::json::NullRule;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
@@ -88,7 +89,7 @@ toy_variant!(Strict, strict, beta = ToyBeta, {
 toy_variant!(Quiet, quiet, beta = ToyBeta, {
     const ENVELOPE: Envelope = Envelope {
         missing: MissingVersion::Floor {
-            text: None,
+            code: &codes::MISSING_FORMAT_VERSION,
             severity: None,
         },
         ..Envelope::DEFAULT
@@ -98,7 +99,7 @@ toy_variant!(Texted, texted, beta = ToyBeta, {
     const ENVELOPE: Envelope = Envelope {
         // Client entity, attachable: the game's text, logged at level 2.
         missing: MissingVersion::Floor {
-            text: Some(VanillaText::NoFormatVersionField),
+            code: &codes::NO_FORMAT_VERSION_FIELD,
             severity: Some(Severity::Warning),
         },
         ..Envelope::DEFAULT
@@ -108,7 +109,7 @@ toy_variant!(TextedInfo, texted_info, beta = ToyBeta, {
     const ENVELOPE: Envelope = Envelope {
         // Entity: the crate's own text, and the game is silent.
         missing: MissingVersion::Floor {
-            text: Some(VanillaText::NoFormatVersionField),
+            code: &codes::NO_FORMAT_VERSION_FIELD,
             severity: Some(Severity::Info),
         },
         ..Envelope::DEFAULT
@@ -118,7 +119,7 @@ toy_variant!(StrictTexted, strict_texted, beta = ToyBeta, {
     const ENVELOPE: Envelope = Envelope {
         // Item, fog, the catalog: rejected with the family's own text.
         missing: MissingVersion::Reject {
-            text: Some(VanillaText::NoFormatVersionField),
+            code: &codes::NO_FORMAT_VERSION_FIELD,
         },
         ..Envelope::DEFAULT
     };
@@ -320,16 +321,7 @@ fn a_syntax_error_is_malformed_input_with_the_document_text() {
     let code = the_only_error(&load_toy(
         r#"{"format_version": "1.2.0", "minecraft:toy": {"#,
     ));
-    assert!(
-        matches!(
-            code,
-            DiagnosticCode::MalformedInput {
-                text: Some(VanillaText::DocumentJson { .. }),
-                ..
-            }
-        ),
-        "{code:?}"
-    );
+    assert!(code.is(&codes::DOCUMENT_JSON), "{code:?}");
 }
 
 /// A syntax fault in a copy of a member that loses to a later one is the document's
@@ -359,16 +351,7 @@ fn a_syntax_error_in_a_copy_that_loses_is_malformed_input() {
             )
         };
         let code = the_only_error(&load_toy(&text));
-        assert!(
-            matches!(
-                code,
-                DiagnosticCode::MalformedInput {
-                    text: Some(VanillaText::DocumentJson { .. }),
-                    ..
-                }
-            ),
-            "{text}: {code:?}"
-        );
+        assert!(code.is(&codes::DOCUMENT_JSON), "{text}: {code:?}");
     }
     // A copy that loses and is well formed loses in silence.
     let text = format!(
@@ -383,10 +366,7 @@ fn a_syntax_error_in_a_copy_that_loses_is_malformed_input() {
 fn a_root_that_is_not_an_object_is_malformed_input() {
     for text in [r"[1, 2]", r#""text""#, "3"] {
         let code = the_only_error(&load_toy(text));
-        assert!(
-            matches!(code, DiagnosticCode::MalformedInput { .. }),
-            "{text}: {code:?}"
-        );
+        assert!(code.is(&codes::DOCUMENT_JSON), "{text}: {code:?}");
     }
 }
 
@@ -394,10 +374,7 @@ fn a_root_that_is_not_an_object_is_malformed_input() {
 fn an_empty_or_null_file_is_an_empty_document() {
     for text in ["", "  \n", "// only a comment", "null"] {
         let code = the_only_error(&load_toy(text));
-        assert!(
-            matches!(code, DiagnosticCode::EmptyDocument { .. }),
-            "{text:?}: {code:?}"
-        );
+        assert!(code.name() == "EmptyDocument", "{text:?}: {code:?}");
     }
 }
 
@@ -406,16 +383,7 @@ fn a_third_root_member_is_malformed_input_with_the_member_count_text() {
     let code = the_only_error(&load_toy(
         r#"{"format_version": "1.2.0", "minecraft:toy": {"description": {"identifier": "demo:x"}}, "other": 1}"#,
     ));
-    assert!(
-        matches!(
-            code,
-            DiagnosticCode::MalformedInput {
-                text: Some(VanillaText::DocumentMemberCount),
-                ..
-            }
-        ),
-        "{code:?}"
-    );
+    assert!(code.is(&core_codes::DOCUMENT_MEMBER_COUNT), "{code:?}");
 }
 
 /// The item loader never counts the root's members; a third one
@@ -438,25 +406,19 @@ fn a_third_root_member_passes_the_uncounted_envelope_and_fails_the_counted_one()
         assert_eq!(
             found,
             [(
-                DiagnosticCode::UnrecognizedField { text: None },
+                DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD),
                 Severity::Info
             )],
             "{third}"
         );
-        assert!(matches!(
-            the_only_error(&load_toy(&text)),
-            DiagnosticCode::MalformedInput {
-                text: Some(VanillaText::DocumentMemberCount),
-                ..
-            }
-        ));
+        assert!(the_only_error(&load_toy(&text)).is(&core_codes::DOCUMENT_MEMBER_COUNT));
     }
     // The payload is still read from under its key.
     let code = the_only_error(&load_with::<Uncounted>(
         r#"{"format_version": "1.2.0", "other": {}}"#,
         &LoadContext::detached(),
     ));
-    assert_eq!(code, DiagnosticCode::MissingPayload { text: None });
+    assert_eq!(code, DiagnosticCode::from(&core_codes::MISSING_PAYLOAD));
 }
 
 #[test]
@@ -499,7 +461,7 @@ fn an_unreadable_format_version_is_malformed() {
         let code = the_only_error(&load_toy(&text));
         assert_eq!(
             code,
-            DiagnosticCode::MalformedFormatVersion { text: None },
+            DiagnosticCode::from(&core_codes::MALFORMED_FORMAT_VERSION),
             "{version}"
         );
     }
@@ -558,7 +520,7 @@ fn a_document_input_reads_a_number_as_its_text() {
         assert_eq!(outcome.version.written, Some(parsed), "{version}");
         assert_eq!(
             the_only_error(&load_toy(&text)),
-            DiagnosticCode::MalformedFormatVersion { text: None },
+            DiagnosticCode::from(&core_codes::MALFORMED_FORMAT_VERSION),
             "{version} on the root reading"
         );
     }
@@ -588,7 +550,7 @@ fn a_document_input_with_an_unreadable_version_is_malformed() {
         ));
         assert_eq!(
             code,
-            DiagnosticCode::MalformedFormatVersion { text: None },
+            DiagnosticCode::from(&core_codes::MALFORMED_FORMAT_VERSION),
             "{version}"
         );
     }
@@ -622,16 +584,7 @@ fn a_document_input_reads_the_first_textual_format_version() {
         r#"{"minecraft:toy": {"format_version": "1.2.0", "description": {"identifier": "demo:x"}}}"#,
         &LoadContext::detached(),
     ));
-    assert!(
-        matches!(
-            code,
-            DiagnosticCode::MalformedInput {
-                text: Some(VanillaText::DocumentMemberCount),
-                ..
-            }
-        ),
-        "{code:?}"
-    );
+    assert!(code.is(&core_codes::DOCUMENT_MEMBER_COUNT), "{code:?}");
     // No `"format_version"` anywhere: the missing-version rule, as on the root reading.
     let outcome = load_with::<Document>(
         r#"{"minecraft:toy": {"description": {"identifier": "demo:x"}}}"#,
@@ -649,7 +602,7 @@ fn a_missing_version_is_told_and_parses_at_the_floor() {
     assert_eq!(
         codes(&outcome),
         [(
-            DiagnosticCode::MissingFormatVersion { text: None },
+            DiagnosticCode::from(&core_codes::MISSING_FORMAT_VERSION),
             Severity::Info
         )]
     );
@@ -671,11 +624,7 @@ fn a_root_member_beside_the_payload_of_a_document_without_a_version_is_told() {
         .iter()
         .find(|d| d.location.json_path.to_string() == "third")
         .expect("a finding at the member");
-    assert!(
-        matches!(third.code, DiagnosticCode::UnrecognizedField { .. }),
-        "{:?}",
-        third.code
-    );
+    assert!(third.code.name() == "UnrecognizedField", "{:?}", third.code);
     // The game says nothing here; the crate reports an information.
     assert_eq!(third.severity, Severity::Info);
 }
@@ -696,12 +645,7 @@ fn a_missing_version_is_an_error_in_a_rejecting_family() {
         r#"{"minecraft:toy": {"description": {"identifier": "demo:x"}}}"#,
         &LoadContext::detached(),
     ));
-    assert_eq!(
-        code,
-        DiagnosticCode::MissingFormatVersion {
-            text: Some(VanillaText::NoValidVersion)
-        }
-    );
+    assert_eq!(code, DiagnosticCode::from(&core_codes::NO_VALID_VERSION));
 }
 
 /// A family with a text of the game for the missing version is told it as a warning.
@@ -715,9 +659,7 @@ fn a_missing_version_with_the_family_s_text_is_a_warning() {
     assert_eq!(
         codes(&outcome),
         [(
-            DiagnosticCode::MissingFormatVersion {
-                text: Some(VanillaText::NoFormatVersionField)
-            },
+            DiagnosticCode::from(&core_codes::NO_FORMAT_VERSION_FIELD),
             Severity::Warning
         )]
     );
@@ -735,9 +677,7 @@ fn a_missing_version_with_the_family_s_text_takes_its_severity() {
     assert_eq!(
         codes(&outcome),
         [(
-            DiagnosticCode::MissingFormatVersion {
-                text: Some(VanillaText::NoFormatVersionField)
-            },
+            DiagnosticCode::from(&core_codes::NO_FORMAT_VERSION_FIELD),
             Severity::Info
         )]
     );
@@ -751,9 +691,7 @@ fn a_missing_version_is_rejected_with_the_family_s_text() {
     ));
     assert_eq!(
         code,
-        DiagnosticCode::MissingFormatVersion {
-            text: Some(VanillaText::NoFormatVersionField)
-        }
+        DiagnosticCode::from(&core_codes::NO_FORMAT_VERSION_FIELD)
     );
 }
 
@@ -778,7 +716,7 @@ fn the_raw_path_reads_the_root_struct_from_the_whole_text() {
     assert_eq!(
         codes(&outcome),
         [(
-            DiagnosticCode::UnrecognizedField { text: None },
+            DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD),
             Severity::Warning
         )]
     );
@@ -801,10 +739,7 @@ fn the_envelope_is_checked_from_the_family_minimum_on() {
         &three("1.2.0"),
         &LoadContext::detached(),
     ));
-    assert!(
-        matches!(code, DiagnosticCode::MalformedInput { .. }),
-        "{code:?}"
-    );
+    assert!(code.name() == "MalformedInput", "{code:?}");
 }
 
 // `select` sorts `X-beta.n` below `X`, and so does the envelope
@@ -828,10 +763,7 @@ fn a_prerelease_of_the_envelope_minimum_is_below_the_minimum() {
             &three(version),
             &LoadContext::detached(),
         ));
-        assert!(
-            matches!(code, DiagnosticCode::MalformedInput { .. }),
-            "{version}: {code:?}"
-        );
+        assert!(code.name() == "MalformedInput", "{version}: {code:?}");
     }
 }
 
@@ -931,12 +863,9 @@ fn content_after_the_root_value_loads_with_one_information_at_its_span() {
         );
         let found: Vec<_> = outcome.diagnostics.iter().collect();
         assert_eq!(found.len(), 1, "`{tail}`: {found:?}");
-        assert!(
-            matches!(
-                &found[0].code,
-                DiagnosticCode::MalformedInput { message, text: None }
-                    if message == "content after the JSON value is ignored"
-            ),
+        assert_eq!(
+            found[0].code,
+            DiagnosticCode::from(codes::SYNTAX.with(["content after the JSON value is ignored"])),
             "{:?}",
             found[0].code
         );
@@ -997,13 +926,11 @@ fn content_after_the_root_value_refuses_a_minecraft_document() {
         let text = format!("{OK_1_2_0}\n {tail} \n");
         let outcome = load_with::<Document>(&text, &LoadContext::detached());
         let code = the_only_error(&outcome);
-        assert!(
-            matches!(
-                &code,
-                DiagnosticCode::MalformedInput {
-                    text: Some(VanillaText::DocumentJson { message }),
-                    ..
-                } if message == "The document root must not be followed by other values."
+        assert_eq!(
+            code,
+            DiagnosticCode::from(
+                codes::DOCUMENT_JSON
+                    .with(["The document root must not be followed by other values."])
             ),
             "`{tail}`: {code:?}"
         );
@@ -1038,13 +965,10 @@ fn a_number_no_double_holds_refuses_a_minecraft_document() {
         );
         let outcome = load_with::<Document>(&text, &LoadContext::detached());
         let code = the_only_error(&outcome);
-        assert!(
-            matches!(
-                &code,
-                DiagnosticCode::MalformedInput {
-                    text: Some(VanillaText::DocumentJson { message }),
-                    ..
-                } if message == "Number too big to be stored in double."
+        assert_eq!(
+            code,
+            DiagnosticCode::from(
+                codes::DOCUMENT_JSON.with(["Number too big to be stored in double."])
             ),
             "`{big}`: {code:?}"
         );
@@ -1119,12 +1043,7 @@ fn a_beta_document_needs_the_beta_apis_toggle_or_a_base_game_pack() {
     let outcome = load_toy(BETA);
     assert_eq!(outcome.diagnostics.len(), 1, "{:?}", outcome.diagnostics);
     let code = the_only_error(&outcome);
-    assert_eq!(
-        code,
-        DiagnosticCode::BetaFeaturesNotEnabled {
-            text: Some(VanillaText::BetaFormatVersion)
-        }
-    );
+    assert_eq!(code, DiagnosticCode::from(&core_codes::BETA_FORMAT_VERSION));
     assert_eq!(
         code.to_string(),
         "Using a beta format_version is only allowed for base packs or when the BetaApis toggle is enabled."
@@ -1167,11 +1086,7 @@ fn a_beta_document_without_a_beta_struct_is_unsupported_whatever_the_permission(
         let code = the_only_error(&load_with::<Stable>(BETA, &cx));
         assert_eq!(
             code,
-            DiagnosticCode::UnsupportedVersion {
-                text: Some(VanillaText::NoParserForVersion {
-                    version: "beta".to_owned()
-                })
-            }
+            DiagnosticCode::from(core_codes::NO_PARSER_FOR_VERSION.with(["beta"]))
         );
     }
 }
@@ -1190,10 +1105,10 @@ fn the_spelled_out_sentinel_is_a_beta_document() {
         outcome.diagnostics
     );
     assert!(outcome.version.beta);
-    assert!(matches!(
-        the_only_error(&load_toy(&text)),
-        DiagnosticCode::BetaFeaturesNotEnabled { .. }
-    ));
+    assert_eq!(
+        the_only_error(&load_toy(&text)).name(),
+        "BetaFeaturesNotEnabled"
+    );
     let code = the_only_error(&load_with::<Stable>(&text, &toggle));
     assert_eq!(
         code.to_string(),
@@ -1209,12 +1124,7 @@ fn a_toggle_only_family_refuses_a_base_game_pack_with_the_beta_documents_text() 
     let mut base_game = LoadContext::detached();
     base_game.is_base_game_pack = true;
     let code = the_only_error(&load_with::<ToggleOnly>(BETA, &base_game));
-    assert_eq!(
-        code,
-        DiagnosticCode::BetaFeaturesNotEnabled {
-            text: Some(VanillaText::BetaDocuments)
-        }
-    );
+    assert_eq!(code, DiagnosticCode::from(&core_codes::BETA_DOCUMENTS));
     let mut toggle = LoadContext::detached();
     toggle.beta_apis = true;
     let outcome = load_with::<ToggleOnly>(BETA, &toggle);
@@ -1236,9 +1146,9 @@ fn a_prerelease_version_loads_by_the_struct_below_with_an_info() {
     assert_eq!(
         codes(&outcome),
         [(
-            DiagnosticCode::PrereleaseFormatVersion {
-                version: "1.1.0-beta.2".to_owned()
-            },
+            DiagnosticCode::from(
+                core_codes::PRERELEASE_FORMAT_VERSION.with(["1.1.0-beta.2".to_owned()])
+            ),
             Severity::Info
         )]
     );
@@ -1251,20 +1161,10 @@ fn below_the_floor_is_unsupported_naming_the_identifier_and_the_floor() {
     let code = the_only_error(&load_toy(
         r#"{"format_version": "0.9.0", "minecraft:toy": {"description": {"identifier": "demo:x"}}}"#,
     ));
-    let DiagnosticCode::UnsupportedVersion {
-        text:
-            Some(VanillaText::UseFormatVersion {
-                what,
-                name,
-                version,
-            }),
-    } = code
-    else {
-        panic!("{code:?}");
-    };
+    // what, name, the floor
     assert_eq!(
-        (what, name.as_str(), version),
-        ("toy", "demo:x", FormatVersion::new(1, 0, 0))
+        code,
+        DiagnosticCode::from(core_codes::USE_FORMAT_VERSION.with(["toy", "demo:x", "1.0.0"]))
     );
 }
 
@@ -1291,11 +1191,7 @@ fn above_the_engine_is_unsupported_with_the_puv_text() {
     ));
     assert_eq!(
         code,
-        DiagnosticCode::UnsupportedVersion {
-            text: Some(VanillaText::NoParserForVersion {
-                version: "1.26.61".to_owned()
-            })
-        }
+        DiagnosticCode::from(core_codes::NO_PARSER_FOR_VERSION.with(["1.26.61"]))
     );
 }
 
@@ -1315,11 +1211,7 @@ fn the_no_parser_text_prints_the_version_as_parsed() {
         );
         assert_eq!(
             the_only_error(&load_toy(&text)),
-            DiagnosticCode::UnsupportedVersion {
-                text: Some(VanillaText::NoParserForVersion {
-                    version: shown.to_owned()
-                })
-            },
+            DiagnosticCode::from(core_codes::NO_PARSER_FOR_VERSION.with([shown.to_string()])),
             "{written}"
         );
     }
@@ -1332,11 +1224,7 @@ fn a_failed_typed_parse_rejects_the_document_at_the_member() {
     );
     assert!(outcome.value.is_none());
     let error = outcome.diagnostics.first_error().expect("an error");
-    assert!(
-        matches!(error.code, DiagnosticCode::InvalidType { .. }),
-        "{:?}",
-        error.code
-    );
+    assert!(error.code.name() == "InvalidType", "{:?}", error.code);
     assert_eq!(
         error.location.json_path.to_string(),
         "minecraft:toy/old_speed"
@@ -1386,7 +1274,7 @@ fn an_unknown_member_is_a_warning_in_an_unstrict_slice() {
     assert_eq!(
         codes(&outcome),
         [(
-            DiagnosticCode::UnrecognizedField { text: None },
+            DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD),
             Severity::Warning
         )]
     );
@@ -1400,7 +1288,7 @@ fn an_unknown_member_or_component_rejects_a_strict_slice() {
     for (payload, code) in [
         (
             r#"{"description": {"identifier": "demo:x"}, "extra_member": true}"#,
-            DiagnosticCode::UnrecognizedField { text: None },
+            DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD),
         ),
         (
             r#"{"description": {"identifier": "demo:x"}, "components": {"minecraft:foot_size": {}}}"#,
@@ -1429,12 +1317,12 @@ fn a_root_member_outside_the_payload_stays_an_information_in_a_strict_slice() {
     assert!(outcome.value.is_some(), "{:?}", outcome.diagnostics);
     let unknown: Vec<_> = codes(&outcome)
         .into_iter()
-        .filter(|(code, _)| matches!(code, DiagnosticCode::UnrecognizedField { .. }))
+        .filter(|(code, _)| code.name() == "UnrecognizedField")
         .collect();
     assert_eq!(
         unknown,
         [(
-            DiagnosticCode::UnrecognizedField { text: None },
+            DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD),
             Severity::Info
         )]
     );
@@ -1538,10 +1426,7 @@ fn an_experimental_beta_field_loads_only_with_its_experiment() {
     without.beta_apis = true;
     let refused = load_with::<Gated>(&document(true), &without);
     let code = the_only_error(&refused);
-    assert!(
-        matches!(code, DiagnosticCode::MissingToggles { .. }),
-        "{code:?}"
-    );
+    assert!(code.name() == "MissingToggles", "{code:?}");
     assert!(
         code.to_string().contains("test_experiment"),
         "the entry names the experiment: {code}"
@@ -1579,7 +1464,7 @@ fn a_null_payload_member_follows_the_family_s_input_kind() {
     let rejected = load_with::<Document>(text, &cx);
     assert_eq!(
         the_only_error(&rejected),
-        DiagnosticCode::InvalidType { text: None }
+        DiagnosticCode::from(&codes::INVALID_TYPE)
     );
     assert_eq!(
         rejected
@@ -1619,8 +1504,7 @@ fn read_as_absent(diagnostics: &Diagnostics) -> Vec<String> {
         .iter()
         .map(|d| {
             assert!(
-                d.severity == Severity::Info
-                    && matches!(d.code, DiagnosticCode::ValueRewritten { .. }),
+                d.severity == Severity::Info && d.is(&codes::VALUE_REWRITTEN),
                 "{d:?}"
             );
             d.location.json_path.to_string()
@@ -1643,7 +1527,7 @@ fn a_null_component_member_follows_the_family_s_input_kind() {
     let rejected = load_with::<Document>(&light, &LoadContext::detached());
     assert_eq!(
         the_only_error(&rejected),
-        DiagnosticCode::InvalidType { text: None }
+        DiagnosticCode::from(&codes::INVALID_TYPE)
     );
     let at = rejected.diagnostics.first_error().unwrap();
     assert_eq!(
@@ -1687,7 +1571,7 @@ fn the_null_rule_is_chosen_after_the_slice() {
     cx.beta_apis = true;
     assert_eq!(
         the_only_error(&load_with::<Mixed>(beta, &cx)),
-        DiagnosticCode::InvalidType { text: None },
+        DiagnosticCode::from(&codes::INVALID_TYPE),
         "the beta slice is N2"
     );
     let glow = |version: &str| {
@@ -1698,7 +1582,7 @@ fn the_null_rule_is_chosen_after_the_slice() {
     let modern = load_with::<Mixed>(&glow("1.2.0"), &LoadContext::detached());
     assert_eq!(
         the_only_error(&modern),
-        DiagnosticCode::InvalidType { text: None },
+        DiagnosticCode::from(&codes::INVALID_TYPE),
         "1.2.0 is N2"
     );
     // Below the modern slices the same family reads a `null` as absent; a family whose every
@@ -1712,7 +1596,7 @@ fn the_null_rule_is_chosen_after_the_slice() {
     );
     assert_eq!(
         the_only_error(&load_with::<Document>(legacy, &LoadContext::detached())),
-        DiagnosticCode::InvalidType { text: None }
+        DiagnosticCode::from(&codes::INVALID_TYPE)
     );
 }
 
@@ -1739,9 +1623,7 @@ fn a_family_chooses_its_beta_gate_by_the_source_of_the_bytes() {
     json.is_base_game_pack = true;
     assert_eq!(
         the_only_error(&load_with::<Sourced>(BETA, &json)),
-        DiagnosticCode::BetaFeaturesNotEnabled {
-            text: Some(VanillaText::BetaDocuments)
-        }
+        DiagnosticCode::from(&core_codes::BETA_DOCUMENTS)
     );
     let mut mcb = json.clone();
     mcb.source = DocumentSource::Mcb;
@@ -1767,14 +1649,9 @@ fn an_mcb_source_has_no_null_rule_and_no_size_check() {
     assert!(outcome.diagnostics.is_empty(), "{:?}", outcome.diagnostics);
     // The same text as JSON is refused for its size before its `null` is read.
     let code = the_only_error(&load_with::<Document>(text, &cx));
-    assert!(
-        matches!(
-            code,
-            DiagnosticCode::MalformedInput {
-                text: Some(VanillaText::DocumentTooLarge { max: 40 }),
-                ..
-            }
-        ),
+    assert_eq!(
+        code,
+        DiagnosticCode::from(core_codes::DOCUMENT_TOO_LARGE.with(["40"])),
         "{code:?}"
     );
 }
@@ -1883,10 +1760,7 @@ fn codes_at<F: Family>(outcome: &LoadOutcome<F>) -> (bool, Vec<(String, Severity
         .diagnostics
         .iter()
         .map(|d| {
-            let name: String = format!("{:?}", d.code)
-                .chars()
-                .take_while(char::is_ascii_alphanumeric)
-                .collect();
+            let name: String = d.code.name().to_owned();
             (name, d.severity, d.location.json_path.to_string())
         })
         .collect();

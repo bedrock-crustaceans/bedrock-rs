@@ -2,7 +2,7 @@
 //! largest finite float of its sign with core's one warning at the number, in every recipe kind
 //! and every place an ingredient stands, as a scalar and as an element of a list.
 
-use bedrock_addon::diagnostic::{Diagnostic, DiagnosticCode, Phase, Severity};
+use bedrock_addon::diagnostic::{Diagnostic, Phase, Severity};
 use bedrock_addon::document::Document;
 use bedrock_addon::families::recipe::{Ingredient, Recipe};
 use bedrock_addon::load::LoadContext;
@@ -195,7 +195,7 @@ fn findings(document: &Document<Recipe>) -> Vec<String> {
 /// Core's finding of a number read as the largest finite float, as this family raises it: the
 /// family's findings carry no span.
 fn is_the_warning(finding: &Diagnostic, path: &str) -> bool {
-    matches!(finding.code, DiagnosticCode::InvalidValue { text: None })
+    finding.is(&bedrock_addon::diagnostic::codes::INVALID_VALUE)
         && finding.severity == Severity::Info
         && finding.phase == Phase::Parse
         && finding.location.json_path.to_string() == path

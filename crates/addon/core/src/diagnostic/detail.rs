@@ -132,7 +132,7 @@ pub enum ReferenceHint {
 
 #[cfg(test)]
 mod tests {
-    use super::super::{Diagnostic, DiagnosticCode};
+    use super::super::{Diagnostic, Severity, codes};
     use super::*;
     use crate::pack_identity::PackType;
 
@@ -166,7 +166,7 @@ mod tests {
     #[test]
     fn a_typed_payload_is_data_on_the_finding_and_not_in_its_line() {
         for detail in typed_details() {
-            let bare = Diagnostic::warn(DiagnosticCode::InternalError);
+            let bare = Diagnostic::of(&codes::INTERNAL_ERROR).severity(Severity::Warning);
             let with = bare.clone().detail(detail.clone());
             assert_eq!(with.detail.as_deref(), Some(&detail));
             assert_eq!(with.clone(), with);

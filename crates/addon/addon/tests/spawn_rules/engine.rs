@@ -38,12 +38,7 @@ fn found(d: &Diagnostics) -> Vec<(String, Severity, String, String)> {
     d.iter()
         .filter(|f| f.severity >= Severity::Warning)
         .map(|f| {
-            let code = format!("{:?}", f.code);
-            let name = code
-                .split([' ', '{', '('])
-                .next()
-                .unwrap_or_default()
-                .to_owned();
+            let name = f.code.name().to_owned();
             (
                 name,
                 f.severity,
