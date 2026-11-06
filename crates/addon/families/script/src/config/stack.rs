@@ -18,7 +18,7 @@ use super::{
     CONFIG_DIR, DEFAULT_DIR, PAYLOAD_SIZE_SINCE, PERMISSIONS_FILE, PackScriptConfig,
     SERVER_NET_MODULE, ScriptConfig, ServerNet, WILDCARD_MODULE,
 };
-use crate::{ScriptModuleRef, ScriptPlugin};
+use crate::{ScriptContext, ScriptModuleRef, ScriptPlugin};
 
 /// What the dependency filter decided for one script module.
 #[derive(Clone, Debug, PartialEq)]
@@ -33,6 +33,19 @@ pub struct PluginVerdict {
 }
 
 impl ScriptConfig {
+    /// The gates `cx` with the permission list this configuration gives the script module
+    /// `module_uuid`: the `allowed_modules` of the folder named after the module, else of
+    /// `default` ([`for_module`](Self::for_module)).
+    #[must_use]
+    pub fn context<'a>(
+        &'a self,
+        mut cx: ScriptContext<'a>,
+        module_uuid: Uuid,
+    ) -> ScriptContext<'a> {
+        cx.allowed_modules = Some(&self.for_module(module_uuid).permissions.allowed_modules);
+        cx
+    }
+
     /// Runs the dependency filter of plugin discovery for `plugin`, with the configuration of
     /// its script module ([`for_module`](Self::for_module)).
     ///
@@ -43,7 +56,7 @@ impl ScriptConfig {
     /// `plugin` is what discovery made of a pack's script module
     /// ([`ScriptBundle::plugin`](crate::ScriptBundle::plugin) on a stack, which is
     /// discovered without a permission list). A discovery that was itself given the list
-    /// ([`ScriptContext::with_config`](crate::ScriptContext::with_config)) has
+    /// ([`context`](Self::context)) has
     /// already applied it: its plugins pass here, and the refusals are its findings.
     ///
     /// One call reads the folder's whole list; for every script module of a stack use

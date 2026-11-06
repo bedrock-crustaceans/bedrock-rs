@@ -1545,7 +1545,7 @@ fn s10_the_permission_list_of_a_discovery_is_the_configuration_s_for_the_module(
             folders,
             ..ScriptConfigFiles::default()
         });
-        let cx = ScriptContext::default().with_config(&config, script.module_uuid);
+        let cx = config.context(ScriptContext::default(), script.module_uuid);
         let found = ScriptDiscovery::new(&bds_catalog()).discover(&script, &main_js(), &cx);
         (brief(found.diagnostics()), found.plugin().is_some())
     };

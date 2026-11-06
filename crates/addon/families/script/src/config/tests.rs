@@ -851,3 +851,35 @@ fn config_files_compare_equal_when_their_bytes_do() {
     };
     assert_eq!(folder.clone(), folder);
 }
+
+#[test]
+fn a_context_carries_the_permission_list_the_configuration_gives_the_module() {
+    let own = uuid(1);
+    let folder = |name: &str, permissions: &str| {
+        let mut folder = ConfigFolder::new(name);
+        folder.permissions = Some(Bytes::copy_from_slice(permissions.as_bytes()));
+        folder
+    };
+    let config = ScriptConfig::parse(&ScriptConfigFiles {
+        folders: vec![
+            folder("default", r#"{"allowed_modules": ["@minecraft/server"]}"#),
+            folder(&own.to_string(), r#"{"allowed_modules": ["*"]}"#),
+        ],
+        ..ScriptConfigFiles::default()
+    });
+    let gates = crate::ScriptContext {
+        beta_apis: true,
+        is_package_origin: true,
+        ..crate::ScriptContext::default()
+    };
+    // The module's own folder, and every other gate as it was given.
+    let cx = config.context(gates, own);
+    assert_eq!(cx.allowed_modules, Some(&["*".to_owned()][..]));
+    assert!(cx.beta_apis && cx.is_package_origin && !cx.editor_world && !cx.allow_internal);
+    // A module with no folder of its own takes `default`'s list.
+    let cx = config.context(gates, uuid(2));
+    assert_eq!(
+        cx.allowed_modules,
+        Some(&["@minecraft/server".to_owned()][..])
+    );
+}

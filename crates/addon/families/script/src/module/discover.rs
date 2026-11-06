@@ -13,7 +13,6 @@ use uuid::Uuid;
 
 use super::resolve::{Entry, Request, VersionResolution, newest_serving, requested, resolve};
 use super::{ModuleCatalog, ScriptModule, ScriptTarget, ScriptVersion, native_module_of};
-use crate::config::ScriptConfig;
 use crate::{NativeModuleAccess, ScriptHost, ScriptPath};
 
 /// What decides the gates of plugin discovery: the world's toggles, the build, the pack's
@@ -37,17 +36,6 @@ pub struct ScriptContext<'a> {
     /// its `permissions.json`): exact names, or `*` for every module; `None` where no such
     /// list applies (a world no dedicated server hosts).
     pub allowed_modules: Option<&'a [String]>,
-}
-
-impl<'a> ScriptContext<'a> {
-    /// These gates with the permission list `config` gives the script module `module_uuid`:
-    /// the `allowed_modules` of the folder named after the module, else of `default`
-    /// ([`ScriptConfig::for_module`]).
-    #[must_use]
-    pub fn with_config(mut self, config: &'a ScriptConfig, module_uuid: Uuid) -> Self {
-        self.allowed_modules = Some(&config.for_module(module_uuid).permissions.allowed_modules);
-        self
-    }
 }
 
 impl ScriptContext<'static> {
@@ -471,7 +459,7 @@ impl<'a> ScriptDiscovery<'a> {
 const GAMETEST_MODULE: &str = "@minecraft/server-gametest";
 
 /// The element of a permission list that allows every module.
-const WILDCARD: &str = crate::config::WILDCARD_MODULE;
+const WILDCARD: &str = "*";
 
 /// The prefix of the editor modules' names.
 const EDITOR_MODULES: &str = "@minecraft/server-editor";
