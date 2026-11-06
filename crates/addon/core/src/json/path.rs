@@ -1,94 +1,38 @@
-//! The JSON member path the helpers report: object keys and array indices from a slice root.
-//! It becomes a `diagnostic::JsonPath` at the boundary of this module.
+//! The JSON member path of a token in a text (`path_at`), and what the walks of this crate ask
+//! of a `diagnostic::JsonPath` beyond its public methods.
 
-use std::fmt;
+use crate::diagnostic::{JsonPath, JsonPathSegment};
 
-use crate::diagnostic::JsonPath;
-
-/// One step into a JSON document.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub(crate) enum Member {
-    /// An object member, by key.
-    Key(String),
-    /// An array element, by index.
-    Index(usize),
-}
-
-/// Object keys and array indices from a slice root to a value.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub(crate) struct MemberPath(Vec<Member>);
-
-impl MemberPath {
-    /// Steps into the object member `key`.
-    pub(crate) fn push_key(&mut self, key: &str) {
-        self.0.push(Member::Key(key.to_owned()));
-    }
-
-    /// Steps into the array element `index`.
-    pub(crate) fn push_index(&mut self, index: usize) {
-        self.0.push(Member::Index(index));
-    }
-
-    /// Steps back out.
-    pub(crate) fn pop(&mut self) {
-        self.0.pop();
-    }
-
+/// What the walks of this crate ask of a [`JsonPath`] beyond its public methods.
+impl JsonPath {
     /// The key that follows `prefix` in this path, when this path starts with `prefix` and
     /// continues with an object member.
-    pub(crate) fn key_after(&self, prefix: &MemberPath) -> Option<&str> {
-        match self.0.strip_prefix(prefix.0.as_slice())?.first()? {
-            Member::Key(key) => Some(key),
-            Member::Index(_) => None,
+    pub(crate) fn key_after(&self, prefix: &JsonPath) -> Option<&str> {
+        if !self.starts_with(prefix) {
+            return None;
+        }
+        match self.segments().nth(prefix.len())? {
+            JsonPathSegment::Key(key) => Some(key),
+            JsonPathSegment::Index(_) => None,
         }
     }
 
     /// Whether `self` names an array element of `other`'s place: the keys agree step by step,
     /// the indices may differ, and the steps `self` has beyond `other` are array indices only.
-    pub(crate) fn refines(&self, other: &MemberPath) -> bool {
-        self.0.len() >= other.0.len()
-            && self.0.iter().zip(&other.0).all(|pair| match pair {
-                (Member::Key(a), Member::Key(b)) => a == b,
-                (Member::Index(_), Member::Index(_)) => true,
-                _ => false,
-            })
-            && self.0[other.0.len()..]
-                .iter()
-                .all(|step| matches!(step, Member::Index(_)))
-    }
-
-    /// The steps, from the root.
-    pub(crate) fn steps(&self) -> &[Member] {
-        &self.0
-    }
-
-    /// The path as a diagnostic breadcrumb.
-    pub(crate) fn to_json_path(&self) -> JsonPath {
-        let mut path = JsonPath::new();
-        for member in &self.0 {
-            match member {
-                Member::Key(key) => path.push(key),
-                Member::Index(index) => path.push_index(*index),
-            }
-        }
-        path
-    }
-}
-
-/// `components/minecraft:friction/0`: keys and indices joined by `/`, the breadcrumb form of
-/// a member's place in a document.
-impl fmt::Display for MemberPath {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for (i, member) in self.0.iter().enumerate() {
-            if i > 0 {
-                f.write_str("/")?;
-            }
-            match member {
-                Member::Key(key) => f.write_str(key)?,
-                Member::Index(index) => write!(f, "{index}")?,
-            }
-        }
-        Ok(())
+    pub(crate) fn refines(&self, other: &JsonPath) -> bool {
+        self.len() >= other.len()
+            && self
+                .segments()
+                .zip(other.segments())
+                .all(|pair| match pair {
+                    (JsonPathSegment::Key(a), JsonPathSegment::Key(b)) => a == b,
+                    (JsonPathSegment::Index(_), JsonPathSegment::Index(_)) => true,
+                    _ => false,
+                })
+            && self
+                .segments()
+                .skip(other.len())
+                .all(|step| matches!(step, JsonPathSegment::Index(_)))
     }
 }
 
@@ -103,7 +47,7 @@ enum Frame {
 /// The members leading to the token at byte `offset` of `text`: the value that starts there, or,
 /// for a member key, that member. A lexical scan (strings, comments, brackets), not a parse; it
 /// runs only to place an error facet reported, and stops at the offset.
-pub(crate) fn path_at(text: &str, offset: usize) -> MemberPath {
+pub(crate) fn path_at(text: &str, offset: usize) -> JsonPath {
     let bytes = text.as_bytes();
     let mut frames: Vec<Frame> = Vec::new();
     let mut i = 0;
@@ -122,7 +66,7 @@ pub(crate) fn path_at(text: &str, offset: usize) -> MemberPath {
         if end > offset {
             let mut members = members_of(&frames);
             if at_key {
-                members.push_key(&key_text(&text[i..end]));
+                members.push(&key_text(&text[i..end]));
             }
             return members;
         }
@@ -150,11 +94,11 @@ pub(crate) fn path_at(text: &str, offset: usize) -> MemberPath {
 }
 
 /// The members the open frames select.
-fn members_of(frames: &[Frame]) -> MemberPath {
-    let mut members = MemberPath::default();
+fn members_of(frames: &[Frame]) -> JsonPath {
+    let mut members = JsonPath::new();
     for frame in frames {
         match frame {
-            Frame::Object(Some(key)) => members.push_key(key),
+            Frame::Object(Some(key)) => members.push(key),
             Frame::Object(None) => {}
             Frame::Array(index) => members.push_index(*index),
         }
@@ -246,16 +190,18 @@ mod tests {
     }
 
     #[test]
+    fn an_escaped_slash_in_a_key_names_one_segment() {
+        let text = r#"{ "a/b": { "c~d": 1 } }"#;
+        assert_eq!(at(text, "1"), "a~1b/c~0d");
+    }
+
+    #[test]
     fn key_after_reads_the_next_key_of_a_matching_prefix() {
-        let mut full = MemberPath::default();
-        full.push_key("m");
-        full.push_key("k");
-        full.push_key("v");
-        let mut prefix = MemberPath::default();
-        prefix.push_key("m");
+        let full = JsonPath::of_keys(["m", "k", "v"]);
+        let mut prefix = JsonPath::of_keys(["m"]);
         assert_eq!(full.key_after(&prefix), Some("k"));
         prefix.pop();
-        prefix.push_key("x");
+        prefix.push("x");
         assert_eq!(full.key_after(&prefix), None);
     }
 }

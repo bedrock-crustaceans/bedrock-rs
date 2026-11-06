@@ -664,9 +664,9 @@ pub fn parse_with_rules<'a, T: facet::Facet<'a>>(
     null: Option<super::NullRule>,
     rules: ScalarRules,
 ) -> Result<ScalarRead<T>, ScalarFailure> {
-    use super::path::{Member, MemberPath};
     use super::read::Plan;
     use super::{Misread, Misreading, Value};
+    use crate::diagnostic::JsonPath;
     use facet_format::ScalarValue;
 
     let Ok(json) = super::from_str_jsonc::<Value>(slice.text) else {
@@ -686,10 +686,10 @@ pub fn parse_with_rules<'a, T: facet::Facet<'a>>(
         plan.absent = super::null::member_paths(T::SHAPE, &json);
         super::null::remove_members(&mut json, &plan.absent);
     }
-    let walked = super::unknown::walk_scalars(T::SHAPE, &json, rules);
+    let walked = super::walk::Walk::new(T::SHAPE, &json).scalars(rules).run();
     let mut told = Vec::new();
-    let tell = |path: &super::path::MemberPath, kind| Misread {
-        path: path.to_json_path(),
+    let tell = |path: &JsonPath, kind| Misread {
+        path: path.clone(),
         kind,
     };
     // Whether a scalar before the one at hand fails the typed read there (a poisoned token, an
@@ -710,7 +710,7 @@ pub fn parse_with_rules<'a, T: facet::Facet<'a>>(
             Verdict::BeyondFloat => told.push(tell(&call.path, Misreading::BeyondFloat)),
             Verdict::Respell(respelt) => plan.fixes.push((call.path.clone(), event(respelt))),
             Verdict::Refused(_) => {
-                let member = matches!(call.path.steps().last(), Some(Member::Key(_)));
+                let member = call.path.last_key().is_some();
                 if rules.default_and_tell && member {
                     plan.blank.push(call.path.clone());
                     told.push(tell(&call.path, Misreading::Defaulted));
@@ -750,7 +750,7 @@ pub fn parse_with_rules<'a, T: facet::Facet<'a>>(
         return Err(read.err().unwrap_or(ScalarFailure::Refused(misread)));
     }
     let value = read?;
-    let absent = plan.absent.iter().map(MemberPath::to_json_path).collect();
+    let absent = plan.absent;
     Ok(ScalarRead {
         value,
         told,
@@ -766,11 +766,11 @@ pub fn parse_with_rules<'a, T: facet::Facet<'a>>(
 fn wrapper_place(
     mut error: super::SliceError,
     slice: super::JsonSlice<'_>,
-    calls: &[super::unknown::ScalarCall],
+    calls: &[super::walk::ScalarCall],
 ) -> super::SliceError {
     let Some(len) = calls
         .iter()
-        .find_map(|call| call.list.filter(|_| call.path.to_json_path() == error.path))
+        .find_map(|call| call.list.filter(|_| call.path == error.path))
     else {
         return error;
     };
@@ -803,7 +803,7 @@ fn event(respelt: Respelt) -> facet_format::ScalarValue<'static> {
 #[allow(dead_code, reason = "the test types are read, not looked at")]
 mod tests {
     use super::*;
-    use crate::json::unknown::{ScalarCall, walk_scalars};
+    use crate::json::walk::{ScalarCall, Walk};
     use crate::json::{Misreading, Value, from_str, keep_members};
     use facet::Facet;
     use indexmap::IndexMap;
@@ -869,13 +869,15 @@ mod tests {
 
     fn calls<'f, T: Facet<'f>>(text: &str, rules: ScalarRules) -> Vec<(String, Verdict, bool)> {
         let json: Value = from_str(text).unwrap();
-        walk_scalars(T::SHAPE, &json, rules)
+        Walk::new(T::SHAPE, &json)
+            .scalars(rules)
+            .run()
             .scalars
             .into_iter()
             .map(
                 |ScalarCall {
                      path, verdict, arm, ..
-                 }| (path.to_json_path().to_string(), verdict, arm),
+                 }| (path.to_string(), verdict, arm),
             )
             .collect()
     }

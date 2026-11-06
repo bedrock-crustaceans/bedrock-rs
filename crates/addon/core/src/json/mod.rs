@@ -62,7 +62,7 @@ mod slice;
 mod stack;
 mod strict;
 mod text;
-mod unknown;
+mod walk;
 mod write;
 
 // hidden: API not yet reviewed
@@ -111,10 +111,10 @@ pub use text::MAX_JSON_DEPTH;
 // hidden: API not yet reviewed
 #[doc(hidden)]
 pub use text::{TooDeep, blank_bom, check_depth, strip_bom};
-pub(crate) use unknown::door_unknown_members;
+pub(crate) use walk::door_unknown_members;
 // hidden: API not yet reviewed
 #[doc(hidden)]
-pub use unknown::{
+pub use walk::{
     BEYOND_FLOAT_MEMBER, Misread, Misreading, keep_members, keep_members_and_range_members,
     keep_unknown_members, keep_unknown_members_with, too_deep_to_walk, unknown_members,
 };

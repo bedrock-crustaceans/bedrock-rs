@@ -18,7 +18,6 @@ use std::borrow::Cow;
 use facet::{Facet, Peek, ScalarType, Shape, Type, UserType};
 use facet_format::{FormatSerializer, ScalarValue, SerializeError};
 
-use super::path::MemberPath;
 use super::stack::{is_low, with_stack_for};
 use super::text::MAX_JSON_DEPTH;
 use super::{EncodeError, Indent, Unrepresentable, Value, WriteStyle};
@@ -45,10 +44,7 @@ pub fn write_json<'f, T: Facet<'f>>(
     out: &mut Vec<u8>,
     style: WriteStyle,
 ) -> Result<(), EncodeError> {
-    write_in(value, out, style).map_err(|(at, what)| EncodeError::NotRepresentable {
-        at: at.to_json_path(),
-        what,
-    })
+    write_in(value, out, style).map_err(|(at, what)| EncodeError::NotRepresentable { at, what })
 }
 
 /// [`write_json`], with the unknown members of `unknown` (a document's table, its paths from
@@ -176,7 +172,7 @@ pub(crate) fn write_in<'f, T: Facet<'f>>(
     value: &T,
     out: &mut Vec<u8>,
     style: WriteStyle,
-) -> Result<(), (MemberPath, Unrepresentable)> {
+) -> Result<(), (JsonPath, Unrepresentable)> {
     // facet walks the value by a call of itself for each level. The walk starts on the stack
     // there is and gives up where little of it is left; it is then made again from the start
     // on a stack that holds every depth a text may have.
@@ -187,7 +183,7 @@ pub(crate) fn write_in<'f, T: Facet<'f>>(
                 Written::Refused(at, what) => Err((at, what)),
                 // Only a wary walk gives up for the stack, and this one is not: were it to,
                 // nothing was written, and the caller is told so.
-                Written::OutOfStack => Err((MemberPath::default(), Unrepresentable::Unsupported)),
+                Written::OutOfStack => Err((JsonPath::new(), Unrepresentable::Unsupported)),
             }
         }),
         Written::Whole => Ok(()),
@@ -200,7 +196,7 @@ enum Written {
     /// The text is in `out`.
     Whole,
     /// The value has no JSON spelling at the member named; nothing was appended.
-    Refused(MemberPath, Unrepresentable),
+    Refused(JsonPath, Unrepresentable),
     /// The walk gave up for the stack left; nothing was appended.
     OutOfStack,
 }
@@ -285,7 +281,7 @@ pub fn to_json<'f, T: Facet<'f>>(value: &T) -> Result<String, EncodeError> {
 /// Returns `EncodeError::NotRepresentable` when `value` is nested past `MAX_JSON_DEPTH` or facet-json cannot write it.
 pub fn to_facet_json(value: &Value) -> Result<String, EncodeError> {
     let levels = levels_of(value).map_err(|at| EncodeError::NotRepresentable {
-        at: at.to_json_path(),
+        at,
         what: Unrepresentable::TooDeep,
     })?;
     with_stack_for(levels, || facet_json::to_string(value)).map_err(|_| {
@@ -354,7 +350,7 @@ pub fn to_facet_json_signed(value: &Value) -> Result<String, EncodeError> {
     // The depth is checked, and bounded, by the plain text first.
     let plain = to_facet_json(value)?;
     let levels = levels_of(value).map_err(|at| EncodeError::NotRepresentable {
-        at: at.to_json_path(),
+        at,
         what: Unrepresentable::TooDeep,
     })?;
     with_stack_for(levels, || {
@@ -373,7 +369,7 @@ pub fn to_facet_json_signed(value: &Value) -> Result<String, EncodeError> {
 /// How deep `value` nests, counted without a call for each level; the path of the first
 /// array or object past `MAX_JSON_DEPTH` when it has one.
 // `pub(super)`: the unknown-member walk sizes its stack by it.
-pub(super) fn levels_of(value: &Value) -> Result<usize, MemberPath> {
+pub(super) fn levels_of(value: &Value) -> Result<usize, JsonPath> {
     /// The step into an element or a member.
     enum Step<'v> {
         Index(usize),
@@ -393,7 +389,7 @@ pub(super) fn levels_of(value: &Value) -> Result<usize, MemberPath> {
             members.map(|(key, member)| (Step::Key(key.as_str()), member)),
         ))
     }
-    let mut at = MemberPath::default();
+    let mut at = JsonPath::new();
     let mut open: Vec<Open<'_>> = Vec::new();
     let mut deepest = 0;
     if let Some(root) = open_of(value) {
@@ -410,7 +406,7 @@ pub(super) fn levels_of(value: &Value) -> Result<usize, MemberPath> {
         };
         match step {
             Step::Index(index) => at.push_index(index),
-            Step::Key(key) => at.push_key(key),
+            Step::Key(key) => at.push(key),
         }
         match open_of(next) {
             Some(_) if open.len() >= MAX_JSON_DEPTH => return Err(at),
@@ -418,7 +414,9 @@ pub(super) fn levels_of(value: &Value) -> Result<usize, MemberPath> {
                 open.push(inner);
                 deepest = deepest.max(open.len());
             }
-            None => at.pop(),
+            None => {
+                at.pop();
+            }
         }
     }
     Ok(deepest.max(open_of(value).map_or(0, |_| 1)))
@@ -449,11 +447,11 @@ struct Writer<'o> {
 
 impl Writer<'_> {
     /// Where the writer is: the open objects' current keys and the arrays' current indices.
-    fn path(&self) -> MemberPath {
-        let mut path = MemberPath::default();
+    fn path(&self) -> JsonPath {
+        let mut path = JsonPath::new();
         for frame in &self.frames {
             match (&frame.key, frame.object) {
-                (Some(key), true) => path.push_key(key),
+                (Some(key), true) => path.push(key),
                 (_, false) if frame.count > 0 => path.push_index(frame.count - 1),
                 _ => {}
             }

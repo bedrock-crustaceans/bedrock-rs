@@ -10,9 +10,9 @@ use facet_json::{DeserializeError, RawJson};
 use facet_path::PathStep;
 
 use super::Value;
-use super::path::{MemberPath, path_at};
+use super::path::path_at;
 use crate::diagnostic::{
-    Diagnostic, DiagnosticCode, JsonPath, Span, code_for_deserialize_error_kind,
+    Diagnostic, DiagnosticCode, JsonPath, JsonPathSegment, Span, code_for_deserialize_error_kind,
 };
 
 /// A slice of a document's text with its file offset, so a nested parse reports file offsets.
@@ -156,7 +156,7 @@ pub fn parse_at<'a, T: Facet<'a>>(slice: JsonSlice<'a>) -> Result<T, SliceError>
         let (span, members, error) = *failure;
         SliceError {
             span,
-            path: members.to_json_path(),
+            path: members,
             error: Box::new(error),
             blank: slice.text.trim().is_empty(),
         }
@@ -167,7 +167,7 @@ pub fn parse_at<'a, T: Facet<'a>>(slice: JsonSlice<'a>) -> Result<T, SliceError>
 /// `null` (rule N1, `json::null`); a failure is reported against the text as written.
 pub(crate) fn parse_without<'a, T: Facet<'a>>(
     slice: JsonSlice<'a>,
-    absent: &[MemberPath],
+    absent: &[JsonPath],
 ) -> Result<T, SliceError> {
     parse_planned(slice, &super::read::Plan::absent(absent))
 }
@@ -182,7 +182,7 @@ pub(crate) fn parse_planned<'a, T: Facet<'a>>(
         let (span, members, error) = *failure;
         SliceError {
             span,
-            path: members.to_json_path(),
+            path: members,
             error: Box::new(error),
             blank: slice.text.trim().is_empty(),
         }
@@ -192,7 +192,7 @@ pub(crate) fn parse_planned<'a, T: Facet<'a>>(
 /// [`parse_at`] with the member path as this module builds it.
 pub(crate) fn parse_in<'a, T: Facet<'a>>(
     slice: JsonSlice<'a>,
-) -> Result<T, Box<(Span, MemberPath, DeserializeError)>> {
+) -> Result<T, Box<(Span, JsonPath, DeserializeError)>> {
     parse_read(slice, &super::read::Plan::default())
 }
 
@@ -200,7 +200,7 @@ pub(crate) fn parse_in<'a, T: Facet<'a>>(
 fn parse_read<'a, T: Facet<'a>>(
     slice: JsonSlice<'a>,
     plan: &super::read::Plan,
-) -> Result<T, Box<(Span, MemberPath, DeserializeError)>> {
+) -> Result<T, Box<(Span, JsonPath, DeserializeError)>> {
     let read = super::read::from_str_borrowed_jsonc_planned::<T>(slice.text, plan);
     let value = read.map_err(|error| {
         let members = members_of(&error, slice.text);
@@ -237,11 +237,11 @@ fn parse_read<'a, T: Facet<'a>>(
 fn array_for_a_map(
     shape: &'static Shape,
     slice: JsonSlice<'_>,
-) -> Option<Box<(Span, MemberPath, DeserializeError)>> {
+) -> Option<Box<(Span, JsonPath, DeserializeError)>> {
     if !has_empty_array(slice.text) {
         return None;
     }
-    let mut members = MemberPath::default();
+    let mut members = JsonPath::new();
     let map = match map_at_the_root(shape, slice.text) {
         AtTheRoot::NoMap => return None,
         AtTheRoot::Array(map) => map,
@@ -406,7 +406,7 @@ fn has_array_of_comments(text: &str) -> bool {
 fn map_given_an_array(
     shape: &'static Shape,
     json: &Value,
-    members: &mut MemberPath,
+    members: &mut JsonPath,
 ) -> Option<&'static Shape> {
     let shape = see_through(shape);
     if is_kept_as_written(shape) {
@@ -417,7 +417,7 @@ fn map_given_an_array(
             return Some(shape);
         }
         for (key, value) in json.as_object()? {
-            members.push_key(key.as_str());
+            members.push(key.as_str());
             let found = map_given_an_array(map.v(), value, members);
             if found.is_some() {
                 return found;
@@ -442,7 +442,7 @@ fn map_given_an_array(
             let Some(value) = object.get(field.effective_name()) else {
                 continue;
             };
-            members.push_key(field.effective_name());
+            members.push(field.effective_name());
             let found = map_given_an_array(field.shape(), value, members);
             if found.is_some() {
                 return found;
@@ -461,32 +461,25 @@ fn map_given_an_array(
 /// Each step reads one level of the text, so one call costs the levels on the path: for the
 /// spans of many values of one document, walk the text once instead
 /// ([`clamp_non_finite`](super::clamp_non_finite) does).
-pub fn span_at(slice: JsonSlice<'_>, path: &crate::diagnostic::JsonPath) -> Option<Span> {
-    let mut members = MemberPath::default();
-    for segment in path.segments() {
-        match segment {
-            crate::diagnostic::JsonPathSegment::Key(key) => members.push_key(key),
-            crate::diagnostic::JsonPathSegment::Index(index) => members.push_index(index),
-        }
-    }
-    locate(slice, &members)
+pub fn span_at(slice: JsonSlice<'_>, path: &JsonPath) -> Option<Span> {
+    locate(slice, path)
 }
 
 /// The span of the value `members` names in `slice`; `None` when a step is not found.
-fn locate(slice: JsonSlice<'_>, members: &MemberPath) -> Option<Span> {
+fn locate(slice: JsonSlice<'_>, members: &JsonPath) -> Option<Span> {
     use indexmap::IndexMap;
     let mut current = slice;
-    for step in members.steps() {
+    for step in members.segments() {
         let next = match step {
-            super::path::Member::Key(key) => {
+            JsonPathSegment::Key(key) => {
                 crate::json::from_str_borrowed_jsonc::<IndexMap<String, RawJson<'_>>>(current.text)
                     .ok()
-                    .and_then(|object| current.nested(object.get(key.as_str())?))
+                    .and_then(|object| current.nested(object.get(key)?))
             }
-            super::path::Member::Index(index) => {
+            JsonPathSegment::Index(index) => {
                 crate::json::from_str_borrowed_jsonc::<Vec<RawJson<'_>>>(current.text)
                     .ok()
-                    .and_then(|array| current.nested(array.get(*index)?))
+                    .and_then(|array| current.nested(array.get(index)?))
             }
         };
         current = next?;
@@ -516,7 +509,7 @@ fn rebase(slice: JsonSlice<'_>, span: Option<facet::Span>) -> Span {
 /// facet puts its span on an outer member, so its members come from facet's `path` (struct
 /// fields by `effective_name`, so renamed fields read as written) followed by the field's JSON
 /// name.
-fn members_of(error: &DeserializeError, text: &str) -> MemberPath {
+fn members_of(error: &DeserializeError, text: &str) -> JsonPath {
     let at_span = error.span.map(|span| path_at(text, span.offset as usize));
     if let facet_format::DeserializeErrorKind::MissingField {
         field,
@@ -534,7 +527,7 @@ fn members_of(error: &DeserializeError, text: &str) -> MemberPath {
             let name = named_fields(container_shape, None)
                 .and_then(|fields| fields.iter().find(|f| f.name == field))
                 .map_or(field, facet::Field::effective_name);
-            members.push_key(name);
+            members.push(name);
         }
         return members;
     }
@@ -568,9 +561,9 @@ fn members_of(error: &DeserializeError, text: &str) -> MemberPath {
 fn walk_path(
     path: &facet_path::Path,
     text: &str,
-    hint: Option<&MemberPath>,
-) -> (MemberPath, Option<&'static Shape>) {
-    let mut members = MemberPath::default();
+    hint: Option<&JsonPath>,
+) -> (JsonPath, Option<&'static Shape>) {
+    let mut members = JsonPath::new();
     let root: Option<Value> = crate::json::from_str_borrowed_jsonc(text).ok();
     let mut node = root.as_ref();
     let mut shape = path.shape;
@@ -586,7 +579,7 @@ fn walk_path(
                     return (members, None);
                 };
                 node = node.and_then(|n| n.as_object()).and_then(|o| o.get(key));
-                members.push_key(key);
+                members.push(key);
                 shape = see_through(map.v());
             }
         }
@@ -605,7 +598,7 @@ fn walk_path(
                 // of an externally tagged one has its key from the variant): no JSON level.
                 if !variant.is_some_and(|variant| is_newtype_variant(shape, variant)) {
                     let name = field.effective_name();
-                    members.push_key(name);
+                    members.push(name);
                     node = node.and_then(|n| n.as_object()).and_then(|o| o.get(name));
                 }
                 shape = field.shape();
@@ -624,7 +617,7 @@ fn walk_path(
             PathStep::Variant(index) => {
                 variant = Some(index as usize);
                 if let Some(name) = external_tag(shape, index as usize) {
-                    members.push_key(name);
+                    members.push(name);
                     node = node.and_then(|n| n.as_object()).and_then(|o| o.get(name));
                 }
             }
@@ -636,7 +629,7 @@ fn walk_path(
                 ) else {
                     return (members, None);
                 };
-                members.push_key(key.as_str());
+                members.push(key.as_str());
                 node = Some(value);
                 shape = map.v();
             }

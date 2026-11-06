@@ -44,11 +44,11 @@
 use facet::{Facet, Peek, Shape};
 
 use super::Value;
-use super::path::{Member, MemberPath};
 use super::slice::{JsonSlice, SliceError, parse_without, span_at};
-use super::unknown::walk_whole;
+use super::walk::Walk;
 use crate::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Location, Phase, Severity,
+    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, JsonPathSegment, Location,
+    Phase, Severity,
 };
 
 /// How a family's reader takes a member written as `null`; the family's input kind decides
@@ -69,7 +69,10 @@ pub enum NullRule {
 /// written; an `Option<RawJson>` or an `Option` of a proxied type is found (module
 /// documentation).
 pub fn nulls_read<'f, T: Facet<'f>>(value: &T, json: &Value) -> Vec<JsonPath> {
-    walk_whole(T::SHAPE, json, Some(Peek::new(value)), false).nulls
+    Walk::new(T::SHAPE, json)
+        .typed(Some(Peek::new(value)))
+        .run()
+        .nulls
 }
 
 /// Rule N2 ([`NullRule::Rejected`]) for `value`, read from `slice`: each place [`nulls_read`]
@@ -128,34 +131,31 @@ pub fn tell_null_members(found: &[JsonPath], at: &JsonPath, d: &mut Diagnostics)
 /// members are the struct's own (module documentation).
 pub fn null_members(shape: &'static Shape, json: &Value) -> Vec<JsonPath> {
     member_paths(shape, json)
-        .iter()
-        .map(MemberPath::to_json_path)
-        .collect()
 }
 
 /// [`null_members`] as the walk names them.
-pub(crate) fn member_paths(shape: &'static Shape, json: &Value) -> Vec<MemberPath> {
-    walk_whole(shape, json, None, false).null_members
+pub(crate) fn member_paths(shape: &'static Shape, json: &Value) -> Vec<JsonPath> {
+    Walk::new(shape, json).run().null_members
 }
 
 /// Removes from `json` the members [`null_members`] finds, and returns their paths.
 pub fn remove_null_members(shape: &'static Shape, json: &mut Value) -> Vec<JsonPath> {
     let found = member_paths(shape, json);
     remove_members(json, &found);
-    found.iter().map(MemberPath::to_json_path).collect()
+    found
 }
 
 /// Removes from `json` the struct members at `found` ([`member_paths`]).
-pub(crate) fn remove_members(json: &mut Value, found: &[MemberPath]) {
+pub(crate) fn remove_members(json: &mut Value, found: &[JsonPath]) {
     for path in found {
-        let Some((Member::Key(key), within)) = path.steps().split_last() else {
+        let Some(key) = path.last_key() else {
             continue;
         };
         let mut node = Some(&mut *json);
-        for step in within {
+        for step in path.segments().take(path.len() - 1) {
             node = node.and_then(|value| match step {
-                Member::Key(key) => value.as_object_mut()?.get_mut(key),
-                Member::Index(index) => value.as_array_mut()?.get_mut(*index),
+                JsonPathSegment::Key(key) => value.as_object_mut()?.get_mut(key),
+                JsonPathSegment::Index(index) => value.as_array_mut()?.get_mut(index),
             });
         }
         if let Some(object) = node.and_then(Value::as_object_mut) {

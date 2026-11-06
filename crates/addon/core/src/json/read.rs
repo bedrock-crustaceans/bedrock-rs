@@ -781,19 +781,19 @@ where
 #[derive(Debug, Default)]
 pub(crate) struct Plan {
     /// Object members read as not written when their value is `null` (rule N1, `json::null`).
-    pub(crate) absent: Vec<super::path::MemberPath>,
+    pub(crate) absent: Vec<JsonPath>,
     /// Object members read as not written whatever their scalar value (a member the scalar
     /// pre-pass refused and defaults).
-    pub(crate) blank: Vec<super::path::MemberPath>,
+    pub(crate) blank: Vec<JsonPath>,
     /// Scalars read as another token: the scalar pre-pass's respellings, and the tokens it
     /// gives a refused scalar so that facet fails there (`json::scalar`). A path written
     /// twice is respelt where facet reads it last.
-    pub(crate) fixes: Vec<(super::path::MemberPath, ScalarValue<'static>)>,
+    pub(crate) fixes: Vec<(JsonPath, ScalarValue<'static>)>,
 }
 
 impl Plan {
     /// A plan that blanks the members `absent` names when `null`.
-    pub(crate) fn absent(absent: &[super::path::MemberPath]) -> Self {
+    pub(crate) fn absent(absent: &[JsonPath]) -> Self {
         Self {
             absent: absent.to_vec(),
             ..Self::default()
@@ -862,7 +862,7 @@ enum Frame {
 }
 
 /// A value of the innermost container ended at `end`.
-fn value_done(frames: &mut [Frame], path: &mut super::path::MemberPath, end: usize) {
+fn value_done(frames: &mut [Frame], path: &mut JsonPath, end: usize) {
     match frames.last_mut() {
         Some(Frame::Object { kept_end, .. }) => {
             *kept_end = Some(end);
@@ -877,7 +877,7 @@ fn value_done(frames: &mut [Frame], path: &mut super::path::MemberPath, end: usi
 }
 
 /// A value of the innermost container starts: an element gets its index.
-fn value_starts(frames: &[Frame], path: &mut super::path::MemberPath) {
+fn value_starts(frames: &[Frame], path: &mut JsonPath) {
     if let Some(Frame::Array { index }) = frames.last() {
         path.push_index(*index);
     }
@@ -889,10 +889,9 @@ fn value_starts(frames: &[Frame], path: &mut super::path::MemberPath) {
 /// before it, its comma included, to the end of its value), and the offset of each scalar it
 /// respells with the token facet reads there, sorted by offset.
 fn plan_marks(text: &str, plan: &Plan) -> (Vec<Range<usize>>, Vec<(u32, ScalarValue<'static>)>) {
-    use super::path::MemberPath;
     let mut parser = JsonParser::<true>::new_jsonc(text.as_bytes());
     let mut frames: Vec<Frame> = Vec::new();
-    let mut path = MemberPath::default();
+    let mut path = JsonPath::new();
     let mut out = Vec::new();
     let mut fixed: Vec<Option<u32>> = vec![None; plan.fixes.len()];
     while let Ok(Some(event)) = parser.next_event() {
@@ -908,7 +907,7 @@ fn plan_marks(text: &str, plan: &Plan) -> (Vec<Range<usize>>, Vec<(u32, ScalarVa
                         out.push(from..start);
                     }
                     *key_start = start;
-                    path.push_key(key.name().map_or("@", |name| name.as_ref()));
+                    path.push(key.name().map_or("@", |name| name.as_ref()));
                 }
             }
             ParseEventKind::StructStart(_) => {

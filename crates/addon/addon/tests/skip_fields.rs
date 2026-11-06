@@ -13,7 +13,7 @@ const ROOTS: &[&str] = &["addon/src", "core/src", "manifest/src", "storage/src"]
 /// Skipped fields exempt from the convention, as `(file below its root, field line trimmed,
 /// reason)`. The scan reads whole files, so `#[cfg(test)]` code is exempted here by path.
 const EXEMPT: &[(&str, &str, &str)] = &[(
-    "json/unknown.rs",
+    "json/walk/mod.rs",
     "extra: Extra,",
     "the test-only structs of `mod tests` keep a bare skip on purpose: they pin the walk over a \
      skipped field and are no document type",

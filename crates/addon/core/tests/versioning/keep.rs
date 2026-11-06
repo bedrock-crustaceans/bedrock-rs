@@ -13,7 +13,7 @@ use bedrock_addon_core::json::{
 };
 use bedrock_addon_core::load::{DocumentSource, LoadContext};
 use bedrock_addon_core::schema;
-use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::{FormatVersion, FormatVersionInput};
 use bedrock_addon_core::versioning::{
     ComponentTable, Family, LoadOutcome, Loaded, ParseCx, Reading, StructIndex, UnknownMask,
     VersionStruct, Versioned, load, parse_payload, write_payload,
@@ -318,4 +318,62 @@ fn stable(loaded: &Loaded<ReadingKeeps>) -> &Payload {
         Loaded::Stable(payload) => payload,
         Loaded::Beta(never) => match *never {},
     }
+}
+
+/// Pin, a question for the diagnostics table: the door tells a member its struct reports
+/// (`schema::unknown = "report"`, or nothing under a reading that does not keep) with the code
+/// of a kept one, `UnrecognizedField`, though the member is not kept; a hand reader's kit tells
+/// the same `Report` as `MemberNotKept`. Today's disposition, pinned, not decided.
+#[test]
+fn pin_the_door_tells_a_reported_member_as_it_tells_a_kept_one() {
+    let outcome = load_as::<ReadingReports>(&document(PAYLOAD));
+    assert!(outcome.value.is_some(), "{:?}", outcome.diagnostics);
+    let told = told(&outcome.diagnostics);
+    let kept = kept(outcome.diagnostics.unknown());
+    for (path, is_kept) in [("marked/u", true), ("reports/u", false), ("plain/u", false)] {
+        assert!(
+            told.contains(&format!("minecraft:toy/{path} UnrecognizedField Warning")),
+            "{path}: {told:?}"
+        );
+        assert_eq!(
+            kept.iter()
+                .any(|member| member.starts_with(&format!("minecraft:toy/{path}="))),
+            is_kept,
+            "{path}: {kept:?}"
+        );
+    }
+}
+
+/// Pin, a question for the diagnostics table: the door tells a member its struct rejects or
+/// ignores at the context's `unknown_severity`, and a kept or reported one at a fixed warning
+/// (which the strict mask lifts to an error after the parse, so a versioned load shows no
+/// difference). Read here outside the load, the asymmetry shows. Pinned, not decided.
+#[test]
+fn pin_the_door_tells_only_reject_and_ignore_at_the_unknown_severity() {
+    let mut load = LoadContext::detached();
+    load.unknown_severity = Severity::Error;
+    let cx = ParseCx {
+        load: &load,
+        written: FormatVersionInput {
+            version: Some(Payload::VERSION),
+            beta_literal: false,
+            prerelease: false,
+        },
+        original_version: Payload::VERSION,
+        at: JsonPath::of_keys(["minecraft:toy"]),
+    };
+    let mut d = Diagnostics::default();
+    let payload: Option<Payload> = parse_payload(JsonSlice::new(PAYLOAD), &cx, &mut d);
+    assert!(payload.is_some(), "{d:?}");
+    let expected: Vec<String> = told_at(Severity::Warning)
+        .into_iter()
+        .map(|line| {
+            if line.contains("DroppedField") || line.contains("IgnoredMember") {
+                line.replace("Warning", "Error")
+            } else {
+                line
+            }
+        })
+        .collect();
+    assert_eq!(told(&d), expected);
 }

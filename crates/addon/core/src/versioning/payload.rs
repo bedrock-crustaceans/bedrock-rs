@@ -17,7 +17,7 @@ use crate::schema::UnknownRule;
 
 /// Parses a version struct from `payload` (typed, straight from the text, never from a
 /// `Value`) and keeps the unknown members of its structs that keep them in `d`'s table
-/// (below `cx.at`; which keep is `json::unknown`'s rule, under the slice's
+/// (below `cx.at`; which keep is `json::walk`'s rule, under the slice's
 /// `Reading::keeps_unknown`), each told by its disposition: kept or reported, an
 /// `UnrecognizedField` warning; `schema::unknown = "reject"` a `DroppedField` and `"ignore"` an
 /// `IgnoredMember`, both at `LoadContext::unknown_severity`. Its scalars are read by the

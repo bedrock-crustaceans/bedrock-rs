@@ -11,7 +11,7 @@
 //! | trade's wire structs (`families/trade/src/read.rs`: `TableWire`, `GroupWire`, `TradeWire`, `EntryWire`, `quantity_int`) | 12 | each element is read from its own `RawJson` slice with `parse_at`: a per-element slice attribute (the element read under the slice's rules) |
 //! | `shared::MenuCategory::is_hidden_in_commands` (`shared/shapes/src/menu.rs`; `shared/shapes/tests/menu_category.rs`) | 2 (+2) | read in block's description, under its shell's `PLAIN` rules, and in item's: the block shell gap, and a pin of item's reading of it |
 //! | [`ReaderMode`] / [`with_reader_mode`] (`core/tests/json_scalars.rs`) | 34 (tests) | no reader sets it: kept as the oracle the pre-pass's `Scalars::NonStrict` is held equal to |
-//! | the wrappers' own tests and the core tests that read through a proxy (`core/tests/{json_strict,json_scalars,json_slice,json_unknown,json_wide_integers,json_wide_integers_generated,json_write,api_traits}.rs`, the tests in `json/null.rs` and `json/unknown.rs`) | tests | they test the wrappers or the proxy rules (a proxied member judges itself; a proxied float is written by its width), and go with them |
+//! | the wrappers' own tests and the core tests that read through a proxy (`core/tests/{json_strict,json_scalars,json_slice,json_unknown,json_wide_integers,json_wide_integers_generated,json_write,api_traits}.rs`, the tests in `json/null.rs` and `json/walk/`) | tests | they test the wrappers or the proxy rules (a proxied member judges itself; a proxied float is written by its width), and go with them |
 //!
 //! facet coerces scalars (`5` into a `String`, `"7"` into an integer, `"true"` into a `bool`,
 //! `null` into the default) and has no option to stop. Each wrapper
