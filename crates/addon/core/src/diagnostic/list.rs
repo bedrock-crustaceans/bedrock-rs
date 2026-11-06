@@ -337,13 +337,18 @@ impl Diagnostics {
         self.list().iter().find(|d| d.rejects())
     }
 
-    /// For error messages: the first error, else the most severe finding, else "no findings".
+    /// For error messages: the first error that rejects, else the first of the most severe
+    /// findings (a kept error among them), else "no findings".
     pub fn summary(&self) -> impl fmt::Display + '_ {
         Summary(self)
     }
 
-    /// The finding [`Diagnostics::summary`] names: the first of the most severe.
+    /// The finding [`Diagnostics::summary`] names: the first that rejects, else the first of
+    /// the most severe.
     fn headline(&self) -> Option<&Diagnostic> {
+        if let Some(rejecting) = self.first_error() {
+            return Some(rejecting);
+        }
         let max = self.max_severity()?;
         self.list().iter().find(|d| d.severity == max)
     }

@@ -69,7 +69,7 @@ impl PackReport {
         self.diagnostics.has_errors()
     }
 
-    /// For error messages: the first error, else the most severe finding, else "no findings".
+    /// For error messages: the first error that rejects, else the most severe finding, else "no findings".
     pub fn summary(&self) -> impl fmt::Display + '_ {
         self.diagnostics.summary()
     }

@@ -219,6 +219,36 @@ fn first_error_skips_a_kept_error() {
 }
 
 #[test]
+fn summary_names_a_rejecting_error_before_a_kept_one() {
+    let diagnostics = kept_then_rejecting();
+    let rejecting = diagnostics
+        .iter()
+        .find(|d| d.rejects())
+        .expect("a rejecting error")
+        .to_string();
+    assert_eq!(diagnostics.summary().to_string(), rejecting);
+}
+
+#[test]
+fn summary_of_only_kept_errors_names_the_first_of_them() {
+    let mut diagnostics = Diagnostics::default();
+    diagnostics.push(finding(
+        DiagnosticCode::UnknownSound { text: None },
+        Severity::Warning,
+    ));
+    diagnostics.push_kept_error(finding(
+        DiagnosticCode::InvalidValue { text: None },
+        Severity::Error,
+    ));
+    let kept = diagnostics
+        .iter()
+        .nth(1)
+        .expect("the kept error")
+        .to_string();
+    assert_eq!(diagnostics.summary().to_string(), kept);
+}
+
+#[test]
 fn first_error_of_only_kept_errors_is_none() {
     let mut diagnostics = Diagnostics::default();
     diagnostics.push_kept_error(finding(
