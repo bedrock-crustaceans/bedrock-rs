@@ -28,8 +28,6 @@
 //!   the other helpers `bedrock_addon` reads and writes with are named from here and not
 //!   listed on the module's page.
 //! - `molang`: the molang types pack content holds; with `molang`, the compile check.
-//! - `visual`: the description slots client entities, attachables and atomic client entities
-//!   share, and the spawn egg of a description.
 //! - `shared`: value types several content modules use (descriptors, ranges, filters).
 //! - `vanilla`: the game's tables (identifier lists, commands, name lists, level sound
 //!   events) re-exported from `bedrock_addon_vanilla`, `GeneratedBuiltIns` over them, and
@@ -116,4 +114,3 @@ pub mod test_cost;
 pub mod vanilla;
 pub mod version;
 pub mod versioning;
-pub mod visual;

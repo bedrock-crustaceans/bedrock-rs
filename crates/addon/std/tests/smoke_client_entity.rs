@@ -309,7 +309,7 @@ fn every_client_entity_molang_occurrence_loads_with_its_text_and_version() {
                 // be read back. The text is the document's; the version is the load
                 // context's, which is the one the loader compiles the joined text with. These
                 // occurrences are counted apart below.
-                let scripts = entity.description.scripts.clone().unwrap_or_default();
+                let scripts = entity.description.slots.scripts.clone().unwrap_or_default();
                 for (name, list) in [
                     ("initialize", &scripts.initialize),
                     ("pre_animation", &scripts.pre_animation),

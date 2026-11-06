@@ -114,14 +114,8 @@ impl<K: crate::id::Kind> SchemaFields for crate::id::Id<K> {
 }
 
 // The shared value types a document holds whole: each reads its own syntax and holds no
-// bound the derive checks and no trigger (an item descriptor's `tags` and a named condition's
-// members are Molang, walked by `MolangFields`).
-crate::impl_schema_leaf!(
-    crate::shared::Filter,
-    crate::shared::FilterSubject,
-    crate::visual::ControllerUse,
-    crate::visual::AnimateEntry,
-);
+// bound the derive checks and no trigger.
+crate::impl_schema_leaf!(crate::shared::Filter, crate::shared::FilterSubject);
 
 impl<T: crate::shared::RangeEnd> SchemaFields for crate::shared::Range<T> {
     fn check_fields(&mut self, _: &mut SchemaCx<'_>) {}

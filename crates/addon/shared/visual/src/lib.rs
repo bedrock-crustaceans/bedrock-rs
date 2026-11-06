@@ -1,7 +1,7 @@
 //! What a client needs to draw a model: the description slots client entities, attachables and
 //! atomic client entities share, their member types and the resolver for vanilla's shared
-//! identifier map. Always built, so `entity::client` and `item::client` never name `render`
-//! or each other.
+//! identifier map, re-exported as `bedrock_addon::visual`. The families compose it; it
+//! depends on `bedrock_addon_core` and `bedrock_addon_shared_shapes` only.
 //!
 //! The member types ([`ControllerUse`], [`AnimateEntry`], [`Scripts`], [`SpawnEgg`]) are the
 //! newest shapes; [`history`] has the older `scripts` shapes. The resolver
@@ -9,26 +9,38 @@
 //! one identifier across packs: by `description.min_engine_version`, not by pack priority
 //! alone.
 
-mod condition;
+/// The shared reader of the description schema: the families' plumbing, not the facade's API.
+#[doc(hidden)]
+pub mod cereal;
 mod held_item_scale;
 pub mod history;
 mod merge;
+/// The shared loader rules: the families' plumbing, not the facade's API.
+#[doc(hidden)]
+pub mod rules;
 mod scripts;
+mod slots;
 mod spawn_egg;
 
 use indexmap::IndexMap;
 
-use crate::id::{AnimationRef, GeometryId, MaterialId, TexturePath};
+use bedrock_addon_core::id::{AnimationRef, GeometryId, MaterialId, TexturePath};
 
-pub use condition::{AnimateEntry, ControllerUse};
+// The two named-condition lists' entries are the vocabulary crate's.
+pub use bedrock_addon_shared_shapes::{
+    AnimateEntry, ControllerUse, NamedCondition, NamedConditionProxy, NotANamedCondition,
+};
 pub use held_item_scale::HeldItemScale;
 pub use merge::{
-    DescriptionSlots, EngineVersionMerge, MergeStep, ShadowReason, SharedDescription,
-    description_min_engine_version, merge_slots, merge_step,
+    EngineVersionMerge, MergeStep, ShadowReason, SharedDescription, description_min_engine_version,
+    merge_step,
 };
 pub use scripts::Scripts;
 #[doc(hidden)]
 pub use scripts::is_molang_place;
+pub use slots::VisualSlots;
+#[doc(hidden)]
+pub use slots::joined;
 pub use spawn_egg::{Color, SpawnEgg, SpawnEggInfo};
 
 /// What an `animations` entry of a client entity or an attachable names, as vanilla tells

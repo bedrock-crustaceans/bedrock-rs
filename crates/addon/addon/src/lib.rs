@@ -166,7 +166,7 @@ pub use bedrock_addon_core::version;
 #[doc(hidden)]
 pub use bedrock_addon_core::versioning;
 #[doc(inline)]
-pub use bedrock_addon_core::visual;
+pub use bedrock_addon_shared_visual as visual;
 
 pub mod load;
 pub mod pack;

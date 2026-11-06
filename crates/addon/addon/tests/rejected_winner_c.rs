@@ -331,8 +331,8 @@ fn client_entity_two_packs_a_top_document_above_the_stack_version_leaves_the_low
     let registry = stack.client_entities();
     let ghost = registry.get(&EntityId::parse(GHOST)).unwrap();
     assert_eq!(ghost.origin().pack.index(), Some(1));
-    assert!(ghost.description.geometry.contains_key("l"));
-    assert!(!ghost.description.geometry.contains_key("top"));
+    assert!(ghost.description.slots.geometry.contains_key("l"));
+    assert!(!ghost.description.slots.geometry.contains_key("top"));
     // The stack's "Ignore" is no rejection and no error: an info on the ignored file.
     assert!(registry.rejected().is_empty());
     assert!(registry.diagnostics().all(|f| f.severity < Severity::Error));
@@ -361,7 +361,7 @@ fn client_entity_three_packs_a_top_document_above_the_stack_version_leaves_the_m
     assert_eq!(ghost.origin().pack.index(), Some(1));
     assert_eq!(ghost.origin().contributors.len(), 1);
     assert_eq!(ghost.origin().contributors[0].index(), Some(2));
-    let geometry = &ghost.description.geometry;
+    let geometry = &ghost.description.slots.geometry;
     assert!(geometry.contains_key("m") && geometry.contains_key("l"));
     assert!(!geometry.contains_key("top"));
     assert!(registry.rejected().is_empty());
@@ -380,8 +380,8 @@ fn client_entity_two_packs_a_refused_top_file_leaves_the_lower_entity_effective(
     let registry = stack.client_entities();
     let ghost = registry.get(&EntityId::parse(GHOST)).unwrap();
     assert_eq!(ghost.origin().pack.index(), Some(1));
-    assert!(ghost.description.geometry.contains_key("l"));
-    assert!(!ghost.description.geometry.contains_key("top"));
+    assert!(ghost.description.slots.geometry.contains_key("l"));
+    assert!(!ghost.description.slots.geometry.contains_key("top"));
     assert_eq!(registry.rejected().len(), 1);
     reported(
         registry.diagnostics(),
@@ -407,7 +407,7 @@ fn client_entity_three_packs_a_refused_top_file_leaves_the_middle_entity_effecti
     assert_eq!(ghost.origin().pack.index(), Some(1));
     assert_eq!(ghost.origin().contributors.len(), 1);
     assert_eq!(ghost.origin().contributors[0].index(), Some(2));
-    let geometry = &ghost.description.geometry;
+    let geometry = &ghost.description.slots.geometry;
     assert!(geometry.contains_key("m") && geometry.contains_key("l"));
     assert!(!geometry.contains_key("top"));
     assert_eq!(registry.rejected().len(), 1);

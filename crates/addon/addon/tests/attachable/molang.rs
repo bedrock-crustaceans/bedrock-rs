@@ -24,11 +24,16 @@ fn m05_numeric_and_bool_conditions() {
     let members = r#""animations": {"walk": "animation.walk", "idle": "animation.idle"}, "scripts": {"animate": [{"walk": 1}, {"idle": true}]}, "render_controllers": [{"controller.render.x": false}]"#;
     let document = loaded(attachable(&ghost("1.10.0", members), &cx()));
     silent(document.diagnostics());
-    let scripts = document.description.scripts.as_ref().unwrap();
+    let scripts = document.description.slots.scripts.as_ref().unwrap();
     let animate = scripts.animate.as_ref().unwrap();
     assert_eq!(animate[0].condition(), Some(&Molang::Const(1.0)));
     assert_eq!(animate[1].condition(), Some(&Molang::Bool(true)));
-    let controllers = document.description.render_controllers.as_ref().unwrap();
+    let controllers = document
+        .description
+        .slots
+        .render_controllers
+        .as_ref()
+        .unwrap();
     assert_eq!(controllers[0].condition(), Some(&Molang::Bool(false)));
 }
 
@@ -44,7 +49,7 @@ fn m06_numeric_named_script() {
     // Nothing at warning level (without the `molang` feature the string script is noted as
     // not checked).
     clean(document.diagnostics());
-    let scripts = document.description.scripts.as_ref().unwrap();
+    let scripts = document.description.slots.scripts.as_ref().unwrap();
     assert_eq!(scripts.scale, Some(Molang::Const(0.9375)));
     // A number builds no script.
     assert!(scripts.scale.as_ref().unwrap().source().is_none());
@@ -58,7 +63,7 @@ fn every_expression_takes_the_pack_s_molang_version() {
         let document = loaded(attachable(&ghost("1.26.0", members), &rp(a, b, c)));
         let expected = Some(pack_version(a, b, c));
         let d = &document.description;
-        let scripts = d.scripts.as_ref().unwrap();
+        let scripts = d.slots.scripts.as_ref().unwrap();
         let sources = [
             scripts.scale.as_ref().unwrap().source().unwrap(),
             scripts.animate.as_ref().unwrap()[0]
@@ -66,7 +71,7 @@ fn every_expression_takes_the_pack_s_molang_version() {
                 .unwrap()
                 .source()
                 .unwrap(),
-            d.render_controllers.as_ref().unwrap()[0]
+            d.slots.render_controllers.as_ref().unwrap()[0]
                 .condition()
                 .unwrap()
                 .source()
@@ -77,8 +82,8 @@ fn every_expression_takes_the_pack_s_molang_version() {
         }
         // `held_item_scale` is built without a version by its reader; the load gives
         // it the pack's.
-        let Some(HeldItemScale::Molang(Molang::Expr(scale))) = &d.held_item_scale else {
-            panic!("{:?}", d.held_item_scale);
+        let Some(HeldItemScale::Molang(Molang::Expr(scale))) = &d.slots.held_item_scale else {
+            panic!("{:?}", d.slots.held_item_scale);
         };
         assert_eq!(scale.raw_version(), expected);
     }
@@ -90,7 +95,14 @@ fn every_expression_takes_the_pack_s_molang_version() {
         ),
         &rp(1, 21, 0),
     ));
-    let scale = old.description.scripts.as_ref().unwrap().scale.as_ref();
+    let scale = old
+        .description
+        .slots
+        .scripts
+        .as_ref()
+        .unwrap()
+        .scale
+        .as_ref();
     assert_eq!(
         scale.unwrap().source().unwrap().raw_version(),
         Some(pack_version(1, 21, 0))
@@ -120,7 +132,7 @@ fn m11_held_item_scale_molang_shapes() {
     let string = r#""held_item_scale": "query.is_on_screen ? 1.5 : 1.0""#;
     let document = loaded(attachable(&ghost("1.26.0", string), &cx()));
     assert!(matches!(
-        document.description.held_item_scale,
+        document.description.slots.held_item_scale,
         Some(HeldItemScale::Molang(Molang::Expr(_)))
     ));
     // A Molang scale has no constant value.
@@ -131,7 +143,7 @@ fn m11_held_item_scale_molang_shapes() {
         &cx(),
     ));
     assert_eq!(
-        boolean.description.held_item_scale,
+        boolean.description.slots.held_item_scale,
         Some(HeldItemScale::Molang(Molang::Bool(true)))
     );
     let mut first = cx();
@@ -368,7 +380,7 @@ mod compiled {
         let first_invalid = d.iter().position(|f| f.code.name() == INVALID).unwrap();
         assert!(first_invalid < dropped);
         // That script is dropped; the others stay.
-        let scripts = document.description.scripts.as_ref().unwrap();
+        let scripts = document.description.slots.scripts.as_ref().unwrap();
         assert_eq!(scripts.pre_animation, None);
         assert_eq!(document.pre_animation(), None);
         assert_eq!(document.initialize().as_deref(), Some("variable.y = 1;"));
@@ -411,7 +423,7 @@ mod compiled {
             "{}",
             lines(d).join("\n")
         );
-        let scripts = document.description.scripts.as_ref().unwrap();
+        let scripts = document.description.slots.scripts.as_ref().unwrap();
         assert_eq!(scripts.pre_animation, None);
         assert_eq!(scripts.initialize, None);
         assert!(scripts.parent_setup.is_some());
@@ -427,6 +439,7 @@ mod compiled {
         silent(document.diagnostics());
         let scale = document
             .description
+            .slots
             .scripts
             .as_ref()
             .unwrap()

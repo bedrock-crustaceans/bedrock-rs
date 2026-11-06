@@ -1,6 +1,6 @@
 //! Format versions 1.8.0 up to 1.10.0, and the step to 1.10.0.
 
-use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath, Phase};
+use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
 use bedrock_addon_core::id::{
     AnimationRef, AttachableId, GeometryId, MaterialId, ParticleId, RenderControllerId,
     SoundEventName, TexturePath,
@@ -10,13 +10,13 @@ use bedrock_addon_core::molang::{MolangFields, MolangVisitor, Step};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::version::known;
 use bedrock_addon_core::versioning::{ParseCx, Upgrade, UpgradeCx, VersionStruct, Versioned};
-use bedrock_addon_core::visual::history::{v1_8_0::Scripts, v1_10_0};
-use bedrock_addon_core::visual::{ControllerUse, SpawnEgg};
+use bedrock_addon_shared_visual::history::v1_8_0::Scripts;
+use bedrock_addon_shared_visual::history::v1_8_0::{ControllerList, animation_controllers};
+use bedrock_addon_shared_visual::{ControllerUse, SpawnEgg};
 use facet::Facet;
 use indexmap::IndexMap;
 
 use super::super::read::{self, is_map_key, not_valid_here};
-use super::super::validate::NAMED_SCRIPT;
 use super::super::write;
 
 /// An attachable document of format version 1.8.0 up to 1.10.0.
@@ -128,15 +128,7 @@ impl MolangFields for Attachable {
         visitor.enter(Step::Key(read::PAYLOAD));
         visitor.enter(Step::Key("description"));
         visitor.enter(Step::Key("scripts"));
-        visitor.field("pre_animation", &NAMED_SCRIPT, &mut scripts.pre_animation);
-        visitor.field("scale", &NAMED_SCRIPT, &mut scripts.scale);
-        visitor.field("scaleX", &NAMED_SCRIPT, &mut scripts.scale_x);
-        visitor.field("scalex", &NAMED_SCRIPT, &mut scripts.scalex);
-        visitor.field("scaleY", &NAMED_SCRIPT, &mut scripts.scale_y);
-        visitor.field("scaley", &NAMED_SCRIPT, &mut scripts.scaley);
-        visitor.field("scaleZ", &NAMED_SCRIPT, &mut scripts.scale_z);
-        visitor.field("scalez", &NAMED_SCRIPT, &mut scripts.scalez);
-        visitor.field("parent_setup", &NAMED_SCRIPT, &mut scripts.parent_setup);
+        scripts.visit_molang(visitor);
         visitor.leave();
         visitor.leave();
         visitor.leave();
@@ -151,35 +143,17 @@ impl Upgrade for Attachable {
     type Next = super::v1_10_0::Attachable;
 
     fn upgrade(self, cx: &mut UpgradeCx<'_>) -> Self::Next {
-        // The step from 1.8 to 1.10.
         let d = self.description;
-        if d.animation_controllers.is_some() {
-            // The converter that moves the list into `animations` and `scripts.animate`
-            // visits `minecraft:client_entity` only; the list stays, and
-            // the v1_10 schema that runs next does not declare it.
-            let found = not_valid_here(
-                "animation_controllers",
-                description_at().with(&["animation_controllers"]),
-            )
-            .phase(Phase::Upgrade);
-            cx.diagnostics.push(found);
-        }
-        let scripts = d.scripts.map(|scripts| v1_10_0::Scripts {
-            variables: None,
-            initialize: None,
-            pre_animation: scripts.pre_animation,
-            scale: scripts.scale,
-            scale_x: scripts.scale_x,
-            scalex: scripts.scalex,
-            scale_y: scripts.scale_y,
-            scaley: scripts.scaley,
-            scale_z: scripts.scale_z,
-            scalez: scripts.scalez,
-            parent_setup: scripts.parent_setup,
-            should_update_bones_and_effects_offscreen: None,
-            should_update_effects_offscreen: None,
-            animate: None,
-        });
+        let mut animations = d.animations;
+        let mut scripts = d.scripts.map(Scripts::into_v1_10);
+        animation_controllers(
+            ControllerList::Kept,
+            d.animation_controllers,
+            &mut animations,
+            &mut scripts,
+            &description_at(),
+            cx,
+        );
         super::v1_10_0::Attachable {
             format_version: known::V1_10_0,
             description: super::v1_10_0::Description {
@@ -193,7 +167,7 @@ impl Upgrade for Attachable {
                 scripts,
                 particle_effects: d.particle_effects,
                 particle_emitters: d.particle_emitters,
-                animations: d.animations,
+                animations,
                 render_controllers: d.render_controllers.map(|controllers| {
                     controllers
                         .into_iter()

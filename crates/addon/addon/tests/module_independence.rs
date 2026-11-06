@@ -903,7 +903,8 @@ fn declared_paths(code: &str) -> Vec<&str> {
 /// index, so code that reads it back goes wrong for such keys; `JsonPath::segments`,
 /// `last_key`, `starts_with`, `ends_with`, `strip_prefix`, `is_key` and `index_after` answer
 /// from the segments. This scan catches the spellings of the mistake a text can show
-/// ([`path_text_reads`]) in the library sources of this crate and of `bedrock_addon_core`:
+/// ([`path_text_reads`]) in the library sources of this crate, of `bedrock_addon_core`, of the
+/// families and of the shared crates:
 /// all of each file but the items of its tests, wherever those stand. A path is a finding's
 /// `json_path`, and in a file that declares a field as a `JsonPath` that field. A path held
 /// under yet another name (a local, a parameter, a field of a type of another file) is not
@@ -928,9 +929,13 @@ fn library_code_does_not_read_the_text_of_a_finding_s_path() {
     let lifted = lifted_families()
         .iter()
         .map(|family| lifted_dir().join(family).join("src"));
+    let shared = directories(&shared_dir())
+        .into_iter()
+        .map(|name| shared_dir().join(name).join("src"));
     for src in [manifest.join("src"), manifest.join("../core/src")]
         .into_iter()
         .chain(lifted)
+        .chain(shared)
     {
         if !src.is_dir() {
             // A crate packaged alone has no sibling to scan.

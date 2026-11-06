@@ -174,6 +174,7 @@ fn v08_prerelease() {
     assert!(
         document
             .description
+            .slots
             .animations
             .as_ref()
             .unwrap()
@@ -278,7 +279,7 @@ fn l04_held_item_scale_zero() {
     assert_eq!(document.held_item_scale(), 1.0);
     // Kept as written.
     assert_eq!(
-        document.description.held_item_scale,
+        document.description.slots.held_item_scale,
         Some(HeldItemScale::Number(0.0))
     );
 }
@@ -405,7 +406,7 @@ fn l09_animations_prefix_filter() {
 fn l10_scale_case_collapse() {
     let members = r#""scripts": {"scalex": "2.0", "scaleX": "3.0"}"#;
     let document = loaded(entity(&ghost("1.10.0", members), &cx()));
-    let scripts = document.description.scripts.as_ref().unwrap();
+    let scripts = document.description.slots.scripts.as_ref().unwrap();
     assert_eq!(scripts.effective_scale_x().unwrap().as_str(), "2.0");
     // Both members are kept.
     assert!(scripts.scale_x.is_some() && scripts.scalex.is_some());
@@ -543,7 +544,12 @@ fn l13_particle_emitters_kept() {
     for version in ["1.8.0", "1.10.0", "1.26.0"] {
         let document = loaded(entity(&ghost(version, members), &cx()));
         silent(document.diagnostics());
-        let emitters = document.description.particle_emitters.as_ref().unwrap();
+        let emitters = document
+            .description
+            .slots
+            .particle_emitters
+            .as_ref()
+            .unwrap();
         assert_eq!(emitters["smoke"], "demo:smoke");
     }
 }
@@ -659,7 +665,12 @@ fn l19_queryable_geometry_1_8() {
     for version in ["1.10.0", "1.26.0"] {
         let document = loaded(entity(&ghost(version, members), &cx()));
         assert_eq!(
-            document.description.queryable_geometry.as_ref().unwrap(),
+            document
+                .description
+                .slots
+                .queryable_geometry
+                .as_ref()
+                .unwrap(),
             "default"
         );
     }
@@ -738,7 +749,7 @@ fn l21_empty_conditional_object_skipped_vanilla_deviation() {
     let members = r#""animations": {"a": "animation.a", "b": "animation.b"}, "scripts": {"animate": ["a", {}, {"b": "q.is_baby"}, {}]}"#;
     for version in ["1.10.0", "1.26.0"] {
         let document = loaded(entity(&ghost(version, members), &cx()));
-        let scripts = document.description.scripts.as_ref().unwrap();
+        let scripts = document.description.slots.scripts.as_ref().unwrap();
         let played: Vec<Option<&str>> = scripts
             .animate
             .iter()
@@ -778,7 +789,7 @@ fn l22_hide_held_items_engine_gate() {
     // The engine this crate tracks declares the member.
     assert!(ENGINE_VERSION >= FormatVersion::new(1, 26, 30));
     let document = loaded(entity(&ghost("1.26.0", members), &cx()));
-    let scripts = document.description.scripts.as_ref().unwrap();
+    let scripts = document.description.slots.scripts.as_ref().unwrap();
     assert!(scripts.hide_held_items.is_some());
     // 1.26.30 is the first engine that does; 1.26.20 does not.
     let mut first = cx();
@@ -798,7 +809,13 @@ fn l22_hide_held_items_engine_gate() {
 #[test]
 fn l23_spawn_egg_defaults() {
     let document = loaded(entity(&ghost("1.10.0", r#""spawn_egg": {}"#), &cx()));
-    let egg = document.description.spawn_egg.as_ref().unwrap().resolved();
+    let egg = document
+        .description
+        .slots
+        .spawn_egg
+        .as_ref()
+        .unwrap()
+        .resolved();
     assert_eq!(egg.texture, "");
     assert_eq!(egg.texture_index, 0);
     assert_eq!(egg.base_color, Color::NIL);
@@ -816,7 +833,13 @@ fn l15_spawn_egg_colour() {
     let members = r##""spawn_egg": {"base_color": "#ff0000", "overlay_color": "red"}"##;
     let document = loaded(entity(&ghost("1.10.0", members), &cx()));
     silent(document.diagnostics());
-    let egg = document.description.spawn_egg.as_ref().unwrap().resolved();
+    let egg = document
+        .description
+        .slots
+        .spawn_egg
+        .as_ref()
+        .unwrap()
+        .resolved();
     assert_eq!(
         egg.base_color,
         Color {
@@ -966,7 +989,7 @@ fn a_held_item_scale_beyond_f32_is_read_as_the_largest_finite_float_deviation() 
         let members = format!(r#""held_item_scale": {written}"#);
         let document = loaded(entity(&ghost("1.26.0", &members), &cx()));
         assert_eq!(
-            document.description.held_item_scale,
+            document.description.slots.held_item_scale,
             Some(HeldItemScale::Number(expected)),
             "{written}"
         );
@@ -1157,13 +1180,16 @@ fn a_clamped_scale_whose_text_occurs_earlier_is_found_at_its_member() {
             f32::MAX
         };
         assert_eq!(
-            document.description.held_item_scale,
+            document.description.slots.held_item_scale,
             Some(bedrock_addon::visual::HeldItemScale::Number(limit))
         );
         // Every other occurrence is as written, in the value and in what is written back.
         let d = &document.description;
-        assert_eq!(d.textures["default"].as_str(), format!("textures/{token}"));
-        assert_eq!(d.textures[token].as_str(), token);
+        assert_eq!(
+            d.slots.textures["default"].as_str(),
+            format!("textures/{token}")
+        );
+        assert_eq!(d.slots.textures[token].as_str(), token);
         let written = document.to_json().unwrap();
         for kept in [
             format!(r#""min_engine_version": "{token}""#),
@@ -1214,7 +1240,7 @@ fn a_clamped_scale_with_comments_around_its_token_is_found() {
             4,
         );
         assert_eq!(
-            document.description.held_item_scale,
+            document.description.slots.held_item_scale,
             Some(bedrock_addon::visual::HeldItemScale::Number(f32::MAX))
         );
         // As the last member too.
@@ -1259,7 +1285,7 @@ fn a_molang_member_beyond_f32_is_read_as_the_largest_finite_float_deviation() {
     for version in ["1.8.0", "1.10.0", "1.26.0"] {
         let text = ghost(version, r#""scripts": {"scale": 1e39, "scalex": -1e999}"#);
         let document = loaded(entity(&text, &cx()));
-        let scripts = document.description.scripts.as_ref().unwrap();
+        let scripts = document.description.slots.scripts.as_ref().unwrap();
         assert_eq!(scripts.scale, Some(Molang::Const(f32::MAX)), "{version}");
         assert_eq!(scripts.scalex, Some(Molang::Const(f32::MIN)), "{version}");
         assert_eq!(
@@ -1426,7 +1452,7 @@ fn a_clamped_number_is_located_by_its_path_when_its_text_occurs_before_it() {
     assert_eq!(text.matches("1e39").count(), 4);
     let document = loaded(entity(&text, &cx()));
     assert_eq!(
-        document.description.held_item_scale,
+        document.description.slots.held_item_scale,
         Some(HeldItemScale::Number(f32::MAX))
     );
     let found: Vec<_> = document

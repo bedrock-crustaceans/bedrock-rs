@@ -244,7 +244,7 @@ fn the_molang_walk_visits_no_field() {
     use bedrock_addon_core::diagnostic::JsonPath;
     use bedrock_addon_core::id::AtomicClientEntityId;
     use bedrock_addon_core::molang::{Molang, MolangFieldSpec, visit_fields_under};
-    use bedrock_addon_core::visual::ControllerUse;
+    use bedrock_addon_shared_visual::ControllerUse;
 
     let mut entity = AtomicClientEntity::new(AtomicClientEntityId::parse("demo:wisp"));
     let mut condition = indexmap::IndexMap::new();

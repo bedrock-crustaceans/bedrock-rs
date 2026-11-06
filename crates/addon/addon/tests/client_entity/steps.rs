@@ -307,7 +307,7 @@ fn s01_1_8_controllers_to_animate() {
     assert!(document.version().upgraded);
     assert_eq!(document.format_version, FormatVersion::new(1, 26, 0));
     assert_eq!(
-        document.description.animations.as_ref().unwrap()["controller__move"].as_str(),
+        document.description.slots.animations.as_ref().unwrap()["controller__move"].as_str(),
         "controller.animation.pig.move"
     );
 }
@@ -365,7 +365,7 @@ fn s01e_multi_member_element_deviation() {
     // Written `b` first: the member read is the smallest key by bytes, not the first written.
     let members = r#""animations": {"walk": "animation.x.walk"}, "animation_controllers": [{"b": "controller.animation.x.b", "a": "controller.animation.x.a"}]"#;
     let document = loaded(entity(&ghost("1.8.0", members), &cx()));
-    let animations = document.description.animations.as_ref().unwrap();
+    let animations = document.description.slots.animations.as_ref().unwrap();
     assert_eq!(
         animations["controller__a"].as_str(),
         "controller.animation.x.a"
@@ -421,7 +421,7 @@ const UPPER: &str = r#""animations": {"walk": "animation.x.walk"}, "scripts": {"
 #[test]
 fn s02b_lowercase_before_1_18_20() {
     let document = loaded(entity(&ghost("1.16.0", UPPER), &cx()));
-    let scripts = document.description.scripts.as_ref().unwrap();
+    let scripts = document.description.slots.scripts.as_ref().unwrap();
     assert_eq!(
         scripts.pre_animation.as_ref().unwrap()[0],
         "variable.foo = query.is_baby;"
@@ -434,7 +434,7 @@ fn s02b_lowercase_before_1_18_20() {
 #[test]
 fn s02c_no_lowercase_at_1_18_20() {
     let document = loaded(entity(&ghost("1.18.20", UPPER), &cx()));
-    let scripts = document.description.scripts.as_ref().unwrap();
+    let scripts = document.description.slots.scripts.as_ref().unwrap();
     assert_eq!(
         scripts.pre_animation.as_ref().unwrap()[0],
         "Variable.Foo = Query.Is_Baby;"
@@ -445,7 +445,7 @@ fn s02c_no_lowercase_at_1_18_20() {
 fn s02d_1_8_path_lowercases() {
     let members = r#""scripts": {"pre_animation": ["Variable.X = 1;"], "scale": "Variable.X"}"#;
     let document = loaded(entity(&ghost("1.8.0", members), &cx()));
-    let scripts = document.description.scripts.as_ref().unwrap();
+    let scripts = document.description.slots.scripts.as_ref().unwrap();
     assert_eq!(
         scripts.pre_animation.as_ref().unwrap()[0],
         "variable.x = 1;"
@@ -457,7 +457,7 @@ fn s02d_1_8_path_lowercases() {
     // So does a document without a version (vanilla's 1.0.0 is below 1.18.20 too).
     let text = r#"{"minecraft:client_entity": {"description": {"identifier": "demo:ghost", "scripts": {"pre_animation": ["Variable.X = 1;"]}}}}"#;
     let document = loaded(entity(text, &cx()));
-    let scripts = document.description.scripts.as_ref().unwrap();
+    let scripts = document.description.slots.scripts.as_ref().unwrap();
     assert_eq!(
         scripts.pre_animation.as_ref().unwrap()[0],
         "variable.x = 1;"
@@ -554,7 +554,7 @@ fn an_animation_of_the_file_under_a_controller_s_name_is_noted_as_replaced() {
         "minecraft:client_entity/description/animations/controller__move",
     );
     assert_eq!(
-        document.description.animations.as_ref().unwrap()["controller__move"].as_str(),
+        document.description.slots.animations.as_ref().unwrap()["controller__move"].as_str(),
         "controller.animation.pig.move"
     );
     let document = loaded(entity(&text("controller.animation.pig.move"), &cx()));
@@ -593,7 +593,7 @@ fn a_controller_a_later_element_of_the_same_key_replaces_is_noted_at_its_element
         document.diagnostics()
     );
     assert_eq!(
-        document.description.animations.as_ref().unwrap()["controller__move"].as_str(),
+        document.description.slots.animations.as_ref().unwrap()["controller__move"].as_str(),
         "controller.animation.x.b"
     );
     let document = loaded(entity(&text("controller.animation.x.b"), &cx()));
@@ -609,7 +609,7 @@ fn a_script_literal_the_lower_casing_changes_is_noted_at_the_script() {
     let members = r#""scripts": {"pre_animation": ["Variable.Foo = 1;", "Variable.Title = 'Big Boss';", "Variable.Tag = 'small';"], "scale": "Query.Get_Name == 'Steve' ? 2 : 1", "parent_setup": "Variable.Hidden = 0.0;"}"#;
     let told = |version: &str| {
         let document = loaded(entity(&ghost(version, members), &cx()));
-        let scripts = document.description.scripts.as_ref().unwrap();
+        let scripts = document.description.slots.scripts.as_ref().unwrap();
         let second = scripts.pre_animation.as_ref().unwrap()[1].clone();
         let told: Vec<String> = document
             .diagnostics()
@@ -654,7 +654,7 @@ fn a_controller_a_later_one_of_its_key_writes_over_is_noted_at_its_element() {
             &cx(),
         ));
         assert_eq!(
-            document.description.animations.as_ref().unwrap()["controller__move"].as_str(),
+            document.description.slots.animations.as_ref().unwrap()["controller__move"].as_str(),
             second
         );
         document

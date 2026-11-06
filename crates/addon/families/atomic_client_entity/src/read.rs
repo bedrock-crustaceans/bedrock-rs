@@ -12,7 +12,7 @@ use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
     BETA_VERSION, ParseCx, VersionStruct, Versioned, write_payload,
 };
-use bedrock_addon_core::visual::ControllerUse;
+use bedrock_addon_shared_visual::ControllerUse;
 use facet::Facet;
 
 use super::AtomicClientEntity;

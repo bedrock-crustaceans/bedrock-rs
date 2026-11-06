@@ -16,19 +16,15 @@ mod scalar_tests;
 mod validate;
 mod write;
 
-use bedrock_addon_core::id::{
-    AnimationRef, EntityId, GeometryId, MaterialId, ParticleId, SoundEventName, TexturePath,
-};
+use bedrock_addon_core::id::EntityId;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::version::{FormatVersion, SemVersion};
-use bedrock_addon_core::visual::{
-    ControllerUse, DescriptionSlots, HasVisuals, HeldItemScale, Scripts, SharedDescription,
-    SpawnEgg, Visuals, description_min_engine_version,
+use bedrock_addon_shared_visual::{
+    HasVisuals, SharedDescription, VisualSlots, Visuals, description_min_engine_version,
 };
-// One enum serves client entities and attachables; core's `visual` module declares it.
-pub use bedrock_addon_core::visual::AnimationKind;
+// One enum serves client entities and attachables; the shared `visual` crate declares it.
+pub use bedrock_addon_shared_visual::AnimationKind;
 use facet::Facet;
-use indexmap::IndexMap;
 use std::borrow::Cow;
 
 use bedrock_addon_core::diagnostic::{
@@ -55,7 +51,7 @@ use bedrock_addon_core::versioning::{
     MissingVersion, NoComponents, Parsed, Reading, Scalars, StructIndex, ValidateCx, VersionStruct,
     finish, parse_as_written,
 };
-use bedrock_addon_core::visual::{MergeStep, merge_slots, merge_step};
+use bedrock_addon_shared_visual::{MergeStep, merge_step};
 
 use crate::history::{Any, ClientEntityFamily};
 use crate::read::text;
@@ -77,6 +73,7 @@ use bedrock_addon_core::versioning::Versioned;
 /// let id = EntityId::parse("demo:ghost");
 /// let mut description = Description::new(id.clone());
 /// description
+///     .slots
 ///     .geometry
 ///     .insert("default".to_owned(), GeometryId::parse("geometry.ghost"));
 /// let entity = ClientEntity {
@@ -110,43 +107,12 @@ pub struct Description {
     /// definition of an identifier wins across packs, never which members are read; a text
     /// that is no version counts as 0.0.0.
     pub min_engine_version: Option<Value>,
-    /// `materials`: slot name → material.
-    #[facet(default, skip_serializing_if = IndexMap::is_empty)]
-    pub materials: IndexMap<String, MaterialId>,
-    /// `textures`: slot name → texture path.
-    #[facet(default, skip_serializing_if = IndexMap::is_empty)]
-    pub textures: IndexMap<String, TexturePath>,
-    /// `geometry`: slot name → geometry.
-    #[facet(default, skip_serializing_if = IndexMap::is_empty)]
-    pub geometry: IndexMap<String, GeometryId>,
-    /// `queryable_geometry`: the geometry slot Molang's geometry queries read.
-    pub queryable_geometry: Option<String>,
-    /// `spawn_egg`: how the entity's spawn egg looks.
-    pub spawn_egg: Option<SpawnEgg>,
-    /// `scripts`: the Molang the client runs for the model and the animations it plays.
-    pub scripts: Option<Scripts>,
-    /// `particle_effects`: short name → particle effect.
-    pub particle_effects: Option<IndexMap<String, ParticleId>>,
-    /// `particle_emitters`: accepted and read by nothing.
-    pub particle_emitters: Option<IndexMap<String, String>>,
-    /// `animations`: short name → animation (`animation.…`) or animation controller
-    /// (`controller.animation.…`). A value with neither prefix is ignored. `None` is a
-    /// description without the member; an empty object the author wrote is kept.
-    pub animations: Option<IndexMap<String, AnimationRef>>,
-    /// `render_controllers`: the render controllers that draw the entity, in order.
-    pub render_controllers: Option<Vec<ControllerUse>>,
-    /// `sound_effects`: short name → sound event. `None` is a description without the
-    /// member; an empty object the author wrote is kept.
-    pub sound_effects: Option<IndexMap<String, SoundEventName>>,
-    /// `enable_attachables`: draw held and worn attachables; `false` when absent.
-    pub enable_attachables: Option<bool>,
-    /// `held_item_ignores_lighting`: draw held items fully lit; `false` when absent.
-    pub held_item_ignores_lighting: Option<bool>,
-    /// `held_item_scale`: the scale of held items; 1.0 when absent. A number at or below 0 is
-    /// not used.
-    pub held_item_scale: Option<HeldItemScale>,
-    /// `hide_armor`: do not draw worn armour; `false` when absent.
-    pub hide_armor: Option<bool>,
+    /// The members client entities and attachables share, at the description's own level
+    /// (`materials` to `hide_armor`, in that order).
+    // `default`: a flattened struct none of whose members is written reads as a missing field
+    // otherwise (facet's flatten reader).
+    #[facet(flatten, default)]
+    pub slots: VisualSlots,
 }
 
 impl ClientEntity {
@@ -166,92 +132,53 @@ impl ClientEntity {
 
     /// `enable_attachables`, `false` when absent.
     pub fn enable_attachables(&self) -> bool {
-        self.description.enable_attachables.unwrap_or(false)
+        self.description.slots.enable_attachables()
     }
 
     /// `held_item_ignores_lighting`, `false` when absent.
     pub fn held_item_ignores_lighting(&self) -> bool {
-        self.description.held_item_ignores_lighting.unwrap_or(false)
+        self.description.slots.held_item_ignores_lighting()
     }
 
     /// `hide_armor`, `false` when absent.
     pub fn hide_armor(&self) -> bool {
-        self.description.hide_armor.unwrap_or(false)
+        self.description.slots.hide_armor()
     }
 
     /// The constant scale of held items: the written number when it is above 0, else 1.0
     /// (also for a Molang scale, which only a client evaluates).
     pub fn held_item_scale(&self) -> f32 {
-        // The game stores the value only when it is above 0; anything else keeps the default 1.0.
-        match self.description.held_item_scale {
-            Some(HeldItemScale::Number(scale)) if scale > 0.0 => scale,
-            _ => 1.0,
-        }
+        self.description.slots.held_item_scale()
     }
 
     /// What the `animations` entry `name` is, by its value's prefix in lower case; `None` for
     /// an unknown name and for a value vanilla ignores.
     pub fn animation_kind(&self, name: &str) -> Option<AnimationKind> {
-        // The game tests the `controller.animation.` prefix first, then `animation.`; a value
-        // with neither prefix is ignored without a message.
-        let value = self.description.animations.as_ref()?.get(name)?.as_str();
-        let value = value.to_ascii_lowercase();
-        if value.starts_with("controller.animation.") {
-            Some(AnimationKind::Controller)
-        } else if value.starts_with("animation.") {
-            Some(AnimationKind::Animation)
-        } else {
-            None
-        }
+        self.description.slots.animation_kind(name)
     }
 
     /// The text vanilla parses for `initialize`: the strings joined with no separator; `None`
     /// when the member is absent or the text is empty.
     pub fn initialize(&self) -> Option<String> {
-        let scripts = self.description.scripts.as_ref()?;
-        validate::joined(scripts.initialize.as_deref())
+        self.description.slots.initialize()
     }
 
     /// The text vanilla parses for `pre_animation`: the strings joined with no separator;
     /// `None` when the member is absent or the text is empty.
     pub fn pre_animation(&self) -> Option<String> {
-        let scripts = self.description.scripts.as_ref()?;
-        validate::joined(scripts.pre_animation.as_deref())
+        self.description.slots.pre_animation()
     }
 }
 
 impl HasVisuals for ClientEntity {
     fn visuals(&self) -> Visuals<'_> {
-        let d = &self.description;
-        Visuals::new(
-            Some(&d.materials),
-            Some(&d.textures),
-            Some(&d.geometry),
-            d.animations.as_ref(),
-            d.render_controllers.as_deref().unwrap_or_default(),
-        )
+        self.description.slots.visuals()
     }
 }
 
 impl SharedDescription for ClientEntity {
-    fn slots(&mut self) -> DescriptionSlots<'_> {
-        let d = &mut self.description;
-        DescriptionSlots {
-            materials: &mut d.materials,
-            textures: &mut d.textures,
-            geometry: &mut d.geometry,
-            animations: &mut d.animations,
-            sound_effects: &mut d.sound_effects,
-            particle_effects: &mut d.particle_effects,
-            queryable_geometry: &mut d.queryable_geometry,
-            render_controllers: &mut d.render_controllers,
-            spawn_egg: &mut d.spawn_egg,
-            scripts: &mut d.scripts,
-            enable_attachables: &mut d.enable_attachables,
-            held_item_ignores_lighting: &mut d.held_item_ignores_lighting,
-            held_item_scale: &mut d.held_item_scale,
-            hide_armor: &mut d.hide_armor,
-        }
+    fn slots_mut(&mut self) -> &mut VisualSlots {
+        &mut self.description.slots
     }
 }
 
@@ -741,7 +668,7 @@ fn combine(parsed: Vec<FileOutcome>, stack: &StackCx<'_>) -> Registry<ClientEnti
         CombineRule::EngineVersionMerge {
             decide: Box::new(decide),
             merge: |earlier, mut later| {
-                merge_slots(&mut earlier.slots(), &mut later.slots());
+                earlier.slots_mut().merge(later.slots_mut());
             },
         },
         CombineRule::top_wins(),
@@ -777,21 +704,7 @@ impl Description {
         Self {
             identifier,
             min_engine_version: None,
-            materials: IndexMap::new(),
-            textures: IndexMap::new(),
-            geometry: IndexMap::new(),
-            queryable_geometry: None,
-            spawn_egg: None,
-            scripts: None,
-            particle_effects: None,
-            particle_emitters: None,
-            animations: None,
-            render_controllers: None,
-            sound_effects: None,
-            enable_attachables: None,
-            held_item_ignores_lighting: None,
-            held_item_scale: None,
-            hide_armor: None,
+            slots: VisualSlots::default(),
         }
     }
 }
@@ -862,7 +775,9 @@ mod tests {
             let entity = registry
                 .get(&EntityId::parse(format!("demo:e{i}")))
                 .expect("every identifier is defined");
-            entity.description.textures["default"].as_str().to_owned()
+            entity.description.slots.textures["default"]
+                .as_str()
+                .to_owned()
         };
         for i in [0, identifiers - 2] {
             assert_eq!(texture(i), "textures/upper");

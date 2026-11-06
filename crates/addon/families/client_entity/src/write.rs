@@ -2,19 +2,19 @@
 //! with its `format_version`.
 
 use bedrock_addon_core::diagnostic::{Diagnostics, Severity};
+use bedrock_addon_core::id::{
+    AnimationRef, EntityId, GeometryId, MaterialId, ParticleId, SoundEventName, TexturePath,
+};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::version::known;
 use bedrock_addon_core::versioning::{ParseCx, VersionStruct, Versioned, write_payload};
-use bedrock_addon_core::visual::HeldItemScale;
+use bedrock_addon_shared_visual::{ControllerUse, HeldItemScale, Scripts, SpawnEgg, VisualSlots};
 use facet::Facet;
+use indexmap::IndexMap;
 
 use super::read;
 use super::{ClientEntity, Description};
-
-/// The engine version that first declares `scripts.hide_held_items` and reads
-/// `held_item_scale` as Molang. Before it the member is a plain float.
-const ENGINE_1_26_30: FormatVersion = known::V1_26_30;
 
 impl Versioned for ClientEntity {
     const VERSION: FormatVersion = known::V1_26_0;
@@ -27,75 +27,15 @@ impl VersionStruct for ClientEntity {
         // `held_item_scale` is the description's one float: a number beyond `f32` is read as
         // the largest finite float, and the typed read is told which path that applies to.
         let description: Description =
-            read::typed(&described, false, &[&["held_item_scale"]], false, d)?;
+            read::typed::<DescriptionRead>(&described, false, &[&["held_item_scale"]], false, d)?
+                .into();
         let json = &described.json;
         let at = &described.at;
         let before = d.len();
         let de = &description;
         read::check_identifier(de.identifier.as_str(), at, d);
         read::check_min_engine_version(de.min_engine_version.as_ref(), at, d);
-        // An absent map and an empty one are the same value here; the JSON tells them apart.
-        let written = |name: &str| json.as_object().is_some_and(|o| o.get(name).is_some());
-        let present = |name: &str, required: bool| written(name) && required;
-        read::check_map(
-            Some(&de.materials),
-            "materials",
-            present("materials", true),
-            at,
-            d,
-        );
-        read::check_map(
-            Some(&de.textures),
-            "textures",
-            present("textures", true),
-            at,
-            d,
-        );
-        read::check_map(
-            Some(&de.geometry),
-            "geometry",
-            present("geometry", true),
-            at,
-            d,
-        );
-        read::check_map(
-            de.particle_effects.as_ref(),
-            "particle_effects",
-            false,
-            at,
-            d,
-        );
-        read::check_map(
-            de.particle_emitters.as_ref(),
-            "particle_emitters",
-            false,
-            at,
-            d,
-        );
-        read::check_map(de.animations.as_ref(), "animations", false, at, d);
-        read::check_map(de.sound_effects.as_ref(), "sound_effects", false, at, d);
-        read::check_controllers(de.render_controllers.as_deref(), at, d);
-        let engine = cx.load.engine_version;
-        if let Some(scripts) = &de.scripts {
-            let scripts_at = at.with(&["scripts"]);
-            read::check_variables(scripts.variables.as_ref(), &scripts_at, d);
-            read::check_animate(scripts.animate.as_deref(), &scripts_at, d);
-            if scripts.hide_held_items.is_some() && engine < ENGINE_1_26_30 {
-                // Undeclared before 1.26.30: "child 'hide_held_items' not valid here.".
-                d.push(read::not_valid_here(
-                    "hide_held_items",
-                    scripts_at.with(&["hide_held_items"]),
-                ));
-            }
-        }
-        if matches!(de.held_item_scale, Some(HeldItemScale::Molang(_))) && engine < ENGINE_1_26_30 {
-            // Before engine 1.26.30 the schema declares `held_item_scale` as a float only.
-            d.push(read::wrong_type(
-                "float",
-                at.with(&["held_item_scale"]),
-                None,
-            ));
-        }
+        de.slots.check(json, at, cx.load.engine_version, d, |_| {});
         // A dropped member is a warning; only an error fails the schema.
         let failed = d
             .iter()
@@ -152,5 +92,61 @@ impl ClientEntity {
         root.insert("format_version", version.to_string());
         root.insert(read::PAYLOAD, Value::from(payload));
         Ok(root.into())
+    }
+}
+
+/// [`Description`] as the typed read takes it: the same members in the same order, the shared
+/// ones written out rather than flattened. A workaround of facet's flatten reader (facet
+/// 0.50.0-rc.7): where a proxied value (an identifier, a slot's id, a render controller)
+/// refuses its JSON, it fails at the end of the object, without the key or the index below
+/// the member, so the findings would lose their place (pinned in core's `json_flatten`). It
+/// goes when that reader places the failure; `Description` itself is what is written.
+#[derive(Facet)]
+struct DescriptionRead {
+    identifier: EntityId,
+    min_engine_version: Option<Value>,
+    #[facet(default)]
+    materials: IndexMap<String, MaterialId>,
+    #[facet(default)]
+    textures: IndexMap<String, TexturePath>,
+    #[facet(default)]
+    geometry: IndexMap<String, GeometryId>,
+    queryable_geometry: Option<String>,
+    spawn_egg: Option<SpawnEgg>,
+    scripts: Option<Scripts>,
+    particle_effects: Option<IndexMap<String, ParticleId>>,
+    particle_emitters: Option<IndexMap<String, String>>,
+    animations: Option<IndexMap<String, AnimationRef>>,
+    render_controllers: Option<Vec<ControllerUse>>,
+    sound_effects: Option<IndexMap<String, SoundEventName>>,
+    enable_attachables: Option<bool>,
+    held_item_ignores_lighting: Option<bool>,
+    held_item_scale: Option<HeldItemScale>,
+    hide_armor: Option<bool>,
+}
+
+impl From<DescriptionRead> for Description {
+    fn from(read: DescriptionRead) -> Self {
+        Self {
+            identifier: read.identifier,
+            min_engine_version: read.min_engine_version,
+            slots: VisualSlots {
+                materials: read.materials,
+                textures: read.textures,
+                geometry: read.geometry,
+                queryable_geometry: read.queryable_geometry,
+                spawn_egg: read.spawn_egg,
+                scripts: read.scripts,
+                particle_effects: read.particle_effects,
+                particle_emitters: read.particle_emitters,
+                animations: read.animations,
+                render_controllers: read.render_controllers,
+                sound_effects: read.sound_effects,
+                enable_attachables: read.enable_attachables,
+                held_item_ignores_lighting: read.held_item_ignores_lighting,
+                held_item_scale: read.held_item_scale,
+                hide_armor: read.hide_armor,
+            },
+        }
     }
 }

@@ -6,11 +6,10 @@ use std::collections::hash_map::Entry;
 
 use indexmap::IndexMap;
 
-use super::{ControllerUse, HeldItemScale, Scripts, SpawnEgg, scripts::script_source};
-use crate::id::{AnimationRef, GeometryId, MaterialId, ParticleId, SoundEventName, TexturePath};
-use crate::json::Value;
-use crate::molang::Molang;
-use crate::version::{FormatVersion, SemVersion};
+use crate::{HeldItemScale, Scripts, VisualSlots, scripts::script_source};
+use bedrock_addon_core::json::Value;
+use bedrock_addon_core::molang::Molang;
+use bedrock_addon_core::version::{FormatVersion, SemVersion};
 
 /// What the shared identifier map does with a document offered for an identifier.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -27,8 +26,8 @@ pub enum MergeStep {
 }
 
 /// Why [`MergeStep::Ignore`] dropped a document; declared beside the finding that carries
-/// it ([`DiagnosticDetail::Shadow`](crate::diagnostic::DiagnosticDetail::Shadow)).
-pub use crate::diagnostic::ShadowReason;
+/// it ([`DiagnosticDetail::Shadow`](bedrock_addon_core::diagnostic::DiagnosticDetail::Shadow)).
+pub use bedrock_addon_core::diagnostic::ShadowReason;
 
 /// The step for a document whose `description.min_engine_version` is `offered`, against the
 /// definition already loaded for its identifier (with `existing`, its `min_engine_version`) and
@@ -72,48 +71,10 @@ pub fn description_min_engine_version(
         .unwrap_or(ZERO)
 }
 
-/// The description members the shared identifier map merges, borrowed from one document so
-/// the client-entity and attachable families share one merge without sharing a struct.
-///
-/// Each family builds it from its own description; a member it does not have is not merged.
-#[derive(Debug)]
-pub struct DescriptionSlots<'a> {
-    /// `materials`: merged key by key. A plain map, like `textures` and `geometry`: the
-    /// schema refuses an empty object there, so an empty map is a document without the member.
-    pub materials: &'a mut IndexMap<String, MaterialId>,
-    /// `textures`: merged key by key.
-    pub textures: &'a mut IndexMap<String, TexturePath>,
-    /// `geometry`: merged key by key.
-    pub geometry: &'a mut IndexMap<String, GeometryId>,
-    /// `animations`: merged key by key. `None` is a document without the member, which an
-    /// authored empty object is not.
-    pub animations: &'a mut Option<IndexMap<String, AnimationRef>>,
-    /// `sound_effects`: merged key by key; `None` as for `animations`.
-    pub sound_effects: &'a mut Option<IndexMap<String, SoundEventName>>,
-    /// `particle_effects`: replaced when the later document has it.
-    pub particle_effects: &'a mut Option<IndexMap<String, ParticleId>>,
-    /// `queryable_geometry`: replaced when the later document has it.
-    pub queryable_geometry: &'a mut Option<String>,
-    /// `render_controllers`: replaced when the later document has it.
-    pub render_controllers: &'a mut Option<Vec<ControllerUse>>,
-    /// `spawn_egg`: replaced whole when the later document has it.
-    pub spawn_egg: &'a mut Option<SpawnEgg>,
-    /// `scripts`: merged member by member ([`merge_slots`]).
-    pub scripts: &'a mut Option<Scripts>,
-    /// `enable_attachables`: replaced when the later document has it.
-    pub enable_attachables: &'a mut Option<bool>,
-    /// `held_item_ignores_lighting`: replaced when the later document has it.
-    pub held_item_ignores_lighting: &'a mut Option<bool>,
-    /// `held_item_scale`: replaced when the later document has a value vanilla stores.
-    pub held_item_scale: &'a mut Option<HeldItemScale>,
-    /// `hide_armor`: replaced when the later document has it.
-    pub hide_armor: &'a mut Option<bool>,
-}
-
 /// A document the shared identifier map holds: a client entity or an attachable.
 pub trait SharedDescription {
-    /// The members [`merge_slots`] merges.
-    fn slots(&mut self) -> DescriptionSlots<'_>;
+    /// The members [`VisualSlots::merge`] merges.
+    fn slots_mut(&mut self) -> &mut VisualSlots;
 
     /// Merges the members only this family has, after the shared ones; nothing by default.
     fn merge_own(&mut self, later: &mut Self) {
@@ -121,45 +82,39 @@ pub trait SharedDescription {
     }
 }
 
-/// Merges the `later` document into `earlier`, as vanilla merges two documents with the same
-/// identifier and `min_engine_version`:
-/// - the maps `materials`, `textures`, `geometry`, `animations`, `sound_effects` and
-///   `scripts.variables` key by key, a later key replacing an earlier one that differs only in
-///   ASCII case (vanilla lower-cases keys); the merged definition has `animations` or
-///   `sound_effects` when one of the two documents has the member;
-/// - `particle_effects`, `render_controllers`, `spawn_egg` (whole, so its absent members fall
-///   back to their defaults) and `scripts.animate` replaced when the later document has them;
-/// - the booleans and `queryable_geometry` replaced when the later document has them, so a
-///   later `false` overrides an earlier `true`;
-/// - a named script replaced when the later document's member builds a script (a non-empty
-///   expression; a number or a boolean does not), `scaleX` / `scalex` as one script;
-/// - `held_item_scale` replaced unless the later value is a number ≤ 0, which vanilla does not
-///   store.
-///
-/// The caller removes scripts that fail to compile before merging: vanilla drops them.
-pub fn merge_slots(earlier: &mut DescriptionSlots<'_>, later: &mut DescriptionSlots<'_>) {
+/// [`VisualSlots::merge`].
+pub(crate) fn merge_slots(earlier: &mut VisualSlots, later: &mut VisualSlots) {
     // The game writes a later definition into a reused one member by member: maps entry by
     // entry, the render-controller list and the particle map replaced whole, the spawn egg
     // assigned whole, `animate` replaced as a list, booleans written when present, and
     // `held_item_scale` only when above 0.
-    merge_map(earlier.materials, later.materials);
-    merge_map(earlier.textures, later.textures);
-    merge_map(earlier.geometry, later.geometry);
-    merge_present_map(earlier.animations, later.animations);
-    merge_present_map(earlier.sound_effects, later.sound_effects);
-    replace_if_present(earlier.particle_effects, later.particle_effects);
-    replace_if_present(earlier.queryable_geometry, later.queryable_geometry);
-    replace_if_present(earlier.render_controllers, later.render_controllers);
-    replace_if_present(earlier.spawn_egg, later.spawn_egg);
-    replace_if_present(earlier.enable_attachables, later.enable_attachables);
+    merge_map(&mut earlier.materials, &mut later.materials);
+    merge_map(&mut earlier.textures, &mut later.textures);
+    merge_map(&mut earlier.geometry, &mut later.geometry);
+    merge_present_map(&mut earlier.animations, &mut later.animations);
+    merge_present_map(&mut earlier.sound_effects, &mut later.sound_effects);
+    replace_if_present(&mut earlier.particle_effects, &mut later.particle_effects);
     replace_if_present(
-        earlier.held_item_ignores_lighting,
-        later.held_item_ignores_lighting,
+        &mut earlier.queryable_geometry,
+        &mut later.queryable_geometry,
     );
-    replace_if_present(earlier.hide_armor, later.hide_armor);
+    replace_if_present(
+        &mut earlier.render_controllers,
+        &mut later.render_controllers,
+    );
+    replace_if_present(&mut earlier.spawn_egg, &mut later.spawn_egg);
+    replace_if_present(
+        &mut earlier.enable_attachables,
+        &mut later.enable_attachables,
+    );
+    replace_if_present(
+        &mut earlier.held_item_ignores_lighting,
+        &mut later.held_item_ignores_lighting,
+    );
+    replace_if_present(&mut earlier.hide_armor, &mut later.hide_armor);
     match later.held_item_scale.take() {
         Some(HeldItemScale::Number(scale)) if scale <= 0.0 => {}
-        Some(scale) => *earlier.held_item_scale = Some(scale),
+        Some(scale) => earlier.held_item_scale = Some(scale),
         None => {}
     }
     if let Some(later) = later.scripts.take() {
@@ -312,7 +267,7 @@ impl<T: SharedDescription> EngineVersionMerge<T> {
         );
         match (step, existing) {
             (MergeStep::Merge, Some((_, earlier))) => {
-                merge_slots(&mut earlier.slots(), &mut document.slots());
+                earlier.slots_mut().merge(document.slots_mut());
                 earlier.merge_own(&mut document);
             }
             (MergeStep::Replace, Some(entry)) => *entry = (min_engine_version, document),

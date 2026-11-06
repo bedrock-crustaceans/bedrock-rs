@@ -288,7 +288,7 @@ fn entities<'a>(cx: &super::LinkCx<'a>) -> Vec<user::User<'a>> {
     let mut users = Vec::new();
     #[cfg(feature = "client_entity")]
     for (_, document) in cx.resource().client_entities() {
-        let description = &document.value().description;
+        let description = &document.value().description.slots;
         // The `animation_controllers` list of a document older than 1.10.0 became
         // `scripts.animate`; a merged definition has other documents' entries in it.
         let before_1_10 = document.version().parsed_as
@@ -343,7 +343,7 @@ fn attachables<'a>(cx: &super::LinkCx<'a>) -> Vec<user::User<'a>> {
     use user::{Family, User};
     let mut users = Vec::new();
     for (_, document) in cx.resource().attachables() {
-        let description = &document.value().description;
+        let description = &document.value().description.slots;
         let before_1_10 = document.version().parsed_as
             < bedrock_addon_core::version::FormatVersion::new(1, 10, 0)
             && document.origin().contributors.is_empty();

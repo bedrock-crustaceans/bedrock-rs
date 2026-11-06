@@ -3,7 +3,7 @@
 
 use bedrock_addon_core::diagnostic::{Severity, VanillaText};
 use bedrock_addon_core::id::{MaterialId, RenderControllerId};
-use bedrock_addon_core::visual::ControllerUse;
+use bedrock_addon_shared_visual::ControllerUse;
 
 use super::super::{At, Findings, LinkCx, Target, invalid, kinds, unresolved};
 use super::user::{Family, User};

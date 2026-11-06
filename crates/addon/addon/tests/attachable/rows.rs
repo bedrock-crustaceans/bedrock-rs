@@ -53,7 +53,7 @@ fn a01_vanilla_1_8_0_armor() {
     assert_eq!(document.description.item, None);
     assert_eq!(document.binding(), None);
     assert!(document.bound_items().is_empty());
-    let scripts = document.description.scripts.as_ref().unwrap();
+    let scripts = document.description.slots.scripts.as_ref().unwrap();
     assert!(scripts.parent_setup.is_some());
 }
 
@@ -102,7 +102,7 @@ fn a04_1_26_0_latest() {
     assert!(!document.version().upgraded);
     assert_eq!(document.held_item_scale(), 0.5);
     assert_eq!(
-        document.description.held_item_scale,
+        document.description.slots.held_item_scale,
         Some(HeldItemScale::Number(0.5))
     );
     assert_eq!(

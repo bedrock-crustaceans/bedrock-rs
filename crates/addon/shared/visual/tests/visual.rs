@@ -1,4 +1,4 @@
-//! The shared description members and the resolver as a user of `bedrock_addon_core::visual`
+//! The shared description members and the resolver as a user of `bedrock_addon_shared_visual`
 //! sees them: the name-or-condition entries, `scripts`, `spawn_egg`, the `Visuals` view, and
 //! `EngineVersionMerge` over the client-entity and attachable fixture rows.
 
@@ -7,16 +7,13 @@
     clippy::disallowed_types,
     reason = "tests read fixtures and call facet-json directly"
 )]
-use bedrock_addon_core::id::{
-    AnimationRef, GeometryId, MaterialId, ParticleId, RenderControllerId, SoundEventName,
-    TexturePath,
-};
+use bedrock_addon_core::id::{RenderControllerId, TexturePath};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::molang::Molang;
 use bedrock_addon_core::version::{FormatVersion, SemVersion};
-use bedrock_addon_core::visual::{
-    AnimateEntry, Color, ControllerUse, DescriptionSlots, EngineVersionMerge, HasVisuals,
-    HeldItemScale, MergeStep, Scripts, ShadowReason, SharedDescription, SpawnEgg, Visuals,
+use bedrock_addon_shared_visual::{
+    AnimateEntry, Color, ControllerUse, EngineVersionMerge, HasVisuals, HeldItemScale, MergeStep,
+    Scripts, ShadowReason, SharedDescription, SpawnEgg, VisualSlots, Visuals,
     description_min_engine_version, merge_step,
 };
 use indexmap::IndexMap;
@@ -46,72 +43,40 @@ fn expression(value: Option<&Molang>) -> Option<&str> {
     }
 }
 
-/// A client entity's `description`, as a family would declare it over the shared member types.
+/// A client entity's `description`, as a family declares it over the shared member set.
 #[derive(Clone, Debug, Default, PartialEq, facet::Facet)]
 struct Description {
     identifier: String,
     #[facet(default)]
     min_engine_version: Option<Value>,
-    #[facet(default)]
-    materials: IndexMap<String, MaterialId>,
-    #[facet(default)]
-    textures: IndexMap<String, TexturePath>,
-    #[facet(default)]
-    geometry: IndexMap<String, GeometryId>,
-    #[facet(default)]
-    animations: Option<IndexMap<String, AnimationRef>>,
-    #[facet(default)]
-    sound_effects: Option<IndexMap<String, SoundEventName>>,
-    #[facet(default)]
-    particle_effects: Option<IndexMap<String, ParticleId>>,
-    #[facet(default)]
-    queryable_geometry: Option<String>,
-    #[facet(default)]
-    render_controllers: Option<Vec<ControllerUse>>,
-    #[facet(default)]
-    spawn_egg: Option<SpawnEgg>,
-    #[facet(default)]
-    scripts: Option<Scripts>,
-    #[facet(default)]
-    enable_attachables: Option<bool>,
-    #[facet(default)]
-    held_item_ignores_lighting: Option<bool>,
-    #[facet(default)]
-    held_item_scale: Option<HeldItemScale>,
-    #[facet(default)]
-    hide_armor: Option<bool>,
+    #[facet(flatten, default)]
+    slots: VisualSlots,
+}
+
+// The tests read and build the shared members as the description's own.
+impl std::ops::Deref for Description {
+    type Target = VisualSlots;
+
+    fn deref(&self) -> &VisualSlots {
+        &self.slots
+    }
+}
+
+impl std::ops::DerefMut for Description {
+    fn deref_mut(&mut self) -> &mut VisualSlots {
+        &mut self.slots
+    }
 }
 
 impl SharedDescription for Description {
-    fn slots(&mut self) -> DescriptionSlots<'_> {
-        DescriptionSlots {
-            materials: &mut self.materials,
-            textures: &mut self.textures,
-            geometry: &mut self.geometry,
-            animations: &mut self.animations,
-            sound_effects: &mut self.sound_effects,
-            particle_effects: &mut self.particle_effects,
-            queryable_geometry: &mut self.queryable_geometry,
-            render_controllers: &mut self.render_controllers,
-            spawn_egg: &mut self.spawn_egg,
-            scripts: &mut self.scripts,
-            enable_attachables: &mut self.enable_attachables,
-            held_item_ignores_lighting: &mut self.held_item_ignores_lighting,
-            held_item_scale: &mut self.held_item_scale,
-            hide_armor: &mut self.hide_armor,
-        }
+    fn slots_mut(&mut self) -> &mut VisualSlots {
+        &mut self.slots
     }
 }
 
 impl HasVisuals for Description {
     fn visuals(&self) -> Visuals<'_> {
-        Visuals::new(
-            Some(&self.materials),
-            Some(&self.textures),
-            Some(&self.geometry),
-            self.animations.as_ref(),
-            self.render_controllers.as_deref().unwrap_or_default(),
-        )
+        self.slots.visuals()
     }
 }
 
@@ -252,7 +217,7 @@ mod animate_entry {
 }
 
 mod scripts {
-    use bedrock_addon_core::visual::history;
+    use bedrock_addon_shared_visual::history;
 
     use super::*;
 
@@ -944,7 +909,7 @@ mod resolver {
             description
         };
         let (mut earlier, mut later) = (document(false), document(true));
-        bedrock_addon_core::visual::merge_slots(&mut earlier.slots(), &mut later.slots());
+        earlier.slots.merge(&mut later.slots);
         assert_eq!(earlier.textures.len(), SLOTS);
         assert!(later.textures.is_empty());
         let (first, path) = earlier.textures.get_index(0).unwrap();
@@ -1143,8 +1108,8 @@ mod resolver {
     }
 
     impl SharedDescription for WithOwn {
-        fn slots(&mut self) -> DescriptionSlots<'_> {
-            self.description.slots()
+        fn slots_mut(&mut self) -> &mut VisualSlots {
+            self.description.slots_mut()
         }
 
         fn merge_own(&mut self, later: &mut Self) {
@@ -1171,7 +1136,7 @@ mod resolver {
 }
 
 mod round_trip {
-    use bedrock_addon_core::visual::history;
+    use bedrock_addon_shared_visual::history;
 
     use super::*;
 
@@ -1238,7 +1203,7 @@ mod strict_types {
         ] {
             assert!(strict::<Scripts>(json), "{json}");
         }
-        // The description members the resolver borrows (`DescriptionSlots`).
+        // The description members the resolver merges (`VisualSlots`).
         for json in [
             r#"{ "identifier": "demo:ghost", "queryable_geometry": 5 }"#,
             r#"{ "identifier": "demo:ghost", "enable_attachables": "true" }"#,

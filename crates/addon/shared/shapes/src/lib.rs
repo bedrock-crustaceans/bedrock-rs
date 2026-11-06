@@ -15,6 +15,8 @@
 //! - [`keyframes`]: [`Keyframes`], a value that may change over the day.
 //! - [`menu`]: [`MenuCategory`] and [`CreativeCategory`], an item's or block's creative-menu
 //!   placement.
+//! - [`named`]: [`NamedCondition`], a name or `{ name: condition }` of which the game reads one
+//!   member, and its two lists' entries [`ControllerUse`] and [`AnimateEntry`].
 //! - [`one_or_many`]: [`OneOrMany`], one value or an array of them, as written.
 //! - [`png`]: the PNG header ([`png::header`], [`png_size`]).
 //! - [`vec`](mod@vec): [`Vec3`] and [`Vec2`], a vector as an array or an object, as written.
@@ -25,6 +27,7 @@ pub mod event;
 pub mod flag;
 pub mod keyframes;
 pub mod menu;
+pub mod named;
 pub mod one_or_many;
 pub mod png;
 pub mod vec;
@@ -36,6 +39,9 @@ pub use descriptor::{
 pub use flag::{NotTrue, TrueOnly};
 pub use keyframes::{Keyframe, Keyframes};
 pub use menu::{CreativeCategory, MenuCategory};
+pub use named::{
+    AnimateEntry, ControllerUse, Name, NamedCondition, NamedConditionProxy, NotANamedCondition,
+};
 pub use one_or_many::OneOrMany;
 pub use png::{PNG_SIGNATURE, PngHeader, png_size};
 pub use vec::{Coordinate, Vec2, Vec3, VecForm, VectorError};

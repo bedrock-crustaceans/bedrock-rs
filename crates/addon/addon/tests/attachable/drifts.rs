@@ -39,7 +39,7 @@ fn a_script_literal_the_lower_casing_changes_is_folded_silently() {
     let members = r#""scripts": {"pre_animation": ["Variable.Foo = 1;", "Variable.Title = 'Big Boss';", "Variable.Tag = 'small';"], "scale": "Query.Get_Name == 'Steve' ? 2 : 1", "parent_setup": "Variable.Hidden = 0.0;"}"#;
     for version in ["1.10.0", "1.8.0"] {
         let document = loaded(attachable(&ghost(version, members), &cx()));
-        let scripts = document.description.scripts.as_ref().unwrap();
+        let scripts = document.description.slots.scripts.as_ref().unwrap();
         assert_eq!(
             scripts.pre_animation.as_ref().unwrap()[1],
             "variable.title = 'big boss';",

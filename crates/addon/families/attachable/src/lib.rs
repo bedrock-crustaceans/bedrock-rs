@@ -18,18 +18,14 @@ mod validate;
 mod write;
 pub use binding::{Condition, ItemBinding, ItemBindingEntry, ItemBindings};
 
-use bedrock_addon_core::id::{
-    AnimationRef, AttachableId, GeometryId, ItemId, MaterialId, ParticleId, SoundEventName,
-    TexturePath,
-};
+use bedrock_addon_core::id::{AttachableId, ItemId};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::version::{FormatVersion, SemVersion};
-use bedrock_addon_core::visual::{
-    ControllerUse, DescriptionSlots, HasVisuals, HeldItemScale, Scripts, SharedDescription,
-    SpawnEgg, Visuals, description_min_engine_version,
+use bedrock_addon_shared_visual::{
+    HasVisuals, SharedDescription, VisualSlots, Visuals, description_min_engine_version,
 };
-// One enum for both families, declared in core's `visual`.
-pub use bedrock_addon_core::visual::AnimationKind;
+// One enum for both families, declared in the shared `visual` crate.
+pub use bedrock_addon_shared_visual::AnimationKind;
 use facet::Facet;
 use indexmap::IndexMap;
 use std::borrow::Cow;
@@ -56,7 +52,7 @@ use bedrock_addon_core::versioning::{
     MissingVersion, NoComponents, Parsed, Reading, Scalars, StructIndex, ValidateCx, VersionStruct,
     finish, parse_as_written,
 };
-use bedrock_addon_core::visual::{MergeStep, merge_slots, merge_step};
+use bedrock_addon_shared_visual::{MergeStep, merge_step};
 
 use crate::history::{Any, AttachableFamily};
 use crate::read::text;
@@ -82,6 +78,7 @@ use bedrock_addon_core::versioning::Versioned;
 /// let id = AttachableId::parse("demo:wand");
 /// let mut description = Description::new(id.clone());
 /// description
+///     .slots
 ///     .geometry
 ///     .insert("default".to_owned(), GeometryId::parse("geometry.wand"));
 /// let wand = Attachable {
@@ -121,43 +118,12 @@ pub struct Description {
     /// definition of an identifier wins across packs, never which members are read; a text
     /// that is no version counts as 0.0.0.
     pub min_engine_version: Option<Value>,
-    /// `materials`: slot name → material.
-    #[facet(default, skip_serializing_if = IndexMap::is_empty)]
-    pub materials: IndexMap<String, MaterialId>,
-    /// `textures`: slot name → texture path.
-    #[facet(default, skip_serializing_if = IndexMap::is_empty)]
-    pub textures: IndexMap<String, TexturePath>,
-    /// `geometry`: slot name → geometry.
-    #[facet(default, skip_serializing_if = IndexMap::is_empty)]
-    pub geometry: IndexMap<String, GeometryId>,
-    /// `queryable_geometry`: the geometry slot Molang's geometry queries read.
-    pub queryable_geometry: Option<String>,
-    /// `spawn_egg`: accepted, and without meaning for an attachable.
-    pub spawn_egg: Option<SpawnEgg>,
-    /// `scripts`: the Molang the client runs for the model and the animations it plays.
-    pub scripts: Option<Scripts>,
-    /// `particle_effects`: short name → particle effect.
-    pub particle_effects: Option<IndexMap<String, ParticleId>>,
-    /// `particle_emitters`: accepted and read by nothing.
-    pub particle_emitters: Option<IndexMap<String, String>>,
-    /// `animations`: short name → animation (`animation.…`) or animation controller
-    /// (`controller.animation.…`). A value with neither prefix is ignored. `None` when the
-    /// member is absent, which reads as no animation.
-    pub animations: Option<IndexMap<String, AnimationRef>>,
-    /// `render_controllers`: the render controllers that draw the attachable, in order.
-    pub render_controllers: Option<Vec<ControllerUse>>,
-    /// `sound_effects`: short name → sound event. `None` when the member is absent.
-    pub sound_effects: Option<IndexMap<String, SoundEventName>>,
-    /// `enable_attachables`: read as for a client entity (it describes an actor that holds
-    /// items); `false` when absent.
-    pub enable_attachables: Option<bool>,
-    /// `held_item_ignores_lighting`: read as for a client entity; `false` when absent.
-    pub held_item_ignores_lighting: Option<bool>,
-    /// `held_item_scale`: read as for a client entity; 1.0 when absent. A number at or below
-    /// 0 is not used.
-    pub held_item_scale: Option<HeldItemScale>,
-    /// `hide_armor`: read as for a client entity; `false` when absent.
-    pub hide_armor: Option<bool>,
+    /// The members client entities and attachables share, at the description's own level
+    /// (`materials` to `hide_armor`, in that order).
+    // `default`: a flattened struct none of whose members is written reads as a missing field
+    // otherwise (facet's flatten reader).
+    #[facet(flatten, default)]
+    pub slots: VisualSlots,
     /// `item`: the item this attachable is drawn for, always or under a condition. Absent,
     /// the attachable is drawn for the item whose identifier is its own.
     pub item: Option<ItemBinding>,
@@ -195,94 +161,53 @@ impl Attachable {
 
     /// `enable_attachables`, `false` when absent.
     pub fn enable_attachables(&self) -> bool {
-        self.description.enable_attachables.unwrap_or(false)
+        self.description.slots.enable_attachables()
     }
 
     /// `held_item_ignores_lighting`, `false` when absent.
     pub fn held_item_ignores_lighting(&self) -> bool {
-        self.description.held_item_ignores_lighting.unwrap_or(false)
+        self.description.slots.held_item_ignores_lighting()
     }
 
     /// `hide_armor`, `false` when absent.
     pub fn hide_armor(&self) -> bool {
-        self.description.hide_armor.unwrap_or(false)
+        self.description.slots.hide_armor()
     }
 
     /// The constant scale of held items: the written number when it is above 0, else 1.0
     /// (also for a Molang scale, which only a client evaluates).
     pub fn held_item_scale(&self) -> f32 {
-        // The game stores the value only when it is above 0.
-        match self.description.held_item_scale {
-            Some(HeldItemScale::Number(scale)) if scale > 0.0 => scale,
-            _ => 1.0,
-        }
+        self.description.slots.held_item_scale()
     }
 
     /// What the `animations` entry `name` is, by its value's prefix in lower case; `None` for
     /// an unknown name and for a value vanilla ignores.
     pub fn animation_kind(&self, name: &str) -> Option<AnimationKind> {
-        // The game checks for `controller.animation.` first, then `animation.`; anything
-        // else is ignored silently.
-        let value = self.description.animations.as_ref()?.get(name)?.as_str();
-        let value = value.to_ascii_lowercase();
-        if value.starts_with("controller.animation.") {
-            Some(AnimationKind::Controller)
-        } else if value.starts_with("animation.") {
-            Some(AnimationKind::Animation)
-        } else {
-            None
-        }
+        self.description.slots.animation_kind(name)
     }
 
     /// The text vanilla parses for `initialize`: the strings joined with no separator; `None`
     /// when the member is absent or the text is empty.
     pub fn initialize(&self) -> Option<String> {
-        let scripts = self.description.scripts.as_ref()?;
-        validate::joined(scripts.initialize.as_deref())
+        self.description.slots.initialize()
     }
 
     /// The text vanilla parses for `pre_animation`: the strings joined with no separator;
     /// `None` when the member is absent or the text is empty.
     pub fn pre_animation(&self) -> Option<String> {
-        let scripts = self.description.scripts.as_ref()?;
-        validate::joined(scripts.pre_animation.as_deref())
+        self.description.slots.pre_animation()
     }
 }
 
 impl HasVisuals for Attachable {
     fn visuals(&self) -> Visuals<'_> {
-        let d = &self.description;
-        Visuals::new(
-            Some(&d.materials),
-            Some(&d.textures),
-            Some(&d.geometry),
-            d.animations.as_ref(),
-            d.render_controllers.as_deref().unwrap_or_default(),
-        )
+        self.description.slots.visuals()
     }
 }
 
 impl SharedDescription for Attachable {
-    /// The members the shared merge borrows. `animations` and `sound_effects` are borrowed
-    /// as maps, so an absent one becomes an empty one here; the load's merge takes that back.
-    fn slots(&mut self) -> DescriptionSlots<'_> {
-        let d = &mut self.description;
-        DescriptionSlots {
-            materials: &mut d.materials,
-            textures: &mut d.textures,
-            geometry: &mut d.geometry,
-            animations: &mut d.animations,
-            sound_effects: &mut d.sound_effects,
-            particle_effects: &mut d.particle_effects,
-            queryable_geometry: &mut d.queryable_geometry,
-            render_controllers: &mut d.render_controllers,
-            spawn_egg: &mut d.spawn_egg,
-            scripts: &mut d.scripts,
-            enable_attachables: &mut d.enable_attachables,
-            held_item_ignores_lighting: &mut d.held_item_ignores_lighting,
-            held_item_scale: &mut d.held_item_scale,
-            hide_armor: &mut d.hide_armor,
-        }
+    fn slots_mut(&mut self) -> &mut VisualSlots {
+        &mut self.description.slots
     }
 
     /// `item`: the later document's, when it has one.
@@ -1045,7 +970,7 @@ fn combine(parsed: Vec<FileOutcome>, stack: &StackCx<'_>) -> Registry<Attachable
 fn merge_documents(earlier: &mut Attachable, mut later: Attachable) {
     // The presence of the two maps is core's to keep, so an authored empty member is written
     // back.
-    merge_slots(&mut earlier.slots(), &mut later.slots());
+    earlier.slots_mut().merge(later.slots_mut());
     earlier.merge_own(&mut later);
 }
 
@@ -1078,21 +1003,7 @@ impl Description {
         Self {
             identifier,
             min_engine_version: None,
-            materials: IndexMap::new(),
-            textures: IndexMap::new(),
-            geometry: IndexMap::new(),
-            queryable_geometry: None,
-            spawn_egg: None,
-            scripts: None,
-            particle_effects: None,
-            particle_emitters: None,
-            animations: None,
-            render_controllers: None,
-            sound_effects: None,
-            enable_attachables: None,
-            held_item_ignores_lighting: None,
-            held_item_scale: None,
-            hide_armor: None,
+            slots: VisualSlots::default(),
             item: None,
         }
     }

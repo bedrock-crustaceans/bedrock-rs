@@ -5,12 +5,14 @@
 
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 
+use bedrock_addon_core::id::MaterialId;
 use bedrock_addon_core::json::{
     BeyondWidth, JsonSlice, ScalarFailure, ScalarRules, Scalars, Value, from_str, null_members,
     parse_at, parse_with_rules, unknown_members,
 };
 use bedrock_addon_core::molang::Molang;
 use facet::Facet;
+use indexmap::IndexMap;
 
 #[derive(Debug, PartialEq, Facet)]
 struct Outer {
@@ -120,4 +122,59 @@ fn an_error_inside_a_flattened_struct_has_no_step_for_the_field() {
     }
     let error = parse_at::<Slots>(JsonSlice::new(r#"{"inner": {"a": 300}}"#)).expect_err("no u8");
     assert_eq!(error.path.to_string(), "");
+}
+
+/// A struct that flattens `Names`, with and without `default` on the field.
+#[derive(Debug, Facet)]
+struct Named {
+    #[facet(flatten)]
+    names: Names,
+}
+
+#[derive(Debug, Facet)]
+struct NamedOrNot {
+    #[facet(flatten, default)]
+    names: Names,
+}
+
+#[derive(Debug, Default, Facet)]
+struct Names {
+    #[facet(default)]
+    flags: IndexMap<String, bool>,
+    #[facet(default)]
+    ids: IndexMap<String, MaterialId>,
+    #[facet(default)]
+    list: Vec<MaterialId>,
+}
+
+/// facet's flatten reader (0.50.0-rc.7), pinned as it is: a flattened struct none of whose
+/// members is written is a missing field unless the field is `default`; and where a proxied
+/// value inside a flattened member refuses its JSON (an identifier given a number), the read
+/// fails with "not initialized" at the end of the object, at the member, without the key or
+/// the index below it. A plain value keeps its place. A family that needs the place reads a
+/// struct with the members written out (the client entity's and the attachable's
+/// `DescriptionRead`); the place is the walk's to recover once facet keeps it.
+#[test]
+fn facets_flatten_reader_needs_default_and_loses_a_refused_proxys_place() {
+    assert!(parse_at::<Named>(JsonSlice::new("{}")).is_err());
+    assert!(parse_at::<NamedOrNot>(JsonSlice::new("{}")).is_ok());
+    let text = r#"{"flags": {"k": "x"}}"#;
+    let error = parse_at::<NamedOrNot>(JsonSlice::new(text)).expect_err("a string is no bool");
+    assert_eq!(error.path.to_string(), "flags/k");
+    for (text, member, place) in [
+        (r#"{"ids": {"k": 5}}"#, "ids", "ids/k"),
+        (r#"{"list": ["a", 5]}"#, "list", "list/1"),
+    ] {
+        let error = parse_at::<NamedOrNot>(JsonSlice::new(text)).expect_err("a number is no id");
+        assert_eq!(error.path.to_string(), member, "{text}");
+        assert_eq!(error.span.len, 1, "{text}");
+        assert_eq!(error.span.offset as usize, text.len() - 1, "{text}");
+        assert!(
+            error.error.to_string().contains("not initialized"),
+            "{error}"
+        );
+        // Not flattened, the place is the value's.
+        let error = parse_at::<Names>(JsonSlice::new(text)).expect_err("a number is no id");
+        assert_eq!(error.path.to_string(), place, "{text}");
+    }
 }

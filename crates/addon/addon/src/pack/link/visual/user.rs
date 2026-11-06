@@ -16,7 +16,7 @@ use bedrock_addon_core::document::Origin;
 use bedrock_addon_core::id::{
     AnimationRef, GeometryId, MaterialId, ParticleId, SoundEventName, TexturePath,
 };
-use bedrock_addon_core::visual::{AnimateEntry, ControllerUse};
+use bedrock_addon_shared_visual::{AnimateEntry, ControllerUse};
 use indexmap::IndexMap;
 
 /// Which family a [`User`] is of.

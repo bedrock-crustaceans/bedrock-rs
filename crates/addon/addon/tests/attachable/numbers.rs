@@ -94,7 +94,7 @@ fn a_named_script_beyond_f32_is_read_as_the_largest_finite_float_deviation() {
         ] {
             let members = format!(r#""scripts": {{"scale": {token}, "parent_setup": "1"}}"#);
             let (attachable, written) = clamped(version, &members, &["scripts/scale"]);
-            let scripts = attachable.description.scripts.as_ref().unwrap();
+            let scripts = attachable.description.slots.scripts.as_ref().unwrap();
             assert!(
                 is_const(scripts.scale.as_ref(), expected),
                 "{version} {token}: {:?}",
@@ -135,6 +135,7 @@ fn a_condition_beyond_f32_is_read_as_the_largest_finite_float_deviation() {
         assert_eq!(
             attachable
                 .description
+                .slots
                 .render_controllers
                 .as_ref()
                 .unwrap()
@@ -222,7 +223,7 @@ fn a_statement_beyond_f32_is_dropped_as_any_number_before_1_26_deviation() {
             let members = format!(r#""scripts": {{"{name}": ["variable.a = 1;", 1e999]}}"#);
             let path = format!("scripts/{name}/1");
             let (attachable, _) = clamped(version, &members, &[&path]);
-            let scripts = attachable.description.scripts.as_ref().unwrap();
+            let scripts = attachable.description.slots.scripts.as_ref().unwrap();
             let kept = if name == "initialize" {
                 scripts.initialize.as_ref()
             } else {
@@ -430,7 +431,7 @@ fn a_number_of_a_member_written_twice_is_clamped_where_the_last_stands() {
         r#""scripts": {"scale": 1e999, "scale": 2}, "held_item_scale": 1, "held_item_scale": 1e39"#,
     );
     let document = loaded(attachable(&text, &cx()));
-    let scripts = document.description.scripts.as_ref().unwrap();
+    let scripts = document.description.slots.scripts.as_ref().unwrap();
     assert!(is_const(scripts.scale.as_ref(), 2.0));
     let at = format!("{DESCRIPTION}/held_item_scale");
     assert_eq!(clamp_warnings(document.diagnostics(), &at), 1);
@@ -459,7 +460,7 @@ fn a_number_of_a_member_written_twice_is_clamped_where_the_last_stands() {
         findings_of,
     );
     let document = loaded(attachable(&text, &cx()));
-    let scripts = document.description.scripts.as_ref().unwrap();
+    let scripts = document.description.slots.scripts.as_ref().unwrap();
     assert!(is_const(scripts.scale.as_ref(), f32::MIN));
     assert_eq!(document.held_item_scale().to_bits(), f32::MAX.to_bits());
 }
@@ -483,7 +484,7 @@ fn a_constant_no_f32_holds_exactly_is_written_as_the_float_it_was_read_as() {
             );
             let document = loaded(attachable(&ghost(version, &members), &cx()));
             clean(document.diagnostics());
-            let scripts = document.description.scripts.as_ref().unwrap();
+            let scripts = document.description.slots.scripts.as_ref().unwrap();
             assert!(
                 is_const(scripts.scale.as_ref(), float),
                 "{version} {token}: {:?}",
@@ -647,7 +648,7 @@ fn an_integer_beyond_64_bits_in_a_number_s_place_is_the_number_it_spells() {
             let text = ghost(version, r#""scripts": {"scale": {n}, "parent_setup": "1"}"#);
             let document = reads_as(&text, &wide, plain).unwrap();
             clean(document.diagnostics());
-            let scripts = document.description.scripts.as_ref().unwrap();
+            let scripts = document.description.slots.scripts.as_ref().unwrap();
             assert!(
                 is_const(scripts.scale.as_ref(), float),
                 "{version} {wide}: {:?}",
@@ -713,7 +714,7 @@ fn an_integer_beyond_f32_is_read_as_the_largest_finite_float_deviation() {
             let members = r#""scripts": {"scale": {n}, "parent_setup": "1"}"#;
             let (attachable, _) =
                 clamped(version, &members.replace("{n}", &wide), &["scripts/scale"]);
-            let scripts = attachable.description.scripts.as_ref().unwrap();
+            let scripts = attachable.description.slots.scripts.as_ref().unwrap();
             assert!(
                 is_const(scripts.scale.as_ref(), expected),
                 "{version} {wide}: {:?}",

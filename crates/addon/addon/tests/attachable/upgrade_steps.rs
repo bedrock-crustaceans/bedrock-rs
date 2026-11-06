@@ -312,7 +312,7 @@ const UPPER: &str = r#""animations": {"walk": "animation.x.walk"}, "scripts": {"
 #[test]
 fn s02b_lowercase_before_1_18_20() {
     let document = loaded(attachable(&ghost("1.16.0", UPPER), &cx()));
-    let scripts = document.description.scripts.as_ref().unwrap();
+    let scripts = document.description.slots.scripts.as_ref().unwrap();
     assert_eq!(
         scripts.pre_animation.as_ref().unwrap()[0],
         "variable.foo = query.is_baby;"
@@ -325,7 +325,7 @@ fn s02b_lowercase_before_1_18_20() {
 #[test]
 fn s02c_no_lowercase_at_1_18_20() {
     let document = loaded(attachable(&ghost("1.18.20", UPPER), &cx()));
-    let scripts = document.description.scripts.as_ref().unwrap();
+    let scripts = document.description.slots.scripts.as_ref().unwrap();
     assert_eq!(
         scripts.pre_animation.as_ref().unwrap()[0],
         "Variable.Foo = Query.Is_Baby;"
@@ -336,7 +336,7 @@ fn s02c_no_lowercase_at_1_18_20() {
 fn s02d_1_8_path_lowercases() {
     let members = r#""scripts": {"pre_animation": ["Variable.X = 1;"], "scale": "Variable.X"}"#;
     let document = loaded(attachable(&ghost("1.8.0", members), &cx()));
-    let scripts = document.description.scripts.as_ref().unwrap();
+    let scripts = document.description.slots.scripts.as_ref().unwrap();
     assert_eq!(
         scripts.pre_animation.as_ref().unwrap()[0],
         "variable.x = 1;"
@@ -348,7 +348,7 @@ fn s02d_1_8_path_lowercases() {
     // So does a document without a version (vanilla's 1.0.0 is below 1.18.20 too).
     let text = r#"{"minecraft:attachable": {"description": {"identifier": "demo:ghost", "scripts": {"pre_animation": ["Variable.X = 1;"]}}}}"#;
     let document = loaded(attachable(text, &cx()));
-    let scripts = document.description.scripts.as_ref().unwrap();
+    let scripts = document.description.slots.scripts.as_ref().unwrap();
     assert_eq!(
         scripts.pre_animation.as_ref().unwrap()[0],
         "variable.x = 1;"

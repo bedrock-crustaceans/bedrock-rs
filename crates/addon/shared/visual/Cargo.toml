@@ -1,0 +1,24 @@
+[package]
+name = "bedrock_addon_shared_visual"
+description = "What client entities, attachables and atomic client entities share to draw a model (the named-condition entries, scripts, spawn egg, held item scale, the slots view and the engine-version merge), re-exported as bedrock_addon::visual; sans-IO"
+version.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[features]
+molang = ["bedrock_addon_core/molang"]   # the loader's compile of `initialize` and `pre_animation`
+
+[dependencies]
+bedrock_addon_core = { path = "../../core" }
+bedrock_addon_shared_shapes = { path = "../shapes" }
+facet = { workspace = true }
+facet-json = { workspace = true }
+indexmap = { workspace = true }
+

@@ -19,7 +19,7 @@ default = ["zip", "encrypted", "molang", "nbt", "full"]
 # infrastructure
 zip = ["dep:zip"]                        # in-memory decoding and encoding of .mcpack/.zip/.mcaddon/.mctemplate
 encrypted = ["zip", "dep:aes", "dep:cfb8", "dep:ctr"]   # marketplace content keys
-molang = ["bedrock_addon_core/molang", "bedrock_addon_family_animation?/molang", "bedrock_addon_family_animation_controller?/molang", "bedrock_addon_family_attachable?/molang", "bedrock_addon_family_biome?/molang", "bedrock_addon_family_block?/molang", "bedrock_addon_family_client_entity?/molang", "bedrock_addon_family_entity?/molang", "bedrock_addon_family_feature?/molang", "bedrock_addon_family_feature_rules?/molang", "bedrock_addon_family_geometry?/molang", "bedrock_addon_family_item?/molang", "bedrock_addon_family_particle?/molang", "bedrock_addon_family_recipe?/molang", "bedrock_addon_family_render_controller?/molang", "bedrock_addon_family_sounds_json?/molang", "bedrock_addon_family_spawn_groups?/molang", "bedrock_addon_family_spawn_rules?/molang"]   # load-time Molang compile check
+molang = ["bedrock_addon_core/molang", "bedrock_addon_shared_visual/molang", "bedrock_addon_family_animation?/molang", "bedrock_addon_family_animation_controller?/molang", "bedrock_addon_family_attachable?/molang", "bedrock_addon_family_biome?/molang", "bedrock_addon_family_block?/molang", "bedrock_addon_family_client_entity?/molang", "bedrock_addon_family_entity?/molang", "bedrock_addon_family_feature?/molang", "bedrock_addon_family_feature_rules?/molang", "bedrock_addon_family_geometry?/molang", "bedrock_addon_family_item?/molang", "bedrock_addon_family_particle?/molang", "bedrock_addon_family_recipe?/molang", "bedrock_addon_family_render_controller?/molang", "bedrock_addon_family_sounds_json?/molang", "bedrock_addon_family_spawn_groups?/molang", "bedrock_addon_family_spawn_rules?/molang"]   # load-time Molang compile check
 nbt = ["dep:nbtx", "bedrock_addon_family_block?/nbt", "bedrock_addon_family_entity?/nbt", "bedrock_addon_family_item?/nbt"]                       # Block::to_network_nbt, Item::network_properties, …
 
 # families: one feature per game document family, the module `families::<name>`
@@ -157,6 +157,7 @@ script-syntax = ["script", "bedrock_addon_family_script?/script-syntax"]   # ful
 bedrock_addon_core = { path = "../core" }
 bedrock_addon_shared_biome_env = { path = "../shared/biome_env" }
 bedrock_addon_shared_shapes = { path = "../shared/shapes" }
+bedrock_addon_shared_visual = { path = "../shared/visual" }
 bedrock_addon_support = { path = "../support" }
 bedrock_addon_derive = { path = "../derive" }
 bedrock_addon_family_aim_assist = { path = "../families/aim_assist", optional = true }

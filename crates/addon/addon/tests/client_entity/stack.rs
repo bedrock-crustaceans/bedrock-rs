@@ -96,14 +96,14 @@ fn p01_merge_details() {
     );
     let set = stack(&[pack(&[(FILE, &high)]), pack(&[(FILE, &low)])]);
     let ghost = ghost_of(&set).unwrap();
-    assert_eq!(ghost.description.textures.len(), 1);
+    assert_eq!(ghost.description.slots.textures.len(), 1);
     assert_eq!(
-        ghost.description.textures["default"].as_str(),
+        ghost.description.slots.textures["default"].as_str(),
         "textures/high"
     );
     assert!(!ghost.enable_attachables());
     assert!(ghost.hide_armor());
-    let scripts = ghost.description.scripts.as_ref().unwrap();
+    let scripts = ghost.description.slots.scripts.as_ref().unwrap();
     assert_eq!(
         scripts.scale.as_ref().unwrap().source().unwrap().as_str(),
         "3.0"
@@ -139,7 +139,7 @@ fn p02_higher_mev_replaces() {
     let set = stack(&[pack(&[(FILE, &old)]), pack(&[(FILE, &new)])]);
     let ghost = ghost_of(&set).unwrap();
     assert_eq!(ghost.origin().pack.name(), "pack 2");
-    assert!(ghost.description.geometry.is_empty());
+    assert!(ghost.description.slots.geometry.is_empty());
     assert_eq!(shadowed(&set), ["pack 1/entity/ghost.entity.json"]);
     // The reason is in the text: the ignored document is the higher pack's.
     assert_eq!(
@@ -157,8 +157,8 @@ fn p02_higher_mev_replaces() {
     let set = stack(&[pack(&[(FILE, &new)]), pack(&[(FILE, &old)])]);
     let ghost = ghost_of(&set).unwrap();
     assert_eq!(ghost.origin().pack.name(), "pack 1");
-    assert!(ghost.description.geometry.is_empty());
-    assert_eq!(ghost.description.textures.len(), 1);
+    assert!(ghost.description.slots.geometry.is_empty());
+    assert_eq!(ghost.description.slots.textures.len(), 1);
     assert!(ghost.origin().contributors.is_empty());
     assert!(shadowed(&set).is_empty());
 }
@@ -218,7 +218,7 @@ fn p04_vanilla_pair() {
         let set = stack(&[pack(&[first, second])]);
         let guardian = entities(&set).get(&id).unwrap();
         assert_eq!(
-            guardian.description.textures["default"].as_str(),
+            guardian.description.slots.textures["default"].as_str(),
             "textures/entity/guardian"
         );
         assert_eq!(entities(&set).len(), 1);
@@ -260,6 +260,7 @@ fn p06_legacy_mev_below_1_8() {
         ghost_of(&set)
             .unwrap()
             .description
+            .slots
             .geometry
             .contains_key("a")
     );
@@ -268,8 +269,8 @@ fn p06_legacy_mev_below_1_8() {
     let above = at_mev(Some("1.2.7"), r#""geometry": {"c": "geometry.c"}"#);
     let set = stack(&[pack(&[(FILE, &above)]), pack(&[(FILE, &low)])]);
     let ghost = ghost_of(&set).unwrap();
-    assert!(ghost.description.geometry.contains_key("c"));
-    assert!(!ghost.description.geometry.contains_key("a"));
+    assert!(ghost.description.slots.geometry.contains_key("c"));
+    assert!(!ghost.description.slots.geometry.contains_key("a"));
 }
 
 #[test]
@@ -288,6 +289,7 @@ fn p07_animate_replaced() {
     let ghost = ghost_of(&set).unwrap();
     let animate = ghost
         .description
+        .slots
         .scripts
         .as_ref()
         .unwrap()
@@ -304,7 +306,13 @@ fn p08_spawn_egg_replaced() {
     let high = at_mev(None, r##""spawn_egg": {"base_color": "#00ff00"}"##);
     let set = stack(&[pack(&[(FILE, &high)]), pack(&[(FILE, &low)])]);
     let ghost = ghost_of(&set).unwrap();
-    let egg = ghost.description.spawn_egg.as_ref().unwrap().resolved();
+    let egg = ghost
+        .description
+        .slots
+        .spawn_egg
+        .as_ref()
+        .unwrap()
+        .resolved();
     assert_eq!(egg.texture, "");
     assert_eq!(egg.texture_index, 0);
     assert_eq!(
@@ -327,6 +335,7 @@ fn a_rejected_document_takes_no_part_and_is_listed() {
         ghost_of(&set)
             .unwrap()
             .description
+            .slots
             .geometry
             .contains_key("a")
     );

@@ -184,9 +184,9 @@ fn a24_the_attachable_and_the_client_entity_load_in_their_own_namespaces() {
     let own = attachables
         .get(&AttachableId::parse("example:wand"))
         .unwrap();
-    assert_eq!(own.description.textures.len(), 1);
+    assert_eq!(own.description.slots.textures.len(), 1);
     assert_eq!(
-        own.description.textures["other"].as_str(),
+        own.description.slots.textures["other"].as_str(),
         "textures/attachable"
     );
     assert_eq!(attachables.len(), 1);
@@ -201,8 +201,8 @@ fn a24_the_attachable_and_the_client_entity_load_in_their_own_namespaces() {
         let entity = entities
             .get(&bedrock_addon::id::EntityId::parse("example:wand"))
             .unwrap();
-        assert_eq!(entity.description.textures.len(), 1);
-        assert!(entity.description.textures.contains_key("default"));
+        assert_eq!(entity.description.slots.textures.len(), 1);
+        assert!(entity.description.slots.textures.contains_key("default"));
     }
 }
 
@@ -331,7 +331,10 @@ fn r12_unknown_geometry() {
     let own = attachables
         .get(&AttachableId::parse("example:wand"))
         .unwrap();
-    assert_eq!(own.description.geometry["other"].as_str(), "Geometry.Nope");
+    assert_eq!(
+        own.description.slots.geometry["other"].as_str(),
+        "Geometry.Nope"
+    );
     // With every geometry defined nothing is said.
     let wand = self::wand(r#""geometry": {"default": "geometry.wand"}"#);
     let files = [
@@ -404,7 +407,7 @@ fn r12_unknown_animation() {
     let own = attachables
         .get(&AttachableId::parse("example:wand"))
         .unwrap();
-    assert_eq!(own.description.animations.as_ref().unwrap().len(), 5);
+    assert_eq!(own.description.slots.animations.as_ref().unwrap().len(), 5);
 }
 
 const RENDER_CONTROLLER: &str = r#"{"format_version": "1.8.0", "render_controllers": {"controller.render.wand": {"geometry": "Geometry.default", "materials": [{"*": "Material.default"}], "textures": ["Texture.default"]}}}"#;
@@ -452,7 +455,12 @@ fn r12_unknown_render_controller() {
         .get(&AttachableId::parse("example:wand"))
         .unwrap();
     assert_eq!(
-        own.description.render_controllers.as_ref().unwrap().len(),
+        own.description
+            .slots
+            .render_controllers
+            .as_ref()
+            .unwrap()
+            .len(),
         4
     );
     // One defined controller, named once: nothing is said.
@@ -581,6 +589,7 @@ fn the_document_loads_and_loading_resolves_no_reference() {
     assert_eq!(own.bound_items().len(), 1);
     assert!(
         own.description
+            .slots
             .particle_effects
             .as_ref()
             .unwrap()

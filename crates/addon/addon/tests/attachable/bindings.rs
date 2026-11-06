@@ -118,8 +118,11 @@ fn a20_two_packs_equal_mev_merge() {
     let set = stack(&[pack(&[(WAND, &top)]), pack(&[(WAND, &bottom)])]);
     assert_eq!(attachables(&set).len(), 1);
     let wand = get(&set, "example:wand").unwrap();
-    assert_eq!(wand.description.textures["default"].as_str(), "b");
-    assert_eq!(wand.description.geometry["default"].as_str(), "geometry.g");
+    assert_eq!(wand.description.slots.textures["default"].as_str(), "b");
+    assert_eq!(
+        wand.description.slots.geometry["default"].as_str(),
+        "geometry.g"
+    );
     // Two bindings, in load order: the lower pack's first. A client tries the top one first.
     let expected = [
         "0 example:wand -> example:wand [always] @pack 2/attachables/wand.json",
@@ -173,9 +176,9 @@ fn a20_a_merge_invents_no_member() {
     let high = wand_doc(None, r#""textures": {"other": "b"}"#);
     let set = stack(&[pack(&[(WAND, &high)]), pack(&[(WAND, &low)])]);
     let wand = get(&set, "example:wand").unwrap();
-    assert_eq!(wand.description.textures.len(), 2);
-    assert_eq!(wand.description.animations, None);
-    assert_eq!(wand.description.sound_effects, None);
+    assert_eq!(wand.description.slots.textures.len(), 2);
+    assert_eq!(wand.description.slots.animations, None);
+    assert_eq!(wand.description.slots.sound_effects, None);
     let written = wand.to_json().unwrap();
     assert!(!written.contains("animations"), "{written}");
     assert!(!written.contains("sound_effects"), "{written}");
@@ -184,8 +187,18 @@ fn a20_a_merge_invents_no_member() {
     let high = wand_doc(None, r#""sound_effects": {"s": "mob.wand"}"#);
     let set = stack(&[pack(&[(WAND, &high)]), pack(&[(WAND, &low)])]);
     let wand = get(&set, "example:wand").unwrap();
-    assert!(wand.description.animations.as_ref().unwrap().is_empty());
-    assert_eq!(wand.description.sound_effects.as_ref().unwrap().len(), 1);
+    assert!(
+        wand.description
+            .slots
+            .animations
+            .as_ref()
+            .unwrap()
+            .is_empty()
+    );
+    assert_eq!(
+        wand.description.slots.sound_effects.as_ref().unwrap().len(),
+        1
+    );
 }
 
 // ---- rule 27: a higher version replaces, the earlier bindings stay ----
@@ -200,7 +213,7 @@ fn a21_higher_mev_replaces() {
     let set = stack(&[pack(&[(WAND, &top)]), pack(&[(WAND, &bottom)])]);
     let wand = get(&set, "example:wand").unwrap();
     // The definition is the top document alone.
-    assert!(wand.description.textures.is_empty());
+    assert!(wand.description.slots.textures.is_empty());
     assert_eq!(wand.description.item, None);
     assert_eq!(wand.origin().pack.name(), "pack 1");
     // The bottom document's binding stays, and now selects the replacement.

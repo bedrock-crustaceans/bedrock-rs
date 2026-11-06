@@ -283,30 +283,6 @@ impl<K: crate::id::Kind> MolangFields for crate::id::Id<K> {
 // A filter and a range hold no Molang a document's walk visits.
 crate::impl_no_molang!(crate::shared::Filter, crate::shared::FilterSubject);
 
-/// The object form of a `render_controllers` entry: every member's condition is a Molang
-/// field at its key, under the walk's default spec (a family whose conditions read otherwise
-/// walks them with `schema::molang_with`).
-impl MolangFields for crate::visual::ControllerUse {
-    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
-        if let Self::Conditional(members) = self {
-            let spec = *visitor.default_spec();
-            members.visit_slot(&spec, visitor);
-        }
-    }
-}
-
-/// The object form of a `scripts.animate` entry, walked as [`ControllerUse`]'s is.
-///
-/// [`ControllerUse`]: crate::visual::ControllerUse
-impl MolangFields for crate::visual::AnimateEntry {
-    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
-        if let Self::Conditional(members) = self {
-            let spec = *visitor.default_spec();
-            members.visit_slot(&spec, visitor);
-        }
-    }
-}
-
 impl<T: crate::shared::RangeEnd> MolangFields for crate::shared::Range<T> {
     fn visit_molang(&mut self, _: &mut MolangVisitor<'_>) {}
 }

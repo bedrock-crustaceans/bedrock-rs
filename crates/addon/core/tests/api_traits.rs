@@ -15,11 +15,9 @@ use bedrock_addon_core::load::{AppData, Experiment, Experiments, LoadOptions};
 use bedrock_addon_core::pack_identity::{PackPath, PathRejected};
 use bedrock_addon_core::versioning::testing::{Checks, FailureKind};
 use bedrock_addon_core::versioning::{UpgradeCx, ValidateCx};
-use bedrock_addon_core::visual::{Color, DescriptionSlots, Visuals};
 
 fn assert_debug<T: Debug>() {}
 fn assert_clone<T: Clone>() {}
-fn assert_copy<T: Copy>() {}
 fn assert_eq_hash<T: Eq + std::hash::Hash>() {}
 fn assert_error<T: Error>() {}
 
@@ -29,10 +27,7 @@ fn the_borrowing_and_context_types_are_debug() {
     assert_debug::<UpgradeCx<'_>>();
     assert_debug::<ValidateCx<'_>>();
     assert_debug::<Checks<'_>>();
-    assert_debug::<DescriptionSlots<'_>>();
-    assert_debug::<Visuals<'_>>();
     assert_clone::<Checks<'_>>();
-    assert_copy::<Visuals<'_>>();
 }
 
 #[test]
@@ -55,11 +50,6 @@ fn the_error_types_derive_what_the_data_allows() {
         bedrock_addon_core::diagnostic::Span::default()
     );
     assert_eq!(AppData::default(), AppData::default());
-}
-
-#[test]
-fn color_defaults_to_nil() {
-    assert_eq!(Color::default(), Color::NIL);
 }
 
 #[test]

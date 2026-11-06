@@ -164,6 +164,7 @@ fn l06_the_document_loads_and_loading_does_not_resolve_references() {
     assert!(
         entity
             .description
+            .slots
             .particle_effects
             .as_ref()
             .unwrap()
@@ -234,7 +235,7 @@ fn reference_check_unknown_geometry() {
     );
     // The entry is kept as written.
     assert_eq!(
-        ghost_of(&set).description.geometry["other"].as_str(),
+        ghost_of(&set).description.slots.geometry["other"].as_str(),
         "Geometry.Nope"
     );
     // With every geometry defined nothing is said.
@@ -300,6 +301,7 @@ fn reference_check_unknown_animation() {
     assert_eq!(
         ghost_of(&set)
             .description
+            .slots
             .animations
             .as_ref()
             .unwrap()
@@ -350,6 +352,7 @@ fn reference_check_unknown_render_controller() {
     assert_eq!(
         ghost_of(&set)
             .description
+            .slots
             .render_controllers
             .as_ref()
             .unwrap()
@@ -468,7 +471,7 @@ fn the_definitions_the_reference_check_tests_resolve_against_load() {
     let entity = ghost_of(&set);
     silent(entity.diagnostics());
     assert_eq!(
-        entity.description.geometry["default"].as_str(),
+        entity.description.slots.geometry["default"].as_str(),
         "Geometry.Ghost"
     );
     assert_eq!(

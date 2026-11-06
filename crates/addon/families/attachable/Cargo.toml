@@ -13,10 +13,12 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
-molang = ["bedrock_addon_core/molang"]
+molang = ["bedrock_addon_core/molang", "bedrock_addon_shared_visual/molang"]
 
 [dependencies]
 bedrock_addon_core = { path = "../../core" }
+bedrock_addon_shared_shapes = { path = "../../shared/shapes" }
+bedrock_addon_shared_visual = { path = "../../shared/visual" }
 facet = { workspace = true }
 facet-json = { workspace = true }
 facet-value = { workspace = true }

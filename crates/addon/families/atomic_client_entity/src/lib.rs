@@ -33,7 +33,7 @@ use bedrock_addon_core::versioning::{
     BETA_VERSION, BetaPermission, BeyondWidth, Envelope, Family, InputKind, Loaded, MissingVersion,
     NoComponents, NoStable, Reading, Scalars, StructIndex, load, write_envelope,
 };
-use bedrock_addon_core::visual::{ControllerUse, HasVisuals, Visuals};
+use bedrock_addon_shared_visual::{ControllerUse, HasVisuals, Visuals};
 use facet::Facet;
 use indexmap::IndexMap;
 

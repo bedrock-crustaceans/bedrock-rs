@@ -67,6 +67,7 @@ fn a_vanilla_1_26_file_round_trips_and_writes_what_it_read() {
     assert!(
         document
             .description
+            .slots
             .scripts
             .as_ref()
             .unwrap()
@@ -113,6 +114,7 @@ fn a_description_the_schema_refuses_is_not_written() {
     );
     let mut key = ClientEntity::new(EntityId::parse("demo:ghost"));
     key.description
+        .slots
         .materials
         .insert("my:slot".to_owned(), MaterialId::parse("m"));
     refused(&key, &format!("{AT}/materials/my:slot"));

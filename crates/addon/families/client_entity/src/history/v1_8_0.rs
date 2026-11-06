@@ -1,6 +1,6 @@
 //! Format versions 1.8.0 up to 1.10.0, and the step to 1.10.0.
 
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase};
+use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
 use bedrock_addon_core::id::{
     AnimationRef, EntityId, GeometryId, MaterialId, ParticleId, RenderControllerId, SoundEventName,
     TexturePath,
@@ -10,13 +10,13 @@ use bedrock_addon_core::molang::{MolangFields, MolangVisitor, Step};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::version::known;
 use bedrock_addon_core::versioning::{ParseCx, Upgrade, UpgradeCx, VersionStruct, Versioned};
-use bedrock_addon_core::visual::history::{v1_8_0::Scripts, v1_10_0};
-use bedrock_addon_core::visual::{AnimateEntry, ControllerUse, SpawnEgg};
+use bedrock_addon_shared_visual::history::v1_8_0::Scripts;
+use bedrock_addon_shared_visual::history::v1_8_0::{ControllerList, animation_controllers};
+use bedrock_addon_shared_visual::{ControllerUse, SpawnEgg};
 use facet::Facet;
 use indexmap::IndexMap;
 
 use super::super::read::{self, is_map_key, not_valid_here};
-use super::super::validate::NAMED_SCRIPT;
 use super::super::write;
 
 /// A client entity document of format version 1.8.0 up to 1.10.0.
@@ -128,15 +128,7 @@ impl MolangFields for ClientEntity {
         visitor.enter(Step::Key(read::PAYLOAD));
         visitor.enter(Step::Key("description"));
         visitor.enter(Step::Key("scripts"));
-        visitor.field("pre_animation", &NAMED_SCRIPT, &mut scripts.pre_animation);
-        visitor.field("scale", &NAMED_SCRIPT, &mut scripts.scale);
-        visitor.field("scaleX", &NAMED_SCRIPT, &mut scripts.scale_x);
-        visitor.field("scalex", &NAMED_SCRIPT, &mut scripts.scalex);
-        visitor.field("scaleY", &NAMED_SCRIPT, &mut scripts.scale_y);
-        visitor.field("scaley", &NAMED_SCRIPT, &mut scripts.scaley);
-        visitor.field("scaleZ", &NAMED_SCRIPT, &mut scripts.scale_z);
-        visitor.field("scalez", &NAMED_SCRIPT, &mut scripts.scalez);
-        visitor.field("parent_setup", &NAMED_SCRIPT, &mut scripts.parent_setup);
+        scripts.visit_molang(visitor);
         visitor.leave();
         visitor.leave();
         visitor.leave();
@@ -153,86 +145,17 @@ impl Upgrade for ClientEntity {
     type Next = super::v1_10_0::ClientEntity;
 
     fn upgrade(self, cx: &mut UpgradeCx<'_>) -> Self::Next {
-        // The game's 1.8 to 1.10 step, controller by controller.
         let d = self.description;
-        let at = description_at();
         let mut animations = d.animations;
-        let mut scripts = d.scripts.map(|scripts| v1_10_0::Scripts {
-            variables: None,
-            initialize: None,
-            pre_animation: scripts.pre_animation,
-            scale: scripts.scale,
-            scale_x: scripts.scale_x,
-            scalex: scripts.scalex,
-            scale_y: scripts.scale_y,
-            scaley: scripts.scaley,
-            scale_z: scripts.scale_z,
-            scalez: scripts.scalez,
-            parent_setup: scripts.parent_setup,
-            should_update_bones_and_effects_offscreen: None,
-            should_update_effects_offscreen: None,
-            animate: None,
-        });
-        match (&mut animations, d.animation_controllers) {
-            (Some(animations), Some(controllers)) => {
-                let mut animate = Vec::with_capacity(controllers.len());
-                // The element and key each made name comes from.
-                let mut made_at: std::collections::HashMap<String, (usize, String)> =
-                    std::collections::HashMap::new();
-                for (index, element) in controllers.iter().enumerate() {
-                    // The game takes the first member of the element in its map order, which
-                    // is the smallest key by bytes.
-                    let Some((first, controller)) = element
-                        .iter()
-                        .min_by(|a, b| a.0.as_bytes().cmp(b.0.as_bytes()))
-                    else {
-                        cx.diagnostics.push(empty_element(&at, index));
-                        continue;
-                    };
-                    for key in element.keys().filter(|key| *key != first) {
-                        cx.diagnostics.push(
-                            Diagnostic::info(DiagnosticCode::DroppedField { text: None })
-                                .at(controller_at(&at, index, key))
-                                .phase(Phase::Upgrade),
-                        );
-                    }
-                    let name = format!("controller__{first}");
-                    let entry = animate.len();
-                    animate.push(AnimateEntry::Always(name.clone()));
-                    let made = AnimationRef::parse(controller.clone());
-                    // An animation of the file under the name is written over, as the
-                    // game's step writes over it; the crate notes it where it is (the game says
-                    // nothing). Where the animation is one an earlier element of this list
-                    // made, the file has it there, not under the made name.
-                    if animations
-                        .get(&name)
-                        .is_some_and(|own| own.as_str() != made.as_str())
-                    {
-                        cx.diagnostics
-                            .push(written_over(&at, &name, made_at.get(&name)));
-                    }
-                    made_at.insert(name.clone(), (index, first.clone()));
-                    // The notes above are of members the file has and stay where they are.
-                    made_of(cx, &at, controller_at(&at, index, first), &name, entry);
-                    animations.insert(name, made);
-                }
-                if !animate.is_empty() {
-                    scripts
-                        .get_or_insert_with(v1_10_0::Scripts::default)
-                        .animate
-                        .get_or_insert_with(Vec::new)
-                        .extend(animate);
-                }
-            }
-            (None, Some(_)) => {
-                // The v1_10 schema that runs next does not declare the member.
-                let found =
-                    not_valid_here("animation_controllers", at.with(&["animation_controllers"]))
-                        .phase(Phase::Upgrade);
-                cx.diagnostics.push(found);
-            }
-            (_, None) => {}
-        }
+        let mut scripts = d.scripts.map(Scripts::into_v1_10);
+        animation_controllers(
+            ControllerList::Moved,
+            d.animation_controllers,
+            &mut animations,
+            &mut scripts,
+            &description_at(),
+            cx,
+        );
         super::v1_10_0::ClientEntity {
             format_version: known::V1_10_0,
             description: super::v1_10_0::Description {
@@ -260,46 +183,6 @@ impl Upgrade for ClientEntity {
             },
         }
     }
-}
-
-/// Records that the animation `name` and the entry `entry` of `scripts.animate` were made of
-/// the controller at `from` (`at` is the description): what is told of them from here on is
-/// told at the controller.
-fn made_of(cx: &mut UpgradeCx<'_>, at: &JsonPath, from: JsonPath, name: &str, entry: usize) {
-    let mut entry_at = at.with(&["scripts", "animate"]);
-    entry_at.push_index(entry);
-    cx.diagnostics
-        .moved(from.clone(), at.with(&["animations", name]));
-    cx.diagnostics.moved(from, entry_at);
-}
-
-/// The note of the animation `name` a controller writes over, where the file has it: the
-/// element and key of `animation_controllers` an earlier controller made it from (`made`),
-/// or `animations` (`at` is the description).
-fn written_over(at: &JsonPath, name: &str, made: Option<&(usize, String)>) -> Diagnostic {
-    let replaced = made.map_or_else(
-        || at.with(&["animations", name]),
-        |(earlier, key)| controller_at(at, *earlier, key),
-    );
-    Diagnostic::info(DiagnosticCode::DroppedField { text: None })
-        .at(replaced)
-        .phase(Phase::Upgrade)
-}
-
-/// The member `key` of the element `index` of `animation_controllers` (`at` is the
-/// description).
-/// The note of an `animation_controllers` element without a member: it moves nothing and
-/// goes with the list (the crate's own note; the game is silent).
-fn empty_element(at: &JsonPath, index: usize) -> Diagnostic {
-    let mut element_at = at.with(&["animation_controllers"]);
-    element_at.push_index(index);
-    Diagnostic::info(DiagnosticCode::DroppedField { text: None })
-        .at(element_at)
-        .phase(Phase::Upgrade)
-}
-
-fn controller_at(at: &JsonPath, index: usize, key: &str) -> JsonPath {
-    at.child("animation_controllers").index(index).child(key)
 }
 
 /// `minecraft:client_entity/description`.

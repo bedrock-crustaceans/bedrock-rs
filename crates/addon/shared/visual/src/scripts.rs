@@ -3,7 +3,7 @@
 use indexmap::IndexMap;
 
 use super::AnimateEntry;
-use crate::molang::{Molang, MolangSource};
+use bedrock_addon_core::molang::{Molang, MolangSource};
 
 /// `scripts`: the Molang a client runs for the model, and the animations it plays.
 ///
@@ -113,11 +113,11 @@ pub(super) fn script_source(value: &Molang) -> Option<&MolangSource> {
 #[doc(hidden)]
 #[must_use]
 pub fn is_molang_place(
-    path: &[crate::diagnostic::JsonPathSegment<'_>],
+    path: &[bedrock_addon_core::diagnostic::JsonPathSegment<'_>],
     statements: bool,
     names_only: bool,
 ) -> bool {
-    use crate::diagnostic::JsonPathSegment::{Index, Key};
+    use bedrock_addon_core::diagnostic::JsonPathSegment::{Index, Key};
     match path {
         [Key("scripts"), Key(name)] => matches!(
             *name,

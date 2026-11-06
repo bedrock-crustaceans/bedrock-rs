@@ -1,7 +1,7 @@
 //! `description.held_item_scale`: a number, or Molang from engine 1.26.30.
 
-use crate::json::{JsonType, ScalarShape, StrictError};
-use crate::molang::{Molang, MolangSource};
+use bedrock_addon_core::json::{JsonType, ScalarShape, StrictError};
+use bedrock_addon_core::molang::{Molang, MolangSource};
 
 /// `held_item_scale`: how much larger or smaller items held by the entity are drawn; 1.0 when
 /// absent.

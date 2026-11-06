@@ -53,22 +53,26 @@ fn condition(text: &str) -> Molang {
 #[test]
 fn a_built_attachable_writes_text_that_reads_back_to_it() {
     let wand = built(|d| {
-        d.materials
+        d.slots
+            .materials
             .insert("default".to_owned(), MaterialId::parse("entity_alphatest"));
         d.item = Some(ItemBinding::Conditional(IndexMap::from([(
             "demo:wand_item".to_owned(),
             condition("query.is_sneaking"),
         )])));
-        d.render_controllers = Some(vec![ControllerUse::Always(RenderControllerId::parse(
+        d.slots.render_controllers = Some(vec![ControllerUse::Always(RenderControllerId::parse(
             "controller.render.item_default",
         ))]);
-        d.held_item_scale = Some(HeldItemScale::Number(0.1));
-        d.animations = Some(IndexMap::new());
+        d.slots.held_item_scale = Some(HeldItemScale::Number(0.1));
+        d.slots.animations = Some(IndexMap::new());
     });
     let text = wand.to_json().unwrap();
     let again = loaded(attachable(&text, &cx()));
     assert_eq!(again.to_json().unwrap(), text);
-    assert_eq!(again.description.materials, wand.description.materials);
+    assert_eq!(
+        again.description.slots.materials,
+        wand.description.slots.materials
+    );
     assert_eq!(again.binding().unwrap().0.as_str(), "demo:wand_item");
     // An authored empty `animations` is written; an absent one is not.
     assert!(text.contains("\"animations\": {}"), "{text}");
@@ -112,12 +116,13 @@ fn a_description_the_schema_refuses_is_not_written() {
         &format!("{AT}/identifier"),
     );
     let key = built(|d| {
-        d.materials
+        d.slots
+            .materials
             .insert("my:slot".to_owned(), MaterialId::parse("m"));
     });
     refused(&key, &format!("{AT}/materials/my:slot"));
     let variable = built(|d| {
-        d.scripts = Some(Scripts {
+        d.slots.scripts = Some(Scripts {
             variables: Some(IndexMap::from([(
                 "variable.x".to_owned(),
                 "private".to_owned(),
@@ -127,7 +132,7 @@ fn a_description_the_schema_refuses_is_not_written() {
     });
     refused(&variable, &format!("{AT}/scripts/variables/variable.x"));
     let empty_variables = built(|d| {
-        d.scripts = Some(Scripts {
+        d.slots.scripts = Some(Scripts {
             variables: Some(IndexMap::new()),
             ..Scripts::default()
         });
@@ -139,11 +144,11 @@ fn a_description_the_schema_refuses_is_not_written() {
 fn an_empty_conditional_object_is_written_and_reads_back() {
     // The loader holds such an entry (with its warning), so the writer writes it.
     let wand = built(|d| {
-        d.render_controllers = Some(vec![
+        d.slots.render_controllers = Some(vec![
             ControllerUse::Conditional(IndexMap::new()),
             ControllerUse::Always(RenderControllerId::parse("controller.render.wand")),
         ]);
-        d.scripts = Some(Scripts {
+        d.slots.scripts = Some(Scripts {
             animate: Some(vec![AnimateEntry::Conditional(IndexMap::new())]),
             ..Scripts::default()
         });
@@ -172,14 +177,14 @@ fn a_version_the_loader_refuses_is_not_written() {
 #[test]
 fn a_scale_that_is_no_number_is_not_written() {
     for scale in [f32::NAN, f32::INFINITY, f32::NEG_INFINITY] {
-        let wand = built(|d| d.held_item_scale = Some(HeldItemScale::Number(scale)));
+        let wand = built(|d| d.slots.held_item_scale = Some(HeldItemScale::Number(scale)));
         assert!(matches!(
             wand.to_json(),
             Err(EncodeError::NotRepresentable { .. })
         ));
     }
     // A scale at or below zero is written: the loader reads it, with its warning.
-    let wand = built(|d| d.held_item_scale = Some(HeldItemScale::Number(-1.0)));
+    let wand = built(|d| d.slots.held_item_scale = Some(HeldItemScale::Number(-1.0)));
     loaded(attachable(&wand.to_json().unwrap(), &cx()));
 }
 

@@ -6,6 +6,7 @@ use bedrock_addon_core::id::{AttachableId, ItemId};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::molang::{Molang, MolangSource, RawVersion};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef};
+use bedrock_addon_shared_shapes::named::{first_member, ignored_members};
 use indexmap::IndexMap;
 
 use super::Attachable;
@@ -68,21 +69,8 @@ impl ItemBinding {
             Self::Item(_) => None,
             Self::Conditional(members) => Some(members),
         };
-        let read = members.and_then(first_member).map(|(name, _)| name);
-        members
-            .into_iter()
-            .flat_map(IndexMap::keys)
-            .filter(move |name| Some(*name) != read)
-            .map(String::as_str)
+        ignored_members(members)
     }
-}
-
-// The member vanilla reads: a jsoncpp object is a `std::map` ordered by `strcmp`, so the
-// first member is the key that sorts first by bytes.
-fn first_member(members: &IndexMap<String, Molang>) -> Option<(&String, &Molang)> {
-    members
-        .iter()
-        .min_by(|a, b| a.0.as_bytes().cmp(b.0.as_bytes()))
 }
 
 /// The condition an item binding is drawn under.

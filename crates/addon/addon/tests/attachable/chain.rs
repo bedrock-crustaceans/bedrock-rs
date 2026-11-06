@@ -110,10 +110,10 @@ fn a10_without_the_list_the_step_only_stamps_the_version() {
     let document = loaded(history::upgrade(written, &cx()));
     clean(document.diagnostics());
     assert_eq!(document.format_version, FormatVersion::new(1, 26, 0));
-    let animations = document.description.animations.as_ref().unwrap();
+    let animations = document.description.slots.animations.as_ref().unwrap();
     assert_eq!(animations.len(), 1);
     assert_eq!(animations["hold"].as_str(), "animation.wand.hold");
-    let scripts = document.description.scripts.as_ref().unwrap();
+    let scripts = document.description.slots.scripts.as_ref().unwrap();
     assert_eq!(scripts.animate, None);
     assert!(scripts.parent_setup.is_some());
 }
