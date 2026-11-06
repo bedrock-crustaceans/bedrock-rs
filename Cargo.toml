@@ -86,3 +86,4 @@ ctr = "0.9"
 rayon = "1"
 oxc_parser = "0.153"
 brarchive = "0.5"
+md-5 = "0.11.0" # the manifest's stable ids for malformed UUIDs (the package is md-5, the library md5)

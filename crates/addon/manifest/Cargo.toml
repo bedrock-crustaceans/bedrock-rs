@@ -17,6 +17,7 @@ bedrock_addon_core = { path = "../core" }
 facet = { workspace = true }
 facet-value = { workspace = true }
 indexmap = { workspace = true }
+md-5 = { workspace = true }
 uuid = { workspace = true }
 
 [dev-dependencies]

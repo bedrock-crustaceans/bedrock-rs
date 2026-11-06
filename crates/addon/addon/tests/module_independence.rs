@@ -772,13 +772,14 @@ fn manifest_dir() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../manifest")
 }
 
-/// The crates the manifest crate may depend on: core, and the facet, `indexmap` and `uuid`
-/// crates core's types are made of.
-const MANIFEST_MAY_DEPEND_ON: [&str; 5] = [
+/// The crates the manifest crate may depend on: core, the facet, `indexmap` and `uuid` crates
+/// core's types are made of, and `md-5` for the stable ids of malformed UUIDs.
+const MANIFEST_MAY_DEPEND_ON: [&str; 6] = [
     "bedrock_addon_core",
     "facet",
     "facet-value",
     "indexmap",
+    "md-5",
     "uuid",
 ];
 
@@ -843,7 +844,7 @@ fn the_manifest_crate_depends_on_core_only() {
     let violations = manifest_violations(&manifest, &sources);
     assert!(
         violations.is_empty(),
-        "the manifest crate depends on bedrock_addon_core (facet, indexmap, uuid) only:\n{}",
+        "the manifest crate depends on bedrock_addon_core (facet, indexmap, md-5, uuid) only:\n{}",
         violations.join("\n")
     );
 }

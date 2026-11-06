@@ -1,8 +1,7 @@
 //! Manifest UUIDs: vanilla's text form and its replacement of a malformed one.
 
+use md5::{Digest, Md5};
 use uuid::Uuid;
-
-use super::md5;
 
 /// The salt vanilla prepends to a malformed UUID's text before hashing it.
 const UPGRADE_SALT: &str = "pack_id";
@@ -25,7 +24,7 @@ pub(super) fn salvage(raw: &str) -> Uuid {
     let mut input = Vec::with_capacity(UPGRADE_SALT.len() + raw.len());
     input.extend_from_slice(UPGRADE_SALT.as_bytes());
     input.extend_from_slice(raw.as_bytes());
-    let mut bytes = md5::digest(&input);
+    let mut bytes: [u8; 16] = Md5::digest(&input).into();
     bytes[6] = (bytes[6] & 0x0f) | 0x30;
     Uuid::from_bytes(bytes)
 }
@@ -34,7 +33,7 @@ pub(super) fn salvage(raw: &str) -> Uuid {
 /// format-0 module duplicates (the same hash over the UUID's text, with no salt): MD5 with the
 /// version nibble set to 3.
 pub(super) fn hash(text: &str) -> Uuid {
-    let mut bytes = md5::digest(text.as_bytes());
+    let mut bytes: [u8; 16] = Md5::digest(text.as_bytes()).into();
     bytes[6] = (bytes[6] & 0x0f) | 0x30;
     Uuid::from_bytes(bytes)
 }
@@ -43,8 +42,8 @@ pub(super) fn hash(text: &str) -> Uuid {
 mod tests {
     use super::*;
 
-    /// `hash` over more than one MD5 block, recorded from the hand MD5 and checked against
-    /// Python's `hashlib`: 57 bytes (the length crosses the 56-byte pad edge) and 70 (a full
+    /// `hash` over more than one MD5 block, recorded from the hand MD5 the `md-5` crate replaced and
+    /// checked against Python's `hashlib`: 57 bytes (the length crosses the 56-byte pad edge) and 70 (a full
     /// block and part of a second). `salvage` is pinned end to end in
     /// `tests/characterize_manifest.txt` ("legacy uuid malformed v0 pad edge", "... two blocks").
     #[test]

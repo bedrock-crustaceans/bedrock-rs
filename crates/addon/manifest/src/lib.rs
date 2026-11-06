@@ -2,14 +2,13 @@
 //! the capability registry, and the script-module parts surfaced as `script::ScriptModule`.
 //!
 //! No I/O, and no dependency but `bedrock_addon_core` (and the facet, `indexmap` and `uuid`
-//! crates it shares). Users reach it as `bedrock_addon::manifest`.
+//! crates it shares, and `md-5`). Users reach it as `bedrock_addon::manifest`.
 
 // Submodule declarations and root re-exports.
 mod capability;
 mod comprehensive;
 mod ids;
 mod legacy;
-mod md5;
 mod memory_tier;
 mod module_type;
 mod parse;
