@@ -22,6 +22,7 @@ pub enum SerializedAbilitiesLayer {
     Spectator = 2,
     Commands = 3,
     Editor = 4,
+    LoadingScreen = 5,
 }
 
 #[derive(ProtoCodec, Clone, Debug)]
