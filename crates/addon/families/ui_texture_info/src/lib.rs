@@ -22,7 +22,7 @@ use bedrock_addon_core::json::jsoncpp::{member, number};
 
 use bedrock_addon_core::diagnostic::Severity;
 use bedrock_addon_core::diagnostic::builders::file_finding;
-use bedrock_addon_core::diagnostic::builders::malformed;
+use bedrock_addon_core::diagnostic::builders::syntax;
 use bedrock_addon_core::document::unversioned::{document, lone, reject};
 use bedrock_addon_core::document::{Content, Document, JsonContent, Origin, Rejected};
 use bedrock_addon_core::document::{Files, FilesBuilder, FilesRule};
@@ -409,7 +409,7 @@ impl bedrock_addon_core::__private::Sealed for UiTextureInfo {}
 /// The root object of a file, or the rejection.
 fn root_object(origin: &Origin, bytes: &[u8]) -> Result<Value, Rejected> {
     let rejection = |message: String| {
-        let code = malformed(message, None);
+        let code = syntax(message).into();
         reject(origin.clone(), Diagnostic::error(code))
     };
     let root = read(bytes).map_err(|error| rejection(error.to_string()))?;

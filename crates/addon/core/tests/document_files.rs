@@ -72,7 +72,7 @@ fn copy(pack_index: usize, path: &'static str, from: &'static str) -> Document<T
 fn failed(pack_index: usize, path: &'static str) -> Result<Document<Table>, Rejected> {
     let mut diagnostics = Diagnostics::default();
     diagnostics.push(Diagnostic::new(
-        DiagnosticCode::InvalidType { text: None },
+        DiagnosticCode::from(&codes::INVALID_TYPE),
         Severity::Error,
         Phase::Parse,
         Location::new(Some(pack(pack_index)), None, JsonPath::new(), None),
@@ -185,7 +185,7 @@ fn under_top_wins_fallback_a_failing_copy_falls_through() {
     assert_eq!(
         codes,
         [
-            (DiagnosticCode::InvalidType { text: None }, Some(0)),
+            (DiagnosticCode::from(&codes::INVALID_TYPE), Some(0)),
             (DiagnosticCode::from(&codes::SHADOWED_DEFINITION), Some(0)),
         ]
     );

@@ -153,7 +153,7 @@ fn beta(pack_index: usize, text: &'static str, from: &'static str) -> Contributi
 fn an_error() -> Diagnostics {
     let mut diagnostics = Diagnostics::default();
     diagnostics.push(bedrock_addon_core::diagnostic::Diagnostic::new(
-        DiagnosticCode::MissingRequiredField { text: None },
+        DiagnosticCode::from(&codes::MISSING_REQUIRED_FIELD),
         Severity::Error,
         Phase::Parse,
         Location::new(None, None, JsonPath::new(), None),
@@ -280,7 +280,7 @@ fn top_wins_can_report_each_shadowed_definition() {
     let registry = build(
         CombineRule::TopWins {
             shadowed: Some(Notice {
-                code: DiagnosticCode::ClientEntityShadowed { reason: None },
+                code: DiagnosticCode::from(&codes::CLIENT_ENTITY_SHADOWED),
                 severity: Severity::Info,
             }),
         },
@@ -290,7 +290,7 @@ fn top_wins_can_report_each_shadowed_definition() {
     assert_eq!(
         codes(&registry),
         [(
-            DiagnosticCode::ClientEntityShadowed { reason: None },
+            DiagnosticCode::from(&codes::CLIENT_ENTITY_SHADOWED),
             Severity::Info,
             Some(1)
         )]
@@ -328,7 +328,7 @@ fn a_failed_top_document_does_not_reserve_its_identifier_under_top_wins() {
     assert_eq!(
         codes(&registry),
         [(
-            DiagnosticCode::MissingRequiredField { text: None },
+            DiagnosticCode::from(&codes::MISSING_REQUIRED_FIELD),
             Severity::Error,
             None
         )]
@@ -434,7 +434,7 @@ fn top_wins_fallback_keeps_the_lower_valid_definition_and_reports_it() {
     let registry = build(
         CombineRule::TopWinsFallback {
             fallback: Some(Notice {
-                code: DiagnosticCode::RenderControllerFallback,
+                code: DiagnosticCode::from(&codes::RENDER_CONTROLLER_FALLBACK),
                 severity: Severity::Warning,
             }),
         },
@@ -447,12 +447,12 @@ fn top_wins_fallback_keeps_the_lower_valid_definition_and_reports_it() {
         codes(&registry),
         [
             (
-                DiagnosticCode::MissingRequiredField { text: None },
+                DiagnosticCode::from(&codes::MISSING_REQUIRED_FIELD),
                 Severity::Error,
                 None
             ),
             (
-                DiagnosticCode::RenderControllerFallback,
+                DiagnosticCode::from(&codes::RENDER_CONTROLLER_FALLBACK),
                 Severity::Warning,
                 Some(0)
             ),
@@ -465,7 +465,7 @@ fn top_wins_fallback_is_silent_when_the_failure_is_lower() {
     let registry = build(
         CombineRule::TopWinsFallback {
             fallback: Some(Notice {
-                code: DiagnosticCode::RenderControllerFallback,
+                code: DiagnosticCode::from(&codes::RENDER_CONTROLLER_FALLBACK),
                 severity: Severity::Warning,
             }),
         },
@@ -476,7 +476,7 @@ fn top_wins_fallback_is_silent_when_the_failure_is_lower() {
     assert!(
         !codes(&registry)
             .iter()
-            .any(|(code, ..)| *code == DiagnosticCode::RenderControllerFallback)
+            .any(|(code, ..)| *code == DiagnosticCode::from(&codes::RENDER_CONTROLLER_FALLBACK))
     );
 }
 
@@ -487,7 +487,7 @@ fn claim_before_validate_a_failed_top_claim_leaves_the_identifier_undefined() {
     let registry = build(
         CombineRule::ClaimBeforeValidate {
             claimed: Some(Notice {
-                code: DiagnosticCode::ClientBiomeShadowsLowerPacks,
+                code: DiagnosticCode::from(&codes::CLIENT_BIOME_SHADOWS_LOWER_PACKS),
                 severity: Severity::Warning,
             }),
         },
@@ -516,7 +516,7 @@ fn claim_before_validate_a_failed_top_claim_leaves_the_identifier_undefined() {
     assert_eq!(
         codes(&registry).last(),
         Some(&(
-            DiagnosticCode::ClientBiomeShadowsLowerPacks,
+            DiagnosticCode::from(&codes::CLIENT_BIOME_SHADOWS_LOWER_PACKS),
             Severity::Warning,
             Some(0)
         ))
@@ -848,7 +848,7 @@ fn diagnostics_are_in_walk_order_documents_rejected_and_combine_time() {
     let mut warned = document(&pack(1), toy("warned"));
     let mut with_warning = Diagnostics::default();
     with_warning.push(bedrock_addon_core::diagnostic::Diagnostic::new(
-        DiagnosticCode::ClampedValue { text: None },
+        DiagnosticCode::from(&codes::CLAMPED_VALUE),
         Severity::Warning,
         Phase::Validate,
         Location::new(Some(pack(1)), None, JsonPath::new(), None),
@@ -872,12 +872,12 @@ fn diagnostics_are_in_walk_order_documents_rejected_and_combine_time() {
         codes(&registry),
         [
             (
-                DiagnosticCode::ClampedValue { text: None },
+                DiagnosticCode::from(&codes::CLAMPED_VALUE),
                 Severity::Warning,
                 Some(1)
             ),
             (
-                DiagnosticCode::MissingRequiredField { text: None },
+                DiagnosticCode::from(&codes::MISSING_REQUIRED_FIELD),
                 Severity::Error,
                 None
             ),

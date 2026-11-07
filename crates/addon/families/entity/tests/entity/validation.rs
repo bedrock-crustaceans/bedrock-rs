@@ -2,7 +2,7 @@
 //! goals and component versions.
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity, VanillaText};
+use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
 use bedrock_addon_core::document::ComponentRef;
 use bedrock_addon_core::document::JsonDocument;
 use bedrock_addon_core::load::{Experiment, LoadContext};
@@ -251,11 +251,11 @@ fn entity_version_below_1_26_20_is_an_unknown_member() {
 /// One structure check: `entity_version` as written gives `text`, and both members are
 /// dropped. The game's checks are kept errors (its level-3 lines, the entity loads
 /// versionless); the handler lookup's text is ours, an information.
-fn structure(version_json: &str, text: VanillaText) {
+fn structure(version_json: &str, line: &str) {
     let (entity, found) = stable(&doc("1.26.30", &versioned(version_json, HANDLERS)), &cx());
     let invalid = with_code(&found, "InvalidValue");
     assert_eq!(invalid.len(), 1, "{version_json}: {found:#?}");
-    if matches!(text, VanillaText::UpgradeHandlerUndefined { .. }) {
+    if line.starts_with("upgrade handler ") {
         assert_eq!(invalid[0].severity, Severity::Info, "{version_json}");
     } else {
         assert_eq!(
@@ -264,10 +264,13 @@ fn structure(version_json: &str, text: VanillaText) {
             "{version_json}"
         );
     }
-    let legacy = DiagnosticCode::InvalidValue { text: Some(text) };
     assert!(
         invalid[0].code.id().starts_with("entity/")
-            && bedrock_addon_core::diagnostic::testing::same_line(&invalid[0].code, &legacy),
+            && bedrock_addon_core::diagnostic::testing::same_line(
+                &invalid[0].code,
+                "InvalidValue",
+                line
+            ),
         "{version_json}: {:?}",
         invalid[0].code
     );
@@ -277,64 +280,49 @@ fn structure(version_json: &str, text: VanillaText) {
 
 #[test]
 fn every_vanilla_structure_message() {
-    use VanillaText::Fixed;
     structure(
         "[]",
-        Fixed("Error loading 'entity_version' as it is not a JSON object."),
+        "Error loading 'entity_version' as it is not a JSON object.",
     );
     structure(
         r#"{ "upgrades": {} }"#,
-        Fixed("Error loading 'entity_version' as 'upgrades' is not an array."),
+        "Error loading 'entity_version' as 'upgrades' is not an array.",
     );
     structure(
         r#"{ "upgrades": [ 1 ] }"#,
-        Fixed(
-            "Error loading 'entity_version' as 'upgrades' contains an entry that is not a JSON object.",
-        ),
+        "Error loading 'entity_version' as 'upgrades' contains an entry that is not a JSON object.",
     );
     structure(
         r#"{ "upgrades": [ { "upgrade_to": "1", "name": "x:v1" } ] }"#,
-        Fixed(
-            "Error loading 'entity_version' as an upgrade entry does not contain an integer 'upgrade_to'.",
-        ),
+        "Error loading 'entity_version' as an upgrade entry does not contain an integer 'upgrade_to'.",
     );
     structure(
         r#"{ "upgrades": [ { "upgrade_to": 1 } ] }"#,
-        Fixed(
-            "Error loading 'entity_version' as an upgrade entry does not contain a string 'name'.",
-        ),
+        "Error loading 'entity_version' as an upgrade entry does not contain a string 'name'.",
     );
     structure(
         r#"{ "upgrades": [ { "upgrade_to": 1, "name": "" } ] }"#,
-        Fixed("Error loading 'entity_version' as an upgrade entry's 'name' is empty."),
+        "Error loading 'entity_version' as an upgrade entry's 'name' is empty.",
     );
     structure(
         r#"{ "upgrades": [ { "upgrade_to": 0, "name": "x:v1" } ] }"#,
-        Fixed(
-            "Error loading 'entity_version' as an upgrade entry 'upgrade_to' version is 0, which is reserved for versionless entities.",
-        ),
+        "Error loading 'entity_version' as an upgrade entry 'upgrade_to' version is 0, which is reserved for versionless entities.",
     );
     structure(
         r#"{ "upgrades": [ { "upgrade_to": 2, "name": "x:v2" } ] }"#,
-        Fixed("Error loading 'entity_version' as its version does not start at 1."),
+        "Error loading 'entity_version' as its version does not start at 1.",
     );
     structure(
         r#"{ "upgrades": [ { "upgrade_to": 1, "name": "x:v1" }, { "upgrade_to": 1, "name": "x:v2" } ] }"#,
-        VanillaText::EntityVersionDuplicate { version: 1 },
+        "Error loading 'entity_version' as it contains multiple upgrade entries for version 1.",
     );
     structure(
         r#"{ "upgrades": [ { "upgrade_to": 1, "name": "x:v1" }, { "upgrade_to": 3, "name": "x:v2" } ] }"#,
-        VanillaText::EntityVersionGap {
-            identifier: "x:golem".to_owned(),
-            from: 1,
-            to: 3,
-        },
+        "Error loading 'x:golem' as it contains a non-contiguous version between 1 and 3.",
     );
     structure(
         r#"{ "upgrades": [ { "upgrade_to": 1, "name": "x:missing" } ] }"#,
-        VanillaText::UpgradeHandlerUndefined {
-            name: "x:missing".to_owned(),
-        },
+        "upgrade handler 'x:missing' is not defined in 'upgrades'",
     );
 }
 
@@ -479,13 +467,14 @@ fn an_event_with_randomize_and_sequence_still_validates_both_lists() {
         ignored[0].phase,
         bedrock_addon_core::diagnostic::Phase::Validate
     );
-    assert_eq!(
-        ignored[0].code,
-        DiagnosticCode::IgnoredMember {
-            text: Some(VanillaText::Fixed(
-                bedrock_addon_core::diagnostic::EVENT_BOTH_RANDOMIZE_AND_SEQUENCE
-            )),
-        }
+    assert!(
+        bedrock_addon_core::diagnostic::testing::same_line(
+            &ignored[0].code,
+            "IgnoredMember",
+            bedrock_addon_core::diagnostic::EVENT_BOTH_RANDOMIZE_AND_SEQUENCE
+        ),
+        "{:?}",
+        ignored[0].code
     );
     assert_eq!(
         ignored[0].location.json_path.to_string(),

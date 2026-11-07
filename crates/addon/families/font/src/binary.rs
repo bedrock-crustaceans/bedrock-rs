@@ -5,7 +5,7 @@ use indexmap::IndexMap;
 
 use super::GlyphPage;
 use super::codes;
-use bedrock_addon_core::diagnostic::builders::{invalid, malformed};
+use bedrock_addon_core::diagnostic::builders::{invalid, syntax};
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticDetail, Diagnostics, JsonPath};
 
@@ -29,7 +29,7 @@ impl GlyphPage {
         if bytes.len() != FONTDATA_SIZE {
             // A file of the wrong size.
             let message = format!("{} bytes, not {FONTDATA_SIZE}", bytes.len());
-            diagnostics.push(Diagnostic::info(malformed(message, None)));
+            diagnostics.push(Diagnostic::info(syntax(message).into()));
         }
         // A header the file does not hold whole is whatever the game's stack held: in practice
         // not 0.
@@ -108,14 +108,14 @@ impl GlyphRemapping {
                 to: u16::from_le_bytes([raw[2], raw[3]]),
             };
             if !seen.insert(entry.from) {
-                let code = malformed(format!("character {:#06X} mapped twice", entry.from), None);
+                let code = syntax(format!("character {:#06X} mapped twice", entry.from)).into();
                 diagnostics.push(Diagnostic::info(code).at(JsonPath::new().index(i)));
             }
             records.push(entry);
         }
         let rest = bytes.len() % 4;
         if rest != 0 {
-            let code = malformed(format!("{rest} bytes after the last record"), None);
+            let code = syntax(format!("{rest} bytes after the last record")).into();
             diagnostics.push(Diagnostic::info(code));
         }
         (Self(records), diagnostics)

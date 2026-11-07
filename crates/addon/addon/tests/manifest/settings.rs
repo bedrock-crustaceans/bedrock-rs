@@ -1,6 +1,6 @@
 //! The `manifest::Setting` rules (format 3 manifest settings and legacy manifests).
 
-use bedrock_addon::diagnostic::{DiagnosticCode as C, Diagnostics, Severity, VanillaText};
+use bedrock_addon::diagnostic::{Code, CodeMeta, DiagnosticCode as C, Diagnostics, Severity};
 use bedrock_addon::document::Document;
 use bedrock_addon::manifest::{DropdownOption, Manifest, Setting};
 use bedrock_addon_core::diagnostic::codes as core_codes;
@@ -22,50 +22,25 @@ fn refused(name: &str) -> Diagnostics {
     }
 }
 
-/// The vanilla texts of the `InvalidValue` errors, in order: the legacy text, or the one a
-/// pack settings definition stands for, built from its arguments.
-fn texts(diagnostics: &Diagnostics) -> Vec<VanillaText> {
+/// The codes of the pack settings definitions of core among the findings, in order.
+fn texts(diagnostics: &Diagnostics) -> Vec<Code> {
+    let settings: [&CodeMeta; 6] = [
+        core_codes::DUPLICATE_PACK_SETTING_NAME.meta(),
+        core_codes::SLIDER_MAX_NOT_ABOVE_MIN.meta(),
+        core_codes::SLIDER_STEP_TOO_LARGE.meta(),
+        core_codes::SLIDER_DEFAULT_OUT_OF_RANGE.meta(),
+        core_codes::DROPDOWN_DEFAULT_NOT_IN_OPTIONS.meta(),
+        core_codes::MULTISELECT_DEFAULT_NOT_IN_OPTIONS.meta(),
+    ];
     diagnostics
         .iter()
         .filter_map(|d| match &d.code {
-            C::InvalidValue { text: Some(text) } => Some(text.clone()),
-            C::Specific { code } => setting_text(code),
+            C::Specific { code } if settings.iter().any(|meta| meta.id() == code.id()) => {
+                Some(code.clone())
+            }
             _ => None,
         })
         .collect()
-}
-
-/// The legacy text a pack settings definition of core stands for.
-fn setting_text(code: &bedrock_addon::diagnostic::Code) -> Option<VanillaText> {
-    let args = code.args();
-    let arg = |index: usize| args[index].clone();
-    Some(if code.is(&core_codes::DUPLICATE_PACK_SETTING_NAME) {
-        VanillaText::DuplicatePackSettingName { name: arg(0) }
-    } else if code.is(&core_codes::SLIDER_MAX_NOT_ABOVE_MIN) {
-        VanillaText::SliderMaxNotAboveMin { name: arg(0) }
-    } else if code.is(&core_codes::SLIDER_STEP_TOO_LARGE) {
-        VanillaText::SliderStepTooLarge {
-            name: arg(0),
-            step: arg(1),
-        }
-    } else if code.is(&core_codes::SLIDER_DEFAULT_OUT_OF_RANGE) {
-        VanillaText::SliderDefaultOutOfRange {
-            name: arg(0),
-            default: arg(1),
-        }
-    } else if code.is(&core_codes::DROPDOWN_DEFAULT_NOT_IN_OPTIONS) {
-        VanillaText::DropdownDefaultNotInOptions {
-            name: arg(0),
-            default: arg(1),
-        }
-    } else if code.is(&core_codes::MULTISELECT_DEFAULT_NOT_IN_OPTIONS) {
-        VanillaText::MultiselectDefaultNotInOptions {
-            name: arg(0),
-            default: arg(1),
-        }
-    } else {
-        return None;
-    })
 }
 
 fn invalid_at(diagnostics: &Diagnostics, path: &str) -> bool {
@@ -156,9 +131,7 @@ fn mv06_the_minecraft_namespace_in_upper_case_is_an_error() {
 fn mv07_duplicate_names_are_an_error() {
     assert_eq!(
         texts(&refused("mv07_duplicate_names")),
-        [VanillaText::DuplicatePackSettingName {
-            name: "banana:slider".to_owned()
-        }]
+        [core_codes::DUPLICATE_PACK_SETTING_NAME.with(["banana:slider".to_owned()])]
     );
 }
 
@@ -167,9 +140,7 @@ fn mv08_slider_max_not_above_min() {
     let texts = texts(&refused("mv08_slider_min_max"));
     assert_eq!(
         texts[0],
-        VanillaText::SliderMaxNotAboveMin {
-            name: "banana:slider".to_owned()
-        }
+        core_codes::SLIDER_MAX_NOT_ABOVE_MIN.with(["banana:slider".to_owned()])
     );
 }
 
@@ -177,10 +148,7 @@ fn mv08_slider_max_not_above_min() {
 fn mv09_slider_step_above_the_range() {
     assert_eq!(
         texts(&refused("mv09_slider_step")),
-        [VanillaText::SliderStepTooLarge {
-            name: "banana:slider".to_owned(),
-            step: "5".to_owned(),
-        }]
+        [core_codes::SLIDER_STEP_TOO_LARGE.with(["banana:slider".to_owned(), "5".to_owned()])]
     );
 }
 
@@ -188,10 +156,8 @@ fn mv09_slider_step_above_the_range() {
 fn mv10_slider_default_out_of_range() {
     assert_eq!(
         texts(&refused("mv10_slider_default")),
-        [VanillaText::SliderDefaultOutOfRange {
-            name: "banana:slider".to_owned(),
-            default: "11".to_owned(),
-        }]
+        [core_codes::SLIDER_DEFAULT_OUT_OF_RANGE
+            .with(["banana:slider".to_owned(), "11".to_owned()])]
     );
 }
 
@@ -207,10 +173,8 @@ fn mv11_slider_step_zero_is_a_constraint_error() {
 fn mv12_dropdown_default_not_in_options() {
     assert_eq!(
         texts(&refused("mv12_dropdown_default")),
-        [VanillaText::DropdownDefaultNotInOptions {
-            name: "banana:dropdown".to_owned(),
-            default: "durian".to_owned(),
-        }]
+        [core_codes::DROPDOWN_DEFAULT_NOT_IN_OPTIONS
+            .with(["banana:dropdown".to_owned(), "durian".to_owned()])]
     );
 }
 
@@ -253,10 +217,8 @@ fn mv15_multiselect_with_no_and_two_defaults_is_valid() {
 fn mv16_multiselect_default_not_in_options() {
     assert_eq!(
         texts(&refused("mv16_multiselect_bad_default")),
-        [VanillaText::MultiselectDefaultNotInOptions {
-            name: "banana:fruits".to_owned(),
-            default: "durian".to_owned(),
-        }]
+        [core_codes::MULTISELECT_DEFAULT_NOT_IN_OPTIONS
+            .with(["banana:fruits".to_owned(), "durian".to_owned()])]
     );
 }
 
@@ -321,15 +283,9 @@ fn mv20_one_slider_can_fail_all_three_checks_in_order() {
     assert_eq!(
         texts,
         [
-            VanillaText::SliderMaxNotAboveMin { name: name() },
-            VanillaText::SliderStepTooLarge {
-                name: name(),
-                step: "2".to_owned()
-            },
-            VanillaText::SliderDefaultOutOfRange {
-                name: name(),
-                default: "6".to_owned()
-            },
+            core_codes::SLIDER_MAX_NOT_ABOVE_MIN.with([name()]),
+            core_codes::SLIDER_STEP_TOO_LARGE.with([name(), "2".to_owned()]),
+            core_codes::SLIDER_DEFAULT_OUT_OF_RANGE.with([name(), "6".to_owned()]),
         ]
     );
     // The numbers print as `{}` prints an `f32` (`5`, not `5.0`).

@@ -6,7 +6,7 @@ use indexmap::IndexMap;
 
 use super::fields::{Fields, Written};
 use super::{Emoticon, EmoticonList};
-use bedrock_addon_core::diagnostic::builders::{invalid, malformed};
+use bedrock_addon_core::diagnostic::builders::{invalid, syntax};
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath};
 use bedrock_addon_core::json::Value;
@@ -80,9 +80,7 @@ impl Authored for EmoticonList {
         let Some(elements) = root.as_array() else {
             // The game returns silently here, so the crate reports an information without the
             // "Malformed JSON" assert, which belongs to an empty file.
-            diagnostics.push(
-                Diagnostic::info(malformed("the root is not an array".to_owned(), None)).at(at),
-            );
+            diagnostics.push(Diagnostic::info(syntax("the root is not an array").into()).at(at));
             return Self::default();
         };
         let mut seen: HashSet<&str> = HashSet::new();

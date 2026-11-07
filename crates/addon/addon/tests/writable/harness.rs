@@ -1332,7 +1332,7 @@ fn kept_line(finding: &Diagnostic) -> Option<String> {
 mod kept_line_tests {
     use super::kept_line;
     use bedrock_addon::diagnostic::{
-        Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
+        Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, codes,
     };
 
     fn kept_at(code: DiagnosticCode, key: &str) -> Diagnostic {
@@ -1352,8 +1352,8 @@ mod kept_line_tests {
     /// of the game's to pair by.
     #[test]
     fn two_kept_errors_without_a_game_text_do_not_pair() {
-        let a = kept_at(DiagnosticCode::InvalidType { text: None }, "a");
-        let b = kept_at(DiagnosticCode::InvalidType { text: None }, "b");
+        let a = kept_at(DiagnosticCode::from(&codes::INVALID_TYPE), "a");
+        let b = kept_at(DiagnosticCode::from(&codes::INVALID_TYPE), "b");
         let (a, b) = (kept_line(&a), kept_line(&b));
         assert!(a.is_none() || a != b, "{a:?} pairs with {b:?}");
     }
@@ -1361,15 +1361,10 @@ mod kept_line_tests {
     /// The same game text under two codes at two places is the one line.
     #[test]
     fn two_kept_errors_with_one_game_text_pair() {
-        use bedrock_addon::diagnostic::VanillaText;
-        let text = || {
-            Some(VanillaText::Fixed(
-                "There must be an \"entries\" array inside the loot table pool.",
-            ))
-        };
-        let a = kept_at(DiagnosticCode::InvalidType { text: text() }, "entries");
+        let text = "There must be an \"entries\" array inside the loot table pool.";
+        let a = kept_at(codes::INVALID_TYPE_WORDED.with([text]).into(), "entries");
         let b = kept_at(
-            DiagnosticCode::MissingRequiredField { text: text() },
+            codes::MISSING_REQUIRED_FIELD_WORDED.with([text]).into(),
             "pool",
         );
         assert!(kept_line(&a).is_some());

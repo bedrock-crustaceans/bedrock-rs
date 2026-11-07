@@ -210,7 +210,7 @@ The JSON path of a location (`location.json_path`, a `diagnostic::JsonPath`) is 
 A document of a family with a version history whose own load raises an error is not in its collection: it is in `rejected()` of its `Registry` or `Files`, with every finding about it (the block of the example below; texture sets call theirs `rejected_sets()`). `blocks.json`, which is one file and no such family, keeps its file with an error at an entry it refuses; only a file that is no JSON object is rejected. And an error is not always a rejection: one the stack tells when it combines the packs' definitions can leave the document in the registry. A dialogue scene tag that two packs define, for example, is told with an error, and the scene stays as a shadowed layer. A member the game reads strictly refuses a value of another JSON type (`InvalidType`). Elsewhere a scalar of another JSON type than its member's (`7` where a string belongs, `"7"` where a number does) is converted, the member holds the converted value, and an `InvalidType` warning at the member says so. Three codes say what a load did with a value it does not hold as the file has it: `DroppedField` (the file's value at the member is gone: a rule or an upgrade step removes or replaces it), `MemberNotKept` (a member no schema declares, at a place that keeps no unknown members: read, not held, not written back) and `ValueRewritten` (the member stays and its value is held, and written, in another form than the file has: a name in another case, a boolean for a number; also a value the written format has no spelling for, written as the nearest it has, and a value a written table carries under another member, which the finding's note names). `LossyConversion` is a number that a 32-bit float does not hold as written; it is raised by the readers of fog and the render documents read the same way, of geometry and of legacy trade tables, and by no other, so its absence says nothing elsewhere. A `StackReport` (`PackStack::report()`, `StackSet::load_all()`) lists the findings of everything loaded so far and filters them with `at_least(Severity)`, `has_errors()`, `by_pack()` and `by_file()`.
 
 ```rust
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon::diagnostic::{Kind, Severity};
 use bedrock_addon::load::LoadOptions;
 use bedrock_addon::pack::{Behavior, OpenOptions, Pack, PackStack};
 use bedrock_addon::storage::PackPath;
@@ -249,7 +249,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     let missing = report
         .iter()
-        .filter(|finding| matches!(finding.code, DiagnosticCode::MissingRequiredField { .. }))
+        .filter(|finding| finding.kind() == Kind::MissingRequired)
         .count();
     assert_eq!(missing, 1);
     Ok(())
@@ -330,7 +330,7 @@ A name that resolves to nothing is `DiagnosticCode::UnresolvedReference`, one th
 ```rust
 use std::sync::Arc;
 
-use bedrock_addon::diagnostic::{DiagnosticCode, DiagnosticDetail, Diagnostics, Phase, Severity};
+use bedrock_addon::diagnostic::{DiagnosticDetail, Diagnostics, Kind, Phase, Severity};
 use bedrock_addon::load::{BuiltIns, LoadOptions};
 use bedrock_addon::pack::{OpenOptions, Pack, PackOrigin, PackRepository, WorldPacks};
 use bedrock_addon::storage::PackPath;
@@ -388,7 +388,7 @@ fn unresolved_blocks(options: LoadOptions) -> Result<Vec<String>, Box<dyn std::e
     Ok(links
         .iter()
         .map(|finding| {
-            assert!(matches!(finding.code, DiagnosticCode::UnresolvedReference { .. }));
+            assert_eq!(finding.kind(), Kind::UnresolvedReference);
             assert_eq!((finding.severity, finding.phase), (Severity::Error, Phase::Link));
             match finding.detail.as_deref() {
                 Some(DiagnosticDetail::Reference { kind: "block", id, .. }) => id.clone(),

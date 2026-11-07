@@ -1056,11 +1056,22 @@ fn config_folders_told(
     config
         .unmatched_folders_of_modules(stack.scripts().iter().filter_map(|bundle| bundle.module))
         .iter()
-        .map(|finding| match &finding.code {
-            DiagnosticCode::UnmatchedConfigFolder { folder, expected } => {
-                (folder.clone(), finding.severity, *expected)
-            }
-            other => panic!("{other:?}"),
+        .map(|finding| {
+            let folder = finding
+                .code
+                .args_of(&bedrock_addon::diagnostic::codes::UNMATCHED_CONFIG_FOLDER)
+                .or_else(|| {
+                    finding.code.args_of(
+                        &bedrock_addon::diagnostic::codes::UNMATCHED_CONFIG_FOLDER_EXPECTED,
+                    )
+                })
+                .unwrap_or_else(|| panic!("{:?}", finding.code))[0]
+                .clone();
+            let expected = match finding.detail.as_deref() {
+                Some(bedrock_addon::diagnostic::DiagnosticDetail::Uuid(uuid)) => Some(*uuid),
+                _ => None,
+            };
+            (folder, finding.severity, expected)
         })
         .collect()
 }

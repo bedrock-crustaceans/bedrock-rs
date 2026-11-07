@@ -7,7 +7,7 @@ use bedrock_addon_core::test_cost as cost;
 
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Location, PackReport,
-    Phase, ReferenceHint, Severity, Span, VanillaText,
+    Phase, ReferenceHint, Severity, Span, codes,
 };
 use bedrock_addon_core::document::Origin;
 use bedrock_addon_core::load::{Place, RootId};
@@ -33,16 +33,19 @@ fn friction_path() -> JsonPath {
 fn mixed_findings() -> Diagnostics {
     let mut diagnostics = Diagnostics::default();
     diagnostics.push(finding(
-        DiagnosticCode::UnknownSound { text: None },
+        DiagnosticCode::from(&codes::UNKNOWN_SOUND),
         Severity::Warning,
     ));
     diagnostics.push(finding(
-        DiagnosticCode::InvalidValue { text: None },
+        DiagnosticCode::from(&codes::INVALID_VALUE),
         Severity::Error,
     ));
-    diagnostics.push(finding(DiagnosticCode::NoSplashes, Severity::Info));
     diagnostics.push(finding(
-        DiagnosticCode::MissingRequiredField { text: None },
+        DiagnosticCode::from(&codes::NO_SPLASHES),
+        Severity::Info,
+    ));
+    diagnostics.push(finding(
+        DiagnosticCode::from(&codes::MISSING_REQUIRED_FIELD),
         Severity::Error,
     ));
     diagnostics
@@ -80,10 +83,10 @@ fn severity_orders_debug_info_warning_error() {
 #[test]
 fn diagnostic_new_has_no_detail() {
     let diagnostic = finding(
-        DiagnosticCode::UnknownSound { text: None },
+        DiagnosticCode::from(&codes::UNKNOWN_SOUND),
         Severity::Warning,
     );
-    assert_eq!(diagnostic.code, DiagnosticCode::UnknownSound { text: None });
+    assert_eq!(diagnostic.code, DiagnosticCode::from(&codes::UNKNOWN_SOUND));
     assert_eq!(diagnostic.severity, Severity::Warning);
     assert_eq!(diagnostic.phase, Phase::Validate);
     assert_eq!(diagnostic.location, Location::default());
@@ -135,7 +138,7 @@ fn empty_diagnostics_have_no_errors_and_no_severity() {
 fn has_errors_needs_an_error_level_finding() {
     let mut diagnostics = Diagnostics::default();
     diagnostics.push(finding(
-        DiagnosticCode::UnknownSound { text: None },
+        DiagnosticCode::from(&codes::UNKNOWN_SOUND),
         Severity::Warning,
     ));
     assert!(!diagnostics.has_errors());
@@ -145,12 +148,18 @@ fn has_errors_needs_an_error_level_finding() {
 #[test]
 fn max_severity_is_the_most_severe() {
     let mut diagnostics = Diagnostics::default();
-    diagnostics.push(finding(DiagnosticCode::NoSplashes, Severity::Info));
     diagnostics.push(finding(
-        DiagnosticCode::UnknownSound { text: None },
+        DiagnosticCode::from(&codes::NO_SPLASHES),
+        Severity::Info,
+    ));
+    diagnostics.push(finding(
+        DiagnosticCode::from(&codes::UNKNOWN_SOUND),
         Severity::Warning,
     ));
-    diagnostics.push(finding(DiagnosticCode::LiteralIgnored, Severity::Debug));
+    diagnostics.push(finding(
+        DiagnosticCode::from(&codes::LITERAL_IGNORED),
+        Severity::Debug,
+    ));
     assert_eq!(diagnostics.max_severity(), Some(Severity::Warning));
     assert_eq!(mixed_findings().max_severity(), Some(Severity::Error));
 }
@@ -174,22 +183,22 @@ fn at_least_filters_by_severity_in_order() {
 fn first_error_is_the_earliest_error() {
     let diagnostics = mixed_findings();
     let first = diagnostics.first_error().expect("two errors");
-    assert!(matches!(first.code, DiagnosticCode::InvalidValue { .. }));
+    assert!(first.is(&codes::INVALID_VALUE));
 }
 
 #[test]
 fn extend_appends_in_order() {
     let mut diagnostics = Diagnostics::default();
     diagnostics.push(finding(
-        DiagnosticCode::UnknownSound { text: None },
+        DiagnosticCode::from(&codes::UNKNOWN_SOUND),
         Severity::Warning,
     ));
     diagnostics.extend(mixed_findings());
     assert_eq!(diagnostics.len(), 5);
-    assert!(matches!(
+    assert_eq!(
         diagnostics.iter().nth(1).map(|d| &d.code),
-        Some(DiagnosticCode::UnknownSound { text: None })
-    ));
+        Some(&DiagnosticCode::from(&codes::UNKNOWN_SOUND))
+    );
 }
 
 /// A kept error then a rejecting one: the game keeps the document after the first, so the
@@ -197,11 +206,11 @@ fn extend_appends_in_order() {
 fn kept_then_rejecting() -> Diagnostics {
     let mut diagnostics = Diagnostics::default();
     diagnostics.push_kept_error(finding(
-        DiagnosticCode::InvalidValue { text: None },
+        DiagnosticCode::from(&codes::INVALID_VALUE),
         Severity::Error,
     ));
     diagnostics.push(finding(
-        DiagnosticCode::MissingRequiredField { text: None },
+        DiagnosticCode::from(&codes::MISSING_REQUIRED_FIELD),
         Severity::Error,
     ));
     diagnostics
@@ -212,10 +221,7 @@ fn first_error_skips_a_kept_error() {
     let diagnostics = kept_then_rejecting();
     let first = diagnostics.first_error().expect("a rejecting error");
     assert!(first.rejects(), "the first error is the first that rejects");
-    assert!(matches!(
-        first.code,
-        DiagnosticCode::MissingRequiredField { .. }
-    ));
+    assert!(first.is(&codes::MISSING_REQUIRED_FIELD));
 }
 
 #[test]
@@ -233,11 +239,11 @@ fn summary_names_a_rejecting_error_before_a_kept_one() {
 fn summary_of_only_kept_errors_names_the_first_of_them() {
     let mut diagnostics = Diagnostics::default();
     diagnostics.push(finding(
-        DiagnosticCode::UnknownSound { text: None },
+        DiagnosticCode::from(&codes::UNKNOWN_SOUND),
         Severity::Warning,
     ));
     diagnostics.push_kept_error(finding(
-        DiagnosticCode::InvalidValue { text: None },
+        DiagnosticCode::from(&codes::INVALID_VALUE),
         Severity::Error,
     ));
     let kept = diagnostics
@@ -252,7 +258,7 @@ fn summary_of_only_kept_errors_names_the_first_of_them() {
 fn first_error_of_only_kept_errors_is_none() {
     let mut diagnostics = Diagnostics::default();
     diagnostics.push_kept_error(finding(
-        DiagnosticCode::InvalidValue { text: None },
+        DiagnosticCode::from(&codes::INVALID_VALUE),
         Severity::Error,
     ));
     assert!(!diagnostics.has_errors());
@@ -276,14 +282,20 @@ fn summary_names_the_first_error() {
 #[test]
 fn summary_without_errors_names_the_most_severe() {
     let mut diagnostics = Diagnostics::default();
-    diagnostics.push(finding(DiagnosticCode::NoSplashes, Severity::Info));
     diagnostics.push(finding(
-        DiagnosticCode::UnknownSound { text: None },
+        DiagnosticCode::from(&codes::NO_SPLASHES),
+        Severity::Info,
+    ));
+    diagnostics.push(finding(
+        DiagnosticCode::from(&codes::UNKNOWN_SOUND),
         Severity::Warning,
     ));
-    diagnostics.push(finding(DiagnosticCode::PersonaPiecePack, Severity::Warning));
+    diagnostics.push(finding(
+        DiagnosticCode::from(&codes::PERSONA_PIECE_PACK),
+        Severity::Warning,
+    ));
     let warning = finding(
-        DiagnosticCode::UnknownSound { text: None },
+        DiagnosticCode::from(&codes::UNKNOWN_SOUND),
         Severity::Warning,
     )
     .to_string();
@@ -293,11 +305,11 @@ fn summary_without_errors_names_the_most_severe() {
 #[test]
 fn display_has_the_content_log_shape() {
     let mut diagnostic = finding(
-        DiagnosticCode::UnknownSound { text: None },
+        DiagnosticCode::from(&codes::UNKNOWN_SOUND),
         Severity::Warning,
     );
     diagnostic.location.json_path = friction_path();
-    let message = DiagnosticCode::UnknownSound { text: None }.to_string();
+    let message = DiagnosticCode::from(&codes::UNKNOWN_SOUND).to_string();
     assert_eq!(
         diagnostic.to_string(),
         format!("[warning] minecraft:block/components/minecraft:friction | {message}")
@@ -307,10 +319,10 @@ fn display_has_the_content_log_shape() {
 #[test]
 fn display_without_location_is_severity_and_message() {
     let diagnostic = finding(
-        DiagnosticCode::MissingRequiredField { text: None },
+        DiagnosticCode::from(&codes::MISSING_REQUIRED_FIELD),
         Severity::Error,
     );
-    let message = DiagnosticCode::MissingRequiredField { text: None }.to_string();
+    let message = DiagnosticCode::from(&codes::MISSING_REQUIRED_FIELD).to_string();
     assert_eq!(diagnostic.to_string(), format!("[error] {message}"));
 }
 
@@ -322,7 +334,7 @@ fn display_names_each_severity_in_lower_case() {
         (Severity::Warning, "[warning] "),
         (Severity::Error, "[error] "),
     ] {
-        let text = finding(DiagnosticCode::NoSplashes, severity).to_string();
+        let text = finding(DiagnosticCode::from(&codes::NO_SPLASHES), severity).to_string();
         assert!(text.starts_with(word), "{text}");
     }
 }
@@ -330,7 +342,7 @@ fn display_names_each_severity_in_lower_case() {
 #[test]
 fn display_appends_the_reference_detail() {
     let mut diagnostic = finding(
-        DiagnosticCode::UnresolvedReference { text: None },
+        DiagnosticCode::from(&codes::UNRESOLVED_REFERENCE),
         Severity::Warning,
     );
     diagnostic.detail = Some(Box::new(DiagnosticDetail::Reference {
@@ -338,7 +350,7 @@ fn display_appends_the_reference_detail() {
         id: "geometry.Ruby".into(),
         hint: Some(ReferenceHint::CaseMismatch("geometry.ruby".into())),
     }));
-    let message = DiagnosticCode::UnresolvedReference { text: None }.to_string();
+    let message = DiagnosticCode::from(&codes::UNRESOLVED_REFERENCE).to_string();
     let text = diagnostic.to_string();
     assert!(
         text.starts_with(&format!("[warning] {message}: geometry 'geometry.Ruby'")),
@@ -350,7 +362,7 @@ fn display_appends_the_reference_detail() {
 /// The tried paths of a file lookup are a list, and print as one joined reference.
 #[test]
 fn display_appends_the_tried_paths_detail() {
-    let code = DiagnosticCode::FontFileMissing { text: None };
+    let code = DiagnosticCode::from(&codes::FONT_FILE_MISSING);
     let mut diagnostic = finding(code.clone(), Severity::Warning);
     let detail = DiagnosticDetail::TriedPaths {
         kind: "font file",
@@ -513,12 +525,12 @@ fn pack_report_summary_names_the_first_error() {
 #[test]
 fn display_names_the_file_before_the_json_path() {
     let mut diagnostic = finding(
-        DiagnosticCode::UnknownSound { text: None },
+        DiagnosticCode::from(&codes::UNKNOWN_SOUND),
         Severity::Warning,
     );
     diagnostic.location.path = Some(PackPath::from_static("blocks/ruby.json"));
     diagnostic.location.json_path = friction_path();
-    let message = DiagnosticCode::UnknownSound { text: None }.to_string();
+    let message = DiagnosticCode::from(&codes::UNKNOWN_SOUND).to_string();
     assert_eq!(
         diagnostic.to_string(),
         format!(
@@ -546,13 +558,13 @@ fn display_names_the_pack_first() {
     let pack = ruby_pack();
     let name = pack.name().to_owned();
     let mut diagnostic = finding(
-        DiagnosticCode::UnknownSound { text: None },
+        DiagnosticCode::from(&codes::UNKNOWN_SOUND),
         Severity::Warning,
     );
     diagnostic.location.pack = Some(pack);
     diagnostic.location.path = Some(PackPath::from_static("blocks/ruby.json"));
     diagnostic.location.json_path = friction_path();
-    let message = DiagnosticCode::UnknownSound { text: None }.to_string();
+    let message = DiagnosticCode::from(&codes::UNKNOWN_SOUND).to_string();
     assert_eq!(
         diagnostic.to_string(),
         format!(
@@ -840,10 +852,10 @@ fn span_line_col_does_not_count_a_byte_order_mark_as_a_column() {
 #[test]
 fn display_appends_a_note_after_the_message() {
     let mut diagnostic = finding(
-        DiagnosticCode::ValueRewritten { text: None },
+        DiagnosticCode::from(&codes::VALUE_REWRITTEN),
         Severity::Info,
     );
-    let message = DiagnosticCode::ValueRewritten { text: None }.to_string();
+    let message = DiagnosticCode::from(&codes::VALUE_REWRITTEN).to_string();
     assert_eq!(diagnostic.to_string(), format!("[info] {message}"));
     diagnostic.detail = Some(Box::new(DiagnosticDetail::Note("written as `x`")));
     assert_eq!(
@@ -870,11 +882,11 @@ fn moved_findings() -> (Diagnostics, JsonPath, JsonPath) {
     let (from, to) = (JsonPath::of_keys(["old"]), JsonPath::of_keys(["new"]));
     let mut diagnostics = Diagnostics::default();
     diagnostics.push(finding(
-        DiagnosticCode::UnknownSound { text: None },
+        DiagnosticCode::from(&codes::UNKNOWN_SOUND),
         Severity::Warning,
     ));
     diagnostics.moved(from.clone(), to.clone());
-    diagnostics.push(Diagnostic::error(DiagnosticCode::InvalidValue { text: None }).at(to.clone()));
+    diagnostics.push(Diagnostic::error(DiagnosticCode::from(&codes::INVALID_VALUE)).at(to.clone()));
     diagnostics.name_as_the_file_has_it();
     assert_eq!(diagnostics.place_of(&to), from);
     (diagnostics, from, to)
@@ -920,10 +932,7 @@ fn locate_in_place_keeps_the_places_take_and_repush_drops() {
 /// the game's sentence alone, as `MalformedInput` prints it when its `text` is given.
 #[test]
 fn a_syntax_detail_is_data_and_not_in_the_line() {
-    let bare = Diagnostic::error(DiagnosticCode::MalformedInput {
-        message: String::new(),
-        text: Some(VanillaText::Fixed("parse error")),
-    });
+    let bare = Diagnostic::error(codes::MALFORMED_INPUT_WORDED.with(["parse error"]).into());
     let with = bare
         .clone()
         .detail(DiagnosticDetail::Syntax("unexpected '}'".into()));

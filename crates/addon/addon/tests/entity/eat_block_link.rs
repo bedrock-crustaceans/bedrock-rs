@@ -1,6 +1,6 @@
 //! `eat_block` with an unknown block in a pair, through a world (link rule E10).
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity, VanillaText};
+use bedrock_addon::diagnostic::Severity;
 
 /// `v12_component_value_messages`, `eat_block` with an unknown block in a pair,
 /// through a world: resolving the name needs the block registry, so the link pass tells it
@@ -18,13 +18,12 @@ fn v12_eat_block_unknown_block_is_reported_with_vanillas_text() {
         .find(|f| f.code.name() == "UnresolvedReference")
         .unwrap_or_else(|| panic!("{d:?}"));
     assert_eq!(found.severity, Severity::Error);
-    let legacy = DiagnosticCode::UnresolvedReference {
-        text: Some(VanillaText::EatBlockInvalidBlock {
-            block: "demo:nothing".to_owned(),
-        }),
-    };
     assert!(
-        bedrock_addon::diagnostic::testing::same_line(&found.code, &legacy),
+        bedrock_addon::diagnostic::testing::same_line(
+            &found.code,
+            "UnresolvedReference",
+            "Block demo:nothing on \"eat_and_replace_block_pairs\" on \"minecraft:behavior.eat_block\" is not a valid block."
+        ),
         "{:?}",
         found.code
     );

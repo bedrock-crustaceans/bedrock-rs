@@ -1,7 +1,7 @@
 //! The version chain: contiguity, struct selection, the
 //! floor and the ceiling, beta documents, the in-payload version.
 
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity, VanillaText};
+use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
 use bedrock_addon_core::document::JsonDocument;
 use bedrock_addon_core::json::JsonSlice;
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput};
@@ -92,15 +92,13 @@ fn below_the_floor_is_unsupported_with_the_floor_text() {
 fn above_the_engine_is_unsupported_with_vanillas_resource_pack_text() {
     let document = super::common::parse(&doc("1.26.61", MINIMAL)).unwrap_err();
     let found = with_code(&document.diagnostics, "UnsupportedVersion");
-    let legacy = DiagnosticCode::UnsupportedVersion {
-        text: Some(VanillaText::ActorAboveEngine {
-            version: "1.26.61".to_owned(),
-            engine: v("1.26.60"),
-        }),
-    };
     assert!(
         found[0].is(&bedrock_addon_family_entity::codes::ACTOR_ABOVE_ENGINE)
-            && bedrock_addon_core::diagnostic::testing::same_line(&found[0].code, &legacy),
+            && bedrock_addon_core::diagnostic::testing::same_line(
+                &found[0].code,
+                "UnsupportedVersion",
+                "Error: actor resource file has format version: 1.26.61 exceeds game version: 1.26.60. Skipping."
+            ),
         "{:?}",
         found[0].code
     );

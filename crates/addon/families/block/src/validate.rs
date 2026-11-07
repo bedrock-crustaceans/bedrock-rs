@@ -24,7 +24,7 @@ use bedrock_addon_core::diagnostic::CodeDef;
 use bedrock_addon_core::diagnostic::cereal::{self, NumericRange};
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity,
 };
 use bedrock_addon_core::document::{ComponentMap, ComponentRef};
 use bedrock_addon_core::id::syntax::{has_namespace, split_namespace};
@@ -1201,16 +1201,12 @@ fn constraint_code(code: DiagnosticCode) -> DiagnosticCode {
             .with([value.as_str(), step.as_str()])
             .into();
     }
-    match code {
-        legacy @ DiagnosticCode::InvalidValue { .. } => legacy,
-        // By legacy name: the definitions that were `InvalidValue`, by their game sentence,
-        // which the pins hold whole in the legacy text.
-        code if code.name() == "InvalidValue" => DiagnosticCode::InvalidValue {
-            text: code.vanilla().map(|line| VanillaText::Formatted {
-                template: "{}",
-                args: vec![line],
-            }),
-        },
+    // By legacy name: the definitions that were `InvalidValue`, by their game sentence, which
+    // the pins hold whole as a formatted text.
+    match code.vanilla() {
+        Some(line) if code.name() == "InvalidValue" => {
+            core_codes::INVALID_VALUE_FORMATTED.with([line]).into()
+        }
         _ => DiagnosticCode::from(&core_codes::INVALID_VALUE),
     }
 }

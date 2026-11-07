@@ -68,7 +68,7 @@ fn layer(pack_index: usize, entries: &[(&str, &'static str)]) -> Document<Lang> 
 fn failed(pack_index: usize) -> Result<Document<Lang>, Rejected> {
     let mut diagnostics = Diagnostics::default();
     diagnostics.push(Diagnostic::new(
-        DiagnosticCode::InvalidType { text: None },
+        DiagnosticCode::from(&codes::INVALID_TYPE),
         Severity::Error,
         Phase::Parse,
         Location::new(Some(pack(pack_index)), None, JsonPath::new(), None),
@@ -138,7 +138,7 @@ fn a_failed_copy_contributes_its_findings_only() {
     assert_eq!(merged.layers().len(), 1);
     assert_eq!(merged.entries.len(), 1);
     let codes: Vec<DiagnosticCode> = merged.diagnostics().map(|d| d.code.clone()).collect();
-    assert_eq!(codes, [DiagnosticCode::InvalidType { text: None }]);
+    assert_eq!(codes, [DiagnosticCode::from(&codes::INVALID_TYPE)]);
 }
 
 #[test]

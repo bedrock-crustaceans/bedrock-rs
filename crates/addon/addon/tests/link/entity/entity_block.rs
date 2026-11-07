@@ -2,7 +2,7 @@
 
 #![allow(unused_imports, reason = "each feature set compiles part of the tests")]
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity, VanillaText};
+use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
 
 use super::super::common::{hosted, link, link_with};
 use super::{FILE, block, entity_with, kept_unresolved, pet, said, said_of, unresolved};
@@ -44,13 +44,12 @@ fn e10_an_eat_block_pair_naming_a_block_nothing_defines_is_an_error_with_vanilla
         ]
     );
     let texts: Vec<_> = found.iter().map(|finding| finding.code.clone()).collect();
-    let legacy = DiagnosticCode::UnresolvedReference {
-        text: Some(VanillaText::EatBlockInvalidBlock {
-            block: "demo:nothing".to_owned(),
-        }),
-    };
     assert!(
-        bedrock_addon::diagnostic::testing::same_line(&texts[0], &legacy),
+        bedrock_addon::diagnostic::testing::same_line(
+            &texts[0],
+            "UnresolvedReference",
+            "Block demo:nothing on \"eat_and_replace_block_pairs\" on \"minecraft:behavior.eat_block\" is not a valid block."
+        ),
         "{:?}",
         texts[0]
     );
@@ -275,14 +274,12 @@ fn e11_a_state_the_block_does_not_have_is_the_notifiers_kept_error_and_another_r
         .find(|finding| finding.severity == Severity::Error)
         .unwrap();
     assert!(kept.kept, "{kept:?}");
-    let legacy = DiagnosticCode::UnresolvedReference {
-        text: Some(VanillaText::Formatted {
-            template: "Block of type '{}' does not have the state '{}'. This block will not be added to InsideBlockNotifierComponent's watch list due to an invalid state.",
-            args: vec!["demo:lamp".to_owned(), "demo:dim".to_owned()],
-        }),
-    };
     assert!(
-        bedrock_addon::diagnostic::testing::same_line(&kept.code, &legacy),
+        bedrock_addon::diagnostic::testing::same_line(
+            &kept.code,
+            "UnresolvedReference",
+            "Block of type 'demo:lamp' does not have the state 'demo:dim'. This block will not be added to InsideBlockNotifierComponent's watch list due to an invalid state."
+        ),
         "{:?}",
         kept.code
     );

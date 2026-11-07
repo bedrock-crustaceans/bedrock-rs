@@ -41,20 +41,6 @@ pub fn syntax(message: impl Into<String>) -> Code {
     }
 }
 
-/// A file that is not JSON: `MalformedInput` with the reader's message and, where vanilla
-/// says something, its text.
-pub fn malformed(message: String, text: Option<&'static str>) -> DiagnosticCode {
-    match text {
-        // The family's sentence with the reader's message beside it: the legacy code holds
-        // both, until the family's own definition carries the message as its finding's detail.
-        Some(text) => DiagnosticCode::MalformedInput {
-            message,
-            text: Some(VanillaText::Fixed(text)),
-        },
-        None => syntax(message).into(),
-    }
-}
-
 /// The code of a site that holds the game's sentence as a legacy [`VanillaText`] (a rule's
 /// place that may or may not carry one): `worded` with the sentence, `plain` without one.
 // a bridge until the sites hold their own definitions

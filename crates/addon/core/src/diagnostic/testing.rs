@@ -131,18 +131,15 @@ fn text_debug(code: &Code) -> String {
     }
 }
 
-/// Whether `code` tells what the legacy code `legacy` told: the same code, or one of the same
-/// legacy name with the same line and the same game's sentence. A site that held the game's
-/// sentence as a legacy text raises the worded definition with the sentence alone; this is the
-/// equality the pins of such a site keep until it has a definition of its own.
-// hidden: a bridge for the pins of the migration, deleted with the legacy enum
+/// Whether `code` tells what a legacy code of the variant `name` with the game's sentence
+/// `line` told: the same legacy name, `line` as its line and as its game's sentence. A site
+/// that held the game's sentence as a legacy text raises a definition with the sentence; this
+/// is the equality the pins of such a site keep until the pin rename.
+// hidden: a bridge for the pins of the migration, deleted with the legacy names
 #[doc(hidden)]
 #[must_use]
-pub fn same_line(code: &DiagnosticCode, legacy: &DiagnosticCode) -> bool {
-    code == legacy
-        || (code.name() == legacy.name()
-            && code.to_string() == legacy.to_string()
-            && code.vanilla() == legacy.vanilla())
+pub fn same_line(code: &DiagnosticCode, name: &str, line: &str) -> bool {
+    code.name() == name && code.to_string() == line && code.vanilla().as_deref() == Some(line)
 }
 
 /// The `Debug` of a structured `VanillaText` a definition renders, by the definition's id.
@@ -186,6 +183,10 @@ fn structured_debug(id: &str, args: &[String]) -> Option<String> {
             "DependencyInvalidVersion {{ module: {:?}, version: {:?} }}",
             args[0], args[1]
         ),
+        // A sentence given whole as the one argument of a formatted text.
+        "core/invalid_value_formatted" => {
+            format!("Formatted {{ template: \"{{}}\", args: [{:?}] }}", args[0])
+        }
         // `NumericRange::code` gave the whole sentence as the one argument of `{}`.
         "core/outside_accepted_range" => format!(
             "Formatted {{ template: \"{{}}\", args: [{:?}] }}",
@@ -219,22 +220,19 @@ mod tests {
     }
 
     /// A worded definition with the sentence tells what the legacy code with the text told;
-    /// another sentence or another name does not.
+    /// another sentence, another name or a line that is not the game's does not.
     #[test]
     fn a_worded_definition_tells_the_line_of_the_legacy_text() {
-        let legacy = DiagnosticCode::UnresolvedReference {
-            text: Some(VanillaText::Formatted {
-                template: "no block {}",
-                args: vec!["a:b".to_owned()],
-            }),
-        };
+        let legacy = "UnresolvedReference";
         let worded =
             DiagnosticCode::from(codes::UNRESOLVED_REFERENCE_WORDED.with(["no block a:b"]));
-        assert!(same_line(&worded, &legacy));
+        assert!(same_line(&worded, legacy, "no block a:b"));
         let other = DiagnosticCode::from(codes::UNRESOLVED_REFERENCE_WORDED.with(["no block c:d"]));
-        assert!(!same_line(&other, &legacy));
+        assert!(!same_line(&other, legacy, "no block a:b"));
         let renamed = DiagnosticCode::from(codes::INVALID_REFERENCE_WORDED.with(["no block a:b"]));
-        assert!(!same_line(&renamed, &legacy));
+        assert!(!same_line(&renamed, legacy, "no block a:b"));
+        let own = DiagnosticCode::from(&codes::UNRESOLVED_REFERENCE);
+        assert!(!same_line(&own, legacy, &own.to_string()));
     }
 
     /// The engine version a field needs renders as the legacy payload's typed version.
@@ -276,6 +274,18 @@ mod tests {
         assert_eq!(
             legacy_debug(&finding(code)),
             r#"InvalidValue { text: Some(Formatted { template: "{}", args: ["the input is outside of the accepted range [0, 1]"] }) }"#
+        );
+    }
+
+    /// A sentence given whole as a formatted text's one argument renders as that text: the
+    /// shape a rule that drops a component tells a cereal range finding in.
+    #[test]
+    fn a_whole_formatted_sentence_renders_as_the_formatted_text() {
+        let code = codes::INVALID_VALUE_FORMATTED.with(["the input must be a number >= 0"]);
+        assert_eq!(code.to_string(), "the input must be a number >= 0");
+        assert_eq!(
+            legacy_debug(&finding(code)),
+            r#"InvalidValue { text: Some(Formatted { template: "{}", args: ["the input must be a number >= 0"] }) }"#
         );
     }
 

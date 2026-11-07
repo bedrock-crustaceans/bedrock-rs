@@ -626,6 +626,7 @@ const LISTED_IDS: &[&str] = &[
     "core/slider_default_out_of_range",
     "core/dropdown_default_not_in_options",
     "core/multiselect_default_not_in_options",
+    "core/invalid_value_formatted",
 ];
 
 /// The list knows every definition of `codes::ALL`, and nothing else.

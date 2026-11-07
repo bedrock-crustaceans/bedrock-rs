@@ -4,9 +4,7 @@
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::testing::same_line;
-use bedrock_addon_core::diagnostic::{
-    DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
-};
+use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::json::{JsonSlice, Value};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::vanilla::ActorType;
@@ -822,18 +820,17 @@ fn e22_1_21_70_leashable_presets() {
 #[test]
 fn e23_1_21_80_null_groups() {
     let found = step::<v1_21_80::Entity>("e23_1_21_80_null_groups", Run::default());
-    let legacy = [DiagnosticCode::DroppedComponent {
-        text: Some(VanillaText::NullGroupRemoved {
-            group: "gone".to_owned(),
-        }),
-    }];
+    let legacy = [(
+        "DroppedComponent",
+        "component group 'gone' is null and was removed",
+    )];
     let codes: Vec<_> = found.iter().map(|d| d.code.clone()).collect();
     assert!(
         codes.len() == legacy.len()
             && codes
                 .iter()
                 .zip(&legacy)
-                .all(|(code, legacy)| same_line(code, legacy)),
+                .all(|(code, (name, line))| same_line(code, name, line)),
         "{codes:?}"
     );
 }
@@ -996,22 +993,15 @@ fn e32_1_26_20_to_1_26_30() {
 fn e33_1_26_30_on_kill_overlap() {
     // The `on_attack` of `melee_attack` that its `on_kill` replaces is told as dropped.
     let found = step::<v1_26_30::Entity>("e33_1_26_30_on_kill_overlap", Run::default());
-    let legacy = [
-        DiagnosticCode::from(&core_codes::DROPPED_FIELD),
-        DiagnosticCode::InvalidValue {
-            text: Some(VanillaText::NotAValidValue {
-                value: "bogus".to_owned(),
-                member: "should_bounce",
-            }),
-        },
-    ];
     let codes: Vec<_> = found.iter().map(|d| d.code.clone()).collect();
     assert!(
-        codes.len() == legacy.len()
-            && codes
-                .iter()
-                .zip(&legacy)
-                .all(|(code, legacy)| same_line(code, legacy)),
+        codes.len() == 2
+            && codes[0] == DiagnosticCode::from(&core_codes::DROPPED_FIELD)
+            && same_line(
+                &codes[1],
+                "InvalidValue",
+                "'bogus' is not a valid 'should_bounce' value."
+            ),
         "{codes:?}"
     );
     assert_eq!(

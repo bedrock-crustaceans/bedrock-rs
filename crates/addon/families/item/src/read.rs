@@ -4,7 +4,7 @@
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Severity, VanillaText,
+    Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Severity,
 };
 use bedrock_addon_core::document::{Document, Origin, Rejected};
 use bedrock_addon_core::id::ItemId;
@@ -176,15 +176,10 @@ pub(crate) fn json_path_texts(d: &mut Diagnostics, text: &str, cx: &LoadContext)
             continue;
         }
         // the versioned parser's "no parser available for version", and its version
-        let no_parser = match &finding.code {
-            DiagnosticCode::UnsupportedVersion {
-                text: Some(VanillaText::NoParserForVersion { version }),
-            } => Some(version.as_str()),
-            DiagnosticCode::Specific { code } if code.is(&core_codes::NO_PARSER_FOR_VERSION) => {
-                code.args().first().map(String::as_str)
-            }
-            _ => None,
-        };
+        let no_parser = finding
+            .code
+            .args_of(&core_codes::NO_PARSER_FOR_VERSION)
+            .and_then(|args| args.first().map(String::as_str));
         let out_of_range = no_parser.is_some_and(|version| version != "beta");
         // By legacy name: the variant and the definitions that were it.
         match finding.code.name() {

@@ -46,7 +46,7 @@ use crate::history::CatalogHistory;
 use crate::read::parse_catalog;
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText, builders,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, builders,
 };
 use bedrock_addon_core::document::{Document, JsonDocument, JsonPlaced, Origin, Rejected};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
@@ -360,21 +360,14 @@ fn vanilla_checks(diagnostics: &mut Diagnostics, document: JsonSlice<'_>) {
             diagnostics.push(no_valid_version());
             continue;
         }
-        // The pipeline's lines, on core's definitions or the legacy variants.
-        let member_count = finding.is(&core_codes::DOCUMENT_MEMBER_COUNT)
-            || finding.is(&core_codes::DOCUMENT_MEMBER_COUNT);
-        let use_format = finding.is(&core_codes::USE_FORMAT_VERSION)
-            || finding.is(&core_codes::USE_FORMAT_VERSION);
+        // The pipeline's lines, on core's definitions.
+        let member_count = finding.is(&core_codes::DOCUMENT_MEMBER_COUNT);
+        let use_format = finding.is(&core_codes::USE_FORMAT_VERSION);
         // the versioned parser's "no parser available for version".
-        let no_parser = match &finding.code {
-            DiagnosticCode::UnsupportedVersion {
-                text: Some(VanillaText::NoParserForVersion { version }),
-            } => Some(version.clone()),
-            DiagnosticCode::Specific { code } if code.is(&core_codes::NO_PARSER_FOR_VERSION) => {
-                code.args().first().cloned()
-            }
-            _ => None,
-        };
+        let no_parser = finding
+            .code
+            .args_of(&core_codes::NO_PARSER_FOR_VERSION)
+            .and_then(|args| args.first().cloned());
         // By legacy name: the variant and the definitions that were it.
         match finding.code.name() {
             // Below its minimum version vanilla does not look at the shape of the root.

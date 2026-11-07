@@ -2788,6 +2788,15 @@ fn core_definitions() -> Vec<(Code, DiagnosticCode)> {
                 }),
             },
         ),
+        (
+            codes::INVALID_VALUE_FORMATTED.with(["the input must be a number >= 0"]),
+            C::InvalidValue {
+                text: Some(VanillaText::Formatted {
+                    template: "{}",
+                    args: vec!["the input must be a number >= 0".to_owned()],
+                }),
+            },
+        ),
     ]
 }
 

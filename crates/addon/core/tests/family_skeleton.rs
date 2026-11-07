@@ -4,7 +4,9 @@
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, VanillaText};
+use bedrock_addon_core::diagnostic::{
+    Class, CodeDef, Diagnostic, DiagnosticCode, Diagnostics, Kind,
+};
 use bedrock_addon_core::document::NoBeta;
 use bedrock_addon_core::id::{BlockId, kind};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
@@ -256,13 +258,28 @@ mod single {
 
 /// The toy family's closing line of a failed file.
 fn closing_line(path: &PackPath) -> Diagnostic {
-    Diagnostic::error(DiagnosticCode::DocumentRejected {
-        text: Some(VanillaText::Formatted {
-            template: "glint {} failed",
-            args: vec![path.as_str().to_owned()],
-        }),
-    })
+    Diagnostic::error(GLINT_FAILED.with([path.as_str()]).into())
 }
+
+/// The toy family's closing line of a failed file, as the game words one.
+static GLINT_FAILED: CodeDef<1> = CodeDef::new(
+    "glint/failed",
+    Kind::Closing,
+    Class::Error,
+    "glint {} failed",
+)
+.game("glint {} failed")
+.was("DocumentRejected");
+
+/// The toy family's line of each close, and whether the file failed.
+static FLARE_CLOSED: CodeDef<2> = CodeDef::new(
+    "flare/closed",
+    Kind::Closing,
+    Class::Lint,
+    "flare {} closed, failed: {}",
+)
+.game("flare {} closed, failed: {}")
+.was("DocumentRejected");
 
 /// Documents the one-version chain must read as `version_chain!`'s chain of one does: a good
 /// one, one below the floor, one without a version, a beta one, one whose payload fails.
@@ -1197,12 +1214,11 @@ impl Family for FlareFamily {
         path: &PackPath,
         failed: bool,
     ) {
-        diagnostics.push(Diagnostic::info(DiagnosticCode::DocumentRejected {
-            text: Some(VanillaText::Formatted {
-                template: "flare {} closed, failed: {}",
-                args: vec![path.as_str().to_owned(), failed.to_string()],
-            }),
-        }));
+        diagnostics.push(Diagnostic::info(
+            FLARE_CLOSED
+                .with([path.as_str().to_owned(), failed.to_string()])
+                .into(),
+        ));
     }
 }
 
@@ -1256,12 +1272,7 @@ fn flare_path() -> PackPath {
 fn closes(diagnostics: &Diagnostics) -> Vec<bool> {
     diagnostics
         .iter()
-        .filter_map(|d| match &d.code {
-            DiagnosticCode::DocumentRejected {
-                text: Some(VanillaText::Formatted { template, args }),
-            } if template.starts_with("flare") => Some(args[1] == "true"),
-            _ => None,
-        })
+        .filter_map(|d| d.code.args_of(&FLARE_CLOSED).map(|args| args[1] == "true"))
         .collect()
 }
 

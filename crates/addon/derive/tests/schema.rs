@@ -5,7 +5,7 @@
 //! `Shape` carries.
 
 use bedrock_addon_core::diagnostic::cereal::NumericRange;
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, JsonPath, Severity};
+use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, JsonPath, Severity, codes};
 use bedrock_addon_core::molang::{
     Molang, MolangFieldSpec, MolangVersionSource, visit_fields_under,
 };
@@ -506,7 +506,7 @@ fn a_field_with_two_bounds_is_one_range_and_one_finding_with_no_text_by_default(
     let (out, failed) = check(&mut high, MemberFailure::Refuse);
     assert!(failed);
     let codes: Vec<&DiagnosticCode> = out.iter().map(|d| &d.code).collect();
-    assert_eq!(codes, [&DiagnosticCode::InvalidValue { text: None }]);
+    assert_eq!(codes, [&DiagnosticCode::from(&codes::INVALID_VALUE)]);
 
     let mut out = Diagnostics::default();
     let mut cx = SchemaCx::new(Reading::DOCUMENT, JsonPath::new(), &mut out).with_range_text(true);
@@ -872,7 +872,7 @@ fn multiple_of_is_a_row_fact_and_a_value_off_the_step_is_one_finding() {
     assert!(failed);
     assert_eq!(paths(&out), [("height_range".to_owned(), Severity::Error)]);
     let codes: Vec<&DiagnosticCode> = out.iter().map(|d| &d.code).collect();
-    assert_eq!(codes, [&DiagnosticCode::InvalidValue { text: None }]);
+    assert_eq!(codes, [&DiagnosticCode::from(&codes::INVALID_VALUE)]);
     assert_eq!(off.height_range, 40, "the value stays under Refuse");
 
     // Worded as the game words it, where the family opts into the range text.
@@ -888,12 +888,7 @@ fn multiple_of_is_a_row_fact_and_a_value_off_the_step_is_one_finding() {
     // The range comes first: a value outside it is told for the range alone.
     let (out, _) = check_worded(&mut height(2000, None), MemberFailure::Refuse);
     let worded: Vec<DiagnosticCode> = out.iter().map(|d| d.code.clone()).collect();
-    assert_eq!(
-        worded,
-        [DiagnosticCode::InvalidValue {
-            text: Some(NumericRange::inclusive(16.0, 1024.0).text())
-        }]
-    );
+    assert_eq!(worded, [NumericRange::inclusive(16.0, 1024.0).code()]);
 }
 
 #[test]

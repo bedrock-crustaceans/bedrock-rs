@@ -2998,6 +2998,19 @@ pub static MULTISELECT_DEFAULT_NOT_IN_OPTIONS: CodeDef<2> = CodeDef::new(
 .game("multiselect {} default value {} is not in options")
 .was("InvalidValue");
 
+/// `InvalidValue` with a sentence of the game's given whole as the one argument of a formatted
+/// text: what a rule that drops a component tells a finding of one of the cereal range definitions
+/// as. It renders as `INVALID_VALUE_WORDED` does; the characterization pins print it as the
+/// formatted text it was.
+pub static INVALID_VALUE_FORMATTED: CodeDef<1> = CodeDef::new(
+    "core/invalid_value_formatted",
+    Kind::InvalidValue,
+    Class::Error,
+    "{}",
+)
+.game("{}")
+.was("InvalidValue");
+
 /// Every definition of this module, in the order of the legacy variants.
 pub static ALL: &[&CodeMeta] = &[
     UNSUPPORTED_VERSION.meta(),
@@ -3290,4 +3303,5 @@ pub static ALL: &[&CodeMeta] = &[
     SLIDER_DEFAULT_OUT_OF_RANGE.meta(),
     DROPDOWN_DEFAULT_NOT_IN_OPTIONS.meta(),
     MULTISELECT_DEFAULT_NOT_IN_OPTIONS.meta(),
+    INVALID_VALUE_FORMATTED.meta(),
 ];

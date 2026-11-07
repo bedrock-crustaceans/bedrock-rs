@@ -27,7 +27,7 @@
     feature = "server_sound_definitions",
 ))]
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Diagnostics, Severity, VanillaText, codes};
+use bedrock_addon::diagnostic::{DiagnosticCode, Diagnostics, Severity, codes};
 use bedrock_addon::document::{Content, Document, Rejected};
 use bedrock_addon::load::{Experiment, Experiments, LoadContext, LoadOptions};
 use bedrock_addon::pack::PackType;
@@ -54,6 +54,19 @@ fn told<T>(outcome: &Result<Document<T>, Rejected>) -> String {
             DiagnosticCode::Specific { code } if code.is(&codes::UNSUPPORTED_VERSION_WORDED) => {
                 lines.push(format!("fixed {:?}", code.args()[0]));
             }
+            // Block culling's own line below its floor.
+            #[cfg(feature = "block_culling")]
+            DiagnosticCode::Specific { code }
+                if code.is(
+                    &bedrock_addon::families::block_culling::codes::MISSING_OBJECT_UNSUPPORTED_VERSION,
+                ) =>
+            {
+                lines.push(format!(
+                    "formatted {:?}",
+                    bedrock_addon::families::block_culling::codes::MISSING_OBJECT_UNSUPPORTED_VERSION
+                        .template()
+                ));
+            }
             // By legacy name: a family's own definition of a fixed sentence that was the
             // variant's `Fixed` text.
             DiagnosticCode::Specific { code }
@@ -61,11 +74,6 @@ fn told<T>(outcome: &Result<Document<T>, Rejected>) -> String {
             {
                 lines.push(format!("fixed {:?}", code.vanilla().unwrap_or_default()));
             }
-            DiagnosticCode::UnsupportedVersion { text } => lines.push(match text {
-                Some(VanillaText::Fixed(text)) => format!("fixed {text:?}"),
-                Some(VanillaText::Formatted { template, .. }) => format!("formatted {template:?}"),
-                other => format!("unsupported {other:?}"),
-            }),
             // By legacy name: the variant and the definitions that were it.
             code if code.name() == "MalformedFormatVersion" => lines.push("malformed".to_owned()),
             _ => {}

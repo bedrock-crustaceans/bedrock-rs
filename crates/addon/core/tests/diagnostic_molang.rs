@@ -4,7 +4,7 @@
 #![cfg(feature = "molang")]
 
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, JsonPath, Location, Phase, Severity,
+    Diagnostic, DiagnosticDetail, JsonPath, Location, Phase, Severity, codes,
 };
 use molang::compile::{CompileOptions, compile};
 use molang::version::MolangVersion;
@@ -28,9 +28,7 @@ fn invalid_molang_renders_the_scope_chain() {
     json_path.push("scripts");
     json_path.push("pre_animation");
     let mut diagnostic = Diagnostic::new(
-        DiagnosticCode::InvalidMolang {
-            expression: source.into(),
-        },
+        codes::INVALID_MOLANG.with([source]).into(),
         Severity::Error,
         Phase::Validate,
         Location::new(None, None, json_path, None),

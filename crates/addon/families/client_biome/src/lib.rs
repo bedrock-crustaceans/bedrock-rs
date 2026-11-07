@@ -37,8 +37,7 @@ use crate::component::{DryFoliageColor, SkyColor, SoundAddition, WaterAppearance
 use bedrock_addon_core::__private::Sealed;
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Phase, Severity,
-    VanillaText, builders,
+    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Phase, Severity, builders,
 };
 use bedrock_addon_core::document::{
     CombineRule, Content, Contribution, Definition, Document, JsonContent, NoBeta, Notice, Origin,
@@ -426,21 +425,10 @@ fn reword(parsed: &mut Parsed<ClientBiomeFamily>, text: &str, path: &str) {
     }
     for mut diagnostic in std::mem::take(&mut parsed.diagnostics) {
         let mut after = None;
-        // The pipeline's lines, on core's definitions or the legacy variants.
-        let plain_malformed_version = matches!(
-            diagnostic.code,
-            DiagnosticCode::MalformedFormatVersion { text: None }
-        ) || diagnostic.is(&core_codes::MALFORMED_FORMAT_VERSION);
-        let use_format = matches!(
-            diagnostic.code,
-            DiagnosticCode::UnsupportedVersion {
-                text: Some(VanillaText::UseFormatVersion { .. }),
-            }
-        ) || diagnostic.is(&core_codes::USE_FORMAT_VERSION);
-        let plain_missing = matches!(
-            diagnostic.code,
-            DiagnosticCode::MissingRequiredField { text: None }
-        ) || diagnostic.is(&core_codes::MISSING_REQUIRED_FIELD);
+        // The pipeline's lines, on core's definitions.
+        let plain_malformed_version = diagnostic.is(&core_codes::MALFORMED_FORMAT_VERSION);
+        let use_format = diagnostic.is(&core_codes::USE_FORMAT_VERSION);
+        let plain_missing = diagnostic.is(&core_codes::MISSING_REQUIRED_FIELD);
         let reworded = match &diagnostic.code {
             // The game clears the input's version and then finds none.
             _ if plain_malformed_version => Some(DiagnosticCode::from(&codes::NO_VALID_VERSION)),

@@ -4,9 +4,7 @@
 
 use std::path::PathBuf;
 
-use bedrock_addon::diagnostic::{
-    CodeMeta, Diagnostic, DiagnosticCode, Diagnostics, Severity, VanillaText,
-};
+use bedrock_addon::diagnostic::{CodeMeta, Diagnostic, DiagnosticCode, Diagnostics, Severity};
 use bedrock_addon::document::{Content, Document, Rejected};
 use bedrock_addon::families::recipe::{Recipe, Shaped};
 use bedrock_addon::load::LoadContext;
@@ -96,26 +94,6 @@ pub fn shaped(document: &Document<Recipe>) -> &Shaped {
     }
 }
 
-/// The vanilla text a finding carries, if any.
-pub fn text(code: &DiagnosticCode) -> Option<&VanillaText> {
-    match code {
-        DiagnosticCode::MalformedInput { text, .. }
-        | DiagnosticCode::MissingIdentifier { text }
-        | DiagnosticCode::DuplicateIdentifier { text }
-        | DiagnosticCode::MissingFormatVersion { text }
-        | DiagnosticCode::MissingRequiredField { text }
-        | DiagnosticCode::InvalidValue { text }
-        | DiagnosticCode::InvalidType { text }
-        | DiagnosticCode::DocumentRejected { text }
-        | DiagnosticCode::IgnoredMember { text }
-        | DiagnosticCode::NoEffect { text }
-        | DiagnosticCode::UnrecognizedField { text }
-        | DiagnosticCode::UnresolvedReference { text }
-        | DiagnosticCode::InvalidReference { text } => text.as_ref(),
-        _ => None,
-    }
-}
-
 /// The recipe family's definition a finding was raised on, if it was.
 fn recipe_def(diagnostic: &Diagnostic) -> Option<&'static CodeMeta> {
     let DiagnosticCode::Specific { code } = &diagnostic.code else {
@@ -127,27 +105,15 @@ fn recipe_def(diagnostic: &Diagnostic) -> Option<&'static CodeMeta> {
         .copied()
 }
 
-/// The template of a finding's vanilla text: the fixed text, or the template with `{}`; for a
-/// finding of a recipe definition, its game sentence.
+/// The game sentence of a finding of a recipe definition, `{}` where each argument goes.
 pub fn template(diagnostic: &Diagnostic) -> Option<&'static str> {
-    if let Some(def) = recipe_def(diagnostic) {
-        return def.game_template();
-    }
-    match text(&diagnostic.code)? {
-        VanillaText::Fixed(text) => Some(text),
-        VanillaText::Formatted { template, .. } => Some(template),
-        _ => None,
-    }
+    recipe_def(diagnostic)?.game_template()
 }
 
-/// The arguments of a finding's formatted vanilla text, or of its recipe definition.
+/// The arguments of a finding of a recipe definition.
 pub fn args(diagnostic: &Diagnostic) -> Vec<String> {
-    if let (Some(_), DiagnosticCode::Specific { code }) = (recipe_def(diagnostic), &diagnostic.code)
-    {
-        return code.args().to_vec();
-    }
-    match text(&diagnostic.code) {
-        Some(VanillaText::Formatted { args, .. }) => args.clone(),
+    match (recipe_def(diagnostic), &diagnostic.code) {
+        (Some(_), DiagnosticCode::Specific { code }) => code.args().to_vec(),
         _ => Vec::new(),
     }
 }

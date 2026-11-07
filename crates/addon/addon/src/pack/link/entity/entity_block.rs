@@ -1,7 +1,5 @@
 //! The blocks an entity's components name.
-use bedrock_addon_core::diagnostic::{
-    DiagnosticCode, JsonPath, JsonPathSegment, Severity, VanillaText,
-};
+use bedrock_addon_core::diagnostic::{JsonPath, JsonPathSegment, Severity, VanillaText};
 use bedrock_addon_core::id::BlockId;
 use bedrock_addon_shared_shapes::{BlockDescriptor, ItemDescriptor};
 
@@ -109,13 +107,10 @@ fn eat_block(cx: &LinkCx<'_>, out: &mut Findings, entities: &Entities<'_>) {
                 if finding.code.name() != "UnresolvedReference" {
                     continue;
                 }
-                let text = match &finding.code {
-                    DiagnosticCode::UnresolvedReference { text } => text.clone(),
-                    code => code.vanilla().map(|line| VanillaText::Formatted {
-                        template: "{}",
-                        args: vec![line],
-                    }),
-                };
+                let text = finding.code.vanilla().map(|line| VanillaText::Formatted {
+                    template: "{}",
+                    args: vec![line],
+                });
                 let Some(JsonPathSegment::Index(index)) =
                     finding.location.json_path.segments().last()
                 else {
