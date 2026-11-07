@@ -11,7 +11,7 @@ use super::{
     FogVolumetricMediaCoeffsSetting, FogWaterDistanceSetting, Keyframed, same_zero,
 };
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity};
+use bedrock_addon_core::diagnostic::{Code, Diagnostic, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::FogId;
 use bedrock_addon_core::json::kit::{Disposition, Node, Read};
@@ -41,7 +41,7 @@ pub(crate) fn read_settings(
 // ---- the lenient walk ---------------------------------------------------------------------------
 
 /// `code` at `node`, spanning it.
-fn tell(read: &mut Read<'_>, code: DiagnosticCode, severity: Severity, node: &Node<'_>) {
+fn tell(read: &mut Read<'_>, code: Code, severity: Severity, node: &Node<'_>) {
     let mut finding = Diagnostic::error(code)
         .severity(severity)
         .at(node.path().clone());
@@ -53,7 +53,7 @@ fn tell(read: &mut Read<'_>, code: DiagnosticCode, severity: Severity, node: &No
 fn violation(read: &mut Read<'_>, node: &Node<'_>) {
     tell(
         read,
-        DiagnosticCode::from(&core_codes::INVALID_VALUE),
+        Code::from(&core_codes::INVALID_VALUE),
         Severity::Error,
         node,
     );
@@ -185,7 +185,7 @@ fn fog_color(read: &mut Read<'_>, node: &Node<'_>) -> Option<FogColor> {
             if clamped != written {
                 tell(
                     read,
-                    DiagnosticCode::from(&core_codes::CLAMPED_VALUE),
+                    Code::from(&core_codes::CLAMPED_VALUE),
                     Severity::Info,
                     element,
                 );
@@ -269,7 +269,7 @@ fn keyframed<'v, T>(
     for (_, member) in dropped {
         tell(
             read,
-            DiagnosticCode::from(&core_codes::DROPPED_FIELD),
+            Code::from(&core_codes::DROPPED_FIELD),
             Severity::Info,
             &member,
         );
@@ -293,7 +293,7 @@ fn settings(read: &mut Read<'_>, node: &Node<'_>) -> Option<FogSettings> {
     if ok && description.is_none() {
         tell(
             read,
-            DiagnosticCode::from(&core_codes::MISSING_REQUIRED_FIELD),
+            Code::from(&core_codes::MISSING_REQUIRED_FIELD),
             Severity::Error,
             node,
         );
@@ -317,7 +317,7 @@ fn description(read: &mut Read<'_>, node: &Node<'_>) -> Option<FogDescription> {
     if ok && identifier.is_none() {
         tell(
             read,
-            DiagnosticCode::from(&core_codes::MISSING_REQUIRED_FIELD),
+            Code::from(&core_codes::MISSING_REQUIRED_FIELD),
             Severity::Error,
             node,
         );
@@ -354,7 +354,7 @@ fn distance_type(read: &mut Read<'_>, node: &Node<'_>) -> Option<DistanceType> {
         _ => {
             tell(
                 read,
-                DiagnosticCode::from(&core_codes::INVALID_ENUM_VALUE),
+                Code::from(&core_codes::INVALID_ENUM_VALUE),
                 Severity::Error,
                 node,
             );

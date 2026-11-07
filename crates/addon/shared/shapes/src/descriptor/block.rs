@@ -5,7 +5,7 @@ use facet_value::VObject;
 use indexmap::IndexMap;
 
 use crate::codes;
-use bedrock_addon_core::diagnostic::{Code, DiagnosticCode, Diagnostics, JsonPath, Severity};
+use bedrock_addon_core::diagnostic::{Code, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::BlockId;
 use bedrock_addon_core::json::Value;
@@ -202,7 +202,7 @@ impl BlockDescriptor {
         // Level 3 and the read goes on, a kept error: the game's descriptor proxy logs the two
         // texts and goes on with the tag expression; the block descriptor reader logs its own
         // and builds an empty descriptor.
-        out.push_kept_error(finding(DiagnosticCode::from(code), Severity::Error, at));
+        out.push_kept_error(finding(code, Severity::Error, at));
         out
     }
 

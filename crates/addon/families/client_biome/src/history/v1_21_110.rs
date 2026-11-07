@@ -4,7 +4,7 @@
 use super::v1_21_40::{AmbientSounds as OlderAmbientSounds, Component};
 use super::{ClientBiomePayload, insert, note_component, v1_21_120};
 use crate::component::{AmbientSounds, ClientBiomeComponent, SoundAddition};
-use bedrock_addon_core::diagnostic::DiagnosticCode;
+use bedrock_addon_core::diagnostic::Code;
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::document::{Component as _, ComponentMap, ComponentRef};
 use bedrock_addon_core::id::SoundEventName;
@@ -85,7 +85,7 @@ impl LegacyStep<1, 21, 110> for ClientBiomePayload<Component> {
                     {
                         let mut at = super::component_path(AmbientSounds::NAME);
                         at.push("addition");
-                        super::note(cx, DiagnosticCode::from(&core_codes::DROPPED_FIELD), at);
+                        super::note(cx, Code::from(&core_codes::DROPPED_FIELD), at);
                     }
                     let sounds = convert(older.clone());
                     let sounds = if early {
@@ -150,7 +150,7 @@ fn underwater(mut sounds: AmbientSounds, vanilla: bool, cx: &mut UpgradeCx<'_>) 
     }
     note_component(
         cx,
-        DiagnosticCode::from(&core_codes::SYNTHESIZED_COMPONENT),
+        Code::from(&core_codes::SYNTHESIZED_COMPONENT),
         AmbientSounds::NAME,
     );
     sounds

@@ -54,7 +54,7 @@
 //!
 //! - `id`: typed identifiers (`Id<K>` and one alias per kind).
 //! - `version`: pack versions, document format versions and the engine version.
-//! - `diagnostic`: findings as data (`Diagnostic`, `Diagnostics`, `DiagnosticCode`, `Severity`).
+//! - `diagnostic`: findings as data (`Diagnostic`, `Diagnostics`, `Code`, `Severity`).
 //! - `document`: a loaded value with its provenance (`Document<T>`) and the collections
 //!   (`Registry`, `Files`, `Merged`).
 //! - `json`: the untyped JSON value (`Value`), the nesting limit (`MAX_JSON_DEPTH`), the write

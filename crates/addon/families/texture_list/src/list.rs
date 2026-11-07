@@ -9,7 +9,7 @@ use indexmap::{IndexMap, IndexSet};
 use super::codes;
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, builders,
+    Code, Diagnostic, Diagnostics, JsonPath, Location, Phase, Severity, builders,
 };
 use bedrock_addon_core::document::unversioned;
 use bedrock_addon_core::document::{Content, Document, JsonContent, Placed, Rejected};
@@ -504,13 +504,13 @@ impl PackLint<'_> {
             // The game's own line, which goes to its developer log, not the content log: an
             // information with the game's text.
             let args = [PATH.to_owned(), self.files.pack.name().to_owned()];
-            let code = DiagnosticCode::from(codes::NO_LIST_IN_BASE_PACK.with(args));
+            let code = codes::NO_LIST_IN_BASE_PACK.with(args);
             let finding = Diagnostic::new(code, Severity::Info, Phase::Validate, at(PATH));
             out.push(finding);
         }
         let has = |path: &str| self.files.files.contains_key(path);
         if has(MISNAMED) && !has(PATH) {
-            let code = DiagnosticCode::from(&core_codes::IGNORED_FILE);
+            let code = Code::from(&core_codes::IGNORED_FILE);
             out.push(Diagnostic::new(
                 code,
                 Severity::Info,
@@ -522,7 +522,7 @@ impl PackLint<'_> {
             let upper = ImageFormat::from_path(key).is_none()
                 && ImageFormat::from_path_ignoring_case(key).is_some();
             if upper {
-                let code = DiagnosticCode::from(&core_codes::IGNORED_FILE);
+                let code = Code::from(&core_codes::IGNORED_FILE);
                 out.push(Diagnostic::new(
                     code,
                     Severity::Info,

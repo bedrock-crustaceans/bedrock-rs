@@ -816,7 +816,6 @@ fn the_legacy_goal_reader_s_value_texts() {
 /// refuses one.
 #[test]
 fn a_beta_file_read_on_its_own_is_refused_in_its_file() {
-    use bedrock_addon_core::diagnostic::DiagnosticCode;
     use bedrock_addon_core::pack_identity::{PackPath, PackRef};
 
     let mut context = cx();
@@ -835,9 +834,7 @@ fn a_beta_file_read_on_its_own_is_refused_in_its_file() {
         .unwrap_or_else(|| panic!("{:#?}", refused.diagnostics));
     assert_eq!(
         refusal.code,
-        DiagnosticCode::from(
-            bedrock_addon_core::diagnostic::codes::NO_PARSER_FOR_VERSION.with(["beta"])
-        ),
+        bedrock_addon_core::diagnostic::codes::NO_PARSER_FOR_VERSION.with(["beta"]),
         "{refusal:?}"
     );
     assert_eq!(refusal.location.pack, Some(PackRef::app_data()));

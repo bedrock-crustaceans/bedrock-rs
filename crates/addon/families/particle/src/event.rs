@@ -11,7 +11,7 @@ use facet_value::{VArray, VObject};
 use super::codes;
 use super::read::{Era, Members, Node, Opt, Reader, Writer, float, object, opt, put_opt, walk};
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon_core::diagnostic::{Code, Severity};
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::{EncodeError, MAX_JSON_DEPTH, Unrepresentable, Value};
 use bedrock_addon_core::molang::{Molang, MolangVisitor, Step};
@@ -63,7 +63,7 @@ impl Node for ParticleEffectType {
         let read = text.and_then(Self::from_name);
         if read.is_none() {
             if text.is_some() && !r.legacy() {
-                r.error(DiagnosticCode::from(&core_codes::INVALID_VALUE));
+                r.error(Code::from(&core_codes::INVALID_VALUE));
             } else {
                 r.wrong_type(value, o.wrong);
             }
@@ -227,7 +227,7 @@ impl EventNode {
                 if m.get(key).is_some_and(Value::is_object) {
                     r.key(key, |r| {
                         r.push(
-                            DiagnosticCode::from(&core_codes::DROPPED_FIELD),
+                            Code::from(&core_codes::DROPPED_FIELD),
                             bedrock_addon_core::diagnostic::Severity::Info,
                         );
                     });
@@ -381,10 +381,7 @@ impl Node for RandomEventNode {
                 // The option is skipped with every member it has; the line is at its
                 // weight alone. The crate notes the skip at the option, at the information
                 // level.
-                r.push(
-                    DiagnosticCode::from(&core_codes::DROPPED_FIELD),
-                    Severity::Info,
-                );
+                r.push(Code::from(&core_codes::DROPPED_FIELD), Severity::Info);
                 return None;
             }
         }

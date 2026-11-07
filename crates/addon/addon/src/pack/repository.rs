@@ -2,7 +2,7 @@
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, PackReport, Phase, Severity,
+    Code, Diagnostic, Diagnostics, JsonPath, Location, PackReport, Phase, Severity,
 };
 use bedrock_addon_core::document::{Origin, Rejected};
 use bedrock_addon_core::json::{self, JsonSlice, MAX_JSON_DEPTH, Value};
@@ -69,7 +69,7 @@ impl PackRepository {
             // The game skips a duplicate registration without a log line, so the crate reports it
             // as an information.
             self.registration.push(Diagnostic::new(
-                DiagnosticCode::from(&core_codes::DUPLICATE_IDENTIFIER),
+                Code::from(&core_codes::DUPLICATE_IDENTIFIER),
                 Severity::Info,
                 Phase::Validate,
                 Location::new(None, Some(manifest_path()), JsonPath::new(), None),
@@ -317,7 +317,7 @@ fn parse_list(
     let Some(bytes) = bytes else {
         return Ok(Vec::new());
     };
-    let reject = |code: DiagnosticCode, json_path: JsonPath, span| {
+    let reject = |code: Code, json_path: JsonPath, span| {
         let origin = Origin::file(PackRef::app_data(), side, PackPath::from_static(file));
         let location = Location::new(None, Some(PackPath::from_static(file)), json_path, span);
         let diagnostics = std::iter::once(Diagnostic::new(
@@ -331,9 +331,7 @@ fn parse_list(
     };
     let bytes = &*crate::json::blank_bom(bytes);
     let bytes = json::strip_bom(bytes);
-    let malformed = |message: String| {
-        DiagnosticCode::from(bedrock_addon_core::diagnostic::builders::syntax(message))
-    };
+    let malformed = |message: String| bedrock_addon_core::diagnostic::builders::syntax(message);
     if let Err(too_deep) = json::check_depth(bytes, MAX_JSON_DEPTH) {
         return Err(reject(
             malformed(too_deep.to_string()),
@@ -363,25 +361,13 @@ fn parse_list(
                 path
             };
             let text = entry.pack_id.as_string().ok_or_else(|| {
-                reject(
-                    DiagnosticCode::from(&core_codes::INVALID_TYPE),
-                    at("pack_id"),
-                    None,
-                )
+                reject(Code::from(&core_codes::INVALID_TYPE), at("pack_id"), None)
             })?;
             let pack_id = pack_uuid(text.as_str()).ok_or_else(|| {
-                reject(
-                    DiagnosticCode::from(&core_codes::INVALID_VALUE),
-                    at("pack_id"),
-                    None,
-                )
+                reject(Code::from(&core_codes::INVALID_VALUE), at("pack_id"), None)
             })?;
             let version = SemVersion::from_json(&entry.version).ok_or_else(|| {
-                reject(
-                    DiagnosticCode::from(&core_codes::INVALID_VALUE),
-                    at("version"),
-                    None,
-                )
+                reject(Code::from(&core_codes::INVALID_VALUE), at("version"), None)
             })?;
             let subpack = match entry.subpack {
                 None => None,
@@ -390,11 +376,7 @@ fn parse_list(
                         .as_string()
                         .map(|text| text.as_str().to_owned())
                         .ok_or_else(|| {
-                            reject(
-                                DiagnosticCode::from(&core_codes::INVALID_TYPE),
-                                at("subpack"),
-                                None,
-                            )
+                            reject(Code::from(&core_codes::INVALID_TYPE), at("subpack"), None)
                         })?,
                 ),
             };
@@ -550,7 +532,7 @@ mod tests {
         assert_eq!(ids(&set.behavior), [needs_resource.id().clone()]);
         assert_eq!(set.behavior.hidden().len(), 1);
         assert_eq!(ids(&set.resource), [resource.id().clone()]);
-        let codes: Vec<&DiagnosticCode> = set
+        let codes: Vec<&Code> = set
             .selection()
             .iter()
             .map(|d| &d.code)

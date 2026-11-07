@@ -3,7 +3,7 @@
 //! Findings are matched on their code, severity and path, and where the row (or the rule it
 //! names) gives vanilla's text, on that text exactly.
 
-use bedrock_addon::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, Severity};
+use bedrock_addon::diagnostic::{Code, Diagnostic, Diagnostics, Severity};
 use bedrock_addon::families::block::component::{
     BlockEntity, ChestObstruction, DestructibleByMining, DestructionParticles, Flammable, Friction,
     Geometry, InstrumentSound, LightEmission, Loot, MapColor, Movable, PrecipitationBehavior,
@@ -38,7 +38,7 @@ fn warnings(d: &Diagnostics) -> Vec<&Diagnostic> {
 /// The finding with `code`, `severity` and vanilla's `text` exactly, if any.
 fn find<'d>(
     d: &'d Diagnostics,
-    code: fn(&DiagnosticCode) -> bool,
+    code: fn(&Code) -> bool,
     severity: Severity,
     text: &str,
 ) -> Option<&'d Diagnostic> {
@@ -60,7 +60,7 @@ fn brief(d: &Diagnostics) -> Vec<String> {
 
 /// Requires a finding with `code`, `severity` and vanilla's `text`.
 #[track_caller]
-fn expect(d: &Diagnostics, code: fn(&DiagnosticCode) -> bool, severity: Severity, text: &str) {
+fn expect(d: &Diagnostics, code: fn(&Code) -> bool, severity: Severity, text: &str) {
     assert!(
         find(d, code, severity, text).is_some(),
         "no {severity:?} finding with the text {text:?}: {:#?}",
@@ -70,7 +70,7 @@ fn expect(d: &Diagnostics, code: fn(&DiagnosticCode) -> bool, severity: Severity
 
 /// Requires a finding with `code` and `severity` whose path ends with `path`.
 #[track_caller]
-fn expect_at(d: &Diagnostics, code: fn(&DiagnosticCode) -> bool, severity: Severity, path: &str) {
+fn expect_at(d: &Diagnostics, code: fn(&Code) -> bool, severity: Severity, path: &str) {
     assert!(
         d.iter().any(|f| code(&f.code)
             && f.severity == severity
@@ -92,14 +92,14 @@ fn findings(text: &str, cx: &bedrock_addon::load::LoadContext) -> (Option<Block>
 }
 
 /// A test of a finding's code.
-type CodeTest = fn(&DiagnosticCode) -> bool;
+type CodeTest = fn(&Code) -> bool;
 
-fn invalid_value(c: &DiagnosticCode) -> bool {
+fn invalid_value(c: &Code) -> bool {
     // By legacy name: the variant and the definitions that were it.
     matches!(c.name(), "InvalidValue")
 }
 
-fn missing_toggles(c: &DiagnosticCode) -> bool {
+fn missing_toggles(c: &Code) -> bool {
     // By legacy name: the variant and the definitions that were it.
     matches!(c.name(), "MissingToggles")
 }

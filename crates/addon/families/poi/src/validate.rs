@@ -4,7 +4,7 @@
 use super::codes;
 use super::{PoiTag, PoiType};
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase};
+use bedrock_addon_core::diagnostic::{Code, Diagnostic, Diagnostics, JsonPath, Phase};
 use bedrock_addon_core::id::{BlockId, PoiTagId};
 
 /// The rules of a POI type, `at` its payload.
@@ -37,8 +37,8 @@ pub(crate) fn poi_type(value: &mut PoiType, at: &JsonPath, d: &mut Diagnostics) 
 }
 
 /// The `ReferenceCycle` code of `tag`.
-pub(crate) fn part_of_a_cycle(tag: &PoiTagId) -> DiagnosticCode {
-    DiagnosticCode::from(codes::PART_OF_A_CYCLE.with([tag.as_str().to_owned()]))
+pub(crate) fn part_of_a_cycle(tag: &PoiTagId) -> Code {
+    codes::PART_OF_A_CYCLE.with([tag.as_str().to_owned()])
 }
 
 /// The rules of a POI tag, `at` its payload.

@@ -12,7 +12,7 @@
 )]
 mod common;
 
-use bedrock_addon_core::diagnostic::{JsonPath, Severity, VanillaText};
+use bedrock_addon_core::diagnostic::{JsonPath, Severity};
 use bedrock_addon_core::molang::SourceForm;
 use bedrock_addon_shared_shapes::{
     BlockDescriptor, BlockSpecifier, CreativeCategory, ItemDescriptor, MenuCategory,
@@ -80,7 +80,8 @@ fn descriptor_kept(text: &str) {
     assert_eq!(on.len(), 2);
     assert_eq!(
         block_text(&on[0]),
-        VanillaText::BlockDescriptorShape { value: "5".into() }.to_string()
+        "BlockDescriptor requires a string, block object, or any_tag object. Cannot parse 5"
+            .to_owned()
     );
     assert!(matches!(on[1], BlockDescriptor::Block { .. }));
     assert!(on[1].check(&JsonPath::new(), Severity::Warning).is_empty());
@@ -151,7 +152,8 @@ fn sg52_tags_shape_then_molang() {
     let blocks = &row.above.blocks;
     assert_eq!(
         block_text(&blocks[0]),
-        VanillaText::BlockDescriptorShape { value: "5".into() }.to_string()
+        "BlockDescriptor requires a string, block object, or any_tag object. Cannot parse 5"
+            .to_owned()
     );
     // The shape is fine; the Molang error is the compile pass's.
     assert_eq!(block_tags(&blocks[1]), "1 +");
@@ -184,20 +186,16 @@ fn s09_descriptor_errors() {
     let row: Row = read_fixture(include_str!("fixtures/spawn/s09_descriptor_errors.json"));
     assert_eq!(
         block_text(&row.shape),
-        VanillaText::BlockDescriptorShape { value: "5".into() }.to_string()
+        "BlockDescriptor requires a string, block object, or any_tag object. Cannot parse 5"
+            .to_owned()
     );
     assert_eq!(
         block_text(&row.name),
-        VanillaText::BlockDescriptorName { value: "7".into() }.to_string()
+        "Only strings are valid for name. The invalid name value: 7\n".to_owned()
     );
     assert_eq!(
         block_text(&row.state),
-        VanillaText::BlockDescriptorStateType {
-            block: "minecraft:wool".into(),
-            state: "color".into(),
-            state_type: 3,
-        }
-        .to_string()
+        "Invalid state type during block parsing: block name minecraft:wool, state name color, state type 3. State type can only be bool, int, or string.".to_owned()
     );
 }
 

@@ -10,7 +10,7 @@
 use super::DeferredSettings;
 use super::codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Phase,
+    Code, Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Phase,
 };
 use bedrock_addon_core::document::Origin;
 use bedrock_addon_core::id::BlockId;
@@ -43,7 +43,7 @@ pub trait Targets {
 /// `origin`, naming what it refers to: a kept error, as both callers mirror a level-3 line
 /// after which the game goes on.
 fn kept_error(
-    code: DiagnosticCode,
+    code: Code,
     origin: &Origin,
     path: &[&str],
     kind: &'static str,
@@ -85,7 +85,7 @@ pub fn check(settings: &DeferredSettings, targets: &dyn Targets) -> Diagnostics 
         // The game logs the line at the error level and goes on to the next entry, so the
         // finding is a kept error.
         d.push(kept_error(
-            codes::NOT_A_BLOCK.with([block.as_str()]).into(),
+            codes::NOT_A_BLOCK.with([block.as_str()]),
             origin,
             &["minecraft:local_light_settings", block.as_str()],
             "block",
@@ -113,7 +113,7 @@ pub fn check(settings: &DeferredSettings, targets: &dyn Targets) -> Diagnostics 
         // The game logs the chosen text at the error level and falls back to
         // "renderer/caustics", so the finding is a kept error.
         d.push(kept_error(
-            code.with([texture]).into(),
+            code.with([texture]),
             document.origin(),
             &["minecraft:water_settings", "caustics", "texture"],
             "texture",

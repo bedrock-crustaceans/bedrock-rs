@@ -22,7 +22,7 @@ pub(crate) use range::{is_range, unread_range_members};
 pub use read::{ShapeError, ShapeErrorKind};
 
 use crate::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, codes,
+    Code, Diagnostic, Diagnostics, JsonPath, Location, Phase, Severity, codes,
 };
 use crate::document::UnknownMembers;
 
@@ -59,7 +59,7 @@ pub fn unrecognized_except(
             let mut path = at.clone();
             path.push(key);
             out.push(finding(
-                DiagnosticCode::from(&codes::UNRECOGNIZED_FIELD),
+                Code::from(&codes::UNRECOGNIZED_FIELD),
                 severity,
                 &path,
             ));
@@ -75,7 +75,7 @@ mod sealed {
 /// A finding of a reader rule at `at`: vanilla logs these while it parses.
 // hidden: reader plumbing of the crate family (the game's jsoncpp contract)
 #[doc(hidden)]
-pub fn finding(code: DiagnosticCode, severity: Severity, at: &JsonPath) -> Diagnostic {
+pub fn finding(code: Code, severity: Severity, at: &JsonPath) -> Diagnostic {
     Diagnostic::new(
         code,
         severity,

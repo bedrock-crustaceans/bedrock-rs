@@ -11,8 +11,7 @@ use uuid::Uuid;
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Location, Phase, Severity,
-    Span,
+    Code, Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Location, Phase, Severity, Span,
 };
 use bedrock_addon_core::json::{self, JsonSlice, PrepareError, Prepared, Value, parse_at};
 use bedrock_addon_core::pack_identity::PackPath;
@@ -55,20 +54,14 @@ impl<'d> Sink<'d> {
     }
 
     /// One finding at `at`, whose value lies at `span`.
-    pub fn push(
-        &mut self,
-        code: DiagnosticCode,
-        severity: Severity,
-        at: JsonPath,
-        span: Option<Span>,
-    ) {
+    pub fn push(&mut self, code: Code, severity: Severity, at: JsonPath, span: Option<Span>) {
         self.push_in(Phase::Parse, code, severity, at, span);
     }
 
     fn push_in(
         &mut self,
         phase: Phase,
-        code: DiagnosticCode,
+        code: Code,
         severity: Severity,
         at: JsonPath,
         span: Option<Span>,
@@ -80,7 +73,7 @@ impl<'d> Sink<'d> {
     fn push_with(
         &mut self,
         phase: Phase,
-        code: DiagnosticCode,
+        code: Code,
         severity: Severity,
         at: JsonPath,
         span: Option<Span>,
@@ -103,7 +96,7 @@ impl<'d> Sink<'d> {
     pub fn reference(&mut self, kind: &'static str, id: &str, at: JsonPath, span: Option<Span>) {
         let span = span.filter(|_| !self.secret);
         let mut finding = Diagnostic::new(
-            DiagnosticCode::from(&core_codes::UNRESOLVED_REFERENCE),
+            Code::from(&core_codes::UNRESOLVED_REFERENCE),
             Severity::Info,
             Phase::Validate,
             Location::new(None, self.path.clone(), at, span),
@@ -119,32 +112,32 @@ impl<'d> Sink<'d> {
     }
 
     /// A note of the crate's own: the server reads these silently, so it is an information.
-    pub fn warn(&mut self, code: DiagnosticCode, at: JsonPath, span: Option<Span>) {
+    pub fn warn(&mut self, code: Code, at: JsonPath, span: Option<Span>) {
         self.push(code, Severity::Info, at, span);
     }
 
     /// A line the dedicated server writes to its log at warning level (`Secret '%s' in file
     /// '%s' is not a string…`): a warning.
-    pub fn warn_logged(&mut self, code: DiagnosticCode, at: JsonPath, span: Option<Span>) {
+    pub fn warn_logged(&mut self, code: Code, at: JsonPath, span: Option<Span>) {
         self.push(code, Severity::Warning, at, span);
     }
 
     /// An information of the crate's own.
-    pub fn info(&mut self, code: DiagnosticCode, at: JsonPath, span: Option<Span>) {
+    pub fn info(&mut self, code: Code, at: JsonPath, span: Option<Span>) {
         self.push(code, Severity::Info, at, span);
     }
 
     /// The line the server prints when the file cannot be parsed, under the variant of the
     /// finding: "Failed to parse JSON in file '%s'", and for `commands.json` followed by
     /// ":  malformed input". Vanilla names the sibling `variables.json` for a `permissions.json`.
-    fn parse_failed(&self, empty: bool) -> DiagnosticCode {
+    fn parse_failed(&self, empty: bool) -> Code {
         let file = self.name.as_str();
-        DiagnosticCode::from(match (self.commands, empty) {
+        match (self.commands, empty) {
             (true, false) => codes::COMMANDS_MALFORMED_MALFORMED_INPUT.with([file]),
             (true, true) => codes::COMMANDS_MALFORMED_EMPTY_DOCUMENT.with([file]),
             (false, false) => codes::CONFIG_PARSE_FAILED_MALFORMED_INPUT.with([file]),
             (false, true) => codes::CONFIG_PARSE_FAILED_EMPTY_DOCUMENT.with([file]),
-        })
+        }
     }
 
     /// The file exists but could not be opened.
@@ -152,7 +145,7 @@ impl<'d> Sink<'d> {
     pub fn unreadable(&mut self, kind: std::io::ErrorKind) {
         self.push_with(
             Phase::Read,
-            DiagnosticCode::from(codes::CONFIG_OPEN_FAILED.with([self.name.as_str()])),
+            codes::CONFIG_OPEN_FAILED.with([self.name.as_str()]),
             Severity::Error,
             JsonPath::new(),
             None,
@@ -258,11 +251,7 @@ pub(super) fn value(slice: JsonSlice<'_>, at: &JsonPath, sink: &mut Sink<'_>) ->
     for clamped in json::clamp_non_finite(&mut value, Some(slice)) {
         let mut path = at.clone();
         path.append(&clamped.path);
-        sink.warn(
-            DiagnosticCode::from(&core_codes::INVALID_VALUE),
-            path,
-            clamped.span,
-        );
+        sink.warn(Code::from(&core_codes::INVALID_VALUE), path, clamped.span);
     }
     Some(value)
 }
@@ -443,7 +432,7 @@ fn read_folder(
     if folder.stray_commands {
         // `config/default/commands.json` is not read.
         Sink::new(Some(name), COMMANDS_FILE, d).info(
-            DiagnosticCode::from(&core_codes::IGNORED_FILE),
+            Code::from(&core_codes::IGNORED_FILE),
             JsonPath::new(),
             None,
         );
@@ -471,7 +460,7 @@ fn shadowing(default: &PackScriptConfig, gaps: &[(&str, Gap)], d: &mut Diagnosti
         ];
         for (_, file) in parts.into_iter().filter(|(lacking, _)| *lacking) {
             Sink::new(Some(name), file, d).warn(
-                DiagnosticCode::from(&core_codes::PACK_CONFIG_SHADOWS_DEFAULT),
+                Code::from(&core_codes::PACK_CONFIG_SHADOWS_DEFAULT),
                 JsonPath::new(),
                 None,
             );

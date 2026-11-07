@@ -2,7 +2,7 @@
 
 #![allow(dead_code)]
 
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, Severity};
+use bedrock_addon_core::diagnostic::{Code, Diagnostic, Diagnostics, Severity};
 use bedrock_addon_core::document::{Content, Document, Rejected};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::pack_identity::PackPath;
@@ -99,7 +99,7 @@ pub fn above_info(d: &Diagnostics) -> Vec<&Diagnostic> {
 }
 
 /// Whether `d` holds a finding whose code matches.
-pub fn has(d: &Diagnostics, pred: impl Fn(&DiagnosticCode) -> bool) -> bool {
+pub fn has(d: &Diagnostics, pred: impl Fn(&Code) -> bool) -> bool {
     d.iter().any(|f| pred(&f.code))
 }
 

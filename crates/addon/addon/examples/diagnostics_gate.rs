@@ -1,4 +1,4 @@
-//! A CI gate over `Severity` and `DiagnosticCode`: load both stacks of a world, run the link
+//! A CI gate over `Severity` and the findings' codes: load both stacks of a world, run the link
 //! pass, print what a pack author must see and decide whether the build passes.
 //!
 //! The pack is held in memory and has three deliberate faults, of the two severities a gate

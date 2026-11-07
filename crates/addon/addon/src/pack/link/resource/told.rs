@@ -7,14 +7,8 @@ use bedrock_addon_core::document::Origin;
 
 /// Vanilla's text `template` with `args`: the block rules' (`sounds.json`'s has none).
 #[cfg(feature = "block")]
-pub(super) fn formatted(
-    template: &'static str,
-    args: &[&str],
-) -> bedrock_addon_core::diagnostic::VanillaText {
-    bedrock_addon_core::diagnostic::VanillaText::Formatted {
-        template,
-        args: args.iter().map(|arg| (*arg).to_owned()).collect(),
-    }
+pub(super) fn formatted(template: &'static str, args: &[&str]) -> String {
+    bedrock_addon_core::diagnostic::sentence(template, args)
 }
 
 /// What was told already: one finding per member, however many blocks an entry applies to (a

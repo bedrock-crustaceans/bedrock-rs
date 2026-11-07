@@ -133,9 +133,7 @@ fn with_validator_line(mut finding: Diagnostic) -> Diagnostic {
         // drops nothing, so the finding is an error.
         finding.severity = crate::diagnostic::Severity::Error;
         let line = validator_text(Validator::Missing, &finding.location.json_path, 0, bare);
-        finding.code = crate::diagnostic::codes::UNRESOLVED_REFERENCE_WORDED
-            .with([line.to_string()])
-            .into();
+        finding.code = crate::diagnostic::codes::UNRESOLVED_REFERENCE_WORDED.with([line]);
     }
     finding
 }

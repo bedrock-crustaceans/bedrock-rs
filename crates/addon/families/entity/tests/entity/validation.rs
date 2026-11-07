@@ -2,7 +2,7 @@
 //! goals and component versions.
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon_core::diagnostic::{Code, Severity};
 use bedrock_addon_core::document::ComponentRef;
 use bedrock_addon_core::document::JsonDocument;
 use bedrock_addon_core::load::{Experiment, LoadContext};
@@ -38,7 +38,7 @@ fn a_custom_minecraft_identifier_is_rejected() {
     let outcome = outcome(&doc("1.26.50", &payload("minecraft:my_mob", "")), &cx());
     assert_eq!(
         with_code(&outcome.diagnostics, "NamespaceRule")[0].code,
-        DiagnosticCode::from(&core_codes::NAMESPACE_RULE)
+        Code::from(&core_codes::NAMESPACE_RULE)
     );
 }
 
@@ -116,7 +116,7 @@ fn aliases_from_1_21_10_are_dropped_with_vanillas_text() {
     let deprecated = with_code(&found, "DeprecatedMember");
     assert_eq!(
         deprecated[0].code,
-        DiagnosticCode::from(&entity_codes::ALIASES_DEPRECATED)
+        Code::from(&entity_codes::ALIASES_DEPRECATED)
     );
 }
 
@@ -141,7 +141,7 @@ fn a_root_event_filter_below_1_19_20_is_dropped() {
     // The text is ours: none is attached.
     assert_eq!(
         found.iter().next().unwrap().code,
-        DiagnosticCode::from(&core_codes::DROPPED_FIELD)
+        Code::from(&core_codes::DROPPED_FIELD)
     );
     let nested = node.get("sequence").unwrap().as_array().unwrap()[0]
         .as_object()
@@ -198,12 +198,12 @@ fn entity_version_at_1_26_20_without_upcoming_creator_features_loads_with_a_note
     assert_eq!(codes(&found, Severity::Info), ["MissingToggles"]);
     assert_eq!(
         found.iter().next().unwrap().code,
-        DiagnosticCode::from(core_codes::TURN_ON_TOGGLE_BEFORE.with([
+        core_codes::TURN_ON_TOGGLE_BEFORE.with([
             "member".to_string(),
             "entity_version".to_string(),
             bedrock_addon_core::version::FormatVersion::new(1, 26, 30).to_string(),
             "upcoming_creator_features".to_string()
-        ]))
+        ])
     );
     assert!(entity.description.entity_version.is_some());
     assert_eq!(entity.upgrades.len(), 2);
@@ -595,7 +595,7 @@ fn spawn_egg_interaction_without_offspring_is_kept_with_the_game_line() {
     assert_eq!(told.len(), 1, "{found:#?}");
     assert_eq!(
         told[0].code,
-        DiagnosticCode::from(&entity_codes::SPAWN_EGG_NEEDS_OFFSPRING)
+        Code::from(&entity_codes::SPAWN_EGG_NEEDS_OFFSPRING)
     );
     assert_eq!(
         told[0].location.json_path.to_string(),
@@ -697,7 +697,7 @@ fn each_suffixed_generic_goal_is_its_own_entry() {
     let missing: Vec<String> = outcome
         .diagnostics
         .iter()
-        .filter(|d| d.code == DiagnosticCode::from(&core_codes::GENERIC_GOAL_SUFFIX_MISSING))
+        .filter(|d| d.code == Code::from(&core_codes::GENERIC_GOAL_SUFFIX_MISSING))
         .inspect(|d| assert_eq!(d.severity, Severity::Info))
         .map(|d| d.location.json_path.to_string())
         .collect();
@@ -936,7 +936,7 @@ fn a_bad_property_drops_the_whole_property_group() {
         assert_eq!(dropped.len(), 1, "{bad}: {found:#?}");
         assert_eq!(
             dropped[0].code,
-            DiagnosticCode::from(&entity_codes::ACTOR_PROPERTIES_NOT_LOADED)
+            Code::from(&entity_codes::ACTOR_PROPERTIES_NOT_LOADED)
         );
         assert_eq!(
             (dropped[0].severity, dropped[0].kept),
@@ -956,11 +956,13 @@ fn property_memory_mapping_needs_the_brain_prototype() {
     let (entity, found) = stable(&text, &cx());
     assert_eq!(
         found.iter().map(|d| d.code.clone()).collect::<Vec<_>>(),
-        [DiagnosticCode::from(core_codes::TURN_ON_TOGGLE.with([
-            "member",
-            "property_memory_mapping",
-            "brain_prototype"
-        ]))]
+        [
+            core_codes::TURN_ON_TOGGLE.with([
+                "member",
+                "property_memory_mapping",
+                "brain_prototype"
+            ])
+        ]
     );
     assert!(entity.description.property_memory_mapping.is_none());
     let mut brain = cx();

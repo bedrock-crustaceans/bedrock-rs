@@ -68,7 +68,7 @@ mod codec {
     use super::{LightType, LocalLight, LocalLightSettings};
     use crate::read::{self, Node, Read, members};
     use crate::write::{self, Object, Written};
-    use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, JsonPath, Severity};
+    use bedrock_addon_core::diagnostic::{Code, Diagnostics, JsonPath, Severity};
     use bedrock_addon_core::id::BlockId;
     use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
     use bedrock_addon_core::versioning::{ParseCx, VersionStruct};
@@ -118,7 +118,7 @@ mod codec {
                     }
                     Entry::Occupied(mut entry) => {
                         d.push(node.finding(
-                            DiagnosticCode::from(&core_codes::DUPLICATE_IDENTIFIER),
+                            Code::from(&core_codes::DUPLICATE_IDENTIFIER),
                             Severity::Info,
                         ));
                         entry.insert(light);

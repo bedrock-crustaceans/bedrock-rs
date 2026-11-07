@@ -3,7 +3,7 @@
 
 use bedrock_addon_core::diagnostic::builders;
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon_core::diagnostic::{Code, Severity};
 use bedrock_addon_core::document::Origin;
 use bedrock_addon_core::id::BlockId;
 use bedrock_addon_core::load::Experiment;
@@ -79,11 +79,11 @@ pub(super) fn exponents(cx: &LinkCx<'_>, out: &mut Findings) {
         let member = "ambient_occlusion_exponent";
         let origin = writers.of(cx, out, id, member, entry.origin());
         let path = entry_path(entry_key(id, &origin), Some(member));
-        let code = DiagnosticCode::from(builders::worded(
+        let code = builders::worded(
             &core_codes::NO_EFFECT,
             &core_codes::NO_EFFECT_WORDED,
-            Some(formatted(EXPONENT_UNUSED, &[id.as_str()])).as_ref(),
-        ));
+            Some(formatted(EXPONENT_UNUSED, &[id.as_str()]).as_str()),
+        );
         // The client logs this at the warning level: a warning.
         out.push(At::new(&origin, path, Severity::Warning).diagnostic(code));
     }
@@ -176,15 +176,15 @@ pub(super) fn tessellation(cx: &LinkCx<'_>, out: &mut Findings) {
             } else {
                 (TEXTURES_MISSING, Severity::Error)
             };
-            let code = DiagnosticCode::from(builders::worded(
+            let code = builders::worded(
                 &core_codes::NO_EFFECT,
                 &core_codes::NO_EFFECT_WORDED,
-                Some(formatted(template, &[id.as_str()])).as_ref(),
-            ));
+                Some(formatted(template, &[id.as_str()]).as_str()),
+            );
             let finding = At::new(origin, path, severity).diagnostic(code);
             out.push(if custom { finding } else { finding.into_kept() });
         } else if cx.lints() {
-            let code = DiagnosticCode::from(&core_codes::SHADOWED_DEFINITION);
+            let code = Code::from(&core_codes::SHADOWED_DEFINITION);
             out.push(At::new(origin, path, Severity::Info).diagnostic(code));
         }
     }
@@ -211,7 +211,7 @@ mod tests {
         for (template, arity) in TEMPLATES {
             assert_eq!(template.matches("{}").count(), *arity, "{template}");
             let args = vec!["x"; *arity];
-            assert!(!formatted(template, &args).to_string().contains("{}"));
+            assert!(!formatted(template, &args).contains("{}"));
         }
     }
 

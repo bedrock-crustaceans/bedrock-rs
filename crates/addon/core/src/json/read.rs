@@ -1044,7 +1044,7 @@ pub fn document_json_refusal(document: JsonSlice<'_>) -> Option<Diagnostic> {
     };
     let offset = document.offset.saturating_add(start);
     let finding = Diagnostic::new(
-        core_codes::DOCUMENT_JSON.with([message]).into(),
+        core_codes::DOCUMENT_JSON.with([message]),
         Severity::Error,
         Phase::Parse,
         Location::new(
@@ -1079,7 +1079,7 @@ pub fn trailing_content_finding(document: JsonSlice<'_>) -> Option<Diagnostic> {
     let span = trailing_content(document.text)?;
     let offset = u32::try_from(document.offset).unwrap_or(u32::MAX);
     Some(Diagnostic::new(
-        core_codes::SYNTAX.with([TRAILING_CONTENT]).into(),
+        core_codes::SYNTAX.with([TRAILING_CONTENT]),
         Severity::Info,
         Phase::Parse,
         Location::new(

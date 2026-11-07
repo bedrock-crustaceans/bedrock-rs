@@ -8,7 +8,7 @@
 //! pack's definition is effective, by the document's origin (pack position, 0 = top, and file).
 //!
 //! Every test also requires the refusal to be reported: the error findings at the top pack's
-//! file, by `DiagnosticCode` variant name.
+//! file, by legacy code name.
 //!
 //! The comment above each family states what the game does and the present behaviour.
 

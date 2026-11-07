@@ -1,5 +1,4 @@
-//! The core's generic definitions: one per legacy [`DiagnosticCode`](super::DiagnosticCode)
-//! variant, each [`was`](CodeDef::was) the variant it replaces, so a finding raised by one keeps the variant's
+//! The core's generic definitions: one per legacy `DiagnosticCode` variant, each [`was`](CodeDef::was) the variant it replaces, so a finding raised by one keeps the variant's
 //! name, kind and line while its [`id`](CodeDef::id) is already its own (`core/invalid_value`).
 //!
 //! A variant with a `text` field has two: the plain one renders the variant's own line (its
@@ -14,7 +13,7 @@
 //! No generic definition is [`Class::KeptError`]: a kept error is kept by its site.
 //!
 //! [`ALL`] lists every definition; `core/tests/diagnostic_codes.rs` lists every id, and
-//! `core/tests/diagnostic_messages.rs` renders each against the legacy variant it replaces.
+//! `core/tests/diagnostic_lines.rs` pins the line each renders, the legacy variant's.
 
 use super::{Class, CodeDef, CodeMeta, Disposition, Kind};
 
@@ -259,8 +258,8 @@ pub static DROPPED_FIELD_WORDED: CodeDef<1> = CodeDef::new(
 
 /// `MemberNotKept` without the game's sentence: a member the load read and does not keep: nothing
 /// reads it, the loaded document does not hold it and a written document does not have it. Unlike
-/// [`UnrecognizedField`](super::DiagnosticCode::UnrecognizedField), whose member is kept and
-/// written back, and unlike [`DroppedField`](super::DiagnosticCode::DroppedField), no rule removes
+/// [`UNRECOGNIZED_FIELD`], whose member is kept and written back, and unlike
+/// [`DROPPED_FIELD`], no rule removes
 /// it: it is a member no schema declares, at a place that keeps no unknown members.
 pub static MEMBER_NOT_KEPT: CodeDef<0> = CodeDef::new(
     "core/member_not_kept",

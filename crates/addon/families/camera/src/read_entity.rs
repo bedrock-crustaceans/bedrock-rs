@@ -4,7 +4,7 @@ use super::read::{VEC2, VEC3, each_ranged, ranged};
 use super::violation;
 use super::{CameraComponents, CameraEntity, codes};
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, JsonPath};
+use bedrock_addon_core::diagnostic::{Code, Diagnostics, JsonPath};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::versioning::chain_file as file;
 use bedrock_addon_core::versioning::shape::{
@@ -127,7 +127,7 @@ const DOCUMENT: &[Member] = &[
 /// known, so the finding carries none.
 fn non_negative(value: Option<f32>, at: JsonPath, d: &mut Diagnostics) -> bool {
     if value.is_some_and(|value| value < 0.0) {
-        d.push(error(DiagnosticCode::from(&core_codes::INVALID_VALUE), at));
+        d.push(error(Code::from(&core_codes::INVALID_VALUE), at));
         return false;
     }
     true

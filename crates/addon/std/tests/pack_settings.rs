@@ -9,7 +9,7 @@ mod common;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon::diagnostic::Severity;
 use bedrock_addon::pack::settings::{
     FileState, GLOBAL_FILE, SavedSettings, SettingValue, SettingsFile, WORLD_FILE,
 };
@@ -86,9 +86,7 @@ fn d9_a_rejected_file_closes_with_its_path() {
         .unwrap();
     assert_eq!(
         last.code,
-        DiagnosticCode::from(
-            bedrock_addon::pack::settings::codes::LOAD_FAILED.with([path.display().to_string()])
-        )
+        bedrock_addon::pack::settings::codes::LOAD_FAILED.with([path.display().to_string()])
     );
     assert_eq!(rejected.origin.path.as_str(), "ps09_unknown_member.json");
 }

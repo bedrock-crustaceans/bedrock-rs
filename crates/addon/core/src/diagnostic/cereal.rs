@@ -9,7 +9,7 @@
 //! game's log masks except the unknown member and the unknown component, which only the strict
 //! mask makes one. Each constructor documents the text it produces and the condition it reports.
 
-use super::{DiagnosticCode, VanillaText, codes};
+use super::{Code, codes};
 
 /// A number as cereal writes it into a message: without a fraction as an integer, otherwise
 /// as C++'s `std::to_string(double)` does, with `%f` (six decimals). Every numeric constraint
@@ -40,15 +40,15 @@ pub const MEMBER_NOT_IN_SCHEMA_TEXT: &str =
 /// `this member was found in the input, but is not present in the Schema`: an unknown member of
 /// an object.
 #[must_use]
-pub fn member_not_in_schema() -> DiagnosticCode {
-    DiagnosticCode::from(&codes::MEMBER_NOT_IN_SCHEMA)
+pub fn member_not_in_schema() -> Code {
+    Code::from(&codes::MEMBER_NOT_IN_SCHEMA)
 }
 
 /// `this component was found in the input, but is not present in the Schema`: an unknown
 /// component.
 #[must_use]
-pub fn component_not_in_schema() -> DiagnosticCode {
-    DiagnosticCode::from(&codes::COMPONENT_NOT_IN_SCHEMA)
+pub fn component_not_in_schema() -> Code {
+    Code::from(&codes::COMPONENT_NOT_IN_SCHEMA)
 }
 
 /// The text of [`missing_required_field`].
@@ -56,21 +56,21 @@ pub const MISSING_REQUIRED_FIELD_TEXT: &str = "missing required field";
 
 /// `missing required field`: an object lacks a member its schema requires.
 #[must_use]
-pub fn missing_required_field() -> DiagnosticCode {
-    DiagnosticCode::from(&codes::REQUIRED_FIELD_MISSING)
+pub fn missing_required_field() -> Code {
+    Code::from(&codes::REQUIRED_FIELD_MISSING)
 }
 
 /// `expected an object`: something else stands where an object is required.
 #[must_use]
-pub fn expected_object() -> DiagnosticCode {
-    DiagnosticCode::from(&codes::EXPECTED_OBJECT)
+pub fn expected_object() -> Code {
+    Code::from(&codes::EXPECTED_OBJECT)
 }
 
 /// `too few input components, expected at least <min>`: a component storage holds fewer
 /// components than its schema demands.
 #[must_use]
-pub fn too_few_components(min: usize) -> DiagnosticCode {
-    codes::TOO_FEW_COMPONENTS.with([min.to_string()]).into()
+pub fn too_few_components(min: usize) -> Code {
+    codes::TOO_FEW_COMPONENTS.with([min.to_string()])
 }
 
 // ---- enums --------------------------------------------------------------------------------
@@ -78,8 +78,8 @@ pub fn too_few_components(min: usize) -> DiagnosticCode {
 /// `invalid enum value`: the line the game logs after [`enum_expects`] or
 /// [`enum_expects_string`].
 #[must_use]
-pub fn invalid_enum_value() -> DiagnosticCode {
-    DiagnosticCode::from(&codes::INVALID_ENUM_LINE)
+pub fn invalid_enum_value() -> Code {
+    Code::from(&codes::INVALID_ENUM_LINE)
 }
 
 /// How many of an enum's names [`enum_expects`] lists before `, ... (<n> others)`.
@@ -93,7 +93,7 @@ const ENUM_NAMES_SHOWN: usize = 3;
 /// '<c>'` then `, ... (<n> others)` when there are more than three names, then `. Found:
 /// '<found>'`. The count in the tail is the number of names less the three shown.
 #[must_use]
-pub fn enum_expects(bound: &str, names: &[&str], found: &str) -> DiagnosticCode {
+pub fn enum_expects(bound: &str, names: &[&str], found: &str) -> Code {
     let mut list = names
         .iter()
         .take(ENUM_NAMES_SHOWN)
@@ -105,16 +105,14 @@ pub fn enum_expects(bound: &str, names: &[&str], found: &str) -> DiagnosticCode 
         list.push_str(&(names.len() - ENUM_NAMES_SHOWN).to_string());
         list.push_str(" others)");
     }
-    codes::ENUM_EXPECTS
-        .with([bound.to_owned(), list, found.to_owned()])
-        .into()
+    codes::ENUM_EXPECTS.with([bound.to_owned(), list, found.to_owned()])
 }
 
 /// `This value is bound to '<bound>' and expects a "named value" (i.e. a string)`: an enum given
 /// something other than a string.
 #[must_use]
-pub fn enum_expects_string(bound: &str) -> DiagnosticCode {
-    codes::ENUM_EXPECTS_STRING.with([bound]).into()
+pub fn enum_expects_string(bound: &str) -> Code {
+    codes::ENUM_EXPECTS_STRING.with([bound])
 }
 
 // ---- scalars, ranges, sizes ---------------------------------------------------------------
@@ -124,8 +122,8 @@ pub const INVALID_NUMERIC_VALUE_TEXT: &str = "invalid numeric value";
 
 /// `invalid numeric value`: no number (or boolean) where one is expected.
 #[must_use]
-pub fn invalid_numeric_value() -> DiagnosticCode {
-    DiagnosticCode::from(&codes::INVALID_NUMERIC_VALUE)
+pub fn invalid_numeric_value() -> Code {
+    Code::from(&codes::INVALID_NUMERIC_VALUE)
 }
 
 /// The bounds of a numeric constraint: each bound is absent when the constraint has none (the
@@ -197,8 +195,8 @@ impl NumericRange {
     /// `the input must be a number` + ` >= ` / ` > ` + min, or ` <= ` / ` < ` + max. Bounds as
     /// [`number`] writes them.
     #[must_use]
-    pub fn text(&self) -> VanillaText {
-        let text = match (self.min, self.max) {
+    pub fn text(&self) -> String {
+        match (self.min, self.max) {
             (Some(min), Some(max)) => format!(
                 "the input is outside of the accepted range {}{}, {}{}",
                 if self.exclusive_min { '(' } else { '[' },
@@ -218,39 +216,31 @@ impl NumericRange {
             ),
             // No bound: no constraint fails; the game's text would end after "number".
             (None, None) => "the input must be a number".to_owned(),
-        };
-        VanillaText::Formatted {
-            template: "{}",
-            args: vec![text],
         }
     }
 
     /// The finding's code: `InvalidValue` with [`Self::text`].
     #[must_use]
-    pub fn code(&self) -> DiagnosticCode {
+    pub fn code(&self) -> Code {
         let bound = |exclusive: bool, strict: &str, loose: &str, at: f64| {
             format!("{}{}", if exclusive { strict } else { loose }, number(at))
         };
         match (self.min, self.max) {
-            (Some(min), Some(max)) => codes::OUTSIDE_ACCEPTED_RANGE
-                .with([format!(
-                    "{}{}, {}{}",
-                    if self.exclusive_min { '(' } else { '[' },
-                    number(min),
-                    number(max),
-                    if self.exclusive_max { ')' } else { ']' },
-                )])
-                .into(),
-            (None, Some(max)) => codes::NUMBER_BOUND
-                .with([bound(self.exclusive_max, "< ", "<= ", max)])
-                .into(),
-            (Some(min), None) => codes::NUMBER_BOUND
-                .with([bound(self.exclusive_min, "> ", ">= ", min)])
-                .into(),
+            (Some(min), Some(max)) => codes::OUTSIDE_ACCEPTED_RANGE.with([format!(
+                "{}{}, {}{}",
+                if self.exclusive_min { '(' } else { '[' },
+                number(min),
+                number(max),
+                if self.exclusive_max { ')' } else { ']' },
+            )]),
+            (None, Some(max)) => {
+                codes::NUMBER_BOUND.with([bound(self.exclusive_max, "< ", "<= ", max)])
+            }
+            (Some(min), None) => {
+                codes::NUMBER_BOUND.with([bound(self.exclusive_min, "> ", ">= ", min)])
+            }
             // No bound: no constraint fails; the game's text would end after "number".
-            (None, None) => codes::INVALID_VALUE_WORDED
-                .with(["the input must be a number"])
-                .into(),
+            (None, None) => codes::INVALID_VALUE_WORDED.with(["the input must be a number"]),
         }
     }
 }
@@ -258,10 +248,8 @@ impl NumericRange {
 /// `<value> is not multiple of <step>`, for a number that breaks a multiple-of constraint: both
 /// as [`number`] writes them.
 #[must_use]
-pub fn not_multiple_of(value: f64, step: f64) -> DiagnosticCode {
-    codes::NOT_MULTIPLE_OF
-        .with([number(value), number(step)])
-        .into()
+pub fn not_multiple_of(value: f64, step: f64) -> Code {
+    codes::NOT_MULTIPLE_OF.with([number(value), number(step)])
 }
 
 /// The template of [`string_mismatch`] (one argument: the regex).
@@ -269,69 +257,67 @@ pub const STRING_MISMATCH_TEXT: &str = "expected string to match the \"{}\" rege
 
 /// `expected string to match the "<regex>" regex`: a string breaks a pattern constraint.
 #[must_use]
-pub fn string_mismatch(regex: &str) -> DiagnosticCode {
-    codes::STRING_MISMATCH.with([regex]).into()
+pub fn string_mismatch(regex: &str) -> Code {
+    codes::STRING_MISMATCH.with([regex])
 }
 
 /// `expected array with at least <n> elements`; the text says `elements` whatever `n` is.
 #[must_use]
-pub fn array_too_small(min: usize) -> DiagnosticCode {
-    codes::ARRAY_AT_LEAST.with([min.to_string()]).into()
+pub fn array_too_small(min: usize) -> Code {
+    codes::ARRAY_AT_LEAST.with([min.to_string()])
 }
 
 /// `expected object with at least <n> elements`, for a map or object under a minimum-size
 /// constraint.
 #[must_use]
-pub fn object_too_small(min: usize) -> DiagnosticCode {
-    codes::OBJECT_AT_LEAST.with([min.to_string()]).into()
+pub fn object_too_small(min: usize) -> Code {
+    codes::OBJECT_AT_LEAST.with([min.to_string()])
 }
 
 /// `No duplicates allowed`: an array with a unique-items constraint holds a repeat.
 #[must_use]
-pub fn no_duplicates() -> DiagnosticCode {
-    DiagnosticCode::from(&codes::NO_DUPLICATES)
+pub fn no_duplicates() -> Code {
+    Code::from(&codes::NO_DUPLICATES)
 }
 
 /// `key <key> is not allowed`: a component storage holds a key its constraint forbids.
 #[must_use]
-pub fn key_not_allowed(key: &str) -> DiagnosticCode {
-    codes::KEY_NOT_ALLOWED.with([key]).into()
+pub fn key_not_allowed(key: &str) -> Code {
+    codes::KEY_NOT_ALLOWED.with([key])
 }
 
 /// `too many input elements, expected no more than <max>`: the size cap of a vector; the same
 /// text ends the maximum size of a sequence container constraint.
 #[must_use]
-pub fn too_many_elements(max: usize) -> DiagnosticCode {
-    codes::TOO_MANY_ELEMENTS.with([max.to_string()]).into()
+pub fn too_many_elements(max: usize) -> Code {
+    codes::TOO_MANY_ELEMENTS.with([max.to_string()])
 }
 
 /// `too many characters, expected no more than <max>`: the size cap of a string.
 #[must_use]
-pub fn too_many_characters(max: usize) -> DiagnosticCode {
-    codes::TOO_MANY_CHARACTERS.with([max.to_string()]).into()
+pub fn too_many_characters(max: usize) -> Code {
+    codes::TOO_MANY_CHARACTERS.with([max.to_string()])
 }
 
 /// `too many input elements for an associative container`: the size cap of a map.
 #[must_use]
-pub fn too_many_map_elements() -> DiagnosticCode {
-    DiagnosticCode::from(&codes::TOO_MANY_MAP_ELEMENTS)
+pub fn too_many_map_elements() -> Code {
+    Code::from(&codes::TOO_MANY_MAP_ELEMENTS)
 }
 
 // ---- the Minecraft Document envelope ------------------------------------------------------
 
 /// `The payload of the Minecraft Document is missing`.
 #[must_use]
-pub fn payload_missing() -> DiagnosticCode {
-    DiagnosticCode::from(&codes::PAYLOAD_MISSING)
+pub fn payload_missing() -> Code {
+    Code::from(&codes::PAYLOAD_MISSING)
 }
 
 /// `The payload key does not match the expected one. Expected: '<expected>'. Actual:
 /// '<actual>'.` The crate files it as the missing payload it is to the family.
 #[must_use]
-pub fn payload_key_mismatch(expected: &str, actual: &str) -> DiagnosticCode {
-    codes::PAYLOAD_UNDER_OTHER_KEY
-        .with([expected, actual])
-        .into()
+pub fn payload_key_mismatch(expected: &str, actual: &str) -> Code {
+    codes::PAYLOAD_UNDER_OTHER_KEY.with([expected, actual])
 }
 
 // ---- the older schema tree ----------------------------------------------------------------
@@ -341,24 +327,20 @@ pub const REQUIRED_CHILD_TEXT: &str = "Required child {} not found";
 
 /// `Required child <name> not found`, logged at level 3.
 #[must_use]
-pub fn required_child(name: &str) -> DiagnosticCode {
-    codes::REQUIRED_CHILD.with([name]).into()
+pub fn required_child(name: &str) -> Code {
+    codes::REQUIRED_CHILD.with([name])
 }
 
 /// `Node has too few children (<actual> < <min>)`, logged at level 3.
 #[must_use]
-pub fn too_few_children(actual: usize, min: usize) -> DiagnosticCode {
-    codes::TOO_FEW_CHILDREN
-        .with([actual.to_string(), min.to_string()])
-        .into()
+pub fn too_few_children(actual: usize, min: usize) -> Code {
+    codes::TOO_FEW_CHILDREN.with([actual.to_string(), min.to_string()])
 }
 
 /// `Node has too many children (<actual> > <max>)`, logged at level 3.
 #[must_use]
-pub fn too_many_children(actual: usize, max: usize) -> DiagnosticCode {
-    codes::TOO_MANY_CHILDREN
-        .with([actual.to_string(), max.to_string()])
-        .into()
+pub fn too_many_children(actual: usize, max: usize) -> Code {
+    codes::TOO_MANY_CHILDREN.with([actual.to_string(), max.to_string()])
 }
 
 /// The template of [`unknown_child_option`] (one argument: the allowed types).
@@ -367,14 +349,14 @@ pub const UNKNOWN_CHILD_OPTION_TEXT: &str = "unknown child schema option type.  
 /// `unknown child schema option type.  Allowed types: <types>`, logged at level 3. The text has
 /// two spaces before `Allowed`.
 #[must_use]
-pub fn unknown_child_option(allowed: &str) -> DiagnosticCode {
-    codes::UNKNOWN_CHILD_OPTION.with([allowed]).into()
+pub fn unknown_child_option(allowed: &str) -> Code {
+    codes::UNKNOWN_CHILD_OPTION.with([allowed])
 }
 
 /// `Version <version> below min required version (<min>)`: a version below the node's minimum.
 #[must_use]
-pub fn version_below_min(version: &str, min: &str) -> DiagnosticCode {
-    codes::VERSION_BELOW_MIN.with([version, min]).into()
+pub fn version_below_min(version: &str, min: &str) -> Code {
+    codes::VERSION_BELOW_MIN.with([version, min])
 }
 
 #[cfg(test)]
@@ -382,7 +364,7 @@ mod tests {
     use super::*;
 
     /// The code's name and its rendered text.
-    fn shown(code: &DiagnosticCode) -> (&'static str, String) {
+    fn shown(code: &Code) -> (&'static str, String) {
         (code.name(), code.to_string())
     }
 
@@ -438,27 +420,27 @@ mod tests {
             ..NumericRange::inclusive(0.0, 100.0)
         };
         assert_eq!(
-            open.text().to_string(),
+            open.text(),
             "the input is outside of the accepted range (0, 100)"
         );
         assert_eq!(
-            NumericRange::at_most(15.0).text().to_string(),
+            NumericRange::at_most(15.0).text(),
             "the input must be a number <= 15"
         );
         assert_eq!(
-            NumericRange::at_least(0.0).text().to_string(),
+            NumericRange::at_least(0.0).text(),
             "the input must be a number >= 0"
         );
         let above = NumericRange {
             exclusive_min: true,
             ..NumericRange::at_least(0.0)
         };
-        assert_eq!(above.text().to_string(), "the input must be a number > 0");
+        assert_eq!(above.text(), "the input must be a number > 0");
         let below = NumericRange {
             exclusive_max: true,
             ..NumericRange::at_most(1.0)
         };
-        assert_eq!(below.text().to_string(), "the input must be a number < 1");
+        assert_eq!(below.text(), "the input must be a number < 1");
         assert!(NumericRange::inclusive(0.0, 0.9).contains(0.9));
         assert!(!NumericRange::inclusive(0.0, 0.9).contains(0.91));
         assert!(!above.contains(0.0));

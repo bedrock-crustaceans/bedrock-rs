@@ -2,7 +2,7 @@
 //! (bounds), 17 (component value messages), and (triggers, filters, Molang).
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon_core::diagnostic::{Code, Severity};
 use bedrock_addon_core::molang::{self, MolangFieldMut, MolangVersion, MolangVersionSource};
 use bedrock_addon_core::versioning::ConvertMode;
 use bedrock_addon_family_entity::codes as entity_codes;
@@ -403,10 +403,7 @@ fn v12_transport_items_search_distance_must_be_positive() {
         let (g, d) = goal::<goal::TransportItems>(key, json, mode);
         let found = finding(&d, "InvalidValue", "search_distance").expect("reported");
         assert_eq!(found.severity, severity);
-        assert_eq!(
-            found.code,
-            DiagnosticCode::from(&entity_codes::SEARCH_DISTANCE)
-        );
+        assert_eq!(found.code, Code::from(&entity_codes::SEARCH_DISTANCE));
         let g = g.expect("the goal is kept");
         assert_eq!(g.search_distance(), [64.0, 32.0], "the default is used");
     }
@@ -444,7 +441,7 @@ fn v06_generic_goal_suffix_through_the_component_map() {
     let missing: Vec<String> = outcome
         .diagnostics
         .iter()
-        .filter(|f| f.code == DiagnosticCode::from(&core_codes::GENERIC_GOAL_SUFFIX_MISSING))
+        .filter(|f| f.code == Code::from(&core_codes::GENERIC_GOAL_SUFFIX_MISSING))
         // an information of the crate's own (no game line), the entity loads
         .inspect(|f| assert_eq!(f.severity, Severity::Info))
         .map(|f| f.location.json_path.to_string())
@@ -553,9 +550,7 @@ fn d5_an_unknown_filter_test_in_a_goal_is_a_warning() {
     assert!(found.kept, "the goal is kept: a kept error");
     assert_eq!(
         found.code,
-        DiagnosticCode::from(
-            bedrock_addon_core::diagnostic::codes::FILTER_TEST_NOT_FOUND.with(["is_teapot"])
-        )
+        bedrock_addon_core::diagnostic::codes::FILTER_TEST_NOT_FOUND.with(["is_teapot"])
     );
 }
 

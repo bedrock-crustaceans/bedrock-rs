@@ -9,8 +9,8 @@ use std::sync::Arc;
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Location, PackReport,
-    Phase, Severity,
+    Code, Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Location, PackReport, Phase,
+    Severity,
 };
 use bedrock_addon_core::document::{Document, Rejected};
 use bedrock_addon_core::load::{ListDepth, Place, ReadRange, RootId};
@@ -860,7 +860,7 @@ impl Opener {
         for duplicate in &pack.duplicates {
             if let Some(path) = strip(duplicate, &pack.prefix) {
                 unit.findings.push(Diagnostic::new(
-                    DiagnosticCode::from(&core_codes::DUPLICATE_ENTRY),
+                    Code::from(&core_codes::DUPLICATE_ENTRY),
                     // The game logs nothing for a name written twice in a zip (its only
                     // duplicate-name line is for brarchives), so this finding is the crate's
                     // own and an information.
@@ -964,7 +964,7 @@ fn locate_manifest(files: &BTreeMap<PackPath, u64>) -> Result<PackPath, Locate> 
 fn read_contents(bytes: &[u8], key: Option<&ContentKey>) -> ContentsOutcome {
     let path = PackPath::from_static(CONTENTS);
     let mut findings = Diagnostics::default();
-    let warn = |code: DiagnosticCode| {
+    let warn = |code: Code| {
         Diagnostic::new(
             code,
             // The game has no content-log line for either case (a missing key is an internal
@@ -985,9 +985,7 @@ fn read_contents(bytes: &[u8], key: Option<&ContentKey>) -> ContentsOutcome {
             }
             Err(reason) => {
                 // Without a usable key every encrypted entry is `unsupported_file_format`.
-                findings.push(warn(DiagnosticCode::from(
-                    &core_codes::UNSUPPORTED_FILE_FORMAT,
-                )));
+                findings.push(warn(Code::from(&core_codes::UNSUPPORTED_FILE_FORMAT)));
                 Encryption::Locked(reason)
             }
         }
@@ -995,12 +993,9 @@ fn read_contents(bytes: &[u8], key: Option<&ContentKey>) -> ContentsOutcome {
         match ContentsJson::parse(bytes) {
             Ok(contents) if !contents.is_current() => findings.push(version_finding(&path)),
             Ok(_) => {}
-            Err(_) => findings.push(warn(
-                bedrock_addon_core::diagnostic::builders::syntax(
-                    "contents.json is not a contents table",
-                )
-                .into(),
-            )),
+            Err(_) => findings.push(warn(bedrock_addon_core::diagnostic::builders::syntax(
+                "contents.json is not a contents table",
+            ))),
         }
         Encryption::Plain
     };
@@ -1040,7 +1035,7 @@ fn version_finding(path: &PackPath) -> Diagnostic {
     let mut json_path = JsonPath::new();
     json_path.push("version");
     Diagnostic::new(
-        DiagnosticCode::from(&core_codes::INVALID_VALUE),
+        Code::from(&core_codes::INVALID_VALUE),
         Severity::Info,
         Phase::Read,
         Location::new(None, Some(path.clone()), json_path, None),
@@ -1050,7 +1045,7 @@ fn version_finding(path: &PackPath) -> Diagnostic {
 /// A listed entry skipped for its name.
 pub(crate) fn path_rejected(name: &str) -> Diagnostic {
     Diagnostic::new(
-        DiagnosticCode::from(core_codes::PATH_REJECTED.with([name.to_owned()])),
+        core_codes::PATH_REJECTED.with([name.to_owned()]),
         // A listing rule of the crate, with no line of the game's, so an information.
         Severity::Info,
         Phase::Read,
@@ -1061,7 +1056,7 @@ pub(crate) fn path_rejected(name: &str) -> Diagnostic {
 /// A file the driver could not read.
 pub(crate) fn read_error(path: &PackPath, kind: std::io::ErrorKind) -> Diagnostic {
     Diagnostic::new(
-        core_codes::READ_ERROR.with([kind.to_string()]).into(),
+        core_codes::READ_ERROR.with([kind.to_string()]),
         Severity::Error,
         Phase::Read,
         Location::new(None, Some(path.clone()), JsonPath::new(), None),
@@ -1072,7 +1067,7 @@ pub(crate) fn read_error(path: &PackPath, kind: std::io::ErrorKind) -> Diagnosti
 /// A job that panicked.
 pub(crate) fn internal_error(path: Option<PackPath>) -> Diagnostic {
     Diagnostic::new(
-        DiagnosticCode::from(&core_codes::INTERNAL_ERROR),
+        Code::from(&core_codes::INTERNAL_ERROR),
         Severity::Error,
         Phase::Read,
         Location::new(None, path, JsonPath::new(), None),

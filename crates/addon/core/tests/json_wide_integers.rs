@@ -9,7 +9,7 @@
 use bedrock_addon_core::diagnostic::codes;
 use std::borrow::Cow;
 
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Span, code_for_deserialize_error_kind};
+use bedrock_addon_core::diagnostic::{Code, Span, code_for_deserialize_error_kind};
 use bedrock_addon_core::json::{
     EnvelopeVersion, JsonSlice, StrictFloat, StrictInt, StrictString, Value, from_slice_jsonc,
     from_str, from_str_borrowed_jsonc, from_str_jsonc, last_wins, parse_at, probe_envelope,
@@ -94,7 +94,7 @@ fn boundaries() -> Vec<(String, bool)> {
     table
 }
 
-fn code(error: &DeserializeError) -> DiagnosticCode {
+fn code(error: &DeserializeError) -> Code {
     code_for_deserialize_error_kind(&error.kind, error.path.is_some(), false)
 }
 
@@ -196,7 +196,7 @@ fn a_wide_integer_in_an_integer_member_is_a_type_error_at_the_member() {
             assert!(error.path.is_some(), "`{token}`: {error:?}");
             assert_eq!(
                 code(&error),
-                DiagnosticCode::from(&codes::INVALID_TYPE),
+                Code::from(&codes::INVALID_TYPE),
                 "`{token}`: {error:?}"
             );
         }
@@ -212,7 +212,7 @@ fn a_wide_integer_is_never_a_string() {
         }
         let (spelt, _) = real_of(&token);
         let error = element::<StrictString>(&token).unwrap_err();
-        assert_eq!(code(&error), DiagnosticCode::from(&codes::INVALID_TYPE));
+        assert_eq!(code(&error), Code::from(&codes::INVALID_TYPE));
         let either: StringOrNumber = element(&token).unwrap();
         assert_eq!(either, StringOrNumber::Number(spelt), "`{token}`");
         if spelt.is_finite() {

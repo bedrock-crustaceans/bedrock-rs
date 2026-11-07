@@ -9,7 +9,7 @@ use super::history::{TextureSetHistory, v1_16_100};
 use super::types::{LayerKind, LayerValue, Rgb, Rgba, TextureName, TextureSet};
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    CodeDef, Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath,
+    Code, CodeDef, Diagnostic, DiagnosticDetail, Diagnostics, JsonPath,
 };
 use bedrock_addon_core::json::jsoncpp::lenient::read_lenient;
 use bedrock_addon_core::json::{Value, strip_bom};
@@ -78,7 +78,7 @@ fn read_root(bytes: &[u8], file: &str, d: &mut Diagnostics) -> Option<Value> {
     // The client asserts on an empty file and shows the missing texture: an information with
     // the assert's text; the set is not loaded.
     if strip_bom(bytes).is_empty() {
-        let code = DiagnosticCode::from(&codes::SET_EMPTY);
+        let code = Code::from(&codes::SET_EMPTY);
         d.push(Diagnostic::info(code).at(root_at));
         return None;
     }
@@ -87,9 +87,7 @@ fn read_root(bytes: &[u8], file: &str, d: &mut Diagnostics) -> Option<Value> {
             if read.trailing {
                 // The reader never looks past the root value, and says nothing, so this is an
                 // information of the crate's own.
-                let code = DiagnosticCode::from(
-                    core_codes::SYNTAX.with(["content after the JSON value is ignored"]),
-                );
+                let code = core_codes::SYNTAX.with(["content after the JSON value is ignored"]);
                 d.push(Diagnostic::info(code).at(root_at));
             }
             Some(read.value)
@@ -116,7 +114,7 @@ fn select_schema(written: Option<&Value>, file: &str, d: &mut Diagnostics) -> Op
         None => SemVersion::parse(written.as_string()?.as_str()),
     });
     let Some(version) = version else {
-        let code = DiagnosticCode::from(codes::SET_BAD_VERSION.with([file.to_owned()]));
+        let code = codes::SET_BAD_VERSION.with([file.to_owned()]);
         // The game logs this at the content log's warning level; the set is not loaded.
         d.push(Diagnostic::warn(code).at(version_at));
         return None;
@@ -124,9 +122,7 @@ fn select_schema(written: Option<&Value>, file: &str, d: &mut Diagnostics) -> Op
     // Any version but the two.
     let schema = Schema::of(&version);
     if schema.is_none() {
-        let code = DiagnosticCode::from(
-            codes::SET_UNSUPPORTED_VERSION.with([version.to_string(), file.to_owned()]),
-        );
+        let code = codes::SET_UNSUPPORTED_VERSION.with([version.to_string(), file.to_owned()]);
         // The game logs this at the content log's warning level; the set is not loaded.
         d.push(Diagnostic::warn(code).at(version_at));
     }
@@ -219,7 +215,7 @@ fn closing(line: &'static CodeDef<0>, at: JsonPath) -> Diagnostic {
 
 /// A member the schema has no child for. The client logs nothing of its own for it.
 fn unknown_member(at: JsonPath) -> Diagnostic {
-    let code = DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD);
+    let code = Code::from(&core_codes::UNRECOGNIZED_FIELD);
     Diagnostic::error(code).at(at)
 }
 
@@ -360,7 +356,7 @@ const COLOUR_TYPES: &str = "'color' 'string'";
 /// A four-member object. The crate rejects it; the client logs this text and loads a zero
 /// colour.
 fn four_members(at: &JsonPath) -> Diagnostic {
-    let code = DiagnosticCode::from(&codes::BAD_COLOR);
+    let code = Code::from(&codes::BAD_COLOR);
     Diagnostic::error(code).at(at.clone())
 }
 
@@ -371,7 +367,7 @@ fn rgba(value: &Value, at: &JsonPath, d: &mut Diagnostics) -> Option<LayerValue<
         Colour::Name(name) => Some(LayerValue::Texture(name)),
         Colour::Hex(text) => {
             let Some(v) = parse_hex(text, 8) else {
-                let code = DiagnosticCode::from(&codes::SET_HEX_8);
+                let code = Code::from(&codes::SET_HEX_8);
                 d.push(Diagnostic::error(code).at(at.clone()));
                 return None;
             };
@@ -410,7 +406,7 @@ fn rgb(value: &Value, at: &JsonPath, d: &mut Diagnostics) -> Option<LayerValue<R
         Colour::Name(name) => Some(LayerValue::Texture(name)),
         Colour::Hex(text) => {
             let Some(v) = parse_hex(text, 6) else {
-                let code = DiagnosticCode::from(&codes::SET_HEX_6);
+                let code = Code::from(&codes::SET_HEX_6);
                 d.push(Diagnostic::error(code).at(at.clone()));
                 return None;
             };
@@ -448,7 +444,7 @@ fn channels<const N: usize>(
     for (index, (element, slot)) in array.iter().zip(&mut out).enumerate() {
         let path = at.index(index);
         let Some(number) = element.as_number() else {
-            let code = DiagnosticCode::from(&core_codes::INVALID_TYPE);
+            let code = Code::from(&core_codes::INVALID_TYPE);
             d.push(Diagnostic::error(code).at(path));
             failed = true;
             continue;
@@ -456,7 +452,7 @@ fn channels<const N: usize>(
         if !number.is_integer() {
             // The game logs this at the content log's error level and the set loads: a kept
             // error.
-            let code = DiagnosticCode::from(&codes::NOT_INTEGRAL);
+            let code = Code::from(&codes::NOT_INTEGRAL);
             d.push_kept_error(Diagnostic::error(code).at(path));
             *slot = 255.0;
             continue;
@@ -465,7 +461,7 @@ fn channels<const N: usize>(
         let written = number.to_i64().unwrap_or(i64::MAX);
         let clamped = written.clamp(0, 255);
         if clamped != written {
-            let code = DiagnosticCode::from(&core_codes::CLAMPED_VALUE);
+            let code = Code::from(&core_codes::CLAMPED_VALUE);
             d.push(Diagnostic::info(code).at(path));
         }
         *slot = f32::from(u8::try_from(clamped).unwrap_or(u8::MAX));

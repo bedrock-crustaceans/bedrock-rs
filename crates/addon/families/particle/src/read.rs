@@ -22,7 +22,7 @@ use super::event::EventNode;
 use super::{BasicRenderParameters, Description, ParticleEffect, codes};
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Class, CodeDef, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, builders,
+    Class, Code, CodeDef, Diagnostic, Diagnostics, JsonPath, Severity, builders,
 };
 use bedrock_addon_core::document::{ComponentMap, UnknownMembers};
 use bedrock_addon_core::id::ParticleId;
@@ -182,7 +182,7 @@ impl<'d> Reader<'d> {
     }
 
     /// A finding at the current path.
-    pub(crate) fn push(&mut self, code: DiagnosticCode, severity: Severity) {
+    pub(crate) fn push(&mut self, code: Code, severity: Severity) {
         if self.muted == 0 {
             self.d.push(
                 Diagnostic::error(code)
@@ -201,14 +201,11 @@ impl<'d> Reader<'d> {
 
     /// A value the crate changes without a line of vanilla's: an information.
     pub(crate) fn warn_ours(&mut self) {
-        self.push(
-            DiagnosticCode::from(&core_codes::INVALID_VALUE),
-            Severity::Info,
-        );
+        self.push(Code::from(&core_codes::INVALID_VALUE), Severity::Info);
     }
 
     /// A finding that refuses the document.
-    pub(crate) fn error(&mut self, code: DiagnosticCode) {
+    pub(crate) fn error(&mut self, code: Code) {
         self.push(code, Severity::Error);
     }
 
@@ -263,7 +260,7 @@ impl<'d> Reader<'d> {
                     }
                     // No object to read from: only the defaults of a value read silently.
                     None => self.key(key, |r| {
-                        r.error(DiagnosticCode::from(&core_codes::MISSING_REQUIRED_FIELD));
+                        r.error(Code::from(&core_codes::MISSING_REQUIRED_FIELD));
                     }),
                 }
             }
@@ -306,10 +303,7 @@ impl<'d> Reader<'d> {
         self.d
             .retain(|finding| !finding.location.json_path.starts_with(&at));
         self.key(key, |r| {
-            r.push(
-                DiagnosticCode::from(&core_codes::INVALID_VALUE),
-                Severity::Info,
-            );
+            r.push(Code::from(&core_codes::INVALID_VALUE), Severity::Info);
         });
     }
 
@@ -323,7 +317,7 @@ impl<'d> Reader<'d> {
     }
 
     /// `code` as a kept error at the current path.
-    pub(crate) fn push_kept(&mut self, code: DiagnosticCode) {
+    pub(crate) fn push_kept(&mut self, code: Code) {
         if self.muted == 0 {
             self.d
                 .push_kept_error(Diagnostic::error(code).at(self.path.clone()));
@@ -700,10 +694,7 @@ fn molang(value: &Value, r: &mut Reader<'_>, o: Opt, code: &'static CodeDef<0>) 
                 // Read as the member's default, 0, without a line of the game's: the crate
                 // notes it at the information level. A `null` member is an absent one.
                 if !value.is_null() {
-                    r.push(
-                        DiagnosticCode::from(&core_codes::INVALID_TYPE),
-                        Severity::Info,
-                    );
+                    r.push(Code::from(&core_codes::INVALID_TYPE), Severity::Info);
                 }
                 None
             }
@@ -1090,7 +1081,7 @@ pub(super) fn render_parameters(
 ) {
     if parameters.texture.chars().count() > MAX_TEXTURE {
         r.key("texture", |r| {
-            r.error(DiagnosticCode::from(&core_codes::INVALID_VALUE));
+            r.error(Code::from(&core_codes::INVALID_VALUE));
         });
     }
 }
@@ -1134,13 +1125,10 @@ pub(crate) fn read_components(
                     // error; a 1.20.80 document logs a warning, which its strict loading
                     // grades an error that refuses the document.
                     if r.legacy() {
-                        r.push_kept(codes::UNRECOGNIZED_COMPONENT.with([key]).into());
+                        r.push_kept(codes::UNRECOGNIZED_COMPONENT.with([key]));
                     } else {
                         let unknown = r.unknown;
-                        r.push(
-                            DiagnosticCode::from(&core_codes::UNRECOGNIZED_COMPONENT),
-                            unknown,
-                        );
+                        r.push(Code::from(&core_codes::UNRECOGNIZED_COMPONENT), unknown);
                     }
                 }
             }

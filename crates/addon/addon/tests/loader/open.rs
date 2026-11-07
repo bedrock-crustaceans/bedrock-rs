@@ -4,7 +4,7 @@
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use std::path::Path;
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon::diagnostic::{Code, Severity};
 use bedrock_addon::load::RootId;
 use bedrock_addon::manifest::{CapabilityRegistry, Manifest};
 use bedrock_addon::pack::{OpenError, OpenOptions, Pack};
@@ -409,7 +409,7 @@ fn an_encrypted_pack_without_its_key_opens_and_its_assets_are_unsupported() {
         .map(|d| &d.code)
         .collect();
     assert!(
-        codes.contains(&&DiagnosticCode::from(&core_codes::UNSUPPORTED_FILE_FORMAT)),
+        codes.contains(&&Code::from(&core_codes::UNSUPPORTED_FILE_FORMAT)),
         "{codes:?}"
     );
     assert!(pack.read(&path("manifest.json")).is_ok());

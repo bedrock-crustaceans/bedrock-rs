@@ -3,7 +3,7 @@
 
 mod common;
 
-use bedrock_addon_core::diagnostic::{JsonPath, Severity, VanillaText};
+use bedrock_addon_core::diagnostic::{JsonPath, Severity};
 use bedrock_addon_core::id::BlockId;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_shared_shapes::{BlockDescriptor, BlockSpecifier, StateValue};
@@ -74,19 +74,15 @@ fn a_name_or_states_beside_tags_is_mixed_and_reported() {
     assert!(matches!(&d, BlockDescriptor::Mixed { name: Some(_), .. }));
     assert_eq!(
         text_of(&d),
-        VanillaText::BlockDescriptorNameAndTags {
-            block: "a:b".into()
-        }
-        .to_string()
+        "Cannot have both a block name and tag expression in a block descriptor for block: a:b"
+            .to_owned()
     );
     let d: BlockDescriptor = round_trip(r#"{"states": {"age": 1}, "tags": "q.any_tag('x')"}"#);
     assert!(matches!(&d, BlockDescriptor::Mixed { name: None, .. }));
     assert_eq!(
         text_of(&d),
-        VanillaText::BlockDescriptorTagsAndStates {
-            block: String::new()
-        }
-        .to_string()
+        "Cannot have both a tag expression and block states in a block descriptor for block: "
+            .to_owned()
     );
 }
 
@@ -104,9 +100,7 @@ fn a_wrong_shape_is_kept_with_the_json_readers_text() {
         assert!(matches!(d, BlockDescriptor::Invalid(_)), "{json}");
         assert_eq!(
             text_of(&d),
-            VanillaText::BlockDescriptorShape {
-                value: common::normalised(json)
-            }
+            format!("BlockDescriptor requires a string, block object, or any_tag object. Cannot parse {}", common::normalised(json))
             .to_string(),
             "{json}"
         );
@@ -119,7 +113,7 @@ fn a_name_that_is_not_a_string_is_kept_with_its_text() {
     assert!(matches!(d, BlockDescriptor::Invalid(_)));
     assert_eq!(
         text_of(&d),
-        VanillaText::BlockDescriptorName { value: "7".into() }.to_string()
+        "Only strings are valid for name. The invalid name value: 7\n".to_owned()
     );
 }
 
@@ -130,12 +124,7 @@ fn a_state_of_another_type_is_kept_with_its_text() {
     assert!(matches!(d, BlockDescriptor::Invalid(_)));
     assert_eq!(
         text_of(&d),
-        VanillaText::BlockDescriptorStateType {
-            block: "a:b".into(),
-            state: "age".into(),
-            state_type: 3,
-        }
-        .to_string()
+        "Invalid state type during block parsing: block name a:b, state name age, state type 3. State type can only be bool, int, or string.".to_owned()
     );
     let d: BlockDescriptor = read(r#"{"name": "a:b", "states": {"x": null}}"#).unwrap();
     assert!(text_of(&d).contains(", state type 0. "), "{}", text_of(&d));

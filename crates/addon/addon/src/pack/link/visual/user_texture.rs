@@ -1,7 +1,7 @@
 //! `description.textures` of a client entity, an attachable or an atomic client entity: each
 //! value is a texture path, handed to the texture group as written.
 
-use bedrock_addon_core::diagnostic::{Severity, VanillaText};
+use bedrock_addon_core::diagnostic::{Severity, sentence};
 
 use super::super::{At, Findings, LinkCx, kinds, texture_not_found};
 use super::user::User;
@@ -34,12 +34,8 @@ pub(super) fn check(cx: &LinkCx<'_>, out: &mut Findings, user: &User<'_>) {
         // The client starts the image's load when it reads the definition at resource load,
         // logs the content-log warning and goes on with the missing texture: a warning with
         // its text.
-        let at = At::new(user.origin, user.entry("textures", key), Severity::Warning).with_text(
-            VanillaText::Formatted {
-                template: NOT_FOUND,
-                args: vec![value.as_str().to_owned()],
-            },
-        );
+        let at = At::new(user.origin, user.entry("textures", key), Severity::Warning)
+            .with_text(sentence(NOT_FOUND, &[value.as_str().to_owned()]));
         out.push(texture_not_found(at, value.as_str()));
     }
 }

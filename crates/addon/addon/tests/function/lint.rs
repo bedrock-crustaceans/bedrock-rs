@@ -3,7 +3,7 @@
 //! is ours and only informs.
 
 use bedrock_addon::diagnostic::codes as core_codes;
-use bedrock_addon::diagnostic::{Diagnostic, DiagnosticCode, Severity};
+use bedrock_addon::diagnostic::{Code, Diagnostic, Severity};
 use bedrock_addon::document::Content;
 use bedrock_addon::families::function::{Function, FunctionLine};
 use bedrock_addon::load::LoadContext;
@@ -26,10 +26,7 @@ fn lines_of<'a>(
         .into_iter()
         .map(|finding| {
             assert_eq!(finding.severity, Severity::Info);
-            assert_eq!(
-                finding.code,
-                DiagnosticCode::from(&core_codes::INVALID_VALUE)
-            );
+            assert_eq!(finding.code, Code::from(&core_codes::INVALID_VALUE));
             let span = finding.location.span.expect("a line span");
             let range = span.offset as usize..(span.offset + span.len) as usize;
             String::from_utf8(bytes[range].to_vec()).unwrap()
@@ -112,10 +109,7 @@ fn the_unknown_command_check_reads_the_core_command_table() {
         assert!(document.dropped.is_empty());
         // Nothing but the arity lint may speak.
         for finding in document.diagnostics() {
-            assert_eq!(
-                finding.code,
-                DiagnosticCode::from(&core_codes::INVALID_VALUE)
-            );
+            assert_eq!(finding.code, Code::from(&core_codes::INVALID_VALUE));
         }
     }
     // The same file with one word outside the table is rejected.

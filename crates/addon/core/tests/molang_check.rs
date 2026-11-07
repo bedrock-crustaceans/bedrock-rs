@@ -11,7 +11,7 @@
 use std::sync::Arc;
 
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Location, Severity, codes,
+    Code, Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Location, Severity, codes,
 };
 use bedrock_addon_core::molang::{
     self, Admission, BLOCK_STATE_QUERIES, CompileCache, DiagCode, EmptyRule, ExperimentMask,
@@ -183,7 +183,7 @@ fn a_render_controller_entry_is_dropped() {
 fn an_unevaluable_expression_in_a_behaviour_pack_is_linted() {
     let checked = check("geometry.default", &CEREAL, Side::Server, &pack(1, 21, 100));
     assert_eq!(checked.outcome, MolangOutcome::Ok);
-    let found: Vec<(&DiagnosticCode, Severity)> = checked
+    let found: Vec<(&Code, Severity)> = checked
         .diagnostics
         .iter()
         .map(|d| (&d.code, d.severity))
@@ -191,7 +191,7 @@ fn an_unevaluable_expression_in_a_behaviour_pack_is_linted() {
     assert_eq!(
         found,
         [(
-            &DiagnosticCode::from(codes::MOLANG_LINT.with(["geometry.default"])),
+            &codes::MOLANG_LINT.with(["geometry.default"]),
             Severity::Info
         )]
     );

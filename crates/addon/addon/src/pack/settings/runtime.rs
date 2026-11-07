@@ -6,7 +6,7 @@ use indexmap::IndexMap;
 use uuid::Uuid;
 
 use crate::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Phase, Severity,
+    Code, Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Phase, Severity,
 };
 use crate::document::Document;
 use crate::manifest::{DropdownOption, Manifest, Setting};
@@ -58,12 +58,12 @@ pub enum SetError {
 impl SetError {
     /// The diagnostic code of the refusal: `SettingUnknownName`, `SettingTypeMismatch` or
     /// `SettingUnknownOption`; `InvalidValue` for a number that is not finite.
-    pub fn code(self) -> DiagnosticCode {
+    pub fn code(self) -> Code {
         match self {
-            Self::UnknownName => DiagnosticCode::from(&core_codes::SETTING_UNKNOWN_NAME),
-            Self::TypeMismatch => DiagnosticCode::from(&core_codes::SETTING_TYPE_MISMATCH),
-            Self::UnknownOption => DiagnosticCode::from(&core_codes::SETTING_UNKNOWN_OPTION),
-            Self::NotFinite => DiagnosticCode::from(&core_codes::INVALID_VALUE),
+            Self::UnknownName => Code::from(&core_codes::SETTING_UNKNOWN_NAME),
+            Self::TypeMismatch => Code::from(&core_codes::SETTING_TYPE_MISMATCH),
+            Self::UnknownOption => Code::from(&core_codes::SETTING_UNKNOWN_OPTION),
+            Self::NotFinite => Code::from(&core_codes::INVALID_VALUE),
         }
     }
 }
@@ -127,7 +127,7 @@ impl PackSettings {
                     if clamped {
                         report(
                             d,
-                            DiagnosticCode::from(&core_codes::SETTING_CLAMPED),
+                            Code::from(&core_codes::SETTING_CLAMPED),
                             Severity::Info,
                             name,
                         );
@@ -150,7 +150,7 @@ impl PackSettings {
             if !values.contains_key(name) {
                 report(
                     d,
-                    DiagnosticCode::from(&core_codes::SETTING_UNKNOWN_NAME),
+                    Code::from(&core_codes::SETTING_UNKNOWN_NAME),
                     // The game ignores the saved name in silence, so the crate reports an
                     // information.
                     Severity::Info,
@@ -333,7 +333,7 @@ fn check(definition: &Setting, value: SettingValue) -> Result<(SettingValue, boo
 }
 
 /// A finding about the saved value `name`, at `values/<name>` of the pack's entry.
-fn report(d: &mut Diagnostics, code: DiagnosticCode, severity: Severity, name: &str) {
+fn report(d: &mut Diagnostics, code: Code, severity: Severity, name: &str) {
     let mut at = JsonPath::new();
     at.push("values");
     at.push(name);

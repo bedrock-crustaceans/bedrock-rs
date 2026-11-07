@@ -5,7 +5,7 @@
 
 use std::fmt::Debug;
 
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, JsonPath, Severity};
+use bedrock_addon_core::diagnostic::{Code, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::document::{ComponentRef, CustomComponent};
 use bedrock_addon_core::json::{JsonSlice, Value};
 use bedrock_addon_core::load::LoadContext;
@@ -761,4 +761,4 @@ fn a_1_16_100_item_through_every_step_to_latest() {
 }
 
 #[allow(dead_code)]
-fn unused(_: &BlockPlacer, _: &Wearable, _: &DiagnosticCode) {}
+fn unused(_: &BlockPlacer, _: &Wearable, _: &Code) {}

@@ -7,9 +7,7 @@
 
 use crate::codes;
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity,
-};
+use bedrock_addon_core::diagnostic::{Code, Diagnostic, Diagnostics, JsonPath, Phase, Severity};
 use bedrock_addon_core::document::Unknown as Table;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::shared::{EventTrigger, FloatRange, RangeForm};
@@ -21,14 +19,14 @@ use super::{EatAndReplaceBlockPair, EatBlock, RangedAttack};
 
 /// A finding of a conversion at the top-level member `name`: an information. The game writes
 /// no content-log line for what its own upgrade does, so the crate reports it as an information.
-fn finding(code: DiagnosticCode, phase: Phase, name: &str) -> Diagnostic {
+fn finding(code: Code, phase: Phase, name: &str) -> Diagnostic {
     let at = JsonPath::new().child(name);
     Diagnostic::info(code).at(at).phase(phase)
 }
 
 /// A note of a conversion at the top-level member `name`: an information about what the game
 /// itself does without a word.
-fn note(code: DiagnosticCode, name: &str) -> Diagnostic {
+fn note(code: Code, name: &str) -> Diagnostic {
     Diagnostic::info(code)
         .at(JsonPath::new().child(name))
         .phase(Phase::Upgrade)
@@ -42,7 +40,7 @@ fn half(json: &mut VObject, name: &str, d: &mut Diagnostics) -> Option<Value> {
     let value = json.remove(name).filter(|value| !value.is_null())?;
     let Some(number) = value.as_number() else {
         d.push(finding(
-            DiagnosticCode::from(&core_codes::INVALID_TYPE),
+            Code::from(&core_codes::INVALID_TYPE),
             Phase::Upgrade,
             name,
         ));
@@ -52,7 +50,7 @@ fn half(json: &mut VObject, name: &str, d: &mut Diagnostics) -> Option<Value> {
     let float = number.to_f64_lossy() as f32;
     if float.is_infinite() {
         d.push(finding(
-            DiagnosticCode::from(&core_codes::INVALID_VALUE),
+            Code::from(&core_codes::INVALID_VALUE),
             Phase::Upgrade,
             name,
         ));
@@ -97,10 +95,8 @@ pub(crate) fn look_time(json: &mut VObject, d: &mut Diagnostics) {
     if json.remove("target_distance").is_some() {
         // The game's upgrade drops it without a word, so the crate's own text is an information.
         let mut dropped = finding(
-            DiagnosticCode::from(
-                core_codes::DROPPED_FIELD_WORDED
-                    .with(["`target_distance` was removed by the 1.26.0 upgrade"]),
-            ),
+            core_codes::DROPPED_FIELD_WORDED
+                .with(["`target_distance` was removed by the 1.26.0 upgrade"]),
             Phase::Upgrade,
             "target_distance",
         );
@@ -124,10 +120,7 @@ pub(crate) fn look_time(json: &mut VObject, d: &mut Diagnostics) {
             .get("look_time")
             .is_some_and(|had| !had.is_null() && *had != range)
         {
-            d.push(note(
-                DiagnosticCode::from(&core_codes::DROPPED_FIELD),
-                "look_time",
-            ));
+            d.push(note(Code::from(&core_codes::DROPPED_FIELD), "look_time"));
         }
         json.insert("look_time", range);
         // What is told of the range as a whole is told at the first member of the pair
@@ -157,7 +150,7 @@ pub(crate) fn ranged_interval(json: &mut VObject, d: &mut Diagnostics) {
     if min.is_some() || max.is_some() {
         if json.contains_key("attack_interval") {
             d.push(finding(
-                DiagnosticCode::from(&core_codes::DROPPED_FIELD),
+                Code::from(&core_codes::DROPPED_FIELD),
                 Phase::Upgrade,
                 "attack_interval",
             ));
@@ -288,7 +281,7 @@ pub(crate) fn success_chance(json: &mut VObject, d: &mut Diagnostics) {
     if json.get("success_chance").is_some_and(Value::is_object) {
         json.remove("success_chance");
         d.push(finding(
-            DiagnosticCode::from(&core_codes::INVALID_TYPE),
+            Code::from(&core_codes::INVALID_TYPE),
             Phase::Parse,
             "success_chance",
         ));
@@ -320,7 +313,7 @@ pub fn eat_block_pairs(goal: &mut EatBlock, is_block: impl Fn(&str) -> bool) -> 
             // The game looks the block up when it sets the goal up, in either reader, and logs
             // an error but keeps the entity: a kept error.
             out.push_kept_error(
-                Diagnostic::error(codes::EAT_BLOCK_INVALID_BLOCK.with([block.as_str()]).into())
+                Diagnostic::error(codes::EAT_BLOCK_INVALID_BLOCK.with([block.as_str()]))
                     .at(at)
                     .phase(Phase::Link),
             );

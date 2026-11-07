@@ -2,7 +2,7 @@
 //!
 //! ```
 //! use bedrock_addon_core::diagnostic::{
-//!     Class, CodeDef, Diagnostic, DiagnosticCode, JsonPath, Kind, Phase, Severity,
+//!     Class, CodeDef, Diagnostic, JsonPath, Kind, Phase, Severity, codes,
 //! };
 //!
 //! static DENSITY_OUT_OF_UNIT: CodeDef<1> = CodeDef::new(
@@ -16,17 +16,14 @@
 //! // A specific code: its class grades it.
 //! let finding = Diagnostic::of(DENSITY_OUT_OF_UNIT.with(["1.5"])).at(at.clone());
 //! assert_eq!(finding.severity, Severity::Error);
-//! // A legacy code says its severity.
-//! let legacy = Diagnostic::warn(DiagnosticCode::InvalidValue { text: None })
+//! // A site that tells a code at another severity than its class says so.
+//! let told = Diagnostic::warn(&codes::INVALID_VALUE)
 //!     .at(at)
 //!     .phase(Phase::Validate);
-//! assert_eq!(legacy.severity, Severity::Warning);
+//! assert_eq!(told.severity, Severity::Warning);
 //! ```
 
-use super::{
-    Class, Code, Diagnostic, DiagnosticCode, DiagnosticDetail, JsonPath, Location, Phase, Severity,
-    Span,
-};
+use super::{Class, Code, Diagnostic, DiagnosticDetail, JsonPath, Location, Phase, Severity, Span};
 use crate::document::Origin;
 
 /// The phase a built finding is told in until [`Diagnostic::phase`] says another: the phase
@@ -45,7 +42,7 @@ impl Diagnostic {
     pub fn of(code: impl Into<Code>) -> Self {
         let code = code.into();
         let class = code.class();
-        let mut finding = Self::told(code.into(), class.default_severity());
+        let mut finding = Self::told(code, class.default_severity());
         finding.kept = class == Class::KeptError;
         finding
     }
@@ -54,36 +51,27 @@ impl Diagnostic {
     /// parsing must chain [`phase`](Self::phase) (see [`of`](Self::of) for the three places
     /// that branch on the phase).
     ///
-    /// For a legacy code, which has no class. The finding is at the document root of no file
-    /// until the builder says otherwise.
-    ///
-    /// A specific code is not taken here, so that its class grades it: it goes through
-    /// [`of`](Self::of), and [`severity`](Self::severity) when the raise site overrides.
-    ///
-    /// ```compile_fail
-    /// use bedrock_addon_core::diagnostic::{Class, CodeDef, Diagnostic, Kind};
-    /// static LINT: CodeDef<0> = CodeDef::new("fog/lint", Kind::Lint, Class::Lint, "lint");
-    /// // A specific code bypassing its class: refused.
-    /// let _ = Diagnostic::error(&LINT);
-    /// ```
-    pub fn error(code: DiagnosticCode) -> Self {
+    /// The severity is the site's, whatever the code's class says, and the finding is not
+    /// [`kept`](Self::kept); where the class says the severity, [`of`](Self::of) grades by it.
+    /// The finding is at the document root of no file until the builder says otherwise.
+    pub fn error(code: impl Into<Code>) -> Self {
         Self::told(code, Severity::Error)
     }
 
     /// A warning told in [`Phase::Parse`]: every site that raises it outside parsing must
-    /// chain [`phase`](Self::phase). For a legacy code; see [`error`](Self::error).
-    pub fn warn(code: DiagnosticCode) -> Self {
+    /// chain [`phase`](Self::phase). The severity is the site's; see [`error`](Self::error).
+    pub fn warn(code: impl Into<Code>) -> Self {
         Self::told(code, Severity::Warning)
     }
 
     /// An information finding told in [`Phase::Parse`]: every site that raises it outside
-    /// parsing must chain [`phase`](Self::phase). For a legacy code; see
+    /// parsing must chain [`phase`](Self::phase). The severity is the site's; see
     /// [`error`](Self::error).
-    pub fn info(code: DiagnosticCode) -> Self {
+    pub fn info(code: impl Into<Code>) -> Self {
         Self::told(code, Severity::Info)
     }
 
-    fn told(code: DiagnosticCode, severity: Severity) -> Self {
+    fn told(code: impl Into<Code>, severity: Severity) -> Self {
         Self::new(code, severity, DEFAULT_PHASE, Location::default())
     }
 
@@ -137,7 +125,7 @@ impl Diagnostic {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::diagnostic::{CodeDef, Kind};
+    use crate::diagnostic::{CodeDef, Kind, codes};
     use crate::pack_identity::{PackPath, PackRef, PackSide};
 
     static DENSITY: CodeDef<1> = CodeDef::new(
@@ -170,14 +158,14 @@ mod tests {
 
     /// The builder and the five-argument constructor build the same finding.
     #[test]
-    fn a_built_legacy_finding_equals_the_constructed_one() {
+    fn a_built_finding_equals_the_constructed_one() {
         let span = Span { offset: 3, len: 4 };
-        let built = Diagnostic::warn(DiagnosticCode::InvalidValue { text: None })
+        let built = Diagnostic::warn(&codes::INVALID_VALUE)
             .at(friction())
             .span(span)
             .phase(Phase::Validate);
         let made = Diagnostic::new(
-            DiagnosticCode::InvalidValue { text: None },
+            &codes::INVALID_VALUE,
             Severity::Warning,
             Phase::Validate,
             Location::new(None, None, friction(), Some(span)),
@@ -187,15 +175,12 @@ mod tests {
 
     #[test]
     fn a_built_finding_is_told_at_parse_at_the_root_of_no_file() {
-        let d = Diagnostic::error(DiagnosticCode::MissingRequiredField { text: None });
+        let d = Diagnostic::error(&codes::MISSING_REQUIRED_FIELD);
         assert_eq!(d.phase, Phase::Parse);
         assert_eq!(d.location, Location::default());
         assert_eq!(d.severity, Severity::Error);
         assert!(!d.kept);
-        assert_eq!(
-            Diagnostic::info(DiagnosticCode::NoEffect { text: None }).severity,
-            Severity::Info
-        );
+        assert_eq!(Diagnostic::info(&codes::NO_EFFECT).severity, Severity::Info);
     }
 
     #[test]

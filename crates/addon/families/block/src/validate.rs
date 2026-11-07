@@ -23,9 +23,7 @@ use crate::codes;
 use bedrock_addon_core::diagnostic::CodeDef;
 use bedrock_addon_core::diagnostic::cereal::{self, NumericRange};
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity,
-};
+use bedrock_addon_core::diagnostic::{Code, Diagnostic, Diagnostics, JsonPath, Phase, Severity};
 use bedrock_addon_core::document::{ComponentMap, ComponentRef};
 use bedrock_addon_core::id::syntax::{has_namespace, split_namespace};
 use bedrock_addon_core::json::Value;
@@ -203,7 +201,7 @@ impl Report<'_> {
     }
 
     /// A finding at `rel` below the payload.
-    fn push(&mut self, code: DiagnosticCode, severity: Severity, rel: &[&str]) {
+    fn push(&mut self, code: Code, severity: Severity, rel: &[&str]) {
         let path = self.path(rel);
         self.d.push(
             Diagnostic::error(code)
@@ -221,12 +219,12 @@ impl Report<'_> {
     }
 
     /// An error: the block is not loaded.
-    fn error(&mut self, code: DiagnosticCode, rel: &[&str]) {
+    fn error(&mut self, code: Code, rel: &[&str]) {
         self.push(code, Severity::Error, rel);
     }
 
     /// A warning.
-    fn warn(&mut self, code: DiagnosticCode, rel: &[&str]) {
+    fn warn(&mut self, code: Code, rel: &[&str]) {
         self.push(code, Severity::Warning, rel);
     }
 }
@@ -316,7 +314,7 @@ fn identifier(block: &Block, cx: &LoadContext, report: &mut Report<'_>) {
     };
     if !ok {
         report.error(
-            DiagnosticCode::from(&codes::NAMESPACE),
+            Code::from(&codes::NAMESPACE),
             &["description", "identifier"],
         );
     }
@@ -339,7 +337,7 @@ fn vanilla_data(block: &mut Block, cx: &LoadContext, report: &mut Report<'_>) {
         if data.block_archetype.as_ref().is_some_and(|a| a.len() > 1) {
             // The game's archetype constraint logs this text.
             report.error(
-                DiagnosticCode::from(&codes::ARCHETYPE_COUNT),
+                Code::from(&codes::ARCHETYPE_COUNT),
                 &["description", "internal_vanilla_data", "block_archetype"],
             );
         }
@@ -350,7 +348,7 @@ fn vanilla_data(block: &mut Block, cx: &LoadContext, report: &mut Report<'_>) {
             .is_some_and(|t| !translucency.contains(f64::from(t.0)))
         {
             report.error(
-                constraint_code(translucency.code()),
+                constraint_code(&translucency.code()),
                 &["description", "internal_vanilla_data", "translucency"],
             );
         }
@@ -361,7 +359,7 @@ fn vanilla_data(block: &mut Block, cx: &LoadContext, report: &mut Report<'_>) {
         // the load fails. The legacy description reader takes its members by name and says
         // nothing of this one, so the crate reports it as an information there.
         report.push(
-            DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD),
+            Code::from(&core_codes::UNRECOGNIZED_FIELD),
             if cereal {
                 Severity::Error
             } else {
@@ -387,7 +385,7 @@ fn menu_category(block: &Block, report: &mut Report<'_>) {
     }
     if menu.category.is_none() {
         report.error(
-            DiagnosticCode::from(&core_codes::MISSING_REQUIRED_FIELD),
+            Code::from(&core_codes::MISSING_REQUIRED_FIELD),
             &["description", "menu_category", "category"],
         );
     }
@@ -395,7 +393,7 @@ fn menu_category(block: &Block, report: &mut Report<'_>) {
         let namespaced = has_namespace(group);
         if !namespaced || group.chars().any(char::is_whitespace) {
             report.error(
-                DiagnosticCode::from(&core_codes::NAMESPACE_RULE),
+                Code::from(&core_codes::NAMESPACE_RULE),
                 &["description", "menu_category", "group"],
             );
         }
@@ -422,17 +420,17 @@ fn states(block: &Block, report: &mut Report<'_>) {
             || path.is_empty()
             || namespace == "minecraft"
         {
-            report.error(DiagnosticCode::from(&core_codes::NAMESPACE_RULE), &rel);
+            report.error(Code::from(&core_codes::NAMESPACE_RULE), &rel);
         }
         if implied.contains(&name.as_str()) {
-            report.error(DiagnosticCode::from(&core_codes::INVALID_VALUE), &rel);
+            report.error(Code::from(&core_codes::INVALID_VALUE), &rel);
         }
         match values {
             StateValues::Invalid(_) => {
-                report.error(DiagnosticCode::from(&codes::STATE_DESCRIPTION), &rel);
+                report.error(Code::from(&codes::STATE_DESCRIPTION), &rel);
             }
             other if !state_values_ok(other) => {
-                report.error(DiagnosticCode::from(&core_codes::INVALID_VALUE), &rel);
+                report.error(Code::from(&core_codes::INVALID_VALUE), &rel);
             }
             _ => {}
         }
@@ -481,7 +479,7 @@ fn traits(block: &mut Block, cx: &LoadContext, report: &mut Report<'_>) {
         .collect();
     for name in &unknown {
         report.error(
-            DiagnosticCode::from(codes::UNKNOWN_TRAIT.with([name])),
+            codes::UNKNOWN_TRAIT.with([name]),
             &["description", "traits", name],
         );
     }
@@ -498,7 +496,7 @@ fn traits(block: &mut Block, cx: &LoadContext, report: &mut Report<'_>) {
             ]),
             None => core_codes::TURN_ON_TOGGLE.with(["trait", name, ucf_toggle()]),
         };
-        report.error(code.into(), &["description", "traits", name]);
+        report.error(code, &["description", "traits", name]);
     };
     let enabled = |report: &mut Report<'_>,
                    name: &str,
@@ -506,14 +504,14 @@ fn traits(block: &mut Block, cx: &LoadContext, report: &mut Report<'_>) {
                    valid: &[&str]| {
         if states.is_empty() {
             report.error(
-                DiagnosticCode::from(codes::TRAIT_NEEDS_STATE.with([name])),
+                codes::TRAIT_NEEDS_STATE.with([name]),
                 &["description", "traits", name, "enabled_states"],
             );
         }
         for state in states {
             if !valid.contains(&state.0.as_str()) {
                 report.error(
-                    DiagnosticCode::from(codes::INVALID_STATE_OPTION.with([&state.0, name])),
+                    codes::INVALID_STATE_OPTION.with([&state.0, name]),
                     &["description", "traits", name, "enabled_states"],
                 );
             }
@@ -541,7 +539,7 @@ fn traits(block: &mut Block, cx: &LoadContext, report: &mut Report<'_>) {
                 || has("minecraft:sixteen_way_rotation"))
             {
                 report.error(
-                    DiagnosticCode::from(&codes::Y_ROTATION_OFFSET_STATES),
+                    Code::from(&codes::Y_ROTATION_OFFSET_STATES),
                     &["description", "traits", NAME, "y_rotation_offset"],
                 );
             } else if !(0.0..=360.0).contains(&offset) || offset % 90.0 != 0.0 {
@@ -550,7 +548,7 @@ fn traits(block: &mut Block, cx: &LoadContext, report: &mut Report<'_>) {
                 // The game logs this line at the content log's warning level and goes on with
                 // the closest axis-aligned rotation: a warning.
                 report.warn(
-                    DiagnosticCode::from(&codes::Y_ROTATION_OFFSET_FACTOR),
+                    Code::from(&codes::Y_ROTATION_OFFSET_FACTOR),
                     &["description", "traits", NAME, "y_rotation_offset"],
                 );
             }
@@ -559,7 +557,7 @@ fn traits(block: &mut Block, cx: &LoadContext, report: &mut Report<'_>) {
             && !has("minecraft:corner_and_cardinal_direction")
         {
             report.error(
-                DiagnosticCode::from(&codes::CORNER_STATES),
+                Code::from(&codes::CORNER_STATES),
                 &["description", "traits", NAME, "blocks_to_corner_with"],
             );
         }
@@ -586,9 +584,7 @@ fn traits(block: &mut Block, cx: &LoadContext, report: &mut Report<'_>) {
                 .any(|s| s.0 == "minecraft:vertical_connections")
         {
             report.error(
-                DiagnosticCode::from(
-                    codes::INVALID_STATE_OPTION.with(["minecraft:vertical_connections", NAME]),
-                ),
+                codes::INVALID_STATE_OPTION.with(["minecraft:vertical_connections", NAME]),
                 &["description", "traits", NAME, "enabled_states"],
             );
         }
@@ -619,7 +615,7 @@ fn traits(block: &mut Block, cx: &LoadContext, report: &mut Report<'_>) {
             // The game binds `parts` with a numeric constraint of 2 to 4 under both error
             // masks, so a value outside it refuses the block.
             report.error(
-                DiagnosticCode::from(&core_codes::INVALID_VALUE),
+                Code::from(&core_codes::INVALID_VALUE),
                 &["description", "traits", NAME, "parts"],
             );
         }
@@ -628,7 +624,7 @@ fn traits(block: &mut Block, cx: &LoadContext, report: &mut Report<'_>) {
             // (`creator_features`).
             "down" | "up" | "north" | "south" | "west" | "east" => {}
             _ => report.error(
-                DiagnosticCode::from(&core_codes::INVALID_VALUE),
+                Code::from(&core_codes::INVALID_VALUE),
                 &["description", "traits", NAME, "direction"],
             ),
         }
@@ -748,7 +744,7 @@ fn empty_conditions(block: &Block, report: &mut Report<'_>) {
             // The empty node is not compiled and the game says nothing, so the crate reports
             // it as an information.
             report.push(
-                DiagnosticCode::from(&core_codes::DROPPED_FIELD),
+                Code::from(&core_codes::DROPPED_FIELD),
                 Severity::Info,
                 &["permutations", &i, "condition"],
             );
@@ -781,48 +777,47 @@ fn component_rules(
     // `minecraft:tags` (which has no constraint) and the format version of
     // `destruction_particles` (the component registry's). A legacy document's descriptions
     // bind most of them differently, as below.
-    let mut drop =
-        |report: &mut Report<'_>, name: &'static str, code: DiagnosticCode, field: &[&str]| {
-            let mut path = rel(&prefix, &[name]);
-            path.extend_from_slice(field);
-            // A legacy document's descriptions bind the same size constraints for these four: a
-            // failed constraint fails the description's load, which refuses the block.
-            let constraint = if cereal {
-                !matches!(name, "minecraft:tags" | "minecraft:destruction_particles")
-            } else {
-                matches!(
-                    name,
-                    "minecraft:crafting_table"
-                        | "minecraft:liquid_detection"
-                        | "minecraft:placement_filter"
-                        | "minecraft:geometry"
-                        | "minecraft:friction"
-                        | "minecraft:light_emission"
-                )
-            };
-            // The game's `destruction_particles` check logs the format-version line and fails the
-            // component, which refuses the block. `minecraft:tags` has no constraint, and a legacy
-            // document's descriptions bind none of the tick order, detailed geometry or single
-            // bounding box constraints that exist only from 1.26.20: the drop is a lint of the
-            // crate's own, an information. The legacy descriptions of crafting table, liquid
-            // detection, placement filter and geometry do bind their size constraints, with the
-            // values of the 1.26.20 components, so their drop refuses the block too, as do friction
-            // and light emission, whose legacy descriptions bind the same ranges; the legacy
-            // collision box and selection box bind none, the legacy tick's order check is a kept
-            // error (below), and a legacy `uv_lock` list has no size constraint.
-            let severity = if constraint || name == "minecraft:destruction_particles" {
-                Severity::Error
-            } else {
-                Severity::Info
-            };
-            report.push(code, severity, &path);
-            dropped.push(name);
+    let mut drop = |report: &mut Report<'_>, name: &'static str, code: Code, field: &[&str]| {
+        let mut path = rel(&prefix, &[name]);
+        path.extend_from_slice(field);
+        // A legacy document's descriptions bind the same size constraints for these four: a
+        // failed constraint fails the description's load, which refuses the block.
+        let constraint = if cereal {
+            !matches!(name, "minecraft:tags" | "minecraft:destruction_particles")
+        } else {
+            matches!(
+                name,
+                "minecraft:crafting_table"
+                    | "minecraft:liquid_detection"
+                    | "minecraft:placement_filter"
+                    | "minecraft:geometry"
+                    | "minecraft:friction"
+                    | "minecraft:light_emission"
+            )
         };
+        // The game's `destruction_particles` check logs the format-version line and fails the
+        // component, which refuses the block. `minecraft:tags` has no constraint, and a legacy
+        // document's descriptions bind none of the tick order, detailed geometry or single
+        // bounding box constraints that exist only from 1.26.20: the drop is a lint of the
+        // crate's own, an information. The legacy descriptions of crafting table, liquid
+        // detection, placement filter and geometry do bind their size constraints, with the
+        // values of the 1.26.20 components, so their drop refuses the block too, as do friction
+        // and light emission, whose legacy descriptions bind the same ranges; the legacy
+        // collision box and selection box bind none, the legacy tick's order check is a kept
+        // error (below), and a legacy `uv_lock` list has no size constraint.
+        let severity = if constraint || name == "minecraft:destruction_particles" {
+            Severity::Error
+        } else {
+            Severity::Info
+        };
+        report.push(code, severity, &path);
+        dropped.push(name);
+    };
     // Friction and light emission: bound by the legacy descriptions too, so checked in every
     // format. What the legacy reader holds here is what its non-strict read gave (`true` is
     // 1.0, `-1` is 255), held to the same range.
     if let Some(bound) = map.get::<Friction>().and_then(out_of_bounds) {
-        drop(report, "minecraft:friction", constraint_code(bound), &[]);
+        drop(report, "minecraft:friction", constraint_code(&bound), &[]);
     }
     if let Some(bound) = map.get::<LightEmission>().and_then(out_of_bounds) {
         // The legacy description binds the brightness to a closed `[0, 15]` range, the
@@ -835,7 +830,7 @@ fn component_rules(
         drop(
             report,
             "minecraft:light_emission",
-            constraint_code(bound),
+            constraint_code(&bound),
             &[],
         );
     }
@@ -845,7 +840,7 @@ fn component_rules(
             drop(
                 report,
                 "minecraft:light_dampening",
-                constraint_code(bound),
+                constraint_code(&bound),
                 &[],
             );
         }
@@ -853,7 +848,7 @@ fn component_rules(
             drop(
                 report,
                 "minecraft:redstone_producer",
-                constraint_code(bound),
+                constraint_code(&bound),
                 &["power"],
             );
         }
@@ -861,7 +856,7 @@ fn component_rules(
             drop(
                 report,
                 "minecraft:redstone_consumer",
-                constraint_code(bound),
+                constraint_code(&bound),
                 &["min_power"],
             );
         }
@@ -869,7 +864,7 @@ fn component_rules(
             t.rotation
                 .and_then(|r| r.into_iter().find(|axis| axis % 90.0 != 0.0))
         }) {
-            let text = constraint_code(cereal::not_multiple_of(f64::from(axis), 90.0));
+            let text = constraint_code(&cereal::not_multiple_of(f64::from(axis), 90.0));
             drop(report, "minecraft:transformation", text, &["rotation"]);
         }
         if let Some(DestructibleByExplosion::Params(p)) = map.get::<DestructibleByExplosion>()
@@ -878,7 +873,7 @@ fn component_rules(
             drop(
                 report,
                 "minecraft:destructible_by_explosion",
-                constraint_code(bound),
+                constraint_code(&bound),
                 &["explosion_resistance"],
             );
         }
@@ -888,7 +883,7 @@ fn component_rules(
             drop(
                 report,
                 "minecraft:destructible_by_mining",
-                constraint_code(bound),
+                constraint_code(&bound),
                 &["seconds_to_destroy"],
             );
         }
@@ -900,7 +895,7 @@ fn component_rules(
             drop(
                 report,
                 "minecraft:connection_rule",
-                constraint_code(cereal::no_duplicates()),
+                constraint_code(&cereal::no_duplicates()),
                 &["enabled_directions"],
             );
         }
@@ -917,7 +912,7 @@ fn component_rules(
                 drop(
                     report,
                     "minecraft:instrument_sound",
-                    constraint_code(code),
+                    constraint_code(&code),
                     &[],
                 );
             }
@@ -929,7 +924,7 @@ fn component_rules(
             drop(
                 report,
                 "minecraft:tags",
-                DiagnosticCode::from(&core_codes::INVALID_VALUE),
+                Code::from(&core_codes::INVALID_VALUE),
                 &[],
             );
         }
@@ -939,14 +934,14 @@ fn component_rules(
                 .as_ref()
                 .is_some_and(|s| !culling_shape_ok(s))
             {
-                let text = constraint_code(cereal::string_mismatch(CULLING_SHAPE_REGEX));
+                let text = constraint_code(&cereal::string_mismatch(CULLING_SHAPE_REGEX));
                 drop(report, "minecraft:geometry", text, &["culling_shape"]);
             } else if params
                 .culling_layer
                 .as_ref()
                 .is_some_and(|l| !culling_layer_ok(l))
             {
-                let text = constraint_code(cereal::string_mismatch(CULLING_LAYER_REGEX));
+                let text = constraint_code(&cereal::string_mismatch(CULLING_LAYER_REGEX));
                 drop(report, "minecraft:geometry", text, &["culling_layer"]);
             }
         }
@@ -956,7 +951,7 @@ fn component_rules(
                     if i.ambient_occlusion.is_some_and(|a| !(0.0..=10.0).contains(&a)))
             })
         }) {
-            let text = constraint_code(NumericRange::inclusive(0.0, 10.0).code());
+            let text = constraint_code(&NumericRange::inclusive(0.0, 10.0).code());
             drop(report, "minecraft:material_instances", text, &[]);
         }
     }
@@ -970,7 +965,7 @@ fn component_rules(
             drop(
                 report,
                 "minecraft:crafting_table",
-                constraint_code(cereal::too_many_elements(64)),
+                constraint_code(&cereal::too_many_elements(64)),
                 &["crafting_tags"],
             );
         } else if let Some(index) = long_tag {
@@ -978,7 +973,7 @@ fn component_rules(
             drop(
                 report,
                 "minecraft:crafting_table",
-                constraint_code(cereal::too_many_characters(64)),
+                constraint_code(&cereal::too_many_characters(64)),
                 &["crafting_tags", index.as_str()],
             );
         } else if table
@@ -989,7 +984,7 @@ fn component_rules(
             drop(
                 report,
                 "minecraft:crafting_table",
-                constraint_code(cereal::too_many_characters(256)),
+                constraint_code(&cereal::too_many_characters(256)),
                 &["table_name"],
             );
         }
@@ -1009,7 +1004,7 @@ fn component_rules(
         drop(
             report,
             "minecraft:liquid_detection",
-            constraint_code(text),
+            constraint_code(&text),
             &["detection_rules"],
         );
     }
@@ -1023,7 +1018,7 @@ fn component_rules(
             drop(
                 report,
                 "minecraft:collision_box",
-                DiagnosticCode::from(&core_codes::INVALID_VALUE),
+                Code::from(&core_codes::INVALID_VALUE),
                 &[],
             );
         } else if cereal
@@ -1069,9 +1064,7 @@ fn component_rules(
         drop(
             report,
             "minecraft:selection_box",
-            codes::BOX_LIMIT_ONE
-                .with(["(0, 0, 0)", "(16, 16, 16)"])
-                .into(),
+            codes::BOX_LIMIT_ONE.with(["(0, 0, 0)", "(16, 16, 16)"]),
             &[],
         );
     }
@@ -1100,8 +1093,7 @@ fn component_rules(
             report,
             "minecraft:tick",
             codes::INTERVAL_RANGE
-                .with(["The first value must be equal or lower than the second value"])
-                .into(),
+                .with(["The first value must be equal or lower than the second value"]),
             &["interval_range"],
         );
     }
@@ -1116,27 +1108,25 @@ fn component_rules(
             "minecraft:geometry.full_block" | "minecraft:geometry.cross"
         ) || (!cereal && params.identifier == "minecraft:geometry.full_block_v1");
         if params.bone_visibility_len() > 64 {
-            let text = constraint_code(cereal::too_many_map_elements());
+            let text = constraint_code(&cereal::too_many_map_elements());
             drop(report, "minecraft:geometry", text, &["bone_visibility"]);
         } else if matches!(&params.uv_lock, Some(UvLock::Bones(bones)) if bones.len() > 64) {
             if cereal {
-                let text = constraint_code(cereal::too_many_elements(64));
+                let text = constraint_code(&cereal::too_many_elements(64));
                 drop(report, "minecraft:geometry", text, &["uv_lock"]);
             } else {
                 // The game keeps the component in silence, so the crate reports an information.
                 report.push(
-                    constraint_code(cereal::too_many_elements(64)),
+                    constraint_code(&cereal::too_many_elements(64)),
                     Severity::Info,
                     &rel(&prefix, &["minecraft:geometry", "uv_lock"]),
                 );
             }
         } else if vanilla && params.bone_visibility_len() > 0 {
             let code = if cereal {
-                DiagnosticCode::from(&codes::BONE_VISIBILITY_GEOMETRY)
+                Code::from(&codes::BONE_VISIBILITY_GEOMETRY)
             } else {
-                codes::INVALID_BONES
-                    .with([params.identifier.as_str()])
-                    .into()
+                codes::INVALID_BONES.with([params.identifier.as_str()])
             };
             drop(report, "minecraft:geometry", code, &["bone_visibility"]);
         }
@@ -1154,7 +1144,7 @@ fn component_rules(
             drop(
                 report,
                 "minecraft:material_instances",
-                constraint_code(code),
+                constraint_code(&code),
                 &[],
             );
         }
@@ -1163,7 +1153,7 @@ fn component_rules(
         f.conditions().len() > 64 || f.conditions().iter().any(|c| c.block_filter().len() > 64)
     }) {
         // Both lists hold at most 64 entries.
-        let text = constraint_code(cereal::too_many_elements(64));
+        let text = constraint_code(&cereal::too_many_elements(64));
         drop(report, "minecraft:placement_filter", text, &[]);
     }
     // destruction_particles needs format 1.21.70.
@@ -1171,9 +1161,7 @@ fn component_rules(
         drop(
             report,
             "minecraft:destruction_particles",
-            codes::FORMAT_REQUIRED
-                .with(["1.21.70", "minecraft:destruction_particles"])
-                .into(),
+            codes::FORMAT_REQUIRED.with(["1.21.70", "minecraft:destruction_particles"]),
             &[],
         );
     }
@@ -1194,27 +1182,25 @@ fn component_rules(
 
 /// The finding of one of `diagnostic::cereal`'s `InvalidValue` codes, as a rule that drops the
 /// component tells it.
-fn constraint_code(code: DiagnosticCode) -> DiagnosticCode {
+fn constraint_code(code: &Code) -> Code {
     // The multiple-of definition held its template and arguments apart.
     if let Some([value, step]) = code.args_of(&core_codes::NOT_MULTIPLE_OF) {
-        return codes::NOT_MULTIPLE_OF
-            .with([value.as_str(), step.as_str()])
-            .into();
+        return codes::NOT_MULTIPLE_OF.with([value.as_str(), step.as_str()]);
     }
     // By legacy name: the definitions that were `InvalidValue`, by their game sentence, which
     // the pins hold whole as a formatted text.
     match code.vanilla() {
         Some(line) if code.name() == "InvalidValue" => {
-            core_codes::INVALID_VALUE_FORMATTED.with([line]).into()
+            core_codes::INVALID_VALUE_FORMATTED.with([line])
         }
-        _ => DiagnosticCode::from(&core_codes::INVALID_VALUE),
+        _ => Code::from(&core_codes::INVALID_VALUE),
     }
 }
 
 /// The finding of the bounds `T` states (`schema::min`, `schema::max`) on `value`, worded with
 /// the game's range text; `None` when every member is inside its bounds. The rule that calls
 /// it says where the finding goes, how severe it is and what a failed bound drops.
-fn out_of_bounds<T: Schema + Clone>(value: &T) -> Option<DiagnosticCode> {
+fn out_of_bounds<T: Schema + Clone>(value: &T) -> Option<Code> {
     let mut found = Diagnostics::default();
     let mut value = value.clone();
     {
@@ -1251,7 +1237,7 @@ fn custom_parameters(
         .collect();
     for name in deep {
         report.push(
-            DiagnosticCode::from(&core_codes::INVALID_VALUE),
+            Code::from(&core_codes::INVALID_VALUE),
             Severity::Info,
             &rel(prefix, &[&name]),
         );
@@ -1288,7 +1274,7 @@ fn base_game_members(
                     Value::from(dithering),
                 );
                 report.push(
-                    DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD),
+                    Code::from(&core_codes::UNRECOGNIZED_FIELD),
                     severity,
                     &rel(prefix, &["minecraft:material_instances", key, "dithering"]),
                 );
@@ -1306,7 +1292,7 @@ fn base_game_members(
             );
         }
         report.push(
-            DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD),
+            Code::from(&core_codes::UNRECOGNIZED_FIELD),
             severity,
             &rel(
                 prefix,
@@ -1391,7 +1377,7 @@ fn field_gates(
 ) {
     let cereal = version >= CEREAL;
     let constraint = |report: &mut Report<'_>, code: &'static CodeDef<0>, path: &[&str]| {
-        report.error(DiagnosticCode::from(code), &rel(prefix, path));
+        report.error(Code::from(code), &rel(prefix, path));
     };
     if version < known::V1_21_90
         && let Some(Geometry::Params(params)) = map.get_mut::<Geometry>()
@@ -1455,9 +1441,7 @@ fn field_gates(
     {
         particles.particle_count = None;
         report.error(
-            codes::FORMAT_REQUIRED_EXPERIMENTAL
-                .with(["1.21.90", "particle_count"])
-                .into(),
+            codes::FORMAT_REQUIRED_EXPERIMENTAL.with(["1.21.90", "particle_count"]),
             &rel(
                 prefix,
                 &["minecraft:destruction_particles", "particle_count"],
@@ -1534,11 +1518,7 @@ fn random_offset(
                 failed = true;
                 // The game binds this as a constraint of the component.
                 report.error(
-                    DiagnosticCode::from(codes::RANDOM_OFFSET_OUTSIDE.with([
-                        name,
-                        bound,
-                        &value.to_string(),
-                    ])),
+                    codes::RANDOM_OFFSET_OUTSIDE.with([name, bound, &value.to_string()]),
                     &path,
                 );
             } else {
@@ -1547,12 +1527,12 @@ fn random_offset(
                 let from = format!("{:.6}", *value);
                 *value = allowed;
                 report.warn(
-                    DiagnosticCode::from(codes::RANDOM_OFFSET_RESTRICTED.with([
+                    codes::RANDOM_OFFSET_RESTRICTED.with([
                         name,
                         bound,
                         &from,
                         &format!("{allowed:.6}"),
-                    ])),
+                    ]),
                     &path,
                 );
             }
@@ -1591,12 +1571,12 @@ fn experimental_components(
     if version < CEREAL && has(map, "minecraft:sound") {
         passed = false;
         report.push(
-            DiagnosticCode::from(core_codes::TURN_ON_TOGGLE_BEFORE.with([
+            core_codes::TURN_ON_TOGGLE_BEFORE.with([
                 "component".to_string(),
                 "minecraft:sound".to_string(),
                 SOUND_RELEASED.to_string(),
                 ucf_toggle().to_string(),
-            ])),
+            ]),
             severity,
             &rel(&prefix, &["minecraft:sound"]),
         );
@@ -1606,12 +1586,12 @@ fn experimental_components(
     if version < CEREAL && has(map, "minecraft:vibration_properties") {
         passed = false;
         report.push(
-            DiagnosticCode::from(core_codes::TURN_ON_TOGGLE_BEFORE.with([
+            core_codes::TURN_ON_TOGGLE_BEFORE.with([
                 "component".to_string(),
                 "minecraft:vibration_properties".to_string(),
                 NEWEST.to_string(),
                 ucf_toggle().to_string(),
-            ])),
+            ]),
             severity,
             &rel(&prefix, &["minecraft:vibration_properties"]),
         );
@@ -1641,7 +1621,7 @@ fn creator_features(block: &Block, cx: &LoadContext, report: &mut Report<'_>) {
             .is_some_and(|m| matches!(m.direction.0.as_str(), "north" | "south" | "west" | "east"))
     {
         report.error(
-            DiagnosticCode::from(&codes::MULTI_BLOCK_HORIZONTAL_TOGGLE),
+            Code::from(&codes::MULTI_BLOCK_HORIZONTAL_TOGGLE),
             &[
                 "description",
                 "traits",
@@ -1668,10 +1648,7 @@ fn creator_features(block: &Block, cx: &LoadContext, report: &mut Report<'_>) {
         ] {
             if set {
                 report.error(
-                    DiagnosticCode::from(
-                        codes::MEMBER_NEEDS_CREATOR_FEATURES
-                            .with([member, "minecraft:block_entity"]),
-                    ),
+                    codes::MEMBER_NEEDS_CREATOR_FEATURES.with([member, "minecraft:block_entity"]),
                     &["components", "minecraft:block_entity", member],
                 );
                 return;
@@ -1692,7 +1669,7 @@ fn creator_features(block: &Block, cx: &LoadContext, report: &mut Report<'_>) {
             if has(map, name) {
                 let prefix = section_path(*section);
                 report.error(
-                    DiagnosticCode::from(codes::NEEDS_CREATOR_FEATURES.with([name])),
+                    codes::NEEDS_CREATOR_FEATURES.with([name]),
                     &rel(&prefix, &[name]),
                 );
                 return;
@@ -1708,7 +1685,7 @@ fn creator_features(block: &Block, cx: &LoadContext, report: &mut Report<'_>) {
         {
             let prefix = section_path(section);
             report.error(
-                DiagnosticCode::from(&codes::COLLISION_MIN_MAX_TOGGLE),
+                Code::from(&codes::COLLISION_MIN_MAX_TOGGLE),
                 &rel(&prefix, &["minecraft:collision_box"]),
             );
             return;
@@ -1730,7 +1707,7 @@ fn block_entity(block: &Block, report: &mut Report<'_>) {
     let at = ["components", "minecraft:block_entity", "container"];
     if out_of_bounds(container).is_some() {
         report.error(
-            DiagnosticCode::from(&core_codes::INVALID_VALUE),
+            Code::from(&core_codes::INVALID_VALUE),
             &[at[0], at[1], at[2], "slot_count"],
         );
     }
@@ -1740,13 +1717,13 @@ fn block_entity(block: &Block, report: &mut Report<'_>) {
         .is_some_and(|title| title.is_empty() || title.chars().count() > 256)
     {
         report.error(
-            DiagnosticCode::from(&core_codes::INVALID_VALUE),
+            Code::from(&core_codes::INVALID_VALUE),
             &[at[0], at[1], at[2], "title"],
         );
     }
     if has(&block.components, "minecraft:crafting_table") {
         report.error(
-            DiagnosticCode::from(&codes::CONTAINER_AND_CRAFTING_TABLE),
+            Code::from(&codes::CONTAINER_AND_CRAFTING_TABLE),
             &["components"],
         );
     }
@@ -1781,9 +1758,9 @@ fn neighbor_change(block: &Block, report: &mut Report<'_>) {
             }
         }
         if distinct.is_empty() || distinct.len() > 6 {
-            report.error(DiagnosticCode::from(&core_codes::INVALID_VALUE), &path);
+            report.error(Code::from(&core_codes::INVALID_VALUE), &path);
         } else if distinct.len() > 1 && distinct.contains(&NeighborChangeDirection::All) {
-            report.error(DiagnosticCode::from(&codes::NEIGHBOR_ALL_ALONE), &path);
+            report.error(Code::from(&codes::NEIGHBOR_ALL_ALONE), &path);
         }
     }
 }
@@ -1863,10 +1840,7 @@ fn redstone_producer(block: &Block, report: &mut Report<'_>) {
         if has(&permutation.components, "minecraft:redstone_producer") {
             let i = index.to_string();
             report.error(
-                DiagnosticCode::from(
-                    codes::PERMUTATION_ONLY_COMPONENT
-                        .with(["1.26.20", "minecraft:redstone_producer"]),
-                ),
+                codes::PERMUTATION_ONLY_COMPONENT.with(["1.26.20", "minecraft:redstone_producer"]),
                 &[
                     "permutations",
                     &i,
@@ -1909,17 +1883,15 @@ fn cross_components(block: &Block, report: &mut Report<'_>) {
             )
             .collect();
     let mut seen: Vec<&'static str> = Vec::new();
-    let mut fail = |report: &mut Report<'_>,
-                    section: Option<usize>,
-                    code: DiagnosticCode,
-                    key: &'static str| {
-        if seen.contains(&key) {
-            return;
-        }
-        seen.push(key);
-        let prefix = section_path(section);
-        report.error(code, &rel(&prefix, &[]));
-    };
+    let mut fail =
+        |report: &mut Report<'_>, section: Option<usize>, code: Code, key: &'static str| {
+            if seen.contains(&key) {
+                return;
+            }
+            seen.push(key);
+            let prefix = section_path(section);
+            report.error(code, &rel(&prefix, &[]));
+        };
     for (section, extra) in sections {
         let get = |name: &str| extra.is_some_and(|m| has(m, name)) || has(base, name);
         let geometry = get("minecraft:geometry");
@@ -1936,7 +1908,7 @@ fn cross_components(block: &Block, report: &mut Report<'_>) {
             fail(
                 report,
                 section,
-                DiagnosticCode::from(&codes::FLOWER_POTTABLE),
+                Code::from(&codes::FLOWER_POTTABLE),
                 "flower_pottable",
             );
         }
@@ -1944,9 +1916,7 @@ fn cross_components(block: &Block, report: &mut Report<'_>) {
             fail(
                 report,
                 section,
-                codes::ITEM_VISUAL
-                    .with([block.description.identifier.as_str()])
-                    .into(),
+                codes::ITEM_VISUAL.with([block.description.identifier.as_str()]),
                 "item_visual",
             );
         }
@@ -1967,7 +1937,7 @@ fn cross_components(block: &Block, report: &mut Report<'_>) {
             fail(
                 report,
                 section,
-                DiagnosticCode::from(&codes::SNOWLOGGING_COLLISION),
+                Code::from(&codes::SNOWLOGGING_COLLISION),
                 "snowlogging",
             );
         }
@@ -1979,7 +1949,7 @@ fn cross_components(block: &Block, report: &mut Report<'_>) {
             fail(
                 report,
                 section,
-                DiagnosticCode::from(&codes::FULL_BLOCK_RANDOM_OFFSET),
+                Code::from(&codes::FULL_BLOCK_RANDOM_OFFSET),
                 "random_offset",
             );
         }
@@ -2007,10 +1977,7 @@ fn multi_block(block: &Block, report: &mut Report<'_>) {
     }
     let traits = &block.description.traits;
     match block.components.get::<Movable>() {
-        None => report.error(
-            DiagnosticCode::from(&codes::MULTI_BLOCK_MOVABLE),
-            &["components"],
-        ),
+        None => report.error(Code::from(&codes::MULTI_BLOCK_MOVABLE), &["components"]),
         Some(movable)
             if !matches!(
                 movable.movement_type,
@@ -2018,7 +1985,7 @@ fn multi_block(block: &Block, report: &mut Report<'_>) {
             ) =>
         {
             report.error(
-                DiagnosticCode::from(&codes::MULTI_BLOCK_MOVEMENT_TYPE),
+                Code::from(&codes::MULTI_BLOCK_MOVEMENT_TYPE),
                 &["components", "minecraft:movable", "movement_type"],
             );
         }
@@ -2032,7 +1999,7 @@ fn multi_block(block: &Block, report: &mut Report<'_>) {
     );
     if horizontal && has(&block.components, "minecraft:random_offset") {
         report.error(
-            DiagnosticCode::from(&codes::MULTI_BLOCK_RANDOM_OFFSET),
+            Code::from(&codes::MULTI_BLOCK_RANDOM_OFFSET),
             &["components", "minecraft:random_offset"],
         );
     }
@@ -2045,7 +2012,7 @@ fn multi_block(block: &Block, report: &mut Report<'_>) {
     ] {
         if present {
             report.error(
-                DiagnosticCode::from(codes::MULTI_BLOCK_TRAIT.with([other])),
+                codes::MULTI_BLOCK_TRAIT.with([other]),
                 &["description", "traits", other],
             );
         }
@@ -2057,7 +2024,7 @@ fn multi_block(block: &Block, report: &mut Report<'_>) {
             .any(|s| s.0 != "minecraft:cardinal_direction")
     {
         report.error(
-            DiagnosticCode::from(&codes::MULTI_BLOCK_PLACEMENT_DIRECTION),
+            Code::from(&codes::MULTI_BLOCK_PLACEMENT_DIRECTION),
             &[
                 "description",
                 "traits",
@@ -2086,7 +2053,7 @@ fn multi_block_permutations(block: &Block, horizontal: bool, report: &mut Report
             if has(&permutation.components, name) {
                 let i = index.to_string();
                 report.error(
-                    DiagnosticCode::from(codes::MULTI_BLOCK_PERMUTATION_COMPONENT.with([name])),
+                    codes::MULTI_BLOCK_PERMUTATION_COMPONENT.with([name]),
                     &["permutations", &i, "components", name],
                 );
             }
@@ -2106,7 +2073,7 @@ fn n_way_visual_rotation(block: &Block, report: &mut Report<'_>) {
         if rotation(&permutation.components).is_some() {
             let i = index.to_string();
             report.error(
-                DiagnosticCode::from(&codes::N_WAY_PERMUTATIONS),
+                Code::from(&codes::N_WAY_PERMUTATIONS),
                 &[
                     "permutations",
                     &i,
@@ -2122,21 +2089,18 @@ fn n_way_visual_rotation(block: &Block, report: &mut Report<'_>) {
     };
     let rel = ["components", "minecraft:geometry", "n_way_visual_rotation"];
     if block.description.traits.multi_block.is_some() {
-        report.error(DiagnosticCode::from(&codes::N_WAY_MULTI_BLOCK), &rel);
+        report.error(Code::from(&codes::N_WAY_MULTI_BLOCK), &rel);
     }
     let axes = [("x", &base.x), ("y", &base.y), ("z", &base.z)];
     if axes.iter().all(|(_, state)| state.is_none()) {
-        report.error(DiagnosticCode::from(&codes::N_WAY_AXIS), &rel);
+        report.error(Code::from(&codes::N_WAY_AXIS), &rel);
     }
     let states = block.states_with_traits();
     for (axis, state) in axes {
         if let Some(state) = state
             && !states.contains_key(state)
         {
-            report.error(
-                DiagnosticCode::from(codes::N_WAY_UNKNOWN_STATE.with([axis, state])),
-                &rel,
-            );
+            report.error(codes::N_WAY_UNKNOWN_STATE.with([axis, state]), &rel);
         }
     }
 }
@@ -2171,14 +2135,14 @@ fn molang_failures(
         let i = index.to_string();
         match rule {
             MolangFailure::RejectDocument => report.error(
-                DiagnosticCode::from(&codes::CONDITION_PARSE),
+                Code::from(&codes::CONDITION_PARSE),
                 &["permutations", &i, "condition"],
             ),
             MolangFailure::DropEntry if compiles_unrestricted(block, index, cx) => {
                 // The game drops the permutation without a word (the parser's lines are the
                 // condition's own), so the crate reports an information.
                 report.push(
-                    DiagnosticCode::from(&core_codes::DROPPED_FIELD),
+                    Code::from(&core_codes::DROPPED_FIELD),
                     Severity::Info,
                     &["permutations", &i],
                 );

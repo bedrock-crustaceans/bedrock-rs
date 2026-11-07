@@ -8,7 +8,7 @@
 )]
 use bedrock_addon_core::__private::Sealed;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, codes,
+    Code, Diagnostic, Diagnostics, JsonPath, Location, Phase, Severity, codes,
 };
 use bedrock_addon_core::document::{
     Document, Merge, Merged, Origin, RawLayer, Rejected, VersionInfo,
@@ -68,7 +68,7 @@ fn layer(pack_index: usize, entries: &[(&str, &'static str)]) -> Document<Lang> 
 fn failed(pack_index: usize) -> Result<Document<Lang>, Rejected> {
     let mut diagnostics = Diagnostics::default();
     diagnostics.push(Diagnostic::new(
-        DiagnosticCode::from(&codes::INVALID_TYPE),
+        Code::from(&codes::INVALID_TYPE),
         Severity::Error,
         Phase::Parse,
         Location::new(Some(pack(pack_index)), None, JsonPath::new(), None),
@@ -137,8 +137,8 @@ fn a_failed_copy_contributes_its_findings_only() {
     let merged = merge_lang(vec![Ok(layer(1, &[("a", "1a")])), failed(0)]);
     assert_eq!(merged.layers().len(), 1);
     assert_eq!(merged.entries.len(), 1);
-    let codes: Vec<DiagnosticCode> = merged.diagnostics().map(|d| d.code.clone()).collect();
-    assert_eq!(codes, [DiagnosticCode::from(&codes::INVALID_TYPE)]);
+    let codes: Vec<Code> = merged.diagnostics().map(|d| d.code.clone()).collect();
+    assert_eq!(codes, [Code::from(&codes::INVALID_TYPE)]);
 }
 
 #[test]
@@ -154,7 +154,7 @@ fn a_strategy_can_release_an_entry_and_report() {
                     let location =
                         Location::new(Some(cx.origin().pack.clone()), None, JsonPath::new(), None);
                     cx.push_diagnostic(Diagnostic::new(
-                        DiagnosticCode::from(&codes::SHADOWED_DEFINITION),
+                        Code::from(&codes::SHADOWED_DEFINITION),
                         Severity::Info,
                         Phase::Validate,
                         location,

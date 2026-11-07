@@ -119,7 +119,7 @@ fn versions_select_by_the_closed_to_engine_model() {
 fn same_pack_duplicates(
     engine: FormatVersion,
 ) -> Vec<(
-    bedrock_addon_core::diagnostic::DiagnosticCode,
+    bedrock_addon_core::diagnostic::Code,
     bedrock_addon_core::diagnostic::Severity,
 )> {
     use bedrock_addon_core::document::{Contribution, Origin};

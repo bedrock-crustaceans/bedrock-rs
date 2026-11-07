@@ -30,8 +30,8 @@
 //! - the id is `<family>/<the const's name in lower case>` (`fog/end_below_start`);
 //! - a code the game prints has its sentence as [`game`](CodeDef::game), byte for byte, and a
 //!   line of the crate's own; a code of the toolkit's own has the line alone;
-//! - while the legacy [`DiagnosticCode`] lives, a definition [`was`](CodeDef::was) the variant
-//!   its sites raised, so pins and filters on the name hold until the pin rename;
+//! - until the pin rename, a definition [`was`](CodeDef::was) the legacy variant its sites
+//!   raised, so pins and filters on the name hold;
 //! - its [`Kind`] is the legacy variant's, and its [`Class`] the severity its sites raise it at
 //!   (a site at another severity keeps it with [`Diagnostic::severity`](super::Diagnostic::severity));
 //! - a helper that took a text (`report(d, severity, text, at)`) takes a `&'static CodeDef<0>`,
@@ -46,7 +46,8 @@
 use std::fmt;
 use std::hash::{Hash, Hasher};
 
-use super::{DiagnosticCode, Severity};
+use super::Severity;
+use super::legacy::is_legacy_name;
 
 /// What a definition holds, whatever its arity: what a [`Code`] points at, and what a list of
 /// definitions of several arities holds ([`CodeDef::meta`], [`codes::ALL`](super::codes::ALL)).
@@ -216,7 +217,7 @@ impl<const N: usize> CodeDef<N> {
         self
     }
 
-    /// The definition as the replacement of the legacy [`DiagnosticCode`] variant named
+    /// The definition as the replacement of the legacy `DiagnosticCode` variant named
     /// `legacy` (`"InvalidValue"`): [`name`](Self::name) is then that variant's name, so a
     /// filter or a pin on the name keeps matching once the raise site moves to the definition.
     /// The [`id`](Self::id) stays the definition's own.
@@ -236,13 +237,13 @@ impl<const N: usize> CodeDef<N> {
     ///
     /// # Panics
     ///
-    /// When `legacy` is not a variant name of [`DiagnosticCode::NAMES`] other than
-    /// `"Specific"`: at compile time in a `const` or `static`, at run time otherwise.
+    /// When `legacy` is not the name of a legacy variant (the frozen list the enum left): at
+    /// compile time in a `const` or `static`, at run time otherwise.
     #[must_use]
     pub const fn was(mut self, legacy: &'static str) -> Self {
         assert!(
             is_legacy_name(legacy),
-            "a code replaces a legacy variant of DiagnosticCode::NAMES"
+            "a code replaces a legacy variant of DiagnosticCode"
         );
         self.meta.legacy = Some(legacy);
         self
@@ -310,48 +311,6 @@ impl From<&'static CodeDef<0>> for Code {
     }
 }
 
-/// A code without arguments, as a `DiagnosticCode`.
-impl From<&'static CodeDef<0>> for DiagnosticCode {
-    fn from(def: &'static CodeDef<0>) -> Self {
-        Code::from(def).into()
-    }
-}
-
-impl DiagnosticCode {
-    /// Whether this is a code of `def`, whatever its arguments: the specific question asked of
-    /// a code without its finding. A legacy code is no code of any definition.
-    pub fn is<const N: usize>(&self, def: &CodeDef<N>) -> bool {
-        matches!(self, Self::Specific { code } if code.is(def))
-    }
-
-    /// The arguments of a code of `def`; `None` for a code of another definition and for a
-    /// legacy code. What a match site that bound a legacy variant's payload asks.
-    pub fn args_of<const N: usize>(&self, def: &CodeDef<N>) -> Option<&[String]> {
-        match self {
-            Self::Specific { code } if code.is(def) => Some(code.args()),
-            _ => None,
-        }
-    }
-
-    /// The game's sentence the code renders, with its arguments; `None` when the game prints
-    /// none. A legacy code gives the game text it carries in its `text` field: so
-    /// `code.name() == "InvalidType" && code.vanilla().is_some()` asks what
-    /// `matches!(code, InvalidType { text: Some(_) })` asked, of either.
-    pub fn vanilla(&self) -> Option<String> {
-        match self {
-            Self::Specific { code } => code.vanilla(),
-            legacy => legacy.game_text().map(ToString::to_string),
-        }
-    }
-}
-
-/// A specific code, as the `Specific` variant.
-impl From<Code> for DiagnosticCode {
-    fn from(code: Code) -> Self {
-        Self::Specific { code }
-    }
-}
-
 /// A specific code with its arguments: what a [`CodeDef`] gives.
 ///
 /// Two codes are equal when they have the same id and arguments; the definition is not
@@ -399,6 +358,12 @@ impl Code {
         self.meta.id == def.meta.id
     }
 
+    /// The arguments of a code of `def`; `None` for a code of another definition. What a
+    /// match site that bound a legacy variant's payload asks.
+    pub fn args_of<const N: usize>(&self, def: &CodeDef<N>) -> Option<&[String]> {
+        self.is(def).then_some(self.args())
+    }
+
     /// The game's sentence, `{}` where each argument goes; `None` for a code of the toolkit's
     /// own.
     pub(super) fn vanilla_template(&self) -> Option<&'static str> {
@@ -436,15 +401,31 @@ impl fmt::Display for Code {
     }
 }
 
+/// `template` with each `{}` replaced by the next of `args` (none left: nothing): a sentence of
+/// the game's built from its format string, for a site that holds one as a text (the link
+/// pass's sentences, which a `_WORDED` definition carries whole).
+///
+/// ```
+/// use bedrock_addon_core::diagnostic::sentence;
+/// assert_eq!(sentence("{} is not a valid item name.", &["a:b"]), "a:b is not a valid item name.");
+/// assert_eq!(sentence("no {} here", &[] as &[&str]), "no  here");
+/// ```
+#[must_use]
+pub fn sentence(template: &str, args: &[impl AsRef<str>]) -> String {
+    let mut out = String::with_capacity(template.len());
+    let _ = fill(&mut out, template, args);
+    out
+}
+
 /// Writes `template` with each `{}` replaced by the next argument (none left: nothing).
-fn fill(out: &mut impl fmt::Write, template: &str, args: &[String]) -> fmt::Result {
+fn fill(out: &mut impl fmt::Write, template: &str, args: &[impl AsRef<str>]) -> fmt::Result {
     let mut args = args.iter();
     let mut parts = template.split("{}");
     if let Some(first) = parts.next() {
         out.write_str(first)?;
     }
     for part in parts {
-        out.write_str(args.next().map_or("", String::as_str))?;
+        out.write_str(args.next().map_or("", AsRef::as_ref))?;
         out.write_str(part)?;
     }
     Ok(())
@@ -483,24 +464,8 @@ const fn split_id(id: &str) -> Option<usize> {
     slash
 }
 
-/// Whether `name` is a variant of [`DiagnosticCode::NAMES`] other than `Specific`.
-const fn is_legacy_name(name: &str) -> bool {
-    if str_eq(name, "Specific") {
-        return false;
-    }
-    let names = DiagnosticCode::NAMES;
-    let mut i = 0;
-    while i < names.len() {
-        if str_eq(names[i], name) {
-            return true;
-        }
-        i += 1;
-    }
-    false
-}
-
 /// `a == b`, in a `const fn`.
-const fn str_eq(a: &str, b: &str) -> bool {
+pub(super) const fn str_eq(a: &str, b: &str) -> bool {
     let (a, b) = (a.as_bytes(), b.as_bytes());
     if a.len() != b.len() {
         return false;
@@ -677,181 +642,10 @@ impl From<crate::json::kit::Disposition> for Disposition {
     }
 }
 
-/// The kind of a code: a specific code's own, a legacy variant's by the table.
-#[allow(clippy::too_many_lines)] // one arm per kind over every legacy variant: the table
-pub(super) fn kind_of(code: &DiagnosticCode) -> Kind {
-    use DiagnosticCode as C;
-    use Kind as K;
-    match code {
-        C::Specific { code } => code.kind(),
-        C::MalformedInput { .. } | C::EmptyDocument { .. } | C::InvalidRoot | C::InvalidNode => {
-            K::Syntax
-        }
-        C::DocumentRejected { .. } => K::Closing,
-        C::PayloadKeyMismatch
-        | C::UnknownPayloadKey { .. }
-        | C::MissingPayload { .. }
-        | C::IgnoredPayload
-        | C::SoundDefinitionsWrapperWithoutVersion => K::Envelope,
-        C::MissingFormatVersion { .. }
-        | C::MalformedFormatVersion { .. }
-        | C::FormatVersionArray
-        | C::UnusualFormatVersion
-        | C::PrereleaseFormatVersion { .. }
-        | C::FormatVersionAboveEngine { .. } => K::FormatVersion,
-        C::UnsupportedVersion { .. } | C::VanillaRejectsVersion => K::UnsupportedVersion,
-        C::MissingMinEngineVersion
-        | C::FieldSinceEngine { .. }
-        | C::FieldUntilEngine { .. }
-        | C::UnsupportedValueForm
-        | C::VersionTooHigh { .. }
-        | C::VersionTooLow { .. } => K::EngineVersion,
-        C::MissingToggles { .. }
-        | C::BetaFeaturesNotEnabled { .. }
-        | C::CapabilityHint { .. }
-        | C::InvalidCapability { .. }
-        | C::VibrantVisualsDisabledByPack => K::Toggle,
-        C::UnrecognizedField { .. } | C::UnrecognizedComponent { .. } => {
-            K::UnknownMember(Disposition::Kept)
-        }
-        C::MemberNotKept { .. } => K::UnknownMember(Disposition::NotKept),
-        C::DroppedField { .. }
-        | C::DroppedComponent { .. }
-        | C::DuplicateComponentVersion { .. } => K::UnknownMember(Disposition::Dropped),
-        C::IgnoredMember { .. }
-        | C::IgnoredProperty
-        | C::LiteralIgnored
-        | C::LegacySettingIgnored
-        | C::PackSettingChangeIgnored
-        | C::AtomicFilterLightingIgnored
-        | C::LegacyFogIgnored => K::UnknownMember(Disposition::Ignored),
-        C::DeprecatedMember { .. } | C::LegacyItemFormat { .. } => K::Deprecated,
-        C::MissingRequiredField { .. }
-        | C::MissingProperty { .. }
-        | C::MissingIdentifier { .. }
-        | C::MissingModules => K::MissingRequired,
-        C::InvalidType { .. } | C::WrongTypeProperty { .. } | C::SettingTypeMismatch => {
-            K::WrongType
-        }
-        C::InvalidValue { .. }
-        | C::InvalidProperty { .. }
-        | C::EmptyProperty
-        | C::MalformedPropertyVersion { .. }
-        | C::MalformedPropertyUuid
-        | C::SettingUnknownOption
-        | C::SettingUnknownName
-        | C::ScatterParamValue { .. }
-        | C::UnsupportedOperator => K::InvalidValue,
-        C::InvalidEnumValue { .. } | C::UnknownNode { .. } => K::InvalidEnumValue,
-        C::KeyframeOutOfDomain => K::OutOfRange,
-        C::ClampedValue { .. } | C::SettingClamped | C::MinEngineVersionCapFormatVersion1 => {
-            K::Clamped
-        }
-        C::ValueRewritten { .. }
-        | C::LossyConversion
-        | C::NonCanonicalMemberCase
-        | C::CaseFoldedTransition
-        | C::SynthesizedComponent
-        | C::IdentifierNamespaced => K::Rewritten,
-        C::InvalidMolang { .. } | C::MolangLint { .. } | C::MolangNotChecked { .. } => K::Molang,
-        C::NamespaceRule { .. } | C::UpgradeTableMissedBareIdentifier => K::Identifier,
-        C::DuplicateIdentifier { .. }
-        | C::DuplicateBone
-        | C::DuplicateEntry
-        | C::DuplicateUuid
-        | C::IdentifierCollision { .. }
-        | C::PoiBlockClaimedTwice
-        | C::MultipleModules
-        | C::MultipleScriptModules { .. }
-        | C::ItemBindingOverlap => K::Duplicate,
-        C::ClientEntityShadowed { .. }
-        | C::AttachableShadowed { .. }
-        | C::AtomicClientEntityShadowed
-        | C::AnimationControllerShadowed
-        | C::ItemBindingShadowed
-        | C::RenderControllerShadowed
-        | C::ShadowedDefinition { .. }
-        | C::ShadowedByBuiltin
-        | C::ClientBiomeShadowsLowerPacks
-        | C::PackConfigShadowsDefault
-        | C::RebasedOverride
-        | C::RenderControllerFallback => K::Shadowed,
-        C::UnresolvedReference { .. }
-        | C::TextureNotFound { .. }
-        | C::UnknownSound { .. }
-        | C::UnresolvedLangKey
-        | C::FontFileMissing { .. }
-        | C::PackNotFound { .. }
-        | C::ScriptImportNotFound { .. }
-        | C::MissingDependency { .. } => K::UnresolvedReference,
-        C::InvalidReference { .. } | C::AtomicUnsupportedRenderController => K::InvalidReference,
-        C::ReferenceCycle { .. } => K::Cycle,
-        C::SplashesReplaced
-        | C::NoSplashes
-        | C::SoundDefinitionsCleared
-        | C::SoundsJsonTableCleared
-        | C::SoundsClearedByLegacyOverlay
-        | C::DistanceResetByLegacyOverlay
-        | C::FontNameOverridden
-        | C::VanillaBiomesClientSkipped
-        | C::ClientBiomeOverriddenByBiomesClient => K::Overridden,
-        C::UnmatchedCondition
-        | C::WhereArrayNeverMatches
-        | C::UnmatchedConfigFolder { .. }
-        | C::NoEffect { .. }
-        | C::UnusedProperty
-        | C::PoiNoBlocks
-        | C::NoUiDefinitions => K::NeverApplies,
-        C::GenericGoalSuffixMissing
-        | C::ImplicitInitialState
-        | C::CaseFoldingDisabled { .. }
-        | C::UnrecognizedEventString
-        | C::LangKeyTrailingSpace
-        | C::BiomeFormatHint { .. }
-        | C::MixedFontPage
-        | C::UnorderedRemapCurve => K::Lint,
-        C::InvalidTexture { .. }
-        | C::LayerImageUndecodable
-        | C::LayerImageFormat
-        | C::PackIconMissing
-        | C::PackIconShape
-        | C::GlyphSheetShape
-        | C::UnsupportedAudioFormat => K::Asset,
-        C::SkinPackNameMismatch
-        | C::SkinPackCreatorRule
-        | C::PersonaPiecePack
-        | C::DependencyAutoAdded { .. } => K::Pack,
-        C::ReadError { .. }
-        | C::PathRejected { .. }
-        | C::FileNotLoaded
-        | C::SkippedCacheDocument
-        | C::IgnoredFile { .. }
-        | C::UnsupportedFileFormat => K::Io,
-        C::InternalError => K::Internal,
-        C::ScriptModulePermission { .. }
-        | C::ScriptModuleVersionUnavailable { .. }
-        | C::ScriptModuleVersionConflict { .. }
-        | C::ScriptModulePromoted { .. }
-        | C::ScriptAlphaDependency
-        | C::ScriptModuleUnrecognized { .. }
-        | C::ScriptModuleRestricted { .. } => K::ScriptModule,
-        C::ScriptSyntaxError { .. }
-        | C::ScriptImportCrashesEngine
-        | C::ScriptImportNotChecked
-        | C::ScriptFileNotLoadable
-        | C::ScriptEvalWithoutCapability
-        | C::ScriptImportMetaEmpty
-        | C::ScriptsNotChecked
-        | C::ScriptSyntaxNotChecked { .. }
-        | C::ScriptEntryOutsideRoot => K::ScriptSource,
-        C::NetConfigRejected { .. } => K::Config,
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::diagnostic::{Diagnostic, Location, Phase, VanillaText, codes, testing};
+    use crate::diagnostic::{Diagnostic, Location, Phase, codes, testing};
     use std::collections::hash_map::DefaultHasher;
 
     static FILE_MISSING: CodeDef<1> = CodeDef::new(
@@ -886,13 +680,8 @@ mod tests {
     )
     .was("InvalidValue");
 
-    fn finding(code: impl Into<DiagnosticCode>) -> Diagnostic {
-        Diagnostic::new(
-            code.into(),
-            Severity::Error,
-            Phase::Parse,
-            Location::default(),
-        )
+    fn finding(code: impl Into<Code>) -> Diagnostic {
+        Diagnostic::new(code, Severity::Error, Phase::Parse, Location::default())
     }
 
     fn hash_of(code: &Code) -> u64 {
@@ -935,14 +724,6 @@ mod tests {
         assert_eq!(code.id(), "core/file_missing");
         assert_eq!(code.name(), "file_missing");
         assert_eq!(code.owner(), "core");
-        let code = DiagnosticCode::from(code);
-        assert_eq!(code.id(), "core/file_missing");
-        assert_eq!(code.name(), "file_missing");
-        assert_eq!(code.variant_name(), "Specific");
-        assert_eq!(
-            DiagnosticCode::InvalidValue { text: None }.id(),
-            "InvalidValue"
-        );
     }
 
     /// A definition compares by its id: the static and a `const` of the same id are one
@@ -958,19 +739,15 @@ mod tests {
     }
 
     /// The arguments of a code of one definition, asked of the code: none for another
-    /// definition or a legacy code.
+    /// definition.
     #[test]
     fn a_codes_arguments_are_given_for_its_own_definition_only() {
-        let code = DiagnosticCode::from(codes::INVALID_MOLANG.with(["1 +"]));
+        let code = codes::INVALID_MOLANG.with(["1 +"]);
         assert_eq!(
             code.args_of(&codes::INVALID_MOLANG),
             Some(&["1 +".to_owned()][..])
         );
         assert_eq!(code.args_of(&codes::MOLANG_LINT), None);
-        let legacy = DiagnosticCode::InvalidMolang {
-            expression: "1 +".to_owned(),
-        };
-        assert_eq!(legacy.args_of(&codes::INVALID_MOLANG), None);
     }
 
     #[test]
@@ -979,8 +756,6 @@ mod tests {
         assert_eq!(FILE_MISSING.owner(), "core");
         assert_eq!(FILE_MISSING.name(), "file_missing");
         let id: &'static str = FILE_MISSING.with(["a"]).id();
-        assert_eq!(id, "core/file_missing");
-        let id: &'static str = DiagnosticCode::from(FILE_MISSING.with(["a"])).id();
         assert_eq!(id, "core/file_missing");
         assert_eq!(split_id("a/b"), Some(1));
         assert_eq!(split_id("ab"), None);
@@ -992,10 +767,9 @@ mod tests {
         assert_eq!(DENSITY_WAS.legacy(), Some("InvalidValue"));
         assert_eq!(DENSITY_WAS.name(), "InvalidValue");
         assert_eq!(DENSITY_WAS.id(), "fog/density_out_of_unit");
-        let code = DiagnosticCode::from(DENSITY_WAS.with(["2"]));
+        let code = DENSITY_WAS.with(["2"]);
         assert_eq!(code.name(), "InvalidValue");
         assert_eq!(code.id(), "fog/density_out_of_unit");
-        assert_eq!(code.variant_name(), "Specific");
         assert_eq!(FILE_MISSING.legacy(), None);
         assert_eq!(FILE_MISSING.name(), "file_missing");
         assert!(is_legacy_name("InvalidValue"));
@@ -1026,7 +800,7 @@ mod tests {
 
     #[test]
     fn a_replacing_definition_keeps_the_legacy_name_and_kind() {
-        testing::assert_replaces(&DENSITY_WAS, DiagnosticCode::InvalidValue { text: None });
+        testing::assert_replaces(&DENSITY_WAS, "InvalidValue");
     }
 
     #[test]
@@ -1035,7 +809,7 @@ mod tests {
         static OTHER_KIND: CodeDef<0> =
             CodeDef::new("fog/out_of_range", Kind::OutOfRange, Class::Error, "x")
                 .was("InvalidValue");
-        testing::assert_replaces(&OTHER_KIND, DiagnosticCode::InvalidValue { text: None });
+        testing::assert_replaces(&OTHER_KIND, "InvalidValue");
     }
 
     #[test]
@@ -1044,27 +818,31 @@ mod tests {
         assert!(d.is(&FILE_MISSING));
         assert!(d.is(&FILE_MISSING_AGAIN));
         assert!(!d.is(&TRAILING_COMMA));
-        assert!(!finding(DiagnosticCode::InvalidValue { text: None }).is(&FILE_MISSING));
-        assert!(DiagnosticCode::from(FILE_MISSING.with(["a"])).is(&FILE_MISSING_AGAIN));
-        assert!(!DiagnosticCode::from(FILE_MISSING.with(["a"])).is(&TRAILING_COMMA));
-        assert!(!DiagnosticCode::InvalidValue { text: None }.is(&DENSITY_WAS));
+        assert!(!finding(&codes::INVALID_VALUE).is(&FILE_MISSING));
+        assert!(FILE_MISSING.with(["a"]).is(&FILE_MISSING_AGAIN));
+        assert!(!FILE_MISSING.with(["a"]).is(&TRAILING_COMMA));
+        assert!(!Code::from(&codes::INVALID_VALUE).is(&DENSITY_WAS));
     }
 
     #[test]
-    fn kind_is_the_definitions_or_the_legacy_codes() {
+    fn kind_is_the_definitions() {
         assert_eq!(
             finding(FILE_MISSING.with(["a"])).kind(),
             Kind::UnresolvedReference
         );
         assert_eq!(finding(&TRAILING_COMMA).kind(), Kind::Lint);
+        assert_eq!(finding(&codes::INVALID_VALUE).kind(), Kind::InvalidValue);
         assert_eq!(
-            finding(DiagnosticCode::InvalidValue { text: None }).kind(),
-            Kind::InvalidValue
-        );
-        assert_eq!(
-            finding(DiagnosticCode::UnrecognizedField { text: None }).kind(),
+            finding(&codes::UNRECOGNIZED_FIELD).kind(),
             Kind::UnknownMember(Disposition::Kept)
         );
+    }
+
+    /// The kind of the legacy variant `name`, as the frozen table holds it.
+    fn legacy_kind(name: &str) -> Kind {
+        super::super::legacy::legacy(name)
+            .unwrap_or_else(|| panic!("{name} is no legacy variant"))
+            .kind
     }
 
     /// The four unknown-member codes are one kind, told apart by what became of the member;
@@ -1073,34 +851,25 @@ mod tests {
     fn the_unknown_member_codes_are_one_kind_with_their_disposition() {
         use Disposition as D;
         let rows = [
-            (DiagnosticCode::UnrecognizedField { text: None }, D::Kept),
-            (
-                DiagnosticCode::UnrecognizedComponent { text: None },
-                D::Kept,
-            ),
-            (DiagnosticCode::MemberNotKept { text: None }, D::NotKept),
-            (DiagnosticCode::DroppedField { text: None }, D::Dropped),
-            (DiagnosticCode::DroppedComponent { text: None }, D::Dropped),
-            (
-                DiagnosticCode::DuplicateComponentVersion {
-                    old: "a".into(),
-                    new: "b".into(),
-                },
-                D::Dropped,
-            ),
-            (DiagnosticCode::IgnoredMember { text: None }, D::Ignored),
-            (DiagnosticCode::IgnoredProperty, D::Ignored),
-            (DiagnosticCode::LiteralIgnored, D::Ignored),
-            (DiagnosticCode::LegacySettingIgnored, D::Ignored),
-            (DiagnosticCode::PackSettingChangeIgnored, D::Ignored),
-            (DiagnosticCode::AtomicFilterLightingIgnored, D::Ignored),
-            (DiagnosticCode::LegacyFogIgnored, D::Ignored),
+            ("UnrecognizedField", D::Kept),
+            ("UnrecognizedComponent", D::Kept),
+            ("MemberNotKept", D::NotKept),
+            ("DroppedField", D::Dropped),
+            ("DroppedComponent", D::Dropped),
+            ("DuplicateComponentVersion", D::Dropped),
+            ("IgnoredMember", D::Ignored),
+            ("IgnoredProperty", D::Ignored),
+            ("LiteralIgnored", D::Ignored),
+            ("LegacySettingIgnored", D::Ignored),
+            ("PackSettingChangeIgnored", D::Ignored),
+            ("AtomicFilterLightingIgnored", D::Ignored),
+            ("LegacyFogIgnored", D::Ignored),
         ];
-        for (code, disposition) in rows {
+        for (name, disposition) in rows {
             assert_eq!(
-                finding(code.clone()).kind(),
+                legacy_kind(name),
                 Kind::UnknownMember(disposition),
-                "{code:?}"
+                "{name}"
             );
         }
     }
@@ -1116,33 +885,19 @@ mod tests {
 
     #[test]
     fn a_closing_line_an_unknown_node_and_a_fallback_have_their_own_kinds() {
-        assert_eq!(
-            finding(DiagnosticCode::DocumentRejected { text: None }).kind(),
-            Kind::Closing
-        );
-        assert_eq!(
-            finding(DiagnosticCode::UnknownNode { name: "x".into() }).kind(),
-            Kind::InvalidEnumValue
-        );
-        assert_eq!(
-            finding(DiagnosticCode::RenderControllerFallback).kind(),
-            Kind::Shadowed
-        );
+        assert_eq!(legacy_kind("DocumentRejected"), Kind::Closing);
+        assert_eq!(legacy_kind("UnknownNode"), Kind::InvalidEnumValue);
+        assert_eq!(legacy_kind("RenderControllerFallback"), Kind::Shadowed);
     }
 
     #[test]
-    fn vanilla_is_the_game_text_of_a_legacy_code() {
-        let with = finding(DiagnosticCode::UnrecognizedField {
-            text: Some(VanillaText::Fixed("child 'zz' not valid here.")),
-        });
+    fn vanilla_is_the_game_sentence_of_the_definition() {
+        let with = finding(codes::UNRECOGNIZED_FIELD_WORDED.with(["child 'zz' not valid here."]));
         assert_eq!(
             with.vanilla().as_deref(),
             Some("child 'zz' not valid here.")
         );
-        assert_eq!(
-            finding(DiagnosticCode::UnrecognizedField { text: None }).vanilla(),
-            None
-        );
+        assert_eq!(finding(&codes::UNRECOGNIZED_FIELD).vanilla(), None);
         assert_eq!(
             finding(FILE_MISSING.with(["x"])).vanilla().as_deref(),
             Some("Failed to load file: x")

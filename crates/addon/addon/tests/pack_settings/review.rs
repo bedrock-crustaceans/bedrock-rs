@@ -1,7 +1,7 @@
 //! Rules that the fixture rows and `edges.rs` did not reach.
 
 use bedrock_addon::diagnostic::codes;
-use bedrock_addon::diagnostic::{DiagnosticCode as C, Diagnostics, Severity};
+use bedrock_addon::diagnostic::{Code as C, Diagnostics, Severity};
 use bedrock_addon::pack::settings::SettingValue;
 use bedrock_addon_core::diagnostic::codes as core_codes;
 
@@ -158,7 +158,7 @@ fn a_foreign_key_under_a_version_without_a_parser_is_the_version_finding_alone()
         assert_eq!(errors.len(), 2, "{version}: {found:#?}");
         assert_eq!(
             errors[0],
-            &C::from(codes::NO_PARSER_FOR_VERSION.with([written.to_owned()])),
+            &codes::NO_PARSER_FOR_VERSION.with([written.to_owned()]),
             "{version}"
         );
         closes(&found, WORLD);

@@ -2,7 +2,7 @@
 
 #![allow(dead_code, reason = "each test file uses part of the helpers")]
 
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Severity};
+use bedrock_addon_core::diagnostic::{Code, Diagnostic, Severity};
 use bedrock_addon_core::document::{Content, Document, Rejected};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::pack_identity::PackPath;
@@ -83,6 +83,6 @@ pub fn path(diagnostic: &Diagnostic) -> String {
 }
 
 /// The code's text as `Display` renders it (vanilla's text where it has one).
-pub fn text(code: &DiagnosticCode) -> String {
+pub fn text(code: &Code) -> String {
     code.to_string()
 }

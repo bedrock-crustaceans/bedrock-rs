@@ -2,7 +2,7 @@
 
 use bedrock_addon_core::diagnostic::builders;
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath, Severity};
+use bedrock_addon_core::diagnostic::{JsonPath, Severity};
 use bedrock_addon_core::document::{ComponentMap, Document};
 use bedrock_addon_core::id::CullingRulesId;
 
@@ -152,11 +152,11 @@ pub(super) fn culling_layers(cx: &LinkCx<'_>, out: &mut Findings) {
             if !told.first(origin, "", "condition", &index.to_string()) {
                 continue;
             }
-            let code = DiagnosticCode::from(builders::worded(
+            let code = builders::worded(
                 &core_codes::NO_EFFECT,
                 &core_codes::NO_EFFECT_WORDED,
-                Some(formatted(NO_CULLING_LAYER, &[])).as_ref(),
-            ));
+                Some(formatted(NO_CULLING_LAYER, &[]).as_str()),
+            );
             let path = rule_path(index, &["condition"]);
             // The game logs this at the warning level: a warning.
             out.push(At::new(origin, path, Severity::Warning).diagnostic(code));
@@ -178,7 +178,7 @@ mod tests {
         for (template, arity) in TEMPLATES {
             assert_eq!(template.matches("{}").count(), *arity, "{template}");
             let args = vec!["x"; *arity];
-            assert!(!formatted(template, &args).to_string().contains("{}"));
+            assert!(!formatted(template, &args).contains("{}"));
         }
     }
 }

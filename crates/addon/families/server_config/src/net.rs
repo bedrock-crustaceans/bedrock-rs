@@ -5,7 +5,7 @@ use facet_json::RawJson;
 use indexmap::IndexMap;
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath, Severity};
+use bedrock_addon_core::diagnostic::{Code, JsonPath, Severity};
 use bedrock_addon_core::json::{JsonSlice, Value};
 
 use super::SERVER_NET_MODULE;
@@ -125,19 +125,14 @@ struct Load<'s, 'd> {
 impl Load<'_, '_> {
     /// A member whose value refuses the entry: a finding of its own at the member, and a
     /// line of the entry's error. `member` is the name the server reports it under.
-    fn refuse(&mut self, code: DiagnosticCode, member: &str, at: JsonPath, slice: JsonSlice<'_>) {
+    fn refuse(&mut self, code: Code, member: &str, at: JsonPath, slice: JsonSlice<'_>) {
         self.errors
             .push(format!(" -> {member}:  {INVALID_NUMERIC}"));
         self.sink.push(code, Severity::Error, at, span(slice));
     }
 
     fn wrong_type(&mut self, member: &str, at: JsonPath, slice: JsonSlice<'_>) {
-        self.refuse(
-            DiagnosticCode::from(&core_codes::INVALID_TYPE),
-            member,
-            at,
-            slice,
-        );
+        self.refuse(Code::from(&core_codes::INVALID_TYPE), member, at, slice);
     }
 
     /// An unsigned integer of at most `max`.
@@ -161,12 +156,7 @@ impl Load<'_, '_> {
             if wide.is_infinite()
                 || (wide.fract() == 0.0 && wide.abs() >= 18_446_744_073_709_551_616.0)
             {
-                self.refuse(
-                    DiagnosticCode::from(&core_codes::INVALID_VALUE),
-                    member,
-                    at,
-                    slice,
-                );
+                self.refuse(Code::from(&core_codes::INVALID_VALUE), member, at, slice);
             } else {
                 self.wrong_type(member, at, slice);
             }
@@ -174,12 +164,7 @@ impl Load<'_, '_> {
         }
         let value = number.to_u64().filter(|value| *value <= max);
         if value.is_none() {
-            self.refuse(
-                DiagnosticCode::from(&core_codes::INVALID_VALUE),
-                member,
-                at,
-                slice,
-            );
+            self.refuse(Code::from(&core_codes::INVALID_VALUE), member, at, slice);
         }
         value
     }
@@ -216,7 +201,7 @@ impl Load<'_, '_> {
             if uri.contains('*') {
                 // A literal prefix, not a wildcard.
                 self.sink.warn(
-                    DiagnosticCode::from(&core_codes::INVALID_VALUE),
+                    Code::from(&core_codes::INVALID_VALUE),
                     at.clone(),
                     span(slice),
                 );
@@ -224,21 +209,15 @@ impl Load<'_, '_> {
             if !is_absolute(&uri) {
                 // Not checked by the server at load; such an entry admits no request (one
                 // with a capital in its scheme included).
-                self.sink.warn(
-                    DiagnosticCode::from(&core_codes::INVALID_VALUE),
-                    at,
-                    span(slice),
-                );
+                self.sink
+                    .warn(Code::from(&core_codes::INVALID_VALUE), at, span(slice));
             }
             uris.push(uri);
         }
         if uris.is_empty() && !failed {
             // Every request is refused.
-            self.sink.info(
-                DiagnosticCode::from(&core_codes::NO_EFFECT),
-                at.clone(),
-                span(slice),
-            );
+            self.sink
+                .info(Code::from(&core_codes::NO_EFFECT), at.clone(), span(slice));
         }
         (!failed).then_some(uris)
     }
@@ -300,7 +279,7 @@ pub(super) fn read(
             FORCE_TLS => config.force_tls = load.boolean(FORCE_TLS, here, slice),
             FORCE_HTTPS => {
                 load.sink.info(
-                    DiagnosticCode::from(&core_codes::DEPRECATED_MEMBER),
+                    Code::from(&core_codes::DEPRECATED_MEMBER),
                     here.clone(),
                     span(slice),
                 );
@@ -336,9 +315,7 @@ pub(super) fn read(
         // and leaves requests unrestricted; the crate denies them.
         let errors = load.errors.join("\n");
         load.sink.push(
-            DiagnosticCode::from(
-                core_codes::NET_CONFIG_REJECTED.with([SERVER_NET_MODULE.to_owned(), errors]),
-            ),
+            core_codes::NET_CONFIG_REJECTED.with([SERVER_NET_MODULE.to_owned(), errors]),
             Severity::Error,
             at.clone(),
             span(entry),
@@ -350,7 +327,7 @@ pub(super) fn read(
         let name = if legacy { FORCE_HTTPS } else { FORCE_TLS };
         let slice = members.get(name).and_then(|raw| entry.nested(raw));
         load.sink.warn(
-            DiagnosticCode::from(&core_codes::NO_EFFECT),
+            Code::from(&core_codes::NO_EFFECT),
             at.child(name),
             slice.and_then(span),
         );

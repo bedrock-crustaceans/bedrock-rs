@@ -3,15 +3,15 @@
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
+    Code, Diagnostic, Diagnostics, JsonPath, Location, Phase, Severity,
 };
 
 fn at() -> JsonPath {
     JsonPath::of_keys(["a", "b"])
 }
 
-fn code() -> DiagnosticCode {
-    DiagnosticCode::from(&core_codes::INVALID_VALUE)
+fn code() -> Code {
+    Code::from(&core_codes::INVALID_VALUE)
 }
 
 /// The finding of `code` the long way.

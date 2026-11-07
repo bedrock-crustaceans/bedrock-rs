@@ -13,7 +13,7 @@ use bedrock_addon_core::versioning::{
     Scalars, StructIndex, UnknownMask, ValidateCx, VersionInput,
 };
 
-use bedrock_addon_core::diagnostic::{Class, Diagnostic, DiagnosticCode, Phase, Severity};
+use bedrock_addon_core::diagnostic::{Class, Code, Diagnostic, Phase, Severity};
 use bedrock_addon_core::load::LoadContext;
 
 use crate::envelope::{
@@ -285,7 +285,7 @@ fn the_slice_s_null_rule_comes_from_reading() {
     assert_eq!(
         codes(&rejected),
         [(
-            DiagnosticCode::from(&bedrock_addon_core::diagnostic::codes::INVALID_TYPE),
+            Code::from(&bedrock_addon_core::diagnostic::codes::INVALID_TYPE),
             Severity::Error
         )]
     );
@@ -305,10 +305,7 @@ fn the_slice_s_unknown_mask_comes_from_reading() {
     assert!(strict.value.is_none(), "{:?}", strict.diagnostics);
     assert_eq!(
         codes(&strict),
-        [(
-            DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD),
-            Severity::Error
-        )]
+        [(Code::from(&core_codes::UNRECOGNIZED_FIELD), Severity::Error)]
     );
 }
 
@@ -326,7 +323,7 @@ fn the_checks_grade_by_the_reading_of_the_slice_that_parsed_the_document() {
             .map(|d| (d.code.clone(), d.severity))
             .collect::<Vec<_>>()
     };
-    let unknown = DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD);
+    let unknown = Code::from(&core_codes::UNRECOGNIZED_FIELD);
     assert_eq!(told("1.0.0"), [(unknown.clone(), Severity::Error)]);
     assert_eq!(told("1.2.0"), [(unknown, Severity::Warning)]);
 }

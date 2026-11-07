@@ -3,8 +3,8 @@
 //! other biomes and to blocks are the link pass's: their tests run through
 //! `StackSet::link`.
 
+use bedrock_addon::diagnostic::Severity;
 use bedrock_addon::diagnostic::codes;
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
 use bedrock_addon::version::{FormatVersion, MinEngineVersion};
 
 use super::common::{base_game, biome, context, document, errors, has, loads, rejected, with};
@@ -455,18 +455,15 @@ fn the_below_floor_hints_render_the_readme_texts() {
         "biome files in the 1.12 format are no longer supported; use the minecraft:biome document format with format_version 1.21.110 or higher"
     );
     assert_eq!(
-        DiagnosticCode::from(
-            codes::BIOME_FORMAT_HINT_EXPERIMENTAL.with([FormatVersion::new(1, 20, 60).to_string()])
-        )
-        .to_string(),
+        codes::BIOME_FORMAT_HINT_EXPERIMENTAL
+            .with([FormatVersion::new(1, 20, 60).to_string()])
+            .to_string(),
         "biome format 1.20.60 was experimental and is not loaded; set format_version to 1.21.110 (move climate ash/white_ash/red_spores/blue_spores to the client biome's minecraft:precipitation)"
     );
     assert_eq!(
-        DiagnosticCode::from(
-            codes::BIOME_FORMAT_HINT_EXPERIMENTAL_SURFACE
-                .with([FormatVersion::new(1, 20, 60).to_string()])
-        )
-        .to_string(),
+        codes::BIOME_FORMAT_HINT_EXPERIMENTAL_SURFACE
+            .with([FormatVersion::new(1, 20, 60).to_string()])
+            .to_string(),
         "biome format 1.20.60 was experimental and is not loaded; set format_version to 1.21.110 (move climate ash/white_ash/red_spores/blue_spores to the client biome's minecraft:precipitation and replace minecraft:surface_parameters / minecraft:*_surface with minecraft:surface_builder)"
     );
 }

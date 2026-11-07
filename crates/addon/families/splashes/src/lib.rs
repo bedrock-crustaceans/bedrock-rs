@@ -8,9 +8,7 @@ mod read;
 
 use bedrock_addon_core::diagnostic::builders::file_finding;
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, builders,
-};
+use bedrock_addon_core::diagnostic::{Code, Diagnostic, Diagnostics, JsonPath, Severity, builders};
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::document::{
     Content, Document, JsonContent, Merge, Merged, Origin, Placed, Rejected, unversioned,
@@ -189,7 +187,7 @@ fn combine_splashes(parsed: Vec<FileCopy<Splashes>>, _: &StackCx<'_>) -> Merged<
                     origins.clear();
                     if lower {
                         diagnostics.push(file_finding(
-                            DiagnosticCode::from(&core_codes::SPLASHES_REPLACED),
+                            Code::from(&core_codes::SPLASHES_REPLACED),
                             Severity::Info,
                             &layer.origin().pack,
                             &layer.origin().path,
@@ -210,7 +208,7 @@ fn combine_splashes(parsed: Vec<FileCopy<Splashes>>, _: &StackCx<'_>) -> Merged<
     if let (true, Some(top)) = (pool.is_empty(), last) {
         // The stack has the file and the full game is left without a splash.
         diagnostics.push(file_finding(
-            DiagnosticCode::from(&core_codes::NO_SPLASHES),
+            Code::from(&core_codes::NO_SPLASHES),
             Severity::Info,
             &top.pack,
             &top.path,

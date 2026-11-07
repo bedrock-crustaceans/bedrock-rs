@@ -3,7 +3,7 @@
 //! `<name>.after.json`, then checks the findings by code (and text where the row quotes it).
 
 use bedrock_addon::diagnostic::codes;
-use bedrock_addon::diagnostic::{DiagnosticCode, Diagnostics, JsonPath, Severity};
+use bedrock_addon::diagnostic::{Code, Diagnostics, JsonPath, Severity};
 use bedrock_addon::families::block::history::{
     v1_16_0, v1_16_100, v1_18_0, v1_19_10, v1_19_20, v1_19_30, v1_19_40, v1_19_80, v1_20_10,
     v1_20_60, v1_21_30, v1_21_60, v1_21_90, v1_26_0,
@@ -107,7 +107,7 @@ fn codes(d: &Diagnostics) -> Vec<String> {
 }
 
 /// How many findings have `code`.
-fn count(d: &Diagnostics, code: fn(&DiagnosticCode) -> bool) -> usize {
+fn count(d: &Diagnostics, code: fn(&Code) -> bool) -> usize {
     d.iter().filter(|f| code(&f.code)).count()
 }
 

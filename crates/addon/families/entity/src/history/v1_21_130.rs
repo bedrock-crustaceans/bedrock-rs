@@ -13,7 +13,7 @@ use facet_value::VObject;
 use super::Payload;
 use super::fragments;
 use super::ops::{Members, Removed, Told, half, overwrite, removed, section_b, sections};
-use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath};
+use bedrock_addon_core::diagnostic::{Code, JsonPath};
 
 /// An entity document as written in format 1.21.130 (up to the next struct's version): its
 /// payload as written.
@@ -240,10 +240,7 @@ fn breedable_split(members: &mut dyn Members, at: &JsonPath, told: &mut Told) {
                         }
                     }
                     _ if entry.is_empty() => {}
-                    _ => told.note(
-                        DiagnosticCode::from(&core_codes::MISSING_REQUIRED_FIELD),
-                        entry_at,
-                    ),
+                    _ => told.note(Code::from(&core_codes::MISSING_REQUIRED_FIELD), entry_at),
                 }
                 continue;
             };

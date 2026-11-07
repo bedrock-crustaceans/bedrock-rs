@@ -24,14 +24,14 @@ use super::resolve::base_of;
 use super::value::{first_key, member, number, string_or_empty};
 use super::{Control, DefKey, DefRef, UiDefinitions};
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{CodeDef, DiagnosticCode, DiagnosticDetail};
+use bedrock_addon_core::diagnostic::{Code, CodeDef, DiagnosticDetail};
 use bedrock_addon_core::json::Value;
 
 /// The note of a finding with the game's text: when the game would log it.
 pub(crate) const CREATION_TIME: &str = "the game logs this only when a screen creates the control";
 
 /// Whether `code` carries a text of the game (the creation-time texts), not one of the crate's own.
-fn game_text(code: &DiagnosticCode) -> bool {
+fn game_text(code: &Code) -> bool {
     // By legacy name: the variant and the definitions that were it; the game's text is the
     // variant's `text` or the definition's sentence.
     matches!(
@@ -49,7 +49,7 @@ fn game_text(code: &DiagnosticCode) -> bool {
 pub(crate) struct Finding {
     pub file: String,
     pub path: Vec<String>,
-    pub code: DiagnosticCode,
+    pub code: Code,
     pub detail: Option<DiagnosticDetail>,
 }
 
@@ -147,7 +147,7 @@ impl<'d> Cx<'_, 'd> {
         }
     }
 
-    fn raise(&mut self, path: &[String], code: impl Into<DiagnosticCode>) {
+    fn raise(&mut self, path: &[String], code: impl Into<Code>) {
         let code = code.into();
         let detail = game_text(&code).then_some(DiagnosticDetail::Note(CREATION_TIME));
         self.found.push(Finding {
@@ -158,7 +158,7 @@ impl<'d> Cx<'_, 'd> {
         });
     }
 
-    fn raise_at(&mut self, path: &mut Vec<String>, key: &str, code: impl Into<DiagnosticCode>) {
+    fn raise_at(&mut self, path: &mut Vec<String>, key: &str, code: impl Into<Code>) {
         path.push(key.to_owned());
         self.raise(path, code);
         path.pop();
@@ -396,9 +396,9 @@ impl<'d> Cx<'_, 'd> {
         }
         let code = match rule.miss {
             Miss::Silent => return,
-            Miss::CrateOwn => DiagnosticCode::from(&core_codes::INVALID_ENUM_VALUE),
+            Miss::CrateOwn => Code::from(&core_codes::INVALID_ENUM_VALUE),
             Miss::Fixed(code) => code.into(),
-            Miss::Format(code) => code.with([text]).into(),
+            Miss::Format(code) => code.with([text]),
         };
         self.raise_at(path, key, code);
     }
@@ -470,7 +470,7 @@ impl<'d> Cx<'_, 'd> {
         &mut self,
         path: &mut Vec<String>,
         key: &str,
-        code: impl Into<DiagnosticCode>,
+        code: impl Into<Code>,
         reference: &str,
     ) {
         path.push(key.to_owned());

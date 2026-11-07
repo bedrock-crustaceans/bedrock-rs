@@ -1,6 +1,6 @@
 //! The blocks an item names.
 
-use bedrock_addon_core::diagnostic::{JsonPath, Severity, VanillaText};
+use bedrock_addon_core::diagnostic::{JsonPath, Severity, sentence};
 use bedrock_addon_core::id::BlockId;
 use bedrock_addon_shared_shapes::BlockDescriptor;
 
@@ -38,10 +38,7 @@ fn placed(cx: &LinkCx<'_>, out: &mut Findings, item: &Entry<'_>) {
     let seed = format_item.and_then(|legacy| legacy.seed.as_ref());
     if let Some(crop) = seed.and_then(|seed| seed.crop_result.as_ref()) {
         // `SeedItemComponentLegacy`.
-        let text = VanillaText::Formatted {
-            template: "Item[{}] Seed Component : Failed to load crop_result[{}]. Are you using valid block names?",
-            args: vec![item.id.as_str().to_owned(), crop.clone()],
-        };
+        let text = sentence("Item[{}] Seed Component : Failed to load crop_result[{}]. Are you using valid block names?", &[item.id.as_str().to_owned(), crop.clone()]);
         let path = at![&component("minecraft:seed"); "crop_result"];
         named(cx, out, item, path, crop, Some(text));
     }
@@ -56,7 +53,7 @@ fn named(
     item: &Entry<'_>,
     path: JsonPath,
     name: &str,
-    text: Option<VanillaText>,
+    text: Option<String>,
 ) {
     if name.is_empty() {
         return;

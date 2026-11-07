@@ -5,9 +5,7 @@
 //! nothing happens at load. Told as informations at the entry.
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, JsonPath, ReferenceHint, Severity,
-};
+use bedrock_addon_core::diagnostic::{Code, Diagnostic, JsonPath, ReferenceHint, Severity};
 
 use super::super::{At, Findings, LinkCx};
 use crate::families::sound_file::{AudioExt, SOUND_FILE_KIND, SoundAsset};
@@ -58,7 +56,7 @@ pub(super) fn run(cx: &LinkCx<'_>, out: &mut Findings) {
             path.push_index(index);
             if has_extension(name) {
                 let at = At::new(origin, path.clone(), Severity::Info);
-                out.push(at.diagnostic(DiagnosticCode::from(&core_codes::INVALID_VALUE)));
+                out.push(at.diagnostic(Code::from(&core_codes::INVALID_VALUE)));
             }
             let built_in = || {
                 built_ins.is_some_and(|built_ins| {
@@ -79,7 +77,7 @@ pub(super) fn run(cx: &LinkCx<'_>, out: &mut Findings) {
                 .map(|asset| ReferenceHint::CaseMismatch(asset.path.as_str().to_owned()));
             let at = At::new(origin, path, Severity::Info);
             let finding: Diagnostic = at.reference(
-                DiagnosticCode::from(&core_codes::UNRESOLVED_REFERENCE),
+                Code::from(&core_codes::UNRESOLVED_REFERENCE),
                 SOUND_FILE_KIND,
                 name,
                 hint,

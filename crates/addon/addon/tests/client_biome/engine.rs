@@ -6,7 +6,7 @@
 //!
 //! Client-biome documents the game's own unit tests feed its loader.
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Diagnostics, Severity};
+use bedrock_addon::diagnostic::{Code, Diagnostics, Severity};
 
 use super::common::{base_game, context, fixture, json, load, load_beta, loads, rejected, written};
 
@@ -19,7 +19,7 @@ fn engine(name: &str) -> String {
 /// loader's closing lines ("Invalid Client Biome file", "Failed to load client biome
 /// document: {}").
 #[track_caller]
-fn first_error(found: &Diagnostics, code: impl Fn(&DiagnosticCode) -> bool, at: &str) {
+fn first_error(found: &Diagnostics, code: impl Fn(&Code) -> bool, at: &str) {
     let errors: Vec<_> = found
         .iter()
         .filter(|d| d.severity >= Severity::Warning)

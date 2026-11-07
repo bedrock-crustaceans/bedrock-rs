@@ -9,7 +9,7 @@ use super::molang::{WORLD_GEN, Walk};
 use super::validate::Check;
 use super::values::{CarverRange, JsonInt};
 use super::{Rules, V1_13_0, strict_struct};
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon_core::diagnostic::{Code, Severity};
 use bedrock_addon_core::molang::{Molang, MolangFields, MolangVisitor};
 use bedrock_addon_core::versioning::ValidateCx;
 use bedrock_addon_shared_shapes::BlockSpecifier;
@@ -103,7 +103,7 @@ fn range_rules(check: &mut ValidateCx<'_>, key: &str, range: Option<&CarverRange
             check.diagnostics.extend(range.check(&at));
         }
         Some(CarverRange::Unparsed(_)) => {
-            check.error(key, DiagnosticCode::from(&codes::FLOAT_RANGE_ARRAY));
+            check.error(key, Code::from(&codes::FLOAT_RANGE_ARRAY));
         }
         None => {}
     }

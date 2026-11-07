@@ -15,7 +15,7 @@ use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 
 use super::super::{Findings, LinkCx, Target, kinds};
 use crate::diagnostic::{
-    Code, Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Phase, Severity,
+    Code, Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Phase, Severity,
 };
 use crate::document::Origin;
 use crate::families::flipbooks::codes;
@@ -176,7 +176,7 @@ impl Check<'_> {
         &mut self,
         key: &str,
         element: Option<usize>,
-        code: DiagnosticCode,
+        code: Code,
         severity: Severity,
     ) -> Diagnostic {
         let mut at = JsonPath::new();
@@ -193,7 +193,7 @@ impl Check<'_> {
     }
 
     /// Reports a finding at member `key` of the entry.
-    fn push(&mut self, key: &str, code: DiagnosticCode, severity: Severity) {
+    fn push(&mut self, key: &str, code: Code, severity: Severity) {
         let finding = self.report(key, None, code, severity);
         self.out.push(finding);
     }
@@ -217,7 +217,6 @@ impl Check<'_> {
                     Severity::Info,
                 )
             };
-            let code = DiagnosticCode::from(code);
             let mut finding = self.report("atlas_tile", None, code, severity);
             finding.detail = Some(Box::new(DiagnosticDetail::Reference {
                 kind: <kind::AtlasTexture as Kind>::NAME,
@@ -231,7 +230,7 @@ impl Check<'_> {
         let Some(place) = usize::try_from(*index).ok().filter(|place| *place < count) else {
             // The game skips the entry.
             let args = [tile.clone(), index.to_string(), count.to_string()];
-            let code = DiagnosticCode::from(codes::BAD_ATLAS_INDEX.with(args));
+            let code = codes::BAD_ATLAS_INDEX.with(args);
             self.push("atlas_index", code, Severity::Error);
             return;
         };
@@ -240,7 +239,7 @@ impl Check<'_> {
             if usize::try_from(variant).map_or(true, |variant| variant >= variants) {
                 // The game reads the variant unchecked and uses variant 0 for one below 0 or
                 // beyond the UV sets without a word: the crate reports an information.
-                let code = DiagnosticCode::from(&core_codes::CLAMPED_VALUE);
+                let code = Code::from(&core_codes::CLAMPED_VALUE);
                 self.push("atlas_tile_variant", code, Severity::Info);
             }
         }
@@ -251,7 +250,7 @@ impl Check<'_> {
     fn image(&mut self, flipbook: &Flipbook, files: &StackFiles, headers: ImageHeaders<'_>) {
         let path = flipbook.flipbook_texture();
         let Some(found) = flipbook_image(flipbook, files) else {
-            let code = DiagnosticCode::from(codes::NO_METADATA.with([path.to_owned()]));
+            let code = codes::NO_METADATA.with([path.to_owned()]);
             self.push("flipbook_texture", code, Severity::Info);
             return;
         };
@@ -266,14 +265,14 @@ impl Check<'_> {
         };
         let frames = info.height.checked_div(info.width).unwrap_or(0);
         if frames < 1 {
-            let code = DiagnosticCode::from(&codes::NO_FRAMES);
+            let code = Code::from(&codes::NO_FRAMES);
             self.push("flipbook_texture", code, Severity::Info);
         }
         for (place, frame) in flipbook.frames.iter().flatten().enumerate() {
             // The game's assertion reads the element before it is assigned, so it never fires,
             // and it has no lower bound; this check is the crate's own.
             if u32::try_from(*frame).map_or(true, |frame| frame >= frames) {
-                let code = DiagnosticCode::from(&codes::FRAME_OUT_OF_RANGE);
+                let code = Code::from(&codes::FRAME_OUT_OF_RANGE);
                 let finding = self.report("frames", Some(place), code, Severity::Info);
                 self.out.push(finding);
             }

@@ -50,6 +50,10 @@ fn decode(bytes: &[u8]) -> Step<(Named<Value>, usize)> {
 
 /// Bytes that are not an NBT compound. The game reads them as an empty root, which fails the
 /// `format_version` step; the crate says the input is malformed, with that text.
+#[expect(
+    clippy::unnecessary_box_returns,
+    reason = "the read's error is a boxed finding"
+)]
 fn malformed(message: String) -> Box<Diagnostic> {
     Box::new(
         Diagnostic::of(codes::NOT_NBT.with(["format_version"]))
@@ -335,6 +339,10 @@ fn entities(body: &Compound) -> Step<Vec<Compound>> {
 }
 
 /// The error that ends the load, at `at`.
+#[expect(
+    clippy::unnecessary_box_returns,
+    reason = "the read's error is a boxed finding"
+)]
 fn fail(code: Code, at: &JsonPath) -> Box<Diagnostic> {
     Box::new(Diagnostic::of(code).at(at.clone()))
 }

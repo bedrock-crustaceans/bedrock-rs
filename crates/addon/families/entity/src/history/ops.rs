@@ -5,7 +5,7 @@
 use crate::codes;
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    self, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity,
+    self, Code, Diagnostic, Diagnostics, JsonPath, Phase, Severity,
 };
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::vanilla::ActorType;
@@ -153,30 +153,30 @@ pub(crate) fn removed(
         Removed::Component => codes::COMPONENT_REMOVED_BY_UPGRADE.with(args),
         Removed::Field => codes::MEMBER_REMOVED_BY_UPGRADE.with(args),
     };
-    note(cx, code.into(), at);
+    note(cx, code, at);
 }
 
 /// An information of a step at `at` (below the payload): the game writes no content-log line for
 /// it, so the crate reports it as an information. Its callers tell a value jsoncpp's `as*` read in
 /// silence (`InvalidType`, the misread member of `v1_26_0` / `v1_26_30`).
-pub(crate) fn finding(cx: &mut UpgradeCx<'_>, code: DiagnosticCode, at: &JsonPath) {
+pub(crate) fn finding(cx: &mut UpgradeCx<'_>, code: Code, at: &JsonPath) {
     finding_of(cx, code, Severity::Info, at);
 }
 
 /// A kept error of a step at `at` (below the payload): a level-3 line of the game after which
 /// the entity loads: a kept error.
-pub(crate) fn kept(cx: &mut UpgradeCx<'_>, code: DiagnosticCode, at: &JsonPath) {
+pub(crate) fn kept(cx: &mut UpgradeCx<'_>, code: Code, at: &JsonPath) {
     ops::kept(cx.diagnostics, code, rooted(at));
 }
 
 /// A note of a step at `at` (below the payload): INFO, a value the game itself discards at
 /// this version.
-pub(crate) fn note(cx: &mut UpgradeCx<'_>, code: DiagnosticCode, at: &JsonPath) {
+pub(crate) fn note(cx: &mut UpgradeCx<'_>, code: Code, at: &JsonPath) {
     finding_of(cx, code, Severity::Info, at);
 }
 
 /// A finding of a step at `at` (below the payload).
-fn finding_of(cx: &mut UpgradeCx<'_>, code: DiagnosticCode, severity: Severity, at: &JsonPath) {
+fn finding_of(cx: &mut UpgradeCx<'_>, code: Code, severity: Severity, at: &JsonPath) {
     ops::tell(cx.diagnostics, code, severity, rooted(at));
 }
 
@@ -197,7 +197,7 @@ pub(crate) struct Told(Vec<Event>);
 /// One thing a step tells.
 enum Event {
     /// A finding at a path below the payload.
-    Finding(DiagnosticCode, Severity, JsonPath),
+    Finding(Code, Severity, JsonPath),
     /// The member at the first path is now at the second.
     Moved(JsonPath, JsonPath),
 }
@@ -206,29 +206,29 @@ impl Told {
     /// A value of another JSON shape than the step converts, read as the game reads it
     /// (`InvalidType`, INFO: the game discards the value without a word).
     pub(crate) fn wrong_type(&mut self, at: JsonPath) {
-        self.note(DiagnosticCode::from(&core_codes::INVALID_TYPE), at);
+        self.note(Code::from(&core_codes::INVALID_TYPE), at);
     }
 
     /// A member the step drops, or replaces by what it makes of another, as the game's
     /// fixer does (`DroppedField`, INFO).
     pub(crate) fn dropped(&mut self, at: JsonPath) {
-        self.note(DiagnosticCode::from(&core_codes::DROPPED_FIELD), at);
+        self.note(Code::from(&core_codes::DROPPED_FIELD), at);
     }
 
     /// A member of an object form the step does not read (`UnrecognizedField`, INFO: the
     /// game does not read it either).
     pub(crate) fn unknown(&mut self, at: JsonPath) {
-        self.note(DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD), at);
+        self.note(Code::from(&core_codes::UNRECOGNIZED_FIELD), at);
     }
 
     /// A value the game itself discards at this version: INFO.
-    pub(crate) fn note(&mut self, code: DiagnosticCode, at: JsonPath) {
+    pub(crate) fn note(&mut self, code: Code, at: JsonPath) {
         self.0.push(Event::Finding(code, Severity::Info, at));
     }
 
     /// A value this library loses or changes where the game would keep it: an information
     /// of the crate's own (the game writes no content-log line for a deviation of the crate's).
-    pub(crate) fn deviation(&mut self, code: DiagnosticCode, at: JsonPath) {
+    pub(crate) fn deviation(&mut self, code: Code, at: JsonPath) {
         self.0.push(Event::Finding(code, Severity::Info, at));
     }
 
@@ -318,19 +318,13 @@ pub(crate) fn half(
 ) -> Option<Value> {
     let value = object.remove(name).filter(|value| !value.is_null())?;
     let Some(number) = value.as_number() else {
-        told.deviation(
-            DiagnosticCode::from(&core_codes::INVALID_TYPE),
-            at.child(name),
-        );
+        told.deviation(Code::from(&core_codes::INVALID_TYPE), at.child(name));
         return None;
     };
     #[allow(clippy::cast_possible_truncation, reason = "the range's f32")]
     let float = number.to_f64_lossy() as f32;
     if float.is_infinite() {
-        told.deviation(
-            DiagnosticCode::from(&core_codes::INVALID_VALUE),
-            at.child(name),
-        );
+        told.deviation(Code::from(&core_codes::INVALID_VALUE), at.child(name));
         return Some(f32_value(f32::MAX.copysign(float)));
     }
     Some(value)

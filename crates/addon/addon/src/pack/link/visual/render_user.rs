@@ -22,7 +22,7 @@ use bedrock_addon_core::diagnostic::codes as core_codes;
 use std::cell::OnceCell;
 use std::collections::{HashMap, HashSet};
 
-use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath, Severity, VanillaText};
+use bedrock_addon_core::diagnostic::{JsonPath, Severity, sentence};
 use bedrock_addon_core::document::Origin;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::molang::MolangSource;
@@ -449,15 +449,15 @@ fn tell(out: &mut Findings, origin: &Origin, written: &Written<'_>, finding: Fou
             // document: a kept error.
             let at = At::new(origin, written.path(&["textures"]), Severity::Error);
             out.push(
-                at.diagnostic(DiagnosticCode::from(builders::worded(
+                at.diagnostic(builders::worded(
                     &core_codes::INVALID_VALUE,
                     &core_codes::INVALID_VALUE_WORDED,
-                    Some(VanillaText::Formatted {
-                        template: NEEDS_THREE_TEXTURES,
-                        args: vec![origin.key.as_deref().unwrap_or(written.key).to_owned()],
-                    })
-                    .as_ref(),
-                )))
+                    Some(sentence(
+                        NEEDS_THREE_TEXTURES,
+                        &[origin.key.as_deref().unwrap_or(written.key).to_owned()],
+                    ))
+                    .as_deref(),
+                ))
                 .into_kept(),
             );
         }

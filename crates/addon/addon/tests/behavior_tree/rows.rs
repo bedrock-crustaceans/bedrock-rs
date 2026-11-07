@@ -2,7 +2,7 @@
 //! and compared with its `expected.json` and `expected.toml` (`check`), then the row's own
 //! claims are asserted.
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Phase, Severity, codes};
+use bedrock_addon::diagnostic::{Code, Phase, Severity, codes};
 use bedrock_addon::diagnostic::{Diagnostics, JsonPath};
 use bedrock_addon::document::{Registry, Rejected};
 use bedrock_addon::families::behavior_tree::codes as bt_codes;
@@ -238,7 +238,7 @@ fn bt12_an_unknown_root_type_is_not_registered_deviation() {
     );
     assert_eq!(
         finding.code,
-        DiagnosticCode::from(codes::UNKNOWN_NODE.with(["minecraft:craft_item"]))
+        codes::UNKNOWN_NODE.with(["minecraft:craft_item"])
     );
     // vanilla's text, without its trailing line feed
     assert_eq!(
@@ -398,10 +398,7 @@ fn bt19_position_arrays() {
         &format!("{ROOT}/minecraft:look_at/block_pos/1"),
     );
     assert!(finding.kept);
-    assert_eq!(
-        finding.code,
-        DiagnosticCode::from(&bt_codes::EXPECTED_INTEGRAL)
-    );
+    assert_eq!(finding.code, Code::from(&bt_codes::EXPECTED_INTEGRAL));
     assert_eq!(findings.len(), 1);
     let (Node::LookAt { block_pos, .. }, findings) = root(&stack, "short") else {
         panic!()
@@ -697,10 +694,7 @@ fn bt05_a_built_in_tree_replaces_a_pack_tree_of_its_name() {
     assert!(matches!(tree.root, Node::Move { .. }));
     let notices: Vec<_> = trees.diagnostics().collect();
     assert_eq!(notices.len(), 1);
-    assert_eq!(
-        notices[0].code,
-        DiagnosticCode::from(&codes::SHADOWED_BY_BUILTIN)
-    );
+    assert_eq!(notices[0].code, Code::from(&codes::SHADOWED_BY_BUILTIN));
     assert_eq!(notices[0].severity, Severity::Info);
     assert_eq!(
         notices[0]

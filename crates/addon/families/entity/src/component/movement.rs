@@ -7,7 +7,7 @@
 
 use super::value::descriptor_tags;
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath, Severity};
+use bedrock_addon_core::diagnostic::{Code, JsonPath, Severity};
 use bedrock_addon_core::id::BlockId;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::schema::{self, Schema};
@@ -440,7 +440,7 @@ pub(crate) fn legacy_range(
     for typed in ["min", "max"] {
         if range.remove(typed).is_some() {
             cx.push(
-                DiagnosticCode::from(&core_codes::DROPPED_FIELD),
+                Code::from(&core_codes::DROPPED_FIELD),
                 Severity::Info,
                 &member.child(typed),
             );
@@ -465,14 +465,11 @@ pub(crate) fn legacy_range(
                 .clamp(f64::from(i32::MIN), f64::from(i32::MAX)) as i64;
             (
                 Value::from(truncated),
-                DiagnosticCode::from(&core_codes::VALUE_REWRITTEN),
+                Code::from(&core_codes::VALUE_REWRITTEN),
             )
         } else {
             let read = i64::from(value.as_bool() == Some(true));
-            (
-                Value::from(read),
-                DiagnosticCode::from(&core_codes::INVALID_VALUE),
-            )
+            (Value::from(read), Code::from(&core_codes::INVALID_VALUE))
         };
         range.insert(bound, read);
         cx.push(code, Severity::Info, &member.child(bound));
@@ -702,7 +699,7 @@ impl Typed for Trail {
         for member in TRAIL_NEW_MEMBERS {
             if json.remove(member).is_some() {
                 cx.push(
-                    DiagnosticCode::from(&core_codes::DROPPED_FIELD),
+                    Code::from(&core_codes::DROPPED_FIELD),
                     Severity::Info,
                     &JsonPath::new().child(member),
                 );

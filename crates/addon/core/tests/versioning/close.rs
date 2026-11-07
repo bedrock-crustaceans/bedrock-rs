@@ -2,9 +2,7 @@
 //! struct included, and the closed entry points that run it once per file.
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, Location, Phase, Severity,
-};
+use bedrock_addon_core::diagnostic::{Code, Diagnostic, Diagnostics, Location, Phase, Severity};
 use bedrock_addon_core::json::JsonSlice;
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::pack_identity::PackPath;
@@ -36,10 +34,8 @@ pub mod closing {
 const CLOSING_LINE: &str = "Failed to load toy";
 
 /// The closing line's code.
-fn closing_code() -> DiagnosticCode {
-    core_codes::DOCUMENT_REJECTED_WORDED
-        .with([CLOSING_LINE])
-        .into()
+fn closing_code() -> Code {
+    core_codes::DOCUMENT_REJECTED_WORDED.with([CLOSING_LINE])
 }
 
 impl Family for Closing {
@@ -57,7 +53,7 @@ impl Family for Closing {
     fn close(diagnostics: &mut Diagnostics, _: Option<JsonSlice<'_>>, _: &PackPath, failed: bool) {
         if failed {
             diagnostics.push(Diagnostic::new(
-                DiagnosticCode::from(core_codes::DOCUMENT_REJECTED_WORDED.with([CLOSING_LINE])),
+                core_codes::DOCUMENT_REJECTED_WORDED.with([CLOSING_LINE]),
                 Severity::Error,
                 Phase::Parse,
                 Location::default(),
@@ -135,7 +131,7 @@ fn toy_at(version: &str) -> String {
 }
 
 /// The `UnsupportedVersion` codes of a load.
-fn unsupported<F: Family>(text: &str) -> Vec<DiagnosticCode> {
+fn unsupported<F: Family>(text: &str) -> Vec<Code> {
     load::<F>(JsonSlice::new(text), &LoadContext::detached())
         .diagnostics
         .iter()
@@ -158,9 +154,7 @@ fn below_the_floor_of_a_no_parser_family_is_no_parser_with_the_version_as_parsed
     ] {
         assert_eq!(
             unsupported::<Floored>(&toy_at(written)),
-            [DiagnosticCode::from(
-                core_codes::NO_PARSER_FOR_VERSION.with([shown])
-            )],
+            [core_codes::NO_PARSER_FOR_VERSION.with([shown])],
             "{written}"
         );
     }
@@ -263,7 +257,7 @@ impl Family for Always {
 
     fn close(diagnostics: &mut Diagnostics, _: Option<JsonSlice<'_>>, _: &PackPath, _: bool) {
         diagnostics.push(Diagnostic::new(
-            DiagnosticCode::from(core_codes::DOCUMENT_REJECTED_WORDED.with([CLOSING_LINE])),
+            core_codes::DOCUMENT_REJECTED_WORDED.with([CLOSING_LINE]),
             Severity::Info,
             Phase::Parse,
             Location::default(),

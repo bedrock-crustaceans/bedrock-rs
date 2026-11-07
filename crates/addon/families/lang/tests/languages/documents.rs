@@ -2,7 +2,7 @@
 //! `language_names/` fixtures, the locale fallback and the login code
 //! check (V7).
 
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, Severity};
+use bedrock_addon_core::diagnostic::{Code, Diagnostic, Diagnostics, Severity};
 use bedrock_addon_core::document::{Content, Document, Placed, Rejected};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::pack_identity::PackPath;
@@ -288,7 +288,7 @@ fn the_vanilla_shape_reads_as_its_pairs_in_order() {
 }
 
 /// The one L10 warning of `diagnostics`: its code and path.
-fn name_entry_warning(diagnostics: &Diagnostics) -> (&DiagnosticCode, String) {
+fn name_entry_warning(diagnostics: &Diagnostics) -> (&Code, String) {
     let finding = only(diagnostics);
     assert_eq!(finding.severity, Severity::Info);
     (&finding.code, at(finding))

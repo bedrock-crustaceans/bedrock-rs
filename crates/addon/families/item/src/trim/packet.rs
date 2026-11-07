@@ -32,7 +32,7 @@ pub struct MaterialEntry {
 /// finding is a kept error: an error that rejects nothing.
 fn duplicate_template(index: usize, item: &ItemId) -> Diagnostic {
     let at = JsonPath::new().child("patterns").index(index);
-    Diagnostic::error(codes::DUPLICATE_TEMPLATE.with([item.as_str()]).into())
+    Diagnostic::error(codes::DUPLICATE_TEMPLATE.with([item.as_str()]))
         .at(at)
         .into_kept()
 }

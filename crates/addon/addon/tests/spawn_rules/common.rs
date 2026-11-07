@@ -5,7 +5,7 @@
 
 use std::path::PathBuf;
 
-use bedrock_addon::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, Severity};
+use bedrock_addon::diagnostic::{Code, Diagnostic, Diagnostics, Severity};
 use bedrock_addon::document::{Content, Document, Rejected};
 use bedrock_addon::families::spawn_groups::SpawnGroup;
 use bedrock_addon::families::spawn_rules::{
@@ -121,7 +121,7 @@ pub fn condition(body: &str) -> (Condition, MobSpawnRules, Diagnostics) {
 /// The findings whose code matches `code`.
 pub fn with<'a>(
     diagnostics: &'a Diagnostics,
-    code: impl Fn(&DiagnosticCode) -> bool + 'a,
+    code: impl Fn(&Code) -> bool + 'a,
 ) -> Vec<&'a Diagnostic> {
     diagnostics.iter().filter(|d| code(&d.code)).collect()
 }
@@ -129,7 +129,7 @@ pub fn with<'a>(
 /// Whether a finding has `code`, `severity` and exactly `text` as its message.
 pub fn has_text(
     diagnostics: &Diagnostics,
-    code: impl Fn(&DiagnosticCode) -> bool,
+    code: impl Fn(&Code) -> bool,
     severity: Severity,
     text: &str,
 ) -> bool {

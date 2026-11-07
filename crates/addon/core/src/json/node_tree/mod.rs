@@ -28,9 +28,7 @@ use indexmap::IndexMap;
 
 use super::{JsonSlice, Value, parse_at};
 use crate::diagnostic::codes as core_codes;
-use crate::diagnostic::{
-    Code, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, Span, VanillaText, cereal,
-};
+use crate::diagnostic::{Code, Diagnostic, Diagnostics, JsonPath, Severity, Span, cereal};
 use crate::molang::{JsonScalar, Molang, OtherJson, RawVersion, ReadField, ReaderKind};
 
 // ---- vanilla's schema texts -------------------------------------------------------------------
@@ -59,18 +57,6 @@ pub const BELOW_MIN_VERSION: &str = "Version {} below min required version ({})"
 pub const ABOVE_MAX_VERSION: &str = "Version {} greater than max allowed version ({})";
 /// The JSON reader failed on the file.
 pub const PARSE_ERROR: &str = core_codes::PARSE_ERROR.template();
-
-/// A vanilla text with its arguments, as the code fields take it.
-#[allow(
-    clippy::unnecessary_wraps,
-    reason = "every code field is an `Option<VanillaText>`"
-)]
-pub fn text(template: &'static str, args: &[&str]) -> Option<VanillaText> {
-    Some(VanillaText::Formatted {
-        template,
-        args: args.iter().map(|arg| (*arg).to_owned()).collect(),
-    })
-}
 
 /// C's `%f` of a float: six decimals, no exponent.
 pub fn percent_f(x: f32) -> String {
@@ -442,12 +428,7 @@ impl Walk {
     }
 
     /// A finding at the current path.
-    pub fn push(
-        &mut self,
-        code: DiagnosticCode,
-        severity: Severity,
-        span: impl Into<Option<Span>>,
-    ) {
+    pub fn push(&mut self, code: Code, severity: Severity, span: impl Into<Option<Span>>) {
         if severity == Severity::Error {
             self.errors += 1;
         }
@@ -460,14 +441,14 @@ impl Walk {
 
     /// A kept error at the current path: the game logs an error line and goes on loading
     /// the document. It fails no validation.
-    pub fn push_kept(&mut self, code: DiagnosticCode, span: impl Into<Option<Span>>) {
+    pub fn push_kept(&mut self, code: Code, span: impl Into<Option<Span>>) {
         let mut finding = Diagnostic::error(code).at(self.path.clone());
         finding.location.span = span.into();
         self.diagnostics.push_kept_error(finding);
     }
 
     /// A schema error at the current path.
-    pub fn error(&mut self, code: DiagnosticCode, span: Span) {
+    pub fn error(&mut self, code: Code, span: Span) {
         self.push(code, Severity::Error, span);
     }
 
@@ -487,14 +468,12 @@ impl Walk {
         self.enter(key);
         match self.rules.validation {
             Validation::Strict => {
-                self.error(core_codes::CHILD_NOT_VALID.with([key]).into(), node.span());
+                self.error(core_codes::CHILD_NOT_VALID.with([key]), node.span());
             }
             // The crate's own text of the family, given whole (`vanilla` gives it, as the
             // legacy text did).
             Validation::Lenient { removed } => self.push(
-                core_codes::UNRECOGNIZED_FIELD_WORDED
-                    .with([removed.replacen("{}", key, 1)])
-                    .into(),
+                core_codes::UNRECOGNIZED_FIELD_WORDED.with([removed.replacen("{}", key, 1)]),
                 Severity::Info,
                 node.span(),
             ),
@@ -504,14 +483,14 @@ impl Walk {
 
     /// `Required child <name> not found` at the current path.
     pub fn missing(&mut self, name: &str, node: Node<'_>) {
-        self.error(core_codes::REQUIRED_CHILD.with([name]).into(), node.span());
+        self.error(core_codes::REQUIRED_CHILD.with([name]), node.span());
     }
 
     /// An error with one of vanilla's lines at the current path: an `InvalidValue` of the
     /// schema tree ([`codes::OUTSIDE_RANGE`](crate::diagnostic::codes::OUTSIDE_RANGE),
     /// [`codes::NOT_ALLOWED_REGEX`](crate::diagnostic::codes::NOT_ALLOWED_REGEX), ...).
     pub fn invalid(&mut self, code: Code, node: Node<'_>) {
-        self.error(code.into(), node.span());
+        self.error(code, node.span());
     }
 
     /// `"Value '<value>' not allowed"` (a bool outside its set) at the current path.
@@ -622,11 +601,7 @@ impl Walk {
             // replaces the earlier's, which is told where the file has it unless the
             // value is the same (a `DroppedField` information of the crate's own).
             self.enter(&earlier);
-            self.push(
-                DiagnosticCode::from(&core_codes::DROPPED_FIELD),
-                Severity::Info,
-                span,
-            );
+            self.push(Code::from(&core_codes::DROPPED_FIELD), Severity::Info, span);
             self.leave();
         }
         let spelled_otherwise = match pattern {
@@ -737,7 +712,7 @@ impl Walk {
             // float: digits of the file a float does not hold are noted by the crate's own
             // information.
             self.push(
-                DiagnosticCode::from(&core_codes::LOSSY_CONVERSION),
+                Code::from(&core_codes::LOSSY_CONVERSION),
                 Severity::Info,
                 node.span(),
             );
@@ -747,7 +722,7 @@ impl Walk {
             // information of such a number on its token; the file loads, and the written text
             // reads back to the same value without a finding.
             self.push(
-                DiagnosticCode::from(&core_codes::INVALID_VALUE),
+                Code::from(&core_codes::INVALID_VALUE),
                 Severity::Info,
                 node.span(),
             );

@@ -37,7 +37,7 @@ pub const MAX_GLOBAL_ENTRIES: usize = 128;
 use std::collections::HashSet;
 use std::convert::Infallible;
 
-use crate::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity, Span};
+use crate::diagnostic::{Code, Diagnostic, Diagnostics, JsonPath, Phase, Severity, Span};
 use crate::document::{Document, Origin, Rejected};
 use crate::json::{
     EnvelopeVersion, JsonSlice, MAX_JSON_DEPTH, RootProbe, check_depth, probe_envelope, strip_bom,
@@ -175,7 +175,7 @@ impl SavedSettings {
         let loaded = load(bytes, &mut found);
         if found.has_errors() {
             // Once per file, after the loader's own entries (error level, the packs log area).
-            found.push(error(codes::LOAD_FAILED.with([name]).into()));
+            found.push(error(codes::LOAD_FAILED.with([name])));
         }
         let diagnostics: Diagnostics = found
             .into_iter()
@@ -251,7 +251,7 @@ fn load(
     // The game reads a version written as three integers too.
     if matches!(written, EnvelopeVersion::Array(_)) {
         d.push(info(
-            DiagnosticCode::from(&core_codes::FORMAT_VERSION_ARRAY),
+            Code::from(&core_codes::FORMAT_VERSION_ARRAY),
             version_at(),
         ));
     }
@@ -260,7 +260,7 @@ fn load(
     let effective = outcome.version.effective;
     if FLOOR < effective && effective < <SavedSettings as Versioned>::VERSION {
         d.push(info(
-            DiagnosticCode::from(&core_codes::VANILLA_REJECTS_VERSION),
+            Code::from(&core_codes::VANILLA_REJECTS_VERSION),
             version_at(),
         ));
     }
@@ -451,7 +451,7 @@ fn version_at() -> JsonPath {
 }
 
 /// An info-level parse finding.
-fn info(code: DiagnosticCode, at: JsonPath) -> Diagnostic {
+fn info(code: Code, at: JsonPath) -> Diagnostic {
     Diagnostic::info(code).at(at)
 }
 
@@ -469,12 +469,12 @@ fn origin(name: &str) -> Origin {
 }
 
 /// A syntax finding without vanilla's text: bytes that are no JSON text at all.
-fn malformed(message: String) -> DiagnosticCode {
-    bedrock_addon_core::diagnostic::builders::syntax(message).into()
+fn malformed(message: String) -> Code {
+    bedrock_addon_core::diagnostic::builders::syntax(message)
 }
 
 /// A file-level parse error.
-fn error(code: DiagnosticCode) -> Diagnostic {
+fn error(code: Code) -> Diagnostic {
     Diagnostic::error(code)
 }
 

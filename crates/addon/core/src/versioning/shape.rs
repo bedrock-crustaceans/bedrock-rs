@@ -9,7 +9,7 @@
 //! 1.26.50, whose scalar reads [`coerce_scalars`] applies before the check.
 
 use crate::diagnostic::codes as core_codes;
-use crate::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText};
+use crate::diagnostic::{Code, Diagnostic, Diagnostics, JsonPath, Severity};
 use crate::json::Value;
 
 /// A member bound as an array holds something else.
@@ -72,12 +72,12 @@ pub const fn opt(key: &'static str, shape: Shape) -> Member {
 }
 
 /// A parse finding at `at`.
-pub fn finding(code: DiagnosticCode, severity: Severity, at: JsonPath) -> Diagnostic {
+pub fn finding(code: Code, severity: Severity, at: JsonPath) -> Diagnostic {
     Diagnostic::error(code).severity(severity).at(at)
 }
 
 /// An error-level parse finding at `at`.
-pub fn error(code: DiagnosticCode, at: JsonPath) -> Diagnostic {
+pub fn error(code: Code, at: JsonPath) -> Diagnostic {
     finding(code, Severity::Error, at)
 }
 
@@ -91,21 +91,12 @@ pub fn element(base: &JsonPath, index: usize) -> JsonPath {
     base.index(index)
 }
 
-/// A fixed vanilla text.
-#[allow(
-    clippy::unnecessary_wraps,
-    reason = "every caller fills a code's optional text"
-)]
-pub fn fixed(text: &'static str) -> Option<VanillaText> {
-    Some(VanillaText::Fixed(text))
-}
-
 /// A wrong JSON type at `at`, with cereal's text when it has one.
 fn wrong_type(text: Option<&'static str>, at: &JsonPath, d: &mut Diagnostics) {
     d.push(error(
         text.map_or_else(
-            || DiagnosticCode::from(&core_codes::INVALID_TYPE),
-            |text| core_codes::INVALID_TYPE_WORDED.with([text]).into(),
+            || Code::from(&core_codes::INVALID_TYPE),
+            |text| core_codes::INVALID_TYPE_WORDED.with([text]),
         ),
         at.clone(),
     ));
@@ -269,9 +260,9 @@ fn object(
             passed &= check(item, &member.shape, &at, unknown, d);
         } else {
             let code = if components {
-                DiagnosticCode::from(&core_codes::UNRECOGNIZED_COMPONENT)
+                Code::from(&core_codes::UNRECOGNIZED_COMPONENT)
             } else {
-                DiagnosticCode::from(core_codes::UNRECOGNIZED_FIELD_WORDED.with([unknown]))
+                core_codes::UNRECOGNIZED_FIELD_WORDED.with([unknown])
             };
             d.push(error(code, at));
             passed = false;
@@ -280,9 +271,7 @@ fn object(
     for member in members {
         if member.required && object.get(member.key).is_none() {
             d.push(error(
-                DiagnosticCode::from(
-                    core_codes::MISSING_REQUIRED_FIELD_WORDED.with([MISSING_REQUIRED]),
-                ),
+                core_codes::MISSING_REQUIRED_FIELD_WORDED.with([MISSING_REQUIRED]),
                 child(at, member.key),
             ));
             passed = false;
@@ -317,10 +306,7 @@ pub fn in_range(value: f64, min: f64, max: f64, at: JsonPath, d: &mut Diagnostic
 
 /// A constraint with its own text: an `InvalidValue` error at `at`.
 pub fn violation(text: &'static str, at: JsonPath, d: &mut Diagnostics) {
-    d.push(error(
-        DiagnosticCode::from(core_codes::INVALID_VALUE_WORDED.with([text])),
-        at,
-    ));
+    d.push(error(core_codes::INVALID_VALUE_WORDED.with([text]), at));
 }
 
 #[cfg(test)]
@@ -333,7 +319,7 @@ mod tests {
     #[test]
     fn a_shape_finding_is_a_parse_finding_at_its_path() {
         let at = || JsonPath::of_keys(["a", "b"]);
-        let code = || DiagnosticCode::from(&core_codes::INVALID_VALUE);
+        let code = || Code::from(&core_codes::INVALID_VALUE);
         for severity in [Severity::Info, Severity::Warning, Severity::Error] {
             let found = finding(code(), severity, at());
             let long = Diagnostic::new(

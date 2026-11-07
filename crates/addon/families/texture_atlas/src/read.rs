@@ -10,9 +10,7 @@ use super::types::{
     TextureAtlas, TextureElement, TextureLayer, Tint, TintMapColor, VariationEntry, face_is_read,
 };
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity,
-};
+use bedrock_addon_core::diagnostic::{Code, Diagnostic, Diagnostics, JsonPath, Phase, Severity};
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::AtlasKey;
 use bedrock_addon_core::json::Value;
@@ -63,7 +61,7 @@ struct Reader<'a> {
 
 impl Reader<'_> {
     /// A finding at the current path.
-    fn report(&mut self, code: DiagnosticCode, severity: Severity) {
+    fn report(&mut self, code: Code, severity: Severity) {
         self.out.push(
             Diagnostic::error(code)
                 .severity(severity)
@@ -73,14 +71,14 @@ impl Reader<'_> {
     }
 
     /// A finding at member `key` of the current path.
-    fn report_at(&mut self, key: &str, code: DiagnosticCode, severity: Severity) {
+    fn report_at(&mut self, key: &str, code: Code, severity: Severity) {
         self.path.push(key);
         self.report(code, severity);
         self.path.pop();
     }
 
     /// The game's content-log error after which the atlas loads: a kept error.
-    fn kept(&mut self, code: DiagnosticCode) {
+    fn kept(&mut self, code: Code) {
         self.out.push_kept_error(
             Diagnostic::error(code)
                 .at(self.path.clone())
@@ -91,11 +89,7 @@ impl Reader<'_> {
     /// A lint of the crate's own at member `key`: vanilla coerces or ignores the value silently, an
     /// information.
     fn invalid(&mut self, key: &str) {
-        self.report_at(
-            key,
-            DiagnosticCode::from(&core_codes::INVALID_VALUE),
-            Severity::Info,
-        );
+        self.report_at(key, Code::from(&core_codes::INVALID_VALUE), Severity::Info);
     }
 
     /// Runs `read` one member down.
@@ -122,7 +116,7 @@ impl Reader<'_> {
                 // The game reads the members it knows and ignores the rest.
                 self.report_at(
                     key.as_str(),
-                    DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD),
+                    Code::from(&core_codes::UNRECOGNIZED_FIELD),
                     Severity::Info,
                 );
                 extra.insert(key.as_str().to_owned(), value.clone());
@@ -147,7 +141,7 @@ pub(super) fn read_atlas(
     let root = merged.as_object();
     let Some((root, name)) = root.and_then(|root| Some((root, root.get("texture_name")?))) else {
         reader.report(
-            DiagnosticCode::from(codes::NO_TEXTURE_NAME.with([kind.path().to_owned()])),
+            codes::NO_TEXTURE_NAME.with([kind.path().to_owned()]),
             Severity::Error,
         );
         return None;
@@ -158,7 +152,7 @@ pub(super) fn read_atlas(
         // information with its text.
         reader.report_at(
             "texture_name",
-            DiagnosticCode::from(&codes::NO_TEXTURE_PAGE),
+            Code::from(&codes::NO_TEXTURE_PAGE),
             Severity::Info,
         );
     } else if texture_name != kind.expected_name() {
@@ -246,11 +240,7 @@ impl Reader<'_> {
         for (key, value) in data {
             let key = key.as_str();
             let Some(node) = value.as_object() else {
-                self.report_at(
-                    key,
-                    DiagnosticCode::from(codes::ENTRY_NOT_OBJECT.with([key])),
-                    Severity::Error,
-                );
+                self.report_at(key, codes::ENTRY_NOT_OBJECT.with([key]), Severity::Error);
                 continue;
             };
             if let Some(item) = self.within(key, |reader| reader.tile(key, node)) {
@@ -264,7 +254,7 @@ impl Reader<'_> {
     fn tile(&mut self, key: &str, node: &VObject) -> Option<AtlasItem> {
         let Some(textures) = non_null(node.get("textures")) else {
             self.report(
-                DiagnosticCode::from(codes::MISSING_TEXTURES.with([key.to_owned()])),
+                codes::MISSING_TEXTURES.with([key.to_owned()]),
                 Severity::Error,
             );
             return None;
@@ -278,10 +268,7 @@ impl Reader<'_> {
                 if elements.is_empty() {
                     // The game keeps the tile with no index (a block that names it gets a
                     // content-log warning); the crate reports an information here.
-                    reader.report(
-                        DiagnosticCode::from(&core_codes::INVALID_VALUE),
-                        Severity::Info,
-                    );
+                    reader.report(Code::from(&core_codes::INVALID_VALUE), Severity::Info);
                 }
                 AtlasTextures::Many(
                     elements
@@ -330,10 +317,7 @@ impl Reader<'_> {
             return TextureElement::Path(path.as_str().to_owned());
         }
         // The game gives the index no layer, silently; the crate reports an information.
-        self.report(
-            DiagnosticCode::from(&core_codes::INVALID_VALUE),
-            Severity::Info,
-        );
+        self.report(Code::from(&core_codes::INVALID_VALUE), Severity::Info);
         TextureElement::Invalid(element.clone())
     }
 
@@ -345,10 +329,7 @@ impl Reader<'_> {
             VariationEntry::Path(path.as_str().to_owned())
         } else {
             // The game raises a debug assert; the empty layer is kept: an information.
-            self.report(
-                DiagnosticCode::from(&core_codes::INVALID_VALUE),
-                Severity::Info,
-            );
+            self.report(Code::from(&core_codes::INVALID_VALUE), Severity::Info);
             VariationEntry::Invalid(entry.clone())
         }
     }
@@ -416,11 +397,7 @@ impl Reader<'_> {
         };
         // The game logs both texts at the content log's warning level and stores the clamped
         // weight: the game's warning.
-        self.report_at(
-            "weight",
-            DiagnosticCode::from(text.with([bound])),
-            Severity::Warning,
-        );
+        self.report_at("weight", text.with([bound]), Severity::Warning);
         clamped
     }
 
@@ -456,7 +433,7 @@ impl Reader<'_> {
                     // information.
                     reader.report_at(
                         key.as_str(),
-                        DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD),
+                        Code::from(&core_codes::UNRECOGNIZED_FIELD),
                         Severity::Info,
                     );
                     continue;
@@ -510,7 +487,7 @@ impl Reader<'_> {
             _ => {
                 // The game logs this at the content log's error level; the atlas loads: a kept
                 // error.
-                self.kept(DiagnosticCode::from(&codes::BAD_COLOR));
+                self.kept(Code::from(&codes::BAD_COLOR));
                 None
             }
         }
@@ -532,7 +509,7 @@ impl Reader<'_> {
         }
         // The game logs this at the content log's error level (as it does for the other colour
         // texts); the value is 255 and the atlas loads: a kept error.
-        self.kept(DiagnosticCode::from(&codes::NOT_INTEGRAL));
+        self.kept(Code::from(&codes::NOT_INTEGRAL));
         255
     }
 }

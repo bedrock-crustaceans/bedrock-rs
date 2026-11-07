@@ -774,7 +774,7 @@ pub(crate) fn suffix_missing(at: JsonPath) -> Diagnostic {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
+    use bedrock_addon_core::diagnostic::{Code, Severity};
 
     /// `v06_generic_goal_suffix`: a missing suffix and a 33-character suffix are
     /// refused; a 32-character one is a named goal.
@@ -807,10 +807,7 @@ mod tests {
             GenericGoal::No
         );
         let d = suffix_missing(JsonPath::new());
-        assert_eq!(
-            d.code,
-            DiagnosticCode::from(&core_codes::GENERIC_GOAL_SUFFIX_MISSING)
-        );
+        assert_eq!(d.code, Code::from(&core_codes::GENERIC_GOAL_SUFFIX_MISSING));
         assert_eq!(d.severity, Severity::Info);
         assert!(!d.kept);
         for key in [
@@ -821,7 +818,7 @@ mod tests {
             assert_eq!(
                 finding.map(|d| (d.code, d.severity, d.kept)),
                 Some((
-                    DiagnosticCode::from(&core_codes::GENERIC_GOAL_SUFFIX_MISSING),
+                    Code::from(&core_codes::GENERIC_GOAL_SUFFIX_MISSING),
                     Severity::Info,
                     false
                 )),

@@ -8,7 +8,7 @@ use super::types::{
     AtlasItem, AtlasKind, AtlasTextures, Color, Isotropic, TextureAtlas, TextureElement,
     TextureLayer, Tint, TintMapColor, VariationEntry,
 };
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics};
+use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics};
 use bedrock_addon_core::document::{
     Content, Document, JsonContent, Placed, Rejected, UnknownMembers, unversioned,
 };
@@ -37,9 +37,8 @@ impl Content for TextureAtlas {
             let read = match read_lenient(bytes) {
                 Ok(read) => read,
                 Err(message) => {
-                    let code = DiagnosticCode::from(
-                        bedrock_addon_core::diagnostic::builders::syntax(message.to_string()),
-                    );
+                    let code =
+                        bedrock_addon_core::diagnostic::builders::syntax(message.to_string());
                     diagnostics.push(Diagnostic::error(code).in_file(&origin));
                     return Err(unversioned::rejected(origin, diagnostics));
                 }

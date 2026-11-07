@@ -7,7 +7,7 @@ use facet_value::{VArray, VObject};
 use super::codes;
 use super::read::{self, child, element, finding, wrong_type};
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{CodeDef, DiagnosticCode, Diagnostics, JsonPath, Severity};
+use bedrock_addon_core::diagnostic::{Code, CodeDef, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::EntityId;
 use bedrock_addon_core::json::Value;
@@ -299,12 +299,7 @@ impl ReadCx<'_> {
     /// A warning with vanilla's formatted text naming the identifier.
     fn formatted(&mut self, code: &'static CodeDef<1>, at: &JsonPath) {
         // The legacy parsers log each condition text at code 2, level 2 in both masks.
-        finding(
-            code.with([self.identifier]).into(),
-            Severity::Warning,
-            at,
-            self.d,
-        );
+        finding(code.with([self.identifier]), Severity::Warning, at, self.d);
     }
 
     /// A warning with a fixed vanilla text.
@@ -348,7 +343,7 @@ pub fn members(
             // The crate's own information: the legacy parsers read the keys they know and never
             // walk the members.
             finding(
-                DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD),
+                Code::from(&core_codes::UNRECOGNIZED_FIELD),
                 Severity::Info,
                 &child(at, key.as_str()),
                 d,
@@ -611,7 +606,7 @@ fn permutation(o: &VObject, at: &JsonPath, cx: &mut ReadCx<'_>) -> Permutation {
     // information.
     if weight.unwrap_or(1) < 1 {
         finding(
-            DiagnosticCode::from(&core_codes::INVALID_VALUE),
+            Code::from(&core_codes::INVALID_VALUE),
             Severity::Info,
             &child(at, "weight"),
             d,
@@ -680,7 +675,7 @@ fn distance(value: &Value, at: &JsonPath, cx: &mut ReadCx<'_>) -> Option<RangeFi
     let (min, max) = sorted(range.ends());
     if min < 0 || max > cx.profile.distance_cap {
         finding(
-            DiagnosticCode::from(&core_codes::CLAMPED_VALUE),
+            Code::from(&core_codes::CLAMPED_VALUE),
             Severity::Info,
             at,
             cx.d,
@@ -778,7 +773,7 @@ fn difficulty(value: &Value, at: &JsonPath, d: &mut Diagnostics) -> Option<Diffi
                 .is_none()
         {
             finding(
-                DiagnosticCode::from(&core_codes::INVALID_ENUM_VALUE),
+                Code::from(&core_codes::INVALID_ENUM_VALUE),
                 Severity::Info,
                 &at,
                 d,

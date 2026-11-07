@@ -1093,18 +1093,19 @@ const APP_DATA_ALONE: &[(&str, &str)] = &[("SpawnGroups", "")];
 const STACK_FLAGS: &[(&str, &str)] = &[("SoundFiles", "client_audio")];
 
 /// Whether the `Debug` text `member` holds a finding with the code `code` told at the file
-/// `path`: a `Diagnostic { code: <code> …, location: Location { …, path: Some(PackPath("<path>")), … } }`,
-/// or a specific code whose definition was `<code>`.
+/// `path`: a `Diagnostic { code: Code { meta: CodeMeta { … }, … }, location: Location { …, path:
+/// Some(PackPath("<path>")), … } }` whose definition was `<code>`, or a finding in the legacy
+/// shape `Diagnostic { code: <code> …` (the shape this file's own helper tests are written in).
 fn tells(member: &str, code: &str, path: &str) -> bool {
     let at = format!("path: Some(PackPath(\"{path}\"))");
-    // A specific code prints its definition's meta: the legacy name it was stands in it.
+    // A code prints its definition's meta: the legacy name it was stands in it.
     let was = format!("legacy: Some({code:?})");
     member.split("Diagnostic { code: ").skip(1).any(|finding| {
         let named = finding
             .strip_prefix(code)
             .is_some_and(|rest| rest.starts_with([' ', ',']))
             || finding
-                .strip_prefix("Specific { code: Code { meta: CodeMeta {")
+                .strip_prefix("Code { meta: CodeMeta {")
                 .is_some_and(|rest| {
                     rest.split("args:")
                         .next()

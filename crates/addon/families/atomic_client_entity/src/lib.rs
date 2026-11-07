@@ -12,7 +12,7 @@ mod tests;
 use bedrock_addon_core::__private::Sealed;
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, Severity, builders,
+    Code, Diagnostic, DiagnosticDetail, Diagnostics, Severity, builders,
 };
 use bedrock_addon_core::document::{
     CombineRule, Content, Contribution, Definition, Document, JsonContent, NoBeta, Notice, Origin,
@@ -547,7 +547,7 @@ fn combine(
         parsed,
         CombineRule::LastLoadedWins {
             replaced: Some(Notice {
-                code: DiagnosticCode::from(&core_codes::ATOMIC_CLIENT_ENTITY_SHADOWED),
+                code: Code::from(&core_codes::ATOMIC_CLIENT_ENTITY_SHADOWED),
                 severity: Severity::Info,
             }),
         },

@@ -14,7 +14,7 @@ use super::{
 };
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    CodeDef, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, Span, builders,
+    Code, CodeDef, Diagnostic, Diagnostics, JsonPath, Severity, Span, builders,
 };
 use bedrock_addon_core::id::Id;
 use bedrock_addon_core::id::syntax::has_namespace;
@@ -136,7 +136,7 @@ impl Reader<'_> {
     }
 
     /// A finding at `node`, spanning it.
-    fn report(&mut self, node: &Node<'_>, code: DiagnosticCode, severity: Severity) {
+    fn report(&mut self, node: &Node<'_>, code: Code, severity: Severity) {
         let mut finding = Diagnostic::error(code)
             .severity(severity)
             .at(node.path().clone());
@@ -145,7 +145,7 @@ impl Reader<'_> {
     }
 
     /// An error at `node`, spanning it.
-    fn error(&mut self, node: &Node<'_>, code: DiagnosticCode) {
+    fn error(&mut self, node: &Node<'_>, code: Code) {
         self.report(node, code, Severity::Error);
     }
 
@@ -181,7 +181,7 @@ impl Reader<'_> {
         self.string(node).filter(|value| {
             let accepted = accept(value);
             if !accepted {
-                self.error(node, DiagnosticCode::from(refused));
+                self.error(node, Code::from(refused));
             }
             accepted
         })
@@ -233,7 +233,7 @@ impl Reader<'_> {
                 markup = self.controls(&member, set);
                 if markup.as_ref().is_some_and(Vec::is_empty) {
                     // `markup` must hold at least one control.
-                    self.error(&member, DiagnosticCode::from(&core_codes::INVALID_VALUE));
+                    self.error(&member, Code::from(&core_codes::INVALID_VALUE));
                     markup = None;
                 }
             } else {
@@ -307,13 +307,11 @@ impl Reader<'_> {
             return Some(component);
         }
         // No alternative of any variant has this constant: the file is skipped.
-        self.error(node, DiagnosticCode::from(&core_codes::INVALID_VALUE));
+        self.error(node, Code::from(&core_codes::INVALID_VALUE));
         if let Some(later) = known.and_then(|component| self.catalogue.later_with(component)) {
             self.report(
                 node,
-                core_codes::FIELD_SINCE_ENGINE
-                    .with([later.engine().to_string()])
-                    .into(),
+                core_codes::FIELD_SINCE_ENGINE.with([later.engine().to_string()]),
                 Severity::Info,
             );
         } else if let Some(earlier) =
@@ -323,9 +321,7 @@ impl Reader<'_> {
             // hint.
             self.report(
                 node,
-                core_codes::FIELD_UNTIL_ENGINE
-                    .with([earlier.engine().to_string()])
-                    .into(),
+                core_codes::FIELD_UNTIL_ENGINE.with([earlier.engine().to_string()]),
                 Severity::Info,
             );
         }
@@ -341,7 +337,7 @@ impl Reader<'_> {
         // A type of the catalogue that is no alternative of this place's variant.
         let placed = match component {
             Some(component) if !self.catalogue.allows(set, component) => {
-                self.error(&named, DiagnosticCode::from(&core_codes::INVALID_VALUE));
+                self.error(&named, Code::from(&core_codes::INVALID_VALUE));
                 false
             }
             _ => true,
@@ -384,7 +380,7 @@ impl Reader<'_> {
             // `attribs["name"]` as a string, and a missing key or another type throws out of
             // the whole load without a log line. The crate reports an error that refuses the
             // root instead.
-            self.error(node, DiagnosticCode::from(&core_codes::INVALID_VALUE));
+            self.error(node, Code::from(&core_codes::INVALID_VALUE));
         }
         Some(control)
     }
@@ -465,7 +461,7 @@ impl Reader<'_> {
 
     /// A conversion failure: `InvalidValue` with `text` at `node`.
     fn unconverted(&mut self, refused: &'static CodeDef<0>, node: &Node<'_>) {
-        self.error(node, DiagnosticCode::from(refused));
+        self.error(node, Code::from(refused));
     }
 
     /// A box size: two or four integers. Another count is the conversion's error
@@ -549,7 +545,7 @@ impl Reader<'_> {
         let name = self.string(node)?;
         let value = BorderImageRepeat::from_name(&name);
         if value.is_none() {
-            self.error(node, DiagnosticCode::from(&core_codes::INVALID_VALUE));
+            self.error(node, Code::from(&core_codes::INVALID_VALUE));
         }
         value
     }
@@ -625,10 +621,7 @@ impl Reader<'_> {
         let members = self.object(node)?;
         for (name, member) in members.iter() {
             if !StyleComponents::KEYS.contains(&name) {
-                self.error(
-                    &member,
-                    DiagnosticCode::from(&core_codes::UNRECOGNIZED_COMPONENT),
-                );
+                self.error(&member, Code::from(&core_codes::UNRECOGNIZED_COMPONENT));
             }
         }
         let components = StyleComponents {
@@ -637,7 +630,7 @@ impl Reader<'_> {
             form_textfield: self.member(&members, textfield, Self::form_textfield),
         };
         if members.is_empty() {
-            self.error(node, DiagnosticCode::from(&core_codes::INVALID_VALUE));
+            self.error(node, Code::from(&core_codes::INVALID_VALUE));
             return None;
         }
         Some(components)

@@ -2,7 +2,7 @@
 
 #![allow(dead_code)]
 
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, Severity};
+use bedrock_addon_core::diagnostic::{Code, Diagnostic, Diagnostics, Severity};
 use bedrock_addon_core::document::JsonDocument;
 use bedrock_addon_core::document::{Content, Document, Rejected};
 use bedrock_addon_core::load::LoadContext;
@@ -95,7 +95,7 @@ pub fn item(version: &str, identifier: &str, components: &str) -> String {
 }
 
 /// Whether `d` holds a finding whose code matches.
-pub fn has(d: &Diagnostics, pred: impl Fn(&DiagnosticCode) -> bool) -> bool {
+pub fn has(d: &Diagnostics, pred: impl Fn(&Code) -> bool) -> bool {
     d.iter().any(|f| pred(&f.code))
 }
 

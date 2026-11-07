@@ -22,7 +22,7 @@ use bedrock_addon_core::json::Value;
 use bedrock_addon_core::json::kit::Written;
 
 use crate::stack::Index;
-use bedrock_addon_core::diagnostic::{DiagnosticCode, DiagnosticDetail, JsonPath, JsonPathSegment};
+use bedrock_addon_core::diagnostic::{Code, DiagnosticDetail, JsonPath, JsonPathSegment};
 use bedrock_addon_core::document::{
     Content, Document, JsonContent, Merge, Origin, Placed, Rejected, unversioned,
 };
@@ -302,7 +302,7 @@ fn read_metadata(origin: Origin, bytes: &[u8]) -> FontFileCopy<FontMetadata> {
     if !FontMetadata::version_is_supported(&root) {
         // The file is ignored; the game's line goes to the developer log, so this is an
         // information, and the file is still refused.
-        let code = DiagnosticCode::from(&codes::VERSION);
+        let code = Code::from(&codes::VERSION);
         let at = JsonPath::new().child("version");
         return Err(unversioned::reject(origin, Diagnostic::info(code).at(at)));
     }

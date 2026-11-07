@@ -2,7 +2,7 @@
 //! in `stack.rs`), each loaded from its fixture file with the `poi` experiment on.
 
 use bedrock_addon::diagnostic::codes;
-use bedrock_addon::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, Severity};
+use bedrock_addon::diagnostic::{Diagnostic, Diagnostics, Severity};
 use bedrock_addon::families::poi::{PoiDescription, PoiTag, PoiType};
 use bedrock_addon::id::{BlockId, PoiTagId, PoiTypeId};
 use bedrock_addon::pack::PackOrigin;
@@ -135,7 +135,7 @@ fn poi06_below_floor_has_no_parser() {
     let d = rejected::<PoiType>(&fixture("poi06_below_floor/poi/blocks/forge.json"));
     let error = only_error(&d);
     assert!(
-        error.code == DiagnosticCode::from(codes::NO_PARSER_FOR_VERSION.with(["1.26.30"])),
+        error.code == codes::NO_PARSER_FOR_VERSION.with(["1.26.30"]),
         "{:?}",
         error.code
     );
@@ -165,7 +165,7 @@ fn poi07_above_engine_has_no_parser() {
     let d = rejected::<PoiType>(&text);
     let error = only_error(&d);
     assert!(
-        error.code == DiagnosticCode::from(codes::NO_PARSER_FOR_VERSION.with([above.clone()])),
+        error.code == codes::NO_PARSER_FOR_VERSION.with([above.clone()]),
         "{:?}",
         error.code
     );

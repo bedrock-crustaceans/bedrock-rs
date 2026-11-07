@@ -1,6 +1,6 @@
 //! The references of a block to voxel shapes.
 
-use bedrock_addon_core::diagnostic::{Severity, VanillaText};
+use bedrock_addon_core::diagnostic::{Severity, sentence};
 use bedrock_addon_core::document::Document;
 use bedrock_addon_core::id::Id;
 
@@ -39,10 +39,7 @@ fn culling_shapes(cx: &LinkCx<'_>, out: &mut Findings, document: &Document<Block
         }
         if let Target::Missing(hint) = cx.voxel_shape(&Id::parse(name)) {
             // The game's wording, the default shape named.
-            let text = VanillaText::Formatted {
-                template: "Voxel shape with name \"{}\" doesn't exist in the registry. Defaulting to {} for identifier.",
-                args: vec![name.to_owned(), DEFAULT_SHAPE.to_owned()],
-            };
+            let text = sentence("Voxel shape with name \"{}\" doesn't exist in the registry. Defaulting to {} for identifier.", &[name.to_owned(), DEFAULT_SHAPE.to_owned()]);
             let path = placed(document, &at![&section; "minecraft:geometry", "culling_shape"]);
             // The game logs this line at the error level and assigns the default shape: a kept
             // error.

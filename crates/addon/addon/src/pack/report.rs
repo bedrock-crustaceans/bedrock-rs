@@ -121,7 +121,7 @@ fn by_place(a: &Diagnostic, b: &Diagnostic) -> Ordering {
 mod tests {
     use bedrock_addon_core::diagnostic::codes as core_codes;
     use bedrock_addon_core::diagnostic::{
-        Diagnostic, DiagnosticCode, JsonPath, Location, Phase, Severity, Span,
+        Code, Diagnostic, JsonPath, Location, Phase, Severity, Span,
     };
     use bedrock_addon_core::pack_identity::{PackIdVersion, PackPath, PackRef, PackType};
     use bedrock_addon_core::version::SemVersion;
@@ -145,7 +145,7 @@ mod tests {
         severity: Severity,
     ) -> Diagnostic {
         Diagnostic::new(
-            DiagnosticCode::from(&core_codes::FILE_NOT_LOADED),
+            Code::from(&core_codes::FILE_NOT_LOADED),
             severity,
             Phase::Read,
             Location::new(

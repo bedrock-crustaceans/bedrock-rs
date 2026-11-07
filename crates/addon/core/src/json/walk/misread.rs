@@ -1,7 +1,7 @@
 //! The scalars a typed member read as another value than the document writes.
 
 use crate::diagnostic::codes as core_codes;
-use crate::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, Location, Phase, Severity};
+use crate::diagnostic::{Code, Diagnostic, JsonPath, Location, Phase, Severity};
 
 /// A scalar of a document that the typed member it belongs to read as another value than the
 /// document writes: facet coerces scalars and reads a float beyond its width as an infinity
@@ -37,9 +37,9 @@ impl Misread {
         let mut path = at.clone();
         path.append(&self.path);
         let code = match self.kind {
-            Misreading::BeyondFloat => DiagnosticCode::from(&core_codes::BEYOND_FLOAT_MEMBER),
-            Misreading::WrongType => DiagnosticCode::from(&core_codes::INVALID_TYPE),
-            Misreading::Defaulted => DiagnosticCode::from(&core_codes::INVALID_VALUE),
+            Misreading::BeyondFloat => Code::from(&core_codes::BEYOND_FLOAT_MEMBER),
+            Misreading::WrongType => Code::from(&core_codes::INVALID_TYPE),
+            Misreading::Defaulted => Code::from(&core_codes::INVALID_VALUE),
         };
         let severity = match self.kind {
             Misreading::BeyondFloat | Misreading::Defaulted => Severity::Info,

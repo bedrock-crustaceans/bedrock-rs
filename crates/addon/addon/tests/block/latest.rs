@@ -3,7 +3,7 @@
 //! document, the new components and the changed rules. The game's own test
 //! documents under `fixtures/block/block/engine/` are the data.
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Diagnostics, Severity};
+use bedrock_addon::diagnostic::{Code, Diagnostics, Severity};
 use bedrock_addon::load::LoadContext;
 
 use super::common::{context, document, fixture, load, loads, rejected, ucf};
@@ -11,7 +11,7 @@ use super::common::{context, document, fixture, load, loads, rejected, ucf};
 /// The findings at `path` (below `minecraft:block`) whose code passes `code`.
 fn at<'d>(
     d: &'d Diagnostics,
-    code: fn(&DiagnosticCode) -> bool,
+    code: fn(&Code) -> bool,
     path: &str,
 ) -> Vec<&'d bedrock_addon::diagnostic::Diagnostic> {
     d.iter()
@@ -21,17 +21,17 @@ fn at<'d>(
         .collect()
 }
 
-fn unrecognized_field(c: &DiagnosticCode) -> bool {
+fn unrecognized_field(c: &Code) -> bool {
     // By legacy name: the variant and the definitions that were it.
     matches!(c.name(), "UnrecognizedField")
 }
 
-fn unrecognized_component(c: &DiagnosticCode) -> bool {
+fn unrecognized_component(c: &Code) -> bool {
     // By legacy name: the variant and the definitions that were it.
     matches!(c.name(), "UnrecognizedComponent")
 }
 
-fn invalid_type(c: &DiagnosticCode) -> bool {
+fn invalid_type(c: &Code) -> bool {
     // By legacy name: the variant and the definitions that were it.
     matches!(c.name(), "InvalidType")
 }
@@ -142,11 +142,11 @@ fn a_null_member_of_a_legacy_block_is_the_legacy_reader_s() {
 fn the_members_of_ours_reject_a_cereal_block() {
     let deprecated_member =
         // By legacy name: the variant and the definitions that were it.
-        |c: &DiagnosticCode| matches!(c.name(), "DeprecatedMember");
+        |c: &Code| matches!(c.name(), "DeprecatedMember");
     for (member, code, path) in [
         (
             r#""deprecated": {}"#,
-            unrecognized_field as fn(&DiagnosticCode) -> bool,
+            unrecognized_field as fn(&Code) -> bool,
             "deprecated",
         ),
         (
@@ -1180,7 +1180,7 @@ fn a_cereal_constraint_fails_the_block_at_the_member() {
 /// The findings of `d` with `code`, severity error, at `path` below `minecraft:block`.
 fn errors_at<'d>(
     d: &'d Diagnostics,
-    code: fn(&DiagnosticCode) -> bool,
+    code: fn(&Code) -> bool,
     path: &str,
 ) -> Vec<&'d bedrock_addon::diagnostic::Diagnostic> {
     at(d, code, path)
@@ -1189,17 +1189,17 @@ fn errors_at<'d>(
         .collect()
 }
 
-fn invalid_value(c: &DiagnosticCode) -> bool {
+fn invalid_value(c: &Code) -> bool {
     // By legacy name: the variant and the definitions that were it.
     matches!(c.name(), "InvalidValue")
 }
 
-fn missing_toggles(c: &DiagnosticCode) -> bool {
+fn missing_toggles(c: &Code) -> bool {
     // By legacy name: the variant and the definitions that were it.
     matches!(c.name(), "MissingToggles")
 }
 
-fn deprecated(c: &DiagnosticCode) -> bool {
+fn deprecated(c: &Code) -> bool {
     // By legacy name: the variant and the definitions that were it.
     matches!(c.name(), "DeprecatedMember")
 }
@@ -1842,7 +1842,7 @@ fn a_failed_component_read_rejects_a_block_under_both_slices() {
     }
 }
 
-fn code_name_of(code: &DiagnosticCode) -> String {
+fn code_name_of(code: &Code) -> String {
     code.name().to_owned()
 }
 

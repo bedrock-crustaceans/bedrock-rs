@@ -5,7 +5,7 @@ use super::codes;
 use indexmap::IndexMap;
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, Severity};
+use bedrock_addon_core::diagnostic::{Code, Diagnostics, Severity};
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::SoundEventName;
 use bedrock_addon_core::json::jsoncpp::fork::{self, Stored};
@@ -497,7 +497,7 @@ pub(crate) fn read_root(root: &Value, diagnostics: &mut Diagnostics) -> RootRead
         // The game writes an error line to the content log; nothing of the file is registered
         // and the parser returns normally: every entry dropped, the file kept, a kept error. The
         // value holds no definition.
-        report.kept(DiagnosticCode::from(&codes::CONTENTS_MALFORMED));
+        report.kept(Code::from(&codes::CONTENTS_MALFORMED));
         return out;
     }
     out.extra = check_unknown(root, &ROOT_KEYS, &[], &mut report);
@@ -506,7 +506,7 @@ pub(crate) fn read_root(root: &Value, diagnostics: &mut Diagnostics) -> RootRead
     if !definitions.is_object() {
         // The game writes an error line to the content log; no definition is registered and the
         // parser returns normally: a kept error. The value holds the member as written.
-        report.kept(DiagnosticCode::from(&codes::SECTION_MALFORMED));
+        report.kept(Code::from(&codes::SECTION_MALFORMED));
         return out;
     }
     let Some(object) = definitions.as_object() else {
@@ -524,7 +524,7 @@ pub(crate) fn read_root(root: &Value, diagnostics: &mut Diagnostics) -> RootRead
             out.not_definitions.insert(name.to_owned(), value.clone());
             // The game registers an empty event.
             report.vanilla(
-                DiagnosticCode::from(codes::MALFORMED_SOUND.with([name.to_owned()])),
+                codes::MALFORMED_SOUND.with([name.to_owned()]),
                 Severity::Info,
             );
         }
@@ -555,10 +555,7 @@ fn read_definition(name: &str, value: &Value, report: &mut Reporter<'_>) -> Soun
     if !external.is_null() && !sounds.is_null() {
         // The game never reads `external_event_name` when `sounds` is present and says nothing,
         // so the crate reports the combination as an information.
-        report.here(
-            DiagnosticCode::from(&core_codes::INVALID_VALUE),
-            Severity::Info,
-        );
+        report.here(Code::from(&core_codes::INVALID_VALUE), Severity::Info);
         let _ = name;
     }
     // The members read on one branch alone are kept as written on the other.
@@ -665,7 +662,7 @@ fn check_category(
     let first = name.split_once('.').map(|(first, _)| first);
     if first == Some("music") && !definition.category.eq_ignore_ascii_case("music") {
         report.vanilla(
-            DiagnosticCode::from(codes::NOT_MUSIC.with([name.to_owned()])),
+            codes::NOT_MUSIC.with([name.to_owned()]),
             // The game logs this at the content log's warning level.
             Severity::Warning,
         );
@@ -678,7 +675,7 @@ fn check_category(
     {
         report.at(
             "category",
-            DiagnosticCode::from(&core_codes::INVALID_VALUE),
+            Code::from(&core_codes::INVALID_VALUE),
             Severity::Info,
         );
     }
@@ -726,19 +723,13 @@ fn read_entry(
             read: present(entry, &ENTRY_KEYS),
         },
         _ => {
-            report.here(
-                DiagnosticCode::from(&core_codes::INVALID_VALUE),
-                Severity::Info,
-            );
+            report.here(Code::from(&core_codes::INVALID_VALUE), Severity::Info);
             return None;
         }
     };
     if read.name.len() > MAX_NAME_BYTES {
         // The game asserts and keeps an empty path.
-        report.here(
-            DiagnosticCode::from(&core_codes::INVALID_VALUE),
-            Severity::Info,
-        );
+        report.here(Code::from(&core_codes::INVALID_VALUE), Severity::Info);
         return None;
     }
     Some(read)

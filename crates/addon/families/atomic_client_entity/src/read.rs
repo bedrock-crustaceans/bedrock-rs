@@ -3,7 +3,7 @@
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, JsonPathSegment, Severity,
+    Code, Diagnostic, Diagnostics, JsonPath, JsonPathSegment, Severity,
 };
 use bedrock_addon_core::json::{
     ClampedText, EncodeError, JsonSlice, NullRule, ScalarFailure, ScalarRead, Value, Width,
@@ -149,9 +149,9 @@ impl VersionStruct for AtomicClientEntity {
                 at.append(&path);
                 // A key of `components` is a component; anywhere else it is a member.
                 let code = if is_component(&path) {
-                    DiagnosticCode::from(&core_codes::UNRECOGNIZED_COMPONENT)
+                    Code::from(&core_codes::UNRECOGNIZED_COMPONENT)
                 } else {
-                    DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD)
+                    Code::from(&core_codes::UNRECOGNIZED_FIELD)
                 };
                 d.push(Diagnostic::error(code).at(at));
             }

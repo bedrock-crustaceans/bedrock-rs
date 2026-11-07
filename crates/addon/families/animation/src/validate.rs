@@ -1,7 +1,7 @@
 //! The findings that are not schema failures: the crate's own lints, where the game says nothing.
 
 use super::{AnimationFile, OneOrMany};
-use bedrock_addon_core::diagnostic::DiagnosticCode;
+use bedrock_addon_core::diagnostic::Code;
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::load::LoadContext;
@@ -26,7 +26,7 @@ pub(crate) fn animation_findings(
                     let at = base.child("bones").child(name);
                     push(
                         diagnostics,
-                        DiagnosticCode::from(&core_codes::DUPLICATE_BONE),
+                        Code::from(&core_codes::DUPLICATE_BONE),
                         Severity::Info,
                         at,
                     );

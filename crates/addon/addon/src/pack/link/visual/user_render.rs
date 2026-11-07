@@ -1,7 +1,7 @@
 //! `description.materials` and `description.render_controllers` of a client entity, an
 //! attachable or an atomic client entity: each names a material or a render controller.
 
-use bedrock_addon_core::diagnostic::{Severity, VanillaText};
+use bedrock_addon_core::diagnostic::{Severity, sentence};
 use bedrock_addon_core::id::{MaterialId, RenderControllerId};
 use bedrock_addon_shared_visual::ControllerUse;
 
@@ -51,12 +51,10 @@ pub(super) fn materials(cx: &LinkCx<'_>, out: &mut Findings, user: &User<'_>) {
         } else {
             // The game logs the miss at the error level, skips the entry and goes on with the
             // file: a kept error, an information with a partial view.
-            At::new(user.origin, path, view.severity(Severity::Error)).with_text(
-                VanillaText::Formatted {
-                    template: MATERIAL_NOT_DEFINED,
-                    args: vec![name.to_string(), user.origin.path.to_string()],
-                },
-            )
+            At::new(user.origin, path, view.severity(Severity::Error)).with_text(sentence(
+                MATERIAL_NOT_DEFINED,
+                &[name.to_string(), user.origin.path.to_string()],
+            ))
         };
         let finding = unresolved(at, kinds::MATERIAL, &name, None);
         out.push(if finding.severity == Severity::Error {
@@ -134,10 +132,7 @@ pub(super) fn material_shaders(cx: &LinkCx<'_>, out: &mut Findings, user: &User<
         // The game logs the shader at the error level when the entity is drawn and falls back
         // to the `Actor` variant: a kept error.
         let at = At::new(user.origin, user.entry("materials", key), Severity::Error).with_text(
-            VanillaText::Formatted {
-                template: SHADER_NOT_FOR_ACTORS,
-                args: vec![material.vertex_shader.clone()],
-            },
+            sentence(SHADER_NOT_FOR_ACTORS, &[material.vertex_shader.as_str()]),
         );
         out.push(invalid(at, kinds::MATERIAL, &name).into_kept());
     }

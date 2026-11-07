@@ -615,9 +615,7 @@ impl StackLoader {
             .read_error_text(path)
         {
             // The kind stays the finding's detail; the walk's sentence is the line.
-            finding.code = bedrock_addon_core::diagnostic::codes::READ_ERROR_WORDED
-                .with([text.to_string()])
-                .into();
+            finding.code = bedrock_addon_core::diagnostic::codes::READ_ERROR_WORDED.with([text]);
         }
         finding
     }

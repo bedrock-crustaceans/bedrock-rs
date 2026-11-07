@@ -2,7 +2,7 @@
 //! at, and the members no reader names.
 
 use crate::diagnostic::codes as core_codes;
-use crate::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity};
+use crate::diagnostic::{Code, Diagnostic, Diagnostics, JsonPath, Phase, Severity};
 use crate::document::UnknownMembers;
 use crate::json::Value;
 
@@ -38,7 +38,7 @@ impl<'a> Reporter<'a> {
     }
 
     /// A finding at the current path.
-    pub fn here(&mut self, code: DiagnosticCode, severity: Severity) {
+    pub fn here(&mut self, code: Code, severity: Severity) {
         self.diagnostics.push(
             Diagnostic::error(code)
                 .severity(severity)
@@ -48,12 +48,12 @@ impl<'a> Reporter<'a> {
     }
 
     /// A finding that carries one of vanilla's texts, at the current path.
-    pub fn vanilla(&mut self, code: DiagnosticCode, severity: Severity) {
+    pub fn vanilla(&mut self, code: Code, severity: Severity) {
         self.here(code, severity);
     }
 
     /// A content-log error of vanilla's after which the file loads: a kept error.
-    pub fn kept(&mut self, code: DiagnosticCode) {
+    pub fn kept(&mut self, code: Code) {
         self.diagnostics.push_kept_error(
             Diagnostic::error(code)
                 .at(self.path.clone())
@@ -62,7 +62,7 @@ impl<'a> Reporter<'a> {
     }
 
     /// A finding at the member `key` of the current path.
-    pub fn at(&mut self, key: &str, code: DiagnosticCode, severity: Severity) {
+    pub fn at(&mut self, key: &str, code: Code, severity: Severity) {
         self.enter(key);
         self.here(code, severity);
         self.leave();
@@ -92,7 +92,7 @@ pub fn check_unknown(
             // the rest.
             report.at(
                 key,
-                DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD),
+                Code::from(&core_codes::UNRECOGNIZED_FIELD),
                 Severity::Info,
             );
         }

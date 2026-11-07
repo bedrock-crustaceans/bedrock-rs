@@ -4,9 +4,7 @@
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{
-    Class, CodeDef, Diagnostic, DiagnosticCode, Diagnostics, Kind,
-};
+use bedrock_addon_core::diagnostic::{Class, CodeDef, Diagnostic, Diagnostics, Kind};
 use bedrock_addon_core::document::NoBeta;
 use bedrock_addon_core::id::{BlockId, kind};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
@@ -258,7 +256,7 @@ mod single {
 
 /// The toy family's closing line of a failed file.
 fn closing_line(path: &PackPath) -> Diagnostic {
-    Diagnostic::error(GLINT_FAILED.with([path.as_str()]).into())
+    Diagnostic::error(GLINT_FAILED.with([path.as_str()]))
 }
 
 /// The toy family's closing line of a failed file, as the game words one.
@@ -1215,9 +1213,7 @@ impl Family for FlareFamily {
         failed: bool,
     ) {
         diagnostics.push(Diagnostic::info(
-            FLARE_CLOSED
-                .with([path.as_str().to_owned(), failed.to_string()])
-                .into(),
+            FLARE_CLOSED.with([path.as_str().to_owned(), failed.to_string()]),
         ));
     }
 }
@@ -1288,8 +1284,7 @@ fn a_stable_json_document_refuses_a_beta_file_and_closes_it_failed() {
         rejected
             .diagnostics
             .iter()
-            .any(|d| d.code
-                == DiagnosticCode::from(core_codes::NO_PARSER_FOR_VERSION.with(["beta"]))),
+            .any(|d| d.code == core_codes::NO_PARSER_FOR_VERSION.with(["beta"])),
         "the beta refusal entity's own parse pushes: {:?}",
         rejected.diagnostics
     );
@@ -1368,8 +1363,7 @@ fn a_beta_document_a_family_built_opens_and_closes_once() {
         refused
             .diagnostics
             .iter()
-            .any(|d| d.code
-                == DiagnosticCode::from(core_codes::NO_PARSER_FOR_VERSION.with(["beta"])))
+            .any(|d| d.code == core_codes::NO_PARSER_FOR_VERSION.with(["beta"]))
     );
     for finding in &refused.diagnostics {
         assert_eq!(finding.location.path, Some(flare_path()));

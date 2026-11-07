@@ -13,7 +13,7 @@ use super::Value;
 use super::lex::{Kind, Lexer, Rules};
 use super::path::path_at;
 use crate::diagnostic::{
-    Diagnostic, DiagnosticCode, JsonPath, JsonPathSegment, Span, code_for_deserialize_error_kind,
+    Code, Diagnostic, JsonPath, JsonPathSegment, Span, code_for_deserialize_error_kind,
 };
 
 /// A slice of a document's text with its file offset, so a nested parse reports file offsets.
@@ -120,7 +120,7 @@ impl SliceError {
     /// The table's code for the failure graded as at a member (`has_path`) or at the slice
     /// root: [`into_diagnostic`](Self::into_diagnostic) gives
     /// `code_with_path(self.has_path())`, a family that grades otherwise asks for the other.
-    pub fn code_with_path(&self, has_path: bool) -> DiagnosticCode {
+    pub fn code_with_path(&self, has_path: bool) -> Code {
         code_for_deserialize_error_kind(&self.error.kind, has_path, self.blank)
     }
 
@@ -135,7 +135,7 @@ impl SliceError {
     pub fn into_diagnostic(
         self,
         base: &JsonPath,
-        remap: impl FnOnce(DiagnosticCode, &SliceError) -> DiagnosticCode,
+        remap: impl FnOnce(Code, &SliceError) -> Code,
     ) -> Diagnostic {
         let code = remap(self.code_with_path(self.has_path()), &self);
         let mut at = base.clone();
@@ -795,7 +795,7 @@ mod tests {
             assert!(error.describes(&text[..3]));
             assert!(!error.describes("no such words in it"));
             assert_eq!(error.code_with_path(error.has_path()), code);
-            DiagnosticCode::from(&core_codes::INVALID_VALUE)
+            Code::from(&core_codes::INVALID_VALUE)
         });
         assert!(finding.is(&core_codes::INVALID_VALUE));
         assert_eq!(finding.location.json_path, JsonPath::of_keys(["base", "v"]));

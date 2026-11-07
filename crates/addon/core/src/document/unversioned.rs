@@ -102,7 +102,7 @@ mod tests {
 
     fn finding() -> Diagnostic {
         Diagnostic::new(
-            crate::diagnostic::builders::syntax("not JSON").into(),
+            crate::diagnostic::builders::syntax("not JSON"),
             Severity::Error,
             Phase::Parse,
             Location::default(),

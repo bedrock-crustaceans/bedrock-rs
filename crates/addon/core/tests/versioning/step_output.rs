@@ -2,7 +2,7 @@
 //! under the run settings and the context it is given, and gives the next struct's payload with
 //! what the step reported.
 
-use bedrock_addon_core::diagnostic::DiagnosticCode;
+use bedrock_addon_core::diagnostic::Code;
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::json::{Value, from_str};
 use bedrock_addon_core::version::FormatVersion;
@@ -64,7 +64,7 @@ fn a_payload_the_struct_does_not_take_is_refused() {
 fn what_the_step_reports_comes_back_with_the_payload() {
     let input = json(r#"{"description": {"identifier": "demo:x"}, "legacy_flag": true}"#);
     let output = step_output::<v1_0_0::Toy>(&input, Run::default(), &checks()).unwrap();
-    let codes: Vec<&DiagnosticCode> = output.diagnostics.iter().map(|d| &d.code).collect();
+    let codes: Vec<&Code> = output.diagnostics.iter().map(|d| &d.code).collect();
     assert!(
         matches!(codes[..], [code] if code.is(&core_codes::DROPPED_FIELD)),
         "{codes:?}"

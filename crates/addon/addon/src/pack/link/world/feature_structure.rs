@@ -1,7 +1,7 @@
 //! The structure a feature places (`structure_template_feature.structure_name`).
 
 use super::super::{At, Findings, LinkCx, Target, kinds, unresolved};
-use crate::diagnostic::{DiagnosticCode, JsonPath, Severity, VanillaText};
+use crate::diagnostic::{JsonPath, Severity, sentence};
 use crate::document::Document;
 use crate::families::feature::Feature;
 use crate::id::StructureId;
@@ -50,17 +50,17 @@ pub(super) fn feature_template(cx: &LinkCx<'_>, out: &mut Findings, document: &D
             };
             let [_, height, _] = structure.value().size;
             if level.0 > height {
-                let text = VanillaText::Formatted {
-                    template: GROUND_LEVEL,
-                    args: vec![level.0.to_string(), height.to_string(), height.to_string()],
-                };
+                let text = sentence(
+                    GROUND_LEVEL,
+                    &[level.0.to_string(), height.to_string(), height.to_string()],
+                );
                 // The game logs this at the warning level and clamps the value: a warning.
                 let at = At::new(origin, member("ground_level"), Severity::Warning);
-                out.push(at.diagnostic(DiagnosticCode::from(builders::worded(
+                out.push(at.diagnostic(builders::worded(
                     &core_codes::INVALID_VALUE,
                     &core_codes::INVALID_VALUE_WORDED,
                     Some(&text),
-                ))));
+                )));
             }
         }
         _ => {}

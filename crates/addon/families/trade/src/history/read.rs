@@ -8,7 +8,7 @@ use crate::codes;
 use crate::validate as rules;
 use bedrock_addon_core::diagnostic::builders;
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity};
+use bedrock_addon_core::diagnostic::{Code, Diagnostic, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::json::{JsonSlice, Value};
 
 /// The members the legacy parser reads, per object.
@@ -75,20 +75,20 @@ impl Reader<'_> {
     }
 
     /// An error at `at`: the table is not loaded.
-    fn error(&mut self, code: DiagnosticCode, at: JsonPath) {
+    fn error(&mut self, code: Code, at: JsonPath) {
         self.push(Diagnostic::error(code).at(at));
     }
 
     /// An information at `at`: the game's legacy parser reads on in silence, so the crate
     /// reports an information.
-    fn warn(&mut self, code: DiagnosticCode, at: JsonPath) {
+    fn warn(&mut self, code: Code, at: JsonPath) {
         self.push(Diagnostic::info(code).at(at));
     }
 
     /// A kept error at `at`: the game logs the line at the content log's error level, drops the
     /// trade or group and goes on with the table. The loader's validity check does not look at
     /// the logged errors, so the table loads.
-    fn kept_error(&mut self, code: DiagnosticCode, at: JsonPath) {
+    fn kept_error(&mut self, code: Code, at: JsonPath) {
         self.d.push_kept_error(Diagnostic::error(code).at(at));
     }
 
@@ -107,7 +107,7 @@ impl Reader<'_> {
         for (key, value) in object {
             if !known.contains(&key.as_str()) {
                 self.warn(
-                    DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD),
+                    Code::from(&core_codes::UNRECOGNIZED_FIELD),
                     at.child(key.as_str()),
                 );
                 self.d.unknown_mut().put(at, key.as_str(), value.clone());
@@ -120,9 +120,9 @@ impl Reader<'_> {
     fn table(&mut self, root: &Value, at: &JsonPath) -> Option<TradeTable> {
         let Some(object) = root.as_object() else {
             let code = if root.is_null() {
-                DiagnosticCode::from(&codes::MUST_CONTAIN_TIERS)
+                Code::from(&codes::MUST_CONTAIN_TIERS)
             } else {
-                DiagnosticCode::from(&core_codes::INVALID_TYPE)
+                Code::from(&core_codes::INVALID_TYPE)
             };
             self.error(code, at.clone());
             return None;
@@ -136,18 +136,18 @@ impl Reader<'_> {
         if format_version.is_none() && present(object.get("format_version")).is_some() {
             // Read as absent, and said.
             self.warn(
-                DiagnosticCode::from(&core_codes::INVALID_TYPE),
+                Code::from(&core_codes::INVALID_TYPE),
                 at.child("format_version"),
             );
         }
         let tiers_at = at.child("tiers");
         // The tiers are missing or not an array.
         let Some(tiers) = object.get("tiers") else {
-            self.error(DiagnosticCode::from(&codes::TIERS_MISSING), at.clone());
+            self.error(Code::from(&codes::TIERS_MISSING), at.clone());
             return None;
         };
         let Some(tiers) = tiers.as_array() else {
-            self.error(DiagnosticCode::from(&codes::TIERS_ARRAY), tiers_at);
+            self.error(Code::from(&codes::TIERS_ARRAY), tiers_at);
             return None;
         };
         let mut table = TradeTable {
@@ -165,7 +165,7 @@ impl Reader<'_> {
     /// with its flat `trades`.
     fn tier(&mut self, json: &Value, at: &JsonPath) -> Option<Tier> {
         let Some(object) = json.as_object() else {
-            self.error(DiagnosticCode::from(&core_codes::INVALID_TYPE), at.clone());
+            self.error(Code::from(&core_codes::INVALID_TYPE), at.clone());
             return None;
         };
         self.unknown(object, TIER_MEMBERS, at);
@@ -183,7 +183,7 @@ impl Reader<'_> {
                 let groups_at = at.child("groups");
                 // The groups are non-null and not an array.
                 let Some(groups) = groups.as_array() else {
-                    self.error(DiagnosticCode::from(&codes::GROUPS_ARRAY), groups_at);
+                    self.error(Code::from(&codes::GROUPS_ARRAY), groups_at);
                     return None;
                 };
                 let mut kept = Vec::with_capacity(groups.len());
@@ -200,10 +200,7 @@ impl Reader<'_> {
                 // `trades` is read only when `groups` is null; beside `groups` it has no
                 // effect, which the crate reports as a warning.
                 if object.contains_key("trades") {
-                    self.warn(
-                        DiagnosticCode::from(&core_codes::DROPPED_FIELD),
-                        at.child("trades"),
-                    );
+                    self.warn(Code::from(&core_codes::DROPPED_FIELD), at.child("trades"));
                 }
             }
             // The flat form: every trade is offered (`num_to_select` -1).
@@ -242,11 +239,11 @@ impl Reader<'_> {
     /// loads, so it is a kept error.
     fn trades(&mut self, json: Option<&Value>, at: &JsonPath, selects: i32) -> Option<Vec<Trade>> {
         let Some(json) = json else {
-            self.kept_error(DiagnosticCode::from(&codes::TRADES_MISSING), at.clone());
+            self.kept_error(Code::from(&codes::TRADES_MISSING), at.clone());
             return None;
         };
         let Some(trades) = json.as_array() else {
-            self.kept_error(DiagnosticCode::from(&codes::TRADES_ARRAY), at.clone());
+            self.kept_error(Code::from(&codes::TRADES_ARRAY), at.clone());
             return None;
         };
         let mut kept = Vec::with_capacity(trades.len());
@@ -276,14 +273,14 @@ impl Reader<'_> {
         };
         let wants = self.entries(object.get("wants"), &at.child("wants"));
         if wants.is_empty() {
-            let code = codes::NO_OFFERS.with([styled().trim()]).into();
+            let code = codes::NO_OFFERS.with([styled().trim()]);
             self.kept_error(code, at.child("wants"));
             self.dropped(at);
             return None;
         }
         let gives = self.entries(object.get("gives"), &at.child("gives"));
         if gives.is_empty() {
-            let code = codes::NO_RECEIVES.with([styled().trim()]).into();
+            let code = codes::NO_RECEIVES.with([styled().trim()]);
             self.kept_error(code, at.child("gives"));
             self.dropped(at);
             return None;
@@ -296,7 +293,7 @@ impl Reader<'_> {
         let weight = self.int(object.get("weight"), &weight_at);
         if let Some(weight) = weight {
             if weight <= 0 {
-                let code = codes::INVALID_WEIGHT.with([weight.to_string()]).into();
+                let code = codes::INVALID_WEIGHT.with([weight.to_string()]);
                 // The game logs an error and drops the trade: a kept error.
                 self.kept_error(code, weight_at);
                 self.dropped(at);
@@ -373,7 +370,7 @@ impl Reader<'_> {
         // A list left empty says so itself, at the list.
         if !kept.is_empty() {
             for at in empty {
-                self.warn(DiagnosticCode::from(&core_codes::INVALID_VALUE), at);
+                self.warn(Code::from(&core_codes::INVALID_VALUE), at);
             }
         }
         // Everything told of the entries at the file's indices is told.
@@ -384,7 +381,7 @@ impl Reader<'_> {
     /// One item of a `wants` or `gives` list.
     fn item(&mut self, json: &Value, at: &JsonPath) -> Option<TradeItem> {
         let Some(object) = json.as_object() else {
-            self.warn(DiagnosticCode::from(&core_codes::INVALID_TYPE), at.clone());
+            self.warn(Code::from(&core_codes::INVALID_TYPE), at.clone());
             return None;
         };
         self.unknown(object, ITEM_MEMBERS, at);
@@ -430,7 +427,7 @@ impl Reader<'_> {
     fn float(&mut self, json: Option<&Value>, at: &JsonPath) -> Option<f32> {
         let json = present(json)?;
         let Some(number) = json.as_number() else {
-            self.warn(DiagnosticCode::from(&core_codes::INVALID_TYPE), at.clone());
+            self.warn(Code::from(&core_codes::INVALID_TYPE), at.clone());
             return None;
         };
         let nearest = narrow(number.to_f64_lossy());
@@ -454,11 +451,11 @@ impl Reader<'_> {
     fn integer(&mut self, json: Option<&Value>, at: &JsonPath) -> Option<i64> {
         let json = present(json)?;
         if let Some(b) = json.as_bool() {
-            self.warn(DiagnosticCode::from(&core_codes::INVALID_TYPE), at.clone());
+            self.warn(Code::from(&core_codes::INVALID_TYPE), at.clone());
             return Some(i64::from(b));
         }
         let Some(number) = json.as_number() else {
-            self.warn(DiagnosticCode::from(&core_codes::INVALID_TYPE), at.clone());
+            self.warn(Code::from(&core_codes::INVALID_TYPE), at.clone());
             return None;
         };
         if !number.is_float()
@@ -472,7 +469,7 @@ impl Reader<'_> {
         #[allow(clippy::cast_possible_truncation)]
         let n = x.trunc() as i64;
         if x.fract() != 0.0 {
-            self.warn(DiagnosticCode::from(&core_codes::INVALID_VALUE), at.clone());
+            self.warn(Code::from(&core_codes::INVALID_VALUE), at.clone());
         }
         Some(n)
     }
@@ -482,7 +479,7 @@ impl Reader<'_> {
         let n = self.integer(json, at)?;
         let fits = i32::try_from(n).ok();
         if fits.is_none() {
-            self.warn(DiagnosticCode::from(&core_codes::INVALID_VALUE), at.clone());
+            self.warn(Code::from(&core_codes::INVALID_VALUE), at.clone());
         }
         fits
     }
@@ -492,7 +489,7 @@ impl Reader<'_> {
         let n = self.integer(json, at)?;
         let fits = u32::try_from(n).ok();
         if fits.is_none() {
-            self.warn(DiagnosticCode::from(&core_codes::INVALID_VALUE), at.clone());
+            self.warn(Code::from(&core_codes::INVALID_VALUE), at.clone());
         }
         fits
     }
@@ -503,7 +500,7 @@ impl Reader<'_> {
         if let Some(flag) = json.as_bool() {
             return Some(flag);
         }
-        self.warn(DiagnosticCode::from(&core_codes::INVALID_TYPE), at.clone());
+        self.warn(Code::from(&core_codes::INVALID_TYPE), at.clone());
         json.as_number().map(|n| n.to_f64_lossy() != 0.0)
     }
 
@@ -515,7 +512,7 @@ impl Reader<'_> {
             return Some(text.as_str().to_owned());
         }
         // Not a string: said, whatever it reads as.
-        self.warn(DiagnosticCode::from(&core_codes::INVALID_TYPE), at.clone());
+        self.warn(Code::from(&core_codes::INVALID_TYPE), at.clone());
         if let Some(b) = json.as_bool() {
             return Some(b.to_string());
         }

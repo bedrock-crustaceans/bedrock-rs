@@ -1,8 +1,8 @@
 //! The culling rules a block names against the block's geometry.
 
+use bedrock_addon_core::diagnostic::Severity;
 use bedrock_addon_core::diagnostic::builders;
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
 use bedrock_addon_core::id::GeometryId;
 
 use super::super::{At, Findings, LinkCx, Target, kinds, unresolved};
@@ -59,11 +59,11 @@ pub(super) fn run(cx: &LinkCx<'_>, out: &mut Findings) {
             let inside = usize::try_from(cube).is_ok_and(|cube| cube < cubes);
             if !inside && told.first(origin, "", "cube", &index.to_string()) {
                 let number = cube.to_string();
-                let code = DiagnosticCode::from(builders::worded(
+                let code = builders::worded(
                     &core_codes::INVALID_VALUE,
                     &core_codes::INVALID_VALUE_WORDED,
-                    Some(formatted(CUBE_OUT_OF_BOUNDS, &[&number, &part.bone])).as_ref(),
-                ));
+                    Some(formatted(CUBE_OUT_OF_BOUNDS, &[&number, &part.bone]).as_str()),
+                );
                 // The game logs the miss at the error level and goes on with the next rule:
                 // a kept error.
                 let at = At::new(

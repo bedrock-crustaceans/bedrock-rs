@@ -11,7 +11,7 @@ use super::{Description, EnvironmentAttributes};
 use crate::codes;
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Class, Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Phase,
+    Class, Code, Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Phase,
 };
 use bedrock_addon_core::document::{ComponentMap, ComponentSet};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
@@ -271,12 +271,12 @@ fn check_identifier(
         if bare_or_namespaced(identifier) {
             return;
         }
-        DiagnosticCode::from(&codes::IDENTIFIER_UPPER)
+        Code::from(&codes::IDENTIFIER_UPPER)
     } else {
         if namespaced(identifier) {
             return;
         }
-        DiagnosticCode::from(&codes::IDENTIFIER_NAMESPACE)
+        Code::from(&codes::IDENTIFIER_NAMESPACE)
     };
     d.push(Diagnostic::error(code).at(child(at, &["description", "identifier"])));
 }
@@ -384,12 +384,8 @@ fn gated(
 }
 
 /// "To use %s '%s', use json format version %s or higher".
-fn use_version(what: &'static str, name: &str, version: FormatVersion) -> DiagnosticCode {
-    DiagnosticCode::from(core_codes::USE_FORMAT_VERSION.with([
-        what.to_string(),
-        name.to_string(),
-        version.to_string(),
-    ]))
+fn use_version(what: &'static str, name: &str, version: FormatVersion) -> Code {
+    core_codes::USE_FORMAT_VERSION.with([what.to_string(), name.to_string(), version.to_string()])
 }
 
 #[cfg(test)]

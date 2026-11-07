@@ -23,7 +23,7 @@ mod tests;
 use indexmap::IndexMap;
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Phase, Severity};
+use bedrock_addon_core::diagnostic::{Code, Diagnostic, Phase, Severity};
 use bedrock_addon_core::document::{
     CombineRule, Content, Contribution, Definition, Document, JsonContent, NoBeta, Notice, Origin,
     PackTie, Placed, Registry, RegistryBuilder, Rejected, VersionInfo, default_path,
@@ -214,13 +214,13 @@ fn parse_walk_file(file: &WalkFile, cx: &LoadContext) -> FileContribution {
 fn combine(parsed: Vec<FileContribution>, stack: &StackCx<'_>) -> Registry<RenderController> {
     // The crate's own note: the game replaces silently.
     let shadowed_notice = Notice {
-        code: DiagnosticCode::from(&core_codes::RENDER_CONTROLLER_SHADOWED),
+        code: Code::from(&core_codes::RENDER_CONTROLLER_SHADOWED),
         severity: Severity::Info,
     };
     let mut builder = RegistryBuilder::new(
         CombineRule::TopWinsFallback {
             fallback: Some(Notice {
-                code: DiagnosticCode::from(&core_codes::RENDER_CONTROLLER_FALLBACK),
+                code: Code::from(&core_codes::RENDER_CONTROLLER_FALLBACK),
                 // The game keeps the lower one silently, so this is the crate's own information.
                 severity: Severity::Info,
             }),

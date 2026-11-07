@@ -4,7 +4,7 @@
 use std::fmt::Write as _;
 use std::time::{Duration, Instant};
 
-use bedrock_addon::diagnostic::{DiagnosticCode, JsonPath, Severity, codes};
+use bedrock_addon::diagnostic::{Code, JsonPath, Severity, codes};
 use bedrock_addon::document::Content;
 use bedrock_addon::families::behavior_tree::codes as bt_codes;
 use bedrock_addon::families::behavior_tree::{BehaviorTree, Node, Param};
@@ -393,10 +393,7 @@ fn an_element_of_a_position_of_numbers() {
         &format!("{ROOT}/minecraft:move_to/block_pos/1"),
     );
     assert!(finding.kept);
-    assert_eq!(
-        finding.code,
-        DiagnosticCode::from(&bt_codes::EXPECTED_NUMBER)
-    );
+    assert_eq!(finding.code, Code::from(&bt_codes::EXPECTED_NUMBER));
     assert_eq!(finding.code.to_string(), "Expected Number.");
     assert_eq!(findings.len(), 1);
     let (pos, findings) = move_to("[1, 2]");

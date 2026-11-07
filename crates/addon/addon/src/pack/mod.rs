@@ -32,7 +32,7 @@ use std::sync::Arc;
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, PackReport, Phase, Severity,
+    Code, Diagnostic, Diagnostics, JsonPath, Location, PackReport, Phase, Severity,
 };
 use bedrock_addon_core::load::{Limits, Place};
 use bedrock_addon_core::pack_identity::PackPath;
@@ -320,7 +320,7 @@ impl Pack {
         if !self.inner.files.entries.contains_key(&path) {
             let mut diagnostics = Diagnostics::default();
             diagnostics.push(icon_finding(
-                DiagnosticCode::from(&core_codes::PACK_ICON_MISSING),
+                Code::from(&core_codes::PACK_ICON_MISSING),
                 Severity::Info,
             ));
             return diagnostics;
@@ -344,12 +344,12 @@ impl Pack {
             None => diagnostics.push(icon_finding(
                 // The game reads no icon bytes at load, so bytes that are not a PNG are not a
                 // finding of the game's: the crate reports them as an information.
-                DiagnosticCode::from(&core_codes::INVALID_VALUE),
+                Code::from(&core_codes::INVALID_VALUE),
                 Severity::Info,
             )),
             Some((width, height)) if width != height => {
                 diagnostics.push(icon_finding(
-                    DiagnosticCode::from(&core_codes::PACK_ICON_SHAPE),
+                    Code::from(&core_codes::PACK_ICON_SHAPE),
                     Severity::Info,
                 ));
             }
@@ -378,7 +378,7 @@ impl Pack {
 const ICON_PATH: &str = "pack_icon.png";
 
 /// A finding at the pack icon.
-fn icon_finding(code: DiagnosticCode, severity: Severity) -> Diagnostic {
+fn icon_finding(code: Code, severity: Severity) -> Diagnostic {
     Diagnostic::new(
         code,
         severity,

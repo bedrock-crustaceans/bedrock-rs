@@ -29,7 +29,7 @@ impl LegacyStep<1, 21, 80> for Payload {
                 groups.shift_remove(&name);
                 finding(
                     cx,
-                    codes::NULL_GROUP_REMOVED.with([name.as_str()]).into(),
+                    codes::NULL_GROUP_REMOVED.with([name.as_str()]),
                     &JsonPath::new().with(&["component_groups", &name]),
                 );
             }

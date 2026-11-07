@@ -21,9 +21,7 @@ mod write;
 mod cost;
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{
-    Code, Diagnostic, DiagnosticCode, Diagnostics, Phase, Severity,
-};
+use bedrock_addon_core::diagnostic::{Code, Diagnostic, Diagnostics, Phase, Severity};
 use bedrock_addon_core::document::{
     Contribution, JsonDefinition, JsonDocument, JsonPlaced, NoBeta, Registry,
     default_path_flat_for_vanilla,
@@ -103,31 +101,24 @@ impl Family for CullingFamily {
                 let plain_unknown = finding.is(&core_codes::UNRECOGNIZED_FIELD);
                 match finding.code.name() {
                     "UnsupportedVersion" if use_format => {
-                        finding.code = DiagnosticCode::from(
-                            codes::MISSING_OBJECT_UNSUPPORTED_VERSION.with([path.as_str()]),
-                        );
+                        finding.code =
+                            codes::MISSING_OBJECT_UNSUPPORTED_VERSION.with([path.as_str()]);
                     }
                     "UnsupportedVersion" => {
-                        finding.code = DiagnosticCode::from(
-                            core_codes::NO_PARSER_FOR_VERSION
-                                .with([document.map(written_version).unwrap_or_default()]),
-                        );
+                        finding.code = core_codes::NO_PARSER_FOR_VERSION
+                            .with([document.map(written_version).unwrap_or_default()]);
                         above = true;
                     }
                     "MissingFormatVersion" => {
-                        finding.code = DiagnosticCode::from(
-                            codes::MISSING_OBJECT_MISSING_FORMAT_VERSION.with([path.as_str()]),
-                        );
+                        finding.code =
+                            codes::MISSING_OBJECT_MISSING_FORMAT_VERSION.with([path.as_str()]);
                     }
                     "MalformedFormatVersion" => {
-                        finding.code = DiagnosticCode::from(
-                            codes::MISSING_OBJECT_MALFORMED_FORMAT_VERSION.with([path.as_str()]),
-                        );
+                        finding.code =
+                            codes::MISSING_OBJECT_MALFORMED_FORMAT_VERSION.with([path.as_str()]);
                     }
                     "MissingPayload" => {
-                        finding.code = DiagnosticCode::from(
-                            codes::MISSING_OBJECT_MISSING_PAYLOAD.with([path.as_str()]),
-                        );
+                        finding.code = codes::MISSING_OBJECT_MISSING_PAYLOAD.with([path.as_str()]);
                     }
                     "MalformedInput" | "EmptyDocument" | "PayloadKeyMismatch"
                     | "UnknownPayloadKey"
@@ -139,9 +130,8 @@ impl Family for CullingFamily {
                         if plain_unknown && finding.location.json_path.len() == 1 =>
                     {
                         // A third root member: the envelope is not exactly two members.
-                        finding.code = DiagnosticCode::from(
-                            codes::MISSING_OBJECT_UNRECOGNIZED_FIELD.with([path.as_str()]),
-                        );
+                        finding.code =
+                            codes::MISSING_OBJECT_UNRECOGNIZED_FIELD.with([path.as_str()]);
                     }
                     _ if finding.phase == Phase::Validate => validate = true,
                     _ => parse = true,

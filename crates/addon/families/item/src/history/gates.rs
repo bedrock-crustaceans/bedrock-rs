@@ -3,7 +3,7 @@
 //! and the rows of the components only an older format binds.
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
+use bedrock_addon_core::diagnostic::{Code, Diagnostic, Diagnostics, JsonPath};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::load::{LoadContext, LoadRequirement};
 use bedrock_addon_core::version::{FormatVersion, known};
@@ -172,9 +172,11 @@ pub(crate) fn gate_with(
         && original < threshold
     {
         d.push(Diagnostic::error(
-            core_codes::TOGGLE_USE_FORMAT_VERSION
-                .with(["item", identifier, threshold.to_string().as_str()])
-                .into(),
+            core_codes::TOGGLE_USE_FORMAT_VERSION.with([
+                "item",
+                identifier,
+                threshold.to_string().as_str(),
+            ]),
         ));
         return None;
     }
@@ -203,7 +205,7 @@ pub(crate) fn gate_with(
             // member of the schema instead: that line is an error under every error mask, so
             // the item is refused (the game's own unit tests expect this text for a current
             // format version).
-            let finding = Diagnostic::error(code.into()).at(path);
+            let finding = Diagnostic::error(code).at(path);
             if row.deprecated_member {
                 d.push(finding);
             } else {
@@ -230,25 +232,23 @@ fn requirement_code(
     requirement: LoadRequirement,
     name: &str,
     released: Option<FormatVersion>,
-) -> DiagnosticCode {
+) -> Code {
     use bedrock_addon_core::load::Experiment;
     let toggle = |experiment: Experiment| experiment.save_name().unwrap_or_default();
     let what = ItemFamily::COMPONENT_NOUN;
     let experiment = match requirement {
         LoadRequirement::LegacyCreatorFeatures => {
             // The crate's own text where the component has no release version.
-            return released
-                .map_or_else(
-                    || codes::LEGACY_ONLY.with([name]),
-                    |version| {
-                        core_codes::TOGGLE_USE_FORMAT_VERSION.with([
-                            what,
-                            name,
-                            version.to_string().as_str(),
-                        ])
-                    },
-                )
-                .into();
+            return released.map_or_else(
+                || codes::LEGACY_ONLY.with([name]),
+                |version| {
+                    core_codes::TOGGLE_USE_FORMAT_VERSION.with([
+                        what,
+                        name,
+                        version.to_string().as_str(),
+                    ])
+                },
+            );
         }
         LoadRequirement::BetaFeatures => Experiment::BetaApis,
         LoadRequirement::Experiment(experiment) => experiment,
@@ -263,5 +263,4 @@ fn requirement_code(
         ]),
         None => core_codes::TURN_ON_TOGGLE.with([what, name, toggle(experiment)]),
     }
-    .into()
 }

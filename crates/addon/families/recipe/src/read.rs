@@ -23,7 +23,7 @@ use super::{
 };
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    CodeDef, Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Severity,
+    Code, CodeDef, Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Severity,
 };
 use bedrock_addon_core::document::VersionInfo;
 use bedrock_addon_core::id::RecipeId;
@@ -159,20 +159,20 @@ impl<'c> Reader<'c> {
         }
     }
 
-    fn report(&mut self, at: &JsonPath, code: DiagnosticCode, severity: Severity) {
+    fn report(&mut self, at: &JsonPath, code: Code, severity: Severity) {
         self.diagnostics
             .push(Diagnostic::error(code).severity(severity).at(at.clone()));
     }
 
     /// A kept error: a line the game logs at error level and then goes on, so the recipe still
     /// loads. It is an error finding that does not reject the document.
-    fn report_kept(&mut self, at: &JsonPath, code: DiagnosticCode) {
+    fn report_kept(&mut self, at: &JsonPath, code: Code) {
         self.diagnostics
             .push_kept_error(Diagnostic::error(code).at(at.clone()));
     }
 
     /// An ingredient's own finding: kept or rejecting as `flags` says.
-    fn report_ingredient(&mut self, at: &JsonPath, code: DiagnosticCode, flags: Flags) {
+    fn report_ingredient(&mut self, at: &JsonPath, code: Code, flags: Flags) {
         if flags.kept {
             self.report_kept(at, code);
         } else {
@@ -226,9 +226,7 @@ impl<'c> Reader<'c> {
         let Ok(prepared) = Prepared::new(bytes) else {
             self.report(
                 &root_path,
-                core_codes::SYNTAX
-                    .with(["not UTF-8 JSON within the nesting limit"])
-                    .into(),
+                core_codes::SYNTAX.with(["not UTF-8 JSON within the nesting limit"]),
                 Severity::Error,
             );
             return (parsed, None, None);
@@ -279,7 +277,7 @@ impl<'c> Reader<'c> {
                 root_members.keep(key);
                 self.report(
                     &root_path.child(key),
-                    DiagnosticCode::from(&core_codes::IGNORED_PAYLOAD),
+                    Code::from(&core_codes::IGNORED_PAYLOAD),
                     Severity::Info,
                 );
             }
@@ -305,9 +303,7 @@ impl<'c> Reader<'c> {
         if self.not_checked > 0 {
             self.report(
                 &root_path,
-                DiagnosticCode::from(
-                    core_codes::MOLANG_NOT_CHECKED.with([self.not_checked.to_string()]),
-                ),
+                core_codes::MOLANG_NOT_CHECKED.with([self.not_checked.to_string()]),
                 Severity::Info,
             );
         }
@@ -354,9 +350,7 @@ impl<'c> Reader<'c> {
     fn no_identifier(&mut self, at: &JsonPath) {
         self.report(
             at,
-            codes::NO_IDENTIFIER
-                .with([self.path.as_str().to_owned()])
-                .into(),
+            codes::NO_IDENTIFIER.with([self.path.as_str().to_owned()]),
             Severity::Error,
         );
     }
@@ -376,15 +370,14 @@ impl<'c> Reader<'c> {
                 root.keep("format_version");
             }
             // The game logs the line as an error and goes on with 1.0.0, so it is a kept error.
-            self.report_kept(&at, DiagnosticCode::from(&codes::MISSING_VERSION_TAG));
+            self.report_kept(&at, Code::from(&codes::MISSING_VERSION_TAG));
             return None;
         };
         if version > self.cx.engine_version {
             self.report(
                 &at,
                 core_codes::FORMAT_VERSION_ABOVE_ENGINE
-                    .with([version.to_string(), ENGINE_VERSION.to_string()])
-                    .into(),
+                    .with([version.to_string(), ENGINE_VERSION.to_string()]),
                 Severity::Info,
             );
         }
@@ -440,7 +433,7 @@ impl<'c> Reader<'c> {
         if list.is_empty() {
             // `No tags specified`: the game logs it as an error and goes on; one recipe object
             // is registered per tag, so nothing is registered. A kept error.
-            self.report_kept(&path, DiagnosticCode::from(&codes::NO_TAGS));
+            self.report_kept(&path, Code::from(&codes::NO_TAGS));
         }
         let smithing = matches!(
             kind,
@@ -448,10 +441,7 @@ impl<'c> Reader<'c> {
         );
         if !smithing && list.iter().any(|tag| tag == SMITHING_TABLE) {
             // The game logs the misuse as an error and goes on loading: a kept error.
-            self.report_kept(
-                &path,
-                DiagnosticCode::from(&codes::SMITHING_TABLE_TAG_MISUSED),
-            );
+            self.report_kept(&path, Code::from(&codes::SMITHING_TABLE_TAG_MISUSED));
         }
         tags
     }
@@ -576,7 +566,7 @@ impl<'c> Reader<'c> {
         if !flags.count {
             self.report_ingredient(
                 &at.child("count"),
-                DiagnosticCode::from(&codes::COUNT_NOT_ALLOWED),
+                Code::from(&codes::COUNT_NOT_ALLOWED),
                 flags,
             );
             return None;
@@ -616,7 +606,7 @@ impl<'c> Reader<'c> {
             members.keep("item");
         }
         if !flags.tag {
-            self.report_ingredient(at, DiagnosticCode::from(&codes::NO_ITEM_NAME), flags);
+            self.report_ingredient(at, Code::from(&codes::NO_ITEM_NAME), flags);
             return None;
         }
         if let Some(tag) = members.take("tag").and_then(Value::as_string) {
@@ -624,7 +614,7 @@ impl<'c> Reader<'c> {
             return Some(());
         }
         // Neither an item nor a tag: the game's error line for this case.
-        self.report_ingredient(at, DiagnosticCode::from(&codes::NO_ITEM_OR_TAG), flags);
+        self.report_ingredient(at, Code::from(&codes::NO_ITEM_OR_TAG), flags);
         None
     }
 
@@ -636,7 +626,7 @@ impl<'c> Reader<'c> {
         } else {
             &codes::ITEM_INVALID
         };
-        self.report_ingredient(at, def.with([""]).into(), flags);
+        self.report_ingredient(at, def.with([""]), flags);
     }
 
     /// What vanilla's item-name parser logs about an item text. The game logs each line as an
@@ -741,8 +731,7 @@ impl<'c> Reader<'c> {
                         .args_of(&bedrock_addon_core::diagnostic::codes::MOLANG_LINT)
                 {
                     finding.code = bedrock_addon_core::diagnostic::codes::INVALID_MOLANG
-                        .with([expression[0].clone()])
-                        .into();
+                        .with([expression[0].clone()]);
                 }
                 self.diagnostics.push(finding);
             }
@@ -773,7 +762,7 @@ impl<'c> Reader<'c> {
                 if entry.is_null() {
                     self.report(
                         &entry_at,
-                        DiagnosticCode::from(&core_codes::IGNORED_MEMBER),
+                        Code::from(&core_codes::IGNORED_MEMBER),
                         Severity::Info,
                     );
                     continue;
@@ -790,11 +779,7 @@ impl<'c> Reader<'c> {
     /// `Recipe result malformed` (also the text of a bad shapeless ingredient and of a bad
     /// furnace input or output).
     fn result_malformed(&mut self, at: &JsonPath) {
-        self.report(
-            at,
-            DiagnosticCode::from(&codes::RESULT_MALFORMED),
-            Severity::Error,
-        );
+        self.report(at, Code::from(&codes::RESULT_MALFORMED), Severity::Error);
     }
 
     /// `result` of shaped and shapeless recipes: count allowed, tags not.
@@ -806,11 +791,7 @@ impl<'c> Reader<'c> {
                 Output::default()
             }
             Some(Output::Many(items)) if items.is_empty() => {
-                self.report(
-                    &at,
-                    DiagnosticCode::from(&codes::NO_RESULT_ITEMS),
-                    Severity::Error,
-                );
+                self.report(&at, Code::from(&codes::NO_RESULT_ITEMS), Severity::Error);
                 Output::Many(items)
             }
             Some(output) => output,
@@ -830,7 +811,7 @@ impl<'c> Reader<'c> {
             if entries.is_empty() {
                 // The game logs this as an error and returns the requirement `{None, []}`: a
                 // kept error.
-                self.report_kept(&at, codes::EMPTY_UNLOCK.with([self.id.clone()]).into());
+                self.report_kept(&at, codes::EMPTY_UNLOCK.with([self.id.clone()]));
                 return Some(Unlock::Ingredients(Vec::new()));
             }
             let flags = Flags {
@@ -848,9 +829,7 @@ impl<'c> Reader<'c> {
                         self.diagnostics.unknown_mut().forget(&at);
                         self.report_kept(
                             &at,
-                            codes::INVALID_UNLOCK_INGREDIENT
-                                .with([self.id.clone()])
-                                .into(),
+                            codes::INVALID_UNLOCK_INGREDIENT.with([self.id.clone()]),
                         );
                         return Some(Unlock::Malformed(value.clone()));
                     }
@@ -869,9 +848,7 @@ impl<'c> Reader<'c> {
             payload.keep("unlock");
             self.report_kept(
                 &at,
-                codes::UNLOCK_WITHOUT_LIST_OR_CONTEXT
-                    .with([self.id.clone()])
-                    .into(),
+                codes::UNLOCK_WITHOUT_LIST_OR_CONTEXT.with([self.id.clone()]),
             );
             return None;
         };
@@ -881,9 +858,7 @@ impl<'c> Reader<'c> {
             // The game logs an error and goes on loading: a kept error.
             self.report_kept(
                 &at.child("context"),
-                codes::MALFORMED_UNLOCK_CONTEXT
-                    .with([self.id.clone()])
-                    .into(),
+                codes::MALFORMED_UNLOCK_CONTEXT.with([self.id.clone()]),
             );
             return Some(Unlock::Malformed(value.clone()));
         };
@@ -894,11 +869,7 @@ impl<'c> Reader<'c> {
     /// A shaped or shapeless recipe from 1.20.10 needs `unlock`.
     fn unlock_gate(&mut self, unlock: Option<&Unlock>, at: &JsonPath) {
         if unlock.is_none() && unlock_required(self.version) {
-            self.report(
-                at,
-                DiagnosticCode::from(&codes::UNLOCK_REQUIRED),
-                Severity::Error,
-            );
+            self.report(at, Code::from(&codes::UNLOCK_REQUIRED), Severity::Error);
         }
     }
 
@@ -971,11 +942,7 @@ impl<'c> Reader<'c> {
         };
         let rows = self.refusing().array(&Node::new(value, at.clone()))?;
         if rows.is_empty() {
-            self.report(
-                &at,
-                DiagnosticCode::from(&core_codes::INVALID_VALUE),
-                Severity::Error,
-            );
+            self.report(&at, Code::from(&core_codes::INVALID_VALUE), Severity::Error);
             return None;
         }
         let mut pattern = Vec::new();
@@ -988,9 +955,7 @@ impl<'c> Reader<'c> {
             // The game rejects a pattern larger than 3x3 when it normalises the grid.
             self.report(
                 &at,
-                codes::PATTERN_TOO_LARGE
-                    .with([width.to_string(), height.to_string()])
-                    .into(),
+                codes::PATTERN_TOO_LARGE.with([width.to_string(), height.to_string()]),
                 Severity::Error,
             );
         }
@@ -1011,11 +976,7 @@ impl<'c> Reader<'c> {
         };
         let object = self.refusing().object(&Node::new(value, at.clone()))?;
         if object.is_empty() {
-            self.report(
-                &at,
-                DiagnosticCode::from(&core_codes::INVALID_VALUE),
-                Severity::Error,
-            );
+            self.report(&at, Code::from(&core_codes::INVALID_VALUE), Severity::Error);
             return None;
         }
         let flags = Flags::new(self.input_count(), true);
@@ -1025,7 +986,7 @@ impl<'c> Reader<'c> {
             if name.is_empty() {
                 self.report(
                     &entry_at,
-                    DiagnosticCode::from(&core_codes::INVALID_VALUE),
+                    Code::from(&core_codes::INVALID_VALUE),
                     Severity::Error,
                 );
                 return None;
@@ -1037,7 +998,7 @@ impl<'c> Reader<'c> {
                 None => {
                     self.report(
                         &entry_at,
-                        codes::KEY_INGREDIENT_MISSING.with([self.id.clone()]).into(),
+                        codes::KEY_INGREDIENT_MISSING.with([self.id.clone()]),
                         Severity::Error,
                     );
                     return None;
@@ -1065,15 +1026,11 @@ impl<'c> Reader<'c> {
             .collect();
         let at = at.child("pattern");
         if used.is_empty() {
-            self.report(
-                &at,
-                DiagnosticCode::from(&codes::EMPTY_RECIPE),
-                Severity::Error,
-            );
+            self.report(&at, Code::from(&codes::EMPTY_RECIPE), Severity::Error);
         } else if !used.iter().any(|symbol| symbols.contains(symbol)) {
             self.report(
                 &at,
-                codes::NO_VALID_KEY.with([self.id.clone()]).into(),
+                codes::NO_VALID_KEY.with([self.id.clone()]),
                 Severity::Error,
             );
         }
@@ -1086,10 +1043,7 @@ impl<'c> Reader<'c> {
             && items.len() > 1
         {
             // The game logs an error and loads the recipe with the first entry: a kept error.
-            self.report_kept(
-                &at.child("result"),
-                DiagnosticCode::from(&codes::MULTIPLE_OUTPUTS),
-            );
+            self.report_kept(&at.child("result"), Code::from(&codes::MULTIPLE_OUTPUTS));
         }
         let unlock = self.unlock(payload, at);
         self.unlock_gate(unlock.as_ref(), at);
@@ -1236,8 +1190,7 @@ impl<'c> Reader<'c> {
                         self.report(
                             &output_at,
                             codes::REDUCTION_TOO_MANY_OUTPUTS
-                                .with([self.id.clone(), MAX_REDUCER_OUTPUTS.to_string()])
-                                .into(),
+                                .with([self.id.clone(), MAX_REDUCER_OUTPUTS.to_string()]),
                             Severity::Error,
                         );
                     }
@@ -1274,9 +1227,7 @@ impl<'c> Reader<'c> {
         if item.is_none() {
             self.report(
                 at,
-                codes::REDUCTION_INVALID_OUTPUT
-                    .with([self.id.clone()])
-                    .into(),
+                codes::REDUCTION_INVALID_OUTPUT.with([self.id.clone()]),
                 Severity::Error,
             );
         }
@@ -1289,8 +1240,7 @@ impl<'c> Reader<'c> {
         if list.len() != 1 || list[0] != SMITHING_TABLE {
             self.report(
                 &at.child("tags"),
-                def.with([self.id.clone(), SMITHING_TABLE.to_owned()])
-                    .into(),
+                def.with([self.id.clone(), SMITHING_TABLE.to_owned()]),
                 Severity::Error,
             );
         }
@@ -1318,7 +1268,7 @@ impl<'c> Reader<'c> {
                 payload.keep("template");
                 self.report(
                     &at.child("template"),
-                    DiagnosticCode::from(&core_codes::IGNORED_MEMBER),
+                    Code::from(&core_codes::IGNORED_MEMBER),
                     Severity::Info,
                 );
                 None
@@ -1376,9 +1326,7 @@ impl<'c> Reader<'c> {
         if !self.trails_and_tales() {
             self.report(
                 at,
-                codes::TRIM_BEFORE_TRAILS_AND_TALES
-                    .with([self.id.clone()])
-                    .into(),
+                codes::TRIM_BEFORE_TRAILS_AND_TALES.with([self.id.clone()]),
                 Severity::Error,
             );
         }
@@ -1396,11 +1344,7 @@ impl<'c> Reader<'c> {
     }
 
     fn smithing_part(&mut self, def: &'static CodeDef<1>, at: &JsonPath, key: &str) {
-        self.report(
-            &at.child(key),
-            def.with([self.id.clone()]).into(),
-            Severity::Error,
-        );
+        self.report(&at.child(key), def.with([self.id.clone()]), Severity::Error);
     }
 
     /// A required single-ingredient member; an invalid one raises the site's text after the

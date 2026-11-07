@@ -1,67 +1,65 @@
-//! Checks for the tests of a family that moves a raise site from a legacy [`DiagnosticCode`] to a
-//! [`CodeDef`].
+//! Checks for the tests of a family whose raise sites moved from a legacy `DiagnosticCode`
+//! variant to a [`CodeDef`], and the bridges its pins render through until the pin rename.
 
 use std::fmt::Write as _;
 
-use super::def::{Code, kind_of};
-use super::{CodeDef, Diagnostic, DiagnosticCode};
+use super::def::Code;
+use super::legacy::legacy;
+use super::{CodeDef, Diagnostic};
 
-/// Asserts that `def` replaces `legacy` as [`CodeDef::was`] promises: it has the legacy
-/// variant's [`name`](DiagnosticCode::name) and [`kind`](super::Kind).
+pub use super::legacy::legacy_names;
+
+/// Asserts that `def` replaces the legacy variant named `legacy` as [`CodeDef::was`]
+/// promises: it has the variant's name and [`kind`](super::Kind).
 ///
 /// # Panics
 ///
-/// When the name or the kind differs.
-#[allow(
-    clippy::needless_pass_by_value,
-    reason = "a test passes the legacy code as a literal"
-)]
-pub fn assert_replaces<const N: usize>(def: &CodeDef<N>, legacy: DiagnosticCode) {
+/// When `legacy` names no legacy variant, or the name or the kind differs.
+pub fn assert_replaces<const N: usize>(def: &CodeDef<N>, legacy_name: &str) {
+    let variant =
+        legacy(legacy_name).unwrap_or_else(|| panic!("{legacy_name} is no legacy variant"));
     assert_eq!(
         def.name(),
-        legacy.name(),
+        variant.name,
         "{} replaces {} under its name",
         def.id(),
-        legacy.name()
+        variant.name
     );
     assert_eq!(
         def.kind(),
-        kind_of(&legacy),
+        variant.kind,
         "{} keeps the kind of {}",
         def.id(),
-        legacy.name()
+        variant.name
     );
 }
 
-/// The `Debug` text of the legacy code a finding's specific code replaces: what a
-/// characterization pin written before the raise site moved holds (the Debug-keyed `.txt` pins,
-/// the literal strings of the kit's reader tests), so the pin renders the same line whichever of
-/// the two the site raises. A legacy code renders as its own `Debug`.
+/// The `Debug` text of the legacy code a finding's code replaces: what a characterization pin
+/// written before the raise site moved holds (the Debug-keyed `.txt` pins, the literal strings
+/// of the kit's reader tests), so the pin renders the line it held.
 ///
 /// The legacy code is the one the definition [`was`](CodeDef::was): a variant without fields
 /// renders its name; a `text` field renders `None` for a definition without the game's sentence,
 /// `Some(Fixed(..))` for one with a sentence and no argument (or the sentence given whole, a
 /// `_WORDED` one), `Some(Formatted { .. })` for one with arguments; `MalformedInput`'s
 /// `message` is the finding's [`syntax_message`](Diagnostic::syntax_message); the few lines of
-/// a structured `VanillaText` render by their id. Goes with the
-/// legacy enum: the pins are then re-rendered by id.
+/// a structured `VanillaText` render by their id. Goes with the legacy names: the pins are
+/// then re-rendered by id.
 ///
 /// # Panics
 ///
-/// For a specific code this does not know how to render: a definition of a structured text or
-/// a typed payload not in its tables. A pin that meets one adds it here.
-// hidden: a bridge for the pins of the migration, deleted with the legacy enum
+/// For a code this does not know how to render: a definition of a structured text or a typed
+/// payload not in its tables, or one that replaces no legacy variant. A pin that meets one
+/// adds it here.
+// hidden: a bridge for the pins of the migration, deleted with the legacy names
 #[doc(hidden)]
 #[must_use]
 pub fn legacy_debug(finding: &Diagnostic) -> String {
-    let DiagnosticCode::Specific { code } = &finding.code else {
-        return format!("{:?}", finding.code);
-    };
+    let code = &finding.code;
     let name = code.name();
-    let fields = DiagnosticCode::FIELDS
-        .iter()
-        .find_map(|(variant, fields)| (*variant == name).then_some(*fields))
-        .unwrap_or_else(|| panic!("{} replaces no legacy variant", code.id()));
+    let fields = legacy(name)
+        .unwrap_or_else(|| panic!("{} replaces no legacy variant", code.id()))
+        .fields;
     let mut out = name.to_owned();
     match fields {
         [] => {}
@@ -110,7 +108,7 @@ pub fn legacy_debug(finding: &Diagnostic) -> String {
 /// The `Debug` of the legacy `text` field (an `Option<VanillaText>`) a definition without
 /// arguments stands for: what a reading table pinned before a family's `MissingVersion` held a
 /// definition (`None`, `Some(NoValidVersion)`, `Some(Fixed(".."))`).
-// hidden: a bridge for the pins of the migration, deleted with the legacy enum
+// hidden: a bridge for the pins of the migration, deleted with the legacy names
 #[doc(hidden)]
 #[must_use]
 pub fn legacy_text_debug(def: &'static CodeDef<0>) -> String {
@@ -138,7 +136,7 @@ fn text_debug(code: &Code) -> String {
 // hidden: a bridge for the pins of the migration, deleted with the legacy names
 #[doc(hidden)]
 #[must_use]
-pub fn same_line(code: &DiagnosticCode, name: &str, line: &str) -> bool {
+pub fn same_line(code: &Code, name: &str, line: &str) -> bool {
     code.name() == name && code.to_string() == line && code.vanilla().as_deref() == Some(line)
 }
 
@@ -203,7 +201,7 @@ fn structured_debug(id: &str, args: &[String]) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::diagnostic::{Class, DiagnosticDetail, Kind, VanillaText, builders, codes};
+    use crate::diagnostic::{Class, DiagnosticDetail, Kind, builders, codes};
 
     /// A definition with the game's sentence and two arguments, as a family declares one.
     static WORDED_TWICE: CodeDef<2> = CodeDef::new(
@@ -215,8 +213,8 @@ mod tests {
     .game("between {} and {}")
     .was("InvalidValue");
 
-    fn finding(code: impl Into<DiagnosticCode>) -> Diagnostic {
-        Diagnostic::error(code.into())
+    fn finding(code: impl Into<Code>) -> Diagnostic {
+        Diagnostic::error(code)
     }
 
     /// A worded definition with the sentence tells what the legacy code with the text told;
@@ -224,14 +222,13 @@ mod tests {
     #[test]
     fn a_worded_definition_tells_the_line_of_the_legacy_text() {
         let legacy = "UnresolvedReference";
-        let worded =
-            DiagnosticCode::from(codes::UNRESOLVED_REFERENCE_WORDED.with(["no block a:b"]));
+        let worded = codes::UNRESOLVED_REFERENCE_WORDED.with(["no block a:b"]);
         assert!(same_line(&worded, legacy, "no block a:b"));
-        let other = DiagnosticCode::from(codes::UNRESOLVED_REFERENCE_WORDED.with(["no block c:d"]));
+        let other = codes::UNRESOLVED_REFERENCE_WORDED.with(["no block c:d"]);
         assert!(!same_line(&other, legacy, "no block a:b"));
-        let renamed = DiagnosticCode::from(codes::INVALID_REFERENCE_WORDED.with(["no block a:b"]));
+        let renamed = codes::INVALID_REFERENCE_WORDED.with(["no block a:b"]);
         assert!(!same_line(&renamed, legacy, "no block a:b"));
-        let own = DiagnosticCode::from(&codes::UNRESOLVED_REFERENCE);
+        let own = Code::from(&codes::UNRESOLVED_REFERENCE);
         assert!(!same_line(&own, legacy, &own.to_string()));
     }
 
@@ -241,12 +238,7 @@ mod tests {
         let code = codes::FIELD_SINCE_ENGINE.with(["1.26.50"]);
         assert_eq!(
             legacy_debug(&finding(code)),
-            format!(
-                "{:?}",
-                DiagnosticCode::FieldSinceEngine {
-                    since: crate::version::FormatVersion::new(1, 26, 50),
-                }
-            )
+            "FieldSinceEngine { since: FormatVersion { major: 1, minor: 26, patch: 50 } }"
         );
     }
 
@@ -256,13 +248,7 @@ mod tests {
         let code = codes::VERSION_TOO_LOW.with(["1.0.0", "1.13.0"]);
         assert_eq!(
             legacy_debug(&finding(code)),
-            format!(
-                "{:?}",
-                DiagnosticCode::VersionTooLow {
-                    version: "1.0.0".to_owned(),
-                    limit: "1.13.0".to_owned(),
-                }
-            )
+            r#"VersionTooLow { version: "1.0.0", limit: "1.13.0" }"#
         );
     }
 
@@ -292,63 +278,38 @@ mod tests {
     /// Each specific code renders as the `Debug` of the legacy code it stands for.
     #[test]
     fn a_specific_code_renders_as_the_legacy_code_it_replaces() {
-        let rows: Vec<(Diagnostic, DiagnosticCode)> = vec![
+        let rows: Vec<(Diagnostic, &str)> = vec![
             (
                 finding(&codes::INVALID_VALUE),
-                DiagnosticCode::InvalidValue { text: None },
+                "InvalidValue { text: None }",
             ),
             (
                 finding(codes::INVALID_VALUE_WORDED.with(["the game's line"])),
-                DiagnosticCode::InvalidValue {
-                    text: Some(VanillaText::Fixed("the game's line")),
-                },
+                r#"InvalidValue { text: Some(Fixed("the game's line")) }"#,
             ),
             (
                 finding(WORDED_TWICE.with(["1", "2"])),
-                DiagnosticCode::InvalidValue {
-                    text: Some(VanillaText::Formatted {
-                        template: "between {} and {}",
-                        args: vec!["1".to_owned(), "2".to_owned()],
-                    }),
-                },
+                r#"InvalidValue { text: Some(Formatted { template: "between {} and {}", args: ["1", "2"] }) }"#,
             ),
-            (
-                finding(&codes::LOSSY_CONVERSION),
-                DiagnosticCode::LossyConversion,
-            ),
+            (finding(&codes::LOSSY_CONVERSION), "LossyConversion"),
             (
                 finding(codes::SYNTAX.with(["expected `,`"])),
-                DiagnosticCode::MalformedInput {
-                    message: "expected `,`".to_owned(),
-                    text: None,
-                },
+                r#"MalformedInput { message: "expected `,`", text: None }"#,
             ),
             (
                 finding(codes::MALFORMED_INPUT_WORDED.with(["the game's line"]))
                     .detail(DiagnosticDetail::Syntax("expected `,`".to_owned())),
-                DiagnosticCode::MalformedInput {
-                    message: "expected `,`".to_owned(),
-                    text: Some(VanillaText::Fixed("the game's line")),
-                },
+                r#"MalformedInput { message: "expected `,`", text: Some(Fixed("the game's line")) }"#,
             ),
         ];
         for (specific, legacy) in rows {
-            assert_eq!(legacy_debug(&specific), format!("{legacy:?}"));
-            assert_eq!(
-                legacy_debug(&finding(legacy.clone())),
-                format!("{legacy:?}")
-            );
+            assert_eq!(legacy_debug(&specific), legacy);
         }
     }
 
     /// The reader's message of a syntax finding, wherever it is held.
     #[test]
-    fn the_syntax_message_is_read_from_the_legacy_code_the_detail_or_the_line() {
-        let legacy = finding(DiagnosticCode::MalformedInput {
-            message: "m".to_owned(),
-            text: None,
-        });
-        assert_eq!(legacy.syntax_message(), Some("m"));
+    fn the_syntax_message_is_read_from_the_detail_or_the_line() {
         let detailed = finding(codes::MALFORMED_INPUT_WORDED.with(["line"]))
             .detail(DiagnosticDetail::Syntax("m".to_owned()));
         assert_eq!(detailed.syntax_message(), Some("m"));
@@ -360,37 +321,29 @@ mod tests {
         assert_eq!(finding(&codes::INVALID_VALUE).syntax_message(), None);
     }
 
-    /// `syntax` renders as the legacy code without a text renders, an empty message included.
+    /// `syntax` renders as the legacy code without a text rendered, an empty message included.
     #[test]
     fn the_syntax_code_renders_the_legacy_line() {
-        for message in ["", "expected `,`"] {
-            let legacy = DiagnosticCode::MalformedInput {
-                message: message.to_owned(),
-                text: None,
-            };
-            let code = DiagnosticCode::from(builders::syntax(message));
-            assert_eq!(code.to_string(), legacy.to_string());
-            assert_eq!(code.name(), legacy.name());
+        for (message, line) in [("", "malformed input"), ("expected `,`", "expected `,`")] {
+            let code = builders::syntax(message);
+            assert_eq!(code.to_string(), line);
+            assert_eq!(code.name(), "MalformedInput");
         }
     }
 
-    /// A code's game sentence, of a legacy code and of a specific one.
+    /// A code's game sentence: its definition's, with its arguments.
     #[test]
-    fn a_code_s_game_sentence_is_its_text_or_its_definition_s() {
-        assert_eq!(DiagnosticCode::InvalidValue { text: None }.vanilla(), None);
+    fn a_code_s_game_sentence_is_its_definition_s() {
+        assert_eq!(Code::from(&codes::INVALID_VALUE).vanilla(), None);
         assert_eq!(
-            DiagnosticCode::InvalidValue {
-                text: Some(VanillaText::Fixed("line"))
-            }
-            .vanilla()
-            .as_deref(),
-            Some("line")
-        );
-        assert_eq!(DiagnosticCode::from(&codes::INVALID_VALUE).vanilla(), None);
-        assert_eq!(
-            DiagnosticCode::from(WORDED_TWICE.with(["1", "2"]))
+            codes::INVALID_VALUE_WORDED
+                .with(["line"])
                 .vanilla()
                 .as_deref(),
+            Some("line")
+        );
+        assert_eq!(
+            WORDED_TWICE.with(["1", "2"]).vanilla().as_deref(),
             Some("between 1 and 2")
         );
     }

@@ -15,7 +15,7 @@ use super::read::{read_meta, read_root, read_store_info, written_in};
 use super::text::{self, unresolved};
 use super::{PackKind, PersonaPieces, PieceMetadata, PieceStoreInfo, PieceType};
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Severity,
+    Code, Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Severity,
 };
 use bedrock_addon_core::document::{Document, Origin, Rejected, unversioned};
 use bedrock_addon_core::json::Value;
@@ -170,7 +170,7 @@ impl PersonaPiece {
             for path in &index.piece_files {
                 if !path.as_str().starts_with("models/") {
                     of_pack.push(at_file(
-                        DiagnosticCode::from(&core_codes::IGNORED_FILE),
+                        Code::from(&core_codes::IGNORED_FILE),
                         Severity::Info,
                         path,
                     ));
@@ -202,7 +202,7 @@ impl PersonaPiece {
                 // The client makes no piece of a folder without a meta file, in silence: an
                 // information of the crate's own.
                 of_pack.push(at_file(
-                    DiagnosticCode::from(&core_codes::MISSING_REQUIRED_FIELD),
+                    Code::from(&core_codes::MISSING_REQUIRED_FIELD),
                     Severity::Info,
                     &directory_path(directory),
                 ));
@@ -212,7 +212,7 @@ impl PersonaPiece {
                 // A later meta file replaces the earlier in the folder's slot, in silence: an
                 // information of the crate's own.
                 of_pack.push(at_file(
-                    DiagnosticCode::from(&core_codes::SHADOWED_DEFINITION),
+                    Code::from(&core_codes::SHADOWED_DEFINITION),
                     Severity::Info,
                     &directory_path(directory),
                 ));
@@ -235,7 +235,7 @@ impl PersonaPiece {
             // finding, at the first folder that is not the kept one. The game says nothing: an
             // information of the crate's own.
             of_pack.push(at_file(
-                DiagnosticCode::from(&core_codes::IDENTIFIER_COLLISION),
+                Code::from(&core_codes::IDENTIFIER_COLLISION),
                 Severity::Info,
                 &directory_path(second),
             ));
@@ -261,7 +261,7 @@ fn shared_identities_and_unused_texts(
         for piece in pieces {
             if !seen.insert(piece.id) {
                 let mut found = at_file(
-                    DiagnosticCode::from(&core_codes::IDENTIFIER_COLLISION),
+                    Code::from(&core_codes::IDENTIFIER_COLLISION),
                     Severity::Info,
                     &piece.meta.origin().path,
                 );
@@ -277,7 +277,7 @@ fn shared_identities_and_unused_texts(
             && index.with_texts.contains(directory);
         if unused {
             of_pack.push(at_file(
-                DiagnosticCode::from(&core_codes::IGNORED_FILE),
+                Code::from(&core_codes::IGNORED_FILE),
                 Severity::Info,
                 &directory_path(&join(directory, "texts")),
             ));
@@ -286,7 +286,7 @@ fn shared_identities_and_unused_texts(
 }
 
 /// A finding about the file (or folder) `path`.
-fn at_file(code: DiagnosticCode, severity: Severity, path: &PackPath) -> Diagnostic {
+fn at_file(code: Code, severity: Severity, path: &PackPath) -> Diagnostic {
     let mut found = Diagnostic::error(code).severity(severity);
     found.location.path = Some(path.clone());
     found
@@ -493,7 +493,7 @@ impl<S: PieceSource> Load<'_, S> {
                     // geometry empty; the piece is kept: a kept error.
                     findings.push(
                         at_file(
-                            codes::GEOMETRY_NOT_FOUND.with([path.as_str()]).into(),
+                            codes::GEOMETRY_NOT_FOUND.with([path.as_str()]),
                             Severity::Error,
                             path,
                         )
@@ -522,7 +522,7 @@ impl<S: PieceSource> Load<'_, S> {
                             // geometry empty; the piece is kept: a kept error.
                             findings.push(
                                 at_file(
-                                    codes::GEOMETRY_NOT_PARSED.with([path.as_str()]).into(),
+                                    codes::GEOMETRY_NOT_PARSED.with([path.as_str()]),
                                     Severity::Error,
                                     path,
                                 )
@@ -557,7 +557,7 @@ impl<S: PieceSource> Load<'_, S> {
                 // information.
                 findings.push(
                     at_file(
-                        core_codes::READ_ERROR.with([kind.to_string()]).into(),
+                        core_codes::READ_ERROR.with([kind.to_string()]),
                         Severity::Info,
                         path,
                     )
@@ -729,7 +729,7 @@ pub(super) fn missing_models(
                 unresolved(
                     "geometry",
                     name,
-                    codes::GEOMETRY_NAME_NOT_FOUND.with([name, on]).into(),
+                    codes::GEOMETRY_NAME_NOT_FOUND.with([name, on]),
                     entry("geometry_sources", index, "geometry"),
                 )
                 .into_kept(),
@@ -820,9 +820,7 @@ pub(super) fn kept_animations(
                     unresolved(
                         "animation",
                         name,
-                        codes::ANIMATION_NOT_IN_FILE
-                            .with([name, id, joined.as_str()])
-                            .into(),
+                        codes::ANIMATION_NOT_IN_FILE.with([name, id, joined.as_str()]),
                         entry("animation_sources", index, "name"),
                     )
                     .into_kept(),

@@ -5,7 +5,7 @@ use super::super::{
     At, Findings, LinkCx, Member, States, Target, block_descriptor, block_specifier, invalid,
     kinds, unresolved,
 };
-use crate::diagnostic::{JsonPath, JsonPathSegment, Severity, VanillaText};
+use crate::diagnostic::{JsonPath, JsonPathSegment, Severity};
 use crate::document::Document;
 use crate::families::feature::{Feature, Reference};
 use crate::id::BlockId;
@@ -99,7 +99,7 @@ fn single_block(
     // The game logs this at the error level and returns without the block, the feature kept:
     // a kept error.
     let at = At::new(member.origin, name_at(member, object), Severity::Error)
-        .with_text(VanillaText::Fixed(PLACES_BLOCK));
+        .with_text(String::from(PLACES_BLOCK));
     out.push(unresolved(at, kinds::BLOCK, name.as_str(), hint).into_kept());
     true
 }
@@ -129,7 +129,7 @@ fn multi_block(
     };
     if block.description.traits.multi_block.is_none() {
         let at = At::new(member.origin, name_at(member, *object), Severity::Error)
-            .with_text(VanillaText::Fixed(NOT_A_MULTI_BLOCK));
+            .with_text(String::from(NOT_A_MULTI_BLOCK));
         out.push(invalid(at, kinds::BLOCK, name.as_str()));
         return true;
     }
@@ -140,7 +140,7 @@ fn multi_block(
             path.push("states");
             path.push(PART);
             let at = At::new(member.origin, path, Severity::Error)
-                .with_text(VanillaText::Fixed(NOT_THE_STARTING_PART));
+                .with_text(String::from(NOT_THE_STARTING_PART));
             out.push(invalid(at, kinds::BLOCK_STATE, PART));
             true
         }

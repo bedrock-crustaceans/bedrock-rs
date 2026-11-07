@@ -1,7 +1,7 @@
 //! Every row of the biome fixtures, one test each, named after the row.
 
 use bedrock_addon::diagnostic::codes;
-use bedrock_addon::diagnostic::{DiagnosticCode, Diagnostics, Severity};
+use bedrock_addon::diagnostic::{Code, Diagnostics, Severity};
 use bedrock_addon::document::{ComponentRef, Content, JsonDocument as _};
 use bedrock_addon::families::biome::component::{
     Builder, Climate, NoiseType, OverworldHeight, ReplaceBiomes, SubsurfaceBuilder, SurfaceBuilder,
@@ -114,7 +114,7 @@ fn b04_1_21_110_floor() {
 
 /// The `UnsupportedVersion` "no parser available" error of `version`, then our hint.
 #[track_caller]
-fn below_floor(diagnostics: &Diagnostics, version: &str) -> DiagnosticCode {
+fn below_floor(diagnostics: &Diagnostics, version: &str) -> Code {
     let unsupported = with(diagnostics, |c| c.is(&codes::NO_PARSER_FOR_VERSION));
     assert_eq!(unsupported.len(), 1, "{diagnostics:#?}");
     assert_eq!(unsupported[0].severity, Severity::Error);
@@ -138,7 +138,7 @@ fn below_floor(diagnostics: &Diagnostics, version: &str) -> DiagnosticCode {
 fn b01_1_12_0_name_keyed() {
     let found = rejected(&fixture("b01_1_12_0_name_keyed/plains.json"), &context());
     let hint = below_floor(&found, "1.12.0");
-    assert_eq!(hint, DiagnosticCode::from(&codes::BIOME_FORMAT_HINT_LEGACY));
+    assert_eq!(hint, Code::from(&codes::BIOME_FORMAT_HINT_LEGACY));
 }
 
 /// `b02_1_13_0_tag_components`: format 1.13.0 (tags as empty components) is below the floor,
@@ -152,9 +152,7 @@ fn b02_1_13_0_tag_components() {
     let hint = below_floor(&found, "1.13.0");
     assert_eq!(
         hint,
-        DiagnosticCode::from(
-            codes::BIOME_FORMAT_HINT_EXPERIMENTAL.with([FormatVersion::new(1, 13, 0).to_string()])
-        )
+        codes::BIOME_FORMAT_HINT_EXPERIMENTAL.with([FormatVersion::new(1, 13, 0).to_string()])
     );
 }
 
@@ -165,9 +163,7 @@ fn b03_1_20_60_tags() {
     let hint = below_floor(&found, "1.20.60");
     assert_eq!(
         hint,
-        DiagnosticCode::from(
-            codes::BIOME_FORMAT_HINT_EXPERIMENTAL.with([FormatVersion::new(1, 20, 60).to_string()])
-        )
+        codes::BIOME_FORMAT_HINT_EXPERIMENTAL.with([FormatVersion::new(1, 20, 60).to_string()])
     );
 }
 
@@ -806,10 +802,8 @@ fn b16_1_20_60_surface_components() {
     let hint = below_floor(&found, "1.20.60");
     assert_eq!(
         hint,
-        DiagnosticCode::from(
-            codes::BIOME_FORMAT_HINT_EXPERIMENTAL_SURFACE
-                .with([FormatVersion::new(1, 20, 60).to_string()])
-        )
+        codes::BIOME_FORMAT_HINT_EXPERIMENTAL_SURFACE
+            .with([FormatVersion::new(1, 20, 60).to_string()])
     );
     assert!(hint.to_string().ends_with(
         "and replace minecraft:surface_parameters / minecraft:*_surface with minecraft:surface_builder)"

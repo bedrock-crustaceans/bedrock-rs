@@ -7,8 +7,8 @@ use super::lint::has_wrong_arity;
 use super::{Function, FunctionLine, TickFunction, TickList, codes};
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    CodeDef, Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Phase, Severity,
-    Span, builders,
+    Code, CodeDef, Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Phase, Severity, Span,
+    builders,
 };
 use bedrock_addon_core::id::FunctionPath;
 use bedrock_addon_core::json::{MAX_JSON_DEPTH, TooDeep, Value, check_depth, strip_bom};
@@ -276,7 +276,7 @@ pub(super) fn parse_tick(bytes: &[u8], command_version: u8) -> ParsedTick {
         .filter(|value| !value.is_null());
     let Some(values) = values else {
         parsed.diagnostics.push(at_values(
-            DiagnosticCode::from(codes::TICK_NO_VALUES.with([VALUES])),
+            codes::TICK_NO_VALUES.with([VALUES]),
             Severity::Error,
             None,
         ));
@@ -284,7 +284,7 @@ pub(super) fn parse_tick(bytes: &[u8], command_version: u8) -> ParsedTick {
     };
     let Some(values) = values.as_array() else {
         parsed.diagnostics.push(at_values(
-            DiagnosticCode::from(codes::TICK_VALUES_NOT_ARRAY.with([VALUES])),
+            codes::TICK_VALUES_NOT_ARRAY.with([VALUES]),
             Severity::Error,
             None,
         ));
@@ -321,7 +321,7 @@ pub(super) fn parse_tick(bytes: &[u8], command_version: u8) -> ParsedTick {
 pub(super) const VALUES: &str = "values";
 
 /// A finding at `values`, or at its entry `index`; the loader adds the pack and the file.
-fn at_values(code: DiagnosticCode, severity: Severity, index: Option<usize>) -> Diagnostic {
+fn at_values(code: Code, severity: Severity, index: Option<usize>) -> Diagnostic {
     let mut at = JsonPath::new().child(VALUES);
     if let Some(index) = index {
         at.push_index(index);
@@ -336,7 +336,7 @@ fn at_values(code: DiagnosticCode, severity: Severity, index: Option<usize>) -> 
 /// has.
 pub(super) fn not_found(name: &str, index: Option<usize>) -> Diagnostic {
     at_values(
-        DiagnosticCode::from(codes::TICK_NOT_FOUND.with([name])),
+        codes::TICK_NOT_FOUND.with([name]),
         // The game logs this as a warning, skips the entry and goes on with the next.
         Severity::Warning,
         index,

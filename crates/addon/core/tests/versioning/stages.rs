@@ -3,8 +3,8 @@
 //! version fallback; what a step's `UpgradeCx` carries; the older era's
 //! `from_only` component enum; Molang through the component map.
 
+use bedrock_addon_core::diagnostic::Severity;
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
 use bedrock_addon_core::document::{ComponentRef, VersionInfo};
 use bedrock_addon_core::json::JsonSlice;
 use bedrock_addon_core::load::LoadContext;
@@ -324,7 +324,7 @@ fn molang_reaches_a_component_through_the_map() {
     assert_eq!(
         codes(&outcome),
         [(
-            DiagnosticCode::from(core_codes::MOLANG_NOT_CHECKED.with([1.to_string()])),
+            core_codes::MOLANG_NOT_CHECKED.with([1.to_string()]),
             Severity::Info
         )]
     );

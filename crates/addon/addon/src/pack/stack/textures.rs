@@ -6,7 +6,7 @@ use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::pack_identity::PackRef;
 
 use super::{PackStack, Resource};
-use crate::diagnostic::{Diagnostic, DiagnosticCode, Location, Phase, Severity};
+use crate::diagnostic::{Code, Diagnostic, Location, Phase, Severity};
 use crate::document::{Document, Rejected};
 use crate::families::texture_file::{ImageInfo, TextureFiles, TextureImage, TextureSource};
 use crate::families::texture_set::{LayerKind, TextureSet, TextureSets, layer_path, payload_at};
@@ -68,13 +68,13 @@ impl LayerImage<'_> {
     pub fn check(&self, bytes: &[u8]) -> Option<Diagnostic> {
         let format = self.image.format?;
         let code = match ImageInfo::read(format, bytes) {
-            None => DiagnosticCode::from(&core_codes::LAYER_IMAGE_UNDECODABLE),
+            None => Code::from(&core_codes::LAYER_IMAGE_UNDECODABLE),
             Some(info) => {
                 let channels = info.channels?;
                 if self.layer.channel_counts().contains(&channels) {
                     return None;
                 }
-                DiagnosticCode::from(&core_codes::LAYER_IMAGE_FORMAT)
+                Code::from(&core_codes::LAYER_IMAGE_FORMAT)
             }
         };
         let mut at = payload_at();

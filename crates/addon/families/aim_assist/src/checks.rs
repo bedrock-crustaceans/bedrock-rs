@@ -4,9 +4,7 @@
 use indexmap::IndexMap;
 
 use super::{AimAssistCategories, AimAssistPreset, codes};
-use bedrock_addon_core::diagnostic::{
-    CodeDef, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase,
-};
+use bedrock_addon_core::diagnostic::{CodeDef, Diagnostic, Diagnostics, JsonPath, Phase};
 use bedrock_addon_core::versioning::ValidateCx;
 use bedrock_addon_core::versioning::shape::{child, element, error, in_range, violation};
 
@@ -89,7 +87,7 @@ fn namespaced(
     } else {
         format
     };
-    let mut finding = error(DiagnosticCode::from(code.with([id])), at);
+    let mut finding = error(code.with([id]), at);
     finding.phase = Phase::Validate;
     Some(finding)
 }

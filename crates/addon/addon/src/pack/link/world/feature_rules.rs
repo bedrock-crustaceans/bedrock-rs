@@ -1,7 +1,7 @@
 //! The feature a rule places.
 
 use super::super::{At, Findings, LinkCx, Target, invalid, kinds, unresolved};
-use crate::diagnostic::{JsonPath, Severity, VanillaText};
+use crate::diagnostic::{JsonPath, Severity, sentence};
 use crate::families::feature::Feature;
 use crate::families::feature_rules::PlacementPass;
 use crate::pack::PackSide;
@@ -56,14 +56,11 @@ pub(super) fn run(cx: &LinkCx<'_>, out: &mut Findings) {
                         .stack_pack(PackSide::Behavior, &origin.pack)
                         .is_some_and(|pack| pack.context.is_base_game_pack);
                 let text = if placed.value().is_internal() && !of_the_game {
-                    VanillaText::Formatted {
-                        template: INTERNAL_FEATURE,
-                        args: vec![name.as_str().to_owned()],
-                    }
+                    sentence(INTERNAL_FEATURE, &[name.as_str().to_owned()])
                 } else if rule.conditions.pass() == Some(PlacementPass::Pregeneration)
                     && !is_cave_carver(placed.value())
                 {
-                    VanillaText::Fixed(ONLY_CAVE_CARVERS)
+                    String::from(ONLY_CAVE_CARVERS)
                 } else {
                     continue;
                 };

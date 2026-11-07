@@ -14,7 +14,7 @@ use std::collections::HashMap;
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
+    Code, Diagnostic, Diagnostics, JsonPath, Location, Phase, Severity,
 };
 use bedrock_addon_core::load::{
     Accept, CollectionLoader, LoadContext, StackCx, StackPack, Walk, WalkFile,
@@ -333,7 +333,7 @@ fn unread_scripts(members: &[Member], module: &Module<'_>) -> Option<Diagnostic>
     };
     let at = main.unwrap_or(first);
     Some(Diagnostic::new(
-        DiagnosticCode::from(&core_codes::FILE_NOT_LOADED),
+        Code::from(&core_codes::FILE_NOT_LOADED),
         Severity::Info,
         Phase::Read,
         Location::new(None, Some(at.file.path.clone()), JsonPath::new(), None),

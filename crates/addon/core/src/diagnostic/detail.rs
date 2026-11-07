@@ -1,11 +1,47 @@
-//! What a finding carries beyond its code: [`DiagnosticDetail`], its [`ReferenceHint`] and the
-//! [`ShadowReason`].
+//! What a finding carries beyond its code: [`DiagnosticDetail`], its [`ReferenceHint`], the
+//! [`NotFoundHint`] and the [`ShadowReason`].
 
 use std::fmt;
 
-use super::NotFoundHint;
 use crate::pack_identity::PackIdVersion;
 use crate::version::FormatVersion;
+
+/// Why an import specifier likely resolved to no file: the near miss a lint found.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub enum NotFoundHint {
+    /// The specifier leaves the pack's `scripts/` root.
+    EscapesRoot,
+    /// `.` or `..` segments in the middle of the path.
+    MidPathDots,
+    /// A file matches when case is ignored.
+    CaseMismatch,
+    /// A directory import (`./dir` for `./dir/index.js`).
+    DirectoryIndex,
+    /// The file exists with `.js` appended.
+    AppendedJs,
+    /// A JSON file imported as a module.
+    ImportedAsJson,
+    /// A bare package name (`lodash`), which no bundle resolves.
+    BarePackage,
+    /// The specifier repeats the `scripts/` prefix.
+    ScriptsPrefix,
+}
+
+impl fmt::Display for NotFoundHint {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(match self {
+            Self::EscapesRoot => "the path leaves the scripts root",
+            Self::MidPathDots => "the path has `.` or `..` in the middle",
+            Self::CaseMismatch => "a file matches when case is ignored",
+            Self::DirectoryIndex => "directory imports are not resolved",
+            Self::AppendedJs => "the file exists with `.js` appended",
+            Self::ImportedAsJson => "a JSON file cannot be imported",
+            Self::BarePackage => "bare package names are not resolved",
+            Self::ScriptsPrefix => "the path repeats the `scripts/` prefix",
+        })
+    }
+}
 
 /// Why the shared identifier map of client entities and attachables ignored a document
 /// (`visual::MergeStep::Ignore`): the reason of [`DiagnosticDetail::Shadow`] and of the

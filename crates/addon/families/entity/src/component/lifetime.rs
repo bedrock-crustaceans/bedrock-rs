@@ -6,7 +6,7 @@
 
 use crate::codes;
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath, Severity};
+use bedrock_addon_core::diagnostic::{Code, JsonPath, Severity};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::shared::{EventTrigger, Filter, FloatRange, IntRange};
@@ -146,7 +146,7 @@ impl Typed for Addrider {
             for key in ["entity_type", "spawn_event"] {
                 if json.remove(key).is_some() {
                     cx.push(
-                        DiagnosticCode::from(&core_codes::DROPPED_FIELD),
+                        Code::from(&core_codes::DROPPED_FIELD),
                         Severity::Info,
                         &JsonPath::new().child(key),
                     );
@@ -320,7 +320,7 @@ impl Typed for Transformation {
             // The game logs this at the error level and keeps the document with the default
             // delay: a kept error.
             cx.kept(
-                DiagnosticCode::from(&codes::DELAY_NOT_NUMBER_OR_OBJECT),
+                Code::from(&codes::DELAY_NOT_NUMBER_OR_OBJECT),
                 &JsonPath::new().child("delay"),
             );
             return true;

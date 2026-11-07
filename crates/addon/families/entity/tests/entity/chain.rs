@@ -1,7 +1,7 @@
 //! The version chain: contiguity, struct selection, the
 //! floor and the ceiling, beta documents, the in-payload version.
 
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon_core::diagnostic::{Code, Severity};
 use bedrock_addon_core::document::JsonDocument;
 use bedrock_addon_core::json::JsonSlice;
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput};
@@ -81,10 +81,8 @@ fn below_the_floor_is_unsupported_with_the_floor_text() {
     assert_eq!(found.len(), 1);
     assert_eq!(
         found[0].code,
-        DiagnosticCode::from(
-            bedrock_addon_core::diagnostic::codes::USE_FORMAT_VERSION
-                .with(["entity", "demo:x", "1.8.0"])
-        )
+        bedrock_addon_core::diagnostic::codes::USE_FORMAT_VERSION
+            .with(["entity", "demo:x", "1.8.0"])
     );
 }
 
@@ -117,7 +115,7 @@ fn a_missing_version_is_an_information_and_parses_at_the_floor_deviation() {
     assert_eq!(found[0].severity, Severity::Info);
     assert_eq!(
         found[0].code,
-        DiagnosticCode::from(&bedrock_addon_core::diagnostic::codes::NO_FORMAT_VERSION_FIELD)
+        Code::from(&bedrock_addon_core::diagnostic::codes::NO_FORMAT_VERSION_FIELD)
     );
 }
 

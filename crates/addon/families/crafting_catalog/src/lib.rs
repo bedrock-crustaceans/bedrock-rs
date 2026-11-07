@@ -45,9 +45,7 @@ pub(crate) use bedrock_addon_core::version::known::V1_26_50;
 use crate::history::CatalogHistory;
 use crate::read::parse_catalog;
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, builders,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath, Severity, builders};
 use bedrock_addon_core::document::{Document, JsonDocument, JsonPlaced, Origin, Rejected};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::load::DocumentSource;
@@ -391,10 +389,8 @@ fn vanilla_checks(diagnostics: &mut Diagnostics, document: JsonSlice<'_>) {
             }),
             _ if use_format => diagnostics.push(below_floor()),
             _ if above_engine && let Some(version) = no_parser => {
-                finding.code = DiagnosticCode::from(
-                    core_codes::FORMAT_VERSION_ABOVE_ENGINE
-                        .with([version, ENGINE_VERSION.to_string()]),
-                );
+                finding.code = core_codes::FORMAT_VERSION_ABOVE_ENGINE
+                    .with([version, ENGINE_VERSION.to_string()]);
                 diagnostics.push(finding);
             }
             _ => diagnostics.push(finding),

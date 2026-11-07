@@ -12,7 +12,7 @@ use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::document::{ComponentMap, Origin};
 
 use super::super::{At, Findings, LinkCx, Target, kinds, unresolved};
-use crate::diagnostic::{DiagnosticCode, JsonPath, Severity, VanillaText};
+use crate::diagnostic::{Code, JsonPath, Severity, sentence};
 use crate::families::item::component::{Icon, ItemComponent, Tags, Wearable, WearableSlot};
 use crate::families::item::trim::TrimData;
 use crate::families::item::{ItemFormat, LegacyItemData};
@@ -130,11 +130,11 @@ impl Subject<'_> {
         if !icon.textures.is_empty() && !icon.textures.contains_key("default") {
             // The game sets the item's icon to the empty name.
             let at = At::new(self.origin, Self::icon_at(&["textures"]), Severity::Error);
-            out.push(at.diagnostic(DiagnosticCode::from(builders::worded(
+            out.push(at.diagnostic(builders::worded(
                 &core_codes::MISSING_REQUIRED_FIELD,
                 &core_codes::MISSING_REQUIRED_FIELD_WORDED,
-                (formatted(NO_DEFAULT, vec![self.id.as_str().to_owned()])).as_ref(),
-            ))));
+                formatted(NO_DEFAULT, &[self.id.as_str()]).as_deref(),
+            )));
         }
         for (key, name) in &icon.textures {
             // The file may hold the `default` texture as the bare name, as `texture` or as
@@ -148,7 +148,7 @@ impl Subject<'_> {
                 Role::Palette => continue,
                 Role::Unread if cx.lints() => {
                     let at = At::new(self.origin, path.clone(), Severity::Info);
-                    out.push(at.diagnostic(DiagnosticCode::from(&core_codes::NO_EFFECT)));
+                    out.push(at.diagnostic(Code::from(&core_codes::NO_EFFECT)));
                 }
                 Role::Unread | Role::Read => {}
             }
@@ -166,11 +166,11 @@ impl Subject<'_> {
                 path.push("slot");
                 // The game logs this at the warning level: a warning.
                 let at = At::new(self.origin, path, Severity::Warning);
-                out.push(at.diagnostic(DiagnosticCode::from(builders::worded(
+                out.push(at.diagnostic(builders::worded(
                     &core_codes::INVALID_VALUE,
                     &core_codes::INVALID_VALUE_WORDED,
-                    (formatted(NOT_ARMOR, vec![self.id.as_str().to_owned()])).as_ref(),
-                ))));
+                    formatted(NOT_ARMOR, &[self.id.as_str()]).as_deref(),
+                )));
             }
             Some(_) => {}
         }
@@ -181,11 +181,11 @@ impl Subject<'_> {
     // Both lines are logged at the warning level: warnings.
     fn no_trimmed_icons(&self, out: &mut Findings, text: &'static str) {
         let at = At::new(self.origin, components_at(), Severity::Warning);
-        out.push(at.diagnostic(DiagnosticCode::from(builders::worded(
+        out.push(at.diagnostic(builders::worded(
             &core_codes::MISSING_REQUIRED_FIELD,
             &core_codes::MISSING_REQUIRED_FIELD_WORDED,
-            (formatted(text, vec![self.id.as_str().to_owned()])).as_ref(),
-        ))));
+            formatted(text, &[self.id.as_str()]).as_deref(),
+        )));
     }
 
     /// The icon of an item of the legacy item format: the bare name, or `texture`.
@@ -218,14 +218,11 @@ impl Subject<'_> {
         };
         let breadcrumb = format!("{} -> components -> minecraft:icon: ", self.id.as_str());
         let text = match &hint {
-            Some(crate::diagnostic::ReferenceHint::CaseMismatch(tile)) => VanillaText::Formatted {
-                template: MISSING_ASSET_BY_CASE,
-                args: vec![breadcrumb, name.to_owned(), tile.clone()],
-            },
-            _ => VanillaText::Formatted {
-                template: MISSING_ASSET,
-                args: vec![breadcrumb, name.to_owned()],
-            },
+            Some(crate::diagnostic::ReferenceHint::CaseMismatch(tile)) => sentence(
+                MISSING_ASSET_BY_CASE,
+                &[breadcrumb, name.to_owned(), tile.clone()],
+            ),
+            _ => sentence(MISSING_ASSET, &[breadcrumb, name.to_owned()]),
         };
         // The linked-asset check's line is at the error level and nothing is dropped: a kept
         // error. With an atlas of an add-on's own alone the tile may be the game's, so that
@@ -261,10 +258,10 @@ fn components_at() -> JsonPath {
 /// A vanilla text with arguments.
 #[allow(
     clippy::unnecessary_wraps,
-    reason = "every call site fills an `Option<VanillaText>` field"
+    reason = "every call site fills an `Option<String>` field"
 )]
-fn formatted(template: &'static str, args: Vec<String>) -> Option<VanillaText> {
-    Some(VanillaText::Formatted { template, args })
+fn formatted(template: &'static str, args: &[&str]) -> Option<String> {
+    Some(sentence(template, args))
 }
 
 /// What the game does with a key of `textures`.

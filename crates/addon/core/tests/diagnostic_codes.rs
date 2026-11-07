@@ -1,11 +1,13 @@
-//! The code vocabulary: every code the crate lists is a `DiagnosticCode` variant, and no name from
-//! the rejected list is one.
+//! The code vocabulary, a tombstone: the names of the deleted legacy `DiagnosticCode` variants,
+//! frozen, which a definition's `.was` names until the pin rename retires them; the ids of the
+//! core's definitions; and the names and ids that were considered for codes and rejected, which
+//! no code may take.
 
-use bedrock_addon_core::diagnostic::{Class, CodeDef, DiagnosticCode, Kind, codes};
+use bedrock_addon_core::diagnostic::{Class, CodeDef, Kind, codes, testing};
 
-/// Every code: the document-level list, the RP-side and shared codes, every family's codes and
-/// the manifest variants.
-const LISTED_CODES: &[&str] = &[
+/// The names of the legacy variants, frozen when the enum was deleted: the document-level list,
+/// the RP-side and shared codes, every family's codes and the manifest variants.
+const LEGACY_NAMES: &[&str] = &[
     // document level
     "UnsupportedVersion",
     "BetaFeaturesNotEnabled",
@@ -186,8 +188,6 @@ const LISTED_CODES: &[&str] = &[
     "VersionTooHigh",
     "VersionTooLow",
     "MinEngineVersionCapFormatVersion1",
-    // a code declared by a `CodeDef`, named by its owner and its own name
-    "Specific",
 ];
 
 /// Names that were considered for codes and rejected: they must never become codes.
@@ -249,37 +249,80 @@ const REJECTED_NAMES: &[&str] = &[
     "PieceIdIgnored",
 ];
 
+/// The rejected names as ids of the core's (`JsonSyntax` is `core/json_syntax`): no definition of
+/// the core's may take one. Two rejected names are left out, as their ids are definitions of
+/// the game's sentences: `core/parse_error` (`parse error`, a `MalformedInput`) and
+/// `core/value_not_allowed` (a value the schema does not allow, an `InvalidValue`).
+const REJECTED_IDS: &[&str] = &[
+    "core/json_syntax",
+    "core/invalid_json",
+    "core/invalid_document",
+    "core/malformed_envelope",
+    "core/envelope_shape",
+    "core/missing_field",
+    "core/missing_textures",
+    "core/wrong_type",
+    "core/type_mismatch",
+    "core/deserialize_error",
+    "core/missing_version",
+    "core/invalid_format_version",
+    "core/invalid_version_shape",
+    "core/invalid_version",
+    "core/future_format_version",
+    "core/constraint_violation",
+    "core/out_of_range",
+    "core/array_length",
+    "core/empty_array",
+    "core/invalid_uuid",
+    "core/unknown_enum_value",
+    "core/unknown_anim_type",
+    "core/value_clamped",
+    "core/color_channel_out_of_range",
+    "core/empty_file",
+    "core/molang_compile",
+    "core/duplicate_definition",
+    "core/duplicate_pack_id",
+    "core/overridden",
+    "core/shadowed_document",
+    "core/io_error",
+    "core/unknown_field",
+    "core/cycle",
+    "core/poi_tag_cycle",
+    "core/unresolved_default",
+    "core/undeclared_array",
+    "core/unknown_parent_geometry",
+    "core/unknown_parent_bone",
+    "core/poi_unknown_block",
+    "core/poi_unknown_tag",
+    "core/missing_texture",
+    "core/layer_image_missing",
+    "core/reserved_namespace",
+    "core/identifier_without_namespace",
+    "core/invalid_identifier",
+    "core/experiment_required",
+    "core/texture_set_without_pbr_capability",
+    "core/script_module_skipped",
+    "core/script_entry_unsupported",
+    "core/script_entry_missing",
+    "core/module_not_permitted",
+    "core/piece_id_ignored",
+];
+
+/// The frozen list is the one `.was` checks against, name for name.
 #[test]
-fn every_listed_code_is_a_variant() {
-    let missing: Vec<_> = LISTED_CODES
-        .iter()
-        .filter(|name| !DiagnosticCode::NAMES.contains(name))
-        .collect();
-    assert!(
-        missing.is_empty(),
-        "listed codes without a variant: {missing:?}"
-    );
+fn the_frozen_names_are_the_names_was_checks() {
+    let mut frozen = LEGACY_NAMES.to_vec();
+    frozen.sort_unstable();
+    let mut checked: Vec<&str> = testing::legacy_names().collect();
+    checked.sort_unstable();
+    assert_eq!(frozen, checked);
 }
 
-/// The list knows every variant, so a code added to the enum is added here before the suite is
-/// green.
 #[test]
-fn every_variant_is_a_code_of_the_list() {
-    let unlisted: Vec<_> = DiagnosticCode::NAMES
-        .iter()
-        .filter(|name| !LISTED_CODES.contains(name))
-        .collect();
-    assert!(
-        unlisted.is_empty(),
-        "variants missing from the code list: {unlisted:?}"
-    );
-}
-
-#[test]
-fn no_rejected_name_is_a_variant() {
+fn no_rejected_name_is_a_legacy_name() {
     let revived: Vec<_> = REJECTED_NAMES
         .iter()
-        .filter(|name| DiagnosticCode::NAMES.contains(name))
+        .filter(|name| LEGACY_NAMES.contains(name))
         .collect();
     assert!(
         revived.is_empty(),
@@ -288,28 +331,24 @@ fn no_rejected_name_is_a_variant() {
 }
 
 #[test]
-fn code_names_are_unique() {
-    let mut names = DiagnosticCode::NAMES.to_vec();
-    names.sort_unstable();
-    names.dedup();
-    assert_eq!(names.len(), DiagnosticCode::NAMES.len());
+fn no_rejected_id_is_a_core_definition() {
+    let revived: Vec<_> = codes::ALL
+        .iter()
+        .map(|meta| meta.id())
+        .filter(|id| REJECTED_IDS.contains(id))
+        .collect();
+    assert!(
+        revived.is_empty(),
+        "rejected ids used as codes: {revived:?}"
+    );
 }
 
 #[test]
-fn name_is_the_variant_name() {
-    let codes = [
-        DiagnosticCode::UnknownSound { text: None },
-        DiagnosticCode::UnrecognizedField { text: None },
-        DiagnosticCode::MolangNotChecked { fields: 1 },
-        DiagnosticCode::ReadError {
-            kind: std::io::ErrorKind::NotFound,
-            text: None,
-        },
-    ];
-    for code in codes {
-        let debug = format!("{code:?}");
-        assert!(debug.starts_with(code.name()), "{debug} vs {}", code.name());
-    }
+fn legacy_names_are_unique() {
+    let mut names = LEGACY_NAMES.to_vec();
+    names.sort_unstable();
+    names.dedup();
+    assert_eq!(names.len(), LEGACY_NAMES.len());
 }
 
 /// A code declared by a definition beside its rule.
@@ -320,15 +359,14 @@ static DENSITY_OUT_OF_UNIT: CodeDef<1> = CodeDef::new(
     "fog density {} is outside [0, 1]",
 );
 
-/// A specific code is the one `Specific` variant of the list, and is known by its stable id,
-/// `owner/name`: its name is its own, never a listed or a rejected variant name.
+/// A code is known by its stable id, `owner/name`: a code that was no legacy variant has its
+/// own name, never a legacy or a rejected variant name.
 #[test]
 fn a_specific_code_is_known_by_owner_and_name() {
-    let code = DiagnosticCode::from(DENSITY_OUT_OF_UNIT.with(["2"]));
-    assert_eq!(code.variant_name(), "Specific");
+    let code = DENSITY_OUT_OF_UNIT.with(["2"]);
     assert_eq!(code.id(), "fog/density_out_of_unit");
     assert_eq!(code.name(), "density_out_of_unit");
-    assert!(!LISTED_CODES.contains(&code.name()));
+    assert!(!LEGACY_NAMES.contains(&code.name()));
     assert!(!REJECTED_NAMES.contains(&code.name()));
 }
 
@@ -643,7 +681,7 @@ fn every_core_definition_is_listed_by_id() {
 }
 
 /// No two definitions share an id, and every one is the core's and names the legacy variant it
-/// replaces: a listed one, never a rejected name.
+/// replaces: a legacy one, never a rejected name.
 #[test]
 fn core_definition_ids_are_unique_and_replace_listed_codes() {
     let mut ids: Vec<&str> = codes::ALL.iter().map(|meta| meta.id()).collect();
@@ -653,7 +691,7 @@ fn core_definition_ids_are_unique_and_replace_listed_codes() {
     for meta in codes::ALL {
         assert_eq!(meta.owner(), "core", "{}", meta.id());
         let legacy = meta.legacy().unwrap_or_default();
-        assert!(LISTED_CODES.contains(&legacy), "{}", meta.id());
+        assert!(LEGACY_NAMES.contains(&legacy), "{}", meta.id());
         assert!(!REJECTED_NAMES.contains(&legacy), "{}", meta.id());
         assert_eq!(meta.name(), legacy, "{}", meta.id());
     }

@@ -68,9 +68,7 @@ use indexmap::IndexMap;
 
 use super::{Coerce, Coercing, JsonSlice, Value};
 use crate::diagnostic::codes as core_codes;
-use crate::diagnostic::{
-    Class, Code, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, Span,
-};
+use crate::diagnostic::{Class, Code, Diagnostic, Diagnostics, JsonPath, Severity, Span};
 use crate::versioning::{NullHandling, Reading, Scalars};
 
 // hidden: API not yet reviewed
@@ -528,7 +526,7 @@ impl<'d> Read<'d> {
 
     /// Tells `code` at `path` and `span`, graded by the reading's
     /// [`on_member_failure`](Reading::on_member_failure).
-    fn fail(&mut self, code: DiagnosticCode, path: JsonPath, span: Option<Span>) {
+    fn fail(&mut self, code: Code, path: JsonPath, span: Option<Span>) {
         let grading = crate::schema::grade(self.reading.on_member_failure);
         let mut finding = Diagnostic::error(code).severity(grading.severity).at(path);
         finding.location.span = span;
@@ -562,7 +560,7 @@ impl<'d> Read<'d> {
             || Code::from(&core_codes::INVALID_TYPE),
             |text| core_codes::INVALID_TYPE_WORDED.with([text]),
         );
-        self.fail(code.into(), node.path.clone(), node.span());
+        self.fail(code, node.path.clone(), node.span());
     }
 
     /// The members of `node`; a [wrong type](Self::wrong_type) when it is no object.
@@ -703,11 +701,7 @@ impl<'d> Read<'d> {
             || Code::from(&core_codes::MISSING_REQUIRED_FIELD),
             |text| core_codes::MISSING_REQUIRED_FIELD_WORDED.with([text]),
         );
-        self.fail(
-            code.into(),
-            members.node.path.child(key),
-            members.node.span(),
-        );
+        self.fail(code, members.node.path.child(key), members.node.span());
     }
 
     /// Tells every member of `members` that `known` does not name, in file order, under

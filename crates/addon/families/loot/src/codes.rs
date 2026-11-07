@@ -237,6 +237,11 @@ pub static ENCHANT_NAME: CodeDef<1> = CodeDef::new(
 .game("Error loading \"enchant_book_for_trading\" function, \"name\": {} is not a valid enchantment name")
 .was("UnresolvedReference");
 
+/// Vanilla's line for a loot entry's item name the game does not have, with `%s` written `{}`.
+/// The link pass raises it (`addon/src/pack/link/content/loot_item.rs`), which resolves item
+/// names, as the sentence of its unresolved-reference finding; the family's walkers do not.
+pub const INVALID_ITEM: &str = "{} is not a valid item name.";
+
 /// Every definition of this table, for the id registry.
 pub static ALL: &[&CodeMeta] = &[
     INVALID_TABLE.meta(),
@@ -262,3 +267,18 @@ pub static ALL: &[&CodeMeta] = &[
     ENCHANT_ARRAY.meta(),
     ENCHANT_NAME.meta(),
 ];
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use bedrock_addon_core::diagnostic::sentence;
+
+    #[test]
+    fn the_invalid_item_line_fills_its_placeholder() {
+        assert_eq!(INVALID_ITEM.matches("{}").count(), 1);
+        assert_eq!(
+            sentence(INVALID_ITEM, &["a:b"]),
+            "a:b is not a valid item name."
+        );
+    }
+}

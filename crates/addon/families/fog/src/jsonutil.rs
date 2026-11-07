@@ -9,7 +9,7 @@ use crate::history::v1_21_90::{
     TransitionFog, Volumetric,
 };
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, JsonPath, Severity};
+use bedrock_addon_core::diagnostic::{Code, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::json::JsonSlice;
 use bedrock_addon_core::json::node_tree::{
     Failure, Group, Hit, Kind, Lossy, Names, Node, Order, Rules, Validation, Walk, percent_f,
@@ -163,7 +163,7 @@ fn description_node(walk: &mut Walk, node: Node<'_>) -> Option<Description> {
         };
         if !is_namespaced(&text) {
             // The node's own message is not recorded; the file fails with the closing line.
-            walk.error(DiagnosticCode::from(&core_codes::INVALID_VALUE), v.span());
+            walk.error(Code::from(&core_codes::INVALID_VALUE), v.span());
             return Hit::Failed;
         }
         identifier = Some(text);
@@ -237,7 +237,7 @@ fn distance_type(walk: &mut Walk, node: Node<'_>) -> Option<DistanceType> {
         // The type is held, and written in lower case: the spelling of the file is noted
         // (ours; the game reads both alike).
         walk.push(
-            DiagnosticCode::from(&core_codes::VALUE_REWRITTEN),
+            Code::from(&core_codes::VALUE_REWRITTEN),
             Severity::Info,
             Some(node.span()),
         );
@@ -252,7 +252,7 @@ fn hex(walk: &mut Walk, node: Node<'_>) -> Option<String> {
     if is_hex(&text, 6) {
         Some(text)
     } else {
-        walk.error(DiagnosticCode::from(&codes::COLOR_FORMAT), node.span());
+        walk.error(Code::from(&codes::COLOR_FORMAT), node.span());
         None
     }
 }
@@ -266,7 +266,7 @@ fn rgb_nodes<'a>(walk: &mut Walk, node: Node<'a>) -> Option<[Node<'a>; 3]> {
         for (offset, element) in rest.iter().enumerate() {
             walk.enter_index(3 + offset);
             walk.push(
-                DiagnosticCode::from(&core_codes::DROPPED_FIELD),
+                Code::from(&core_codes::DROPPED_FIELD),
                 Severity::Info,
                 Some(element.span()),
             );
@@ -274,7 +274,7 @@ fn rgb_nodes<'a>(walk: &mut Walk, node: Node<'a>) -> Option<[Node<'a>; 3]> {
         }
         Some([*r, *g, *b])
     } else {
-        walk.error(DiagnosticCode::from(&codes::COLOR_SHAPE), node.span());
+        walk.error(Code::from(&codes::COLOR_SHAPE), node.span());
         None
     }
 }
@@ -282,7 +282,7 @@ fn rgb_nodes<'a>(walk: &mut Walk, node: Node<'a>) -> Option<[Node<'a>; 3]> {
 /// Neither a string nor an array: the base node's validation refuses it (its text is not
 /// recorded).
 fn not_a_color(walk: &mut Walk, node: Node<'_>) {
-    walk.error(DiagnosticCode::from(&core_codes::INVALID_TYPE), node.span());
+    walk.error(Code::from(&core_codes::INVALID_TYPE), node.span());
 }
 
 /// `fog_color` / `init_fog.fog_color`: `#rrggbb`, or an array read through
@@ -306,10 +306,7 @@ fn fog_color(walk: &mut Walk, node: Node<'_>) -> Option<FogColorJu> {
                     // validate fog schema" (`_contentLog(true, 3, 26)`) and never registers
                     // the fog: the file is refused, and the line is the closing one's.
                     Kind::Null => {
-                        walk.error(
-                            DiagnosticCode::from(&core_codes::INVALID_TYPE),
-                            element.span(),
-                        );
+                        walk.error(Code::from(&core_codes::INVALID_TYPE), element.span());
                         ok = false;
                     }
                     // Read as vanilla reads it, and said: the element is
@@ -317,7 +314,7 @@ fn fog_color(walk: &mut Walk, node: Node<'_>) -> Option<FogColorJu> {
                     // pass a bool without a line, so it is an information.
                     Kind::Bool => {
                         walk.push(
-                            DiagnosticCode::from(&core_codes::INVALID_TYPE),
+                            Code::from(&core_codes::INVALID_TYPE),
                             Severity::Info,
                             Some(element.span()),
                         );
@@ -329,7 +326,7 @@ fn fog_color(walk: &mut Walk, node: Node<'_>) -> Option<FogColorJu> {
                             if clamped != written {
                                 // Ours; vanilla clamps without a word.
                                 walk.push(
-                                    DiagnosticCode::from(&core_codes::CLAMPED_VALUE),
+                                    Code::from(&core_codes::CLAMPED_VALUE),
                                     Severity::Info,
                                     Some(element.span()),
                                 );
@@ -339,20 +336,16 @@ fn fog_color(walk: &mut Walk, node: Node<'_>) -> Option<FogColorJu> {
                         // V10e. `parseValue<mce::Color>` logs the line at level 3
                         // (`_contentLog(true, 3, 17)`) and the fog reader ignores the
                         // parse result, so the file loads: a kept error.
-                        Err(_) => walk.push_kept(
-                            DiagnosticCode::from(&codes::INTEGRAL),
-                            Some(element.span()),
-                        ),
+                        Err(_) => {
+                            walk.push_kept(Code::from(&codes::INTEGRAL), Some(element.span()));
+                        }
                     },
                     _ => {
                         // Validation reads each element as a float first:
                         // `parseValue<float>` logs "Expected Number." at level 3
                         // (`_contentLog(true, 3, 17)`) and fails, and the file is
                         // refused as for a `null`.
-                        walk.error(
-                            DiagnosticCode::from(&codes::EXPECTED_NUMBER),
-                            element.span(),
-                        );
+                        walk.error(Code::from(&codes::EXPECTED_NUMBER), element.span());
                         ok = false;
                     }
                 }

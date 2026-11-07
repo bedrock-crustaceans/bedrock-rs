@@ -348,7 +348,7 @@ mod clamp_text {
 
 mod clamp_beyond_double {
     use bedrock_addon_core::diagnostic::{
-        Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, Span, codes,
+        Code, Diagnostic, Diagnostics, JsonPath, Location, Phase, Severity, Span, codes,
     };
     use bedrock_addon_core::json::{ClampPlan, ClampedText, JsonSlice, clamp_tokens};
 
@@ -434,7 +434,7 @@ mod clamp_beyond_double {
             None,
         ] {
             later.push(Diagnostic::new(
-                DiagnosticCode::from(&codes::INVALID_TYPE),
+                Code::from(&codes::INVALID_TYPE),
                 Severity::Warning,
                 Phase::Parse,
                 Location::new(None, None, JsonPath::new(), span),

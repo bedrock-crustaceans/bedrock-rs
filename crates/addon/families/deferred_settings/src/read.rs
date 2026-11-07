@@ -11,7 +11,7 @@ use super::codes;
 use super::value::{Description, Keyframe, Keyframes, Rgb8, Rgba8, Vec3};
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    CodeDef, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, Span,
+    Code, CodeDef, Diagnostic, Diagnostics, JsonPath, Severity, Span,
 };
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::{Id, Kind};
@@ -62,7 +62,7 @@ impl<'a> Node<'a> {
     }
 
     /// A finding about this value.
-    pub(crate) fn finding(&self, code: DiagnosticCode, severity: Severity) -> Diagnostic {
+    pub(crate) fn finding(&self, code: Code, severity: Severity) -> Diagnostic {
         Diagnostic::error(code)
             .severity(severity)
             .at(self.at.clone())
@@ -70,7 +70,7 @@ impl<'a> Node<'a> {
     }
 
     /// Reports an error about this value.
-    pub(crate) fn error(&self, code: DiagnosticCode, d: &mut Diagnostics) -> Failed {
+    pub(crate) fn error(&self, code: Code, d: &mut Diagnostics) -> Failed {
         d.push(self.finding(code, Severity::Error));
         Failed
     }
@@ -206,15 +206,13 @@ impl<'a> Members<'a> {
                 known
                     .iter()
                     .find(|(name, _)| *name == key)
-                    .map(|(name, version)| {
-                        DiagnosticCode::from(def.with([(*name).to_owned(), version.to_string()]))
-                    })
+                    .map(|(name, version)| def.with([(*name).to_owned(), version.to_string()]))
             };
         let mut extra = UnknownMembers::default();
         for (key, node) in self.rest() {
             let code = hint(&codes::NEEDS_FORMAT_VERSION, later, &key)
                 .or_else(|| hint(&codes::NO_LONGER_USED, gone, &key))
-                .unwrap_or_else(|| DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD));
+                .unwrap_or_else(|| Code::from(&core_codes::UNRECOGNIZED_FIELD));
             // The game reads every deferred settings file leniently: an unknown member is no
             // error, and the parse log is printed only for an invalid document. The game is
             // silent about a file that loads, so the finding is an information.
@@ -258,7 +256,7 @@ fn number(node: &Node<'_>, d: &mut Diagnostics) -> Read<(f64, bool)> {
         Some(ScalarShape::UInt(value)) => Ok((value as f64, true)),
         Some(ScalarShape::Int(value)) => Ok((value as f64, true)),
         Some(ScalarShape::Number(value)) => Ok((value, false)),
-        _ => Err(node.error(DiagnosticCode::from(&codes::MUST_BE_NUMBER), d)),
+        _ => Err(node.error(Code::from(&codes::MUST_BE_NUMBER), d)),
     }
 }
 
@@ -285,10 +283,7 @@ pub(crate) fn float(node: &Node<'_>, d: &mut Diagnostics) -> Read<f32> {
     if narrow.is_finite() {
         return Ok(narrow);
     }
-    d.push(node.finding(
-        DiagnosticCode::from(&core_codes::INVALID_VALUE),
-        Severity::Info,
-    ));
+    d.push(node.finding(Code::from(&core_codes::INVALID_VALUE), Severity::Info));
     Ok(if value < 0.0 { f32::MIN } else { f32::MAX })
 }
 
@@ -298,7 +293,7 @@ pub(crate) fn float(node: &Node<'_>, d: &mut Diagnostics) -> Read<f32> {
 pub(crate) fn integer_in(min: i32, max: i32, node: &Node<'_>, d: &mut Diagnostics) -> Read<i32> {
     let (value, _) = number(node, d)?;
     if value.fract() != 0.0 {
-        return Err(node.error(DiagnosticCode::from(&core_codes::INVALID_VALUE), d));
+        return Err(node.error(Code::from(&core_codes::INVALID_VALUE), d));
     }
     if value < f64::from(min) || value > f64::from(max) {
         #[allow(clippy::cast_precision_loss, reason = "the bounds are small integers")]
@@ -313,7 +308,7 @@ pub(crate) fn integer_in(min: i32, max: i32, node: &Node<'_>, d: &mut Diagnostic
 pub(crate) fn boolean(node: &Node<'_>, d: &mut Diagnostics) -> Read<bool> {
     match node.scalar() {
         Some(ScalarShape::Bool(value)) => Ok(value),
-        _ => Err(node.error(DiagnosticCode::from(&core_codes::INVALID_TYPE), d)),
+        _ => Err(node.error(Code::from(&core_codes::INVALID_TYPE), d)),
     }
 }
 
@@ -321,7 +316,7 @@ pub(crate) fn boolean(node: &Node<'_>, d: &mut Diagnostics) -> Read<bool> {
 pub(crate) fn string(node: &Node<'_>, d: &mut Diagnostics) -> Read<String> {
     match node.scalar() {
         Some(ScalarShape::String(value)) => Ok(value),
-        _ => Err(node.error(DiagnosticCode::from(&core_codes::INVALID_TYPE), d)),
+        _ => Err(node.error(Code::from(&core_codes::INVALID_TYPE), d)),
     }
 }
 
@@ -335,7 +330,7 @@ pub(crate) fn choice<T: Copy>(
     let name = string(node, d)?;
     match table.iter().find(|(known, _)| *known == name) {
         Some((_, value)) => Ok(*value),
-        None => Err(node.error(DiagnosticCode::from(&core_codes::INVALID_ENUM_VALUE), d)),
+        None => Err(node.error(Code::from(&core_codes::INVALID_ENUM_VALUE), d)),
     }
 }
 
@@ -345,10 +340,7 @@ pub(crate) fn choice<T: Copy>(
 pub(crate) fn identifier<K: Kind>(node: &Node<'_>, d: &mut Diagnostics) -> Read<Id<K>> {
     let text = string(node, d)?;
     if !text.contains(':') {
-        d.push(node.finding(
-            DiagnosticCode::from(&core_codes::NAMESPACE_RULE),
-            Severity::Info,
-        ));
+        d.push(node.finding(Code::from(&core_codes::NAMESPACE_RULE), Severity::Info));
     }
     Ok(Id::parse(text))
 }
@@ -373,7 +365,7 @@ fn channels<const N: usize>(
     node: &Node<'_>,
     d: &mut Diagnostics,
 ) -> Read<[u8; N]> {
-    let wrong = |at: &Node<'_>, d: &mut Diagnostics| at.error(DiagnosticCode::from(wrong_type), d);
+    let wrong = |at: &Node<'_>, d: &mut Diagnostics| at.error(Code::from(wrong_type), d);
     let mut out = [0_u8; N];
     match node.first_token() {
         Some(b'"') => {
@@ -408,17 +400,14 @@ fn channels<const N: usize>(
                     }
                 };
                 if value.fract() != 0.0 {
-                    element.error(DiagnosticCode::from(&core_codes::INVALID_VALUE), d);
+                    element.error(Code::from(&core_codes::INVALID_VALUE), d);
                     failed = true;
                     continue;
                 }
                 let clamped = value.clamp(0.0, 255.0);
                 #[allow(clippy::float_cmp, reason = "exact: whether the clamp changed it")]
                 if clamped != value {
-                    d.push(element.finding(
-                        DiagnosticCode::from(&core_codes::CLAMPED_VALUE),
-                        Severity::Info,
-                    ));
+                    d.push(element.finding(Code::from(&core_codes::CLAMPED_VALUE), Severity::Info));
                 }
                 #[allow(
                     clippy::cast_possible_truncation,
@@ -616,7 +605,7 @@ pub(crate) fn keyframes<'a, T>(
                 // By legacy name: the variant and the definitions that were it.
                 .any(|f| matches!(f.code.name(), "InvalidType"));
         if mistyped {
-            return Err(node.error(DiagnosticCode::from(&codes::KEYFRAMES), d));
+            return Err(node.error(Code::from(&codes::KEYFRAMES), d));
         }
         for finding in own {
             d.push(finding);
@@ -631,10 +620,7 @@ pub(crate) fn keyframes<'a, T>(
         any = true;
         let read = value(&child, d);
         let Some(time) = strtof(&key) else {
-            child.error(
-                DiagnosticCode::from(codes::KEY_CONVERSION.with(["float"])),
-                d,
-            );
+            child.error(codes::KEY_CONVERSION.with(["float"]), d);
             failed = true;
             continue;
         };
@@ -646,7 +632,7 @@ pub(crate) fn keyframes<'a, T>(
             // The game skips a key outside the domain without a line, so the finding is an
             // information.
             d.push(child.finding(
-                DiagnosticCode::from(&core_codes::KEYFRAME_OUT_OF_DOMAIN),
+                Code::from(&core_codes::KEYFRAME_OUT_OF_DOMAIN),
                 Severity::Info,
             ));
             continue;
@@ -659,7 +645,7 @@ pub(crate) fn keyframes<'a, T>(
         return Err(Failed);
     }
     if !any || frames.is_empty() {
-        return Err(node.error(DiagnosticCode::from(&core_codes::INVALID_VALUE), d));
+        return Err(node.error(Code::from(&core_codes::INVALID_VALUE), d));
     }
     Ok(Keyframes::Keys(standing(frames, d)))
 }
@@ -678,15 +664,9 @@ pub(super) fn standing<T>(
     for (frame, child) in frames {
         #[allow(clippy::float_cmp, reason = "exact: two keys of one time")]
         if kept.last().is_some_and(|(last, _)| last.time == frame.time) {
-            d.push(child.finding(
-                DiagnosticCode::from(&core_codes::INVALID_VALUE),
-                Severity::Info,
-            ));
+            d.push(child.finding(Code::from(&core_codes::INVALID_VALUE), Severity::Info));
             if let Some((_, replaced)) = kept.pop() {
-                d.push(replaced.finding(
-                    DiagnosticCode::from(&core_codes::DROPPED_FIELD),
-                    Severity::Info,
-                ));
+                d.push(replaced.finding(Code::from(&core_codes::DROPPED_FIELD), Severity::Info));
             }
         }
         kept.push((frame, child));
@@ -702,7 +682,7 @@ pub(super) fn standing<T>(
     reason = "x, y and z are the members' names"
 )]
 pub(crate) fn vec3_in(range: Range, node: &Node<'_>, d: &mut Diagnostics) -> Read<Vec3> {
-    let wrong = |d: &mut Diagnostics| node.error(DiagnosticCode::from(&codes::VEC3), d);
+    let wrong = |d: &mut Diagnostics| node.error(Code::from(&codes::VEC3), d);
     match node.first_token() {
         Some(b'[') => {
             let Ok(elements) = parse_at::<Vec<RawJson<'_>>>(node.slice) else {

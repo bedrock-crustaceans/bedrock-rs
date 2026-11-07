@@ -4,7 +4,7 @@
 use super::codes;
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Phase, Severity, builders,
+    Code, Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Phase, Severity, builders,
 };
 use bedrock_addon_core::document::{Document, Origin, Rejected, VersionInfo};
 use bedrock_addon_core::json::{EnvelopeVersion, JsonSlice, Prepared};
@@ -299,10 +299,10 @@ fn version_texts(diagnostics: &mut Diagnostics, envelope: &Envelope) {
             // By legacy name: the variant and the definitions that were it.
             match finding.code.name() {
                 "UnsupportedVersion" => {
-                    finding.code = DiagnosticCode::from(&codes::BETA_UNSUPPORTED);
+                    finding.code = Code::from(&codes::BETA_UNSUPPORTED);
                 }
                 "BetaFeaturesNotEnabled" => {
-                    finding.code = DiagnosticCode::from(&codes::BETA_NOT_ENABLED);
+                    finding.code = Code::from(&codes::BETA_NOT_ENABLED);
                 }
                 _ => {}
             }
@@ -311,7 +311,7 @@ fn version_texts(diagnostics: &mut Diagnostics, envelope: &Envelope) {
         {
             // Below the first struct the pipeline says no parser is available
             // (`ENVELOPE.below_floor`), as above the last; both print the version as shown.
-            finding.code = core_codes::NO_PARSER_FOR_VERSION.with([shown]).into();
+            finding.code = core_codes::NO_PARSER_FOR_VERSION.with([shown]);
         }
         diagnostics.push(finding);
     }

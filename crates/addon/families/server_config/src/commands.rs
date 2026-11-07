@@ -3,7 +3,7 @@
 
 use crate::codes;
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, JsonPath, Severity, Span};
+use bedrock_addon_core::diagnostic::{Code, Diagnostics, JsonPath, Severity, Span};
 use bedrock_addon_core::json::JsonSlice;
 
 use super::read::{Sink, Twice, object, span, string, value, with_root};
@@ -35,7 +35,7 @@ pub(super) fn read(
         let at = JsonPath::new();
         let Some(members) = object(root) else {
             sink.push(
-                DiagnosticCode::from(&core_codes::INVALID_TYPE),
+                Code::from(&core_codes::INVALID_TYPE),
                 Severity::Error,
                 at,
                 span(root),
@@ -59,7 +59,7 @@ pub(super) fn read(
                 _ => {
                     // Accepted silently by the server.
                     sink.info(
-                        DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD),
+                        Code::from(&core_codes::UNRECOGNIZED_FIELD),
                         here.clone(),
                         span(slice),
                     );
@@ -95,7 +95,7 @@ fn levels(
 ) -> bool {
     let Some(members) = object(slice) else {
         sink.push(
-            DiagnosticCode::from(&core_codes::INVALID_TYPE),
+            Code::from(&core_codes::INVALID_TYPE),
             Severity::Error,
             at.clone(),
             span(slice),
@@ -137,7 +137,7 @@ fn level(
 ) -> Option<CommandPermissionLevel> {
     let Some(name) = string(slice) else {
         sink.push(
-            DiagnosticCode::from(&core_codes::INVALID_TYPE),
+            Code::from(&core_codes::INVALID_TYPE),
             Severity::Error,
             at,
             span(slice),
@@ -148,9 +148,9 @@ fn level(
     if level.is_none() {
         // Only the root's member carries the server's line.
         let code = if root {
-            DiagnosticCode::from(codes::BAD_LEVEL.with([sink.name.clone(), member_name(&at), name]))
+            codes::BAD_LEVEL.with([sink.name.clone(), member_name(&at), name])
         } else {
-            DiagnosticCode::from(&core_codes::INVALID_ENUM_VALUE)
+            Code::from(&core_codes::INVALID_ENUM_VALUE)
         };
         sink.push(code, Severity::Error, at, span(slice));
     }

@@ -267,14 +267,10 @@ fn combine(parsed: Vec<Contribution<Item>>, stack: &StackCx<'_>) -> Registry<Ite
         {
             let path = JsonPath::new().with(&["minecraft:item", "description", "identifier"]);
             builder.push_diagnostic(
-                Diagnostic::warn(
-                    codes::OVERRIDDEN_BY_A_HIGHER_PACK
-                        .with([id.as_str()])
-                        .into(),
-                )
-                .at(path)
-                .phase(Phase::Validate)
-                .in_file(origin),
+                Diagnostic::warn(codes::OVERRIDDEN_BY_A_HIGHER_PACK.with([id.as_str()]))
+                    .at(path)
+                    .phase(Phase::Validate)
+                    .in_file(origin),
             );
         }
         let contribution = match contribution {
@@ -323,7 +319,7 @@ fn override_gate(
     let mut diagnostics = document.diagnostics().clone();
     let path = JsonPath::new().with(&["minecraft:item", "description", "identifier"]);
     diagnostics.push(
-        Diagnostic::error(code.into())
+        Diagnostic::error(code)
             .at(path)
             .phase(Phase::Validate)
             .in_file(&origin),

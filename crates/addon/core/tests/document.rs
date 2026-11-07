@@ -2,7 +2,7 @@
 //! helper.
 
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, codes,
+    Code, Diagnostic, Diagnostics, JsonPath, Location, Phase, Severity, codes,
 };
 use bedrock_addon_core::document::{
     Content, Document, NoBeta, Origin, Rejected, VersionInfo, default_path,
@@ -48,7 +48,7 @@ fn version_1_21_60() -> VersionInfo {
 fn a_warning() -> Diagnostics {
     let mut diagnostics = Diagnostics::default();
     diagnostics.push(Diagnostic::new(
-        DiagnosticCode::from(&codes::SHADOWED_DEFINITION),
+        Code::from(&codes::SHADOWED_DEFINITION),
         Severity::Warning,
         Phase::Validate,
         Location::new(None, None, JsonPath::new(), None),

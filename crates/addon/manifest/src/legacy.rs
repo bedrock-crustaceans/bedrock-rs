@@ -7,7 +7,7 @@
 //! format 1, and its UUID, version and module problems are warnings instead of errors.
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{DiagnosticCode as Code, JsonPath};
+use bedrock_addon_core::diagnostic::{Code, JsonPath};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::pack_identity::PackType;
 use bedrock_addon_core::version::{BaseGameVersion, MinEngineVersion, SemVersion};
@@ -47,7 +47,7 @@ pub(super) fn read(
         // format_version 2 in your manifest.json." for a format-0 manifest at content-log
         // level 2, area 36: a warning.
         reader.sink.push(
-            Code::from(core_codes::DEPRECATED_MEMBER_WORDED.with(["Pack Manifest version 0 is deprecated, please include format_version 2 in your manifest.json.",])),
+            core_codes::DEPRECATED_MEMBER_WORDED.with(["Pack Manifest version 0 is deprecated, please include format_version 2 in your manifest.json.",]),
             bedrock_addon_core::diagnostic::Severity::Warning,
             bedrock_addon_core::diagnostic::Phase::Parse,
             &path(&["format_version"]),
@@ -549,12 +549,8 @@ impl Legacy<'_, '_> {
                         .warning(Code::from(&core_codes::INVALID_PROPERTY), &at);
                     Some(ModuleType::Resources)
                 } else {
-                    self.sink.error(
-                        core_codes::MANIFEST_INVALID_VALUE
-                            .with([pointer(&at)])
-                            .into(),
-                        &at,
-                    );
+                    self.sink
+                        .error(core_codes::MANIFEST_INVALID_VALUE.with([pointer(&at)]), &at);
                     None
                 }
             }
@@ -847,7 +843,7 @@ pub(super) fn check_capability(
     match registry.validate(&cx) {
         CapabilityValidation::Succeeded { .. } => {}
         CapabilityValidation::Failed | CapabilityValidation::NotFound => sink.push(
-            Code::from(core_codes::INVALID_CAPABILITY.with([capability.name().to_owned()])),
+            core_codes::INVALID_CAPABILITY.with([capability.name().to_owned()]),
             // The capability registry is the crate's own API and the game has no pack-report
             // warning for it, so the crate reports an information.
             bedrock_addon_core::diagnostic::Severity::Info,

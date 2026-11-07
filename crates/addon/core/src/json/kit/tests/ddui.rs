@@ -26,7 +26,7 @@ const COMPONENTS: [&str; 3] = [
 ];
 
 /// An error with `code` at `node`, spanning it.
-fn error(read: &mut Read<'_>, node: &Node<'_>, code: DiagnosticCode) {
+fn error(read: &mut Read<'_>, node: &Node<'_>, code: Code) {
     let mut finding = Diagnostic::error(code).at(node.path().clone());
     finding.location.span = node.span();
     read.push(finding);
@@ -52,9 +52,7 @@ fn description(read: &mut Read<'_>, node: &Node<'_>) -> Option<String> {
                     error(
                         read,
                         &member,
-                        DiagnosticCode::from(
-                            core_codes::INVALID_VALUE_WORDED.with([NAMESPACE_TEXT]),
-                        ),
+                        core_codes::INVALID_VALUE_WORDED.with([NAMESPACE_TEXT]),
                     );
                 }
                 accepted
@@ -102,11 +100,7 @@ fn box_size(read: &mut Read<'_>, node: &Node<'_>) -> Option<Vec<i32>> {
         } else {
             BOX_SIZE_4_TEXT
         };
-        error(
-            read,
-            node,
-            DiagnosticCode::from(core_codes::INVALID_VALUE_WORDED.with([text])),
-        );
+        error(read, node, core_codes::INVALID_VALUE_WORDED.with([text]));
     }
     size
 }
@@ -132,11 +126,7 @@ fn color(read: &mut Read<'_>, node: &Node<'_>) -> Option<String> {
         } else {
             COLOR_RGBA_TEXT
         };
-        error(
-            read,
-            node,
-            DiagnosticCode::from(core_codes::INVALID_VALUE_WORDED.with([text])),
-        );
+        error(read, node, core_codes::INVALID_VALUE_WORDED.with([text]));
         return None;
     }
     if value.is_array() {
@@ -149,11 +139,7 @@ fn color(read: &mut Read<'_>, node: &Node<'_>) -> Option<String> {
             } else {
                 COLOR_RGBA_TEXT
             };
-            error(
-                read,
-                node,
-                DiagnosticCode::from(core_codes::INVALID_VALUE_WORDED.with([text])),
-            );
+            error(read, node, core_codes::INVALID_VALUE_WORDED.with([text]));
         }
         return color.map(|bytes| format!("{bytes:?}"));
     }
@@ -165,7 +151,7 @@ fn color(read: &mut Read<'_>, node: &Node<'_>) -> Option<String> {
 fn repeat(read: &mut Read<'_>, node: &Node<'_>) -> Option<String> {
     let name = read.string(node)?;
     if !matches!(name, "stretch" | "repeat") {
-        error(read, node, DiagnosticCode::from(&core_codes::INVALID_VALUE));
+        error(read, node, Code::from(&core_codes::INVALID_VALUE));
         return None;
     }
     Some(name.to_owned())
@@ -260,7 +246,7 @@ fn style_components(read: &mut Read<'_>, node: &Node<'_>) -> Option<()> {
             error(
                 read,
                 &member,
-                DiagnosticCode::from(&core_codes::UNRECOGNIZED_COMPONENT),
+                Code::from(&core_codes::UNRECOGNIZED_COMPONENT),
             );
         }
     }
@@ -269,7 +255,7 @@ fn style_components(read: &mut Read<'_>, node: &Node<'_>) -> Option<()> {
     member(read, &members, label, form_label);
     member(read, &members, textfield, form_textfield);
     if members.is_empty() {
-        error(read, node, DiagnosticCode::from(&core_codes::INVALID_VALUE));
+        error(read, node, Code::from(&core_codes::INVALID_VALUE));
         return None;
     }
     Some(())

@@ -1,6 +1,5 @@
 //! Beta items.
 
-use bedrock_addon_core::diagnostic::DiagnosticCode;
 use bedrock_addon_core::document::Content;
 use bedrock_addon_core::pack_identity::PackPath;
 use bedrock_addon_family_item::component::{
@@ -372,9 +371,7 @@ fn a_beta_file_read_as_an_item_is_refused_in_its_file() {
         .unwrap_or_else(|| panic!("{:#?}", refused.diagnostics));
     assert_eq!(
         refusal.code,
-        DiagnosticCode::from(
-            bedrock_addon_core::diagnostic::codes::NO_PARSER_FOR_VERSION.with(["beta"])
-        ),
+        bedrock_addon_core::diagnostic::codes::NO_PARSER_FOR_VERSION.with(["beta"]),
         "{refusal:?}"
     );
     assert_eq!(refusal.location.pack, Some(PackRef::app_data()));

@@ -3,7 +3,7 @@
 
 use super::report::Reporter;
 use crate::diagnostic::codes as core_codes;
-use crate::diagnostic::{DiagnosticCode, Severity};
+use crate::diagnostic::{Code, Severity};
 use crate::json::Value;
 use crate::json::jsoncpp::fork::{self, Stored};
 
@@ -15,11 +15,7 @@ pub fn float(value: &Value, key: &str, default: f32, report: &mut Reporter<'_>) 
         fork::stored(member),
         Stored::String | Stored::Array | Stored::Object
     ) {
-        report.at(
-            key,
-            DiagnosticCode::from(&core_codes::INVALID_VALUE),
-            Severity::Info,
-        );
+        report.at(key, Code::from(&core_codes::INVALID_VALUE), Severity::Info);
     }
     fork::as_float(member, default)
 }
@@ -39,11 +35,7 @@ pub fn real(value: &Value, key: &str) -> f32 {
 pub fn boolean(value: &Value, key: &str, default: bool, report: &mut Reporter<'_>) -> bool {
     let member = fork::member(value, key);
     if !matches!(fork::stored(member), Stored::Null | Stored::Bool) {
-        report.at(
-            key,
-            DiagnosticCode::from(&core_codes::INVALID_VALUE),
-            Severity::Info,
-        );
+        report.at(key, Code::from(&core_codes::INVALID_VALUE), Severity::Info);
     }
     fork::as_bool(member, default)
 }
@@ -53,11 +45,7 @@ pub fn boolean(value: &Value, key: &str, default: bool, report: &mut Reporter<'_
 pub fn integer(value: &Value, key: &str, default: i32, report: &mut Reporter<'_>) -> i32 {
     let member = fork::member(value, key);
     if !matches!(fork::stored(member), Stored::Null | Stored::Integer) {
-        report.at(
-            key,
-            DiagnosticCode::from(&core_codes::INVALID_VALUE),
-            Severity::Info,
-        );
+        report.at(key, Code::from(&core_codes::INVALID_VALUE), Severity::Info);
     }
     fork::as_int(member, default)
 }
@@ -67,11 +55,7 @@ pub fn integer(value: &Value, key: &str, default: i32, report: &mut Reporter<'_>
 pub fn string(value: &Value, key: &str, report: &mut Reporter<'_>) -> String {
     let member = fork::member(value, key);
     if !matches!(fork::stored(member), Stored::Null | Stored::String) {
-        report.at(
-            key,
-            DiagnosticCode::from(&core_codes::INVALID_VALUE),
-            Severity::Info,
-        );
+        report.at(key, Code::from(&core_codes::INVALID_VALUE), Severity::Info);
     }
     fork::to_text(member)
 }

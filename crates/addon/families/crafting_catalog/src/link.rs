@@ -8,7 +8,7 @@ use super::codes;
 use super::{CatalogItem, CatalogKey, Category, CraftingCatalog, Group};
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Code, Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Phase, Severity,
+    Code, Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Phase, Severity,
 };
 use bedrock_addon_core::document::Merged;
 use bedrock_addon_core::id::ItemId;
@@ -75,12 +75,7 @@ impl<'m> Places<'m> {
 
     /// A link finding at the entry `key` of the merged catalogue: in the file that placed
     /// it, at the path it is written at there.
-    fn finding(
-        &mut self,
-        code: DiagnosticCode,
-        severity: Severity,
-        key: &CatalogKey,
-    ) -> Diagnostic {
+    fn finding(&mut self, code: Code, severity: Severity, key: &CatalogKey) -> Diagnostic {
         let merged = self.merged;
         let origin = merged.origin(key);
         let layer = origin.and_then(|origin| {
@@ -146,13 +141,7 @@ fn placement(
     let placed = category.category_name.creative_category();
     // The game writes both lines (the category's and the group's) to the content log at its
     // warning level, so both findings are warnings.
-    let mut warn = |code: Code| {
-        index.finding(
-            DiagnosticCode::from(code),
-            Severity::Warning,
-            &item_key(item),
-        )
-    };
+    let mut warn = |code: Code| index.finding(code, Severity::Warning, &item_key(item));
     if own_category != placed {
         // The names are `stringFromCreativeItemCategory`'s: the menu category spellings.
         let name = |category: CreativeCategory| category.name().unwrap_or_default().to_owned();
@@ -217,7 +206,7 @@ pub fn link_group_names(
                 name: name.to_owned(),
             };
             let lint = places.finding(
-                DiagnosticCode::from(&core_codes::UNRESOLVED_LANG_KEY),
+                Code::from(&core_codes::UNRESOLVED_LANG_KEY),
                 Severity::Info,
                 &key,
             );

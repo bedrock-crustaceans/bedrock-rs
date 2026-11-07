@@ -8,7 +8,7 @@ use facet_value::VObject;
 
 use super::Payload;
 use super::ops::{Told, finding, overwrite, same, section_b, sections};
-use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath};
+use bedrock_addon_core::diagnostic::{Code, JsonPath};
 
 /// An entity document as written in format 1.26.0 (up to the next struct's version): its
 /// payload as written.
@@ -88,7 +88,7 @@ impl LegacyStep<1, 26, 0> for Payload {
                 }
             }
             for at in misread {
-                finding(cx, DiagnosticCode::from(&core_codes::INVALID_TYPE), &at);
+                finding(cx, Code::from(&core_codes::INVALID_TYPE), &at);
             }
             told.report(cx);
         }

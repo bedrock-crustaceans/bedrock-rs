@@ -4,7 +4,7 @@
 
 use std::fmt::Write as _;
 
-use bedrock_addon::diagnostic::{DiagnosticCode, DiagnosticDetail, NotFoundHint, Severity};
+use bedrock_addon::diagnostic::{DiagnosticDetail, NotFoundHint, Severity};
 use bedrock_addon::families::script::{
     ImportKind, NativeModuleAccess, Resolution, ScanOptions, ScriptBundle, ScriptHost, ScriptPath,
     ScriptRoot, ScriptSyntaxKind,
@@ -293,9 +293,7 @@ fn a_bundle_says_once_how_many_files_the_parser_was_kept_from() {
         .collect();
     let expected = if checked {
         vec![(
-            DiagnosticCode::from(
-                bedrock_addon::diagnostic::codes::SCRIPT_SYNTAX_NOT_CHECKED.with([2.to_string()]),
-            ),
+            bedrock_addon::diagnostic::codes::SCRIPT_SYNTAX_NOT_CHECKED.with([2.to_string()]),
             Severity::Info,
             None,
         )]
@@ -305,10 +303,9 @@ fn a_bundle_says_once_how_many_files_the_parser_was_kept_from() {
     };
     assert_eq!(notes, expected);
     assert_eq!(
-        DiagnosticCode::from(
-            bedrock_addon::diagnostic::codes::SCRIPT_SYNTAX_NOT_CHECKED.with([2.to_string()])
-        )
-        .to_string(),
+        bedrock_addon::diagnostic::codes::SCRIPT_SYNTAX_NOT_CHECKED
+            .with([2.to_string()])
+            .to_string(),
         "syntax of 2 script files not checked: nested too deeply for the parser"
     );
     // A bundle whose files are all read says nothing.
@@ -582,10 +579,8 @@ fn l10_l11_unknown_and_restricted_modules_by_how_they_are_imported() {
     let restricted = bundle.findings().nth(2).unwrap();
     assert_eq!(
         restricted.code,
-        DiagnosticCode::from(
-            bedrock_addon::diagnostic::codes::SCRIPT_MODULE_RESTRICTED
-                .with(["@minecraft/server-bindings", "main.js"])
-        )
+        bedrock_addon::diagnostic::codes::SCRIPT_MODULE_RESTRICTED
+            .with(["@minecraft/server-bindings", "main.js"])
     );
     assert_eq!(
         bundle.main().unwrap().imports()[4].resolution,
@@ -799,9 +794,7 @@ fn every_hint_and_the_file_it_points_at() {
     let first = bundle.findings().next().unwrap();
     assert_eq!(
         first.code,
-        DiagnosticCode::from(
-            bedrock_addon::diagnostic::codes::SCRIPT_IMPORT_NOT_FOUND.with(["scripts/lib/b.js"])
-        )
+        bedrock_addon::diagnostic::codes::SCRIPT_IMPORT_NOT_FOUND.with(["scripts/lib/b.js"])
     );
     assert_eq!(
         first.detail.as_deref(),

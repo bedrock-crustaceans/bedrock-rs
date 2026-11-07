@@ -9,7 +9,7 @@ use bedrock_addon_core::diagnostic::Severity;
 use indexmap::IndexMap;
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase};
+use bedrock_addon_core::diagnostic::{Code, Diagnostic, Diagnostics, JsonPath, Phase};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
 use bedrock_addon_core::version::FormatVersion;
@@ -152,11 +152,7 @@ impl BlockPayload {
 /// A member of the file that a step replaces by what it makes of another, as the game's own
 /// fixer does without a word: `DroppedField`, severity INFO: the game says nothing, so the finding is the crate's own.
 pub(crate) fn replaced(at: &JsonPath, d: &mut Diagnostics) {
-    ops::note(
-        d,
-        DiagnosticCode::from(&core_codes::DROPPED_FIELD),
-        at.clone(),
-    );
+    ops::note(d, Code::from(&core_codes::DROPPED_FIELD), at.clone());
 }
 
 /// Renames the member `old` of the component `name` (held in `members`) to `new`: block's

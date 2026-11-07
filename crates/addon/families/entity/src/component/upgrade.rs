@@ -7,7 +7,7 @@
 
 use crate::codes;
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
+use bedrock_addon_core::diagnostic::{Code, Diagnostic, Diagnostics, JsonPath};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::versioning::write_payload;
 use facet_value::{VArray, VObject};
@@ -17,7 +17,7 @@ use super::movement::JumpDynamic;
 /// An information of the crate's own at `at`, relative to the component: a member a step of this
 /// library drops or reads as a default where the game says nothing (the game writes no content-log
 /// line for this).
-fn warning(code: DiagnosticCode, at: &JsonPath) -> Diagnostic {
+fn warning(code: Code, at: &JsonPath) -> Diagnostic {
     Diagnostic::info(code).at(at.clone())
 }
 
@@ -50,10 +50,7 @@ pub fn interact_1_13_0(value: &mut Value, d: &mut Diagnostics) {
             if let Some(member) = object.remove(key) {
                 if had_on_interact {
                     let here = at.child(key);
-                    d.push(warning(
-                        DiagnosticCode::from(&core_codes::DROPPED_FIELD),
-                        &here,
-                    ));
+                    d.push(warning(Code::from(&core_codes::DROPPED_FIELD), &here));
                 } else {
                     trigger.insert(key, member);
                 }
@@ -166,12 +163,8 @@ pub fn projectile_1_26_40(value: &mut Value, d: &mut Diagnostics) {
         // The game logs this at the error level and keeps the document with the default taken: a
         // kept error.
         d.push_kept_error(
-            Diagnostic::error(
-                codes::NOT_A_VALID_VALUE
-                    .with([text.as_str(), "should_bounce"])
-                    .into(),
-            )
-            .at(JsonPath::new().child("should_bounce")),
+            Diagnostic::error(codes::NOT_A_VALID_VALUE.with([text.as_str(), "should_bounce"]))
+                .at(JsonPath::new().child("should_bounce")),
         );
         object.insert("should_bounce", Value::from("no"));
     }
@@ -182,14 +175,14 @@ pub fn projectile_1_26_40(value: &mut Value, d: &mut Diagnostics) {
         if damage.contains_key("difficulty_randomization") {
             damage.remove("semi_random_diff_damage");
             d.push(warning(
-                DiagnosticCode::from(&core_codes::DROPPED_FIELD),
+                Code::from(&core_codes::DROPPED_FIELD),
                 &JsonPath::new().with(&["on_hit", "impact_damage", "semi_random_diff_damage"]),
             ));
         } else {
             if old.as_bool().is_none() {
                 // The crate's own: not a bool, so `false` (`none`) is used, with a finding.
                 d.push(warning(
-                    DiagnosticCode::from(&core_codes::INVALID_VALUE),
+                    Code::from(&core_codes::INVALID_VALUE),
                     &JsonPath::new().with(&["on_hit", "impact_damage", "semi_random_diff_damage"]),
                 ));
             }

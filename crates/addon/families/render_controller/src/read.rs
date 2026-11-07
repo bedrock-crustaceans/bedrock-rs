@@ -14,8 +14,8 @@ use super::{
 };
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Code, Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, JsonPathSegment,
-    Phase, Severity, Span,
+    Code, Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, JsonPathSegment, Phase, Severity,
+    Span,
 };
 use bedrock_addon_core::json::node_tree::{
     Failure, Group, Hit, Kind, Lossy, Names, Node, Order, Pattern, REQUIRED_CHILD, Rules,
@@ -375,9 +375,7 @@ fn folding_hints(diagnostics: &mut Diagnostics, folded: &Folded, original: &str)
         let offset = u32::try_from(quote).unwrap_or(u32::MAX);
         let (line, _) = Span { offset, len: 1 }.line_col(original);
         hints.push(Diagnostic::new(
-            DiagnosticCode::from(
-                core_codes::CASE_FOLDING_DISABLED_AT_LINE.with([line.to_string()]),
-            ),
+            core_codes::CASE_FOLDING_DISABLED_AT_LINE.with([line.to_string()]),
             Severity::Info,
             Phase::Parse,
             finding.location.clone(),
@@ -418,10 +416,7 @@ fn read_root(walk: &mut Walk, root: Node<'_>, drafts: &mut Drafts) -> Option<Sem
         return None;
     }
     if version.is_none() {
-        walk.error(
-            DiagnosticCode::from(codes::REQUIRED_CHILD.with(["format_version"])),
-            root.span(),
-        );
+        walk.error(codes::REQUIRED_CHILD.with(["format_version"]), root.span());
     }
     if !controllers {
         walk.missing("render_controllers", root);
@@ -439,10 +434,7 @@ fn format_version(walk: &mut Walk, node: Node<'_>) -> Option<SemVersion> {
         .and_then(SemVersion::parse)
         .filter(|v| !v.is_any());
     let Some(version) = version else {
-        walk.error(
-            DiagnosticCode::from(codes::UNKNOWN_OPTION_TYPE.with(["SemVersion"])),
-            node.span(),
-        );
+        walk.error(codes::UNKNOWN_OPTION_TYPE.with(["SemVersion"]), node.span());
         return None;
     };
     let as_written = written.as_deref().unwrap_or("");
@@ -454,7 +446,7 @@ fn format_version(walk: &mut Walk, node: Node<'_>) -> Option<SemVersion> {
         None
     };
     if let Some(code) = refused {
-        walk.error(DiagnosticCode::from(code), node.span());
+        walk.error(code, node.span());
         return None;
     }
     Some(version)
@@ -576,7 +568,7 @@ fn read_controller(walk: &mut Walk, node: Node<'_>, key: &str, drafts: &mut Draf
             // text).
             if matches!(value, Molang::Const(_)) {
                 walk.push(
-                    DiagnosticCode::from(&core_codes::INVALID_TYPE),
+                    Code::from(&core_codes::INVALID_TYPE),
                     Severity::Info,
                     Some(v.span()),
                 );

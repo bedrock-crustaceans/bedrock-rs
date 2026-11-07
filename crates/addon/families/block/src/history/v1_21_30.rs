@@ -43,7 +43,7 @@ impl LegacyStep<1, 21, 30> for BlockPayload {
         // namespace without writing a log line.
         if namespaced_group {
             cx.diagnostics.push(
-                Diagnostic::info(bedrock_addon_core::diagnostic::DiagnosticCode::from(
+                Diagnostic::info(bedrock_addon_core::diagnostic::Code::from(
                     &core_codes::DEPRECATED_MEMBER,
                 ))
                 .at(at.clone())

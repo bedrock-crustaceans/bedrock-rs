@@ -3,7 +3,7 @@
 use super::codes;
 use super::{BROADCAST_RANGE_SINCE, SoundMetadataFile};
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{Code, Diagnostic, DiagnosticCode, Phase, Severity};
+use bedrock_addon_core::diagnostic::{Code, Diagnostic, Phase, Severity};
 use bedrock_addon_core::versioning::ValidateCx;
 
 /// The regex of the string constraint on a sound event name.
@@ -38,7 +38,7 @@ pub(crate) fn namespace_code(name: &str) -> Option<Code> {
 /// The rules on the loaded file. An error rejects it.
 pub(crate) fn validate(file: &SoundMetadataFile, cx: &mut ValidateCx<'_>) {
     let base = cx.at.clone();
-    let mut push = |code: DiagnosticCode, severity: Severity, index: usize, path: &[&str]| {
+    let mut push = |code: Code, severity: Severity, index: usize, path: &[&str]| {
         let at = base.index(index).with(path);
         cx.diagnostics.push(
             Diagnostic::error(code)
@@ -51,7 +51,7 @@ pub(crate) fn validate(file: &SoundMetadataFile, cx: &mut ValidateCx<'_>) {
     for (index, definition) in file.0.iter().enumerate() {
         let name = definition.sound_event_name.as_str();
         if let Some(code) = namespace_code(name) {
-            push(code.into(), Severity::Error, index, &["sound_event_name"]);
+            push(code, Severity::Error, index, &["sound_event_name"]);
         }
         if !no_whitespace(name) {
             push(pattern(), Severity::Error, index, &["sound_event_name"]);
@@ -66,7 +66,7 @@ pub(crate) fn validate(file: &SoundMetadataFile, cx: &mut ValidateCx<'_>) {
             if !seconds.is_finite() || seconds <= 0.0 {
                 // The crate's own information: vanilla converts any value without a check.
                 push(
-                    DiagnosticCode::from(&core_codes::INVALID_VALUE),
+                    Code::from(&core_codes::INVALID_VALUE),
                     Severity::Info,
                     index,
                     &["duration_info", "seconds"],
@@ -77,7 +77,7 @@ pub(crate) fn validate(file: &SoundMetadataFile, cx: &mut ValidateCx<'_>) {
             if cx.load.engine_version < BROADCAST_RANGE_SINCE {
                 // An engine below 1.26.50 does not bind the member.
                 push(
-                    DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD),
+                    Code::from(&core_codes::UNRECOGNIZED_FIELD),
                     Severity::Error,
                     index,
                     &["broadcast_range"],
@@ -85,7 +85,7 @@ pub(crate) fn validate(file: &SoundMetadataFile, cx: &mut ValidateCx<'_>) {
             } else if *range <= 0.0 {
                 // The crate's own information: the game binds any number without a check.
                 push(
-                    DiagnosticCode::from(&core_codes::INVALID_VALUE),
+                    Code::from(&core_codes::INVALID_VALUE),
                     Severity::Info,
                     index,
                     &["broadcast_range"],

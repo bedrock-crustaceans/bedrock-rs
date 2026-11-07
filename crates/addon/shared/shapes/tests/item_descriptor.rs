@@ -5,7 +5,7 @@
 mod common;
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{JsonPath, Severity, VanillaText};
+use bedrock_addon_core::diagnostic::{JsonPath, Severity};
 use bedrock_addon_core::id::ItemId;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::molang::{MolangSource, SourceForm};
@@ -109,9 +109,7 @@ fn a_wrong_shape_is_kept_and_reported_as_invalid_type() {
         assert_eq!(
             finding.code.vanilla(),
             Some(
-                VanillaText::ItemDescriptorShape {
-                    value: common::normalised(json)
-                }
+                format!("ItemDescriptor requires a string, {{\"item\": string}}, or {{\"tags\": string}} or {{\"item_tag\": string}}. ItemDescriptor cannot parse {}\n", common::normalised(json))
                 .to_string()
             ),
             "{json}"

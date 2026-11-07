@@ -140,7 +140,7 @@ fn level_findings(composition: &Composition) -> Vec<&Diagnostic> {
 }
 
 /// [`placed_findings`]' codes.
-fn above_info(composition: &Composition) -> Vec<&DiagnosticCode> {
+fn above_info(composition: &Composition) -> Vec<&Code> {
     placed_findings(composition)
         .into_iter()
         // A dependency the education layer hides silently is an information.
@@ -234,9 +234,7 @@ fn a_behavior_packs_resource_dependency_is_auto_added_after_the_listed_resource_
     assert_eq!(found.len(), 1);
     assert_eq!(
         found[0],
-        &DiagnosticCode::from(
-            core_codes::DEPENDENCY_AUTO_ADDED.with([r.id.to_string(), a.id.to_string()])
-        )
+        &core_codes::DEPENDENCY_AUTO_ADDED.with([r.id.to_string(), a.id.to_string()])
     );
     let added = composition
         .findings

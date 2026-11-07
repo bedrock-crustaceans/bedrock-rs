@@ -6,7 +6,7 @@ use facet::Facet;
 use super::ParseCx;
 use crate::diagnostic::codes as core_codes;
 use crate::diagnostic::{
-    Class, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, Span,
+    Class, Code, Diagnostic, Diagnostics, JsonPath, Location, Phase, Severity, Span,
     code_for_deserialize_error_kind,
 };
 use crate::json::{
@@ -78,15 +78,15 @@ pub(super) fn tell_unknown(
     for (path, rule) in unknown {
         let (code, severity) = match rule {
             UnknownRule::Reject => (
-                DiagnosticCode::from(&core_codes::DROPPED_FIELD),
+                Code::from(&core_codes::DROPPED_FIELD),
                 cx.grade(Class::Unknown),
             ),
             UnknownRule::Ignore => (
-                DiagnosticCode::from(&core_codes::IGNORED_MEMBER),
+                Code::from(&core_codes::IGNORED_MEMBER),
                 cx.grade(Class::Unknown),
             ),
             UnknownRule::Keep | UnknownRule::Report => (
-                DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD),
+                Code::from(&core_codes::UNRECOGNIZED_FIELD),
                 cx.grade(Class::Unknown),
             ),
         };

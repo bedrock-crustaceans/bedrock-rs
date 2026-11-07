@@ -5,7 +5,7 @@ use std::collections::HashSet;
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
+    Code, Diagnostics, JsonPath, Severity,
 };
 use bedrock_addon_core::document::{ComponentMap, Origin};
 use bedrock_addon_core::id::ItemId;
@@ -119,7 +119,7 @@ fn trim_template(out: &mut Findings, item: &Entry<'_>) {
     let tagged = tags.tags.iter().any(|tag| tag == TRIM_TEMPLATES);
     if tagged && TrimData::vanilla().pattern_for_item(item.id).is_none() {
         let place = At::new(item.origin, component("minecraft:tags"), Severity::Info);
-        out.push(place.diagnostic(DiagnosticCode::from(&core_codes::NO_EFFECT)));
+        out.push(place.diagnostic(Code::from(&core_codes::NO_EFFECT)));
     }
 }
 
@@ -146,9 +146,9 @@ fn client_items(cx: &LinkCx<'_>, out: &mut Findings) {
             };
             if let Target::Missing(hint) = cx.item_definition(&ItemId::parse(identifier.as_str())) {
                 let origin = Origin::file(pack.pack.clone(), PackSide::Resource, file.path.clone());
-                let text = VanillaText::ItemNotInBehaviorPack {
-                    identifier: identifier.clone(),
-                };
+                let text = format!(
+                    "Resource pack has item definitions not found in the behavior pack. Item '{identifier}' is being ignored."
+                );
                 let path = at!["minecraft:item", "description", "identifier"];
                 // The game logs the line at the error level and skips the item: the resource
                 // pack's definition is dropped and the load goes on. The link pass refuses

@@ -8,7 +8,7 @@ use uuid::Uuid;
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Location, Phase, Severity,
+    Code, Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Location, Phase, Severity,
 };
 use bedrock_addon_core::pack_identity::PackPath;
 use bedrock_addon_core::version::FormatVersion;
@@ -123,7 +123,7 @@ fn verdict(
                 // The server drops an optional dependency without a log line.
                 verdict.dropped.push(module.to_owned());
                 verdict.diagnostics.push(Diagnostic::new(
-                    DiagnosticCode::from(&core_codes::DROPPED_FIELD),
+                    Code::from(&core_codes::DROPPED_FIELD),
                     Severity::Info,
                     Phase::Link,
                     location(),
@@ -132,9 +132,7 @@ fn verdict(
                 // A required dependency the folder does not allow rejects the plugin.
                 verdict.runs = false;
                 verdict.diagnostics.push(Diagnostic::new(
-                    DiagnosticCode::from(
-                        codes::PLUGIN_MODULE_NOT_CONFIGURED.with([plugin.name.as_str(), module]),
-                    ),
+                    codes::PLUGIN_MODULE_NOT_CONFIGURED.with([plugin.name.as_str(), module]),
                     Severity::Error,
                     Phase::Link,
                     location(),
@@ -210,13 +208,9 @@ impl ScriptConfig {
             };
             let mut finding = Diagnostic::new(
                 match expected {
-                    Some(uuid) => DiagnosticCode::from(
-                        core_codes::UNMATCHED_CONFIG_FOLDER_EXPECTED
-                            .with([folder.clone(), uuid.to_string()]),
-                    ),
-                    None => DiagnosticCode::from(
-                        core_codes::UNMATCHED_CONFIG_FOLDER.with([folder.clone()]),
-                    ),
+                    Some(uuid) => core_codes::UNMATCHED_CONFIG_FOLDER_EXPECTED
+                        .with([folder.clone(), uuid.to_string()]),
+                    None => core_codes::UNMATCHED_CONFIG_FOLDER.with([folder.clone()]),
                 },
                 severity,
                 Phase::Link,
@@ -258,9 +252,7 @@ impl ScriptConfig {
                 .child(SERVER_NET_MODULE)
                 .child(MAX_WEBSOCKET_PAYLOAD_SIZE);
             findings.push(Diagnostic::new(
-                DiagnosticCode::from(
-                    core_codes::FIELD_SINCE_ENGINE.with([PAYLOAD_SIZE_SINCE.to_string()]),
-                ),
+                core_codes::FIELD_SINCE_ENGINE.with([PAYLOAD_SIZE_SINCE.to_string()]),
                 Severity::Info,
                 Phase::Validate,
                 Location::new(None, permissions_path(config), at, None),

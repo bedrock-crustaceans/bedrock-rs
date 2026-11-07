@@ -12,7 +12,7 @@ use super::{
 };
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Phase, Severity,
+    Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Phase, Severity,
 };
 use bedrock_addon_core::document::{
     CombineRule, Contribution, Definition, Document, Notice, Registry, RegistryBuilder, Rejected,
@@ -273,13 +273,11 @@ fn validator_line<T>(document: &Document<T>, path: &JsonPath, name: &str) -> Dia
         0,
         name,
     );
-    Diagnostic::error(DiagnosticCode::from(
-        core_codes::UNRESOLVED_REFERENCE_WORDED.with([text.to_string()]),
-    ))
-    .at(path.clone())
-    .phase(Phase::Validate)
-    .in_file(document.origin())
-    .detail(preset_reference(name))
+    Diagnostic::error(core_codes::UNRESOLVED_REFERENCE_WORDED.with([text]))
+        .at(path.clone())
+        .phase(Phase::Validate)
+        .in_file(document.origin())
+        .detail(preset_reference(name))
 }
 
 /// The validator's line of a preset whose parent is unknown.

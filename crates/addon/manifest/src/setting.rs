@@ -4,7 +4,7 @@
 use std::collections::HashSet;
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{DiagnosticCode as Code, JsonPath, Phase, Severity};
+use bedrock_addon_core::diagnostic::{Code, JsonPath, Phase, Severity};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::version::{FormatVersion, MinEngineVersion, SemVersion};
 
@@ -408,7 +408,7 @@ fn check(
     for (index, setting) in settings {
         let at = path(&["settings"]).index(*index);
         let fail = |sink: &mut Sink<'_>, code: bedrock_addon_core::diagnostic::Code| {
-            sink.push(code.into(), Severity::Error, Phase::Validate, &at);
+            sink.push(code, Severity::Error, Phase::Validate, &at);
         };
         if let Some(name) = setting.name()
             && !names.insert(name.to_owned())
@@ -461,9 +461,7 @@ fn check(
                     .is_none_or(|engine| engine.version < SemVersion::from(MULTISELECT_SINCE))
                 {
                     sink.push(
-                        core_codes::FIELD_SINCE_ENGINE
-                            .with([MULTISELECT_SINCE.to_string()])
-                            .into(),
+                        core_codes::FIELD_SINCE_ENGINE.with([MULTISELECT_SINCE.to_string()]),
                         Severity::Info,
                         Phase::Validate,
                         &at,

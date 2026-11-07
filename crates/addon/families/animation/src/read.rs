@@ -215,9 +215,7 @@ fn read_loop(walk: &mut Walk, node: Node<'_>) -> Option<LoopMode> {
                 Some(LoopMode::HoldOnLastFrame)
             } else {
                 walk.error(
-                    core_codes::NOT_ALLOWED_REGEX
-                        .with([&value, "hold_on_last_frame"])
-                        .into(),
+                    core_codes::NOT_ALLOWED_REGEX.with([&value, "hold_on_last_frame"]),
                     node.span(),
                 );
                 None
@@ -300,9 +298,7 @@ fn read_relative_to(walk: &mut Walk, node: Node<'_>) -> Option<RelativeTo> {
             Hit::Ok
         } else {
             walk.error(
-                core_codes::NOT_ALLOWED_REGEX
-                    .with([&lower, "entity"])
-                    .into(),
+                core_codes::NOT_ALLOWED_REGEX.with([&lower, "entity"]),
                 v.span(),
             );
             Hit::Failed
@@ -433,9 +429,7 @@ fn read_lerp_mode(walk: &mut Walk, node: Node<'_>) -> Option<LerpMode> {
         "catmullrom" => Some(LerpMode::CatmullRom),
         _ => {
             walk.error(
-                core_codes::NOT_ALLOWED_KEYS
-                    .with([&value, "linear, catmullrom"])
-                    .into(),
+                core_codes::NOT_ALLOWED_KEYS.with([&value, "linear, catmullrom"]),
                 node.span(),
             );
             None

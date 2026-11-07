@@ -212,7 +212,7 @@ pub struct Finding {
     pub text: Option<String>,
 }
 
-/// The variant name of a finding's code, as the crate gives it (`DiagnosticCode::name`): the
+/// The variant name of a finding's code, as the crate gives it (`Code::name`): the
 /// form an `expected.toml` states a code in.
 pub fn code_name(diagnostic: &Diagnostic) -> String {
     diagnostic.code.name().to_owned()

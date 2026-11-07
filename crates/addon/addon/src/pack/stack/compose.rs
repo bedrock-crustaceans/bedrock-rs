@@ -11,8 +11,7 @@
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Code, Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Location, Phase,
-    Severity,
+    Code, Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Location, Phase, Severity,
 };
 use bedrock_addon_core::load::LoadOptions;
 use bedrock_addon_core::pack_identity::{PackIdVersion, PackOrigin, PackPath, PackSide, PackType};
@@ -177,7 +176,7 @@ impl Composer<'_> {
         self.candidates[candidate].facts
     }
 
-    fn finding(&mut self, code: DiagnosticCode, severity: Severity, location: Location) {
+    fn finding(&mut self, code: Code, severity: Severity, location: Location) {
         self.findings
             .push(Diagnostic::new(code, severity, Phase::Validate, location));
     }
@@ -192,7 +191,7 @@ impl Composer<'_> {
         location: Location,
     ) {
         self.findings.push(
-            Diagnostic::new(code.into(), severity, Phase::Validate, location)
+            Diagnostic::new(code, severity, Phase::Validate, location)
                 .detail(DiagnosticDetail::Packs { pack, dependency }),
         );
     }
@@ -232,9 +231,9 @@ impl Composer<'_> {
                 let piece = side == PackSide::Resource
                     && self.facts(candidate).has_module(PackType::PersonaPiece);
                 let code = if piece {
-                    DiagnosticCode::from(&core_codes::PERSONA_PIECE_PACK)
+                    Code::from(&core_codes::PERSONA_PIECE_PACK)
                 } else {
-                    DiagnosticCode::from(&core_codes::INVALID_VALUE)
+                    Code::from(&core_codes::INVALID_VALUE)
                 };
                 // The game checks no kind and logs nothing for it, so the crate reports it as an
                 // information.
@@ -254,7 +253,7 @@ impl Composer<'_> {
                 // removes duplicates without a log line, so the crate reports it as an
                 // information.
                 self.finding(
-                    DiagnosticCode::from(&core_codes::DUPLICATE_IDENTIFIER),
+                    Code::from(&core_codes::DUPLICATE_IDENTIFIER),
                     Severity::Info,
                     entry_location(file, index, None),
                 );
@@ -301,7 +300,7 @@ impl Composer<'_> {
         // The game falls back to the default subpack without a line, so the crate reports it as
         // an information.
         self.finding(
-            DiagnosticCode::from(&core_codes::INVALID_VALUE),
+            Code::from(&core_codes::INVALID_VALUE),
             Severity::Info,
             entry_location(file, index, Some("subpack")),
         );
@@ -475,7 +474,7 @@ impl Composer<'_> {
             if stack.iter().any(|planned| planned.candidate == candidate) {
                 // The base-game layer dedups in silence too, as the game does.
                 self.finding(
-                    DiagnosticCode::from(&core_codes::DUPLICATE_IDENTIFIER),
+                    Code::from(&core_codes::DUPLICATE_IDENTIFIER),
                     Severity::Info,
                     Location::default(),
                 );

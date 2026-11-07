@@ -19,8 +19,7 @@ use super::{
 };
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Code, CodeDef, Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Phase,
-    Severity, builders,
+    Code, CodeDef, Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Phase, Severity, builders,
 };
 use bedrock_addon_core::document::{
     Content, Document, Merge, Merged, Origin, Placed, RawLayer, Rejected, unversioned,
@@ -354,7 +353,7 @@ struct Report {
 impl Report {
     fn push(
         &mut self,
-        code: impl Into<DiagnosticCode>,
+        code: impl Into<Code>,
         severity: Severity,
         origin: Option<&Origin>,
         path: &[&str],
@@ -381,7 +380,7 @@ impl Report {
     }
 
     /// A content-log error after which the game goes on with the file: a kept error.
-    fn push_kept(&mut self, code: impl Into<DiagnosticCode>, origin: Option<&Origin>) {
+    fn push_kept(&mut self, code: impl Into<Code>, origin: Option<&Origin>) {
         let mut diagnostic = Diagnostic::error(code.into()).phase(Phase::Validate);
         if let Some(origin) = origin {
             diagnostic = diagnostic.in_file(origin);
@@ -390,7 +389,7 @@ impl Report {
     }
 
     /// A lint of the crate's own (vanilla is silent): an information.
-    fn lint(&mut self, code: impl Into<DiagnosticCode>, origin: Option<&Origin>, path: &[&str]) {
+    fn lint(&mut self, code: impl Into<Code>, origin: Option<&Origin>, path: &[&str]) {
         self.push(code, Severity::Info, origin, path, None);
     }
 

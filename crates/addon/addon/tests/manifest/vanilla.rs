@@ -5,7 +5,7 @@
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use std::path::{Path, PathBuf};
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon::diagnostic::{Code, Severity};
 use bedrock_addon::manifest::{
     Capability, Dependency, ManifestFormat, MemoryTier, ModuleType, NativeModuleVersion,
 };
@@ -189,8 +189,7 @@ fn a_format_1_min_engine_version_above_1_12_is_capped_with_a_warning() {
             .diagnostics()
             .iter()
             .any(|d| d.severity == Severity::Warning
-                && d.code
-                    == DiagnosticCode::from(&core_codes::MIN_ENGINE_VERSION_CAP_FORMAT_VERSION1))
+                && d.code == Code::from(&core_codes::MIN_ENGINE_VERSION_CAP_FORMAT_VERSION1))
     );
 }
 

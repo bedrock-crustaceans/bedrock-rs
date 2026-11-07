@@ -23,7 +23,7 @@ use indexmap::IndexMap;
 #[cfg(any(feature = "block", feature = "item"))]
 use super::{At, Findings, LinkCx, Target, kinds, unresolved};
 #[cfg(feature = "block")]
-use bedrock_addon_core::diagnostic::VanillaText;
+use bedrock_addon_core::diagnostic::sentence;
 
 /// How a rule's row grades the states of a block descriptor that names a block of the stack:
 /// a state the block does not have, and a value the state cannot take.
@@ -213,10 +213,8 @@ fn block(
                 match own.get(state) {
                     None => {
                         if let States::Kept(template) = member.states {
-                            let text = VanillaText::Formatted {
-                                template,
-                                args: vec![name.as_str().to_owned(), state.clone()],
-                            };
+                            let text =
+                                sentence(template, &[name.as_str().to_owned(), state.clone()]);
                             at.severity = Severity::Error;
                             let finding =
                                 unresolved(at.with_text(text), kinds::BLOCK_STATE, state, None);

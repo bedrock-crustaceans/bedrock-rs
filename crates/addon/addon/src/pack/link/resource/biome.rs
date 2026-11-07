@@ -21,9 +21,7 @@ use bedrock_addon_core::document::{ComponentMap, Origin, VersionInfo};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 
 use super::super::{At, Findings, LinkCx, Target, kinds, unresolved};
-use crate::diagnostic::{
-    Diagnostic, DiagnosticCode, JsonPath, ReferenceHint, Severity, VanillaText,
-};
+use crate::diagnostic::{Code, Diagnostic, JsonPath, ReferenceHint, Severity, sentence};
 #[cfg(feature = "biomes_client")]
 use crate::families::biomes_client::{LegacyClientBiome, LegacyClientBiomes};
 use crate::families::client_biome::component::ClientBiomeComponent;
@@ -120,10 +118,7 @@ fn unknown(cx: &LinkCx<'_>, identifier: &BiomeId, origin: &Origin) -> Option<Dia
     let Target::Missing(hint) = cx.biome(identifier) else {
         return None;
     };
-    let text = VanillaText::Formatted {
-        template: NO_BIOME,
-        args: vec![identifier.as_str().to_owned()],
-    };
+    let text = sentence(NO_BIOME, &[identifier.as_str().to_owned()]);
     let at = At::new(
         origin,
         path(&["description", "identifier"]),
@@ -174,7 +169,7 @@ impl<'a> Shadowed<'a> {
                 Severity::Info,
             );
             out.push(at.reference(
-                DiagnosticCode::from(&core_codes::CLIENT_BIOME_SHADOWS_LOWER_PACKS),
+                Code::from(&core_codes::CLIENT_BIOME_SHADOWS_LOWER_PACKS),
                 kinds::PACK,
                 pack.name(),
                 Some(ReferenceHint::Shadowed),
@@ -258,7 +253,7 @@ pub(super) fn own_entry<'l>(
 pub(super) fn overridden(origin: &Origin, component: &str, by: &PackRef) -> Diagnostic {
     let at = At::new(origin, path(&["components", component]), Severity::Info);
     at.reference(
-        DiagnosticCode::from(&core_codes::CLIENT_BIOME_OVERRIDDEN_BY_BIOMES_CLIENT),
+        Code::from(&core_codes::CLIENT_BIOME_OVERRIDDEN_BY_BIOMES_CLIENT),
         kinds::PACK,
         by.name(),
         None,

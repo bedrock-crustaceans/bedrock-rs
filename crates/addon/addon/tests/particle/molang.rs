@@ -8,7 +8,7 @@
     reason = "part of the tests needs the `molang` feature, part its absence"
 )]
 
-use bedrock_addon::diagnostic::{DiagnosticCode as Code, Diagnostics, Severity};
+use bedrock_addon::diagnostic::{Code, Diagnostics, Severity};
 use bedrock_addon::document::JsonDocument as _;
 use bedrock_addon::families::particle::ParticleEffect;
 use bedrock_addon::families::particle::component::{

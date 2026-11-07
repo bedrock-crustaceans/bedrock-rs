@@ -15,7 +15,7 @@ use super::component::{
 };
 use super::read::V1_26_0;
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, Phase, Severity};
+use bedrock_addon_core::diagnostic::{Code, Diagnostic, JsonPath, Phase, Severity};
 use bedrock_addon_core::document::ComponentMap;
 use bedrock_addon_core::id::BiomeId;
 use bedrock_addon_core::shared::RangeForm;
@@ -36,8 +36,8 @@ const NETHER_TYPES: [&str; 4] = [
 
 /// An `InvalidValue` without text: a member constraint, whose message is the game's generic
 /// one rather than a fixed sentence.
-fn constraint() -> DiagnosticCode {
-    DiagnosticCode::from(&core_codes::INVALID_VALUE)
+fn constraint() -> Code {
+    Code::from(&core_codes::INVALID_VALUE)
 }
 
 /// Validates the identifier and the components of a biome (stable or beta).
@@ -598,7 +598,7 @@ fn overlapping(specifiers: &[NoiseBlockSpecifier]) -> bool {
 /// The `noise` member's combined constraint: in a base-game pack a `namespace:name` in the
 /// `minecraft` namespace, elsewhere a `namespace:name` in any other namespace
 /// (case-insensitive); in every pack no whitespace. The first failing part is reported.
-fn noise_constraint(noise: &str, base_game: bool) -> Option<DiagnosticCode> {
+fn noise_constraint(noise: &str, base_game: bool) -> Option<Code> {
     // `^(?:{P}.)+:(?:.)+$`: something, a colon, something.
     let namespaced = noise
         .char_indices()
@@ -607,10 +607,10 @@ fn noise_constraint(noise: &str, base_game: bool) -> Option<DiagnosticCode> {
         .get(..10)
         .is_some_and(|prefix| prefix.eq_ignore_ascii_case("minecraft:"));
     if !namespaced {
-        return Some(DiagnosticCode::from(&codes::NAMESPACE_MISSING));
+        return Some(Code::from(&codes::NAMESPACE_MISSING));
     }
     if !base_game && in_minecraft {
-        return Some(codes::NAMESPACE_INVALID.with(["minecraft"]).into());
+        return Some(codes::NAMESPACE_INVALID.with(["minecraft"]));
     }
     if base_game && !in_minecraft {
         return Some(constraint());
@@ -801,7 +801,7 @@ fn nether(components: &ComponentMap<BiomeComponent>, cx: &mut ValidateCx<'_>) {
 #[cfg(test)]
 mod tests {
     use super::{identifier_matches, noise_constraint};
-    use bedrock_addon_core::diagnostic::DiagnosticCode;
+    use bedrock_addon_core::diagnostic::Code;
     use bedrock_addon_core::diagnostic::codes as core_codes;
 
     #[test]
@@ -816,7 +816,7 @@ mod tests {
 
     #[test]
     fn the_noise_constraint_follows_the_pack_area() {
-        let namespace = |c: Option<DiagnosticCode>| c.is_some_and(|c| c.name() == "NamespaceRule");
+        let namespace = |c: Option<Code>| c.is_some_and(|c| c.name() == "NamespaceRule");
         assert_eq!(noise_constraint("test:grad", false), None);
         assert!(namespace(noise_constraint("minecraft:grad", false)));
         assert!(namespace(noise_constraint("MineCraft:grad", false)));

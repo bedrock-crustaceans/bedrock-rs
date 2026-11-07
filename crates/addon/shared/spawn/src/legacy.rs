@@ -10,7 +10,7 @@ use super::condition::{
 };
 use super::read::{self, child, element, finding, finding_with, wrong_type};
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Severity, builders,
+    Code, Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Severity, builders,
 };
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::{JsonSlice, Value};
@@ -141,7 +141,7 @@ pub fn read(document: JsonSlice<'_>, flavor: Flavor, d: &mut Diagnostics) -> Opt
         if flavor == Flavor::Groups && payload.is_none() {
             // The payload key is absent, with vanilla's text.
             finding(
-                DiagnosticCode::from(&codes::MISSING_IDENTIFIER_PAYLOAD),
+                Code::from(&codes::MISSING_IDENTIFIER_PAYLOAD),
                 Severity::Error,
                 &JsonPath::new(),
                 d,
@@ -150,7 +150,7 @@ pub fn read(document: JsonSlice<'_>, flavor: Flavor, d: &mut Diagnostics) -> Opt
             let mut path = child(&at, "description");
             path.push("identifier");
             finding(
-                DiagnosticCode::from(&codes::MISSING_IDENTIFIER),
+                Code::from(&codes::MISSING_IDENTIFIER),
                 Severity::Error,
                 &path,
                 d,

@@ -2,7 +2,7 @@
 //! both ends of its range and on each half of its condition, and the constructors.
 
 use bedrock_addon::diagnostic::codes;
-use bedrock_addon::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, Severity};
+use bedrock_addon::diagnostic::{Diagnostic, Diagnostics, Severity};
 use bedrock_addon::document::{Content, Placed};
 use bedrock_addon::families::poi::{PoiTag, PoiType};
 use bedrock_addon::id::{BlockId, PoiTagId, PoiTypeId};
@@ -62,7 +62,7 @@ fn e1_the_floor_is_1_26_40_for_both_documents() {
             .collect();
         assert_eq!(errors.len(), 1, "{version}: {}", describe(d.iter()));
         assert!(
-            errors[0].code == DiagnosticCode::from(codes::NO_PARSER_FOR_VERSION.with([version])),
+            errors[0].code == codes::NO_PARSER_FOR_VERSION.with([version]),
             "{version}: {:?}",
             errors[0].code
         );
@@ -104,8 +104,7 @@ fn e2_the_ceiling_is_the_engine_version() {
     let d = rejected::<PoiType>(&block_document(&above, FORGE));
     assert!(
         d.iter()
-            .any(|f| f.code
-                == DiagnosticCode::from(codes::NO_PARSER_FOR_VERSION.with([above.clone()]))),
+            .any(|f| f.code == codes::NO_PARSER_FOR_VERSION.with([above.clone()])),
         "{}",
         describe(d.iter())
     );

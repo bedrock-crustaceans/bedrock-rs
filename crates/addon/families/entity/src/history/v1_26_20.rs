@@ -7,7 +7,7 @@ use facet_value::VArray;
 
 use super::Payload;
 use super::ops::{Members, note, sections};
-use bedrock_addon_core::diagnostic::DiagnosticCode;
+use bedrock_addon_core::diagnostic::Code;
 
 /// An entity document as written in format 1.26.20 (up to the next struct's version): its
 /// payload as written.
@@ -39,11 +39,7 @@ impl LegacyStep<1, 26, 20> for Payload {
                 let at = section
                     .at
                     .with(&["minecraft:behavior.pickup_items", MEMBER]);
-                note(
-                    cx,
-                    DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD),
-                    &at,
-                );
+                note(cx, Code::from(&core_codes::UNRECOGNIZED_FIELD), &at);
             }
             if let Some(pushable) = members.object("minecraft:pushable_by_entity") {
                 pushable.insert_absent("presets", VArray::new().into());

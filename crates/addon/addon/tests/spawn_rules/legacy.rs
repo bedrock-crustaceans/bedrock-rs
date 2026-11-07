@@ -1,6 +1,6 @@
 //! The standard (1.8.0-shaped) spawn rules: the fixture rows `s01`, `s05`–`s09o`.
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon::diagnostic::{Code, Severity};
 use bedrock_addon::families::spawn_rules::{Difficulty, OneOrMany, PopulationControl};
 use bedrock_addon::id::EntityId;
 use bedrock_addon::shared::BlockDescriptor;
@@ -10,22 +10,22 @@ use super::common::{
     paths, rejected, round_trip, standard, with,
 };
 
-fn invalid_type(code: &DiagnosticCode) -> bool {
+fn invalid_type(code: &Code) -> bool {
     // By legacy name: the variant and the definitions that were it.
     matches!(code.name(), "InvalidType")
 }
 
-fn invalid_value(code: &DiagnosticCode) -> bool {
+fn invalid_value(code: &Code) -> bool {
     // By legacy name: the variant and the definitions that were it.
     matches!(code.name(), "InvalidValue")
 }
 
-fn missing_field(code: &DiagnosticCode) -> bool {
+fn missing_field(code: &Code) -> bool {
     // By legacy name: the variant and the definitions that were it.
     matches!(code.name(), "MissingRequiredField")
 }
 
-fn invalid_enum(code: &DiagnosticCode) -> bool {
+fn invalid_enum(code: &Code) -> bool {
     // By legacy name: the variant and the definitions that were it.
     matches!(code.name(), "InvalidEnumValue")
 }

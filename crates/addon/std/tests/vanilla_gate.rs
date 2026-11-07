@@ -493,7 +493,7 @@ struct Expected {
     pass: Pass,
     /// The file's path in the pack, whole.
     path: &'static str,
-    /// The `DiagnosticCode` name.
+    /// The code's name.
     code: &'static str,
     /// The severity the game logs it at, which the crate mirrors.
     severity: Severity,

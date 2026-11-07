@@ -10,7 +10,7 @@
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Class, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, JsonPathSegment, Severity, Told,
+    Class, Code, Diagnostic, Diagnostics, JsonPath, JsonPathSegment, Severity, Told,
 };
 use bedrock_addon_core::json::{JsonSlice, NullRule, Value, to_json};
 use bedrock_addon_core::load::LoadContext;
@@ -106,7 +106,7 @@ impl<'d> ComponentCheck<'d> {
     /// A member the typed read refuses, with the game's text where the generic read has none:
     /// `code` as an error that drops the component (the strict read only; the caller checks the
     /// mode).
-    pub(crate) fn refuse(&mut self, code: DiagnosticCode, at: &JsonPath) {
+    pub(crate) fn refuse(&mut self, code: Code, at: &JsonPath) {
         self.failed = true;
         self.push(code, Severity::Error, at);
     }
@@ -161,14 +161,14 @@ impl<'d> ComponentCheck<'d> {
     }
 
     /// A finding that does not depend on the mode (a vanilla warning; the value stays).
-    pub(crate) fn push(&mut self, code: DiagnosticCode, severity: Severity, at: &JsonPath) {
+    pub(crate) fn push(&mut self, code: Code, severity: Severity, at: &JsonPath) {
         self.out
             .push(Diagnostic::error(code).at(at.clone()).severity(severity));
     }
 
     /// A kept error at `at`: a level-3 line of the game after which the entity loads: the game logs
     /// this at the error level and keeps the document, a kept error.
-    pub(crate) fn kept(&mut self, code: DiagnosticCode, at: &JsonPath) {
+    pub(crate) fn kept(&mut self, code: Code, at: &JsonPath) {
         self.out
             .push_kept_error(Diagnostic::error(code).at(at.clone()));
     }
@@ -192,7 +192,7 @@ impl<'d> ComponentCheck<'d> {
                 ] {
                     if !missing {
                         let here = at.child(end);
-                        self.refuse(DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD), &here);
+                        self.refuse(Code::from(&core_codes::UNRECOGNIZED_FIELD), &here);
                     }
                 }
                 return;

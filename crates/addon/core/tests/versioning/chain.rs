@@ -4,7 +4,7 @@
 //! `history::ToyHistory` methods.
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, JsonPath, Severity};
+use bedrock_addon_core::diagnostic::{Code, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::document::{ComponentMap, ComponentRef, Document, Origin, VersionInfo};
 use bedrock_addon_core::json::{JsonSlice, Value};
 use bedrock_addon_core::load::LoadContext;
@@ -72,10 +72,7 @@ fn a_floor_document_walks_every_step_to_latest() {
     ));
     assert_eq!(
         codes(&outcome),
-        [(
-            DiagnosticCode::from(&core_codes::DROPPED_FIELD),
-            Severity::Warning
-        )]
+        [(Code::from(&core_codes::DROPPED_FIELD), Severity::Warning)]
     );
     assert_eq!(
         outcome.version,

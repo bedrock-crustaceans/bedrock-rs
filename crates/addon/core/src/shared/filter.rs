@@ -294,9 +294,7 @@ impl Filter {
                     // "Filter test not found -> %s":
                     // level 3, and the test evaluates false: a kept error.
                     out.push_kept_error(finding(
-                        codes::FILTER_TEST_NOT_FOUND
-                            .with([test.test.as_str()])
-                            .into(),
+                        codes::FILTER_TEST_NOT_FOUND.with([test.test.as_str()]),
                         Severity::Error,
                         path,
                     ));

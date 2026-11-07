@@ -6,7 +6,7 @@
 //! Biome documents the game's own unit tests feed its loader; `case-11.fmt.txt` is a
 //! format-string template the test fills before parsing.
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Diagnostics, Severity};
+use bedrock_addon::diagnostic::{Code, Diagnostics, Severity};
 use bedrock_addon::version::FormatVersion;
 
 use super::common::{base_game, context, fixture, load, load_beta, loads, rejected};
@@ -19,7 +19,7 @@ fn engine(name: &str) -> String {
 
 /// The one finding of a refused document: its code (by `matches`), severity and path.
 #[track_caller]
-fn only(found: &Diagnostics, code: impl Fn(&DiagnosticCode) -> bool, at: &str) {
+fn only(found: &Diagnostics, code: impl Fn(&Code) -> bool, at: &str) {
     let all: Vec<_> = found
         .iter()
         .filter(|d| d.severity >= Severity::Warning)

@@ -1,7 +1,7 @@
 //! `scripts()` on both stacks: which packs have a bundle, the side that decides the module
 //! type, base-game packs, subpacks, the cache, and the same bundles through a `StackLoader`.
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon::diagnostic::{Code, Severity};
 use bedrock_addon::families::script::{Resolution, ScriptPath};
 use bedrock_addon::load::{
     Collection, CollectionSet, LoadOptions, RepositoryLoader, Residency, RootId, Source,
@@ -488,7 +488,7 @@ fn the_stack_s_report_lists_a_bundle_s_findings() {
     let stack = script_stack(&[("scripts/main.js", b"import \"./gone.js\";\n")]);
     assert_eq!(stack.scripts().len(), 1);
     let report = stack.report();
-    let found: Vec<&DiagnosticCode> = report
+    let found: Vec<&Code> = report
         .iter()
         .map(|finding| &finding.code)
         .filter(|code| code.is(&bedrock_addon::diagnostic::codes::SCRIPT_IMPORT_NOT_FOUND))

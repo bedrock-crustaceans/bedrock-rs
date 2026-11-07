@@ -1,7 +1,7 @@
 //! `description.particle_effects` of a client entity, an attachable or an atomic client entity:
 //! each value names a particle effect.
 
-use bedrock_addon_core::diagnostic::{Severity, VanillaText};
+use bedrock_addon_core::diagnostic::{Severity, sentence};
 use bedrock_addon_core::id::ParticleId;
 
 use super::super::{At, Findings, LinkCx, Target, kinds, unresolved};
@@ -28,10 +28,10 @@ pub(super) fn check(cx: &LinkCx<'_>, out: &mut Findings, user: &User<'_>) {
         } else {
             // The game logs the miss at the error level and goes on with the next entry: a
             // kept error.
-            At::new(user.origin, path, Severity::Error).with_text(VanillaText::Formatted {
-                template: PARTICLE_NOT_FOUND,
-                args: vec![user.origin.path.to_string(), value.as_str().to_owned()],
-            })
+            At::new(user.origin, path, Severity::Error).with_text(sentence(
+                PARTICLE_NOT_FOUND,
+                &[user.origin.path.to_string(), value.as_str().to_owned()],
+            ))
         };
         let finding = unresolved(at, kinds::PARTICLE, &name, hint);
         out.push(if lint { finding } else { finding.into_kept() });

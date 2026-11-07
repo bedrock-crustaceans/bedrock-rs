@@ -845,7 +845,7 @@ fn locate<'a>(
 mod tests {
     use super::*;
     use crate::diagnostic::codes as core_codes;
-    use crate::diagnostic::{DiagnosticCode, Location, Phase, Severity};
+    use crate::diagnostic::{Code, Location, Phase, Severity};
     use crate::test_cost::{assert_linear_timed_at, timed};
 
     fn path(members: &[&str]) -> JsonPath {
@@ -856,7 +856,7 @@ mod tests {
         path
     }
 
-    fn finding(code: DiagnosticCode, severity: Severity, at: &[&str]) -> Diagnostic {
+    fn finding(code: Code, severity: Severity, at: &[&str]) -> Diagnostic {
         Diagnostic::new(
             code,
             severity,
@@ -881,7 +881,7 @@ mod tests {
 
     #[test]
     fn a_finding_about_the_value_at_the_number_speaks_for_it() {
-        let wrong_type = DiagnosticCode::from(&core_codes::INVALID_TYPE);
+        let wrong_type = Code::from(&core_codes::INVALID_TYPE);
         assert!(left_out_beside(finding(
             wrong_type.clone(),
             Severity::Warning,
@@ -905,9 +905,9 @@ mod tests {
     #[test]
     fn a_finding_that_names_an_unknown_member_does_not_speak_for_its_number() {
         for code in [
-            DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD),
-            DiagnosticCode::from(&core_codes::UNRECOGNIZED_COMPONENT),
-            DiagnosticCode::from(&core_codes::UNKNOWN_SOUND),
+            Code::from(&core_codes::UNRECOGNIZED_FIELD),
+            Code::from(&core_codes::UNRECOGNIZED_COMPONENT),
+            Code::from(&core_codes::UNKNOWN_SOUND),
         ] {
             assert!(
                 !left_out_beside(finding(code.clone(), Severity::Warning, &["a", "n"])),
@@ -920,7 +920,7 @@ mod tests {
     /// and the number in it is the clamp's to tell.
     #[test]
     fn a_kept_error_around_the_number_does_not_speak_for_it() {
-        let missing = DiagnosticCode::from(&core_codes::MISSING_REQUIRED_FIELD);
+        let missing = Code::from(&core_codes::MISSING_REQUIRED_FIELD);
         assert!(!left_out_beside(
             finding(missing, Severity::Error, &["a"]).into_kept()
         ));
@@ -928,7 +928,7 @@ mod tests {
 
     #[test]
     fn a_member_refused_around_the_number_speaks_for_it_and_the_root_does_not() {
-        let invalid = DiagnosticCode::from(&core_codes::INVALID_VALUE);
+        let invalid = Code::from(&core_codes::INVALID_VALUE);
         assert!(left_out_beside(finding(
             invalid.clone(),
             Severity::Error,
@@ -937,7 +937,7 @@ mod tests {
         // A warning around the number refuses nothing (a legacy block's "Duplicate
         // component" is at the component it keeps); an error at the root is the file's.
         assert!(!left_out_beside(finding(
-            DiagnosticCode::from(&core_codes::DROPPED_COMPONENT),
+            Code::from(&core_codes::DROPPED_COMPONENT),
             Severity::Warning,
             &["a"]
         )));
@@ -953,7 +953,7 @@ mod tests {
     fn a_finding_of_another_file_does_not_speak_for_the_number() {
         use crate::pack_identity::PackPath;
         let mut theirs = finding(
-            DiagnosticCode::from(&core_codes::INVALID_TYPE),
+            Code::from(&core_codes::INVALID_TYPE),
             Severity::Warning,
             &["a", "n"],
         );
@@ -974,12 +974,12 @@ mod tests {
     #[test]
     fn a_later_finding_at_the_number_takes_the_clamps_warning_back() {
         let range = finding(
-            DiagnosticCode::from(&core_codes::INVALID_TYPE),
+            Code::from(&core_codes::INVALID_TYPE),
             Severity::Warning,
             &["a", "n"],
         );
         let unknown = finding(
-            DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD),
+            Code::from(&core_codes::UNRECOGNIZED_FIELD),
             Severity::Warning,
             &["b"],
         );
@@ -1017,12 +1017,12 @@ mod tests {
                     clamp.push(clamp_warning(&at));
                     d.push(clamp_warning(&at));
                     d.push(finding(
-                        DiagnosticCode::from(&core_codes::INVALID_TYPE),
+                        Code::from(&core_codes::INVALID_TYPE),
                         Severity::Warning,
                         &at,
                     ));
                     d.push(finding(
-                        DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD),
+                        Code::from(&core_codes::UNRECOGNIZED_FIELD),
                         Severity::Warning,
                         &["other", member.as_str()],
                     ));

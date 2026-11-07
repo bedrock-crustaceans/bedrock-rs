@@ -25,7 +25,7 @@ use std::sync::{LazyLock, OnceLock};
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, JsonPath, Location, PackReport, Phase, Severity,
+    Code, Diagnostic, JsonPath, Location, PackReport, Phase, Severity,
 };
 use bedrock_addon_core::document::{PlacedWritable, Writable};
 use bedrock_addon_core::json::{EncodeError, WriteStyle};
@@ -366,7 +366,7 @@ fn unwritable(manifest: &Manifest, error: EncodeError, origin: PackOrigin) -> Op
     report.original_name.clone_from(&manifest.header.name);
     report.original_version = manifest.header.version.to_string();
     report.diagnostics.push(Diagnostic::new(
-        DiagnosticCode::from(&core_codes::INVALID_VALUE),
+        Code::from(&core_codes::INVALID_VALUE),
         Severity::Error,
         Phase::Validate,
         Location::new(None, Some(MANIFEST_PATH.clone()), at, None),

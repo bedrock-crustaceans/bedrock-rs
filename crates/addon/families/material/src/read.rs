@@ -20,7 +20,7 @@ use super::values::{
 };
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Severity,
+    Code, Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Severity,
 };
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::{
@@ -69,7 +69,7 @@ impl Layer {
     pub(super) fn report_clamped(&self, out: &mut Diagnostics) {
         out.extend(self.trailing.clone());
         for at in &self.clamped {
-            let code = DiagnosticCode::from(&core_codes::INVALID_VALUE);
+            let code = Code::from(&core_codes::INVALID_VALUE);
             out.push(Diagnostic::info(code).at(at.clone()));
         }
     }
@@ -185,7 +185,7 @@ pub(super) fn unwrap_copy(root: VObject, out: &mut Diagnostics) -> Unwrapped {
         };
     }
     let at = JsonPath::new().child(MATERIALS).child(VERSION);
-    let code = DiagnosticCode::from(&core_codes::UNSUPPORTED_VERSION);
+    let code = Code::from(&core_codes::UNSUPPORTED_VERSION);
     out.push(Diagnostic::info(code).at(at));
     Unwrapped {
         dropped: root.get(MATERIALS).cloned(),
@@ -284,7 +284,7 @@ fn unprefixed(key: &str) -> Option<&str> {
 
 impl Reader<'_> {
     /// A finding at the current path.
-    fn report(&mut self, code: DiagnosticCode, severity: Severity) {
+    fn report(&mut self, code: Code, severity: Severity) {
         self.out.push(
             Diagnostic::error(code)
                 .severity(severity)
@@ -294,13 +294,13 @@ impl Reader<'_> {
 
     /// The game's content-log error at the current path after which the material loads: a
     /// kept error.
-    fn report_kept(&mut self, code: DiagnosticCode) {
+    fn report_kept(&mut self, code: Code) {
         self.out
             .push_kept_error(Diagnostic::error(code).at(self.path.clone()));
     }
 
     /// A finding at member `key` of the current path.
-    fn report_at(&mut self, key: &str, code: DiagnosticCode, severity: Severity) {
+    fn report_at(&mut self, key: &str, code: Code, severity: Severity) {
         self.path.push(key);
         self.report(code, severity);
         self.path.pop();
@@ -316,18 +316,14 @@ impl Reader<'_> {
 
     /// A value of the wrong JSON type at member `key`: an information of the crate's own.
     fn wrong_type(&mut self, key: &str) {
-        self.report_at(
-            key,
-            DiagnosticCode::from(&core_codes::INVALID_TYPE),
-            Severity::Info,
-        );
+        self.report_at(key, Code::from(&core_codes::INVALID_TYPE), Severity::Info);
     }
 
     /// Reports a key the client does not read under this spelling.
     fn unrecognized(&mut self, key: &str) {
         self.report_at(
             key,
-            DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD),
+            Code::from(&core_codes::UNRECOGNIZED_FIELD),
             Severity::Info,
         );
     }
@@ -363,11 +359,7 @@ impl Reader<'_> {
         let text = self.string(key, value)?;
         if !self.unread && !table.contains(&text.as_str()) {
             self.refused = true;
-            self.report_at(
-                key,
-                DiagnosticCode::from(&core_codes::INVALID_VALUE),
-                Severity::Error,
-            );
+            self.report_at(key, Code::from(&core_codes::INVALID_VALUE), Severity::Error);
         }
         Some(text)
     }
@@ -386,16 +378,12 @@ impl Reader<'_> {
             // 0. The crate notes it; the client reads an unsigned 0 either way.
             self.report_at(
                 key,
-                DiagnosticCode::from(&core_codes::VALUE_REWRITTEN),
+                Code::from(&core_codes::VALUE_REWRITTEN),
                 Severity::Info,
             );
         }
         if read.is_none() && !self.clamped_at(key) {
-            self.report_at(
-                key,
-                DiagnosticCode::from(&core_codes::INVALID_VALUE),
-                Severity::Info,
-            );
+            self.report_at(key, Code::from(&core_codes::INVALID_VALUE), Severity::Info);
         }
         read
     }
@@ -419,11 +407,7 @@ impl Reader<'_> {
         // A number past the doubles has the clamp's finding; the largest double as written
         // has none yet.
         if !self.clamped_at(key) {
-            self.report_at(
-                key,
-                DiagnosticCode::from(&core_codes::INVALID_VALUE),
-                Severity::Info,
-            );
+            self.report_at(key, Code::from(&core_codes::INVALID_VALUE), Severity::Info);
         }
         Some(if wide < 0.0 { f32::MIN } else { f32::MAX })
     }
@@ -459,7 +443,7 @@ impl Reader<'_> {
             let mut list = Vec::with_capacity(array.len());
             for (index, entry) in array.iter().enumerate() {
                 let Some(text) = entry.as_string() else {
-                    let code = DiagnosticCode::from(&core_codes::INVALID_TYPE);
+                    let code = Code::from(&core_codes::INVALID_TYPE);
                     reader.within_index(index, |reader| reader.report(code, Severity::Info));
                     continue;
                 };
@@ -477,12 +461,12 @@ impl Reader<'_> {
     /// unknown one is reported with the client's text.
     fn state(&mut self, name: &str) {
         if name == IGNORED_RENDER_STATE {
-            let code = codes::STATE_IGNORED.with([name]).into();
+            let code = codes::STATE_IGNORED.with([name]);
             self.report(code, Severity::Info);
         } else if render_state_bit(name).is_none() {
             // The game logs this at the content log's error level; the state is ignored and the
             // material loads: a kept error.
-            let code = codes::STATE_UNKNOWN.with([name]).into();
+            let code = codes::STATE_UNKNOWN.with([name]);
             self.report_kept(code);
         }
     }
@@ -589,13 +573,13 @@ impl Reader<'_> {
             match sampler.sampler_index {
                 // The client skips the entry and says nothing.
                 None => self.report(
-                    DiagnosticCode::from(&core_codes::MISSING_REQUIRED_FIELD),
+                    Code::from(&core_codes::MISSING_REQUIRED_FIELD),
                     Severity::Info,
                 ),
                 // An assertion in a versioned material, silence in a legacy one.
                 Some(index) if index >= SAMPLER_SLOTS => self.report_at(
                     "samplerIndex",
-                    DiagnosticCode::from(&core_codes::INVALID_VALUE),
+                    Code::from(&core_codes::INVALID_VALUE),
                     Severity::Info,
                 ),
                 Some(_) => {}
@@ -619,10 +603,7 @@ impl Reader<'_> {
                 reader.within_index(index, |reader| match entry.as_object() {
                     Some(object) => list.push(reader.sampler(object, rules, applied)),
                     None => {
-                        reader.report(
-                            DiagnosticCode::from(&core_codes::INVALID_TYPE),
-                            Severity::Info,
-                        );
+                        reader.report(Code::from(&core_codes::INVALID_TYPE), Severity::Info);
                     }
                 });
             }
@@ -638,7 +619,7 @@ impl Reader<'_> {
             for (index, entry) in array.iter().enumerate() {
                 reader.within_index(index, |reader| {
                     let Some(object) = entry.as_object() else {
-                        let code = DiagnosticCode::from(&core_codes::INVALID_TYPE);
+                        let code = Code::from(&core_codes::INVALID_TYPE);
                         reader.report(code, Severity::Info);
                         return;
                     };
@@ -670,19 +651,19 @@ impl Reader<'_> {
             for (index, entry) in array.iter().enumerate() {
                 reader.within_index(index, |reader| {
                     let Some(names) = entry.as_array() else {
-                        let code = DiagnosticCode::from(&core_codes::INVALID_TYPE);
+                        let code = Code::from(&core_codes::INVALID_TYPE);
                         reader.report(code, Severity::Info);
                         return;
                     };
                     let mut list = Vec::with_capacity(names.len());
                     for (at, name) in names.as_slice().iter().enumerate() {
                         let Some(name) = name.as_string() else {
-                            let code = DiagnosticCode::from(&core_codes::INVALID_TYPE);
+                            let code = Code::from(&core_codes::INVALID_TYPE);
                             reader.within_index(at, |reader| reader.report(code, Severity::Info));
                             continue;
                         };
                         if !TEXTURE_FORMATS.contains(&name.as_str()) {
-                            let code = DiagnosticCode::from(&core_codes::INVALID_VALUE);
+                            let code = Code::from(&core_codes::INVALID_VALUE);
                             reader.within_index(at, |reader| reader.report(code, Severity::Info));
                         }
                         list.push(name.as_str().to_owned());
@@ -703,7 +684,7 @@ impl Reader<'_> {
             for (index, entry) in array.iter().enumerate() {
                 reader.within_index(index, |reader| {
                     let Some(object) = entry.as_object() else {
-                        let code = DiagnosticCode::from(&core_codes::INVALID_TYPE);
+                        let code = Code::from(&core_codes::INVALID_TYPE);
                         reader.report(code, Severity::Info);
                         return;
                     };
@@ -738,11 +719,7 @@ impl Reader<'_> {
         let list = read(self);
         self.unread = outer;
         if list.is_some() && skipped && !outer {
-            self.report_at(
-                key,
-                DiagnosticCode::from(&core_codes::NO_EFFECT),
-                Severity::Info,
-            );
+            self.report_at(key, Code::from(&core_codes::NO_EFFECT), Severity::Info);
         }
         list
     }
@@ -947,7 +924,7 @@ pub(super) fn read_file(
         let key = key.as_str();
         let Some(object) = value.as_object() else {
             if !value.is_null() {
-                let code = DiagnosticCode::from(&core_codes::INVALID_TYPE);
+                let code = Code::from(&core_codes::INVALID_TYPE);
                 reader.report_at(key, code, Severity::Info);
             }
             extra.insert(key.to_owned(), value.clone());
@@ -1003,7 +980,7 @@ pub(super) fn read_list_placed(
     for (index, element) in array.as_slice().iter().enumerate() {
         reader.within_index(index, |reader| {
             let Some(object) = element.as_object() else {
-                let code = DiagnosticCode::from(&core_codes::INVALID_TYPE);
+                let code = Code::from(&core_codes::INVALID_TYPE);
                 reader.report(code, Severity::Info);
                 return;
             };
@@ -1026,7 +1003,7 @@ impl Reader<'_> {
             if key == "tag" {
                 // The game logs the removed keyword at the content log's error level and the entry
                 // still loads: a kept error.
-                let code = codes::KEY_REMOVED.with([key]).into();
+                let code = codes::KEY_REMOVED.with([key]);
                 self.path.push(key);
                 self.report_kept(code);
                 self.path.pop();
@@ -1052,7 +1029,7 @@ impl Reader<'_> {
         let Some(path) = path else {
             // A path of the wrong type has its own finding.
             if object.get("path").is_none_or(Value::is_null) {
-                let code = DiagnosticCode::from(&core_codes::MISSING_REQUIRED_FIELD);
+                let code = Code::from(&core_codes::MISSING_REQUIRED_FIELD);
                 self.report_at("path", code, Severity::Info);
             }
             return None;
@@ -1070,7 +1047,7 @@ pub(super) fn parse_error(path: &PackPath, message: String) -> Diagnostic {
 
 /// The root of a copy that is no object, or of a list that is no array: nothing is read.
 pub(super) fn wrong_root() -> Diagnostic {
-    let code = DiagnosticCode::from(&core_codes::INVALID_TYPE);
+    let code = Code::from(&core_codes::INVALID_TYPE);
     Diagnostic::error(code)
 }
 

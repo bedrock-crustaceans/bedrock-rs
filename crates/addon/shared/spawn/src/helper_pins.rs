@@ -3,16 +3,15 @@
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Class, CodeDef, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Kind, Location, Phase,
-    Severity,
+    Class, Code, CodeDef, Diagnostic, Diagnostics, JsonPath, Kind, Location, Phase, Severity,
 };
 
 fn at() -> JsonPath {
     JsonPath::of_keys(["a", "b"])
 }
 
-fn code() -> DiagnosticCode {
-    DiagnosticCode::from(&core_codes::INVALID_VALUE)
+fn code() -> Code {
+    Code::from(&core_codes::INVALID_VALUE)
 }
 
 /// The finding of `code` the long way.
@@ -40,7 +39,7 @@ fn the_closing_line_and_the_load_error() {
     same(
         &crate::load::closing(&CLOSING),
         &Diagnostic::new(
-            DiagnosticCode::from(&CLOSING),
+            Code::from(&CLOSING),
             Severity::Error,
             Phase::Validate,
             Location::default(),

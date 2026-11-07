@@ -8,7 +8,7 @@
 
 use crate::codes;
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath, Severity};
+use bedrock_addon_core::diagnostic::{Code, JsonPath, Severity};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::shared::{EventTrigger, Filter, FloatRange};
@@ -695,12 +695,7 @@ fn enum_spelling(
     let value = text.as_str().to_owned();
     // The game logs a level-3 line for `should_bounce` and for `difficulty_randomization` and
     // takes the default: it logs this at the error level and keeps the document, a kept error.
-    cx.kept(
-        codes::NOT_A_VALID_VALUE
-            .with([value.as_str(), member])
-            .into(),
-        at,
-    );
+    cx.kept(codes::NOT_A_VALID_VALUE.with([value.as_str(), member]), at);
     json.insert(member, Value::from(fallback));
     true
 }
@@ -722,7 +717,7 @@ impl Typed for Projectile {
                     // The game writes no content-log line for another integer, so the crate's own
                     // information stands here.
                     cx.push(
-                        DiagnosticCode::from(&core_codes::INVALID_VALUE),
+                        Code::from(&core_codes::INVALID_VALUE),
                         Severity::Info,
                         &JsonPath::new().child("anchor"),
                     );
@@ -875,7 +870,7 @@ fn legacy_spawn_chances(spawn: &mut VObject, at: &JsonPath, cx: &mut ComponentCh
                 && spawn_chance_rewritten(value, integer)
             {
                 cx.push(
-                    DiagnosticCode::from(&core_codes::VALUE_REWRITTEN),
+                    Code::from(&core_codes::VALUE_REWRITTEN),
                     Severity::Info,
                     &at.child(name),
                 );

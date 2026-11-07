@@ -37,7 +37,7 @@ use crate::component::{DryFoliageColor, SkyColor, SoundAddition, WaterAppearance
 use bedrock_addon_core::__private::Sealed;
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Phase, Severity, builders,
+    Code, Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Phase, Severity, builders,
 };
 use bedrock_addon_core::document::{
     CombineRule, Content, Contribution, Definition, Document, JsonContent, NoBeta, Notice, Origin,
@@ -375,8 +375,8 @@ impl Parts {
 }
 
 /// "unsupported version: no parser available for version %s".
-fn no_parser(version: &str) -> DiagnosticCode {
-    DiagnosticCode::from(core_codes::NO_PARSER_FOR_VERSION.with([version.to_string()]))
+fn no_parser(version: &str) -> Code {
+    core_codes::NO_PARSER_FOR_VERSION.with([version.to_string()])
 }
 
 /// The text of a file, after the BOM, the UTF-8 and the depth check.
@@ -431,7 +431,7 @@ fn reword(parsed: &mut Parsed<ClientBiomeFamily>, text: &str, path: &str) {
         let plain_missing = diagnostic.is(&core_codes::MISSING_REQUIRED_FIELD);
         let reworded = match &diagnostic.code {
             // The game clears the input's version and then finds none.
-            _ if plain_malformed_version => Some(DiagnosticCode::from(&codes::NO_VALID_VERSION)),
+            _ if plain_malformed_version => Some(Code::from(&codes::NO_VALID_VERSION)),
             // Below the floor the game refuses the version in the legacy loader's own words;
             // below the legacy range it has no parser at all.
             _ if use_format => written.filter(|version| *version < FLOOR).map(|version| {
@@ -439,7 +439,7 @@ fn reword(parsed: &mut Parsed<ClientBiomeFamily>, text: &str, path: &str) {
                 if version < LEGACY_SLICE {
                     no_parser(&version_text)
                 } else {
-                    DiagnosticCode::from(codes::CANNOT_LOAD.with([path, version_text.as_str()]))
+                    codes::CANNOT_LOAD.with([path, version_text.as_str()])
                 }
             }),
             // The game takes the first textual `format_version`: a document below 1.21.130
@@ -449,7 +449,7 @@ fn reword(parsed: &mut Parsed<ClientBiomeFamily>, text: &str, path: &str) {
                 && written.is_some_and(|version| version < MODERN)
                 && diagnostic.location.json_path.is_key("format_version") =>
             {
-                Some(DiagnosticCode::from(codes::NO_VERSION_STRING.with([path])))
+                Some(codes::NO_VERSION_STRING.with([path]))
             }
             // A text the legacy loader cannot read as a JSON object; the reader's message stays
             // the finding's detail.
@@ -462,7 +462,7 @@ fn reword(parsed: &mut Parsed<ClientBiomeFamily>, text: &str, path: &str) {
                     let message = diagnostic.syntax_message().unwrap_or_default();
                     codes::LEGACY_SYNTAX.with([message])
                 };
-                Some(code.into())
+                Some(code)
             }
             // The content log line that follows "Invalid Client Biome file".
             _ if diagnostic.is(&codes::INVALID_FILE) => {
@@ -603,7 +603,7 @@ fn findings_of(contribution: &Contribution<ClientBiome>) -> Diagnostics {
 }
 
 /// A combine-time finding at a document.
-fn notice(code: DiagnosticCode, severity: Severity, origin: &Origin) -> Diagnostic {
+fn notice(code: Code, severity: Severity, origin: &Origin) -> Diagnostic {
     Diagnostic::error(code)
         .severity(severity)
         .at(identifier_path())
@@ -647,7 +647,7 @@ fn combine(parsed: Vec<Contribution<ClientBiome>>, stack: &StackCx<'_>) -> Regis
     let mut builder = RegistryBuilder::new(
         CombineRule::ClaimBeforeValidate {
             claimed: Some(Notice {
-                code: DiagnosticCode::from(&core_codes::CLIENT_BIOME_SHADOWS_LOWER_PACKS),
+                code: Code::from(&core_codes::CLIENT_BIOME_SHADOWS_LOWER_PACKS),
                 severity: Severity::Info,
             }),
         },
@@ -680,7 +680,7 @@ fn combine(parsed: Vec<Contribution<ClientBiome>>, stack: &StackCx<'_>) -> Regis
             if !seen.insert((rank, id.clone())) {
                 findings.extend(findings_of(&contribution));
                 findings.push(notice(
-                    DiagnosticCode::from(&core_codes::DUPLICATE_IDENTIFIER),
+                    Code::from(&core_codes::DUPLICATE_IDENTIFIER),
                     Severity::Info,
                     origin,
                 ));
@@ -688,7 +688,7 @@ fn combine(parsed: Vec<Contribution<ClientBiome>>, stack: &StackCx<'_>) -> Regis
             }
             if loaded && !claiming.contains(&index) {
                 findings.push(notice(
-                    DiagnosticCode::from(&core_codes::SHADOWED_DEFINITION),
+                    Code::from(&core_codes::SHADOWED_DEFINITION),
                     Severity::Info,
                     origin,
                 ));

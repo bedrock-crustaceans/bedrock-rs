@@ -2,7 +2,7 @@
 //! `tests/fixtures/loot/loot/`.
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon_core::diagnostic::{Code, Severity};
 use bedrock_addon_core::document::{Content, UnknownMembers};
 use bedrock_addon_core::id::{EntityId, ItemId, LootTablePath};
 use bedrock_addon_core::load::LoadContext;
@@ -72,10 +72,7 @@ fn lt01_pools_only_loads_without_a_version_warning() {
     );
     assert_eq!(third.entries()[0].weight, None);
     assert_eq!(third.entries()[0].weight(), 1);
-    let _ = (
-        DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD),
-        Severity::Info,
-    );
+    let _ = (Code::from(&core_codes::UNRECOGNIZED_FIELD), Severity::Info);
 }
 
 #[test]

@@ -106,9 +106,7 @@ impl Leaves for Walk {
             if value.fract() != 0.0 {
                 self.enter_index(index);
                 self.push(
-                    codes::UV_TRUNCATED
-                        .with([value.to_string(), value.trunc().to_string()])
-                        .into(),
+                    codes::UV_TRUNCATED.with([value.to_string(), value.trunc().to_string()]),
                     Severity::Info,
                     element.span(),
                 );
@@ -152,9 +150,7 @@ impl Leaves for Walk {
             // The crate's own information either way.
             self.enter_index(index);
             self.push(
-                codes::INDEX_NOT_WHOLE
-                    .with([given.to_string(), value.to_string()])
-                    .into(),
+                codes::INDEX_NOT_WHOLE.with([given.to_string(), value.to_string()]),
                 Severity::Info,
                 element.span(),
             );

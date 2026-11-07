@@ -1,7 +1,7 @@
 //! The validation rules and the upgrade steps that no fixture row covers on
 //! its own, and both ends of every rule's range.
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Diagnostics, JsonPath, Severity, codes};
+use bedrock_addon::diagnostic::{Code, Diagnostics, JsonPath, Severity, codes};
 use bedrock_addon::families::dialogue::codes as dialogue_codes;
 use bedrock_addon::families::dialogue::{ActionMode, DialogueScene, DialogueText, NpcAction};
 use bedrock_addon::id::DialogueSceneTag;
@@ -750,7 +750,7 @@ fn unknown_members_are_reported_as_infos_and_kept_deviation() {
         .collect();
     let info = |at: &str| {
         (
-            DiagnosticCode::from(&codes::UNRECOGNIZED_FIELD),
+            Code::from(&codes::UNRECOGNIZED_FIELD),
             Severity::Info,
             at.to_owned(),
         )

@@ -13,7 +13,7 @@
 #[cfg(feature = "molang")]
 use bedrock_addon_core::diagnostic::Location;
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, JsonPath, Severity};
+use bedrock_addon_core::diagnostic::{Code, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::json::{JsonSlice, Value};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::molang::{Molang, MolangFieldSpec, ReaderKind};
@@ -51,7 +51,7 @@ fn lenient_value(value: &Molang, at: &JsonPath, cx: &mut ComponentCheck<'_>) -> 
     }
     if value.check(ReaderKind::SchemaValidated).is_err() {
         cx.push(
-            DiagnosticCode::from(&core_codes::INVALID_TYPE),
+            Code::from(&core_codes::INVALID_TYPE),
             // The lenient reader's refusal of the object form: the game writes no content-log
             // line for this, so the crate reports it as an information.
             Severity::Info,

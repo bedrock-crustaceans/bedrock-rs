@@ -4,7 +4,7 @@
 use super::types::TintColor;
 use crate::codes;
 use crate::read::{Members, Node, Opt, Reader, Writer, object};
-use bedrock_addon_core::diagnostic::DiagnosticCode;
+use bedrock_addon_core::diagnostic::Code;
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::json::{EncodeError, Value};
 use bedrock_addon_core::molang::Molang;
@@ -26,7 +26,7 @@ impl Node for DirectionMode {
             Some("derive_from_velocity") => Some(Self::DeriveFromVelocity),
             Some("custom") => Some(Self::Custom),
             Some(_) if !r.legacy() => {
-                r.error(DiagnosticCode::from(&core_codes::INVALID_VALUE));
+                r.error(Code::from(&core_codes::INVALID_VALUE));
                 None
             }
             _ => {

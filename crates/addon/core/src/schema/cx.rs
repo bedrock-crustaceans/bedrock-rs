@@ -3,7 +3,7 @@
 
 use super::grading::{Grading, grade};
 use crate::diagnostic::cereal::NumericRange;
-use crate::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, codes};
+use crate::diagnostic::{Code, Diagnostic, Diagnostics, JsonPath, codes};
 use crate::versioning::Reading;
 
 /// What a derived check does with the member after [`SchemaCx`] recorded its failure.
@@ -93,7 +93,7 @@ impl<'d> SchemaCx<'d> {
         let code = if self.range_text {
             range.code()
         } else {
-            DiagnosticCode::from(&codes::INVALID_VALUE)
+            Code::from(&codes::INVALID_VALUE)
         };
         if resettable {
             self.fail(code)
@@ -111,7 +111,7 @@ impl<'d> SchemaCx<'d> {
         let code = if self.range_text {
             crate::diagnostic::cereal::not_multiple_of(value, step)
         } else {
-            DiagnosticCode::from(&codes::INVALID_VALUE)
+            Code::from(&codes::INVALID_VALUE)
         };
         if resettable {
             self.fail(code)
@@ -121,7 +121,7 @@ impl<'d> SchemaCx<'d> {
         }
     }
 
-    fn fail(&mut self, code: DiagnosticCode) -> Verdict {
+    fn fail(&mut self, code: Code) -> Verdict {
         let Grading {
             fails_owner,
             resets,
@@ -137,7 +137,7 @@ impl<'d> SchemaCx<'d> {
 
     /// Records `code` at the current path at the rule's severity, failing the owner where
     /// `fails_owner`.
-    fn report(&mut self, code: DiagnosticCode, fails_owner: bool) {
+    fn report(&mut self, code: Code, fails_owner: bool) {
         self.failed |= fails_owner;
         self.out.push(
             Diagnostic::error(code)

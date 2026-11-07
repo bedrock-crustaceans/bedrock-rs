@@ -7,6 +7,10 @@ use bedrock_addon::diagnostic::CodeMeta;
 use std::collections::BTreeMap;
 
 /// Every definition table, named for the crate that owns it.
+#[allow(
+    clippy::too_many_lines,
+    reason = "one line per family's table; with every family on it is long"
+)]
 fn tables() -> Vec<(&'static str, &'static [&'static CodeMeta])> {
     let tables: Vec<(&'static str, &'static [&'static CodeMeta])> = vec![
         ("core", bedrock_addon::diagnostic::codes::ALL),

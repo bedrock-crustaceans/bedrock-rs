@@ -3,7 +3,7 @@
 //! `FieldMeta.since_engine`.
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, JsonPath, Severity};
+use bedrock_addon_core::diagnostic::{Code, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::document::{ComponentMap, ComponentRef};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::version::{FormatVersion, MinEngineVersion};
@@ -122,7 +122,7 @@ fn an_unknown_member_of_a_component_is_kept_and_reported_at_its_path() {
     assert_eq!(
         codes(&outcome),
         [(
-            DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD),
+            Code::from(&core_codes::UNRECOGNIZED_FIELD),
             Severity::Warning
         )]
     );
@@ -141,9 +141,7 @@ fn before_its_release_a_component_needs_its_requirement() {
     let outcome = load_toy(&text);
     assert!(outcome.value.is_none(), "the base components fail");
     let error = outcome.diagnostics.first_error().expect("an error");
-    let DiagnosticCode::Specific { code } = &error.code else {
-        panic!("{:?}", error.code);
-    };
+    let code = &error.code;
     assert!(code.is(&core_codes::TURN_ON_TOGGLE_BEFORE), "{code:?}");
     // what, name, the releasing version, the toggle
     assert_eq!(
@@ -186,7 +184,7 @@ fn the_legacy_creator_features_name_the_release_version() {
     assert!(
         matches!(
             &error.code,
-            DiagnosticCode::Specific { code }
+            code
                 if code.is(&core_codes::TOGGLE_USE_FORMAT_VERSION)
                     && code.args()[2] == FormatVersion::new(1, 2, 0).to_string()
         ),
@@ -233,10 +231,10 @@ fn a_deprecated_component_is_dropped_with_the_generic_text() {
     assert_eq!(
         codes(&outcome),
         [(
-            DiagnosticCode::from(core_codes::DEPRECATED_IN_FORMAT.with([
+            core_codes::DEPRECATED_IN_FORMAT.with([
                 "toy:retired".to_string(),
                 FormatVersion::new(1, 1, 0).to_string()
-            ])),
+            ]),
             Severity::Warning
         )]
     );
@@ -250,7 +248,7 @@ fn a_vanilla_only_component_is_dropped_outside_base_game_packs() {
     assert_eq!(
         codes(&outcome),
         [(
-            DiagnosticCode::from(&core_codes::UNRECOGNIZED_COMPONENT),
+            Code::from(&core_codes::UNRECOGNIZED_COMPONENT),
             Severity::Warning
         )]
     );
@@ -273,12 +271,12 @@ fn two_versions_of_a_component_keep_the_newer() {
     assert_eq!(
         codes(&outcome),
         [(
-            DiagnosticCode::from(core_codes::DUPLICATE_COMPONENT_VERSION.with([
+            core_codes::DUPLICATE_COMPONENT_VERSION.with([
                 "toy:old_glow",
                 "toy:glow",
                 "toy:glow",
                 "toy:old_glow"
-            ])),
+            ]),
             Severity::Info
         )]
     );
@@ -343,7 +341,7 @@ fn a_field_newer_than_the_packs_engine_is_reported_when_present() {
     assert_eq!(
         found,
         [(
-            DiagnosticCode::from(core_codes::FIELD_SINCE_ENGINE.with(["1.21.130"])),
+            core_codes::FIELD_SINCE_ENGINE.with(["1.21.130"]),
             "components/minecraft:cooldown/cooldown/type".to_owned()
         )]
     );

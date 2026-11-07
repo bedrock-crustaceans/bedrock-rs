@@ -485,7 +485,7 @@ fn a_finding_of_a_subsensor_the_1_20_0_step_shifted_names_the_member_of_the_file
     // sensor is held as written), so the step is run alone and a finding of a later check
     // is told at each place of its output.
     use bedrock_addon_core::diagnostic::{
-        Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
+        Code, Diagnostic, Diagnostics, JsonPath, Location, Phase, Severity,
     };
     use bedrock_addon_core::json::JsonSlice;
     use bedrock_addon_core::vanilla::ActorType;
@@ -535,7 +535,7 @@ fn a_finding_of_a_subsensor_the_1_20_0_step_shifted_names_the_member_of_the_file
             }
         }
         found.push(Diagnostic::new(
-            DiagnosticCode::from(&core_codes::INVALID_VALUE),
+            Code::from(&core_codes::INVALID_VALUE),
             Severity::Warning,
             Phase::Validate,
             Location::new(None, None, at, None),

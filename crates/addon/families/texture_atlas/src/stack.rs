@@ -8,7 +8,7 @@ use super::patch::patch_json;
 use super::read::read_atlas;
 use super::types::{AtlasItem, AtlasKind, TextureAtlas, TextureElement, VariationEntry};
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase};
+use bedrock_addon_core::diagnostic::{Code, Diagnostic, Diagnostics, JsonPath, Phase};
 use bedrock_addon_core::document::{Merge, Merged, Origin, RawLayer, UnknownMembers, unversioned};
 use bedrock_addon_core::id::AtlasKey;
 use bedrock_addon_core::json::Value;
@@ -48,13 +48,11 @@ pub(crate) fn parse_copy(file: &WalkFile) -> AtlasCopy {
         Ok(read) => {
             // Both are informations of the crate's own: the game has no text for either.
             if read.trailing {
-                let code = DiagnosticCode::from(
-                    core_codes::SYNTAX.with(["content after the JSON value is ignored"]),
-                );
+                let code = core_codes::SYNTAX.with(["content after the JSON value is ignored"]);
                 findings.push(Diagnostic::info(code).in_file(&origin));
             }
             if !read.value.is_object() && !read.value.is_null() {
-                let code = DiagnosticCode::from(&core_codes::INVALID_VALUE);
+                let code = Code::from(&core_codes::INVALID_VALUE);
                 findings.push(Diagnostic::info(code).in_file(&origin));
             }
             Some(RawLayer::new(origin.clone(), read.value))
@@ -62,9 +60,7 @@ pub(crate) fn parse_copy(file: &WalkFile) -> AtlasCopy {
         Err(message) => {
             // The game skips the copy when the JSON reader fails, without a line, so the crate
             // reports an information.
-            let code = DiagnosticCode::from(bedrock_addon_core::diagnostic::builders::syntax(
-                message.to_string(),
-            ));
+            let code = bedrock_addon_core::diagnostic::builders::syntax(message.to_string());
             findings.push(Diagnostic::info(code).in_file(&origin));
             None
         }
@@ -230,7 +226,7 @@ fn check_images(
         }
         let missing = |path: Option<&str>, at: &JsonPath, out: &mut Diagnostics| {
             if path.is_some() && stack_index(path, files).is_none() {
-                let code = DiagnosticCode::from(&core_codes::TEXTURE_NOT_FOUND);
+                let code = Code::from(&core_codes::TEXTURE_NOT_FOUND);
                 out.push(
                     Diagnostic::info(code)
                         .at(at.clone())
@@ -252,7 +248,7 @@ fn check_images(
                 for (entry, (path, kept)) in paths.iter().zip(kept).enumerate() {
                     let at = at.index(entry);
                     if !kept {
-                        let code = DiagnosticCode::from(&core_codes::DROPPED_FIELD);
+                        let code = Code::from(&core_codes::DROPPED_FIELD);
                         out.push(
                             Diagnostic::info(code)
                                 .at(at.clone())

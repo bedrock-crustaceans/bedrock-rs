@@ -5,7 +5,7 @@ use indexmap::IndexMap;
 
 use crate::codes;
 use crate::read::{Era, Members, Node, Opt, Reader, Writer, object};
-use bedrock_addon_core::diagnostic::DiagnosticCode;
+use bedrock_addon_core::diagnostic::Code;
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::json::{EncodeError, Value};
 use bedrock_addon_core::molang::{Molang, MolangVisitor};
@@ -78,7 +78,7 @@ impl Node for EmitterDirection {
             Some("inwards") => Some(Self::Inwards),
             Some("outwards") => Some(Self::Outwards),
             Some(_) if !r.legacy() => {
-                r.error(DiagnosticCode::from(&core_codes::INVALID_VALUE));
+                r.error(Code::from(&core_codes::INVALID_VALUE));
                 None
             }
             _ => {
@@ -132,7 +132,7 @@ impl Node for PlaneNormal {
             Some("y") => Some(Self::Y),
             Some("z") => Some(Self::Z),
             Some(_) if !r.legacy() => {
-                r.error(DiagnosticCode::from(&core_codes::INVALID_VALUE));
+                r.error(Code::from(&core_codes::INVALID_VALUE));
                 None
             }
             _ => {

@@ -16,7 +16,7 @@ use super::{
 };
 use crate::__private::Sealed;
 use crate::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, codes,
+    Code, Diagnostic, Diagnostics, JsonPath, Location, Phase, Severity, codes,
 };
 use crate::id::{Id, kind};
 use crate::json::{EncodeError, WriteStyle};
@@ -83,7 +83,7 @@ fn upgraded() -> Diagnostics {
     let mut diagnostics = Diagnostics::default();
     diagnostics.moved(path("old"), path("new"));
     diagnostics.push(Diagnostic::new(
-        DiagnosticCode::from(&codes::INVALID_VALUE),
+        Code::from(&codes::INVALID_VALUE),
         Severity::Warning,
         Phase::Upgrade,
         Location::new(None, None, path("new"), None),
@@ -185,7 +185,7 @@ fn moved_in(pack: usize, tag: &str) -> Document<Moved> {
         path(&format!("new{pack}-{tag}")),
     );
     diagnostics.push(Diagnostic::new(
-        DiagnosticCode::from(&codes::INVALID_VALUE),
+        Code::from(&codes::INVALID_VALUE),
         Severity::Warning,
         Phase::Upgrade,
         Location::new(None, None, path(&format!("new{pack}-{tag}")), None),

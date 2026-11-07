@@ -5,7 +5,7 @@
 //! `Shape` carries.
 
 use bedrock_addon_core::diagnostic::cereal::NumericRange;
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, JsonPath, Severity, codes};
+use bedrock_addon_core::diagnostic::{Code, Diagnostics, JsonPath, Severity, codes};
 use bedrock_addon_core::molang::{
     Molang, MolangFieldSpec, MolangVersionSource, visit_fields_under,
 };
@@ -505,14 +505,14 @@ fn a_field_with_two_bounds_is_one_range_and_one_finding_with_no_text_by_default(
     let mut high = Friction(1.5);
     let (out, failed) = check(&mut high, MemberFailure::Refuse);
     assert!(failed);
-    let codes: Vec<&DiagnosticCode> = out.iter().map(|d| &d.code).collect();
-    assert_eq!(codes, [&DiagnosticCode::from(&codes::INVALID_VALUE)]);
+    let codes: Vec<&Code> = out.iter().map(|d| &d.code).collect();
+    assert_eq!(codes, [&Code::from(&codes::INVALID_VALUE)]);
 
     let mut out = Diagnostics::default();
     let mut cx = SchemaCx::new(Reading::DOCUMENT, JsonPath::new(), &mut out).with_range_text(true);
     Friction(-1.0).check(&mut cx);
     let range = NumericRange::inclusive(0.0, f64::from(0.9_f32));
-    let codes: Vec<&DiagnosticCode> = out.iter().map(|d| &d.code).collect();
+    let codes: Vec<&Code> = out.iter().map(|d| &d.code).collect();
     assert_eq!(codes, [&range.code()], "the game's range text, both sides");
 }
 
@@ -574,7 +574,7 @@ fn a_cross_field_bound_compares_with_the_other_member_when_it_is_written() {
     let mut cx = SchemaCx::new(reading, JsonPath::new(), &mut out).with_range_text(true);
     window.check(&mut cx);
     assert_eq!(window.value, 5, "the other member");
-    let codes: Vec<&DiagnosticCode> = out.iter().map(|d| &d.code).collect();
+    let codes: Vec<&Code> = out.iter().map(|d| &d.code).collect();
     assert_eq!(codes, [&NumericRange::inclusive(0.0, 5.0).code()]);
 }
 
@@ -871,13 +871,13 @@ fn multiple_of_is_a_row_fact_and_a_value_off_the_step_is_one_finding() {
     let (out, failed) = check(&mut off, MemberFailure::Refuse);
     assert!(failed);
     assert_eq!(paths(&out), [("height_range".to_owned(), Severity::Error)]);
-    let codes: Vec<&DiagnosticCode> = out.iter().map(|d| &d.code).collect();
-    assert_eq!(codes, [&DiagnosticCode::from(&codes::INVALID_VALUE)]);
+    let codes: Vec<&Code> = out.iter().map(|d| &d.code).collect();
+    assert_eq!(codes, [&Code::from(&codes::INVALID_VALUE)]);
     assert_eq!(off.height_range, 40, "the value stays under Refuse");
 
     // Worded as the game words it, where the family opts into the range text.
     let (out, _) = check_worded(&mut height(40, None), MemberFailure::Refuse);
-    let worded: Vec<DiagnosticCode> = out.iter().map(|d| d.code.clone()).collect();
+    let worded: Vec<Code> = out.iter().map(|d| d.code.clone()).collect();
     assert_eq!(
         worded,
         [bedrock_addon_core::diagnostic::cereal::not_multiple_of(
@@ -887,7 +887,7 @@ fn multiple_of_is_a_row_fact_and_a_value_off_the_step_is_one_finding() {
 
     // The range comes first: a value outside it is told for the range alone.
     let (out, _) = check_worded(&mut height(2000, None), MemberFailure::Refuse);
-    let worded: Vec<DiagnosticCode> = out.iter().map(|d| d.code.clone()).collect();
+    let worded: Vec<Code> = out.iter().map(|d| d.code.clone()).collect();
     assert_eq!(worded, [NumericRange::inclusive(16.0, 1024.0).code()]);
 }
 

@@ -1,7 +1,7 @@
 //! The line rules of a function file (vanilla's `_processFunctionEntry`): fixtures f06 to f15.
 
 use bedrock_addon::diagnostic::codes as core_codes;
-use bedrock_addon::diagnostic::{DiagnosticCode, DiagnosticDetail, Severity};
+use bedrock_addon::diagnostic::{Code, DiagnosticDetail, Severity};
 use bedrock_addon::families::function::{Function, FunctionLine, FunctionState};
 use bedrock_addon::id::FunctionPath;
 
@@ -338,10 +338,7 @@ fn a_namespaced_first_word_is_kept_with_an_information() {
         panic!("one finding, not {}", document.diagnostics().len());
     };
     assert_eq!(warning.severity, Severity::Info);
-    assert_eq!(
-        warning.code,
-        DiagnosticCode::from(&core_codes::UNRESOLVED_REFERENCE)
-    );
+    assert_eq!(warning.code, Code::from(&core_codes::UNRESOLVED_REFERENCE));
     assert_eq!(
         warning.detail.as_deref(),
         Some(&DiagnosticDetail::Reference {
@@ -458,7 +455,7 @@ fn a_feature_gated_command_is_kept_with_an_information_deviation() {
                 assert_eq!(finding.severity, Severity::Info, "{name}");
                 assert_eq!(
                     finding.code,
-                    DiagnosticCode::from(&core_codes::UNRESOLVED_REFERENCE),
+                    Code::from(&core_codes::UNRESOLVED_REFERENCE),
                     "{name}"
                 );
                 assert!(finding.location.span.is_some(), "{name}");

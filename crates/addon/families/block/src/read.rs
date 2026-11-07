@@ -10,9 +10,7 @@ use super::component::{BlockComponent, DeprecatedComponents, DeprecatedDefinitio
 use super::history::{BlockFamily, BlockHistory};
 use super::{Block, Description, Permutation};
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{
-    Class, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity,
-};
+use bedrock_addon_core::diagnostic::{Class, Diagnostic, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::document::{ComponentMap, Document, Origin, Rejected};
 use bedrock_addon_core::id::syntax::split_namespace;
 use bedrock_addon_core::json::Prepared;
@@ -371,7 +369,7 @@ fn unknown_traits(d: &mut Diagnostics, start: usize, at: &JsonPath) {
         else {
             continue;
         };
-        finding.code = DiagnosticCode::from(codes::UNKNOWN_TRAIT.with([name]));
+        finding.code = codes::UNKNOWN_TRAIT.with([name]);
         finding.severity = Severity::Error;
     }
 }

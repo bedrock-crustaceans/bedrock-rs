@@ -7,7 +7,7 @@ use facet_json::RawJson;
 use super::{Description, Shape, ShapeBox, VoxelShape, codes};
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Class, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, Span, cereal,
+    Class, Code, Diagnostic, Diagnostics, JsonPath, Severity, Span, cereal,
 };
 use bedrock_addon_core::json::{self, JsonSlice, Value, parse_at};
 use bedrock_addon_core::versioning::ParseCx;
@@ -148,7 +148,7 @@ fn corner(
         return Some([x, y, z]);
     }
     // A corner's own finding is at the corner's text, when the payload holds it.
-    let at_corner = |code: DiagnosticCode| {
+    let at_corner = |code: Code| {
         let finding = Diagnostic::error(code).at(at.clone());
         match span {
             Some(span) => finding.span(span),
@@ -156,7 +156,7 @@ fn corner(
         }
     };
     let expected = |d: &mut Diagnostics| {
-        d.push(at_corner(DiagnosticCode::from(&codes::EXPECTED_X_Y_Z)));
+        d.push(at_corner(Code::from(&codes::EXPECTED_X_Y_Z)));
     };
     let Some(object) = json.and_then(Value::as_object) else {
         expected(d);

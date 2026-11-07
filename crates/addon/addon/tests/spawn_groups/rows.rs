@@ -2,7 +2,7 @@
 //! (`sg30`–`sg39a`). Rows marked [test] reproduce vanilla's `SpawnGroupDataLoaderUnitTests` with
 //! their template.
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Diagnostics, Severity};
+use bedrock_addon::diagnostic::{Code, Diagnostics, Severity};
 use bedrock_addon::document::{Content, Document};
 use bedrock_addon::families::spawn_groups::SpawnGroup;
 use bedrock_addon::families::spawn_rules::{Difficulty, MobSpawnRules};
@@ -45,17 +45,17 @@ fn one(body: &str) -> (i32, MobSpawnRules, Diagnostics) {
     )
 }
 
-fn invalid_type(code: &DiagnosticCode) -> bool {
+fn invalid_type(code: &Code) -> bool {
     // By legacy name: the variant and the definitions that were it.
     matches!(code.name(), "InvalidType")
 }
 
-fn invalid_value(code: &DiagnosticCode) -> bool {
+fn invalid_value(code: &Code) -> bool {
     // By legacy name: the variant and the definitions that were it.
     matches!(code.name(), "InvalidValue")
 }
 
-fn missing_field(code: &DiagnosticCode) -> bool {
+fn missing_field(code: &Code) -> bool {
     // By legacy name: the variant and the definitions that were it.
     matches!(code.name(), "MissingRequiredField")
 }

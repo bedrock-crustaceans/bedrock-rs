@@ -61,7 +61,7 @@ fn convert(
             && !had.as_object().is_some_and(facet_value::VObject::is_empty)
         {
             d.push(
-                Diagnostic::info(bedrock_addon_core::diagnostic::DiagnosticCode::from(
+                Diagnostic::info(bedrock_addon_core::diagnostic::Code::from(
                     &core_codes::DROPPED_FIELD,
                 ))
                 .at(component_path(section, name))

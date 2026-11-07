@@ -4,7 +4,7 @@
 //! collision at the attachable.
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath, Severity};
+use bedrock_addon_core::diagnostic::{Code, JsonPath, Severity};
 use bedrock_addon_core::id::EntityId;
 
 use super::super::{At, Findings, LinkCx, kinds};
@@ -31,7 +31,7 @@ pub(super) fn run(cx: &LinkCx<'_>, out: &mut Findings) {
         // information.
         let at = At::new(document.origin(), path, Severity::Info);
         out.push(at.reference(
-            DiagnosticCode::from(&core_codes::IDENTIFIER_COLLISION),
+            Code::from(&core_codes::IDENTIFIER_COLLISION),
             kinds::ENTITY,
             attachable.description.identifier.as_str(),
             None,

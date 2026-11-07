@@ -4,7 +4,7 @@
 
 use bedrock_addon_core::__private::Sealed;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, codes,
+    Code, Diagnostic, Diagnostics, JsonPath, Location, Phase, Severity, codes,
 };
 use bedrock_addon_core::document::{
     CombineRule, Content, Contribution, Definition, Document, Files, FilesBuilder, FilesRule,
@@ -81,7 +81,7 @@ fn document(pack_index: usize, from: &'static str) -> Document<Toy> {
     at.push(from);
     let mut diagnostics = Diagnostics::default();
     diagnostics.push(Diagnostic::new(
-        DiagnosticCode::from(&codes::UNRECOGNIZED_FIELD),
+        Code::from(&codes::UNRECOGNIZED_FIELD),
         Severity::Warning,
         Phase::Parse,
         Location::new(Some(pack(pack_index)), None, at, None),
@@ -100,7 +100,7 @@ fn stable(pack_index: usize, text: &'static str, from: &'static str) -> Contribu
 fn rejected(pack_index: usize, text: &'static str) -> Contribution<Toy> {
     let mut diagnostics = Diagnostics::default();
     diagnostics.push(Diagnostic::new(
-        DiagnosticCode::from(&codes::MISSING_REQUIRED_FIELD),
+        Code::from(&codes::MISSING_REQUIRED_FIELD),
         Severity::Error,
         Phase::Parse,
         Location::new(None, None, JsonPath::new(), None),
@@ -123,7 +123,7 @@ fn keep_shadowed() -> LoadOptions {
 type Seen = (
     Vec<(String, Vec<&'static str>)>,
     usize,
-    Vec<(DiagnosticCode, Severity, Option<String>)>,
+    Vec<(Code, Severity, Option<String>)>,
 );
 
 fn seen(registry: &Registry<Toy>) -> Seen {
@@ -215,7 +215,7 @@ fn files_combine_is_the_push_loop_in_one_call() {
             .all_layers()
             .map(|(path, layers)| (path.to_string(), layers.map(|d| d.value().0).collect()))
             .collect();
-        let findings: Vec<DiagnosticCode> = files.diagnostics().map(|d| d.code.clone()).collect();
+        let findings: Vec<Code> = files.diagnostics().map(|d| d.code.clone()).collect();
         (layers, files.len(), files.rejected().len(), findings)
     };
     for rule in [
@@ -240,7 +240,7 @@ fn layers(registry: &Registry<Toy>, text: &'static str) -> Vec<&'static str> {
 }
 
 /// The combine-time findings (phase `Validate`) with the file each is at.
-fn notices(registry: &Registry<Toy>) -> Vec<(DiagnosticCode, String)> {
+fn notices(registry: &Registry<Toy>) -> Vec<(Code, String)> {
     registry
         .diagnostics()
         .filter(|d| d.phase == Phase::Validate)
@@ -251,12 +251,12 @@ fn notices(registry: &Registry<Toy>) -> Vec<(DiagnosticCode, String)> {
         .collect()
 }
 
-fn shadowed() -> DiagnosticCode {
-    DiagnosticCode::from(&codes::SHADOWED_DEFINITION)
+fn shadowed() -> Code {
+    Code::from(&codes::SHADOWED_DEFINITION)
 }
 
-fn duplicate() -> DiagnosticCode {
-    DiagnosticCode::from(&codes::DUPLICATE_IDENTIFIER)
+fn duplicate() -> Code {
+    Code::from(&codes::DUPLICATE_IDENTIFIER)
 }
 
 fn tied(tie: PackTie, walk: Vec<Contribution<Toy>>) -> Registry<Toy> {

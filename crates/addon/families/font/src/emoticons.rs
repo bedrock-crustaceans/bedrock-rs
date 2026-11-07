@@ -80,7 +80,7 @@ impl Authored for EmoticonList {
         let Some(elements) = root.as_array() else {
             // The game returns silently here, so the crate reports an information without the
             // "Malformed JSON" assert, which belongs to an empty file.
-            diagnostics.push(Diagnostic::info(syntax("the root is not an array").into()).at(at));
+            diagnostics.push(Diagnostic::info(syntax("the root is not an array")).at(at));
             return Self::default();
         };
         let mut seen: HashSet<&str> = HashSet::new();

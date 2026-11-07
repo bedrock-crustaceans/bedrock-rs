@@ -1,6 +1,6 @@
 //! The `manifest::Setting` rules (format 3 manifest settings and legacy manifests).
 
-use bedrock_addon::diagnostic::{Code, CodeMeta, DiagnosticCode as C, Diagnostics, Severity};
+use bedrock_addon::diagnostic::{Code, CodeMeta, Diagnostics, Severity};
 use bedrock_addon::document::Document;
 use bedrock_addon::manifest::{DropdownOption, Manifest, Setting};
 use bedrock_addon_core::diagnostic::codes as core_codes;
@@ -35,9 +35,7 @@ fn texts(diagnostics: &Diagnostics) -> Vec<Code> {
     diagnostics
         .iter()
         .filter_map(|d| match &d.code {
-            C::Specific { code } if settings.iter().any(|meta| meta.id() == code.id()) => {
-                Some(code.clone())
-            }
+            code if settings.iter().any(|meta| meta.id() == code.id()) => Some(code.clone()),
             _ => None,
         })
         .collect()

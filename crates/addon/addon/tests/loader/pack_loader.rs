@@ -5,7 +5,7 @@
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use std::io::ErrorKind;
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon::diagnostic::{Code, Severity};
 use bedrock_addon::load::{
     Input, JobKind, ListDepth, Loader, Output, PackLoader, Place, ReadRange, Request, RootId, Sans,
     Stage,
@@ -192,7 +192,7 @@ mod encrypted {
             .collect();
         assert_eq!(
             codes,
-            [&DiagnosticCode::from(&core_codes::UNSUPPORTED_FILE_FORMAT)],
+            [&Code::from(&core_codes::UNSUPPORTED_FILE_FORMAT)],
             "{codes:?}"
         );
     }
@@ -404,7 +404,7 @@ fn a_panicked_contents_index_job_is_an_internal_error_and_the_pack_opens() {
         .iter()
         .map(|d| &d.code)
         .collect();
-    assert_eq!(codes, [&DiagnosticCode::from(&core_codes::INTERNAL_ERROR)]);
+    assert_eq!(codes, [&Code::from(&core_codes::INTERNAL_ERROR)]);
     // A plain `contents.json`: the files stay readable.
     assert!(pack.read(&PackPath::from_static("manifest.json")).is_ok());
 }
@@ -488,7 +488,7 @@ fn a_panicked_brarchive_index_job_of_an_archive_pack_names_each_archive() {
     assert_eq!(
         findings,
         [(
-            &DiagnosticCode::from(&core_codes::INTERNAL_ERROR),
+            &Code::from(&core_codes::INTERNAL_ERROR),
             Some("__brarchive/entities.brarchive")
         )]
     );

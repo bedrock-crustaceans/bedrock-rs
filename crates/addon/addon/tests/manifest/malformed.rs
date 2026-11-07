@@ -2,7 +2,7 @@
 //! finding it must produce (code by `matches!`, severity, JSON path). The rows that
 //! differ from the corpus's own expectation table name the reason.
 
-use bedrock_addon::diagnostic::{DiagnosticCode as C, Severity};
+use bedrock_addon::diagnostic::{Code as C, Severity};
 use bedrock_addon::manifest::ModuleType;
 use bedrock_addon::version::SemVersion;
 use bedrock_addon_core::diagnostic::codes as core_codes;

@@ -1,7 +1,7 @@
 //! Value types several entity components share.
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath, Severity};
+use bedrock_addon_core::diagnostic::{Code, JsonPath, Severity};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::molang::{
     MolangFieldSpec, MolangVersion, MolangVersionSource, MolangVisitor,
@@ -193,7 +193,7 @@ pub(crate) fn tell_partial_vector(
             .any(|axis| !object.contains_key(axis))
     {
         cx.push(
-            DiagnosticCode::from(&core_codes::VALUE_REWRITTEN),
+            Code::from(&core_codes::VALUE_REWRITTEN),
             Severity::Info,
             &at.child(key),
         );

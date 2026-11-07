@@ -10,7 +10,7 @@
 use bedrock_addon_core::diagnostic::codes;
 use std::borrow::Cow;
 
-use bedrock_addon_core::diagnostic::{DiagnosticCode, code_for_deserialize_error_kind};
+use bedrock_addon_core::diagnostic::{Code, code_for_deserialize_error_kind};
 use facet::Facet;
 use facet_format::DeserializeErrorKind;
 
@@ -47,9 +47,7 @@ struct Sided {
 }
 
 /// The kind facet-json reports for `input` read as `T`, whether it has a path, and the code.
-fn parse<T: Facet<'static> + std::fmt::Debug>(
-    input: &str,
-) -> (DeserializeErrorKind, bool, DiagnosticCode) {
+fn parse<T: Facet<'static> + std::fmt::Debug>(input: &str) -> (DeserializeErrorKind, bool, Code) {
     let error = facet_json::from_str::<T>(input).expect_err("input must fail");
     let has_path = error.path.is_some();
     let code = code_for_deserialize_error_kind(&error.kind, has_path, input.trim().is_empty());
@@ -57,11 +55,11 @@ fn parse<T: Facet<'static> + std::fmt::Debug>(
 }
 
 /// The code for a hand-built kind, with a path and a non-blank input.
-fn code_of(kind: &DeserializeErrorKind) -> DiagnosticCode {
+fn code_of(kind: &DeserializeErrorKind) -> Code {
     code_for_deserialize_error_kind(kind, true, false)
 }
 
-fn is_malformed_input(code: &DiagnosticCode) -> bool {
+fn is_malformed_input(code: &Code) -> bool {
     code.args_of(&codes::SYNTAX)
         .is_some_and(|message| !message[0].is_empty())
 }
@@ -394,8 +392,5 @@ fn bug_is_malformed_input_and_a_bug() {
 #[test]
 fn malformed_input_carries_facets_message() {
     let (kind, _, code) = parse::<Friction>("{\"value\": @}");
-    assert_eq!(
-        code,
-        DiagnosticCode::from(codes::SYNTAX.with([kind.to_string()]))
-    );
+    assert_eq!(code, codes::SYNTAX.with([kind.to_string()]));
 }

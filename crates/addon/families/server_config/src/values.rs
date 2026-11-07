@@ -4,7 +4,7 @@ use crate::codes;
 use indexmap::IndexMap;
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath};
+use bedrock_addon_core::diagnostic::{Code, JsonPath};
 use bedrock_addon_core::json::Value;
 
 use super::SecretString;
@@ -18,11 +18,7 @@ pub(super) fn variables(bytes: &[u8], sink: &mut Sink<'_>) -> IndexMap<String, V
         let at = JsonPath::new();
         let Some(members) = object(root) else {
             // Silent on the server.
-            sink.warn(
-                DiagnosticCode::from(&core_codes::INVALID_TYPE),
-                at,
-                span(root),
-            );
+            sink.warn(Code::from(&core_codes::INVALID_TYPE), at, span(root));
             return;
         };
         variables.reserve(members.len());
@@ -47,11 +43,7 @@ pub(super) fn secrets(bytes: &[u8], sink: &mut Sink<'_>) -> IndexMap<String, Sec
         let at = JsonPath::new();
         let Some(members) = object(root) else {
             // Silent on the server. The sink keeps the span out.
-            sink.warn(
-                DiagnosticCode::from(&core_codes::INVALID_TYPE),
-                at,
-                span(root),
-            );
+            sink.warn(Code::from(&core_codes::INVALID_TYPE), at, span(root));
             return;
         };
         secrets.reserve(members.len());
@@ -70,7 +62,7 @@ pub(super) fn secrets(bytes: &[u8], sink: &mut Sink<'_>) -> IndexMap<String, Sec
         skipped.sort_unstable_by(|a, b| a.0.as_bytes().cmp(b.0.as_bytes()));
         for (name, span) in skipped {
             sink.warn_logged(
-                DiagnosticCode::from(codes::SECRET_NOT_A_STRING.with([name, sink.name.as_str()])),
+                codes::SECRET_NOT_A_STRING.with([name, sink.name.as_str()]),
                 at.child(name),
                 span,
             );

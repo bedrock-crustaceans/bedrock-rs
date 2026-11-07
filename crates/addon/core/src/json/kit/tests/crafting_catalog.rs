@@ -79,7 +79,7 @@ fn is_namespaced(text: &str) -> bool {
 }
 
 /// `Reader::constrained`: a namespaced string, else `code`.
-fn constrained(read: &mut Read<'_>, node: &Node<'_>, code: DiagnosticCode) -> Option<String> {
+fn constrained(read: &mut Read<'_>, node: &Node<'_>, code: Code) -> Option<String> {
     let value = string(read, node)?;
     if is_namespaced(value) {
         return Some(value.to_owned());
@@ -90,14 +90,12 @@ fn constrained(read: &mut Read<'_>, node: &Node<'_>, code: DiagnosticCode) -> Op
     None
 }
 
-fn group_name_code() -> DiagnosticCode {
-    DiagnosticCode::from(
-        core_codes::INVALID_VALUE_WORDED
-            .with(["string must be prefixed with a namespace (eg. namespace:value)"]),
-    )
+fn group_name_code() -> Code {
+    core_codes::INVALID_VALUE_WORDED
+        .with(["string must be prefixed with a namespace (eg. namespace:value)"])
 }
 
-fn item_name_code() -> DiagnosticCode {
+fn item_name_code() -> Code {
     cereal::string_mismatch("^(?:.)+:(?:.)+$")
 }
 

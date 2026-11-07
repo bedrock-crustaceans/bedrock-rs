@@ -3,7 +3,7 @@
 
 use bedrock_addon_core::__private::Sealed;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, codes,
+    Code, Diagnostic, Diagnostics, JsonPath, Location, Phase, Severity, codes,
 };
 use bedrock_addon_core::document::{
     Content, Document, Files, FilesBuilder, FilesRule, Notice, Origin, Rejected, VersionInfo,
@@ -72,7 +72,7 @@ fn copy(pack_index: usize, path: &'static str, from: &'static str) -> Document<T
 fn failed(pack_index: usize, path: &'static str) -> Result<Document<Table>, Rejected> {
     let mut diagnostics = Diagnostics::default();
     diagnostics.push(Diagnostic::new(
-        DiagnosticCode::from(&codes::INVALID_TYPE),
+        Code::from(&codes::INVALID_TYPE),
         Severity::Error,
         Phase::Parse,
         Location::new(Some(pack(pack_index)), None, JsonPath::new(), None),
@@ -161,7 +161,7 @@ fn under_top_wins_fallback_a_failing_copy_falls_through() {
     let files = build(
         FilesRule::TopWinsFallback {
             fallback: Some(Notice {
-                code: DiagnosticCode::from(&codes::SHADOWED_DEFINITION),
+                code: Code::from(&codes::SHADOWED_DEFINITION),
                 severity: Severity::Info,
             }),
         },
@@ -173,7 +173,7 @@ fn under_top_wins_fallback_a_failing_copy_falls_through() {
         ],
     );
     assert_eq!(files.get(&path(STRUCTURE)).map(|d| d.0), Some("middle"));
-    let codes: Vec<(DiagnosticCode, Option<usize>)> = files
+    let codes: Vec<(Code, Option<usize>)> = files
         .diagnostics()
         .map(|d| {
             (
@@ -185,8 +185,8 @@ fn under_top_wins_fallback_a_failing_copy_falls_through() {
     assert_eq!(
         codes,
         [
-            (DiagnosticCode::from(&codes::INVALID_TYPE), Some(0)),
-            (DiagnosticCode::from(&codes::SHADOWED_DEFINITION), Some(0)),
+            (Code::from(&codes::INVALID_TYPE), Some(0)),
+            (Code::from(&codes::SHADOWED_DEFINITION), Some(0)),
         ]
     );
 }

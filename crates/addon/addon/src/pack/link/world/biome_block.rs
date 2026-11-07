@@ -6,7 +6,7 @@ use super::super::{
     At, Findings, LinkCx, Member, States, Target, Validator, block_specifier, kinds, unresolved,
     validator_miss,
 };
-use crate::diagnostic::{JsonPath, JsonPathSegment, Severity, VanillaText};
+use crate::diagnostic::{JsonPath, JsonPathSegment, Severity, sentence};
 use crate::document::Origin;
 use crate::families::biome::block_references;
 use crate::families::biome::component::BiomeComponent;
@@ -53,10 +53,10 @@ pub(super) fn component_blocks(
     for (below, block) in block_references(component) {
         let mut path = at.join(&below);
         if let Target::Missing(hint) = cx.block(&block.name) {
-            let text = VanillaText::Formatted {
-                template: FAILED_TO_RESOLVE,
-                args: vec![label(&below), block.name.as_str().to_owned()],
-            };
+            let text = sentence(
+                FAILED_TO_RESOLVE,
+                &[label(&below), block.name.as_str().to_owned()],
+            );
             // nothing of its own: a second finding with its line.
             let name = block.name.as_str();
             // The linked-asset check raises this finding to an error; it is written as the error

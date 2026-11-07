@@ -279,7 +279,7 @@ impl Outcome {
         let place = |below: &JsonPath| at.join(below);
         for problem in &self.problems {
             found.push_kept_error(
-                Diagnostic::error(problem.code().into())
+                Diagnostic::error(problem.code())
                     .at(place(problem.at()))
                     .phase(phase),
             );

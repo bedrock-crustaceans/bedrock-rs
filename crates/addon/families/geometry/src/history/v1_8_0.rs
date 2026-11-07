@@ -225,12 +225,10 @@ impl VersionStruct for GeometryFile {
             // The version node's maximum: 1.11.1 up to 1.12.0 fails the schema.
             walk.enter("format_version");
             walk.error(
-                codes::ABOVE_MAX_VERSION
-                    .with([
-                        cx.original_version.to_string(),
-                        MAX_FORMAT_VERSION.to_string(),
-                    ])
-                    .into(),
+                codes::ABOVE_MAX_VERSION.with([
+                    cx.original_version.to_string(),
+                    MAX_FORMAT_VERSION.to_string(),
+                ]),
                 Span { offset: 0, len: 0 },
             );
             walk.leave();

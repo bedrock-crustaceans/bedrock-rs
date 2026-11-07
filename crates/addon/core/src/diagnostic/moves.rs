@@ -149,9 +149,7 @@ impl Moves {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::diagnostic::{
-        Diagnostic, DiagnosticCode, Diagnostics, Location, Phase, Severity, codes,
-    };
+    use crate::diagnostic::{Code, Diagnostic, Diagnostics, Location, Phase, Severity, codes};
 
     fn path(keys: &[&str]) -> JsonPath {
         let mut at = JsonPath::new();
@@ -214,7 +212,7 @@ mod tests {
     fn a_finding_told_before_a_move_keeps_its_path() {
         let finding = |at: JsonPath| {
             Diagnostic::new(
-                DiagnosticCode::from(&codes::INVALID_TYPE),
+                Code::from(&codes::INVALID_TYPE),
                 Severity::Warning,
                 Phase::Parse,
                 Location::new(None, None, at, None),
@@ -252,7 +250,7 @@ mod tests {
     fn the_findings_and_moves_of_a_list_come_in_the_order_made() {
         let finding = |at: JsonPath| {
             Diagnostic::new(
-                DiagnosticCode::from(&codes::INVALID_TYPE),
+                Code::from(&codes::INVALID_TYPE),
                 Severity::Warning,
                 Phase::Parse,
                 Location::new(None, None, at, None),
@@ -277,7 +275,7 @@ mod tests {
 
     fn told_at(at: JsonPath) -> Diagnostic {
         Diagnostic::new(
-            DiagnosticCode::from(&codes::INVALID_TYPE),
+            Code::from(&codes::INVALID_TYPE),
             Severity::Warning,
             Phase::Parse,
             Location::new(None, None, at, None),

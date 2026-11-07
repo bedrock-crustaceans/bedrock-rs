@@ -204,7 +204,7 @@ impl MolangFields for ScatterFeature {
 /// percent and fraction chances, a missing coordinate, `step_size` and `grid_offset`), so the
 /// feature stays loaded.
 fn scatter_warning(check: &mut ValidateCx<'_>, key: &str, code: Code) {
-    check.kept(key, code.into());
+    check.kept(key, code);
 }
 
 /// The client's checks on a scatter constant, and its replacement values, applied to the

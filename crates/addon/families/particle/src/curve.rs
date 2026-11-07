@@ -12,7 +12,7 @@ use indexmap::IndexMap;
 use super::codes;
 use super::read::{Era, Fields, Members, Node, Opt, Reader, Writer, object, put, req, walk};
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{CodeDef, DiagnosticCode, Severity};
+use bedrock_addon_core::diagnostic::{Code, CodeDef, Severity};
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::{EncodeError, Value};
 use bedrock_addon_core::molang::{Molang, MolangVisitor};
@@ -230,10 +230,7 @@ impl Fields for BezierChainCurve {
 /// instead.
 fn left_out(r: &mut Reader<'_>, legacy_only: bool) -> Option<Curve> {
     if r.legacy() || !legacy_only {
-        r.push(
-            DiagnosticCode::from(&core_codes::DROPPED_FIELD),
-            Severity::Info,
-        );
+        r.push(Code::from(&core_codes::DROPPED_FIELD), Severity::Info);
     }
     None
 }

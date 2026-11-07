@@ -2,7 +2,7 @@
 //! host; the near miss; the bytes; the order and the cost.
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Phase, ReferenceHint, Severity};
+use bedrock_addon_core::diagnostic::{Code, Phase, ReferenceHint, Severity};
 use bedrock_addon_core::id::{Id, Kind, kind};
 use bedrock_addon_core::load::LoadOptions;
 use bedrock_addon_core::pack_identity::{PackPath, PackSide};
@@ -691,10 +691,7 @@ fn the_bytes_of_a_file_are_the_packs_resident_ones_and_a_file_not_loaded_is_told
     let told: Vec<_> = told.iter().collect();
     assert_eq!(told.len(), 1, "{told:?}");
     let finding = told[0];
-    assert_eq!(
-        finding.code,
-        DiagnosticCode::from(&core_codes::FILE_NOT_LOADED)
-    );
+    assert_eq!(finding.code, Code::from(&core_codes::FILE_NOT_LOADED));
     assert_eq!(finding.severity, Severity::Info);
     assert_eq!(finding.phase, Phase::Link);
     assert_eq!(

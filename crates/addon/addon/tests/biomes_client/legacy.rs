@@ -1,7 +1,7 @@
 //! `biomes_client.json`, merged over the resource stack with vanilla's
 //! merge strategy and read from the merged value
 
-use bedrock_addon::diagnostic::{Diagnostic, DiagnosticCode as Code, Severity};
+use bedrock_addon::diagnostic::{Code, Diagnostic, Severity};
 use bedrock_addon::document::{Content, Merged, Placed, RawLayer};
 #[cfg(feature = "client_biome")]
 use bedrock_addon::families::biomes_client::WaterSurface;

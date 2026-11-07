@@ -10,7 +10,7 @@ use crate::read::{MOBS, detached_origin};
 use crate::validate::missing_bone_parents;
 use crate::{FileContribution, Geometry, Inherited};
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, Phase};
+use bedrock_addon_core::diagnostic::{Code, Diagnostic, Diagnostics, Phase};
 use bedrock_addon_core::document::{Contribution, Document, Notice, Rejected};
 use bedrock_addon_core::id::GeometryId;
 use bedrock_addon_core::pack_identity::PackPath;
@@ -69,7 +69,7 @@ pub(crate) fn inherit(files: &mut [FileContribution]) {
     children.sort_unstable();
     let mut settled: HashMap<Slot, Parent> = HashMap::new();
     let mut inherited: Vec<Heir> = Vec::new();
-    let mut failed: Vec<(Slot, DiagnosticCode)> = Vec::new();
+    let mut failed: Vec<(Slot, Code)> = Vec::new();
     for start in children {
         let mut walk: Vec<Slot> = Vec::new();
         let mut on_walk: HashSet<Slot> = HashSet::new();
@@ -119,12 +119,12 @@ pub(crate) fn inherit(files: &mut [FileContribution]) {
                 above = Ok(Some((slot, node)));
             } else {
                 let code = if cycle {
-                    DiagnosticCode::from(&core_codes::REFERENCE_CYCLE)
+                    Code::from(&core_codes::REFERENCE_CYCLE)
                 } else {
-                    DiagnosticCode::from(codes::PARENT_NOT_DEFINED.with([
+                    codes::PARENT_NOT_DEFINED.with([
                         geometry.description.identifier.as_str(),
                         geometry.parent().unwrap_or_default(),
-                    ]))
+                    ])
                 };
                 failed.push((slot, code));
                 settled.insert(slot, Parent::NotBuilt);
@@ -210,7 +210,7 @@ fn apply(
     files: &mut [FileContribution],
     inherited: Vec<Heir>,
     mut missing: HashMap<Slot, Vec<usize>>,
-    failed: Vec<(Slot, DiagnosticCode)>,
+    failed: Vec<(Slot, Code)>,
 ) {
     for Heir { slot, node, .. } in inherited {
         let unknown = missing.remove(&slot).unwrap_or_default();

@@ -5,11 +5,11 @@
 #[non_exhaustive]
 pub enum BelowFloor {
     /// The generic floor line: "To use … use json format version … or higher"
-    /// (`VanillaText::UseFormatVersion`). The default.
+    /// ([`USE_FORMAT_VERSION`](crate::diagnostic::codes::USE_FORMAT_VERSION)). The default.
     #[default]
     UseFormatVersion,
     /// The game's versioned loader has no slice below its first one: "no parser available"
-    /// (`VanillaText::NoParserForVersion`), the version rendered as the text above the engine
+    /// ([`NO_PARSER_FOR_VERSION`](crate::diagnostic::codes::NO_PARSER_FOR_VERSION)), the version rendered as the text above the engine
     /// renders it (`versioning::no_parser_version`: the full triple, a pre-release as
     /// written).
     NoParser,

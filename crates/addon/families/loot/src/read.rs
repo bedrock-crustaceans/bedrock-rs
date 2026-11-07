@@ -17,7 +17,7 @@ use super::function::{
 use super::{Entry, EntryKind, LootTable, Pool, RandomValueBounds, Tiers};
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Severity,
+    Code, Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Severity,
 };
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::{EntityId, ItemId, LootTablePath};
@@ -235,18 +235,18 @@ fn split_namespace(text: &str) -> (Option<String>, &str) {
 
 impl Walk<'_> {
     /// A warning at `at`: a warning-level line of the game's content log (each caller says which).
-    fn warn(&mut self, code: DiagnosticCode, at: &JsonPath) {
+    fn warn(&mut self, code: Code, at: &JsonPath) {
         self.findings.push(Diagnostic::warn(code).at(at.clone()));
     }
 
     /// An information of the crate's own at `at`: the game reads on in silence.
-    fn note(&mut self, code: DiagnosticCode, at: &JsonPath) {
+    fn note(&mut self, code: Code, at: &JsonPath) {
         self.findings.push(Diagnostic::info(code).at(at.clone()));
     }
 
     /// A content-log error of the game's after which it keeps the table (the element is dropped
     /// or defaulted and the loader goes on): a kept error.
-    fn kept(&mut self, code: DiagnosticCode, at: &JsonPath) {
+    fn kept(&mut self, code: Code, at: &JsonPath) {
         self.findings
             .push_kept_error(Diagnostic::error(code).at(at.clone()));
     }
@@ -254,7 +254,7 @@ impl Walk<'_> {
     /// A member of a JSON type its reader does not take: an `InvalidType` information of the
     /// crate's own, and the member is read as absent.
     fn wrong_type(&mut self, at: &JsonPath) {
-        self.note(DiagnosticCode::from(&core_codes::INVALID_TYPE), at);
+        self.note(Code::from(&core_codes::INVALID_TYPE), at);
     }
 
     /// The Upcoming Creator Features experiment is on.
@@ -272,7 +272,7 @@ impl Walk<'_> {
         if let Some(flag) = value.as_bool() {
             return Some(flag);
         }
-        self.kept(DiagnosticCode::from(&codes::DYNAMIC_PROPERTIES), at);
+        self.kept(Code::from(&codes::DYNAMIC_PROPERTIES), at);
         None
     }
 
@@ -303,7 +303,7 @@ impl Walk<'_> {
                 let real = number.to_f64_lossy();
                 let x = real.trunc();
                 if (f64::from(i32::MIN)..=f64::from(i32::MAX)).contains(&x) && real.fract() != 0.0 {
-                    self.note(DiagnosticCode::from(&core_codes::INVALID_VALUE), at);
+                    self.note(Code::from(&core_codes::INVALID_VALUE), at);
                 }
                 #[allow(clippy::cast_possible_truncation)] // checked to be in range
                 (x >= f64::from(i32::MIN) && x <= f64::from(i32::MAX)).then_some(x as i32)
@@ -485,7 +485,7 @@ impl Walk<'_> {
             // The game logs the text at the content log's error level and keeps the pool
             // with no entries; the loot reader keeps the table too: a kept error.
             self.findings.push_kept_error(
-                Diagnostic::error(DiagnosticCode::from(&codes::ENTRIES_MISSING)).at(at.clone()),
+                Diagnostic::error(Code::from(&codes::ENTRIES_MISSING)).at(at.clone()),
             );
             None
         };
@@ -525,7 +525,7 @@ impl Walk<'_> {
             // The same test and line as for a missing array: the game's error, the pool kept
             // with no entries and the table with it (a kept error).
             self.findings.push_kept_error(
-                Diagnostic::error(DiagnosticCode::from(&codes::ENTRIES_ARRAY)).at(at.clone()),
+                Diagnostic::error(Code::from(&codes::ENTRIES_ARRAY)).at(at.clone()),
             );
             return None;
         };
@@ -535,7 +535,7 @@ impl Walk<'_> {
             let at = at.index(index);
             let Some(object) = element.as_object() else {
                 // The element is skipped, the table kept.
-                self.kept(DiagnosticCode::from(&codes::ENTRY_OBJECT), &at);
+                self.kept(Code::from(&codes::ENTRY_OBJECT), &at);
                 continue;
             };
             if let Some(entry) = self.entry(object, &at) {
@@ -573,7 +573,7 @@ impl Walk<'_> {
                 // The entry is dropped; vanilla logs an error and loads
                 // the table: a kept error.
                 let given = written.map(as_written).unwrap_or_default();
-                self.kept(DiagnosticCode::from(codes::ENTRY_TYPE.with([&given])), at);
+                self.kept(codes::ENTRY_TYPE.with([&given]), at);
                 return None;
             }
         };
@@ -603,7 +603,7 @@ impl Walk<'_> {
             let at = at.index(index);
             let Some(object) = element.as_object() else {
                 // The element is skipped, the table kept.
-                self.kept(DiagnosticCode::from(&codes::FUNCTION_OBJECT), &at);
+                self.kept(Code::from(&codes::FUNCTION_OBJECT), &at);
                 continue;
             };
             if let Some(function) = self.function(object, &at) {
@@ -628,18 +628,12 @@ impl Walk<'_> {
             // From 1.26.40 the game looks the name up in its Upcoming Creator Features
             // registry only with the experiment on, and otherwise logs this text and skips
             // the function: a missing toggle.
-            self.kept(
-                DiagnosticCode::from(codes::UCF_FUNCTION.with([&written])),
-                at,
-            );
+            self.kept(codes::UCF_FUNCTION.with([&written]), at);
             return None;
         }
         let Some(kind) = self.function_kind(name, &mut m, at) else {
             // The function is skipped; vanilla prints the name it was given.
-            self.kept(
-                DiagnosticCode::from(codes::UNSUPPORTED_FUNCTION.with([&written])),
-                at,
-            );
+            self.kept(codes::UNSUPPORTED_FUNCTION.with([&written]), at);
             return None;
         };
         let extra = self.rest(&m, at);
@@ -756,7 +750,7 @@ impl Walk<'_> {
         let values = self.member(m, "values", at, Self::bounds);
         if !m.has("data") && !m.has("values") {
             // A content-log warning of the game's; the function is kept with range 0..0.
-            self.warn(DiagnosticCode::from(&codes::SET_DATA_KEY), at);
+            self.warn(Code::from(&codes::SET_DATA_KEY), at);
         }
         ItemData { data, values }
     }
@@ -769,7 +763,7 @@ impl Walk<'_> {
         }
         let Some(array) = value.as_array() else {
             // A member that is no array gives no options.
-            self.kept(DiagnosticCode::from(&codes::ENCHANT_ARRAY), at);
+            self.kept(Code::from(&codes::ENCHANT_ARRAY), at);
             return None;
         };
         let mut out = Vec::new();
@@ -788,10 +782,7 @@ impl Walk<'_> {
                 // or a host): the option is dropped with an error-level line of the game's
                 // content log and the table is kept: a kept error.
                 let shown = written.map(as_written).unwrap_or_default();
-                self.kept(
-                    DiagnosticCode::from(codes::ENCHANT_NAME.with([&shown])),
-                    &at,
-                );
+                self.kept(codes::ENCHANT_NAME.with([&shown]), &at);
                 continue;
             };
             let name = name.to_owned();
@@ -816,10 +807,7 @@ impl Walk<'_> {
             let read = banner_type(value);
             if read.is_none() {
                 // A banner type that names neither type keeps the default type.
-                self.kept(
-                    DiagnosticCode::from(codes::BANNER_TYPE.with([&styled(value)])),
-                    &at.child("type"),
-                );
+                self.kept(codes::BANNER_TYPE.with([&styled(value)]), &at.child("type"));
             }
             read
         });
@@ -828,7 +816,7 @@ impl Walk<'_> {
             if read.is_none() {
                 // A colour that names none of the 16 is white.
                 self.kept(
-                    DiagnosticCode::from(codes::BANNER_BASE_COLOR.with([&styled(value)])),
+                    codes::BANNER_BASE_COLOR.with([&styled(value)]),
                     &at.child("base_color"),
                 );
             }
@@ -838,7 +826,7 @@ impl Walk<'_> {
             let at = at.child("patterns");
             if banner_type.unwrap_or_default() != BannerType::Default {
                 // A banner that is not a default one takes no patterns: they are ignored.
-                self.kept(DiagnosticCode::from(&codes::BANNER_NON_DEFAULT), &at);
+                self.kept(Code::from(&codes::BANNER_NON_DEFAULT), &at);
                 return None;
             }
             Some(self.banner_patterns(value, &at))
@@ -857,9 +845,7 @@ impl Walk<'_> {
         let values = one_or_many(value, at);
         if values.len() > MAX_PATTERNS {
             self.kept(
-                DiagnosticCode::from(
-                    codes::BANNER_MAX.with([&MAX_PATTERNS.to_string(), &values.len().to_string()]),
-                ),
+                codes::BANNER_MAX.with([&MAX_PATTERNS.to_string(), &values.len().to_string()]),
                 at,
             );
         }
@@ -890,7 +876,7 @@ impl Walk<'_> {
                 // empty name, and nothing is appended. Absent, `null` and `""` all read as the
                 // empty string, which no pattern has. Every other name is kept as written and
                 // not checked.
-                self.kept(DiagnosticCode::from(codes::BANNER_PATTERN.with([""])), at);
+                self.kept(codes::BANNER_PATTERN.with([""]), at);
                 return None;
             }
         };
@@ -898,7 +884,7 @@ impl Walk<'_> {
             let read = item_color(value);
             if read.is_none() {
                 self.kept(
-                    DiagnosticCode::from(codes::BANNER_PATTERN_COLOR.with([&styled(value)])),
+                    codes::BANNER_PATTERN_COLOR.with([&styled(value)]),
                     &at.child("color"),
                 );
             }
@@ -943,7 +929,7 @@ impl Walk<'_> {
             } else {
                 // An `UnresolvedReference` information of the crate's own: vanilla drops it
                 // in silence.
-                self.note(DiagnosticCode::from(&core_codes::UNRESOLVED_REFERENCE), &at);
+                self.note(Code::from(&core_codes::UNRESOLVED_REFERENCE), &at);
             }
         }
         Some(out)
@@ -981,7 +967,7 @@ impl Walk<'_> {
             let at = at.index(index);
             let Some(object) = element.as_object() else {
                 // The element is skipped, the table kept.
-                self.kept(DiagnosticCode::from(&codes::CONDITION_OBJECT), &at);
+                self.kept(Code::from(&codes::CONDITION_OBJECT), &at);
                 continue;
             };
             if let Some(condition) = self.condition(object, &at) {
@@ -1003,10 +989,7 @@ impl Walk<'_> {
                 .as_string()
                 .map_or_else(|| compact(operator), |text| text.as_str().to_owned());
             if !matches!(shown.as_str(), "==" | "equals" | "!=" | "not") {
-                self.kept(
-                    DiagnosticCode::from(codes::CONDITION_OPERATOR.with([&shown])),
-                    at,
-                );
+                self.kept(codes::CONDITION_OPERATOR.with([&shown]), at);
                 return None;
             }
         }
@@ -1015,10 +998,8 @@ impl Walk<'_> {
         let Some(kind) = self.condition_kind(&name, &mut m, at) else {
             // Vanilla skips it with a developer-log line, so the pool, entry or function is
             // not gated by it; the finding carries that line as an information.
-            self.findings.push(
-                Diagnostic::info(DiagnosticCode::from(codes::UNKNOWN_CONDITION.with([&name])))
-                    .at(at.clone()),
-            );
+            self.findings
+                .push(Diagnostic::info(codes::UNKNOWN_CONDITION.with([&name])).at(at.clone()));
             return None;
         };
         let extra = self.rest(&m, at);

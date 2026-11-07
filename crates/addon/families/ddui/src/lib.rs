@@ -409,7 +409,7 @@ fn no_parser(diagnostics: &mut Diagnostics, version: &str) {
     for mut finding in found {
         // By legacy name: the variant and the definitions that were it.
         if matches!(finding.code.name(), "BetaFeaturesNotEnabled") {
-            finding.code = core_codes::NO_PARSER_FOR_VERSION.with([version]).into();
+            finding.code = core_codes::NO_PARSER_FOR_VERSION.with([version]);
         }
         diagnostics.push(finding);
     }

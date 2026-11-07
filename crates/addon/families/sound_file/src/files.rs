@@ -7,7 +7,7 @@ use indexmap::IndexMap;
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
+    Code, Diagnostic, Diagnostics, JsonPath, Location, Phase, Severity,
 };
 use bedrock_addon_core::load::{ListedFile, StackPack};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef};
@@ -180,12 +180,7 @@ impl SoundFiles {
 }
 
 /// A finding about a file of a pack.
-fn file_finding(
-    code: DiagnosticCode,
-    severity: Severity,
-    pack: &PackRef,
-    path: &PackPath,
-) -> Diagnostic {
+fn file_finding(code: Code, severity: Severity, pack: &PackRef, path: &PackPath) -> Diagnostic {
     Diagnostic::new(
         code,
         severity,
@@ -245,7 +240,7 @@ fn index_listings<'a>(
                 None if served => {
                     // A file below `sounds/` with no audio extension is never read.
                     out.diagnostics.push(file_finding(
-                        DiagnosticCode::from(&core_codes::IGNORED_FILE),
+                        Code::from(&core_codes::IGNORED_FILE),
                         Severity::Info,
                         pack,
                         path,
@@ -267,7 +262,7 @@ fn index_listings<'a>(
                     // The same pack ships the name under an earlier extension.
                     if served {
                         out.diagnostics.push(file_finding(
-                            DiagnosticCode::from(&core_codes::SHADOWED_DEFINITION),
+                            Code::from(&core_codes::SHADOWED_DEFINITION),
                             Severity::Info,
                             &asset.pack,
                             &asset.path,

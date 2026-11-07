@@ -6,7 +6,7 @@ use facet_json::RawJson;
 use indexmap::IndexMap;
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath};
+use bedrock_addon_core::diagnostic::{Code, JsonPath};
 use bedrock_addon_core::json::JsonSlice;
 use bedrock_addon_family_script::meta;
 
@@ -35,11 +35,7 @@ pub(super) fn read(bytes: &[u8], sink: &mut Sink<'_>) -> Read {
         let at = JsonPath::new();
         let Some(members) = object(root) else {
             // Silent on the server, every member absent.
-            sink.warn(
-                DiagnosticCode::from(&core_codes::INVALID_TYPE),
-                at,
-                span(root),
-            );
+            sink.warn(Code::from(&core_codes::INVALID_TYPE), at, span(root));
             return;
         };
         for (name, raw) in &members {
@@ -59,7 +55,7 @@ pub(super) fn read(bytes: &[u8], sink: &mut Sink<'_>) -> Read {
                 _ => {
                     // Ignored silently by the server.
                     sink.info(
-                        DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD),
+                        Code::from(&core_codes::UNRECOGNIZED_FIELD),
                         at.clone(),
                         span(slice),
                     );
@@ -80,7 +76,7 @@ fn allowed_modules(slice: JsonSlice<'_>, at: &JsonPath, sink: &mut Sink<'_>) -> 
     let Some(elements) = array(slice) else {
         // Silent on the server, the list is empty.
         sink.warn(
-            DiagnosticCode::from(&core_codes::INVALID_TYPE),
+            Code::from(&core_codes::INVALID_TYPE),
             at.clone(),
             span(slice),
         );
@@ -95,22 +91,14 @@ fn allowed_modules(slice: JsonSlice<'_>, at: &JsonPath, sink: &mut Sink<'_>) -> 
         let at = at.index(index);
         let Some(module) = string(slice) else {
             // The string elements still apply.
-            sink.warn(
-                DiagnosticCode::from(&core_codes::INVALID_TYPE),
-                at,
-                span(slice),
-            );
+            sink.warn(Code::from(&core_codes::INVALID_TYPE), at, span(slice));
             continue;
         };
         if module == WILDCARD_MODULE {
             wildcard.get_or_insert((at, span(slice)));
         } else if near_miss(&module) {
             // Matches nothing on the server.
-            sink.warn(
-                DiagnosticCode::from(&core_codes::INVALID_VALUE),
-                at,
-                span(slice),
-            );
+            sink.warn(Code::from(&core_codes::INVALID_VALUE), at, span(slice));
         }
         modules.push(module);
     }
@@ -118,7 +106,7 @@ fn allowed_modules(slice: JsonSlice<'_>, at: &JsonPath, sink: &mut Sink<'_>) -> 
         && modules.len() > 1
     {
         // `*` allows every module, so the other elements say nothing.
-        sink.info(DiagnosticCode::from(&core_codes::NO_EFFECT), at, span);
+        sink.info(Code::from(&core_codes::NO_EFFECT), at, span);
     }
     modules
 }
@@ -145,7 +133,7 @@ fn module_permissions(
 ) {
     let Some(modules) = object(slice) else {
         sink.warn(
-            DiagnosticCode::from(&core_codes::INVALID_TYPE),
+            Code::from(&core_codes::INVALID_TYPE),
             at.clone(),
             span(slice),
         );
@@ -161,11 +149,7 @@ fn module_permissions(
             // The module has no settings; silent on the server. A
             // server-net entry that cannot be read denies the pack's egress here
             // (a deliberate deviation; vanilla: unrestricted).
-            sink.warn(
-                DiagnosticCode::from(&core_codes::INVALID_TYPE),
-                at,
-                span(slice),
-            );
+            sink.warn(Code::from(&core_codes::INVALID_TYPE), at, span(slice));
             if is_net {
                 permissions.server_net = ServerNet::Denied;
             }
@@ -175,11 +159,7 @@ fn module_permissions(
             permissions.server_net = net::read(slice, &settings, &at, sink);
         } else {
             // Kept, read by nothing.
-            sink.info(
-                DiagnosticCode::from(&core_codes::NO_EFFECT),
-                at.clone(),
-                span(slice),
-            );
+            sink.info(Code::from(&core_codes::NO_EFFECT), at.clone(), span(slice));
         }
         let settings = values_of(slice, &settings, &at, sink, is_net);
         permissions
@@ -222,11 +202,7 @@ fn level(
     let level = string(slice).and_then(|name| CommandPermissionLevel::from_name(&name));
     if level.is_none() {
         // Silently unset on the server.
-        sink.warn(
-            DiagnosticCode::from(&core_codes::INVALID_ENUM_VALUE),
-            at,
-            span(slice),
-        );
+        sink.warn(Code::from(&core_codes::INVALID_ENUM_VALUE), at, span(slice));
     }
     level
 }

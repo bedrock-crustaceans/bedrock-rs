@@ -27,8 +27,8 @@ impl Outcome {
             .iter()
             .map(|d| {
                 format!(
-                    "{:?} {:?} at `{}`",
-                    std::mem::discriminant(&d.code),
+                    "{} {:?} at `{}`",
+                    d.code.id(),
                     d.severity,
                     d.location.json_path
                 )

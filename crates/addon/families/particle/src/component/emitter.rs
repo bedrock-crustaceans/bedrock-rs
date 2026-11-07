@@ -6,7 +6,7 @@ use indexmap::IndexMap;
 use super::types::VectorEvents;
 use crate::codes;
 use crate::read::{Members, Opt, Reader, object};
-use bedrock_addon_core::diagnostic::DiagnosticCode;
+use bedrock_addon_core::diagnostic::Code;
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::molang::Molang;
 
@@ -146,7 +146,7 @@ fn lifetime_events(events: &mut EmitterLifetimeEvents, _: Members<'_>, r: &mut R
             if entry.distance < 0.0 {
                 r.index(at, |r| {
                     r.key("distance", |r| {
-                        r.error(DiagnosticCode::from(&core_codes::INVALID_VALUE));
+                        r.error(Code::from(&core_codes::INVALID_VALUE));
                     });
                 });
             }

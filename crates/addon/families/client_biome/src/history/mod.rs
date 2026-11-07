@@ -23,7 +23,7 @@ use super::read::PAYLOAD_KEY;
 use super::{Beta, ClientBiome};
 use bedrock_addon_core::diagnostic::Diagnostics;
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath};
+use bedrock_addon_core::diagnostic::{Code, JsonPath};
 use bedrock_addon_core::document::{
     Component, ComponentMap, ComponentRef, ComponentSet, Document, Rejected,
 };
@@ -132,7 +132,7 @@ fn component_path(name: &str) -> JsonPath {
 }
 
 /// An info finding of a step about the component `name` (vanilla is silent).
-fn note(cx: &mut UpgradeCx<'_>, code: DiagnosticCode, at: JsonPath) {
+fn note(cx: &mut UpgradeCx<'_>, code: Code, at: JsonPath) {
     ops::note(cx.diagnostics, code, at);
 }
 
@@ -161,7 +161,7 @@ where
     map.insert_typed(C::from(component.into_set()), true);
     note(
         cx,
-        DiagnosticCode::from(&core_codes::SYNTHESIZED_COMPONENT),
+        Code::from(&core_codes::SYNTHESIZED_COMPONENT),
         component_path(T::NAME),
     );
 }
@@ -193,7 +193,7 @@ pub(crate) fn change<T>(
     map.insert_typed(OlderComponent::Newest(component.into_set()), synthesized);
     note(
         cx,
-        DiagnosticCode::from(&core_codes::SYNTHESIZED_COMPONENT),
+        Code::from(&core_codes::SYNTHESIZED_COMPONENT),
         component_path(T::NAME),
     );
 }
@@ -204,11 +204,11 @@ pub(crate) fn identifier_path() -> JsonPath {
 }
 
 /// An info finding about the document's identifier.
-pub(crate) fn note_identifier(cx: &mut UpgradeCx<'_>, code: DiagnosticCode) {
+pub(crate) fn note_identifier(cx: &mut UpgradeCx<'_>, code: Code) {
     note(cx, code, identifier_path());
 }
 
 /// An info finding about the component `name`.
-pub(crate) fn note_component(cx: &mut UpgradeCx<'_>, code: DiagnosticCode, name: &str) {
+pub(crate) fn note_component(cx: &mut UpgradeCx<'_>, code: Code, name: &str) {
     note(cx, code, component_path(name));
 }

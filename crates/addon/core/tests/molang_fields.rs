@@ -9,7 +9,7 @@
     reason = "tests read fixtures and call facet-json directly"
 )]
 use bedrock_addon_core::diagnostic::{
-    DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, codes,
+    Code, Diagnostics, JsonPath, Location, Phase, Severity, codes,
 };
 use bedrock_addon_core::molang::{
     self, ExperimentMask, Molang, MolangContext, MolangFieldMut, MolangFieldSpec, MolangFields,
@@ -192,7 +192,7 @@ fn pass_one_reports_a_field_its_reader_refuses() {
     let mut diagnostics = Diagnostics::default();
     let pass = molang::pass_one(&mut document, &context(), &base(), &mut diagnostics);
     assert_eq!(pass.failed, 3);
-    let found: Vec<(String, &DiagnosticCode, Severity, Phase)> = diagnostics
+    let found: Vec<(String, &Code, Severity, Phase)> = diagnostics
         .iter()
         .map(|d| {
             (
@@ -203,8 +203,8 @@ fn pass_one_reports_a_field_its_reader_refuses() {
             )
         })
         .collect();
-    let invalid_type = DiagnosticCode::from(&codes::INVALID_TYPE);
-    let expected: Vec<(String, &DiagnosticCode, Severity, Phase)> = [
+    let invalid_type = Code::from(&codes::INVALID_TYPE);
+    let expected: Vec<(String, &Code, Severity, Phase)> = [
         "minecraft:toy/condition",
         "minecraft:toy/script",
         "minecraft:toy/events/b/condition",
@@ -239,7 +239,7 @@ fn a_number_out_of_range_is_invalid_value() {
     document.condition = Molang::Const(f32::INFINITY);
     let mut diagnostics = Diagnostics::default();
     molang::pass_one(&mut document, &context(), &base(), &mut diagnostics);
-    let codes: Vec<&DiagnosticCode> = diagnostics.iter().map(|d| &d.code).collect();
+    let codes: Vec<&Code> = diagnostics.iter().map(|d| &d.code).collect();
     assert!(
         matches!(codes[..], [code] if code.is(&bedrock_addon_core::diagnostic::codes::INVALID_VALUE))
     );
@@ -261,7 +261,7 @@ fn not_checked_names_the_number_of_expressions() {
     };
     assert_eq!(
         finding.code,
-        DiagnosticCode::from(codes::MOLANG_NOT_CHECKED.with([7.to_string()]))
+        codes::MOLANG_NOT_CHECKED.with([7.to_string()])
     );
     assert_eq!(finding.severity, Severity::Info);
     assert_eq!(finding.location, base());
@@ -298,13 +298,8 @@ fn an_invalid_expression_loads_unchecked_without_the_compile_pass() {
     let pass = molang::pass_one(&mut document, &context(), &base(), &mut diagnostics);
     assert_eq!(pass.failed, 0);
     molang::not_checked(&mut document, &base(), &mut diagnostics);
-    let codes: Vec<&DiagnosticCode> = diagnostics.iter().map(|d| &d.code).collect();
-    assert_eq!(
-        codes,
-        [&DiagnosticCode::from(
-            codes::MOLANG_NOT_CHECKED.with([2.to_string()])
-        )]
-    );
+    let codes: Vec<&Code> = diagnostics.iter().map(|d| &d.code).collect();
+    assert_eq!(codes, [&codes::MOLANG_NOT_CHECKED.with([2.to_string()])]);
 }
 
 /// A field walked with `field_default` takes the walk's default spec: the one

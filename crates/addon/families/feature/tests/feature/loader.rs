@@ -1,7 +1,7 @@
 //! The loader stage and the document rules every type shares: versions, identifiers, payload
 //! keys, internal types (fixtures f07, f08, f11, f12; validation rules 1–3, 5–8, 10).
 
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity, codes as core_codes};
+use bedrock_addon_core::diagnostic::{Severity, codes as core_codes};
 use bedrock_addon_core::document::Content;
 use bedrock_addon_core::pack_identity::PackPath;
 use bedrock_addon_family_feature::Feature;
@@ -189,10 +189,8 @@ fn an_engine_gated_member_newer_than_the_packs_min_engine_version_is_warned() {
     assert!(document.diagnostics().iter().any(|f| {
         f.severity == Severity::Info
             && f.code
-                == DiagnosticCode::from(
-                    bedrock_addon_core::diagnostic::codes::FIELD_SINCE_ENGINE
-                        .with([FormatVersion::new(1, 26, 20).to_string()]),
-                )
+                == bedrock_addon_core::diagnostic::codes::FIELD_SINCE_ENGINE
+                    .with([FormatVersion::new(1, 26, 20).to_string()])
             && f.location
                 .json_path
                 .to_string()

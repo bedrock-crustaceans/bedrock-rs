@@ -15,7 +15,7 @@ mod write;
 
 use std::path::{Path, PathBuf};
 
-use bedrock_addon::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, Severity};
+use bedrock_addon::diagnostic::{Code, Diagnostic, Diagnostics, Severity};
 use bedrock_addon::document::{Document, Rejected};
 use bedrock_addon::manifest::{CapabilityRegistry, Manifest};
 use bedrock_addon::storage::PackPath;
@@ -74,7 +74,7 @@ fn has(
     diagnostics: &Diagnostics,
     severity: Severity,
     path: &str,
-    code: impl Fn(&DiagnosticCode) -> bool,
+    code: impl Fn(&Code) -> bool,
 ) -> bool {
     diagnostics.iter().any(|d: &Diagnostic| {
         d.severity == severity && d.location.json_path.to_string() == path && code(&d.code)

@@ -25,7 +25,7 @@ use bedrock_addon_core::id::BehaviorTreeId;
 use std::collections::{HashMap, HashSet};
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, Phase};
+use bedrock_addon_core::diagnostic::{Code, Diagnostic, Diagnostics, Phase};
 use bedrock_addon_core::document::unversioned;
 use bedrock_addon_core::document::{
     CombineRule, Content, Contribution, Definition, Document, EngineVersionDecision, JsonContent,
@@ -572,7 +572,7 @@ fn built_ins() -> impl Iterator<Item = (BehaviorTreeId, Document<BehaviorTree>)>
 }
 
 /// A combine-time information about the file at `path` of `pack`.
-fn notice(code: DiagnosticCode, pack: &PackRef, path: &PackPath) -> Diagnostic {
+fn notice(code: Code, pack: &PackRef, path: &PackPath) -> Diagnostic {
     let file = Origin::file(pack.clone(), PackSide::Behavior, path.clone());
     Diagnostic::info(code).phase(Phase::Validate).in_file(&file)
 }
@@ -612,10 +612,10 @@ fn combine(parsed: Vec<FileOutcome>, stack: &StackCx<'_>) -> Registry<BehaviorTr
                 // Ours: paths are walked sorted, so the last path of the pack wins; vanilla
                 // says nothing (`AutomationBehaviorTreeGroup::addBehaviorTree`
                 // emplaces without a log): an information.
-                let code = DiagnosticCode::from(&core_codes::DUPLICATE_IDENTIFIER);
+                let code = Code::from(&core_codes::DUPLICATE_IDENTIFIER);
                 notice(code, &earlier.pack, &earlier.path)
             } else {
-                let code = DiagnosticCode::from(&core_codes::SHADOWED_DEFINITION);
+                let code = Code::from(&core_codes::SHADOWED_DEFINITION);
                 notice(code, &earlier.pack, &earlier.path)
             }
         }));
@@ -625,7 +625,7 @@ fn combine(parsed: Vec<FileOutcome>, stack: &StackCx<'_>) -> Registry<BehaviorTr
         .filter_map(|(name, _)| claims.get(&BehaviorTreeId::parse(*name)))
         .filter(|claim| claim.loaded)
         .map(|claim| {
-            let code = DiagnosticCode::from(&core_codes::SHADOWED_BY_BUILTIN);
+            let code = Code::from(&core_codes::SHADOWED_BY_BUILTIN);
             // Ours: `addBehaviorTree` emplaces the built-in tree without a
             // line, like a duplicate within a pack.
             notice(code, &claim.pack, &claim.path)
@@ -667,7 +667,7 @@ fn combine(parsed: Vec<FileOutcome>, stack: &StackCx<'_>) -> Registry<BehaviorTr
         bedrock_addon_core::load::unread_files(stack, DIRECTORY, PackPath::is_json)
     {
         builder.push_diagnostic(notice(
-            DiagnosticCode::from(&core_codes::IGNORED_FILE),
+            Code::from(&core_codes::IGNORED_FILE),
             &pack.pack,
             &ignored.path,
         ));

@@ -7,7 +7,7 @@
 use super::super::{
     At, Findings, LinkCx, Target, Validator, invalid, kinds, unresolved, validator_miss,
 };
-use crate::diagnostic::{DiagnosticCode, JsonPath, Severity, VanillaText};
+use crate::diagnostic::{JsonPath, Severity, sentence};
 use crate::document::{ComponentMap, ComponentRef, Origin};
 use crate::families::biome::component::{
     BiomeComponent, NameOrWeight, OverworldGenerationRules, ReplaceBiomes, WeightedBiome,
@@ -28,11 +28,8 @@ const NO_TARGET: &str = "No biome found with name: '{}'";
 const NOT_VANILLA: &str = "Must replace vanilla biomes only. Attempting to use biome: '{}'";
 
 /// `template` with `name`.
-fn text(template: &'static str, name: &str) -> VanillaText {
-    VanillaText::Formatted {
-        template,
-        args: vec![name.to_owned()],
-    }
+fn text(template: &'static str, name: &str) -> String {
+    sentence(template, &[name.to_owned()])
 }
 
 /// The rules of every effective biome, the stable documents then the beta ones.
@@ -215,21 +212,19 @@ fn custom_biome_count(cx: &LinkCx<'_>, out: &mut Findings, limit: usize) {
         .chain(beta)
         .filter(|(id, origin)| !of_the_game(cx, id, origin));
     for (id, origin) in custom.skip(limit) {
-        let text = VanillaText::Formatted {
-            template: COUNT_EXCEEDS,
-            args: vec![MAX_CUSTOM_BIOMES.to_string(), id.as_str().to_owned()],
-        };
+        let text = sentence(
+            COUNT_EXCEEDS,
+            &[MAX_CUSTOM_BIOMES.to_string(), id.as_str().to_owned()],
+        );
         let mut path = JsonPath::new();
         for key in ["minecraft:biome", "description", "identifier"] {
             path.push(key);
         }
         out.push(
-            At::new(origin, path, Severity::Error).diagnostic(DiagnosticCode::from(
-                builders::worded(
-                    &core_codes::INVALID_VALUE,
-                    &core_codes::INVALID_VALUE_WORDED,
-                    Some(&text),
-                ),
+            At::new(origin, path, Severity::Error).diagnostic(builders::worded(
+                &core_codes::INVALID_VALUE,
+                &core_codes::INVALID_VALUE_WORDED,
+                Some(&text),
             )),
         );
     }

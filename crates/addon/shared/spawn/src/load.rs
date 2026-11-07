@@ -5,7 +5,7 @@
 use super::codes;
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    CodeDef, Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, Phase, builders,
+    Code, CodeDef, Diagnostic, DiagnosticDetail, Diagnostics, Phase, builders,
 };
 use bedrock_addon_core::document::{
     CombineRule, Contribution, Definition, Document, Origin, Registry, RegistryBuilder, Rejected,
@@ -29,7 +29,7 @@ pub struct FileLoad<T> {
 }
 
 /// A rejection finding at the document root.
-pub fn error(code: DiagnosticCode) -> Diagnostic {
+pub fn error(code: Code) -> Diagnostic {
     Diagnostic::error(code)
 }
 
@@ -54,7 +54,7 @@ pub(crate) fn first_format_version(value: &Value) -> Option<&Value> {
 /// not formatted as an object".
 pub(crate) fn not_an_object(root: &Value) -> Diagnostic {
     if first_format_version(root).is_none() {
-        error(DiagnosticCode::from(&core_codes::NO_VALID_VERSION))
+        error(Code::from(&core_codes::NO_VALID_VERSION))
     } else {
         Diagnostic::of(&codes::NOT_AN_OBJECT).detail(DiagnosticDetail::Syntax(
             "the root is not an object".to_owned(),

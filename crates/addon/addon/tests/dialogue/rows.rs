@@ -1,7 +1,7 @@
 //! Every row of the fixtures: the list ("Fixtures to write", `l1`–`l9`) and
 //! the table (`d01`–`d27`), fixtures under `tests/fixtures/dialogue/dialogue/`.
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity, codes};
+use bedrock_addon::diagnostic::{Code, Severity, codes};
 use bedrock_addon::document::{Content, Document};
 use bedrock_addon::families::dialogue::codes as dialogue_codes;
 use bedrock_addon::families::dialogue::{
@@ -439,10 +439,7 @@ fn d23_a_cut_label_is_a_clamped_value_info_deviation() {
         .iter()
         .map(|d| (d.code.clone(), d.severity))
         .collect();
-    assert_eq!(
-        found,
-        [(DiagnosticCode::from(&codes::CLAMPED_VALUE), Severity::Info)]
-    );
+    assert_eq!(found, [(Code::from(&codes::CLAMPED_VALUE), Severity::Info)]);
 }
 
 #[test]

@@ -15,7 +15,7 @@
 use bedrock_addon_core::diagnostic::codes;
 use std::sync::Arc;
 
-use bedrock_addon_core::diagnostic::{DiagnosticCode, code_for_deserialize_error_kind};
+use bedrock_addon_core::diagnostic::{Code, code_for_deserialize_error_kind};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::molang::{
     self, JsonScalar, JsonType, Molang, MolangList, MolangSource, OtherJson, RawVersion, ReadField,
@@ -151,7 +151,7 @@ struct ListField {
 }
 
 /// The code a facet rejection of a field becomes (the crate's facet-error table).
-fn rejection(error: &facet_json::DeserializeError) -> DiagnosticCode {
+fn rejection(error: &facet_json::DeserializeError) -> Code {
     code_for_deserialize_error_kind(&error.kind, error.path.is_some(), false)
 }
 
@@ -163,10 +163,10 @@ fn lacks_an_object_form_member(value: &Value) -> bool {
 }
 
 /// The code a reader error becomes (the crate's Molang detail mapping).
-fn reader_code(error: &ReprError) -> DiagnosticCode {
+fn reader_code(error: &ReprError) -> Code {
     match error {
-        ReprError::NumberOutOfRange { .. } => DiagnosticCode::from(&codes::INVALID_VALUE),
-        _ => DiagnosticCode::from(&codes::INVALID_TYPE),
+        ReprError::NumberOutOfRange { .. } => Code::from(&codes::INVALID_VALUE),
+        _ => Code::from(&codes::INVALID_TYPE),
     }
 }
 
@@ -176,7 +176,7 @@ fn typed(
     json: &str,
     reader: ReaderKind,
     context: RawVersion,
-) -> Result<Result<ReadField, ReprError>, Box<DiagnosticCode>> {
+) -> Result<Result<ReadField, ReprError>, Box<Code>> {
     let text = format!(r#"{{"field": {json}}}"#);
     if reader == ReaderKind::ScalarOrArray {
         let mut list = facet_json::from_str::<ListField>(&text)
@@ -242,7 +242,7 @@ fn the_reader_matrix_agrees_three_ways() {
                 ));
             }
             let facet = typed(json, reader, context);
-            let invalid_type = DiagnosticCode::from(&codes::INVALID_TYPE);
+            let invalid_type = Code::from(&codes::INVALID_TYPE);
             match (&facet, &want) {
                 // facet refuses a number not finite as an `f32` through molang's proxy, which the
                 // crate maps to `InvalidType`; the strict reader on a `Value` says `InvalidValue`.
@@ -251,7 +251,7 @@ fn the_reader_matrix_agrees_three_ways() {
                 // object-form struct (`MissingRequiredField`); on a `Value` it is just not the
                 // object form (`InvalidType`).
                 (Err(code), Err(_))
-                    if **code == (DiagnosticCode::from(&codes::MISSING_REQUIRED_FIELD))
+                    if **code == (Code::from(&codes::MISSING_REQUIRED_FIELD))
                         && lacks_an_object_form_member(&value) => {}
                 (Err(code), Err(error)) if **code == reader_code(error) => {}
                 (Err(code), Ok(_)) if narrower && **code == invalid_type => {}

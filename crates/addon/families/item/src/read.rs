@@ -116,9 +116,7 @@ pub(crate) fn load_item(bytes: &[u8], cx: &LoadContext) -> ItemLoad {
     {
         let mut diagnostics = parsed.diagnostics;
         diagnostics.push(Diagnostic::error(
-            codes::ITEM_IN_RESOURCE_PACK
-                .with([identifier.clone().unwrap_or_default()])
-                .into(),
+            codes::ITEM_IN_RESOURCE_PACK.with([identifier.clone().unwrap_or_default()]),
         ));
         return ItemLoad {
             outcome: LoadOutcome {
@@ -206,9 +204,9 @@ pub(crate) fn json_path_texts(d: &mut Diagnostics, text: &str, cx: &LoadContext)
     }
     if invalid_object {
         d.push(
-            Diagnostic::error((&codes::INVALID_JSON_OBJECT).into()).detail(
-                DiagnosticDetail::Syntax("the item is not loaded".to_owned()),
-            ),
+            Diagnostic::error(&codes::INVALID_JSON_OBJECT).detail(DiagnosticDetail::Syntax(
+                "the item is not loaded".to_owned(),
+            )),
         );
     }
 }

@@ -33,7 +33,7 @@ use std::borrow::Cow;
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    CodeDef, Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Phase, Severity,
+    Code, CodeDef, Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Phase, Severity,
     ShadowReason, builders,
 };
 use bedrock_addon_core::document::{
@@ -454,9 +454,8 @@ fn place(mut found: Diagnostics, origin: &Origin) -> Diagnostics {
         if let Some([file, scale]) = finding.code.args_of(&visual_codes::HELD_ITEM_SCALE_INVALID)
             && file == validate::FILE
         {
-            finding.code = visual_codes::HELD_ITEM_SCALE_INVALID
-                .with([origin.path.as_str(), scale.as_str()])
-                .into();
+            finding.code =
+                visual_codes::HELD_ITEM_SCALE_INVALID.with([origin.path.as_str(), scale.as_str()]);
         }
     }
     found.located(origin)
@@ -508,9 +507,9 @@ fn admit<'b>(
 /// value that is no version (or the any-version, or the `"beta"` literal) is unknown; a
 /// version above the engine exceeds the game version; below 1.0.0 it is unknown again; from
 /// 1.0.0 up to 1.8.0 it is below the schema's minimum.
-fn version_gate(version: &Value, path: &str, cx: &LoadContext) -> Option<DiagnosticCode> {
+fn version_gate(version: &Value, path: &str, cx: &LoadContext) -> Option<Code> {
     // A value the game cannot read as a version, or that is the `beta` literal, is unknown.
-    let unknown = || DiagnosticCode::from(visual_codes::UNKNOWN_VERSION.with([path]));
+    let unknown = || visual_codes::UNKNOWN_VERSION.with([path]);
     let literal = version.as_string().map(facet_value::VString::as_str);
     let Some(read) =
         SemVersion::from_json(version).filter(|read| !read.is_any() && literal != Some("beta"))
@@ -520,12 +519,10 @@ fn version_gate(version: &Value, path: &str, cx: &LoadContext) -> Option<Diagnos
     let written = literal.map_or_else(|| read.to_string(), str::to_owned);
     let engine = cx.engine_version;
     if read > SemVersion::new(engine.major, engine.minor, engine.patch) {
-        return Some(DiagnosticCode::from(visual_codes::ACTOR_ABOVE_ENGINE.with(
-            [
-                written,
-                format!("{}.{}.{}", engine.major, engine.minor, engine.patch),
-            ],
-        )));
+        return Some(visual_codes::ACTOR_ABOVE_ENGINE.with([
+            written,
+            format!("{}.{}.{}", engine.major, engine.minor, engine.patch),
+        ]));
     }
     if read < SemVersion::new(1, 0, 0) {
         return Some(unknown());

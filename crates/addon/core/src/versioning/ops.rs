@@ -10,7 +10,7 @@
 use facet_value::{VArray, VObject};
 use indexmap::IndexMap;
 
-use crate::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity};
+use crate::diagnostic::{Code, Diagnostic, Diagnostics, JsonPath, Phase, Severity};
 use crate::json::Value;
 
 /// The members of a JSON object: an ordered map of a payload (`IndexMap`) or an object of the
@@ -264,12 +264,12 @@ pub fn strings(items: &[&str]) -> Value {
 
 /// An information of a step at `at` (the path in the file): the game discards the value
 /// without a content-log line, so the finding is the crate's own.
-pub fn note(d: &mut Diagnostics, code: DiagnosticCode, at: JsonPath) {
+pub fn note(d: &mut Diagnostics, code: Code, at: JsonPath) {
     tell(d, code, Severity::Info, at);
 }
 
 /// A finding of a step at `at`, of `severity`.
-pub fn tell(d: &mut Diagnostics, code: DiagnosticCode, severity: Severity, at: JsonPath) {
+pub fn tell(d: &mut Diagnostics, code: Code, severity: Severity, at: JsonPath) {
     d.push(
         Diagnostic::error(code)
             .at(at)
@@ -279,7 +279,7 @@ pub fn tell(d: &mut Diagnostics, code: DiagnosticCode, severity: Severity, at: J
 }
 
 /// A kept error of a step at `at`: the game logs an error and loads the document.
-pub fn kept(d: &mut Diagnostics, code: DiagnosticCode, at: JsonPath) {
+pub fn kept(d: &mut Diagnostics, code: Code, at: JsonPath) {
     d.push_kept_error(Diagnostic::error(code).at(at).phase(Phase::Upgrade));
 }
 
@@ -287,12 +287,12 @@ pub fn kept(d: &mut Diagnostics, code: DiagnosticCode, at: JsonPath) {
 /// member, with what is to tell of a value they read as another.
 pub mod jsoncpp {
     use crate::diagnostic::codes as core_codes;
-    use crate::diagnostic::{DiagnosticCode, Severity};
+    use crate::diagnostic::{Code, Severity};
     use crate::json::Value;
 
     /// What is to tell of a value read as another: the code, and INFO where the game reads it
     /// so, a warning where the value is the crate's own.
-    pub type Misread = (DiagnosticCode, Severity);
+    pub type Misread = (Code, Severity);
 
     /// What `asInt` makes of a member, and what is to tell of it: a value that is no number is
     /// 0 (`InvalidType`); a number with a fraction is truncated and one beyond an int saturates
@@ -300,10 +300,8 @@ pub mod jsoncpp {
     /// an absent one).
     pub fn int_of(value: &Value) -> (i32, Option<Misread>) {
         let Some(number) = value.as_number() else {
-            let code = (!value.is_null()).then_some((
-                DiagnosticCode::from(&core_codes::INVALID_TYPE),
-                Severity::Info,
-            ));
+            let code = (!value.is_null())
+                .then_some((Code::from(&core_codes::INVALID_TYPE), Severity::Info));
             return (0, code);
         };
         let number = number.to_f64_lossy();
@@ -316,10 +314,7 @@ pub mod jsoncpp {
         // crate's own.
         (
             int,
-            (!exact).then_some((
-                DiagnosticCode::from(&core_codes::INVALID_VALUE),
-                Severity::Info,
-            )),
+            (!exact).then_some((Code::from(&core_codes::INVALID_VALUE), Severity::Info)),
         )
     }
 
@@ -330,10 +325,8 @@ pub mod jsoncpp {
             Some(number) => (number.to_f64_lossy(), None),
             None => (
                 0.0,
-                (!value.is_null()).then_some((
-                    DiagnosticCode::from(&core_codes::INVALID_TYPE),
-                    Severity::Info,
-                )),
+                (!value.is_null())
+                    .then_some((Code::from(&core_codes::INVALID_TYPE), Severity::Info)),
             ),
         }
     }
@@ -349,10 +342,7 @@ pub mod jsoncpp {
         if float.is_infinite() {
             return (
                 f32::MAX.copysign(float),
-                Some((
-                    DiagnosticCode::from(&core_codes::INVALID_VALUE),
-                    Severity::Info,
-                )),
+                Some((Code::from(&core_codes::INVALID_VALUE), Severity::Info)),
             );
         }
         (float, code)
@@ -547,14 +537,8 @@ mod tests {
     #[test]
     fn the_jsoncpp_readers_read_as_jsoncpp() {
         use jsoncpp::{float_of, int_of, number_of};
-        let invalid_type = Some((
-            DiagnosticCode::from(&core_codes::INVALID_TYPE),
-            Severity::Info,
-        ));
-        let invalid_value = Some((
-            DiagnosticCode::from(&core_codes::INVALID_VALUE),
-            Severity::Info,
-        ));
+        let invalid_type = Some((Code::from(&core_codes::INVALID_TYPE), Severity::Info));
+        let invalid_value = Some((Code::from(&core_codes::INVALID_VALUE), Severity::Info));
         assert_eq!(int_of(&json("3")), (3, None));
         assert_eq!(int_of(&json("3.7")), (3, invalid_value.clone()));
         assert_eq!(int_of(&json("1e12")), (i32::MAX, invalid_value.clone()));
@@ -570,22 +554,14 @@ mod tests {
     fn the_findings_are_upgrade_findings_at_their_severity() {
         let mut d = Diagnostics::default();
         let at = JsonPath::new().child("minecraft:block");
-        note(
-            &mut d,
-            DiagnosticCode::from(&core_codes::DROPPED_FIELD),
-            at.clone(),
-        );
+        note(&mut d, Code::from(&core_codes::DROPPED_FIELD), at.clone());
         tell(
             &mut d,
-            DiagnosticCode::from(&core_codes::INVALID_TYPE),
+            Code::from(&core_codes::INVALID_TYPE),
             Severity::Warning,
             at.clone(),
         );
-        kept(
-            &mut d,
-            DiagnosticCode::from(&core_codes::INVALID_VALUE),
-            at.clone(),
-        );
+        kept(&mut d, Code::from(&core_codes::INVALID_VALUE), at.clone());
         let expected = [
             Diagnostic::of(&core_codes::DROPPED_FIELD)
                 .at(at.clone())

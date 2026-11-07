@@ -64,7 +64,7 @@ impl LegacyStep<1, 19, 10> for BlockPayload {
                             super::legacy::component_path(section, "minecraft:creative_category");
                         at.push(key.as_str());
                         d.push(
-                            Diagnostic::info(bedrock_addon_core::diagnostic::DiagnosticCode::from(
+                            Diagnostic::info(bedrock_addon_core::diagnostic::Code::from(
                                 &core_codes::UNRECOGNIZED_FIELD,
                             ))
                             .at(at.clone())

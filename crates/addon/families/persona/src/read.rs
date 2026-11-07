@@ -20,7 +20,7 @@ use super::{
 };
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Severity,
+    Code, Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Severity,
 };
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::kit::{Disposition, Node, Read};
@@ -142,7 +142,7 @@ impl Reader {
     }
 
     /// A finding at the place being read.
-    fn report(&mut self, code: DiagnosticCode, severity: Severity) {
+    fn report(&mut self, code: Code, severity: Severity) {
         let finding = Diagnostic::error(code)
             .severity(severity)
             .at(self.at.clone());
@@ -150,7 +150,7 @@ impl Reader {
     }
 
     /// A finding at the member `key` of the object being read.
-    fn report_at(&mut self, key: &str, code: DiagnosticCode, severity: Severity) {
+    fn report_at(&mut self, key: &str, code: Code, severity: Severity) {
         self.at.push(key);
         self.report(code, severity);
         self.at.pop();
@@ -302,10 +302,7 @@ impl Reader {
         if !color.as_str().is_empty() && !color.is_well_formed() {
             // The game reads what is there and logs nothing: an information of the
             // crate's own.
-            self.report(
-                DiagnosticCode::from(&core_codes::INVALID_VALUE),
-                Severity::Info,
-            );
+            self.report(Code::from(&core_codes::INVALID_VALUE), Severity::Info);
         }
         Ok(color)
     }
@@ -340,7 +337,7 @@ impl Reader {
     fn no_texture(&mut self) {
         // The builder skips the entry in silence: an information of the crate's own.
         self.report(
-            DiagnosticCode::from(&core_codes::MISSING_REQUIRED_FIELD),
+            Code::from(&core_codes::MISSING_REQUIRED_FIELD),
             Severity::Info,
         );
     }
@@ -542,7 +539,7 @@ impl Reader {
         if meta.animation_sources.is_some() && meta.piece_type() != PieceType::Emote {
             self.report_at(
                 "animation_sources",
-                DiagnosticCode::from(&core_codes::IGNORED_MEMBER),
+                Code::from(&core_codes::IGNORED_MEMBER),
                 Severity::Info,
             );
         }
@@ -561,11 +558,9 @@ impl Reader {
             // A type that is no arm or leg has the game's text; an arm or leg with a side it
             // does not take is skipped in silence and has none.
             let code = if piece_type.is_arm_or_leg() {
-                DiagnosticCode::from(&core_codes::INVALID_VALUE)
+                Code::from(&core_codes::INVALID_VALUE)
             } else {
-                codes::SIDE_NOT_ARM_OR_LEG
-                    .with([piece_type.name(), side.as_str()])
-                    .into()
+                codes::SIDE_NOT_ARM_OR_LEG.with([piece_type.name(), side.as_str()])
             };
             self.at.push("geometry_sources");
             self.at.push_index(index);
@@ -657,13 +652,13 @@ fn meta_file(root: &Value, reader: &mut Reader) -> PieceMetadata {
         return meta;
     };
     let at_version = JsonPath::new().child("format_version");
-    let refuse = |reader: &mut Reader, code: DiagnosticCode, at: JsonPath| {
+    let refuse = |reader: &mut Reader, code: Code, at: JsonPath| {
         reader.read().push(Diagnostic::error(code).at(at));
     };
     let Some(input) = FormatVersionInput::from_json(version) else {
         refuse(
             reader,
-            DiagnosticCode::from(&core_codes::MALFORMED_FORMAT_VERSION),
+            Code::from(&core_codes::MALFORMED_FORMAT_VERSION),
             at_version,
         );
         return meta;
@@ -672,8 +667,7 @@ fn meta_file(root: &Value, reader: &mut Reader) -> PieceMetadata {
         || input.version.map(|v| v.to_string()).unwrap_or_default(),
         |text| text.as_str().to_owned(),
     );
-    let unsupported =
-        |written: &str| DiagnosticCode::from(core_codes::NO_PARSER_FOR_VERSION.with([written]));
+    let unsupported = |written: &str| core_codes::NO_PARSER_FOR_VERSION.with([written]);
     let below = input
         .version
         .is_some_and(|v| v < META_VERSION || (input.prerelease && v == META_VERSION));
@@ -696,7 +690,7 @@ fn meta_file(root: &Value, reader: &mut Reader) -> PieceMetadata {
     let Some(payload) = members.get(ENVELOPE) else {
         refuse(
             reader,
-            DiagnosticCode::from(&core_codes::MISSING_PAYLOAD),
+            Code::from(&core_codes::MISSING_PAYLOAD),
             JsonPath::new(),
         );
         return meta;
@@ -752,7 +746,7 @@ pub(super) fn read_store_info(root: &Value, findings: &mut Vec<Diagnostic>) -> P
         if !set && !written_in(&store.extra, key) {
             reader.report_at(
                 key,
-                DiagnosticCode::from(&core_codes::MISSING_REQUIRED_FIELD),
+                Code::from(&core_codes::MISSING_REQUIRED_FIELD),
                 Severity::Info,
             );
         }

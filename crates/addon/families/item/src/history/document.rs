@@ -37,9 +37,7 @@ use crate::component::{
 use crate::deprecated::ItemDeprecatedData;
 use crate::legacy::{LegacyItemData, is_legacy_read, read_legacy};
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{
-    Class, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity,
-};
+use bedrock_addon_core::diagnostic::{Class, Code, Diagnostic, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::load::LoadContext;
 
 /// A packed `major.minor.patch` (`major × 1 000 000 + minor × 1 000 + patch`), the version
@@ -528,7 +526,7 @@ pub(crate) fn parse_parts(
         // stable document without a registered component is routed to the legacy format
         // before this; a beta document is not routed.
         let missing = match &shell.components {
-            None => Some(DiagnosticCode::from(&core_codes::MISSING_REQUIRED_FIELD)),
+            None => Some(Code::from(&core_codes::MISSING_REQUIRED_FIELD)),
             Some(components) if components.is_empty() => Some(
                 bedrock_addon_core::diagnostic::cereal::too_few_components(1),
             ),
@@ -856,7 +854,7 @@ fn side_car(
             if value.is_some() {
                 // A deprecated member is an error under both error masks and rejects the
                 // item.
-                d.push(Diagnostic::error(code.into()).at(at.child(key)));
+                d.push(Diagnostic::error(code).at(at.child(key)));
             }
         }
         return out;
@@ -1036,11 +1034,9 @@ fn unbind_members(
             } else {
                 known::V1_26_10
             };
-            core_codes::FIELD_SINCE_ENGINE
-                .with([since.to_string()])
-                .into()
+            core_codes::FIELD_SINCE_ENGINE.with([since.to_string()])
         } else {
-            DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD)
+            Code::from(&core_codes::UNRECOGNIZED_FIELD)
         };
         let path = JsonPath::new().child(member);
         // A member the struct of this version does not bind is a member the schema does not
@@ -1150,7 +1146,7 @@ fn check_component(
                 // the finding's (the game's own constraint text is not known).
                 let slot = std::mem::replace(&mut c.slot, "none".to_owned());
                 let path = JsonPath::new().child("slot");
-                d.push(Diagnostic::error(codes::ENCHANT_SLOT.with([slot]).into()).at(path));
+                d.push(Diagnostic::error(codes::ENCHANT_SLOT.with([slot])).at(path));
                 return false;
             }
             true

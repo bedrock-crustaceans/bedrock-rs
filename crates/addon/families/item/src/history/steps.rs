@@ -26,7 +26,7 @@ use crate::component::{
 };
 use crate::legacy::ItemFormat;
 use crate::{Beta, Item, ItemDescription, codes};
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, Phase, Severity};
+use bedrock_addon_core::diagnostic::{Code, Diagnostic, JsonPath, Phase, Severity};
 use bedrock_addon_core::id::SoundEventName;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput, known};
@@ -57,7 +57,7 @@ fn not_carried(cx: &mut UpgradeCx<'_>, key: &str) {
     if !said {
         report(
             cx,
-            DiagnosticCode::from(&core_codes::DROPPED_FIELD),
+            Code::from(&core_codes::DROPPED_FIELD),
             Severity::Info,
             &["components", key],
         );
@@ -66,7 +66,7 @@ fn not_carried(cx: &mut UpgradeCx<'_>, key: &str) {
 
 /// The game's content-log error after which the step goes on: a kept error, at
 /// `minecraft:item/<path>`.
-fn report_kept(cx: &mut UpgradeCx<'_>, code: DiagnosticCode, path: &[&str]) {
+fn report_kept(cx: &mut UpgradeCx<'_>, code: Code, path: &[&str]) {
     let mut at = JsonPath::new();
     at.push("minecraft:item");
     for part in path {
@@ -77,7 +77,7 @@ fn report_kept(cx: &mut UpgradeCx<'_>, code: DiagnosticCode, path: &[&str]) {
 }
 
 /// A finding of a step at `minecraft:item/<path>`.
-fn report(cx: &mut UpgradeCx<'_>, code: DiagnosticCode, severity: Severity, path: &[&str]) {
+fn report(cx: &mut UpgradeCx<'_>, code: Code, severity: Severity, path: &[&str]) {
     let mut at = JsonPath::new();
     at.push("minecraft:item");
     for part in path {
@@ -198,7 +198,7 @@ fn settle_versions<T: MolangFields>(value: &mut T, cx: &UpgradeCx<'_>) {
 fn moved(cx: &mut UpgradeCx<'_>, path: &[&str]) {
     report(
         cx,
-        DiagnosticCode::from(&core_codes::DEPRECATED_MEMBER),
+        Code::from(&core_codes::DEPRECATED_MEMBER),
         Severity::Info,
         path,
     );
@@ -219,7 +219,7 @@ fn unread(cx: &mut UpgradeCx<'_>, component: &str) {
     for (key, _) in keys {
         report(
             cx,
-            DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD),
+            Code::from(&core_codes::UNRECOGNIZED_FIELD),
             Severity::Warning,
             &["components", component, &key],
         );
@@ -233,7 +233,7 @@ fn fill<T: PartialEq>(cx: &mut UpgradeCx<'_>, slot: &mut Option<T>, key: &str, v
     if slot.as_ref().is_some_and(|had| *had != value) {
         report(
             cx,
-            DiagnosticCode::from(&core_codes::DROPPED_FIELD),
+            Code::from(&core_codes::DROPPED_FIELD),
             Severity::Info,
             &["__deprecated_components", key],
         );
@@ -257,7 +257,7 @@ fn saturated_duration(legacy: &crate::legacy::LegacyItemData, cx: &mut UpgradeCx
     if !said {
         report(
             cx,
-            DiagnosticCode::from(&core_codes::INVALID_VALUE),
+            Code::from(&core_codes::INVALID_VALUE),
             Severity::Info,
             &["components", "minecraft:use_duration"],
         );
@@ -286,7 +286,7 @@ fn negative_duration(legacy: &crate::legacy::LegacyItemData, cx: &mut UpgradeCx<
         if !said {
             report(
                 cx,
-                DiagnosticCode::from(&core_codes::INVALID_VALUE),
+                Code::from(&core_codes::INVALID_VALUE),
                 Severity::Info,
                 &["components", "minecraft:use_duration"],
             );
@@ -307,7 +307,7 @@ fn copy_triggered_digger(
         deprecated.legacy_on_dig = None;
         report(
             cx,
-            DiagnosticCode::from(&core_codes::DROPPED_FIELD),
+            Code::from(&core_codes::DROPPED_FIELD),
             Severity::Info,
             &["__deprecated_components", "legacy_on_dig_trigger"],
         );
@@ -330,7 +330,7 @@ fn copy_triggered_digger(
 fn replaced(cx: &mut UpgradeCx<'_>, path: &[&str]) {
     report(
         cx,
-        DiagnosticCode::from(&core_codes::DROPPED_FIELD),
+        Code::from(&core_codes::DROPPED_FIELD),
         Severity::Info,
         path,
     );
@@ -382,7 +382,7 @@ impl Upgrade for v1_16_100::Item {
                         // content log's error level and goes on with 0.6: a kept error.
                         report_kept(
                             cx,
-                            codes::SATURATION_MODIFIER.with([name]).into(),
+                            codes::SATURATION_MODIFIER.with([name]),
                             &["components", "minecraft:food", "saturation_modifier"],
                         );
                         0.6
@@ -398,7 +398,7 @@ impl Upgrade for v1_16_100::Item {
                 if old.max_damage.is_some() && old.max_durability.is_some() {
                     report(
                         cx,
-                        DiagnosticCode::from(&core_codes::DROPPED_FIELD),
+                        Code::from(&core_codes::DROPPED_FIELD),
                         Severity::Info,
                         &["components", "minecraft:durability", "max_damage"],
                     );
@@ -409,7 +409,7 @@ impl Upgrade for v1_16_100::Item {
                     // which the item is refused (" Error Parsing Item"): an error.
                     report(
                         cx,
-                        DiagnosticCode::from(&core_codes::MISSING_REQUIRED_FIELD),
+                        Code::from(&core_codes::MISSING_REQUIRED_FIELD),
                         Severity::Error,
                         &["components", "minecraft:durability"],
                     );
@@ -430,7 +430,7 @@ impl Upgrade for v1_16_100::Item {
                 if is_name_list(old.repair_items.as_ref()) {
                     report(
                         cx,
-                        DiagnosticCode::from(&core_codes::DROPPED_FIELD),
+                        Code::from(&core_codes::DROPPED_FIELD),
                         Severity::Info,
                         &["components", "minecraft:repairable", "repair_items"],
                     );
@@ -480,7 +480,7 @@ impl Upgrade for v1_20_0::Item {
             if category.is_none() {
                 report(
                     cx,
-                    DiagnosticCode::from(&core_codes::INVALID_VALUE),
+                    Code::from(&core_codes::INVALID_VALUE),
                     Severity::Info,
                     &["description", "category"],
                 );
@@ -507,7 +507,7 @@ impl Upgrade for v1_20_0::Item {
                 }
                 _ => report(
                     cx,
-                    DiagnosticCode::from(&codes::ARMOR_WITHOUT_WEARABLE),
+                    Code::from(&codes::ARMOR_WITHOUT_WEARABLE),
                     Severity::Error,
                     &["components", "minecraft:armor"],
                 ),
@@ -524,7 +524,7 @@ impl Upgrade for v1_20_0::Item {
             if armor.texture_type.is_some() {
                 report(
                     cx,
-                    DiagnosticCode::from(&core_codes::DROPPED_FIELD),
+                    Code::from(&core_codes::DROPPED_FIELD),
                     Severity::Info,
                     &["components", "minecraft:armor", "texture_type"],
                 );
@@ -546,7 +546,7 @@ fn saturation(value: &Value, cx: &mut UpgradeCx<'_>) -> Option<f32> {
         // another type has none, so this information is the crate's own.
         report(
             cx,
-            DiagnosticCode::from(&core_codes::INVALID_TYPE),
+            Code::from(&core_codes::INVALID_TYPE),
             Severity::Info,
             &member,
         );
@@ -571,7 +571,7 @@ fn saturation(value: &Value, cx: &mut UpgradeCx<'_>) -> Option<f32> {
             // crate's own.
             report(
                 cx,
-                DiagnosticCode::from(&core_codes::INVALID_VALUE),
+                Code::from(&core_codes::INVALID_VALUE),
                 Severity::Info,
                 &member,
             );
@@ -760,7 +760,7 @@ impl Upgrade for v1_20_40::Item {
         if movement.is_some_and(|modifier| !(0.0..=1.0).contains(&modifier)) {
             report(
                 cx,
-                DiagnosticCode::from(&core_codes::INVALID_VALUE),
+                Code::from(&core_codes::INVALID_VALUE),
                 Severity::Info,
                 &["components", "minecraft:chargeable", "movement_modifier"],
             );
@@ -846,7 +846,7 @@ impl Upgrade for v1_20_50::Item {
         {
             report(
                 cx,
-                DiagnosticCode::from(&core_codes::DROPPED_FIELD),
+                Code::from(&core_codes::DROPPED_FIELD),
                 Severity::Info,
                 &["description", "category"],
             );
@@ -928,7 +928,7 @@ impl Upgrade for v1_21_10::Item {
             if read.is_none() && !own.iter().any(|told| told.location.json_path.is_empty()) {
                 report(
                     cx,
-                    DiagnosticCode::from(&core_codes::DROPPED_COMPONENT),
+                    Code::from(&core_codes::DROPPED_COMPONENT),
                     Severity::Info,
                     &["components", RARITY],
                 );
@@ -1004,7 +1004,7 @@ impl Upgrade for v1_21_50::Item {
                 *group = format!("minecraft:{group}");
                 report(
                     cx,
-                    DiagnosticCode::from(&core_codes::DEPRECATED_MEMBER),
+                    Code::from(&core_codes::DEPRECATED_MEMBER),
                     Severity::Info,
                     &["description", "menu_category", "group"],
                 );
@@ -1110,7 +1110,7 @@ impl Upgrade for v1_21_90::Item {
                 // crate's own.
                 report(
                     cx,
-                    DiagnosticCode::from(&core_codes::VALUE_REWRITTEN),
+                    Code::from(&core_codes::VALUE_REWRITTEN),
                     Severity::Info,
                     &["description", "menu_category"],
                 );
@@ -1164,7 +1164,7 @@ pub(crate) fn custom_components_to_keyed(
         if taken {
             report(
                 cx,
-                DiagnosticCode::from(&core_codes::DROPPED_FIELD),
+                Code::from(&core_codes::DROPPED_FIELD),
                 Severity::Info,
                 &["components", "minecraft:custom_components"],
             );

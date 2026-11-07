@@ -20,8 +20,6 @@ pub mod codes;
 mod condition;
 mod function;
 mod read;
-#[doc(hidden)]
-pub mod texts;
 mod write;
 
 use crate::read::parse_table;

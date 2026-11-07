@@ -6,7 +6,7 @@
 
 use crate::codes;
 use crate::component::descriptor_tags;
-use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath};
+use bedrock_addon_core::diagnostic::{Code, JsonPath};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::shared::{Filter, FloatRange};
@@ -144,7 +144,7 @@ impl Typed for Insomnia {
                 .is_some_and(|value| !value.is_null() && value.as_number().is_none())
         {
             cx.refuse(
-                DiagnosticCode::from(&codes::INSOMNIA_NOT_A_NUMBER),
+                Code::from(&codes::INSOMNIA_NOT_A_NUMBER),
                 &JsonPath::new().child(MEMBER),
             );
         }

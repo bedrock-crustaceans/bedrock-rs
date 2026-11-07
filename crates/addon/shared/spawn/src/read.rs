@@ -6,12 +6,12 @@
 //! JSON type also gets an `InvalidType` warning at its path (vanilla is silent).
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity};
+use bedrock_addon_core::diagnostic::{Code, Diagnostic, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::json::Value;
 
 /// A finding of the spawn readers at `at` (a parse finding without a span: the readers walk a
 /// `Value`, so a finding carries a path and no span).
-pub fn finding(code: DiagnosticCode, severity: Severity, at: &JsonPath, d: &mut Diagnostics) {
+pub fn finding(code: Code, severity: Severity, at: &JsonPath, d: &mut Diagnostics) {
     d.push(Diagnostic::error(code).severity(severity).at(at.clone()));
 }
 
@@ -24,12 +24,7 @@ pub fn finding_with(found: Diagnostic, at: &JsonPath, d: &mut Diagnostics) {
 /// `asInt`/`asString`/`asBool`, which convert or default without a line, and skip what is not
 /// an object or an array in silence.
 pub fn wrong_type(at: &JsonPath, d: &mut Diagnostics) {
-    finding(
-        DiagnosticCode::from(&core_codes::INVALID_TYPE),
-        Severity::Info,
-        at,
-        d,
-    );
+    finding(Code::from(&core_codes::INVALID_TYPE), Severity::Info, at, d);
 }
 
 /// `at` followed by `key`.
@@ -76,7 +71,7 @@ fn told_beyond(
 ) {
     if integer(value).is_some_and(|integer| !range.contains(&integer)) {
         finding(
-            DiagnosticCode::from(&core_codes::INVALID_VALUE),
+            Code::from(&core_codes::INVALID_VALUE),
             Severity::Info,
             at,
             d,

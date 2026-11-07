@@ -17,7 +17,7 @@
 //! - `id`: typed identifiers (`Id<K>`, `Kind`, the `kind` markers and one alias per kind).
 //! - `version`: pack versions (`SemVersion`) and document versions (`FormatVersion`), the
 //!   engine version and the manifest version types.
-//! - `diagnostic`: findings as data (`Diagnostic`, `Diagnostics`, `DiagnosticCode`,
+//! - `diagnostic`: findings as data (`Diagnostic`, `Diagnostics`, `Code`,
 //!   `Severity`, `Phase`, `PackReport`).
 //! - `document`: a loaded value with its provenance (`Document<T>`), the collections
 //!   (`Registry`, `Files`, `Merged`), components and the `Content` / `Definition` traits.

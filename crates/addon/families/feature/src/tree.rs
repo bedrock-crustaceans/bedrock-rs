@@ -12,7 +12,7 @@ use super::molang::walk;
 use super::validate::Check;
 use super::values::{BlockList, Chance, ChanceList, JsonInt, WeightedBlock};
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{CodeDef, Diagnostic, DiagnosticCode};
+use bedrock_addon_core::diagnostic::{Code, CodeDef, Diagnostic};
 use bedrock_addon_core::id::FeatureId;
 use bedrock_addon_core::json::{JsonType, StrictError, Value};
 use bedrock_addon_core::shared::IntRange;
@@ -825,7 +825,7 @@ walk!(AboveRoot { "above_root_block" => above_root_block });
 /// A setter's message as an `InvalidValue` kept error: the client logs it at level 3 and keeps
 /// the value (for the trunk, the cherry start offset and each canopy offset).
 fn setter(check: &mut ValidateCx<'_>, key: &str, code: &'static CodeDef<0>) {
-    check.kept(key, DiagnosticCode::from(code));
+    check.kept(key, Code::from(code));
 }
 
 fn decoration(check: &mut ValidateCx<'_>, decoration: &Decoration) {

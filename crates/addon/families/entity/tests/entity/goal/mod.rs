@@ -10,7 +10,7 @@ mod steps;
 mod types;
 mod versions;
 
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, Severity};
+use bedrock_addon_core::diagnostic::{Code, Diagnostic, Diagnostics, Severity};
 use bedrock_addon_core::document::Component;
 use bedrock_addon_core::json::{JsonSlice, to_json};
 use bedrock_addon_core::load::LoadContext;
@@ -192,6 +192,6 @@ pub fn assert_finding(d: &Diagnostics, code: &str, path: &str, severity: Severit
 
 /// `code` names a diagnostic code variant.
 #[allow(dead_code)]
-fn is_code(code: &DiagnosticCode, name: &str) -> bool {
+fn is_code(code: &Code, name: &str) -> bool {
     code.name() == name
 }

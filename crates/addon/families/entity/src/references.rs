@@ -367,8 +367,7 @@ fn older_members(filters: &Value, at: &JsonPath, cx: &mut ValidateCx<'_>) {
                 // error. Whether the trigger itself survives is not observable, so the
                 // document keeps it.
                 cx.diagnostics.push_kept_error(
-                    Diagnostic::error(codes::INVALID_FILTER_MEMBER.with([key]).into())
-                        .at(at.child(key)),
+                    Diagnostic::error(codes::INVALID_FILTER_MEMBER.with([key])).at(at.child(key)),
                 );
             }
         }

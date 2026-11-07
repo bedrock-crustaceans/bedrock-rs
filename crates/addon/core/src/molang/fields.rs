@@ -10,7 +10,7 @@ use super::{
     settle_list,
 };
 use crate::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, codes,
+    Code, Diagnostic, Diagnostics, JsonPath, Location, Phase, Severity, codes,
 };
 
 /// A version struct (or part of one) that holds Molang fields. Implemented next to each struct,
@@ -432,7 +432,7 @@ pub fn not_checked<T: MolangFields + ?Sized>(
     let fields = count_sources(document);
     if fields > 0 {
         diagnostics.push(Diagnostic::new(
-            codes::MOLANG_NOT_CHECKED.with([fields.to_string()]).into(),
+            codes::MOLANG_NOT_CHECKED.with([fields.to_string()]),
             Severity::Info,
             Phase::Validate,
             base.clone(),
@@ -450,10 +450,10 @@ fn list_sources(list: &MolangList) -> u32 {
 
 /// `ReprError::UnsupportedType` (and anything a newer molang adds) is `InvalidType`,
 /// `ReprError::NumberOutOfRange` is `InvalidValue`.
-fn reader_error_code(error: &ReprError) -> DiagnosticCode {
+fn reader_error_code(error: &ReprError) -> Code {
     match error {
-        ReprError::NumberOutOfRange { .. } => DiagnosticCode::from(&codes::INVALID_VALUE),
-        _ => DiagnosticCode::from(&codes::INVALID_TYPE),
+        ReprError::NumberOutOfRange { .. } => Code::from(&codes::INVALID_VALUE),
+        _ => Code::from(&codes::INVALID_TYPE),
     }
 }
 

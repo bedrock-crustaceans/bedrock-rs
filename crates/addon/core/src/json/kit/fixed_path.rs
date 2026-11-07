@@ -203,7 +203,7 @@ pub mod testing {
 mod tests {
     use super::*;
     use crate::diagnostic::codes as core_codes;
-    use crate::diagnostic::{Diagnostic, DiagnosticCode, Location, Phase};
+    use crate::diagnostic::{Code, Diagnostic, Location, Phase};
     use crate::json::kit::Node;
 
     fn json(text: &str) -> Value {
@@ -243,15 +243,9 @@ mod tests {
         assert_eq!(
             found,
             [
-                info(
-                    DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD),
-                    child("b")
-                ),
-                info(DiagnosticCode::from(&core_codes::INVALID_TYPE), child("a")),
-                info(
-                    DiagnosticCode::from(&core_codes::MISSING_REQUIRED_FIELD),
-                    child("c")
-                ),
+                info(Code::from(&core_codes::UNRECOGNIZED_FIELD), child("b")),
+                info(Code::from(&core_codes::INVALID_TYPE), child("a")),
+                info(Code::from(&core_codes::MISSING_REQUIRED_FIELD), child("c")),
             ]
         );
     }

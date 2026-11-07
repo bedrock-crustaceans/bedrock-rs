@@ -2,7 +2,7 @@
 //! tests of the deliberate deviations from vanilla that this binary pins by name (each ends in
 //! `deviation`, or is a manifest rule's).
 
-use bedrock_addon::diagnostic::{DiagnosticCode as C, Diagnostics, Severity};
+use bedrock_addon::diagnostic::{Code as C, Diagnostics, Severity};
 use bedrock_addon::document::{Document, Rejected};
 use bedrock_addon::json::Value;
 use bedrock_addon::manifest::{CapabilityRegistry, Manifest, Setting};

@@ -28,7 +28,7 @@ pub use version::ScriptVersion;
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode as Code, Diagnostics, JsonPath, Location, Phase, Severity,
+    Code, Diagnostic, Diagnostics, JsonPath, Location, Phase, Severity,
 };
 use bedrock_addon_core::document::{Document, Rejected};
 use bedrock_addon_core::load::LoadContext;
@@ -300,7 +300,7 @@ impl ScriptModule {
                     // version it is left with (the same line it prints for `"abc"`).
                     refused = true;
                     finding(
-                        Code::from(core_codes::DEPENDENCY_INVALID_VERSION.with([name, "0.0.0"])),
+                        core_codes::DEPENDENCY_INVALID_VERSION.with([name, "0.0.0"]),
                         Severity::Error,
                         &native.at,
                         "version",
@@ -310,10 +310,7 @@ impl ScriptModule {
                     // claims an older one: the game writes no line for this, so it is the
                     // crate's own lint, an information.
                     finding(
-                        Code::from(
-                            core_codes::FIELD_SINCE_ENGINE
-                                .with([RELAXED_VERSION_SINCE.to_string()]),
-                        ),
+                        core_codes::FIELD_SINCE_ENGINE.with([RELAXED_VERSION_SINCE.to_string()]),
                         Severity::Info,
                         &native.at,
                         "version",

@@ -77,7 +77,7 @@ use std::convert::Infallible;
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Location, Phase, Severity,
+    Code, Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Location, Phase, Severity,
 };
 use bedrock_addon_core::document::unversioned::origin_of;
 use bedrock_addon_core::document::{
@@ -1083,7 +1083,7 @@ fn capability_hints(shipping: &HashSet<PackRef>, stack: &StackCx<'_>) -> Diagnos
         if recent && !capable && !entry.context.is_base_game_pack && shipping.contains(&entry.pack)
         {
             hints.push(Diagnostic::new(
-                DiagnosticCode::from(&codes::PBR_CAPABILITY_HINT),
+                Code::from(&codes::PBR_CAPABILITY_HINT),
                 Severity::Info,
                 Phase::Validate,
                 Location::new(Some(entry.pack.clone()), None, JsonPath::new(), None),
@@ -1112,7 +1112,7 @@ fn ignored_files(stack: &StackCx<'_>) -> Diagnostics {
                 || (DIRECTORIES.contains(&directory) && !is_read(&file.key));
             if ignored {
                 infos.push(Diagnostic::new(
-                    DiagnosticCode::from(&core_codes::IGNORED_FILE),
+                    Code::from(&core_codes::IGNORED_FILE),
                     Severity::Info,
                     Phase::Validate,
                     Location::new(

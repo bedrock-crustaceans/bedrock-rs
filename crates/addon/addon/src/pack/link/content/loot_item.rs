@@ -2,7 +2,7 @@
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    DiagnosticCode, JsonPath, ReferenceHint, Severity,
+    Code, JsonPath, ReferenceHint, Severity,
 };
 use bedrock_addon_core::document::Origin;
 use bedrock_addon_core::id::{Kind, kind};
@@ -10,7 +10,8 @@ use bedrock_addon_core::id::{Kind, kind};
 use super::super::{At, Findings, LinkCx, Target, kinds, unresolved};
 use super::loot::{Site, walk};
 use crate::families::item::trim::{ItemTags, TrimData};
-use crate::families::loot::texts::{INVALID_ITEM, formatted};
+use crate::families::loot::codes::INVALID_ITEM;
+use bedrock_addon_core::diagnostic::sentence;
 use crate::families::loot::{ConditionKind, Entry, EntryKind, FunctionKind};
 
 /// The tag a smithing template item carries.
@@ -68,7 +69,7 @@ fn given(cx: &LinkCx<'_>, out: &mut Findings, origin: &Origin, path: &JsonPath, 
         if crate::vanilla::names::is_loot_entry_only_item(&super::super::canonical(name)) {
             return;
         }
-        let text = formatted(INVALID_ITEM, [name.as_str()]);
+        let text = sentence(INVALID_ITEM, &[name.as_str()]);
         // The game logs the line at the error level and falls through to the entry's
         // `functions`: a kept error.
         let place = At::new(origin, at![path; "name"], Severity::Error).with_text(text);
@@ -116,7 +117,7 @@ impl Trims {
             // nothing; its names are not looked up.
             if cx.lints() {
                 let place = At::new(origin, path.clone(), Severity::Info);
-                out.push(place.diagnostic(DiagnosticCode::from(&core_codes::NO_EFFECT)));
+                out.push(place.diagnostic(Code::from(&core_codes::NO_EFFECT)));
             }
             return;
         };
@@ -146,7 +147,7 @@ impl Trims {
             match name {
                 // An absent name is read as the empty one; the function trims nothing.
                 None | Some("") => {
-                    out.push(place.diagnostic(DiagnosticCode::from(&core_codes::MISSING_REQUIRED_FIELD)));
+                    out.push(place.diagnostic(Code::from(&core_codes::MISSING_REQUIRED_FIELD)));
                 }
                 // A name of no pattern, of no material.
                 Some(name) if !known.contains(&name) => {

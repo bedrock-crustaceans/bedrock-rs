@@ -5,7 +5,7 @@ use super::codes;
 use super::read::not_valid_here;
 use super::values::{BlockList, Chance, ChanceList, JsonInt};
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, Phase, Severity};
+use bedrock_addon_core::diagnostic::{Code, Diagnostic, JsonPath, Phase, Severity};
 use bedrock_addon_core::shared::IntRange;
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{FieldMeta, ValidateCx, check_fields_since_engine};
@@ -29,11 +29,11 @@ pub(crate) trait Check {
     fn path(&self, key: &str) -> JsonPath;
 
     /// An error at `key`.
-    fn error(&mut self, key: &str, code: DiagnosticCode);
+    fn error(&mut self, key: &str, code: Code);
 
     /// A kept error at `key` (`""`: the current member): a setter's or a builder's line the
     /// game logs at level 3 while the feature stays registered.
-    fn kept(&mut self, key: &str, code: DiagnosticCode);
+    fn kept(&mut self, key: &str, code: Code);
 
     /// An integer node with the range `[min, max]`.
     fn check_int(&mut self, key: &str, value: Option<JsonInt>, min: i32, max: i32);
@@ -107,13 +107,13 @@ impl Check for ValidateCx<'_> {
         self.at.child(key)
     }
 
-    fn error(&mut self, key: &str, code: DiagnosticCode) {
+    fn error(&mut self, key: &str, code: Code) {
         let at = self.path(key);
         self.diagnostics
             .push(Diagnostic::error(code).at(at).phase(Phase::Validate));
     }
 
-    fn kept(&mut self, key: &str, code: DiagnosticCode) {
+    fn kept(&mut self, key: &str, code: Code) {
         let at = if key.is_empty() {
             self.at.clone()
         } else {
@@ -129,7 +129,7 @@ impl Check for ValidateCx<'_> {
         {
             let code =
                 core_codes::OUTSIDE_RANGE.with([v.to_string(), min.to_string(), max.to_string()]);
-            self.error(key, code.into());
+            self.error(key, code);
         }
     }
 
@@ -143,7 +143,7 @@ impl Check for ValidateCx<'_> {
         {
             let code =
                 core_codes::OUTSIDE_RANGE.with([v.to_string(), min.to_string(), max.to_string()]);
-            self.error(key, code.into());
+            self.error(key, code);
         }
     }
 
@@ -159,7 +159,7 @@ impl Check for ValidateCx<'_> {
         ] {
             if !(min..=max).contains(&end) {
                 let code = line.with([end.to_string(), min.to_string(), max.to_string()]);
-                self.error(key, code.into());
+                self.error(key, code);
                 return;
             }
         }
@@ -180,7 +180,7 @@ impl Check for ValidateCx<'_> {
         } else {
             return;
         };
-        self.error(key, code.into());
+        self.error(key, code);
     }
 
     fn chance(&mut self, key: &str, value: Option<&Chance>) {

@@ -4,7 +4,7 @@
 
 use std::path::PathBuf;
 
-use bedrock_addon::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, Severity};
+use bedrock_addon::diagnostic::{Code, Diagnostic, Diagnostics, Severity};
 use bedrock_addon::document::{Content, Document, Rejected};
 use bedrock_addon::families::biome::{Beta, Biome};
 use bedrock_addon::load::{LoadContext, LoadOptions};
@@ -114,7 +114,7 @@ pub fn errors(diagnostics: &Diagnostics) -> Vec<&Diagnostic> {
 /// The findings whose code matches `code`.
 pub fn with<'a>(
     diagnostics: &'a Diagnostics,
-    code: impl Fn(&DiagnosticCode) -> bool + 'a,
+    code: impl Fn(&Code) -> bool + 'a,
 ) -> Vec<&'a Diagnostic> {
     diagnostics.iter().filter(move |d| code(&d.code)).collect()
 }
@@ -122,7 +122,7 @@ pub fn with<'a>(
 /// Whether a finding has `code`, `severity` and exactly the text `text`.
 pub fn has(
     diagnostics: &Diagnostics,
-    code: impl Fn(&DiagnosticCode) -> bool,
+    code: impl Fn(&Code) -> bool,
     severity: Severity,
     text: &str,
 ) -> bool {

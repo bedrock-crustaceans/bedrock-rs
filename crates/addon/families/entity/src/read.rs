@@ -5,12 +5,11 @@
 //! the scripts are built member by member so a bad one is reported at its path.
 
 use crate::codes;
-use bedrock_addon_core::diagnostic::Code;
 use std::cell::OnceCell;
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Class, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity, Span, Told,
+    Class, Code, Diagnostic, Diagnostics, JsonPath, Phase, Severity, Span, Told,
 };
 use bedrock_addon_core::document::{
     ComponentMap, ComponentSet, Origin, Rejected, Unknown as Table, VersionInfo,
@@ -190,7 +189,7 @@ impl<'c, 'd> Reader<'c, 'd> {
     /// A finding at `at`.
     pub(crate) fn report(
         &mut self,
-        code: DiagnosticCode,
+        code: Code,
         severity: Severity,
         at: JsonPath,
         span: Option<Span>,
@@ -203,7 +202,7 @@ impl<'c, 'd> Reader<'c, 'd> {
     }
 
     /// A kept error: the game logs `code`'s line at the error level and loads the entity.
-    fn report_kept(&mut self, code: DiagnosticCode, at: JsonPath, span: Option<Span>) {
+    fn report_kept(&mut self, code: Code, at: JsonPath, span: Option<Span>) {
         let finding = Diagnostic::error(code).at(at);
         self.d.push_kept_error(match span.filter(|_| self.spans) {
             Some(span) => finding.span(span),
@@ -263,7 +262,7 @@ impl<'c, 'd> Reader<'c, 'd> {
                 // The game logs this at the warning level for a document below 1.21.89; the
                 // strict slices from that version on make it an error.
                 self.report(
-                    DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD),
+                    Code::from(&core_codes::UNRECOGNIZED_FIELD),
                     self.unknown(),
                     base.join(&path),
                     None,
@@ -273,7 +272,7 @@ impl<'c, 'd> Reader<'c, 'd> {
                 // Facet's coercion, which jsoncpp's `as*` conversions make in silence: the game
                 // writes no content-log line, so the crate reports an information.
                 self.report(
-                    DiagnosticCode::from(&core_codes::INVALID_TYPE),
+                    Code::from(&core_codes::INVALID_TYPE),
                     Severity::Info,
                     base.join(&path),
                     None,
@@ -413,7 +412,7 @@ pub(crate) fn read_entity(
             Severity::Error
         };
         r.report(
-            DiagnosticCode::from(&core_codes::MISSING_REQUIRED_FIELD),
+            Code::from(&core_codes::MISSING_REQUIRED_FIELD),
             severity,
             at.child("description"),
             Some(span_of(payload)),
@@ -447,7 +446,7 @@ pub(crate) fn read_entity(
             // The member arrives with the 1.21.130 format; in an older document it is
             // an unknown member.
             r.report(
-                DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD),
+                Code::from(&core_codes::UNRECOGNIZED_FIELD),
                 // The game logs this at the warning level for a document below 1.21.89; the
                 // strict slices from that version on make it an error.
                 r.unknown(),
@@ -474,7 +473,7 @@ pub(crate) fn read_entity(
     let _ = shell.format_version;
     if shell.do_not_upgrade.is_some() {
         r.report(
-            DiagnosticCode::from(&core_codes::DROPPED_FIELD),
+            Code::from(&core_codes::DROPPED_FIELD),
             Severity::Info,
             at.child("do_not_upgrade"),
             None,
@@ -517,13 +516,13 @@ fn read_groups(
             // the group is not there; the game says nothing, so the crate reports an
             // information.
             Ok(None) => r.report(
-                DiagnosticCode::from(&core_codes::INVALID_VALUE),
+                Code::from(&core_codes::INVALID_VALUE),
                 Severity::Info,
                 group_at,
                 Some(span_of(slice)),
             ),
             Err(_) => r.report(
-                DiagnosticCode::from(&core_codes::INVALID_TYPE),
+                Code::from(&core_codes::INVALID_TYPE),
                 // A group that is no object refuses the entity: cereal's "expected an object" is
                 // an error in both masks, followed by the error-level "failed to load" line.
                 Severity::Error,
@@ -570,16 +569,14 @@ pub(crate) fn read_components(
         if is_brain_key(key) && !r.load.experiments.contains(Experiment::BrainPrototype) {
             // The Brain group needs the experiment.
             r.report(
-                DiagnosticCode::from(
-                    core_codes::TURN_ON_TOGGLE.with([
-                        "component".to_string(),
-                        key.clone(),
-                        Experiment::BrainPrototype
-                            .save_name()
-                            .unwrap_or_default()
-                            .to_string(),
-                    ]),
-                ),
+                core_codes::TURN_ON_TOGGLE.with([
+                    "component".to_string(),
+                    key.clone(),
+                    Experiment::BrainPrototype
+                        .save_name()
+                        .unwrap_or_default()
+                        .to_string(),
+                ]),
                 // The game has no entity form of the toggle text (only the item's and the
                 // block's), so the crate reports an information.
                 Severity::Info,
@@ -732,7 +729,7 @@ pub(crate) fn read_components(
             Some(_) => map.insert_dynamic(key, json_of(slice)),
             None if reported => {}
             None => r.report(
-                DiagnosticCode::from(&core_codes::DROPPED_COMPONENT),
+                Code::from(&core_codes::DROPPED_COMPONENT),
                 // A read that failed without a finding of its own: the game writes no line, so
                 // the crate reports an information.
                 Severity::Info,
@@ -798,7 +795,7 @@ fn mode_for(key: &str, converted: bool) -> ConvertMode {
 /// A key no row reads, or one no slice of the document's version binds: told and not kept.
 fn unknown_component(r: &mut Reader<'_, '_>, path: JsonPath, slice: JsonSlice<'_>) {
     r.report(
-        DiagnosticCode::from(&core_codes::UNRECOGNIZED_COMPONENT),
+        Code::from(&core_codes::UNRECOGNIZED_COMPONENT),
         // The game logs this at the warning level for a document below 1.21.89; the strict
         // slices from that version on make it an error.
         r.unknown(),
@@ -913,7 +910,7 @@ fn schema_converted(key: &str) -> bool {
 /// outside the typed bounds; the few values it checks itself it tells with its own texts, which
 /// the goals' checks carry. A schema-driven reader tells its own lines in its validation and
 /// numeric checks (`schema`), before this read: what the read still tells is the crate's.
-fn legacy_reader_is_silent(code: &DiagnosticCode) -> bool {
+fn legacy_reader_is_silent(code: &Code) -> bool {
     // By legacy name: the variant and the definitions that were it; the plain `InvalidValue`
     // is the variant without a text or core's own definition of it.
     matches!(code.name(), "UnrecognizedField")
@@ -976,7 +973,7 @@ fn settle_aliases(
     let path = description_at.child("aliases");
     if r.original_version < ALIASES_DEPRECATED {
         r.report(
-            DiagnosticCode::from(&core_codes::DEPRECATED_MEMBER),
+            Code::from(&core_codes::DEPRECATED_MEMBER),
             // Below 1.21.10 the game registers the aliases without a line, so the crate
             // reports an information.
             Severity::Info,
@@ -990,7 +987,7 @@ fn settle_aliases(
         // The game logs this at the error level yet goes on loading the entity, so the crate
         // reports a warning.
         r.report(
-            DiagnosticCode::from(&codes::ALIASES_DEPRECATED),
+            Code::from(&codes::ALIASES_DEPRECATED),
             Severity::Warning,
             path,
             None,
@@ -1035,7 +1032,7 @@ fn read_description(
         // the text at the error level and returns: a kept error.
         properties = IndexMap::new();
         r.report_kept(
-            DiagnosticCode::from(&codes::ACTOR_PROPERTIES_NOT_LOADED),
+            Code::from(&codes::ACTOR_PROPERTIES_NOT_LOADED),
             at.child("properties"),
             None,
         );
@@ -1050,7 +1047,7 @@ fn read_description(
         if category.is_none() {
             // an unknown string, a number or `null` is invalid; the field is dropped.
             r.report(
-                DiagnosticCode::from(&core_codes::INVALID_VALUE),
+                Code::from(&core_codes::INVALID_VALUE),
                 // The game writes no content-log line for a bad `spawn_category`, so the crate
                 // reports an information.
                 Severity::Info,
@@ -1094,7 +1091,7 @@ fn read_property(r: &mut Reader<'_, '_>, slice: JsonSlice<'_>, at: &JsonPath) ->
         "enum" => PropertyType::Enum,
         _ => {
             r.report_kept(
-                DiagnosticCode::from(&core_codes::INVALID_VALUE),
+                Code::from(&core_codes::INVALID_VALUE),
                 at.child("type"),
                 None,
             );
@@ -1117,7 +1114,7 @@ fn read_property(r: &mut Reader<'_, '_>, slice: JsonSlice<'_>, at: &JsonPath) ->
                     // and the group drop is the crate's own, so it is an information.
                     let Some(i) = n.to_i64().and_then(|i| i32::try_from(i).ok()) else {
                         r.report(
-                            DiagnosticCode::from(&core_codes::INVALID_VALUE),
+                            Code::from(&core_codes::INVALID_VALUE),
                             Severity::Info,
                             default_at,
                             Some(span_of(default_slice)),
@@ -1138,7 +1135,7 @@ fn read_property(r: &mut Reader<'_, '_>, slice: JsonSlice<'_>, at: &JsonPath) ->
                 }
             } else {
                 r.report_kept(
-                    DiagnosticCode::from(&core_codes::INVALID_TYPE),
+                    Code::from(&core_codes::INVALID_TYPE),
                     default_at,
                     Some(span_of(default_slice)),
                 );
@@ -1152,7 +1149,7 @@ fn read_property(r: &mut Reader<'_, '_>, slice: JsonSlice<'_>, at: &JsonPath) ->
             Ok(pair) if pair.iter().all(Value::is_number) => Some(pair),
             _ => {
                 r.report_kept(
-                    DiagnosticCode::from(&core_codes::INVALID_VALUE),
+                    Code::from(&core_codes::INVALID_VALUE),
                     at.child("range"),
                     None,
                 );
@@ -1197,7 +1194,7 @@ fn read_scripts(r: &mut Reader<'_, '_>, slice: JsonSlice<'_>, at: &JsonPath) -> 
             IndexMap<String, RawJson<'_>>,
         >(entry_slice.text) else {
             r.report(
-                DiagnosticCode::from(&core_codes::INVALID_TYPE),
+                Code::from(&core_codes::INVALID_TYPE),
                 // The game takes a string or an object and skips another type without a line, so
                 // the crate reports an information.
                 Severity::Info,
@@ -1209,9 +1206,7 @@ fn read_scripts(r: &mut Reader<'_, '_>, slice: JsonSlice<'_>, at: &JsonPath) -> 
         if members.len() != 1 {
             // The game logs this at the error level and keeps the script: a kept error.
             r.report_kept(
-                DiagnosticCode::from(
-                    codes::ANIMATION_SCRIPT_OBJECT_SIZE.with([members.len().to_string()]),
-                ),
+                codes::ANIMATION_SCRIPT_OBJECT_SIZE.with([members.len().to_string()]),
                 entry_at.clone(),
                 Some(span_of(entry_slice)),
             );
@@ -1223,7 +1218,7 @@ fn read_scripts(r: &mut Reader<'_, '_>, slice: JsonSlice<'_>, at: &JsonPath) -> 
             let value_at = entry_at.child(name);
             if !json_of(value_slice).is_string() {
                 r.report(
-                    DiagnosticCode::from(&core_codes::INVALID_TYPE),
+                    Code::from(&core_codes::INVALID_TYPE),
                     // The condition is built from a string only and the game logs no line for
                     // another type, so the crate reports an information.
                     Severity::Info,
@@ -1271,7 +1266,7 @@ fn settle_entity_version(
     if r.original_version < ENTITY_VERSION_SINCE {
         if let Some(value) = entity_version {
             r.report(
-                DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD),
+                Code::from(&core_codes::UNRECOGNIZED_FIELD),
                 // The game logs this at the warning level for a document below 1.21.89; the
                 // strict slices from that version on make it an error.
                 r.unknown(),
@@ -1283,7 +1278,7 @@ fn settle_entity_version(
         }
         if let Some(upgrades) = upgrades {
             r.report(
-                DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD),
+                Code::from(&core_codes::UNRECOGNIZED_FIELD),
                 // The game logs this at the warning level for a document below 1.21.89; the
                 // strict slices from that version on make it an error.
                 r.unknown(),
@@ -1308,17 +1303,15 @@ fn settle_entity_version(
             ("upgrades", at.child("upgrades"))
         };
         r.report(
-            DiagnosticCode::from(
-                core_codes::TURN_ON_TOGGLE_BEFORE.with([
-                    "member".to_string(),
-                    name.to_string(),
-                    ENTITY_VERSION_STABLE.to_string(),
-                    Experiment::UpcomingCreatorFeatures
-                        .save_name()
-                        .unwrap_or_default()
-                        .to_string(),
-                ]),
-            ),
+            core_codes::TURN_ON_TOGGLE_BEFORE.with([
+                "member".to_string(),
+                name.to_string(),
+                ENTITY_VERSION_STABLE.to_string(),
+                Experiment::UpcomingCreatorFeatures
+                    .save_name()
+                    .unwrap_or_default()
+                    .to_string(),
+            ]),
             Severity::Info,
             gated,
             None,
@@ -1335,7 +1328,7 @@ fn settle_entity_version(
             // not kept, and told.
             for unread in unread_version_members(&value) {
                 r.report(
-                    DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD),
+                    Code::from(&core_codes::UNRECOGNIZED_FIELD),
                     // The game reads only the members it knows and logs no line for another, so
                     // the crate reports an information.
                     Severity::Info,
@@ -1351,16 +1344,16 @@ fn settle_entity_version(
             if code.is(&codes::UPGRADE_HANDLER_UNDEFINED) {
                 // The handler lookup's text is the crate's own (the game has no such line): an
                 // information.
-                r.report(code.into(), Severity::Info, invalid_at, None);
+                r.report(code, Severity::Info, invalid_at, None);
             } else {
                 // The game logs every structure check of the entity version at the error level
                 // and the entity loads versionless: a kept error.
-                r.report_kept(code.into(), invalid_at, None);
+                r.report_kept(code, invalid_at, None);
             }
             if !path.is_empty() {
                 // The member goes whole for the value inside it: told at the member too.
                 r.report(
-                    DiagnosticCode::from(&core_codes::DROPPED_FIELD),
+                    Code::from(&core_codes::DROPPED_FIELD),
                     Severity::Info,
                     version_at,
                     None,
@@ -1378,7 +1371,7 @@ fn settle_entity_version(
 /// dropped): told at the member, without a line of the game's, so as an information.
 fn upgrades_dropped(r: &mut Reader<'_, '_>, at: &JsonPath) {
     r.report(
-        DiagnosticCode::from(&core_codes::DROPPED_FIELD),
+        Code::from(&core_codes::DROPPED_FIELD),
         Severity::Info,
         at.child("upgrades"),
         None,
@@ -1530,8 +1523,7 @@ pub(crate) fn place(mut found: Diagnostics, version: &VersionInfo, origin: &Orig
             // "no parser" line), told again in the resource pack's words.
             if diagnostic.code.name() == "UnsupportedVersion" {
                 diagnostic.code = codes::ACTOR_ABOVE_ENGINE
-                    .with([written.to_string(), ENGINE_VERSION.to_string()])
-                    .into();
+                    .with([written.to_string(), ENGINE_VERSION.to_string()]);
             }
         }
     }
@@ -1642,7 +1634,7 @@ mod file_tests {
         at.push("components");
         let mut found = Diagnostics::default();
         found.push(Diagnostic::new(
-            DiagnosticCode::from(&core_codes::INTERNAL_ERROR),
+            Code::from(&core_codes::INTERNAL_ERROR),
             Severity::Error,
             phase,
             Location::new(None, None, at, None),
@@ -1671,13 +1663,13 @@ mod file_tests {
         };
         let mut found = Diagnostics::default();
         found.push(Diagnostic::new(
-            DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD),
+            Code::from(&core_codes::UNRECOGNIZED_FIELD),
             Severity::Warning,
             Phase::Parse,
             Location::new(None, None, at("made_up"), None),
         ));
         found.push(Diagnostic::new(
-            DiagnosticCode::from(&core_codes::INTERNAL_ERROR),
+            Code::from(&core_codes::INTERNAL_ERROR),
             Severity::Error,
             Phase::Validate,
             Location::new(None, None, at("components"), None),
@@ -1781,15 +1773,15 @@ mod tests {
     /// an information, also for `timer`, a schema-driven reader, at 1.26.50.
     #[test]
     fn every_legacy_reader_is_silent_where_the_typed_read_tells_its_own_finding() {
-        assert!(legacy_reader_is_silent(&DiagnosticCode::from(
+        assert!(legacy_reader_is_silent(&Code::from(
             &core_codes::INVALID_VALUE
         )));
-        assert!(legacy_reader_is_silent(&DiagnosticCode::from(
+        assert!(legacy_reader_is_silent(&Code::from(
             &core_codes::UNRECOGNIZED_FIELD
         )));
         // A text of the game's is no finding of the crate's.
-        assert!(!legacy_reader_is_silent(&DiagnosticCode::from(
-            core_codes::INVALID_VALUE_WORDED.with(["x"])
-        )));
+        assert!(!legacy_reader_is_silent(
+            &core_codes::INVALID_VALUE_WORDED.with(["x"])
+        ));
     }
 }

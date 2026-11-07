@@ -9,7 +9,7 @@ use indexmap::IndexMap;
 use super::codes;
 use super::{CatalogItem, Category, CategoryName, CraftingCatalog, Group, GroupIdentifier};
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{Class, Diagnostic, DiagnosticCode, Diagnostics, builders};
+use bedrock_addon_core::diagnostic::{Class, Code, Diagnostic, Diagnostics, builders};
 use bedrock_addon_core::id::ItemId;
 use bedrock_addon_core::json::kit::{Disposition, Elements, Members, Node, Read};
 use bedrock_addon_core::json::{JsonSlice, Value, from_str_jsonc, parse_at};
@@ -38,12 +38,12 @@ fn token(value: &Value) -> &'static str {
 const ITEM_NAME_REGEX: &str = "^(?:.)+:(?:.)+$";
 
 /// The code of a group name that fails its namespace constraint.
-fn group_name_code() -> DiagnosticCode {
-    DiagnosticCode::from(&codes::GROUP_NAME)
+fn group_name_code() -> Code {
+    Code::from(&codes::GROUP_NAME)
 }
 
 /// The code of an item name that does not match its pattern.
-fn item_name_code() -> DiagnosticCode {
+fn item_name_code() -> Code {
     bedrock_addon_core::diagnostic::cereal::string_mismatch(ITEM_NAME_REGEX)
 }
 
@@ -61,7 +61,7 @@ fn is_namespaced(text: &str) -> bool {
 }
 
 /// An error with `code` at `node`, spanning it.
-fn error(read: &mut Read<'_>, code: DiagnosticCode, node: &Node<'_>) {
+fn error(read: &mut Read<'_>, code: Code, node: &Node<'_>) {
     let mut finding = Diagnostic::error(code).at(node.path().clone());
     finding.location.span = node.span();
     read.push(finding);
@@ -76,7 +76,7 @@ fn expect(read: &mut Read<'_>, node: &Node<'_>, expected: &'static str) -> bool 
     }
     error(
         read,
-        builders::syntax(format!("expected {expected}, found {found}")).into(),
+        builders::syntax(format!("expected {expected}, found {found}")),
         node,
     );
     false
@@ -99,7 +99,7 @@ fn string<'v>(read: &mut Read<'_>, node: &Node<'v>) -> Option<&'v str> {
 
 /// The string `node` holds, which must be `namespace:name`; a violation is `code`, vanilla's
 /// message of the constraint.
-fn constrained(read: &mut Read<'_>, node: &Node<'_>, code: DiagnosticCode) -> Option<String> {
+fn constrained(read: &mut Read<'_>, node: &Node<'_>, code: Code) -> Option<String> {
     let value = string(read, node)?;
     if is_namespaced(value) {
         return Some(value.to_owned());
@@ -173,11 +173,7 @@ fn category_name(read: &mut Read<'_>, members: &Members<'_>) -> Option<CategoryN
     let name = string(read, &node)?;
     let category = CategoryName::from_name(name);
     if category.is_none() {
-        error(
-            read,
-            DiagnosticCode::from(&core_codes::INVALID_VALUE),
-            &node,
-        );
+        error(read, Code::from(&core_codes::INVALID_VALUE), &node);
     }
     category
 }

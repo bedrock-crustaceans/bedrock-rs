@@ -16,7 +16,7 @@ use indexmap::IndexMap;
 use bedrock_addon_core::__private::Sealed;
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity, builders,
+    Code, Diagnostic, Diagnostics, JsonPath, Phase, Severity, builders,
 };
 use bedrock_addon_core::document::{
     Content, Document, JsonContent, Merge, Merged, Origin, Placed, RawLayer, Rejected, VersionInfo,
@@ -317,10 +317,7 @@ fn flag(object: &VObject, key: &str, at: &JsonPath, notes: &mut Notes<'_>) -> bo
         None => false,
         Some(value) if value.is_null() => false,
         Some(value) => value.as_bool().unwrap_or_else(|| {
-            notes.info(
-                DiagnosticCode::from(&core_codes::INVALID_TYPE),
-                child(at, &[key]),
-            );
+            notes.info(Code::from(&core_codes::INVALID_TYPE), child(at, &[key]));
             false
         }),
     }
@@ -335,7 +332,7 @@ struct Notes<'a> {
 impl Notes<'_> {
     /// A note of the crate's own: the game's merge is silent here, so the finding is an
     /// information.
-    fn info(&mut self, code: DiagnosticCode, at: JsonPath) {
+    fn info(&mut self, code: Code, at: JsonPath) {
         self.diagnostics
             .push(Diagnostic::info(code).in_file(self.origin).at(at));
     }

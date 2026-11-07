@@ -367,7 +367,7 @@ fn report(
                     RenderNote::InvalidMolang => codes::INVALID_MOLANG.with([expression]),
                 };
                 diagnostics.push(Diagnostic::new(
-                    code.into(),
+                    code,
                     Severity::Info,
                     Phase::Validate,
                     location.clone(),
@@ -385,7 +385,7 @@ fn report(
                     .any(|d| d.severity >= spec.error_severity)
             {
                 diagnostics.push(Diagnostic::new(
-                    codes::INVALID_MOLANG.with([written.as_str()]).into(),
+                    codes::INVALID_MOLANG.with([written.as_str()]),
                     spec.error_severity,
                     Phase::Validate,
                     location.clone(),
@@ -518,7 +518,7 @@ pub(crate) fn molang_diagnostic(
             (codes::MOLANG_LINT.with([expression]), Severity::Info, false)
         }
     };
-    let mut finding = Diagnostic::new(code.into(), severity, Phase::Validate, location);
+    let mut finding = Diagnostic::new(code, severity, Phase::Validate, location);
     finding.detail = Some(Box::new(DiagnosticDetail::Molang(diagnostic.clone())));
     if kept { finding.into_kept() } else { finding }
 }

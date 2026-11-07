@@ -3,7 +3,7 @@
 //! function.
 
 use bedrock_addon::diagnostic::codes as core_codes;
-use bedrock_addon::diagnostic::{DiagnosticCode, JsonPath, Severity};
+use bedrock_addon::diagnostic::{Code, JsonPath, Severity};
 use bedrock_addon::document::{Content, Placed};
 use bedrock_addon::families::function::{
     Function, FunctionLine, FunctionState, TickFunction, TickList,
@@ -204,7 +204,7 @@ fn only_a_file_at_functions_name_mcfunction_parses_as_a_function() {
         assert_eq!(finding.severity, Severity::Error, "{path}");
         assert_eq!(
             finding.code,
-            DiagnosticCode::from(&core_codes::IGNORED_FILE),
+            Code::from(&core_codes::IGNORED_FILE),
             "{path}"
         );
         assert_eq!(rejected.origin.path.as_str(), path);

@@ -8,7 +8,7 @@ use facet::Facet;
 use super::shape::{self, Shape};
 use crate::diagnostic::codes as core_codes;
 use crate::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Span, code_for_deserialize_error_kind,
+    Code, Diagnostic, Diagnostics, JsonPath, Span, code_for_deserialize_error_kind,
 };
 use crate::document::{Document, Rejected};
 use crate::json::{JsonSlice, ScalarFailure, Value, parse_with_rules, probe_envelope};
@@ -139,7 +139,7 @@ fn typed_as<'a, T: for<'f> Facet<'f>>(
 ) -> Option<T> {
     let Some(mut json) = last_wins(checked.text) else {
         d.push(shape::error(
-            DiagnosticCode::from(&core_codes::INVALID_TYPE),
+            Code::from(&core_codes::INVALID_TYPE),
             cx.at.clone(),
         ));
         return None;
@@ -225,12 +225,7 @@ fn coerced_finding(checked: JsonSlice<'_>, at: &JsonPath, place: &JsonPath) -> D
 }
 
 /// The finding of a failed typed parse: `code` at `base` followed by the failing member.
-fn typed_failure(
-    code: DiagnosticCode,
-    base: &JsonPath,
-    member: &JsonPath,
-    span: Span,
-) -> Diagnostic {
+fn typed_failure(code: Code, base: &JsonPath, member: &JsonPath, span: Span) -> Diagnostic {
     let path = base.join(member);
     let mut finding = shape::error(code, path);
     finding.location.span = Some(span);
@@ -258,7 +253,7 @@ mod tests {
         assert_eq!(
             lines,
             [Diagnostic::new(
-                DiagnosticCode::from(core_codes::DOCUMENT_REJECTED_WORDED.with(["closing"])),
+                core_codes::DOCUMENT_REJECTED_WORDED.with(["closing"]),
                 Severity::Error,
                 Phase::Parse,
                 Location::default()

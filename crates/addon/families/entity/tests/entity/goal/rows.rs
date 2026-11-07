@@ -1,7 +1,7 @@
 //! The goal rows of and the goal rules of.
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, Severity};
+use bedrock_addon_core::diagnostic::{Diagnostics, Severity};
 use bedrock_addon_core::document::Component;
 use bedrock_addon_core::versioning::ConvertMode;
 use bedrock_addon_family_entity::component::EntityComponent;
@@ -55,7 +55,7 @@ fn v13_deprecated_inherited_names_are_reported_and_dropped() {
         assert_eq!(found.severity, Severity::Error);
         assert_eq!(
             found.code,
-            DiagnosticCode::from(core_codes::DEPRECATED_MEMBER_WORDED.with([text]))
+            core_codes::DEPRECATED_MEMBER_WORDED.with([text])
         );
         assert_eq!(d.len(), 1, "only the deprecated member is reported: {d:?}");
     };

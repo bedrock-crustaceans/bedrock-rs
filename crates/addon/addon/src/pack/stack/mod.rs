@@ -38,7 +38,7 @@ use std::marker::PhantomData;
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
+    Code, Diagnostic, Diagnostics, JsonPath, Location, Phase, Severity,
 };
 use bedrock_addon_core::load::{ListedFile, LoadContext, LoadOptions, StackPack};
 use bedrock_addon_core::molang;
@@ -373,7 +373,7 @@ fn carried_in_vain(packs: &[StackPack]) -> Diagnostics {
     let mut found = Diagnostics::default();
     let mut ignored = |path: &PackPath, pack: &StackPack| {
         found.push(Diagnostic::new(
-            DiagnosticCode::from(&core_codes::IGNORED_FILE),
+            Code::from(&core_codes::IGNORED_FILE),
             Severity::Info,
             Phase::Validate,
             Location::new(
@@ -431,7 +431,7 @@ fn icon_lints(instances: &[PackInstance], packs: &[StackPack]) -> Diagnostics {
     for (instance, pack) in instances.iter().zip(packs).rev() {
         for mut finding in instance.pack.icon_findings() {
             if pack.context.is_base_game_pack
-                && finding.code == DiagnosticCode::from(&core_codes::PACK_ICON_MISSING)
+                && finding.code == Code::from(&core_codes::PACK_ICON_MISSING)
             {
                 continue;
             }

@@ -13,9 +13,7 @@ pub mod codes;
 mod write;
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{
-    CodeDef, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase,
-};
+use bedrock_addon_core::diagnostic::{Code, CodeDef, Diagnostic, Diagnostics, JsonPath, Phase};
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::json::jsoncpp::{member, number};
@@ -409,7 +407,7 @@ impl bedrock_addon_core::__private::Sealed for UiTextureInfo {}
 /// The root object of a file, or the rejection.
 fn root_object(origin: &Origin, bytes: &[u8]) -> Result<Value, Rejected> {
     let rejection = |message: String| {
-        let code = syntax(message).into();
+        let code = syntax(message);
         reject(origin.clone(), Diagnostic::error(code))
     };
     let root = read(bytes).map_err(|error| rejection(error.to_string()))?;
@@ -502,7 +500,7 @@ fn combine(parsed: Vec<FileCopy<UiTextureInfo>>, cx: &StackCx<'_>) -> Files<UiTe
     });
     for (_, (pack, path)) in orphans {
         builder.push_diagnostic(file_finding(
-            DiagnosticCode::from(&core_codes::IGNORED_FILE),
+            Code::from(&core_codes::IGNORED_FILE),
             Severity::Info,
             pack,
             path,

@@ -28,7 +28,7 @@ use bytes::Bytes;
 use indexmap::IndexMap;
 
 use super::{ListDepth, LoadContext, LoadOptions};
-use crate::diagnostic::{Diagnostic, VanillaText};
+use crate::diagnostic::{Diagnostic, sentence};
 use crate::document::{Content, Definition, Files, Merge, Merged, Registry};
 use crate::id::{Id, Kind};
 use crate::pack_identity::{PackOrigin, PackPath, PackRef, PackSide};
@@ -280,11 +280,9 @@ impl Walk {
 
     /// The text of [`read_error`](Self::read_error) for the file at `path`, if the walk's
     /// family has one.
-    pub fn read_error_text(&self, path: &PackPath) -> Option<VanillaText> {
-        self.read_error.map(|template| VanillaText::Formatted {
-            template,
-            args: vec![path.as_str().to_owned()],
-        })
+    pub fn read_error_text(&self, path: &PackPath) -> Option<String> {
+        self.read_error
+            .map(|template| sentence(template, &[path.as_str().to_owned()]))
     }
 
     /// [`matches`](Self::matches) for a file of the pack loaded with `cx`: `None` also when

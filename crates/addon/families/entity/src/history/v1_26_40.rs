@@ -45,9 +45,7 @@ impl LegacyStep<1, 26, 40> for Payload {
         for (value, at) in invalid {
             finding(
                 cx,
-                codes::NOT_A_VALID_VALUE
-                    .with([value.as_str(), "anchor"])
-                    .into(),
+                codes::NOT_A_VALID_VALUE.with([value.as_str(), "anchor"]),
                 &at,
             );
         }

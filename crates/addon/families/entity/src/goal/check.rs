@@ -2,9 +2,7 @@
 //! table), strict or lenient, and the member checks every goal runs while it is read.
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{
-    Class, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity,
-};
+use bedrock_addon_core::diagnostic::{Class, Code, Diagnostic, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::{
     JsonSlice, NullRule, StrictIntType, Value, remove_null_members, tell_null_members,
@@ -366,10 +364,11 @@ fn lenient<T: Goal>(slice: JsonSlice<'_>, d: &mut Diagnostics) -> Option<(T, Val
                 d.push(
                     // Without a row of the game's text the game writes no line, so the crate
                     // reports an information; a row with a text carries its own level.
-                    Diagnostic::error(legacy.map_or(
-                        DiagnosticCode::from(&core_codes::INVALID_VALUE),
-                        |(_, text, _)| core_codes::INVALID_VALUE_WORDED.with([*text]).into(),
-                    ))
+                    Diagnostic::error(
+                        legacy.map_or(Code::from(&core_codes::INVALID_VALUE), |(_, text, _)| {
+                            core_codes::INVALID_VALUE_WORDED.with([*text])
+                        }),
+                    )
                     .at(at)
                     .severity(legacy.map_or(Severity::Info, |(.., severity)| *severity)),
                 );
@@ -388,7 +387,7 @@ fn lenient<T: Goal>(slice: JsonSlice<'_>, d: &mut Diagnostics) -> Option<(T, Val
 /// their paths (below the goal) returned, for an information each; a range left empty goes, the
 /// member keeping its default. `range_*` stay. Run on the goal as the step to its typed version
 /// starts, before that step's own conversions (which write the typed `{min, max}`).
-pub(crate) fn legacy_ranges(key: &str, goal: &mut VObject) -> Vec<(JsonPath, DiagnosticCode)> {
+pub(crate) fn legacy_ranges(key: &str, goal: &mut VObject) -> Vec<(JsonPath, Code)> {
     let mut dropped = Vec::new();
     // A string `look_time` of the look goals is read by the game's integer range parser, which
     // `parse_range_string` mirrors.
@@ -402,7 +401,7 @@ pub(crate) fn legacy_ranges(key: &str, goal: &mut VObject) -> Vec<(JsonPath, Dia
         goal.insert("look_time", Value::from(range));
         dropped.push((
             JsonPath::new().child("look_time"),
-            DiagnosticCode::from(&core_codes::VALUE_REWRITTEN),
+            Code::from(&core_codes::VALUE_REWRITTEN),
         ));
     }
     let names: Vec<String> = goal.keys().map(|key| key.as_str().to_owned()).collect();
@@ -424,7 +423,7 @@ pub(crate) fn legacy_ranges(key: &str, goal: &mut VObject) -> Vec<(JsonPath, Dia
             if range.remove(end).is_some() {
                 let mut at = JsonPath::new().child(&name);
                 at.push(end);
-                dropped.push((at, DiagnosticCode::from(&core_codes::DROPPED_FIELD)));
+                dropped.push((at, Code::from(&core_codes::DROPPED_FIELD)));
             }
         }
         if range.is_empty() {
@@ -765,7 +764,7 @@ impl<'d> GoalCheck<'d> {
 
     /// A value of member `key` the game logs at level 3 at the goal's set-up, whatever the
     /// reader, and replaces by its default: the game logs this at the error level and keeps the document: a kept error.
-    pub(crate) fn kept(&mut self, key: &str, code: impl Into<DiagnosticCode>) {
+    pub(crate) fn kept(&mut self, key: &str, code: impl Into<Code>) {
         let at = self.path(key);
         self.d
             .push_kept_error(Diagnostic::error(code.into()).at(at));
@@ -775,7 +774,7 @@ impl<'d> GoalCheck<'d> {
     /// the strict parse; in the lenient one (the caller then resets the member) an
     /// information: the legacy readers check no bound, so the typed struct's bound is the
     /// crate's own and the game writes no line for it.
-    pub(crate) fn reject(&mut self, key: &str, code: impl Into<DiagnosticCode>) {
+    pub(crate) fn reject(&mut self, key: &str, code: impl Into<Code>) {
         let severity = if self.strict {
             self.failed = true;
             Severity::Error
@@ -788,7 +787,7 @@ impl<'d> GoalCheck<'d> {
     }
 
     /// [`GoalCheck::reject`] at `at`, a path below the goal.
-    fn reject_at(&mut self, at: JsonPath, code: impl Into<DiagnosticCode>) {
+    fn reject_at(&mut self, at: JsonPath, code: impl Into<Code>) {
         let severity = if self.strict {
             self.failed = true;
             Severity::Error
@@ -883,14 +882,11 @@ impl<'d> GoalCheck<'d> {
         let (code, severity) = if self.strict {
             self.failed = true;
             (
-                DiagnosticCode::from(core_codes::DEPRECATED_MEMBER_WORDED.with([text])),
+                core_codes::DEPRECATED_MEMBER_WORDED.with([text]),
                 Severity::Error,
             )
         } else {
-            (
-                DiagnosticCode::from(&core_codes::MEMBER_NOT_KEPT),
-                Severity::Info,
-            )
+            (Code::from(&core_codes::MEMBER_NOT_KEPT), Severity::Info)
         };
         self.d
             .push(Diagnostic::error(code).at(at).severity(severity));

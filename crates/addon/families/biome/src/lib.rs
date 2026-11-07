@@ -43,9 +43,7 @@ use crate::component::{
     TopSlide,
 };
 use bedrock_addon_core::__private::Sealed;
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, builders,
-};
+use bedrock_addon_core::diagnostic::{Code, Diagnostic, Diagnostics, JsonPath, Phase, builders};
 use bedrock_addon_core::document::{
     CombineRule, Content, Contribution, Definition, Document, JsonContent, JsonDefinition,
     JsonDocument, JsonPlaced, NoBeta, Origin, Placed, Registry, RegistryBuilder, Rejected,
@@ -472,7 +470,7 @@ fn floor_hint(parsed: &mut Parsed<BiomeFamily>, text: &str) {
 /// The crate's own hint for a document of an old format: the 1.12 name-keyed shape, or an
 /// experimental format from 1.13.0 (with the surface sentence when the 1.20.60-era surface
 /// components are used).
-fn hint(text: &str, version: FormatVersion) -> Option<DiagnosticCode> {
+fn hint(text: &str, version: FormatVersion) -> Option<Code> {
     let root = bedrock_addon_core::json::from_str_jsonc::<Value>(
         &bedrock_addon_core::json::last_wins(text),
     )
@@ -485,7 +483,7 @@ fn hint(text: &str, version: FormatVersion) -> Option<DiagnosticCode> {
             .as_object()
             .is_some_and(|o| o.get("format_version").is_some())
         {
-            return Some(DiagnosticCode::from(&core_codes::BIOME_FORMAT_HINT_LEGACY));
+            return Some(Code::from(&core_codes::BIOME_FORMAT_HINT_LEGACY));
         }
     }
     if version < EXPERIMENTAL_FORMATS {
@@ -508,7 +506,7 @@ fn hint(text: &str, version: FormatVersion) -> Option<DiagnosticCode> {
     } else {
         &core_codes::BIOME_FORMAT_HINT_EXPERIMENTAL
     };
-    Some(hint.with([version.to_string()]).into())
+    Some(hint.with([version.to_string()]))
 }
 
 /// A rejection with one finding.

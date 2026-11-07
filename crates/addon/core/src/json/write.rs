@@ -22,9 +22,7 @@ use super::stack::{is_low, with_stack_for};
 use super::text::MAX_JSON_DEPTH;
 use super::{EncodeError, Indent, Unrepresentable, Value, WriteStyle};
 use crate::diagnostic::codes as core_codes;
-use crate::diagnostic::{
-    Diagnostic, DiagnosticCode, JsonPath, JsonPathSegment, Location, Phase, Severity,
-};
+use crate::diagnostic::{Diagnostic, JsonPath, JsonPathSegment, Location, Phase, Severity};
 use crate::document::Unknown;
 
 /// Writes `value` as JSON text to `out` in `style`. On failure nothing is appended to `out`.
@@ -240,7 +238,7 @@ fn write_once<'f, T: Facet<'f>>(
 /// The finding of an unknown member the writer leaves out, at its path.
 fn dropped(at: JsonPath) -> Diagnostic {
     Diagnostic::new(
-        DiagnosticCode::from(core_codes::DROPPED_FIELD_WORDED.with([UNKNOWN_MEMBER_NOT_WRITTEN])),
+        core_codes::DROPPED_FIELD_WORDED.with([UNKNOWN_MEMBER_NOT_WRITTEN]),
         Severity::Warning,
         Phase::Write,
         Location::new(None, None, at, None),

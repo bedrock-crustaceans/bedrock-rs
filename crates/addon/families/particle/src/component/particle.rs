@@ -7,7 +7,7 @@ use super::types::VectorEvents;
 use crate::codes;
 use crate::read::{Era, Members, Node, Opt, Reader, Writer, object, read_list};
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon_core::diagnostic::{Code, Severity};
 use bedrock_addon_core::json::{EncodeError, Value};
 use bedrock_addon_core::molang::{Molang, MolangVisitor};
 use bedrock_addon_shared_shapes::OneOrMany;
@@ -259,10 +259,7 @@ fn collision_event(event: &mut CollisionEvent, m: Members<'_>, r: &mut Reader<'_
     if r.legacy() && written && event.min_speed.is_none_or(|speed| speed < LEGACY_MIN_SPEED) {
         event.min_speed = Some(LEGACY_MIN_SPEED);
         r.key("min_speed", |r| {
-            r.push(
-                DiagnosticCode::from(&core_codes::INVALID_VALUE),
-                Severity::Info,
-            );
+            r.push(Code::from(&core_codes::INVALID_VALUE), Severity::Info);
         });
     }
 }
@@ -287,10 +284,7 @@ impl Node for CollisionEvents {
                 .is_some_and(|name| !name.as_str().is_empty())
         };
         let left_out = |r: &mut Reader<'_>| {
-            r.push(
-                DiagnosticCode::from(&core_codes::DROPPED_FIELD),
-                Severity::Info,
-            );
+            r.push(Code::from(&core_codes::DROPPED_FIELD), Severity::Info);
         };
         if let Some(entries) = value.as_array() {
             let legacy = r.legacy();
@@ -372,7 +366,7 @@ fn collision(component: &mut ParticleMotionCollision, _: Members<'_>, r: &mut Re
                     &codes::RADIUS_TOO_LARGE
                 });
             } else {
-                r.error(DiagnosticCode::from(&core_codes::INVALID_VALUE));
+                r.error(Code::from(&core_codes::INVALID_VALUE));
             }
         });
         if r.legacy() {

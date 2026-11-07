@@ -7,9 +7,7 @@ use facet::Facet;
 
 use super::{PoiTag, PoiType};
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{
-    Class, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity,
-};
+use bedrock_addon_core::diagnostic::{Class, Code, Diagnostic, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value, parse_at, unknown_members};
 use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::{ParseCx, VersionStruct, Versioned, write_payload};
@@ -92,8 +90,8 @@ fn byte(object: &Value, key: &str, at: &JsonPath, d: &mut Diagnostics) -> bool {
         .map(|number| number.to_u64().is_some_and(|n| u8::try_from(n).is_ok()));
     let code = match integer {
         Some(true) => return true,
-        Some(false) => DiagnosticCode::from(&core_codes::INVALID_VALUE),
-        None => DiagnosticCode::from(&core_codes::INVALID_TYPE),
+        Some(false) => Code::from(&core_codes::INVALID_VALUE),
+        None => Code::from(&core_codes::INVALID_TYPE),
     };
     d.push(Diagnostic::error(code).at(at.child(key)));
     false

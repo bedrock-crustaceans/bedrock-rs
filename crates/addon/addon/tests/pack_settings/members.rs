@@ -2,7 +2,7 @@
 //! `ps10`, `ps11`, `ps14`, `ps15` (rules D5–D10).
 
 use bedrock_addon::diagnostic::codes;
-use bedrock_addon::diagnostic::{DiagnosticCode as C, Diagnostics, Severity};
+use bedrock_addon::diagnostic::{Code as C, Diagnostics, Severity};
 use uuid::Uuid;
 
 use super::common::{

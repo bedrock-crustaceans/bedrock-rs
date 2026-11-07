@@ -1,7 +1,7 @@
 //! The registry of `rp.particles()`: the walk of `particles/`, the effect
 //! loaded last per identifier, a failed file, and the references the link pass will check.
 
-use bedrock_addon::diagnostic::{Diagnostic, DiagnosticCode as Code, Diagnostics, Severity};
+use bedrock_addon::diagnostic::{Code, Diagnostic, Diagnostics, Severity};
 use bedrock_addon::families::particle::component::EmitterRateInstant;
 use bedrock_addon::id::ParticleId;
 use bedrock_addon::load::LoadOptions;

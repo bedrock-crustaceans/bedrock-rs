@@ -77,10 +77,10 @@ fn the_server_install_loads_and_links_on_a_thread_with_one_mebibyte_of_stack() {
 
 #[test]
 fn a_kept_error_is_no_refusal_of_the_link_pass_and_a_rejecting_error_is() {
-    use bedrock_addon::diagnostic::{Diagnostic, DiagnosticCode, Location, Phase, Severity, codes};
+    use bedrock_addon::diagnostic::{Code, Diagnostic, Location, Phase, Severity, codes};
     let error = || {
         Diagnostic::new(
-            DiagnosticCode::from(&codes::UNRECOGNIZED_EVENT_STRING),
+            Code::from(&codes::UNRECOGNIZED_EVENT_STRING),
             Severity::Error,
             Phase::Link,
             Location::default(),
@@ -96,9 +96,9 @@ fn a_kept_error_is_no_refusal_of_the_link_pass_and_a_rejecting_error_is() {
 
 #[test]
 fn the_clean_default_world_counts_a_kept_link_error_that_the_refusal_check_lets_through() {
-    use bedrock_addon::diagnostic::{Diagnostic, DiagnosticCode, Location, Phase, Severity, codes};
+    use bedrock_addon::diagnostic::{Code, Diagnostic, Location, Phase, Severity, codes};
     let kept = Diagnostic::new(
-        DiagnosticCode::from(&codes::UNRECOGNIZED_EVENT_STRING),
+        Code::from(&codes::UNRECOGNIZED_EVENT_STRING),
         Severity::Error,
         Phase::Link,
         Location::default(),

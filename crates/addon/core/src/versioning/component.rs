@@ -13,7 +13,7 @@ use super::{
 };
 use crate::diagnostic::codes as core_codes;
 use crate::diagnostic::{
-    Class, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
+    Class, Code, Diagnostic, Diagnostics, JsonPath, Location, Phase, Severity,
 };
 use crate::document::{ComponentMap, ComponentRef, ComponentSet, CustomComponent};
 use crate::json::{JsonSlice, NullRule, ScalarRead, Value, parse_with_rules, reject_nulls};
@@ -259,7 +259,7 @@ pub fn parse_component_map<'a, F: Family>(
                 // The game says nothing here, so the crate reports a read that failed without a
                 // finding of its own as an information.
                 None => d.push(Diagnostic::new(
-                    DiagnosticCode::from(&core_codes::DROPPED_COMPONENT),
+                    Code::from(&core_codes::DROPPED_COMPONENT),
                     Severity::Info,
                     Phase::Parse,
                     Location::new(None, None, path, Some(span_of(slice))),
@@ -380,14 +380,14 @@ pub fn validate_components<F: Family>(
             );
             // `minecraft:foot_size` at 1.16.100: the game logs the not-in-schema line at
             // level 2 and keeps the actor.
-            d.push(finding(code.into(), unknown_severity, path.clone()));
+            d.push(finding(code, unknown_severity, path.clone()));
             dropped.push(name.to_owned());
         }
         if matches!(meta.area, ContextArea::Vanilla | ContextArea::Internal)
             && !cx.is_base_game_pack
         {
             d.push(finding(
-                DiagnosticCode::from(&core_codes::UNRECOGNIZED_COMPONENT),
+                Code::from(&core_codes::UNRECOGNIZED_COMPONENT),
                 unknown_severity,
                 path.clone(),
             ));
@@ -400,9 +400,7 @@ pub fn validate_components<F: Family>(
             // fixer, and no block row has `supersedes`; an entity's rename logs nothing. The
             // crate reports the dropped older version as an information.
             d.push(finding(
-                core_codes::DUPLICATE_COMPONENT_VERSION
-                    .with([old, name, name, old])
-                    .into(),
+                core_codes::DUPLICATE_COMPONENT_VERSION.with([old, name, name, old]),
                 Severity::Info,
                 path,
             ));
@@ -472,13 +470,11 @@ pub fn check_experimental_fields(
             path.push(part);
         }
         d.push(Diagnostic::new(
-            core_codes::TURN_ON_TOGGLE
-                .with([
-                    "field".to_owned(),
-                    format!("{owner}.{}", field.name),
-                    field.experiment.save_name().unwrap_or_default().to_owned(),
-                ])
-                .into(),
+            core_codes::TURN_ON_TOGGLE.with([
+                "field".to_owned(),
+                format!("{owner}.{}", field.name),
+                field.experiment.save_name().unwrap_or_default().to_owned(),
+            ]),
             Severity::Error,
             Phase::Parse,
             Location::new(None, None, path, None),
@@ -488,10 +484,8 @@ pub fn check_experimental_fields(
 }
 
 /// "To use %s '%s', use json format version %s or higher".
-fn use_format_version(what: &'static str, name: &str, version: FormatVersion) -> DiagnosticCode {
-    core_codes::USE_FORMAT_VERSION
-        .with([what.to_owned(), name.to_owned(), version.to_string()])
-        .into()
+fn use_format_version(what: &'static str, name: &str, version: FormatVersion) -> Code {
+    core_codes::USE_FORMAT_VERSION.with([what.to_owned(), name.to_owned(), version.to_string()])
 }
 
 /// `FieldSinceEngine` warnings for every field of `fields` that `present` finds in a
@@ -519,9 +513,7 @@ pub fn check_fields_since_engine(
         // The game has no line for a field newer than the pack, so the crate reports it as an
         // information.
         d.push(finding(
-            core_codes::FIELD_SINCE_ENGINE
-                .with([field.since_engine.to_string()])
-                .into(),
+            core_codes::FIELD_SINCE_ENGINE.with([field.since_engine.to_string()]),
             Severity::Info,
             path,
         ));
@@ -537,35 +529,35 @@ fn requirement_code(
     what: &'static str,
     name: &str,
     released: Option<FormatVersion>,
-) -> DiagnosticCode {
+) -> Code {
     let toggle = |experiment: Experiment| experiment.save_name().unwrap_or_default().to_owned();
     let experiment = match requirement {
         LoadRequirement::LegacyCreatorFeatures => {
             return released.map_or_else(
-                || DiagnosticCode::from(&core_codes::MISSING_TOGGLES),
+                || Code::from(&core_codes::MISSING_TOGGLES),
                 |version| {
-                    core_codes::TOGGLE_USE_FORMAT_VERSION
-                        .with([what.to_owned(), name.to_owned(), version.to_string()])
-                        .into()
+                    core_codes::TOGGLE_USE_FORMAT_VERSION.with([
+                        what.to_owned(),
+                        name.to_owned(),
+                        version.to_string(),
+                    ])
                 },
             );
         }
-        LoadRequirement::BaseGamePack => return DiagnosticCode::from(&core_codes::MISSING_TOGGLES),
+        LoadRequirement::BaseGamePack => return Code::from(&core_codes::MISSING_TOGGLES),
         LoadRequirement::BetaFeatures => Experiment::BetaApis,
         LoadRequirement::Experiment(experiment) => experiment,
     };
     match released {
-        Some(version) => core_codes::TURN_ON_TOGGLE_BEFORE
-            .with([
-                what.to_owned(),
-                name.to_owned(),
-                version.to_string(),
-                toggle(experiment),
-            ])
-            .into(),
-        None => core_codes::TURN_ON_TOGGLE
-            .with([what.to_owned(), name.to_owned(), toggle(experiment)])
-            .into(),
+        Some(version) => core_codes::TURN_ON_TOGGLE_BEFORE.with([
+            what.to_owned(),
+            name.to_owned(),
+            version.to_string(),
+            toggle(experiment),
+        ]),
+        None => {
+            core_codes::TURN_ON_TOGGLE.with([what.to_owned(), name.to_owned(), toggle(experiment)])
+        }
     }
 }
 
@@ -594,7 +586,7 @@ fn table<F: Family>() -> &'static ComponentTable<F> {
     table
 }
 
-fn finding(code: DiagnosticCode, severity: Severity, path: JsonPath) -> Diagnostic {
+fn finding(code: Code, severity: Severity, path: JsonPath) -> Diagnostic {
     Diagnostic::new(
         code,
         severity,

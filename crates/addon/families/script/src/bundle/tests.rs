@@ -1057,7 +1057,7 @@ fn bundles_on_engine(
 /// drawn over files nobody read: one finding says so.
 #[test]
 fn a_plugin_whose_script_files_the_walk_left_unread_is_told_once() {
-    use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
+    use bedrock_addon_core::diagnostic::{Code, Severity};
     use bedrock_addon_core::load::{
         ListedFile, LoadContext, LoadOptions, StackCx, StackPack, WalkFile,
     };
@@ -1116,7 +1116,7 @@ fn a_plugin_whose_script_files_the_walk_left_unread_is_told_once() {
     assert_eq!(unread.len(), 1);
     assert!(unread[0].plugin.is_some());
     assert!(unread[0].files.values().all(|file| file.content.is_none()));
-    let found: Vec<(&DiagnosticCode, Severity, String)> = unread[0]
+    let found: Vec<(&Code, Severity, String)> = unread[0]
         .findings()
         .map(|f| {
             (
@@ -1132,7 +1132,7 @@ fn a_plugin_whose_script_files_the_walk_left_unread_is_told_once() {
     assert_eq!(
         found,
         [(
-            &DiagnosticCode::from(&core_codes::FILE_NOT_LOADED),
+            &Code::from(&core_codes::FILE_NOT_LOADED),
             Severity::Info,
             "scripts/main.js".to_owned()
         )],
@@ -1147,7 +1147,7 @@ fn a_plugin_whose_script_files_the_walk_left_unread_is_told_once() {
 
 #[test]
 fn m9_on_an_engine_before_1_26_30_the_relaxed_form_refuses_the_manifest_and_no_script_runs() {
-    use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
+    use bedrock_addon_core::diagnostic::{Code, Severity};
     use bedrock_addon_core::version::FormatVersion;
     let manifest = r#"{
     "format_version": 3,
@@ -1162,7 +1162,7 @@ fn m9_on_an_engine_before_1_26_30_the_relaxed_form_refuses_the_manifest_and_no_s
     // a caller sets.
     let refused = bundles_on_engine(manifest, FormatVersion::new(1, 26, 29));
     assert_eq!(refused.len(), 1);
-    let found: Vec<(&DiagnosticCode, Severity, String, String)> = refused[0]
+    let found: Vec<(&Code, Severity, String, String)> = refused[0]
         .findings()
         .map(|f| {
             (

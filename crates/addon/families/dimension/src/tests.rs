@@ -30,9 +30,7 @@ fn generator_type_converts_to_its_id() {
 /// the helper is written over core's builder, and must give exactly this.
 #[test]
 fn the_shadowed_definition_note() {
-    use bedrock_addon_core::diagnostic::{
-        Diagnostic, DiagnosticCode, JsonPath, Location, Phase, Severity,
-    };
+    use bedrock_addon_core::diagnostic::{Code, Diagnostic, JsonPath, Location, Phase, Severity};
     use bedrock_addon_core::document::Origin;
     use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
     let pack = PackRef::app_data();
@@ -46,7 +44,7 @@ fn the_shadowed_definition_note() {
     );
     let found = crate::shadowed(&origin);
     let long = Diagnostic::new(
-        DiagnosticCode::from(&core_codes::SHADOWED_DEFINITION),
+        Code::from(&core_codes::SHADOWED_DEFINITION),
         Severity::Info,
         Phase::Validate,
         Location::new(Some(pack), Some(path), JsonPath::new(), None),

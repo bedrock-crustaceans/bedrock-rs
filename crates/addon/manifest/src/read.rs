@@ -14,7 +14,7 @@
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, Span,
+    Code, Diagnostic, Diagnostics, JsonPath, Location, Phase, Severity, Span,
 };
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::Value;
@@ -72,13 +72,7 @@ impl<'p> Sink<'p> {
     }
 
     /// Records `code` at `at`.
-    pub(super) fn push(
-        &mut self,
-        code: DiagnosticCode,
-        severity: Severity,
-        phase: Phase,
-        at: &JsonPath,
-    ) {
+    pub(super) fn push(&mut self, code: Code, severity: Severity, phase: Phase, at: &JsonPath) {
         self.diagnostics.push(Diagnostic::new(
             code,
             severity,
@@ -89,7 +83,7 @@ impl<'p> Sink<'p> {
 
     /// Records an error at the byte range `span` of the file (the root's JSON path): a finding
     /// on the text itself, before there is a value to walk.
-    pub(super) fn error_in_text(&mut self, code: DiagnosticCode, span: Span) {
+    pub(super) fn error_in_text(&mut self, code: Code, span: Span) {
         self.diagnostics.push(Diagnostic::new(
             code,
             Severity::Error,
@@ -98,7 +92,7 @@ impl<'p> Sink<'p> {
         ));
     }
 
-    pub(super) fn error(&mut self, code: DiagnosticCode, at: &JsonPath) {
+    pub(super) fn error(&mut self, code: Code, at: &JsonPath) {
         self.push(code, Severity::Error, Phase::Parse, at);
     }
 
@@ -107,24 +101,19 @@ impl<'p> Sink<'p> {
     /// keys: `.malformed_uuid`, `.multiple_modules`, `.manifest_upgraded`,
     /// `.malformed_version`, `.invalidpacktype`, `.duplicate_uuid`). A pack-report entry has
     /// no content-log level, so it is taken as the level-2 equivalent.
-    pub(super) fn warning(&mut self, code: DiagnosticCode, at: &JsonPath) {
+    pub(super) fn warning(&mut self, code: Code, at: &JsonPath) {
         self.push(code, Severity::Warning, Phase::Parse, at);
     }
 
     /// An information from the crate: the game reads on in silence.
-    pub(super) fn note(&mut self, code: DiagnosticCode, at: &JsonPath) {
+    pub(super) fn note(&mut self, code: Code, at: &JsonPath) {
         self.push(code, Severity::Info, Phase::Parse, at);
     }
 
     /// An error, or a warning when the manifest is being upgraded from format 0 (vanilla's
     /// "Upgraded" twin codes are one code here, with the severity picked by the read; the
     /// twin is a pack-report warning, as [`Self::warning`] says).
-    pub(super) fn error_or_upgraded(
-        &mut self,
-        code: DiagnosticCode,
-        upgraded: bool,
-        at: &JsonPath,
-    ) {
+    pub(super) fn error_or_upgraded(&mut self, code: Code, upgraded: bool, at: &JsonPath) {
         let severity = if upgraded {
             Severity::Warning
         } else {
@@ -147,15 +136,9 @@ impl<'p> Sink<'p> {
                 .is_some_and(|number| number.to_f64_lossy().fract() != 0.0);
             // Vanilla reads the element in silence; the crate reports an information.
             if element.is_null() || element.as_bool().is_some() {
-                self.note(
-                    DiagnosticCode::from(&core_codes::INVALID_TYPE),
-                    &at.index(index),
-                );
+                self.note(Code::from(&core_codes::INVALID_TYPE), &at.index(index));
             } else if fraction {
-                self.note(
-                    DiagnosticCode::from(&core_codes::INVALID_VALUE),
-                    &at.index(index),
-                );
+                self.note(Code::from(&core_codes::INVALID_VALUE), &at.index(index));
             }
         }
         Some(version)
@@ -177,18 +160,18 @@ impl<'p> Sink<'p> {
 /// The primitives: one member each, by the rules of the sink's profile.
 impl Sink<'_> {
     /// The code of a member of the wrong JSON type.
-    pub(super) fn wrong_type(&self) -> DiagnosticCode {
+    pub(super) fn wrong_type(&self) -> Code {
         match self.profile {
-            Profile::Legacy => DiagnosticCode::from(&core_codes::WRONG_TYPE_PROPERTY),
-            Profile::Comprehensive => DiagnosticCode::from(&core_codes::INVALID_TYPE),
+            Profile::Legacy => Code::from(&core_codes::WRONG_TYPE_PROPERTY),
+            Profile::Comprehensive => Code::from(&core_codes::INVALID_TYPE),
         }
     }
 
     /// The code of a required member that is absent.
-    fn missing(&self) -> DiagnosticCode {
+    fn missing(&self) -> Code {
         match self.profile {
-            Profile::Legacy => DiagnosticCode::from(&core_codes::MISSING_PROPERTY),
-            Profile::Comprehensive => DiagnosticCode::from(&core_codes::MISSING_REQUIRED_FIELD),
+            Profile::Legacy => Code::from(&core_codes::MISSING_PROPERTY),
+            Profile::Comprehensive => Code::from(&core_codes::MISSING_REQUIRED_FIELD),
         }
     }
 
@@ -277,7 +260,7 @@ impl Sink<'_> {
         if read.is_empty() && required && self.profile == Profile::Legacy {
             // An empty required string is reported as `empty_property:%s;` (skipped for an
             // optional member), and the pack is rejected, so it is an error.
-            self.error(DiagnosticCode::from(&core_codes::EMPTY_PROPERTY), &at);
+            self.error(Code::from(&core_codes::EMPTY_PROPERTY), &at);
         }
         Some(read.to_owned())
     }
@@ -323,7 +306,7 @@ impl Sink<'_> {
             return Some(uuid);
         }
         self.error_or_upgraded(
-            DiagnosticCode::from(&core_codes::MALFORMED_PROPERTY_UUID),
+            Code::from(&core_codes::MALFORMED_PROPERTY_UUID),
             upgraded,
             &at,
         );
@@ -347,7 +330,7 @@ impl Sink<'_> {
             let parsed = relaxed_version_text(&raw);
             if parsed.is_none() {
                 self.error(
-                    DiagnosticCode::from(&core_codes::MALFORMED_PROPERTY_VERSION),
+                    Code::from(&core_codes::MALFORMED_PROPERTY_VERSION),
                     &below(at, key),
                 );
             }
@@ -356,27 +339,21 @@ impl Sink<'_> {
         let at = below(at, key);
         let Some(value) = self.present(object, key) else {
             if upgraded {
-                self.warning(DiagnosticCode::from(&core_codes::MISSING_PROPERTY), &at);
+                self.warning(Code::from(&core_codes::MISSING_PROPERTY), &at);
                 return Some(SemVersion::new(0, 0, 0));
             }
-            self.error(DiagnosticCode::from(&core_codes::MISSING_PROPERTY), &at);
+            self.error(Code::from(&core_codes::MISSING_PROPERTY), &at);
             return None;
         };
         if let Some(raw) = text(value) {
             return match strict_version_text(raw) {
                 Some(version) => Some(version),
                 None if upgraded => {
-                    self.warning(
-                        DiagnosticCode::from(&core_codes::MALFORMED_PROPERTY_VERSION),
-                        &at,
-                    );
+                    self.warning(Code::from(&core_codes::MALFORMED_PROPERTY_VERSION), &at);
                     Some(SemVersion::new(1, 0, 0))
                 }
                 None => {
-                    self.error(
-                        core_codes::MANIFEST_NOT_SEMVER.with([pointer(&at)]).into(),
-                        &at,
-                    );
+                    self.error(core_codes::MANIFEST_NOT_SEMVER.with([pointer(&at)]), &at);
                     None
                 }
             };
@@ -386,9 +363,9 @@ impl Sink<'_> {
         }
         // An array of the wrong length or with an unconvertible element, or another type.
         let code = if upgraded {
-            DiagnosticCode::from(&core_codes::WRONG_TYPE_PROPERTY)
+            Code::from(&core_codes::WRONG_TYPE_PROPERTY)
         } else {
-            core_codes::MANIFEST_WRONG_TYPE.with([pointer(&at)]).into()
+            core_codes::MANIFEST_WRONG_TYPE.with([pointer(&at)])
         };
         self.error_or_upgraded(code, upgraded, &at);
         upgraded.then(|| SemVersion::new(0, 0, 0))
@@ -416,7 +393,7 @@ impl Sink<'_> {
                     extra.insert(key.as_str().to_owned(), value.clone());
                 }
                 Profile::Comprehensive => self.error(
-                    DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD),
+                    Code::from(&core_codes::UNRECOGNIZED_FIELD),
                     &below(at, key.as_str()),
                 ),
             }
@@ -431,19 +408,14 @@ impl Sink<'_> {
         let engine = SemVersion::from(ENGINE_VERSION);
         if *version > engine {
             self.error(
-                DiagnosticCode::from(
-                    core_codes::VERSION_TOO_HIGH.with([version.to_string(), engine.to_string()]),
-                ),
+                core_codes::VERSION_TOO_HIGH.with([version.to_string(), engine.to_string()]),
                 at,
             );
             return false;
         }
         if *version < LOWEST_ENGINE {
             self.error(
-                DiagnosticCode::from(
-                    core_codes::VERSION_TOO_LOW
-                        .with([version.to_string(), LOWEST_ENGINE.to_string()]),
-                ),
+                core_codes::VERSION_TOO_LOW.with([version.to_string(), LOWEST_ENGINE.to_string()]),
                 at,
             );
             return false;
@@ -492,7 +464,7 @@ fn number_count(version: &str) -> usize {
 pub(super) fn pack_scope(
     sink: &mut Sink<'_>,
     text: Option<String>,
-    code: DiagnosticCode,
+    code: Code,
     extra: &mut UnknownMembers,
 ) -> Option<PackScope> {
     let text = text?;

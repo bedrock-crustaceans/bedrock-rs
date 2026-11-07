@@ -4,7 +4,7 @@
 
 use std::path::PathBuf;
 
-use bedrock_addon::diagnostic::{CodeMeta, Diagnostic, DiagnosticCode, Diagnostics, Severity};
+use bedrock_addon::diagnostic::{CodeMeta, Diagnostic, Diagnostics, Severity};
 use bedrock_addon::document::{Content, Document, Rejected};
 use bedrock_addon::families::recipe::{Recipe, Shaped};
 use bedrock_addon::load::LoadContext;
@@ -96,9 +96,7 @@ pub fn shaped(document: &Document<Recipe>) -> &Shaped {
 
 /// The recipe family's definition a finding was raised on, if it was.
 fn recipe_def(diagnostic: &Diagnostic) -> Option<&'static CodeMeta> {
-    let DiagnosticCode::Specific { code } = &diagnostic.code else {
-        return None;
-    };
+    let code = &diagnostic.code;
     bedrock_addon::families::recipe::codes::ALL
         .iter()
         .find(|meta| meta.id() == code.id())
@@ -112,9 +110,9 @@ pub fn template(diagnostic: &Diagnostic) -> Option<&'static str> {
 
 /// The arguments of a finding of a recipe definition.
 pub fn args(diagnostic: &Diagnostic) -> Vec<String> {
-    match (recipe_def(diagnostic), &diagnostic.code) {
-        (Some(_), DiagnosticCode::Specific { code }) => code.args().to_vec(),
-        _ => Vec::new(),
+    match recipe_def(diagnostic) {
+        Some(_) => diagnostic.code.args().to_vec(),
+        None => Vec::new(),
     }
 }
 

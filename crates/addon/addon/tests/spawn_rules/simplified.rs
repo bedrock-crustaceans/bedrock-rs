@@ -2,7 +2,7 @@
 //! `s10`–`s22`. The first five inputs are vanilla's
 //! unit-test documents (`ActorSpawnRuleDataLoaderUpgradeUnitTests`).
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon::diagnostic::{Code, Severity};
 use bedrock_addon::families::spawn_rules::{Placement, SpawnRules};
 use bedrock_addon::version::ENGINE_VERSION;
 
@@ -11,12 +11,12 @@ use super::common::{
     paths, rejected, round_trip, simplified, standard, with,
 };
 
-fn unresolved(code: &DiagnosticCode) -> bool {
+fn unresolved(code: &Code) -> bool {
     // By legacy name: the variant and the definitions that were it.
     matches!(code.name(), "UnresolvedReference")
 }
 
-fn unrecognized(code: &DiagnosticCode) -> bool {
+fn unrecognized(code: &Code) -> bool {
     // By legacy name: the variant and the definitions that were it.
     matches!(code.name(), "UnrecognizedField")
 }

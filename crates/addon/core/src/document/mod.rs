@@ -9,7 +9,7 @@ use std::ops::Deref;
 
 use crate::__private::Sealed;
 use crate::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, codes,
+    Code, Diagnostic, Diagnostics, JsonPath, Location, Phase, Severity, codes,
 };
 use crate::id::Kind;
 use crate::json::{EncodeError, WriteStyle};
@@ -624,7 +624,7 @@ impl<K: Kind> Content for NoBeta<K> {
         );
         let mut diagnostics = Diagnostics::default();
         diagnostics.push(Diagnostic::new(
-            DiagnosticCode::from(&codes::UNSUPPORTED_VERSION),
+            Code::from(&codes::UNSUPPORTED_VERSION),
             Severity::Error,
             Phase::Parse,
             origin.location(),

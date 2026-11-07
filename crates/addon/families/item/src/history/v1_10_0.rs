@@ -21,7 +21,7 @@ use crate::legacy::{
     LegacySeed, number, seed_warning,
 };
 use crate::read::is_component_based;
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
+use bedrock_addon_core::diagnostic::{Code, Diagnostic, Diagnostics, JsonPath};
 
 /// An item in the legacy item format (no `SemVersion`
 /// reaches its readers, so one shape serves 1.10 to 1.16.0).
@@ -111,13 +111,13 @@ bedrock_addon_core::impl_no_molang!(Item);
 /// An information at `at`: the member reads its value as another one than the document writes
 /// (the legacy readers take any JSON value, as `asInt`, `asFloat`, `asBool` do; what they
 /// make of it is said). The game is silent, so the finding is the crate's own information.
-fn told(code: DiagnosticCode, at: JsonPath, d: &mut Diagnostics) {
+fn told(code: Code, at: JsonPath, d: &mut Diagnostics) {
     d.push(Diagnostic::info(code).at(at));
 }
 
 /// A value of another JSON type than the member's: an `InvalidType` information at `at`.
 fn wrong_type(at: JsonPath, d: &mut Diagnostics) {
-    told(DiagnosticCode::from(&core_codes::INVALID_TYPE), at, d);
+    told(Code::from(&core_codes::INVALID_TYPE), at, d);
 }
 
 /// A JSON number as the double it spells.
@@ -136,11 +136,11 @@ fn as_int(value: &Value, at: JsonPath, d: &mut Diagnostics) -> Option<i32> {
     };
     let whole = number.trunc();
     if whole < f64::from(i32::MIN) || whole > f64::from(i32::MAX) {
-        told(DiagnosticCode::from(&core_codes::INVALID_VALUE), at, d);
+        told(Code::from(&core_codes::INVALID_VALUE), at, d);
         return None;
     }
     if number.fract() != 0.0 {
-        told(DiagnosticCode::from(&core_codes::INVALID_VALUE), at, d);
+        told(Code::from(&core_codes::INVALID_VALUE), at, d);
     }
     Some(whole as i32)
 }
@@ -290,11 +290,11 @@ fn read_food(
                         // The game logs an unknown effect name at the content log's error
                         // level and adds the effect on: a kept error.
                         d.push_kept_error(
-                            Diagnostic::error(
-                                codes::LEGACY_EFFECT_NAME
-                                    .with([identifier, "effect", name.as_str()])
-                                    .into(),
-                            )
+                            Diagnostic::error(codes::LEGACY_EFFECT_NAME.with([
+                                identifier,
+                                "effect",
+                                name.as_str(),
+                            ]))
                             .at(path.clone()),
                         );
                     }
@@ -326,11 +326,11 @@ fn read_food(
                         // The game logs an unknown name in `remove_effects` at the error
                         // level and the loop goes on: a kept error.
                         d.push_kept_error(
-                            Diagnostic::error(
-                                codes::LEGACY_EFFECT_NAME
-                                    .with([identifier, "remove_effect", name.as_str()])
-                                    .into(),
-                            )
+                            Diagnostic::error(codes::LEGACY_EFFECT_NAME.with([
+                                identifier,
+                                "remove_effect",
+                                name.as_str(),
+                            ]))
                             .at(path),
                         );
                     }

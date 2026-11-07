@@ -28,7 +28,7 @@ fn invalid_molang_renders_the_scope_chain() {
     json_path.push("scripts");
     json_path.push("pre_animation");
     let mut diagnostic = Diagnostic::new(
-        codes::INVALID_MOLANG.with([source]).into(),
+        codes::INVALID_MOLANG.with([source]),
         Severity::Error,
         Phase::Validate,
         Location::new(None, None, json_path, None),

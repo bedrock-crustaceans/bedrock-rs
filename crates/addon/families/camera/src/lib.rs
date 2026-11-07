@@ -41,7 +41,7 @@ mod tests;
 /// A constraint with its own line: an `InvalidValue` error at `at`.
 pub(crate) fn violation(line: &'static CodeDef<0>, at: JsonPath, d: &mut Diagnostics) {
     d.push(bedrock_addon_core::versioning::shape::error(
-        DiagnosticCode::from(line),
+        Code::from(line),
         at,
     ));
 }
@@ -55,7 +55,7 @@ use std::convert::Infallible;
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    CodeDef, Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath,
+    Code, CodeDef, Diagnostic, DiagnosticDetail, Diagnostics, JsonPath,
 };
 use bedrock_addon_core::document::unversioned::origin_of;
 use bedrock_addon_core::document::{
@@ -310,15 +310,14 @@ impl Family for ListFamily {
             // JSON: %s"), the reader's message from its detail or line kept as its detail.
             if finding.code.name() == "MalformedInput" {
                 let message = finding.syntax_message().unwrap_or_default().to_owned();
-                finding.code =
-                    DiagnosticCode::from(codes::LIST_NOT_JSON.with([path.as_str(), &message]));
+                finding.code = codes::LIST_NOT_JSON.with([path.as_str(), &message]);
                 finding.detail = Some(Box::new(DiagnosticDetail::Syntax(message)));
             }
             // By legacy name: the variant and the definitions that were it.
             if finding.code.name() == "UnsupportedVersion" {
                 // The version range is a constraint on the version string, not a slice of the
                 // chain: the game's text for it is not known, so neither generic text stands in.
-                finding.code = DiagnosticCode::from(&core_codes::UNSUPPORTED_VERSION);
+                finding.code = Code::from(&core_codes::UNSUPPORTED_VERSION);
             }
             diagnostics.push(finding);
         }

@@ -10,7 +10,7 @@ use bedrock_addon_core::diagnostic::builders;
 use std::collections::HashMap;
 
 use bedrock_addon_core::diagnostic::{
-    DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
+    Diagnostics, JsonPath, Severity, sentence,
 };
 use bedrock_addon_core::document::{Document, Origin};
 use bedrock_addon_core::id::ItemId;
@@ -294,10 +294,10 @@ impl Rule<'_, '_, '_> {
         let text = if template.contains("{}") {
             formatted(template, &[place.id])
         } else {
-            VanillaText::Fixed(template)
+            String::from(template)
         };
         let finding = At::new(place.origin, path, Severity::Error)
-            .diagnostic(DiagnosticCode::from(builders::worded(&core_codes::DOCUMENT_REJECTED, &core_codes::DOCUMENT_REJECTED_WORDED, Some(&text))));
+            .diagnostic(builders::worded(&core_codes::DOCUMENT_REJECTED, &core_codes::DOCUMENT_REJECTED_WORDED, Some(&text)));
         self.out.push(finding);
     }
 
@@ -328,7 +328,7 @@ impl Rule<'_, '_, '_> {
                 Severity::Error,
                 formatted("The Item: {} is missing or invalid, can't make the recipe", &[&id]),
             ),
-            Role::Result => (Severity::Error, VanillaText::Fixed("Recipe has an invalid result")),
+            Role::Result => (Severity::Error, String::from("Recipe has an invalid result")),
             // The game logs the line at the error level, clears the requirement and the recipe
             // loads: a kept error.
             Role::Unlock => (
@@ -502,9 +502,6 @@ struct Place<'r> {
 }
 
 /// Vanilla's text `template` with `args` in place of each `{}`.
-fn formatted(template: &'static str, args: &[&str]) -> VanillaText {
-    VanillaText::Formatted {
-        template,
-        args: args.iter().map(|arg| (*arg).to_owned()).collect(),
-    }
+fn formatted(template: &'static str, args: &[&str]) -> String {
+    sentence(template, args)
 }

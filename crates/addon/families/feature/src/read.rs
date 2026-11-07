@@ -8,7 +8,7 @@ use facet::Facet;
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Code, CodeDef, Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Severity,
+    Code, CodeDef, Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Severity,
 };
 use bedrock_addon_core::json::{
     JsonSlice, NullRule, ScalarFailure, SliceError, Value, parse_with_rules, unknown_members,
@@ -95,7 +95,7 @@ pub(crate) fn parse_strict_with<'a, T: Facet<'a>>(
             if finding.code.name() == "InvalidValue" {
                 let key = last_key(&finding.location.json_path);
                 if let Some((_, message)) = texts.iter().find(|(k, _)| *k == key) {
-                    finding.code = DiagnosticCode::from(*message);
+                    finding.code = Code::from(*message);
                 }
             }
             d.push(finding);
@@ -128,13 +128,9 @@ fn slice_error(error: SliceError, base: &JsonPath) -> Diagnostic {
         // By legacy name: the variant and the definitions that were it.
         match code.name() {
             // The client's enum members reject an unknown name as a value.
-            "InvalidEnumValue" => DiagnosticCode::from(&core_codes::INVALID_VALUE),
-            "MissingRequiredField" => {
-                DiagnosticCode::from(core_codes::REQUIRED_CHILD.with([last_key(&at())]))
-            }
-            "UnrecognizedField" => {
-                DiagnosticCode::from(core_codes::CHILD_NOT_VALID.with([last_key(&at())]))
-            }
+            "InvalidEnumValue" => Code::from(&core_codes::INVALID_VALUE),
+            "MissingRequiredField" => core_codes::REQUIRED_CHILD.with([last_key(&at())]),
+            "UnrecognizedField" => core_codes::CHILD_NOT_VALID.with([last_key(&at())]),
             _ => code,
         }
     })

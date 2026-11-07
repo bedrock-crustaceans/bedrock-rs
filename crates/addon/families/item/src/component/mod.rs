@@ -250,7 +250,7 @@ pub(crate) fn tell_range_members<T>(
     for (path, _) in keep_members_and_range_members(&ranged, &json, &mut none).0 {
         if !known.contains(&path) {
             d.push(
-                Diagnostic::error(bedrock_addon_core::diagnostic::DiagnosticCode::from(
+                Diagnostic::error(bedrock_addon_core::diagnostic::Code::from(
                     &core_codes::MEMBER_NOT_KEPT,
                 ))
                 .severity(severity)

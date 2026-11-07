@@ -4,7 +4,7 @@
 
 use std::path::PathBuf;
 
-use bedrock_addon::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, Severity};
+use bedrock_addon::diagnostic::{Code, Diagnostic, Diagnostics, Severity};
 use bedrock_addon::document::{Content, Document, Rejected};
 use bedrock_addon::families::client_biome::{Beta, ClientBiome};
 use bedrock_addon::load::{LoadContext, LoadOptions};
@@ -133,14 +133,14 @@ pub fn errors(diagnostics: &Diagnostics) -> Vec<&Diagnostic> {
 }
 
 /// How many findings have a code `code` accepts.
-pub fn count(diagnostics: &Diagnostics, code: impl Fn(&DiagnosticCode) -> bool) -> usize {
+pub fn count(diagnostics: &Diagnostics, code: impl Fn(&Code) -> bool) -> usize {
     diagnostics.iter().filter(|d| code(&d.code)).count()
 }
 
 /// Whether a finding has `severity`, exactly the text `text` and a code `code` accepts.
 pub fn has(
     diagnostics: &Diagnostics,
-    code: impl Fn(&DiagnosticCode) -> bool,
+    code: impl Fn(&Code) -> bool,
     severity: Severity,
     text: &str,
 ) -> bool {
@@ -152,7 +152,7 @@ pub fn has(
 /// Whether a finding at `at` has `severity` and a code `code` accepts.
 pub fn has_at(
     diagnostics: &Diagnostics,
-    code: impl Fn(&DiagnosticCode) -> bool,
+    code: impl Fn(&Code) -> bool,
     severity: Severity,
     at: &str,
 ) -> bool {

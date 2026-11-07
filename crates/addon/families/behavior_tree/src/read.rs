@@ -9,7 +9,7 @@ use super::codes;
 use super::{BehaviorTree, Node, Param};
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    CodeDef, Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Severity,
+    Code, CodeDef, Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Severity,
 };
 use bedrock_addon_core::document::Unknown;
 use bedrock_addon_core::id::BehaviorTreeId;
@@ -100,13 +100,13 @@ impl<'d> Reader<'d> {
         as_string(node.map(kit::Node::value), default)
     }
 
-    fn report(&mut self, at: &JsonPath, code: DiagnosticCode, severity: Severity) {
+    fn report(&mut self, at: &JsonPath, code: Code, severity: Severity) {
         self.read
             .push(Diagnostic::error(code).severity(severity).at(at.clone()));
     }
 
     /// A kept error at `at`: the game logs `code`'s line at level 3 and loads the tree.
-    fn kept_error(&mut self, at: &JsonPath, code: DiagnosticCode) {
+    fn kept_error(&mut self, at: &JsonPath, code: Code) {
         self.read
             .push(Diagnostic::error(code).at(at.clone()).into_kept());
     }
@@ -114,16 +114,15 @@ impl<'d> Reader<'d> {
     fn document(&mut self, bytes: &[u8]) -> (Option<BehaviorTreeId>, Option<BehaviorTree>) {
         // Ours: vanilla's reader checks neither the encoding nor the nesting (a tree nests two
         // levels per node: the limit bounds the walk below).
-        let ours = |message: &'static str| DiagnosticCode::from(core_codes::SYNTAX.with([message]));
+        let ours = |message: &'static str| core_codes::SYNTAX.with([message]);
         let prepared = match Prepared::non_empty(bytes) {
             Ok(prepared) => prepared,
             Err(error) => {
                 let (code, severity) = match error {
                     // Vanilla skips an empty text without a word: an information.
-                    PrepareError::Empty => (
-                        DiagnosticCode::from(&core_codes::EMPTY_DOCUMENT),
-                        Severity::Info,
-                    ),
+                    PrepareError::Empty => {
+                        (Code::from(&core_codes::EMPTY_DOCUMENT), Severity::Info)
+                    }
                     PrepareError::NotUtf8(_) => (ours("the file is not UTF-8"), Severity::Error),
                     PrepareError::TooDeep(_) => {
                         (ours("the JSON nests too deeply"), Severity::Error)
@@ -170,7 +169,7 @@ impl<'d> Reader<'d> {
             // object: vanilla skips the file without a word.
             self.report(
                 &payload_at.child(NAME),
-                DiagnosticCode::from(&core_codes::MISSING_REQUIRED_FIELD),
+                Code::from(&core_codes::MISSING_REQUIRED_FIELD),
                 Severity::Error,
             );
             return (None, None);
@@ -183,7 +182,7 @@ impl<'d> Reader<'d> {
         else {
             self.report(
                 &root_at,
-                DiagnosticCode::from(&core_codes::INVALID_ROOT),
+                Code::from(&core_codes::INVALID_ROOT),
                 Severity::Error,
             );
             return (Some(name), None);
@@ -228,7 +227,7 @@ impl<'d> Reader<'d> {
             // node is dropped. `BehaviorFactory::loadNodeDefinition` logs it at
             // level 3, area 13: at the root no tree is made; a child is left out and the
             // tree loads, a kept error.
-            let code = DiagnosticCode::from(core_codes::UNKNOWN_NODE.with([kind.to_owned()]));
+            let code = core_codes::UNKNOWN_NODE.with([kind.to_owned()]);
             if root {
                 self.report(at, code, Severity::Error);
             } else {
@@ -266,7 +265,7 @@ impl<'d> Reader<'d> {
             // Vanilla ignores a literal of the wrong type without a word.
             self.report(
                 node.path(),
-                DiagnosticCode::from(&core_codes::LITERAL_IGNORED),
+                Code::from(&core_codes::LITERAL_IGNORED),
                 Severity::Info,
             );
         }
@@ -296,7 +295,7 @@ impl<'d> Reader<'d> {
             if !node.value().is_string() {
                 self.report(
                     node.path(),
-                    DiagnosticCode::from(&core_codes::LITERAL_IGNORED),
+                    Code::from(&core_codes::LITERAL_IGNORED),
                     Severity::Info,
                 );
             }
@@ -319,7 +318,7 @@ impl<'d> Reader<'d> {
             // The flying literal is overwritten by the throw literal.
             self.report(
                 &at.child(SHOULD_BE_FLYING.literal),
-                DiagnosticCode::from(&core_codes::LITERAL_IGNORED),
+                Code::from(&core_codes::LITERAL_IGNORED),
                 Severity::Info,
             );
         }
@@ -346,7 +345,7 @@ impl<'d> Reader<'d> {
         if let Some(node) = written.as_ref().filter(|_| literal.is_none()) {
             self.report(
                 node.path(),
-                DiagnosticCode::from(&core_codes::LITERAL_IGNORED),
+                Code::from(&core_codes::LITERAL_IGNORED),
                 Severity::Info,
             );
         }
@@ -366,7 +365,7 @@ impl<'d> Reader<'d> {
             _ => {
                 self.report(
                     &at.child("children"),
-                    DiagnosticCode::from(&core_codes::INVALID_TYPE),
+                    Code::from(&core_codes::INVALID_TYPE),
                     Severity::Info,
                 );
                 return None;
@@ -378,7 +377,7 @@ impl<'d> Reader<'d> {
             let Some((kind, body)) = one_member(element.value()) else {
                 self.report(
                     element.path(),
-                    DiagnosticCode::from(&core_codes::INVALID_NODE),
+                    Code::from(&core_codes::INVALID_NODE),
                     Severity::Info,
                 );
                 continue;
@@ -403,11 +402,7 @@ impl<'d> Reader<'d> {
         let at = at.child("child");
         let child = body.take("child");
         let Some((kind, body)) = child.as_ref().and_then(|node| one_member(node.value())) else {
-            self.report(
-                &at,
-                DiagnosticCode::from(&core_codes::INVALID_NODE),
-                Severity::Info,
-            );
+            self.report(&at, Code::from(&core_codes::INVALID_NODE), Severity::Info);
             return None;
         };
         self.node(kind, body, &at, false).map(Box::new)
@@ -646,11 +641,7 @@ impl Literal for f32 {
 /// infinity, and the tree is loaded and written back).
 fn finite(reader: &mut Reader<'_>, read: f32, at: &JsonPath) -> f32 {
     if read.is_infinite() {
-        reader.report(
-            at,
-            DiagnosticCode::from(&core_codes::INVALID_VALUE),
-            Severity::Info,
-        );
+        reader.report(at, Code::from(&core_codes::INVALID_VALUE), Severity::Info);
         return f32::MAX.copysign(read);
     }
     read
@@ -697,7 +688,7 @@ fn triple<T: Copy + Default>(
         }
         match element(written.value()) {
             Some(read) => *slot = read,
-            None => reader.kept_error(written.path(), DiagnosticCode::from(line)),
+            None => reader.kept_error(written.path(), Code::from(line)),
         }
     }
     Some(out)

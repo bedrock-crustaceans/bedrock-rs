@@ -3,7 +3,7 @@
 //! `StackLoader`'s install through an entry gives what the entry's lazy load gives.
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics};
+use bedrock_addon_core::diagnostic::{Code, Diagnostic, Diagnostics};
 use bedrock_addon_core::load::{
     Accept, AppDataPlace, CollectionLoader, ListDepth, LoadContext, LoadOptions, StackCx, Walk,
     WalkFile, WalkOrder,
@@ -502,8 +502,8 @@ fn a_keyed_line_reports_what_loading_each_key_found() {
     );
     let mut out = Vec::new();
     entry(Collection::Translations, PackSide::Behavior).report(&bp, &mut out);
-    let codes: Vec<&DiagnosticCode> = out.iter().map(|finding| &finding.code).collect();
-    assert_eq!(codes, [&DiagnosticCode::from(&core_codes::FILE_NOT_LOADED)]);
+    let codes: Vec<&Code> = out.iter().map(|finding| &finding.code).collect();
+    assert_eq!(codes, [&Code::from(&core_codes::FILE_NOT_LOADED)]);
     assert_eq!(
         out[0].location.pack,
         Some(bp.as_stack().stack_packs()[0].pack.clone())

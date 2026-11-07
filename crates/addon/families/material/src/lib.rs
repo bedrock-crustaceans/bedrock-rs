@@ -42,9 +42,7 @@ pub use values::{
 use std::collections::{HashMap, HashSet};
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity,
-};
+use bedrock_addon_core::diagnostic::{Code, Diagnostic, Diagnostics, JsonPath, Phase, Severity};
 use bedrock_addon_core::document::{
     Content, Document, Merged, Origin, Placed, RawLayer, Rejected, UnknownMembers, unversioned,
 };
@@ -507,7 +505,7 @@ fn report_rekeyed(rekeyed: &[String], wrapped: bool, origin: &Origin, out: &mut 
         }
         let at = JsonPath::new().child(key);
         let at = path_in_file(&at, wrapped);
-        let code = DiagnosticCode::from(&core_codes::SHADOWED_DEFINITION);
+        let code = Code::from(&core_codes::SHADOWED_DEFINITION);
         let finding = Diagnostic::info(code)
             .at(at)
             .phase(Phase::Validate)
@@ -684,7 +682,7 @@ impl Loading<'_> {
         let mut fallbacks = Diagnostics::default();
         for source in &sources {
             if source.origin.path.as_str() != path {
-                let code = DiagnosticCode::from(&core_codes::SHADOWED_DEFINITION);
+                let code = Code::from(&core_codes::SHADOWED_DEFINITION);
                 fallbacks.push(
                     Diagnostic::info(code)
                         .phase(Phase::Validate)
@@ -739,7 +737,7 @@ impl Loading<'_> {
                 if !loaded.insert(path) {
                     // The game skips the later listing, and its defines, in silence.
                     if repeated {
-                        let code = DiagnosticCode::from(&core_codes::NO_EFFECT);
+                        let code = Code::from(&core_codes::NO_EFFECT);
                         self.diagnostics.push(at_entry(None, code, Severity::Info));
                     }
                     continue;
@@ -748,7 +746,7 @@ impl Loading<'_> {
                 let Some(file) = self.merged(path) else {
                     // The crate reads only `.material` files; the game reads any path.
                     if !path.ends_with(EXTENSION) && self.listed(path) {
-                        let code = DiagnosticCode::from(&core_codes::IGNORED_FILE);
+                        let code = Code::from(&core_codes::IGNORED_FILE);
                         let finding = at_entry(Some("path"), code, Severity::Info);
                         self.diagnostics.push(finding);
                     }
@@ -891,7 +889,7 @@ fn combine(parsed: Vec<MaterialParsed>, stack: &StackCx<'_>) -> Materials {
         let own: Vec<&FileCopy> = loading.copies.get(BARRIER).into_iter().flatten().collect();
         let mut unread = Diagnostics::default();
         for copy in &own {
-            let code = DiagnosticCode::from(&core_codes::IGNORED_FILE);
+            let code = Code::from(&core_codes::IGNORED_FILE);
             unread.push(
                 Diagnostic::info(code)
                     .phase(Phase::Validate)

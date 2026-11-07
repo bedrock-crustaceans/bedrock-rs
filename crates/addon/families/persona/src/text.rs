@@ -3,15 +3,10 @@
 
 use std::collections::HashMap;
 
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, DiagnosticDetail, JsonPath};
+use bedrock_addon_core::diagnostic::{Code, Diagnostic, DiagnosticDetail, JsonPath};
 
 /// An unresolved reference at `at`, with the name it could not be resolved to.
-pub(super) fn unresolved(
-    kind: &'static str,
-    name: &str,
-    code: DiagnosticCode,
-    at: JsonPath,
-) -> Diagnostic {
+pub(super) fn unresolved(kind: &'static str, name: &str, code: Code, at: JsonPath) -> Diagnostic {
     // Every caller sets the severity it means (an information of the crate's own, or an error
     // the game logs for a missing geometry name or animation); the helper's own is the least.
     Diagnostic::info(code)

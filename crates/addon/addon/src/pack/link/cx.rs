@@ -9,9 +9,7 @@ use std::cell::RefCell;
 use std::collections::HashSet;
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, JsonPath, Location, Phase, Severity,
-};
+use bedrock_addon_core::diagnostic::{Code, Diagnostic, JsonPath, Location, Phase, Severity};
 use bedrock_addon_core::load::{BuiltIns, StackPack};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bytes::Bytes;
@@ -136,7 +134,7 @@ impl<'a> LinkCx<'a> {
                     .insert((side, index, path.clone()));
                 if first {
                     out.push(Diagnostic::new(
-                        DiagnosticCode::from(&core_codes::FILE_NOT_LOADED),
+                        Code::from(&core_codes::FILE_NOT_LOADED),
                         Severity::Info,
                         Phase::Link,
                         Location::new(

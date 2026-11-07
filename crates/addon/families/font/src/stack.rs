@@ -12,7 +12,7 @@ use super::codes;
 use super::{FontEntry, FontFormat, FontMetadata, Fonts};
 use bedrock_addon_core::diagnostic::builders::file_finding;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Severity,
+    Code, Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Severity,
 };
 
 /// The page prefix of the game's built-in MSDF fonts (`SmoothFontLatin`, `SmoothSmall`).
@@ -246,7 +246,7 @@ impl Index {
             if carries || resolve(&self.files, font_file, extensions).is_none() {
                 let mut finding = file_finding(
                     // The game's text.
-                    DiagnosticCode::from(&codes::FONT_LOAD_FAILED),
+                    Code::from(&codes::FONT_LOAD_FAILED),
                     Severity::Info,
                     &file.pack,
                     &file.path,
@@ -290,7 +290,7 @@ fn check_glyph_name(path: &str, file: &FontFile, diagnostics: &mut Diagnostics) 
         .unwrap_or(rest);
     if page_of(stem).is_none() {
         diagnostics.push(file_finding(
-            DiagnosticCode::from(&core_codes::IGNORED_FILE),
+            Code::from(&core_codes::IGNORED_FILE),
             Severity::Info,
             &file.pack,
             &file.path,
@@ -307,7 +307,7 @@ fn check_page(prefix: &str, page: &MsdfPage, diagnostics: &mut Diagnostics) {
         (Some(image), None) => {
             let mut finding: Diagnostic = at(
                 // The game's text.
-                DiagnosticCode::from(&codes::MSDF_INFO_MISSING),
+                Code::from(&codes::MSDF_INFO_MISSING),
                 Severity::Info,
                 image,
             );
@@ -326,7 +326,7 @@ fn check_page(prefix: &str, page: &MsdfPage, diagnostics: &mut Diagnostics) {
                 (metrics, image)
             };
             let mut finding: Diagnostic = at(
-                DiagnosticCode::from(&core_codes::MIXED_FONT_PAGE),
+                Code::from(&core_codes::MIXED_FONT_PAGE),
                 Severity::Info,
                 higher,
             );
@@ -342,7 +342,7 @@ fn check_page(prefix: &str, page: &MsdfPage, diagnostics: &mut Diagnostics) {
     // A page the client's built-in glyph list lacks is never drawn.
     let drawn = page.page == 0 || (prefix == SMOOTH_PREFIX && smooth_page_is_drawn(page.page));
     if !drawn && let Some(file) = page.image.as_ref().or(page.metrics.as_ref()) {
-        let code = DiagnosticCode::from(&core_codes::IGNORED_FILE);
+        let code = Code::from(&core_codes::IGNORED_FILE);
         diagnostics.push(at(code, Severity::Info, file));
     }
 }

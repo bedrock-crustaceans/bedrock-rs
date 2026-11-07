@@ -2,7 +2,7 @@
 
 #![allow(unused_imports, reason = "each feature set compiles part of the tests")]
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon::diagnostic::{Code, Severity};
 
 use super::super::common::{hosted, link, link_with};
 use super::{FILE, block, entity_with, kept_unresolved, pet, said, said_of, unresolved};

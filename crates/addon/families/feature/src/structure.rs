@@ -10,7 +10,7 @@ use super::molang::walk;
 use super::read::parse_strict_with;
 use super::validate::Check;
 use super::values::JsonInt;
-use bedrock_addon_core::diagnostic::{CodeDef, DiagnosticCode, Diagnostics};
+use bedrock_addon_core::diagnostic::{Code, CodeDef, Diagnostics};
 use bedrock_addon_core::id::FeatureId;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::version::{FormatVersion, known};
@@ -314,8 +314,8 @@ impl Rules for BeardsAndShaversFeature {
 }
 
 /// A setter's message.
-fn setter(code: &'static CodeDef<0>) -> DiagnosticCode {
-    DiagnosticCode::from(code)
+fn setter(code: &'static CodeDef<0>) -> Code {
+    Code::from(code)
 }
 
 impl Rules for SnapToSurfaceFeature {

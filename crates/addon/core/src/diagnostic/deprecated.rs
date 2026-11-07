@@ -7,7 +7,7 @@
 //! reports one with [`Diagnostic::deprecated_member`] or [`Diagnostic::deprecated_enum_value`]
 //! and does not read the value.
 
-use super::{Diagnostic, DiagnosticCode, JsonPath, Location, Phase, Severity, codes};
+use super::{Code, Diagnostic, JsonPath, Location, Phase, Severity, codes};
 
 /// Vanilla's text for a deprecated enum value.
 pub const ENUM_VALUE_DEPRECATED: &str = "enum value is deprecated";
@@ -17,7 +17,7 @@ impl Diagnostic {
     /// the document; the member's value is not read.
     pub fn deprecated_member(member: &str, at: JsonPath) -> Self {
         Self::new(
-            codes::MEMBER_DEPRECATED.with([member]).into(),
+            codes::MEMBER_DEPRECATED.with([member]),
             Severity::Error,
             Phase::Parse,
             Location::new(None, None, at, None),
@@ -28,7 +28,7 @@ impl Diagnostic {
     /// rejects the document.
     pub fn deprecated_enum_value(at: JsonPath) -> Self {
         Self::new(
-            DiagnosticCode::from(&codes::ENUM_VALUE_DEPRECATED),
+            Code::from(&codes::ENUM_VALUE_DEPRECATED),
             Severity::Error,
             Phase::Parse,
             Location::new(None, None, at, None),

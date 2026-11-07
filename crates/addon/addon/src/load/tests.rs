@@ -6,7 +6,7 @@ use std::collections::BTreeMap;
 use std::sync::{Mutex, OnceLock};
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics};
+use bedrock_addon_core::diagnostic::{Code, Diagnostic, DiagnosticDetail, Diagnostics};
 use bedrock_addon_core::load::{
     Accept, AppDataPlace, Limits, ListDepth, LoadContext, LoadOptions, Place, ReadRange, RootId,
     StackCx, Walk, WalkFile, WalkOrder,
@@ -720,7 +720,7 @@ fn a_panicked_parse_rejects_its_file_and_a_panicked_combine_installs_it_empty() 
     assert!(
         findings
             .iter()
-            .all(|d| d.code == DiagnosticCode::from(&core_codes::INTERNAL_ERROR))
+            .all(|d| d.code == Code::from(&core_codes::INTERNAL_ERROR))
     );
 
     // The first `Combine` panics; the replacement over no files installs the empty collection.
@@ -742,7 +742,7 @@ fn a_panicked_parse_rejects_its_file_and_a_panicked_combine_installs_it_empty() 
         .iter()
         .map(|d| &d.code)
         .collect();
-    assert_eq!(codes, [&DiagnosticCode::from(&core_codes::INTERNAL_ERROR)]);
+    assert_eq!(codes, [&Code::from(&core_codes::INTERNAL_ERROR)]);
 }
 
 #[test]
@@ -767,7 +767,7 @@ fn an_indexed_file_of_a_memory_pack_is_not_loaded() {
         .iter()
         .map(|d| &d.code)
         .collect();
-    assert_eq!(codes, [&DiagnosticCode::from(&core_codes::FILE_NOT_LOADED)]);
+    assert_eq!(codes, [&Code::from(&core_codes::FILE_NOT_LOADED)]);
 }
 
 #[test]
@@ -792,10 +792,7 @@ fn an_mcb_document_is_an_unsupported_file_format() {
         .iter()
         .map(|d| &d.code)
         .collect();
-    assert_eq!(
-        codes,
-        [&DiagnosticCode::from(&core_codes::UNSUPPORTED_FILE_FORMAT)]
-    );
+    assert_eq!(codes, [&Code::from(&core_codes::UNSUPPORTED_FILE_FORMAT)]);
 }
 
 #[test]
@@ -812,7 +809,7 @@ fn a_panicked_brarchive_index_job_leaves_the_archive_absent() {
     assert_eq!(files(toy).len(), 3, "the horse is not walked");
     let top = &set.behavior.instances()[0].pack;
     let codes: Vec<_> = top.report().diagnostics().iter().map(|d| &d.code).collect();
-    assert_eq!(codes, [&DiagnosticCode::from(&core_codes::INTERNAL_ERROR)]);
+    assert_eq!(codes, [&Code::from(&core_codes::INTERNAL_ERROR)]);
 }
 
 #[test]
@@ -985,7 +982,7 @@ fn a_panicked_second_stage_installs_the_collection_empty() {
         .iter()
         .map(|d| &d.code)
         .collect();
-    assert_eq!(codes, [&DiagnosticCode::from(&core_codes::INTERNAL_ERROR)]);
+    assert_eq!(codes, [&Code::from(&core_codes::INTERNAL_ERROR)]);
     // Nothing of the second stage was read.
     assert!(seen.reads.is_empty(), "{:?}", seen.reads);
 }

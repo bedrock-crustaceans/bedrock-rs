@@ -1,7 +1,7 @@
 //! Both ends of every range and both halves of every compound rule of the reader, the runtime
 //! values and the save algorithm, beyond what the fixture rows pin.
 
-use bedrock_addon::diagnostic::{DiagnosticCode as C, Diagnostics, Severity, codes};
+use bedrock_addon::diagnostic::{Diagnostics, Severity, codes};
 use bedrock_addon::manifest::{DropdownOption, Setting};
 use bedrock_addon::pack::settings::{
     FileState, GLOBAL_FILE, PackSettings, SavedSettings, SetError, SettingValue, Settings,
@@ -137,9 +137,7 @@ fn an_array_version_below_the_floor_is_named_in_dotted_form_and_gets_no_array_in
     let version = found
         .iter()
         .find_map(|d| match &d.code {
-            C::Specific { code } if code.is(&codes::NO_PARSER_FOR_VERSION) => {
-                Some(code.args()[0].clone())
-            }
+            code if code.is(&codes::NO_PARSER_FOR_VERSION) => Some(code.args()[0].clone()),
             _ => None,
         })
         .expect("no parser");

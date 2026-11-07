@@ -6,7 +6,7 @@ use std::fmt::Write as _;
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode as Code, Diagnostics, JsonPath, Location, Phase, Severity,
+    Code, Diagnostic, Diagnostics, JsonPath, Location, Phase, Severity,
 };
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::version::SemVersion;
@@ -412,11 +412,11 @@ impl<'a> ScriptDiscovery<'a> {
             // The module's UUID and version were already brought by an earlier pack. The game
             // prints this as a `WARN [Scripting]` line, so the finding is a warning.
             run.finding(
-                Code::from(codes::PLUGIN_MODULE_EXISTS.with([
+                codes::PLUGIN_MODULE_EXISTS.with([
                     run.plugin_name.clone(),
                     module.module_uuid.to_string(),
                     key.2.to_string(),
-                ])),
+                ]),
                 Severity::Warning,
                 &module.path,
             );
@@ -429,11 +429,11 @@ impl<'a> ScriptDiscovery<'a> {
         // warning.
         for skipped in &module.skipped {
             run.finding(
-                Code::from(core_codes::MULTIPLE_SCRIPT_MODULES.with([format!(
+                core_codes::MULTIPLE_SCRIPT_MODULES.with([format!(
                     "{} - {}",
                     module.pack_name,
                     ScriptVersion::from(&skipped.version)
-                )])),
+                )]),
                 Severity::Warning,
                 &skipped.path,
             );
@@ -523,7 +523,7 @@ impl<'a> Run<'a> {
         // sanitises to an empty name.
         let Some(runtime) = ScriptRuntime::from_language(module.language.as_deref()) else {
             self.finding(
-                Code::from(codes::PLUGIN_UNSUPPORTED_RUNTIME.with([plugin.clone(), String::new()])),
+                codes::PLUGIN_UNSUPPORTED_RUNTIME.with([plugin.clone(), String::new()]),
                 Severity::Error,
                 &module.path.child("language"),
             );
@@ -539,12 +539,12 @@ impl<'a> Run<'a> {
             ];
             match entry {
                 None => self.finding(
-                    Code::from(codes::PLUGIN_ENTRY_NOT_SUPPORTED_MISSING_REQUIRED_FIELD.with(args)),
+                    codes::PLUGIN_ENTRY_NOT_SUPPORTED_MISSING_REQUIRED_FIELD.with(args),
                     Severity::Error,
                     &module.path,
                 ),
                 Some(_) => self.finding(
-                    Code::from(codes::PLUGIN_ENTRY_NOT_SUPPORTED_INVALID_VALUE.with(args)),
+                    codes::PLUGIN_ENTRY_NOT_SUPPORTED_INVALID_VALUE.with(args),
                     Severity::Error,
                     &module.path.child("entry"),
                 ),
@@ -563,7 +563,7 @@ impl<'a> Run<'a> {
                 continue;
             };
             self.finding(
-                Code::from(codes::PLUGIN_DEPENDENCY_BY_UUID.with([self.plugin_name.clone()])),
+                codes::PLUGIN_DEPENDENCY_BY_UUID.with([self.plugin_name.clone()]),
                 Severity::Warning,
                 &dependency.path,
             );
@@ -582,9 +582,7 @@ impl<'a> Run<'a> {
         let main_found = files.contains(&main);
         if !main_found {
             self.finding(
-                Code::from(
-                    codes::PLUGIN_MISSING_MAIN_FILE.with([self.plugin_name.clone(), main.clone()]),
-                ),
+                codes::PLUGIN_MISSING_MAIN_FILE.with([self.plugin_name.clone(), main.clone()]),
                 Severity::Error,
                 &module.path.child("entry"),
             );
@@ -637,11 +635,11 @@ impl<'a> Run<'a> {
                 // The game accepts the name here and fails later, when it creates the
                 // context; the crate reports it with the dependency.
                 self.finding(
-                    Code::from(codes::PLUGIN_UNKNOWN_MODULE.with([
+                    codes::PLUGIN_UNKNOWN_MODULE.with([
                         self.module.pack_name.clone(),
                         self.plugin_name.clone(),
                         name.to_string(),
-                    ])),
+                    ]),
                     Severity::Error,
                     &dependency.path,
                 );
@@ -675,36 +673,36 @@ impl<'a> Run<'a> {
         let dependency = format!("{name} - {version}");
         if name.starts_with(EDITOR_MODULES) && !cx.editor_world {
             // The editor modules are dropped from a world that is no editor world.
-            return Gate::Drop(Code::from(
+            return Gate::Drop(
                 codes::PLUGIN_NOT_EDITOR_WORLD.with([plugin.clone(), name.to_string()]),
-            ));
+            );
         }
         // A pack bundled with the game skips the next three gates.
         let gated = !cx.is_package_origin;
         if gated && !cx.beta_apis && name == GAMETEST_MODULE {
             // `server-gametest` needs the Beta APIs toggle at every version.
-            return Gate::Reject(Code::from(
+            return Gate::Reject(
                 codes::PLUGIN_BETA_APIS_MODULE.with([plugin.clone(), dependency.clone()]),
-            ));
+            );
         }
         if gated && !cx.beta_apis && version.is_beta() {
             // A beta version needs the Beta APIs toggle.
-            return Gate::Reject(Code::from(
+            return Gate::Reject(
                 codes::PLUGIN_BETA_APIS.with([plugin.clone(), dependency.clone()]),
-            ));
+            );
         }
         if gated && !cx.allow_internal && version.is_internal() {
             // An internal version is for development builds.
-            return Gate::Reject(Code::from(
+            return Gate::Reject(
                 codes::PLUGIN_INTERNAL_APIS.with([plugin.clone(), dependency.clone()]),
-            ));
+            );
         }
         // The permission list allows the name itself, or every module with its `*`.
         if allowed.is_some_and(|allowed| !allowed.contains(name) && !allowed.contains(WILDCARD)) {
             // The module is not in the server's `allowed_modules`.
-            return Gate::Reject(Code::from(
+            return Gate::Reject(
                 codes::PLUGIN_MODULE_NOT_CONFIGURED.with([plugin.clone(), name.to_string()]),
-            ));
+            );
         }
         Gate::Allow
     }
@@ -740,13 +738,13 @@ impl<'a> Run<'a> {
                     for entry in promoted {
                         // A request is promoted to the version the context serves.
                         self.finding(
-                            Code::from(core_codes::SCRIPT_MODULE_PROMOTED.with([
+                            core_codes::SCRIPT_MODULE_PROMOTED.with([
                                 module.pack_name.clone(),
                                 name.to_owned(),
                                 entry.version.to_string(),
                                 version.to_string(),
                                 by.clone(),
-                            ])),
+                            ]),
                             Severity::Info,
                             &at(&entry),
                         );
@@ -773,11 +771,11 @@ impl<'a> Run<'a> {
                             earlier.version, earlier.by, later.version, later.by
                         );
                         self.finding(
-                            Code::from(core_codes::SCRIPT_MODULE_VERSION_CONFLICT.with([
+                            core_codes::SCRIPT_MODULE_VERSION_CONFLICT.with([
                                 module.pack_name.clone(),
                                 name.to_owned(),
                                 requests,
-                            ])),
+                            ]),
                             Severity::Error,
                             &place,
                         );
@@ -846,11 +844,11 @@ impl<'a> Run<'a> {
             let Some(entry) = catalog.module(name) else {
                 // The catalog has no such module: the request fails with the module's name.
                 self.finding(
-                    Code::from(codes::PLUGIN_UNKNOWN_MODULE.with([
+                    codes::PLUGIN_UNKNOWN_MODULE.with([
                         module.pack_name.clone(),
                         by.clone(),
                         name.to_string(),
-                    ])),
+                    ]),
                     Severity::Error,
                     written
                         .get(&(name, &version))
@@ -921,14 +919,14 @@ impl<'a> Run<'a> {
                 let _ = write!(out, "\n{}", v.version);
                 out
             });
-        Code::from(core_codes::SCRIPT_MODULE_VERSION_UNAVAILABLE.with([
+        core_codes::SCRIPT_MODULE_VERSION_UNAVAILABLE.with([
             self.module.pack_name.clone(),
             entry.by.clone(),
             entry.version.to_string(),
             name.to_owned(),
             current,
             available,
-        ]))
+        ])
     }
 }
 

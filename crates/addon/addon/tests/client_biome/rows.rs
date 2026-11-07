@@ -1,6 +1,6 @@
 //! The upgrade path and the versions and validation of client biomes, one test per row.
 
-use bedrock_addon::diagnostic::{DiagnosticCode as Code, Severity};
+use bedrock_addon::diagnostic::{Code, Severity};
 use bedrock_addon::document::{ComponentRef, Content, Document};
 use bedrock_addon::families::client_biome::component::{
     AmbientSounds, BiomeMusic, GrassAppearance, WaterAppearance,

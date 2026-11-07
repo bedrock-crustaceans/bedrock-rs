@@ -8,7 +8,7 @@
 use crate::codes;
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, Span,
+    Code, Diagnostic, Diagnostics, JsonPath, Location, Phase, Severity, Span,
 };
 use bedrock_addon_core::json::{EncodeError, Unrepresentable};
 use bedrock_addon_core::pack_identity::PackPath;
@@ -151,12 +151,7 @@ fn location(key: Option<&str>, span: Option<Span>) -> Location {
     )
 }
 
-fn finding(
-    code: DiagnosticCode,
-    severity: Severity,
-    key: Option<&str>,
-    span: Option<Span>,
-) -> Diagnostic {
+fn finding(code: Code, severity: Severity, key: Option<&str>, span: Option<Span>) -> Diagnostic {
     Diagnostic::new(code, severity, Phase::Parse, location(key, span))
 }
 
@@ -206,7 +201,7 @@ impl ServerProperties {
             .map(|entry| entry.value.as_str())
     }
 
-    fn report(&mut self, code: DiagnosticCode, severity: Severity, key: Option<&str>, span: Span) {
+    fn report(&mut self, code: Code, severity: Severity, key: Option<&str>, span: Span) {
         self.diagnostics
             .push(finding(code, severity, key, Some(span)));
     }
@@ -225,7 +220,7 @@ impl ServerProperties {
         {
             let key = key.trim_end_matches(SPACE);
             self.report(
-                DiagnosticCode::from(&core_codes::NO_EFFECT),
+                Code::from(&core_codes::NO_EFFECT),
                 Severity::Info,
                 is_known(key).then_some(key),
                 span,
@@ -238,8 +233,8 @@ impl ServerProperties {
         if line.len() > PROPERTIES_LINE_MAX {
             // The server reads a line into a 4096-byte buffer; the crate assumes it stops
             // reading here.
-            let code = DiagnosticCode::from(bedrock_addon_core::diagnostic::builders::syntax(
-                format!("a line longer than {PROPERTIES_LINE_MAX} bytes"),
+            let code = bedrock_addon_core::diagnostic::builders::syntax(format!(
+                "a line longer than {PROPERTIES_LINE_MAX} bytes"
             ));
             self.report(code, Severity::Error, None, span);
             return;
@@ -259,7 +254,7 @@ impl ServerProperties {
         let text = String::from_utf8_lossy(line);
         if matches!(text, std::borrow::Cow::Owned(_)) {
             // The server works on bytes; the crate reads the line lossily and says so.
-            let code = DiagnosticCode::from(core_codes::SYNTAX.with(["the line is not UTF-8"]));
+            let code = core_codes::SYNTAX.with(["the line is not UTF-8"]);
             self.report(code, Severity::Info, None, span);
         }
         if line[0] == b' ' {
@@ -270,7 +265,7 @@ impl ServerProperties {
         let Some((key, rest)) = text.split_once('=') else {
             // The whole line is a key without a value, so nothing is applied.
             self.report(
-                DiagnosticCode::from(&core_codes::NO_EFFECT),
+                Code::from(&core_codes::NO_EFFECT),
                 Severity::Info,
                 None,
                 span,
@@ -287,7 +282,7 @@ impl ServerProperties {
         if dropped {
             // R5: the text after a second `=` is dropped.
             self.report(
-                DiagnosticCode::from(&core_codes::NO_EFFECT),
+                Code::from(&core_codes::NO_EFFECT),
                 Severity::Info,
                 is_known(key).then_some(key),
                 span,
@@ -302,7 +297,7 @@ impl ServerProperties {
             if unled.len() < key.len() {
                 // R3: a key led by a tab matches nothing.
                 self.report(
-                    DiagnosticCode::from(&core_codes::NO_EFFECT),
+                    Code::from(&core_codes::NO_EFFECT),
                     Severity::Info,
                     is_known(unled).then_some(unled),
                     span,
@@ -311,7 +306,7 @@ impl ServerProperties {
                 // R4: ignored silently by the server, and a known key in another case alike
                 // (likely a mistake, but the server says nothing: an information either way).
                 self.report(
-                    DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD),
+                    Code::from(&core_codes::UNRECOGNIZED_FIELD),
                     Severity::Info,
                     None,
                     span,
@@ -663,7 +658,7 @@ struct Typed<'d> {
 }
 
 impl Typed<'_> {
-    fn push(&mut self, code: DiagnosticCode, severity: Severity, key: &str) {
+    fn push(&mut self, code: Code, severity: Severity, key: &str) {
         self.d.push(Diagnostic::new(
             code,
             severity,
@@ -673,11 +668,7 @@ impl Typed<'_> {
     }
 
     fn invalid(&mut self, key: &str) {
-        self.push(
-            DiagnosticCode::from(&core_codes::INVALID_VALUE),
-            Severity::Info,
-            key,
-        );
+        self.push(Code::from(&core_codes::INVALID_VALUE), Severity::Info, key);
     }
 
     /// Exactly `true` is true, every other value false. R6: an information unless the value
@@ -697,11 +688,7 @@ impl Typed<'_> {
             self.invalid(key);
         }
         if read.overflow {
-            self.push(
-                DiagnosticCode::from(&core_codes::CLAMPED_VALUE),
-                Severity::Info,
-                key,
-            );
+            self.push(Code::from(&core_codes::CLAMPED_VALUE), Severity::Info, key);
         }
         read.value
     }
@@ -730,17 +717,13 @@ impl Typed<'_> {
     fn memory(&mut self, key: &str, value: &str) -> i32 {
         let read = self.threshold(key, value);
         if read > MEMORY_MAX_MB {
-            self.push(
-                DiagnosticCode::from(&core_codes::CLAMPED_VALUE),
-                Severity::Info,
-                key,
-            );
+            self.push(Code::from(&core_codes::CLAMPED_VALUE), Severity::Info, key);
         }
         read.min(MEMORY_MAX_MB)
     }
 
     /// A value the server refuses with `template`: an error, and the key stays as it was.
-    fn refuse(&mut self, code: DiagnosticCode, key: &str) {
+    fn refuse(&mut self, code: Code, key: &str) {
         self.push(code, Severity::Error, key);
     }
 
@@ -822,7 +805,7 @@ impl Typed<'_> {
                         self.properties.debugger.force_inbound_port = Some(port);
                     }
                     _ => {
-                        self.refuse(DiagnosticCode::from(&codes::BAD_PORT), key);
+                        self.refuse(Code::from(&codes::BAD_PORT), key);
                     }
                 }
             }
@@ -831,10 +814,7 @@ impl Typed<'_> {
                     self.properties.debugger.auto_attach = mode;
                 } else {
                     // R10.
-                    self.refuse(
-                        DiagnosticCode::from(codes::BAD_AUTO_ATTACH.with([value])),
-                        key,
-                    );
+                    self.refuse(codes::BAD_AUTO_ATTACH.with([value]), key);
                     self.hash(key, value, |head| AutoAttach::from_name(head).is_some());
                 }
             }
@@ -847,7 +827,7 @@ impl Typed<'_> {
                 if address.is_some() {
                     self.properties.debugger.connect_address = address;
                 } else {
-                    self.refuse(DiagnosticCode::from(&codes::BAD_ADDRESS), key);
+                    self.refuse(Code::from(&codes::BAD_ADDRESS), key);
                 }
             }
             "script-debugger-auto-attach-timeout" => {
@@ -917,10 +897,7 @@ impl Typed<'_> {
                     self.properties.content_log.level = level;
                 } else {
                     // R13: the value is printed with its leading spaces.
-                    self.refuse(
-                        DiagnosticCode::from(codes::BAD_LOG_LEVEL.with([value])),
-                        key,
-                    );
+                    self.refuse(codes::BAD_LOG_LEVEL.with([value]), key);
                     self.hash(key, value, |head| {
                         ContentLogLevel::from_name(head).is_some()
                     });
@@ -952,7 +929,7 @@ impl Typed<'_> {
         if unmet {
             self.span = None;
             self.push(
-                DiagnosticCode::from(&core_codes::NO_EFFECT),
+                Code::from(&core_codes::NO_EFFECT),
                 Severity::Info,
                 "script-debugger-auto-attach",
             );

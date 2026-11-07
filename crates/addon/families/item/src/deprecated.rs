@@ -4,7 +4,7 @@ use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::shared::EventTrigger;
 use facet_value::VObject;
 
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
+use bedrock_addon_core::diagnostic::{Code, Diagnostic, Diagnostics, JsonPath};
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::Value;
 
@@ -84,10 +84,7 @@ impl ItemDeprecatedData {
     pub(crate) fn from_value(value: &Value, at: &JsonPath, d: &mut Diagnostics) -> Self {
         let mut out = Self::default();
         let Some(object) = value.as_object() else {
-            d.push(note(
-                DiagnosticCode::from(&core_codes::INVALID_TYPE),
-                at.clone(),
-            ));
+            d.push(note(Code::from(&core_codes::INVALID_TYPE), at.clone()));
             return out;
         };
         'members: for (key, member) in object {
@@ -109,14 +106,11 @@ impl ItemDeprecatedData {
                             .filter(|(other, _)| other.as_str() != inner)
                         {
                             let path = at.child(key).child(other.as_str());
-                            d.push(note(
-                                DiagnosticCode::from(&core_codes::MEMBER_NOT_KEPT),
-                                path,
-                            ));
+                            d.push(note(Code::from(&core_codes::MEMBER_NOT_KEPT), path));
                         }
                     } else {
                         let path = at.child(key);
-                        d.push(note(DiagnosticCode::from(&core_codes::INVALID_TYPE), path));
+                        d.push(note(Code::from(&core_codes::INVALID_TYPE), path));
                         out.extra.insert(key.to_owned(), member.clone());
                     }
                     continue 'members;
@@ -142,10 +136,7 @@ impl ItemDeprecatedData {
                                 let mut full = at.clone();
                                 full.push(key);
                                 full.append(&path);
-                                d.push(note(
-                                    DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD),
-                                    full,
-                                ));
+                                d.push(note(Code::from(&core_codes::UNRECOGNIZED_FIELD), full));
                             }
                             out.legacy_on_dig = Some(digger);
                         }
@@ -156,10 +147,7 @@ impl ItemDeprecatedData {
                 }
                 _ => {
                     let path = at.child(key);
-                    d.push(note(
-                        DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD),
-                        path,
-                    ));
+                    d.push(note(Code::from(&core_codes::UNRECOGNIZED_FIELD), path));
                     out.extra.insert(key.to_owned(), member.clone());
                 }
             }
@@ -208,6 +196,6 @@ pub(crate) fn trigger_value(trigger: &EventTrigger) -> Value {
 /// of a 1.20.30–1.26.0 document. The game logs its presence as a deprecated member and
 /// refuses the item, so what is told of the members inside is the crate's own reading of a
 /// document the game does not load: an information, since the game says nothing about them.
-fn note(code: DiagnosticCode, path: JsonPath) -> Diagnostic {
+fn note(code: Code, path: JsonPath) -> Diagnostic {
     Diagnostic::info(code).at(path)
 }

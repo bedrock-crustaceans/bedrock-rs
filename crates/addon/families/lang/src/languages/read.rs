@@ -253,10 +253,10 @@ pub(super) fn names_json(names: &LanguageNames) -> Vec<Vec<String>> {
 #[cfg(test)]
 mod gate_tests {
     use super::*;
-    use bedrock_addon_core::diagnostic::DiagnosticCode;
+    use bedrock_addon_core::diagnostic::Code;
 
     /// The finding of a copy that is no JSON, as `(code, span)`.
-    fn refusal(bytes: &[u8]) -> (DiagnosticCode, Option<bedrock_addon_core::diagnostic::Span>) {
+    fn refusal(bytes: &[u8]) -> (Code, Option<bedrock_addon_core::diagnostic::Span>) {
         let finding = root(bytes).unwrap_err();
         (finding.code.clone(), finding.location.span)
     }

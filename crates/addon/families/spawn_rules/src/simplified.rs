@@ -5,9 +5,7 @@ use facet::Facet;
 
 use super::codes;
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{
-    Class, CodeDef, DiagnosticCode, Diagnostics, JsonPath, Severity,
-};
+use bedrock_addon_core::diagnostic::{Class, Code, CodeDef, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::id::{EntityId, SpawnRulesId};
 use bedrock_addon_core::json::{
     EncodeError, JsonSlice, ScalarFailure, Value, keep_unknown_members_with, parse_with_rules,
@@ -126,7 +124,7 @@ impl VersionStruct for SimplifiedSpawnRules {
         let severity = cx.load.grade(Class::Unknown);
         let unknown = |path: &JsonPath, d: &mut Diagnostics| {
             finding(
-                DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD),
+                Code::from(&core_codes::UNRECOGNIZED_FIELD),
                 severity,
                 &cx.at.join(path),
                 d,
@@ -292,7 +290,7 @@ fn resolved<'a>(written: Option<&'a String>, names: &[&str], fallback: &'a str) 
 pub(crate) fn validate(rules: &SimplifiedSpawnRules, at: &JsonPath, d: &mut Diagnostics) {
     let negative = |path: &JsonPath, d: &mut Diagnostics| {
         finding(
-            DiagnosticCode::from(&core_codes::INVALID_VALUE),
+            Code::from(&core_codes::INVALID_VALUE),
             Severity::Error,
             path,
             d,
@@ -363,12 +361,7 @@ pub(crate) fn validate(rules: &SimplifiedSpawnRules, at: &JsonPath, d: &mut Diag
             let path = placement_at.child(key);
             // An `UnresolvedReference` warning with vanilla's text: the validator logs it at the
             // content log's warning level.
-            finding(
-                DiagnosticCode::from(template.with([identifier])),
-                Severity::Warning,
-                &path,
-                d,
-            );
+            finding(template.with([identifier]), Severity::Warning, &path, d);
         }
     }
 }

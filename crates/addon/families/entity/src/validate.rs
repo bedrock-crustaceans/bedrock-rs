@@ -6,7 +6,7 @@ use std::collections::HashSet;
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
+    Code, Diagnostic, Diagnostics, JsonPath, Location, Phase, Severity,
 };
 use bedrock_addon_core::document::{ComponentMap, ComponentRef};
 use bedrock_addon_core::json::Value;
@@ -53,7 +53,7 @@ pub(crate) fn validate(entity: &mut Entity, cx: &mut ValidateCx<'_>) {
                 cx,
                 // The gate's text is the crate's own, so none is attached; the game drops the
                 // member without a content-log line, so the crate reports an information.
-                DiagnosticCode::from(&core_codes::DROPPED_FIELD),
+                Code::from(&core_codes::DROPPED_FIELD),
                 Severity::Info,
                 at.child("filters"),
             );
@@ -113,7 +113,7 @@ fn apply_replaced_values(entity: &mut Entity, cx: &ValidateCx<'_>) {
 }
 
 /// A finding at `at`.
-fn report(cx: &mut ValidateCx<'_>, code: DiagnosticCode, severity: Severity, at: JsonPath) {
+fn report(cx: &mut ValidateCx<'_>, code: Code, severity: Severity, at: JsonPath) {
     cx.diagnostics.push(
         Diagnostic::error(code)
             .at(at)
@@ -130,7 +130,7 @@ fn identifier(entity: &Entity, cx: &mut ValidateCx<'_>) {
     let Some((namespace, name)) = bedrock_addon_core::id::syntax::split_namespace(text) else {
         report(
             cx,
-            DiagnosticCode::from(&core_codes::NAMESPACE_RULE),
+            Code::from(&core_codes::NAMESPACE_RULE),
             Severity::Error,
             at,
         );
@@ -139,7 +139,7 @@ fn identifier(entity: &Entity, cx: &mut ValidateCx<'_>) {
     if namespace.is_empty() || name.is_empty() {
         report(
             cx,
-            DiagnosticCode::from(&core_codes::NAMESPACE_RULE),
+            Code::from(&core_codes::NAMESPACE_RULE),
             Severity::Error,
             at,
         );
@@ -151,7 +151,7 @@ fn identifier(entity: &Entity, cx: &mut ValidateCx<'_>) {
     {
         report(
             cx,
-            DiagnosticCode::from(&core_codes::NAMESPACE_RULE),
+            Code::from(&core_codes::NAMESPACE_RULE),
             Severity::Error,
             at.clone(),
         );
@@ -164,12 +164,7 @@ fn identifier(entity: &Entity, cx: &mut ValidateCx<'_>) {
             // crate reports an information.
             Severity::Info
         };
-        report(
-            cx,
-            DiagnosticCode::from(&core_codes::INVALID_VALUE),
-            severity,
-            at,
-        );
+        report(cx, Code::from(&core_codes::INVALID_VALUE), severity, at);
     }
 }
 
@@ -188,16 +183,14 @@ fn property_memory_mapping(entity: &mut Entity, cx: &mut ValidateCx<'_>) {
     let at = cx.at.child("description").child("property_memory_mapping");
     report(
         cx,
-        DiagnosticCode::from(
-            core_codes::TURN_ON_TOGGLE.with([
-                "member".to_string(),
-                "property_memory_mapping".to_string(),
-                Experiment::BrainPrototype
-                    .save_name()
-                    .unwrap_or_default()
-                    .to_string(),
-            ]),
-        ),
+        core_codes::TURN_ON_TOGGLE.with([
+            "member".to_string(),
+            "property_memory_mapping".to_string(),
+            Experiment::BrainPrototype
+                .save_name()
+                .unwrap_or_default()
+                .to_string(),
+        ]),
         // The game has neither the toggle text's "member" form nor a line for
         // `property_memory_mapping`, so the crate reports an information.
         Severity::Info,
@@ -214,16 +207,14 @@ fn brain(entity: &mut Entity, cx: &mut ValidateCx<'_>) {
     if !cx.load.experiments.contains(Experiment::BrainPrototype) {
         report(
             cx,
-            DiagnosticCode::from(
-                core_codes::TURN_ON_TOGGLE.with([
-                    "member".to_string(),
-                    "brain".to_string(),
-                    Experiment::BrainPrototype
-                        .save_name()
-                        .unwrap_or_default()
-                        .to_string(),
-                ]),
-            ),
+            core_codes::TURN_ON_TOGGLE.with([
+                "member".to_string(),
+                "brain".to_string(),
+                Experiment::BrainPrototype
+                    .save_name()
+                    .unwrap_or_default()
+                    .to_string(),
+            ]),
             Severity::Error,
             at,
         );
@@ -255,7 +246,7 @@ fn brain(entity: &mut Entity, cx: &mut ValidateCx<'_>) {
         // so the crate reports an information.
         report(
             cx,
-            DiagnosticCode::from(&core_codes::INVALID_VALUE),
+            Code::from(&core_codes::INVALID_VALUE),
             Severity::Info,
             path,
         );
@@ -277,7 +268,7 @@ fn brain(entity: &mut Entity, cx: &mut ValidateCx<'_>) {
                 .child("beehive_has_nectar");
             report(
                 cx,
-                DiagnosticCode::from(&core_codes::UNRESOLVED_REFERENCE),
+                Code::from(&core_codes::UNRESOLVED_REFERENCE),
                 // The game writes no content-log line for this: an information.
                 Severity::Info,
                 path,
@@ -380,7 +371,7 @@ fn node(value: &mut Value, at: &JsonPath, groups: &HashSet<&str>, cx: &mut Valid
                 if !member.is_number() {
                     report(
                         cx,
-                        DiagnosticCode::from(&core_codes::INVALID_TYPE),
+                        Code::from(&core_codes::INVALID_TYPE),
                         // The game writes no content-log line for this: an information.
                         Severity::Info,
                         member_at,
@@ -404,7 +395,7 @@ fn node(value: &mut Value, at: &JsonPath, groups: &HashSet<&str>, cx: &mut Valid
                 if !LoadRequirement::LegacyCreatorFeatures.satisfied(cx.load) {
                     report(
                         cx,
-                        DiagnosticCode::from(&core_codes::MISSING_TOGGLES),
+                        Code::from(&core_codes::MISSING_TOGGLES),
                         // The game writes no content-log line for this: an information.
                         Severity::Info,
                         member_at,
@@ -423,7 +414,7 @@ fn node(value: &mut Value, at: &JsonPath, groups: &HashSet<&str>, cx: &mut Valid
             // the entity still loads (a kept error).
             _ if collection => report(
                 cx,
-                DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD),
+                Code::from(&core_codes::UNRECOGNIZED_FIELD),
                 Severity::Info,
                 member_at,
             ),
@@ -442,7 +433,7 @@ fn node(value: &mut Value, at: &JsonPath, groups: &HashSet<&str>, cx: &mut Valid
 /// the entity still loads, so it is a kept error.
 fn unknown_response(key: &str, at: JsonPath, cx: &mut ValidateCx<'_>) {
     cx.diagnostics.push_kept_error(
-        Diagnostic::error(core_codes::CHILD_NOT_VALID.with([key]).into())
+        Diagnostic::error(core_codes::CHILD_NOT_VALID.with([key]))
             .at(at)
             .phase(Phase::Validate),
     );
@@ -464,7 +455,7 @@ fn drop_responses(
         if object.remove(key).is_some() {
             report(
                 cx,
-                DiagnosticCode::from(&core_codes::DROPPED_FIELD),
+                Code::from(&core_codes::DROPPED_FIELD),
                 Severity::Info,
                 at.child(key),
             );
@@ -499,11 +490,11 @@ fn response_schema(key: &str, member: &Value, at: &JsonPath, cx: &mut ValidateCx
 fn gated(cx: &mut ValidateCx<'_>, key: &str, experiment: Experiment, at: JsonPath) {
     report(
         cx,
-        DiagnosticCode::from(core_codes::TURN_ON_TOGGLE.with([
+        core_codes::TURN_ON_TOGGLE.with([
             "event response".to_string(),
             key.to_string(),
             experiment.save_name().unwrap_or_default().to_string(),
-        ])),
+        ]),
         // The game has no toggle text of the "event response" form (only the item's and the
         // block's), so the crate reports an information.
         Severity::Info,
@@ -537,7 +528,7 @@ fn group_references(value: &Value, at: &JsonPath, groups: &HashSet<&str>, cx: &m
             // information.
             report(
                 cx,
-                DiagnosticCode::from(&core_codes::UNRESOLVED_REFERENCE),
+                Code::from(&core_codes::UNRESOLVED_REFERENCE),
                 Severity::Info,
                 path,
             );
@@ -557,7 +548,7 @@ fn filters(value: &mut Value, at: &JsonPath, cx: &mut ValidateCx<'_>) {
         }
         Err(_) => report(
             cx,
-            DiagnosticCode::from(&core_codes::INVALID_VALUE),
+            Code::from(&core_codes::INVALID_VALUE),
             // The game writes no content-log line for this: an information.
             Severity::Info,
             at.clone(),
@@ -577,7 +568,7 @@ fn trigger(value: &mut Value, at: &JsonPath, cx: &mut ValidateCx<'_>) {
         }
         Err(_) => report(
             cx,
-            DiagnosticCode::from(&core_codes::INVALID_VALUE),
+            Code::from(&core_codes::INVALID_VALUE),
             // The game writes no content-log line for this: an information.
             Severity::Info,
             at.clone(),
@@ -780,7 +771,7 @@ fn gather(entity: &Entity, cx: &mut ValidateCx<'_>, drop: &mut Vec<NodeRef>) -> 
                 if !(in_events && (value.is_object() || value.is_array())) {
                     report(
                         cx,
-                        DiagnosticCode::from(&core_codes::INVALID_TYPE),
+                        Code::from(&core_codes::INVALID_TYPE),
                         // The game writes no content-log line for this: an information.
                         Severity::Info,
                         json_path(&cx.at, &path),
@@ -900,7 +891,7 @@ fn timer(map: &ComponentMap<EntityComponent>, at: &JsonPath, cx: &mut ValidateCx
     if timer.time.is_some() && !timer.random_time_choices.is_empty() {
         report(
             cx,
-            DiagnosticCode::from(&codes::TIMER_BOTH),
+            Code::from(&codes::TIMER_BOTH),
             // The game logs this at the warning level.
             Severity::Warning,
             at.child(KEY),
@@ -928,7 +919,7 @@ fn preferred_path(map: &ComponentMap<EntityComponent>, at: &JsonPath, cx: &mut V
                 place.push_index(j);
                 report(
                     cx,
-                    codes::DUPLICATE_PATH_BLOCK.with([name.as_str()]).into(),
+                    codes::DUPLICATE_PATH_BLOCK.with([name.as_str()]),
                     Severity::Error,
                     place,
                 );

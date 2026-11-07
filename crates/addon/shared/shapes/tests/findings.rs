@@ -83,3 +83,40 @@ fn descriptors_report_their_unknown_members() {
         [path(&["x"])]
     );
 }
+
+/// The descriptor definitions render the game's lines byte for byte (the rows the shared types
+/// once added to core's legacy message table).
+#[test]
+fn the_descriptor_definitions_render_the_game_lines() {
+    use bedrock_addon_shared_shapes::codes;
+    let rows = [
+        (
+            codes::ITEM_DESCRIPTOR_SHAPE.with(["5"]),
+            "ItemDescriptor requires a string, {\"item\": string}, or {\"tags\": string} or {\"item_tag\": string}. ItemDescriptor cannot parse 5\n",
+        ),
+        (
+            codes::BLOCK_DESCRIPTOR_SHAPE.with(["5"]),
+            "BlockDescriptor requires a string, block object, or any_tag object. Cannot parse 5",
+        ),
+        (
+            codes::BLOCK_DESCRIPTOR_NAME.with(["7"]),
+            "Only strings are valid for name. The invalid name value: 7\n",
+        ),
+        (
+            codes::BLOCK_DESCRIPTOR_STATE_TYPE.with(["minecraft:wool", "color", "3"]),
+            "Invalid state type during block parsing: block name minecraft:wool, state name color, state type 3. State type can only be bool, int, or string.",
+        ),
+        (
+            codes::BLOCK_DESCRIPTOR_TAGS_AND_STATES.with(["a:b"]),
+            "Cannot have both a tag expression and block states in a block descriptor for block: a:b",
+        ),
+        (
+            codes::BLOCK_DESCRIPTOR_NAME_AND_TAGS.with(["a:b"]),
+            "Cannot have both a block name and tag expression in a block descriptor for block: a:b",
+        ),
+    ];
+    for (code, expected) in rows {
+        assert_eq!(code.to_string(), expected, "{}", code.id());
+        assert_eq!(code.vanilla().as_deref(), Some(expected), "{}", code.id());
+    }
+}

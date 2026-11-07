@@ -5,7 +5,7 @@
 mod common;
 
 use bedrock_addon::diagnostic::codes as core_codes;
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon::diagnostic::{Code, Severity};
 use bedrock_addon::load::{Experiment, LoadOptions};
 use bedrock_addon::pack::{
     PackIdVersion, PackOrigin, PackRepository, PackSelection, PackStack, Side, StackSet,
@@ -38,7 +38,7 @@ fn ids<S: Side>(stack: &PackStack<S>) -> Vec<PackIdVersion> {
 
 /// Selection findings that name a place or a pack of the world's lists: all informations; the base-game layer's missing vanilla packs carry no place and are
 /// left out.
-fn warnings(set: &StackSet) -> Vec<DiagnosticCode> {
+fn warnings(set: &StackSet) -> Vec<Code> {
     set.selection()
         .iter()
         .filter(|diagnostic| {
@@ -61,9 +61,7 @@ fn an_empty_repository_stacks_nothing_and_says_what_it_missed() {
     let found = warnings(&set);
     assert_eq!(
         found,
-        [DiagnosticCode::from(
-            core_codes::PACK_NOT_FOUND.with([ghost.id().to_string()])
-        )]
+        [core_codes::PACK_NOT_FOUND.with([ghost.id().to_string()])]
     );
     // The base-game layer: both script libraries and `vanilla`, as info, and the ghost's own
     // entry.
@@ -117,7 +115,7 @@ fn the_first_registration_of_an_identity_and_origin_wins() {
     let set = repository.stacks(&world(&[], &[]), LoadOptions::default());
     assert_eq!(
         warnings(&set),
-        [DiagnosticCode::from(&core_codes::DUPLICATE_IDENTIFIER)]
+        [Code::from(&core_codes::DUPLICATE_IDENTIFIER)]
     );
 }
 
@@ -150,9 +148,7 @@ fn a_missing_dependency_hides_the_pack_with_an_error() {
     let codes: Vec<_> = errors.iter().map(|d| &d.code).collect();
     assert_eq!(
         codes,
-        [&DiagnosticCode::from(
-            core_codes::MISSING_DEPENDENCY.with([a.id().to_string(), missing.id().to_string()])
-        )]
+        [&core_codes::MISSING_DEPENDENCY.with([a.id().to_string(), missing.id().to_string()])]
     );
     assert_eq!(
         errors[0].detail.as_deref(),
@@ -191,9 +187,7 @@ fn a_behavior_packs_resource_pack_is_auto_added_with_a_warning() {
     // The line names the dependency first.
     assert_eq!(
         found,
-        [DiagnosticCode::from(
-            core_codes::DEPENDENCY_AUTO_ADDED.with([r.id().to_string(), a.id().to_string()])
-        )]
+        [core_codes::DEPENDENCY_AUTO_ADDED.with([r.id().to_string(), a.id().to_string()])]
     );
 }
 
@@ -280,8 +274,5 @@ fn the_world_chooses_a_subpack_by_folder_name() {
         unknown.resource[0].subpack = Some("medium".to_owned());
         repository.stacks(&unknown, LoadOptions::default())
     };
-    assert_eq!(
-        warnings(&unknown),
-        [DiagnosticCode::from(&core_codes::INVALID_VALUE)]
-    );
+    assert_eq!(warnings(&unknown), [Code::from(&core_codes::INVALID_VALUE)]);
 }

@@ -2,7 +2,7 @@
 
 use facet_format::DeserializeErrorKind;
 
-use super::{DiagnosticCode, codes};
+use super::{Code, codes};
 
 /// The code for one facet-json `DeserializeError`, by its kind (the crate's table).
 ///
@@ -18,39 +18,39 @@ pub fn code_for_deserialize_error_kind(
     kind: &DeserializeErrorKind,
     has_path: bool,
     blank_input: bool,
-) -> DiagnosticCode {
+) -> Code {
     use DeserializeErrorKind as K;
     match kind {
-        K::UnexpectedEof { .. } if blank_input => DiagnosticCode::from(&codes::EMPTY_DOCUMENT),
+        K::UnexpectedEof { .. } if blank_input => Code::from(&codes::EMPTY_DOCUMENT),
         // facet-json (rc.7) reports an unknown name of a plain enum this way, not as
         // `UnknownVariant`.
         K::UnexpectedToken {
             expected: UNKNOWN_ENUM_NAME,
             ..
-        } if has_path => DiagnosticCode::from(&codes::INVALID_ENUM_VALUE),
-        K::UnexpectedToken { .. } if has_path => DiagnosticCode::from(&codes::INVALID_TYPE),
+        } if has_path => Code::from(&codes::INVALID_ENUM_VALUE),
+        K::UnexpectedToken { .. } if has_path => Code::from(&codes::INVALID_TYPE),
         K::UnexpectedChar { .. }
         | K::UnexpectedEof { .. }
         | K::InvalidUtf8 { .. }
         | K::UnexpectedToken { .. }
         | K::DuplicateField { .. } => malformed(kind),
-        K::MissingField { .. } => DiagnosticCode::from(&codes::MISSING_REQUIRED_FIELD),
+        K::MissingField { .. } => Code::from(&codes::MISSING_REQUIRED_FIELD),
         K::TypeMismatch { .. }
         | K::ShapeMismatch { .. }
         | K::NoMatchingVariant { .. }
         | K::Reflect { .. }
-        | K::Solver { .. } => DiagnosticCode::from(&codes::INVALID_TYPE),
-        K::UnknownVariant { .. } => DiagnosticCode::from(&codes::INVALID_ENUM_VALUE),
+        | K::Solver { .. } => Code::from(&codes::INVALID_TYPE),
+        K::UnknownVariant { .. } => Code::from(&codes::INVALID_ENUM_VALUE),
         K::NumberOutOfRange { .. } | K::InvalidValue { .. } | K::Validation { .. } => {
-            DiagnosticCode::from(&codes::INVALID_VALUE)
+            Code::from(&codes::INVALID_VALUE)
         }
         // Version structs keep unknown keys (`extra`), so facet does not raise this; were it
         // raised, it would be this code.
-        K::UnknownField { .. } => DiagnosticCode::from(&codes::UNRECOGNIZED_FIELD),
+        K::UnknownField { .. } => Code::from(&codes::UNRECOGNIZED_FIELD),
         // facet-json (rc.7) reports an object given to an untagged enum without a struct arm
         // (an identifier proxy, say) this way: the input causes it, so it is a wrong type at
         // its path and no assertion.
-        K::Unsupported { .. } if has_path => DiagnosticCode::from(&codes::INVALID_TYPE),
+        K::Unsupported { .. } if has_path => Code::from(&codes::INVALID_TYPE),
         K::Unsupported { .. } => malformed(kind),
         K::CannotBorrow { .. }
         | K::RawCaptureNotSupported { .. }
@@ -70,6 +70,6 @@ pub fn code_for_deserialize_error_kind(
 /// What facet-json's enum deserializer expects when a plain enum's name is unknown.
 const UNKNOWN_ENUM_NAME: &str = "known enum variant";
 
-fn malformed(kind: &DeserializeErrorKind) -> DiagnosticCode {
-    super::builders::syntax(kind.to_string()).into()
+fn malformed(kind: &DeserializeErrorKind) -> Code {
+    super::builders::syntax(kind.to_string())
 }

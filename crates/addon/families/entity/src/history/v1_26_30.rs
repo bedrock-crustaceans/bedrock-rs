@@ -2,7 +2,7 @@
 
 use crate::codes;
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath};
+use bedrock_addon_core::diagnostic::{Code, JsonPath};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::version::known;
@@ -95,17 +95,15 @@ impl LegacyStep<1, 26, 30> for Payload {
         for (what, at) in found {
             match what {
                 Found::Dropped(member) => removed(cx, Removed::Field, &at, member, V1_26_40),
-                Found::Misread => finding(cx, DiagnosticCode::from(&core_codes::INVALID_TYPE), &at),
+                Found::Misread => finding(cx, Code::from(&core_codes::INVALID_TYPE), &at),
                 // A note (an information): the game binds both keys to the one trigger, the
                 // later one winning.
-                Found::Replaced => note(cx, DiagnosticCode::from(&core_codes::DROPPED_FIELD), &at),
+                Found::Replaced => note(cx, Code::from(&core_codes::DROPPED_FIELD), &at),
                 // `should_bounce` / `difficulty_randomization`: level 3 and the default taken
                 // (the game logs this at the error level and keeps the document: a kept error).
                 Found::Invalid(member, value) => kept(
                     cx,
-                    codes::NOT_A_VALID_VALUE
-                        .with([value.as_str(), member])
-                        .into(),
+                    codes::NOT_A_VALID_VALUE.with([value.as_str(), member]),
                     &at,
                 ),
             }

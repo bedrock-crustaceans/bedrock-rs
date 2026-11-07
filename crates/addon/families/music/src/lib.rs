@@ -8,7 +8,7 @@ pub mod codes;
 use indexmap::IndexMap;
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, Severity};
+use bedrock_addon_core::diagnostic::{Code, Diagnostics, Severity};
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::document::unversioned::{lone, version_at};
 use bedrock_addon_core::document::{
@@ -253,7 +253,7 @@ pub(crate) fn read_root(
         report.enter(name);
         if name.is_empty() {
             // The game writes this line to the content log at the warning level.
-            report.vanilla(DiagnosticCode::from(&codes::NO_NAME), Severity::Warning);
+            report.vanilla(Code::from(&codes::NO_NAME), Severity::Warning);
             extra.insert(name.to_owned(), value.clone());
         } else if value.is_object() {
             out.insert(
@@ -262,10 +262,7 @@ pub(crate) fn read_root(
             );
         } else {
             // The game registers an empty music definition.
-            report.here(
-                DiagnosticCode::from(&core_codes::INVALID_VALUE),
-                Severity::Info,
-            );
+            report.here(Code::from(&core_codes::INVALID_VALUE), Severity::Info);
             extra.insert(name.to_owned(), value.clone());
         }
         report.leave();
@@ -322,7 +319,7 @@ fn read_definition(value: &Value, report: &mut Reporter<'_>) -> MusicDefinition 
         // The game stores the values as given.
         report.at(
             "min_delay",
-            DiagnosticCode::from(&core_codes::INVALID_VALUE),
+            Code::from(&core_codes::INVALID_VALUE),
             Severity::Info,
         );
     }

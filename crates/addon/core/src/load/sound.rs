@@ -148,16 +148,11 @@ pub fn parse_copy(file: &WalkFile, cx: &LoadContext) -> SoundCopy {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::diagnostic::{DiagnosticCode, Location, Phase};
+    use crate::diagnostic::{Code, Location, Phase};
     use crate::pack_identity::{PackPath, PackRef, PackSide};
 
     fn long(severity: Severity, phase: Phase, location: Location) -> Diagnostic {
-        Diagnostic::new(
-            DiagnosticCode::from(&codes::INVALID_VALUE),
-            severity,
-            phase,
-            location,
-        )
+        Diagnostic::new(Code::from(&codes::INVALID_VALUE), severity, phase, location)
     }
 
     fn here(at: JsonPath) -> Location {
@@ -198,10 +193,7 @@ mod tests {
         let mut told = Diagnostics::default();
         assert!(readable("sounds.json", vec![copy(pack())], &mut told).is_empty());
         let top = told.iter().next().unwrap();
-        assert_eq!(
-            top.code,
-            DiagnosticCode::from(codes::STACK_TOP_UNPARSABLE.with(["sounds.json"]))
-        );
+        assert_eq!(top.code, codes::STACK_TOP_UNPARSABLE.with(["sounds.json"]));
         assert_eq!(top.severity, Severity::Error);
         assert_eq!(top.syntax_message(), Some(error.to_string().as_str()));
 
@@ -211,7 +203,7 @@ mod tests {
             1
         );
         let lower = told.iter().next().unwrap();
-        assert_eq!(lower.code, DiagnosticCode::from(syntax(error.to_string())));
+        assert_eq!(lower.code, syntax(error.to_string()));
         assert_eq!(lower.severity, Severity::Info);
     }
 

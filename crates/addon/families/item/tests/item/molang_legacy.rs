@@ -19,7 +19,7 @@ fn with_events(events: &str, components: &str) -> String {
 /// the strict reader, which refuses such a number (`InvalidType`, the member kept as written).
 #[test]
 fn a_legacy_expression_beyond_f32_is_written_as_authored_deviation() {
-    use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
+    use bedrock_addon_core::diagnostic::{Code, Severity};
     use bedrock_addon_core::json::Value;
 
     // The document with `@` where the number stands, the members down to the number from the
@@ -72,7 +72,7 @@ fn a_legacy_expression_beyond_f32_is_written_as_authored_deviation() {
                     .diagnostics()
                     .iter()
                     .filter(|f| {
-                        f.code == DiagnosticCode::from(&core_codes::INVALID_TYPE)
+                        f.code == Code::from(&core_codes::INVALID_TYPE)
                             && f.severity == Severity::Warning
                             && f.location.json_path.to_string() == path
                     })
@@ -164,10 +164,7 @@ fn wrong_typed(
     d: &bedrock_addon_core::diagnostic::Diagnostics,
 ) -> Vec<(String, bedrock_addon_core::diagnostic::Severity, bool)> {
     d.iter()
-        .filter(|f| {
-            f.code
-                == bedrock_addon_core::diagnostic::DiagnosticCode::from(&core_codes::INVALID_TYPE)
-        })
+        .filter(|f| f.code == bedrock_addon_core::diagnostic::Code::from(&core_codes::INVALID_TYPE))
         .map(|f| (f.location.json_path.to_string(), f.severity, f.kept))
         .collect()
 }

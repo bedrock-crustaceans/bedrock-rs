@@ -12,7 +12,7 @@ use super::codes;
 use super::molang::{WORLD_GEN, Walk, walk};
 use super::validate::Check;
 use super::values::{JsonInt, pair, weight_of, weight_value};
-use bedrock_addon_core::diagnostic::DiagnosticCode;
+use bedrock_addon_core::diagnostic::Code;
 use bedrock_addon_core::id::FeatureId;
 use bedrock_addon_core::json::{StrictError, Value};
 use bedrock_addon_core::molang::{Molang, MolangVisitor};
@@ -317,10 +317,7 @@ impl Rules for ConditionalListFeature {
         if self.early_out_scheme == Some(EarlyOutScheme::None)
             && check.load.engine_version < EARLY_OUT_NONE_ENGINE
         {
-            check.error(
-                "early_out_scheme",
-                DiagnosticCode::from(&core_codes::INVALID_VALUE),
-            );
+            check.error("early_out_scheme", Code::from(&core_codes::INVALID_VALUE));
         }
     }
 }
@@ -329,10 +326,7 @@ impl Rules for RectLayoutFeature {
     fn rules(&mut self, check: &mut ValidateCx<'_>) {
         // The client logs this at level 3 and keeps the value: a kept error.
         if self.ratio_of_empty_space.is_some_and(|r| r >= 1.0) {
-            check.kept(
-                "ratio_of_empty_space",
-                DiagnosticCode::from(&codes::EMPTY_SPACE),
-            );
+            check.kept("ratio_of_empty_space", Code::from(&codes::EMPTY_SPACE));
         }
         check.each("feature_areas", &self.feature_areas, |check, area| {
             check.check_len(
@@ -390,7 +384,7 @@ impl Rules for HeightDifferenceFilterFeature {
         // Logged at level 3 while the feature stays registered: a kept error. The client
         // checks this only when no bound is set, and fails nothing.
         if diffs.iter().all(|(_, value)| value.is_none()) {
-            check.kept("", DiagnosticCode::from(&codes::NO_HEIGHT_DIFFERENCES));
+            check.kept("", Code::from(&codes::NO_HEIGHT_DIFFERENCES));
         }
     }
 }

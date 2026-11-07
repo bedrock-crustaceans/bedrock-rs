@@ -12,7 +12,7 @@ use super::file::{KeyRules, MaterialDef, MaterialFile, MaterialFileForm, Materia
 use super::list::MaterialListKind;
 use super::set::NameSet;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, JsonPath, Location, Phase, Severity,
+    Code, Diagnostic, DiagnosticDetail, JsonPath, Location, Phase, Severity,
 };
 
 /// Which group of the client a [`MaterialGroup`] is.
@@ -513,7 +513,7 @@ impl MaterialGroup {
                 let finding = if key.extend {
                     unresolved(source.path, &[text], MATERIAL, &key.name)
                 } else {
-                    warn(DiagnosticCode::from(&core_codes::DUPLICATE_IDENTIFIER))
+                    warn(Code::from(&core_codes::DUPLICATE_IDENTIFIER))
                 };
                 out.push((index, finding));
                 false
@@ -522,7 +522,7 @@ impl MaterialGroup {
             // silence.
             Some(Slot::Created(_)) if !key.extend => {
                 if !again {
-                    let code = DiagnosticCode::from(&core_codes::DUPLICATE_IDENTIFIER);
+                    let code = Code::from(&core_codes::DUPLICATE_IDENTIFIER);
                     out.push((index, warn(code)));
                 }
                 false
@@ -603,12 +603,7 @@ fn index_of(index: usize) -> u32 {
 }
 
 /// A finding at `segments` of the file `path`.
-fn at(
-    path: &PackPath,
-    segments: &[Segment<'_>],
-    code: DiagnosticCode,
-    severity: Severity,
-) -> Diagnostic {
+fn at(path: &PackPath, segments: &[Segment<'_>], code: Code, severity: Severity) -> Diagnostic {
     let mut json_path = JsonPath::new();
     for segment in segments {
         match segment {
@@ -627,14 +622,14 @@ enum Segment<'a> {
 }
 
 /// A finding at the key `text` of the file `path`.
-fn at_key(path: &PackPath, text: &str, code: DiagnosticCode, severity: Severity) -> Diagnostic {
+fn at_key(path: &PackPath, text: &str, code: Code, severity: Severity) -> Diagnostic {
     at(path, &[Segment::Key(text)], code, severity)
 }
 
 /// `id`, a `kind`, resolves to nothing; reported at the keys `keys`.
 fn unresolved(path: &PackPath, keys: &[&str], kind: &'static str, id: &str) -> Diagnostic {
     let segments: Vec<Segment<'_>> = keys.iter().map(|key| Segment::Key(key)).collect();
-    let code = DiagnosticCode::from(&core_codes::UNRESOLVED_REFERENCE);
+    let code = Code::from(&core_codes::UNRESOLVED_REFERENCE);
     let mut finding = at(path, &segments, code, Severity::Info);
     finding.detail = Some(Box::new(DiagnosticDetail::Reference {
         kind,
@@ -680,7 +675,7 @@ fn apply_variants(
             if let Some((outer, _)) = name.rsplit_once('.')
                 && !variants.contains(outer)
             {
-                let code = DiagnosticCode::from(&core_codes::UNRESOLVED_REFERENCE);
+                let code = Code::from(&core_codes::UNRESOLVED_REFERENCE);
                 let mut finding = at(path, &place, code, Severity::Info);
                 finding.detail = Some(Box::new(DiagnosticDetail::Reference {
                     kind: VARIANT,
@@ -692,7 +687,7 @@ fn apply_variants(
             }
             let (with, was_there) = variants.with(name);
             if was_there {
-                let code = codes::VARIANT_REPLACED.with([name.as_str()]).into();
+                let code = codes::VARIANT_REPLACED.with([name.as_str()]);
                 out.push((index, at(path, &place, code, Severity::Info)));
             } else {
                 own.added.push(name.clone());

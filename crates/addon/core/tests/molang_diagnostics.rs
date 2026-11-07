@@ -8,7 +8,7 @@
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 
 use bedrock_addon_core::diagnostic::{
-    DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Location, Severity, codes,
+    Code, DiagnosticDetail, Diagnostics, JsonPath, Location, Severity, codes,
 };
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::molang::{
@@ -120,7 +120,7 @@ fn check_row(check: &MolangCheck, row: &facet_value::VObject, failures: &mut Vec
             // A lint: not a parser message of the table.
             continue;
         };
-        if finding.code != (DiagnosticCode::from(codes::INVALID_MOLANG.with([expr.to_owned()]))) {
+        if finding.code != codes::INVALID_MOLANG.with([expr.to_owned()]) {
             failures.push(format!("#{number} {expr:?}: code {:?}", finding.code));
         }
         let message_text = detail.to_string();
@@ -191,17 +191,13 @@ fn a_kept_message_is_a_kept_error() {
         &mut diagnostics,
     );
     assert_eq!(outcome, MolangOutcome::Ok);
-    let found: Vec<(&DiagnosticCode, Severity, bool)> = diagnostics
+    let found: Vec<(&Code, Severity, bool)> = diagnostics
         .iter()
         .map(|d| (&d.code, d.severity, d.kept))
         .collect();
     assert_eq!(
         found,
-        [(
-            &DiagnosticCode::from(codes::INVALID_MOLANG.with(["1e"])),
-            Severity::Error,
-            true
-        )]
+        [(&codes::INVALID_MOLANG.with(["1e"]), Severity::Error, true)]
     );
     assert!(!diagnostics.has_errors());
 }

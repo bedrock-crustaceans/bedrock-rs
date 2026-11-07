@@ -27,7 +27,7 @@
     feature = "server_sound_definitions",
 ))]
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Diagnostics, Severity, codes};
+use bedrock_addon::diagnostic::{Diagnostics, Severity, codes};
 use bedrock_addon::document::{Content, Document, Rejected};
 use bedrock_addon::load::{Experiment, Experiments, LoadContext, LoadOptions};
 use bedrock_addon::pack::PackType;
@@ -45,21 +45,20 @@ fn told<T>(outcome: &Result<Document<T>, Rejected>) -> String {
     let mut lines = Vec::new();
     for finding in findings {
         match &finding.code {
-            DiagnosticCode::Specific { code } if code.is(&codes::NO_PARSER_FOR_VERSION) => {
+            code if code.is(&codes::NO_PARSER_FOR_VERSION) => {
                 lines.push(format!("no parser {:?}", code.args()[0]));
             }
-            DiagnosticCode::Specific { code } if code.is(&codes::USE_FORMAT_VERSION) => {
+            code if code.is(&codes::USE_FORMAT_VERSION) => {
                 lines.push(format!("use format version {}", code.args()[2]));
             }
-            DiagnosticCode::Specific { code } if code.is(&codes::UNSUPPORTED_VERSION_WORDED) => {
+            code if code.is(&codes::UNSUPPORTED_VERSION_WORDED) => {
                 lines.push(format!("fixed {:?}", code.args()[0]));
             }
             // Block culling's own line below its floor.
             #[cfg(feature = "block_culling")]
-            DiagnosticCode::Specific { code }
-                if code.is(
-                    &bedrock_addon::families::block_culling::codes::MISSING_OBJECT_UNSUPPORTED_VERSION,
-                ) =>
+            code if code.is(
+                &bedrock_addon::families::block_culling::codes::MISSING_OBJECT_UNSUPPORTED_VERSION,
+            ) =>
             {
                 lines.push(format!(
                     "formatted {:?}",
@@ -69,9 +68,7 @@ fn told<T>(outcome: &Result<Document<T>, Rejected>) -> String {
             }
             // By legacy name: a family's own definition of a fixed sentence that was the
             // variant's `Fixed` text.
-            DiagnosticCode::Specific { code }
-                if code.name() == "UnsupportedVersion" && code.args().is_empty() =>
-            {
+            code if code.name() == "UnsupportedVersion" && code.args().is_empty() => {
                 lines.push(format!("fixed {:?}", code.vanilla().unwrap_or_default()));
             }
             // By legacy name: the variant and the definitions that were it.

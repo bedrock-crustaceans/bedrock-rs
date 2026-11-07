@@ -2,7 +2,7 @@
 //! claim-first rule, duplicates, beta documents and `Placed::default_path`.
 
 use bedrock_addon::diagnostic::codes;
-use bedrock_addon::diagnostic::{Diagnostic, DiagnosticCode as Code, Severity};
+use bedrock_addon::diagnostic::{Code, Diagnostic, Severity};
 use bedrock_addon::document::{Content, Placed};
 use bedrock_addon::families::client_biome::ClientBiome;
 use bedrock_addon::families::client_biome::component::SkyColor;

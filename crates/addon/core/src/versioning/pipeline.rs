@@ -18,8 +18,7 @@ use super::{
 use crate::diagnostic::builders::syntax;
 use crate::diagnostic::codes as core_codes;
 use crate::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Location, Phase, Severity,
-    Span,
+    Code, Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Location, Phase, Severity, Span,
 };
 use crate::document::VersionInfo;
 use crate::json::{EnvelopeVersion, JsonSlice, RootProbe, Value, probe_envelope};
@@ -570,11 +569,7 @@ pub fn no_parser_version(input: &FormatVersionInput, written: &str) -> String {
 
 /// The finding of a version no struct covers, with the game's "no parser" text.
 pub(super) fn unsupported(written: &str, at: JsonPath) -> Diagnostic {
-    error(
-        core_codes::NO_PARSER_FOR_VERSION.with([written]).into(),
-        at,
-        None,
-    )
+    error(core_codes::NO_PARSER_FOR_VERSION.with([written]), at, None)
 }
 
 /// The default identity: `description.identifier` and `description.runtime_identifier`.
@@ -625,7 +620,7 @@ impl Run {
         };
         let Ok(written) = read else {
             self.diagnostics.push(error(
-                DiagnosticCode::from(&core_codes::MALFORMED_FORMAT_VERSION),
+                Code::from(&core_codes::MALFORMED_FORMAT_VERSION),
                 version_at(),
                 None,
             ));
@@ -711,7 +706,7 @@ impl Run {
         if counted && written.is_some() && envelope.member_count() != 2 {
             self.diagnostics.push(
                 error(
-                    DiagnosticCode::from(&core_codes::DOCUMENT_MEMBER_COUNT),
+                    Code::from(&core_codes::DOCUMENT_MEMBER_COUNT),
                     JsonPath::new(),
                     Some(span_of(document)),
                 )
@@ -730,7 +725,7 @@ impl Run {
                 Some(actual) if counted && written.is_some() => {
                     crate::diagnostic::cereal::payload_key_mismatch(F::PAYLOAD_KEY, actual)
                 }
-                _ => DiagnosticCode::from(&core_codes::MISSING_PAYLOAD),
+                _ => Code::from(&core_codes::MISSING_PAYLOAD),
             };
             self.diagnostics
                 .push(error(code, JsonPath::new(), Some(span_of(document))));
@@ -745,7 +740,7 @@ impl Run {
                 let mut member = JsonPath::new();
                 member.push(key);
                 self.diagnostics.push(Diagnostic::new(
-                    DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD),
+                    Code::from(&core_codes::UNRECOGNIZED_FIELD),
                     Severity::Info,
                     Phase::Parse,
                     Location::new(None, None, member, None),
@@ -785,17 +780,14 @@ impl Run {
             None => {
                 match F::ENVELOPE.missing {
                     MissingVersion::Reject { code } => {
-                        self.diagnostics.push(error(
-                            DiagnosticCode::from(code),
-                            JsonPath::new(),
-                            None,
-                        ));
+                        self.diagnostics
+                            .push(error(Code::from(code), JsonPath::new(), None));
                         return None;
                     }
                     MissingVersion::Floor { code, severity } => {
                         if let Some(severity) = severity {
                             self.diagnostics.push(Diagnostic::new(
-                                DiagnosticCode::from(code),
+                                Code::from(code),
                                 severity,
                                 Phase::Parse,
                                 Location::new(None, None, JsonPath::new(), None),
@@ -834,7 +826,7 @@ impl Run {
                 };
                 if let Some(code) = refusal {
                     self.diagnostics
-                        .push(error(DiagnosticCode::from(code), version_at(), None));
+                        .push(error(Code::from(code), version_at(), None));
                     return None;
                 }
                 Some((written, StructIndex::Beta))
@@ -846,7 +838,7 @@ impl Run {
                 let index = self.stable::<F>(&written, &text, payload, &identity, cx)?;
                 if written.prerelease {
                     self.diagnostics.push(Diagnostic::new(
-                        DiagnosticCode::from(core_codes::PRERELEASE_FORMAT_VERSION.with([text])),
+                        core_codes::PRERELEASE_FORMAT_VERSION.with([text]),
                         Severity::Info,
                         Phase::Parse,
                         Location::new(None, None, version_at(), None),
@@ -864,7 +856,7 @@ impl Run {
             Err(failure) => {
                 if is_blank(document.text) {
                     self.diagnostics.push(Diagnostic::new(
-                        DiagnosticCode::from(&core_codes::EMPTY_DOCUMENT),
+                        Code::from(&core_codes::EMPTY_DOCUMENT),
                         F::EMPTY_DOCUMENT,
                         Phase::Parse,
                         Location::new(None, None, JsonPath::new(), Some(span_of(document))),
@@ -873,12 +865,10 @@ impl Run {
                 }
                 let message = failure.error.kind.to_string();
                 let finding = if F::ENVELOPE.check == EnvelopeCheck::Never {
-                    error(syntax(message).into(), JsonPath::new(), Some(failure.span))
+                    error(syntax(message), JsonPath::new(), Some(failure.span))
                 } else {
                     error(
-                        crate::diagnostic::codes::DOCUMENT_JSON
-                            .with([message.clone()])
-                            .into(),
+                        crate::diagnostic::codes::DOCUMENT_JSON.with([message.clone()]),
                         JsonPath::new(),
                         Some(failure.span),
                     )
@@ -914,13 +904,11 @@ impl Run {
                     // rendered the same way.
                     BelowFloor::NoParser => unsupported(&no_parser_version(written, text), at),
                     _ => error(
-                        core_codes::USE_FORMAT_VERSION
-                            .with([
-                                F::NAME.to_owned(),
-                                identity.identifier.clone().unwrap_or_default(),
-                                F::FLOOR.to_string(),
-                            ])
-                            .into(),
+                        core_codes::USE_FORMAT_VERSION.with([
+                            F::NAME.to_owned(),
+                            identity.identifier.clone().unwrap_or_default(),
+                            F::FLOOR.to_string(),
+                        ]),
                         at,
                         None,
                     ),
@@ -981,7 +969,7 @@ fn size_finding(len: usize, max: usize, told: &mut Diagnostics) -> bool {
     };
     told.push(
         Diagnostic::new(
-            code.into(),
+            code,
             severity,
             Phase::Parse,
             Location::new(None, None, JsonPath::new(), None),
@@ -1004,7 +992,7 @@ fn rapidjson_refuses<F: Family>(document: JsonSlice<'_>, told: &mut Diagnostics)
     if F::ENVELOPE.check == EnvelopeCheck::Never
         && let Some(DiagnosticDetail::Syntax(message)) = refusal.detail.take().map(|detail| *detail)
     {
-        refusal.code = syntax(message).into();
+        refusal.code = syntax(message);
     }
     told.push(refusal);
     true
@@ -1040,7 +1028,7 @@ fn version_at() -> JsonPath {
 }
 
 /// An error-level parse finding.
-fn error(code: DiagnosticCode, at: JsonPath, span: Option<Span>) -> Diagnostic {
+fn error(code: Code, at: JsonPath, span: Option<Span>) -> Diagnostic {
     Diagnostic::new(
         code,
         Severity::Error,
@@ -1053,7 +1041,7 @@ fn error(code: DiagnosticCode, at: JsonPath, span: Option<Span>) -> Diagnostic {
 mod tests {
     use super::size_finding;
     use crate::diagnostic::codes as core_codes;
-    use crate::diagnostic::{DiagnosticCode, Diagnostics, Severity};
+    use crate::diagnostic::{Diagnostics, Severity};
     use crate::load::{JSON_DOCUMENT_WARNING_BYTES, MAX_JSON_DOCUMENT_BYTES};
 
     /// The document input's size check goes by length alone: nothing below 96 MiB, the
@@ -1074,9 +1062,7 @@ mod tests {
         let limit = MAX_JSON_DOCUMENT_BYTES.to_string();
         assert_eq!(
             warning.code,
-            DiagnosticCode::from(
-                core_codes::DOCUMENT_NEARLY_TOO_LARGE.with([limit.clone(), limit])
-            )
+            core_codes::DOCUMENT_NEARLY_TOO_LARGE.with([limit.clone(), limit])
         );
         let mut told = Diagnostics::default();
         assert!(size_finding(MAX_JSON_DOCUMENT_BYTES + 1, max, &mut told));

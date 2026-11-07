@@ -42,7 +42,7 @@ use bedrock_addon_derive::Components;
 use super::codes;
 use super::history::ParticleFamily;
 use super::read::{Era, Node, Opt, Reader, Writer};
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, JsonPath, Severity};
+use bedrock_addon_core::diagnostic::{Code, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::document::Component;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::load::LoadContext;
@@ -218,10 +218,7 @@ where
     let read = if unreadable == Unreadable::Silent && r.legacy() && !value.is_object() {
         // The game says nothing and keeps every default; what the author wrote there is
         // not read, which is noted at the component.
-        r.push(
-            DiagnosticCode::from(&core_codes::INVALID_TYPE),
-            Severity::Info,
-        );
+        r.push(Code::from(&core_codes::INVALID_TYPE), Severity::Info);
         None
     } else {
         T::read(value, r, o)

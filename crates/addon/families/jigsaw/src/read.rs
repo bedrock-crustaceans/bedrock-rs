@@ -16,9 +16,7 @@ use super::{
     ProcessorList, ProcessorRule, StructureSet, TemplatePool, V1_21_50,
 };
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{
-    Class, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity,
-};
+use bedrock_addon_core::diagnostic::{Class, Code, Diagnostic, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::document::{Document, Origin, Rejected, Unknown, VersionInfo};
 use bedrock_addon_core::json::{
     EncodeError, JsonSlice, NullRule, ScalarFailure, ScalarRead, Value, keep_unknown_members,
@@ -121,7 +119,7 @@ fn read_failure(error: bedrock_addon_core::json::SliceError, cx: &ParseCx<'_>) -
     error.into_diagnostic(&cx.at, |code, error| {
         // By legacy name: the variant and the definitions that were it.
         if matches!(code.name(), "InvalidType") && error.describes(UNKNOWN_TAG) {
-            DiagnosticCode::from(&core_codes::INVALID_ENUM_VALUE)
+            Code::from(&core_codes::INVALID_ENUM_VALUE)
         } else {
             code
         }

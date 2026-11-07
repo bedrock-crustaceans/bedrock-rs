@@ -31,7 +31,7 @@ use crate::{BasicRenderParameters, Curve, Description, EventNode, codes};
 use bedrock_addon_core::diagnostic::Location;
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    CodeDef, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity,
+    Code, CodeDef, Diagnostic, Diagnostics, JsonPath, Phase, Severity,
 };
 use bedrock_addon_core::document::{Component as _, ComponentMap, UnknownMembers};
 use bedrock_addon_core::id::ParticleId;
@@ -91,13 +91,13 @@ impl Versioned for ParticleEffect {
 /// (the error is the crate's own there: the game registers an effect named `""`), with
 /// vanilla's text.
 fn refuse(r: &mut Reader<'_>, code: &'static CodeDef<0>) {
-    r.error(DiagnosticCode::from(code));
+    r.error(Code::from(code));
 }
 
 /// A content-log line about a member that is missing, which the game writes at the error
 /// level and which does not stop the load: a kept error.
 fn lacking(r: &mut Reader<'_>, code: &'static CodeDef<0>) {
-    r.push_kept(DiagnosticCode::from(code));
+    r.push_kept(Code::from(code));
 }
 
 /// A string member of `basic_render_parameters`: its value, and whether the legacy parser
@@ -210,10 +210,7 @@ impl ParticleEffect {
             for key in ["curves", "events", "components"] {
                 if m.get(key).is_some_and(|member| !member.is_null()) {
                     r.key(key, |r| {
-                        r.push(
-                            DiagnosticCode::from(&core_codes::DROPPED_FIELD),
-                            Severity::Info,
-                        );
+                        r.push(Code::from(&core_codes::DROPPED_FIELD), Severity::Info);
                     });
                 }
             }

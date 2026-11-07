@@ -8,7 +8,7 @@ use super::command::command_version;
 use super::{Button, DialogueScene, DialogueText, StoredCommand};
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Severity,
+    Code, Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Severity,
 };
 use bedrock_addon_core::document::Unknown;
 use bedrock_addon_core::id::DialogueSceneTag;
@@ -77,7 +77,7 @@ enum Scene {
     /// It loaded.
     Loaded(DialogueScene),
     /// The rule `code` at the path dropped it; the tag when it had a string one.
-    Dropped(Option<String>, DiagnosticCode, JsonPath),
+    Dropped(Option<String>, Code, JsonPath),
     /// It parsed with an empty tag.
     Untagged,
 }
@@ -161,7 +161,7 @@ fn unknown(
 }
 
 /// An error at `at`.
-fn error(read: &mut Read<'_>, code: DiagnosticCode, at: JsonPath) {
+fn error(read: &mut Read<'_>, code: Code, at: JsonPath) {
     read.push(Diagnostic::error(code).at(at));
 }
 
@@ -188,11 +188,7 @@ impl Reader<'_> {
         let payload_at = JsonPath::new().child(PAYLOAD);
         // Only a null check: the payload's type is not looked at.
         let Some(payload) = member(read, &root, PAYLOAD) else {
-            error(
-                read,
-                DiagnosticCode::from(codes::NO_PAYLOAD.with([self.stem])),
-                payload_at,
-            );
+            error(read, codes::NO_PAYLOAD.with([self.stem]), payload_at);
             return None;
         };
         let scenes_at = payload_at.child("scenes");
@@ -201,7 +197,7 @@ impl Reader<'_> {
         let Some(scenes) = member(read, &payload, "scenes") else {
             error(
                 read,
-                DiagnosticCode::from(codes::NO_SCENES_MISSING_REQUIRED_FIELD.with([self.stem])),
+                codes::NO_SCENES_MISSING_REQUIRED_FIELD.with([self.stem]),
                 scenes_at,
             );
             return None;
@@ -209,7 +205,7 @@ impl Reader<'_> {
         let Some(scenes) = elements(read, &scenes) else {
             error(
                 read,
-                DiagnosticCode::from(codes::NO_SCENES_INVALID_TYPE.with([self.stem])),
+                codes::NO_SCENES_INVALID_TYPE.with([self.stem]),
                 scenes_at,
             );
             return None;
@@ -277,9 +273,7 @@ impl Reader<'_> {
         let Some(written) = member(read, root, "format_version") else {
             error(
                 read,
-                DiagnosticCode::from(
-                    codes::NO_FORMAT_VERSION_MISSING_FORMAT_VERSION.with([self.stem]),
-                ),
+                codes::NO_FORMAT_VERSION_MISSING_FORMAT_VERSION.with([self.stem]),
                 at,
             );
             return None;
@@ -297,9 +291,7 @@ impl Reader<'_> {
         let Some(version) = version else {
             error(
                 read,
-                DiagnosticCode::from(
-                    codes::NO_FORMAT_VERSION_MALFORMED_FORMAT_VERSION.with([self.stem]),
-                ),
+                codes::NO_FORMAT_VERSION_MALFORMED_FORMAT_VERSION.with([self.stem]),
                 at,
             );
             return None;
@@ -319,11 +311,7 @@ impl Reader<'_> {
         // A plain `<` against the floor: 1.14.0 itself loads.
         if version < SemVersion::from(FLOOR) {
             let floor = FLOOR.to_string();
-            error(
-                read,
-                DiagnosticCode::from(codes::OUT_OF_RANGE.with([self.stem, &floor])),
-                at,
-            );
+            error(read, codes::OUT_OF_RANGE.with([self.stem, &floor]), at);
             return None;
         }
         Some(version)
@@ -360,7 +348,7 @@ impl Reader<'_> {
             None => None,
             Some(name) => {
                 let Some(name) = text(name.value()) else {
-                    let code = DiagnosticCode::from(codes::NPC_NAME.with([self.stem]));
+                    let code = codes::NPC_NAME.with([self.stem]);
                     return Scene::Dropped(None, code, at.child("npc_name"));
                 };
                 Some(name)
@@ -368,12 +356,11 @@ impl Reader<'_> {
         };
         // Absent, null or any other type than a string: one text.
         let Some(tag) = member(read, scene, "scene_tag") else {
-            let code =
-                DiagnosticCode::from(codes::NO_SCENE_TAG_MISSING_REQUIRED_FIELD.with([self.stem]));
+            let code = codes::NO_SCENE_TAG_MISSING_REQUIRED_FIELD.with([self.stem]);
             return Scene::Dropped(None, code, at.child("scene_tag"));
         };
         let Some(tag) = tag.value().as_string() else {
-            let code = DiagnosticCode::from(codes::NO_SCENE_TAG_INVALID_TYPE.with([self.stem]));
+            let code = codes::NO_SCENE_TAG_INVALID_TYPE.with([self.stem]);
             return Scene::Dropped(None, code, at.child("scene_tag"));
         };
         let tag = tag.as_str().to_owned();
@@ -381,7 +368,7 @@ impl Reader<'_> {
         // default: a bool reads as its word, a number or an array as the empty text.
         let text = match member(read, scene, "text") {
             None => {
-                let code = DiagnosticCode::from(codes::NO_TEXT.with([self.stem]));
+                let code = codes::NO_TEXT.with([self.stem]);
                 return Scene::Dropped(Some(tag), code, at.child("text"));
             }
             Some(node) => text(node.value()).unwrap_or_else(|| {
@@ -421,9 +408,7 @@ impl Reader<'_> {
             .as_ref()
             .is_some_and(|kept| kept.len() > MAX_NUM_BUTTONS)
         {
-            let code = DiagnosticCode::from(
-                codes::MAX_BUTTONS.with([self.stem, &MAX_NUM_BUTTONS.to_string()]),
-            );
+            let code = codes::MAX_BUTTONS.with([self.stem, &MAX_NUM_BUTTONS.to_string()]);
             return Scene::Dropped(Some(tag), code, buttons_at);
         }
         let on_open_commands = self.scene_commands(scene, "on_open_commands", read);
@@ -456,16 +441,14 @@ impl Reader<'_> {
         keep_at: &JsonPath,
     ) -> Option<Button> {
         let at = button.path();
-        let warn = |read: &mut Read<'_>, code: DiagnosticCode, at: JsonPath| {
+        let warn = |read: &mut Read<'_>, code: Code, at: JsonPath| {
             read.push(Diagnostic::error(code).at(at).into_kept());
         };
         // An absent or null name and one that is neither a string nor an object share one text.
         let Some(name) = member(read, button, "name") else {
             warn(
                 read,
-                DiagnosticCode::from(
-                    codes::NO_BUTTON_NAME_MISSING_REQUIRED_FIELD.with([self.stem]),
-                ),
+                codes::NO_BUTTON_NAME_MISSING_REQUIRED_FIELD.with([self.stem]),
                 at.child("name"),
             );
             return None;
@@ -473,7 +456,7 @@ impl Reader<'_> {
         let Some(name) = text(name.value()) else {
             warn(
                 read,
-                DiagnosticCode::from(codes::NO_BUTTON_NAME_INVALID_TYPE.with([self.stem])),
+                codes::NO_BUTTON_NAME_INVALID_TYPE.with([self.stem]),
                 at.child("name"),
             );
             return None;
@@ -482,11 +465,7 @@ impl Reader<'_> {
         let commands = member(read, button, "commands");
         let url = member(read, button, "url");
         if commands.is_some() && url.is_some() {
-            warn(
-                read,
-                DiagnosticCode::from(codes::COMMANDS_AND_URL.with([self.stem])),
-                at.clone(),
-            );
+            warn(read, codes::COMMANDS_AND_URL.with([self.stem]), at.clone());
             return None;
         }
         // A non-array is ignored; a non-string element drops the button.
@@ -498,7 +477,7 @@ impl Reader<'_> {
                     let Some(raw) = command.value().as_string() else {
                         warn(
                             read,
-                            DiagnosticCode::from(codes::COMMAND_TYPE.with([self.stem])),
+                            codes::COMMAND_TYPE.with([self.stem]),
                             command.path().clone(),
                         );
                         return None;
@@ -513,11 +492,7 @@ impl Reader<'_> {
             None => None,
             Some(url) => {
                 let Some(url) = url.value().as_string() else {
-                    warn(
-                        read,
-                        DiagnosticCode::from(codes::URL_TYPE.with([self.stem])),
-                        at.child("url"),
-                    );
+                    warn(read, codes::URL_TYPE.with([self.stem]), at.child("url"));
                     return None;
                 };
                 Some(url.as_str().to_owned())

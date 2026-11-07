@@ -4,7 +4,7 @@
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::testing::same_line;
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, JsonPath, Severity};
+use bedrock_addon_core::diagnostic::{Code, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::json::{JsonSlice, Value};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::vanilla::ActorType;
@@ -406,7 +406,7 @@ fn e00e_1_13_0_melee_chance_spawn() {
     let found = step::<v1_13_0::Entity>("e00e_1_13_0_search_count", Run::default());
     assert_eq!(removed(&found), ["DroppedField", "DroppedField"]);
     let found = step::<v1_13_0::Entity>("e00e_1_13_0_snowball_damage_sensor", Run::default());
-    let sensor = DiagnosticCode::from(&entity_codes::DAMAGE_SENSOR_NOT_ADDED);
+    let sensor = Code::from(&entity_codes::DAMAGE_SENSOR_NOT_ADDED);
     assert_eq!(
         sensor.to_string(),
         "The component minecraft:damage_sensor will not be added to this entity as it won't work unless the format version is 1.15 or greater."
@@ -996,7 +996,7 @@ fn e33_1_26_30_on_kill_overlap() {
     let codes: Vec<_> = found.iter().map(|d| d.code.clone()).collect();
     assert!(
         codes.len() == 2
-            && codes[0] == DiagnosticCode::from(&core_codes::DROPPED_FIELD)
+            && codes[0] == Code::from(&core_codes::DROPPED_FIELD)
             && same_line(
                 &codes[1],
                 "InvalidValue",

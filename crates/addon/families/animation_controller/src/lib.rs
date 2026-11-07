@@ -22,7 +22,7 @@ mod validate;
 mod write;
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, Severity};
+use bedrock_addon_core::diagnostic::{Code, Diagnostics, Severity};
 use bedrock_addon_core::document::{
     Content, Definition, Document, JsonContent, NoBeta, Notice, Origin, Placed, Registry, Rejected,
     VersionInfo,
@@ -168,7 +168,7 @@ fn combine_controllers(
         "animation_controllers",
         controllers,
         Notice {
-            code: DiagnosticCode::from(&core_codes::ANIMATION_CONTROLLER_SHADOWED),
+            code: Code::from(&core_codes::ANIMATION_CONTROLLER_SHADOWED),
             severity: Severity::Info,
         },
     )

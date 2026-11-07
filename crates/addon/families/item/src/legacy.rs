@@ -5,7 +5,7 @@ use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::version::{FormatVersion, known};
 use indexmap::IndexMap;
 
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity};
+use bedrock_addon_core::diagnostic::{Code, Diagnostic, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::load::{LoadContext, LoadRequirement};
 
@@ -229,7 +229,7 @@ pub(crate) fn read_legacy(
     // The game writes a deprecation line for `foil`, `mining_speed`, `tag:` and
     // `creative_category` at the content log's error level, and the item loads on: each is a
     // kept error.
-    let deprecated = |d: &mut Diagnostics, key: &str, code: DiagnosticCode| {
+    let deprecated = |d: &mut Diagnostics, key: &str, code: Code| {
         d.push_kept_error(Diagnostic::error(code).at(path(key)));
     };
     for (key, value) in components {
@@ -240,27 +240,15 @@ pub(crate) fn read_legacy(
             "minecraft:block" => {
                 data.block = value.as_string().map(|s| s.as_str().to_owned());
                 if data.block.is_none() {
-                    misread(
-                        d,
-                        DiagnosticCode::from(&core_codes::INVALID_TYPE),
-                        path(key),
-                    );
+                    misread(d, Code::from(&core_codes::INVALID_TYPE), path(key));
                 }
             }
             "minecraft:frame_count" => {
                 data.frame_count = number(value).map(truncate);
                 match number(value) {
-                    None => misread(
-                        d,
-                        DiagnosticCode::from(&core_codes::INVALID_TYPE),
-                        path(key),
-                    ),
+                    None => misread(d, Code::from(&core_codes::INVALID_TYPE), path(key)),
                     Some(n) if n.fract() != 0.0 || n.abs() > f64::from(i32::MAX) => {
-                        misread(
-                            d,
-                            DiagnosticCode::from(&core_codes::INVALID_VALUE),
-                            path(key),
-                        );
+                        misread(d, Code::from(&core_codes::INVALID_VALUE), path(key));
                     }
                     Some(_) => {}
                 }
@@ -272,17 +260,9 @@ pub(crate) fn read_legacy(
                     #[allow(clippy::cast_possible_truncation, reason = "an f32 member")]
                     let speed = number(value).map(|n| n as f32);
                     match speed {
-                        None => misread(
-                            d,
-                            DiagnosticCode::from(&core_codes::INVALID_TYPE),
-                            path(key),
-                        ),
+                        None => misread(d, Code::from(&core_codes::INVALID_TYPE), path(key)),
                         Some(speed) if speed.is_infinite() => {
-                            misread(
-                                d,
-                                DiagnosticCode::from(&core_codes::INVALID_VALUE),
-                                path(key),
-                            );
+                            misread(d, Code::from(&core_codes::INVALID_VALUE), path(key));
                         }
                         Some(_) => {}
                     }
@@ -302,11 +282,7 @@ pub(crate) fn read_legacy(
             // newest format, does not carry it: told as not written, as an information (as
             // for `creative_category`, which the game holds too).
             "minecraft:use_modifiers" if original_version < V1_20_50 => {
-                misread(
-                    d,
-                    DiagnosticCode::from(&core_codes::DROPPED_FIELD),
-                    path(key),
-                );
+                misread(d, Code::from(&core_codes::DROPPED_FIELD), path(key));
             }
             // The legacy read takes the number, or `value` of the object form: any other
             // member of the object is read by nothing.
@@ -323,7 +299,7 @@ pub(crate) fn read_legacy(
                     if value.is_object() {
                         at.push("value");
                     }
-                    misread(d, DiagnosticCode::from(&core_codes::INVALID_TYPE), at);
+                    misread(d, Code::from(&core_codes::INVALID_TYPE), at);
                 }
                 if let Some(object) = value.as_object() {
                     for (member, _) in object
@@ -331,7 +307,7 @@ pub(crate) fn read_legacy(
                         .filter(|(member, _)| member.as_str() != "value")
                     {
                         let at = path(key).child(member.as_str());
-                        misread(d, DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD), at);
+                        misread(d, Code::from(&core_codes::UNRECOGNIZED_FIELD), at);
                     }
                 }
             }
@@ -340,9 +316,7 @@ pub(crate) fn read_legacy(
                     deprecated(
                         d,
                         key,
-                        codes::CREATIVE_CATEGORY_DEPRECATED
-                            .with([original_version.to_string()])
-                            .into(),
+                        codes::CREATIVE_CATEGORY_DEPRECATED.with([original_version.to_string()]),
                     );
                 } else {
                     // Held for the legacy item (the legacy data's `creative_category`). The
@@ -357,16 +331,12 @@ pub(crate) fn read_legacy(
                     // the game writes no such line for an item, so this information is the
                     // crate's own.
                     d.push(
-                        Diagnostic::info(
-                            core_codes::DUPLICATE_COMPONENT_VERSION
-                                .with([
-                                    "minecraft:foil",
-                                    "minecraft:glint",
-                                    "minecraft:glint",
-                                    "minecraft:foil",
-                                ])
-                                .into(),
-                        )
+                        Diagnostic::info(core_codes::DUPLICATE_COMPONENT_VERSION.with([
+                            "minecraft:foil",
+                            "minecraft:glint",
+                            "minecraft:glint",
+                            "minecraft:foil",
+                        ]))
                         .at(path("minecraft:glint")),
                     );
                 } else if original_version >= V1_20_20 {
@@ -374,11 +344,7 @@ pub(crate) fn read_legacy(
                 } else if LoadRequirement::LegacyCreatorFeatures.satisfied(cx) {
                     data.is_glint = value.as_bool();
                     if data.is_glint.is_none() {
-                        misread(
-                            d,
-                            DiagnosticCode::from(&core_codes::INVALID_TYPE),
-                            path(key),
-                        );
+                        misread(d, Code::from(&core_codes::INVALID_TYPE), path(key));
                     }
                 } else {
                     // The text is the crate's own and the game says nothing: an information.
@@ -433,7 +399,7 @@ pub(crate) fn seed_warning(at: &JsonPath, d: &mut Diagnostics) {
 /// The information of a key of the legacy reader read as another value than the file writes:
 /// the value stays what the reader makes of it. The game is silent, so the finding is the
 /// crate's own information.
-fn misread(d: &mut Diagnostics, code: DiagnosticCode, path: JsonPath) {
+fn misread(d: &mut Diagnostics, code: Code, path: JsonPath) {
     let said = d
         .iter()
         .any(|finding| finding.location.json_path == path && finding.severity >= Severity::Info);

@@ -2,7 +2,7 @@
 //! lenient conversion, written back, and checked by its rules. Fixtures live under
 //! `tests/fixtures/entity/entity/component/`.
 
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, Severity};
+use bedrock_addon_core::diagnostic::{Code, Diagnostics, Severity};
 use bedrock_addon_core::document::Component;
 use bedrock_addon_core::json::{JsonSlice, Value, to_json};
 use bedrock_addon_core::load::LoadContext;
@@ -137,12 +137,7 @@ pub fn json(text: &str) -> Value {
 }
 
 /// Whether `d` holds a finding of `code` (by variant) at `path`.
-pub fn has(
-    d: &Diagnostics,
-    code: fn(&DiagnosticCode) -> bool,
-    severity: Severity,
-    path: &str,
-) -> bool {
+pub fn has(d: &Diagnostics, code: fn(&Code) -> bool, severity: Severity, path: &str) -> bool {
     d.iter().any(|f| {
         code(&f.code) && f.severity == severity && f.location.json_path.to_string() == path
     })

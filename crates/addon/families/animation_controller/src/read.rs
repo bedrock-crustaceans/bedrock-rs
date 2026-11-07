@@ -10,7 +10,7 @@ use super::{
     StateAnimation, StateVariable, Transition,
 };
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity};
+use bedrock_addon_core::diagnostic::{Code, Diagnostic, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::json::node_tree::{Group, Hit, Kind, Node, Pattern, Walk};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::molang::{MolangSource, RawVersion};
@@ -63,9 +63,9 @@ pub(crate) fn load_format_version(walk: &mut Walk, root: Node<'_>) -> Option<Loa
         .and_then(|(_, node)| read_version(walk, *node));
     let Some(version) = version else {
         let code = if member.is_none() {
-            DiagnosticCode::from(&codes::ILL_FORMATTED_MISSING_FORMAT_VERSION)
+            Code::from(&codes::ILL_FORMATTED_MISSING_FORMAT_VERSION)
         } else {
-            DiagnosticCode::from(&codes::ILL_FORMATTED_UNSUPPORTED_VERSION)
+            Code::from(&codes::ILL_FORMATTED_UNSUPPORTED_VERSION)
         };
         walk.push(code, Severity::Error, member.map(|(_, n)| n.span()));
         return None;
@@ -77,9 +77,7 @@ pub(crate) fn load_format_version(walk: &mut Walk, root: Node<'_>) -> Option<Loa
     );
     if version > engine {
         walk.push(
-            DiagnosticCode::from(
-                codes::EXCEEDS_GAME.with([&version.to_string(), &engine.to_string()]),
-            ),
+            codes::EXCEEDS_GAME.with([&version.to_string(), &engine.to_string()]),
             Severity::Error,
             None,
         );
@@ -87,7 +85,7 @@ pub(crate) fn load_format_version(walk: &mut Walk, root: Node<'_>) -> Option<Loa
     }
     if version < V1_8_0 {
         walk.push(
-            DiagnosticCode::from(codes::UNKNOWN_FORMAT_VERSION.with([version.to_string()])),
+            codes::UNKNOWN_FORMAT_VERSION.with([version.to_string()]),
             Severity::Error,
             None,
         );
@@ -187,7 +185,7 @@ pub(crate) fn parse_as_written(
     let version = loaded.version;
     if version.is_pre_release() {
         walk.push(
-            DiagnosticCode::from(core_codes::PRERELEASE_FORMAT_VERSION.with([version.to_string()])),
+            core_codes::PRERELEASE_FORMAT_VERSION.with([version.to_string()]),
             Severity::Info,
             None,
         );
@@ -225,10 +223,7 @@ pub(crate) fn controller_format_version(
 ) -> Option<SemVersion> {
     if node.kind() == Kind::Array {
         // A version node can only be parsed from a JSON string.
-        walk.error(
-            DiagnosticCode::from(codes::UNKNOWN_OPTION_TYPE.with(["SemVersion"])),
-            node.span(),
-        );
+        walk.error(codes::UNKNOWN_OPTION_TYPE.with(["SemVersion"]), node.span());
         return None;
     }
     format_version(walk, node, minimum)

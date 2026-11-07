@@ -2,7 +2,7 @@
 //! so a content module that mirrors a reference the validator holds (a camera preset, a
 //! catalogue item) gives its line without naming the link module.
 
-use super::{JsonPath, JsonPathSegment, VanillaText};
+use super::{JsonPath, JsonPathSegment, sentence};
 
 /// What the game's validator says of a reference it cannot resolve.
 // hidden: the game's validator wording, used by the families' readers
@@ -47,12 +47,12 @@ pub fn breadcrumb(path: &JsonPath, from: usize) -> String {
 // hidden: the game's validator wording, used by the families' readers
 #[doc(hidden)]
 #[must_use]
-pub fn validator_text(says: Validator, path: &JsonPath, from: usize, name: &str) -> VanillaText {
-    VanillaText::Formatted {
-        template: match says {
+pub fn validator_text(says: Validator, path: &JsonPath, from: usize, name: &str) -> String {
+    sentence(
+        match says {
             Validator::Missing => "{}:  Missing referenced asset {}",
             Validator::InvalidPath => "{}:  Invalid asset path {}",
         },
-        args: vec![breadcrumb(path, from), name.to_owned()],
-    }
+        &[breadcrumb(path, from), name.to_owned()],
+    )
 }

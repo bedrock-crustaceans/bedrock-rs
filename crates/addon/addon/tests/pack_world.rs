@@ -1,6 +1,6 @@
 //! `WorldPacks::parse`: the world's `world_behavior_packs.json` and `world_resource_packs.json`.
 
-use bedrock_addon::diagnostic::DiagnosticCode;
+use bedrock_addon::diagnostic::Code;
 use bedrock_addon::document::Rejected;
 use bedrock_addon::pack::WorldPacks;
 use bedrock_addon::version::SemVersion;
@@ -74,7 +74,7 @@ fn an_empty_array_is_an_empty_list() {
 }
 
 /// The one finding of a rejection, and the file it names.
-fn rejection(rejected: &Rejected) -> (&DiagnosticCode, String, String) {
+fn rejection(rejected: &Rejected) -> (&Code, String, String) {
     let diagnostics: Vec<_> = rejected.diagnostics.iter().collect();
     assert_eq!(diagnostics.len(), 1, "{diagnostics:?}");
     let location = &diagnostics[0].location;

@@ -3,13 +3,11 @@
 
 use super::types::EventString;
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity,
-};
+use bedrock_addon_core::diagnostic::{Code, Diagnostic, Diagnostics, JsonPath, Phase, Severity};
 use bedrock_addon_core::load::LoadContext;
 
 /// Push a finding of the validate phase at `at`.
-pub fn push(diagnostics: &mut Diagnostics, code: DiagnosticCode, severity: Severity, at: JsonPath) {
+pub fn push(diagnostics: &mut Diagnostics, code: Code, severity: Severity, at: JsonPath) {
     diagnostics.push(
         Diagnostic::error(code)
             .severity(severity)
@@ -32,7 +30,7 @@ pub fn events<'a>(
         {
             push(
                 diagnostics,
-                DiagnosticCode::from(&core_codes::UNRECOGNIZED_EVENT_STRING),
+                Code::from(&core_codes::UNRECOGNIZED_EVENT_STRING),
                 Severity::Info,
                 at,
             );
@@ -48,7 +46,7 @@ pub fn command_version_unset(cx: &LoadContext, any_event: bool, diagnostics: &mu
     if any_event && cx.min_engine_version.is_none() {
         push(
             diagnostics,
-            DiagnosticCode::from(&core_codes::MISSING_MIN_ENGINE_VERSION),
+            Code::from(&core_codes::MISSING_MIN_ENGINE_VERSION),
             Severity::Info,
             JsonPath::new(),
         );

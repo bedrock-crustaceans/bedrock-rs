@@ -1,16 +1,17 @@
 //! Findings as data: one typed `Diagnostic` per thing a vanilla content log would print, never a
-//! log line. Tests match on `code` variants, never on text.
+//! log line. Tests ask a finding's `code` for its definition (`is`) or its `kind`, never its
+//! text.
 
 mod builder;
 pub mod builders;
 pub mod cereal;
-mod code;
 pub mod codes;
 mod def;
 mod deprecated;
 mod detail;
 mod event;
 mod facet;
+mod legacy;
 mod list;
 mod location;
 mod moves;
@@ -18,20 +19,16 @@ mod path;
 mod report;
 mod severity;
 pub mod testing;
-// hidden: API not yet reviewed
-#[doc(hidden)]
-pub mod texts;
 pub mod validator;
 
-pub use code::{DiagnosticCode, NotFoundHint, VanillaText};
-pub use def::{Class, Code, CodeDef, CodeMeta, Disposition, Kind};
+pub use def::{Class, Code, CodeDef, CodeMeta, Disposition, Kind, sentence};
 pub use deprecated::ENUM_VALUE_DEPRECATED;
 pub use event::EVENT_BOTH_RANDOMIZE_AND_SEQUENCE;
 // hidden: reader plumbing: maps the facet error kinds to codes for the crate family's readers
 #[doc(hidden)]
 pub use facet::code_for_deserialize_error_kind;
 
-pub use detail::{DiagnosticDetail, ReferenceHint, ShadowReason};
+pub use detail::{DiagnosticDetail, NotFoundHint, ReferenceHint, ShadowReason};
 pub use list::{Diagnostics, Told};
 pub use location::{Location, Span};
 pub use path::{JsonPath, JsonPathSegment};
@@ -44,8 +41,9 @@ use std::fmt;
 #[derive(Clone, Debug, PartialEq)]
 #[non_exhaustive]
 pub struct Diagnostic {
-    /// What happened, with typed payload. `Display` renders vanilla's text.
-    pub code: DiagnosticCode,
+    /// What happened: a code of a definition, with its arguments. `Display` renders the game's
+    /// sentence when there is one, else the crate's line.
+    pub code: Code,
     /// Chosen by the emitting rule; the same code can be an error in one family and a warning
     /// in another.
     pub severity: Severity,
@@ -72,10 +70,10 @@ impl Diagnostic {
         self.severity == Severity::Error && !self.kept
     }
 
-    /// This finding as a kept error: at error level, rejecting nothing. A legacy code is made
-    /// [`kept`](Self::kept) here: [`Diagnostics::push_kept_error`] goes through it, and so
-    /// does a compile pass that marks a Molang finding kept before it is pushed; a specific
-    /// code is kept by its [`Class::KeptError`] in [`of`](Self::of). Both halves must hold for
+    /// This finding as a kept error: at error level, rejecting nothing. A finding told at
+    /// another severity is made [`kept`](Self::kept) here: [`Diagnostics::push_kept_error`]
+    /// goes through it, and so does a compile pass that marks a Molang finding kept before it
+    /// is pushed; a code of [`Class::KeptError`] is kept in [`of`](Self::of). Both halves must hold for
     /// the finding: it is an error in the game's content log, and the game's loader goes on
     /// with the document.
     #[must_use]
@@ -85,40 +83,35 @@ impl Diagnostic {
         self
     }
 
-    /// The general kind of the finding: a specific code's own, or the kind a legacy code
-    /// belongs to. For the question `d.kind() == Kind::InvalidValue`, whichever rule raised it.
+    /// The general kind of the finding, its code's: for the question
+    /// `d.kind() == Kind::InvalidValue`, whichever rule raised it.
     pub fn kind(&self) -> Kind {
-        def::kind_of(&self.code)
+        self.code.kind()
     }
 
     /// Whether the finding is a code of `def`, whatever its arguments: the specific question.
-    /// A legacy code is no code of any definition.
     pub fn is<const N: usize>(&self, def: &CodeDef<N>) -> bool {
-        matches!(&self.code, DiagnosticCode::Specific { code } if code.is(def))
+        self.code.is(def)
     }
 
     /// The game's sentence for the finding, with its arguments; `None` when the game prints
-    /// none and the finding is the toolkit's own. A legacy code gives the game text it carries
-    /// in its `text` field.
+    /// none and the finding is the toolkit's own.
     pub fn vanilla(&self) -> Option<String> {
         self.code.vanilla()
     }
 
-    /// The reader's message behind a syntax finding (`MalformedInput`): the legacy code's
-    /// `message`, the [`DiagnosticDetail::Syntax`] a finding whose line is the game's carries,
-    /// or the line of [`codes::SYNTAX`] (the message as the line); empty for
-    /// [`codes::MALFORMED_INPUT`]. `None` for any other finding.
+    /// The reader's message behind a syntax finding (one that was `MalformedInput`): the
+    /// [`DiagnosticDetail::Syntax`] a finding whose line is the game's carries, or the line of
+    /// [`codes::SYNTAX`] (the message as the line); empty for [`codes::MALFORMED_INPUT`].
+    /// `None` for any other finding.
     pub fn syntax_message(&self) -> Option<&str> {
-        match &self.code {
-            DiagnosticCode::MalformedInput { message, .. } => Some(message),
-            DiagnosticCode::Specific { code } if code.name() == "MalformedInput" => {
-                match self.detail.as_deref() {
-                    Some(DiagnosticDetail::Syntax(message)) => Some(message),
-                    _ if code.is(&codes::SYNTAX) => code.args().first().map(String::as_str),
-                    _ if code.is(&codes::MALFORMED_INPUT) => Some(""),
-                    _ => None,
-                }
-            }
+        if self.code.name() != "MalformedInput" {
+            return None;
+        }
+        match self.detail.as_deref() {
+            Some(DiagnosticDetail::Syntax(message)) => Some(message),
+            _ if self.code.is(&codes::SYNTAX) => self.code.args().first().map(String::as_str),
+            _ if self.code.is(&codes::MALFORMED_INPUT) => Some(""),
             _ => None,
         }
     }
@@ -129,9 +122,14 @@ impl Diagnostic {
     /// `kept`. Prefer [`Diagnostic::of`], [`Diagnostic::error`], [`Diagnostic::warn`] and
     /// [`Diagnostic::info`] with the builder where the severity follows from the code. The
     /// struct is `#[non_exhaustive]`, so this is the only way to build one outside the crate.
-    pub fn new(code: DiagnosticCode, severity: Severity, phase: Phase, location: Location) -> Self {
+    pub fn new(
+        code: impl Into<Code>,
+        severity: Severity,
+        phase: Phase,
+        location: Location,
+    ) -> Self {
         Self {
-            code,
+            code: code.into(),
             severity,
             phase,
             location,

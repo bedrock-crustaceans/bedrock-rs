@@ -2,7 +2,7 @@
 //! `ps16` (validation.md D2–D4b).
 
 use bedrock_addon::diagnostic::codes;
-use bedrock_addon::diagnostic::{DiagnosticCode as C, Diagnostics, Severity};
+use bedrock_addon::diagnostic::{Code as C, Diagnostics, Severity};
 use bedrock_addon::version::{ENGINE_VERSION, FormatVersion};
 
 use super::common::{fixture, loads, names, parse_text, refused};
@@ -10,7 +10,7 @@ use super::document::closes;
 
 /// "unsupported version: no parser available for version <version>".
 fn no_parser(version: &str) -> C {
-    C::from(codes::NO_PARSER_FOR_VERSION.with([version.to_owned()]))
+    codes::NO_PARSER_FOR_VERSION.with([version.to_owned()])
 }
 
 /// The errors of a rejected file: `first`, then the closing finding.

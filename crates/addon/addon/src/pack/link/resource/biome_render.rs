@@ -15,7 +15,7 @@ use bedrock_addon_core::document::{ComponentRef, Merged, Origin, RawLayer};
 use super::super::{At, Findings, LinkCx, Target, Validator, kinds, unresolved, validator_miss};
 use super::biome::{Claim, Shadowed, claims, is_unknown, path};
 use super::biome::{overridden, own_entry};
-use crate::diagnostic::{Diagnostic, JsonPath, Severity, VanillaText};
+use crate::diagnostic::{Diagnostic, JsonPath, Severity, sentence};
 use crate::families::biomes_client::{LegacyClientBiome, LegacyClientBiomes};
 use crate::families::client_biome::component::{ClientBiomeComponent, FogAppearance};
 use crate::id::{BiomeId, FogId};
@@ -81,10 +81,7 @@ fn refused(
     let Target::Missing(hint) = target else {
         return None;
     };
-    let text = VanillaText::Formatted {
-        template: named.template,
-        args: vec![name.to_owned()],
-    };
+    let text = sentence(named.template, &[name.to_owned()]);
     let member = path(&["components", named.component, named.member]);
     // The linked-asset check raises this finding to an error; it is written as the error that
     // comes out.

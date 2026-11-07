@@ -8,7 +8,7 @@
 use std::collections::HashSet;
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{DiagnosticCode as Code, JsonPath};
+use bedrock_addon_core::diagnostic::{Code, JsonPath};
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::pack_identity::PackType;
@@ -283,9 +283,7 @@ fn modules(sink: &mut Sink<'_>, root: &Value) -> Vec<Module> {
             if ty.is_none() {
                 // The game names the member without its element's index.
                 sink.error(
-                    core_codes::MANIFEST_INVALID_VALUE
-                        .with(["modules/type"])
-                        .into(),
+                    core_codes::MANIFEST_INVALID_VALUE.with(["modules/type"]),
                     &below(&at, "type"),
                 );
             }
@@ -383,11 +381,7 @@ fn script_module_version(
                 // the setter left, `0.0.0`.
                 let code = module_name.map_or_else(
                     || Code::from(&core_codes::MALFORMED_PROPERTY_VERSION),
-                    |module| {
-                        core_codes::DEPENDENCY_INVALID_VERSION
-                            .with([module, "0.0.0"])
-                            .into()
-                    },
+                    |module| core_codes::DEPENDENCY_INVALID_VERSION.with([module, "0.0.0"]),
                 );
                 sink.error(code, &below(at, "version"));
             }

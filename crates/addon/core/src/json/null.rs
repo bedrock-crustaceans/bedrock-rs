@@ -48,8 +48,8 @@ use super::slice::{JsonSlice, SliceError, parse_without, span_at};
 use super::walk::Walk;
 use crate::diagnostic::codes as core_codes;
 use crate::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, JsonPathSegment, Location,
-    Phase, Severity,
+    Code, Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, JsonPathSegment, Location, Phase,
+    Severity,
 };
 
 /// How a family's reader takes a member written as `null`; the family's input kind decides
@@ -93,7 +93,7 @@ pub fn reject_nulls<'f, T: Facet<'f>>(
         let mut full = at.clone();
         full.append(path);
         d.push(Diagnostic::new(
-            DiagnosticCode::from(&core_codes::INVALID_TYPE),
+            Code::from(&core_codes::INVALID_TYPE),
             Severity::Error,
             Phase::Parse,
             Location::new(None, None, full, span_at(slice, path)),
@@ -116,7 +116,7 @@ pub fn tell_null_members(found: &[JsonPath], at: &JsonPath, d: &mut Diagnostics)
         let mut full = at.clone();
         full.append(path);
         let mut finding = Diagnostic::new(
-            DiagnosticCode::from(&core_codes::VALUE_REWRITTEN),
+            Code::from(&core_codes::VALUE_REWRITTEN),
             Severity::Info,
             Phase::Parse,
             Location::new(None, None, full, None),

@@ -12,7 +12,7 @@ use crate::component::{
 };
 use crate::read::ComponentEra;
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity};
+use bedrock_addon_core::diagnostic::{Code, Diagnostic, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::document::{ComponentMap, ComponentSet, UnknownMembers};
 use bedrock_addon_core::id::SoundEventName;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
@@ -191,7 +191,7 @@ fn from_table<T>(
     } else if table(&format!("minecraft:{identifier}")).is_some() {
         note_component(
             cx,
-            DiagnosticCode::from(&core_codes::UPGRADE_TABLE_MISSED_BARE_IDENTIFIER),
+            Code::from(&core_codes::UPGRADE_TABLE_MISSED_BARE_IDENTIFIER),
             T::NAME,
         );
     }

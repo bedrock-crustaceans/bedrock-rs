@@ -11,20 +11,12 @@ use super::component::{
 };
 use super::legacy::ItemFormat;
 use super::{Item, codes};
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity,
-};
+use bedrock_addon_core::diagnostic::{Code, Diagnostic, Diagnostics, JsonPath, Phase, Severity};
 use bedrock_addon_core::id::syntax::has_namespace;
 use bedrock_addon_core::load::LoadContext;
 
 /// A validator finding at `at/<path…>`.
-fn push(
-    d: &mut Diagnostics,
-    at: &JsonPath,
-    path: &[&str],
-    code: DiagnosticCode,
-    severity: Severity,
-) {
+fn push(d: &mut Diagnostics, at: &JsonPath, path: &[&str], code: Code, severity: Severity) {
     let mut full = at.clone();
     for part in path {
         full.push(part);
@@ -62,7 +54,7 @@ pub(crate) fn validate(
             d,
             at,
             &["description", "identifier"],
-            DiagnosticCode::from(&codes::IDENTIFIER),
+            Code::from(&codes::IDENTIFIER),
             Severity::Error,
         );
     }
@@ -86,7 +78,7 @@ pub(crate) fn validate(
                 d,
                 at,
                 &components(name),
-                codes::USE_DURATION_REQUIRED.with([name]).into(),
+                codes::USE_DURATION_REQUIRED.with([name]),
                 // The game's validator logs this with validation code 1, which the content
                 // log writes at the warning level and which does not make the load fail: a
                 // warning, the item loads.
@@ -111,7 +103,7 @@ pub(crate) fn validate(
                 d,
                 at,
                 &components(name),
-                codes::DURABILITY_REQUIRED.with([name]).into(),
+                codes::DURABILITY_REQUIRED.with([name]),
                 // Validation code 1 again: a warning, the item loads.
                 Severity::Warning,
             );
@@ -123,7 +115,7 @@ pub(crate) fn validate(
             d,
             at,
             &components("minecraft:bundle_interaction"),
-            DiagnosticCode::from(&codes::BUNDLE_NEEDS_STORAGE),
+            Code::from(&codes::BUNDLE_NEEDS_STORAGE),
             // Validation code 1 again: a warning, the item loads.
             Severity::Warning,
         );
@@ -135,7 +127,7 @@ pub(crate) fn validate(
             d,
             at,
             &components("minecraft:storage_item"),
-            DiagnosticCode::from(&codes::STORAGE_NEEDS_STACK_OF_ONE),
+            Code::from(&codes::STORAGE_NEEDS_STACK_OF_ONE),
             Severity::Error,
         );
     }
@@ -153,7 +145,7 @@ pub(crate) fn validate(
             d,
             at,
             &components("minecraft:swing_sounds"),
-            DiagnosticCode::from(&codes::SWING_SOUNDS_EMPTY),
+            Code::from(&codes::SWING_SOUNDS_EMPTY),
             Severity::Error,
         );
     }
@@ -169,9 +161,7 @@ pub(crate) fn validate(
         let full = at.child("components").child("minecraft:wearable");
         d.push_kept_error(
             Diagnostic::error(
-                codes::WEARABLE_STACK_SIZE
-                    .with(["minecraft:wearable", wearable.slot.name()])
-                    .into(),
+                codes::WEARABLE_STACK_SIZE.with(["minecraft:wearable", wearable.slot.name()]),
             )
             .at(full)
             .phase(Phase::Validate),
@@ -188,7 +178,7 @@ fn kinetic_rules(kinetic: &KineticWeapon, use_modifiers: bool, at: &JsonPath, d:
             d,
             at,
             &path,
-            DiagnosticCode::from(&codes::KINETIC_NEEDS_USE_MODIFIERS),
+            Code::from(&codes::KINETIC_NEEDS_USE_MODIFIERS),
             Severity::Error,
         );
     }
@@ -202,7 +192,7 @@ fn kinetic_rules(kinetic: &KineticWeapon, use_modifiers: bool, at: &JsonPath, d:
             d,
             at,
             &path,
-            DiagnosticCode::from(&codes::KINETIC_NEEDS_CONDITION),
+            Code::from(&codes::KINETIC_NEEDS_CONDITION),
             Severity::Error,
         );
     }
@@ -215,7 +205,7 @@ fn kinetic_rules(kinetic: &KineticWeapon, use_modifiers: bool, at: &JsonPath, d:
                 d,
                 at,
                 &[path[0], path[1], name, "max_duration"],
-                codes::KINETIC_ZERO_DURATION.with([name, name]).into(),
+                codes::KINETIC_ZERO_DURATION.with([name, name]),
                 Severity::Error,
             );
         }
@@ -224,7 +214,7 @@ fn kinetic_rules(kinetic: &KineticWeapon, use_modifiers: bool, at: &JsonPath, d:
                 d,
                 at,
                 &[path[0], path[1], name],
-                codes::KINETIC_SPEED_EXCLUSIVE.with([name]).into(),
+                codes::KINETIC_SPEED_EXCLUSIVE.with([name]),
                 Severity::Error,
             );
         }
