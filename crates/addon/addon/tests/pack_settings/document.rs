@@ -84,7 +84,6 @@ pub fn closes(diagnostics: &Diagnostics, name: &str) {
     );
     let closing = errors
         .iter()
-        // By legacy name: the variant and the definitions that were it.
         .filter(|d| matches!(d.code.id(), "pack_settings/load_failed"))
         .count();
     assert_eq!(closing, 1, "one closing finding per file");
@@ -116,7 +115,6 @@ fn ps04_array_at_1_21_100_is_a_type_error_and_fails_the_file() {
         &found,
         "minecraft:pack_settings/settings/0/values/banana:fruits",
     );
-    // By legacy name: the variant and the definitions that were it.
     assert!(matches!(typed[..], [d] if matches!(d.code.id(), "core/invalid_type")));
     closes(&found, name);
 }

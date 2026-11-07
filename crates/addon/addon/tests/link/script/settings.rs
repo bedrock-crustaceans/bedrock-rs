@@ -294,7 +294,6 @@ fn s13_the_setting_a_pack_setting_query_names_stays_run() {
     // The load's lint: a warning, once for the expression.
     let lints: Vec<Severity> = in_file
         .iter()
-        // By legacy name: the variant and the definitions that were it.
         .filter(|f| matches!(f.code.id(), "core/molang_lint"))
         .map(|f| f.severity)
         .collect();
@@ -305,7 +304,6 @@ fn s13_the_setting_a_pack_setting_query_names_stays_run() {
             f.detail.as_deref(),
             Some(DiagnosticDetail::Reference { .. })
         ) || format!("{f}").contains("nothing_defines_me")
-            // By legacy name: the variant and the definitions that were it.
             && !matches!(f.code.id(), "core/molang_lint")
     };
     assert_eq!(in_file.iter().copied().filter(is_reference).count(), 0);

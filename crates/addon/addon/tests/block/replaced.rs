@@ -8,6 +8,31 @@ use bedrock_addon::load::LoadContext;
 
 use super::common::{allow_listed, context, document, loads};
 
+/// The ids a block load says a member is dropped with: the core's and the block reader's.
+const DROPPED: [&str; 4] = [
+    "core/dropped_field",
+    "core/dropped_field_worded",
+    "block/members_thrown_away",
+    "block/bone_visibility_boolean",
+];
+
+/// The ids a block load says a member is deprecated with.
+const DEPRECATED: [&str; 6] = [
+    "core/deprecated_member",
+    "core/deprecated_member_worded",
+    "core/deprecated_in_format",
+    "core/member_deprecated",
+    "core/enum_value_deprecated",
+    "block/component_not_valid_from",
+];
+
+/// Whether a finding of [`told`] has one of `ids`.
+fn any_of(found: &[String], ids: &[&str]) -> bool {
+    found
+        .iter()
+        .any(|f| ids.iter().any(|id| f.starts_with(&format!("{id} "))))
+}
+
 /// The findings of the block `payload` of `version` in an ordinary pack as
 /// `Code Severity at path`, and the written text.
 #[track_caller]
@@ -85,10 +110,7 @@ fn case_13_a_menu_category_of_the_file_replaced_by_a_creative_category_is_told()
         "1.19.10",
         r#"{"description": {"identifier": "demo:x", "menu_category": {"category": "items"}}, "components": {"minecraft:creative_category": {"category": "items"}}}"#,
     );
-    assert!(
-        !found.iter().any(|f| f.starts_with("core/dropped_field")),
-        "{found:#?}"
-    );
+    assert!(!any_of(&found, &DROPPED), "{found:#?}");
     // Of two components the later one wins (the base first, then each permutation): the
     // earlier one is told where the file has it.
     let (found, written) = told(
@@ -129,10 +151,7 @@ fn case_14_a_flammable_modifier_replaced_by_the_odds_is_told() {
         "1.16.100",
         r#"{"description": {"identifier": "demo:x"}, "components": {"minecraft:flammable": {"flame_odds": 5, "burn_odds": 7, "catch_chance_modifier": 5, "destroy_chance_modifier": 7.0}}}"#,
     );
-    assert!(
-        !found.iter().any(|f| f.starts_with("core/dropped_field")),
-        "{found:#?}"
-    );
+    assert!(!any_of(&found, &DROPPED), "{found:#?}");
     // The table's name beside the description it is made of (1.18.0).
     let (found, written) = told_in(
         "1.18.0",
@@ -337,10 +356,7 @@ fn case_r2_5_an_is_hidden_in_commands_the_1_19_30_step_writes_over_is_noted() {
         "1.19.20",
         r#"{"description": {"identifier": "demo:x", "menu_category": {"category": "construction", "is_hidden_in_commands": false}}, "components": {}}"#,
     );
-    assert!(
-        !found.iter().any(|f| f.starts_with("core/dropped_field")),
-        "{found:#?}"
-    );
+    assert!(!any_of(&found, &DROPPED), "{found:#?}");
     // The 1.19.10 step copies `{category, group}` of the component alone; what else
     // the component holds is not read, and told where the file has it.
     let (found, written) = told(
@@ -422,12 +438,7 @@ fn a_menu_category_group_and_the_commands_category_a_step_rewrites_are_told() {
         "1.19.30",
         r#"{"description": {"identifier": "demo:x", "menu_category": {"category": "nature"}}, "components": {}}"#,
     );
-    assert!(
-        !found
-            .iter()
-            .any(|f| f.starts_with("core/deprecated_member")),
-        "{found:#?}"
-    );
+    assert!(!any_of(&found, &DEPRECATED), "{found:#?}");
 }
 
 #[test]
@@ -519,10 +530,7 @@ fn a_custom_component_of_the_file_under_a_name_of_the_v1_list_is_told_and_nothin
         "1.21.60",
         r#"{"description": {"identifier": "demo:x"}, "components": {"demo:a": {}, "minecraft:custom_components": ["demo:a"]}}"#,
     );
-    assert!(
-        !found.iter().any(|f| f.starts_with("core/dropped_field")),
-        "{found:#?}"
-    );
+    assert!(!any_of(&found, &DROPPED), "{found:#?}");
 }
 
 #[test]
@@ -634,10 +642,7 @@ fn a_set_block_state_beside_the_set_block_property_it_is_made_of_is_noted_and_no
         r#"{"description": {"identifier": "demo:x", "properties": {"demo:a": [0, 1]}}, "components": {}, "events": {"e": {"set_block_state": {"demo:a": 1}, "set_block_property": {"demo:a": 1}}}}"#,
         &allow_listed(),
     );
-    assert!(
-        !found.iter().any(|f| f.starts_with("core/dropped_field")),
-        "{found:#?}"
-    );
+    assert!(!any_of(&found, &DROPPED), "{found:#?}");
 }
 
 #[test]
@@ -860,13 +865,11 @@ fn a_use_beta_features_of_a_legacy_block_is_carried() {
         // not loaded.
         let d = super::common::rejected(&document("1.26.20", &payload), cx);
         assert!(
-            d.iter().any(
-                // By legacy name: the variant and the definitions that were it.
-                |f| matches!(f.code.id(), "core/unrecognized_field")
+            d.iter()
+                .any(|f| matches!(f.code.id(), "core/unrecognized_field")
                     && f.severity == Severity::Error
                     && f.location.json_path.to_string()
-                        == "minecraft:block/description/use_beta_features"
-            ),
+                        == "minecraft:block/description/use_beta_features"),
             "{d:#?}"
         );
     }
@@ -914,12 +917,10 @@ fn a_legacy_event_with_a_sequence_or_a_randomize_is_carried() {
         &allow_listed(),
     );
     assert!(
-        d.iter().any(
-            // By legacy name: the variant and the definitions that were it.
-            |f| matches!(f.code.id(), "core/unrecognized_field")
+        d.iter()
+            .any(|f| matches!(f.code.id(), "core/unrecognized_field")
                 && f.severity == Severity::Error
-                && f.location.json_path.to_string() == "minecraft:block/deprecated_event_handlers"
-        ),
+                && f.location.json_path.to_string() == "minecraft:block/deprecated_event_handlers"),
         "{d:#?}"
     );
 }
@@ -973,10 +974,9 @@ fn what_is_told_of_a_legacy_event_names_the_member_of_the_file() {
         &allow_listed(),
     );
     assert!(
-        d.iter().any(
-            // By legacy name: the variant and the definitions that were it.
-            |f| matches!(f.code.id(), "core/unrecognized_field") && f.severity == Severity::Error
-        ),
+        d.iter()
+            .any(|f| matches!(f.code.id(), "core/unrecognized_field")
+                && f.severity == Severity::Error),
         "{d:#?}"
     );
 }

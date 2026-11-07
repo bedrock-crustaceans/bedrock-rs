@@ -187,7 +187,6 @@ fn an_unknown_child_is_named_by_its_key_as_written() {
         };
         let told: Vec<(String, String)> = found
             .iter()
-            // By legacy name: the variant and the definitions that were it.
             .filter(|f| matches!(f.code.id(), "core/child_not_valid"))
             .map(|f| (f.location.json_path.to_string(), f.code.to_string()))
             .collect();

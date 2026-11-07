@@ -3,6 +3,7 @@
 //! or `minecraft:tags` no slice of the file's version binds, the members of a component a step
 //! takes apart, a `tag:` key beside `minecraft:tags`, and the legacy `creative_category`.
 
+use bedrock_addon_core::diagnostic::Kind;
 use bedrock_addon_core::load::LoadContext;
 
 use super::common::{allowlisted, item, loads, newest_payload, rejects, third_party};
@@ -11,12 +12,7 @@ use super::common::{allowlisted, item, loads, newest_payload, rejects, third_par
 /// (below `minecraft:item/`), and the written text on one line.
 #[track_caller]
 fn told(version: &str, components: &str, cx: &LoadContext) -> (Vec<String>, String) {
-    let mut document = loads(&item(version, "demo:x", components), cx);
-    // An item the steps leave without a component the game's routing test knows has no text: such a document is read with a stack size beside its components.
-    if refused_at_components(&document) {
-        let components = format!(r#"{components}, "minecraft:max_stack_size": 16"#);
-        document = loads(&item(version, "demo:x", &components), cx);
-    }
+    let document = told_document(version, components, cx);
     let found = document
         .diagnostics()
         .iter()
@@ -32,6 +28,22 @@ fn told(version: &str, components: &str, cx: &LoadContext) -> (Vec<String>, Stri
         found,
         written.split_whitespace().collect::<Vec<_>>().join(" "),
     )
+}
+
+/// The item [`told`] reads.
+#[track_caller]
+fn told_document(
+    version: &str,
+    components: &str,
+    cx: &LoadContext,
+) -> bedrock_addon_core::document::Document<bedrock_addon_family_item::Item> {
+    let document = loads(&item(version, "demo:x", components), cx);
+    // An item the steps leave without a component the game's routing test knows has no text: such a document is read with a stack size beside its components.
+    if refused_at_components(&document) {
+        let components = format!(r#"{components}, "minecraft:max_stack_size": 16"#);
+        return loads(&item(version, "demo:x", &components), cx);
+    }
+    document
 }
 
 /// Whether the newest writer refuses `document` at `components`: an item left without a
@@ -679,8 +691,16 @@ fn a_movement_modifier_out_of_the_modifiers_range_is_told_and_not_carried() {
         r#""minecraft:chargeable": {"movement_modifier": 1}"#,
         &allowlisted(),
     );
+    let document = told_document(
+        "1.20.40",
+        r#""minecraft:chargeable": {"movement_modifier": 1}"#,
+        &allowlisted(),
+    );
     assert!(
-        !found.iter().any(|f| f.starts_with("core/invalid_value")),
+        document
+            .diagnostics()
+            .iter()
+            .all(|f| f.code.kind() != Kind::InvalidValue),
         "{found:#?}"
     );
     assert!(written.contains(r#""movement_modifier": 1.0"#), "{written}");

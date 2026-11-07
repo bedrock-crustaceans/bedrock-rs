@@ -4,6 +4,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 
+use bedrock_addon::diagnostic::{Code, Disposition, Kind as FindingKind};
 use bedrock_addon::json::Value;
 use bedrock_addon::load::{LoadContext, LoadOptions};
 use bedrock_addon::pack::PackType;
@@ -521,7 +522,7 @@ const EXEMPT: &[(&str, &str, &str, &str)] = &[
         "component dropped or read as the default",
     ),
     // (c) A keyed custom component of the file beside the v1 list that names it: the keyed
-    // one wins and the list's entry is told (`DroppedField` at `custom_components`); the
+    // one wins and the list's entry is told (a dropped member at `custom_components`); the
     // name the side-car then holds (`custom_components_v1`) is the scalar the judge misses
     // in the document WITHOUT the keyed component, where the list's entry becomes the
     // keyed one and no list is written.
@@ -1106,6 +1107,8 @@ struct Read {
     findings: Vec<String>,
     /// The path of each finding.
     at: Vec<Vec<String>>,
+    /// The code of each finding.
+    codes: Vec<Code>,
 }
 
 impl Read {
@@ -1172,6 +1175,11 @@ fn read_text(
             members: paths,
             findings: ours.findings.iter().map(finding_text).collect(),
             at: ours.findings.iter().map(path_of).collect(),
+            codes: ours
+                .findings
+                .iter()
+                .map(|finding| finding.code.clone())
+                .collect(),
         },
         ours,
     ))
@@ -1282,7 +1290,7 @@ struct Base<'a> {
     read: Read,
     /// The scalars of the text, keys left out.
     scalars: Vec<String>,
-    /// Whether the member at a path is not read as a whole (see [`not_read`]), once asked.
+    /// Whether the member at a path is not read as a whole (see [`told_not_read`]), once asked.
     ignored: std::cell::RefCell<BTreeMap<Vec<String>, bool>>,
     /// What the document is written as with nothing of the author's but its identifier
     /// ([`bare_text`]): the members the steps put into every document of its version.
@@ -1346,28 +1354,37 @@ fn same_but_order(a: &Read, b: &Read) -> bool {
     a.written == b.written || (a.members == b.members && sorted(&a.leaves) == sorted(&b.leaves))
 }
 
-/// The codes that say a member is dropped or not read, whatever it holds: the only findings
-/// that make a place "told as not read". A finding of any other code (the
-/// `MolangNotChecked` INFO at the payload, most of all) says nothing of a value below it.
-const NOT_READ: &[&str] = &[
-    "core/dropped_field",
-    // The name four of `DroppedField`'s sites have now (a member read and kept nowhere):
-    // the same statement of the same members, no new place.
-    "core/member_not_kept",
-    "core/dropped_component",
-    "core/deprecated_member",
-    "core/unrecognized_field",
-    "core/unrecognized_component",
-    "core/invalid_type",
-    "core/invalid_value",
-    // A value its member's reader does not take (a number where a component's object is
-    // read): the member is not read.
-    "core/syntax",
-    // "Two versions of the same component found": the newer-named one of the file goes.
-    "core/duplicate_component_version",
-    // A member the game never looks up (the particle's legacy `camera_distance_fade`).
-    "core/no_effect",
-];
+/// Whether `code` says a member is dropped or not read, whatever it holds: the only findings
+/// that make a place "told as not read". A finding of any other kind (the
+/// `core/molang_not_checked` INFO at the payload, most of all) says nothing of a value below it.
+///
+/// Asked by kind, as every family raises these under its own ids.
+fn not_read(code: &Code) -> bool {
+    matches!(
+        code.kind(),
+        // A member the load drops, does not keep (read and kept nowhere), or does not know;
+        // also "two versions of the same component found": the newer-named one of the file
+        // goes.
+        FindingKind::UnknownMember(Disposition::Dropped | Disposition::NotKept | Disposition::Kept)
+            | FindingKind::Deprecated
+            | FindingKind::WrongType
+            | FindingKind::InvalidValue
+            // A value its member's reader does not take (a number where a component's object
+            // is read): the member is not read.
+            | FindingKind::Syntax
+            // A member the game never looks up (the particle's legacy `camera_distance_fade`).
+            | FindingKind::NeverApplies
+    )
+}
+
+/// Whether `code` says a value is read as another (`core/value_rewritten`, with the game's
+/// words or the crate's).
+fn value_rewritten(code: &Code) -> bool {
+    matches!(
+        code.id(),
+        "core/value_rewritten" | "core/value_rewritten_worded"
+    )
+}
 
 /// The scalars of `value` (no keys), sorted.
 fn scalars_of(value: &Value) -> Vec<String> {
@@ -1379,20 +1396,20 @@ fn scalars_of(value: &Value) -> Vec<String> {
 }
 
 /// Whether the load says the place is not read ("told as not read"): a finding of a
-/// [`NOT_READ`] code of this load at the place itself, or at an enclosing member that is not
+/// [`not_read`] code of this load at the place itself, or at an enclosing member that is not
 /// read AS A WHOLE (the document with `7` and with `"x"` there, or the document without it,
 /// is written as the unchanged one). A finding at an enclosing member that IS read excuses
 /// nothing below it, also where a step moved the member and the written text has it at
 /// another place (a component told as deprecated and carried into a side-car: what is below
 /// it is written, or told where it is).
-fn not_read(
+fn told_not_read(
     read: &dyn Fn(&str) -> Outcome,
     base: &Base<'_>,
     node: &Node,
     outcome: &Outcome,
 ) -> bool {
     for finding in &outcome.findings {
-        if !NOT_READ.contains(&code(finding).as_str()) {
+        if !not_read(&finding.code) {
             continue;
         }
         let at = path_of(finding);
@@ -1439,21 +1456,18 @@ fn not_read(
     false
 }
 
-/// Whether the load has a `ClampedValue` finding at the place itself.
+/// Whether the load has a finding of a clamped value at the place itself.
 fn clamped_at(node: &Node, outcome: &Outcome) -> bool {
     outcome
         .findings
         .iter()
-        .any(|finding| {
-            finding.code.kind() == bedrock_addon::diagnostic::Kind::Clamped
-                && path_of(finding) == node.path
-        })
+        .any(|finding| finding.code.kind() == FindingKind::Clamped && path_of(finding) == node.path)
 }
 
 /// Whether `at` is a component of an entity (`minecraft:entity/components/<key>` or
 /// `minecraft:entity/component_groups/<group>/<key>`): the place the information names when
 /// a failed validation of the game's legacy reader defaults the whole component (no other
-/// `ValueRewritten` above a place counts for the two rules that use it).
+/// [`value_rewritten`] above a place counts for the two rules that use it).
 fn component_level(at: &[String]) -> bool {
     match at {
         [payload, section, _] => payload == "minecraft:entity" && section == "components",
@@ -1463,13 +1477,13 @@ fn component_level(at: &[String]) -> bool {
 }
 
 /// Whether the load says at the place itself that its value is read as another (an information
-/// `ValueRewritten` there): the same words whatever value stood there, so also where the
+/// [`value_rewritten`] there): the same words whatever value stood there, so also where the
 /// unchanged document was told so (as [`clamped_at`] for a clamp).
 fn rewritten_at(node: &Node, outcome: &Outcome) -> bool {
     outcome
         .findings
         .iter()
-        .any(|finding| code(finding) == "core/value_rewritten" && path_of(finding) == node.path)
+        .any(|finding| value_rewritten(&finding.code) && path_of(finding) == node.path)
 }
 
 /// Whether a finding at `at` is at the member the place's value MOVED to ("said elsewhere"):
@@ -1615,22 +1629,22 @@ impl Changed<'_, '_> {
     fn written_as_before(&self, read: &dyn Fn(&str) -> Outcome) -> Result<&'static str, Fault> {
         let (base, node, outcome) = (self.base, self.node, self.outcome);
         // A member the load says it does not read, whatever its value.
-        if not_read(read, base, node, outcome) {
+        if told_not_read(read, base, node, outcome) {
             return Ok("told as not read");
         }
         // Both loads say the enclosing component is rewritten as a whole (a legacy reader
         // whose failed validation keeps its defaults): nothing below it is read.
-        let whole = |findings: &[String], at: &[Vec<String>]| {
-            findings.iter().zip(at).any(|(text, at)| {
+        let whole = |codes: &[Code], at: &[Vec<String>]| {
+            codes.iter().zip(at).any(|(code, at)| {
                 component_level(at)
                     && *at != node.path
                     && node.path.starts_with(at)
-                    && text.starts_with("core/value_rewritten")
+                    && value_rewritten(code)
             })
         };
         let ours_at: Vec<Vec<String>> = outcome.findings.iter().map(path_of).collect();
-        let ours_text: Vec<String> = outcome.findings.iter().map(finding_text).collect();
-        if whole(&base.read.findings, &base.read.at) && whole(&ours_text, &ours_at) {
+        let ours_codes: Vec<Code> = outcome.findings.iter().map(|f| f.code.clone()).collect();
+        if whole(&base.read.codes, &base.read.at) && whole(&ours_codes, &ours_at) {
             return Ok("told as not read");
         }
         // The same value in another form (a short form for the long one the document has):
@@ -1656,9 +1670,10 @@ impl Changed<'_, '_> {
             .findings
             .iter()
             .zip(&base.read.at)
-            .any(|(text, at)| {
+            .zip(&base.read.codes)
+            .any(|((text, at), code)| {
                 *at == node.path
-                    && NOT_READ.iter().any(|code| text.starts_with(code))
+                    && not_read(code)
                     && !outcome
                         .findings
                         .iter()
@@ -1685,7 +1700,7 @@ impl Changed<'_, '_> {
             .outcome
             .findings
             .iter()
-            .filter(|finding| NOT_READ.contains(&code(finding).as_str()))
+            .filter(|finding| not_read(&finding.code))
             .map(path_of)
             .filter(|at| at.len() > 2)
             .map(|at| {
@@ -1716,7 +1731,7 @@ impl Changed<'_, '_> {
                     .strip_prefix(own.as_str())
                     .is_none_or(|rest| !rest.is_empty() && !rest.starts_with('/'))
             })
-            // A member the load says it drops or replaces (a finding of a [`NOT_READ`]
+            // A member the load says it drops or replaces (a finding of a [`not_read`]
             // code at it or above it, below the payload) is told of: the member a step
             // writes the replaced one over.
             .filter(|member| {
@@ -1768,11 +1783,12 @@ impl Changed<'_, '_> {
             .findings
             .iter()
             .zip(&base.read.at)
-            .any(|(text, at)| {
+            .zip(&base.read.codes)
+            .any(|((text, at), code)| {
                 component_level(at)
                     && *at != node.path
                     && node.path.starts_with(at)
-                    && text.starts_with("core/value_rewritten")
+                    && value_rewritten(code)
                     && !self
                         .outcome
                         .findings

@@ -167,7 +167,6 @@ fn a_list_value_under_an_array_version_of_the_old_struct_is_a_type_error() {
 fn mismatch(found: &Diagnostics) -> bool {
     found
         .iter()
-        // By legacy name: the variant and the definitions that were it.
         .any(|d| matches!(d.code.id(), "core/payload_key_mismatch"))
 }
 
@@ -195,7 +194,6 @@ fn a_foreign_payload_key_loads_under_an_array_version_and_in_either_member_order
         let warning = loaded
             .diagnostics()
             .iter()
-            // By legacy name: the variant and the definitions that were it.
             .find(|d| matches!(d.code.id(), "core/payload_key_mismatch"))
             .unwrap();
         let span = warning.location.span.unwrap();
@@ -212,7 +210,6 @@ fn a_foreign_payload_key_with_an_escaped_quote_is_found_whole() {
     let warning = loaded
         .diagnostics()
         .iter()
-        // By legacy name: the variant and the definitions that were it.
         .find(|d| matches!(d.code.id(), "core/payload_key_mismatch"))
         .unwrap();
     assert_eq!(warning.location.json_path.to_string(), "a\"b");
@@ -334,7 +331,6 @@ fn three_entries_of_one_pack_warn_twice_and_distinct_packs_never() {
     let paths: Vec<String> = loaded
         .diagnostics()
         .iter()
-        // By legacy name: the variant and the definitions that were it.
         .filter(|d| matches!(d.code.id(), "core/duplicate_identifier"))
         .map(|d| d.location.json_path.to_string())
         .collect();

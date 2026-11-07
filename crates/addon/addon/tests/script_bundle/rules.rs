@@ -95,7 +95,8 @@ fn found(code: &str, severity: &str, file: &str) -> (String, String, String) {
     (code.to_owned(), severity.to_owned(), file.to_owned())
 }
 
-const SYNTAX: &str = "script/script_invalid_utf8";
+/// The engine's line for a file that is not UTF-8.
+const INVALID_UTF8: &str = "script/script_invalid_utf8";
 /// Every code that was `ScriptSyntaxError`.
 const SYNTAX_IDS: [&str; 5] = [
     "core/script_syntax_error",
@@ -249,7 +250,7 @@ fn the_parser_reads_only_the_files_the_entry_reaches() {
     let unreached = &runs.files[&ScriptPath::new("c.js")];
     assert_eq!(unreached.content.as_ref().unwrap().syntax, None);
     let expected = if checked {
-        vec![found(SYNTAX, "info", "scripts/b.js")]
+        vec![found("core/script_syntax_error", "info", "scripts/b.js")]
     } else {
         Vec::new()
     };
@@ -398,8 +399,8 @@ fn l6_l7_invalid_utf8_is_an_error_where_the_entry_reaches_and_a_note_elsewhere_d
     assert_eq!(
         by_reach(b"export const v = \"\xff\";"),
         [
-            found(SYNTAX, "error", "scripts/d.js"),
-            found(SYNTAX, "error", "scripts/s.js"),
+            found(INVALID_UTF8, "error", "scripts/d.js"),
+            found(INVALID_UTF8, "error", "scripts/s.js"),
             found("script/unread_not_utf8", "info", "scripts/u.js"),
         ]
     );

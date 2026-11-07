@@ -19,16 +19,17 @@
 
 mod common;
 
-use bedrock_addon::diagnostic::{Diagnostic, DiagnosticDetail, Kind, Phase, Severity};
+use bedrock_addon::diagnostic::{Diagnostic, DiagnosticDetail, Kind, Phase, Severity, codes};
 use bedrock_addon::pack::{LinkOptions, StackSet};
 use bedrock_addon::storage::PackPath;
 
 /// What the gate decided, and the counts it decided on.
 #[derive(Debug, PartialEq, Eq)]
 struct Verdict {
-    /// The build passes: nothing is an error.
+    /// The build passes: nothing is an error, so `errors` is 0.
     passed: bool,
-    /// Findings of `Severity::Error`: a document or definition was dropped.
+    /// Findings of `Severity::Error`: a document or definition was dropped, or the game logs
+    /// an error and keeps it (a kept error, which `has_errors()` does not count).
     errors: usize,
     /// Findings of `Severity::Warning`: a member was dropped or replaced by a default.
     warnings: usize,
@@ -55,8 +56,11 @@ fn ci_gate(stacks: &StackSet) -> Verdict {
     // A code is matched as data, never by its text.
     let deprecated = report
         .iter()
-        // By kind: whichever rule raised it.
-        .filter(|finding| finding.kind() == Kind::Deprecated)
+        // By kind: whichever rule raised it; the lint that an item is read with the legacy
+        // schema is of the same kind and upgrades no member.
+        .filter(|finding| {
+            finding.kind() == Kind::Deprecated && !finding.is(&codes::LEGACY_ITEM_FORMAT)
+        })
         .count();
     eprintln!("{deprecated} deprecated member(s) upgraded");
     let rejected: Vec<PackPath> = stacks
@@ -77,9 +81,12 @@ fn ci_gate(stacks: &StackSet) -> Verdict {
             .filter(|finding| finding.severity == severity)
             .count()
     };
+    // Every error counts, a kept one too: it is an error in the game's log. (`has_errors()`
+    // asks the narrower question, whether an error rejected something.)
+    let errors = count(Severity::Error);
     Verdict {
-        passed: !report.has_errors() && !links.has_errors(),
-        errors: count(Severity::Error),
+        passed: errors == 0,
+        errors,
         warnings: count(Severity::Warning),
         lints: links
             .iter()

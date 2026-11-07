@@ -67,7 +67,6 @@ fn b12_duplicate_identifier() {
     let duplicates: Vec<_> = stack
         .biomes()
         .diagnostics()
-        // By legacy name: the variant and the definitions that were it.
         .filter(|d| d.code.id() == "biome/duplicate")
         .cloned()
         .collect();

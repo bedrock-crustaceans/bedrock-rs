@@ -572,12 +572,10 @@ fn rc28_comments_and_the_vanilla_apostrophe() {
     let document = loaded(parse(&text, &rp(1, 21, 100)));
     clean(document.diagnostics());
     assert!(
-        find(
-            document.diagnostics(),
-            "core/case_folding_disabled_at_line_unresolvable",
-            Severity::Info
-        )
-        .is_none()
+        document
+            .diagnostics()
+            .iter()
+            .all(|f| !(f.code.kind() == Kind::Lint && f.severity == Severity::Info))
     );
     let eyes = &document.render_controllers["controller.render.creaking_eyes"];
     // Folding stops at the apostrophe of the comment's "there's".
@@ -1240,6 +1238,16 @@ fn rc29_a_dropped_controller_raises_no_array_finding() {
             .filter(|f| f.code.kind() == Kind::UnresolvedReference && f.severity == Severity::Info)
             .count(),
         0,
+        "{:?}",
+        lines(document.diagnostics())
+    );
+    assert_eq!(
+        document
+            .diagnostics()
+            .iter()
+            .filter(|f| f.code.kind() == Kind::MissingRequired && f.severity == Severity::Error)
+            .count(),
+        1,
         "{:?}",
         lines(document.diagnostics())
     );

@@ -6,7 +6,7 @@
 
 #![allow(dead_code, reason = "each feature set uses part of the helpers")]
 
-use bedrock_addon::diagnostic::{Diagnostic, DiagnosticDetail, Diagnostics, Phase, Severity};
+use bedrock_addon::diagnostic::{Diagnostic, DiagnosticDetail, Diagnostics, Kind, Phase, Severity};
 
 #[cfg(feature = "block")]
 mod block;
@@ -83,18 +83,18 @@ pub fn one(
 }
 
 /// The vanilla text of a finding, as the game prints it; `None` for a finding of ours.
+///
+/// Asked of the kinds whose findings carried the game's sentence: an unresolved or invalid
+/// reference, an invalid value, a rule with no effect, a missing member, a rejected document.
 pub fn text(finding: &Diagnostic) -> Option<String> {
-    // By legacy name: the variants and the definitions (plain and worded) that were them.
     matches!(
-        finding.code.id(),
-        "core/unresolved_reference_worded"
-            | "core/invalid_reference_worded"
-            | "core/invalid_value_worded"
-            | "core/no_effect_worded"
-            | "core/missing_required_field_worded"
-            | "core/document_rejected_worded"
-            | "crafting_catalog/category_mismatch"
-            | "crafting_catalog/group_mismatch"
+        finding.code.kind(),
+        Kind::UnresolvedReference
+            | Kind::InvalidReference
+            | Kind::InvalidValue
+            | Kind::NeverApplies
+            | Kind::MissingRequired
+            | Kind::Closing
     )
     .then(|| finding.vanilla())
     .flatten()

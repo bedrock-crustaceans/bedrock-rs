@@ -40,7 +40,6 @@ fn shadowed(
 ) -> Vec<(Severity, String)> {
     rules
         .diagnostics()
-        // By legacy name: the variant and the definitions that were it.
         .filter(|f| matches!(f.code.id(), "core/shadowed_definition"))
         .map(|f| {
             (

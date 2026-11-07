@@ -24,7 +24,6 @@ fn misread(version: &str, payload: &str) -> (Vec<String>, Value) {
         .filter(|f| {
             f.phase == Phase::Upgrade
                 && f.severity == Severity::Info
-                // By legacy name: the variant and the definitions that were it.
                 && f.code.id() == "core/invalid_type"
         })
         .map(|f| f.location.json_path.to_string())

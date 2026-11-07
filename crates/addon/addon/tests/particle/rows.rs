@@ -737,7 +737,6 @@ fn a_plain_effect_loads_in_both_eras_without_a_finding() {
         assert_eq!(document.description.identifier.as_str(), "demo:spark");
     }
     assert_lacks(loaded(&effect(LEGACY, "")).diagnostics(), "component!");
-    // By legacy name: the variant and the definitions that were it.
     assert_eq!(
         rejected("{").iter().next().map(|d| d.code.id()),
         Some("core/document_json")

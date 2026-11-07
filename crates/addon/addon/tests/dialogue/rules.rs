@@ -336,13 +336,11 @@ fn a_button_name_that_is_absent_or_null_is_missing_and_another_type_invalid() {
         assert_eq!(warnings(&diagnostics), [NO_NAME], "{button}");
         let code = &diagnostics.iter().next().unwrap().code;
         assert_eq!(
-            // By legacy name: the variant and the definitions that were it.
             matches!(code.id(), "dialogue/no_button_name_missing_required_field"),
             missing,
             "{button}: {code:?}"
         );
         assert_eq!(
-            // By legacy name: the variant and the definitions that were it.
             matches!(code.id(), "dialogue/no_button_name_invalid_type"),
             !missing,
             "{button}: {code:?}"

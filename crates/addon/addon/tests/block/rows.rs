@@ -95,12 +95,10 @@ fn findings(text: &str, cx: &bedrock_addon::load::LoadContext) -> (Option<Block>
 type CodeTest = fn(&Code) -> bool;
 
 fn invalid_value(c: &Code) -> bool {
-    // By legacy name: the variant and the definitions that were it.
     c.kind() == Kind::InvalidValue
 }
 
 fn missing_toggles(c: &Code) -> bool {
-    // By legacy name: the variant and the definitions that were it.
     c.kind() == Kind::Toggle
 }
 
@@ -113,7 +111,6 @@ fn below_floor() {
         let d = rejected(&document(version, payload), &context());
         expect(
             &d,
-            // By legacy name: the variant and the definitions that were it.
             |c| matches!(c.id(), "core/use_format_version"),
             Severity::Error,
             "To use block 'demo:x', use json format version 1.16.0 or higher",
@@ -130,7 +127,6 @@ fn envelope() {
     assert_eq!(block.version().parsed_as, FormatVersion::new(1, 16, 0));
     expect_at(
         block.diagnostics(),
-        // By legacy name: the variant and the definitions that were it.
         |c| matches!(c.id(), "core/missing_format_version"),
         Severity::Info,
         "",
@@ -148,7 +144,6 @@ fn envelope() {
         let d = rejected(&text, &context());
         expect(
             &d,
-            // By legacy name: the variant and the definitions that were it.
             |c| matches!(c.id(), "core/malformed_format_version"),
             Severity::Error,
             "Malformed format version",
@@ -168,7 +163,6 @@ fn envelope() {
     let d = rejected(&third("1.26.30"), &context());
     expect(
         &d,
-        // By legacy name: the variant and the definitions that were it.
         |c| matches!(c.id(), "core/document_member_count"),
         Severity::Error,
         "A Minecraft Document must have exactly two members: \"format_version\" and a payload member",
@@ -177,7 +171,6 @@ fn envelope() {
     let block = loads(&third("1.21.60"), &context());
     expect_at(
         block.diagnostics(),
-        // By legacy name: the variant and the definitions that were it.
         |c| matches!(c.id(), "core/unrecognized_field"),
         Severity::Info,
         "extra",
@@ -186,7 +179,6 @@ fn envelope() {
     let d = rejected(&document("1.26.61", payload), &context());
     expect(
         &d,
-        // By legacy name: the variant and the definitions that were it.
         |c| matches!(c.id(), "core/no_parser_for_version"),
         Severity::Error,
         "unsupported version: no parser available for version 1.26.61",
@@ -590,7 +582,6 @@ fn cross_component() {
     assert_eq!((x.range.min, x.range.max), (0.0, 0.0));
     expect(
         block.diagnostics(),
-        // By legacy name: the variant and the definitions that were it.
         |c| matches!(c.id(), "block/random_offset_restricted"),
         Severity::Warning,
         "Random offset pushes collision box outside of cube for 'x->min'. Restricting value from -2.000000 to 0.000000",
@@ -662,7 +653,6 @@ fn format_1_26_30_stamp() {
         let d = rejected(&text.replacen("\"1.26.30\"", "\"1.26.61\"", 1), &ucf());
         expect(
             &d,
-            // By legacy name: the variant and the definitions that were it.
             |c| matches!(c.id(), "core/no_parser_for_version"),
             Severity::Error,
             "unsupported version: no parser available for version 1.26.61",
@@ -765,7 +755,6 @@ fn retail_multi_block_rules() {
     let cases: [(String, CodeTest, &str); 5] = [
         (
             multi("", "{}", ""),
-            // By legacy name: the variant and the definitions that were it.
             |c| matches!(c.id(), "block/multi_block_movable"),
             "Blocks with trait 'minecraft:multi_block' must define component 'minecraft:movable'",
         ),
@@ -838,7 +827,6 @@ fn retail_multi_block_rules() {
     );
     expect(
         &d,
-        // By legacy name: the variant and the definitions that were it.
         |c| matches!(c.id(), "block/n_way_unknown_state"),
         Severity::Error,
         "'minecraft:geometry' field 'n_way_visual_rotation.y' references unknown state 'demo:missing'",
@@ -852,7 +840,6 @@ fn retail_multi_block_rules() {
     );
     expect(
         &d,
-        // By legacy name: the variant and the definitions that were it.
         |c| matches!(c.id(), "block/n_way_axis"),
         Severity::Error,
         "'n_way_visual_rotation' must define at least one axis (x, y, or z)",
@@ -893,7 +880,6 @@ fn y_rotation_offset_snap() {
     );
     expect(
         block.diagnostics(),
-        // By legacy name: the variant and the definitions that were it.
         |c| matches!(c.id(), "block/y_rotation_offset_factor"),
         Severity::Warning,
         "\"minecraft:placement_direction\" trait \"y_rotation_offset\" must be a factor of 90.0. Defaulting to the nearest axis-aligned angle.",
@@ -975,7 +961,6 @@ fn required_members() {
         let d = rejected(&modern_components(&format!("{{{component}}}")), &ucf());
         expect_at(
             &d,
-            // By legacy name: the variant and the definitions that were it.
             |c| matches!(c.id(), "core/missing_required_field"),
             Severity::Error,
             path,
@@ -988,10 +973,7 @@ fn required_members() {
     );
     expect_at(
         &d,
-        |c| {
-            // By legacy name: the variant and the definitions that were it.
-            matches!(c.id(), "core/missing_required_field") || c.kind() == Kind::WrongType
-        },
+        |c| matches!(c.id(), "core/missing_required_field") || c.kind() == Kind::WrongType,
         Severity::Error,
         "minecraft:map_color",
     );
@@ -1110,7 +1092,6 @@ fn constraint_texts() {
     assert!(block.components.get::<RandomOffset>().is_some());
     expect(
         block.diagnostics(),
-        // By legacy name: the variant and the definitions that were it.
         |c| matches!(c.id(), "block/random_offset_restricted"),
         Severity::Warning,
         "Random offset pushes collision box outside of cube for 'x->min'. Restricting value from -2.000000 to 0.000000",
@@ -1140,7 +1121,6 @@ fn condition_float() {
     );
     expect(
         &d,
-        // By legacy name: the variant and the definitions that were it.
         |c| matches!(c.id(), "block/condition_not_string"),
         Severity::Error,
         "permutation condition must be a string value",
@@ -1264,7 +1244,6 @@ fn condition_object_invalid_and_high() {
         // The game says nothing of the empty node: an information of ours.
         expect_at(
             block.diagnostics(),
-            // By legacy name: the variant and the definitions that were it.
             |c| matches!(c.id(), "core/dropped_field"),
             Severity::Info,
             "permutations/0/condition",
@@ -1273,7 +1252,6 @@ fn condition_object_invalid_and_high() {
             !block
                 .diagnostics()
                 .iter()
-                // By legacy name: the variant and the definitions that were it.
                 .any(|f| matches!(f.code.id(), "core/invalid_molang")),
             "{condition}: not compiled"
         );
@@ -1330,7 +1308,6 @@ fn condition_pre_1_19_70() {
         // The drop is silent in the game: an information of ours.
         expect_at(
             block.diagnostics(),
-            // By legacy name: the variant and the definitions that were it.
             |c| matches!(c.id(), "core/dropped_field"),
             Severity::Info,
             "permutations/0",

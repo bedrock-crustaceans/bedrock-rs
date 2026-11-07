@@ -228,9 +228,14 @@ fn f02d_runtime_values_are_replaced_and_warned_and_the_feature_loads() {
             f.severity == Severity::Error
                 && matches!(
                     f.code.id(),
-                    "feature/iterations_negative"
+                    "core/scatter_param_value"
+                        | "core/scatter_param_value_worded"
+                        | "feature/iterations_negative"
                         | "feature/scatter_chance_percent"
+                        | "feature/scatter_chance_fraction"
+                        | "feature/must_be_provided"
                         | "feature/step_size_not_grid"
+                        | "feature/grid_offset_not_grid"
                         | "feature/extent_order"
                 )
         })

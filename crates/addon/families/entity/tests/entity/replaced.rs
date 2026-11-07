@@ -61,10 +61,7 @@ fn case_1_a_target_range_beside_max_dist_is_noted_as_replaced() {
         "demo:x",
         r#""components": {"minecraft:behavior.drop_item_for": {"priority": 1, "max_dist": 3, "target_range": [3, 3, 3]}}"#,
     );
-    assert!(
-        !found.iter().any(|f| f.starts_with("core/dropped_field")),
-        "{found:#?}"
-    );
+    has_none_dropped(&found);
 }
 
 #[test]
@@ -135,10 +132,7 @@ fn case_4_an_entry_of_breeds_with_a_later_entry_of_its_mate_replaces_is_noted() 
         "demo:x",
         r#""components": {"minecraft:breedable": {"breeds_with": [{"mate_type": "demo:a", "baby_type": "demo:b"}, {"mate_type": "demo:d", "baby_type": "demo:c"}]}}"#,
     );
-    assert!(
-        !found.iter().any(|f| f.starts_with("core/dropped_field")),
-        "{found:#?}"
-    );
+    has_none_dropped(&found);
 }
 
 #[test]
@@ -160,10 +154,7 @@ fn case_5_an_offspring_of_the_file_the_breedable_split_replaces_is_noted() {
         "demo:x",
         r#""components": {"minecraft:breedable": {"require_tame": false}, "minecraft:offspring": {"offspring_pairs": {"demo:z": "demo:y"}}}"#,
     );
-    assert!(
-        !found.iter().any(|f| f.starts_with("core/dropped_field")),
-        "{found:#?}"
-    );
+    has_none_dropped(&found);
     assert!(written.contains(r#""demo:z": "demo:y""#), "{written}");
 }
 
@@ -270,7 +261,7 @@ fn a_component_a_step_renames_over_one_the_file_has_is_noted() {
             &format!(r#""components": {{"{old}": {{"priority": 1}}, "{new}": {{"priority": 1}}}}"#),
         );
         // (A marker's legacy reader tells `priority` itself: not the step's note.)
-        has_not(&found, &format!("core/dropped_field Info components/{new}"));
+        has_not_dropped(&found, &format!("Info components/{new}"));
     }
 }
 
@@ -351,6 +342,17 @@ fn has_not_dropped(found: &[String], told: &str) {
     for id in DROPPED {
         has_not(found, &format!("{id} {told}"));
     }
+}
+
+/// Requires no finding of the dropped kind anywhere.
+#[track_caller]
+fn has_none_dropped(found: &[String]) {
+    assert!(
+        !found
+            .iter()
+            .any(|f| DROPPED.iter().any(|id| f.starts_with(&format!("{id} ")))),
+        "{found:#?}"
+    );
 }
 
 #[track_caller]
@@ -461,10 +463,7 @@ fn case_r2_3_an_impact_damage_knockback_flag_the_step_sets_is_noted() {
         "demo:x",
         r#""components": {"minecraft:projectile": {"on_hit": {"impact_damage": {"damage": 1, "apply_knockback_to_blocking_targets": true}}}}"#,
     );
-    assert!(
-        !found.iter().any(|f| f.starts_with("core/dropped_field")),
-        "{found:#?}"
-    );
+    has_none_dropped(&found);
 }
 
 #[test]
@@ -897,7 +896,7 @@ fn b3c_the_upgrades_that_go_with_an_entity_version_are_told() {
         "entity/no_string_name Error description/entity_version/upgrades/0/name",
     );
     has(&found, "core/dropped_field Info description/entity_version");
-    has_not(&found, "core/dropped_field Info upgrades");
+    has_not_dropped(&found, "Info upgrades");
     // The handlers of a version that reads stay, and nothing is told.
     let (found, written) = told(
         "1.26.30",
@@ -905,10 +904,7 @@ fn b3c_the_upgrades_that_go_with_an_entity_version_are_told() {
         r#""description": {"identifier": "demo:x", "entity_version": {"upgrades": [{"upgrade_to": 1, "name": "h"}]}}, "components": {}, "upgrades": {"h": {}}"#,
     );
     assert!(written.contains(r#""upgrades": { "h": {} }"#), "{written}");
-    assert!(
-        !found.iter().any(|f| f.starts_with("core/dropped_field")),
-        "{found:#?}"
-    );
+    has_none_dropped(&found);
 }
 
 #[test]
@@ -1513,10 +1509,7 @@ fn a_legacy_look_time_reads_min_max_and_not_the_range_spelling() {
         r#""components": {"minecraft:behavior.look_at_player": {"priority": 1, "look_time": {"min": 1, "max": 3}}}"#,
     );
     assert!(written.contains(r#""look_time": { "min": 1"#), "{written}");
-    assert!(
-        !found.iter().any(|f| f.contains("core/dropped_field")),
-        "{found:?}"
-    );
+    has_none_dropped(&found);
     let (found, written) = told(
         "1.21.0",
         "demo:x",

@@ -203,7 +203,6 @@ fn legacy_shape_at_1_21_60() {
     let d = rejected(&text, &experiment());
     assert!(
         d.iter()
-            // By legacy name: the variant and the definitions that were it.
             .any(|f| matches!(f.code.id(), "core/missing_required_field"))
     );
 }

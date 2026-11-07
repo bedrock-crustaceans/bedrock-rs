@@ -99,7 +99,6 @@ fn a_wrong_shape_is_kept_and_reported_as_invalid_type() {
         // on: a kept error.
         assert_eq!(finding.severity, Severity::Error);
         assert!(finding.kept);
-        // By legacy name: the variant and the definitions that were it.
         assert_eq!(
             finding.code.id(),
             "shapes/item_descriptor_shape",

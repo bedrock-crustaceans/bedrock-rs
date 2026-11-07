@@ -173,7 +173,6 @@ pub fn text(d: &Diagnostic) -> String {
 pub fn findings(diagnostics: &Diagnostics) -> Vec<String> {
     diagnostics
         .iter()
-        // By legacy name: the variant and the definitions that were it.
         .filter(|d| !matches!(d.code.id(), "core/molang_not_checked"))
         .map(text)
         .collect()

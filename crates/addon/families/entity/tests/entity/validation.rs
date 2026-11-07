@@ -2,7 +2,7 @@
 //! goals and component versions.
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{Code, Severity};
+use bedrock_addon_core::diagnostic::{Code, Kind, Severity};
 use bedrock_addon_core::document::ComponentRef;
 use bedrock_addon_core::document::JsonDocument;
 use bedrock_addon_core::load::{Experiment, LoadContext};
@@ -804,7 +804,7 @@ fn generic_component_metadata() {
     beta.beta_apis = true;
     let (_, found) = stable(&text, &beta);
     assert!(
-        with_code(&found, "core/turn_on_toggle_before").is_empty(),
+        found.iter().all(|f| f.code.kind() != Kind::Toggle),
         "{found:#?}"
     );
 
@@ -1458,7 +1458,6 @@ fn an_unknown_component_has_the_game_text_at_the_component() {
     let found: Vec<_> = after
         .diagnostics
         .iter()
-        // By legacy name: the variant and the definitions that were it.
         .filter(|f| matches!(f.code.id(), "core/component_not_in_schema"))
         .map(|f| {
             (
@@ -1480,11 +1479,12 @@ fn an_unknown_component_has_the_game_text_at_the_component() {
     let before = super::common::fixture("engine/upgrade-asm-1.json");
     let earlier = outcome(&before, &cx());
     assert!(
-        earlier
-            .diagnostics
-            .iter()
-            // By legacy name: the variant and the definitions that were it.
-            .all(|f| !matches!(f.code.id(), "core/component_not_in_schema")),
+        earlier.diagnostics.iter().all(|f| !matches!(
+            f.code.id(),
+            "core/component_not_in_schema"
+                | "core/unrecognized_component"
+                | "core/unrecognized_component_worded"
+        )),
         "{:#?}",
         earlier.diagnostics
     );

@@ -122,7 +122,6 @@ fn sg42_duplicate_identifier() {
     assert_eq!(winner.spawn_rules()[0].herds[0].min_size, 2);
     let duplicates: Vec<_> = registry
         .diagnostics()
-        // By legacy name: the variant and the definitions that were it.
         .filter(|d| matches!(d.code.id(), "core/duplicate_identifier"))
         .collect();
     assert_eq!(duplicates.len(), 1);
@@ -171,7 +170,6 @@ fn sg43_failed_duplicate() {
         registry.rejected()[0]
             .diagnostics
             .iter()
-            // By legacy name: the variant and the definitions that were it.
             .any(|d| matches!(d.code.id(), "core/no_parser_for_version"))
     );
 }
@@ -211,7 +209,6 @@ fn sg38_a_group_without_conditions_is_not_registered() {
     assert!(
         registry
             .diagnostics()
-            // By legacy name: the variant and the definitions that were it.
             .any(|d| matches!(d.code.id(), "core/empty_document"))
     );
 }

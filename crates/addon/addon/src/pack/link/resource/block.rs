@@ -328,8 +328,6 @@ mod tests {
         found
             .iter()
             .map(|finding| {
-                // By legacy name: the definitions that were `NoEffect` or
-                // `ShadowedDefinition`, plain (no sentence) and worded.
                 let text = matches!(
                     finding.code.id(),
                     "core/no_effect_worded" | "core/shadowed_definition"

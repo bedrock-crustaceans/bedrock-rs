@@ -94,7 +94,6 @@ mod compiled {
     fn rejections(d: &Diagnostics) -> usize {
         d.iter()
             .filter(|f| {
-                // By legacy name: the variant and the definitions that were it.
                 matches!(f.code.id(), "core/invalid_molang") && f.severity >= Severity::Warning
             })
             .count()
@@ -131,7 +130,6 @@ mod compiled {
         let mut at: Vec<String> = loaded
             .diagnostics()
             .iter()
-            // By legacy name: the variant and the definitions that were it.
             .filter(|f| matches!(f.code.id(), "core/invalid_molang"))
             .map(|f| f.location.json_path.to_string())
             .collect();
@@ -192,7 +190,6 @@ mod compiled {
         assert!(
             low.diagnostics()
                 .iter()
-                // By legacy name: the variant and the definitions that were it.
                 .any(|f| matches!(f.code.id(), "core/invalid_molang")
                     && f.severity == Severity::Info),
             "{:#?}",

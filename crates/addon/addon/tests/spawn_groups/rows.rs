@@ -160,10 +160,7 @@ fn sg16_permute() {
         r.guaranteed,
         vec![(1, EntityId::parse("test:test_permute_2"))]
     );
-    let unknown = with(&d, |c| {
-        // By legacy name: the variant and the definitions that were it.
-        matches!(c.id(), "core/unrecognized_field")
-    });
+    let unknown = with(&d, |c| matches!(c.id(), "core/unrecognized_field"));
     assert_eq!(
         paths(&unknown),
         ["minecraft:spawn_groups/conditions/0/minecraft:permute_type/1/min_guaranteed"]
@@ -444,7 +441,6 @@ fn sg30_below_floor() {
     assert!(
         has_text(
             &d,
-            // By legacy name: the variant and the definitions that were it.
             |c| matches!(c.id(), "core/no_parser_for_version"),
             Severity::Error,
             "unsupported version: no parser available for version 1.7.0"
@@ -468,7 +464,6 @@ fn sg32_missing_version() {
     assert!(
         has_text(
             &d,
-            // By legacy name: the variant and the definitions that were it.
             |c| matches!(c.id(), "core/no_valid_version"),
             Severity::Error,
             "no valid version passed by the caller or found in the input"
@@ -485,7 +480,6 @@ fn sg33_malformed_version() {
         assert!(
             has_text(
                 &d,
-                // By legacy name: the variant and the definitions that were it.
                 |c| matches!(c.id(), "core/malformed_format_version"),
                 Severity::Error,
                 "Malformed format version"
@@ -538,7 +532,6 @@ fn sg36_wrong_payload_key() {
     assert!(
         has_text(
             &d,
-            // By legacy name: the variant and the definitions that were it.
             |c| matches!(c.id(), "spawn/missing_identifier_payload"),
             Severity::Error,
             "Missing identifier in spawn rule file"
@@ -554,7 +547,6 @@ fn sg37_root_not_object() {
     assert!(
         has_text(
             &d,
-            // By legacy name: the variant and the definitions that were it.
             |c| matches!(c.id(), "spawn/not_an_object"),
             Severity::Error,
             "Spawn rules json was not formatted as an object"
@@ -565,7 +557,6 @@ fn sg37_root_not_object() {
     assert!(
         has_text(
             &d,
-            // By legacy name: the variant and the definitions that were it.
             |c| matches!(c.id(), "core/no_valid_version"),
             Severity::Error,
             "no valid version passed by the caller or found in the input"
@@ -636,7 +627,6 @@ fn sg38_no_conditions_deviation() {
         r#"{"format_version": "1.11.0", "minecraft:spawn_groups": {"description": {"identifier": "x:g"}, "conditions": []}}"#,
     );
     let empty = with(document.diagnostics(), |c| {
-        // By legacy name: the variant and the definitions that were it.
         matches!(c.id(), "core/empty_document")
     });
     assert_eq!(empty[0].severity, Severity::Info);

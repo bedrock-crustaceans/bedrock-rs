@@ -65,7 +65,6 @@ fn duplicate_identifier(directory: &str, key: &str, payload: &str) {
     let shadowed: Vec<(Option<usize>, String)> = stack
         .jigsaw()
         .diagnostics()
-        // By legacy name: the variant and the definitions that were it.
         .filter(|d| matches!(d.code.id(), "core/shadowed_definition"))
         .map(|d| {
             assert_eq!(d.severity, Severity::Info);

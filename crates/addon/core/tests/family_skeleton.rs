@@ -596,7 +596,6 @@ fn a_json_document_that_fails_is_rejected_in_its_file_and_closed_once() {
         <Glint as Content>::parse(&glint_path(), &[0xff, 0xfe, 0x00], &cx).expect_err("no text");
     let codes: Vec<_> = unreadable.diagnostics.iter().map(|d| &d.code).collect();
     assert!(
-        // By legacy name: the variant and the definitions that were it.
         matches!(
             codes
                 .iter()

@@ -1,9 +1,8 @@
-//! Characterization of the severity of an unknown member or component of an item (phase 7,
-//! grading): what each format version tells of the same small documents. A component-based
-//! document from 1.16.100 on is read by the modern (cereal) slices, where an unknown member is
-//! an error; an older one, or one the route sends to the legacy format, by the legacy slice, where
-//! it is a warning. The tables pin what the reader tells today, whatever mechanism grades it, so
-//! that moving the grading from the post-parse lift to the raise sites changes nothing.
+//! The severity of an unknown member or component of an item: what each format version tells
+//! of the same small documents. A component-based document from 1.16.100 on is read by the
+//! modern (cereal) slices, where an unknown member is an error; an older one, or one the route
+//! sends to the legacy format, by the legacy slice, where it is a warning. Each finding is
+//! graded where it is raised; the tables pin what that gives.
 
 use std::fmt::Write as _;
 

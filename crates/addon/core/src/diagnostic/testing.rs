@@ -38,17 +38,14 @@ pub fn legacy_text_debug(def: &'static CodeDef<0>) -> String {
     text_debug(&Code::from(def))
 }
 
-/// The `Debug` of the legacy `text` field a specific code stands for.
+/// The `Debug` of the legacy `text` field a definition without arguments stands for.
 fn text_debug(code: &Code) -> String {
-    let args = code.args();
-    if let Some(structured) = structured_debug(code.id(), args) {
+    if let Some(structured) = structured_debug(code.id()) {
         return format!("Some({structured})");
     }
     match code.vanilla_template() {
         None => "None".to_owned(),
-        Some("{}") => format!("Some(Fixed({:?}))", args[0]),
-        Some(template) if args.is_empty() => format!("Some(Fixed({template:?}))"),
-        Some(template) => format!("Some(Formatted {{ template: {template:?}, args: {args:?} }})"),
+        Some(template) => format!("Some(Fixed({template:?}))"),
     }
 }
 
@@ -61,60 +58,13 @@ pub fn same_line(code: &Code, id: &str, line: &str) -> bool {
     code.id() == id && code.to_string() == line && code.vanilla().as_deref() == Some(line)
 }
 
-/// The `Debug` of a structured `VanillaText` a definition renders, by the definition's id.
-fn structured_debug(id: &str, args: &[String]) -> Option<String> {
+/// The `Debug` of a structured `VanillaText` a definition without arguments renders, by the
+/// definition's id: the three a family's `MissingVersion` holds.
+fn structured_debug(id: &str) -> Option<&'static str> {
     Some(match id {
-        "core/document_json" => format!("DocumentJson {{ message: {:?} }}", args[0]),
-        "core/no_valid_version" => "NoValidVersion".to_owned(),
-        "core/no_format_version_field" => "NoFormatVersionField".to_owned(),
-        "core/no_parser_for_version" => format!("NoParserForVersion {{ version: {:?} }}", args[0]),
-        "core/document_member_count" => "DocumentMemberCount".to_owned(),
-        "core/member_deprecated" => format!("MemberDeprecated {{ member: {:?} }}", args[0]),
-        "core/filter_test_not_found" => format!("FilterTestNotFound {{ name: {:?} }}", args[0]),
-        "core/manifest_invalid_value" => {
-            format!("ManifestInvalidValue {{ path: {:?} }}", args[0])
-        }
-        "core/manifest_not_semver" => format!("ManifestNotSemVer {{ path: {:?} }}", args[0]),
-        "core/manifest_wrong_type" => format!("ManifestWrongType {{ path: {:?} }}", args[0]),
-        "core/duplicate_pack_setting_name" => {
-            format!("DuplicatePackSettingName {{ name: {:?} }}", args[0])
-        }
-        "core/slider_max_not_above_min" => {
-            format!("SliderMaxNotAboveMin {{ name: {:?} }}", args[0])
-        }
-        "core/slider_step_too_large" => format!(
-            "SliderStepTooLarge {{ name: {:?}, step: {:?} }}",
-            args[0], args[1]
-        ),
-        "core/slider_default_out_of_range" => format!(
-            "SliderDefaultOutOfRange {{ name: {:?}, default: {:?} }}",
-            args[0], args[1]
-        ),
-        "core/dropdown_default_not_in_options" => format!(
-            "DropdownDefaultNotInOptions {{ name: {:?}, default: {:?} }}",
-            args[0], args[1]
-        ),
-        "core/multiselect_default_not_in_options" => format!(
-            "MultiselectDefaultNotInOptions {{ name: {:?}, default: {:?} }}",
-            args[0], args[1]
-        ),
-        "core/dependency_invalid_version" => format!(
-            "DependencyInvalidVersion {{ module: {:?}, version: {:?} }}",
-            args[0], args[1]
-        ),
-        // A sentence given whole as the one argument of a formatted text.
-        "core/invalid_value_formatted" => {
-            format!("Formatted {{ template: \"{{}}\", args: [{:?}] }}", args[0])
-        }
-        // `NumericRange::code` gave the whole sentence as the one argument of `{}`.
-        "core/outside_accepted_range" => format!(
-            "Formatted {{ template: \"{{}}\", args: [{:?}] }}",
-            format!("the input is outside of the accepted range {}", args[0])
-        ),
-        "core/number_bound" => format!(
-            "Formatted {{ template: \"{{}}\", args: [{:?}] }}",
-            format!("the input must be a number {}", args[0])
-        ),
+        "core/no_valid_version" => "NoValidVersion",
+        "core/no_format_version_field" => "NoFormatVersionField",
+        "core/document_member_count" => "DocumentMemberCount",
         _ => return None,
     })
 }

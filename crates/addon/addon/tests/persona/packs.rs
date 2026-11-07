@@ -101,7 +101,6 @@ fn pp03_p4_a_piece_pack_with_two_piece_folders_keeps_one() {
     ]);
     let pieces = load(&pack);
     assert_eq!(lines(&pieces), ["info core/identifier_collision pieces/b"]);
-    // By legacy name: the variant and the definitions that were it.
     assert!(pieces.report().any(
         |found| matches!(found.code.id(), "core/identifier_collision")
             && found.severity == Severity::Info
@@ -301,7 +300,6 @@ fn pp05_m4_a_built_in_piece_without_a_uuid_is_skipped() {
     );
     assert!(pieces.rejected.iter().all(|rejected| {
         rejected.diagnostics.iter().any(|found| {
-            // By legacy name: the variant and the definitions that were it.
             matches!(
                 found.code.id(),
                 "core/invalid_value" | "core/missing_required_field"
@@ -611,7 +609,6 @@ fn pp07_p1_a_piece_pack_is_never_on_a_resource_stack() {
     let found: Vec<_> = stacks
         .selection()
         .iter()
-        // By legacy name: the variant and the definitions that were it.
         .filter(|d| matches!(d.code.id(), "core/persona_piece_pack"))
         .collect();
     assert_eq!(found.len(), 1, "{found:?}");
@@ -826,7 +823,6 @@ fn pp11_p3_a_piece_pack_s_min_engine_version_is_ignored() {
             .diagnostics()
             .iter()
             .filter(|found| {
-                // By legacy name: the variant and the definitions that were it.
                 matches!(found.code.id(), "core/ignored_property")
                     && found.severity == Severity::Warning
             })

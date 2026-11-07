@@ -129,7 +129,6 @@ fn an_item_event_with_randomize_and_sequence_warns_and_ignores_the_sequence() {
     let found: Vec<(String, Severity, String)> = document
         .diagnostics()
         .iter()
-        // By legacy name: the variant and the definitions that were it.
         .filter(|f| matches!(f.code.id(), "shapes/event_both_randomize_and_sequence"))
         .map(|f| {
             (
@@ -325,7 +324,6 @@ mod compiled {
     /// The paths of the `InvalidMolang` findings, with their severities.
     fn invalid(d: &bedrock_addon_core::diagnostic::Diagnostics) -> Vec<(String, Severity)> {
         d.iter()
-            // By legacy name: the variant and the definitions that were it.
             .filter(|f| matches!(f.code.id(), "core/invalid_molang"))
             .map(|f| (f.location.json_path.to_string(), f.severity))
             .collect()
@@ -351,7 +349,6 @@ mod compiled {
             document
                 .diagnostics()
                 .iter()
-                // By legacy name: the variant and the definitions that were it.
                 .filter(|f| matches!(f.code.id(), "core/invalid_molang"))
                 .all(|f| f.kept),
             "{:#?}",
@@ -398,7 +395,6 @@ mod compiled {
             loads(&digger, &checking())
                 .diagnostics()
                 .iter()
-                // By legacy name: the variant and the definitions that were it.
                 .filter(|f| matches!(f.code.id(), "core/invalid_molang"))
                 .all(|f| f.kept),
             "a kept error"
@@ -450,7 +446,6 @@ mod compiled {
             document
                 .diagnostics()
                 .iter()
-                // By legacy name: the variant and the definitions that were it.
                 .filter(|f| matches!(f.code.id(), "core/invalid_molang"))
                 .all(|f| f.kept),
             "kept errors: the item loads"

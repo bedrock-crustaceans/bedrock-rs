@@ -4,7 +4,7 @@
 
 use std::collections::BTreeMap;
 
-use bedrock_addon::diagnostic::Severity;
+use bedrock_addon::diagnostic::{Kind, Severity};
 use bedrock_addon::families::server_config::{
     CommandPermissionLevel, CommandsConfig, ConfigFolder, NetModuleConfig, PackPermissions,
     PackScriptConfig, ScriptConfig, ScriptConfigFiles, SecretString, ServerNet,
@@ -42,18 +42,13 @@ fn commands(text: &str) -> ScriptConfig {
 /// level or above, and none of the reader's own notes, informations (a value of
 /// the wrong type or form, one with no effect).
 fn clean(config: &ScriptConfig) -> bool {
-    const NOTES: [&str; 5] = [
-        "core/invalid_type",
-        "core/invalid_value",
-        "core/invalid_enum_value",
-        "server_config/bad_log_level",
-        "core/no_effect",
-    ];
     config.diagnostics().max_severity() < Some(Severity::Warning)
-        && !config
-            .diagnostics()
-            .iter()
-            .any(|d| NOTES.contains(&d.code.id()))
+        && !config.diagnostics().iter().any(|d| {
+            matches!(
+                d.code.kind(),
+                Kind::WrongType | Kind::InvalidValue | Kind::InvalidEnumValue | Kind::NeverApplies
+            )
+        })
 }
 
 /// A JSON value in a form that compares member for member whatever the member order:

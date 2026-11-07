@@ -1,9 +1,7 @@
-//! Characterization of the severity of an unknown member or component of a block (phase 7,
-//! grading): what each format version tells of the same small documents. The slices from
-//! 1.26.20 on are the cereal ones (an unknown member an error); the older ones are the
-//! hand-written legacy reader (a warning). The tables pin what the reader tells today, whatever
-//! mechanism grades it, so that moving the grading from the post-parse lift to the raise sites
-//! changes nothing.
+//! The severity of an unknown member or component of a block: what each format version tells
+//! of the same small documents. The slices from 1.26.20 on are the cereal ones (an unknown
+//! member an error); the older ones are the hand-written legacy reader (a warning). Each
+//! finding is graded where it is raised; the tables pin what that gives.
 
 use std::fmt::Write as _;
 

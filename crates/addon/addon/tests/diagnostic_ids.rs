@@ -1,7 +1,6 @@
 //! The registry of diagnostic definition ids: every table of definitions the toolkit raises
-//! from, and the rule that no id appears twice across them. Each family that gains a `codes.rs`
-//! adds its `ALL` table below, behind its feature; the migration is not done for a family until
-//! its line is here.
+//! from, and the rule that no id appears twice across them. Every `codes.rs` has its `ALL`
+//! table below, behind its family's feature (`codes_tables.rs` scans the sources for it).
 
 use bedrock_addon::diagnostic::CodeMeta;
 use std::collections::BTreeMap;
@@ -170,8 +169,6 @@ fn tables() -> Vec<(&'static str, &'static [&'static CodeMeta])> {
             "server_config",
             bedrock_addon::families::server_config::codes::ALL,
         ),
-        // wave 2: one line per family, in the group's commit for that family, e.g.
-        // #[cfg(feature = "fog")] ("fog", bedrock_addon::families::fog::codes::ALL),
         #[cfg(feature = "persona")]
         ("persona", bedrock_addon::families::persona::codes::ALL),
         #[cfg(feature = "material")]
@@ -239,4 +236,34 @@ fn every_id_names_its_owner_first() {
         wrong.is_empty(),
         "ids outside their owner's prefix: {wrong:?}"
     );
+}
+
+/// `Diagnostic::syntax_message` claims a reader's message for every `Kind::Syntax` definition
+/// but those of `SYNTAX_WITHOUT_MESSAGE`. Each listed id is a definition of that kind, and the
+/// definitions left are the 51 that are a reader's message: a new `Kind::Syntax` definition
+/// turns this red until it is counted here or listed there.
+#[cfg(feature = "full")]
+#[test]
+fn the_syntax_kind_without_a_message_is_the_listed_ten() {
+    use bedrock_addon::diagnostic::{Kind, SYNTAX_WITHOUT_MESSAGE};
+    let syntax: Vec<&str> = tables()
+        .into_iter()
+        .flat_map(|(_, table)| table.iter())
+        .filter(|meta| meta.kind() == Kind::Syntax)
+        .map(|meta| meta.id())
+        .collect();
+    let unlisted: Vec<&&str> = SYNTAX_WITHOUT_MESSAGE
+        .iter()
+        .filter(|id| !syntax.contains(id))
+        .collect();
+    assert!(
+        unlisted.is_empty(),
+        "listed, but no `Kind::Syntax` definition: {unlisted:?}"
+    );
+    assert_eq!(SYNTAX_WITHOUT_MESSAGE.len(), 10);
+    let messages: Vec<&str> = syntax
+        .into_iter()
+        .filter(|id| !SYNTAX_WITHOUT_MESSAGE.contains(id))
+        .collect();
+    assert_eq!(messages.len(), 51, "{messages:#?}");
 }

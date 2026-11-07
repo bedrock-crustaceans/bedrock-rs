@@ -119,11 +119,7 @@ fn a_side_file_that_is_no_json_object_is_rejected() {
     for text in ["{ \"nineslice_size\": ", "", "[]", "4", "null"] {
         let rejected = parse::<UiTextureInfo>("textures/ui/x.json", text).unwrap_err();
         let finding = rejected.diagnostics.iter().next().unwrap();
-        assert!(
-            // By legacy name: the variant and the definitions that were it.
-            matches!(finding.code.id(), "core/syntax"),
-            "{text}"
-        );
+        assert!(matches!(finding.code.id(), "core/syntax"), "{text}");
         assert_eq!(finding.severity, Severity::Error);
     }
     // every finding of a file that is read is a warning: the document loads

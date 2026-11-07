@@ -344,16 +344,16 @@ mod clamp_text {
     }
 }
 
-// ---- clamp_beyond_double: a whole document read at the width of a double ----
+// ---- clamp_tokens at doubles: a whole document read at the width of a double ----
 
-mod clamp_beyond_double {
+mod clamp_at_doubles {
     use bedrock_addon_core::diagnostic::{
         Code, Diagnostic, Diagnostics, JsonPath, Location, Phase, Severity, Span, codes,
     };
     use bedrock_addon_core::json::{ClampPlan, ClampedText, JsonSlice, clamp_tokens};
 
     /// The clamp of a document read at the width of a double.
-    fn clamp_beyond_double(
+    fn clamp_at_doubles(
         slice: JsonSlice<'_>,
         at: &JsonPath,
         d: &mut Diagnostics,
@@ -377,7 +377,7 @@ mod clamp_beyond_double {
             "{\"a\": 1e999".to_owned(),
         ] {
             let mut d = Diagnostics::default();
-            let clamped = clamp_beyond_double(JsonSlice::new(&text), &JsonPath::new(), &mut d);
+            let clamped = clamp_at_doubles(JsonSlice::new(&text), &JsonPath::new(), &mut d);
             assert!(clamped.is_none(), "{text}");
             assert!(d.is_empty(), "{text}");
         }
@@ -396,7 +396,7 @@ mod clamp_beyond_double {
             text: &text,
             offset: 10,
         };
-        let clamped = clamp_beyond_double(slice, &at, &mut d).expect("three numbers");
+        let clamped = clamp_at_doubles(slice, &at, &mut d).expect("three numbers");
         assert_eq!(
             clamped.text,
             r#"{"a": 1.7976931348623157e308, /* 1e999 */ "b": [0, -1.7976931348623157e308, {"c": 1.7976931348623157e308}], "d": 1e39, "e": "1e999", "f": true}"#

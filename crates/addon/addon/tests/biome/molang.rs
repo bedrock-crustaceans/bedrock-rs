@@ -62,7 +62,6 @@ fn b21_forms_read(cx: &bedrock_addon::load::LoadContext) {
             }
         }
         assert!(
-            // By legacy name: the variant and the definitions that were it.
             with(document.diagnostics(), |c| matches!(
                 c.id(),
                 "core/invalid_molang" | "core/molang_lint"
@@ -81,7 +80,6 @@ fn b22_height_range_object_form() {
         &height_range(r#"[{"expression": "1", "version": 13}, 64]"#),
         &context(),
     );
-    // By legacy name: the variant and the definitions that were it.
     let invalid = with(&found, |c| matches!(c.id(), "core/invalid_type"));
     assert_eq!(invalid.len(), 1, "{found:#?}");
     assert_eq!(invalid[0].severity, Severity::Error);
@@ -140,7 +138,6 @@ mod compiled {
     fn glue_last(found: &Diagnostics, source: &str) {
         let errors = errors(found);
         let last = errors.last().expect("an error");
-        // By legacy name: the variant and the definitions that were it.
         assert!(matches!(last.code.id(), "biome/expression"));
         assert_eq!(
             last.code.to_string(),
@@ -209,7 +206,6 @@ mod compiled {
             &checked(context()),
         );
         assert!(
-            // By legacy name: the variant and the definitions that were it.
             with(document.diagnostics(), |c| matches!(
                 c.id(),
                 "core/invalid_molang"

@@ -24,13 +24,11 @@ fn v01_a_file_that_is_not_a_json_object_is_not_loaded() {
         // is `EmptyDocument`, as in every family; vanilla's line is the same.
         let nothing = !bytes.starts_with(b"{") && !bytes.starts_with(b"\"");
         assert_eq!(
-            // By legacy name: the variant and the definitions that were it.
             matches!(error.code.id(), "loot/invalid_table_empty"),
             nothing,
             "{error:?}"
         );
         assert_eq!(
-            // By legacy name: the variant and the definitions that were it.
             matches!(error.code.id(), "loot/invalid_table"),
             !nothing,
             "{error:?}"

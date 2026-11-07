@@ -32,7 +32,6 @@ fn a_format_version_that_gives_no_version_is_malformed() {
         let errors: Vec<_> = d.iter().filter(|f| f.severity == Severity::Error).collect();
         assert_eq!(errors.len(), 1, "{version}: {d:#?}");
         assert!(
-            // By legacy name: the variant and the definitions that were it.
             errors[0].code.id() == "core/malformed_format_version",
             "{version}: {:?}",
             errors[0].code

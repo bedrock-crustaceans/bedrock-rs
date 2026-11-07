@@ -1,19 +1,19 @@
 //! The core's generic definitions: one per kind of finding no family owns, each id
 //! `core/<name>`, the name its constant's in lower case (`core/invalid_value`).
 //!
-//! A variant with a `text` field has two: the plain one renders the variant's own line (its
-//! `text: None` form), the `_WORDED` one takes the game's sentence whole as its one argument
-//! (its `text: Some(..)` form, for a site whose sentence has no definition of its own yet). A
-//! variant whose line branches on its payload has one definition per branch; a typed payload
-//! the line does not print rides as the finding's [`DiagnosticDetail`](super::DiagnosticDetail).
+//! Most kinds have two: the plain one renders the crate's own line, the `_WORDED` one takes the
+//! game's sentence whole as its one argument (for a site whose sentence has no definition of
+//! its own yet). A line that branches on its payload has one definition per branch; a typed
+//! payload the line does not print rides as the finding's
+//! [`DiagnosticDetail`](super::DiagnosticDetail).
 //!
-//! The [`Class`] is the default a finding of [`Diagnostic::of`](super::Diagnostic::of) gets: a
-//! raise site that moves here from `Diagnostic::error`, `warn` or `info` keeps its severity with
-//! [`Diagnostic::severity`](super::Diagnostic::severity) wherever the class grades otherwise.
-//! No generic definition is [`Class::KeptError`]: a kept error is kept by its site.
+//! The [`Class`] is the default a finding of [`Diagnostic::of`](super::Diagnostic::of) gets; a
+//! raise site at another severity keeps its own with
+//! [`Diagnostic::severity`](super::Diagnostic::severity). No generic definition is
+//! [`Class::KeptError`]: a kept error is kept by its site.
 //!
 //! [`ALL`] lists every definition; `core/tests/diagnostic_codes.rs` lists every id, and
-//! `core/tests/diagnostic_lines.rs` pins the line each renders, the legacy variant's.
+//! `core/tests/diagnostic_lines.rs` pins the line each renders.
 
 use super::{Class, CodeDef, CodeMeta, Disposition, Kind};
 

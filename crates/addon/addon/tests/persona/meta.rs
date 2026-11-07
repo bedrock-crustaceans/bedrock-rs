@@ -514,7 +514,6 @@ fn pm09_m14_an_unknown_member_invalidates_the_piece() {
         ]
     );
     let finding = first(&pieces, "core/unrecognized_field");
-    // By legacy name: the variant and the definitions that were it.
     assert!(matches!(finding.code.id(), "core/unrecognized_field"));
 }
 
@@ -661,7 +660,6 @@ fn pm12_pm13_m2_a_meta_file_that_is_no_json_object_is_skipped() {
         assert!(pieces.pieces.is_empty(), "{text}");
         assert_eq!(found(&pieces), ["error persona/meta_not_parsed"], "{text}");
         let finding = first(&pieces, "persona/meta_not_parsed");
-        // By legacy name: the variant and the definitions that were it.
         assert!(matches!(finding.code.id(), "persona/meta_not_parsed"));
         assert_eq!(message(&finding), NOT_PARSED);
         assert_eq!(pieces.rejected.len(), 1);

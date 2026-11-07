@@ -1,7 +1,7 @@
 //! `projectile`: the 1.26.50 struct, its `on_hit` subcomponents, the value messages
 //! and the lenient conversion of the legacy reader's JSON.
 
-use bedrock_addon_core::diagnostic::{Kind, Severity};
+use bedrock_addon_core::diagnostic::{Disposition, Kind, Severity};
 use bedrock_addon_core::versioning::ConvertMode;
 use bedrock_addon_family_entity::component::{
     DifficultyRandomization, EffectDuration, Projectile, ProjectileAnchor, ProjectileOffset,
@@ -96,7 +96,6 @@ fn spawn_chance_above_one_is_an_error() {
     assert!(value.is_none());
     assert!(has(
         &d,
-        // By legacy name: the variant and the definitions that were it.
         |c| matches!(c.id(), "core/invalid_value"),
         Severity::Error,
         "on_hit/spawn_chance/first_spawn_chance"
@@ -159,7 +158,6 @@ fn e34_the_lenient_conversion_maps_integer_anchors() {
     assert_eq!(value.anchor, ProjectileAnchor::Origin);
     assert!(has(
         &d,
-        // By legacy name: the variant and the definitions that were it.
         |c| matches!(c.id(), "core/invalid_value"),
         Severity::Info,
         "anchor"
@@ -192,7 +190,6 @@ fn v14_legacy_aliases_are_read_by_the_lenient_conversion_only() {
     assert!(!new.reflect_on_hurt);
     assert!(has(
         &d,
-        // By legacy name: the variant and the definitions that were it.
         |c| matches!(c.id(), "core/unrecognized_field"),
         Severity::Warning,
         "reflectOnHurt"
@@ -216,7 +213,6 @@ fn the_lenient_conversion_maps_impact_damage_aliases_when_the_member_is_absent()
     assert_eq!(damage.power_multiplier, 3.0, "the canonical member wins");
     assert!(has(
         &d,
-        // By legacy name: the variant and the definitions that were it.
         |c| matches!(c.id(), "core/unrecognized_field"),
         Severity::Warning,
         "on_hit/impact_damage/powermultiplier"
@@ -300,8 +296,7 @@ fn legacy_spawn_chances_are_read_as_the_game_reads_them() {
     assert_eq!((first, second), (0.05, 0.01));
     assert!(
         !d.iter()
-            // By legacy name: the variant and the definitions that were it.
-            .any(|f| matches!(f.code.id(), "core/unrecognized_field")),
+            .any(|f| f.code.kind() == Kind::UnknownMember(Disposition::Kept)),
         "{d:?}"
     );
     // A negative percent falls back to the one-in-N member, the camel spellings included.
@@ -382,7 +377,6 @@ fn a_legacy_spawn_chance_read_as_another_number_is_told_as_rewritten() {
             lenient::<Projectile>(&format!(r#"{{"on_hit": {{"spawn_chance": {{{spawn}}}}}}}"#));
         let mut at: Vec<_> = d
             .iter()
-            // By legacy name: the variant and the definitions that were it.
             .filter(|f| matches!(f.code.id(), "core/value_rewritten"))
             .map(|f| (f.location.json_path.to_string(), f.severity))
             .collect();
@@ -486,7 +480,6 @@ fn owner_launch_immunity_ticks_is_no_member() {
         assert!(
             has(
                 &d,
-                // By legacy name: the variant and the definitions that were it.
                 |c| matches!(c.id(), "core/unrecognized_field"),
                 Severity::Warning,
                 "owner_launch_immunity_ticks"
@@ -549,7 +542,6 @@ fn the_legacy_on_hit_camel_case_spellings_are_the_members_below_1_26_50() {
     assert!(
         has(
             &d,
-            // By legacy name: the variant and the definitions that were it.
             |c| matches!(c.id(), "core/unrecognized_field"),
             Severity::Warning,
             "on_hit/catch_fire/onFireTime"
@@ -587,7 +579,6 @@ fn a_lone_mob_effect_object_is_an_error_at_1_26_50() {
     assert!(
         has(
             &d,
-            // By legacy name: the variant and the definitions that were it.
             |c| matches!(c.id(), "core/invalid_type"),
             Severity::Error,
             "on_hit/mob_effect/effects"

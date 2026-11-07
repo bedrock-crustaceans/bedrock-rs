@@ -25,10 +25,7 @@ fn first_error_at(found: &bedrock_addon::diagnostic::Diagnostics) -> String {
 fn rule_3_the_payload_key_is_minecraft_biome() {
     let wrong = r#"{"format_version": "1.26.0", "minecraft:block": {"description": {"identifier": "test:x"}, "components": {}}}"#;
     let found = rejected(wrong, &context());
-    assert!(
-        // By legacy name: the variant and the definitions that were it.
-        !with(&found, |c| matches!(c.id(), "core/payload_under_other_key")).is_empty()
-    );
+    assert!(!with(&found, |c| matches!(c.id(), "core/payload_under_other_key")).is_empty());
     // `description` and `components` are required members of the payload.
     for payload in [
         r#"{"description": {"identifier": "test:x"}}"#,
@@ -36,7 +33,6 @@ fn rule_3_the_payload_key_is_minecraft_biome() {
     ] {
         let found = rejected(&document("1.26.30", payload), &context());
         assert!(
-            // By legacy name: the variant and the definitions that were it.
             !with(&found, |c| matches!(c.id(), "core/missing_required_field")).is_empty(),
             "{payload}: {found:#?}"
         );
@@ -45,7 +41,6 @@ fn rule_3_the_payload_key_is_minecraft_biome() {
     let legacy = wrong.replace("1.26.0", "1.21.110");
     let found = rejected(&legacy, &context());
     assert!(
-        // By legacy name: the variant and the definitions that were it.
         !with(&found, |c| matches!(c.id(), "core/missing_required_field")).is_empty(),
         "{found:#?}"
     );
@@ -59,7 +54,6 @@ fn rule_4_the_identifier_is_lower_case_and_namespaced() {
         assert!(
             has(
                 &found,
-                // By legacy name: the variant and the definitions that were it.
                 |c| matches!(c.id(), "biome/identifier"),
                 Severity::Error,
                 "identifier has an upper case letter or does not specify any namespace"
@@ -80,11 +74,9 @@ fn rule_4_the_identifier_is_lower_case_and_namespaced() {
 fn rule_6_a_legacy_strict_failure_is_invalid_biome_file() {
     let arrayed = biome("1.21.110", "test:x", "").replacen(r#""1.21.110""#, "[1, 21, 110]", 1);
     let found = rejected(&arrayed, &context());
-    // By legacy name: the variant and the definitions that were it.
     assert!(!with(&found, |c| matches!(c.id(), "core/invalid_type")).is_empty());
     assert!(has(
         &found,
-        // By legacy name: the variant and the definitions that were it.
         |c| matches!(c.id(), "biome/invalid_biome_file"),
         Severity::Error,
         "Invalid Biome file"
@@ -98,7 +90,6 @@ fn rule_6_a_legacy_strict_failure_is_invalid_biome_file() {
     let found = rejected(&biome("1.21.120", "test:x", humidity), &context());
     let errors_found = errors(&found);
     assert_eq!(errors_found.len(), 1);
-    // By legacy name: the variant and the definitions that were it.
     assert!(matches!(
         errors_found[0].code.id(),
         "core/missing_required_field"
@@ -115,14 +106,12 @@ fn rule_7_replace_biomes_constraint_by_struct() {
     let empty = r#""minecraft:replace_biomes": {"replacements": []}"#;
     assert!(has(
         &rejected(&biome("1.21.120", "test:x", empty), &context()),
-        // By legacy name: the variant and the definitions that were it.
         |c| matches!(c.id(), "biome/empty_replacements_1_21_80"),
         Severity::Error,
         "expected array with at least 1 element"
     ));
     assert!(has(
         &rejected(&replacing("1.26.0", "minecraft:the_end", ""), &context()),
-        // By legacy name: the variant and the definitions that were it.
         |c| matches!(c.id(), "biome/dimension_1_26_0"),
         Severity::Error,
         "Dimension must be either 'minecraft:overworld' or 'minecraft:nether' but is 'minecraft:the_end'"
@@ -267,7 +256,6 @@ fn rule_9_glue_checks() {
     let document = loads(&both, &context());
     assert!(has(
         document.diagnostics(),
-        // By legacy name: the variant and the definitions that were it.
         |c| matches!(c.id(), "biome/multiple_dimensions"),
         Severity::Warning,
         "Replacement present in multiple Dimensions"
@@ -326,7 +314,6 @@ fn rule_9_unknown_transformation_biome_is_a_link_error() {
     ));
     assert!(has(
         &found,
-        // By legacy name: the variant and the definitions that were it.
         |c| matches!(c.id(), "core/unresolved_reference_worded"),
         Severity::Error,
         "No biome found with name 'test:nowhere'"
@@ -340,7 +327,6 @@ fn rule_9_replacement_targets_are_link_errors() {
         replacing("1.26.0", "minecraft:overworld", "").replace("crimson_forest", "nowhere");
     assert!(has(
         &linked(&unknown),
-        // By legacy name: the variant and the definitions that were it.
         |c| matches!(c.id(), "core/unresolved_reference_worded"),
         Severity::Error,
         "No biome found with name: 'nowhere'"
@@ -358,7 +344,6 @@ fn rule_9_unresolved_blocks_are_link_errors() {
     ));
     assert!(has(
         &found,
-        // By legacy name: the variant and the definitions that were it.
         |c| matches!(c.id(), "core/unresolved_reference_worded"),
         Severity::Error,
         "'top_material' block with name 'test:nothing', failed to resolve."
@@ -375,7 +360,6 @@ fn rule_10_a_subsurface_builder_has_no_effect_in_the_nether() {
     let document = loads(&text, &context());
     assert!(has(
         document.diagnostics(),
-        // By legacy name: the variant and the definitions that were it.
         |c| matches!(c.id(), "biome/no_effect_in_nether"),
         Severity::Warning,
         "minecraft:subsurface_builder will have no effect on Biomes in the Nether"
@@ -391,7 +375,6 @@ fn rule_12_multinoise_outside_minecraft_is_a_kept_error() {
     let document = loads(&biome("1.26.30", "test:x", rules), &context());
     assert!(has(
         document.diagnostics(),
-        // By legacy name: the variant and the definitions that were it.
         |c| matches!(c.id(), "biome/pre_caves"),
         Severity::Error,
         "Biome named: test:x contains minecraft:multinoise_generation_rules component which is a pre-caves and cliffs component and is unused for custom biomes"
@@ -558,7 +541,6 @@ fn an_identifier_that_is_an_object_is_a_type_error_and_no_panic() {
     );
     let found: Vec<_> = d
         .iter()
-        // By legacy name: the variant and the definitions that were it.
         .filter(|f| matches!(f.code.id(), "core/invalid_type"))
         .collect();
     assert_eq!(found.len(), 1, "{d:#?}");

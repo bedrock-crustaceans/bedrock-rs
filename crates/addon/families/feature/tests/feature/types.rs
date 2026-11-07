@@ -303,7 +303,6 @@ fn unknown_feature_type(d: &bedrock_addon_core::diagnostic::Diagnostics, key: &s
     assert_eq!(d.len(), 1, "{d:#?}");
     let finding = d.iter().next().unwrap();
     assert!(
-        // By legacy name: the variant and the definitions that were it.
         matches!(finding.code.id(), "core/unknown_payload_key"),
         "{d:#?}"
     );

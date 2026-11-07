@@ -199,7 +199,6 @@ fn poi10_unknown_payload_is_a_missing_payload_error() {
     for d in [rejected::<PoiType>(&text), rejected::<PoiTag>(&text)] {
         let error = only_error(&d);
         assert!(
-            // By legacy name: the variant and the definitions that were it.
             matches!(error.code.id(), "core/payload_under_other_key"),
             "{:?}",
             error.code
@@ -217,7 +216,6 @@ fn poi10_unknown_payload_is_a_missing_payload_error() {
         .filter(|d| d.severity == Severity::Error && !is_closing(d))
         .collect();
     assert_eq!(errors.len(), 1, "{}", describe(poi.diagnostics()));
-    // By legacy name: the variant and the definitions that were it.
     assert!(matches!(
         errors[0].code.id(),
         "core/payload_under_other_key"
@@ -237,7 +235,6 @@ fn poi12_missing_blocks_is_rejected() {
     let d = rejected::<PoiType>(&fixture("poi12_missing_blocks/poi/blocks/forge.json"));
     let error = only_error(&d);
     assert!(
-        // By legacy name: the variant and the definitions that were it.
         matches!(error.code.id(), "core/missing_required_field"),
         "{:?}",
         error.code
@@ -261,7 +258,6 @@ fn poi13_bad_identifier_is_rejected_for_each_spelling() {
         )));
         let error = only_error(&d);
         assert!(
-            // By legacy name: the variant and the definitions that were it.
             matches!(error.code.id(), "core/invalid_value"),
             "{file}: {:?}",
             error.code
@@ -279,7 +275,6 @@ fn poi14_bad_block_name_is_a_pattern_error() {
     let d = rejected::<PoiType>(&fixture("poi14_bad_block_name/poi/blocks/forge.json"));
     let error = only_error(&d);
     assert!(
-        // By legacy name: the variant and the definitions that were it.
         matches!(error.code.id(), "core/invalid_value"),
         "{:?}",
         error.code
@@ -317,7 +312,6 @@ fn poi16_usable_distance_range_rejects_300() {
     ));
     let error = only_error(&d);
     assert!(
-        // By legacy name: the variant and the definitions that were it.
         matches!(error.code.id(), "core/invalid_value"),
         "{:?}",
         error.code
@@ -333,7 +327,6 @@ fn poi17_unknown_member_is_an_error() {
     let d = rejected::<PoiType>(&fixture("poi17_unknown_member/poi/blocks/forge.json"));
     let error = only_error(&d);
     assert!(
-        // By legacy name: the variant and the definitions that were it.
         matches!(error.code.id(), "core/unrecognized_field"),
         "{:?}",
         error.code
@@ -355,7 +348,6 @@ fn poi18_empty_blocks_loads_with_an_information() {
     );
     assert_eq!(forge.diagnostics().iter().count(), 1);
     let warning = forge.diagnostics().iter().next().unwrap();
-    // By legacy name: the variant and the definitions that were it.
     assert!(matches!(warning.code.id(), "core/poi_no_blocks"));
     assert_eq!(
         warning.location.json_path.to_string(),
@@ -372,7 +364,6 @@ fn poi19_duplicate_block_in_list_loads_with_one_entry() {
     assert_eq!(forge.diagnostics().iter().count(), 1);
     let info = forge.diagnostics().iter().next().unwrap();
     assert!(
-        // By legacy name: the variant and the definitions that were it.
         matches!(info.code.id(), "core/no_effect"),
         "{:?}",
         info.code
@@ -390,7 +381,6 @@ fn poi20_tag_bad_parent_is_a_pattern_error() {
     let d = rejected::<PoiTag>(&fixture("poi20_tag_bad_parent/poi/tags/tag.json"));
     let error = only_error(&d);
     assert!(
-        // By legacy name: the variant and the definitions that were it.
         matches!(error.code.id(), "core/invalid_value"),
         "{:?}",
         error.code

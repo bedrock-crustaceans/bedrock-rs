@@ -23,7 +23,6 @@ fn findings<T>(outcome: Result<Document<T>, Rejected>) -> Diagnostics {
 #[allow(dead_code, reason = "used by the tests of the compiled families")]
 fn invalid_type_at<'a>(d: &'a Diagnostics, path: &str) -> Vec<&'a Diagnostic> {
     d.iter()
-        // By legacy name: the variant and the definitions that were it.
         .filter(|f| f.code.kind() == Kind::WrongType)
         .filter(|f| f.location.json_path.to_string() == path)
         .collect()
@@ -498,7 +497,6 @@ fn a_blocks_json_entry_that_is_an_array_is_a_type_error() {
     ));
     assert!(
         d.iter()
-            // By legacy name: the variant and the definitions that were it.
             .any(|f| matches!(f.code.id(), "blocks_json/not_json")),
         "{d:#?}"
     );

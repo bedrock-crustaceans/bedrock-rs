@@ -6,7 +6,7 @@
 use bedrock_addon::diagnostic::{Code, Diagnostics, Kind, Severity};
 use bedrock_addon::load::LoadContext;
 
-use super::common::{context, document, fixture, load, loads, rejected, ucf};
+use super::common::{context, document, fixture, load, loads, missing_toggles, rejected, ucf};
 
 /// The findings at `path` (below `minecraft:block`) whose code passes `code`.
 fn at<'d>(
@@ -22,12 +22,10 @@ fn at<'d>(
 }
 
 fn unrecognized_field(c: &Code) -> bool {
-    // By legacy name: the variant and the definitions that were it.
     matches!(c.id(), "core/unrecognized_field")
 }
 
 fn unrecognized_component(c: &Code) -> bool {
-    // By legacy name: the variant and the definitions that were it.
     matches!(
         c.id(),
         "block/child_not_valid"
@@ -41,8 +39,7 @@ fn unrecognized_component(c: &Code) -> bool {
 }
 
 fn invalid_type(c: &Code) -> bool {
-    // By legacy name: the variant and the definitions that were it.
-    matches!(c.id(), "core/invalid_type")
+    c.kind() == Kind::WrongType
 }
 
 /// A base-game context (the game's test blocks are `minecraft:` blocks).
@@ -149,9 +146,7 @@ fn a_null_member_of_a_legacy_block_is_the_legacy_reader_s() {
 /// root.
 #[test]
 fn the_members_of_ours_reject_a_cereal_block() {
-    let deprecated_member =
-        // By legacy name: the variant and the definitions that were it.
-        |c: &Code| matches!(c.id(), "core/member_deprecated");
+    let deprecated_member = |c: &Code| matches!(c.id(), "core/member_deprecated");
     for (member, code, path) in [
         (
             r#""deprecated": {}"#,
@@ -877,15 +872,13 @@ fn a_container_and_its_rules() {
     // rejects the block.
     let d = rejected(&container("{}"), &ucf());
     assert!(
-        d.iter().any(
-            // By legacy name: the variant and the definitions that were it.
-            |f| matches!(f.code.id(), "core/missing_required_field")
+        d.iter()
+            .any(|f| matches!(f.code.id(), "core/missing_required_field")
                 && f.severity == Severity::Error
                 && f.location
                     .json_path
                     .to_string()
-                    .ends_with("minecraft:block_entity/container/slot_count")
-        ),
+                    .ends_with("minecraft:block_entity/container/slot_count")),
         "{d:#?}"
     );
     let d = rejected(
@@ -1151,11 +1144,9 @@ fn a_cereal_constraint_fails_the_block_at_the_member() {
     for (bad, path, good) in cases {
         let d = rejected(&newest(&bad), &ucf());
         assert!(
-            d.iter()
-                // By legacy name: the variant and the definitions that were it.
-                .any(|f| f.code.kind() == Kind::InvalidValue
-                    && f.severity == Severity::Error
-                    && f.location.json_path.to_string() == format!("minecraft:block/{path}")),
+            d.iter().any(|f| f.code.kind() == Kind::InvalidValue
+                && f.severity == Severity::Error
+                && f.location.json_path.to_string() == format!("minecraft:block/{path}")),
             "{bad}: {d:#?}"
         );
         let _ = loads(&newest(&good), &ucf());
@@ -1199,17 +1190,10 @@ fn errors_at<'d>(
 }
 
 fn invalid_value(c: &Code) -> bool {
-    // By legacy name: the variant and the definitions that were it.
     c.kind() == Kind::InvalidValue
 }
 
-fn missing_toggles(c: &Code) -> bool {
-    // By legacy name: the variant and the definitions that were it.
-    c.kind() == Kind::Toggle
-}
-
 fn deprecated(c: &Code) -> bool {
-    // By legacy name: the variant and the definitions that were it.
     c.kind() == Kind::Deprecated
 }
 
@@ -1973,13 +1957,11 @@ fn the_crafting_table_and_culling_layer_constraints_as_the_game_reads_them() {
     let refused = |components: String, path: &str, text: &str| {
         let d = rejected(&newest(&components), &ucf());
         assert!(
-            d.iter()
-                // By legacy name: the variant and the definitions that were it.
-                .any(|f| f.code.kind() == Kind::InvalidValue
-                    && f.severity == Severity::Error
-                    && f.location.json_path.to_string()
-                        == format!("minecraft:block/components/{path}")
-                    && f.code.to_string() == text),
+            d.iter().any(|f| f.code.kind() == Kind::InvalidValue
+                && f.severity == Severity::Error
+                && f.location.json_path.to_string()
+                    == format!("minecraft:block/components/{path}")
+                && f.code.to_string() == text),
             "{components}: {d:#?}"
         );
     };

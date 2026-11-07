@@ -4,8 +4,8 @@
 use bedrock_addon_core::diagnostic::{Class, CodeDef, Kind, codes};
 
 /// Ids that were considered for the core's codes and rejected: no definition of the core's may
-/// take one. Two are left out, as they are definitions of the game's sentences: `core/parse_error` (`parse error`, a `MalformedInput`) and
-/// `core/value_not_allowed` (a value the schema does not allow, an `InvalidValue`).
+/// take one. (`core/parse_error` and `core/value_not_allowed` are not among them: both are
+/// definitions of the game's sentences.)
 const REJECTED_IDS: &[&str] = &[
     "core/json_syntax",
     "core/invalid_json",

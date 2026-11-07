@@ -39,7 +39,6 @@ fn boss_with_a_string_range_is_an_error_in_a_strict_read() {
     assert!(boss.is_none(), "dropped");
     assert!(has(
         &d,
-        // By legacy name: the variant and the definitions that were it.
         |c| matches!(c.id(), "core/invalid_type"),
         Severity::Error,
         "hud_range"
@@ -53,7 +52,6 @@ fn boss_with_a_string_range_takes_the_default_in_the_lenient_conversion() {
     assert!(boss.should_darken_sky, "the other members are kept");
     assert!(has(
         &d,
-        // By legacy name: the variant and the definitions that were it.
         |c| matches!(c.id(), "core/invalid_value"),
         Severity::Info,
         "hud_range"
@@ -148,7 +146,6 @@ fn a_wrong_typed_insomnia_threshold_carries_the_game_s_text() {
     let found: Vec<_> = d
         .iter()
         .filter(|f| {
-            // By legacy name: the variant and the definitions that were it.
             matches!(f.code.id(), "entity/insomnia_not_a_number")
                 && f.severity == Severity::Error
                 && f.location.json_path.to_string() == "days_until_insomnia"

@@ -1,9 +1,8 @@
-//! Characterization of the severity of an unknown member or component (phase 7, grading):
-//! what each format version tells of the same small documents, through both of the reader's
-//! paths. A document at 1.26.50, 1.26.60 or beta is read by the newest struct's reader; one at
-//! 1.21.88, 1.21.89 or 1.26.20 is read by an older struct and carried to the newest by the
-//! steps (`into_latest`). The tables pin what the reader tells today, whatever mechanism grades
-//! it, so that moving the grading from the post-parse lifts to the raise sites changes nothing.
+//! The severity of an unknown member or component: what each format version tells of the same
+//! small documents, through both of the reader's paths. A document at 1.26.50, 1.26.60 or beta
+//! is read by the newest struct's reader; one at 1.21.88, 1.21.89 or 1.26.20 is read by an older
+//! struct and carried to the newest by the steps (`into_latest`). Each finding is graded where
+//! it is raised, by the format version of the document; the tables pin what that gives.
 
 use std::fmt::Write as _;
 
@@ -268,12 +267,9 @@ beta refused
     );
 }
 
-/// R1 of the grading note: a member inside `description/entity_version` that its hand checks
-/// do not read, and the `entity_version` and `upgrades` members themselves below 1.26.20.
-/// The entity reader's lift leaves the findings strictly below `entity_version` alone and the
-/// pipeline's does not; the pin shows there is no warning there for either to grade: below
-/// 1.26.20 only the member itself is told, and from 1.26.20 on the members below it are
-/// information.
+/// A member inside `description/entity_version` that its hand checks do not read, and the
+/// `entity_version` and `upgrades` members themselves below 1.26.20: below 1.26.20 only the
+/// member itself is told, and from 1.26.20 on the members below it are information.
 #[test]
 fn an_unread_member_of_entity_version_is_graded_by_the_version() {
     let found = told(

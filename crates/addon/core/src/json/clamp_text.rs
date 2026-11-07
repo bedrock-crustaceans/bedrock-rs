@@ -1186,7 +1186,7 @@ mod tests {
 
     #[test]
     fn clamping_the_numbers_no_double_holds_is_linear_in_the_numbers() {
-        assert_linear_timed_at("core clamp_beyond_double", 5_000, |n| {
+        assert_linear_timed_at("core clamp of doubles", 5_000, |n| {
             let text = document(n, "-1e999");
             let mut found = Diagnostics::default();
             let (clamped, took) = timed(|| {
@@ -1211,7 +1211,7 @@ mod tests {
     fn a_text_without_a_number_beyond_a_double_costs_one_walk_of_its_tokens() {
         // The numbers have exponents, so each token is parsed to see that a double holds it;
         // no value is built and nothing is replaced.
-        assert_linear_timed_at("core clamp_beyond_double, nothing to clamp", 20_000, |n| {
+        assert_linear_timed_at("core clamp of doubles, nothing to clamp", 20_000, |n| {
             let text = document(n, "1e300");
             let mut found = Diagnostics::default();
             let (clamped, took) = timed(|| {

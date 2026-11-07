@@ -14,7 +14,7 @@ use bedrock_addon::id::BlockId;
 use bedrock_addon::json::StrictInt;
 use bedrock_addon::molang::{Molang, MolangVersion, RawVersion};
 
-use super::common::{context, document, errors, load, loads, rejected, ucf};
+use super::common::{context, document, errors, load, loads, missing_toggles, rejected, ucf};
 
 /// A 1.26.20 block with `description` members and `components`.
 fn block(description: &str, components: &str) -> String {
@@ -66,7 +66,6 @@ fn rule_1_the_identifier_is_namespaced_and_not_minecraft() {
         );
         let d = rejected(&text, &context());
         assert!(
-            // By legacy name: the variant and the definitions that were it.
             d.iter().any(|f| matches!(f.code.id(), "block/namespace")
                 && f.severity == Severity::Error
                 && f.code.to_string()
@@ -87,7 +86,6 @@ fn rule_1_the_identifier_is_namespaced_and_not_minecraft() {
 
 #[test]
 fn rule_3_state_definitions() {
-    // By legacy name: the variant and the definitions that were it.
     let namespace = |c: &Code| matches!(c.id(), "core/namespace_rule");
     let cases: [(&str, CodeTest); 9] = [
         (r#"{"lit": [false, true]}"#, namespace),
@@ -107,14 +105,10 @@ fn rule_3_state_definitions() {
         (r#"{"demo:a": ["x", "x"]}"#, invalid_value),
         (r#"{"demo:a": [true]}"#, invalid_value),
         (r#"{"demo:a": {"min": 0}}"#, |c| {
-            // By legacy name: the variant and the definitions that were it.
             c.kind() == Kind::WrongType
                 && c.to_string() == "Failed to create Block State Description"
         }),
-        (r#"{"demo:a": []}"#, |c| {
-            // By legacy name: the variant and the definitions that were it.
-            c.kind() == Kind::WrongType
-        }),
+        (r#"{"demo:a": []}"#, |c| c.kind() == Kind::WrongType),
     ];
     for (states, code) in cases {
         let d = rejected(
@@ -418,7 +412,6 @@ fn strict_types_reject_a_wrong_json_type_in_a_1_26_20_document() {
         // (0x8 is an error under both masks).
         let d = rejected(&block("", components), &ucf());
         assert!(
-            // By legacy name: the variant and the definitions that were it.
             d.iter().any(|f| (f.code.id() == "core/invalid_type"
                 || f.code.kind() == Kind::InvalidValue)
                 && f.severity == Severity::Error
@@ -444,7 +437,6 @@ fn strict_types_reject_a_wrong_json_type_in_a_1_26_20_document() {
 fn base_game_members_are_unknown_elsewhere() {
     let components = r#"{"minecraft:geometry": "geometry.x", "minecraft:material_instances": {"*": {"texture": "x", "dithering": true}},
         "minecraft:connection_rule": {"vanilla_connections_from": ["fence"]}}"#;
-    // By legacy name: the variant and the definitions that were it.
     let unknown = |c: &Code| matches!(c.id(), "core/unrecognized_field");
     // In a cereal document the hidden members are unknown ones, 0x4 under 0xfffc: the block
     // is refused, as for `internal_vanilla_data`.
@@ -530,7 +522,6 @@ fn rule_11_a_duplicate_component_keeps_the_first() {
     );
     let loaded = loads(&text, &context());
     assert_eq!(loaded.components.get::<Friction>(), Some(&Friction(0.5)));
-    // By legacy name: the variant and the definitions that were it.
     assert!(loaded.diagnostics().iter().any(|f| matches!(f.code.id(), "block/duplicate_component") && f.severity == Severity::Error
         && f.kept
         && f.code.to_string()
@@ -547,10 +538,8 @@ fn rule_15_trait_checks() {
             ),
         )
     };
-    // By legacy name: the variant and the definitions that were it.
     let missing = |c: &Code| matches!(c.id(), "block/trait_needs_state");
-    // By legacy name: the variant and the definitions that were it.
-    let toggles = |c: &Code| c.kind() == Kind::Toggle;
+    let toggles = missing_toggles;
     let cases: [(&str, &str, CodeTest, &str); 6] = [
         (
             r#"{"minecraft:placement_position": {"enabled_states": []}}"#,
@@ -636,7 +625,6 @@ fn engine_gated_members_newer_than_the_pack_are_reported() {
     // A base-game pack: `vertical_connections` is base-game only.
     let mut cx = super::common::pack_version(1, 26, 20);
     cx.is_base_game_pack = true;
-    // By legacy name: the variant and the definitions that were it.
     let since = |c: &Code| matches!(c.id(), "core/field_since_engine");
     let loaded = loads(
         &block(
@@ -686,7 +674,6 @@ fn engine_gated_members_newer_than_the_pack_are_reported() {
 
 #[test]
 fn rule_15a_legacy_structural_errors() {
-    // By legacy name: the variant and the definitions that were it.
     let invalid_type = |c: &Code| c.kind() == Kind::WrongType;
     let cases: [(&str, &str); 8] = [
         (
@@ -748,13 +735,11 @@ fn rule_15a_legacy_structural_errors() {
         "{d:#?}"
     );
     assert!(
-        d.iter().any(
-            // By legacy name: the variant and the definitions that were it.
-            |f| matches!(f.code.id(), "core/unrecognized_field")
+        d.iter()
+            .any(|f| matches!(f.code.id(), "core/unrecognized_field")
                 && f.severity == Severity::Warning
                 && f.location.json_path.to_string()
-                    == "minecraft:block/description/use_beta_features"
-        ),
+                    == "minecraft:block/description/use_beta_features"),
         "{d:#?}"
     );
     let d = rejected(
@@ -783,7 +768,6 @@ fn internal_vanilla_data_is_an_unknown_member_outside_the_base_game() {
     );
     assert!(at(
         &d,
-        // By legacy name: the variant and the definitions that were it.
         |c| matches!(c.id(), "core/unrecognized_field"),
         Severity::Error,
         "internal_vanilla_data"
@@ -806,7 +790,6 @@ fn internal_vanilla_data_is_an_unknown_member_outside_the_base_game() {
     // information of ours.
     assert!(at(
         loaded.diagnostics(),
-        // By legacy name: the variant and the definitions that were it.
         |c| matches!(c.id(), "core/unrecognized_field"),
         Severity::Info,
         "internal_vanilla_data"
@@ -837,7 +820,6 @@ fn without_the_molang_feature_expressions_are_counted_not_checked() {
         r#"{}, "permutations": [{"condition": "q.block_state('demo:a')", "components": {}}]"#,
     );
     let loaded = loads(&text, &context());
-    // By legacy name: the variant and the definitions that were it.
     assert!(
         loaded
             .diagnostics()
@@ -883,7 +865,6 @@ fn the_constructors_build_a_valid_block() {
     let d = broken.validate(&context());
     assert!(at(
         &d,
-        // By legacy name: the variant and the definitions that were it.
         |c| matches!(c.id(), "block/namespace"),
         Severity::Error,
         "description/identifier"
@@ -942,19 +923,16 @@ fn the_menu_category_needs_a_category_and_a_namespaced_group() {
         (
             r#"{"group": "minecraft:itemGroup.name.ore"}"#,
             "menu_category/category",
-            // By legacy name: the variant and the definitions that were it.
             (|c: &Code| matches!(c.id(), "core/missing_required_field")) as fn(&Code) -> bool,
         ),
         (
             r#"{"category": "nature", "group": "my group"}"#,
             "menu_category/group",
-            // By legacy name: the variant and the definitions that were it.
             |c: &Code| matches!(c.id(), "core/namespace_rule"),
         ),
         (
             r#"{"category": "nature", "group": "plain"}"#,
             "menu_category/group",
-            // By legacy name: the variant and the definitions that were it.
             |c: &Code| matches!(c.id(), "core/namespace_rule"),
         ),
     ] {
@@ -1056,7 +1034,6 @@ fn an_identifier_that_is_an_object_is_a_type_error_and_no_panic() {
     );
     let found: Vec<_> = d
         .iter()
-        // By legacy name: the variant and the definitions that were it.
         .filter(|f| matches!(f.code.id(), "core/invalid_type"))
         .collect();
     assert_eq!(found.len(), 1, "{d:#?}");
@@ -1310,13 +1287,11 @@ fn the_generic_checks_of_a_legacy_block_report_below_the_payload_key() {
     };
     // Core's gate of a component (`versioning::validate_components`).
     assert_eq!(
-        // By legacy name: the variant and the definitions that were it.
-        at(|c| matches!(c.id(), "core/turn_on_toggle_before")),
+        at(missing_toggles),
         ["minecraft:block/permutations/0/components/minecraft:connection_rule"]
     );
     // Molang pass 2 (`versioning::pipeline::molang_pass_two`).
     assert_eq!(
-        // By legacy name: the variant and the definitions that were it.
         at(|c| matches!(c.id(), "core/invalid_molang")),
         ["minecraft:block/permutations/0/condition"]
     );
@@ -1549,7 +1524,6 @@ fn a_null_optional_member_of_a_cereal_block_rejects_the_document() {
     assert!(
         at(
             &d,
-            // By legacy name: the variant and the definitions that were it.
             |c| matches!(c.id(), "core/invalid_type"),
             Severity::Error,
             "description/internal_vanilla_data/requires_correct_tool_for_drops"

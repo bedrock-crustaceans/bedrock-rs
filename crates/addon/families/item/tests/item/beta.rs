@@ -101,7 +101,6 @@ fn a_beta_document_needs_the_beta_apis() {
         Ok(_) => panic!("loaded"),
         Err(rejected) => rejected.diagnostics,
     };
-    // By legacy name: the variant and the definitions that were it.
     assert!(has(&d, |c| matches!(c.id(), "core/beta_documents")));
     // a base-game pack may not either: the JSON path gates on the toggle alone
     // `a_json_beta_item_needs_the_beta_apis_even_in_a_base_game_pack`)
@@ -184,7 +183,6 @@ fn a_json_beta_item_needs_the_beta_apis_even_in_a_base_game_pack() {
         Ok(_) => panic!("loaded"),
         Err(rejected) => rejected.diagnostics,
     };
-    // By legacy name: the variant and the definitions that were it.
     assert!(has(&d, |c| matches!(c.id(), "core/beta_documents")));
     assert!(
         has_text(
@@ -345,7 +343,6 @@ fn routing_wins_over_the_components_min_size_and_beta_meets_it() {
     assert!(
         d.iter().any(
             |f| f.severity == bedrock_addon_core::diagnostic::Severity::Error
-                // By legacy name: the variant and the definitions that were it.
                 && matches!(f.code.id(), "core/missing_required_field")
                 && f.location.json_path.to_string() == "minecraft:item/components"
         ),
@@ -366,7 +363,6 @@ fn a_beta_file_read_as_an_item_is_refused_in_its_file() {
     let refusal = refused
         .diagnostics
         .iter()
-        // By legacy name: the variant and the definitions that were it.
         .find(|d| matches!(d.code.id(), "core/no_parser_for_version"))
         .unwrap_or_else(|| panic!("{:#?}", refused.diagnostics));
     assert_eq!(

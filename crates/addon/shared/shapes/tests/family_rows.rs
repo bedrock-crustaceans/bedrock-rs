@@ -33,7 +33,6 @@ fn block_text(descriptor: &BlockDescriptor) -> String {
     let found = descriptor.check(&JsonPath::new(), Severity::Warning);
     assert_eq!(found.len(), 1);
     let code = &found.iter().next().unwrap().code;
-    // By legacy name: the variant and the definitions that were it.
     assert_eq!(code.kind(), Kind::InvalidValue, "{code:?}");
     code.vanilla().expect("a vanilla text")
 }

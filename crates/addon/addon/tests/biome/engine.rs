@@ -111,12 +111,7 @@ fn the_engine_s_biomes_without_a_version_are_refused() {
         "case-20.json",
     ] {
         let found = rejected(&engine(name), &context());
-        only(
-            &found,
-            // By legacy name: the variant and the definitions that were it.
-            |c| matches!(c.id(), "core/no_valid_version"),
-            "",
-        );
+        only(&found, |c| matches!(c.id(), "core/no_valid_version"), "");
     }
 }
 
@@ -128,14 +123,12 @@ fn the_engine_s_biomes_below_the_floor_are_refused() {
         let found = rejected(&engine(name), &context());
         only(
             &found,
-            // By legacy name: the variant and the definitions that were it.
             |c| matches!(c.id(), "core/no_parser_for_version"),
             "format_version",
         );
         assert!(
             found
                 .iter()
-                // By legacy name: the variant and the definitions that were it.
                 .any(|d| matches!(d.code.id(), "core/biome_format_hint_experimental")),
             "{name}"
         );
@@ -149,7 +142,6 @@ fn the_engine_s_swamp_builder_in_the_nether_is_refused() {
     let found = rejected(&engine("case-5.json"), &context());
     only(
         &found,
-        // By legacy name: the variant and the definitions that were it.
         |c| matches!(c.id(), "biome/nether_builders"),
         "minecraft:biome/components/minecraft:surface_builder/builder/type",
     );
@@ -164,7 +156,6 @@ fn the_engine_s_attributes_outside_the_beta_struct_refuse_the_biome() {
     let found = load(&engine("case-18.json"), &context()).expect_err("refused");
     only(
         &found.diagnostics,
-        // By legacy name: the variant and the definitions that were it.
         |c| matches!(c.id(), "core/unrecognized_field"),
         "minecraft:biome/environment_attributes",
     );

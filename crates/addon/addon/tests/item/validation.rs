@@ -160,7 +160,6 @@ fn v04_a_lowered_engine_version_refuses_cooldown_type() {
         "minecraft:cooldown",
     ]);
     assert!(lowered.unknown().get(&at, "type").is_some());
-    // By legacy name: the variant and the definitions that were it.
     assert!(has(lowered.diagnostics(), |c| matches!(
         c.id(),
         "core/field_since_engine"
@@ -183,7 +182,6 @@ fn v04b_a_member_above_the_engine_version_is_an_information_and_an_unbound_one_a
     let told: Vec<_> = lowered
         .diagnostics()
         .iter()
-        // By legacy name: the variant and the definitions that were it.
         .filter(|f| matches!(f.code.id(), "core/field_since_engine"))
         .collect();
     assert_eq!(told.len(), 1);
@@ -195,7 +193,6 @@ fn v04b_a_member_above_the_engine_version_is_an_information_and_an_unbound_one_a
     );
     let loaded = loads(&unbound, &third_party());
     assert!(
-        // By legacy name: the variant and the definitions that were it.
         loaded
             .diagnostics()
             .iter()
@@ -933,16 +930,13 @@ fn rule_1_an_identifier_needs_a_namespace() {
             &third_party(),
         );
         assert!(
-            d.iter()
-                // By legacy name: the variant and the definitions that were it.
-                .any(|f| matches!(f.code.id(), "item/identifier")
-                    && f.severity == Severity::Error
-                    && f.code.to_string().contains("must include a namespace")),
+            d.iter().any(|f| matches!(f.code.id(), "item/identifier")
+                && f.severity == Severity::Error
+                && f.code.to_string().contains("must include a namespace")),
             "{identifier}: {d:#?}"
         );
     }
     let legacy = rejects(&item("1.10", "ruby", ""), &third_party());
-    // By legacy name: the variant and the definitions that were it.
     assert!(has(&legacy, |c| matches!(c.id(), "item/identifier")));
 }
 
@@ -1321,10 +1315,7 @@ fn a_legacy_category_that_is_no_creative_category_is_dropped_and_told() {
         )
         .diagnostics()
         .iter()
-        .filter(|f| {
-            // By legacy name: the variant and the definitions that were it.
-            f.phase == Phase::Upgrade && matches!(f.code.id(), "core/invalid_value")
-        })
+        .filter(|f| f.phase == Phase::Upgrade && matches!(f.code.id(), "core/invalid_value"))
         .map(|f| (f.location.json_path.to_string(), f.severity))
         .collect()
     };
@@ -1445,7 +1436,6 @@ fn a_root_use_beta_features_that_is_no_bool_is_a_member_nothing_reads() {
     assert!(
         document.diagnostics().iter().any(|f| {
             f.location.json_path.to_string() == "use_beta_features"
-                // By legacy name: the variant and the definitions that were it.
                 && matches!(f.code.id(), "core/unrecognized_field")
         }),
         "{:#?}",
@@ -1586,7 +1576,6 @@ fn a_null_member_of_a_modern_item_rejects_it() {
     );
     assert!(
         d.iter().any(|f| f.severity == Severity::Error
-            // By legacy name: the variant and the definitions that were it.
             && matches!(f.code.id(), "core/invalid_type")
             && f.location.json_path.to_string()
                 == "minecraft:item/components/minecraft:use_modifiers/start_sound"),

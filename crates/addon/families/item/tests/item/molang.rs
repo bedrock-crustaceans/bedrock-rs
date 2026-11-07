@@ -79,7 +79,6 @@ mod compiled {
         );
         assert!(
             d.iter()
-                // By legacy name: the variant and the definitions that were it.
                 .any(|f| matches!(f.code.id(), "core/invalid_molang"))
         );
         let fine = r#""context.other->query.remaining_durability + 0.05 * context.other->query.max_durability""#;
@@ -93,7 +92,6 @@ mod compiled {
         let (_, d) = repair_amount(&repairable(r#""'a' + 1""#), &checking());
         let finding = d
             .iter()
-            // By legacy name: the variant and the definitions that were it.
             .find(|f| matches!(f.code.id(), "core/invalid_molang"))
             .unwrap();
         assert_eq!((finding.severity, finding.kept), (Severity::Error, true));

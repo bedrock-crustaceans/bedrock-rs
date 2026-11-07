@@ -5,7 +5,7 @@
 
 use std::sync::Arc;
 
-use bedrock_addon::diagnostic::{Diagnostic, DiagnosticDetail, Diagnostics, Severity};
+use bedrock_addon::diagnostic::{Diagnostic, DiagnosticDetail, Diagnostics, Kind, Severity};
 use bedrock_addon::load::{BuiltIns, LoadOptions};
 use bedrock_addon::pack::{
     LinkOptions, Pack, PackOrigin, PackRepository, PackSelection, StackSet, WorldPacks,
@@ -260,9 +260,14 @@ pub fn references(findings: &Diagnostics, code: &str) -> Vec<Reference> {
         .collect()
 }
 
-/// The `UnresolvedReference` findings: `(kind, name as written, severity, JSON path)`.
+/// The unresolved-reference findings, plain or worded: `(kind, name as written, severity,
+/// JSON path)`.
 pub fn unresolved(findings: &Diagnostics) -> Vec<Reference> {
-    references(findings, "core/unresolved_reference_worded")
+    findings
+        .iter()
+        .filter(|finding| finding.code.kind() == Kind::UnresolvedReference)
+        .filter_map(reference)
+        .collect()
 }
 
 /// The findings in the file `path`.

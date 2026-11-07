@@ -318,7 +318,6 @@ mod checked {
         let arity: Vec<Severity> = document
             .diagnostics()
             .iter()
-            // By legacy name: the variant and the definitions that were it.
             .filter(|d| matches!(d.code.id(), "core/molang_lint"))
             .filter(|d| {
                 matches!(d.detail.as_deref(), Some(DiagnosticDetail::Molang(m)) if m.code() == DiagCode::QueryArity)

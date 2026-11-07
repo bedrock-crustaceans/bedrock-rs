@@ -92,7 +92,6 @@ fn check_recipes(source: &str, dirs: &[&Path], world_behavior: &[u8], flattened:
             mcb += 1;
             continue;
         }
-        // By legacy name: the definitions that were `DuplicateIdentifier` and the variant.
         if flattened && finding.code.id() == "recipe/duplicate_identifier" {
             merged += 1;
             continue;

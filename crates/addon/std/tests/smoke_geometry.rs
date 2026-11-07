@@ -188,7 +188,10 @@ fn s05_sample_packs_geometry_loads_without_errors() {
         .filter(|d| {
             matches!(
                 d.code.id(),
-                "core/duplicate_bone" | "geometry/parent_is_self"
+                "core/duplicate_bone"
+                    | "core/reference_cycle"
+                    | "core/reference_cycle_worded"
+                    | "geometry/parent_is_self"
             )
         })
         .map(|d| {

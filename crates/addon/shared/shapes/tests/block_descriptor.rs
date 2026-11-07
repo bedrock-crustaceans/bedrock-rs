@@ -17,7 +17,6 @@ fn text_of(descriptor: &BlockDescriptor) -> String {
     // The game logs these at level 3 and goes on: a kept error.
     assert_eq!(finding.severity, Severity::Error);
     assert!(finding.kept);
-    // By legacy name: the variant and the definitions that were it.
     assert_eq!(
         finding.code.kind(),
         Kind::InvalidValue,

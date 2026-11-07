@@ -78,7 +78,6 @@ fn found(stack: &PackStack<Resource>, code: impl Fn(&Code) -> bool) -> Vec<(Stri
 }
 
 fn shadowed(code: &Code) -> bool {
-    // By legacy name: the variant and the definitions that were it.
     matches!(code.id(), "core/shadowed_definition")
 }
 

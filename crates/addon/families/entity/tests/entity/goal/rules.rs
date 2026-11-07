@@ -90,7 +90,6 @@ fn rule15_unknown_names_fail_the_strict_parse() {
             .unwrap_or_else(|| panic!("{member}: {d:?}"));
         assert_eq!(found.severity, Severity::Error);
         assert!(
-            // By legacy name: the variant and the definitions that were it.
             found.code.id() == "core/invalid_type" || found.code.kind() == Kind::InvalidEnumValue,
             "{found:?}"
         );

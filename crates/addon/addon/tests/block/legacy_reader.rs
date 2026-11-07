@@ -60,9 +60,7 @@ fn a_legacy_ambient_occlusion_string_still_rejects_the_block() {
     let text = with_instance("1.21.40", r#"{"texture": "x", "ambient_occlusion": "1"}"#);
     let d = rejected(&text, &context());
     assert!(
-        d.iter()
-            // By legacy name: the variant and the definitions that were it.
-            .any(|f| matches!(f.code.id(), "core/invalid_type")),
+        d.iter().any(|f| matches!(f.code.id(), "core/invalid_type")),
         "{d:#?}"
     );
 }
@@ -72,9 +70,7 @@ fn a_cereal_ambient_occlusion_bool_is_not_taken() {
     let text = with_instance("1.26.20", r#"{"texture": "x", "ambient_occlusion": false}"#);
     let d = rejected(&text, &context());
     assert!(
-        d.iter()
-            // By legacy name: the variant and the definitions that were it.
-            .any(|f| matches!(f.code.id(), "core/invalid_type")),
+        d.iter().any(|f| matches!(f.code.id(), "core/invalid_type")),
         "{d:#?}"
     );
 }
@@ -149,7 +145,6 @@ fn a_cereal_integer_member_takes_the_integer_tokens_only() {
         let text = with_component("1.26.20", "minecraft:light_emission", written);
         let d = rejected(&text, &context());
         assert!(
-            // By legacy name: the variant and the definitions that were it.
             d.iter()
                 .any(|f| matches!(f.code.kind(), Kind::WrongType | Kind::InvalidValue)),
             "{written}: {d:#?}"
@@ -162,9 +157,7 @@ fn a_legacy_integer_member_still_rejects_a_string() {
     let text = with_component("1.21.40", "minecraft:light_emission", r#""3""#);
     let d = rejected(&text, &context());
     assert!(
-        d.iter()
-            // By legacy name: the variant and the definitions that were it.
-            .any(|f| matches!(f.code.id(), "core/invalid_type")),
+        d.iter().any(|f| matches!(f.code.id(), "core/invalid_type")),
         "{d:#?}"
     );
 }
@@ -180,13 +173,11 @@ fn a_legacy_light_emission_out_of_range_after_the_read_rejects_the_block() {
         let text = with_component("1.21.40", "minecraft:light_emission", written);
         let d = rejected(&text, &context());
         assert!(
-            d.iter()
-                // By legacy name: the variant and the definitions that were it.
-                .any(|f| f.code.kind() == Kind::InvalidValue
-                    && f.location
-                        .json_path
-                        .to_string()
-                        .ends_with("minecraft:light_emission")),
+            d.iter().any(|f| f.code.kind() == Kind::InvalidValue
+                && f.location
+                    .json_path
+                    .to_string()
+                    .ends_with("minecraft:light_emission")),
             "{written}: {d:#?}"
         );
     }
@@ -200,13 +191,11 @@ fn a_legacy_friction_out_of_range_after_the_read_rejects_the_block() {
         let text = with_component("1.21.40", "minecraft:friction", written);
         let d = rejected(&text, &context());
         assert!(
-            d.iter()
-                // By legacy name: the variant and the definitions that were it.
-                .any(|f| f.code.kind() == Kind::InvalidValue
-                    && f.location
-                        .json_path
-                        .to_string()
-                        .ends_with("minecraft:friction")),
+            d.iter().any(|f| f.code.kind() == Kind::InvalidValue
+                && f.location
+                    .json_path
+                    .to_string()
+                    .ends_with("minecraft:friction")),
             "{written}: {d:#?}"
         );
     }

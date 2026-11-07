@@ -40,7 +40,6 @@ fn quirk_format_version_truncates_to_u8_and_coerces_other_types() {
         &diagnostics,
         Severity::Error,
         "header/pack_id",
-        // By legacy name: the variant and the definitions that were it.
         |c| matches!(c.id(), "core/missing_property")
     ));
     // A number read as its text from 3.0.0 on is no legacy manifest; `true`, `[2]`,
@@ -104,7 +103,6 @@ fn quirk_a_module_with_the_header_uuid_is_an_error_from_format_1() {
         &diagnostics,
         Severity::Error,
         "header/uuid",
-        // By legacy name: the variant and the definitions that were it.
         |c| matches!(c.id(), "core/duplicate_uuid")
     ));
 }
@@ -121,7 +119,6 @@ fn quirk_format_0_resolves_a_module_with_the_header_uuid_with_a_warning() {
         document.diagnostics(),
         Severity::Warning,
         "header/pack_id",
-        // By legacy name: the variant and the definitions that were it.
         |c| matches!(c.id(), "core/duplicate_uuid")
     ));
     assert_ne!(document.header.uuid, document.modules[0].uuid);
@@ -151,7 +148,6 @@ fn quirk_the_last_module_decides_the_pack_type() {
     );
     // Modules of different behaviour / resource kinds are refused (`MultipleModules`).
     let diagnostics = rejected(&two("data", "resources"));
-    // By legacy name: the variant and the definitions that were it.
     assert!(has(&diagnostics, Severity::Error, "modules", |c| matches!(
         c.id(),
         "core/multiple_modules"
@@ -193,7 +189,6 @@ fn quirk_the_module_type_table_has_sixteen_names() {
         &diagnostics,
         Severity::Error,
         "modules/0/type",
-        // By legacy name: the variant and the definitions that were it.
         |c| matches!(c.id(), "core/manifest_invalid_value")
     ));
 }
@@ -278,7 +273,6 @@ fn quirk_version_array_elements_above_0xffff_are_rejected() {
         &diagnostics,
         Severity::Error,
         "header/version",
-        // By legacy name: the variant and the definitions that were it.
         |c| matches!(c.id(), "core/manifest_wrong_type")
     ));
 }
@@ -297,7 +291,6 @@ fn quirk_a_format_1_min_engine_version_is_capped_to_1_12_0() {
         document.diagnostics(),
         Severity::Warning,
         "header/min_engine_version",
-        // By legacy name: the variant and the definitions that were it.
         |c| matches!(c.id(), "core/min_engine_version_cap_format_version1")
     ));
     // Below the cap: kept. Format 2 has no cap but a floor of 1.13.0.
@@ -311,7 +304,6 @@ fn quirk_a_format_1_min_engine_version_is_capped_to_1_12_0() {
         &diagnostics,
         Severity::Error,
         "header/min_engine_version",
-        // By legacy name: the variant and the definitions that were it.
         |c| matches!(c.id(), "core/version_too_low")
     ));
 }
@@ -334,7 +326,6 @@ fn quirk_a_format_1_pack_without_min_engine_version_gets_1_2_5() {
         &diagnostics,
         Severity::Error,
         "header/min_engine_version",
-        // By legacy name: the variant and the definitions that were it.
         |c| matches!(c.id(), "core/missing_property")
     ));
 }
@@ -349,7 +340,6 @@ fn quirk_an_explicit_nil_uuid_is_malformed() {
         &diagnostics,
         Severity::Error,
         "header/uuid",
-        // By legacy name: the variant and the definitions that were it.
         |c| matches!(c.id(), "core/malformed_property_uuid")
     ));
 }
@@ -368,7 +358,6 @@ fn quirk_case_folding_is_ascii_only() {
         &diagnostics,
         Severity::Error,
         "header/uuid",
-        // By legacy name: the variant and the definitions that were it.
         |c| matches!(c.id(), "core/malformed_property_uuid")
     ));
     // Module types are matched exactly: no case folding at all.
@@ -378,7 +367,6 @@ fn quirk_case_folding_is_ascii_only() {
         &diagnostics,
         Severity::Error,
         "modules/0/type",
-        // By legacy name: the variant and the definitions that were it.
         |c| matches!(c.id(), "core/manifest_invalid_value")
     ));
 }
@@ -438,7 +426,6 @@ fn format_3_rejects_unknown_members_and_array_versions() {
         &unknown,
         Severity::Error,
         "header/author",
-        // By legacy name: the variant and the definitions that were it.
         |c| matches!(c.id(), "core/unrecognized_field")
     ));
     let array = rejected(&format_3("", "").replace(
@@ -449,7 +436,6 @@ fn format_3_rejects_unknown_members_and_array_versions() {
         &array,
         Severity::Error,
         "header/version",
-        // By legacy name: the variant and the definitions that were it.
         |c| matches!(c.id(), "core/invalid_type")
     ));
     let module = rejected(&format_3("", "").replace(
@@ -460,7 +446,6 @@ fn format_3_rejects_unknown_members_and_array_versions() {
         &module,
         Severity::Error,
         "modules/0/main",
-        // By legacy name: the variant and the definitions that were it.
         |c| matches!(c.id(), "core/unrecognized_field")
     ));
     let legacy_engine = rejected(&format_3("", "").replace("\"1.26.20\"", "[1, 26, 20]"));
@@ -468,7 +453,6 @@ fn format_3_rejects_unknown_members_and_array_versions() {
         &legacy_engine,
         Severity::Error,
         "header/min_engine_version",
-        // By legacy name: the variant and the definitions that were it.
         |c| matches!(c.id(), "core/invalid_type")
     ));
 }
@@ -480,7 +464,6 @@ fn an_unknown_manifest_member_whose_key_holds_a_slash_is_one_step_of_the_path() 
     for (key, written) in [("a/b", "header/a~1b"), ("a~b", "header/a~0b")] {
         let unknown = rejected(&format_3(&format!(",\n    \"{key}\": \"me\""), ""));
         assert!(
-            // By legacy name: the variant and the definitions that were it.
             has(&unknown, Severity::Error, written, |c| matches!(
                 c.id(),
                 "core/unrecognized_field"
@@ -525,7 +508,6 @@ fn format_3_native_module_dependencies() {
                 &diagnostics,
                 Severity::Error,
                 "dependencies/0/version",
-                // By legacy name: the variant and the definitions that were it.
                 |c| matches!(c.id(), "core/invalid_type"),
             )
         } else {
@@ -533,7 +515,6 @@ fn format_3_native_module_dependencies() {
                 &diagnostics,
                 Severity::Error,
                 "dependencies/0/version",
-                // By legacy name: the variant and the definitions that were it.
                 |c| matches!(c.id(), "core/dependency_invalid_version"),
             )
         };
@@ -550,7 +531,6 @@ fn format_3_native_module_dependencies() {
         &rejected(&both),
         Severity::Error,
         "dependencies/0/uuid",
-        // By legacy name: the variant and the definitions that were it.
         |c| matches!(c.id(), "core/unrecognized_field")
     ));
 }
@@ -568,7 +548,6 @@ fn legacy_native_module_dependencies_drop_a_uuid_with_a_warning() {
         document.diagnostics(),
         Severity::Warning,
         "dependencies/1",
-        // By legacy name: the variant and the definitions that were it.
         |c| matches!(c.id(), "core/invalid_property")
     ));
     // A legacy native version must be a full SemVer: `*` and `2.0` are refused.
@@ -579,7 +558,6 @@ fn legacy_native_module_dependencies_drop_a_uuid_with_a_warning() {
                 &diagnostics,
                 Severity::Error,
                 "dependencies/0/version",
-                // By legacy name: the variant and the definitions that were it.
                 |c| matches!(c.id(), "core/manifest_not_semver")
             ),
             "{version}"
@@ -598,14 +576,12 @@ fn capabilities_are_checked_against_the_registry() {
         document.diagnostics(),
         Severity::Info,
         "capabilities/0",
-        // By legacy name: the variant and the definitions that were it.
         |c| matches!(c.id(), "core/invalid_capability")
     ));
     assert!(has(
         document.diagnostics(),
         Severity::Info,
         "capabilities/2",
-        // By legacy name: the variant and the definitions that were it.
         |c| matches!(c.id(), "core/invalid_capability")
     ));
     assert_eq!(
@@ -638,10 +614,8 @@ fn a_syntax_error_and_an_empty_file_are_rejected() {
         &rejected("{ \"format_version\": 2, "),
         Severity::Error,
         "",
-        // By legacy name: the variant and the definitions that were it.
         |c| matches!(c.id(), "core/syntax")
     ));
-    // By legacy name: the variant and the definitions that were it.
     assert!(has(&rejected("  \n"), Severity::Error, "", |c| matches!(
         c.id(),
         "core/empty_document"
@@ -703,7 +677,6 @@ fn format_3_a_null_member_is_a_type_error_that_rejects() {
         let refused = match parse_str(&format_3(header_extra, root_extra)) {
             Ok(_) => false,
             Err(rejected) => has(&rejected.diagnostics, Severity::Error, path, |c| {
-                // By legacy name: the variant and the definitions that were it.
                 matches!(c.id(), "core/invalid_type")
             }),
         };
@@ -769,7 +742,6 @@ fn a_format_version_that_gives_no_version_is_malformed_on_both_paths() {
                 &diagnostics,
                 Severity::Error,
                 "format_version",
-                // By legacy name: the variant and the definitions that were it.
                 |c| matches!(c.id(), "core/malformed_format_version")
             ),
             "{value}: {diagnostics:#?}"
@@ -789,7 +761,6 @@ fn a_format_version_that_gives_no_version_is_malformed_on_both_paths() {
         &absent,
         Severity::Error,
         "header/pack_id",
-        // By legacy name: the variant and the definitions that were it.
         |c| matches!(c.id(), "core/missing_property")
     ));
 }
@@ -819,7 +790,6 @@ fn a_format_version_above_3_has_no_parser() {
         assert!(
             diagnostics.iter().any(|d| d.severity == Severity::Error
                 && d.location.json_path.to_string() == "format_version"
-                // By legacy name: the variant and the definitions that were it.
                 && matches!(d.code.id(), "core/no_parser_for_version")
                 && d.code.to_string() == text),
             "{value}: {diagnostics:#?}"
@@ -848,7 +818,6 @@ fn a_format_3_manifest_s_format_version_is_the_integer_3() {
                 &diagnostics,
                 Severity::Error,
                 "format_version",
-                // By legacy name: the variant and the definitions that were it.
                 |c| matches!(c.id(), "core/invalid_type")
             ),
             "{value}: {diagnostics:#?}"

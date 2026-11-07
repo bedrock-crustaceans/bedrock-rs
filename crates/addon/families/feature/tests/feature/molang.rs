@@ -251,7 +251,6 @@ mod compiled {
         let d = rejects(&condition, &base_checking(old));
         assert!(
             d.iter()
-                // By legacy name: the variant and the definitions that were it.
                 .any(|f| matches!(f.code.id(), "core/invalid_molang")
                     && f.severity == Severity::Error)
         );

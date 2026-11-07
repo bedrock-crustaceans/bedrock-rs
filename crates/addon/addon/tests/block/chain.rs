@@ -88,7 +88,6 @@ fn a_prerelease_loads_through_the_struct_below_it_with_an_info() {
         &context(),
     );
     assert_eq!(block.version().parsed_as, FormatVersion::new(1, 21, 30));
-    // By legacy name: the variant and the definitions that were it.
     assert!(
         block
             .diagnostics()
@@ -119,7 +118,6 @@ fn a_prerelease_of_1_26_20_is_read_from_the_raw_text_by_the_legacy_struct() {
     );
     assert!(
         d.iter()
-            // By legacy name: the variant and the definitions that were it.
             .any(|f| matches!(f.code.id(), "core/document_member_count"))
     );
 }
@@ -138,16 +136,10 @@ fn the_beta_literal_has_no_struct_whatever_the_beta_apis() {
         let d = rejected(&text, &cx);
         assert!(
             d.iter()
-                // By legacy name: the variant and the definitions that were it.
                 .any(|f| matches!(f.code.id(), "core/no_parser_for_version")),
             "{d:#?}"
         );
-        assert!(
-            !d.iter()
-                // By legacy name: the variant and the definitions that were it.
-                .any(|f| f.code.kind() == Kind::Toggle),
-            "{d:#?}"
-        );
+        assert!(!d.iter().any(|f| f.code.kind() == Kind::Toggle), "{d:#?}");
     }
 }
 
@@ -239,7 +231,6 @@ fn a_document_below_1_16_0_is_rejected_deviation() {
     );
     assert!(
         d.iter()
-            // By legacy name: the variant and the definitions that were it.
             .any(|f| matches!(f.code.id(), "core/use_format_version"))
     );
 }
@@ -299,7 +290,6 @@ fn a_third_root_member_below_1_26_20_is_reported_deviation() {
         block
             .diagnostics()
             .iter()
-            // By legacy name: the variant and the definitions that were it.
             .any(|f| matches!(f.code.id(), "core/unrecognized_field"))
     );
 }
@@ -334,13 +324,11 @@ fn events_of_a_1_26_20_document_reject_the_block() {
     );
     let d = rejected(&text, &context());
     assert!(
-        d.iter().any(
-            // By legacy name: the variant and the definitions that were it.
-            |f| matches!(f.code.id(), "core/member_deprecated")
+        d.iter()
+            .any(|f| matches!(f.code.id(), "core/member_deprecated")
                 && f.severity == Severity::Error
                 && f.code.to_string() == "member \"events\" is deprecated"
-                && f.location.json_path.to_string().ends_with("events")
-        ),
+                && f.location.json_path.to_string().ends_with("events")),
         "{d:#?}"
     );
 }

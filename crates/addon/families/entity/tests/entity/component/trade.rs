@@ -94,7 +94,6 @@ fn wither_target_highest_damage_drops_the_deprecated_target_goal_names() {
         assert!(
             has(
                 &d,
-                // By legacy name: the variant and the definitions that were it.
                 |c| matches!(c.id(), "core/member_deprecated"),
                 Severity::Error,
                 member

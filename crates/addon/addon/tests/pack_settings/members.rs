@@ -33,7 +33,6 @@ fn ps09_unknown_member_is_an_error_and_drops_the_file() {
         &refused(name),
         name,
         "minecraft:pack_settings/settings/0/comment",
-        // By legacy name: the variant and the definitions that were it.
         |c| matches!(c.id(), "core/unrecognized_field"),
     );
 }
@@ -45,7 +44,6 @@ fn an_unknown_member_of_the_document_is_an_error_too() {
         &refused_text(WORLD, &text),
         WORLD,
         "minecraft:pack_settings/comment",
-        // By legacy name: the variant and the definitions that were it.
         |c| matches!(c.id(), "core/unrecognized_field"),
     );
 }
@@ -60,7 +58,6 @@ fn a_member_named_like_a_kept_field_is_an_unknown_member() {
         &refused_text(WORLD, &text),
         WORLD,
         "minecraft:pack_settings/settings/0/extra",
-        // By legacy name: the variant and the definitions that were it.
         |c| matches!(c.id(), "core/unrecognized_field"),
     );
 }
@@ -125,7 +122,6 @@ fn ps10_a_non_string_pack_id_is_a_type_error() {
         &found,
         name,
         "minecraft:pack_settings/settings/0/pack_id",
-        // By legacy name: the variant and the definitions that were it.
         |c| matches!(c.id(), "core/invalid_type"),
     );
 }
@@ -177,7 +173,6 @@ fn ps15_findings_under_a_foreign_payload_key_keep_their_file_offsets() {
     let found = refused_text(WORLD, text);
     let typed = found
         .iter()
-        // By legacy name: the variant and the definitions that were it.
         .find(|d| matches!(d.code.id(), "core/invalid_type"))
         .expect("the type error");
     let span = typed.location.span.expect("a span");
@@ -203,7 +198,6 @@ fn d6_a_missing_required_member_is_an_error() {
     ] {
         let found = refused_text(WORLD, &document("\"1.21.100\"", &payload));
         fails_at(&found, WORLD, path, |c| {
-            // By legacy name: the variant and the definitions that were it.
             matches!(c.id(), "core/missing_required_field")
         });
     }
@@ -229,7 +223,6 @@ fn d8_a_null_object_or_mixed_array_value_is_a_type_error() {
             &found,
             WORLD,
             "minecraft:pack_settings/settings/0/values/banana:x",
-            // By legacy name: the variant and the definitions that were it.
             |c| matches!(c.id(), "core/invalid_type"),
         );
     }
@@ -249,7 +242,6 @@ fn d8_last_used_must_be_an_unsigned_integer() {
             &found,
             WORLD,
             "minecraft:pack_settings/settings/0/last_used",
-            // By legacy name: the variant and the definitions that were it.
             |c| matches!(c.id(), "core/invalid_type"),
         );
     }
@@ -261,7 +253,6 @@ fn d8_settings_must_be_an_array() {
         let payload = format!(r#"{{"settings": {value}}}"#);
         let found = refused_text(WORLD, &document("\"1.21.100\"", &payload));
         fails_at(&found, WORLD, "minecraft:pack_settings/settings", |c| {
-            // By legacy name: the variant and the definitions that were it.
             matches!(c.id(), "core/invalid_type")
         });
     }
@@ -287,7 +278,6 @@ fn d8_an_entry_values_or_payload_of_another_type_is_a_type_error_at_its_path() {
         ("null", "minecraft:pack_settings"),
     ] {
         let found = refused_text(WORLD, &document("\"1.21.100\"", payload));
-        // By legacy name: the variant and the definitions that were it.
         fails_at(&found, WORLD, path, |c| {
             matches!(c.id(), "core/invalid_type")
         });

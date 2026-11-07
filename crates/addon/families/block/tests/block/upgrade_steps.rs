@@ -49,7 +49,6 @@ fn light_emission_scales_to_fifteen_and_clamps() {
     assert!(
         out.diagnostics
             .iter()
-            // By legacy name: the variant and the definitions that were it.
             .any(|d| d.code.id() == "core/clamped_value"),
         "the clamp is reported"
     );

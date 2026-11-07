@@ -139,7 +139,6 @@ fn e4_a_malformed_format_version_is_rejected() {
             .collect();
         assert_eq!(errors.len(), 1, "{version}: {}", describe(d.iter()));
         assert!(
-            // By legacy name: the variant and the definitions that were it.
             matches!(errors[0].code.id(), "core/malformed_format_version"),
             "{version}: {:?}",
             errors[0].code
@@ -170,7 +169,6 @@ fn e4_a_number_is_read_as_its_text() {
             .collect();
         assert_eq!(errors.len(), 1, "{version}: {}", describe(d.iter()));
         assert!(
-            // By legacy name: the variant and the definitions that were it.
             matches!(errors[0].code.id(), "core/no_parser_for_version"),
             "{version}: {:?}",
             errors[0].code
@@ -545,12 +543,7 @@ fn b11_each_repeat_of_a_block_is_reported_and_removed() {
         .diagnostics()
         .iter()
         .map(|d| {
-            assert!(
-                // By legacy name: the variant and the definitions that were it.
-                matches!(d.code.id(), "core/no_effect"),
-                "{:?}",
-                d.code
-            );
+            assert!(matches!(d.code.id(), "core/no_effect"), "{:?}", d.code);
             assert_eq!(d.severity, Severity::Info);
             d.location.json_path.to_string()
         })
@@ -875,7 +868,6 @@ fn validate_runs_the_rules_on_a_built_value() {
 fn closes_with_failed_to_load(d: &Diagnostics) {
     let last = d.iter().last().expect("a finding");
     assert!(
-        // By legacy name: the variant and the definitions that were it.
         matches!(last.code.id(), "poi/failed_to_load"),
         "{}",
         describe(d.iter())
@@ -885,7 +877,6 @@ fn closes_with_failed_to_load(d: &Diagnostics) {
     assert_eq!(last.code.to_string(), "Failed to load POI Type");
     let closing = d
         .iter()
-        // By legacy name: the variant and the definitions that were it.
         .filter(|f| matches!(f.code.id(), "poi/failed_to_load"))
         .count();
     assert_eq!(closing, 1, "one closing line");

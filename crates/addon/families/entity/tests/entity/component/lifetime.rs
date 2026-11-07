@@ -36,9 +36,9 @@ fn tick_world_radius_outside_two_to_six_is_an_error_in_a_strict_read() {
         let (value, d) = read_as::<TickWorld>(text, ConvertMode::Strict);
         assert!(value.is_none(), "{text} is dropped");
         assert!(
-            d.iter().any(|f| f.severity == Severity::Error
-                // By legacy name: the variant and the definitions that were it.
-                && matches!(f.code.id(), "core/invalid_value")),
+            d.iter()
+                .any(|f| f.severity == Severity::Error
+                    && matches!(f.code.id(), "core/invalid_value")),
             "{text}: {d:?}"
         );
     }
@@ -51,7 +51,6 @@ fn tick_world_radius_outside_its_range_takes_the_default_in_the_lenient_conversi
     assert!(!value.never_despawn);
     assert!(has(
         &d,
-        // By legacy name: the variant and the definitions that were it.
         |c| matches!(c.id(), "core/invalid_value"),
         // The typed bound is the crate's own in the lenient conversion.
         Severity::Info,
@@ -93,7 +92,6 @@ fn addrider_entry_without_entity_type_is_missing_a_required_member() {
     assert!(value.is_none());
     assert!(
         d.iter()
-            // By legacy name: the variant and the definitions that were it.
             .any(|f| matches!(f.code.id(), "core/missing_required_field")),
         "{d:?}"
     );
@@ -137,7 +135,6 @@ fn the_lenient_conversion_reads_the_legacy_single_rider() {
     assert!(strict.riders.is_empty());
     assert!(has(
         &d,
-        // By legacy name: the variant and the definitions that were it.
         |c| matches!(c.id(), "core/unrecognized_field"),
         Severity::Warning,
         "entity_type"

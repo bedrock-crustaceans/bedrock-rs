@@ -328,7 +328,14 @@ fn a_section_or_entry_that_is_no_object_asks_for_no_events() {
         ],
     );
     let sounds = stack.sounds_json();
-    expect_none(sounds, "sounds_json/expected_events");
+    assert!(
+        sounds
+            .findings()
+            .iter()
+            .all(|d| d.code.kind() != Kind::MissingRequired),
+        "no missing required field in {:#?}",
+        describe(sounds)
+    );
     // A block entry that is no object registers an empty type.
     assert!(sounds.block_sounds["stone"].sounds.events.is_empty());
     assert!(
@@ -515,9 +522,14 @@ fn sj11_variant_errors() {
         ]
     );
     assert_eq!(
-        found(sounds, "sounds_json/expected_key").len()
-            + found(sounds, "sounds_json/expected_map").len(),
-        4
+        sounds
+            .findings()
+            .iter()
+            .filter(|d| d.code.kind() == Kind::MissingRequired)
+            .count(),
+        4,
+        "{:#?}",
+        describe(sounds)
     );
     let entities = &sounds.entity_sounds.entities;
     assert!(entities["none"].variants.is_none());

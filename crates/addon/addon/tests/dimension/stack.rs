@@ -22,7 +22,6 @@ fn shadowed(stack: &PackStack<Behavior>) -> Vec<(Severity, String)> {
     stack
         .dimensions()
         .diagnostics()
-        // By legacy name: the variant and the definitions that were it.
         .filter(|f| matches!(f.code.id(), "core/shadowed_definition"))
         .map(|f| {
             (
@@ -131,7 +130,6 @@ fn dim18_a_pack_definition_replaces_a_script_registered_dimension() {
     assert!(dimensions.get(&overworld()).is_some());
     let found: Vec<_> = dimensions.diagnostics().collect();
     assert_eq!(found.len(), 1, "{found:#?}");
-    // By legacy name: the variant and the definitions that were it.
     assert!(matches!(
         found[0].code.id(),
         "dimension/replaced_registration"
@@ -217,7 +215,6 @@ fn a_rejected_file_names_the_identifier_of_its_last_copy() {
     let found: Vec<_> = dimensions.diagnostics().collect();
     assert_eq!(found.len(), 1, "{found:#?}");
     assert!(
-        // By legacy name: the variant and the definitions that were it.
         matches!(found[0].code.id(), "core/missing_required_field"),
         "{found:#?}"
     );

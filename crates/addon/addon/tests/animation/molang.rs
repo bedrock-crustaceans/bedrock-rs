@@ -273,7 +273,6 @@ mod compiled {
 fn lints(d: &bedrock_addon::diagnostic::Diagnostics) -> Vec<String> {
     use bedrock_addon::diagnostic::DiagnosticDetail;
     d.iter()
-        // By legacy name: the variant and the definitions that were it.
         .filter(|f| matches!(f.code.id(), "core/molang_lint"))
         .map(|f| {
             let code = match f.detail.as_deref() {

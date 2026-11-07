@@ -105,7 +105,6 @@ const EMPTY_ENTRY: &str =
 fn mismatches(found: &Diagnostics) -> usize {
     found
         .iter()
-        // By legacy name: the variant and the definitions that were it.
         .filter(|d| matches!(d.code.id(), "core/payload_key_mismatch"))
         .count()
 }
@@ -127,7 +126,6 @@ fn a_comment_between_a_foreign_key_and_its_value_does_not_hide_the_key() {
         let warning = loaded
             .diagnostics()
             .iter()
-            // By legacy name: the variant and the definitions that were it.
             .find(|d| matches!(d.code.id(), "core/payload_key_mismatch"))
             .unwrap();
         let span = warning.location.span.unwrap();

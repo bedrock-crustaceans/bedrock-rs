@@ -32,9 +32,8 @@
 //!   line of the crate's own; a code of the toolkit's own has the line alone;
 //! - its [`Kind`] says what sort of finding it is, and its [`Class`] the severity its sites raise it at
 //!   (a site at another severity keeps it with [`Diagnostic::severity`](super::Diagnostic::severity));
-//! - a helper that took a text (`report(d, severity, text, at)`) takes a `&'static CodeDef<0>`,
-//!   and a reader that still takes a text takes [`CodeDef::template`];
-//! - the family's `texts.rs` goes: its consts become the definitions.
+//! - a helper that reports one of several sentences takes a `&'static CodeDef<0>`, and a
+//!   reader that takes a sentence takes [`CodeDef::template`].
 //!
 //! A finding no family owns (the door, the envelope, the kit, the builders, the link pass) is
 //! a definition of [`codes`](super::codes), the core's: one generic definition per kind of

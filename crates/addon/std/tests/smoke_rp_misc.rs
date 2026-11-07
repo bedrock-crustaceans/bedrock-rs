@@ -318,7 +318,6 @@ fn check_client(source: &str, root: &Path, want: &Expected) {
     let report = rp.report();
     let in_vain: Vec<&str> = report
         .iter()
-        // By legacy name: `IGNORED_FILE`, `IGNORED_FILE_WORDED` and the variant a family raises.
         .filter(|d| d.code.id() == "core/ignored_file")
         .filter_map(|d| d.location.path.as_ref().map(PackPath::as_str))
         .filter(|path| {

@@ -87,7 +87,6 @@ fn sg52_tags_shape_then_molang() {
     let d = document.diagnostics();
     assert!(
         d.iter()
-            // By legacy name: the variant and the definitions that were it.
             .any(|f| f.code.id() == "shapes/block_descriptor_shape"
                 && f.code.to_string().ends_with("Cannot parse 5")),
         "{d:#?}"

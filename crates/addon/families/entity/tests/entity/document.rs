@@ -819,7 +819,6 @@ fn a_beta_file_read_on_its_own_is_refused_in_its_file() {
     let refusal = refused
         .diagnostics
         .iter()
-        // By legacy name: the variant and the definitions that were it.
         .find(|d| d.code.id() == "core/no_parser_for_version")
         .unwrap_or_else(|| panic!("{:#?}", refused.diagnostics));
     assert_eq!(

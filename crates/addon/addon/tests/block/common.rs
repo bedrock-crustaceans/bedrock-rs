@@ -13,6 +13,26 @@ use bedrock_addon::storage::PackPath;
 use bedrock_addon::version::MinEngineVersion;
 use uuid::Uuid;
 
+/// Whether `code` asks for a toggle the pack does not have (`upcoming_creator_features`,
+/// the beta APIs): the toggle rules a block document meets, its own and the core's. Not the
+/// beta-features gate, which shares the kind.
+pub fn missing_toggles(code: &Code) -> bool {
+    matches!(
+        code.id(),
+        "core/missing_toggles"
+            | "core/missing_toggles_worded"
+            | "core/toggle_use_format_version"
+            | "core/turn_on_toggle"
+            | "core/turn_on_toggle_before"
+            | "block/custom_properties_version"
+            | "block/custom_permutations_version"
+            | "block/multi_block_horizontal_toggle"
+            | "block/member_needs_creator_features"
+            | "block/needs_creator_features"
+            | "block/collision_min_max_toggle"
+    )
+}
+
 /// One of the ten packs allowed the legacy creator features.
 pub const ALLOW_LISTED: Uuid = Uuid::from_u128(0xda09_e399_6f5e_4287_a013_4cf1_3de3_2166);
 

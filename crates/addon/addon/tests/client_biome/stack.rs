@@ -625,7 +625,6 @@ fn a_shadowed_document_is_not_glue_checked() {
     assert!(stack.client_biomes().rejected().is_empty());
     let all: Vec<_> = stack.client_biomes().diagnostics().collect();
     assert_eq!(all.len(), 1, "{all:#?}");
-    // By legacy name: the variant and the definitions that were it.
     assert_eq!(all[0].code.id(), "core/shadowed_definition");
     assert_eq!(file(all[0]).0, "bottom");
     // The same document on top is the claiming one: it is checked, fails, and still claims.
@@ -691,7 +690,6 @@ fn a_document_for_an_unknown_biome_is_still_glue_checked_deviation() {
     assert!(stack.client_biomes().is_empty());
     let all: Vec<_> = stack.client_biomes().diagnostics().collect();
     assert_eq!(all.len(), 1, "{all:#?}");
-    // By legacy name: the variant and the definitions that were it.
     assert_eq!(all[0].code.id(), "client_biome/volume");
     assert_eq!(all[0].severity, Severity::Error);
     assert_eq!(

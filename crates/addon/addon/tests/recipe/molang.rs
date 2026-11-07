@@ -63,7 +63,6 @@ fn invalid_molang(
     document
         .diagnostics()
         .iter()
-        // By legacy name: the variant and the definitions that were it.
         .filter(|d| matches!(d.code.id(), "core/invalid_molang"))
         .collect()
 }
@@ -153,7 +152,6 @@ fn data_molang_object_is_not_a_molang_value() {
         Severity::Error,
     );
     assert!(finding.kept);
-    // By legacy name: the variant and the definitions that were it.
     assert!(matches!(finding.code.id(), "recipe/data_not_molang"));
     assert_eq!(args(finding), ["7"]);
     let ingredient = &shaped(&document).key["#"];

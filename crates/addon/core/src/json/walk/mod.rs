@@ -672,7 +672,10 @@ mod tests {
 
     #[derive(Debug, Facet)]
     #[repr(u8)]
-    #[allow(dead_code)]
+    #[allow(
+        dead_code,
+        reason = "only the shape is walked; no test reads a variant's fields"
+    )]
     enum Tagged {
         First { v: u8 },
         Second(Inner),

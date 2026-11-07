@@ -110,20 +110,17 @@ fn the_engine_s_refused_client_biomes_name_their_first_error() {
     let at = "minecraft:client_biome/components";
     first_error(
         &rejected(&engine("case-10.json"), &context()),
-        // By legacy name: the variant and the definitions that were it.
         |c| matches!(c.id(), "core/missing_required_field"),
         &format!("{at}/minecraft:cubemap_identifier/cubemap_identifier"),
     );
     first_error(
         &rejected(&engine("case-11.json"), &context()),
-        // By legacy name: the variant and the definitions that were it.
         |c| matches!(c.id(), "client_biome/cannot_load"),
         "format_version",
     );
     for name in ["case-7.json", "case-13.json"] {
         first_error(
             &rejected(&engine(name), &context()),
-            // By legacy name: the variant and the definitions that were it.
             |c| matches!(c.id(), "core/invalid_type"),
             &format!("{at}/minecraft:ambient_sounds/addition"),
         );
@@ -132,7 +129,6 @@ fn the_engine_s_refused_client_biomes_name_their_first_error() {
         let found = rejected(&engine(name), &context());
         first_error(
             &found,
-            // By legacy name: the variant and the definitions that were it.
             |c| matches!(c.id(), "client_biome/water_empty"),
             &format!("{at}/minecraft:water_appearance"),
         );
@@ -151,7 +147,6 @@ fn the_engine_s_attributes_outside_the_beta_struct_refuse_the_client_biome() {
     let found = load(&engine("case-2.json"), &context()).expect_err("refused");
     first_error(
         &found.diagnostics,
-        // By legacy name: the variant and the definitions that were it.
         |c| matches!(c.id(), "core/unrecognized_field"),
         "minecraft:client_biome/environment_attributes",
     );

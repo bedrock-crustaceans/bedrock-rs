@@ -125,7 +125,6 @@ fn s05_below_floor() {
     assert!(
         has_text(
             &d,
-            // By legacy name: the variant and the definitions that were it.
             |c| matches!(c.id(), "core/no_parser_for_version"),
             Severity::Error,
             "unsupported version: no parser available for version 1.7.0"
@@ -141,10 +140,7 @@ fn s06_permute_guaranteed_count() {
         r#""minecraft:permute_type": [{"weight": 1, "entity_type": "x:a", "guaranteed_count": 2, "min_guaranteed": 3}]"#,
     );
     assert_eq!(rules.guaranteed, vec![(2, EntityId::parse("x:a"))]);
-    let unknown = with(&d, |c| {
-        // By legacy name: the variant and the definitions that were it.
-        matches!(c.id(), "core/unrecognized_field")
-    });
+    let unknown = with(&d, |c| matches!(c.id(), "core/unrecognized_field"));
     assert_eq!(
         paths(&unknown),
         ["minecraft:spawn_rules/conditions/0/minecraft:permute_type/0/min_guaranteed"]
@@ -161,7 +157,6 @@ fn s07_bad_format_version() {
     assert!(
         has_text(
             &d,
-            // By legacy name: the variant and the definitions that were it.
             |c| matches!(c.id(), "core/malformed_format_version"),
             Severity::Error,
             "Malformed format version"
@@ -406,10 +401,7 @@ fn s09c_object_form_messages() {
 #[test]
 fn s09b_unknown_condition_key() {
     let (c, _, d) = condition(r#""minecraft:spawns_on_moon": {}"#);
-    let found = with(&d, |c| {
-        // By legacy name: the variant and the definitions that were it.
-        matches!(c.id(), "core/unrecognized_field")
-    });
+    let found = with(&d, |c| matches!(c.id(), "core/unrecognized_field"));
     assert_eq!(
         paths(&found),
         ["minecraft:spawn_rules/conditions/0/minecraft:spawns_on_moon"]
@@ -782,7 +774,6 @@ fn a_root_that_is_not_an_object_is_vanillas_message() {
     assert!(
         has_text(
             &d,
-            // By legacy name: the variant and the definitions that were it.
             |c| matches!(c.id(), "spawn/not_an_object"),
             Severity::Error,
             "Spawn rules json was not formatted as an object"
@@ -835,7 +826,6 @@ fn unknown_root_description_and_in_object_members_deviation() {
     let text = r#"{"format_version": "1.8.0", "extra": 1, "minecraft:spawn_rules": {"description": {"identifier": "x:mob", "population_control": "animal", "note": "x"}, "conditions": [{"minecraft:weight": {"default": 2, "bonus": 1}}]}}"#;
     let document = loads(text, &context());
     let unknown = with(document.diagnostics(), |c| {
-        // By legacy name: the variant and the definitions that were it.
         matches!(c.id(), "core/unrecognized_field")
     });
     assert_eq!(

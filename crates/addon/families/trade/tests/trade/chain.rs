@@ -130,7 +130,6 @@ fn a_version_above_the_engine_is_unsupported() {
 fn a_prerelease_of_1_21_30_is_read_by_the_legacy_parser_with_an_info() {
     let document = loads(&doc(Some("1.21.30-beta.1"), TIERS));
     assert_eq!(document.version().parsed_as, FormatVersion::new(0, 0, 0));
-    // By legacy name: the variant and the definitions that were it.
     assert!(
         document
             .diagnostics()

@@ -201,7 +201,6 @@ fn kept(unknown: &Unknown) -> Vec<String> {
 fn told(d: &Diagnostics) -> Vec<String> {
     d.iter()
         .map(|f| {
-            // By legacy name: the variant and the definitions that were it.
             let code = match f.code.id() {
                 name @ ("core/unrecognized_field"
                 | "core/dropped_field"

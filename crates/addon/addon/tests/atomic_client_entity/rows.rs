@@ -453,11 +453,12 @@ fn s06_unknown_component() {
         Severity::Error,
         "minecraft:atomic_client_entity/components/minecraft:collision_box",
     );
+    // No unknown-member finding beside it, whichever reader would raise one (camera's preset
+    // reader tells its own under `core/unrecognized_field_worded`).
     none_of_ids(
         &d,
         &[
             "block_culling/missing_object_unrecognized_field",
-            "camera/unrecognized_field",
             "core/child_not_valid",
             "core/member_not_in_schema",
             "core/unrecognized_field",

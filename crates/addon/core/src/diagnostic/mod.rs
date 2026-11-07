@@ -62,6 +62,24 @@ pub struct Diagnostic {
     pub kept: bool,
 }
 
+/// The [`Kind::Syntax`] definitions that carry no reader's message: the empty-document,
+/// invalid-node and invalid-root ones share the kind. Every other definition of the kind is a
+/// reader's message ([`Diagnostic::syntax_message`]); the registry test of `bedrock_addon`
+/// holds the two sets.
+#[doc(hidden)]
+pub const SYNTAX_WITHOUT_MESSAGE: &[&str] = &[
+    "core/empty_document",
+    "core/empty_document_worded",
+    "fog/empty_after_parse",
+    "fog/empty_resource",
+    "loot/invalid_table_empty",
+    "server_config/commands_malformed_empty_document",
+    "server_config/config_parse_failed_empty_document",
+    "texture_set/set_empty",
+    "core/invalid_node",
+    "core/invalid_root",
+];
+
 impl Diagnostic {
     /// An error-level finding that rejects the document it is about: an error that is not
     /// [`kept`](Self::kept). A loader's "any error rejects" check asks this.
@@ -104,23 +122,7 @@ impl Diagnostic {
     /// [`codes::SYNTAX`] (the message as the line); empty for [`codes::MALFORMED_INPUT`].
     /// `None` for any other finding.
     pub fn syntax_message(&self) -> Option<&str> {
-        // The syntax kind is shared by the empty-document, invalid-node and invalid-root
-        // definitions, which are not a reader's message.
-        if self.code.kind() != Kind::Syntax
-            || matches!(
-                self.code.id(),
-                "core/empty_document"
-                    | "core/empty_document_worded"
-                    | "fog/empty_after_parse"
-                    | "fog/empty_resource"
-                    | "loot/invalid_table_empty"
-                    | "server_config/commands_malformed_empty_document"
-                    | "server_config/config_parse_failed_empty_document"
-                    | "texture_set/set_empty"
-                    | "core/invalid_node"
-                    | "core/invalid_root"
-            )
-        {
+        if self.code.kind() != Kind::Syntax || SYNTAX_WITHOUT_MESSAGE.contains(&self.code.id()) {
             return None;
         }
         match self.detail.as_deref() {

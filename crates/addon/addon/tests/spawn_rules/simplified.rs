@@ -22,7 +22,6 @@ fn unresolved(code: &Code) -> bool {
 }
 
 fn unrecognized(code: &Code) -> bool {
-    // By legacy name: the variant and the definitions that were it.
     matches!(code.id(), "core/unrecognized_field")
 }
 
@@ -221,10 +220,7 @@ fn s14_simplified_missing_identifier() {
         &document("1.21.60", r#"{"description": {}}"#),
         &experiment(),
     );
-    let found = with(&d, |c| {
-        // By legacy name: the variant and the definitions that were it.
-        matches!(c.id(), "core/missing_required_field")
-    });
+    let found = with(&d, |c| matches!(c.id(), "core/missing_required_field"));
     assert_eq!(
         paths(&found),
         ["minecraft:spawn_rules/description/identifier"]
@@ -274,7 +270,6 @@ fn s16_simplified_constraints() {
             &modern("1.21.60", &format!(r#", "conditions": [{body}]"#)),
             &experiment(),
         );
-        // By legacy name: the variant and the definitions that were it.
         let found = with(&d, |c| matches!(c.id(), "core/invalid_value"));
         assert_eq!(paths(&found), [at], "{body}");
         assert_eq!(found[0].severity, Severity::Error);
@@ -301,11 +296,9 @@ fn s17_simplified_required_weights() {
             &experiment(),
         );
         assert!(
-            d.iter().any(
-                // By legacy name: the variant and the definitions that were it.
-                |f| matches!(f.code.id(), "core/missing_required_field")
-                    && f.severity == Severity::Error
-            ),
+            d.iter()
+                .any(|f| matches!(f.code.id(), "core/missing_required_field")
+                    && f.severity == Severity::Error),
             "{body}: {d:#?}"
         );
     }
@@ -328,10 +321,7 @@ fn s18_simplified_legacy_shape_at_1_21_60() {
             "minecraft:spawn_rules/description/population_control",
         ]
     );
-    let missing = with(&d, |c| {
-        // By legacy name: the variant and the definitions that were it.
-        matches!(c.id(), "core/missing_required_field")
-    });
+    let missing = with(&d, |c| matches!(c.id(), "core/missing_required_field"));
     assert_eq!(
         paths(&missing),
         ["minecraft:spawn_rules/conditions/0/weight"]
@@ -345,7 +335,6 @@ fn s19_simplified_envelope() {
     assert!(
         has_text(
             &d,
-            // By legacy name: the variant and the definitions that were it.
             |c| matches!(c.id(), "core/document_member_count"),
             Severity::Error,
             "A Minecraft Document must have exactly two members: \"format_version\" and a payload member"
@@ -364,7 +353,6 @@ fn s19_simplified_envelope() {
     assert!(
         has_text(
             &d,
-            // By legacy name: the variant and the definitions that were it.
             |c| matches!(c.id(), "core/payload_under_other_key"),
             Severity::Error,
             "The payload key does not match the expected one. Expected: 'minecraft:spawn_rules'. Actual: 'minecraft:spawn_groups'."
@@ -433,7 +421,6 @@ fn s20b_simplified_at_engine() {
     assert!(
         has_text(
             &d,
-            // By legacy name: the variant and the definitions that were it.
             |c| matches!(c.id(), "core/no_parser_for_version"),
             Severity::Error,
             &format!("unsupported version: no parser available for version {engine}")
@@ -543,7 +530,6 @@ fn s16b_simplified_wrong_typed_scalars_are_refused_at_their_member() {
         let d = rejected(&text, &experiment());
         let found: Vec<_> = d
             .iter()
-            // By legacy name: the variant and the definitions that were it.
             .filter(|f| matches!(f.code.id(), "core/invalid_type"))
             .collect();
         assert_eq!(found.len(), 1, "{body}: {d:#?}");
