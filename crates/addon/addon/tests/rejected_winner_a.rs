@@ -89,7 +89,7 @@ fn errors_at_top<'a>(findings: impl Iterator<Item = &'a Diagnostic>, path: &str)
                 == Some(0)
         })
         .filter(|d| d.location.path.as_ref().map(PackPath::as_str) == Some(path))
-        .map(|d| d.code.name().to_owned())
+        .map(|d| d.code.id().to_owned())
         .collect()
 }
 
@@ -121,7 +121,7 @@ fn blocks_two_packs_a_refused_top_block_leaves_the_lower_block_effective() {
     );
     assert_eq!(
         errors_at_top(blocks.diagnostics(), "blocks/x.json"),
-        ["InvalidType"]
+        ["core/invalid_type"]
     );
 }
 
@@ -143,7 +143,7 @@ fn blocks_three_packs_a_refused_top_block_leaves_the_middle_block_effective() {
     );
     assert_eq!(
         errors_at_top(blocks.diagnostics(), "blocks/x.json"),
-        ["InvalidType"]
+        ["core/invalid_type"]
     );
 }
 
@@ -174,7 +174,7 @@ fn items_two_packs_a_refused_top_item_leaves_the_lower_item_effective() {
     );
     assert_eq!(
         errors_at_top(items.diagnostics(), "items/x.json"),
-        ["InvalidType"]
+        ["item/components_not_object"]
     );
 }
 
@@ -196,7 +196,7 @@ fn items_three_packs_a_refused_top_item_leaves_the_middle_item_effective() {
     );
     assert_eq!(
         errors_at_top(items.diagnostics(), "items/x.json"),
-        ["InvalidType"]
+        ["item/components_not_object"]
     );
 }
 
@@ -231,7 +231,7 @@ fn items_two_packs_a_gated_top_override_leaves_the_base_game_item_effective() {
     );
     assert_eq!(
         errors_at_top(items.diagnostics(), "items/x.json"),
-        ["NamespaceRule"]
+        ["item/vanilla_is_component_based"]
     );
 }
 
@@ -253,7 +253,7 @@ fn items_three_packs_a_gated_top_override_leaves_the_middle_override_effective()
     );
     assert_eq!(
         errors_at_top(items.diagnostics(), "items/x.json"),
-        ["NamespaceRule"]
+        ["item/vanilla_is_component_based"]
     );
 }
 
@@ -285,7 +285,7 @@ fn entities_two_packs_a_refused_top_entity_leaves_the_lower_entity_effective() {
     );
     assert_eq!(
         errors_at_top(entities.diagnostics(), "entities/x.json"),
-        ["InvalidType", "DocumentRejected"]
+        ["core/invalid_type", "entity/failed_to_load"]
     );
 }
 
@@ -307,7 +307,7 @@ fn entities_three_packs_a_refused_top_entity_leaves_the_middle_entity_effective(
     );
     assert_eq!(
         errors_at_top(entities.diagnostics(), "entities/x.json"),
-        ["InvalidType", "DocumentRejected"]
+        ["core/invalid_type", "entity/failed_to_load"]
     );
 }
 
@@ -341,7 +341,7 @@ fn spawn_rules_two_packs_a_refused_top_file_leaves_the_lower_rule_effective() {
     );
     assert_eq!(
         errors_at_top(rules.diagnostics(), "spawn_rules/x.json"),
-        ["UnsupportedVersion", "DocumentRejected"]
+        ["core/no_parser_for_version", "spawn_rules/failed_rules"]
     );
 }
 
@@ -363,7 +363,7 @@ fn spawn_rules_three_packs_a_refused_top_file_leaves_the_middle_rule_effective()
     );
     assert_eq!(
         errors_at_top(rules.diagnostics(), "spawn_rules/x.json"),
-        ["UnsupportedVersion", "DocumentRejected"]
+        ["core/no_parser_for_version", "spawn_rules/failed_rules"]
     );
 }
 
@@ -394,7 +394,7 @@ fn feature_rules_two_packs_a_refused_top_rule_leaves_the_lower_rule_effective() 
     );
     assert_eq!(
         errors_at_top(rules.diagnostics(), "feature_rules/x.json"),
-        ["MissingRequiredField"]
+        ["core/missing_required_field"]
     );
 }
 
@@ -416,7 +416,7 @@ fn feature_rules_three_packs_a_refused_top_rule_leaves_the_middle_rule_effective
     );
     assert_eq!(
         errors_at_top(rules.diagnostics(), "feature_rules/x.json"),
-        ["MissingRequiredField"]
+        ["core/missing_required_field"]
     );
 }
 
@@ -449,7 +449,7 @@ fn features_two_packs_a_schema_refused_top_feature_keeps_its_identifier_taken() 
     );
     assert_eq!(
         errors_at_top(features.diagnostics(), "features/x.json"),
-        ["InvalidValue"]
+        ["core/outside_range"]
     );
 }
 
@@ -469,7 +469,7 @@ fn features_three_packs_a_schema_refused_top_feature_keeps_its_identifier_taken_
     );
     assert_eq!(
         errors_at_top(features.diagnostics(), "features/x.json"),
-        ["InvalidValue"]
+        ["core/outside_range"]
     );
 }
 
@@ -495,7 +495,7 @@ fn features_two_packs_an_unparsable_top_feature_leaves_the_lower_feature_effecti
     );
     assert_eq!(
         errors_at_top(features.diagnostics(), "features/x.json"),
-        ["MalformedInput"]
+        ["feature/invalid_json"]
     );
 }
 
@@ -517,7 +517,7 @@ fn features_three_packs_an_unparsable_top_feature_leaves_the_middle_feature_effe
     );
     assert_eq!(
         errors_at_top(features.diagnostics(), "features/x.json"),
-        ["MalformedInput"]
+        ["feature/invalid_json"]
     );
 }
 
@@ -549,7 +549,7 @@ fn biomes_two_packs_a_refused_top_biome_leaves_the_lower_biome_effective() {
     );
     assert_eq!(
         errors_at_top(biomes.diagnostics(), "biomes/x.json"),
-        ["InvalidType"]
+        ["core/invalid_type"]
     );
 }
 
@@ -571,7 +571,7 @@ fn biomes_three_packs_a_refused_top_biome_leaves_the_middle_biome_effective() {
     );
     assert_eq!(
         errors_at_top(biomes.diagnostics(), "biomes/x.json"),
-        ["InvalidType"]
+        ["core/invalid_type"]
     );
 }
 
@@ -604,7 +604,7 @@ fn recipes_two_packs_a_refused_top_recipe_leaves_the_lower_recipe_effective() {
     );
     assert_eq!(
         errors_at_top(recipes.diagnostics(), "recipes/x.json"),
-        ["MissingRequiredField"]
+        ["core/missing_required_field"]
     );
 }
 
@@ -626,7 +626,7 @@ fn recipes_three_packs_a_refused_top_recipe_leaves_the_middle_recipe_effective()
     );
     assert_eq!(
         errors_at_top(recipes.diagnostics(), "recipes/x.json"),
-        ["MissingRequiredField"]
+        ["core/missing_required_field"]
     );
 }
 
@@ -660,7 +660,7 @@ fn loot_tables_two_packs_a_refused_top_copy_leaves_the_path_without_a_table() {
     );
     assert_eq!(
         errors_at_top(tables.diagnostics(), LOOT_PATH),
-        ["MalformedInput"]
+        ["loot/invalid_table"]
     );
 }
 
@@ -681,6 +681,6 @@ fn loot_tables_three_packs_a_refused_top_copy_leaves_the_path_without_a_table() 
     );
     assert_eq!(
         errors_at_top(tables.diagnostics(), LOOT_PATH),
-        ["MalformedInput"]
+        ["loot/invalid_table"]
     );
 }

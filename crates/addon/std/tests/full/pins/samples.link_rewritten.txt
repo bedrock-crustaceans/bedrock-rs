@@ -1,12 +1,12 @@
-      5  E UnresolvedReference [culling rules] @ blocks
-     21  I ClampedValue [-] @ textures
-     21  I UnknownSound [sound event] @ sounds.json
-      1  I UnresolvedReference [animation] @ attachables
-     13  I UnresolvedReference [animation] @ entity
-      5  I UnresolvedReference [entity] @ entity
-      2  I UnresolvedReference [geometry] @ entity
-     12  I UnresolvedReference [item] @ entities
-      3  I UnresolvedReference [loot table] @ entities
-      1  I UnresolvedReference [particle event] @ particles
-    567  I UnresolvedReference [sound file] @ sounds
-     11  W TextureNotFound [texture] @ entity
+      5  E core/unresolved_reference_worded [culling rules] @ blocks
+     21  I core/clamped_value [-] @ textures
+     21  I core/unknown_sound [sound event] @ sounds.json
+      1  I core/unresolved_reference [animation] @ attachables
+     13  I core/unresolved_reference [animation] @ entity
+      5  I core/unresolved_reference [entity] @ entity
+      2  I core/unresolved_reference [geometry] @ entity
+     12  I core/unresolved_reference [item] @ entities
+      3  I core/unresolved_reference [loot table] @ entities
+      1  I core/unresolved_reference [particle event] @ particles
+    567  I core/unresolved_reference [sound file] @ sounds
+     11  W core/texture_not_found_worded [texture] @ entity

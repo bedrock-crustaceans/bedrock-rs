@@ -29,7 +29,7 @@ use std::collections::BTreeMap;
 use std::fs;
 use std::path::Path;
 
-use bedrock_addon::diagnostic::Diagnostic;
+use bedrock_addon::diagnostic::{Diagnostic, Kind};
 use bedrock_addon::document::Content;
 use bedrock_addon::json::MAX_JSON_DEPTH;
 use bedrock_addon::load::{LoadOptions, StackOptions};
@@ -463,7 +463,7 @@ fn malformed<'a>(findings: impl Iterator<Item = &'a Diagnostic>) -> usize {
         // By name: MALFORMED_INPUT, SYNTAX, MALFORMED_INPUT_WORDED, DOCUMENT_JSON, PARSE_ERROR,
         // the document size defs and STACK_TOP_UNPARSABLE (and fog's PARSE_ERROR) all were
         // `MalformedInput`, and families not yet on definitions still raise the variant.
-        .filter(|finding| finding.code.name() == "MalformedInput")
+        .filter(|finding| finding.code.kind() == Kind::Syntax)
         .count()
 }
 

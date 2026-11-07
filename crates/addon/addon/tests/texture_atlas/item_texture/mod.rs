@@ -32,7 +32,7 @@ fn findings(stack: &PackStack<Resource>) -> Vec<Rendered> {
             .texture_atlases()
             .item_atlas
             .diagnostics()
-            .filter(|finding| finding.code.name() != "TextureNotFound"),
+            .filter(|finding| finding.code.id() != "core/texture_not_found"),
     )
 }
 
@@ -149,7 +149,7 @@ fn t08_a_copy_that_is_no_json_is_skipped_deviation() {
     let found: Vec<_> = stack.texture_atlases().item_atlas.diagnostics().collect();
     let malformed: Vec<_> = found
         .iter()
-        .filter(|finding| finding.code.name() == "MalformedInput")
+        .filter(|finding| finding.code.id() == "core/syntax")
         .collect();
     assert_eq!(malformed.len(), 1);
     assert_eq!(malformed[0].severity, Info);
@@ -164,7 +164,7 @@ fn t09_without_texture_name_there_is_no_item_atlas() {
     assert!(stack.texture_atlases().item_atlas.frame_counts().is_empty());
     assert_eq!(
         rendered(stack.texture_atlases().diagnostics()),
-        [finding("MissingRequiredField", Error, "", NO_NAME)]
+        [finding("texture_atlas/no_texture_name", Error, "", NO_NAME)]
     );
 }
 
@@ -175,7 +175,7 @@ fn t10_an_entry_that_is_no_object_is_dropped() {
     assert_eq!(
         findings(&stack),
         [finding(
-            "InvalidValue",
+            "texture_atlas/entry_not_object",
             Error,
             "texture_data/a",
             "Expecting \"a\" to be a JSON object."
@@ -190,7 +190,7 @@ fn t11_an_entry_without_textures_is_dropped() {
     assert_eq!(
         findings(&stack),
         [finding(
-            "MissingRequiredField",
+            "texture_atlas/missing_textures",
             Error,
             "texture_data/a",
             "Missing textures \"a\"."
@@ -208,13 +208,13 @@ fn t12_weights_are_clamped() {
         findings(&stack),
         [
             finding(
-                "ClampedValue",
+                "texture_atlas/weight_low",
                 Warning,
                 "texture_data/a/textures/0/weight",
                 "Variations texture weight cannot be lower than 0.05"
             ),
             finding(
-                "ClampedValue",
+                "texture_atlas/weight_high",
                 Warning,
                 "texture_data/a/textures/1/weight",
                 "Variations texture weight cannot be higher than 1000000"
@@ -231,7 +231,7 @@ fn t13_another_texture_name_loads_with_a_warning_deviation() {
     assert_eq!(
         findings(&stack),
         [finding(
-            "InvalidValue",
+            "core/invalid_value",
             Info,
             "texture_name",
             "invalid value"
@@ -249,7 +249,7 @@ fn the_expected_name_is_the_kind_s() {
     assert_eq!(
         findings(&stack),
         [finding(
-            "InvalidValue",
+            "core/invalid_value",
             Info,
             "texture_name",
             "invalid value"
@@ -272,7 +272,7 @@ fn t22_an_element_of_the_wrong_type_is_a_frame_without_a_layer_deviation() {
     assert_eq!(
         findings(&stack),
         [finding(
-            "InvalidValue",
+            "core/invalid_value",
             Info,
             "texture_data/a/textures/1",
             "invalid value"
@@ -290,7 +290,7 @@ fn t23_the_members_vanilla_writes_and_never_reads_are_no_finding() {
     assert_eq!(
         findings(&stack),
         [finding(
-            "UnrecognizedField",
+            "core/unrecognized_field",
             Info,
             "foo",
             "unrecognized field"
@@ -306,7 +306,7 @@ fn t25_a_bad_colour_keeps_the_tile() {
     assert_eq!(
         findings(&stack),
         [finding(
-            "InvalidValue",
+            "texture_atlas/bad_color",
             Error,
             "texture_data/a/mip_fade_color",
             "Expected [ r, g, b ] or [r, g, b, a] or \"#RRGGBB\"."

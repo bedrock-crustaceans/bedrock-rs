@@ -148,11 +148,11 @@ fn a_stack_load_asks_only_for_the_fixed_files_and_the_files_the_lists_name() {
             .resource
             .report()
             .iter()
-            .map(|f| f.code.name())
+            .map(|f| f.code.id())
             // (The packs have no icon: the stack's own infos.)
-            .filter(|name| *name != "PackIconMissing")
+            .filter(|name| *name != "core/pack_icon_missing")
             .collect();
-        assert_eq!(found, ["UnresolvedReference"], "{order:?}");
+        assert_eq!(found, ["json_ui/not_loaded"], "{order:?}");
     }
 }
 
@@ -195,9 +195,9 @@ fn a_stack_without_a_listed_file_asks_for_the_fixed_files_only() {
         .resource
         .report()
         .iter()
-        .map(|f| f.code.name())
+        .map(|f| f.code.id())
         // (The packs have no icon: the stack's own infos.)
-        .filter(|name| *name != "PackIconMissing")
+        .filter(|name| *name != "core/pack_icon_missing")
         .collect();
-    assert_eq!(found, ["NoUiDefinitions"]);
+    assert_eq!(found, ["core/no_ui_definitions"]);
 }

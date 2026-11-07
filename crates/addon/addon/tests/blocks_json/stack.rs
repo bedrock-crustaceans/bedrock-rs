@@ -2,7 +2,7 @@
 
 use std::collections::BTreeMap;
 
-use bedrock_addon::diagnostic::Severity;
+use bedrock_addon::diagnostic::{Kind, Severity};
 use bedrock_addon::document::{Content, Placed};
 use bedrock_addon::families::blocks_json::codes::NOT_JSON;
 use bedrock_addon::families::blocks_json::{BlocksJson, ClientBlock};
@@ -35,7 +35,7 @@ fn vanilla_s_1_26_50_file_as_a_base_game_pack() {
     // The texture-list warning for the two seven-key texture lists.
     let v7: Vec<&str> = found
         .iter()
-        .filter(|f| f.code == "InvalidType" && !f.text.is_empty())
+        .filter(|f| f.code == "blocks_json/bad_textures" && !f.text.is_empty())
         .map(|f| f.text.as_str())
         .collect();
     assert_eq!(
@@ -48,7 +48,7 @@ fn vanilla_s_1_26_50_file_as_a_base_game_pack() {
     // The unread-member warning for the typo `sounds` of `coral_block`, the only unread member of the file.
     let l3: Vec<&Found> = found
         .iter()
-        .filter(|f| f.code == "IgnoredMember" && f.at.contains('/'))
+        .filter(|f| f.code == "core/ignored_member" && f.at.contains('/'))
         .collect();
     assert_eq!(l3.len(), 1, "{l3:#?}");
     assert_eq!(
@@ -59,7 +59,7 @@ fn vanilla_s_1_26_50_file_as_a_base_game_pack() {
     // base-game pack; `lava_cauldron` dropped; nothing at error level.
     let suppressed: Vec<&Found> = found
         .iter()
-        .filter(|f| f.code == "DeprecatedMember")
+        .filter(|f| f.code == "blocks_json/old_name")
         .collect();
     assert_eq!(suppressed.len(), 31);
     assert!(
@@ -67,7 +67,7 @@ fn vanilla_s_1_26_50_file_as_a_base_game_pack() {
             .iter()
             .all(|f| f.severity == Severity::Debug && !f.text.is_empty())
     );
-    assert!(found.contains(&ours("IgnoredMember", I, "lava_cauldron")));
+    assert!(found.contains(&ours("core/ignored_member", I, "lava_cauldron")));
     assert!(found.iter().all(|f| f.severity < E), "{:#?}", tally(&found));
     // The 13 legacy keys that are still blocks resolve directly.
     for name in [
@@ -128,13 +128,46 @@ fn vanilla_s_legacy_file_is_split() {
         Some("1.1.0")
     );
     // The version is given, as an array: no version warnings, hence no legacy-name finding, and no legacy-name warning below the gates.
-    for code in [
-        "MissingFormatVersion",
-        "MalformedFormatVersion",
-        "UnsupportedVersion",
-        "DeprecatedMember",
-    ] {
-        assert!(found.iter().all(|f| f.code != code), "{code}");
+    const VERSION_FINDINGS: &[&str] = &[
+        "animation_controller/ill_formatted_missing_format_version",
+        "block_culling/missing_object_malformed_format_version",
+        "block_culling/missing_object_missing_format_version",
+        "blocks_json/version_invalid",
+        "blocks_json/version_not_given",
+        "client_biome/no_valid_version",
+        "core/format_version_required",
+        "core/malformed_format_version",
+        "core/malformed_format_version_worded",
+        "core/missing_format_version",
+        "core/missing_format_version_worded",
+        "core/no_format_version_field",
+        "core/no_valid_version",
+        "core/version_not_given_legacy_fields",
+        "core/version_not_processable",
+        "core/version_not_readable",
+        "ddui/malformed_version",
+        "deferred_settings/malformed_version",
+        "deferred_settings/member_count_without_version",
+        "dialogue/no_format_version_malformed_format_version",
+        "dialogue/no_format_version_missing_format_version",
+        "fog/invalid_version",
+        "geometry/version_not_valid",
+        "item/version_not_readable",
+        "jigsaw/bad_format_version_string",
+        "recipe/missing_version_tag",
+        "render_controller/required_child",
+        "texture_set/set_bad_version",
+    ];
+    assert!(
+        found.iter().all(|f| !VERSION_FINDINGS.contains(&f.code)),
+        "{:#?}",
+        tally(&found)
+    );
+    for kind in [Kind::UnsupportedVersion, Kind::Deprecated] {
+        assert!(
+            loaded.registry().diagnostics().all(|f| f.kind() != kind),
+            "{kind:?}"
+        );
     }
     // `wool` → `white_wool: "wool:0"` … `black_wool: "wool:15"`.
     assert_eq!(loaded.textures("white_wool"), six("wool:0"));
@@ -146,8 +179,8 @@ fn vanilla_s_legacy_file_is_split() {
     assert_eq!(
         tally(&found),
         [
-            (("IgnoredMember", "info".to_owned()), 2),
-            (("ShadowedDefinition", "info".to_owned()), 2),
+            (("core/ignored_member", "info".to_owned()), 2),
+            (("core/shadowed_definition", "info".to_owned()), 2),
         ]
         .into_iter()
         .collect()
@@ -166,7 +199,7 @@ fn an_old_name_in_a_base_game_pack_is_kept_at_debug_level_deviation() {
     assert_eq!(found.len(), 1);
     assert_eq!(
         (found[0].code, found[0].severity),
-        ("DeprecatedMember", Severity::Debug)
+        ("blocks_json/old_name", Severity::Debug)
     );
     assert!(
         found[0]
@@ -177,7 +210,10 @@ fn an_old_name_in_a_base_game_pack_is_kept_at_debug_level_deviation() {
     let in_user = load(&[user(&entry)]);
     assert!(in_user.registry().is_empty());
     let found = in_user.found();
-    assert_eq!((found[0].code, found[0].severity), ("DeprecatedMember", E));
+    assert_eq!(
+        (found[0].code, found[0].severity),
+        ("blocks_json/old_name", E)
+    );
     assert_eq!(found[0].text, in_base.found()[0].text);
 }
 
@@ -203,7 +239,7 @@ fn a_higher_pack_overrides_field_by_field() {
     assert_eq!(
         loaded.found(),
         [vanilla(
-            "InvalidType",
+            "blocks_json/bad_textures",
             W,
             "obsidian/textures",
             "'minecraft:obsidian' | Invalid or incomplete texture list."
@@ -345,7 +381,7 @@ fn a_file_that_is_not_json_is_refused_with_an_error_deviation() {
                 found[0].pack.as_str(),
                 found[0].at.as_str()
             ),
-            ("MalformedInput", I, "rp 1", ""),
+            ("blocks_json/not_json", I, "rp 1", ""),
             "{broken:?}"
         );
         // The text is ours, with the reason as its one argument: which reason a file is
@@ -373,7 +409,7 @@ fn a_file_that_is_not_json_is_refused_with_an_error_deviation() {
     let loaded = load(&[user(&valid), user(&deep)]);
     assert_eq!(
         (loaded.found()[0].code, loaded.found()[0].severity),
-        ("MalformedInput", I)
+        ("blocks_json/not_json", I)
     );
     assert_eq!(
         loaded.found()[0].text,
@@ -525,7 +561,7 @@ fn a_file_version_is_each_file_s_own() {
     assert_eq!(found.len(), 1);
     assert_eq!(
         (found[0].code, found[0].severity, found[0].pack.as_str()),
-        ("DeprecatedMember", E, "rp 1")
+        ("blocks_json/old_name", E, "rp 1")
     );
 }
 
@@ -539,7 +575,7 @@ fn content_after_the_root_object_is_ignored_with_a_warning_at_its_span() {
     assert_eq!(loaded.textures("obsidian"), six("a"));
     let found: Vec<_> = loaded.registry().diagnostics().collect();
     assert_eq!(found.len(), 1, "{found:#?}");
-    assert_eq!(found[0].code.name(), "MalformedInput");
+    assert_eq!(found[0].code.id(), "core/syntax");
     // Ours: a JsonCpp reader stops at the root value in silence.
     assert_eq!(found[0].severity, Severity::Info);
     assert!(found[0].location.pack.is_some() && found[0].location.path.is_some());
@@ -573,13 +609,13 @@ fn a_second_object_after_the_root_is_content_after_it_and_no_repeated_key() {
             .registry()
             .diagnostics()
             .filter(|f| f.severity >= Severity::Info)
-            .map(|f| (f.code.name(), f.location.json_path.to_string()))
+            .map(|f| (f.code.id(), f.location.json_path.to_string()))
             .collect();
         assert_eq!(
             found,
             [
-                ("MalformedInput", String::new()),
-                ("MissingFormatVersion", String::new())
+                ("core/syntax", String::new()),
+                ("blocks_json/version_not_given", String::new())
             ],
             "{text}"
         );
@@ -589,7 +625,7 @@ fn a_second_object_after_the_root_is_content_after_it_and_no_repeated_key() {
     let repeated = loaded
         .registry()
         .diagnostics()
-        .filter(|f| f.code.name() == "DuplicateIdentifier")
+        .filter(|f| f.code.id() == "core/duplicate_identifier")
         .count();
     assert_eq!(repeated, 1);
 }

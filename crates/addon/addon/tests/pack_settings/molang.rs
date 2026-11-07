@@ -37,7 +37,7 @@ fn lints(text: &str, side: Side) -> (MolangOutcome, Vec<(DiagCode, Severity)>, u
     let found = diagnostics
         .iter()
         // By legacy name: the variant and the definitions that were it.
-        .filter(|d| matches!(d.code.name(), "MolangLint"))
+        .filter(|d| matches!(d.code.id(), "core/molang_lint"))
         .filter_map(|d| match d.detail.as_deref() {
             Some(DiagnosticDetail::Molang(m)) => Some((m.code(), d.severity)),
             _ => None,

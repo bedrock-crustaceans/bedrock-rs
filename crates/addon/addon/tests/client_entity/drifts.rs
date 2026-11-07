@@ -38,7 +38,7 @@ fn a_list_entry_condition_of_the_wrong_type_allows_a_string() {
             assert_eq!(
                 lines(&found),
                 [format!(
-                    "Error InvalidType minecraft:client_entity/description/{at} unknown child schema option type.  Allowed types: string"
+                    "Error core/unknown_child_option minecraft:client_entity/description/{at} unknown child schema option type.  Allowed types: string"
                 )],
                 "{version} {members}"
             );

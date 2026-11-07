@@ -61,7 +61,7 @@ fn told(finding: &Diagnostic) -> Told {
         _ => ("", String::new()),
     };
     (
-        finding.code.name(),
+        finding.code.id(),
         finding.severity,
         finding.phase,
         finding
@@ -170,7 +170,7 @@ fn biome_r45_a_client_biome_of_no_biome_is_an_error_with_the_clients_text() {
     assert_eq!(
         of_biomes(&found),
         [(
-            "UnresolvedReference",
+            "core/unresolved_reference_worded",
             Severity::Error,
             Phase::Link,
             "rp 2".to_owned(),
@@ -182,7 +182,7 @@ fn biome_r45_a_client_biome_of_no_biome_is_an_error_with_the_clients_text() {
     );
     let finding = found
         .iter()
-        .find(|finding| finding.code.name() == "UnresolvedReference")
+        .find(|finding| finding.code.id() == "core/unresolved_reference_worded")
         .expect("the finding");
     assert_eq!(
         finding.code.to_string(),
@@ -203,7 +203,7 @@ fn biome_r45_an_older_documents_bare_name_is_a_minecraft_biome() {
             .map(|told| (told.0, told.1, told.5.as_str(), told.7.as_str()))
             .collect::<Vec<_>>(),
         [(
-            "UnresolvedReference",
+            "core/unresolved_reference_worded",
             Severity::Error,
             IDENTIFIER,
             "minecraft:nowhere"
@@ -222,7 +222,7 @@ fn biome_r45_a_claim_the_component_checks_refused_is_still_asked_for_its_biome()
     assert_eq!(
         of_biomes(&set.link()),
         [(
-            "UnresolvedReference",
+            "core/unresolved_reference_worded",
             Severity::Error,
             Phase::Link,
             "rp 2".to_owned(),
@@ -253,12 +253,12 @@ fn biome_r45_a_refused_document_a_higher_pack_shadows_is_not_asked_again() {
     let unknown = |set: &bedrock_addon::pack::StackSet| -> Vec<Told> {
         of_biomes(&set.link())
             .into_iter()
-            .filter(|told| told.0 == "UnresolvedReference")
+            .filter(|told| told.0 == "core/unresolved_reference_worded")
             .collect()
     };
     let at = |pack: &str, file: &str| {
         (
-            "UnresolvedReference",
+            "core/unresolved_reference_worded",
             Severity::Error,
             Phase::Link,
             pack.to_owned(),
@@ -289,7 +289,7 @@ fn biome_r45_a_refused_document_a_higher_pack_shadows_is_not_asked_again() {
 fn shadows(found: &Diagnostics) -> Vec<(String, String, String, Severity, String)> {
     found
         .iter()
-        .filter(|finding| finding.code.name() == "ClientBiomeShadowsLowerPacks")
+        .filter(|finding| finding.code.id() == "core/client_biome_shadows_lower_packs")
         .map(|finding| {
             let told = told(finding);
             let detail = finding
@@ -330,7 +330,7 @@ fn biome_a_refused_claim_is_told_once_for_each_pack_it_shadows() {
     // The detail is a reference to the pack, by its name.
     let finding = found
         .iter()
-        .find(|finding| finding.code.name() == "ClientBiomeShadowsLowerPacks")
+        .find(|finding| finding.code.id() == "core/client_biome_shadows_lower_packs")
         .expect("the warning");
     assert!(
         matches!(
@@ -372,7 +372,7 @@ fn biome_a_shadowed_document_is_not_asked() {
     assert_eq!(
         of_biomes(&found)
             .iter()
-            .filter(|told| told.0 == "UnresolvedReference")
+            .filter(|told| told.0 == "core/unresolved_reference_worded")
             .map(|told| told.4.as_str())
             .collect::<Vec<_>>(),
         ["biomes/top.json"]
@@ -483,7 +483,11 @@ mod render {
                 .iter()
                 .map(|told| (told.0, told.6, told.7.as_str()))
                 .collect::<Vec<_>>(),
-            [("UnresolvedReference", "fog", "minecraft:fog_plains")]
+            [(
+                "core/unresolved_reference_worded",
+                "fog",
+                "minecraft:fog_plains"
+            )]
         );
     }
 
@@ -499,7 +503,7 @@ mod render {
         assert_eq!(
             of_biomes(&found),
             [(
-                "UnresolvedReference",
+                "core/unresolved_reference_worded",
                 Severity::Error,
                 Phase::Link,
                 "rp 2".to_owned(),
@@ -529,7 +533,7 @@ mod render {
         );
         let finding = found
             .iter()
-            .find(|finding| finding.code.name() == "UnresolvedReference")
+            .find(|finding| finding.code.id() == "core/unresolved_reference_worded")
             .expect("the finding");
         assert_eq!(finding.severity, Severity::Error);
         assert!(
@@ -564,7 +568,7 @@ mod render {
             assert_eq!(
                 of_biomes(&found),
                 [(
-                    "UnresolvedReference",
+                    "core/unresolved_reference_worded",
                     Severity::Error,
                     Phase::Link,
                     "rp 2".to_owned(),
@@ -696,18 +700,23 @@ mod render {
                 .collect::<Vec<_>>(),
             [
                 (
-                    "UnresolvedReference",
+                    "core/unresolved_reference_worded",
                     Severity::Error,
                     "biome",
                     "demo:nowhere"
                 ),
                 (
-                    "ClientBiomeShadowsLowerPacks",
+                    "core/client_biome_shadows_lower_packs",
                     Severity::Info,
                     "pack",
                     "rp 3"
                 ),
-                ("UnresolvedReference", Severity::Error, "fog", "demo:none"),
+                (
+                    "core/unresolved_reference_worded",
+                    Severity::Error,
+                    "fog",
+                    "demo:none"
+                ),
             ]
         );
     }
@@ -773,7 +782,7 @@ mod render {
         // the `NonOwnerPointer` asserts): ours, an information.
         let warning = |path: &str, id: &str| {
             (
-                "UnresolvedReference",
+                "core/unresolved_reference",
                 Severity::Info,
                 Phase::Link,
                 "rp 2".to_owned(),
@@ -813,7 +822,7 @@ mod render {
         assert_eq!(
             of_biomes(&found)
                 .iter()
-                .filter(|told| told.0 == "UnresolvedReference")
+                .filter(|told| told.0 == "core/unresolved_reference")
                 .map(|told| (told.3.as_str(), told.5.as_str(), told.7.as_str()))
                 .collect::<Vec<_>>(),
             [(
@@ -831,7 +840,7 @@ mod render {
             let found = link_with(&[], &[(LEGACY, text)], host(), LinkOptions::default());
             of_biomes(&found)
                 .into_iter()
-                .filter(|told| told.0 == "UnresolvedReference")
+                .filter(|told| told.0 == "core/unresolved_reference")
                 .map(|told| (told.5, told.7))
                 .collect::<Vec<_>>()
         };
@@ -871,7 +880,7 @@ mod render {
     fn overrides(found: &Diagnostics) -> Vec<Told> {
         found
             .iter()
-            .filter(|finding| finding.code.name() == "ClientBiomeOverriddenByBiomesClient")
+            .filter(|finding| finding.code.id() == "core/client_biome_overridden_by_biomes_client")
             .map(told)
             .collect()
     }
@@ -889,7 +898,7 @@ mod render {
         };
         // Vanilla overwrites the component's values in silence: ours, an information.
         let warning = [(
-            "ClientBiomeOverriddenByBiomesClient",
+            "core/client_biome_overridden_by_biomes_client",
             Severity::Info,
             Phase::Link,
             "rp 3".to_owned(),
@@ -979,7 +988,7 @@ fn biome_v6_10_each_pack_whose_entry_replaces_the_water_surface_is_named() {
     ]);
     let warning = |by: &str| {
         (
-            "ClientBiomeOverriddenByBiomesClient",
+            "core/client_biome_overridden_by_biomes_client",
             Severity::Info,
             Phase::Link,
             "rp 3".to_owned(),
@@ -1041,7 +1050,7 @@ fn biome_r49_a_music_definition_nothing_defines_is_an_error_with_the_validators_
         .filter(about_music)
         .map(|f| {
             (
-                f.code.name(),
+                f.code.id(),
                 f.severity,
                 f.location.json_path.to_string(),
                 f.code.to_string(),
@@ -1051,7 +1060,7 @@ fn biome_r49_a_music_definition_nothing_defines_is_an_error_with_the_validators_
     assert_eq!(
         music,
         [(
-            "UnresolvedReference",
+            "core/unresolved_reference_worded",
             Severity::Error,
             "minecraft:client_biome/components/minecraft:biome_music/music_definition".to_owned(),
             "-> components -> minecraft:biome_music -> music_definition:  Missing referenced asset no.such.music".to_owned()
@@ -1085,7 +1094,7 @@ mod sound {
             .map(|told| {
                 assert_eq!(
                     (told.0, told.2, told.3.as_str(), told.4.as_str()),
-                    ("UnknownSound", Phase::Link, "rp 2", FILE)
+                    ("core/unknown_sound_worded", Phase::Link, "rp 2", FILE)
                 );
                 let below = told
                     .5

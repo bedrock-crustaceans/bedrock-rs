@@ -1,7 +1,7 @@
 # families/script_config fixtures.md, row sc35_commands_json_syntax (probe D cmd_broken).
 
 [[diagnostic]]
-code = "MalformedInput"
+code = "server_config/commands_malformed_malformed_input"
 severity = "error"
 phase = "parse"
 file = "config/commands.json"

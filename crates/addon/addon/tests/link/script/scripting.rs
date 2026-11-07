@@ -73,7 +73,7 @@ fn told_of<'a>(findings: impl IntoIterator<Item = &'a Diagnostic>) -> Vec<Told> 
         .into_iter()
         .map(|f| {
             (
-                f.code.name(),
+                f.code.id(),
                 f.severity,
                 f.location
                     .path
@@ -144,7 +144,7 @@ fn s1_an_entry_that_names_no_file_or_is_absent_is_an_error_of_the_load() {
     assert_eq!(
         loaded(&missing),
         [row(
-            "UnresolvedReference",
+            "script/plugin_missing_main_file",
             Severity::Error,
             "manifest.json",
             "modules/0/entry"
@@ -155,7 +155,7 @@ fn s1_an_entry_that_names_no_file_or_is_absent_is_an_error_of_the_load() {
     assert_eq!(
         loaded(&absent),
         [row(
-            "MissingRequiredField",
+            "script/plugin_entry_not_supported_missing_required_field",
             Severity::Error,
             "manifest.json",
             "modules/0"
@@ -186,7 +186,7 @@ fn s2_a_module_name_is_matched_byte_for_byte_against_the_catalog() {
         assert_eq!(
             loaded(&set),
             [row(
-                "UnresolvedReference",
+                "script/plugin_unknown_module",
                 Severity::Error,
                 "manifest.json",
                 "dependencies/0"
@@ -213,7 +213,7 @@ fn s3_the_versions_a_pack_asks_for_are_resolved_once_per_stack() {
     assert_eq!(
         load(r#"{ "module_name": "@minecraft/server", "version": "9.9.9" }"#),
         [row(
-            "ScriptModuleVersionUnavailable",
+            "core/script_module_version_unavailable",
             Severity::Error,
             "manifest.json",
             "dependencies/0"
@@ -225,7 +225,7 @@ fn s3_the_versions_a_pack_asks_for_are_resolved_once_per_stack() {
                { "module_name": "@minecraft/server", "version": "2.0.0" }"#
         ),
         [row(
-            "ScriptModuleVersionConflict",
+            "core/script_module_version_conflict",
             Severity::Error,
             "manifest.json",
             "dependencies/1"
@@ -250,7 +250,7 @@ fn s3_the_versions_a_pack_asks_for_are_resolved_once_per_stack() {
     assert_eq!(
         loaded(&promoted),
         [row(
-            "ScriptModulePromoted",
+            "core/script_module_promoted",
             Severity::Info,
             "manifest.json",
             "dependencies/0"
@@ -275,7 +275,7 @@ fn s3_the_versions_a_pack_asks_for_are_resolved_once_per_stack() {
     let report = two.load_all();
     let unavailable = report
         .iter()
-        .filter(|f| f.code.name() == "ScriptModuleVersionUnavailable")
+        .filter(|f| f.code.id() == "core/script_module_version_unavailable")
         .count();
     assert_eq!(unavailable, 2);
 }
@@ -294,12 +294,12 @@ fn s4_a_dependency_by_uuid_is_deprecated_and_stands_for_0_1_0() {
     assert!(
         set.selection()
             .iter()
-            .all(|finding| finding.code.name() != "MissingDependency")
+            .all(|finding| finding.code.id() != "core/missing_dependency")
     );
     assert_eq!(
         loaded(&set),
         [row(
-            "DeprecatedMember",
+            "script/plugin_dependency_by_uuid",
             Severity::Warning,
             "manifest.json",
             "dependencies/0"
@@ -325,7 +325,7 @@ fn s5_the_missing_main_file_is_one_error_with_the_file_that_differs_in_case() {
     assert_eq!(
         loaded(&set),
         [row(
-            "UnresolvedReference",
+            "script/plugin_missing_main_file",
             Severity::Error,
             "manifest.json",
             "modules/0/entry"
@@ -361,21 +361,21 @@ fn s6_an_import_of_a_file_the_bundle_does_not_have_is_told_by_how_it_is_imported
         [
             // L8: a static import fails the plugin.
             row(
-                "ScriptImportNotFound",
+                "core/script_import_not_found",
                 Severity::Error,
                 "scripts/main.js",
                 ""
             ),
             // L9: a literal `import()` rejects one promise.
             row(
-                "ScriptImportNotFound",
+                "core/script_import_not_found",
                 Severity::Info,
                 "scripts/main.js",
                 ""
             ),
             // L21: vanilla's normaliser throws and the server terminates.
             row(
-                "ScriptImportCrashesEngine",
+                "core/script_import_crashes_engine",
                 Severity::Error,
                 "scripts/main.js",
                 ""
@@ -395,7 +395,7 @@ fn s6_an_import_of_a_file_the_bundle_does_not_have_is_told_by_how_it_is_imported
     assert_eq!(
         loaded(&cased),
         [row(
-            "ScriptImportNotFound",
+            "core/script_import_not_found",
             Severity::Error,
             "scripts/main.js",
             ""
@@ -418,20 +418,20 @@ fn s7_an_at_name_is_checked_against_the_modules_the_plugin_got() {
         [
             // L10: static, then behind an `import()`.
             row(
-                "ScriptModuleUnrecognized",
+                "core/script_module_unrecognized",
                 Severity::Error,
                 "scripts/main.js",
                 ""
             ),
             row(
-                "ScriptModuleUnrecognized",
+                "core/script_module_unrecognized",
                 Severity::Info,
                 "scripts/main.js",
                 ""
             ),
             // L11.
             row(
-                "ScriptModuleRestricted",
+                "core/script_module_restricted",
                 Severity::Error,
                 "scripts/main.js",
                 ""
@@ -517,14 +517,14 @@ fn s8_a_config_folder_no_script_module_of_the_stack_uses_is_told_from_the_stack_
                     .map(|path| path.as_str().to_owned()),
                 Some(format!("config/{folder}"))
             );
-            (f.code.name(), f.severity, f.phase, folder.clone(), expected)
+            (f.code.id(), f.severity, f.phase, folder.clone(), expected)
         })
         .collect();
     let mut wanted = vec![
         // D3: the pack's header UUID; the folder its module does use is named. Every unmatched
         // folder is an information of ours.
         (
-            "UnmatchedConfigFolder",
+            "core/unmatched_config_folder_expected",
             Severity::Info,
             Phase::Link,
             of_header.clone(),
@@ -532,7 +532,7 @@ fn s8_a_config_folder_no_script_module_of_the_stack_uses_is_told_from_the_stack_
         ),
         // D4: the module's UUID in another spelling.
         (
-            "UnmatchedConfigFolder",
+            "core/unmatched_config_folder_expected",
             Severity::Info,
             Phase::Link,
             upper.clone(),
@@ -540,14 +540,14 @@ fn s8_a_config_folder_no_script_module_of_the_stack_uses_is_told_from_the_stack_
         ),
         // D5: nothing of the stack.
         (
-            "UnmatchedConfigFolder",
+            "core/unmatched_config_folder",
             Severity::Info,
             Phase::Link,
             data_only.clone(),
             None,
         ),
         (
-            "UnmatchedConfigFolder",
+            "core/unmatched_config_folder",
             Severity::Info,
             Phase::Link,
             "notes".to_owned(),
@@ -559,11 +559,12 @@ fn s8_a_config_folder_no_script_module_of_the_stack_uses_is_told_from_the_stack_
     assert_eq!(told, wanted);
     // `default` and the folder a module uses are no finding; nor is anything of this a
     // finding of `link()`, which holds no configuration.
-    assert!(
-        set.link()
-            .iter()
-            .all(|finding| finding.code.name() != "UnmatchedConfigFolder")
-    );
+    assert!(set.link().iter().all(|finding| {
+        !matches!(
+            finding.code.id(),
+            "core/unmatched_config_folder" | "core/unmatched_config_folder_expected"
+        )
+    }));
 }
 
 #[test]
@@ -586,12 +587,12 @@ fn s9_a_module_the_configuration_does_not_allow_is_refused_once_by_the_configura
     let found: Vec<(&str, Severity, String)> = verdicts[0]
         .diagnostics
         .iter()
-        .map(|f| (f.code.name(), f.severity, f.code.to_string()))
+        .map(|f| (f.code.id(), f.severity, f.code.to_string()))
         .collect();
     assert_eq!(
         found,
         [(
-            "ScriptModulePermission",
+            "server_config/plugin_module_not_configured",
             Severity::Error,
             "Plugin [bp 1 - 1.0.0] - requesting dependency on module [@minecraft/server-ui] \
              but it is not configured to use it."
@@ -608,12 +609,12 @@ fn s9_a_module_the_configuration_does_not_allow_is_refused_once_by_the_configura
     let read: Vec<(&str, Severity, String)> = near
         .diagnostics()
         .iter()
-        .map(|f| (f.code.name(), f.severity, f.location.json_path.to_string()))
+        .map(|f| (f.code.id(), f.severity, f.location.json_path.to_string()))
         .collect();
     assert_eq!(
         read,
         [(
-            "InvalidValue",
+            "core/invalid_value",
             Severity::Info,
             "allowed_modules/1".to_owned()
         )]
@@ -633,7 +634,7 @@ fn s10_a_permission_level_for_no_command_is_a_note_of_the_file_s_own_reading() {
     assert_eq!(
         found,
         [row(
-            "UnresolvedReference",
+            "core/unresolved_reference",
             Severity::Info,
             "config/commands.json",
             "permission_levels/nosuchcommand"
@@ -666,7 +667,7 @@ fn s4_a_dependency_on_a_uuid_that_is_no_native_module_is_a_pack_dependency() {
         let missing = set
             .selection()
             .iter()
-            .filter(|finding| finding.code.name() == "MissingDependency")
+            .filter(|finding| finding.code.id() == "core/missing_dependency")
             .count();
         (set.behavior.packs().len(), missing)
     };

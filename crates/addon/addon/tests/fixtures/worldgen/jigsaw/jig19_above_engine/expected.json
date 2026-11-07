@@ -8,14 +8,14 @@
   },
   "diagnostics": [
     {
-      "code": "UnsupportedVersion",
+      "code": "core/no_parser_for_version",
       "severity": "error",
       "path": "worldgen/structures/ruin.json",
       "json_path": "format_version",
       "text": "unsupported version: no parser available for version 1.26.61"
     },
     {
-      "code": "DocumentRejected",
+      "code": "jigsaw/structure_failed",
       "severity": "error",
       "path": "worldgen/structures/ruin.json",
       "text": "Failed to parse jigsaw structure definition 'worldgen/structures/ruin.json'."

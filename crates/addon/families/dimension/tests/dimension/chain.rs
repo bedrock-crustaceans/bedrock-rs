@@ -113,7 +113,7 @@ fn a_dimension_height_of_the_file_the_step_makes_of_the_bounds_is_noted() {
         let told: Vec<String> = document
             .diagnostics()
             .iter()
-            .filter(|f| f.code.name() == "DroppedField")
+            .filter(|f| f.code.id() == "core/dropped_field")
             .map(|f| format!("{:?} {}", f.severity, f.location.json_path))
             .collect();
         assert_eq!(
@@ -147,7 +147,7 @@ fn bounds_of_the_file_that_become_no_height_are_noted_as_dropped() {
         document
             .diagnostics()
             .iter()
-            .filter(|f| f.code.name() == "DroppedField")
+            .filter(|f| f.code.id() == "core/dropped_field")
             .map(|f| format!("{:?} {}", f.severity, f.location.json_path))
             .collect::<Vec<String>>()
     };

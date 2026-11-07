@@ -5,5 +5,5 @@
 "=a" = "b"
 
 [[diagnostics]]
-code = "InvalidValue"
+code = "core/invalid_value"
 severity = "info"

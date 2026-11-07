@@ -2,21 +2,21 @@
 
 [[diagnostic]]
 phase = "link"
-kind = "UnresolvedReference"
+kind = "core/unresolved_reference"
 severity = "info"
 file = "behavior_trees/orphan.json"
 path = "minecraft:behavior_tree/minecraft:root/minecraft:subtree/subtree_id"
 
 [[diagnostic]]
 phase = "link"
-kind = "ReferenceCycle"
+kind = "core/reference_cycle"
 severity = "info"
 file = "behavior_trees/a.json"
 path = "minecraft:behavior_tree/minecraft:root/minecraft:subtree/subtree_id"
 
 [[diagnostic]]
 phase = "link"
-kind = "ReferenceCycle"
+kind = "core/reference_cycle"
 severity = "info"
 file = "behavior_trees/b.json"
 path = "minecraft:behavior_tree/minecraft:root/minecraft:subtree/subtree_id"

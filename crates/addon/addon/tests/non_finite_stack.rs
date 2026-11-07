@@ -100,7 +100,7 @@ impl Yielded {
 fn kind(finding: &Diagnostic) -> String {
     format!(
         "{} {:?} at `{}` in {:?} {}",
-        finding.code.name(),
+        finding.code.id(),
         finding.severity,
         finding.location.json_path,
         finding.location.pack.as_ref().and_then(PackRef::index),
@@ -137,7 +137,7 @@ fn infinity_in(value: &Value) -> Option<String> {
 const LARGEST: &str = "1.7976931348623157e308";
 
 /// The codes a family reports a replaced number with (as `non_finite.rs`).
-const CLAMP_CODES: &[&str] = &["InvalidValue", "ClampedValue"];
+const CLAMP_CODES: &[&str] = &["core/invalid_value", "core/clamped_value"];
 
 /// The numbers no double holds, each with a twin of the other sign.
 fn numbers() -> Vec<(&'static str, String, &'static str)> {
@@ -267,7 +267,7 @@ fn judge(
     }
     let (plain, plain_pack) = load("0");
     let is_clamp = |finding: &&Diagnostic| {
-        CLAMP_CODES.contains(&finding.code.name()) && finding.location.json_path.to_string() == at
+        CLAMP_CODES.contains(&finding.code.id()) && finding.location.json_path.to_string() == at
     };
     let clamps = in_copy(&ours, &pack, file).into_iter().filter(is_clamp);
     let known = in_copy(&plain, &plain_pack, file)

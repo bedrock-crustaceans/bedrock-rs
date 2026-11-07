@@ -16,8 +16,8 @@ pub fn codes<'a>(
     d: impl IntoIterator<Item = &'a Diagnostic>,
 ) -> Vec<(Severity, &'static str, String)> {
     d.into_iter()
-        .filter(|f| f.code.name() != "DocumentRejected")
-        .map(|f| (f.severity, f.code.name(), f.location.json_path.to_string()))
+        .filter(|f| f.code.id() != "ddui/failed_to_load")
+        .map(|f| (f.severity, f.code.id(), f.location.json_path.to_string()))
         .collect()
 }
 
@@ -37,7 +37,7 @@ fn refused_on(text: &str, engine: FormatVersion) -> Vec<(Severity, &'static str,
     assert_eq!(found(&d).last(), Some(&failed_to_load()), "{d:#?}");
     assert_eq!(
         d.iter()
-            .filter(|f| f.code.name() == "DocumentRejected")
+            .filter(|f| f.code.id() == "ddui/failed_to_load")
             .count(),
         1
     );
@@ -56,7 +56,10 @@ fn s01_a_root_without_description_is_refused() {
     let text = r().replace(r#""description": { "identifier": "demo:screen" },"#, "");
     assert_eq!(
         refused(&text),
-        [e("MissingRequiredField", "minecraft:ui-root/description")]
+        [e(
+            "core/missing_required_field",
+            "minecraft:ui-root/description"
+        )]
     );
 }
 
@@ -66,9 +69,12 @@ fn every_required_member_of_the_skeleton_is_required() {
     assert_eq!(
         refused(text),
         [
-            e("MissingRequiredField", "minecraft:ui-root/description"),
-            e("MissingRequiredField", "minecraft:ui-root/attribs"),
-            e("MissingRequiredField", "minecraft:ui-root/layout"),
+            e(
+                "core/missing_required_field",
+                "minecraft:ui-root/description"
+            ),
+            e("core/missing_required_field", "minecraft:ui-root/attribs"),
+            e("core/missing_required_field", "minecraft:ui-root/layout"),
         ]
     );
     let text = r#"{ "format_version": "1.21.130", "minecraft:ui-root": { "description": {}, "attribs": {}, "layout": {} } }"#;
@@ -76,14 +82,17 @@ fn every_required_member_of_the_skeleton_is_required() {
         refused(text),
         [
             e(
-                "MissingRequiredField",
+                "core/missing_required_field",
                 "minecraft:ui-root/description/identifier"
             ),
             e(
-                "MissingRequiredField",
+                "core/missing_required_field",
                 "minecraft:ui-root/attribs/root_point"
             ),
-            e("MissingRequiredField", "minecraft:ui-root/layout/markup"),
+            e(
+                "core/missing_required_field",
+                "minecraft:ui-root/layout/markup"
+            ),
         ]
     );
     let text = r#"{ "format_version": "1.21.130", "minecraft:ui-composition": { "description": {}, "layout": {} } }"#;
@@ -92,14 +101,17 @@ fn every_required_member_of_the_skeleton_is_required() {
         codes(&d),
         [
             e(
-                "MissingRequiredField",
+                "core/missing_required_field",
                 "minecraft:ui-composition/description/identifier"
             ),
             e(
-                "MissingRequiredField",
+                "core/missing_required_field",
                 "minecraft:ui-composition/layout/markup"
             ),
-            e("MissingRequiredField", "minecraft:ui-composition/attribs"),
+            e(
+                "core/missing_required_field",
+                "minecraft:ui-composition/attribs"
+            ),
         ]
     );
 }
@@ -112,7 +124,7 @@ fn s02_an_identifier_without_a_namespace_is_refused_with_the_constraint_s_text()
             found(&d),
             [
                 error(
-                    "InvalidValue",
+                    "ddui/not_namespaced",
                     "minecraft:ui-root/description/identifier",
                     NAMESPACE_TEXT
                 ),
@@ -132,7 +144,7 @@ fn s02_an_identifier_without_a_namespace_is_refused_with_the_constraint_s_text()
     assert_eq!(
         found(&d)[0],
         error(
-            "InvalidValue",
+            "ddui/not_namespaced",
             "minecraft:ui-composition/description/identifier",
             NAMESPACE_TEXT
         )
@@ -153,7 +165,10 @@ fn s03_an_empty_root_point_is_refused() {
     let text = r().replace("minecraft:screen", "");
     assert_eq!(
         refused(&text),
-        [e("InvalidValue", "minecraft:ui-root/attribs/root_point")]
+        [e(
+            "core/invalid_value",
+            "minecraft:ui-root/attribs/root_point"
+        )]
     );
     // One character is not empty.
     let document = loads(root(&r().replace("minecraft:screen", " ")));
@@ -171,12 +186,15 @@ fn s04_any_other_root_point_loads() {
 fn s05_an_empty_markup_is_refused() {
     assert_eq!(
         refused(&root_json("demo:screen", "")),
-        [e("InvalidValue", "minecraft:ui-root/layout/markup")]
+        [e("core/invalid_value", "minecraft:ui-root/layout/markup")]
     );
     let d = rejects(composition(&composition_json("demo:c", "", "")));
     assert_eq!(
         codes(&d),
-        [e("InvalidValue", "minecraft:ui-composition/layout/markup")]
+        [e(
+            "core/invalid_value",
+            "minecraft:ui-composition/layout/markup"
+        )]
     );
     // One control is enough.
     let one = composition_json("demo:c", "", r#"{ "component": "Form.Divider" }"#);
@@ -192,7 +210,7 @@ fn s06_an_unknown_member_of_the_payload_is_an_error() {
     let d = rejects(root(&text));
     assert_eq!(
         codes(&d),
-        [e("UnrecognizedField", "minecraft:ui-root/extra")]
+        [e("core/unrecognized_field", "minecraft:ui-root/extra")]
     );
     assert_eq!(spanned(&text, d.iter().next().unwrap()), "1");
 }
@@ -208,12 +226,15 @@ fn s06_unknown_members_at_every_level_are_each_an_error() {
     assert_eq!(
         refused(text),
         [
-            e("UnrecognizedField", "minecraft:ui-root/description/a"),
-            e("UnrecognizedField", "minecraft:ui-root/attribs/b"),
-            e("UnrecognizedField", "minecraft:ui-root/attribs/c"),
-            e("UnrecognizedField", "minecraft:ui-root/layout/markup/0/d"),
-            e("UnrecognizedField", "minecraft:ui-root/layout/e"),
-            e("UnrecognizedField", "minecraft:ui-root/f"),
+            e("core/unrecognized_field", "minecraft:ui-root/description/a"),
+            e("core/unrecognized_field", "minecraft:ui-root/attribs/b"),
+            e("core/unrecognized_field", "minecraft:ui-root/attribs/c"),
+            e(
+                "core/unrecognized_field",
+                "minecraft:ui-root/layout/markup/0/d"
+            ),
+            e("core/unrecognized_field", "minecraft:ui-root/layout/e"),
+            e("core/unrecognized_field", "minecraft:ui-root/f"),
         ]
     );
 }
@@ -224,7 +245,7 @@ fn a_member_named_extra_is_an_unknown_member() {
     let text = panel(r#"{ "component": "Form.Button", "extra": {} }"#);
     assert_eq!(
         refused(&text),
-        [e("UnrecognizedField", &format!("{}/extra", child(0)))]
+        [e("core/unrecognized_field", &format!("{}/extra", child(0)))]
     );
 }
 
@@ -237,7 +258,7 @@ fn s07_a_composition_must_write_attribs_even_empty() {
     assert_eq!(
         codes(&d),
         [e(
-            "MissingRequiredField",
+            "core/missing_required_field",
             "minecraft:ui-composition/attribs"
         )]
     );
@@ -254,7 +275,7 @@ fn s08_an_empty_extension_point_is_refused() {
     assert_eq!(
         codes(&d),
         [e(
-            "InvalidValue",
+            "core/invalid_value",
             "minecraft:ui-composition/attribs/extension_point"
         )]
     );
@@ -299,40 +320,40 @@ fn a_wrong_type_for_a_bound_member_is_refused() {
         assert_ne!(text, r());
         assert_eq!(
             refused(&text),
-            [e("InvalidType", &format!("{ROOT}/{path}"))],
+            [e("core/invalid_type", &format!("{ROOT}/{path}"))],
             "{to}"
         );
     }
     let text = r#"{ "format_version": "1.21.130", "minecraft:ui-root": { "description": { "identifier": "demo:screen" }, "attribs": { "root_point": "minecraft:screen" }, "layout": { "markup": {} } } }"#;
     assert_eq!(
         refused(text),
-        [e("InvalidType", "minecraft:ui-root/layout/markup")]
+        [e("core/invalid_type", "minecraft:ui-root/layout/markup")]
     );
     let text = text.replace(r#"{ "markup": {} }"#, "null");
     assert_eq!(
         refused(&text),
-        [e("InvalidType", "minecraft:ui-root/layout")]
+        [e("core/invalid_type", "minecraft:ui-root/layout")]
     );
     let text = r#"{ "format_version": "1.21.130", "minecraft:ui-root": [] }"#;
-    assert_eq!(refused(text), [e("InvalidType", "minecraft:ui-root")]);
+    assert_eq!(refused(text), [e("core/invalid_type", "minecraft:ui-root")]);
     // A control, its `component` and its `children`.
-    assert_eq!(refused(&panel("5")), [e("InvalidType", &child(0))]);
+    assert_eq!(refused(&panel("5")), [e("core/invalid_type", &child(0))]);
     assert_eq!(
         refused(&panel(
             r#"{ "component": 5 }, { "component": ["Panel.Text"] }"#
         )),
         [
-            e("InvalidType", &format!("{}/component", child(0))),
-            e("InvalidType", &format!("{}/component", child(1))),
+            e("core/invalid_type", &format!("{}/component", child(0))),
+            e("core/invalid_type", &format!("{}/component", child(1))),
         ]
     );
     assert_eq!(
         refused(&panel(r#"{ "component": "Visibility", "children": {} }"#)),
-        [e("InvalidType", &format!("{}/children", child(0)))]
+        [e("core/invalid_type", &format!("{}/children", child(0)))]
     );
     assert_eq!(
         refused(&panel(r#"{ "component": "Visibility", "children": null }"#)),
-        [e("InvalidType", &format!("{}/children", child(0)))]
+        [e("core/invalid_type", &format!("{}/children", child(0)))]
     );
 }
 
@@ -346,7 +367,7 @@ fn a_null_extension_point_is_a_wrong_type() {
     assert_eq!(
         codes(&d),
         [e(
-            "InvalidType",
+            "core/invalid_type",
             "minecraft:ui-composition/attribs/extension_point"
         )]
     );
@@ -355,7 +376,7 @@ fn a_null_extension_point_is_a_wrong_type() {
     assert_eq!(
         codes(&d),
         [e(
-            "UnrecognizedField",
+            "core/unrecognized_field",
             "minecraft:ui-composition/attribs/other"
         )]
     );
@@ -400,7 +421,10 @@ fn c02_attribs_on_a_type_that_binds_none_is_an_unknown_member() {
         let d = rejects(root(&text));
         assert_eq!(
             codes(&d),
-            [e("UnrecognizedField", &format!("{}/attribs", child(0)))],
+            [e(
+                "core/unrecognized_field",
+                &format!("{}/attribs", child(0))
+            )],
             "{name}"
         );
         assert_eq!(spanned(&text, d.iter().next().unwrap()), "{}");
@@ -414,7 +438,7 @@ fn c02_attribs_on_a_type_that_binds_none_is_an_unknown_member() {
     assert_eq!(
         refused(&text),
         [e(
-            "UnrecognizedField",
+            "core/unrecognized_field",
             "minecraft:ui-root/layout/markup/0/attribs"
         )]
     );
@@ -438,13 +462,19 @@ fn c03_children_on_a_leaf_is_an_unknown_member() {
         ));
         let got = refused(&text);
         assert!(
-            got.contains(&e("UnrecognizedField", &format!("{}/children", child(0)))),
+            got.contains(&e(
+                "core/unrecognized_field",
+                &format!("{}/children", child(0))
+            )),
             "{name}: {got:?}"
         );
     }
     assert_eq!(
         refused(&panel(r#"{ "component": "Form.Button", "children": [] }"#)),
-        [e("UnrecognizedField", &format!("{}/children", child(0)))]
+        [e(
+            "core/unrecognized_field",
+            &format!("{}/children", child(0))
+        )]
     );
 }
 
@@ -453,7 +483,7 @@ fn c04_a_container_must_write_children() {
     assert_eq!(
         refused(&root_json("demo:screen", r#"{ "component": "Panel" }"#)),
         [e(
-            "MissingRequiredField",
+            "core/missing_required_field",
             "minecraft:ui-root/layout/markup/0/children"
         )]
     );
@@ -466,7 +496,10 @@ fn c04_a_container_must_write_children() {
         let text = panel(&format!(r#"{{ "component": "{name}" }}"#));
         assert_eq!(
             refused(&text),
-            [e("MissingRequiredField", &format!("{}/children", child(0)))],
+            [e(
+                "core/missing_required_field",
+                &format!("{}/children", child(0))
+            )],
             "{name}"
         );
     }
@@ -475,7 +508,7 @@ fn c04_a_container_must_write_children() {
         assert_eq!(
             refused(&text),
             [e(
-                "MissingRequiredField",
+                "core/missing_required_field",
                 "minecraft:ui-root/layout/markup/0/children"
             )],
             "{name}"
@@ -497,7 +530,10 @@ fn c06_panel_text_must_write_attribs() {
     let d = rejects(root(&panel(r#"{ "component": "Panel.Text" }"#)));
     assert_eq!(
         codes(&d),
-        [e("MissingRequiredField", &format!("{}/attribs", child(0)))]
+        [e(
+            "core/missing_required_field",
+            &format!("{}/attribs", child(0))
+        )]
     );
 }
 
@@ -507,8 +543,14 @@ fn a_control_must_write_its_component() {
     assert_eq!(
         refused(&text),
         [
-            e("MissingRequiredField", &format!("{}/component", child(0))),
-            e("MissingRequiredField", &format!("{}/component", child(1))),
+            e(
+                "core/missing_required_field",
+                &format!("{}/component", child(0))
+            ),
+            e(
+                "core/missing_required_field",
+                &format!("{}/component", child(1))
+            ),
         ]
     );
 }
@@ -519,7 +561,7 @@ fn c07_an_unknown_component_is_refused() {
     let d = rejects(root(&text));
     assert_eq!(
         codes(&d),
-        [e("InvalidValue", &format!("{}/component", child(0)))]
+        [e("core/invalid_value", &format!("{}/component", child(0)))]
     );
     assert_eq!(spanned(&text, d.iter().next().unwrap()), r#""Form.Label""#);
 }
@@ -529,7 +571,7 @@ fn c08_a_component_outside_its_parent_s_set_is_refused() {
     // `Container.Item` directly under `Panel`.
     assert_eq!(
         refused(&panel(r#"{ "component": "Container.Item" }"#)),
-        [e("InvalidValue", &format!("{}/component", child(0)))]
+        [e("core/invalid_value", &format!("{}/component", child(0)))]
     );
     // `Panel.CloseButton` under `Context.List`.
     assert_eq!(
@@ -537,7 +579,7 @@ fn c08_a_component_outside_its_parent_s_set_is_refused() {
             r#"{ "component": "Context.List", "children": [ { "component": "Panel.CloseButton" } ] }"#
         )),
         [e(
-            "InvalidValue",
+            "core/invalid_value",
             &format!("{}/children/0/component", child(0))
         )]
     );
@@ -547,14 +589,14 @@ fn c08_a_component_outside_its_parent_s_set_is_refused() {
             r#"{ "component": "Context.List", "children": [ { "component": "ExtensionPoint", "attribs": { "name": "x" } } ] }"#
         )),
         [e(
-            "InvalidValue",
+            "core/invalid_value",
             &format!("{}/children/0/component", child(0))
         )]
     );
     // `Panel` under `Panel`.
     assert_eq!(
         refused(&panel(r#"{ "component": "Panel", "children": [] }"#)),
-        [e("InvalidValue", &format!("{}/component", child(0)))]
+        [e("core/invalid_value", &format!("{}/component", child(0)))]
     );
     // `Form.Button` at the top of a root's markup.
     assert_eq!(
@@ -563,7 +605,7 @@ fn c08_a_component_outside_its_parent_s_set_is_refused() {
             r#"{ "component": "Form.Button" }"#
         )),
         [e(
-            "InvalidValue",
+            "core/invalid_value",
             "minecraft:ui-root/layout/markup/0/component"
         )]
     );
@@ -577,7 +619,7 @@ fn c08_a_component_outside_its_parent_s_set_is_refused() {
         assert_eq!(
             codes(&d),
             [e(
-                "InvalidValue",
+                "core/invalid_value",
                 "minecraft:ui-composition/layout/markup/0/component"
             )],
             "{misplaced}"
@@ -597,13 +639,13 @@ fn c08_every_misplaced_control_of_a_file_is_reported() {
     assert_eq!(
         refused(&text),
         [
-            e("InvalidValue", &format!("{}/component", child(0))),
-            e("InvalidValue", &format!("{}/component", child(2))),
+            e("core/invalid_value", &format!("{}/component", child(0))),
+            e("core/invalid_value", &format!("{}/component", child(2))),
             e(
-                "MissingRequiredField",
+                "core/missing_required_field",
                 &format!("{}/children/0/attribs", child(2))
             ),
-            e("InvalidValue", &format!("{}/component", child(3))),
+            e("core/invalid_value", &format!("{}/component", child(3))),
         ]
     );
 }
@@ -630,7 +672,7 @@ fn c09_a_grid_takes_items_and_lists() {
     assert_eq!(
         refused(&text),
         [e(
-            "InvalidValue",
+            "core/invalid_value",
             &format!("{}/children/0/component", child(0))
         )]
     );
@@ -669,7 +711,7 @@ fn c11_component_names_are_compared_with_case() {
             r#"{ "component": "panel", "children": [] }"#
         )),
         [e(
-            "InvalidValue",
+            "core/invalid_value",
             "minecraft:ui-root/layout/markup/0/component"
         )]
     );
@@ -715,8 +757,8 @@ fn c12_container_item_is_gone_from_the_1_26_45_catalogue() {
         assert_eq!(
             refused_on(&text, E45),
             [
-                e("InvalidValue", &at),
-                (Severity::Info, "FieldUntilEngine", at.clone())
+                e("core/invalid_value", &at),
+                (Severity::Info, "core/field_until_engine", at.clone())
             ]
         );
         let last: Vec<String> = rejects(root_in(&text, &cx(E45, false)))
@@ -740,7 +782,7 @@ fn c12_a_type_of_no_catalogue_gets_no_hint() {
     for engine in [E20, E45] {
         assert_eq!(
             refused_on(&text, engine),
-            [e("InvalidValue", &format!("{}/component", child(0)))],
+            [e("core/invalid_value", &format!("{}/component", child(0)))],
             "{engine:?}"
         );
     }
@@ -752,14 +794,14 @@ fn c12_a_type_of_no_catalogue_gets_no_hint() {
 fn c12_the_1_26_20_catalogue_refuses_the_later_types_and_names_their_engine() {
     let text = root_json("demo:screen", C12);
     let d = rejects(root(&text));
-    let hint = |path: &str| (Severity::Info, "FieldSinceEngine", path.to_owned());
+    let hint = |path: &str| (Severity::Info, "core/field_since_engine", path.to_owned());
     assert_eq!(
         codes(&d),
         [
-            e("InvalidValue", &format!("{}/component", child(0))),
+            e("core/invalid_value", &format!("{}/component", child(0))),
             hint(&format!("{}/component", child(0))),
             e(
-                "InvalidValue",
+                "core/invalid_value",
                 &format!("{}/children/0/component", child(1))
             ),
             hint(&format!("{}/children/0/component", child(1))),
@@ -780,12 +822,16 @@ fn c12_the_1_26_20_catalogue_refuses_the_later_types_and_names_their_engine() {
     );
     let found = refused_on(&gone, E45);
     assert_eq!(found.len(), 2);
-    assert!(found.iter().all(|(_, code, _)| *code != "FieldSinceEngine"));
+    assert!(
+        found
+            .iter()
+            .all(|(_, code, _)| *code != "core/field_since_engine")
+    );
     // And a type the 1.26.20 catalogue lacks has no earlier engine to name.
     assert!(
         codes(&d)
             .iter()
-            .all(|(_, code, _)| *code != "FieldUntilEngine")
+            .all(|(_, code, _)| *code != "core/field_until_engine")
     );
 }
 
@@ -794,17 +840,17 @@ fn c13_the_new_types_bind_what_the_retail_client_binds() {
     let cases = [
         (
             r#"{ "component": "Form.Image", "children": [] }"#,
-            "UnrecognizedField",
+            "core/unrecognized_field",
             "children",
         ),
         (
             r#"{ "component": "Container.TextField", "children": [] }"#,
-            "UnrecognizedField",
+            "core/unrecognized_field",
             "children",
         ),
         (
             r#"{ "component": "ScrollableGridLayout", "attribs": {} }"#,
-            "MissingRequiredField",
+            "core/missing_required_field",
             "children",
         ),
     ];
@@ -822,7 +868,7 @@ fn c13_the_new_types_bind_what_the_retail_client_binds() {
     assert_eq!(
         refused_on(&slot, E45),
         [e(
-            "UnrecognizedField",
+            "core/unrecognized_field",
             &format!("{}/children/0/children", child(0))
         )]
     );
@@ -855,7 +901,7 @@ fn c14_a_scrollable_grid_takes_list_content() {
         assert_eq!(
             refused_on(&text, E45),
             [e(
-                "InvalidValue",
+                "core/invalid_value",
                 &format!("{}/children/0/component", child(0))
             )],
             "{outside}"
@@ -873,7 +919,7 @@ fn a_finding_after_a_member_written_twice_keeps_its_place_in_the_file() {
     let d = rejects(root(&text));
     assert_eq!(
         codes(&d),
-        [e("InvalidValue", &format!("{}/component", child(1)))]
+        [e("core/invalid_value", &format!("{}/component", child(1)))]
     );
     assert_eq!(spanned(&text, d.iter().next().unwrap()), r#""Nope""#);
     let text = panel(r#"{ "component": "Nope", "component": "Form.Divider" }"#);

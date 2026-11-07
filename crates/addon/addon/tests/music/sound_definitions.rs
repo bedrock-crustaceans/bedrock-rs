@@ -1,9 +1,9 @@
 //! The sound events a music definition names, judged by the link pass: the `event_name` of a
 //! definition is a sound definition of the category `music`.
 
-use bedrock_addon::diagnostic::{Phase, Severity};
+use bedrock_addon::diagnostic::{Kind, Phase, Severity};
 
-use super::common::{BINDINGS, DEFINITIONS, MUSIC, expect_none, found, linked_user, pack};
+use super::common::{BINDINGS, DEFINITIONS, MUSIC, found, linked_user, pack};
 
 const TWO_EVENTS: &str = r#"{"format_version": "1.20.20", "sound_definitions": {
     "music.game": {"category": "music"}, "dig.stone": {"category": "block"}}}"#;
@@ -22,14 +22,14 @@ fn rule_25_music_names_a_music_definition() {
             ),
         ],
     )]);
-    let unknown: Vec<String> = found(&link, "UnknownSound")
+    let unknown: Vec<String> = found(&link, "core/unknown_sound")
         .iter()
         .map(|d| d.location.json_path.to_string())
         .collect();
     // Missing, and present under another category; an empty name is not checked.
     assert_eq!(unknown, ["end/event_name", "menu/event_name"]);
     assert!(
-        found(&link, "UnknownSound")
+        found(&link, "core/unknown_sound")
             .iter()
             .all(|d| d.severity == Severity::Info && d.phase == Phase::Link)
     );
@@ -41,5 +41,9 @@ fn nothing_is_cross_checked_without_a_sound_definitions_file() {
         10,
         &[(MUSIC, r#"{"game": {"event_name": "music.game"}}"#)],
     )]);
-    expect_none(&link, "UnknownSound");
+    assert!(
+        link.iter()
+            .all(|d| d.code.kind() != Kind::UnresolvedReference),
+        "no unresolved reference in {link:#?}"
+    );
 }

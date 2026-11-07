@@ -40,7 +40,7 @@ fn told(payload: &str) -> String {
                 out,
                 "  {:?} {} {}",
                 finding.severity,
-                finding.code.name(),
+                finding.code.id(),
                 finding.location.json_path
             );
         }
@@ -55,17 +55,17 @@ fn an_unknown_root_member_is_graded_by_the_version() {
     assert_eq!(
         found,
         r"1.16.100 loaded
-  Warning UnrecognizedField minecraft:block/made_up
+  Warning core/unrecognized_field minecraft:block/made_up
 1.21.90 loaded
-  Warning UnrecognizedField minecraft:block/made_up
+  Warning core/unrecognized_field minecraft:block/made_up
 1.26.0 loaded
-  Warning UnrecognizedField minecraft:block/made_up
+  Warning core/unrecognized_field minecraft:block/made_up
 1.26.20 refused
-  Error UnrecognizedField minecraft:block/made_up
+  Error core/unrecognized_field minecraft:block/made_up
 1.26.60 refused
-  Error UnrecognizedField minecraft:block/made_up
+  Error core/unrecognized_field minecraft:block/made_up
 beta refused
-  Error UnsupportedVersion format_version
+  Error core/no_parser_for_version format_version
 ",
         "\n{found}"
     );
@@ -77,17 +77,17 @@ fn an_unknown_description_member_is_graded_by_the_version() {
     assert_eq!(
         found,
         r"1.16.100 loaded
-  Warning UnrecognizedField minecraft:block/description/note
+  Warning core/unrecognized_field minecraft:block/description/note
 1.21.90 loaded
-  Warning UnrecognizedField minecraft:block/description/note
+  Warning core/unrecognized_field minecraft:block/description/note
 1.26.0 loaded
-  Warning UnrecognizedField minecraft:block/description/note
+  Warning core/unrecognized_field minecraft:block/description/note
 1.26.20 refused
-  Error UnrecognizedField minecraft:block/description/note
+  Error core/unrecognized_field minecraft:block/description/note
 1.26.60 refused
-  Error UnrecognizedField minecraft:block/description/note
+  Error core/unrecognized_field minecraft:block/description/note
 beta refused
-  Error UnsupportedVersion format_version
+  Error core/no_parser_for_version format_version
 ",
         "\n{found}"
     );
@@ -105,7 +105,7 @@ fn an_unknown_component_is_graded_by_the_version() {
 1.26.20 loaded
 1.26.60 loaded
 beta refused
-  Error UnsupportedVersion format_version
+  Error core/no_parser_for_version format_version
 ",
         "\n{found}"
     );
@@ -119,17 +119,17 @@ fn an_unknown_member_of_a_component_is_graded_by_the_version() {
     assert_eq!(
         found,
         r"1.16.100 loaded
-  Warning UnrecognizedField minecraft:block/components/minecraft:destructible_by_explosion/zz
+  Warning core/unrecognized_field minecraft:block/components/minecraft:destructible_by_explosion/zz
 1.21.90 loaded
-  Warning UnrecognizedField minecraft:block/components/minecraft:destructible_by_explosion/zz
+  Warning core/unrecognized_field minecraft:block/components/minecraft:destructible_by_explosion/zz
 1.26.0 loaded
-  Warning UnrecognizedField minecraft:block/components/minecraft:destructible_by_explosion/zz
+  Warning core/unrecognized_field minecraft:block/components/minecraft:destructible_by_explosion/zz
 1.26.20 refused
-  Error UnrecognizedField minecraft:block/components/minecraft:destructible_by_explosion/zz
+  Error core/unrecognized_field minecraft:block/components/minecraft:destructible_by_explosion/zz
 1.26.60 refused
-  Error UnrecognizedField minecraft:block/components/minecraft:destructible_by_explosion/zz
+  Error core/unrecognized_field minecraft:block/components/minecraft:destructible_by_explosion/zz
 beta refused
-  Error UnsupportedVersion format_version
+  Error core/no_parser_for_version format_version
 ",
         "\n{found}"
     );
@@ -143,20 +143,20 @@ fn an_unknown_member_of_a_permutation_is_graded_by_the_version() {
     assert_eq!(
         found,
         r"1.16.100 loaded
-  Warning UnrecognizedField minecraft:block/permutations/0/comment
-  Info MolangNotChecked minecraft:block
+  Warning core/unrecognized_field minecraft:block/permutations/0/comment
+  Info core/molang_not_checked minecraft:block
 1.21.90 loaded
-  Warning UnrecognizedField minecraft:block/permutations/0/comment
-  Info MolangNotChecked minecraft:block
+  Warning core/unrecognized_field minecraft:block/permutations/0/comment
+  Info core/molang_not_checked minecraft:block
 1.26.0 loaded
-  Warning UnrecognizedField minecraft:block/permutations/0/comment
-  Info MolangNotChecked minecraft:block
+  Warning core/unrecognized_field minecraft:block/permutations/0/comment
+  Info core/molang_not_checked minecraft:block
 1.26.20 refused
-  Error UnrecognizedField minecraft:block/permutations/0/comment
+  Error core/unrecognized_field minecraft:block/permutations/0/comment
 1.26.60 refused
-  Error UnrecognizedField minecraft:block/permutations/0/comment
+  Error core/unrecognized_field minecraft:block/permutations/0/comment
 beta refused
-  Error UnsupportedVersion format_version
+  Error core/no_parser_for_version format_version
 ",
         "\n{found}"
     );

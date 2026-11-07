@@ -11,7 +11,7 @@ use super::{Told, render_controller, render_controller_of, says, told};
 const FILE: &str = "render_controllers/x.render_controllers.json";
 const INFO: Severity = Severity::Info;
 const ERROR: Severity = Severity::Error;
-const UNRESOLVED: &str = "UnresolvedReference";
+const UNRESOLVED: &str = "core/unresolved_reference";
 const KEY: &str = "controller.render.x";
 
 fn at(tail: &str) -> String {
@@ -291,12 +291,18 @@ mod with_client_entities {
         // The game logs the line at level 3 at draw time and drops nothing: a kept error.
         assert_eq!(
             glinting(r#""GLINT", "MULTIPLICATIVE_TINT""#, TWO),
-            [says("InvalidValue", ERROR, &at("textures"), "", "")]
+            [says(
+                "core/invalid_value_worded",
+                ERROR,
+                &at("textures"),
+                "",
+                ""
+            )]
         );
         assert!(
             glinting_findings(r#""GLINT", "MULTIPLICATIVE_TINT""#, TWO)
                 .iter()
-                .filter(|finding| finding.code.name() == "InvalidValue")
+                .filter(|finding| finding.code.id() == "core/invalid_value_worded")
                 .all(|finding| finding.kept)
         );
     }

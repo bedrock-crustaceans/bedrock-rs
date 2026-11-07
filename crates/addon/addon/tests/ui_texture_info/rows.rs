@@ -68,7 +68,11 @@ fn ui03_t2_a_slice_size_of_another_shape_is_ignored() {
         assert_eq!(nineslice(&doc), (None, Some([3.0, 5.0])), "{written}");
         assert_eq!(
             located(doc.diagnostics()),
-            [("InvalidValue", Severity::Info, "nineslice_size".to_owned())],
+            [(
+                "core/invalid_value",
+                Severity::Info,
+                "nineslice_size".to_owned()
+            )],
             "{written}"
         );
     }
@@ -81,7 +85,7 @@ fn ui04_t4_a_negative_base_size_is_kept() {
     assert_eq!(
         texts(&doc),
         [(
-            "InvalidValue",
+            "ui_texture_info/negative_base_size",
             Severity::Info,
             "UV Base size can't be negative!".to_owned()
         )]
@@ -98,7 +102,7 @@ fn t3_a_base_size_of_another_shape_is_ignored() {
         assert_eq!(nineslice(&doc).1, None, "{written}");
         assert_eq!(
             located(doc.diagnostics()),
-            [("InvalidValue", Severity::Info, "base_size".to_owned())],
+            [("core/invalid_value", Severity::Info, "base_size".to_owned())],
             "{written}"
         );
     }
@@ -155,7 +159,7 @@ fn rejected_sheet(text: &str) {
     assert!(doc.frames().is_empty(), "{text}");
     assert_eq!(
         codes(doc.diagnostics()),
-        [("InvalidValue", Severity::Info)],
+        [("core/invalid_value", Severity::Info)],
         "{text}"
     );
     assert_eq!(
@@ -241,7 +245,7 @@ fn ui10_t2c_a_negative_slice_size_is_kept() {
     assert_eq!(
         texts(&doc),
         [(
-            "InvalidValue",
+            "ui_texture_info/negative_nineslice",
             Severity::Info,
             "NineSlice cannot be negative".to_owned()
         )]
@@ -267,7 +271,11 @@ fn ui11_t2b_a_boolean_slice_size_is_a_number_deviation() {
         assert_eq!(nineslice(&doc).0, Some(SliceSize::All(read)), "{written}");
         assert_eq!(
             located(doc.diagnostics()),
-            [("InvalidValue", Severity::Info, "nineslice_size".to_owned())],
+            [(
+                "core/invalid_value",
+                Severity::Info,
+                "nineslice_size".to_owned()
+            )],
             "{written}"
         );
     }
@@ -281,7 +289,7 @@ fn t1_a_side_file_that_is_not_json() {
         &LoadContext::detached(),
     )
     .unwrap_err();
-    assert_eq!(codes(&rejected.diagnostics)[0].0, "MalformedInput");
+    assert_eq!(codes(&rejected.diagnostics)[0].0, "core/syntax");
     // Through a stack: the image is left without a side file; a lower pack's copy does not
     // stand in (two and three packs).
     let good: &[(&str, &str)] = &[
@@ -301,7 +309,7 @@ fn t1_a_side_file_that_is_not_json() {
         let found: Vec<_> = infos.diagnostics().collect();
         assert_eq!(
             codes(found.iter().copied()),
-            [("MalformedInput", Severity::Error)]
+            [("core/syntax", Severity::Error)]
         );
         assert_eq!(pack_number(found[0], lower + 1), Some(lower));
         assert_eq!(
@@ -333,7 +341,7 @@ fn ui08_the_highest_pack_s_side_file_applies_whichever_pack_has_the_image() {
     let found: Vec<_> = infos.diagnostics().collect();
     assert_eq!(
         codes(found.iter().copied()),
-        [("InvalidValue", Severity::Info)],
+        [("ui_texture_info/negative_base_size", Severity::Info)],
         "the side file's own finding only"
     );
     assert_eq!(pack_number(found[0], 3), Some(2));
@@ -359,7 +367,10 @@ fn ui09_t6_a_side_file_without_an_image_in_any_pack() {
     let found: Vec<(usize, String)> = infos
         .diagnostics()
         .map(|d| {
-            assert_eq!((d.code.name(), d.severity), ("IgnoredFile", Severity::Info));
+            assert_eq!(
+                (d.code.id(), d.severity),
+                ("core/ignored_file", Severity::Info)
+            );
             (
                 pack_number(d, 2).unwrap(),
                 d.location.path.as_ref().unwrap().to_string(),
@@ -395,7 +406,7 @@ fn t6_every_image_extension_and_the_bare_name_count() {
         let stack = stack_of(&[&[(path.as_str(), ""), ("textures/ui/x.json", "{}")]]);
         assert_eq!(
             codes(stack.ui_texture_infos().diagnostics()),
-            [("IgnoredFile", Severity::Info)],
+            [("core/ignored_file", Severity::Info)],
             "{other}"
         );
     }

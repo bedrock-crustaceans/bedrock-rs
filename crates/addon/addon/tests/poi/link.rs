@@ -51,7 +51,7 @@ fn link_fixture(name: &str) -> Diagnostics {
 fn unresolved_blocks(d: &Diagnostics) -> Vec<(String, String)> {
     d.iter()
         .filter(|f: &&Diagnostic| {
-            f.code.name() == "UnresolvedReference" && f.severity == Severity::Error
+            f.code.id() == "poi/block_lookup_failed" && f.severity == Severity::Error
         })
         .filter_map(|f| match f.detail.as_deref() {
             Some(DiagnosticDetail::Reference {
@@ -86,5 +86,8 @@ fn poi40_all_blocks_unknown_is_reported_without_a_no_blocks_warning() {
         )],
         "{d:?}"
     );
-    assert!(d.iter().all(|f| f.code.name() != "PoiNoBlocks"), "{d:?}");
+    assert!(
+        d.iter().all(|f| f.code.id() != "core/poi_no_blocks"),
+        "{d:?}"
+    );
 }

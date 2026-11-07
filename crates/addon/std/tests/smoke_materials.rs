@@ -118,9 +118,9 @@ fn assert_loads(
         if diagnostic.severity >= Severity::Error {
             tally.errors.push(diagnostic.to_string());
         } else if diagnostic.severity == Severity::Warning {
-            *tally.warnings.entry(diagnostic.code.name()).or_insert(0) += 1;
+            *tally.warnings.entry(diagnostic.code.id()).or_insert(0) += 1;
         } else {
-            *tally.infos.entry(diagnostic.code.name()).or_insert(0) += 1;
+            *tally.infos.entry(diagnostic.code.id()).or_insert(0) += 1;
         }
     }
     eprintln!(
@@ -244,7 +244,7 @@ fn expected_client(groups: [usize; 3], names: [usize; 3]) -> Tally {
         names,
         errors: Vec::new(),
         warnings: BTreeMap::new(),
-        infos: BTreeMap::from([("NoEffect", 4), ("ShadowedDefinition", 2)]),
+        infos: BTreeMap::from([("core/no_effect", 4), ("material/variant_replaced", 2)]),
     }
 }
 

@@ -130,7 +130,7 @@ fn an_item_event_with_randomize_and_sequence_warns_and_ignores_the_sequence() {
         .diagnostics()
         .iter()
         // By legacy name: the variant and the definitions that were it.
-        .filter(|f| matches!(f.code.name(), "IgnoredMember"))
+        .filter(|f| matches!(f.code.id(), "shapes/event_both_randomize_and_sequence"))
         .map(|f| {
             (
                 f.location.json_path.to_string(),
@@ -326,7 +326,7 @@ mod compiled {
     fn invalid(d: &bedrock_addon_core::diagnostic::Diagnostics) -> Vec<(String, Severity)> {
         d.iter()
             // By legacy name: the variant and the definitions that were it.
-            .filter(|f| matches!(f.code.name(), "InvalidMolang"))
+            .filter(|f| matches!(f.code.id(), "core/invalid_molang"))
             .map(|f| (f.location.json_path.to_string(), f.severity))
             .collect()
     }
@@ -352,7 +352,7 @@ mod compiled {
                 .diagnostics()
                 .iter()
                 // By legacy name: the variant and the definitions that were it.
-                .filter(|f| matches!(f.code.name(), "InvalidMolang"))
+                .filter(|f| matches!(f.code.id(), "core/invalid_molang"))
                 .all(|f| f.kept),
             "{:#?}",
             document.diagnostics()
@@ -376,8 +376,8 @@ mod compiled {
         // check still tells of its trigger)
         let all = findings(side_car, &checking());
         assert!(
-            all.iter()
-                .any(|f| f.severity == Severity::Error && f.code.name() == "DeprecatedMember"),
+            all.iter().any(|f| f.severity == Severity::Error
+                && f.code.id() == "item/deprecated_components_deprecated"),
             "{all:#?}"
         );
         // (nothing of the trigger is compiled: the load stops at the refusal)
@@ -399,7 +399,7 @@ mod compiled {
                 .diagnostics()
                 .iter()
                 // By legacy name: the variant and the definitions that were it.
-                .filter(|f| matches!(f.code.name(), "InvalidMolang"))
+                .filter(|f| matches!(f.code.id(), "core/invalid_molang"))
                 .all(|f| f.kept),
             "a kept error"
         );
@@ -451,7 +451,7 @@ mod compiled {
                 .diagnostics()
                 .iter()
                 // By legacy name: the variant and the definitions that were it.
-                .filter(|f| matches!(f.code.name(), "InvalidMolang"))
+                .filter(|f| matches!(f.code.id(), "core/invalid_molang"))
                 .all(|f| f.kept),
             "kept errors: the item loads"
         );

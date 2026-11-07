@@ -24,7 +24,14 @@ fn attachables(set: &StackSet) -> &Registry<Attachable> {
 fn shadowed(set: &StackSet) -> Vec<String> {
     attachables(set)
         .diagnostics()
-        .filter(|f| f.code.name() == "AttachableShadowed")
+        .filter(|f| {
+            matches!(
+                f.code.id(),
+                "core/attachable_shadowed"
+                    | "core/attachable_shadowed_older"
+                    | "core/attachable_shadowed_above_stack"
+            )
+        })
         .map(|f| {
             assert_eq!(f.severity, Severity::Info);
             format!(

@@ -1,7 +1,7 @@
 # families/script_config fixtures.md, row sc29_secret_types (probe B).
 
 [[diagnostic]]
-code = "InvalidType"
+code = "server_config/secret_not_a_string"
 severity = "warning"
 phase = "parse"
 file = "config/426f63cd-dd57-5b19-8d35-d73e1b7b1cc5/secrets.json"
@@ -9,7 +9,7 @@ path = "s_arr"
 text = "Secret 's_arr' in file 'config/426f63cd-dd57-5b19-8d35-d73e1b7b1cc5/secrets.json' is not a string. Secrets can only be strings."
 
 [[diagnostic]]
-code = "InvalidType"
+code = "server_config/secret_not_a_string"
 severity = "warning"
 phase = "parse"
 file = "config/426f63cd-dd57-5b19-8d35-d73e1b7b1cc5/secrets.json"
@@ -17,7 +17,7 @@ path = "s_bool"
 text = "Secret 's_bool' in file 'config/426f63cd-dd57-5b19-8d35-d73e1b7b1cc5/secrets.json' is not a string. Secrets can only be strings."
 
 [[diagnostic]]
-code = "InvalidType"
+code = "server_config/secret_not_a_string"
 severity = "warning"
 phase = "parse"
 file = "config/426f63cd-dd57-5b19-8d35-d73e1b7b1cc5/secrets.json"
@@ -25,7 +25,7 @@ path = "s_null"
 text = "Secret 's_null' in file 'config/426f63cd-dd57-5b19-8d35-d73e1b7b1cc5/secrets.json' is not a string. Secrets can only be strings."
 
 [[diagnostic]]
-code = "InvalidType"
+code = "server_config/secret_not_a_string"
 severity = "warning"
 phase = "parse"
 file = "config/426f63cd-dd57-5b19-8d35-d73e1b7b1cc5/secrets.json"
@@ -33,7 +33,7 @@ path = "s_num"
 text = "Secret 's_num' in file 'config/426f63cd-dd57-5b19-8d35-d73e1b7b1cc5/secrets.json' is not a string. Secrets can only be strings."
 
 [[diagnostic]]
-code = "InvalidType"
+code = "server_config/secret_not_a_string"
 severity = "warning"
 phase = "parse"
 file = "config/426f63cd-dd57-5b19-8d35-d73e1b7b1cc5/secrets.json"

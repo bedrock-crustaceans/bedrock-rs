@@ -14,6 +14,6 @@ normalized = "@minecraft/server"
 resolution = "native"
 
 [[diagnostics]]
-code = "ScriptEntryOutsideRoot"
+code = "core/script_entry_outside_root"
 severity = "info"
 text = "entry lacks the scripts/ prefix"

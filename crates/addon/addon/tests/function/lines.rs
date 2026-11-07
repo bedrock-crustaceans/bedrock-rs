@@ -56,9 +56,13 @@ fn f10_below_command_version_12_a_bad_line_is_dropped_and_the_function_kept() {
     assert_eq!(
         rendered(document.diagnostics()),
         [
-            finding("DroppedField", Severity::Warning, &header("x")),
             finding(
-                "UnresolvedReference",
+                "function/failed_header_dropped",
+                Severity::Warning,
+                &header("x")
+            ),
+            finding(
+                "function/unknown_command",
                 Severity::Warning,
                 "Error on line 2: unknown or invalid command 'bogus'"
             ),
@@ -88,9 +92,9 @@ fn f11_from_command_version_12_a_bad_line_rejects_the_function() {
     assert_eq!(rejected.origin.path.as_str(), "functions/x.mcfunction");
     // The same errors as f10; the function is not created, so they are errors here.
     let expected = [
-        finding("DocumentRejected", Severity::Error, &header("x")),
+        finding("function/failed_header", Severity::Error, &header("x")),
         finding(
-            "UnresolvedReference",
+            "function/unknown_command",
             Severity::Error,
             "Error on line 2: unknown or invalid command 'bogus'",
         ),
@@ -115,7 +119,17 @@ fn rejected_findings(name: &str) -> Vec<Rendered> {
 
 /// The unknown-command error with `text`.
 fn unknown(severity: Severity, text: &str) -> Rendered {
-    finding("UnresolvedReference", severity, text)
+    finding("function/unknown_command", severity, text)
+}
+
+/// The unknown-command error with the comment hint and `text`.
+fn unknown_comment(severity: Severity, text: &str) -> Rendered {
+    finding("function/unknown_command_comment", severity, text)
+}
+
+/// The unknown-command error with the slash hint and `text`.
+fn unknown_slash(severity: Severity, text: &str) -> Rendered {
+    finding("function/unknown_command_slash", severity, text)
 }
 
 #[test]
@@ -124,8 +138,8 @@ fn f07_a_double_slash_line_gets_the_comment_hint() {
     assert_eq!(
         rejected_findings("f07_double_slash"),
         [
-            finding("DocumentRejected", Severity::Error, &header("x")),
-            unknown(
+            finding("function/failed_header", Severity::Error, &header("x")),
+            unknown_comment(
                 Severity::Error,
                 "Error on line 1: unknown or invalid command '//' (If you intended to make a comment use '#' instead of '//')"
             ),
@@ -139,8 +153,8 @@ fn f08_a_leading_slash_gets_the_slash_hint() {
     assert_eq!(
         rejected_findings("f08_leading_slash"),
         [
-            finding("DocumentRejected", Severity::Error, &header("x")),
-            unknown(
+            finding("function/failed_header", Severity::Error, &header("x")),
+            unknown_slash(
                 Severity::Error,
                 "Error on line 1: unknown or invalid command '/say' (Commands in functions may not begin with '/')"
             ),
@@ -154,7 +168,7 @@ fn f09_a_lone_slash_gets_no_hint() {
     assert_eq!(
         rejected_findings("f09_lone_slash"),
         [
-            finding("DocumentRejected", Severity::Error, &header("x")),
+            finding("function/failed_header", Severity::Error, &header("x")),
             unknown(
                 Severity::Error,
                 "Error on line 1: unknown or invalid command '/'"
@@ -172,11 +186,11 @@ fn the_hints_look_at_the_first_word_only() {
     assert_eq!(
         rendered(document.diagnostics())[1..],
         [
-            unknown(
+            unknown_comment(
                 Severity::Warning,
                 "Error on line 1: unknown or invalid command '//note' (If you intended to make a comment use '#' instead of '//')"
             ),
-            unknown(
+            unknown_slash(
                 Severity::Warning,
                 "Error on line 2: unknown or invalid command '/x' (Commands in functions may not begin with '/')"
             ),
@@ -206,7 +220,7 @@ fn f12_an_error_names_the_physical_line() {
     assert_eq!(
         rejected_findings("f12_line_numbers"),
         [
-            finding("DocumentRejected", Severity::Error, &header("x")),
+            finding("function/failed_header", Severity::Error, &header("x")),
             unknown(
                 Severity::Error,
                 "Error on line 3: unknown or invalid command 'bogus'"
@@ -221,7 +235,7 @@ fn f13_every_bad_line_is_reported_after_one_header() {
     assert_eq!(
         rejected_findings("f13_all_errors_reported"),
         [
-            finding("DocumentRejected", Severity::Error, &header("a/b")),
+            finding("function/failed_header", Severity::Error, &header("a/b")),
             unknown(
                 Severity::Error,
                 "Error on line 1: unknown or invalid command 'bogus'"

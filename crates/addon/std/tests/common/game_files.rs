@@ -200,7 +200,7 @@ pub fn warnings_by_code<'a>(
     let mut warnings = BTreeMap::new();
     for finding in findings {
         if finding.severity == Severity::Warning {
-            *warnings.entry(finding.code.name()).or_insert(0) += 1;
+            *warnings.entry(finding.code.id()).or_insert(0) += 1;
         }
     }
     warnings

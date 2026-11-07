@@ -184,7 +184,11 @@ mod item {
                 .collect();
             assert_eq!(
                 items,
-                [("UnresolvedReference", Severity::Error, name.to_owned())],
+                [(
+                    "core/unresolved_reference_worded",
+                    Severity::Error,
+                    name.to_owned()
+                )],
                 "{name}"
             );
         }
@@ -200,14 +204,14 @@ mod item {
             told(&found),
             [
                 error(
-                    "UnresolvedReference",
+                    "core/unresolved_reference_worded",
                     &format!("{SHAPED}/key/#/item"),
                     "The Item: demo:none is missing or invalid, can't make the recipe",
                     "item",
                     "Demo:None"
                 ),
                 error(
-                    "DocumentRejected",
+                    "core/document_rejected_worded",
                     &format!("{SHAPED}/key/#"),
                     "Recipe for: demo:recipe is missing (unknown) ingredient",
                     "",
@@ -246,14 +250,14 @@ mod item {
             told(&found),
             [
                 error(
-                    "UnresolvedReference",
+                    "core/unresolved_reference_worded",
                     &format!("{SHAPED}/result/1/item"),
                     "Recipe has an invalid result",
                     "item",
                     "demo:none"
                 ),
                 error(
-                    "UnresolvedReference",
+                    "core/unresolved_reference_worded",
                     &format!("{SHAPED}/result/2"),
                     "Recipe has an invalid result",
                     "item",
@@ -276,14 +280,14 @@ mod item {
             told(&found),
             [
                 error(
-                    "UnresolvedReference",
+                    "core/unresolved_reference_worded",
                     &format!("{SHAPELESS}/ingredients/1"),
                     "The Item: demo:none is missing or invalid, can't make the recipe",
                     "item",
                     "demo:none"
                 ),
                 error(
-                    "DocumentRejected",
+                    "core/document_rejected_worded",
                     &format!("{SHAPELESS}/ingredients/1"),
                     "Recipe result malformed",
                     "",
@@ -308,7 +312,7 @@ mod item {
         assert_eq!(
             told(&found),
             [(
-                "UnresolvedReference",
+                "core/unresolved_reference_worded",
                 Severity::Error,
                 format!("{SHAPELESS}/unlock/1/item"),
                 Some("Recipe: demo:recipe has an invalid unlock ingredient".to_owned()),
@@ -385,7 +389,7 @@ mod item {
             let found = link(&[(FILE, &recipe(kind, members))]);
             let payload = format!("minecraft:recipe_{kind}");
             let mut expected = vec![error(
-                "UnresolvedReference",
+                "core/unresolved_reference_worded",
                 &format!("{payload}/{member}"),
                 item,
                 "item",
@@ -394,7 +398,7 @@ mod item {
             if let Some(site) = site {
                 let owner = member.split('/').next().unwrap();
                 expected.push(error(
-                    "DocumentRejected",
+                    "core/document_rejected_worded",
                     &format!("{payload}/{owner}"),
                     site,
                     "",
@@ -459,7 +463,7 @@ mod item {
     fn rc2_a_minecraft_tag_nothing_here_knows_is_an_information_not_an_error() {
         for tag in ["minecraft:is_axe", "minecraft:is_sword", "minecraft:arrow"] {
             let expected = [(
-                "UnresolvedReference",
+                "core/unresolved_reference",
                 Severity::Info,
                 format!("{SHAPELESS}/ingredients/0/tag"),
                 None,
@@ -517,7 +521,7 @@ mod item {
                 told(&found),
                 [
                     error(
-                        "UnresolvedReference",
+                        "core/unresolved_reference_worded",
                         &format!("{SHAPELESS}/ingredients/0/tag"),
                         &format!(
                             "The Item Tag: {tag} is missing or invalid, can't make the recipe"
@@ -526,7 +530,7 @@ mod item {
                         tag
                     ),
                     error(
-                        "DocumentRejected",
+                        "core/document_rejected_worded",
                         &format!("{SHAPELESS}/ingredients/0"),
                         "Recipe result malformed",
                         "",
@@ -549,14 +553,14 @@ mod item {
             told(&found),
             [
                 error(
-                    "InvalidReference",
+                    "core/invalid_reference_worded",
                     &format!("{SHAPELESS}/ingredients/0/count"),
                     "The Item from tag 'demo:gems': demo:gem has invalid stack size: 17",
                     "item",
                     "demo:gem"
                 ),
                 error(
-                    "DocumentRejected",
+                    "core/document_rejected_worded",
                     &format!("{SHAPELESS}/ingredients/0"),
                     "Recipe result malformed",
                     "",
@@ -616,7 +620,7 @@ mod item {
             assert_eq!(
                 told(&found),
                 [error(
-                    "InvalidReference",
+                    "core/invalid_reference_worded",
                     &format!("{TRANSFORM}/{member}"),
                     "Smithing Transform Recipe: demo:recipe addition item must have the 'minecraft:transform_materials' tag.",
                     "item",
@@ -668,14 +672,14 @@ mod item {
             told(&found),
             [
                 error(
-                    "InvalidReference",
+                    "core/invalid_reference_worded",
                     &format!("{TRIM}/template"),
                     "Smithing Trim Recipe: demo:recipe has minecraft:stick as a template ingredient, which should be a valid trim pattern, but isn't. Did you register it in the Trim Pattern Registry?",
                     "item",
                     "minecraft:stick"
                 ),
                 error(
-                    "InvalidReference",
+                    "core/invalid_reference_worded",
                     &format!("{TRIM}/addition/item"),
                     "Smithing Trim Recipe: demo:recipe has minecraft:diamond_axe as an addition ingredient, which should be a valid trim material, but isn't.",
                     "item",
@@ -703,14 +707,14 @@ mod item {
             told(&found),
             [
                 error(
-                    "InvalidReference",
+                    "core/invalid_reference_worded",
                     &format!("{TRIM}/template/tag"),
                     "Smithing Trim Recipe: demo:recipe has demo:spiral as a template ingredient, which should be a valid trim pattern, but isn't. Did you register it in the Trim Pattern Registry?",
                     "item",
                     "demo:spiral"
                 ),
                 error(
-                    "InvalidReference",
+                    "core/invalid_reference_worded",
                     &format!("{TRIM}/addition/tag"),
                     "Smithing Trim Recipe: demo:recipe has demo:spiral as an addition ingredient, which should be a valid trim material, but isn't.",
                     "item",
@@ -798,7 +802,7 @@ mod station {
             .into_iter()
             .map(|(index, tag)| {
                 (
-                    "UnresolvedReference",
+                    "core/unresolved_reference",
                     Severity::Info,
                     format!("{SHAPELESS}/tags/{index}"),
                     None,
@@ -813,7 +817,7 @@ mod station {
         assert_eq!(
             stations(&found),
             [(
-                "UnresolvedReference",
+                "core/unresolved_reference",
                 Severity::Info,
                 format!("{SHAPELESS}/tags"),
                 None,

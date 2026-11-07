@@ -1,7 +1,7 @@
 //! the version gate `v00`–`v09` and the loader rules
 //! `l01`–`l23`. Resource pack at `min_engine_version` 1.21.0 unless the row says otherwise.
 
-use bedrock_addon::diagnostic::Severity;
+use bedrock_addon::diagnostic::{Diagnostics, Kind, Severity};
 use bedrock_addon::document::Placed;
 use bedrock_addon::families::client_entity::AnimationKind;
 use bedrock_addon::version::{ENGINE_VERSION, FormatVersion};
@@ -9,7 +9,17 @@ use bedrock_addon::visual::{Color, ControllerUse, HasVisuals, HeldItemScale};
 
 use super::common::*;
 
-const NOT_VALID: &str = "UnrecognizedField";
+/// Requires no finding of `kind`.
+#[track_caller]
+fn none_of_kind(d: &Diagnostics, kind: Kind) {
+    assert!(
+        d.iter().all(|f| f.code.kind() != kind),
+        "{}",
+        lines(d).join("\n")
+    );
+}
+
+const NOT_VALID: &str = "core/child_not_valid";
 const TYPE_ERROR: &str = "unknown child schema option type.  Allowed types: ";
 
 fn child(name: &str) -> String {
@@ -24,7 +34,7 @@ fn v00_missing_version() {
     let document = loaded(entity(text, &cx()));
     expect(
         document.diagnostics(),
-        "MissingFormatVersion",
+        "core/version_not_given_legacy_fields",
         Severity::Warning,
         "Warning: The \"format_version\" field was not given. Fields from format version 1.8.0 and older will be loaded. Update your targeted \"format_version\" to use fields from newer versions.",
     );
@@ -48,7 +58,7 @@ fn v01_major_zero() {
     let d = rejected(entity(&ghost("0.9.0", ""), &cx()));
     expect(
         &d,
-        "UnsupportedVersion",
+        "visual/unknown_version",
         Severity::Error,
         "Unknown/unsupported version value specified in format_version field in entity/x.entity.json",
     );
@@ -60,7 +70,7 @@ fn v02_number_version() {
     let d = rejected(entity(text, &cx()));
     expect(
         &d,
-        "UnsupportedVersion",
+        "visual/unknown_version",
         Severity::Error,
         "Unknown/unsupported version value specified in format_version field in entity/x.entity.json",
     );
@@ -85,7 +95,7 @@ fn v05_below_floor() {
     let d = rejected(entity(&ghost("1.7.0", ""), &cx()));
     expect(
         &d,
-        "UnsupportedVersion",
+        "core/version_below_min",
         Severity::Error,
         "Version 1.7.0 below min required version (1.10.0)",
     );
@@ -98,7 +108,7 @@ fn v05_the_floor_itself_and_one_dot_zero_bound_the_range() {
     let d = rejected(entity(&ghost("1.0.0", ""), &cx()));
     expect(
         &d,
-        "UnsupportedVersion",
+        "core/version_below_min",
         Severity::Error,
         "Version 1.0.0 below min required version (1.10.0)",
     );
@@ -106,7 +116,7 @@ fn v05_the_floor_itself_and_one_dot_zero_bound_the_range() {
     let d = rejected(entity(&ghost("1.8.0-beta.1", ""), &cx()));
     expect(
         &d,
-        "UnsupportedVersion",
+        "core/version_below_min",
         Severity::Error,
         "Version 1.8.0-beta.1 below min required version (1.10.0)",
     );
@@ -119,7 +129,7 @@ fn v06_above_engine() {
     let d = rejected(entity(&ghost(&above, ""), &cx()));
     expect(
         &d,
-        "UnsupportedVersion",
+        "visual/actor_above_engine",
         Severity::Error,
         &format!(
             "Error: actor resource file has format version: {above} exceeds game version: {e}. Skipping."
@@ -136,22 +146,22 @@ fn v07_beta_literal() {
     let d = rejected(entity(&ghost("beta", ""), &cx()));
     expect(
         &d,
-        "UnsupportedVersion",
+        "visual/unknown_version",
         Severity::Error,
         "Unknown/unsupported version value specified in format_version field in entity/x.entity.json",
     );
-    none(&d, "BetaFeaturesNotEnabled");
+    none_of_kind(&d, Kind::Toggle);
     // Neither the Beta APIs toggle nor a base-game pack makes it a version.
     let mut beta = cx();
     beta.beta_apis = true;
     beta.is_base_game_pack = true;
     let d = rejected(entity(&ghost("beta", ""), &beta));
-    assert!(find(&d, "UnsupportedVersion", Severity::Error).is_some());
+    assert!(find(&d, "visual/unknown_version", Severity::Error).is_some());
     // The any-version is no version either.
     let d = rejected(entity(&ghost("*", ""), &cx()));
     expect_prefix(
         &d,
-        "UnsupportedVersion",
+        "visual/unknown_version",
         Severity::Error,
         "Unknown/unsupported version value",
     );
@@ -164,7 +174,7 @@ fn v08_prerelease() {
     assert!(
         find(
             document.diagnostics(),
-            "PrereleaseFormatVersion",
+            "core/prerelease_format_version",
             Severity::Info
         )
         .is_some()
@@ -186,7 +196,12 @@ fn v08_prerelease() {
 fn v09_empty_root() {
     for text in ["{}", "null", "[]", "3"] {
         let d = rejected(entity(text, &cx()));
-        expect(&d, "MalformedInput", Severity::Error, "nothing to parse in");
+        expect(
+            &d,
+            "visual/nothing_to_parse",
+            Severity::Error,
+            "nothing to parse in",
+        );
     }
 }
 
@@ -199,7 +214,7 @@ fn comments_before_the_root_and_inside_it_are_read_over() {
 #[test]
 fn rule_1_text_that_is_no_json_is_malformed_input() {
     let d = rejected(entity(r#"{"format_version": "1.10.0", "#, &cx()));
-    assert!(find(&d, "MalformedInput", Severity::Error).is_some());
+    assert!(find(&d, "core/syntax", Severity::Error).is_some());
 }
 
 // ---- loader rules ----
@@ -221,7 +236,7 @@ fn l02_missing_description() {
     let d = rejected(entity(text, &cx()));
     expect(
         &d,
-        "MissingRequiredField",
+        "core/required_child",
         Severity::Error,
         "Required child description not found",
     );
@@ -230,7 +245,7 @@ fn l02_missing_description() {
     let d = rejected(entity(text, &cx()));
     expect(
         &d,
-        "InvalidType",
+        "core/unknown_child_option",
         Severity::Error,
         &format!("{TYPE_ERROR}object"),
     );
@@ -244,7 +259,7 @@ fn l03_missing_identifier_without_a_version_is_the_schema_s_finding() {
     let d = rejected(entity(text, &cx()));
     expect(
         &d,
-        "MissingRequiredField",
+        "core/required_child",
         Severity::Error,
         "Required child identifier not found",
     );
@@ -253,7 +268,7 @@ fn l03_missing_identifier_without_a_version_is_the_schema_s_finding() {
 #[test]
 fn rule_9_a_document_without_the_payload_is_rejected() {
     let d = rejected(entity(r#"{"format_version": "1.10.0"}"#, &cx()));
-    assert!(find(&d, "MissingRequiredField", Severity::Error).is_some());
+    assert!(find(&d, "visual/no_entity_definition", Severity::Error).is_some());
 }
 
 #[test]
@@ -261,7 +276,7 @@ fn rule_12_an_empty_identifier_is_rejected() {
     let d = rejected(entity(&doc("1.10.0", r#"{"identifier": ""}"#), &cx()));
     expect_at(
         &d,
-        "InvalidValue",
+        "visual/missing_identifier",
         Severity::Error,
         "minecraft:client_entity/description/identifier",
     );
@@ -272,7 +287,7 @@ fn l04_held_item_scale_zero() {
     let document = loaded(entity(&ghost("1.26.0", r#""held_item_scale": 0"#), &cx()));
     expect(
         document.diagnostics(),
-        "InvalidValue",
+        "visual/held_item_scale_invalid",
         Severity::Error,
         "In file 'entity/x.entity.json', parameter \"held_item_scale\" has invalid value: must be greater than zero, was '0'.",
     );
@@ -293,7 +308,7 @@ fn l04_held_item_scale_bounds() {
     ));
     expect(
         below.diagnostics(),
-        "InvalidValue",
+        "visual/held_item_scale_invalid",
         Severity::Error,
         "In file 'entity/x.entity.json', parameter \"held_item_scale\" has invalid value: must be greater than zero, was '-1.5'.",
     );
@@ -302,7 +317,7 @@ fn l04_held_item_scale_bounds() {
         &ghost("1.26.0", r#""held_item_scale": 0.25"#),
         &cx(),
     ));
-    none(above.diagnostics(), "InvalidValue");
+    none_of_kind(above.diagnostics(), Kind::InvalidValue);
     assert_eq!(above.held_item_scale(), 0.25);
     // Absent: 1.0, nothing said.
     let absent = loaded(entity(&ghost("1.26.0", ""), &cx()));
@@ -349,7 +364,7 @@ fn l08_render_controller_object_first_member() {
     );
     expect_at(
         document.diagnostics(),
-        "DroppedField",
+        "core/dropped_field",
         Severity::Info,
         "minecraft:client_entity/description/render_controllers/0/controller.render.b",
     );
@@ -368,7 +383,7 @@ fn l14_first_member_byte_order() {
     );
     expect_at(
         document.diagnostics(),
-        "DroppedField",
+        "core/dropped_field",
         Severity::Info,
         "minecraft:client_entity/description/render_controllers/0/controller.render.b",
     );
@@ -377,7 +392,7 @@ fn l14_first_member_byte_order() {
     let document = loaded(entity(&ghost("1.26.0", members), &cx()));
     expect_at(
         document.diagnostics(),
-        "DroppedField",
+        "core/dropped_field",
         Severity::Info,
         "minecraft:client_entity/description/scripts/animate/0/b",
     );
@@ -430,7 +445,7 @@ fn l11_attachable_payload_in_entity_dir() {
     assert!(entities.diagnostics().next().is_none());
     // Read directly as a client entity, it has no client entity payload.
     let d = rejected(entity(attachable, &cx()));
-    assert!(find(&d, "MissingRequiredField", Severity::Error).is_some());
+    assert!(find(&d, "visual/no_entity_definition", Severity::Error).is_some());
 }
 
 #[test]
@@ -446,7 +461,7 @@ fn l11_a_file_with_both_payloads_loads_the_client_entity() {
         let document = loaded(entity(&text, &cx()));
         expect_at(
             document.diagnostics(),
-            "DroppedField",
+            "core/dropped_field",
             Severity::Info,
             "minecraft:attachable",
         );
@@ -512,7 +527,7 @@ fn attachable_rule_23_item_on_a_client_entity_is_not_valid_and_the_file_is_skipp
         );
         assert!(
             entities.rejected()[0].diagnostics.iter().any(|f| {
-                f.code.name() == NOT_VALID
+                f.code.id() == NOT_VALID
                     && f.severity == Severity::Error
                     && f.location.json_path.to_string()
                         == "minecraft:client_entity/description/item"
@@ -561,13 +576,13 @@ fn l16_required_pattern_empty() {
             let d = rejected(entity(&ghost(version, &format!(r#""{map}": {{}}"#)), &cx()));
             expect(
                 &d,
-                "MissingRequiredField",
+                "core/required_child",
                 Severity::Error,
                 "Required child [a-zA-Z0-9_.-]+ not found",
             );
             expect_at(
                 &d,
-                "MissingRequiredField",
+                "core/required_child",
                 Severity::Error,
                 &format!("minecraft:client_entity/description/{map}"),
             );
@@ -583,7 +598,7 @@ fn l16_required_pattern_empty() {
             ));
             expect(
                 &d,
-                "MissingRequiredField",
+                "core/required_child",
                 Severity::Error,
                 "Required child variable.[a-zA-Z_][a-zA-Z0-9_]* not found",
             );
@@ -597,14 +612,14 @@ fn l17_missing_identifier_schema() {
         let d = rejected(entity(&doc(version, "{}"), &cx()));
         expect(
             &d,
-            "MissingRequiredField",
+            "core/required_child",
             Severity::Error,
             "Required child identifier not found",
         );
         // Reported at the object that lacks it.
         expect_at(
             &d,
-            "MissingRequiredField",
+            "core/required_child",
             Severity::Error,
             "minecraft:client_entity/description",
         );
@@ -612,7 +627,7 @@ fn l17_missing_identifier_schema() {
         let d = rejected(entity(&doc(version, r#"{"identifier": 5}"#), &cx()));
         expect(
             &d,
-            "InvalidType",
+            "core/unknown_child_option",
             Severity::Error,
             &format!("{TYPE_ERROR}string"),
         );
@@ -683,7 +698,7 @@ fn l20_variables_not_public() {
         let d = rejected(entity(&ghost(version, members), &cx()));
         expect(
             &d,
-            "InvalidValue",
+            "core/not_allowed_regex",
             Severity::Error,
             "Value 'Public' not allowed.  Must match at least one of the following regex patterns: public",
         );
@@ -725,13 +740,13 @@ fn l21_empty_conditional_object_skipped_vanilla_deviation() {
         assert!(matches!(&controllers[1], ControllerUse::Conditional(m) if m.is_empty()));
         assert!(controllers[1].condition().is_none());
         let at = "minecraft:client_entity/description/render_controllers/1";
-        only_info_at(document.diagnostics(), "InvalidValue", at);
+        only_info_at(document.diagnostics(), "core/invalid_value", at);
         // The written text holds the entry, and reads back to the same value with the same
         // warning: a fixed point.
         let text = round_trip(&document, |text| entity(text, &cx()));
         only_info_at(
             loaded(entity(&text, &cx())).diagnostics(),
-            "InvalidValue",
+            "core/invalid_value",
             at,
         );
     }
@@ -743,7 +758,7 @@ fn l21_empty_conditional_object_skipped_vanilla_deviation() {
     assert_eq!(document.visuals().render_controllers.len(), 1);
     only_info_at(
         document.diagnostics(),
-        "InvalidValue",
+        "core/invalid_value",
         "minecraft:client_entity/description/render_controllers/0",
     );
     let members = r#""animations": {"a": "animation.a", "b": "animation.b"}, "scripts": {"animate": ["a", {}, {"b": "q.is_baby"}, {}]}"#;
@@ -761,7 +776,7 @@ fn l21_empty_conditional_object_skipped_vanilla_deviation() {
         for index in [1, 3] {
             expect_at(
                 d,
-                "InvalidValue",
+                "core/invalid_value",
                 Severity::Info,
                 &format!("minecraft:client_entity/description/scripts/animate/{index}"),
             );
@@ -777,7 +792,7 @@ fn l21_empty_conditional_object_skipped_vanilla_deviation() {
     let document = loaded(entity(&ghost("1.26.0", members), &cx()));
     expect_at(
         document.diagnostics(),
-        "UnresolvedReference",
+        "core/unresolved_reference",
         Severity::Info,
         "minecraft:client_entity/description/scripts/animate/1",
     );
@@ -866,7 +881,7 @@ fn rule_8_wrong_json_types_fail_the_file() {
         let d = rejected(entity(&ghost("1.10.0", members), &cx()));
         expect(
             &d,
-            "InvalidType",
+            "core/unknown_child_option",
             Severity::Error,
             &format!("{TYPE_ERROR}{allowed}"),
         );
@@ -891,7 +906,7 @@ fn r6_an_animate_entry_that_names_no_animation_is_noted() {
     let unresolved: Vec<String> = document
         .diagnostics()
         .iter()
-        .filter(|f| f.code.name() == "UnresolvedReference")
+        .filter(|f| f.code.id() == "core/unresolved_reference")
         .map(|f| {
             assert_eq!(f.severity, Severity::Info);
             f.location.json_path.to_string()
@@ -927,7 +942,7 @@ fn r6_many_animate_entries_are_each_looked_up() {
     let unresolved: Vec<String> = document
         .diagnostics()
         .iter()
-        .filter(|f| f.code.name() == "UnresolvedReference")
+        .filter(|f| f.code.id() == "core/unresolved_reference")
         .map(|f| f.location.json_path.to_string())
         .collect();
     assert_eq!(
@@ -997,7 +1012,7 @@ fn a_held_item_scale_beyond_f32_is_read_as_the_largest_finite_float_deviation() 
             document
                 .diagnostics()
                 .iter()
-                .any(|f| f.code.name() == "InvalidValue"
+                .any(|f| f.code.id() == "core/invalid_value"
                     && f.severity == Severity::Info
                     && f.location.json_path.to_string()
                         == "minecraft:client_entity/description/held_item_scale"
@@ -1031,7 +1046,7 @@ fn a_texture_index_that_is_no_integer_is_a_wrong_type() {
         let d = rejected(entity(&ghost("1.10.0", &members), &cx()));
         expect(
             &d,
-            "InvalidType",
+            "core/unknown_child_option",
             Severity::Error,
             &format!("{TYPE_ERROR}int"),
         );
@@ -1064,7 +1079,7 @@ fn a_clamped_scale_leaves_the_span_of_a_later_wrong_type_where_it_is() {
     clamp_changes_no_other_finding(text, &[("1e39", "1e30", SCALE_AT)], entity_findings);
     // And the span is the member's value, in the file's own bytes.
     let found = entity_findings(text);
-    let wrong = find(&found, "InvalidType", Severity::Error).unwrap();
+    let wrong = find(&found, "core/unknown_child_option", Severity::Error).unwrap();
     let span = wrong.location.span.unwrap();
     let covered = &text[span.offset as usize..][..span.len as usize];
     assert!(
@@ -1085,13 +1100,13 @@ fn a_clamped_scale_leaves_the_path_of_a_later_wrong_type_where_it_is() {
     let found = entity_findings(&text);
     expect_at(
         &found,
-        "InvalidType",
+        "core/unknown_child_option",
         Severity::Error,
         "minecraft:client_entity/description/scripts/scale",
     );
     expect(
         &found,
-        "InvalidType",
+        "core/unknown_child_option",
         Severity::Error,
         "unknown child schema option type.  Allowed types: molang",
     );
@@ -1142,7 +1157,7 @@ fn a_scale_beyond_f32_is_not_clamped_where_the_member_does_not_exist() {
         let d = rejected(entity(&ghost(version, r#""held_item_scale": 1e39"#), &cx()));
         expect(
             &d,
-            "UnrecognizedField",
+            "core/child_not_valid",
             Severity::Error,
             "child 'held_item_scale' not valid here.",
         );
@@ -1261,7 +1276,7 @@ fn a_clamped_scale_with_comments_around_its_token_is_found() {
 fn clamp_warnings(d: &bedrock_addon::diagnostic::Diagnostics, text: &str) -> Vec<String> {
     d.iter()
         .filter(|f| {
-            f.code.name() == "InvalidValue"
+            f.code.id() == "core/invalid_value"
                 && f.severity == Severity::Info
                 && f.code.to_string() == "invalid value"
         })
@@ -1409,7 +1424,11 @@ fn a_null_where_a_member_is_declared_fails_the_file() {
             let errors: Vec<_> = d.iter().filter(|f| f.severity == Severity::Error).collect();
             assert_eq!(errors.len(), 1, "{version} {members}: {d:#?}");
             let found = errors[0];
-            assert_eq!(found.code.name(), "InvalidType", "{version} {members}");
+            assert_eq!(
+                found.code.id(),
+                "core/unknown_child_option",
+                "{version} {members}"
+            );
             assert_eq!(
                 found.location.json_path.to_string(),
                 format!("minecraft:client_entity/description/{tail}"),
@@ -1433,9 +1452,9 @@ fn a_null_where_a_member_is_declared_fails_the_file() {
         let errors: Vec<_> = d
             .iter()
             .filter(|f| f.severity == Severity::Error)
-            .map(|f| f.code.name())
+            .map(|f| f.code.id())
             .collect();
-        assert_eq!(errors, ["UnrecognizedField"], "{version}");
+        assert_eq!(errors, ["core/child_not_valid"], "{version}");
     }
     // The member left out is the absent member.
     loaded(entity(&ghost("1.26.0", ""), &cx()));
@@ -1458,7 +1477,7 @@ fn a_clamped_number_is_located_by_its_path_when_its_text_occurs_before_it() {
     let found: Vec<_> = document
         .diagnostics()
         .iter()
-        .filter(|f| f.code.name() == "InvalidValue")
+        .filter(|f| f.code.id() == "core/invalid_value")
         .collect();
     assert_eq!(
         found.len(),

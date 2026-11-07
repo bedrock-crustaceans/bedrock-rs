@@ -1,7 +1,7 @@
 {
   "diagnostics": [
     {
-      "code": "InvalidEnumValue",
+      "code": "core/invalid_enum_value",
       "severity": "info",
       "text": "invalid enum value",
       "at": "k/button_mappings/0/input_mode_condition"

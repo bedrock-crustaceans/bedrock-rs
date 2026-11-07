@@ -110,7 +110,7 @@ fn load(template: &Responder, order: Order, residency: Residency) -> (String, Ve
     let poi = set.behavior.poi();
     let findings = poi
         .diagnostics()
-        .map(|d| format!("{} {}", d.severity, d.code.name()))
+        .map(|d| format!("{} {}", d.severity, d.code.id()))
         .collect();
     assert_eq!(
         (poi.types.len(), poi.tags.len(), poi.rejected().count()),
@@ -135,10 +135,10 @@ fn every_completion_order_gives_the_same_group() {
         // The stack holds what the test is about: a shadowed type, a claimed block, a cycle,
         // a missing tag.
         for code in [
-            "info ShadowedDefinition",
-            "info PoiBlockClaimedTwice",
-            "info ReferenceCycle",
-            "info UnresolvedReference",
+            "info core/shadowed_definition",
+            "info core/poi_block_claimed_twice",
+            "info poi/part_of_a_cycle",
+            "info core/unresolved_reference",
         ] {
             assert!(
                 reference.1.iter().any(|finding| finding == code),

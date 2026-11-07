@@ -64,8 +64,8 @@ fn b21_forms_read(cx: &bedrock_addon::load::LoadContext) {
         assert!(
             // By legacy name: the variant and the definitions that were it.
             with(document.diagnostics(), |c| matches!(
-                c.name(),
-                "InvalidMolang" | "MolangLint"
+                c.id(),
+                "core/invalid_molang" | "core/molang_lint"
             ))
             .is_empty(),
             "{range}: {:#?}",
@@ -82,7 +82,7 @@ fn b22_height_range_object_form() {
         &context(),
     );
     // By legacy name: the variant and the definitions that were it.
-    let invalid = with(&found, |c| matches!(c.name(), "InvalidType"));
+    let invalid = with(&found, |c| matches!(c.id(), "core/invalid_type"));
     assert_eq!(invalid.len(), 1, "{found:#?}");
     assert_eq!(invalid[0].severity, Severity::Error);
     assert_eq!(
@@ -141,7 +141,7 @@ mod compiled {
         let errors = errors(found);
         let last = errors.last().expect("an error");
         // By legacy name: the variant and the definitions that were it.
-        assert!(matches!(last.code.name(), "InvalidValue"));
+        assert!(matches!(last.code.id(), "biome/expression"));
         assert_eq!(
             last.code.to_string(),
             format!("Expression Text: '{source}', failed to parse.")
@@ -211,8 +211,8 @@ mod compiled {
         assert!(
             // By legacy name: the variant and the definitions that were it.
             with(document.diagnostics(), |c| matches!(
-                c.name(),
-                "InvalidMolang"
+                c.id(),
+                "core/invalid_molang"
             ))
             .is_empty(),
             "{:#?}",

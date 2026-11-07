@@ -40,7 +40,7 @@ pub fn said_of(finding: &Diagnostic) -> Said {
         _ => ("", String::new()),
     };
     (
-        finding.code.name(),
+        finding.code.id(),
         finding.severity,
         finding
             .location
@@ -86,13 +86,15 @@ pub fn one(
 pub fn text(finding: &Diagnostic) -> Option<String> {
     // By legacy name: the variants and the definitions (plain and worded) that were them.
     matches!(
-        finding.code.name(),
-        "UnresolvedReference"
-            | "InvalidReference"
-            | "InvalidValue"
-            | "NoEffect"
-            | "MissingRequiredField"
-            | "DocumentRejected"
+        finding.code.id(),
+        "core/unresolved_reference_worded"
+            | "core/invalid_reference_worded"
+            | "core/invalid_value_worded"
+            | "core/no_effect_worded"
+            | "core/missing_required_field_worded"
+            | "core/document_rejected_worded"
+            | "crafting_catalog/category_mismatch"
+            | "crafting_catalog/group_mismatch"
     )
     .then(|| finding.vanilla())
     .flatten()

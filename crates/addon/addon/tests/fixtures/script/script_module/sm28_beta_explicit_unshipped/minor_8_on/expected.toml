@@ -3,7 +3,7 @@ scope = "module"
 beta_apis = true
 
 [[diagnostic]]
-code = "ScriptModuleVersionUnavailable"
+code = "core/script_module_version_unavailable"
 severity = "error"
 path = "dependencies/0"
 text = "Plugin [sm28] - module [sm28 - 3.2.1] requested invalid version [2.8.0-beta] of [@minecraft/server].\nCurrent [beta] version is [2.9.0-beta].\nAvailable versions:\n0.1.0\n1.19.0\n2.8.0\n2.9.0-beta\n3.0.0-alpha"

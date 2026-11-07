@@ -34,7 +34,7 @@ fn many_controllers_without_textures_are_dropped_in_linear_time() {
         assert_eq!(
             count(
                 document.diagnostics(),
-                "MissingRequiredField",
+                "render_controller/must_contain_textures",
                 Severity::Error
             ),
             entries
@@ -73,7 +73,7 @@ fn many_array_references_are_checked_in_linear_time() {
         assert_eq!(
             count(
                 document.diagnostics(),
-                "UnresolvedReference",
+                "core/unresolved_reference",
                 Severity::Info
             ),
             entries / 2
@@ -114,13 +114,17 @@ fn a_registry_of_many_controllers_with_findings_loads_in_linear_time() {
                 .unwrap();
             // Each controller carries its own finding.
             assert_eq!(
-                count(last.diagnostics(), "UnresolvedReference", Severity::Info),
+                count(
+                    last.diagnostics(),
+                    "core/unresolved_reference",
+                    Severity::Info
+                ),
                 1
             );
             assert_eq!(
                 registry
                     .diagnostics()
-                    .filter(|f| f.code.name() == "UnresolvedReference")
+                    .filter(|f| f.code.id() == "core/unresolved_reference")
                     .count(),
                 entries
             );

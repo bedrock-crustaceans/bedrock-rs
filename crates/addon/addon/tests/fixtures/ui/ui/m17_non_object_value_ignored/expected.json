@@ -1,14 +1,14 @@
 {
   "diagnostics": [
     {
-      "code": "IgnoredMember",
+      "code": "core/ignored_member",
       "severity": "info",
       "text": "member ignored",
       "pack": 1,
       "at": "root"
     },
     {
-      "code": "IgnoredMember",
+      "code": "core/ignored_member",
       "severity": "info",
       "text": "member ignored",
       "pack": 1,

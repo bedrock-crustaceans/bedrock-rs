@@ -5,7 +5,7 @@
 
 use std::io::ErrorKind;
 
-use bedrock_addon::diagnostic::{Diagnostic, Severity};
+use bedrock_addon::diagnostic::{Diagnostic, Kind, Severity};
 use bedrock_addon::families::ddui::{Component, Control, DataDrivenUi};
 use bedrock_addon::id::{UiCompositionId, UiRootId};
 use bedrock_addon::load::{
@@ -25,7 +25,7 @@ const DIVIDER: &str = r#"{ "component": "Form.Divider" }"#;
 
 fn not_defined(name: &str) -> Found {
     error(
-        "UnresolvedReference",
+        "ddui/not_defined",
         POINT_AT,
         &format!("extension_point '{name}' is not defined.: extension point '{name}'"),
     )
@@ -90,7 +90,15 @@ where
 /// `(pack, file)` of each finding named `code`.
 fn at(ui: &DataDrivenUi, code: &str) -> Vec<(String, String)> {
     ui.diagnostics()
-        .filter(|f| f.code.name() == code)
+        .filter(|f| f.code.id() == code)
+        .map(place)
+        .collect()
+}
+
+/// `(pack, file)` of each finding of the kind `kind`.
+fn at_kind(ui: &DataDrivenUi, kind: Kind) -> Vec<(String, String)> {
+    ui.diagnostics()
+        .filter(|f| f.code.kind() == kind)
         .map(place)
         .collect()
 }
@@ -159,7 +167,7 @@ fn d01_only_an_extension_of_exactly_json_is_read_deviation() {
     assert_eq!(stored(ui.roots.iter()), [pair("demo:c", "addon")]);
     assert_eq!(stored(ui.compositions.iter()), [pair("demo:e", "addon")]);
     assert_eq!(
-        at(ui, "IgnoredFile"),
+        at(ui, "core/ignored_file"),
         [
             pair("addon", "ddui/root/a.JSON"),
             pair("addon", "ddui/root/b.txt"),
@@ -219,7 +227,7 @@ fn d02_a_sub_folder_is_read_in_an_add_on_pack_and_not_in_a_shipped_one() {
     assert_eq!(stored(ui.compositions.iter()), [pair("demo:c", "addon")]);
     // The file the shipped pack's walk never reaches is no ignored file either.
     assert_eq!(
-        at(ui, "IgnoredFile"),
+        at(ui, "core/ignored_file"),
         [pair("addon", "ddui/root/sub/z.txt")]
     );
 }
@@ -295,7 +303,7 @@ fn a_load_requests_the_bytes_of_the_files_it_parses_only() {
         assert_eq!(read, expected, "{origin:?}");
         let ui = loaded.resource.data_driven_ui();
         assert_eq!(ui.roots.len(), expected.len(), "{origin:?}");
-        assert_eq!(at(ui, "IgnoredFile").len(), 3, "{origin:?}");
+        assert_eq!(at(ui, "core/ignored_file").len(), 3, "{origin:?}");
     }
 }
 
@@ -358,7 +366,7 @@ fn v2_a_file_that_cannot_be_read_is_skipped_with_a_read_error() {
             .filter_map(|f| match f.detail.as_deref() {
                 // The read-error definitions carry the host's kind as the detail.
                 Some(bedrock_addon::diagnostic::DiagnosticDetail::Io(kind))
-                    if f.code.name() == "ReadError" => {
+                    if f.code.id() == "core/read_error_worded" => {
                     let path = f.location.path.as_ref()?.as_str().to_owned();
                     assert_eq!(
                         f.code.to_string(),
@@ -394,7 +402,7 @@ fn v2_a_file_that_cannot_be_read_is_skipped_with_a_read_error() {
         let report = loaded.resource.report();
         let others = report
             .iter()
-            .filter(|f| f.code.name() != "PackIconMissing")
+            .filter(|f| f.code.id() != "core/pack_icon_missing")
             .count();
         assert_eq!(others, 2, "{order:?}");
         assert_eq!(ui.diagnostics().count(), 0, "{order:?}");
@@ -517,7 +525,10 @@ fn e04_an_add_on_composition_at_a_declared_point_is_refused_for_being_external_o
     assert!(ui.compositions.is_empty());
     assert_eq!(
         found(ui.diagnostics()),
-        [error("InvalidValue", POINT_AT, OVERRIDEN), failed_to_load()]
+        [
+            error("ddui/extension_point_overridden", POINT_AT, OVERRIDEN),
+            failed_to_load()
+        ]
     );
     assert!(labels(ui, "demo:slot").is_empty());
 }
@@ -540,7 +551,7 @@ fn e05_an_add_on_composition_at_an_undeclared_point_gets_both_messages_in_order(
     assert_eq!(
         found(ui.diagnostics()),
         [
-            error("InvalidValue", POINT_AT, OVERRIDEN),
+            error("ddui/extension_point_overridden", POINT_AT, OVERRIDEN),
             not_defined("demo:none"),
             failed_to_load()
         ]
@@ -627,7 +638,7 @@ fn e08_a_nameless_point_refuses_its_root_and_the_compositions_are_still_read_dev
     let got = found(ui.diagnostics());
     assert_eq!(
         (got[0].0, got[0].1),
-        (Severity::Error, "InvalidValue"),
+        (Severity::Error, "core/invalid_value"),
         "{got:#?}"
     );
     assert!(got.contains(&not_defined("demo:slot")), "{got:#?}");
@@ -681,11 +692,11 @@ fn e10_an_add_on_minecraft_composition_at_an_undeclared_point_gets_three_message
         found(ui.diagnostics()),
         [
             error(
-                "NamespaceRule",
+                "ddui/external_namespace",
                 "minecraft:ui-composition/description/identifier",
                 EXTERNAL
             ),
-            error("InvalidValue", POINT_AT, OVERRIDEN),
+            error("ddui/extension_point_overridden", POINT_AT, OVERRIDEN),
             not_defined("demo:none"),
             failed_to_load()
         ]
@@ -707,7 +718,11 @@ fn a_composition_that_fails_the_parse_is_not_looked_up() {
     )]);
     let ui = stack.data_driven_ui();
     let got = found(ui.diagnostics());
-    assert!(got.iter().all(|f| f.1 != "UnresolvedReference"), "{got:#?}");
+    assert!(
+        ui.diagnostics()
+            .all(|f| f.code.kind() != Kind::UnresolvedReference),
+        "{got:#?}"
+    );
     assert_eq!(got.last(), Some(&failed_to_load()));
 }
 
@@ -756,7 +771,7 @@ fn k01_the_lowest_pack_s_definition_wins_deviation() {
         Component::PanelText
     );
     assert_eq!(
-        at(ui, "ShadowedDefinition"),
+        at(ui, "core/shadowed_definition"),
         [pair("pack_1", "ddui/root/s.json")]
     );
     assert!(ui.diagnostics().all(|f| f.severity == Severity::Info));
@@ -780,7 +795,7 @@ fn k01_of_three_packs_the_lowest_wins_and_both_others_are_shadowed() {
     let ui = stack.data_driven_ui();
     assert_eq!(stored(ui.roots.iter()), [pair("demo:screen", "bottom")]);
     assert_eq!(
-        at(ui, "ShadowedDefinition"),
+        at(ui, "core/shadowed_definition"),
         [
             pair("top", "ddui/root/s.json"),
             pair("middle", "ddui/root/s.json")
@@ -813,7 +828,7 @@ fn k01_of_three_packs_the_lowest_wins_and_both_others_are_shadowed() {
     ]);
     let ui = stack.data_driven_ui();
     assert_eq!(stored(ui.compositions.iter()), [pair("demo:c", "bottom")]);
-    assert_eq!(at(ui, "ShadowedDefinition").len(), 2);
+    assert_eq!(at(ui, "core/shadowed_definition").len(), 2);
 }
 
 #[test]
@@ -830,7 +845,7 @@ fn k01_within_one_pack_the_later_file_replaces_the_earlier_one() {
     let kept = ui.roots.get(&root_id("demo:screen")).unwrap();
     assert_eq!(kept.origin().path.as_str(), "ddui/root/b.json");
     assert_eq!(
-        at(ui, "ShadowedDefinition"),
+        at(ui, "core/shadowed_definition"),
         [pair("addon", "ddui/root/a.json")]
     );
 }
@@ -888,7 +903,7 @@ fn k03_a_lower_definition_that_fails_replaces_nothing() {
     let ui = stack.data_driven_ui();
     assert_eq!(stored(ui.roots.iter()), [pair("demo:screen", "pack_1")]);
     assert_eq!(ui.roots.rejected().len(), 1);
-    assert!(at(ui, "ShadowedDefinition").is_empty());
+    assert!(at_kind(ui, Kind::Shadowed).is_empty());
     // Three packs: the lowest fails, the middle one is the lowest that loads.
     let stack = self::stack(vec![
         external(
@@ -902,7 +917,7 @@ fn k03_a_lower_definition_that_fails_replaces_nothing() {
     let ui = stack.data_driven_ui();
     assert_eq!(stored(ui.roots.iter()), [pair("demo:screen", "middle")]);
     assert_eq!(
-        at(ui, "ShadowedDefinition"),
+        at(ui, "core/shadowed_definition"),
         [pair("top", "ddui/root/s.json")]
     );
     // The failing one in the middle: the lowest still wins, over the top one.
@@ -941,7 +956,7 @@ fn k03_a_lower_composition_refused_at_the_stack_stage_replaces_nothing() {
         [pair("minecraft:c", "pack_1")]
     );
     assert_eq!(labels(ui, "demo:slot"), ["kept"]);
-    assert!(at(ui, "ShadowedDefinition").is_empty());
+    assert!(at_kind(ui, Kind::Shadowed).is_empty());
     let stack = self::stack(vec![
         builtin(
             1,

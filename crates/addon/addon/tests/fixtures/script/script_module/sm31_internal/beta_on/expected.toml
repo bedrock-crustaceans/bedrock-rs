@@ -3,7 +3,7 @@ scope = "module"
 beta_apis = true
 
 [[diagnostic]]
-code = "ScriptModulePermission"
+code = "script/plugin_internal_apis"
 severity = "error"
 path = "dependencies/0"
 text = "Plugin [sm31 - 3.2.1] - requesting dependency on internal APIs [@minecraft/server - 2.9.0-internal], but does not have permission to access them."

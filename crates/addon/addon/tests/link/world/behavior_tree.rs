@@ -115,7 +115,7 @@ fn m5_a_subtree_through_which_a_tree_reaches_itself_is_a_cycle_warning() {
         said(&found, &[KIND]),
         [
             finding(
-                "ReferenceCycle",
+                "core/reference_cycle",
                 Severity::Info,
                 "behavior_trees/a.json",
                 AT,
@@ -123,7 +123,7 @@ fn m5_a_subtree_through_which_a_tree_reaches_itself_is_a_cycle_warning() {
                 "b"
             ),
             finding(
-                "ReferenceCycle",
+                "core/reference_cycle",
                 Severity::Info,
                 "behavior_trees/b.json",
                 AT,

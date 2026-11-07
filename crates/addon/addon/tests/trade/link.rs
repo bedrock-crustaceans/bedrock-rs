@@ -45,7 +45,7 @@ fn t1_an_item_nothing_defines_is_an_unresolved_reference() {
     let d = set.link();
     let unresolved: Vec<String> = d
         .iter()
-        .filter(|f| f.code.name() == "UnresolvedReference")
+        .filter(|f| f.code.id() == "core/unresolved_reference_worded")
         .map(|f| {
             // The game's validator line: a content-log error.
             assert_eq!(f.severity, Severity::Error);

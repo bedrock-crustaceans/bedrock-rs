@@ -2,7 +2,7 @@
 scope = "pack"
 
 [[diagnostic]]
-code = "MalformedPropertyVersion"
+code = "core/dependency_invalid_version"
 severity = "error"
 path = "dependencies/0/version"
 text = "dependency @minecraft/server invalid version: 0.0.0"

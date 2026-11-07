@@ -63,7 +63,7 @@
   },
   "diagnostics": [
     {
-      "code": "DuplicateIdentifier",
+      "code": "core/duplicate_identifier",
       "severity": "info",
       "at": "extra@a.leaf"
     }

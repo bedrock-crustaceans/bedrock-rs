@@ -5,21 +5,19 @@
 
 #![allow(unused_imports, reason = "each feature set compiles part of the tests")]
 
-use bedrock_addon::diagnostic::{Diagnostic, Diagnostics, Severity};
+use bedrock_addon::diagnostic::{Diagnostic, Diagnostics, Kind, Severity};
 use bedrock_addon::load::{Experiment, Experiments, LoadOptions};
 use bedrock_addon::pack::StackSet;
 
 use super::super::common::stacks;
 use super::{FILE, entity_with, pet};
 
-/// The codes of a reference finding (one code per kind of miss).
-const REFERENCE_CODES: [&str; 6] = [
-    "UnresolvedReference",
-    "InvalidReference",
-    "ReferenceCycle",
-    "UnknownSound",
-    "TextureNotFound",
-    "UnresolvedLangKey",
+/// The kinds of a reference finding: a name that resolves to nothing, one that resolves to the
+/// wrong thing, and a cycle.
+const REFERENCE_KINDS: [Kind; 3] = [
+    Kind::UnresolvedReference,
+    Kind::InvalidReference,
+    Kind::Cycle,
 ];
 
 /// What a finding says: code, severity, JSON path.
@@ -27,7 +25,7 @@ type Told = (&'static str, Severity, String);
 
 fn told(finding: &Diagnostic) -> Told {
     (
-        finding.code.name(),
+        finding.code.id(),
         finding.severity,
         finding.location.json_path.to_string(),
     )
@@ -37,7 +35,7 @@ fn told(finding: &Diagnostic) -> Told {
 fn references<'a>(findings: impl IntoIterator<Item = &'a Diagnostic>) -> Vec<Told> {
     findings
         .into_iter()
-        .filter(|finding| REFERENCE_CODES.contains(&finding.code.name()))
+        .filter(|finding| REFERENCE_KINDS.contains(&finding.code.kind()))
         .map(told)
         .collect()
 }
@@ -85,7 +83,7 @@ fn warning(path: &str) -> Told {
     // A kept error: "Filter test not found" is level 3 and the test evaluates
     // false.
     (
-        "UnresolvedReference",
+        "core/filter_test_not_found",
         Severity::Error,
         format!("minecraft:entity/{path}"),
     )
@@ -95,7 +93,7 @@ fn warning(path: &str) -> Told {
 /// their definitions lack and the game runs them, so the finding is an information.
 fn info(path: &str) -> Told {
     (
-        "UnresolvedReference",
+        "core/unresolved_reference",
         Severity::Info,
         format!("minecraft:entity/{path}"),
     )
@@ -441,7 +439,7 @@ fn e9_an_unknown_filter_test_in_a_sensors_trigger_is_a_warning_at_load() {
     let registry = set.behavior.entities();
     let texts: Vec<String> = registry
         .diagnostics()
-        .filter(|finding| finding.code.name() == "UnresolvedReference")
+        .filter(|finding| finding.code.id() == "core/filter_test_not_found")
         .map(|finding| finding.code.to_string())
         .collect();
     assert!(
@@ -451,7 +449,7 @@ fn e9_an_unknown_filter_test_in_a_sensors_trigger_is_a_warning_at_load() {
     // Told in the phase the family tells a typed component's filter in.
     let phases: Vec<_> = registry
         .diagnostics()
-        .filter(|finding| finding.code.name() == "UnresolvedReference")
+        .filter(|finding| finding.code.id() == "core/filter_test_not_found")
         .map(|finding| finding.phase)
         .collect();
     assert_eq!(phases.len(), 5);
@@ -500,14 +498,14 @@ fn e9_an_unknown_member_of_the_older_filter_form_in_a_sensors_trigger_is_a_warni
     assert_eq!(registry.len(), 1, "{:?}", registry.rejected());
     let unknown: Vec<(Told, String, bedrock_addon::diagnostic::Phase)> = registry
         .diagnostics()
-        .filter(|finding| finding.code.name() == "UnrecognizedField")
+        .filter(|finding| finding.code.id() == "entity/invalid_filter_member")
         .filter(|finding| finding.location.json_path.to_string().contains("/filters/"))
         .map(|finding| (told(finding), finding.code.to_string(), finding.phase))
         .collect();
     let c = "minecraft:entity/components/minecraft:";
     let warning = |path: String, member: &str| {
         (
-            ("UnrecognizedField", Severity::Error, path),
+            ("entity/invalid_filter_member", Severity::Error, path),
             format!("Invalid EntityFilterGroup member found: {member}"),
             bedrock_addon::diagnostic::Phase::Parse,
         )
@@ -630,12 +628,12 @@ fn sr4_an_unregistered_placement_name_is_the_loads_warning_and_the_pass_adds_non
         load,
         [
             (
-                "UnresolvedReference",
+                "spawn_rules/placement_type",
                 Severity::Warning,
                 "minecraft:spawn_rules/placement/type".to_owned()
             ),
             (
-                "UnresolvedReference",
+                "spawn_rules/placement_heightmap",
                 Severity::Warning,
                 "minecraft:spawn_rules/placement/heightmap".to_owned()
             ),

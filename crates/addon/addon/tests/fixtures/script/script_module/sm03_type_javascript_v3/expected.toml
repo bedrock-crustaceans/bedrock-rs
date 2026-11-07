@@ -2,12 +2,12 @@
 scope = "pack"
 
 [[diagnostic]]
-code = "InvalidProperty"
+code = "core/manifest_invalid_value"
 severity = "error"
 path = "modules/0/type"
 text = "Provided 'modules/type' element has an invalid value in pack manifest."
 
 [[diagnostic]]
-code = "IgnoredProperty"
+code = "core/ignored_property"
 severity = "warning"
 path = "header/min_engine_version"

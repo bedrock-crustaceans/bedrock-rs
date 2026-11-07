@@ -69,16 +69,13 @@ pub fn codes(diagnostics: &Diagnostics, severity: Severity) -> Vec<&'static str>
     diagnostics
         .iter()
         .filter(|d| d.severity >= severity)
-        .map(|d| d.code.name())
+        .map(|d| d.code.id())
         .collect()
 }
 
 /// The findings whose code is `name`.
 pub fn with_code<'a>(diagnostics: &'a Diagnostics, name: &str) -> Vec<&'a Diagnostic> {
-    diagnostics
-        .iter()
-        .filter(|d| d.code.name() == name)
-        .collect()
+    diagnostics.iter().filter(|d| d.code.id() == name).collect()
 }
 
 /// `text` as a JSON value.

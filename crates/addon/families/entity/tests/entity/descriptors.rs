@@ -32,7 +32,7 @@ fn breed(json: &str, mode: ConvertMode) -> (Option<Breed>, Diagnostics) {
 /// Every finding as `(code, severity, path)`.
 fn findings(d: &Diagnostics) -> Vec<(&'static str, Severity, String)> {
     d.iter()
-        .map(|f| (f.code.name(), f.severity, f.location.json_path.to_string()))
+        .map(|f| (f.code.id(), f.severity, f.location.json_path.to_string()))
         .collect()
 }
 
@@ -169,7 +169,7 @@ fn a_fractional_forget_duration_reads_in_a_goal_and_not_in_the_component() {
     assert_eq!(
         findings(&d),
         [finding(
-            "InvalidType",
+            "core/invalid_type",
             Severity::Error,
             "entity_types/0/must_see_forget_duration"
         )]
@@ -180,11 +180,11 @@ fn a_fractional_forget_duration_reads_in_a_goal_and_not_in_the_component() {
         findings(&d),
         [
             finding(
-                "InvalidValue",
+                "core/invalid_value",
                 Severity::Info,
                 "entity_types/0/must_see_forget_duration"
             ),
-            finding("DroppedField", Severity::Info, "entity_types/0"),
+            finding("core/dropped_field", Severity::Info, "entity_types/0"),
         ]
     );
 }
@@ -195,7 +195,7 @@ fn a_fractional_forget_duration_reads_in_a_goal_and_not_in_the_component() {
 fn a_fractional_cooldown_drops_the_member_in_a_goal_and_the_descriptor_in_the_component() {
     const TEXT: &str = r#"{"entity_types": [{"cooldown": 2.5}]}"#;
     let strict = [finding(
-        "InvalidType",
+        "core/invalid_type",
         Severity::Error,
         "entity_types/0/cooldown",
     )];
@@ -210,7 +210,7 @@ fn a_fractional_cooldown_drops_the_member_in_a_goal_and_the_descriptor_in_the_co
     assert_eq!(
         findings(&d),
         [finding(
-            "InvalidValue",
+            "core/invalid_value",
             Severity::Info,
             "entity_types/0/cooldown"
         )]
@@ -223,8 +223,12 @@ fn a_fractional_cooldown_drops_the_member_in_a_goal_and_the_descriptor_in_the_co
     assert_eq!(
         findings(&d),
         [
-            finding("InvalidValue", Severity::Info, "entity_types/0/cooldown"),
-            finding("DroppedField", Severity::Info, "entity_types/0"),
+            finding(
+                "core/invalid_value",
+                Severity::Info,
+                "entity_types/0/cooldown"
+            ),
+            finding("core/dropped_field", Severity::Info, "entity_types/0"),
         ]
     );
     assert!(value.expect("kept").entity_types.as_slice().is_empty());
@@ -238,7 +242,7 @@ fn the_component_descriptor_keeps_an_unknown_member() {
     assert_eq!(
         findings(&d),
         [finding(
-            "UnrecognizedField",
+            "core/unrecognized_field",
             Severity::Warning,
             "entity_types/0/zzz"
         )]
@@ -295,13 +299,21 @@ fn an_unknown_control_flag_is_told_differently_by_a_goal_and_the_component() {
     assert!(value.is_none());
     assert_eq!(
         findings(&d),
-        [finding("InvalidType", Severity::Error, "control_flags/0")]
+        [finding(
+            "core/invalid_type",
+            Severity::Error,
+            "control_flags/0"
+        )]
     );
     let (value, d) = breed(r#"{"control_flags": ["move", "fly"]}"#, ConvertMode::Strict);
     assert!(value.is_none());
     assert_eq!(
         findings(&d),
-        [finding("InvalidType", Severity::Error, "control_flags/1")]
+        [finding(
+            "core/invalid_type",
+            Severity::Error,
+            "control_flags/1"
+        )]
     );
 
     let (value, d) = wither(r#"{"control_flags": ["fly"]}"#, ConvertMode::Strict);
@@ -309,7 +321,7 @@ fn an_unknown_control_flag_is_told_differently_by_a_goal_and_the_component() {
     assert_eq!(
         findings(&d),
         [finding(
-            "InvalidEnumValue",
+            "core/invalid_enum_value",
             Severity::Error,
             "control_flags"
         )]
@@ -319,7 +331,7 @@ fn an_unknown_control_flag_is_told_differently_by_a_goal_and_the_component() {
     assert_eq!(
         findings(&d),
         [finding(
-            "InvalidEnumValue",
+            "core/invalid_enum_value",
             Severity::Error,
             "control_flags/0"
         )]
@@ -331,7 +343,11 @@ fn an_unknown_control_flag_is_told_differently_by_a_goal_and_the_component() {
 #[test]
 fn the_lenient_read_drops_an_unknown_control_flag_in_both() {
     const TEXT: &str = r#"{"control_flags": ["move", "fly"]}"#;
-    let told = [finding("InvalidValue", Severity::Info, "control_flags/1")];
+    let told = [finding(
+        "core/invalid_value",
+        Severity::Info,
+        "control_flags/1",
+    )];
     let (value, d) = breed(TEXT, ConvertMode::Lenient);
     assert_eq!(findings(&d), told);
     assert_eq!(

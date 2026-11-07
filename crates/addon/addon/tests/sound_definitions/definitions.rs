@@ -1,7 +1,7 @@
 //! `sounds/sound_definitions.json`: the rows `sd01`–`sd24`
 //! and their rules, with both ends of each rule pinned.
 
-use bedrock_addon::diagnostic::Severity;
+use bedrock_addon::diagnostic::{Kind, Severity};
 use bedrock_addon::document::{Merged, RawLayer};
 use bedrock_addon::families::sound_definitions::{
     SoundDefinition, SoundDefinitions, SoundEntryForm,
@@ -50,12 +50,12 @@ fn sd01_legacy_root_runs_every_step() {
     assert_eq!(pig.max_distance, 0.0);
     assert_eq!((pig.sounds[0].pitch, pig.sounds[0].volume), (1.0, 0.5));
     assert_eq!(sounds.format_version, Some(SemVersion::new(1, 26, 50)));
-    expect_one(sounds, "DroppedField", Severity::Info, "max_distance");
+    expect_one(sounds, "core/dropped_field", Severity::Info, "max_distance");
     // The entry's `pitch` the 1.14.0 step removes ("no message") is noted
     // at the member as the file has it.
     let dropped: Vec<String> = sounds
         .diagnostics()
-        .filter(|d| d.code.name() == "DroppedField" && d.severity == Severity::Info)
+        .filter(|d| d.code.id() == "core/dropped_field" && d.severity == Severity::Info)
         .map(|d| d.location.json_path.to_string())
         .collect();
     assert_eq!(
@@ -81,7 +81,7 @@ fn a_legacy_distance_flag_of_the_file_the_1_14_step_writes_over_is_noted() {
     let sounds = stack.sound_definitions();
     let dropped: Vec<String> = sounds
         .diagnostics()
-        .filter(|d| d.code.name() == "DroppedField" && d.severity == Severity::Info)
+        .filter(|d| d.code.id() == "core/dropped_field" && d.severity == Severity::Info)
         .map(|d| d.location.json_path.to_string())
         .collect();
     assert_eq!(
@@ -107,7 +107,7 @@ fn a_finding_of_an_entry_of_a_keyed_sounds_names_the_key() {
         ],
     );
     let sounds = stack.sound_definitions();
-    let paths: Vec<String> = found(sounds, "InvalidValue")
+    let paths: Vec<String> = found(sounds, "core/invalid_value")
         .iter()
         .map(|d| d.location.json_path.to_string())
         .collect();
@@ -118,7 +118,7 @@ fn a_finding_of_an_entry_of_a_keyed_sounds_names_the_key() {
         &[r#"{ "a": { "sounds": [ { "name": "t" }, { "name": "s", "volume": "x" } ] } }"#],
     );
     let sounds = stack.sound_definitions();
-    let paths: Vec<String> = found(sounds, "InvalidValue")
+    let paths: Vec<String> = found(sounds, "core/invalid_value")
         .iter()
         .map(|d| d.location.json_path.to_string())
         .collect();
@@ -143,8 +143,8 @@ fn sd02_v1_14_0_zeroes_integer_distances_only() {
     let x = definition(sounds, "x");
     assert_eq!((x.min_distance, x.max_distance), (0.0, 32.0));
     assert!(!x.use_legacy_max_distance);
-    expect_one(sounds, "DroppedField", Severity::Info, "min_distance");
-    assert_eq!(found(sounds, "DroppedField").len(), 1);
+    expect_one(sounds, "core/dropped_field", Severity::Info, "min_distance");
+    assert_eq!(found(sounds, "core/dropped_field").len(), 1);
 }
 
 #[test]
@@ -172,7 +172,7 @@ fn sd04_a_wrapper_without_a_version_is_wrapped_again() {
     assert_eq!(sounds.sound_definitions.len(), 1);
     expect_one(
         sounds,
-        "SoundDefinitionsWrapperWithoutVersion",
+        "core/sound_definitions_wrapper_without_version",
         Severity::Info,
         "",
     );
@@ -189,7 +189,7 @@ fn sd05_an_unparsable_version_is_the_legacy_path() {
     assert!(sounds.get("sound_definitions").is_some());
     expect_one(
         sounds,
-        "SoundDefinitionsWrapperWithoutVersion",
+        "core/sound_definitions_wrapper_without_version",
         Severity::Info,
         "",
     );
@@ -205,7 +205,7 @@ fn a_wrapper_at_1_14_0_is_no_wrapper_trap() {
     );
     let sounds = stack.sound_definitions();
     assert!(sounds.get("x").is_some());
-    expect_none(sounds, "SoundDefinitionsWrapperWithoutVersion");
+    expect_none(sounds, "core/sound_definitions_wrapper_without_version");
 }
 
 #[test]
@@ -219,7 +219,12 @@ fn sd06_a_future_version_is_the_newest_shape_deviation() {
     );
     let sounds = stack.sound_definitions();
     assert_eq!(definition(sounds, "x").max_distance, 4.0);
-    expect_one(sounds, "FormatVersionAboveEngine", Severity::Info, "9.0.0");
+    expect_one(
+        sounds,
+        "core/format_version_above_engine",
+        Severity::Info,
+        "9.0.0",
+    );
     assert_eq!(sounds.diagnostics().count(), 1);
 }
 
@@ -236,7 +241,7 @@ fn the_engine_version_itself_is_not_above_the_engine() {
     );
     expect_one(
         stack.sound_definitions(),
-        "FormatVersionAboveEngine",
+        "core/format_version_above_engine",
         Severity::Info,
         "1.26.61",
     );
@@ -267,11 +272,11 @@ fn sd07_vanilla_test_inputs() {
     assert!(music.sounds[0].is_3d);
     expect_one(
         sounds,
-        "InvalidValue",
+        "core/invalid_value",
         Severity::Info,
         "game_music_event/category",
     );
-    assert_eq!(found(sounds, "InvalidValue").len(), 1);
+    assert_eq!(found(sounds, "core/invalid_value").len(), 1);
 }
 
 #[test]
@@ -292,7 +297,7 @@ fn every_listed_category_is_accepted_and_an_absent_one_is_no_finding() {
     let stack = copies(DEFINITIONS, &[&latest(r#"{"category": "Hostile"}"#)]);
     expect_one(
         stack.sound_definitions(),
-        "InvalidValue",
+        "core/invalid_value",
         Severity::Info,
         "x/category",
     );
@@ -348,11 +353,11 @@ fn sd09_a_legacy_overlay_resets_the_distances() {
     assert!(zombie.use_legacy_max_distance);
     expect_one(
         sounds,
-        "DistanceResetByLegacyOverlay",
+        "core/distance_reset_by_legacy_overlay",
         Severity::Info,
         "mob.zombie.say",
     );
-    let reset = found(sounds, "DistanceResetByLegacyOverlay")[0];
+    let reset = found(sounds, "core/distance_reset_by_legacy_overlay")[0];
     assert_eq!(pack_of(reset), Some(0), "the overlay's pack");
     assert_eq!(sounds.diagnostics().count(), 1, "{:#?}", describe(sounds));
 }
@@ -362,7 +367,10 @@ fn a_distance_reset_needs_a_number_below_and_a_null_above() {
     // Nothing numeric below: no reset to report.
     let base = r#"{"format_version": "1.20.20", "sound_definitions": {"x": {"sounds": ["a"]}}}"#;
     let stack = copies(DEFINITIONS, &[base, r#"{ "x": { "sounds": ["b"] } }"#]);
-    expect_none(stack.sound_definitions(), "DistanceResetByLegacyOverlay");
+    expect_none(
+        stack.sound_definitions(),
+        "core/distance_reset_by_legacy_overlay",
+    );
     // A 1.20.20 overlay inserts nothing.
     let stack = copies(
         DEFINITIONS,
@@ -371,7 +379,10 @@ fn a_distance_reset_needs_a_number_below_and_a_null_above() {
             r#"{"format_version": "1.20.20", "sound_definitions": {"mob.zombie.say": {"sounds": ["b"]}}}"#,
         ],
     );
-    expect_none(stack.sound_definitions(), "DistanceResetByLegacyOverlay");
+    expect_none(
+        stack.sound_definitions(),
+        "core/distance_reset_by_legacy_overlay",
+    );
     // Only `min_distance` numeric below is enough.
     let base =
         r#"{"format_version": "1.20.20", "sound_definitions": {"x": {"min_distance": 1.0}}}"#;
@@ -384,7 +395,7 @@ fn a_distance_reset_needs_a_number_below_and_a_null_above() {
     );
     expect_one(
         stack.sound_definitions(),
-        "DistanceResetByLegacyOverlay",
+        "core/distance_reset_by_legacy_overlay",
         Severity::Info,
         "x",
     );
@@ -396,7 +407,10 @@ fn a_distance_reset_needs_a_number_below_and_a_null_above() {
             r#"{"format_version": "1.14.0", "sound_definitions": {"x": {"min_distance": 3.0, "max_distance": 4.0}}}"#,
         ],
     );
-    expect_none(stack.sound_definitions(), "DistanceResetByLegacyOverlay");
+    expect_none(
+        stack.sound_definitions(),
+        "core/distance_reset_by_legacy_overlay",
+    );
 }
 
 #[test]
@@ -423,11 +437,14 @@ fn sd11_an_unparsable_base_gives_an_empty_result_deviation() {
     assert!(sounds.layers().is_empty());
     expect_one(
         sounds,
-        "MalformedInput",
+        "core/stack_top_unparsable",
         Severity::Error,
         "Could not parse file at the top of the stack: sounds/sound_definitions.json.",
     );
-    assert_eq!(pack_of(found(sounds, "MalformedInput")[0]), Some(1));
+    assert_eq!(
+        pack_of(found(sounds, "core/stack_top_unparsable")[0]),
+        Some(1)
+    );
     assert_eq!(sounds.diagnostics().count(), 1);
 }
 
@@ -443,19 +460,14 @@ fn a_file_nested_past_the_depth_limit_is_no_json_and_overflows_nothing() {
     assert!(sounds.sound_definitions.is_empty());
     expect_one(
         sounds,
-        "MalformedInput",
+        "core/stack_top_unparsable",
         Severity::Error,
         "Could not parse file at the top of the stack",
     );
     // As an overlay it is skipped like any copy that is no JSON.
     let stack = copies(DEFINITIONS, &[ZOMBIE, &nested]);
     assert_eq!(stack.sound_definitions().sound_definitions.len(), 1);
-    expect_one(
-        stack.sound_definitions(),
-        "MalformedInput",
-        Severity::Info,
-        "",
-    );
+    expect_one(stack.sound_definitions(), "core/syntax", Severity::Info, "");
 }
 
 #[test]
@@ -465,7 +477,7 @@ fn sd12_an_unparsable_overlay_is_skipped_deviation() {
     let sounds = stack.sound_definitions();
     assert_eq!(definition(sounds, "mob.zombie.say").sounds.len(), 3);
     assert_eq!(sounds.layers().len(), 1);
-    let skipped = found(sounds, "MalformedInput");
+    let skipped = found(sounds, "core/syntax");
     assert_eq!(skipped.len(), 1);
     assert_eq!(skipped[0].severity, Severity::Info);
     assert_eq!(pack_of(skipped[0]), Some(0));
@@ -490,7 +502,7 @@ fn sd13_external_event_and_sounds() {
     // An integer value is not a double: 0.0.
     assert_eq!(parameters, [("p", 1.5), ("q", 0.0)]);
     // rule 8's text is gone from 1.26.60: an information of ours at the definition
-    let at_x: Vec<_> = found(sounds, "InvalidValue")
+    let at_x: Vec<_> = found(sounds, "core/invalid_value")
         .into_iter()
         .filter(|d| {
             d.severity == Severity::Info && d.location.json_path.to_string().ends_with("/x")
@@ -567,7 +579,7 @@ fn sd15_a_music_name_of_another_category() {
     let stack = copies(DEFINITIONS, &[text]);
     expect_one(
         stack.sound_definitions(),
-        "InvalidValue",
+        "sound_definitions/not_music",
         Severity::Warning,
         "The sound category of 'music.game.x' is not set as music in sound_definitions.json",
     );
@@ -591,7 +603,7 @@ fn the_music_name_check_needs_a_dot_and_the_exact_first_segment() {
         ("music.x", "MUSIC"),
     ] {
         let stack = copies(DEFINITIONS, &[&doc(name, category)]);
-        let named: Vec<_> = found(stack.sound_definitions(), "InvalidValue")
+        let named: Vec<_> = found(stack.sound_definitions(), "sound_definitions/not_music")
             .into_iter()
             .filter(|d| d.to_string().contains("is not set as music"))
             .collect();
@@ -601,7 +613,7 @@ fn the_music_name_check_needs_a_dot_and_the_exact_first_segment() {
     let stack = copies(DEFINITIONS, &[&doc("music.x", "ui")]);
     expect_one(
         stack.sound_definitions(),
-        "InvalidValue",
+        "sound_definitions/not_music",
         Severity::Warning,
         "is not set as music",
     );
@@ -615,7 +627,7 @@ fn sd16_a_definition_that_is_no_object_is_skipped_deviation() {
     let sounds = stack.sound_definitions();
     assert!(sounds.get("x").is_none());
     assert!(sounds.get("y").is_some());
-    let malformed: Vec<_> = found(sounds, "InvalidValue")
+    let malformed: Vec<_> = found(sounds, "sound_definitions/malformed_sound")
         .into_iter()
         .filter(|d| {
             d.to_string()
@@ -639,7 +651,7 @@ fn sd16_a_definition_that_is_no_object_is_skipped_deviation() {
     assert!(sounds.get("y").is_some());
     expect_one(
         sounds,
-        "InvalidValue",
+        "sound_definitions/malformed_sound",
         Severity::Info,
         "sound definitions has sound 'x'that is malformed",
     );
@@ -670,7 +682,7 @@ fn an_unknown_member_is_reported_at_every_level() {
         "actions": [{"action_type": 1, "other": 2}]}}}"#;
     let stack = copies(DEFINITIONS, &[text]);
     let sounds = stack.sound_definitions();
-    let paths: Vec<String> = found(sounds, "UnrecognizedField")
+    let paths: Vec<String> = found(sounds, "core/unrecognized_field")
         .iter()
         .map(|d| d.location.json_path.to_string())
         .collect();
@@ -684,7 +696,7 @@ fn an_unknown_member_is_reported_at_every_level() {
         ]
     );
     assert!(
-        found(sounds, "UnrecognizedField")
+        found(sounds, "core/unrecognized_field")
             .iter()
             .all(|d| d.severity == Severity::Info)
     );
@@ -711,40 +723,40 @@ fn sd18_a_versioned_copy_without_the_section_wipes_every_definition() {
     // Vanilla's two error lines; the document loads, so they are warnings.
     expect_one(
         sounds,
-        "InvalidValue",
+        "sound_definitions/not_a_list",
         Severity::Error,
         "sound definition field isn't a list of sound definitions!",
     );
     expect_one(
         sounds,
-        "InvalidValue",
+        "sound_definitions/section_malformed",
         Severity::Error,
         "sound_definitions section is malformed",
     );
-    expect_one(sounds, "SoundDefinitionsCleared", Severity::Info, "");
+    expect_one(sounds, "core/sound_definitions_cleared", Severity::Info, "");
     assert_eq!(
-        pack_of(found(sounds, "SoundDefinitionsCleared")[0]),
+        pack_of(found(sounds, "core/sound_definitions_cleared")[0]),
         Some(0)
     );
     // The root-level definitions are unread root members.
-    expect_one(sounds, "UnrecognizedField", Severity::Info, "mine");
+    expect_one(sounds, "core/unrecognized_field", Severity::Info, "mine");
 }
 
 #[test]
 fn a_copy_without_the_section_clears_what_is_below_and_nothing_when_nothing_is_below() {
     let stack = copies(DEFINITIONS, &[r#"{"format_version": "1.16.0"}"#]);
     let sounds = stack.sound_definitions();
-    expect_none(sounds, "SoundDefinitionsCleared");
+    expect_none(sounds, "core/sound_definitions_cleared");
     expect_one(
         sounds,
-        "InvalidValue",
+        "sound_definitions/not_a_list",
         Severity::Error,
         "isn't a list of sound definitions!",
     );
     // A lower copy without definitions has nothing to clear either.
     let empty = r#"{"format_version": "1.20.20", "sound_definitions": {}}"#;
     let stack = copies(DEFINITIONS, &[empty, r#"{"format_version": "1.16.0"}"#]);
-    expect_none(stack.sound_definitions(), "SoundDefinitionsCleared");
+    expect_none(stack.sound_definitions(), "core/sound_definitions_cleared");
     // At 1.20.20 only the 1.26.50 step runs. It reads the section with the non-const
     // `operator[]`, which inserts it as `null`; that `null` merges over the lower
     // copy as sd18's does. The step logs nothing; the merged root's read says the section is
@@ -756,10 +768,10 @@ fn a_copy_without_the_section_clears_what_is_below_and_nothing_when_nothing_is_b
         json(r#"{"format_version": "1.26.50", "sound_definitions": null}"#)
     );
     assert!(sounds.sound_definitions.is_empty());
-    expect_one(sounds, "SoundDefinitionsCleared", Severity::Info, "");
+    expect_one(sounds, "core/sound_definitions_cleared", Severity::Info, "");
     expect_one(
         sounds,
-        "InvalidValue",
+        "sound_definitions/section_malformed",
         Severity::Error,
         "sound_definitions section is malformed",
     );
@@ -767,10 +779,10 @@ fn a_copy_without_the_section_clears_what_is_below_and_nothing_when_nothing_is_b
     // With nothing below, nothing is cleared; the read still finds no section.
     let stack = copies(DEFINITIONS, &[r#"{"format_version": "1.20.20"}"#]);
     let sounds = stack.sound_definitions();
-    expect_none(sounds, "SoundDefinitionsCleared");
+    expect_none(sounds, "core/sound_definitions_cleared");
     expect_one(
         sounds,
-        "InvalidValue",
+        "sound_definitions/section_malformed",
         Severity::Error,
         "sound_definitions section is malformed",
     );
@@ -783,7 +795,7 @@ fn a_merged_root_that_is_no_object_or_null() {
     assert!(sounds.sound_definitions.is_empty());
     expect_one(
         sounds,
-        "InvalidValue",
+        "sound_definitions/contents_malformed",
         Severity::Error,
         "sound_definitions.json contents is malformed",
     );
@@ -822,12 +834,12 @@ fn sd20_a_legacy_overlay_clears_the_sounds() {
     assert!(definition(sounds, "mob.zombie.say").sounds.is_empty());
     expect_one(
         sounds,
-        "SoundsClearedByLegacyOverlay",
+        "core/sounds_cleared_by_legacy_overlay",
         Severity::Info,
         "mob.zombie.say",
     );
     assert_eq!(
-        pack_of(found(sounds, "SoundsClearedByLegacyOverlay")[0]),
+        pack_of(found(sounds, "core/sounds_cleared_by_legacy_overlay")[0]),
         Some(0)
     );
 }
@@ -838,12 +850,18 @@ fn a_legacy_overlay_clears_no_sounds_it_writes_or_that_were_not_there() {
         DEFINITIONS,
         &[ZOMBIE, r#"{ "mob.zombie.say": { "sounds": ["a"] } }"#],
     );
-    expect_none(stack.sound_definitions(), "SoundsClearedByLegacyOverlay");
+    expect_none(
+        stack.sound_definitions(),
+        "core/sounds_cleared_by_legacy_overlay",
+    );
     let stack = copies(
         DEFINITIONS,
         &[ZOMBIE, r#"{ "other": { "category": "hostile" } }"#],
     );
-    expect_none(stack.sound_definitions(), "SoundsClearedByLegacyOverlay");
+    expect_none(
+        stack.sound_definitions(),
+        "core/sounds_cleared_by_legacy_overlay",
+    );
     // A 1.14.0 overlay inserts no `sounds`.
     let stack = copies(
         DEFINITIONS,
@@ -852,7 +870,10 @@ fn a_legacy_overlay_clears_no_sounds_it_writes_or_that_were_not_there() {
             r#"{"format_version": "1.14.0", "sound_definitions": {"mob.zombie.say": {"category": "hostile"}}}"#,
         ],
     );
-    expect_none(stack.sound_definitions(), "SoundsClearedByLegacyOverlay");
+    expect_none(
+        stack.sound_definitions(),
+        "core/sounds_cleared_by_legacy_overlay",
+    );
     assert_eq!(
         definition(stack.sound_definitions(), "mob.zombie.say")
             .sounds
@@ -883,7 +904,12 @@ fn sd21_a_legacy_root_version_member_becomes_a_definition() {
     assert_eq!(definition(sounds, "a").sounds[0].name, "x");
     assert!(sounds.get("format_version").is_some());
     // At the member as the file has it, at the root: the file has no wrapper.
-    expect_one(sounds, "InvalidValue", Severity::Info, "| format_version |");
+    expect_one(
+        sounds,
+        "core/invalid_value",
+        Severity::Info,
+        "| format_version |",
+    );
     assert_eq!(sounds.diagnostics().count(), 1, "{:#?}", describe(sounds));
 }
 
@@ -920,7 +946,7 @@ fn sd23_bool_strings() {
     let x = definition(sounds, "x");
     assert!(x.use_legacy_max_distance);
     assert!(x.sounds[0].stream);
-    let paths: Vec<String> = found(sounds, "InvalidValue")
+    let paths: Vec<String> = found(sounds, "core/invalid_value")
         .iter()
         .map(|d| d.location.json_path.to_string())
         .collect();
@@ -952,7 +978,10 @@ fn the_vanilla_spelling_of_the_legacy_flag_and_real_bools_are_no_finding() {
     );
     let entry = &definition(stack.sound_definitions(), "x").sounds[0];
     assert!(!entry.is_3d && entry.interruptible);
-    assert_eq!(found(stack.sound_definitions(), "InvalidValue").len(), 2);
+    assert_eq!(
+        found(stack.sound_definitions(), "core/invalid_value").len(),
+        2
+    );
 }
 
 #[test]
@@ -976,13 +1005,13 @@ fn sd24_int_and_string_coercions() {
         d.location.json_path.to_string() == "sound_definitions/y"
     };
     assert_eq!(
-        found(sounds, "InvalidValue")
+        found(sounds, "core/invalid_value")
             .iter()
             .filter(|d| rule_8(d))
             .count(),
         1
     );
-    let warned: Vec<String> = found(sounds, "InvalidValue")
+    let warned: Vec<String> = found(sounds, "core/invalid_value")
         .iter()
         .filter(|d| d.severity == Severity::Info && !rule_8(d))
         .map(|d| d.location.json_path.to_string())
@@ -1011,7 +1040,7 @@ fn a_float_member_of_another_type_reads_as_zero_with_a_warning() {
     // A bool is 0.0 or 1.0 and, not being one of the three types of rule 29, no finding.
     assert_eq!((x.sounds[0].volume, x.sounds[0].pitch), (0.0, 1.0));
     assert_eq!(
-        found(sounds, "InvalidValue").len(),
+        found(sounds, "core/invalid_value").len(),
         3,
         "{:#?}",
         describe(sounds)
@@ -1028,7 +1057,7 @@ fn entries_of_another_type_are_skipped_and_null_silently() {
     let x = definition(sounds, "x");
     assert_eq!(x.sounds.len(), 1);
     assert_eq!(x.sounds[0].name, "kept");
-    let paths: Vec<String> = found(sounds, "InvalidValue")
+    let paths: Vec<String> = found(sounds, "core/invalid_value")
         .iter()
         .map(|d| d.location.json_path.to_string())
         .collect();
@@ -1053,7 +1082,7 @@ fn a_sound_path_of_1024_bytes_is_dropped_and_one_of_1023_kept() {
     );
     let sounds = stack.sound_definitions();
     assert!(definition(sounds, "x").sounds.is_empty());
-    let errors: Vec<_> = found(sounds, "InvalidValue")
+    let errors: Vec<_> = found(sounds, "core/invalid_value")
         .into_iter()
         .filter(|d| d.severity == Severity::Info)
         .collect();
@@ -1064,7 +1093,14 @@ fn a_sound_path_of_1024_bytes_is_dropped_and_one_of_1023_kept() {
         &[&latest(&format!(r#"{{"sounds": ["{fits}"]}}"#))],
     );
     assert_eq!(definition(stack.sound_definitions(), "x").sounds.len(), 1);
-    expect_none(stack.sound_definitions(), "InvalidValue");
+    assert!(
+        stack
+            .sound_definitions()
+            .diagnostics()
+            .all(|d| d.code.kind() != Kind::InvalidValue),
+        "no invalid value in {:#?}",
+        describe(stack.sound_definitions())
+    );
 }
 
 #[test]

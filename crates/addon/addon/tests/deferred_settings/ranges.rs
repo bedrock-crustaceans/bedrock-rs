@@ -697,7 +697,11 @@ fn every_ranged_member_takes_its_bounds_and_refuses_the_next_float_beyond_them()
                     let text = range_text(row.min, row.max);
                     assert_eq!(
                         row.payload.load(&refused.text),
-                        Err(vec![finding("InvalidValue", &refused.at, &text)]),
+                        Err(vec![finding(
+                            "core/outside_accepted_range",
+                            &refused.at,
+                            &text
+                        )]),
                         "the next float beyond the bound is outside the range: {}",
                         refused.text
                     );

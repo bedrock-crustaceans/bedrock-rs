@@ -106,7 +106,7 @@ fn the_1_10_step_keeps_the_string_elements_of_a_script_list_and_drops_the_rest()
     assert_eq!(
         out.diagnostics
             .iter()
-            .filter(|f| f.code.name() == "DroppedField" && f.severity == Severity::Info)
+            .filter(|f| f.code.id() == "core/dropped_field" && f.severity == Severity::Info)
             .count(),
         2,
         "each dropped element is reported"
@@ -201,13 +201,13 @@ fn the_1_8_step_rejects_a_document_with_item_in_either_form() {
             let d = rejected(attachable(&ghost(version, item), &cx()));
             expect(
                 &d,
-                "UnrecognizedField",
+                "core/child_not_valid",
                 Severity::Error,
                 "child 'item' not valid here.",
             );
             expect_at(
                 &d,
-                "UnrecognizedField",
+                "core/child_not_valid",
                 Severity::Error,
                 "minecraft:attachable/description/item",
             );

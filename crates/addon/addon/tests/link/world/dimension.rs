@@ -62,7 +62,7 @@ fn w15_a_default_biome_nothing_defines_is_an_information_and_a_lint() {
     assert_eq!(
         said(&found, &["biome"]),
         [finding(
-            "UnresolvedReference",
+            "core/unresolved_reference",
             Severity::Info,
             OVERWORLD,
             "minecraft:dimension/components/minecraft:default_biome/biome",

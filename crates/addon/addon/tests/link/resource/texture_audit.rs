@@ -32,7 +32,7 @@ fn loaded(set: &StackSet, file: &str) -> Vec<(&'static str, Severity, String)> {
 
 fn said(finding: &Diagnostic) -> (&'static str, Severity, String) {
     (
-        finding.code.name(),
+        finding.code.id(),
         finding.severity,
         finding.location.json_path.to_string(),
     )
@@ -56,7 +56,7 @@ fn r33_an_atlas_layer_path_no_pack_has_is_told_at_load_and_not_by_the_link_pass(
         assert_eq!(
             loaded(&set, file),
             [(
-                "TextureNotFound",
+                "core/texture_not_found",
                 Severity::Info,
                 "texture_data/x/textures".to_owned()
             )],
@@ -72,7 +72,7 @@ fn r36_a_list_entry_no_file_of_the_pack_matches_is_told_at_load_and_not_by_the_l
     let set = world(&[(LIST, r#"[ "textures/blocks/gone" ]"#)]);
     assert_eq!(
         loaded(&set, LIST),
-        [("TextureNotFound", Severity::Info, "0".to_owned())]
+        [("core/texture_not_found", Severity::Info, "0".to_owned())]
     );
     assert_eq!(linked(&set, LIST), []);
 }
@@ -87,7 +87,7 @@ fn r37_a_layer_image_the_set_s_pack_lacks_is_told_at_load_and_not_by_the_link_pa
     assert_eq!(
         loaded(&set, SET),
         [(
-            "TextureNotFound",
+            "texture_set/set_no_image",
             Severity::Info,
             "minecraft:texture_set/color".to_owned()
         )]

@@ -850,7 +850,7 @@ mod tests {
                 .map(|finding| {
                     format!(
                         "{} {:?} at `{}`",
-                        finding.code.name(),
+                        finding.code.id(),
                         finding.phase,
                         finding.location.json_path
                     )
@@ -859,7 +859,7 @@ mod tests {
             assert_eq!(
                 errors,
                 [format!(
-                    "InvalidValue {:?} at `minecraft:block/components/minecraft:friction`",
+                    "core/invalid_value {:?} at `minecraft:block/components/minecraft:friction`",
                     Phase::Upgrade
                 )],
                 "{unwritable}: the refusal is said where the writer stopped"

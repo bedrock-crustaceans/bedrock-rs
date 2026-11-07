@@ -150,7 +150,7 @@ mod compiled {
         assert!(molang(document.diagnostics()).is_empty());
         kept_at(
             document.diagnostics(),
-            "ScatterParamValue",
+            "feature/must_be_provided",
             "distribution/x",
         );
         assert!(super::super::common::has_text(
@@ -179,7 +179,7 @@ mod compiled {
             &carver(r#"{"expression": "1", "version": 13}"#),
             &checking(),
         );
-        error_at(&d, "InvalidType", "width_modifier");
+        error_at(&d, "core/invalid_type", "width_modifier");
     }
 
     fn conditional(condition: &str) -> String {
@@ -252,7 +252,8 @@ mod compiled {
         assert!(
             d.iter()
                 // By legacy name: the variant and the definitions that were it.
-                .any(|f| matches!(f.code.name(), "InvalidMolang") && f.severity == Severity::Error)
+                .any(|f| matches!(f.code.id(), "core/invalid_molang")
+                    && f.severity == Severity::Error)
         );
         assert!(molang(&d).contains(&(DiagCode::UnknownQuery, Severity::Error)));
     }

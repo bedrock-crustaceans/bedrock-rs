@@ -57,7 +57,7 @@ fn a_negative_size_fails_in_every_component_and_zero_does_not() {
                 &format!("size: {size}, structure_world_origin: [0, 0, 0]"),
                 "block_indices: [[], []], entities: [], palette: {}",
             )),
-            "InvalidValue",
+            "structure/negative",
             "The \"size\" field shouldn't have any negative values.",
         );
     }
@@ -75,7 +75,7 @@ fn a_world_origin_of_4_ints_expects_3_elements() {
             "size: [1, 1, 1], structure_world_origin: [1, 2, 3, 4]",
             BODY,
         )),
-        "InvalidValue",
+        "structure/three_elements",
         "The \"structure_world_origin\" field expects 3 elements.",
     );
 }
@@ -86,14 +86,14 @@ fn format_versions_far_from_1_are_larger_or_smaller() {
         &bytes(&format!(
             "{{format_version: 2147483647, {ROOT}, structure: {{{BODY}}}}}"
         )),
-        "UnsupportedVersion",
+        "structure/larger_version",
         "\"format_version\" field has a value larger than the current version.  We expect a format version with a value at most 1 and got 2147483647.",
     );
     fails_with(
         &bytes(&format!(
             "{{format_version: -2147483648, {ROOT}, structure: {{{BODY}}}}}"
         )),
-        "UnsupportedVersion",
+        "structure/smaller_version",
         "\"format_version\" field has a value smaller than the current version.  We expect a format version with a value at most 1 and got -2147483648.",
     );
 }
@@ -102,7 +102,7 @@ fn format_versions_far_from_1_are_larger_or_smaller() {
 fn block_indices_with_no_layers_reports_0_arrays() {
     fails_with(
         &bytes(&doc(ROOT, "block_indices: [], entities: [], palette: {}")),
-        "InvalidValue",
+        "structure/two_arrays",
         "The \"block_indices\" field should be an array with 2 arrays and instead we have 0 arrays.",
     );
 }
@@ -115,7 +115,7 @@ fn the_shorter_layer_may_be_either_one() {
                 ROOT,
                 &format!("block_indices: {layers}, entities: [], palette: {{}}"),
             )),
-            "InvalidValue",
+            "structure/same_size",
             "The \"block_indices\" field's arrays need to both be the same size.",
         );
     }
@@ -128,7 +128,7 @@ fn an_index_count_above_the_volume_fails_too() {
             ROOT,
             "block_indices: [[0, 0], [-1, -1]], entities: [], palette: {}",
         )),
-        "InvalidValue",
+        "structure/volume",
         "The \"block_indices\" field should have as many elements as defined by the \"size\" field.",
     );
 }
@@ -200,7 +200,7 @@ fn block_position_keys_are_whole_decimal_i32s() {
         let text = key.trim_matches('"');
         fails_with(
             &positions(&format!("{key}: {{}}")),
-            "InvalidValue",
+            "structure/not_a_number",
             &format!(
                 "Expected a string formatted as a number when parsing contents of the \"block_position_data\" field, but got \"{text}\""
             ),
@@ -230,7 +230,7 @@ fn the_first_bad_palette_by_name_is_the_one_reported_and_file_order_is_kept() {
             ROOT,
             "block_indices: [[0], [-1]], entities: [], palette: {b: 1, a: {block_position_data: {}}}",
         )),
-        "MissingRequiredField",
+        "structure/required",
         "\"block_palette\" field, a required field, is missing from the structure.",
     );
     assert_eq!(
@@ -254,7 +254,7 @@ fn the_first_bad_palette_by_name_is_the_one_reported_and_file_order_is_kept() {
 fn a_block_entity_is_read_before_the_tick_queue() {
     fails_with(
         &positions(r#""0": {tick_queue_data: 1, block_entity_data: 1}"#),
-        "InvalidValue",
+        "structure/compound_field",
         "Expected a compound tag for the \"block_entity_data\" field.",
     );
     let document = loads(&positions(
@@ -455,7 +455,7 @@ fn what_nbt_cannot_hold_is_not_representable() {
     let findings = structure.validate(&LoadContext::detached());
     assert_eq!(findings.len(), 1);
     let finding = findings.iter().next().unwrap();
-    assert_eq!(finding.code.name(), "MalformedInput");
+    assert_eq!(finding.code.id(), "core/syntax");
     assert_eq!(finding.severity, Severity::Error);
 }
 

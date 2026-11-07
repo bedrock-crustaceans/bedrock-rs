@@ -38,7 +38,7 @@ fn findings(stack: &PackStack<Resource>) -> Vec<Rendered> {
             .texture_atlases()
             .terrain_atlas
             .diagnostics()
-            .filter(|finding| finding.code.name() != "TextureNotFound"),
+            .filter(|finding| finding.code.id() != "core/texture_not_found"),
     )
 }
 
@@ -178,7 +178,7 @@ fn t09_a_copy_that_is_no_json_is_skipped() {
     let atlas = &stack.texture_atlases().terrain_atlas;
     let found: Vec<_> = atlas
         .diagnostics()
-        .filter(|finding| finding.code.name() == "MalformedInput")
+        .filter(|finding| finding.code.id() == "core/syntax")
         .collect();
     assert_eq!(found.len(), 1);
     assert_eq!(found[0].severity, Info);
@@ -200,7 +200,7 @@ fn t10_without_texture_name_no_atlas_is_built() {
     assert_eq!(
         all(&stack),
         [finding(
-            "MissingRequiredField",
+            "texture_atlas/no_texture_name",
             Error,
             "",
             "failed to read texture_name in atlas file textures/terrain_texture.json"
@@ -215,7 +215,7 @@ fn t11_an_entry_that_is_no_object_is_dropped() {
     assert_eq!(
         findings(&stack),
         [finding(
-            "InvalidValue",
+            "texture_atlas/entry_not_object",
             Error,
             "texture_data/x",
             "Expecting \"x\" to be a JSON object."
@@ -230,7 +230,7 @@ fn t12_an_entry_without_textures_is_dropped() {
     assert_eq!(
         findings(&stack),
         [finding(
-            "MissingRequiredField",
+            "texture_atlas/missing_textures",
             Error,
             "texture_data/x",
             "Missing textures \"x\"."
@@ -261,7 +261,7 @@ fn t13_the_four_kinds_of_element() {
     assert_eq!(
         findings(&stack),
         [finding(
-            "InvalidValue",
+            "core/invalid_value",
             Info,
             "texture_data/x/textures/3",
             "invalid value"
@@ -278,7 +278,7 @@ fn t14_variations_that_is_no_array_is_ignored() {
     assert_eq!(
         findings(&stack),
         [finding(
-            "UnrecognizedField",
+            "core/unrecognized_field",
             Info,
             "texture_data/x/textures/variations",
             "unrecognized field"
@@ -305,10 +305,10 @@ fn t15_weights_are_clamped() {
     assert_eq!(
         findings(&stack),
         [
-            finding("ClampedValue", Warning, &at(0), low),
-            finding("ClampedValue", Warning, &at(1), low),
-            finding("ClampedValue", Warning, &at(2), low),
-            finding("ClampedValue", Warning, &at(3), high),
+            finding("texture_atlas/weight_low", Warning, &at(0), low),
+            finding("texture_atlas/weight_low", Warning, &at(1), low),
+            finding("texture_atlas/weight_low", Warning, &at(2), low),
+            finding("texture_atlas/weight_high", Warning, &at(3), high),
         ]
     );
 }
@@ -354,13 +354,13 @@ fn t16_colours() {
         findings(&stack),
         [
             finding(
-                "InvalidValue",
+                "texture_atlas/not_integral",
                 Error,
                 "texture_data/x/textures/3/tint_color/0",
                 NOT_INTEGRAL
             ),
             finding(
-                "InvalidValue",
+                "texture_atlas/bad_color",
                 Error,
                 "texture_data/x/textures/5/tint_color",
                 BAD_COLOR
@@ -416,7 +416,7 @@ fn t19_isotropic() {
     assert_eq!(
         findings(&stack),
         [finding(
-            "UnrecognizedField",
+            "core/unrecognized_field",
             Info,
             "texture_data/x/textures/2/isotropic/bogus",
             "unrecognized field"
@@ -432,7 +432,7 @@ fn t20_quad_inside_an_element_is_not_read() {
     assert_eq!(
         findings(&stack),
         [finding(
-            "UnrecognizedField",
+            "core/unrecognized_field",
             Info,
             "texture_data/x/textures/0/quad",
             "unrecognized field"
@@ -454,7 +454,7 @@ fn t21_variations_keep_the_images_of_the_highest_pack_deviation() {
     assert_eq!(
         all(&stack),
         [finding(
-            "DroppedField",
+            "core/dropped_field",
             Info,
             "texture_data/x/textures/variations/1",
             "field dropped"
@@ -473,13 +473,13 @@ fn t22_one_missing_variation_drops_every_found_one() {
         all(&stack),
         [
             finding(
-                "DroppedField",
+                "core/dropped_field",
                 Info,
                 "texture_data/x/textures/variations/0",
                 "field dropped"
             ),
             finding(
-                "TextureNotFound",
+                "core/texture_not_found",
                 Info,
                 "texture_data/x/textures/variations/1",
                 "texture not found"
@@ -495,7 +495,7 @@ fn t23_another_texture_name_loads_with_a_warning() {
     assert_eq!(
         findings(&stack),
         [finding(
-            "InvalidValue",
+            "core/invalid_value",
             Info,
             "texture_name",
             "invalid value"
@@ -552,12 +552,12 @@ fn t27_content_after_the_root_is_ignored() {
     let atlas = &stack.texture_atlases().terrain_atlas;
     let found: Vec<_> = atlas
         .diagnostics()
-        .filter(|finding| finding.code.name() != "TextureNotFound")
+        .filter(|finding| finding.code.id() != "core/texture_not_found")
         .collect();
     assert_eq!(found.len(), 1);
     assert_eq!(
-        (found[0].code.name(), found[0].severity),
-        ("MalformedInput", Info)
+        (found[0].code.id(), found[0].severity),
+        ("core/syntax", Info)
     );
     assert_eq!(pack_index(found[0]), Some(0));
     assert_eq!(atlas.layers().len(), 2);
@@ -571,9 +571,9 @@ fn t28_a_root_that_is_no_object_wipes_the_lower_packs() {
     assert_eq!(
         rendered(atlas.diagnostics()),
         [
-            finding("InvalidValue", Info, "", "invalid value"),
+            finding("core/invalid_value", Info, "", "invalid value"),
             finding(
-                "MissingRequiredField",
+                "texture_atlas/no_texture_name",
                 Error,
                 "",
                 "failed to read texture_name in atlas file textures/terrain_texture.json"
@@ -606,13 +606,13 @@ fn t30_colour_edge_cases_deviation() {
         findings(&stack),
         [
             finding(
-                "InvalidValue",
+                "texture_atlas/bad_color",
                 Error,
                 "texture_data/x/textures/0/tint_color",
                 BAD_COLOR
             ),
             finding(
-                "InvalidValue",
+                "texture_atlas/not_integral",
                 Error,
                 "texture_data/x/textures/1/tint_color/0",
                 NOT_INTEGRAL
@@ -633,7 +633,7 @@ fn t31_a_variation_without_a_path_drops_every_found_one() {
     assert_eq!(
         all(&stack),
         [finding(
-            "DroppedField",
+            "core/dropped_field",
             Info,
             "texture_data/x/textures/variations/0",
             "field dropped"
@@ -648,7 +648,7 @@ fn t32_a_quad_string_is_true() {
     assert_eq!(
         findings(&stack),
         [finding(
-            "InvalidValue",
+            "core/invalid_value",
             Info,
             "texture_data/x/quad",
             "invalid value"
@@ -664,7 +664,7 @@ fn t33_an_empty_textures_array_keeps_the_entry() {
     assert_eq!(
         all(&stack),
         [finding(
-            "InvalidValue",
+            "core/invalid_value",
             Info,
             "texture_data/x/textures",
             "invalid value"
@@ -683,7 +683,7 @@ fn t34_side_selects_the_faces_that_are_read() {
     // Then `east` only (`north` is no bool), then nothing for a number.
     assert_eq!(masks, [2, 32, 0]);
     let at = |rest: &str| format!("texture_data/x/textures/{rest}");
-    let invalid = |rest: &str| finding("InvalidValue", Info, &at(rest), "invalid value");
+    let invalid = |rest: &str| finding("core/invalid_value", Info, &at(rest), "invalid value");
     assert_eq!(
         findings(&stack),
         [
@@ -708,7 +708,7 @@ fn t35_an_invalid_variation_does_not_get_the_tile_s_values() {
     assert_eq!(
         findings(&stack),
         [finding(
-            "InvalidValue",
+            "core/invalid_value",
             Info,
             "texture_data/x/textures/variations/0",
             "invalid value"
@@ -803,13 +803,13 @@ fn a_file_without_texture_name_is_rejected_on_its_own() {
     let path = PackPath::new("textures/terrain_texture.json").unwrap();
     let rejected = TextureAtlas::parse(&path, b"{}", &LoadContext::detached()).unwrap_err();
     assert_eq!(
-        rejected.diagnostics.iter().next().unwrap().code.name(),
-        "MissingRequiredField"
+        rejected.diagnostics.iter().next().unwrap().code.id(),
+        "texture_atlas/no_texture_name"
     );
     let rejected = TextureAtlas::parse(&path, b"{", &LoadContext::detached()).unwrap_err();
     assert_eq!(
-        rejected.diagnostics.iter().next().unwrap().code.name(),
-        "MalformedInput"
+        rejected.diagnostics.iter().next().unwrap().code.id(),
+        "core/syntax"
     );
 }
 
@@ -840,7 +840,7 @@ fn rule_3_an_empty_texture_name_builds_the_atlas_with_the_assert_s_text() {
     assert_eq!(
         findings(&stack),
         [finding(
-            "InvalidValue",
+            "texture_atlas/no_texture_page",
             Info,
             "texture_name",
             "Atlas textures must contain at least one defined texture page"
@@ -860,7 +860,7 @@ fn rules_17_and_18_mip_levels_and_padding_are_read_as_vanilla_reads_them_deviati
     assert_eq!(atlas.num_mip_levels, Some(-1));
     assert_eq!(atlas.effective_num_mip_levels(), -1);
     assert_eq!(atlas.padding, Some(0));
-    let invalid = |at: &str| finding("InvalidValue", Info, at, "invalid value");
+    let invalid = |at: &str| finding("core/invalid_value", Info, at, "invalid value");
     assert_eq!(
         findings(&stack),
         [invalid("padding"), invalid("num_mip_levels")]
@@ -884,7 +884,7 @@ fn rule_19_texture_data_that_is_no_object_gives_no_tile_deviation() {
     assert_eq!(
         findings(&stack),
         [finding(
-            "InvalidValue",
+            "core/invalid_value",
             Info,
             "texture_data",
             "invalid value"
@@ -912,13 +912,13 @@ fn a_tint_base_color_that_is_no_object_is_ignored() {
         findings(&stack),
         [
             finding(
-                "InvalidValue",
+                "core/invalid_value",
                 Info,
                 "texture_data/x/textures/0/tint_base_color",
                 "invalid value"
             ),
             finding(
-                "UnrecognizedField",
+                "core/unrecognized_field",
                 Info,
                 "texture_data/x/textures/2/tint_color/x_color",
                 "unrecognized field"
@@ -973,19 +973,19 @@ fn a_mip_fade_amount_beyond_a_float_is_the_largest_finite_float_deviation() {
         findings(&stack),
         [
             finding(
-                "InvalidValue",
+                "core/invalid_value",
                 Info,
                 "texture_data/x/mip_fade_amount",
                 "invalid value"
             ),
             finding(
-                "InvalidValue",
+                "core/invalid_value",
                 Info,
                 "texture_data/x/textures/mip_fade_amount",
                 "invalid value"
             ),
             finding(
-                "InvalidValue",
+                "core/invalid_value",
                 Info,
                 "texture_data/y/mip_fade_amount",
                 "invalid value"
@@ -1108,11 +1108,11 @@ fn the_atlas_reader_grades_as_the_game_logs() {
         .texture_atlases()
         .terrain_atlas
         .diagnostics()
-        .filter(|finding| finding.code.name() != "TextureNotFound")
+        .filter(|finding| finding.code.id() != "core/texture_not_found")
         .map(|finding| {
             (
                 finding.location.json_path.to_string(),
-                finding.code.name(),
+                finding.code.id(),
                 finding.severity,
                 finding.kept,
             )
@@ -1122,40 +1122,40 @@ fn the_atlas_reader_grades_as_the_game_logs() {
     assert_eq!(
         told,
         [
-            ("extra".to_owned(), "UnrecognizedField", Info, false),
+            ("extra".to_owned(), "core/unrecognized_field", Info, false),
             (
                 "texture_data/a/textures".to_owned(),
-                "InvalidValue",
+                "core/invalid_value",
                 Info,
                 false
             ),
             (
                 "texture_data/b/textures/0".to_owned(),
-                "InvalidValue",
+                "core/invalid_value",
                 Info,
                 false
             ),
             (
                 "texture_data/c/textures/variations/0".to_owned(),
-                "InvalidValue",
+                "core/invalid_value",
                 Info,
                 false
             ),
             (
                 "texture_data/d/isotropic".to_owned(),
-                "UnrecognizedField",
+                "core/unrecognized_field",
                 Info,
                 false
             ),
             (
                 "texture_data/e/textures/0/tint_color/0".to_owned(),
-                "InvalidValue",
+                "texture_atlas/not_integral",
                 Error,
                 true
             ),
             (
                 "texture_data/f/textures/0/tint_color".to_owned(),
-                "InvalidValue",
+                "texture_atlas/bad_color",
                 Error,
                 true
             ),

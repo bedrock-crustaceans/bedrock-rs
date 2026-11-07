@@ -86,7 +86,7 @@ fn a_culling_name_no_rules_document_has() {
         " -> components -> minecraft:geometry -> culling:  Missing referenced asset demo:nope",
     );
     assert_eq!(missing.len(), 1, "{found:#?}");
-    assert_eq!(missing[0].code.name(), "UnresolvedReference");
+    assert_eq!(missing[0].code.id(), "core/unresolved_reference_worded");
     // The block loads and its schematic is not built; vanilla logs at level 3:
     // a kept error.
     assert_eq!(missing[0].severity, Severity::Error);
@@ -137,7 +137,7 @@ fn a_rule_names_a_bone_the_geometry_lacks() {
     );
     let missing = with_text(&found, "Did not find any bones with name `ghost`");
     assert_eq!(missing.len(), 1, "{found:#?}");
-    assert_eq!(missing[0].code.name(), "UnresolvedReference");
+    assert_eq!(missing[0].code.id(), "core/unresolved_reference_worded");
     assert_eq!(
         missing[0].severity,
         Severity::Error,
@@ -163,7 +163,7 @@ fn a_cube_index_beyond_the_bone_s_cubes() {
             &format!("Cube index `{cube}` is out of bounds for schematic part `body`"),
         );
         assert_eq!(out.len(), 1, "{cube}: {found:#?}");
-        assert_eq!(out[0].code.name(), "InvalidValue");
+        assert_eq!(out[0].code.id(), "core/invalid_value_worded");
         assert_eq!(out[0].severity, Severity::Error, "level 3, kept");
         assert!(out[0].kept);
     }

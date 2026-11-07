@@ -1,6 +1,6 @@
 //! The validation rules and the parse-time gates: fixtures `v01`–`v05`, `v07`–`v14`, `v16`–`v20`.
 
-use bedrock_addon::diagnostic::{Severity, codes};
+use bedrock_addon::diagnostic::{Kind, Severity, codes};
 use bedrock_addon::document::ComponentRef;
 use bedrock_addon::families::item::ItemFormat;
 use bedrock_addon::families::item::component::{
@@ -34,7 +34,7 @@ fn v01_damage_ranges() {
     assert!(
         error_at(
             &d,
-            "InvalidValue",
+            "core/invalid_value",
             "minecraft:item/components/minecraft:damage/value"
         ),
         "{d:#?}"
@@ -59,7 +59,7 @@ fn v02_foil() {
     assert_eq!(allowlisted.legacy.is_glint, Some(true));
     let third = loads(&item("1.20.10", "demo:x", foil), &third_party());
     assert_eq!(third.legacy.is_glint, None);
-    assert_eq!(with_code(third.diagnostics(), "DroppedComponent").len(), 1);
+    assert_eq!(with_code(third.diagnostics(), "item/foil_ignored").len(), 1);
     let both = loads(
         &item(
             "1.20.20",
@@ -112,17 +112,17 @@ fn v03_a_refused_custom_component_behind_dropped_entries_is_at_the_index_of_the_
             .iter()
             .filter_map(|finding| {
                 let path = finding.location.json_path.to_string();
-                Some((path.strip_prefix(at)?.to_owned(), finding.code.name()))
+                Some((path.strip_prefix(at)?.to_owned(), finding.code.id()))
             })
             .collect();
         told.sort();
         assert_eq!(
             told,
             [
-                ("0".to_owned(), "InvalidType"),
-                ("1".to_owned(), "InvalidValue"),
-                ("2".to_owned(), "InvalidType"),
-                ("4".to_owned(), "InvalidValue"),
+                ("0".to_owned(), "core/invalid_type"),
+                ("1".to_owned(), "item/custom_component_namespace"),
+                ("2".to_owned(), "core/invalid_type"),
+                ("4".to_owned(), "item/custom_component_namespace"),
             ],
             "{version}: {:#?}",
             d.iter().map(ToString::to_string).collect::<Vec<_>>()
@@ -162,8 +162,8 @@ fn v04_a_lowered_engine_version_refuses_cooldown_type() {
     assert!(lowered.unknown().get(&at, "type").is_some());
     // By legacy name: the variant and the definitions that were it.
     assert!(has(lowered.diagnostics(), |c| matches!(
-        c.name(),
-        "FieldSinceEngine"
+        c.id(),
+        "core/field_since_engine"
     )));
 }
 
@@ -184,7 +184,7 @@ fn v04b_a_member_above_the_engine_version_is_an_information_and_an_unbound_one_a
         .diagnostics()
         .iter()
         // By legacy name: the variant and the definitions that were it.
-        .filter(|f| matches!(f.code.name(), "FieldSinceEngine"))
+        .filter(|f| matches!(f.code.id(), "core/field_since_engine"))
         .collect();
     assert_eq!(told.len(), 1);
     assert_eq!(told[0].severity, Severity::Info, "{told:#?}");
@@ -196,9 +196,11 @@ fn v04b_a_member_above_the_engine_version_is_an_information_and_an_unbound_one_a
     let loaded = loads(&unbound, &third_party());
     assert!(
         // By legacy name: the variant and the definitions that were it.
-        loaded.diagnostics().iter().any(
-            |f| matches!(f.code.name(), "UnrecognizedField") && f.severity == Severity::Warning
-        ),
+        loaded
+            .diagnostics()
+            .iter()
+            .any(|f| matches!(f.code.id(), "core/unrecognized_field")
+                && f.severity == Severity::Warning),
         "{:#?}",
         loaded.diagnostics()
     );
@@ -262,10 +264,10 @@ fn v08_menu_category() {
     let told: Vec<&str> = undefined
         .diagnostics()
         .iter()
-        .filter(|f| f.code.name() == "ValueRewritten")
-        .map(|f| f.code.name())
+        .filter(|f| f.code.id() == "core/value_rewritten")
+        .map(|f| f.code.id())
         .collect();
-    assert_eq!(told, ["ValueRewritten"]);
+    assert_eq!(told, ["core/value_rewritten"]);
     assert!(above_info(undefined.diagnostics()).is_empty());
     let none = loads(&menu("1.21.110", "{}"), &third_party());
     assert_eq!(
@@ -387,20 +389,23 @@ fn v10_unknown_members_are_reported_from_1_20_60() {
     let told: Vec<String> = quiet
         .diagnostics()
         .iter()
-        .filter(|f| f.code.name() == "InvalidValue")
-        .map(|f| format!("{} {:?} {}", f.code.name(), f.phase, f.location.json_path))
+        .filter(|f| f.code.id() == "core/invalid_value")
+        .map(|f| format!("{} {:?} {}", f.code.id(), f.phase, f.location.json_path))
         .collect();
     assert_eq!(
         told,
-        ["InvalidValue Validate minecraft:item/components/minecraft:fuel/smoke"],
+        ["core/invalid_value Validate minecraft:item/components/minecraft:fuel/smoke"],
         "{:#?}",
         quiet.diagnostics()
     );
     let loud = loads(&json("1.20.60"), &third_party());
-    assert_eq!(with_code(loud.diagnostics(), "UnrecognizedField").len(), 1);
+    assert_eq!(
+        with_code(loud.diagnostics(), "core/unrecognized_field").len(),
+        1
+    );
     // A name no component ever had is removed by the game's component validation without a
     // line: an information.
-    let unknown: Vec<Severity> = with_code(loud.diagnostics(), "UnrecognizedComponent")
+    let unknown: Vec<Severity> = with_code(loud.diagnostics(), "core/unrecognized_component")
         .iter()
         .map(|f| f.severity)
         .collect();
@@ -415,10 +420,11 @@ fn v10_unknown_members_are_reported_from_1_20_60() {
         ),
         &third_party(),
     );
-    let told: Vec<(Severity, String)> = with_code(later.diagnostics(), "UnrecognizedComponent")
-        .iter()
-        .map(|f| (f.severity, f.location.json_path.to_string()))
-        .collect();
+    let told: Vec<(Severity, String)> =
+        with_code(later.diagnostics(), "core/unrecognized_component")
+            .iter()
+            .map(|f| (f.severity, f.location.json_path.to_string()))
+            .collect();
     assert_eq!(
         told,
         [(
@@ -552,7 +558,7 @@ fn v13_a_resource_pack_item_without_a_behaviour_pack_twin_is_ignored() {
     assert_eq!(
         link_messages(
             &d,
-            "UnresolvedReference",
+            "core/unresolved_reference_worded",
             Severity::Error,
             "items/lone.json"
         ),
@@ -563,7 +569,7 @@ fn v13_a_resource_pack_item_without_a_behaviour_pack_twin_is_ignored() {
     );
     assert!(
         d.iter()
-            .filter(|f| f.code.name() == "UnresolvedReference")
+            .filter(|f| f.code.id() == "core/unresolved_reference_worded")
             .all(|f| f.kept),
         "{d:#?}"
     );
@@ -571,7 +577,7 @@ fn v13_a_resource_pack_item_without_a_behaviour_pack_twin_is_ignored() {
     assert!(
         link_messages(
             &d,
-            "UnresolvedReference",
+            "core/unresolved_reference_worded",
             Severity::Error,
             "items/twin.json"
         )
@@ -594,18 +600,11 @@ fn v14_use_beta_features() {
         // An information of ours: the game says nothing of it.
         let told: Vec<String> = unknown_members(document.diagnostics())
             .iter()
-            .map(|f| {
-                format!(
-                    "{} {} {:?}",
-                    f.location.json_path,
-                    f.code.name(),
-                    f.severity
-                )
-            })
+            .map(|f| format!("{} {} {:?}", f.location.json_path, f.code.id(), f.severity))
             .collect();
         assert_eq!(
             told,
-            ["use_beta_features UnrecognizedField Info"],
+            ["use_beta_features core/unrecognized_field Info"],
             "{version}"
         );
     }
@@ -662,7 +661,7 @@ fn v17_binding_constraints_refuse_the_item() {
         let d = rejects(&item("1.26.0", "demo:x", components), &third_party());
         assert!(
             d.iter()
-                .any(|f| f.code.name() == code && f.severity == Severity::Error),
+                .any(|f| f.code.id() == code && f.severity == Severity::Error),
             "{components}: {d:#?}"
         );
     };
@@ -683,7 +682,7 @@ fn v17_binding_constraints_refuse_the_item() {
         r#""minecraft:repairable": {"repair_items": [{"repair_amount": 1}]}"#,
         r#""minecraft:shooter": {"ammunition": [{"use_offhand": true}]}"#,
     ] {
-        dropped(missing, "MissingRequiredField");
+        dropped(missing, "core/missing_required_field");
     }
     // Numeric constraints (max_stack_size `range`, fuel `min`, use_modifiers `range` in the
     // 1.20.50 slice): 0x40, refused.
@@ -692,7 +691,7 @@ fn v17_binding_constraints_refuse_the_item() {
         r#""minecraft:fuel": 0.01"#,
         r#""minecraft:use_modifiers": {"use_duration": 1.0, "movement_modifier": 1.5}"#,
     ] {
-        dropped(invalid, "InvalidValue");
+        dropped(invalid, "core/invalid_value");
     }
     // Checks of ours whose binding was not read: the component is dropped with an
     // information (open).
@@ -708,7 +707,7 @@ fn v17_binding_constraints_refuse_the_item() {
             "{components}"
         );
         assert!(
-            with_code(document.diagnostics(), "InvalidValue")
+            with_code(document.diagnostics(), "core/invalid_value")
                 .iter()
                 .any(|f| f.severity == Severity::Info),
             "{components}: {:#?}",
@@ -716,7 +715,7 @@ fn v17_binding_constraints_refuse_the_item() {
         );
         // The crate's summary that the component goes whole: no game line.
         assert!(
-            with_code(document.diagnostics(), "DroppedComponent")
+            with_code(document.diagnostics(), "core/dropped_component")
                 .iter()
                 .all(|f| f.severity == Severity::Info),
             "{components}: {:#?}",
@@ -754,7 +753,7 @@ fn v18_the_root_keys_of_1_26_30() {
     let unknown = rejects(&root("1.26.30", "__deprecated_components"), &third_party());
     assert!(
         unknown.iter().any(|f| f.severity == Severity::Error
-            && f.code.name() == "UnrecognizedField"
+            && f.code.id() == "core/unrecognized_field"
             && f.location.json_path.to_string() == "minecraft:item/__deprecated_components"),
         "{unknown:#?}"
     );
@@ -799,7 +798,7 @@ fn v19_custom_component_names() {
                 "custom component names must not use the minecraft namespace"
             ) && error_at(
                 &d,
-                "InvalidValue",
+                "item/custom_component_namespace",
                 "minecraft:item/components/minecraft:custom_components/0"
             ),
             "{version}: {d:#?}"
@@ -808,7 +807,7 @@ fn v19_custom_component_names() {
     let keyed = r#""demo:shake": {"strength": 2}, "minecraft:max_stack_size": 1"#;
     let early = loads(&item("1.21.80", "demo:x", keyed), &third_party());
     assert_eq!(
-        with_code(early.diagnostics(), "UnrecognizedComponent").len(),
+        with_code(early.diagnostics(), "core/unrecognized_component").len(),
         1
     );
     assert!(
@@ -875,14 +874,14 @@ fn shared_values_report_their_own_findings() {
     let d = document.diagnostics();
     let shape = d
         .iter()
-        .find(|f| f.code.name() == "InvalidType")
+        .find(|f| f.code.id() == "shapes/item_descriptor_shape")
         .unwrap_or_else(|| panic!("{d:#?}"));
     assert_eq!(
         shape.location.json_path.to_string(),
         "minecraft:item/components/minecraft:shooter/ammunition/0/item"
     );
     // a swapped range is an info
-    assert!(d.iter().any(|f| f.code.name() == "InvalidValue"
+    assert!(d.iter().any(|f| f.code.id() == "core/invalid_value"
         && f.severity == Severity::Info
         && f.location.json_path.to_string().ends_with("damage_chance")));
 }
@@ -905,7 +904,7 @@ fn rule_12_an_unknown_enchant_slot_refuses_the_item() {
         assert!(
             error_at(
                 &d,
-                "InvalidValue",
+                "item/enchant_slot",
                 "minecraft:item/components/minecraft:enchantable/slot"
             ),
             "{version}: {d:#?}"
@@ -936,7 +935,7 @@ fn rule_1_an_identifier_needs_a_namespace() {
         assert!(
             d.iter()
                 // By legacy name: the variant and the definitions that were it.
-                .any(|f| matches!(f.code.name(), "NamespaceRule")
+                .any(|f| matches!(f.code.id(), "item/identifier")
                     && f.severity == Severity::Error
                     && f.code.to_string().contains("must include a namespace")),
             "{identifier}: {d:#?}"
@@ -944,7 +943,7 @@ fn rule_1_an_identifier_needs_a_namespace() {
     }
     let legacy = rejects(&item("1.10", "ruby", ""), &third_party());
     // By legacy name: the variant and the definitions that were it.
-    assert!(has(&legacy, |c| matches!(c.name(), "NamespaceRule")));
+    assert!(has(&legacy, |c| matches!(c.id(), "item/identifier")));
 }
 
 #[test]
@@ -987,7 +986,7 @@ fn rule_19d_an_unknown_crop_result_is_an_information() {
     assert_eq!(
         link_messages(
             &d,
-            "UnresolvedReference",
+            "core/unresolved_reference_worded",
             Severity::Info,
             "items/bad_seeds.json"
         ),
@@ -998,7 +997,8 @@ fn rule_19d_an_unknown_crop_result_is_an_information() {
     );
     for resolved in ["items/wheat_seeds.json", "items/crop_seeds.json"] {
         assert!(
-            link_messages(&d, "UnresolvedReference", Severity::Info, resolved).is_empty(),
+            link_messages_of_kind(&d, Kind::UnresolvedReference, Severity::Info, resolved)
+                .is_empty(),
             "{resolved}: {d:#?}"
         );
     }
@@ -1035,7 +1035,7 @@ fn a_member_written_twice_in_the_undefined_category_band_is_told_of_the_category
         .map(|f| {
             format!(
                 "{} {:?} at {}",
-                f.code.name(),
+                f.code.id(),
                 f.severity,
                 f.location.json_path
             )
@@ -1073,16 +1073,9 @@ fn a_doubled_use_beta_features_is_read_as_its_last_copy() {
     // An information of ours: the game says nothing of it.
     let told: Vec<String> = super::common::unknown_members(item.diagnostics())
         .iter()
-        .map(|f| {
-            format!(
-                "{} {} {:?}",
-                f.location.json_path,
-                f.code.name(),
-                f.severity
-            )
-        })
+        .map(|f| format!("{} {} {:?}", f.location.json_path, f.code.id(), f.severity))
         .collect();
-    assert_eq!(told, ["use_beta_features UnrecognizedField Info"]);
+    assert_eq!(told, ["use_beta_features core/unrecognized_field Info"]);
 }
 
 /// The stacks of behaviour pack `behavior` and resource pack `resource`, both enabled.
@@ -1109,7 +1102,24 @@ fn stack_set(behavior: &Spec, resource: &Spec) -> StackSet {
 fn link_messages(d: &Diagnostics, name: &str, severity: Severity, path: &str) -> Vec<String> {
     d.iter()
         .filter(|f| {
-            f.code.name() == name
+            f.code.id() == name
+                && f.severity == severity
+                && f.location.path.as_ref().is_some_and(|p| p.as_str() == path)
+        })
+        .map(|f| f.code.to_string())
+        .collect()
+}
+
+/// [`link_messages`] over a kind of code.
+fn link_messages_of_kind(
+    d: &Diagnostics,
+    kind: Kind,
+    severity: Severity,
+    path: &str,
+) -> Vec<String> {
+    d.iter()
+        .filter(|f| {
+            f.code.kind() == kind
                 && f.severity == severity
                 && f.location.path.as_ref().is_some_and(|p| p.as_str() == path)
         })
@@ -1168,7 +1178,7 @@ fn a_scalar_of_another_json_type_refuses_the_item_at_the_member() {
             // The typed read fails a value of another type (`0x8`, an error in both masks):
             // the item is refused whole (converted with a warning before).
             let d = rejects(&text, &cx);
-            let wrong_type: Vec<(String, Severity)> = with_code(&d, "InvalidType")
+            let wrong_type: Vec<(String, Severity)> = with_code(&d, "core/invalid_type")
                 .iter()
                 .map(|d| (d.location.json_path.to_string(), d.severity))
                 .collect();
@@ -1181,7 +1191,10 @@ fn a_scalar_of_another_json_type_refuses_the_item_at_the_member() {
         }
         let document = loads(&text, &cx);
         assert!(
-            with_code(document.diagnostics(), "InvalidType").is_empty(),
+            document
+                .diagnostics()
+                .iter()
+                .all(|f| f.code.kind() != Kind::WrongType),
             "{components}"
         );
         let text = bedrock_addon::document::Content::to_json(&*document).unwrap();
@@ -1236,16 +1249,17 @@ fn a_legacy_repair_items_entry_the_step_cannot_convert_is_told_and_the_others_ar
                 // type 0x8; both refuse the item.
                 let d = rejects(&item(version, "demo:x", &components), &cx);
                 assert!(
-                    error_at(&d, "InvalidValue", &format!("{list}/{told_at}")),
+                    error_at(&d, "core/invalid_value", &format!("{list}/{told_at}")),
                     "{version} {entry}: {d:#?}"
                 );
                 continue;
             }
             let document = loads(&item(version, "demo:x", &components), &cx);
-            let told: Vec<(String, Severity)> = with_code(document.diagnostics(), "InvalidValue")
-                .iter()
-                .map(|d| (d.location.json_path.to_string(), d.severity))
-                .collect();
+            let told: Vec<(String, Severity)> =
+                with_code(document.diagnostics(), "core/invalid_value")
+                    .iter()
+                    .map(|d| (d.location.json_path.to_string(), d.severity))
+                    .collect();
             // Beyond a double the core reader clamps and says so; beyond a float
             // alone the step's own note is an information.
             let severity = if entry.contains("1e999") {
@@ -1276,7 +1290,10 @@ fn a_legacy_repair_items_entry_the_step_cannot_convert_is_told_and_the_others_ar
         let components =
             r#""minecraft:repairable": {"repair_items": {"items": ["minecraft:stick"]}}"#;
         let d = rejects(&item(version, "demo:x", components), &cx);
-        assert!(error_at(&d, "InvalidValue", list), "{version}: {d:#?}");
+        assert!(
+            error_at(&d, "core/invalid_value", list),
+            "{version}: {d:#?}"
+        );
     }
 }
 
@@ -1306,7 +1323,7 @@ fn a_legacy_category_that_is_no_creative_category_is_dropped_and_told() {
         .iter()
         .filter(|f| {
             // By legacy name: the variant and the definitions that were it.
-            f.phase == Phase::Upgrade && matches!(f.code.name(), "InvalidValue")
+            f.phase == Phase::Upgrade && matches!(f.code.id(), "core/invalid_value")
         })
         .map(|f| (f.location.json_path.to_string(), f.severity))
         .collect()
@@ -1330,68 +1347,68 @@ fn a_legacy_category_that_is_no_creative_category_is_dropped_and_told() {
 /// value, or drops, is told at the member the file has; the value stays what the step made.
 #[test]
 fn a_legacy_member_a_step_drops_or_reads_as_another_value_is_told() {
-    // (version, components, the member told, whether the code is InvalidType)
-    let rows: [(&str, &str, &str, &str); 8] = [
+    // (version, components, the member told, the kind of the code)
+    let rows: [(&str, &str, &str, Kind); 8] = [
         (
             "1.20.0",
             r#""minecraft:food": {"nutrition": 4, "saturation_modifier": 1e39}"#,
             "components/minecraft:food/saturation_modifier",
-            "InvalidValue",
+            Kind::InvalidValue,
         ),
         (
             "1.20.0",
             r#""minecraft:food": {"nutrition": 4, "saturation_modifier": true}"#,
             "components/minecraft:food/saturation_modifier",
-            "InvalidType",
+            Kind::WrongType,
         ),
         (
             "1.16.100",
             r#""minecraft:durability": {"damage_chance": {"min": 10, "max": 50}}"#,
             "components/minecraft:durability",
-            "MissingRequiredField",
+            Kind::MissingRequired,
         ),
         (
             "1.20.40",
             r#""minecraft:use_duration": 4294967296, "minecraft:icon": {"texture": "stick"}"#,
             "components/minecraft:use_duration",
-            "InvalidValue",
+            Kind::InvalidValue,
         ),
         (
             "1.21.50",
             r#""minecraft:custom_components": ["demo:shake", 7], "minecraft:icon": "stick""#,
             "components/minecraft:custom_components/1",
-            "InvalidType",
+            Kind::WrongType,
         ),
         (
             "1.20.0",
             r#""minecraft:foil": 7, "minecraft:icon": {"texture": "stick"}"#,
             "components/minecraft:foil",
-            "InvalidType",
+            Kind::WrongType,
         ),
         (
             "1.20.0",
             r#""minecraft:block": 7, "minecraft:icon": {"texture": "stick"}"#,
             "components/minecraft:block",
-            "InvalidType",
+            Kind::WrongType,
         ),
         (
             "1.20.0",
             r#""minecraft:mining_speed": 1e39, "minecraft:icon": {"texture": "stick"}"#,
             "components/minecraft:mining_speed",
-            "InvalidValue",
+            Kind::InvalidValue,
         ),
     ];
     for (version, components, member, code) in rows {
         let text = item(version, "demo:x", components);
         let found = findings(&text, &allowlisted());
         let at = format!("minecraft:item/{member}");
-        let told: Vec<String> = found
+        let told: Vec<Kind> = found
             .iter()
             .filter(|f| f.location.json_path.to_string() == at && f.severity >= Severity::Info)
-            .map(bedrock_addon::diagnostic::testing::legacy_debug)
+            .map(|f| f.code.kind())
             .collect();
         assert!(
-            told.iter().any(|name| name.starts_with(code)),
+            told.contains(&code),
             "{version} {components}: {told:?} at {at}; all: {found:#?}"
         );
         // A document the game refuses (the 1.18 durability without a maximum)
@@ -1429,7 +1446,7 @@ fn a_root_use_beta_features_that_is_no_bool_is_a_member_nothing_reads() {
         document.diagnostics().iter().any(|f| {
             f.location.json_path.to_string() == "use_beta_features"
                 // By legacy name: the variant and the definitions that were it.
-                && matches!(f.code.name(), "UnrecognizedField")
+                && matches!(f.code.id(), "core/unrecognized_field")
         }),
         "{:#?}",
         document.diagnostics()
@@ -1476,7 +1493,7 @@ fn a_component_based_item_whose_every_component_the_load_drops_is_told_and_not_w
                 .diagnostics()
                 .iter()
                 .filter(|f| f.location.json_path.to_string() == "minecraft:item/components")
-                .map(|f| format!("{} {:?}", f.code.name(), f.severity))
+                .map(|f| format!("{} {:?}", f.code.id(), f.severity))
                 .collect::<Vec<_>>()
         };
     // Its one component is dropped (an empty `absorbable_causes`, a check of ours whose
@@ -1488,7 +1505,7 @@ fn a_component_based_item_whose_every_component_the_load_drops_is_told_and_not_w
     assert_eq!(lone.legacy.format, ItemFormat::DataDriven);
     assert_eq!(lone.components.iter().count(), 0);
     // the load's note of ours, an information
-    assert_eq!(told(&lone), ["InvalidValue Info"]);
+    assert_eq!(told(&lone), ["core/invalid_value Info"]);
     match lone.to_json() {
         Err(EncodeError::NotRepresentable { at, .. }) => {
             assert_eq!(at.to_string(), "minecraft:item/components");
@@ -1530,16 +1547,13 @@ fn a_root_use_beta_features_is_taken_out_with_comments_around_it() {
         // An information of ours: the game says nothing of it.
         let told: Vec<String> = unknown_members(item.diagnostics())
             .iter()
-            .map(|f| {
-                format!(
-                    "{} {} {:?}",
-                    f.location.json_path,
-                    f.code.name(),
-                    f.severity
-                )
-            })
+            .map(|f| format!("{} {} {:?}", f.location.json_path, f.code.id(), f.severity))
             .collect();
-        assert_eq!(told, ["use_beta_features UnrecognizedField Info"], "{text}");
+        assert_eq!(
+            told,
+            ["use_beta_features core/unrecognized_field Info"],
+            "{text}"
+        );
     }
 }
 
@@ -1552,16 +1566,9 @@ fn a_root_use_beta_features_written_with_an_escape_is_taken_out() {
     // An information of ours: the game says nothing of it.
     let told: Vec<String> = unknown_members(item.diagnostics())
         .iter()
-        .map(|f| {
-            format!(
-                "{} {} {:?}",
-                f.location.json_path,
-                f.code.name(),
-                f.severity
-            )
-        })
+        .map(|f| format!("{} {} {:?}", f.location.json_path, f.code.id(), f.severity))
         .collect();
-    assert_eq!(told, ["use_beta_features UnrecognizedField Info"]);
+    assert_eq!(told, ["use_beta_features core/unrecognized_field Info"]);
 }
 
 /// A modern item (1.26.30 here; 1.26.50 and beta in
@@ -1580,7 +1587,7 @@ fn a_null_member_of_a_modern_item_rejects_it() {
     assert!(
         d.iter().any(|f| f.severity == Severity::Error
             // By legacy name: the variant and the definitions that were it.
-            && matches!(f.code.name(), "InvalidType")
+            && matches!(f.code.id(), "core/invalid_type")
             && f.location.json_path.to_string()
                 == "minecraft:item/components/minecraft:use_modifiers/start_sound"),
         "{d:#?}"
@@ -1637,7 +1644,7 @@ fn a_null_component_of_a_legacy_item_is_absent() {
 fn error_at(d: &bedrock_addon::diagnostic::Diagnostics, name: &str, path: &str) -> bool {
     d.iter().any(|f| {
         f.severity == Severity::Error
-            && f.code.name() == name
+            && f.code.id() == name
             && f.location.json_path.to_string() == path
     })
 }
@@ -1667,7 +1674,7 @@ fn a_null_holds_in_every_modern_slice() {
             // (`Item::parse` refuses a loaded beta document too, without a type error)
             let d = rejects(&item(version, "demo:x", components), &beta);
             assert!(
-                error_at(&d, "InvalidType", path),
+                error_at(&d, "core/invalid_type", path),
                 "{version} {path}: {d:#?}"
             );
         }
@@ -1679,7 +1686,7 @@ fn a_null_holds_in_every_modern_slice() {
         assert!(
             error_at(
                 &d,
-                "InvalidType",
+                "core/invalid_type",
                 "minecraft:item/description/menu_category"
             ),
             "{version}: {d:#?}"
@@ -1696,12 +1703,12 @@ fn o5_an_unknown_member_rejects_a_modern_item_and_not_a_legacy_one() {
         (
             r#""minecraft:tags": {"tags": ["demo:a"], "note": 1}"#,
             "minecraft:item/components/minecraft:tags/note",
-            "UnrecognizedField",
+            "core/unrecognized_field",
         ),
         (
             r#""minecraft:icon": "stick", "minecraft:sparkle": {}"#,
             "minecraft:item/components/minecraft:sparkle",
-            "UnrecognizedComponent",
+            "core/unrecognized_component",
         ),
     ] {
         for version in ["1.26.30", "1.26.50"] {
@@ -1711,14 +1718,14 @@ fn o5_an_unknown_member_rejects_a_modern_item_and_not_a_legacy_one() {
         let document = loads(&item("1.21.90", "demo:x", components), &third_party());
         // A component name no format ever had is removed without a game line: an information;
         // an unknown member is cereal's 0x4, a level-2 line: a warning.
-        let legacy = if name == "UnrecognizedComponent" {
+        let legacy = if name == "core/unrecognized_component" {
             Severity::Info
         } else {
             Severity::Warning
         };
         assert!(
             document.diagnostics().iter().any(|f| f.severity == legacy
-                && f.code.name() == name
+                && f.code.id() == name
                 && f.location.json_path.to_string() == path),
             "{path}: {:#?}",
             document.diagnostics()
@@ -1749,7 +1756,7 @@ fn events_is_an_unknown_member_of_the_modern_documents_only() {
     for version in ["1.26.30", "1.26.50"] {
         let d = rejects(&with_events(version), &third_party());
         assert!(
-            error_at(&d, "UnrecognizedField", "minecraft:item/events"),
+            error_at(&d, "core/unrecognized_field", "minecraft:item/events"),
             "{version}: {d:#?}"
         );
     }
@@ -1757,18 +1764,21 @@ fn events_is_an_unknown_member_of_the_modern_documents_only() {
     let told: Vec<String> = legacy
         .diagnostics()
         .iter()
-        .filter(|f| f.code.name() == "InvalidValue")
+        .filter(|f| f.code.id() == "core/invalid_value")
         .map(|f| {
             format!(
                 "{} {:?} {:?} {}",
-                f.code.name(),
+                f.code.id(),
                 f.severity,
                 f.phase,
                 f.location.json_path
             )
         })
         .collect();
-    assert_eq!(told, ["InvalidValue Info Validate minecraft:item/events"]);
+    assert_eq!(
+        told,
+        ["core/invalid_value Info Validate minecraft:item/events"]
+    );
     assert!(legacy.events.is_some());
 }
 
@@ -1783,7 +1793,7 @@ fn the_slice_rules_change_at_their_bounds() {
     assert!(
         error_at(
             &d,
-            "InvalidType",
+            "core/invalid_type",
             "minecraft:item/components/minecraft:use_modifiers/start_sound"
         ),
         "{d:#?}"
@@ -1794,13 +1804,13 @@ fn the_slice_rules_change_at_their_bounds() {
         older
             .diagnostics()
             .iter()
-            .any(|f| f.severity == Severity::Warning && f.code.name() == "UnrecognizedField")
+            .any(|f| f.severity == Severity::Warning && f.code.id() == "core/unrecognized_field")
     );
     let d = rejects(&item("1.26.30", "demo:x", unknown), &third_party());
     assert!(
         error_at(
             &d,
-            "UnrecognizedField",
+            "core/unrecognized_field",
             "minecraft:item/components/minecraft:tags/note"
         ),
         "{d:#?}"
@@ -1810,7 +1820,7 @@ fn the_slice_rules_change_at_their_bounds() {
     assert!(
         error_at(
             &d,
-            "InvalidEnumValue",
+            "core/invalid_enum_value",
             "minecraft:item/components/minecraft:use_modifiers/start_sound"
         ),
         "{d:#?}"
@@ -1830,45 +1840,45 @@ fn e1_a_component_of_the_wrong_shape_refuses_the_item_in_every_slice() {
         (
             "1.21.0",
             r#""minecraft:interact_button": 7"#,
-            "InvalidType",
+            "core/invalid_type",
             "minecraft:interact_button",
         ),
         (
             "1.26.30",
             r#""minecraft:interact_button": 7"#,
-            "InvalidType",
+            "core/invalid_type",
             "minecraft:interact_button",
         ),
         // a bare scalar of the wrong type (document.rs `value` and component/value.rs)
         (
             "1.21.0",
             r#""minecraft:max_stack_size": "x""#,
-            "InvalidType",
+            "core/invalid_type",
             "minecraft:max_stack_size",
         ),
         (
             "1.26.30",
             r#""minecraft:max_stack_size": "x""#,
-            "InvalidType",
+            "core/invalid_type",
             "minecraft:max_stack_size",
         ),
         // the custom component list of 1.20.80–1.21.50, and the entries of 1.21.60–1.26.0
         (
             "1.21.30",
             r#""minecraft:custom_components": 7"#,
-            "InvalidType",
+            "core/invalid_type",
             "minecraft:custom_components",
         ),
         (
             "1.21.60",
             r#""minecraft:custom_components": 7"#,
-            "InvalidType",
+            "core/invalid_type",
             "minecraft:custom_components",
         ),
         (
             "1.21.60",
             r#""minecraft:custom_components": [7]"#,
-            "InvalidType",
+            "core/invalid_type",
             "minecraft:custom_components/0",
         ),
     ] {
@@ -1891,12 +1901,13 @@ fn e1_a_component_of_the_wrong_shape_refuses_the_item_in_every_slice() {
             &allowlisted(),
         );
         assert!(
-            d.iter().any(|f| f.code.name() == "MissingRequiredField"
-                && f.severity == Severity::Error
-                && f.location
-                    .json_path
-                    .to_string()
-                    .starts_with("minecraft:item/components/minecraft:durability")),
+            d.iter()
+                .any(|f| f.code.id() == "core/missing_required_field"
+                    && f.severity == Severity::Error
+                    && f.location
+                        .json_path
+                        .to_string()
+                        .starts_with("minecraft:item/components/minecraft:durability")),
             "{version}: {d:#?}"
         );
     }
@@ -1914,7 +1925,7 @@ fn e1_a_component_of_the_wrong_shape_refuses_the_item_in_every_slice() {
         document
             .diagnostics()
             .iter()
-            .any(|f| f.code.name() == "InvalidType"
+            .any(|f| f.code.id() == "core/invalid_type"
                 && f.severity == Severity::Info
                 && f.location.json_path.to_string()
                     == "minecraft:item/components/minecraft:custom_components/1"),

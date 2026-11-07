@@ -5,21 +5,21 @@
   "rejected": 1,
   "diagnostics": [
     {
-      "code": "MissingRequiredField",
+      "code": "dialogue/no_button_name_missing_required_field",
       "severity": "error",
       "path": "dialogue/counts.json",
       "json_path": "minecraft:npc_dialogue/scenes/0/buttons/3/name",
       "text": "JSON: counts.json has an error: \n Each button needs a 'name' field, was not found. Skipping button..."
     },
     {
-      "code": "MissingRequiredField",
+      "code": "dialogue/no_button_name_missing_required_field",
       "severity": "error",
       "path": "dialogue/counts.json",
       "json_path": "minecraft:npc_dialogue/scenes/0/buttons/7/name",
       "text": "JSON: counts.json has an error: \n Each button needs a 'name' field, was not found. Skipping button..."
     },
     {
-      "code": "InvalidValue",
+      "code": "dialogue/max_buttons",
       "severity": "error",
       "path": "dialogue/counts.json",
       "json_path": "minecraft:npc_dialogue/scenes/1/buttons",

@@ -107,7 +107,7 @@ pub fn found<'a>(d: impl IntoIterator<Item = &'a Diagnostic>) -> Vec<Found> {
             let detail = f.detail.as_ref().map(ToString::to_string);
             (
                 f.severity,
-                f.code.name(),
+                f.code.id(),
                 f.location.json_path.to_string(),
                 format!("{}{}", f.code, detail.unwrap_or_default()),
             )
@@ -132,13 +132,17 @@ pub fn info(code: &'static str, path: &str, message: &str) -> Found {
 
 /// The loader's closing line of a file the Puv load or a validator failed.
 pub fn failed_to_load() -> Found {
-    error("DocumentRejected", "", "Failed to load DataDrivenUI file")
+    error(
+        "ddui/failed_to_load",
+        "",
+        "Failed to load DataDrivenUI file",
+    )
 }
 
 /// The loader's text for a file whose payload member is not `key`.
 pub fn missing_object(key: &str) -> Found {
     error(
-        "MissingPayload",
+        "ddui/missing_object",
         "",
         &format!("Failed to parse DataDrivenUI file. Missing object \"{key}\""),
     )

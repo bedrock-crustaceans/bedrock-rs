@@ -96,6 +96,6 @@ fn a_cycle_of_twenty_thousand_materials_creates_none_and_reports_each() {
     assert!(
         found
             .iter()
-            .all(|finding| finding.0 == "UnresolvedReference")
+            .all(|finding| finding.0 == "core/unresolved_reference")
     );
 }

@@ -62,8 +62,8 @@ fn cat03_an_unknown_member_is_a_warning_and_the_file_loads() {
     assert_eq!(found.len(), 1, "{found:#?}");
     assert!(matches!(
         // By legacy name: the variant and the definitions that were it.
-        found[0].code.name(),
-        "UnrecognizedField"
+        found[0].code.id(),
+        "core/unrecognized_field"
     ));
     assert_eq!(found[0].severity, Severity::Warning);
     assert_eq!(
@@ -84,7 +84,7 @@ fn cat04_a_missing_format_version_is_an_error_with_vanilla_s_text() {
         expected_list("cat04_missing_format_version.expected.json")
     );
     // By legacy name: the variant and the definitions that were it.
-    assert_eq!(one_error(&found).code.name(), "MissingFormatVersion");
+    assert_eq!(one_error(&found).code.id(), "core/version_not_processable");
 }
 
 #[test]
@@ -94,7 +94,7 @@ fn cat04b_an_unreadable_format_version_is_the_missing_version_error() {
         let error = one_error(&found);
         assert!(
             // By legacy name: the variant and the definitions that were it.
-            matches!(error.code.name(), "MissingFormatVersion"),
+            matches!(error.code.id(), "core/version_not_processable"),
             "{case}: {found:#?}"
         );
         assert_eq!(error.code.to_string(), FORMAT_VERSION_TEXT, "{case}");
@@ -105,7 +105,7 @@ fn cat04b_an_unreadable_format_version_is_the_missing_version_error() {
     let error = one_error(&found);
     assert!(
         // By legacy name: the variant and the definitions that were it.
-        matches!(error.code.name(), "UnsupportedVersion"),
+        matches!(error.code.id(), "crafting_catalog/below_floor"),
         "{found:#?}"
     );
     assert_eq!(error.code.to_string(), FORMAT_VERSION_TEXT);
@@ -137,7 +137,7 @@ fn cat06_a_payload_without_categories_is_rejected() {
     let found = rejects(&fixture("cat06_missing_categories.json"));
     let error = one_error(&found);
     // By legacy name: the variant and the definitions that were it.
-    assert!(matches!(error.code.name(), "MissingRequiredField"));
+    assert!(matches!(error.code.id(), "core/missing_required_field"));
     assert_eq!(
         error.location.json_path.to_string(),
         "minecraft:crafting_items_catalog/categories"
@@ -149,7 +149,7 @@ fn cat07_an_unknown_category_name_is_rejected() {
     let found = rejects(&fixture("cat07_bad_category_name.json"));
     let error = one_error(&found);
     // By legacy name: the variant and the definitions that were it.
-    assert!(matches!(error.code.name(), "InvalidValue"));
+    assert!(matches!(error.code.id(), "core/invalid_value"));
     assert_eq!(
         error.location.json_path.to_string(),
         "minecraft:crafting_items_catalog/categories/0/category_name"
@@ -165,7 +165,7 @@ fn cat08_a_group_name_without_a_namespace_is_rejected_with_vanilla_s_text() {
     );
     let error = one_error(&found);
     // By legacy name: the variant and the definitions that were it.
-    assert!(matches!(error.code.name(), "InvalidValue"));
+    assert!(matches!(error.code.id(), "crafting_catalog/group_name"));
     assert_eq!(
         error.location.json_path.to_string(),
         "minecraft:crafting_items_catalog/categories/0/groups/0/group_identifier/name"
@@ -181,7 +181,7 @@ fn cat09_an_item_name_without_a_namespace_is_rejected_with_vanilla_s_text() {
     );
     let error = one_error(&found);
     // By legacy name: the variant and the definitions that were it.
-    assert!(matches!(error.code.name(), "InvalidValue"));
+    assert!(matches!(error.code.id(), "core/string_mismatch"));
     assert_eq!(
         error.location.json_path.to_string(),
         "minecraft:crafting_items_catalog/categories/0/groups/0/items/0"

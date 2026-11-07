@@ -175,7 +175,7 @@ mod item {
             .diagnostics()
             .iter()
             // By legacy name: the variant and the definitions that were it.
-            .filter(|f| matches!(f.code.name(), "UnrecognizedField"))
+            .filter(|f| matches!(f.code.id(), "core/unrecognized_field"))
             .map(|f| f.location.json_path.to_string())
             .collect();
         unrecognized.sort();

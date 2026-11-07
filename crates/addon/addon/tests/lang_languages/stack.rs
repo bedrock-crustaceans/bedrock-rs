@@ -43,7 +43,7 @@ fn language_findings<S: Side>(
     stack
         .languages()
         .diagnostics()
-        .filter(|d| d.code.name() == code && d.severity == severity)
+        .filter(|d| d.code.id() == code && d.severity == severity)
         .map(place)
         .collect()
 }
@@ -136,7 +136,7 @@ fn a_lang_file_of_an_unlisted_code_is_reported_deviation() {
     // L7, vanilla = "silent"
     let stack = case("new_language");
     assert_eq!(
-        language_findings(&stack, "IgnoredFile", Severity::Info),
+        language_findings(&stack, "core/ignored_file", Severity::Info),
         [(Some(0), "texts/yy_YY.lang".to_owned(), String::new())]
     );
     assert_eq!(stack.languages().diagnostics().count(), 1);
@@ -237,7 +237,7 @@ fn a_texts_folder_with_a_capital_t_is_reported_once_per_pack_deviation() {
     // L12, vanilla = "only the single-pack appendLanguageStrings path falls back to Texts/"
     let stack = case("texts_capital");
     assert_eq!(
-        language_findings(&stack, "IgnoredFile", Severity::Info),
+        language_findings(&stack, "core/ignored_file", Severity::Info),
         [(Some(0), "Texts".to_owned(), String::new())]
     );
     let two_files = resource_stack(vec![pack_with(
@@ -249,7 +249,7 @@ fn a_texts_folder_with_a_capital_t_is_reported_once_per_pack_deviation() {
         ],
     )]);
     assert_eq!(
-        language_findings(&two_files, "IgnoredFile", Severity::Info).len(),
+        language_findings(&two_files, "core/ignored_file", Severity::Info).len(),
         1
     );
     // its `languages.json` is not read either
@@ -351,7 +351,7 @@ fn a_copy_that_does_not_parse_is_skipped_and_the_other_packs_copies_count() {
     ]);
     assert_eq!(codes(&stack), ["en_US"]);
     assert_eq!(stack.languages().layers().len(), 1);
-    let errors = language_findings(&stack, "MalformedInput", Severity::Info);
+    let errors = language_findings(&stack, "core/syntax", Severity::Info);
     assert_eq!(
         errors,
         [
@@ -376,7 +376,7 @@ fn a_stack_without_languages_json_lists_nothing_and_has_no_translations() {
     assert!(stack.translations(&lang_of("en_US")).is_none());
     // L7: the file is never loaded
     assert_eq!(
-        language_findings(&stack, "IgnoredFile", Severity::Info),
+        language_findings(&stack, "core/ignored_file", Severity::Info),
         [(Some(0), "texts/en_US.lang".to_owned(), String::new())]
     );
 }
@@ -385,11 +385,11 @@ fn a_stack_without_languages_json_lists_nothing_and_has_no_translations() {
 fn the_findings_of_a_languages_file_come_with_its_pack_and_path() {
     let stack = resource_stack(vec![base_pack(r#"["en_US", 5, "english"]"#, &[])]);
     assert_eq!(
-        language_findings(&stack, "InvalidType", Severity::Info),
+        language_findings(&stack, "core/invalid_type", Severity::Info),
         [(Some(0), "texts/languages.json".to_owned(), "1".to_owned())]
     );
     assert_eq!(
-        language_findings(&stack, "InvalidValue", Severity::Info),
+        language_findings(&stack, "core/invalid_value", Severity::Info),
         [(Some(0), "texts/languages.json".to_owned(), "2".to_owned())]
     );
 }
@@ -572,7 +572,7 @@ fn a_name_keyword_no_listed_lang_file_defines_is_reported_deviation() {
         ],
     )]);
     assert_eq!(
-        language_findings(&missing_key, "UnresolvedLangKey", Severity::Info),
+        language_findings(&missing_key, "core/unresolved_lang_key", Severity::Info),
         [(
             Some(0),
             "manifest.json".to_owned(),
@@ -581,7 +581,7 @@ fn a_name_keyword_no_listed_lang_file_defines_is_reported_deviation() {
     );
     let no_languages = resource_stack(vec![keyword_pack(1, &[])]);
     assert_eq!(
-        language_findings(&no_languages, "UnresolvedLangKey", Severity::Info).len(),
+        language_findings(&no_languages, "core/unresolved_lang_key", Severity::Info).len(),
         1
     );
 }
@@ -595,7 +595,7 @@ fn a_name_keyword_a_listed_lang_file_defines_is_not_reported() {
             ("texts/de_DE.lang", "pack.name=Mein Paket\n"),
         ],
     )]);
-    assert!(language_findings(&stack, "UnresolvedLangKey", Severity::Info).is_empty());
+    assert!(language_findings(&stack, "core/unresolved_lang_key", Severity::Info).is_empty());
     // a plain name is no keyword
     let plain = resource_stack(vec![base_pack(r#"["en_US"]"#, &[])]);
     assert_eq!(plain.languages().diagnostics().count(), 0);
@@ -619,7 +619,7 @@ fn a_keyword_in_a_lang_file_the_pack_does_not_list_is_reported_deviation() {
         base_pack(r#"["en_US", "de_DE"]"#, &[]),
     ]);
     assert_eq!(
-        language_findings(&stack, "IgnoredMember", Severity::Info),
+        language_findings(&stack, "core/ignored_member", Severity::Info),
         [
             (
                 Some(0),
@@ -669,7 +669,7 @@ fn a_keyword_neither_header_field_uses_is_reported_deviation() {
             &[LISTS_ENGLISH, ("texts/en_US.lang", both)],
         )]);
         assert_eq!(
-            language_findings(&stack, "IgnoredMember", Severity::Info),
+            language_findings(&stack, "core/ignored_member", Severity::Info),
             [
                 (
                     Some(0),
@@ -704,7 +704,7 @@ fn a_description_keyword_is_used_by_the_manifest() {
     )]);
     // only the keyword no header field names is unused
     assert_eq!(
-        language_findings(&stack, "IgnoredMember", Severity::Info),
+        language_findings(&stack, "core/ignored_member", Severity::Info),
         [(
             Some(0),
             "texts/en_US.lang".to_owned(),
@@ -738,7 +738,7 @@ fn a_description_keyword_no_listed_lang_file_defines_is_reported_deviation() {
         &[LISTS_ENGLISH, ("texts/en_US.lang", "pack.name=My Pack\n")],
     )]);
     assert_eq!(
-        language_findings(&stack, "UnresolvedLangKey", Severity::Info),
+        language_findings(&stack, "core/unresolved_lang_key", Severity::Info),
         [(
             Some(0),
             "manifest.json".to_owned(),
@@ -910,7 +910,7 @@ fn a_keyword_another_pack_defines_does_not_resolve_this_packs_name() {
     ]);
     // L6 for the top pack only: the lower pack's own file resolves the lower pack's name
     assert_eq!(
-        language_findings(&stack, "UnresolvedLangKey", Severity::Info),
+        language_findings(&stack, "core/unresolved_lang_key", Severity::Info),
         [(
             Some(0),
             "manifest.json".to_owned(),
@@ -953,15 +953,15 @@ fn a_stack_load_of_the_languages_asks_for_the_lists_and_the_lang_files_only() {
             .diagnostics()
             .map(|f| {
                 let path = f.location.path.as_ref().map_or("", |path| path.as_str());
-                (f.code.name(), path)
+                (f.code.id(), path)
             })
             .collect();
         assert!(
-            found.contains(&("ShadowedDefinition", "texts/en_US/other.json")),
+            found.contains(&("core/shadowed_definition", "texts/en_US/other.json")),
             "{order:?}: {found:?}"
         );
         assert!(
-            found.contains(&("IgnoredFile", "texts/zz_ZZ")),
+            found.contains(&("core/ignored_file", "texts/zz_ZZ")),
             "{order:?}: {found:?}"
         );
         assert!(

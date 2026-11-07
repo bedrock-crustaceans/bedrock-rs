@@ -143,7 +143,7 @@ fn r26_an_empty_string_is_not_compiled_without_the_feature_either() {
         "surface_pass",
         Some(&distribution("1", r#""""#, "0", "0")),
     ));
-    assert!(with_code(document.diagnostics(), "InvalidMolang").is_empty());
+    assert!(with_code(document.diagnostics(), "core/invalid_molang").is_empty());
     assert_eq!(must_be_provided(document.diagnostics()).len(), 1);
 }
 
@@ -155,7 +155,7 @@ fn rule_5_without_the_molang_feature_a_rule_with_expressions_is_not_checked() {
         "surface_pass",
         Some(&distribution(r#""v.x""#, "0", "0", "0")),
     ));
-    let found = with_code(document.diagnostics(), "MolangNotChecked");
+    let found = with_code(document.diagnostics(), "core/molang_not_checked");
     assert_eq!(found.len(), 1, "{:#?}", document.diagnostics());
     assert_eq!(found[0].severity, Severity::Info);
 }

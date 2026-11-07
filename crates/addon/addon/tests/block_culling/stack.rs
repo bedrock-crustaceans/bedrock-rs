@@ -67,7 +67,7 @@ fn findings(registry: &Registry<CullingRules>) -> Vec<(&'static str, Severity, S
         .diagnostics()
         .map(|f| {
             (
-                f.code.name(),
+                f.code.id(),
                 f.severity,
                 f.location
                     .pack
@@ -151,9 +151,15 @@ fn a_failed_override_keeps_the_lower_document() {
     let errors: Vec<&str> = registry
         .diagnostics()
         .filter(|f| f.severity == Severity::Error)
-        .map(|f| f.code.name())
+        .map(|f| f.code.id())
         .collect();
-    assert_eq!(errors, ["MissingRequiredField", "DocumentRejected"]);
+    assert_eq!(
+        errors,
+        [
+            "core/missing_required_field_worded",
+            "block_culling/failed_to_parse"
+        ]
+    );
 }
 
 #[test]
@@ -192,7 +198,7 @@ fn two_files_of_one_pack_the_later_path_wins_with_a_warning_deviation() {
     for finding in &found {
         assert_eq!(
             (finding.0, finding.1, finding.2.as_str()),
-            ("DuplicateIdentifier", Severity::Info, "rp 1")
+            ("core/duplicate_identifier", Severity::Info, "rp 1")
         );
     }
 }
@@ -421,7 +427,7 @@ fn a_document_of_many_repeated_rules_is_refused_with_a_finding_each() {
     assert!(registry.is_empty());
     let found = registry
         .diagnostics()
-        .filter(|f| f.code.name() == "DuplicateIdentifier")
+        .filter(|f| f.code.id() == "block_culling/duplicate_part")
         .count();
     assert_eq!(found, count - 1);
 }

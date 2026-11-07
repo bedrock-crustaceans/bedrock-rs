@@ -26,7 +26,7 @@ const COMPONENTS: &str = r#"
 
 fn info(path: &str, id: &str) -> super::Said {
     miss(
-        "UnresolvedReference",
+        "core/unresolved_reference",
         Severity::Info,
         &format!("minecraft:entity/components/minecraft:{path}"),
         "loot table",

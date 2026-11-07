@@ -2,7 +2,7 @@
 scope = "module"
 
 [[diagnostic]]
-code = "UnresolvedReference"
+code = "script/plugin_missing_main_file"
 severity = "error"
 path = "modules/0/entry"
 text = "Plugin [sm26 - 3.2.1] - does not contain main file [main.js]."

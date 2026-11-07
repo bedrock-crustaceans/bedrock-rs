@@ -86,8 +86,8 @@ fn m5_a_piece_id_of_the_wrong_type_invalidates_the_piece() {
     assert_eq!(
         lines(&load(&pack)),
         [
-            "error InvalidType pieces/hat/hat.meta.json piece_id",
-            "error MalformedInput pieces/hat/hat.meta.json"
+            "error core/invalid_type pieces/hat/hat.meta.json piece_id",
+            "error persona/meta_not_parsed pieces/hat/hat.meta.json"
         ]
     );
 }
@@ -100,14 +100,12 @@ fn pp03_p4_a_piece_pack_with_two_piece_folders_keeps_one() {
         ("texts/en_US.lang", NAMES),
     ]);
     let pieces = load(&pack);
-    assert_eq!(lines(&pieces), ["info IdentifierCollision pieces/b"]);
+    assert_eq!(lines(&pieces), ["info core/identifier_collision pieces/b"]);
     // By legacy name: the variant and the definitions that were it.
-    assert!(
-        pieces
-            .report()
-            .any(|found| matches!(found.code.name(), "IdentifierCollision")
-                && found.severity == Severity::Info)
-    );
+    assert!(pieces.report().any(
+        |found| matches!(found.code.id(), "core/identifier_collision")
+            && found.severity == Severity::Info
+    ));
     let directories: Vec<&str> = pieces
         .pieces
         .iter()
@@ -136,7 +134,7 @@ fn p4_three_piece_folders_are_one_finding_and_one_is_none() {
         ("texts/en_US.lang", NAMES),
     ]);
     let pieces = load(&three);
-    assert_eq!(lines(&pieces), ["info IdentifierCollision pieces/b"]);
+    assert_eq!(lines(&pieces), ["info core/identifier_collision pieces/b"]);
     assert_eq!(pieces.pieces.len(), 3);
     assert_eq!(pieces.kept().count(), 1);
 
@@ -162,7 +160,7 @@ fn p4_counts_only_the_folders_that_made_a_piece() {
         assert_eq!(
             lines(&pieces),
             [format!(
-                "error MalformedInput pieces/{refused}/{refused}.meta.json"
+                "error persona/meta_not_parsed pieces/{refused}/{refused}.meta.json"
             )]
         );
         assert_eq!(pieces.pieces.len(), 1);
@@ -179,8 +177,8 @@ fn p4_counts_only_the_folders_that_made_a_piece() {
     assert_eq!(
         lines(&pieces),
         [
-            "info IdentifierCollision pieces/c",
-            "error MalformedInput pieces/a/a.meta.json"
+            "info core/identifier_collision pieces/c",
+            "error persona/meta_not_parsed pieces/a/a.meta.json"
         ]
     );
     let kept: Vec<&str> = pieces
@@ -198,8 +196,8 @@ fn p4_counts_only_the_folders_that_made_a_piece() {
     assert_eq!(
         lines(&load(&pack)),
         [
-            "info IdentifierCollision pieces/c",
-            "error MalformedInput pieces/b/b.meta.json"
+            "info core/identifier_collision pieces/c",
+            "error persona/meta_not_parsed pieces/b/b.meta.json"
         ]
     );
 }
@@ -281,10 +279,10 @@ fn pp05_m4_a_built_in_piece_without_a_uuid_is_skipped() {
     assert_eq!(
         lines(&pieces),
         [
-            "error InvalidValue pieces/b/b.meta.json piece_id",
-            "error MissingRequiredField pieces/c/c.meta.json piece_id",
-            "error MalformedInput pieces/c/c.meta.json",
-            "error InvalidValue pieces/d/d.meta.json piece_id",
+            "error core/invalid_value pieces/b/b.meta.json piece_id",
+            "error core/missing_required_field pieces/c/c.meta.json piece_id",
+            "error persona/meta_not_parsed pieces/c/c.meta.json",
+            "error core/invalid_value pieces/d/d.meta.json piece_id",
         ]
     );
     assert_eq!(only(&pieces).directory.as_str(), "pieces/a");
@@ -304,8 +302,10 @@ fn pp05_m4_a_built_in_piece_without_a_uuid_is_skipped() {
     assert!(pieces.rejected.iter().all(|rejected| {
         rejected.diagnostics.iter().any(|found| {
             // By legacy name: the variant and the definitions that were it.
-            matches!(found.code.name(), "InvalidValue" | "MissingRequiredField")
-                && found.severity == Severity::Error
+            matches!(
+                found.code.id(),
+                "core/invalid_value" | "core/missing_required_field"
+            ) && found.severity == Severity::Error
         })
     }));
 }
@@ -323,8 +323,8 @@ fn m4_a_skipped_piece_keeps_the_findings_of_its_file() {
     assert_eq!(
         lines(&pieces),
         [
-            "info InvalidValue pieces/a/a.meta.json tint_color",
-            "error InvalidValue pieces/a/a.meta.json piece_id",
+            "info core/invalid_value pieces/a/a.meta.json tint_color",
+            "error core/invalid_value pieces/a/a.meta.json piece_id",
         ]
     );
     assert_eq!(pieces.rejected.len(), 1);
@@ -399,7 +399,7 @@ fn every_finding_of_the_pack_names_the_pack() {
     let ordinary = load(&ordinary_pack(&[("pieces/x/x.meta.json", "{}")]));
     assert_eq!(
         of_pack(&ordinary, ORDINARY_PACK),
-        ["info IgnoredFile pieces/x/x.meta.json"]
+        ["info core/ignored_file pieces/x/x.meta.json"]
     );
     // P4 (at the first folder the client does not keep), P6, P7, S4
     let piece = load(&piece_pack(&[
@@ -414,10 +414,10 @@ fn every_finding_of_the_pack_names_the_pack() {
     assert_eq!(
         of_pack(&piece, PIECE_PACK),
         [
-            "info ShadowedDefinition pieces/b",
-            "info MissingRequiredField pieces/d",
-            "info IdentifierCollision pieces/b",
-            "info IgnoredFile pieces/b/texts",
+            "info core/shadowed_definition pieces/b",
+            "info core/missing_required_field pieces/d",
+            "info core/identifier_collision pieces/b",
+            "info core/ignored_file pieces/b/texts",
         ]
     );
     // M7
@@ -429,7 +429,7 @@ fn every_finding_of_the_pack_names_the_pack() {
     ]));
     assert_eq!(
         of_pack(&builtin, BUILTIN_PACK),
-        ["info IdentifierCollision pieces/b/b.meta.json piece_id"]
+        ["info core/identifier_collision pieces/b/b.meta.json piece_id"]
     );
 }
 
@@ -450,8 +450,8 @@ fn m7_two_built_in_pieces_with_one_id_keep_the_first() {
     assert_eq!(
         lines(&pieces),
         [
-            "info IdentifierCollision pieces/b/b.meta.json piece_id",
-            "info IdentifierCollision pieces/c/c.meta.json piece_id",
+            "info core/identifier_collision pieces/b/b.meta.json piece_id",
+            "info core/identifier_collision pieces/c/c.meta.json piece_id",
         ]
     );
     assert_eq!(pieces.pieces.len(), 4);
@@ -485,9 +485,9 @@ fn a_piece_the_client_skips_holds_no_identity() {
         let pieces = load(&piece_pack(&files));
         // P4 is said only of folders that made a piece, at the second of them: never at
         // the folder of the piece that is kept.
-        let mut expected = vec!["error MalformedInput pieces/a/a.meta.json"];
+        let mut expected = vec!["error persona/meta_not_parsed pieces/a/a.meta.json"];
         if others.len() == 2 {
-            expected.insert(0, "info IdentifierCollision pieces/c");
+            expected.insert(0, "info core/identifier_collision pieces/c");
         }
         assert_eq!(lines(&pieces), expected);
         let kept: Vec<&str> = pieces
@@ -516,8 +516,8 @@ fn a_piece_the_client_skips_holds_no_identity() {
     assert_eq!(
         lines(&pieces),
         [
-            "info IdentifierCollision pieces/c/c.meta.json piece_id",
-            "error InvalidValue pieces/a/a.meta.json piece_id",
+            "info core/identifier_collision pieces/c/c.meta.json piece_id",
+            "error core/invalid_value pieces/a/a.meta.json piece_id",
         ]
     );
     let kept: Vec<&str> = pieces
@@ -543,7 +543,7 @@ fn m7_the_id_is_compared_as_a_uuid() {
     ]);
     assert_eq!(
         lines(&load(&pack)),
-        ["info IdentifierCollision pieces/b/b.meta.json piece_id"]
+        ["info core/identifier_collision pieces/b/b.meta.json piece_id"]
     );
 }
 
@@ -565,9 +565,9 @@ fn pp06_p2_piece_files_in_an_ordinary_pack_are_not_read() {
     assert_eq!(
         lines(&pieces),
         [
-            "info IgnoredFile pieces/x/x.geometry.json",
-            "info IgnoredFile pieces/x/x.meta.json",
-            "info IgnoredFile pieces/x/x.store_info.json",
+            "info core/ignored_file pieces/x/x.geometry.json",
+            "info core/ignored_file pieces/x/x.meta.json",
+            "info core/ignored_file pieces/x/x.store_info.json",
         ]
     );
     // The pack itself is an ordinary resource pack and is served.
@@ -583,7 +583,10 @@ fn p2_a_behavior_pack_s_piece_files_are_not_read_either() {
     );
     let pieces = load(&pack);
     assert_eq!(pieces.kind, PackKind::Ordinary);
-    assert_eq!(lines(&pieces), ["info IgnoredFile pieces/x/x.meta.json"]);
+    assert_eq!(
+        lines(&pieces),
+        ["info core/ignored_file pieces/x/x.meta.json"]
+    );
 }
 
 #[test]
@@ -609,7 +612,7 @@ fn pp07_p1_a_piece_pack_is_never_on_a_resource_stack() {
         .selection()
         .iter()
         // By legacy name: the variant and the definitions that were it.
-        .filter(|d| matches!(d.code.name(), "PersonaPiecePack"))
+        .filter(|d| matches!(d.code.id(), "core/persona_piece_pack"))
         .collect();
     assert_eq!(found.len(), 1, "{found:?}");
     // Adding to the stack has no kind check and no line: an information.
@@ -669,7 +672,9 @@ fn the_other_suffixes_and_the_texts_folder_are_matched_letter_for_letter() {
     assert_eq!(
         lines(&pieces),
         // G3: no geometry file to look the model up in.
-        ["error UnresolvedReference pieces/hat/hat.meta.json geometry_sources/0/geometry"]
+        [
+            "error persona/geometry_name_not_found pieces/hat/hat.meta.json geometry_sources/0/geometry"
+        ]
     );
     let piece = only(&pieces);
     assert!(piece.geometry.is_none());
@@ -685,7 +690,7 @@ fn the_other_suffixes_and_the_texts_folder_are_matched_letter_for_letter() {
         ("pieces/hat/texts/en_us.lang", "persona.offer.title=A\n"),
         ("texts/en_US.lang", NAMES),
     ]));
-    assert_eq!(lines(&lower), ["info IgnoredFile pieces/hat/texts"]);
+    assert_eq!(lines(&lower), ["info core/ignored_file pieces/hat/texts"]);
     assert_eq!(only(&lower).offer_title, None);
     let exact = load(&piece_pack(&[
         ("pieces/hat/hat.meta.json", &meta("")),
@@ -695,7 +700,7 @@ fn the_other_suffixes_and_the_texts_folder_are_matched_letter_for_letter() {
     ]));
     assert_eq!(
         lines(&exact),
-        ["info MalformedInput pieces/hat/hat.store_info.json"]
+        ["info core/syntax pieces/hat/hat.store_info.json"]
     );
     assert!(only(&exact).geometry.is_some());
     assert_eq!(only(&exact).offer_title.as_deref(), Some("A"));
@@ -707,7 +712,7 @@ fn the_other_suffixes_and_the_texts_folder_are_matched_letter_for_letter() {
     ]));
     assert_eq!(
         lines(&names),
-        ["info UnresolvedLangKey pieces/hat/hat.meta.json"]
+        ["info core/unresolved_lang_key pieces/hat/hat.meta.json"]
     );
 }
 
@@ -752,10 +757,10 @@ fn pp09_p6_a_folder_without_a_meta_file_is_no_piece_deviation() {
     assert_eq!(
         lines(&pieces),
         [
-            "info MissingRequiredField pieces/w",
-            "info MissingRequiredField pieces/x",
-            "info MissingRequiredField pieces/y",
-            "info MissingRequiredField pieces/z",
+            "info core/missing_required_field pieces/w",
+            "info core/missing_required_field pieces/x",
+            "info core/missing_required_field pieces/y",
+            "info core/missing_required_field pieces/z",
         ]
     );
 }
@@ -769,7 +774,10 @@ fn p6_a_folder_without_a_meta_file_has_no_texts_to_report() {
         ("texts/en_US.lang", NAMES),
     ]);
     let pieces = load(&pack);
-    assert_eq!(lines(&pieces), ["info MissingRequiredField pieces/x"]);
+    assert_eq!(
+        lines(&pieces),
+        ["info core/missing_required_field pieces/x"]
+    );
 }
 
 #[test]
@@ -783,7 +791,7 @@ fn pp10_p7_of_two_meta_files_in_a_folder_one_is_read_deviation() {
         ("texts/en_US.lang", NAMES),
     ]);
     let pieces = load(&pack);
-    assert_eq!(lines(&pieces), ["info ShadowedDefinition pieces/x"]);
+    assert_eq!(lines(&pieces), ["info core/shadowed_definition pieces/x"]);
     let piece = only(&pieces);
     // The later one by name stands, as a later file replaces the slot in the client's walk.
     assert_eq!(piece.meta.origin().path.as_str(), "pieces/x/b.meta.json");
@@ -800,7 +808,7 @@ fn p7_three_meta_files_are_one_finding() {
     ]);
     let pieces = load(&pack);
     // The shadowed files are never read: their broken JSON is not reported.
-    assert_eq!(lines(&pieces), ["info ShadowedDefinition pieces/x"]);
+    assert_eq!(lines(&pieces), ["info core/shadowed_definition pieces/x"]);
     assert_eq!(
         only(&pieces).meta.origin().path.as_str(),
         "pieces/x/c.meta.json"
@@ -819,7 +827,7 @@ fn pp11_p3_a_piece_pack_s_min_engine_version_is_ignored() {
             .iter()
             .filter(|found| {
                 // By legacy name: the variant and the definitions that were it.
-                matches!(found.code.name(), "IgnoredProperty")
+                matches!(found.code.id(), "core/ignored_property")
                     && found.severity == Severity::Warning
             })
             .count()

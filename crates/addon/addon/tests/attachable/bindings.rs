@@ -2,7 +2,7 @@
 //! bindings the stack gathers. Packs are listed highest priority first; every manifest is at
 //! 1.21.0 unless the row says otherwise. `a24` waits for the link pass (`link.rs`).
 
-use bedrock_addon::diagnostic::Severity;
+use bedrock_addon::diagnostic::{Code, Kind, Severity};
 use bedrock_addon::document::{Content, Document, Registry};
 use bedrock_addon::families::attachable::{Attachable, Condition, ItemBindingEntry, ItemBindings};
 use bedrock_addon::id::AttachableId;
@@ -71,15 +71,20 @@ fn bindings_of(set: &StackSet, item: &str) -> Vec<String> {
 fn texts(set: &StackSet, name: &str) -> Vec<String> {
     attachables(set)
         .diagnostics()
-        .filter(|f| f.code.name() == name)
+        .filter(|f| f.code.id() == name)
         .map(|f| f.code.to_string())
         .collect()
 }
 
 fn found(set: &StackSet, name: &str) -> Vec<String> {
+    found_by(set, |code| code.id() == name)
+}
+
+/// The findings whose code `keep` accepts, as `severity pack/path json_path`.
+fn found_by(set: &StackSet, keep: impl Fn(&Code) -> bool) -> Vec<String> {
     attachables(set)
         .diagnostics()
-        .filter(|f| f.code.name() == name)
+        .filter(|f| keep(&f.code))
         .map(|f| {
             format!(
                 "{:?} {}/{} {}",
@@ -90,6 +95,17 @@ fn found(set: &StackSet, name: &str) -> Vec<String> {
             )
         })
         .collect()
+}
+
+/// Whether `code` is a definition the legacy `AttachableShadowed` was: the shadowing of an
+/// attachable, whichever wording.
+fn is_attachable_shadowed(code: &Code) -> bool {
+    matches!(
+        code.id(),
+        "core/attachable_shadowed"
+            | "core/attachable_shadowed_above_stack"
+            | "core/attachable_shadowed_older"
+    )
 }
 
 /// Requires the registry to have no finding at warning level or above.
@@ -134,7 +150,7 @@ fn a20_two_packs_equal_mev_merge() {
     let index = ItemBindings::from_registry(attachables(&set));
     let tried: Vec<usize> = index.tried("example:wand").map(|e| e.sequence).collect();
     assert_eq!(tried, [1, 0]);
-    assert!(found(&set, "ItemBindingShadowed").is_empty());
+    assert!(found(&set, "core/item_binding_shadowed").is_empty());
     no_warning(&set);
     // The merged description holds the later document's `item`.
     assert_eq!(wand.binding().unwrap().1, wand.bound_items()[1].condition);
@@ -224,10 +240,10 @@ fn a21_higher_mev_replaces() {
     assert_eq!(wand.bound_items().len(), 1);
     assert!(wand.bound_items()[0].shadowed);
     assert_eq!(
-        found(&set, "ItemBindingShadowed"),
+        found(&set, "core/item_binding_shadowed"),
         [format!("Info pack 2/attachables/wand.json {ITEM_AT}")]
     );
-    assert!(found(&set, "AttachableShadowed").is_empty());
+    assert!(found_by(&set, is_attachable_shadowed).is_empty());
     no_warning(&set);
 }
 
@@ -251,7 +267,7 @@ fn a21_a_chain_of_replacements_keeps_every_binding_and_shadows_all_but_the_last(
             "2 example:c -> example:wand [always] @pack 1/attachables/wand.json",
         ]
     );
-    assert_eq!(found(&set, "ItemBindingShadowed").len(), 2);
+    assert_eq!(found(&set, "core/item_binding_shadowed").len(), 2);
     // A document merged into the replacement is not shadowed.
     let merged = wand_doc(Some("1.20.0"), r#""item": "example:d""#);
     let set = stack(&[
@@ -266,7 +282,7 @@ fn a21_a_chain_of_replacements_keeps_every_binding_and_shadows_all_but_the_last(
         .map(|entry| entry.shadowed)
         .collect();
     assert_eq!(shadowed, [true, false, false]);
-    assert_eq!(found(&set, "ItemBindingShadowed").len(), 1);
+    assert_eq!(found(&set, "core/item_binding_shadowed").len(), 1);
 }
 
 // ---- rules 24 and 25: an ignored document adds no binding ----
@@ -282,17 +298,17 @@ fn a22_lower_mev_ignored() {
     // The document ignored is the higher pack's, for its lower `min_engine_version`: the
     // finding says so.
     assert_eq!(
-        found(&set, "AttachableShadowed"),
+        found(&set, "core/attachable_shadowed_older"),
         ["Info pack 1/attachables/wand.json "]
     );
     assert_eq!(
-        texts(&set, "AttachableShadowed"),
+        texts(&set, "core/attachable_shadowed_older"),
         ["attachable ignored: its min_engine_version is below the loaded definition's"]
     );
     // Vanilla returns before it reads `item`: no binding.
     assert!(wand.bound_items().is_empty());
     assert!(ItemBindings::from_registry(attachables(&set)).is_empty());
-    assert!(found(&set, "ItemBindingShadowed").is_empty());
+    assert!(found(&set, "core/item_binding_shadowed").is_empty());
 }
 
 #[test]
@@ -329,11 +345,11 @@ fn a23_mev_above_stack() {
     // No other pack exists: the document is above the stack's version, and the finding
     // says so.
     assert_eq!(
-        found(&set, "AttachableShadowed"),
+        found(&set, "core/attachable_shadowed_above_stack"),
         ["Info pack 1/attachables/wand.json "]
     );
     assert_eq!(
-        texts(&set, "AttachableShadowed"),
+        texts(&set, "core/attachable_shadowed_above_stack"),
         ["attachable ignored: its min_engine_version is above the stack's"]
     );
     assert!(ItemBindings::from_registry(attachables(&set)).is_empty());
@@ -343,7 +359,7 @@ fn a23_mev_above_stack() {
     assert_eq!(bindings_of(&set, "example:wand").len(), 1);
     let set = stack(&[at((1, 20, 0), &files), at((1, 21, 0), &[])]);
     assert_eq!(bindings_of(&set, "example:wand").len(), 1);
-    assert!(found(&set, "AttachableShadowed").is_empty());
+    assert!(found_by(&set, is_attachable_shadowed).is_empty());
 }
 
 // ---- which files are attachables ----
@@ -380,8 +396,8 @@ fn a25_attachable_under_entity_dir() {
     );
     // The client entity beside it is the other family's: nothing is said of it here.
     assert!(attachables(&set).rejected().is_empty());
-    assert!(found(&set, "IgnoredPayload").is_empty());
-    assert!(found(&set, "MissingRequiredField").is_empty());
+    assert!(found(&set, "core/ignored_payload").is_empty());
+    assert!(found_by(&set, |code| code.kind() == Kind::MissingRequired).is_empty());
     assert!(client_entities(&set).is_none_or(|n| n == 1));
 }
 
@@ -425,7 +441,7 @@ fn a26_both_payloads() {
         assert!(attachables(&set).is_empty(), "{path}");
         assert!(attachables(&set).rejected().is_empty(), "{path}");
         assert_eq!(
-            found(&set, "IgnoredPayload"),
+            found(&set, "core/ignored_payload"),
             [format!("Info pack 1/{path} minecraft:attachable")]
         );
         assert_eq!(attachables(&set).diagnostics().count(), 1);
@@ -437,7 +453,7 @@ fn a26_both_payloads() {
     // A `minecraft:client_entity` that is no object does not make the file a client entity.
     let text = BOTH.replace(r#"{"description": {"identifier": "example:ghost"}}"#, "3");
     let set = stack(&[pack(&[("entity/both.json", &text)])]);
-    assert!(found(&set, "IgnoredPayload").is_empty());
+    assert!(found(&set, "core/ignored_payload").is_empty());
     // It is an attachable then, whose root holds a member of the wrong type.
     assert_eq!(
         attachables(&set).len() + attachables(&set).rejected().len(),
@@ -450,7 +466,7 @@ fn a26_read_alone_a_file_with_both_payloads_is_refused() {
     let d = rejected(attachable(BOTH, &cx()));
     expect_at(
         &d,
-        "IgnoredPayload",
+        "core/ignored_payload",
         Severity::Error,
         "minecraft:attachable",
     );
@@ -465,7 +481,7 @@ fn a26_a_client_entity_under_attachables_is_the_client_entities() {
     let set = stack(&[pack(&[("attachables/ghost.json", ENTITY)])]);
     assert!(attachables(&set).is_empty());
     assert!(attachables(&set).rejected().is_empty());
-    assert_eq!(found(&set, "IgnoredPayload"), Vec::<String>::new());
+    assert_eq!(found(&set, "core/ignored_payload"), Vec::<String>::new());
     assert_eq!(attachables(&set).diagnostics().count(), 0);
     assert!(client_entities(&set).is_none_or(|n| n == 1));
     // The app's own `definitions/attachables` is read the same way, before every pack.
@@ -477,7 +493,7 @@ fn a26_a_client_entity_under_attachables_is_the_client_entities() {
     let d = rejected(attachable(ENTITY, &cx()));
     expect_at(
         &d,
-        "IgnoredPayload",
+        "core/ignored_payload",
         Severity::Error,
         "minecraft:client_entity",
     );
@@ -607,7 +623,7 @@ fn a29_install_layering() {
     no_warning(&set);
     let all: Vec<String> = attachables(&set)
         .diagnostics()
-        .filter(|f| f.code.name() != "MolangNotChecked")
+        .filter(|f| f.code.id() != "core/molang_not_checked")
         .map(line)
         .collect();
     assert!(all.is_empty(), "{}", all.join("\n"));
@@ -650,7 +666,7 @@ fn rule_29_two_always_bindings_of_one_item_overlap() {
     ]);
     // Only the later one can be selected: the note is at the one that never is.
     assert_eq!(
-        found(&set, "ItemBindingOverlap"),
+        found(&set, "core/item_binding_overlap"),
         [format!("Info pack 2/attachables/sword.json {ITEM_AT}")]
     );
     no_warning(&set);
@@ -661,7 +677,7 @@ fn rule_29_two_always_bindings_of_one_item_overlap() {
         pack(&[("attachables/sword.json", &sword)]),
     ]);
     assert_eq!(
-        found(&set, "ItemBindingOverlap"),
+        found(&set, "core/item_binding_overlap"),
         [
             format!("Info pack 3/attachables/sword.json {ITEM_AT}"),
             format!("Info pack 2/attachables/knife.json {ITEM_AT}"),
@@ -684,7 +700,7 @@ fn rule_29_a_conditional_binding_or_another_item_is_no_overlap() {
             pack(&[("attachables/top.json", top)]),
             pack(&[("attachables/bottom.json", bottom)]),
         ]);
-        assert!(found(&set, "ItemBindingOverlap").is_empty());
+        assert!(found(&set, "core/item_binding_overlap").is_empty());
         assert_eq!(bindings_of(&set, "example:blade").len(), 2);
     }
     // Items compare byte for byte.
@@ -692,7 +708,7 @@ fn rule_29_a_conditional_binding_or_another_item_is_no_overlap() {
         pack(&[("attachables/top.json", &other)]),
         pack(&[("attachables/bottom.json", &sword)]),
     ]);
-    assert!(found(&set, "ItemBindingOverlap").is_empty());
+    assert!(found(&set, "core/item_binding_overlap").is_empty());
     let index = ItemBindings::from_registry(attachables(&set));
     assert_eq!(index.get("example:blade").len(), 1);
     assert_eq!(index.get("example:Blade").len(), 1);
@@ -718,7 +734,7 @@ fn a_rejected_document_binds_nothing_and_leaves_the_lower_definition() {
         bindings_of(&set, "example:a"),
         ["0 example:a -> example:wand [always] @pack 2/attachables/wand.json"]
     );
-    assert!(found(&set, "ItemBindingShadowed").is_empty());
+    assert!(found(&set, "core/item_binding_shadowed").is_empty());
     let lowest = wand_doc(Some("1.10.0"), r#""item": "example:lowest""#);
     let set = stack(&[
         pack(&[(WAND, &bad)]),

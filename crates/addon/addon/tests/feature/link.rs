@@ -3,7 +3,7 @@
 
 #![cfg(feature = "block")]
 
-use bedrock_addon::diagnostic::{Diagnostics, Severity};
+use bedrock_addon::diagnostic::{Diagnostics, Kind, Severity};
 use bedrock_addon::load::LoadOptions;
 use bedrock_addon::pack::{PackOrigin, PackRepository, PackSelection, StackSet, WorldPacks};
 
@@ -35,7 +35,7 @@ fn stacks(spec: &Spec) -> StackSet {
 /// at the file `path`.
 fn has(d: &Diagnostics, name: &str, severity: Severity, text: &str, path: &str) -> bool {
     d.iter().any(|f| {
-        f.code.name() == name
+        f.code.id() == name
             && f.severity == severity
             && f.code.to_string() == text
             && f.location.path.as_ref().is_some_and(|p| p.as_str() == path)
@@ -69,7 +69,7 @@ fn f19_multi_block_places_block_must_be_a_starting_multi_block_part() {
     assert!(
         has(
             &d,
-            "InvalidReference",
+            "core/invalid_reference_worded",
             Severity::Error,
             "Must place a multi-block in a 'minecraft:multi_block_feature'",
             "features/place_lamp.json",
@@ -80,7 +80,7 @@ fn f19_multi_block_places_block_must_be_a_starting_multi_block_part() {
     assert!(
         has(
             &d,
-            "InvalidReference",
+            "core/invalid_reference_worded",
             Severity::Error,
             "If trying to place a multi-block in a 'minecraft:multi_block_feature' only the starting part may be used in field 'places_block'",
             "features/place_door_top.json",
@@ -88,7 +88,7 @@ fn f19_multi_block_places_block_must_be_a_starting_multi_block_part() {
         "{d:#?}"
     );
     assert!(
-        !d.iter().any(|f| f.code.name() == "InvalidValue"
+        !d.iter().any(|f| f.code.kind() == Kind::InvalidValue
             && f.location
                 .path
                 .as_ref()
@@ -112,7 +112,7 @@ fn w4_single_block_places_block_must_resolve() {
     assert!(
         has(
             &d,
-            "UnresolvedReference",
+            "core/unresolved_reference_worded",
             Severity::Error,
             "Failed to resolve block for 'places_block' property.",
             "features/place_missing.json",

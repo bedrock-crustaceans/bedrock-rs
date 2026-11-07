@@ -1,6 +1,6 @@
 [
   {
-    "code": "MissingFormatVersion",
+    "code": "core/version_not_processable",
     "severity": "error",
     "text": "The file cannot be processed without a valid format_version"
   }

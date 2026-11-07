@@ -4,6 +4,6 @@ resolved = []
 main = "main.js"
 
 [[diagnostic]]
-code = "DroppedField"
+code = "core/dropped_field"
 severity = "info"
 path = "dependencies/0"

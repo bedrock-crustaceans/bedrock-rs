@@ -37,7 +37,7 @@ fn invalid_format_version_rule() {
     rules::format_version("not a version", &JsonPath::new(), &mut d);
     let finding = d.iter().next().expect("V14 reports");
     assert_eq!(finding.severity, Severity::Error);
-    assert_eq!(finding.code.name(), "InvalidValue");
+    assert_eq!(finding.code.id(), "fog/bad_format_version");
     assert!(finding.is(&codes::BAD_FORMAT_VERSION));
     assert_eq!(finding.code.to_string(), "Invalid format version.");
     assert_eq!(finding.location.json_path.to_string(), "format_version");
@@ -118,7 +118,7 @@ fn an_older_file_that_breaks_a_rule_of_the_schema_is_refused() {
         .map(|f| {
             format!(
                 "{} {:?} {:?} at {}",
-                f.code.name(),
+                f.code.id(),
                 f.severity,
                 f.phase,
                 f.location.json_path
@@ -128,8 +128,8 @@ fn an_older_file_that_breaks_a_rule_of_the_schema_is_refused() {
     assert_eq!(
         told,
         [
-            "InvalidValue Error Validate at minecraft:fog_settings/distance/air",
-            "DocumentRejected Error Parse at ",
+            "fog/end_below_start Error Validate at minecraft:fog_settings/distance/air",
+            "fog/failed_to_validate Error Parse at ",
         ]
     );
 }
@@ -257,7 +257,7 @@ fn a_text_too_deep_and_not_utf8_is_told_as_too_deep() {
     let messages: Vec<_> = rejected
         .diagnostics
         .iter()
-        .filter(|f| f.code.name() == "MalformedInput")
+        .filter(|f| f.code.id() == "fog/parse_error")
         .filter_map(|f| match f.detail.as_deref() {
             Some(DiagnosticDetail::Syntax(message)) => Some(message.as_str()),
             _ => None,
@@ -286,7 +286,7 @@ fn a_text_too_deep_and_not_utf8_behind_a_bom_is_told_as_too_deep() {
     let messages: Vec<_> = rejected
         .diagnostics
         .iter()
-        .filter(|f| f.code.name() == "MalformedInput")
+        .filter(|f| f.code.id() == "fog/parse_error")
         .filter_map(|f| match f.detail.as_deref() {
             Some(DiagnosticDetail::Syntax(message)) => Some(message.as_str()),
             _ => None,
@@ -307,7 +307,7 @@ fn a_failed_member_fails_the_object_and_the_required_check_is_not_made() {
         Hit::Failed
     });
     assert!(!ok, "a member that failed must fail the object");
-    let findings: Vec<_> = walk.diagnostics.iter().map(|d| d.code.name()).collect();
+    let findings: Vec<_> = walk.diagnostics.iter().map(|d| d.code.id()).collect();
     assert!(
         findings.is_empty(),
         "the required check must not run after a failed member: {findings:?}"

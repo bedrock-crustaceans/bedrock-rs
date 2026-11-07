@@ -2,6 +2,8 @@
 //! between the two copies of one schema). Each test pins today's attachable side; which side
 //! is the game's is not decided here.
 
+use bedrock_addon::diagnostic::Kind;
+
 use super::common::*;
 
 /// D3: an array or an object as the condition of a list entry is a wrong type the attachable
@@ -23,7 +25,7 @@ fn a_list_entry_condition_of_the_wrong_type_allows_molang() {
             assert_eq!(
                 lines(&found),
                 [format!(
-                    "Error InvalidType minecraft:attachable/description/{at} unknown child schema option type.  Allowed types: molang"
+                    "Error core/unknown_child_option minecraft:attachable/description/{at} unknown child schema option type.  Allowed types: molang"
                 )],
                 "{version} {members}"
             );
@@ -45,6 +47,11 @@ fn a_script_literal_the_lower_casing_changes_is_folded_silently() {
             "variable.title = 'big boss';",
             "{version}"
         );
-        none(document.diagnostics(), "ValueRewritten");
+        assert!(
+            document
+                .diagnostics()
+                .iter()
+                .all(|f| f.code.kind() != Kind::Rewritten)
+        );
     }
 }

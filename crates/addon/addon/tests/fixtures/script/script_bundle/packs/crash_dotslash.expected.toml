@@ -15,7 +15,7 @@ normalized = ""
 resolution = "crash"
 
 [[diagnostics]]
-code = "ScriptImportCrashesEngine"
+code = "core/script_import_crashes_engine"
 severity = "error"
 text = "this import specifier terminates the server"
 file = "scripts/main.js"

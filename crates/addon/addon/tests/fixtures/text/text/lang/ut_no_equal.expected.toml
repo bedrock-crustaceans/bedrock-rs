@@ -4,6 +4,6 @@
 [entries]
 
 [[diagnostics]]
-code = "MalformedInput"
+code = "lang/null_in_key"
 severity = "warning"
 text = "Line: 1 - Invalid lang file format. Null character was found while parsing key: 'key.no_equal'."

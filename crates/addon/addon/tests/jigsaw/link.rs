@@ -3,7 +3,7 @@
 //! The generation texts belong to the consumer that places structures: their rows pin
 //! that loading raises none of them.
 
-use bedrock_addon::diagnostic::{Diagnostics, Severity};
+use bedrock_addon::diagnostic::{Diagnostics, Kind, Severity};
 use bedrock_addon::load::LoadOptions;
 use bedrock_addon::pack::{PackOrigin, PackRepository, WorldPacks};
 
@@ -33,7 +33,7 @@ fn link_fixture(name: &str) -> Diagnostics {
 /// Whether an error `UnresolvedReference` with exactly `text` was found.
 fn has_error(d: &Diagnostics, text: &str) -> bool {
     d.iter().any(|f| {
-        f.code.name() == "UnresolvedReference"
+        f.code.kind() == Kind::UnresolvedReference
             && f.severity == Severity::Error
             && f.code.to_string() == text
     })
@@ -42,7 +42,7 @@ fn has_error(d: &Diagnostics, text: &str) -> bool {
 /// Whether an information `UnresolvedReference` with exactly `text` was found (ours).
 fn has(d: &Diagnostics, text: &str) -> bool {
     d.iter().any(|f| {
-        f.code.name() == "UnresolvedReference"
+        f.code.kind() == Kind::UnresolvedReference
             && f.severity == Severity::Info
             && f.code.to_string() == text
     })
@@ -57,7 +57,7 @@ fn jig13_unknown_block_is_reported_once_with_vanillas_text() {
     // block's `name`.
     let texts: Vec<String> = d
         .iter()
-        .filter(|f| f.code.name() == "UnresolvedReference")
+        .filter(|f| f.code.kind() == Kind::UnresolvedReference)
         .map(|f| f.code.to_string())
         .collect();
     assert_eq!(texts.len(), 2, "{texts:#?}");
@@ -101,7 +101,7 @@ fn load_findings(name: &str) -> Vec<(&'static str, String)> {
     stack
         .jigsaw()
         .diagnostics()
-        .map(|d| (d.code.name(), d.code.to_string()))
+        .map(|d| (d.code.id(), d.code.to_string()))
         .collect()
 }
 
@@ -109,10 +109,18 @@ fn load_findings(name: &str) -> Vec<(&'static str, String)> {
 #[track_caller]
 fn no_load_finding(name: &str, texts: &[&str]) {
     let found = load_findings(name);
+    let stack = load_fixture(name);
+    assert!(
+        stack
+            .jigsaw()
+            .diagnostics()
+            .all(|d| d.code.kind() != Kind::UnresolvedReference),
+        "{name}: {found:?}"
+    );
     assert!(
         found
             .iter()
-            .all(|(code, text)| *code != "UnresolvedReference" && !texts.contains(&text.as_str())),
+            .all(|(_, text)| !texts.contains(&text.as_str())),
         "{name}: {found:?}"
     );
 }

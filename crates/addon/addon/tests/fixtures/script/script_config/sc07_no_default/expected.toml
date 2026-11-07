@@ -1,7 +1,7 @@
 # families/script_config fixtures.md, row sc07_no_default (probe D nodefault).
 
 [[diagnostic]]
-code = "ScriptModulePermission"
+code = "server_config/plugin_module_not_configured"
 severity = "error"
 phase = "link"
 file = "config/default/permissions.json"

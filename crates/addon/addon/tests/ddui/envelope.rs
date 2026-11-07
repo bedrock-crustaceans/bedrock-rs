@@ -22,7 +22,7 @@ fn versioned(version: &str) -> String {
 fn no_parser(version: &str) -> Vec<Found> {
     vec![
         error(
-            "UnsupportedVersion",
+            "core/no_parser_for_version",
             "format_version",
             &format!("unsupported version: no parser available for version {version}"),
         ),
@@ -33,7 +33,7 @@ fn no_parser(version: &str) -> Vec<Found> {
 fn no_valid_version() -> Vec<Found> {
     vec![
         error(
-            "UnsupportedVersion",
+            "ddui/no_valid_version",
             "format_version",
             "no valid version passed by the caller or found in the input",
         ),
@@ -62,7 +62,7 @@ fn d05_truncated_json_is_a_missing_object_with_the_reader_s_text_as_a_note() {
     let got = found(&d);
     assert_eq!(got.len(), 2, "{got:#?}");
     assert_eq!(got[0].0, Severity::Info);
-    assert_eq!(got[0].1, "MalformedInput");
+    assert_eq!(got[0].1, "core/document_json");
     assert!(
         got[0]
             .3
@@ -79,7 +79,7 @@ fn d06_a_third_root_member_is_a_missing_object_with_the_member_count_as_a_note()
     assert_eq!(
         found(&rejects(root(&text))),
         [
-            info("MalformedInput", "", MEMBER_COUNT),
+            info("core/document_member_count", "", MEMBER_COUNT),
             missing_object(ROOT_KEY)
         ]
     );
@@ -95,7 +95,7 @@ fn d06_three_members_without_the_payload_key_still_carry_the_note() {
     assert_eq!(
         found(&rejects(root(&text))),
         [
-            info("MalformedInput", "", MEMBER_COUNT),
+            info("core/document_member_count", "", MEMBER_COUNT),
             missing_object(ROOT_KEY)
         ]
     );
@@ -106,7 +106,10 @@ fn an_empty_file_and_null_are_missing_objects() {
     for text in ["", "  \n", "null", "// nothing\n"] {
         let got = found(&rejects(root(text)));
         assert_eq!(got.len(), 2, "{text:?}: {got:#?}");
-        assert_eq!((got[0].0, got[0].1), (Severity::Info, "EmptyDocument"));
+        assert_eq!(
+            (got[0].0, got[0].1),
+            (Severity::Info, "core/empty_document")
+        );
         assert_eq!(got[1], missing_object(ROOT_KEY));
     }
 }
@@ -116,7 +119,7 @@ fn a_root_that_is_no_object_is_a_missing_object() {
     for text in ["[]", "5", r#""text""#] {
         let got = found(&rejects(root(text)));
         assert_eq!(got.len(), 2, "{text:?}: {got:#?}");
-        assert_eq!((got[0].0, got[0].1), (Severity::Info, "MalformedInput"));
+        assert_eq!((got[0].0, got[0].1), (Severity::Info, "core/document_json"));
         assert_eq!(got[1], missing_object(ROOT_KEY));
     }
 }
@@ -127,7 +130,7 @@ fn bytes_that_are_no_text_are_a_missing_object() {
     let rejected = UiRoot::parse(&path, &[0xff, 0xfe, b'{', b'}'], &LoadContext::detached())
         .expect_err("not UTF-8");
     let got = found(&rejected.diagnostics);
-    assert_eq!((got[0].0, got[0].1), (Severity::Info, "MalformedInput"));
+    assert_eq!((got[0].0, got[0].1), (Severity::Info, "core/document_json"));
     assert_eq!(got[1], missing_object(ROOT_KEY));
     assert_eq!(got.len(), 2);
     // Nested past the reader's limit.
@@ -193,7 +196,7 @@ fn f04_a_missing_version_is_a_missing_object_with_the_member_count_as_a_note() {
     assert_eq!(
         found(&rejects(root(&text))),
         [
-            info("MalformedInput", "", MEMBER_COUNT),
+            info("core/document_member_count", "", MEMBER_COUNT),
             missing_object(ROOT_KEY)
         ]
     );
@@ -228,7 +231,7 @@ fn f07_a_version_string_that_is_no_version_is_a_missing_object() {
         found(&rejects(root(&versioned(r#""abc""#)))),
         [
             info(
-                "MalformedFormatVersion",
+                "ddui/malformed_version",
                 "format_version",
                 "Malformed format version"
             ),
@@ -253,7 +256,7 @@ fn f08_a_version_that_is_no_string_is_read_as_the_document_input_reads_it() {
         found(&rejects(root(&versioned("null")))),
         [
             info(
-                "MalformedFormatVersion",
+                "ddui/malformed_version",
                 "format_version",
                 "Malformed format version"
             ),
@@ -311,7 +314,7 @@ fn parse_as_written_gives_the_one_struct() {
 #[test]
 fn content_after_the_root_value_refuses_the_file_on_every_path() {
     let refusal = error(
-        "MalformedInput",
+        "core/document_json",
         "",
         "Failed to parse the Minecraft Document JSON: The document root must not be followed by other values.",
     );

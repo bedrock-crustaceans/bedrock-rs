@@ -114,7 +114,7 @@ fn a_failing_top_copy_leaves_the_path_without_a_table() {
         .filter(|f| f.severity == Severity::Error)
         .collect();
     assert_eq!(errors.len(), 1);
-    assert_eq!(errors[0].code.name(), "MissingRequiredField");
+    assert_eq!(errors[0].code.id(), "core/missing_required_field");
     assert_eq!(
         errors[0].location.path.as_ref().map(PackPath::as_str),
         Some("trading/farmer_trades.json")
@@ -161,7 +161,7 @@ fn the_determinism_fragment_is_two_valid_tables() {
         .map(|f| {
             format!(
                 "{} {:?} at {}",
-                f.code.name(),
+                f.code.id(),
                 f.severity,
                 f.location.json_path
             )
@@ -169,7 +169,7 @@ fn the_determinism_fragment_is_two_valid_tables() {
         .collect();
     assert_eq!(
         told,
-        ["ValueRewritten Info at tiers/0/trades/0/wants/0/functions"]
+        ["core/value_rewritten Info at tiers/0/trades/0/wants/0/functions"]
     );
 }
 

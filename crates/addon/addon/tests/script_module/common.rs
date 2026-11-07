@@ -215,7 +215,7 @@ pub struct Finding {
 /// The variant name of a finding's code, as the crate gives it (`Code::name`): the
 /// form an `expected.toml` states a code in.
 pub fn code_name(diagnostic: &Diagnostic) -> String {
-    diagnostic.code.name().to_owned()
+    diagnostic.code.id().to_owned()
 }
 
 pub fn severity_name(severity: Severity) -> &'static str {

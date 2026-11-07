@@ -16,7 +16,7 @@ fn obsidian(members: &str) -> (super::common::Loaded, Vec<Found>) {
 
 fn bad_textures(key: &str) -> Found {
     vanilla(
-        "InvalidType",
+        "blocks_json/bad_textures",
         W,
         &format!("{key}/textures"),
         &format!("'minecraft:{key}' | Invalid or incomplete texture list."),
@@ -108,7 +108,7 @@ fn carried_textures_take_the_same_forms_with_their_own_text() {
     assert_eq!(
         found,
         [vanilla(
-            "InvalidType",
+            "blocks_json/bad_carried_textures",
             W,
             "obsidian/carried_textures",
             "'minecraft:obsidian' | Invalid or incomplete carried_textures list."
@@ -149,7 +149,7 @@ fn the_texts_name_the_block_not_the_key() {
 
 #[test]
 fn the_isotropic_forms_and_their_masks() {
-    let l5 = || ours("InvalidValue", I, "obsidian/isotropic");
+    let l5 = || ours("core/invalid_value", I, "obsidian/isotropic");
     let cases: [(&str, Option<u8>, bool); 16] = [
         ("true", Some(0xff), false),
         ("false", Some(0), false),
@@ -200,7 +200,7 @@ fn an_isotropic_of_another_type_changes_nothing_deviation() {
         assert_eq!(loaded.block("obsidian").isotropic, None, "{isotropic}");
         assert_eq!(
             found,
-            [ours("InvalidType", I, "obsidian/isotropic")],
+            [ours("core/invalid_type", I, "obsidian/isotropic")],
             "{isotropic}"
         );
     }
@@ -270,7 +270,7 @@ fn the_isotropic_value_shows_which_map_was_read() {
 
 fn bad_shape(key: &str, block: &str) -> Found {
     vanilla(
-        "InvalidValue",
+        "blocks_json/bad_blockshape",
         W,
         &format!("{key}/blockshape"),
         &format!("'{block}' | Invalid blockshape name."),
@@ -308,13 +308,13 @@ fn blockshape_is_a_creator_pack_s_to_set_on_a_vanilla_block() {
         loaded.found(),
         [
             vanilla(
-                "InvalidValue",
+                "blocks_json/base_game_blockshape",
                 E,
                 "dirt",
                 "Unexpected: blocks.json in a base game pack specifies a blockshape. Json entry: 'dirt'"
             ),
             vanilla(
-                "IgnoredMember",
+                "blocks_json/custom_blockshape",
                 E,
                 "ns:foo/blockshape",
                 "'ns:foo' | Cannot set 'blockshape' on custom blocks."
@@ -492,9 +492,9 @@ fn members_the_client_never_reads_deviation() {
     assert_eq!(
         found,
         [
-            ours("IgnoredMember", I, "obsidian/brightness_gamma"),
-            ours("IgnoredMember", I, "obsidian/sounds"),
-            ours("IgnoredMember", I, "obsidian/client_entity"),
+            ours("core/ignored_member", I, "obsidian/brightness_gamma"),
+            ours("core/ignored_member", I, "obsidian/sounds"),
+            ours("core/ignored_member", I, "obsidian/client_entity"),
         ]
     );
     // They are kept, as written.
@@ -505,20 +505,23 @@ fn members_the_client_never_reads_deviation() {
     assert_eq!(
         found,
         [
-            ours("IgnoredMember", I, "obsidian/Textures"),
-            ours("IgnoredMember", I, "obsidian/extra"),
+            ours("core/ignored_member", I, "obsidian/Textures"),
+            ours("core/ignored_member", I, "obsidian/extra"),
         ]
     );
     // Once per entry, however many blocks the entry is split onto, and for a skipped entry.
     let loaded = load_one(&file(r#""wool": {"textures": "w", "sounds": "cloth"}"#));
     let found = loaded.found();
     assert_eq!(found.len(), 2);
-    assert_eq!(found[0], ours("IgnoredMember", I, "wool/sounds"));
+    assert_eq!(found[0], ours("core/ignored_member", I, "wool/sounds"));
     let loaded = load_one(&super::common::file_at(
         "[1, 1, 0]",
         r#""wool": {"textures": "w", "sounds": "cloth"}"#,
     ));
-    assert_eq!(loaded.found(), [ours("IgnoredMember", I, "wool/sounds")]);
+    assert_eq!(
+        loaded.found(),
+        [ours("core/ignored_member", I, "wool/sounds")]
+    );
     assert_eq!(loaded.registry().len(), 16);
 }
 
@@ -549,22 +552,27 @@ fn values_of_odd_types() {
         loaded.found(),
         [
             vanilla(
-                "InvalidValue",
+                "blocks_json/base_game_blockshape",
                 E,
                 "dirt",
                 "Unexpected: blocks.json in a base game pack specifies a blockshape. Json entry: 'dirt'"
             ),
-            ours("InvalidValue", I, "glass/isotropic").in_pack(1),
-            ours("InvalidType", I, "glass/sound").in_pack(1),
+            ours("core/invalid_value", I, "glass/isotropic").in_pack(1),
+            ours("core/invalid_type", I, "glass/sound").in_pack(1),
             vanilla(
-                "IgnoredMember",
+                "blocks_json/custom_blockshape",
                 E,
                 "ns:foo/blockshape",
                 "'ns:foo' | Cannot set 'blockshape' on custom blocks."
             )
             .in_pack(1),
-            ours("InvalidType", I, "obsidian/ambient_occlusion_exponent").in_pack(1),
-            ours("InvalidType", I, "obsidian/sound").in_pack(1),
+            ours(
+                "core/invalid_type",
+                I,
+                "obsidian/ambient_occlusion_exponent"
+            )
+            .in_pack(1),
+            ours("core/invalid_type", I, "obsidian/sound").in_pack(1),
         ]
     );
 }
@@ -589,7 +597,10 @@ fn the_base_game_check_runs_before_the_key_is_looked_at() {
                 "Unexpected: blocks.json in a base game pack specifies a blockshape. Json entry: '{key}'"
             )
         );
-        assert_eq!((found[0].code, found[0].severity), ("InvalidValue", E));
+        assert_eq!(
+            (found[0].code, found[0].severity),
+            ("blocks_json/base_game_blockshape", E)
+        );
         assert!(loaded.registry().is_empty(), "{key}");
     }
     // Without the member a base-game entry is an entry like any other.
@@ -629,7 +640,13 @@ fn ambient_occlusion_takes_a_number() {
 #[test]
 fn an_ambient_occlusion_that_is_no_number_deviation() {
     // `vanilla = "silent"` for a string, array or object; `"applied silently"` for a boolean.
-    let l6 = || ours("InvalidType", I, "obsidian/ambient_occlusion_exponent");
+    let l6 = || {
+        ours(
+            "core/invalid_type",
+            I,
+            "obsidian/ambient_occlusion_exponent",
+        )
+    };
     for value in [r#""high""#, "[0.5]", r#"{"value": 0.5}"#] {
         let (loaded, found) = obsidian(&format!(r#""ambient_occlusion_exponent": {value}"#));
         assert_eq!(
@@ -666,9 +683,9 @@ fn an_ambient_occlusion_beyond_f32_is_the_largest_float_deviation() {
         );
         // A number that is no double is first held as the largest finite one.
         let at = "obsidian/ambient_occlusion_exponent";
-        let mut expected = vec![ours("InvalidValue", I, at)];
+        let mut expected = vec![ours("core/invalid_value", I, at)];
         if value.ends_with("e999") {
-            expected.insert(0, ours("ClampedValue", I, at));
+            expected.insert(0, ours("core/clamped_value", I, at));
         }
         assert_eq!(found, expected, "{value}");
     }
@@ -690,7 +707,7 @@ fn sound_takes_any_string_and_reads_other_values_as_jsoncpp_does_deviation() {
         assert_eq!(loaded.block("obsidian").sound(), sound);
         assert_eq!(found, [], "values are not validated");
     }
-    let l7 = || ours("InvalidType", I, "obsidian/sound");
+    let l7 = || ours("core/invalid_type", I, "obsidian/sound");
     for (value, read) in [
         ("5", ""),
         ("1.5", ""),

@@ -71,7 +71,7 @@ fn about_the_broken_file(set: &StackSet) -> usize {
                 .is_some_and(|path| path.as_str() == "functions/broken.mcfunction")
         })
         // By legacy name: `READ_ERROR` and `READ_ERROR_WORDED` (the walk's sentence).
-        .inspect(|f| assert!(f.code.name() == "ReadError", "{f:?}"))
+        .inspect(|f| assert!(f.code.id() == "core/read_error", "{f:?}"))
         .count()
 }
 
@@ -87,8 +87,8 @@ fn a_stack_load_of_the_tick_list_resolves_against_the_stack_s_functions() {
             let names: Vec<&str> = tick.values.iter().map(|e| e.function.as_str()).collect();
             assert_eq!(names, ["ok"], "{order:?}");
             // `broken` exists in no pack's registry: the M10 warning, and nothing else.
-            let found: Vec<&'static str> = tick.diagnostics().map(|f| f.code.name()).collect();
-            assert_eq!(found, ["UnresolvedReference"], "{order:?}");
+            let found: Vec<&'static str> = tick.diagnostics().map(|f| f.code.id()).collect();
+            assert_eq!(found, ["function/tick_not_found"], "{order:?}");
             // The function registry was loaded for it, selected or not.
             assert_eq!(set.behavior.functions().len(), 1, "{order:?}");
             // One read of the file, one finding: the function registry's.

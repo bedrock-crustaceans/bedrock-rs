@@ -374,7 +374,7 @@ fn a_root_that_is_not_an_object_is_malformed_input() {
 fn an_empty_or_null_file_is_an_empty_document() {
     for text in ["", "  \n", "// only a comment", "null"] {
         let code = the_only_error(&load_toy(text));
-        assert!(code.name() == "EmptyDocument", "{text:?}: {code:?}");
+        assert!(code.id() == "core/empty_document", "{text:?}: {code:?}");
     }
 }
 
@@ -621,7 +621,11 @@ fn a_root_member_beside_the_payload_of_a_document_without_a_version_is_told() {
         .iter()
         .find(|d| d.location.json_path.to_string() == "third")
         .expect("a finding at the member");
-    assert!(third.code.name() == "UnrecognizedField", "{:?}", third.code);
+    assert!(
+        third.code.id() == "core/unrecognized_field",
+        "{:?}",
+        third.code
+    );
     // The game says nothing here; the crate reports an information.
     assert_eq!(third.severity, Severity::Info);
 }
@@ -733,7 +737,7 @@ fn the_envelope_is_checked_from_the_family_minimum_on() {
         &three("1.2.0"),
         &LoadContext::detached(),
     ));
-    assert!(code.name() == "MalformedInput", "{code:?}");
+    assert!(code.id() == "core/document_member_count", "{code:?}");
 }
 
 // `select` sorts `X-beta.n` below `X`, and so does the envelope
@@ -757,7 +761,10 @@ fn a_prerelease_of_the_envelope_minimum_is_below_the_minimum() {
             &three(version),
             &LoadContext::detached(),
         ));
-        assert!(code.name() == "MalformedInput", "{version}: {code:?}");
+        assert!(
+            code.id() == "core/document_member_count",
+            "{version}: {code:?}"
+        );
     }
 }
 
@@ -821,7 +828,7 @@ fn a_document_with_integers_beyond_64_bits_loads() {
         let clamps: Vec<_> = outcome
             .diagnostics
             .iter()
-            .filter(|d| d.code.name() == "InvalidValue")
+            .filter(|d| d.code.id() == "core/invalid_value")
             .collect();
         assert_eq!(
             clamps.len(),
@@ -1008,17 +1015,14 @@ fn the_spans_of_a_file_with_a_byte_order_mark_are_of_the_file_as_written() {
         .filter_map(|finding| {
             let span = finding.location.span?;
             let start = span.offset as usize;
-            Some((finding.code.name(), &file[start..start + span.len as usize]))
+            Some((finding.code.id(), &file[start..start + span.len as usize]))
         })
         .collect();
     assert!(
-        under.contains(&("InvalidValue", &b"-1e39"[..])),
+        under.contains(&("core/invalid_value", &b"-1e39"[..])),
         "{under:?}"
     );
-    assert!(
-        under.contains(&("MalformedInput", &b"tail"[..])),
-        "{under:?}"
-    );
+    assert!(under.contains(&("core/syntax", &b"tail"[..])), "{under:?}");
 }
 
 // ---- versions and the beta literal ----
@@ -1092,8 +1096,8 @@ fn the_spelled_out_sentinel_is_a_beta_document() {
     );
     assert!(outcome.version.beta);
     assert_eq!(
-        the_only_error(&load_toy(&text)).name(),
-        "BetaFeaturesNotEnabled"
+        the_only_error(&load_toy(&text)).id(),
+        "core/beta_format_version"
     );
     let code = the_only_error(&load_with::<Stable>(&text, &toggle));
     assert_eq!(
@@ -1205,7 +1209,7 @@ fn a_failed_typed_parse_rejects_the_document_at_the_member() {
     );
     assert!(outcome.value.is_none());
     let error = outcome.diagnostics.first_error().expect("an error");
-    assert!(error.code.name() == "InvalidType", "{:?}", error.code);
+    assert!(error.code.id() == "core/invalid_type", "{:?}", error.code);
     assert_eq!(
         error.location.json_path.to_string(),
         "minecraft:toy/old_speed"
@@ -1298,7 +1302,7 @@ fn a_root_member_outside_the_payload_stays_an_information_in_a_strict_slice() {
     assert!(outcome.value.is_some(), "{:?}", outcome.diagnostics);
     let unknown: Vec<_> = codes(&outcome)
         .into_iter()
-        .filter(|(code, _)| code.name() == "UnrecognizedField")
+        .filter(|(code, _)| code.id() == "core/unrecognized_field")
         .collect();
     assert_eq!(
         unknown,
@@ -1404,7 +1408,7 @@ fn an_experimental_beta_field_loads_only_with_its_experiment() {
     without.beta_apis = true;
     let refused = load_with::<Gated>(&document(true), &without);
     let code = the_only_error(&refused);
-    assert!(code.name() == "MissingToggles", "{code:?}");
+    assert!(code.id() == "core/turn_on_toggle", "{code:?}");
     assert!(
         code.to_string().contains("test_experiment"),
         "the entry names the experiment: {code}"
@@ -1652,9 +1656,9 @@ fn a_document_input_refuses_a_text_above_the_limit_and_warns_near_it() {
     assert_eq!(
         codes(&near)
             .into_iter()
-            .map(|(code, severity)| (code.name(), severity))
+            .map(|(code, severity)| (code.id(), severity))
             .collect::<Vec<_>>(),
-        [("MalformedInput", Severity::Warning)]
+        [("core/document_nearly_too_large", Severity::Warning)]
     );
     cx.max_json_document_bytes = len - 1;
     assert!(load_toy_with(OK_1_2_0, &cx).value.is_some());
@@ -1679,12 +1683,12 @@ fn a_component_that_fails_its_typed_read_rejects_a_document_input_under_both_mas
     for (text, code, at) in [
         (
             &wrong_type,
-            "InvalidType",
+            "core/invalid_type",
             "minecraft:toy/components/toy:glow/level",
         ),
         (
             &missing,
-            "MissingRequiredField",
+            "core/missing_required_field",
             "minecraft:toy/components/toy:needs/amount",
         ),
     ] {
@@ -1732,7 +1736,7 @@ fn codes_at<F: Family>(outcome: &LoadOutcome<F>) -> (bool, Vec<(String, Severity
         .diagnostics
         .iter()
         .map(|d| {
-            let name: String = d.code.name().to_owned();
+            let name: String = d.code.id().to_owned();
             (name, d.severity, d.location.json_path.to_string())
         })
         .collect();

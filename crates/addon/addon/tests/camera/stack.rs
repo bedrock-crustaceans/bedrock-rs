@@ -58,27 +58,27 @@ fn cam07_invalid_inheritance_discards_the_preset() {
         found,
         [
             (
-                "InvalidReference",
-                "Illegal inheritance: Preset 'ex:fp' cannot inherit from 'minecraft:first_person'. It will be discarded.".to_owned()
-            ),
-            (
-                "ReferenceCycle",
+                "camera/circular",
                 "Circular reference: Preset 'ex:loop_a' inherits from 'ex:loop_a' more than once and will be discarded.".to_owned()
             ),
             (
-                "ReferenceCycle",
+                "camera/circular",
                 "Circular reference: Preset 'ex:loop_b' inherits from 'ex:loop_b' more than once and will be discarded.".to_owned()
             ),
             (
-                "ReferenceCycle",
+                "camera/circular",
                 "Circular reference: Preset 'ex:self' inherits from 'ex:self' more than once and will be discarded.".to_owned()
             ),
             (
-                "UnresolvedReference",
+                "camera/illegal_inheritance",
+                "Illegal inheritance: Preset 'ex:fp' cannot inherit from 'minecraft:first_person'. It will be discarded.".to_owned()
+            ),
+            (
+                "camera/unknown_parent",
                 "Preset 'ex:orphan' inherits from unknown preset 'ex:missing' and will be discarded.".to_owned()
             ),
             (
-                "UnresolvedReference",
+                "camera/unknown_parent",
                 "Preset 'ex:unknown' inherits from unknown preset 'ex:missing' and will be discarded.".to_owned()
             ),
         ]
@@ -114,7 +114,7 @@ fn cam07_a_later_preset_of_the_same_name_replaces_the_earlier_one() {
     assert_eq!(
         group(cameras, Severity::Info),
         [(
-            "ShadowedDefinition",
+            "core/shadowed_definition",
             "definition shadowed by a higher-priority source".to_owned()
         )]
     );
@@ -154,7 +154,11 @@ fn rule_2_the_discard_pass_sees_the_merged_set_only() {
     assert!(cameras.presets.is_empty(), "{:?}", cameras.presets);
     let found = group(cameras, Severity::Error);
     assert_eq!(found.len(), 2, "{found:?}");
-    assert!(found.iter().all(|(code, _)| *code == "UnresolvedReference"));
+    assert!(
+        found
+            .iter()
+            .all(|(code, _)| *code == "camera/unknown_parent")
+    );
     // And a replaced definition's bad parent is no finding at all.
     let stack = stack_of_replaced();
     assert!(group(stack.cameras(), Severity::Error).is_empty());
@@ -182,7 +186,7 @@ fn cam17_a_vanilla_camera_may_not_set_its_radius() {
         assert_eq!(
             group(cameras, Severity::Error),
             [(
-                "InvalidValue",
+                "camera/illegal_override",
                 format!(
                     "Illegal override: Preset '{name}' cannot change vanilla camera settings. It will be discarded."
                 )
@@ -235,7 +239,7 @@ fn cam18_only_the_allowed_vanilla_cameras_may_be_inherited_from() {
     found.sort();
     let illegal = |preset: &str, parent: &str| {
         (
-            "InvalidReference",
+            "camera/illegal_inheritance",
             format!(
                 "Illegal inheritance: Preset '{preset}' cannot inherit from '{parent}'. It will be discarded."
             ),
@@ -248,7 +252,7 @@ fn cam18_only_the_allowed_vanilla_cameras_may_be_inherited_from() {
             illegal("ex:death", "minecraft:death_camera"),
             illegal("ex:first", "minecraft:first_person"),
             (
-                "UnresolvedReference",
+                "camera/unknown_parent",
                 "Preset 'ex:missing' inherits from unknown preset 'ex:nothing' and will be discarded.".to_owned()
             ),
         ]
@@ -263,7 +267,7 @@ fn rule_2_the_override_check_runs_before_the_inheritance_checks() {
     )]]);
     let found = group(stack.cameras(), Severity::Error);
     assert_eq!(found.len(), 1, "{found:?}");
-    assert_eq!(found[0].0, "InvalidValue");
+    assert_eq!(found[0].0, "camera/illegal_override");
 }
 
 #[test]
@@ -287,15 +291,15 @@ fn cam09_a_list_must_name_known_presets_once_each() {
         found,
         [
             (
-                "DuplicateIdentifier",
+                "camera/list_duplicate",
                 "Camera List 'ex:twice' references Camera Preset 'ex:a' more than once, it will not be loaded.".to_owned()
             ),
             (
-                "InvalidValue",
+                "camera/list_empty",
                 "Camera List 'ex:empty' must contain at least one Camera Preset identifier, it will not be loaded.".to_owned()
             ),
             (
-                "UnresolvedReference",
+                "camera/list_unknown",
                 "Camera List 'ex:unknown' references unknown Camera Preset 'ex:nothing', it will not be loaded.".to_owned()
             ),
         ]
@@ -312,7 +316,7 @@ fn rule_5_the_list_checks_run_unknown_then_empty_then_duplicate() {
     ]]);
     let found = group(stack.cameras(), Severity::Error);
     assert_eq!(found.len(), 1, "{found:?}");
-    assert_eq!(found[0].0, "UnresolvedReference");
+    assert_eq!(found[0].0, "camera/list_unknown");
 }
 
 #[test]
@@ -337,11 +341,11 @@ fn cam10_a_list_below_1_19_50_is_rejected() {
         errors(&d),
         [
             finding(
-                "UnsupportedVersion",
+                "core/unsupported_version",
                 "format_version",
                 "unsupported format_version"
             ),
-            finding("DocumentRejected", "", "Invalid Camera List file")
+            finding("camera/list_invalid", "", "Invalid Camera List file")
         ]
     );
     loads(list(&list_json("1.19.50", "ex:l", r#"["minecraft:free"]"#)));
@@ -349,13 +353,13 @@ fn cam10_a_list_below_1_19_50_is_rejected() {
 
 #[test]
 fn cam19_a_list_above_the_engine_or_without_cameras_is_invalid() {
-    let invalid = finding("DocumentRejected", "", "Invalid Camera List file");
+    let invalid = finding("camera/list_invalid", "", "Invalid Camera List file");
     let d = rejects(list(&list_json("1.26.61", "ex:l", r#"["minecraft:free"]"#)));
     assert_eq!(
         errors(&d),
         [
             finding(
-                "UnsupportedVersion",
+                "core/unsupported_version",
                 "format_version",
                 "unsupported format_version"
             ),
@@ -365,7 +369,7 @@ fn cam19_a_list_above_the_engine_or_without_cameras_is_invalid() {
     loads(list(&list_json("1.26.60", "ex:l", r#"["minecraft:free"]"#)));
     let missing = |key: &str| {
         finding(
-            "MissingRequiredField",
+            "core/missing_required_field_worded",
             &format!("minecraft:camera_list/{key}"),
             "missing required field",
         )
@@ -383,7 +387,7 @@ fn cam19_a_list_above_the_engine_or_without_cameras_is_invalid() {
         errors(&d),
         [
             finding(
-                "MissingRequiredField",
+                "core/missing_required_field_worded",
                 "minecraft:camera_list",
                 "missing required field"
             ),
@@ -396,7 +400,7 @@ fn cam19_a_list_above_the_engine_or_without_cameras_is_invalid() {
     assert_eq!(
         errors(&d),
         [
-            finding("MissingFormatVersion", "", "missing required field"),
+            finding("core/format_version_required", "", "missing required field"),
             invalid.clone()
         ]
     );
@@ -442,32 +446,32 @@ fn rule_5_a_list_file_is_strict_and_names_its_json_errors() {
     assert_eq!(
         errors(&d)[0],
         finding(
-            "InvalidValue",
+            "camera/identifier",
             "minecraft:camera_list/identifier",
             "Identifier requires a namespace and name separated by a ':' and each must have at least one alphanumeric or underscore character."
         )
     );
     // `^\w+:\w+$`: unlike a preset's, a list's identifier may not be empty.
     let d = rejects(list(&list_json("1.21.60", "", r#"["ex:a"]"#)));
-    assert_eq!(errors(&d)[0].0, "InvalidValue");
+    assert_eq!(errors(&d)[0].0, "camera/identifier");
     let text = list_json("1.21.60", "ex:l", r#"["ex:a"]"#);
     let d = rejects(list(&text.replacen('{', r#"{"extra": 1, "#, 1)));
     assert_eq!(
         errors(&d),
         [
             finding(
-                "UnrecognizedField",
+                "core/unrecognized_field_worded",
                 "extra",
                 "this member was found in the input, but is not present in the Schema"
             ),
-            finding("DocumentRejected", "", "Invalid Camera List file")
+            finding("camera/list_invalid", "", "Invalid Camera List file")
         ]
     );
     let d = rejects(list(&list_json("1.21.60", "ex:l", r#"{"a": 1}"#)));
     assert_eq!(
         errors(&d)[0],
         finding(
-            "InvalidType",
+            "core/invalid_type_worded",
             "minecraft:camera_list/cameras",
             "expected an array"
         )
@@ -475,7 +479,7 @@ fn rule_5_a_list_file_is_strict_and_names_its_json_errors() {
     let d = rejects(list(r#"{"format_version": "1.21.60", "#));
     let found = errors(&d);
     assert_eq!(found.len(), 1, "{found:?}");
-    assert_eq!(found[0].0, "MalformedInput");
+    assert_eq!(found[0].0, "camera/list_not_json");
     assert!(
         found[0]
             .2
@@ -519,7 +523,7 @@ fn cam22_two_files_defining_one_spline_name_both_stay_with_a_warning_deviation()
         .filter(|f| f.severity == Severity::Info)
         .map(|f| {
             (
-                f.code.name(),
+                f.code.id(),
                 f.location.path.as_ref().unwrap().as_str().to_owned(),
                 f.location.json_path.to_string(),
             )
@@ -528,7 +532,7 @@ fn cam22_two_files_defining_one_spline_name_both_stay_with_a_warning_deviation()
     assert_eq!(
         warnings,
         [(
-            "DuplicateIdentifier",
+            "core/duplicate_identifier",
             "cameras/splines/top.json".to_owned(),
             "minecraft:camera_custom_splines/splines/0/name".to_owned()
         )]
@@ -584,7 +588,7 @@ fn discarded(
         .map(|f| {
             let message = f.code.to_string();
             let preset = message.split('\'').nth(1).unwrap_or_default().to_owned();
-            (preset, f.code.name(), message)
+            (preset, f.code.id(), message)
         })
         .collect();
     found.sort();
@@ -594,7 +598,7 @@ fn discarded(
 fn circular(preset: &str, repeated: &str) -> (String, &'static str, String) {
     (
         preset.to_owned(),
-        "ReferenceCycle",
+        "camera/circular",
         format!(
             "Circular reference: Preset '{preset}' inherits from '{repeated}' more than once and will be discarded."
         ),
@@ -662,7 +666,7 @@ fn rule_2_two_disjoint_cycles_and_a_valid_chain_are_judged_apart() {
     let unknown = |preset: &str| {
         (
             preset.to_owned(),
-            "UnresolvedReference",
+            "camera/unknown_parent",
             format!(
                 "Preset '{preset}' inherits from unknown preset 'ex:nothing' and will be discarded."
             ),
@@ -671,7 +675,7 @@ fn rule_2_two_disjoint_cycles_and_a_valid_chain_are_judged_apart() {
     let illegal = |preset: &str| {
         (
             preset.to_owned(),
-            "InvalidReference",
+            "camera/illegal_inheritance",
             format!(
                 "Illegal inheritance: Preset '{preset}' cannot inherit from 'minecraft:first_person'. It will be discarded."
             ),
@@ -748,10 +752,11 @@ fn rule_2_a_20_000_long_chain_is_judged_in_linear_time() {
         assert!(cameras.presets.is_empty());
         assert_eq!(cameras.presets.rejected().len(), count);
         assert!(cameras.diagnostics().all(|f| {
-            f.code.name() == "UnresolvedReference"
-                && (f.code.to_string().contains("unknown preset 'ex:nothing'")
-                        // The game's validator line of the one direct reference.
-                        || f.code.to_string().ends_with(":  Missing referenced asset ex:nothing"))
+            (f.code.id() == "camera/unknown_parent"
+                && f.code.to_string().contains("unknown preset 'ex:nothing'"))
+                // The game's validator line of the one direct reference.
+                || (f.code.id() == "core/unresolved_reference_worded"
+                    && f.code.to_string().ends_with(":  Missing referenced asset ex:nothing"))
         }));
         took
     });
@@ -773,7 +778,7 @@ fn rule_2_a_20_000_long_cycle_is_judged_in_linear_time() {
         assert_eq!(cameras.presets.rejected().len(), count);
         let mut seen = 0;
         for finding in cameras.diagnostics() {
-            assert_eq!(finding.code.name(), "ReferenceCycle");
+            assert_eq!(finding.code.id(), "camera/circular");
             let message = finding.code.to_string();
             let mut names = message.split('\'').skip(1).step_by(2);
             // Each member of the cycle names itself.
@@ -849,7 +854,7 @@ fn rule_5_two_packs_a_refused_list_leaves_the_lower_pack_s_list_in_place() {
     assert_eq!(
         found,
         [(
-            "InvalidValue",
+            "camera/list_empty",
             "Camera List 'ex:l' must contain at least one Camera Preset identifier, it will not be loaded.".to_owned()
         )]
     );
@@ -872,7 +877,7 @@ fn rule_5_three_packs_a_refused_list_leaves_the_next_pack_s_list_in_place() {
     assert_eq!(kept.origin().pack.index(), Some(1));
     let found = group(cameras, Severity::Error);
     assert_eq!(found.len(), 1, "{found:?}");
-    assert_eq!(found[0].0, "UnresolvedReference");
+    assert_eq!(found[0].0, "camera/list_unknown");
     // Refused in the middle and on top: the lowest pack's list stays.
     let loaded = stack(&[
         &[list_file("ex:l", "[]")],

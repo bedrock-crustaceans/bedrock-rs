@@ -1,7 +1,7 @@
 # families/script_config fixtures.md, row sc41_net_force_https (probe F netlegacy, review G).
 
 [[diagnostic]]
-code = "DeprecatedMember"
+code = "core/deprecated_member"
 severity = "info"
 phase = "parse"
 file = "config/default/permissions.json"

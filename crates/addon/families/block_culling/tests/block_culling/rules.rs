@@ -1,6 +1,8 @@
 //! Rows r01 to r14: the identifier, then the rule checks. Any of
 //! them skips the file with "… into internal format".
 
+use bedrock_addon_core::diagnostic::Kind;
+
 use super::common::{
     BONE1_EAST, KEY, base_game, document, error, errors, failed_internal, latest, load_in, loads,
     rejects, rejects_in, user_pack,
@@ -39,7 +41,7 @@ fn r01_a_cube_without_a_face() {
         errors(&rejects(&json)),
         [
             error(
-                "InvalidValue",
+                "block_culling/cube_without_face",
                 "Rule 1 with geometry part 'bone2' had a cube index but no face specified",
                 &format!("{KEY}/rules/1/geometry_part/cube")
             ),
@@ -59,7 +61,7 @@ fn r02_a_face_without_a_cube() {
         errors(&rejects(&json)),
         [
             error(
-                "InvalidValue",
+                "block_culling/face_without_cube",
                 "Rule 1 with geometry part 'bone2' had a face specified, but no cube index",
                 &format!("{KEY}/rules/1/geometry_part/face")
             ),
@@ -79,7 +81,7 @@ fn r03_a_part_an_earlier_rule_has_whatever_the_direction() {
         errors(&rejects(&json)),
         [
             error(
-                "DuplicateIdentifier",
+                "block_culling/duplicate_part",
                 "Rule 1 had geometry part 'bone1' cube index 2 face index 'East' that matches an earlier rule",
                 &format!("{KEY}/rules/1/geometry_part")
             ),
@@ -111,7 +113,7 @@ fn the_duplicate_key_is_bone_cube_and_face_and_nothing_else() {
         rule("b", 0, "up", r#""cull_against_full_and_opaque": false, "#),
     ] {
         let found = texts(&latest(&[&first, &other]));
-        assert_eq!(found[0].0, "DuplicateIdentifier", "{other}");
+        assert_eq!(found[0].0, "block_culling/duplicate_part", "{other}");
     }
     // The third of three is reported as well as the second, each against an earlier rule.
     let found = texts(&latest(&[&first, &first, &first]));
@@ -119,11 +121,11 @@ fn the_duplicate_key_is_bone_cube_and_face_and_nothing_else() {
         found,
         [
             text(
-                "DuplicateIdentifier",
+                "block_culling/duplicate_part",
                 "Rule 1 had geometry part 'b' cube index 0 face index 'Up' that matches an earlier rule"
             ),
             text(
-                "DuplicateIdentifier",
+                "block_culling/duplicate_part",
                 "Rule 2 had geometry part 'b' cube index 0 face index 'Up' that matches an earlier rule"
             ),
             internal()
@@ -141,7 +143,7 @@ fn r04_two_whole_bone_rules_of_one_bone_are_duplicates() {
         texts(&json),
         [
             text(
-                "DuplicateIdentifier",
+                "block_culling/duplicate_part",
                 "Rule 1 had geometry part 'b' cube index -1 face index 'Unknown facing' that matches an earlier rule"
             ),
             internal()
@@ -161,15 +163,15 @@ fn r05_every_offending_rule_is_logged_before_the_one_rejection() {
         texts(&json),
         [
             text(
-                "InvalidValue",
+                "block_culling/cube_without_face",
                 "Rule 1 with geometry part 'no_face' had a cube index but no face specified"
             ),
             text(
-                "InvalidValue",
+                "block_culling/face_without_cube",
                 "Rule 2 with geometry part 'no_cube' had a face specified, but no cube index"
             ),
             text(
-                "DuplicateIdentifier",
+                "block_culling/duplicate_part",
                 "Rule 3 had geometry part 'bone1' cube index 2 face index 'East' that matches an earlier rule"
             ),
             internal()
@@ -184,12 +186,12 @@ fn r06_the_minecraft_namespace_is_not_a_user_pack_s() {
         errors(&rejects(&named("minecraft:culling_parsing"))),
         [
             error(
-                "NamespaceRule",
+                "block_culling/minecraft_namespace",
                 "Identifier not allowed to use Minecraft namespace",
                 &format!("{KEY}/description/identifier")
             ),
             error(
-                "MissingIdentifier",
+                "block_culling/identifier_failed",
                 "Identifier 'minecraft:culling_parsing' failed validation when registering block culling json",
                 &format!("{KEY}/description/identifier")
             ),
@@ -216,9 +218,12 @@ fn r08_an_identifier_needs_a_namespace() {
     assert_eq!(
         texts(&named("lamp")),
         [
-            text("NamespaceRule", "Identifier must have a namespace"),
             text(
-                "MissingIdentifier",
+                "block_culling/needs_namespace",
+                "Identifier must have a namespace"
+            ),
+            text(
+                "block_culling/identifier_failed",
                 "Identifier 'lamp' failed validation when registering block culling json"
             ),
             internal()
@@ -234,10 +239,13 @@ fn r09_white_space_in_the_name_or_the_namespace() {
     assert_eq!(
         texts(&named("demo:my lamp")),
         [
-            text("NamespaceRule", "Identifier cannot have illegal characters"),
-            text("NamespaceRule", "Identifier name is invalid"),
             text(
-                "MissingIdentifier",
+                "block_culling/illegal_characters",
+                "Identifier cannot have illegal characters"
+            ),
+            text("block_culling/name_invalid", "Identifier name is invalid"),
+            text(
+                "block_culling/identifier_failed",
                 "Identifier 'demo:my lamp' failed validation when registering block culling json"
             ),
             internal()
@@ -246,8 +254,11 @@ fn r09_white_space_in_the_name_or_the_namespace() {
     assert_eq!(
         texts(&named("de mo:lamp"))[..2],
         [
-            text("NamespaceRule", "Identifier cannot have illegal characters"),
-            text("NamespaceRule", "Namespace is invalid"),
+            text(
+                "block_culling/illegal_characters",
+                "Identifier cannot have illegal characters"
+            ),
+            text("block_culling/namespace_invalid", "Namespace is invalid"),
         ]
     );
     // Space, tab, line feed and carriage return, in either part; the namespace is checked first.
@@ -273,10 +284,14 @@ fn r10_a_bad_identifier_skips_the_rule_checks() {
     let json = document("1.21.80", "lamp", &[BONE1_EAST, BONE1_EAST]);
     let found = texts(&json);
     assert_eq!(found.len(), 3, "{found:#?}");
-    assert!(found.iter().all(|(code, _)| *code != "DuplicateIdentifier"));
+    assert!(
+        rejects(&json)
+            .iter()
+            .all(|d| d.code.kind() != Kind::Duplicate)
+    );
     // With a sound identifier the duplicate is found.
     let json = document("1.21.80", "a:lamp", &[BONE1_EAST, BONE1_EAST]);
-    assert_eq!(texts(&json)[0].0, "DuplicateIdentifier");
+    assert_eq!(texts(&json)[0].0, "block_culling/duplicate_part");
 }
 
 #[test]
@@ -285,7 +300,7 @@ fn r12_an_empty_identifier_fails_without_a_reason() {
         texts(&named("")),
         [
             text(
-                "MissingIdentifier",
+                "block_culling/identifier_failed",
                 "Identifier '' failed validation when registering block culling json"
             ),
             internal()
@@ -300,7 +315,7 @@ fn r13_the_minecraft_namespace_is_compared_without_case() {
         assert_eq!(
             found[0],
             text(
-                "NamespaceRule",
+                "block_culling/minecraft_namespace",
                 "Identifier not allowed to use Minecraft namespace"
             ),
             "{identifier}"
@@ -321,9 +336,9 @@ fn r14_more_than_one_colon_or_an_empty_side() {
         assert_eq!(
             texts(&named(identifier)),
             [
-                text("NamespaceRule", "Invalid identifier"),
+                text("block_culling/invalid_identifier", "Invalid identifier"),
                 text(
-                    "MissingIdentifier",
+                    "block_culling/identifier_failed",
                     &format!(
                         "Identifier '{identifier}' failed validation when registering block culling json"
                     )

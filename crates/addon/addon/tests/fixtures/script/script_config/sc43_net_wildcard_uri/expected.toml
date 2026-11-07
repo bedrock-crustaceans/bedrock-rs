@@ -1,7 +1,7 @@
 # families/script_config fixtures.md, row sc43_net_wildcard_uri (probe F netwild).
 
 [[diagnostic]]
-code = "InvalidValue"
+code = "core/invalid_value"
 severity = "info"
 phase = "parse"
 file = "config/default/permissions.json"

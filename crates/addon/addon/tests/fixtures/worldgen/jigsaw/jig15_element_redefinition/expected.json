@@ -11,7 +11,7 @@
   },
   "diagnostics": [
     {
-      "code": "InvalidValue",
+      "code": "jigsaw/element_redefined",
       "severity": "info",
       "path": "worldgen/template_pools/b.json",
       "json_path": "minecraft:template_pool/elements/0/element/location",

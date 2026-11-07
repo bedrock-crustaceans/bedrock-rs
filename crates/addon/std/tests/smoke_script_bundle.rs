@@ -128,7 +128,7 @@ struct Counts {
 /// as for any pack, so this one pack cannot run.
 fn is_known_missing_main(root: &Path, finding: &Diagnostic) -> bool {
     root.ends_with("behavior_packs/experimental_spawn_rules")
-        && finding.code.name() == "UnresolvedReference"
+        && finding.code.id() == "script/plugin_missing_main_file"
         && finding
             .code
             .to_string()
@@ -204,7 +204,7 @@ fn check(source: &str, dirs: &[PathBuf]) -> Counts {
             }
             for finding in bundle.findings() {
                 *by_code
-                    .entry((finding.code.name(), finding.severity.to_string()))
+                    .entry((finding.code.id(), finding.severity.to_string()))
                     .or_default() += 1;
                 if finding.severity >= Severity::Error {
                     if is_known_missing_main(&root, finding) {
@@ -227,7 +227,7 @@ fn check(source: &str, dirs: &[PathBuf]) -> Counts {
     assert!(
         by_code
             .keys()
-            .all(|(code, _)| *code != "ScriptSyntaxNotChecked"),
+            .all(|(code, _)| *code != "core/script_syntax_not_checked"),
         "{source}: {by_code:?}"
     );
     counts.parsed = parsed;

@@ -1,7 +1,7 @@
 //! The validation rules that no fixture row of the fixtures carries, the order of the
 //! checks, the listed deviations, and the rules across packs. Manifests are written inline.
 
-use bedrock_addon::diagnostic::{Diagnostics, Severity};
+use bedrock_addon::diagnostic::{Diagnostics, Disposition, Kind, Severity};
 use bedrock_addon::families::script::{
     Discovery, ScriptContext, ScriptDiscovery, ScriptFiles, ScriptModule, ScriptRuntime,
     ScriptTarget,
@@ -139,7 +139,7 @@ fn m2_a_legacy_dependency_that_is_no_object_refuses_the_pack() {
     let refused = parse(&legacy("p", 1, JS, r#""@minecraft/server""#)).expect_err("refused");
     assert_eq!(
         brief(&refused),
-        [row("WrongTypeProperty", "error", "dependencies/0")]
+        [row("core/wrong_type_property", "error", "dependencies/0")]
     );
 }
 
@@ -155,7 +155,7 @@ fn m4_a_legacy_module_name_of_the_wrong_type_refuses_the_pack() {
     assert_eq!(
         brief(&refused),
         [row(
-            "WrongTypeProperty",
+            "core/wrong_type_property",
             "error",
             "dependencies/0/module_name"
         )]
@@ -170,17 +170,17 @@ fn m4_a_legacy_element_without_a_module_name_is_read_as_a_pack_dependency() {
     for (dependency, findings) in [
         (
             r#"{ "version": "2.0.0" }"#,
-            vec![row("MissingProperty", "error", "dependencies/0/uuid")],
+            vec![row("core/missing_property", "error", "dependencies/0/uuid")],
         ),
         (
             r#"{ "module_name": null, "version": [1, 0, 0] }"#,
-            vec![row("MissingProperty", "error", "dependencies/0/uuid")],
+            vec![row("core/missing_property", "error", "dependencies/0/uuid")],
         ),
         (
             "{ }",
             vec![
-                row("MissingProperty", "error", "dependencies/0/uuid"),
-                row("MissingProperty", "error", "dependencies/0/version"),
+                row("core/missing_property", "error", "dependencies/0/uuid"),
+                row("core/missing_property", "error", "dependencies/0/version"),
             ],
         ),
     ] {
@@ -203,7 +203,7 @@ fn m5_a_legacy_version_string_that_is_no_version_refuses_the_pack() {
         assert_eq!(
             brief(&refused),
             [row(
-                "MalformedPropertyVersion",
+                "core/manifest_not_semver",
                 "error",
                 "dependencies/0/version"
             )],
@@ -223,7 +223,11 @@ fn m7_a_legacy_dependency_without_a_version_refuses_the_pack() {
     .expect_err("refused");
     assert_eq!(
         brief(&refused),
-        [row("MissingProperty", "error", "dependencies/0/version")]
+        [row(
+            "core/missing_property",
+            "error",
+            "dependencies/0/version"
+        )]
     );
 }
 
@@ -235,7 +239,11 @@ fn m6_a_legacy_version_of_another_type_refuses_the_pack() {
         let refused = parse(&legacy("p", 1, JS, &dependency)).expect_err("refused");
         assert_eq!(
             brief(&refused),
-            [row("WrongTypeProperty", "error", "dependencies/0/version")],
+            [row(
+                "core/manifest_wrong_type",
+                "error",
+                "dependencies/0/version"
+            )],
             "{version}"
         );
     }
@@ -251,7 +259,11 @@ fn m12_an_unknown_member_of_a_v3_dependency_refuses_the_pack() {
     .expect_err("refused");
     assert_eq!(
         brief(&refused),
-        [row("UnrecognizedField", "error", "dependencies/0/note")]
+        [row(
+            "core/unrecognized_field",
+            "error",
+            "dependencies/0/note"
+        )]
     );
 }
 
@@ -266,7 +278,7 @@ fn m13_a_v3_dependency_without_its_version_refuses_the_pack() {
     assert_eq!(
         brief(&refused),
         [row(
-            "MissingRequiredField",
+            "core/missing_required_field",
             "error",
             "dependencies/0/version"
         )]
@@ -280,13 +292,25 @@ fn m13_a_v3_element_without_a_module_name_is_read_as_a_pack_dependency() {
     for (dependency, findings) in [
         (
             r#"{ "version": "2.0.0" }"#,
-            vec![row("MissingRequiredField", "error", "dependencies/0/uuid")],
+            vec![row(
+                "core/missing_required_field",
+                "error",
+                "dependencies/0/uuid",
+            )],
         ),
         (
             "{ }",
             vec![
-                row("MissingRequiredField", "error", "dependencies/0/uuid"),
-                row("MissingRequiredField", "error", "dependencies/0/version"),
+                row(
+                    "core/missing_required_field",
+                    "error",
+                    "dependencies/0/uuid",
+                ),
+                row(
+                    "core/missing_required_field",
+                    "error",
+                    "dependencies/0/version",
+                ),
             ],
         ),
     ] {
@@ -309,7 +333,7 @@ fn m10_a_v3_version_that_is_a_number_refuses_the_pack() {
     .expect_err("refused");
     assert_eq!(
         brief(&refused),
-        [row("InvalidType", "error", "dependencies/0/version")]
+        [row("core/invalid_type", "error", "dependencies/0/version")]
     );
 }
 
@@ -335,7 +359,11 @@ fn m8_a_legacy_optional_is_ignored_whatever_it_says() {
         let (module, diagnostics) = parse(&legacy("p", 1, JS, &dependency)).expect("loads");
         assert_eq!(
             brief(&diagnostics),
-            [row("IgnoredMember", "info", "dependencies/0/optional")],
+            [row(
+                "core/ignored_member",
+                "info",
+                "dependencies/0/optional"
+            )],
             "{optional}"
         );
         assert!(!module.expect("a script module").dependencies[0].optional);
@@ -381,9 +409,9 @@ fn m14_only_the_relaxed_form_is_gated_and_only_below_1_26_30() {
         .map(|document| brief(document.diagnostics()))
         .map_err(|rejected| brief(&rejected.diagnostics))
     };
-    let warning = row("FieldSinceEngine", "info", "dependencies/0/version");
+    let warning = row("core/field_since_engine", "info", "dependencies/0/version");
     let error = row(
-        "MalformedPropertyVersion",
+        "core/dependency_invalid_version",
         "error",
         "dependencies/0/version",
     );
@@ -434,7 +462,7 @@ fn the_relaxed_form_is_the_legacy_readers_error_on_every_engine() {
     assert_eq!(
         brief(&refused),
         [row(
-            "MalformedPropertyVersion",
+            "core/manifest_not_semver",
             "error",
             "dependencies/0/version"
         )]
@@ -498,7 +526,11 @@ fn a_manifest_without_a_script_module_has_no_script_side_and_keeps_its_findings(
     assert_eq!(module, None);
     assert_eq!(
         brief(&diagnostics),
-        [row("IgnoredMember", "info", "dependencies/0/optional")]
+        [row(
+            "core/ignored_member",
+            "info",
+            "dependencies/0/optional"
+        )]
     );
 }
 
@@ -520,7 +552,7 @@ fn paths_are_the_files_when_the_legacy_reader_drops_an_element() {
     let (parsed, diagnostics) = parse(&text).expect("loads");
     assert_eq!(
         brief(&diagnostics),
-        [row("InvalidProperty", "warning", "dependencies/0")]
+        [row("core/invalid_property", "warning", "dependencies/0")]
     );
     let parsed = parsed.expect("a script module");
     assert_eq!(parsed.dependencies[0].path.to_string(), "dependencies/2");
@@ -582,9 +614,9 @@ fn a_format_0_manifest_has_its_script_module_in_the_header_and_no_dependencies()
         "format 0 reads no dependencies"
     );
     assert!(
-        !listed(&diagnostics)
+        !diagnostics
             .iter()
-            .any(|(code, ..)| code == "IgnoredMember"),
+            .any(|d| d.code.kind() == Kind::UnknownMember(Disposition::Ignored)),
         "nothing of the unread dependencies is reported: {diagnostics:?}"
     );
 }
@@ -650,10 +682,14 @@ fn every_dependency_is_filtered_after_one_rejected_the_plugin() {
     assert_eq!(
         brief(found.diagnostics()),
         [
-            row("MissingToggles", "error", "dependencies/0"),
-            row("ScriptModulePermission", "error", "dependencies/1"),
-            row("ScriptModulePermission", "error", "dependencies/2"),
-            row("ScriptAlphaDependency", "info", "dependencies/3"),
+            row("script/plugin_beta_apis", "error", "dependencies/0"),
+            row(
+                "script/plugin_module_not_configured",
+                "error",
+                "dependencies/1"
+            ),
+            row("script/plugin_internal_apis", "error", "dependencies/2"),
+            row("core/script_alpha_dependency", "info", "dependencies/3"),
         ]
     );
 }
@@ -672,15 +708,23 @@ fn a_gated_dependency_hides_the_missing_main_file_and_the_uuid_warning() {
     );
     assert_eq!(
         brief(discover(&text).diagnostics()),
-        [row("MissingToggles", "error", "dependencies/0")]
+        [row("script/plugin_beta_apis", "error", "dependencies/0")]
     );
     // Without the gated dependency both appear, the warning first.
     let ungated = text.replace(r#""version": "beta""#, r#""version": "2.0.0""#);
     assert_eq!(
         brief(discover(&ungated).diagnostics()),
         [
-            row("DeprecatedMember", "warning", "dependencies/1"),
-            row("UnresolvedReference", "error", "modules/0/entry"),
+            row(
+                "script/plugin_dependency_by_uuid",
+                "warning",
+                "dependencies/1"
+            ),
+            row(
+                "script/plugin_missing_main_file",
+                "error",
+                "modules/0/entry"
+            ),
         ]
     );
 }
@@ -696,12 +740,20 @@ fn the_language_is_checked_before_the_entry_and_the_entry_before_the_dependencie
     );
     assert_eq!(
         brief(discover(&both).diagnostics()),
-        [row("InvalidEnumValue", "error", "modules/0/language")]
+        [row(
+            "script/plugin_unsupported_runtime",
+            "error",
+            "modules/0/language"
+        )]
     );
     let entry = legacy("p", 1, r#", "entry": "scripts/main.ts""#, dependency);
     assert_eq!(
         brief(discover(&entry).diagnostics()),
-        [row("InvalidValue", "error", "modules/0/entry")]
+        [row(
+            "script/plugin_entry_not_supported_invalid_value",
+            "error",
+            "modules/0/entry"
+        )]
     );
 }
 
@@ -736,7 +788,7 @@ fn the_entry_loses_only_a_leading_scripts_root() {
         assert_eq!(
             listed(found.diagnostics()),
             [(
-                "UnresolvedReference".to_owned(),
+                "script/plugin_missing_main_file".to_owned(),
                 "error",
                 "modules/0/entry".to_owned(),
                 format!("Plugin [p - 3.2.1] - does not contain main file [{printed}]."),
@@ -760,7 +812,7 @@ fn an_entry_without_the_js_extension_is_not_supported() {
         assert_eq!(
             listed(found.diagnostics()),
             [(
-                "InvalidValue".to_owned(),
+                "script/plugin_entry_not_supported_invalid_value".to_owned(),
                 "error",
                 "modules/0/entry".to_owned(),
                 format!(
@@ -818,7 +870,7 @@ fn s13_an_editor_module_is_dropped_outside_an_editor_world() {
     assert_eq!(
         listed(found.diagnostics()),
         [(
-            "DroppedField".to_owned(),
+            "script/plugin_not_editor_world".to_owned(),
             "info",
             "dependencies/0".to_owned(),
             "Plugin [p - 3.2.1] - skipping dependency on [@minecraft/server-editor] because this is not an editor world."
@@ -840,7 +892,7 @@ fn s13_an_editor_module_is_dropped_outside_an_editor_world() {
     let editor = discover_with(&text, &main_js(), |cx| cx.editor_world = true);
     assert_eq!(
         brief(editor.diagnostics()),
-        [row("MissingToggles", "error", "dependencies/0")]
+        [row("script/plugin_beta_apis", "error", "dependencies/0")]
     );
 }
 
@@ -855,7 +907,7 @@ fn s9_an_optional_dependency_a_permission_refuses_is_dropped() {
     let found = discover(&text);
     assert_eq!(
         brief(found.diagnostics()),
-        [row("DroppedField", "info", "dependencies/0")]
+        [row("core/dropped_field", "info", "dependencies/0")]
     );
     let plugin = found.plugin().expect("runs");
     assert_eq!(plugin.dependencies.len(), 1);
@@ -887,7 +939,11 @@ fn s10_the_wildcard_of_a_permission_list_allows_every_module() {
     assert_eq!(
         with(&["@minecraft/*", "@minecraft/server"]),
         (
-            vec![row("ScriptModulePermission", "error", "dependencies/0")],
+            vec![row(
+                "script/plugin_module_not_configured",
+                "error",
+                "dependencies/0"
+            )],
             false
         )
     );
@@ -906,7 +962,11 @@ fn the_package_origin_lifts_the_three_gates_and_not_the_permissions() {
     let package = discover_with(&text, &main_js(), |cx| cx.is_package_origin = true);
     assert_eq!(
         brief(package.diagnostics()),
-        [row("ScriptModulePermission", "error", "dependencies/2")]
+        [row(
+            "script/plugin_module_not_configured",
+            "error",
+            "dependencies/2"
+        )]
     );
     let beta = discover_with(&text, &main_js(), |cx| cx.beta_apis = true);
     assert_eq!(brief(beta.diagnostics()), brief(package.diagnostics()));
@@ -914,9 +974,13 @@ fn the_package_origin_lifts_the_three_gates_and_not_the_permissions() {
     assert_eq!(
         brief(neither.diagnostics()),
         [
-            row("MissingToggles", "error", "dependencies/0"),
-            row("MissingToggles", "error", "dependencies/1"),
-            row("ScriptModulePermission", "error", "dependencies/2"),
+            row("script/plugin_beta_apis", "error", "dependencies/0"),
+            row("script/plugin_beta_apis_module", "error", "dependencies/1"),
+            row(
+                "script/plugin_module_not_configured",
+                "error",
+                "dependencies/2"
+            ),
         ]
     );
 }
@@ -934,7 +998,7 @@ fn a_beta_selector_of_a_module_without_a_beta_is_gated_by_its_major() {
     assert_eq!(
         listed(found.diagnostics()),
         [(
-            "MissingToggles".to_owned(),
+            "script/plugin_beta_apis".to_owned(),
             "error",
             "dependencies/0".to_owned(),
             "Plugin [p - 3.2.1] - requesting dependency on beta APIs [@minecraft/nonexistent - 0.0.0-alpha], but the Beta APIs experiment is not enabled."
@@ -957,7 +1021,7 @@ fn s12_the_server_ui_uuid_stands_for_server_ui() {
     assert_eq!(
         listed(found.diagnostics()),
         [(
-            "DeprecatedMember".to_owned(),
+            "script/plugin_dependency_by_uuid".to_owned(),
             "warning",
             "dependencies/0".to_owned(),
             "Plugin [p - 3.2.1] dependency by UUID is deprecated and only supports version 0.1.0, use module_name instead."
@@ -986,8 +1050,16 @@ fn s12_the_server_ui_uuid_stands_for_server_ui() {
     assert_eq!(
         brief(found.diagnostics()),
         [
-            row("DeprecatedMember", "warning", "dependencies/0"),
-            row("DeprecatedMember", "warning", "dependencies/1"),
+            row(
+                "script/plugin_dependency_by_uuid",
+                "warning",
+                "dependencies/0"
+            ),
+            row(
+                "script/plugin_dependency_by_uuid",
+                "warning",
+                "dependencies/1"
+            ),
         ]
     );
     let names: Vec<String> = found
@@ -1015,8 +1087,16 @@ fn a_conflict_beside_an_unshipped_request_reads_alike_with_the_beta_apis_on_or_o
     assert_eq!(
         brief(off.diagnostics()),
         [
-            row("ScriptModuleVersionUnavailable", "error", "dependencies/1"),
-            row("ScriptModuleVersionConflict", "error", "dependencies/1"),
+            row(
+                "core/script_module_version_unavailable",
+                "error",
+                "dependencies/1"
+            ),
+            row(
+                "core/script_module_version_conflict",
+                "error",
+                "dependencies/1"
+            ),
         ]
     );
     assert_eq!(listed(off.diagnostics()), listed(on.diagnostics()));
@@ -1036,7 +1116,11 @@ fn unknown_module_is_reported_at_discovery_deviation() {
     let found = discover_with(&text, &main_js(), |cx| cx.allowed_modules = None);
     assert_eq!(
         brief(found.diagnostics()),
-        [row("UnresolvedReference", "error", "dependencies/0")]
+        [row(
+            "script/plugin_unknown_module",
+            "error",
+            "dependencies/0"
+        )]
     );
 }
 
@@ -1052,7 +1136,7 @@ fn v3_bad_semver_is_a_malformed_version_deviation() {
     assert_eq!(
         brief(&refused),
         [row(
-            "MalformedPropertyVersion",
+            "core/dependency_invalid_version",
             "error",
             "dependencies/0/version"
         )]
@@ -1071,7 +1155,10 @@ fn legacy_optional_is_an_info_deviation() {
     let (_, diagnostics) = parse(&text).expect("loads");
     let all = listed(&diagnostics);
     assert_eq!(all.len(), 1);
-    assert_eq!((all[0].0.as_str(), all[0].1), ("IgnoredMember", "info"));
+    assert_eq!(
+        (all[0].0.as_str(), all[0].1),
+        ("core/ignored_member", "info")
+    );
     assert_eq!(
         diagnostics.iter().next().map(|d| d.severity),
         Some(Severity::Info)
@@ -1089,7 +1176,7 @@ fn optional_dependency_dropped_by_a_gate_is_an_info_deviation() {
     let found = discover(&text);
     assert_eq!(
         brief(found.diagnostics()),
-        [row("DroppedField", "info", "dependencies/0")]
+        [row("core/dropped_field", "info", "dependencies/0")]
     );
     assert!(found.plugin().expect("runs").dependencies.is_empty());
 }
@@ -1105,7 +1192,11 @@ fn internal_apis_are_refused_unless_the_build_allows_them_deviation() {
     );
     assert_eq!(
         brief(discover(&text).diagnostics()),
-        [row("ScriptModulePermission", "error", "dependencies/0")]
+        [row(
+            "script/plugin_internal_apis",
+            "error",
+            "dependencies/0"
+        )]
     );
     let allowed = discover_with(&text, &main_js(), |cx| cx.allow_internal = true);
     assert_eq!(brief(allowed.diagnostics()), []);
@@ -1129,7 +1220,11 @@ fn alpha_dependency_is_an_info_deviation() {
     let found = discover(&text);
     assert_eq!(
         brief(found.diagnostics()),
-        [row("ScriptAlphaDependency", "info", "dependencies/0")]
+        [row(
+            "core/script_alpha_dependency",
+            "info",
+            "dependencies/0"
+        )]
     );
     assert!(found.plugin().is_some());
     // A tag that only starts with `alpha` is another tag.
@@ -1142,7 +1237,7 @@ fn alpha_dependency_is_an_info_deviation() {
     assert!(
         !listed(discover(&other).diagnostics())
             .iter()
-            .any(|(code, ..)| code == "ScriptAlphaDependency")
+            .any(|(code, ..)| code == "core/script_alpha_dependency")
     );
 }
 
@@ -1180,7 +1275,7 @@ fn s2_a_module_an_earlier_pack_brought_is_skipped() {
     assert_eq!(
         listed(found[1].diagnostics()),
         [(
-            "DuplicateIdentifier".to_owned(),
+            "script/plugin_module_exists".to_owned(),
             "warning",
             "modules/0".to_owned(),
             "Plugin [lower - 3.2.1] - module uuid [22222222-2222-2222-2222-222222222201] with version [3.2.1] already exists, skipping."
@@ -1197,7 +1292,7 @@ fn s2_three_packs_with_one_module_run_the_first_only() {
     for later in &found[1..] {
         assert_eq!(
             brief(later.diagnostics()),
-            [row("DuplicateIdentifier", "warning", "modules/0")]
+            [row("script/plugin_module_exists", "warning", "modules/0")]
         );
     }
 }
@@ -1224,7 +1319,7 @@ fn s2_a_plugin_whose_context_failed_still_exists() {
     assert_eq!(
         brief(found[0].diagnostics()),
         [row(
-            "ScriptModuleVersionUnavailable",
+            "core/script_module_version_unavailable",
             "error",
             "dependencies/0"
         )]
@@ -1233,7 +1328,7 @@ fn s2_a_plugin_whose_context_failed_still_exists() {
         assert!(later.plugin().is_none());
         assert_eq!(
             brief(later.diagnostics()),
-            [row("DuplicateIdentifier", "warning", "modules/0")]
+            [row("script/plugin_module_exists", "warning", "modules/0")]
         );
     }
 }
@@ -1251,7 +1346,7 @@ fn s2_a_module_discovery_rejected_is_no_plugin_and_the_next_pack_runs() {
     ]);
     assert_eq!(
         brief(found[0].diagnostics()),
-        [row("MissingToggles", "error", "dependencies/0")]
+        [row("script/plugin_beta_apis", "error", "dependencies/0")]
     );
     assert!(found[0].plugin().is_none());
     assert!(found[1].plugin().is_some());
@@ -1259,7 +1354,7 @@ fn s2_a_module_discovery_rejected_is_no_plugin_and_the_next_pack_runs() {
     assert!(found[2].plugin().is_none());
     assert_eq!(
         brief(found[2].diagnostics()),
-        [row("DuplicateIdentifier", "warning", "modules/0")]
+        [row("script/plugin_module_exists", "warning", "modules/0")]
     );
 }
 
@@ -1279,7 +1374,7 @@ fn s2_a_module_whose_main_file_is_missing_still_exists() {
         assert_eq!(
             listed(found[0].diagnostics()),
             [(
-                "UnresolvedReference".to_owned(),
+                "script/plugin_missing_main_file".to_owned(),
                 "error",
                 "modules/0/entry".to_owned(),
                 "Plugin [a - 3.2.1] - does not contain main file [missing.js].".to_owned(),
@@ -1290,7 +1385,7 @@ fn s2_a_module_whose_main_file_is_missing_still_exists() {
             assert!(later.plugin().is_none(), "no pack below runs the module");
             assert_eq!(
                 brief(later.diagnostics()),
-                [row("DuplicateIdentifier", "warning", "modules/0")]
+                [row("script/plugin_module_exists", "warning", "modules/0")]
             );
         }
     }
@@ -1326,7 +1421,7 @@ fn s2_a_script_and_a_client_script_twin_do_not_shadow_each_other() {
     for later in &found[2..] {
         assert_eq!(
             brief(later.diagnostics()),
-            [row("DuplicateIdentifier", "warning", "modules/0")]
+            [row("script/plugin_module_exists", "warning", "modules/0")]
         );
     }
 }
@@ -1344,7 +1439,7 @@ fn s1_the_later_modules_are_skipped_also_when_the_first_is_disabled() {
     assert_eq!(
         listed(found.diagnostics()),
         [(
-            "MultipleScriptModules".to_owned(),
+            "core/multiple_script_modules".to_owned(),
             "warning",
             "modules/1".to_owned(),
             "Plugin [p - 3.2.1] - skipped, only one script module allowed per pack.".to_owned(),
@@ -1368,8 +1463,12 @@ fn s1_the_later_modules_are_skipped_also_when_the_first_is_disabled() {
     assert_eq!(
         brief(found.diagnostics()),
         [
-            row("InvalidEnumValue", "error", "modules/0/language"),
-            row("MultipleScriptModules", "warning", "modules/1"),
+            row(
+                "script/plugin_unsupported_runtime",
+                "error",
+                "modules/0/language"
+            ),
+            row("core/multiple_script_modules", "warning", "modules/1"),
         ]
     );
 }
@@ -1462,7 +1561,7 @@ fn the_same_input_prints_the_same_debug_text() {
         format!("{catalog:?}\n{module:?}\n{found:?}\n{discovery:?}")
     };
     let first = print();
-    assert!(first.contains("ScriptModuleVersionConflict"));
+    assert!(first.contains("core/script_module_version_conflict"));
     for _ in 0..8 {
         assert_eq!(print(), first);
     }
@@ -1553,7 +1652,11 @@ fn s10_the_permission_list_of_a_discovery_is_the_configuration_s_for_the_module(
     let server_only = r#"{"allowed_modules": ["@minecraft/server"]}"#;
     let both = r#"{"allowed_modules": ["@minecraft/server", "@minecraft/server-ui"]}"#;
     let refused = (
-        vec![row("ScriptModulePermission", "error", "dependencies/0")],
+        vec![row(
+            "script/plugin_module_not_configured",
+            "error",
+            "dependencies/0",
+        )],
         false,
     );
     assert_eq!(run(vec![folder("default", server_only)]), refused);
@@ -1592,8 +1695,8 @@ fn a_syntax_fault_in_the_copy_of_a_dependency_member_that_loses_refuses_the_mani
     );
     let rejected = parse(&faulty).expect_err("the manifest is refused");
     assert_eq!(
-        rejected.first_error().map(|f| f.code.name()),
-        Some("MalformedInput")
+        rejected.first_error().map(|f| f.code.id()),
+        Some("core/syntax")
     );
     // The same manifest with a well-formed copy that loses reads the last.
     let sound = legacy(

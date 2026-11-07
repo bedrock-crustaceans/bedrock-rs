@@ -2,6 +2,7 @@
 //! documents. Whatever loads writes text that loads back to the same rules; whatever the
 //! loader would refuse is not written.
 
+use bedrock_addon_core::diagnostic::Kind;
 use bedrock_addon_core::document::{Content, Rejected};
 use bedrock_addon_core::id::CullingRulesId;
 use bedrock_addon_core::json::{EncodeError, Value};
@@ -473,18 +474,18 @@ fn assert_refusal_is_sound(refusal: &Rejected, json: &str) -> bool {
     // Every cube the generator writes is a number: none is refused for its
     // type, and an integer beyond 64 bits is refused for its value, as every
     // index beyond `int` is.
-    let at_cube = |code: &str| {
+    let at_cube = |kind: Kind| {
         refusal
             .diagnostics
             .iter()
             .filter(|f| {
-                f.code.name() == code && f.location.json_path.to_string().ends_with("/cube")
+                f.code.kind() == kind && f.location.json_path.to_string().ends_with("/cube")
             })
             .count()
     };
-    assert_eq!(at_cube("InvalidType"), 0, "{json}");
+    assert_eq!(at_cube(Kind::WrongType), 0, "{json}");
     if json.contains("18446744073709551616") {
-        assert!(at_cube("InvalidValue") > 0, "{json}");
+        assert!(at_cube(Kind::InvalidValue) > 0, "{json}");
     }
     // Every reason has the file's path, and a closing line of vanilla's.
     assert!(

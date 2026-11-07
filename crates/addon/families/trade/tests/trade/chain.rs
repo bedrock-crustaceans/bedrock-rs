@@ -120,7 +120,7 @@ fn a_version_above_the_engine_is_unsupported() {
         ENGINE_VERSION.patch + 1,
     );
     let d = rejects(&doc(Some(&above.to_string()), TIERS));
-    let found = with(&d, "UnsupportedVersion", Severity::Error);
+    let found = with(&d, "core/no_parser_for_version", Severity::Error);
     assert_eq!(found.len(), 1);
     assert_eq!(found[0].location.json_path.to_string(), "format_version");
     assert_eq!(above_info(&d).len(), 1);
@@ -135,7 +135,7 @@ fn a_prerelease_of_1_21_30_is_read_by_the_legacy_parser_with_an_info() {
         document
             .diagnostics()
             .iter()
-            .any(|f| matches!(f.code.name(), "PrereleaseFormatVersion")
+            .any(|f| matches!(f.code.id(), "core/prerelease_format_version")
                 && f.severity == Severity::Info)
     );
 }
@@ -169,7 +169,10 @@ fn the_beta_literal_has_no_struct() {
     // No beta struct: no parser for `beta`, with or without the Beta APIs.
     let text = doc(Some("beta"), TIERS);
     let d = rejects(&text);
-    assert_eq!(with(&d, "UnsupportedVersion", Severity::Error).len(), 1);
+    assert_eq!(
+        with(&d, "core/no_parser_for_version", Severity::Error).len(),
+        1
+    );
     let mut cx = super::common::cx();
     cx.beta_apis = true;
     let rejected = {
@@ -182,7 +185,12 @@ fn the_beta_literal_has_no_struct() {
         .unwrap_err()
     };
     assert_eq!(
-        with(&rejected.diagnostics, "UnsupportedVersion", Severity::Error).len(),
+        with(
+            &rejected.diagnostics,
+            "core/no_parser_for_version",
+            Severity::Error
+        )
+        .len(),
         1
     );
 }
@@ -190,7 +198,10 @@ fn the_beta_literal_has_no_struct() {
 #[test]
 fn a_version_string_that_is_no_version_is_malformed() {
     let d = rejects(&doc(Some("latest"), TIERS));
-    assert_eq!(with(&d, "MalformedFormatVersion", Severity::Error).len(), 1);
+    assert_eq!(
+        with(&d, "core/malformed_format_version", Severity::Error).len(),
+        1
+    );
 }
 
 #[test]
@@ -204,11 +215,15 @@ fn an_array_version_is_picked_by_the_document_input() {
     let told: Vec<_> = document
         .diagnostics()
         .iter()
-        .map(|f| (f.code.name(), f.severity, f.location.json_path.to_string()))
+        .map(|f| (f.code.id(), f.severity, f.location.json_path.to_string()))
         .collect();
     assert_eq!(
         told,
-        [("InvalidType", Severity::Info, "format_version".to_owned())]
+        [(
+            "core/invalid_type",
+            Severity::Info,
+            "format_version".to_owned()
+        )]
     );
     let info = document.version();
     assert_eq!(info.written, None);
@@ -216,5 +231,8 @@ fn an_array_version_is_picked_by_the_document_input() {
     assert_eq!(info.parsed_as, FormatVersion::new(0, 0, 0));
     let text = format!(r#"{{"format_version": [1, 99, 0], "tiers": {TIERS}}}"#);
     let d = rejects(&text);
-    assert_eq!(with(&d, "UnsupportedVersion", Severity::Error).len(), 1);
+    assert_eq!(
+        with(&d, "core/no_parser_for_version", Severity::Error).len(),
+        1
+    );
 }

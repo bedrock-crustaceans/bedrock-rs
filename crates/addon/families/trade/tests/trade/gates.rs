@@ -40,7 +40,7 @@ fn mark_variants(values: &[i32]) -> Value {
 /// Whether `finding` is the information that a legacy blob is written under its deprecated
 /// name (`round_trip.rs`, the `k107_` test): not what these tests are about.
 fn announcement(finding: &bedrock_addon_core::diagnostic::Diagnostic) -> bool {
-    finding.code.name() == "ValueRewritten" && finding.severity == Severity::Info
+    finding.code.id() == "core/value_rewritten" && finding.severity == Severity::Info
 }
 
 /// JSON text as a `Value`.
@@ -163,11 +163,11 @@ fn t05_trader_material_type_expands_into_five_biome_filtered_choices_at_1_18_10(
         .diagnostics()
         .iter()
         .filter(|f| !announcement(f))
-        .map(|f| format!("{} at {}", f.code.name(), f.location.json_path))
+        .map(|f| format!("{} at {}", f.code.id(), f.location.json_path))
         .collect();
     assert_eq!(told.len(), 1, "{told:?}");
     assert!(
-        told[0].starts_with("DroppedField at ") && told[0].ends_with("/wants/0/filters"),
+        told[0].starts_with("core/dropped_field at ") && told[0].ends_with("/wants/0/filters"),
         "{told:?}"
     );
     let entry = &trade(document.value(), 0, 0, 0).wants[0];
@@ -206,7 +206,7 @@ fn t05_the_expanded_choices_keep_their_quantity_deviation() {
     }
     found_at(
         document.diagnostics(),
-        "UnrecognizedField",
+        "core/unrecognized_field",
         Severity::Info,
         "tiers/0/trades/0/wants/0/quanitity",
     );
@@ -291,11 +291,15 @@ fn f6_6_item_5_a_number_format_version_reads_as_0_0_0_and_is_told() {
         .diagnostics()
         .iter()
         .filter(|f| !announcement(f))
-        .map(|f| (f.code.name(), f.severity, f.location.json_path.to_string()))
+        .map(|f| (f.code.id(), f.severity, f.location.json_path.to_string()))
         .collect();
     assert_eq!(
         told,
-        [("InvalidType", Severity::Info, "format_version".to_owned())],
+        [(
+            "core/invalid_type",
+            Severity::Info,
+            "format_version".to_owned()
+        )],
         "{:#?}",
         document.diagnostics()
     );
@@ -322,11 +326,11 @@ fn a_null_format_version_is_malformed_not_0_0_0() {
     let errors: Vec<_> = d
         .iter()
         .filter(|f| f.severity == bedrock_addon_core::diagnostic::Severity::Error)
-        .map(|f| (f.code.name(), f.location.json_path.to_string()))
+        .map(|f| (f.code.id(), f.location.json_path.to_string()))
         .collect();
     assert_eq!(
         errors,
-        [("MalformedFormatVersion", "format_version".to_owned())]
+        [("core/malformed_format_version", "format_version".to_owned())]
     );
 }
 
@@ -383,7 +387,7 @@ fn a_member_a_gate_drops_or_replaces_is_told() {
             .map(|f| {
                 let path = f.location.json_path.to_string();
                 let member = path.split("/wants/0/").nth(1).unwrap_or(&path).to_owned();
-                format!("{} at {member}", f.code.name())
+                format!("{} at {member}", f.code.id())
             })
             .collect()
     };
@@ -395,21 +399,21 @@ fn a_member_a_gate_drops_or_replaces_is_told() {
             r#"{"item": "minecraft:emerald", "biomes": ["plains", 7, "mushroom"], "filters": {"test": "is_daytime"}}"#
         ),
         [
-            "InvalidType at biomes/1",
-            "InvalidValue at biomes/2",
-            "DroppedField at filters"
+            "core/invalid_type at biomes/1",
+            "core/invalid_value at biomes/2",
+            "core/dropped_field at filters"
         ]
     );
     assert_eq!(
         told(None, r#"{"item": "minecraft:emerald", "biomes": 7}"#),
-        ["InvalidType at biomes"]
+        ["core/invalid_type at biomes"]
     );
     assert_eq!(
         told(
             None,
             r#"{"item": "minecraft:emerald", "biomes": "mushroom"}"#
         ),
-        ["InvalidValue at biomes"]
+        ["core/invalid_value at biomes"]
     );
     // From 1.20.30 no gate reads `biomes`.
     assert_eq!(
@@ -417,7 +421,7 @@ fn a_member_a_gate_drops_or_replaces_is_told() {
             Some("1.20.30"),
             r#"{"item": "minecraft:emerald", "biomes": ["plains"]}"#
         ),
-        ["DroppedField at biomes"]
+        ["core/dropped_field at biomes"]
     );
     // An entry whose `choice` is empty goes; where other entries stay, it is told.
     let document = loads(&doc(
@@ -427,7 +431,10 @@ fn a_member_a_gate_drops_or_replaces_is_told() {
     let found: Vec<String> = document
         .diagnostics()
         .iter()
-        .map(|f| format!("{} at {}", f.code.name(), f.location.json_path))
+        .map(|f| format!("{} at {}", f.code.id(), f.location.json_path))
         .collect();
-    assert_eq!(found, ["InvalidValue at tiers/0/trades/0/wants/1/choice"]);
+    assert_eq!(
+        found,
+        ["core/invalid_value at tiers/0/trades/0/wants/1/choice"]
+    );
 }

@@ -91,19 +91,19 @@ fn tally(registry: &Registry<Entity>, dir: &Path) -> Tally {
     for diagnostic in registry.diagnostics() {
         if diagnostic.severity == Severity::Info
             && diagnostic.phase == Phase::Validate
-            && diagnostic.code.name() == "UnresolvedReference"
+            && diagnostic.code.id() == "core/unresolved_reference"
         {
             self_references += 1;
         }
         if diagnostic.severity == Severity::Info && diagnostic.phase == Phase::Upgrade {
-            *notes.entry(diagnostic.code.name()).or_insert(0) += 1;
+            *notes.entry(diagnostic.code.id()).or_insert(0) += 1;
         }
-        if diagnostic.code.name() == "UnsupportedFileFormat" {
+        if diagnostic.code.id() == "core/unsupported_file_format" {
             unsupported.push(diagnostic.to_string());
         } else if diagnostic.severity >= Severity::Error {
             errors.push(diagnostic.to_string());
         } else if diagnostic.severity == Severity::Warning {
-            *warnings.entry(diagnostic.code.name()).or_insert(0) += 1;
+            *warnings.entry(diagnostic.code.id()).or_insert(0) += 1;
         }
     }
     let mcb = unsupported.len();
@@ -257,19 +257,21 @@ const ERRORS_SERVER_FIRST: &str = "minecraft:entity/components/minecraft:apply_k
 /// default replaces. The 10 spawn chances and 3 `*_spawn_percent_chance` members are read, not
 /// noted.
 const NOTES_SERVER: &[(&str, usize)] = &[
-    ("DroppedField", 23),
-    ("InvalidValue", 21),
-    ("MemberNotKept", 19),
-    ("UnrecognizedField", 199),
-    ("ValueRewritten", 38),
+    ("core/dropped_field", 14),
+    ("entity/member_removed_by_upgrade", 9),
+    ("core/invalid_value", 21),
+    ("core/member_not_kept", 19),
+    ("core/unrecognized_field", 199),
+    ("core/value_rewritten", 38),
 ];
 /// The same over the packs of client install B (the same, with 6 more unknown members).
 const NOTES_CLIENT_INSTALL_B: &[(&str, usize)] = &[
-    ("DroppedField", 23),
-    ("InvalidValue", 21),
-    ("MemberNotKept", 19),
-    ("UnrecognizedField", 205),
-    ("ValueRewritten", 38),
+    ("core/dropped_field", 14),
+    ("entity/member_removed_by_upgrade", 9),
+    ("core/invalid_value", 21),
+    ("core/member_not_kept", 19),
+    ("core/unrecognized_field", 205),
+    ("core/value_rewritten", 38),
 ];
 
 #[test]
@@ -283,7 +285,7 @@ fn sample_packs_entities_load() {
         &[],
         // Two older `behavior.follow_mob` goals' `abort_navigation_on_stop`; the 4 unknown
         // members of the conversions.
-        &[("MemberNotKept", 2), ("UnrecognizedField", 4)],
+        &[("core/member_not_kept", 2), ("core/unrecognized_field", 4)],
         // Plus the 16 undefined groups an event names.
         29,
     );
@@ -347,9 +349,9 @@ fn upgraded_sulfur_cube_presets_equal_the_shipped_ones() {
         // 3 bounds and 11 unknown members.
         &[
             // 2 of the 3 bounds were spawn chances, which are read, not noted.
-            ("InvalidValue", 1),
-            ("MemberNotKept", 1),
-            ("UnrecognizedField", 11),
+            ("core/invalid_value", 1),
+            ("core/member_not_kept", 1),
+            ("core/unrecognized_field", 11),
         ],
         // Plus the 6 undefined groups an event names.
         21,
@@ -517,18 +519,11 @@ fn a_creaking_with_a_third_root_member_loads() {
                     && f.location.json_path.segments().len() == 1
                     && f.location.json_path.to_string() != "minecraft:entity"
             })
-            .map(|f| {
-                format!(
-                    "{} {:?} {}",
-                    f.code.name(),
-                    f.severity,
-                    f.location.json_path
-                )
-            })
+            .map(|f| format!("{} {:?} {}", f.code.id(), f.severity, f.location.json_path))
             .collect();
         assert_eq!(
             at_the_root,
-            ["UnrecognizedField Info use_beta_features"],
+            ["core/unrecognized_field Info use_beta_features"],
             "{pack}"
         );
     }

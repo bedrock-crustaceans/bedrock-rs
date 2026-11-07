@@ -112,7 +112,7 @@ fn i2_a_resource_pack_item_no_behaviour_pack_defines_is_vanillas_kept_error() {
     assert_eq!(
         said(&found, &ITEM_KINDS),
         [one(
-            "UnresolvedReference",
+            "core/unresolved_reference_worded",
             Severity::Error,
             "items/lone.json",
             "minecraft:item/description/identifier",
@@ -172,7 +172,7 @@ fn i2_a_resource_pack_item_that_is_not_loaded_is_not_judged() {
     assert_eq!(said(&found, &ITEM_KINDS), []);
     let not_loaded: Vec<_> = found
         .iter()
-        .filter(|finding| finding.code.name() == "FileNotLoaded")
+        .filter(|finding| finding.code.id() == "core/file_not_loaded")
         .map(|finding| said_of(finding).2)
         .collect();
     assert_eq!(not_loaded, ["items/lone.json"]);
@@ -273,7 +273,7 @@ mod entity {
             said(&found, &KINDS),
             [
                 one(
-                    "UnresolvedReference",
+                    "core/unresolved_reference_worded",
                     Severity::Error,
                     FILE,
                     &format!("{COMPONENTS}/minecraft:entity_placer/entity"),
@@ -281,7 +281,7 @@ mod entity {
                     "demo:nobody<demo:born>"
                 ),
                 one(
-                    "UnresolvedReference",
+                    "core/unresolved_reference_worded",
                     Severity::Error,
                     FILE,
                     &format!("{COMPONENTS}/minecraft:projectile/projectile_entity"),
@@ -369,7 +369,7 @@ mod block {
         assert_eq!(
             said(&found, &KINDS),
             [one(
-                "UnresolvedReference",
+                "core/unresolved_reference_worded",
                 Severity::Error,
                 FILE,
                 &format!("{COMPONENTS}/minecraft:block_placer/block"),
@@ -404,7 +404,7 @@ mod block {
         assert_eq!(
             said(&found, &KINDS),
             [one(
-                "UnresolvedReference",
+                "core/unresolved_reference",
                 Severity::Info,
                 FILE,
                 &format!("{COMPONENTS}/minecraft:block_placer/block/states/demo:dim"),
@@ -432,7 +432,7 @@ mod block {
         assert_eq!(
             said(&found, &KINDS),
             [one(
-                "UnresolvedReference",
+                "core/unresolved_reference",
                 Severity::Info,
                 FILE,
                 &format!("{COMPONENTS}/minecraft:block"),
@@ -454,7 +454,7 @@ mod block {
             said(&found, &KINDS),
             [
                 one(
-                    "UnresolvedReference",
+                    "core/unresolved_reference_worded",
                     Severity::Error,
                     FILE,
                     &format!("{COMPONENTS}/minecraft:block_placer/use_on/1/name"),
@@ -462,7 +462,7 @@ mod block {
                     "demo:none_b"
                 ),
                 one(
-                    "UnresolvedReference",
+                    "core/unresolved_reference_worded",
                     Severity::Error,
                     FILE,
                     &format!("{COMPONENTS}/minecraft:digger/destroy_speeds/1/block"),
@@ -470,7 +470,7 @@ mod block {
                     "demo:none_a"
                 ),
                 one(
-                    "UnresolvedReference",
+                    "core/unresolved_reference_worded",
                     Severity::Error,
                     FILE,
                     &format!("{COMPONENTS}/minecraft:entity_placer/use_on/0"),
@@ -478,7 +478,7 @@ mod block {
                     "demo:none_c"
                 ),
                 one(
-                    "UnresolvedReference",
+                    "core/unresolved_reference_worded",
                     Severity::Error,
                     FILE,
                     &format!("{COMPONENTS}/minecraft:entity_placer/dispense_on/1"),
@@ -531,7 +531,7 @@ fn i5_the_item_descriptors_of_an_item_are_resolved() {
     .into_iter()
     .map(|(path, id)| {
         one(
-            "UnresolvedReference",
+            "core/unresolved_reference_worded",
             Severity::Error,
             FILE,
             &format!("{COMPONENTS}/{path}"),
@@ -673,7 +673,7 @@ mod sound {
             .filter(|path| version == "beta" || !path.starts_with("minecraft:record"))
             .map(|path| {
                 one(
-                    "UnknownSound",
+                    "core/unknown_sound",
                     Severity::Info,
                     FILE,
                     &format!("{COMPONENTS}/{path}"),
@@ -725,7 +725,7 @@ fn i7_without_the_sound_feature_the_load_refuses_the_record() {
         .diagnostics()
         .map(|finding| {
             (
-                finding.code.name(),
+                finding.code.id(),
                 finding.severity,
                 finding.location.json_path.to_string(),
             )
@@ -734,7 +734,7 @@ fn i7_without_the_sound_feature_the_load_refuses_the_record() {
     assert_eq!(
         told,
         [(
-            "InvalidEnumValue",
+            "core/invalid_enum_value",
             Severity::Error,
             format!("{COMPONENTS}/minecraft:record/sound_event")
         )]
@@ -766,7 +766,7 @@ fn t4_a_pack_item_tagged_as_a_trim_template_has_no_effect() {
     assert_eq!(
         told,
         [(
-            "NoEffect",
+            "core/no_effect",
             Severity::Info,
             "items/spiral.json".to_owned(),
             format!("{COMPONENTS}/minecraft:tags")
@@ -791,7 +791,7 @@ fn t4_a_pack_item_tagged_as_a_trim_template_has_no_effect() {
     assert_eq!(
         found
             .iter()
-            .filter(|finding| finding.code.name() == "NoEffect")
+            .filter(|finding| finding.code.id() == "core/no_effect")
             .count(),
         0
     );
@@ -814,7 +814,9 @@ fn load_references(file: &str) -> Vec<(Severity, String, String)> {
     );
     items
         .diagnostics()
-        .filter(|finding| finding.code.name() == "UnresolvedReference")
+        .filter(|finding| {
+            finding.code.kind() == bedrock_addon::diagnostic::Kind::UnresolvedReference
+        })
         .map(|finding| {
             let id = match finding.detail.as_deref() {
                 Some(bedrock_addon::diagnostic::DiagnosticDetail::Reference { id, .. }) => {

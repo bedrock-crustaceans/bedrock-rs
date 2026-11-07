@@ -23,7 +23,7 @@ fn p01_below_floor() {
     assert_eq!(
         texts(&d),
         [
-            "Error format_version UnsupportedVersion: unsupported version: no parser available for version 1.8.0"
+            "Error format_version core/no_parser_for_version: unsupported version: no parser available for version 1.8.0"
         ]
     );
 }
@@ -109,7 +109,7 @@ fn p05_missing_required() {
     assert_eq!(
         findings(effect.diagnostics()),
         [
-            "Error particle_effect/components MissingRequiredField: Particle effect needs an emitter rate component!"
+            "Error particle_effect/components particle/needs_rate: Particle effect needs an emitter rate component!"
         ]
     );
     assert_eq!(effect.components.len(), 1);
@@ -211,7 +211,7 @@ fn p10_object_molang_legacy() {
     assert_eq!(
         findings(legacy.diagnostics()),
         [
-            "Error particle_effect/components/minecraft:emitter_rate_instant/num_particles InvalidValue: field is not a number or a Molang expression"
+            "Error particle_effect/components/minecraft:emitter_rate_instant/num_particles particle/not_molang: field is not a number or a Molang expression"
         ]
     );
     let rate = legacy.components.get::<EmitterRateInstant>().unwrap();
@@ -235,7 +235,7 @@ fn p11_local_space_coercion() {
         assert_has(
             rotated.diagnostics(),
             &format!(
-                "Error {space}/rotation InvalidValue: We do not support rotation being true and position being false"
+                "Error {space}/rotation particle/rotation_without_position: We do not support rotation being true and position being false"
             ),
         );
         let stored = rotated.components.get::<EmitterLocalSpace>().unwrap();
@@ -250,7 +250,9 @@ fn p11_local_space_coercion() {
         ));
         assert_eq!(
             findings(positioned.diagnostics()),
-            [format!("Info {space}/velocity InvalidValue: invalid value")],
+            [format!(
+                "Info {space}/velocity core/invalid_value: invalid value"
+            )],
             "{version}"
         );
         let stored = positioned.components.get::<EmitterLocalSpace>().unwrap();
@@ -280,7 +282,7 @@ fn p12_no_description_deviation() {
     assert_eq!(
         texts(&d),
         [
-            "Error particle_effect/description MissingRequiredField: Particle effects file has no description block!"
+            "Error particle_effect/description particle/no_description: Particle effects file has no description block!"
         ]
     );
 }
@@ -295,7 +297,7 @@ fn p13_strict_unknown_1_20_80() {
     let cereal = rejected(&effect(CEREAL, unknown));
     assert!(
         findings(&cereal).contains(
-            &"Error particle_effect/components/x:y UnrecognizedComponent: unrecognized component"
+            &"Error particle_effect/components/x:y core/unrecognized_component: unrecognized component"
                 .to_owned()
         ),
         "{:?}",
@@ -306,7 +308,7 @@ fn p13_strict_unknown_1_20_80() {
     assert_eq!(
         findings(legacy.diagnostics()),
         [
-            "Error particle_effect/components/x:y UnrecognizedComponent: Unrecognized component name 'x:y' in particle effect"
+            "Error particle_effect/components/x:y particle/unrecognized_component: Unrecognized component name 'x:y' in particle effect"
         ]
     );
 }
@@ -324,7 +326,7 @@ fn p14_curve_nodes() {
             ),
         )
     };
-    let line = "Error particle_effect/curves/variable.c/nodes InvalidValue: Invalid number of control nodes in curve!  Defaulting curve to 0.0";
+    let line = "Error particle_effect/curves/variable.c/nodes particle/curve_node_count: Invalid number of control nodes in curve!  Defaulting curve to 0.0";
     for (kind, count) in [("bezier", 3), ("catmull_rom", 3), ("linear", 101)] {
         let effect = loaded(&curve(kind, count));
         assert_eq!(findings(effect.diagnostics()), [line], "{kind} {count}");
@@ -359,7 +361,7 @@ fn p15_above_engine() {
     assert_eq!(
         texts(&d),
         [format!(
-            "Error format_version UnsupportedVersion: unsupported version: no parser available for version {above}"
+            "Error format_version core/no_parser_for_version: unsupported version: no parser available for version {above}"
         )]
     );
     // The engine's own version is the last one read.
@@ -380,7 +382,7 @@ fn p16_vanilla_1_26_30_geyser() {
     assert_eq!(
         findings(effect.diagnostics()),
         [
-            "Info particle_effect/components/minecraft:emitter_local_space/velocity InvalidValue: invalid value"
+            "Info particle_effect/components/minecraft:emitter_local_space/velocity core/invalid_value: invalid value"
         ]
     );
     let space = effect.components.get::<EmitterLocalSpace>().unwrap();
@@ -413,7 +415,9 @@ fn p17_camera_distance_fade_deviation() {
         let legacy = loaded(&effect(LEGACY, &format!(r#""{fade}": {value}"#)));
         assert_eq!(
             findings(legacy.diagnostics()),
-            [format!("Info {at_fade} NoEffect: member has no effect")],
+            [format!(
+                "Info {at_fade} core/no_effect: member has no effect"
+            )],
             "{value}"
         );
         assert_eq!(legacy.components.len(), 2, "{value}");
@@ -427,7 +431,7 @@ fn p17_camera_distance_fade_deviation() {
     assert_eq!(
         findings(&cereal),
         [format!(
-            "Error {at_fade} UnrecognizedComponent: unrecognized component"
+            "Error {at_fade} core/unrecognized_component: unrecognized component"
         )]
     );
 }
@@ -443,12 +447,12 @@ fn p18_envelope_split_deviation() {
     let legacy = loaded(&with_extra(LEGACY));
     assert_eq!(
         findings(legacy.diagnostics()),
-        ["Info x UnrecognizedField: unrecognized field"]
+        ["Info x core/unrecognized_field: unrecognized field"]
     );
     assert_eq!(
         texts(&rejected(&with_extra("1.26.30"))),
         [
-            "Error  MalformedInput: A Minecraft Document must have exactly two members: \"format_version\" and a payload member"
+            "Error  core/document_member_count: A Minecraft Document must have exactly two members: \"format_version\" and a payload member"
         ]
     );
     // The boundary: 1.20.79 is still the raw text, 1.20.80 the envelope.
@@ -456,11 +460,11 @@ fn p18_envelope_split_deviation() {
     assert_eq!(errors(&rejected(&with_extra("1.20.80"))).len(), 1);
     assert_eq!(
         texts(&rejected(r#"{"format_version": "1.26.30"}"#)),
-        ["Error  MissingPayload: The payload of the Minecraft Document is missing"]
+        ["Error  core/payload_missing: The payload of the Minecraft Document is missing"]
     );
     assert_eq!(
         texts(&rejected(r#"{"format_version": "1.10.0"}"#)),
-        ["Error particle_effect MissingRequiredField: no particle_effect field was given"]
+        ["Error particle_effect particle/no_payload: no particle_effect field was given"]
     );
     // The game builds its input with the key `particle_effect`, so a payload keyed
     // `particle_effects` fails the payload-key check and logs A11 with 0x10.
@@ -468,7 +472,7 @@ fn p18_envelope_split_deviation() {
     assert_eq!(
         texts(&rejected(&renamed)),
         [
-            "Error  MissingPayload: The payload key does not match the expected one. Expected: 'particle_effect'. Actual: 'particle_effects'."
+            "Error  core/payload_under_other_key: The payload key does not match the expected one. Expected: 'particle_effect'. Actual: 'particle_effects'."
         ]
     );
 }
@@ -482,14 +486,14 @@ fn p19_required_1_20_80() {
     assert_eq!(
         texts(&rejected(&effect(CEREAL, tinting))),
         [format!(
-            "Error {components}/minecraft:particle_appearance_tinting/color MissingRequiredField: missing required field"
+            "Error {components}/minecraft:particle_appearance_tinting/color core/missing_required_field: missing required field"
         )]
     );
     let legacy = loaded(&effect(LEGACY, tinting));
     assert_eq!(
         findings(legacy.diagnostics()),
         [format!(
-            "Error {components}/minecraft:particle_appearance_tinting/color InvalidValue: Component has no color field!"
+            "Error {components}/minecraft:particle_appearance_tinting/color particle/no_color: Component has no color field!"
         )]
     );
     let white = [number(1.0), number(1.0), number(1.0), number(1.0)];
@@ -506,7 +510,7 @@ fn p19_required_1_20_80() {
     assert_eq!(
         texts(&rejected(&effect(CEREAL, billboard))),
         [format!(
-            "Error {components}/minecraft:particle_appearance_billboard/direction/mode MissingRequiredField: missing required field"
+            "Error {components}/minecraft:particle_appearance_billboard/direction/mode core/missing_required_field: missing required field"
         )]
     );
     let legacy = loaded(&effect(LEGACY, billboard));
@@ -524,16 +528,16 @@ fn p19_required_1_20_80() {
     assert_eq!(
         texts(&rejected(&effect_with(CEREAL, events))),
         [
-            "Error particle_effect/events/e/randomize/0/weight MissingRequiredField: missing required field"
+            "Error particle_effect/events/e/randomize/0/weight core/missing_required_field: missing required field"
         ]
     );
     let legacy = loaded(&effect_with(LEGACY, events));
     assert_eq!(
         findings(legacy.diagnostics()),
         [
-            "Error particle_effect/events/e/randomize/0/weight InvalidValue: Error reading weight field!  Ignoring random option",
+            "Error particle_effect/events/e/randomize/0/weight particle/weight: Error reading weight field!  Ignoring random option",
             // The option goes with its `log`.
-            "Info particle_effect/events/e/randomize/0 DroppedField: field dropped",
+            "Info particle_effect/events/e/randomize/0 core/dropped_field: field dropped",
         ]
     );
     let node = &legacy.events.as_ref().unwrap()["e"];
@@ -554,7 +558,7 @@ fn p20_min_speed_floor_deviation() {
     assert_eq!(
         findings(legacy.diagnostics()),
         [
-            "Info particle_effect/components/minecraft:particle_motion_collision/events/0/min_speed InvalidValue: invalid value"
+            "Info particle_effect/components/minecraft:particle_motion_collision/events/0/min_speed core/invalid_value: invalid value"
         ]
     );
     let cereal = loaded(&effect(CEREAL, collision));
@@ -578,8 +582,8 @@ fn p21_uv_messages() {
     assert_eq!(
         findings(bare.diagnostics()),
         [
-            format!("Error {at_uv} InvalidValue: missing uv field"),
-            format!("Error {at_uv} InvalidValue: missing uv_size field"),
+            format!("Error {at_uv} particle/missing_uv: missing uv field"),
+            format!("Error {at_uv} particle/missing_uv_size: missing uv_size field"),
         ]
     );
     let stored = bare
@@ -598,12 +602,16 @@ fn p21_uv_messages() {
     let no_size = loaded(&billboard(r#"{"uv": [0, 0]}"#));
     assert_eq!(
         findings(no_size.diagnostics()),
-        [format!("Error {at_uv} InvalidValue: missing uv_size field")]
+        [format!(
+            "Error {at_uv} particle/missing_uv_size: missing uv_size field"
+        )]
     );
     let no_uv = loaded(&billboard(r#"{"uv_size": [1, 1]}"#));
     assert_eq!(
         findings(no_uv.diagnostics()),
-        [format!("Error {at_uv} InvalidValue: missing uv field")]
+        [format!(
+            "Error {at_uv} particle/missing_uv: missing uv field"
+        )]
     );
 }
 
@@ -630,7 +638,7 @@ fn p22_color_rgb_array() {
     assert_eq!(
         findings(red.diagnostics()),
         [
-            "Error particle_effect/components/minecraft:particle_appearance_tinting/color InvalidValue: Color value string has problems!"
+            "Error particle_effect/components/minecraft:particle_appearance_tinting/color particle/color_string: Color value string has problems!"
         ]
     );
     let hex = loaded(&tinting(r##""#80FF0000""##));
@@ -656,7 +664,7 @@ fn p23_legacy_array_length() {
     assert_eq!(
         findings(legacy.diagnostics()),
         [format!(
-            "Error {at_member} InvalidValue: error reading array"
+            "Error {at_member} particle/array_error: error reading array"
         )]
     );
     assert_eq!(
@@ -669,7 +677,9 @@ fn p23_legacy_array_length() {
     );
     assert_eq!(
         texts(&rejected(&effect(CEREAL, shape))),
-        [format!("Error {at_member} InvalidType: wrong JSON type")]
+        [format!(
+            "Error {at_member} core/invalid_type: wrong JSON type"
+        )]
     );
     // One too many is as wrong as one too few.
     let four = r#""minecraft:emitter_shape_box": {"half_dimensions": [1, 2, 3, 4]}"#;
@@ -691,7 +701,7 @@ fn p24_curve_nodes_1_20_80() {
     assert_eq!(
         findings(bezier.diagnostics()),
         [
-            "Error particle_effect/curves/variable.c/nodes InvalidValue: Invalid number of control nodes in curve!  Defaulting curve to 0.0"
+            "Error particle_effect/curves/variable.c/nodes particle/curve_node_count: Invalid number of control nodes in curve!  Defaulting curve to 0.0"
         ]
     );
     let Some(Curve::Simple(curve)) = bezier.curves.as_ref().unwrap().get("variable.c") else {
@@ -709,7 +719,7 @@ fn p24_curve_nodes_1_20_80() {
     assert_eq!(
         findings(chain.diagnostics()),
         [
-            "Error particle_effect/curves/variable.c/nodes/0.0 InvalidValue: Particle curve bezier chain node is missing required value field"
+            "Error particle_effect/curves/variable.c/nodes/0.0 particle/chain_value: Particle curve bezier chain node is missing required value field"
         ]
     );
 }
@@ -729,7 +739,7 @@ fn a_plain_effect_loads_in_both_eras_without_a_finding() {
     assert_lacks(loaded(&effect(LEGACY, "")).diagnostics(), "component!");
     // By legacy name: the variant and the definitions that were it.
     assert_eq!(
-        rejected("{").iter().next().map(|d| d.code.name()),
-        Some("MalformedInput")
+        rejected("{").iter().next().map(|d| d.code.id()),
+        Some("core/document_json")
     );
 }

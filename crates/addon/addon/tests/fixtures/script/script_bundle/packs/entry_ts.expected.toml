@@ -5,7 +5,7 @@ others = ["scripts/main.ts"]
 main = "main.ts"
 
 [[diagnostics]]
-code = "InvalidValue"
+code = "script/plugin_entry_not_supported_invalid_value"
 severity = "error"
 text = "Plugin [SB_entry_ts - 1.0.0] - entry [scripts/main.ts] not supported for runtime [JavaScript]."
 file = "manifest.json"

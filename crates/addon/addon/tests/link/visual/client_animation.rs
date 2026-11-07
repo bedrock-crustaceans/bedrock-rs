@@ -11,7 +11,7 @@ use super::{Told, animation, animation_controller, client_entity, entity, says, 
 const ANIMATION: &str = "animations/x.animation.json";
 const CONTROLLER: &str = "animation_controllers/x.animation_controllers.json";
 const INFO: Severity = Severity::Info;
-const UNRESOLVED: &str = "UnresolvedReference";
+const UNRESOLVED: &str = "core/unresolved_reference";
 
 /// The client entity `id` with the effect maps `effects`, playing `plays` (the value of its
 /// one `animations` entry).

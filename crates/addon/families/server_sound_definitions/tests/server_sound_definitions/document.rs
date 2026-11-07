@@ -127,7 +127,7 @@ fn ssd05_a_version_other_than_1_26_60_has_no_parser() {
         );
         one_error(
             &rejected(&text),
-            "UnsupportedVersion",
+            "core/no_parser_for_version",
             &format!("unsupported version: no parser available for version {shown}"),
         );
     }
@@ -142,7 +142,7 @@ fn a_prerelease_version_is_an_ordinary_unsupported_version() {
     assert!(
         diagnostics
             .iter()
-            .any(|d| d.code.name() == "UnsupportedVersion" && d.severity == Severity::Error),
+            .any(|d| d.code.id() == "core/no_parser_for_version" && d.severity == Severity::Error),
         "{:#?}",
         lines(&diagnostics)
     );
@@ -166,7 +166,7 @@ fn a_beta_document_has_no_parser_whatever_the_permission() {
             let refused = parse_with(&text, &cx).unwrap_err();
             one_error(
                 &refused.diagnostics,
-                "UnsupportedVersion",
+                "core/no_parser_for_version",
                 "unsupported version: no parser available for version beta",
             );
         }
@@ -180,7 +180,7 @@ fn ssd06_a_missing_version_is_an_error_deviation() {
     let text = format!(r#"{{"minecraft:server_sound_definitions": [{CLICK}]}}"#);
     one_error(
         &rejected(&text),
-        "MissingFormatVersion",
+        "core/no_valid_version",
         "no valid version passed by the caller or found in the input",
     );
 }
@@ -228,7 +228,7 @@ fn a_member_written_as_null_rejects_the_file() {
         ),
     ] {
         let diagnostics = rejected(&file(definition));
-        one_error(&diagnostics, "InvalidType", "");
+        one_error(&diagnostics, "core/invalid_type", "");
         assert_eq!(
             diagnostics
                 .iter()
@@ -258,14 +258,14 @@ fn ssd08_a_third_member() {
     );
     one_error(
         &rejected(&text),
-        "MalformedInput",
+        "core/document_member_count",
         "A Minecraft Document must have exactly two members: \"format_version\" and a payload member",
     );
     // Below the slice's version the envelope is not looked at.
     let text = format!(
         r#"{{"format_version": "1.26.40", "minecraft:server_sound_definitions": [{CLICK}], "sound_definitions": {{}}}}"#
     );
-    one_error(&rejected(&text), "UnsupportedVersion", "1.26.40");
+    one_error(&rejected(&text), "core/no_parser_for_version", "1.26.40");
 }
 
 #[test]
@@ -276,7 +276,7 @@ fn ssd09_an_unknown_member_rejects_the_file_and_is_reported() {
         r#"{CLICK}, {{"sound_event_name": "demo:two", "volume": 1.0}}"#
     ));
     let diagnostics = rejected(&text);
-    one_error(&diagnostics, "UnrecognizedField", "");
+    one_error(&diagnostics, "core/unrecognized_field", "");
     let at = diagnostics
         .iter()
         .next()
@@ -290,7 +290,7 @@ fn ssd09_an_unknown_member_rejects_the_file_and_is_reported() {
         r#"{"sound_event_name": "demo:x", "duration_info": {"mode": "game_time", "seconds": 1, "extra": 1}}"#,
         r#"{"sound_event_name": "demo:x", "music_info": {"album": "a"}}"#,
     ] {
-        one_error(&rejected(&file(nested)), "UnrecognizedField", "");
+        one_error(&rejected(&file(nested)), "core/unrecognized_field", "");
     }
 }
 
@@ -302,7 +302,11 @@ fn ssd10_broadcast_range_needs_a_1_26_50_engine_deviation() {
     let mut old = context(true, false);
     old.engine_version = FormatVersion::new(1, 26, 45);
     let refused = parse_with(&text, &old).unwrap_err();
-    one_error(&refused.diagnostics, "UnrecognizedField", "broadcast_range");
+    one_error(
+        &refused.diagnostics,
+        "core/unrecognized_field",
+        "broadcast_range",
+    );
     // The engine version itself, and a file without the member, are fine.
     old.engine_version = FormatVersion::new(1, 26, 50);
     assert!(parse_with(&text, &old).is_ok());
@@ -315,7 +319,7 @@ fn ssd11_a_bad_mode() {
     let text = file(
         r#"{"sound_event_name": "demo:x", "duration_info": { "mode": "wall_time", "seconds": 3 }}"#,
     );
-    one_error(&rejected(&text), "InvalidEnumValue", "");
+    one_error(&rejected(&text), "core/invalid_enum_value", "");
 }
 
 #[test]
@@ -325,7 +329,7 @@ fn ssd12_missing_required_members() {
         r#"{"sound_event_name": "demo:x", "duration_info": { "seconds": 1 }}"#,
         r#"{"duration_info": { "mode": "game_time", "seconds": 1 }}"#,
     ] {
-        one_error(&rejected(&file(text)), "MissingRequiredField", "");
+        one_error(&rejected(&file(text)), "core/missing_required_field", "");
     }
 }
 
@@ -335,7 +339,7 @@ fn the_payload_must_be_an_array_of_objects() {
         let text = format!(
             r#"{{"format_version": "1.26.60", "minecraft:server_sound_definitions": {payload}}}"#
         );
-        one_error(&rejected(&text), "InvalidType", "");
+        one_error(&rejected(&text), "core/invalid_type", "");
     }
     for definition in [
         r#"{"sound_event_name": 5}"#,
@@ -343,7 +347,7 @@ fn the_payload_must_be_an_array_of_objects() {
         r#"{"sound_event_name": "demo:x", "duration_info": {"mode": "game_time", "seconds": "3"}}"#,
         r#"{"sound_event_name": "demo:x", "music_info": {"genres": "rock"}}"#,
     ] {
-        one_error(&rejected(&file(definition)), "InvalidType", "");
+        one_error(&rejected(&file(definition)), "core/invalid_type", "");
     }
 }
 
@@ -352,15 +356,17 @@ fn ssd13_a_name_with_whitespace_or_empty() {
     let diagnostics = rejected(&file(r#"{"sound_event_name": "demo:boss theme"}"#));
     one_error(
         &diagnostics,
-        "InvalidValue",
+        "core/string_mismatch",
         "expected string to match the \"^\\S+$\" regex",
     );
     // The empty name fails the namespace rule as well.
     let diagnostics = rejected(&file(r#"{"sound_event_name": ""}"#));
     assert!(
-        diagnostics.iter().any(|d| d.code.name() == "InvalidValue"
-            && d.to_string()
-                .contains("expected string to match the \"^\\S+$\" regex")),
+        diagnostics
+            .iter()
+            .any(|d| d.code.id() == "core/string_mismatch"
+                && d.to_string()
+                    .contains("expected string to match the \"^\\S+$\" regex")),
         "{:#?}",
         lines(&diagnostics)
     );
@@ -369,7 +375,7 @@ fn ssd13_a_name_with_whitespace_or_empty() {
         assert!(
             rejected(&text)
                 .iter()
-                .any(|d| d.code.name() == "InvalidValue"),
+                .any(|d| d.code.id() == "core/string_mismatch"),
             "{spaced}"
         );
     }
@@ -389,7 +395,12 @@ fn ssd14_the_namespace_rule() {
         ("MINECRAFT:click", invalid),
     ] {
         let document = file(&format!(r#"{{"sound_event_name": "{name}"}}"#));
-        one_error(&rejected(&document), "NamespaceRule", text);
+        let code = if text == prefix {
+            "server_sound_definitions/needs_namespace"
+        } else {
+            "server_sound_definitions/invalid_namespace"
+        };
+        one_error(&rejected(&document), code, text);
     }
     // A longer namespace that only starts like `minecraft`, and a second colon, pass.
     for name in ["minecrafty:click", "xminecraft:click", "demo:a:b", ":a:b"] {
@@ -404,7 +415,7 @@ fn ssd15_minecraft_is_refused_in_a_base_game_pack_too() {
     let refused = parse_with(&text, &context(false, true)).unwrap_err();
     one_error(
         &refused.diagnostics,
-        "NamespaceRule",
+        "server_sound_definitions/invalid_namespace",
         "string has invalid namespace (minecraft)",
     );
 }
@@ -422,7 +433,7 @@ fn ssd16_tag_patterns() {
         let text = file(&format!(
             r#"{{"sound_event_name": "demo:x", "tags": {tags}}}"#
         ));
-        one_error(&rejected(&text), "InvalidValue", regex);
+        one_error(&rejected(&text), "core/string_mismatch", regex);
     }
     for tags in [
         r#"{ "demo:k": 3 }"#,
@@ -433,7 +444,7 @@ fn ssd16_tag_patterns() {
         let text = file(&format!(
             r#"{{"sound_event_name": "demo:x", "tags": {tags}}}"#
         ));
-        one_error(&rejected(&text), "InvalidType", "");
+        one_error(&rejected(&text), "core/invalid_type", "");
     }
 }
 
@@ -470,8 +481,8 @@ fn ssd22_seconds_and_range_lints_deviation() {
         assert_eq!(found.len(), 1, "{definition}");
         // ours, an information
         assert_eq!(
-            (found[0].code.name(), found[0].severity),
-            ("InvalidValue", Severity::Info)
+            (found[0].code.id(), found[0].severity),
+            ("core/invalid_value", Severity::Info)
         );
         assert_eq!(
             found[0].location.json_path.to_string(),
@@ -507,7 +518,7 @@ fn a_value_at_or_below_zero_is_an_information_of_ours() {
         let found: Vec<(String, Severity)> = document
             .diagnostics()
             .iter()
-            .filter(|d| d.code.name() == "InvalidValue")
+            .filter(|d| d.code.id() == "core/invalid_value")
             .map(|d| (d.location.json_path.to_string(), d.severity))
             .collect();
         assert_eq!(found, [(at.to_owned(), Severity::Info)], "{members}");

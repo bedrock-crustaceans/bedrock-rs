@@ -1,7 +1,7 @@
 # families/script_config fixtures.md, row sp08_tab (P2).
 
 [[diagnostic]]
-code = "NoEffect"
+code = "core/no_effect"
 severity = "info"
 phase = "parse"
 file = "server.properties"

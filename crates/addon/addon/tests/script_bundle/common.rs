@@ -153,7 +153,7 @@ pub fn finding_of(finding: &Diagnostic) -> Finding {
         _ => String::new(),
     };
     Finding {
-        code: finding.code.name().to_owned(),
+        code: finding.code.id().to_owned(),
         severity: finding.severity.to_string(),
         text: finding.code.to_string(),
         file: finding

@@ -1,7 +1,7 @@
 //! The envelope, and the deliberate deviations from vanilla
 //! (each pinned by a test whose name says `deviation`).
 
-use bedrock_addon::diagnostic::Severity;
+use bedrock_addon::diagnostic::{Kind, Severity};
 use bedrock_addon::version::FormatVersion;
 
 use super::common::*;
@@ -14,7 +14,7 @@ fn rule_1_a_missing_format_version_skips_the_file() {
     let text = vanilla_input("without_distribution", "1.13.0")
         .replace(r#""format_version": "1.13.0","#, "");
     let d = rejects(&text);
-    let found = with_code(&d, "MissingFormatVersion");
+    let found = with_code(&d, "core/no_valid_version");
     assert_eq!(found.len(), 1, "{d:#?}");
     assert_eq!(found[0].severity, Severity::Error);
     assert!(has_text(
@@ -31,7 +31,7 @@ fn rule_1_a_malformed_format_version_skips_the_file() {
         let text = vanilla_input("without_distribution", "X").replace(r#""X""#, version);
         let d = rejects(&text);
         assert_eq!(
-            with_code(&d, "MalformedFormatVersion").len(),
+            with_code(&d, "core/malformed_format_version").len(),
             1,
             "{version}: {d:#?}"
         );
@@ -75,8 +75,8 @@ fn rule_1_a_third_root_member_skips_the_file() {
 fn rule_1_beta_is_unsupported() {
     let d = rejects(&vanilla_input("without_distribution", "beta"));
     assert!(
-        !with_code(&d, "UnsupportedVersion").is_empty()
-            || !with_code(&d, "BetaFeaturesNotEnabled").is_empty(),
+        !with_code(&d, "core/no_parser_for_version").is_empty()
+            || d.iter().any(|f| f.kind() == Kind::Toggle),
         "{d:#?}"
     );
 }
@@ -100,7 +100,7 @@ fn a_duplicate_rule_is_reported_as_shadowed_deviation() {
     let shadowed: Vec<_> = stack
         .feature_rules()
         .diagnostics()
-        .filter(|f| f.code.name() == "ShadowedDefinition")
+        .filter(|f| f.code.id() == "core/shadowed_definition")
         .collect();
     assert_eq!(shadowed.len(), 1);
     assert_eq!(shadowed[0].severity, Severity::Info);
@@ -115,7 +115,16 @@ fn a_logged_and_kept_check_is_a_kept_error() {
         "nowhere_pass",
         Some(&distribution("-1", "0", "0", "0")),
     ));
-    let found = with_code(document.diagnostics(), "InvalidValue");
+    let found: Vec<_> = document
+        .diagnostics()
+        .iter()
+        .filter(|f| {
+            matches!(
+                f.code.id(),
+                "feature_rules/unknown_pass" | "feature_rules/iterations_negative"
+            )
+        })
+        .collect();
     assert_eq!(found.len(), 2);
     assert!(
         found

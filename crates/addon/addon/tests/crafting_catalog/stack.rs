@@ -238,7 +238,7 @@ fn a_base_file_that_fails_to_load_is_still_the_base() {
     assert_eq!(found.len(), 1, "{found:#?}");
     assert_eq!(
         (found[0].0.as_str(), found[0].2.as_str()),
-        ("UnsupportedVersion", "v1")
+        ("crafting_catalog/below_floor", "v1")
     );
     assert_eq!(groups(merged, CategoryName::Construction), ["custom:top"]);
 }
@@ -261,7 +261,7 @@ fn a_file_that_fails_to_load_leaves_the_other_packs_alone() {
     assert_eq!(found.len(), 1, "{found:#?}");
     assert_eq!(
         (found[0].0.as_str(), found[0].1, found[0].2.as_str()),
-        ("MissingRequiredField", Severity::Error, "broken")
+        ("core/missing_required_field", Severity::Error, "broken")
     );
     assert_eq!(
         groups(merged, CategoryName::Construction),
@@ -695,10 +695,10 @@ fn m1_an_unknown_item_is_not_placed_so_a_second_one_is_no_duplicate() {
     assert_eq!(
         codes,
         [
-            "UnresolvedReference",
-            "UnresolvedReference",
-            "InvalidValue",
-            "InvalidValue"
+            "crafting_catalog/missing_item",
+            "crafting_catalog/missing_item",
+            "crafting_catalog/invalid_aux",
+            "crafting_catalog/invalid_aux"
         ]
     );
 }
@@ -719,7 +719,7 @@ fn m2_a_bad_aux_value_on_an_unknown_name_is_one_error() {
         );
         let found = found(stack.crafting_catalog());
         assert_eq!(found.len(), 1, "{name}: {found:#?}");
-        assert_eq!(found[0].0, "InvalidValue", "{name}");
+        assert_eq!(found[0].0, "crafting_catalog/invalid_aux", "{name}");
         assert_eq!(found[0].1, Severity::Error);
         assert_eq!(
             found[0].3,
@@ -757,7 +757,7 @@ fn m2_an_aux_value_is_a_16_bit_integer() {
     );
     let found = found(merged);
     assert_eq!(found.len(), 2, "{found:#?}");
-    assert!(found.iter().all(|f| f.0 == "InvalidValue"));
+    assert!(found.iter().all(|f| f.0 == "crafting_catalog/invalid_aux"));
 }
 
 #[test]

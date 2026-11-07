@@ -220,7 +220,7 @@ fn sound_members(sound: &str) -> Vec<(String, &'static str)> {
 fn enum_error_at(d: &bedrock_addon_core::diagnostic::Diagnostics, path: &str) -> bool {
     d.iter().any(|f| {
         f.severity == bedrock_addon_core::diagnostic::Severity::Error
-            && f.code.name() == "InvalidEnumValue"
+            && f.code.id() == "core/invalid_enum_value"
             && f.location.json_path.to_string() == format!("minecraft:item/components/{path}")
     })
 }
@@ -297,8 +297,8 @@ fn a_legacy_start_sound_is_checked_and_spelled_by_the_provider() {
         r#""minecraft:use_modifiers": {"use_duration": 1.0, "start_sound": "Hurt"}"#,
     );
     let tables = third_party();
-    assert!(has(&rejects(&custom, &tables), |code| code.name()
-        == "InvalidEnumValue"));
+    assert!(has(&rejects(&custom, &tables), |code| code.id()
+        == "core/invalid_enum_value"));
     let document = loads(&vanilla, &tables);
     let modifiers = document.components.get::<UseModifiers>().unwrap();
     assert_eq!(modifiers.start_sound.as_ref().unwrap().as_str(), "hurt");
@@ -311,7 +311,10 @@ fn a_legacy_start_sound_is_checked_and_spelled_by_the_provider() {
         modifiers.start_sound.as_ref().unwrap().as_str(),
         "custom.boom"
     );
-    assert_eq!(with_code(document.diagnostics(), "ValueRewritten").len(), 1);
-    assert!(has(&rejects(&vanilla, &hosted), |code| code.name()
-        == "InvalidEnumValue"));
+    assert_eq!(
+        with_code(document.diagnostics(), "core/value_rewritten").len(),
+        1
+    );
+    assert!(has(&rejects(&vanilla, &hosted), |code| code.id()
+        == "core/invalid_enum_value"));
 }

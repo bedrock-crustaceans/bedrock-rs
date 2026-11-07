@@ -81,7 +81,7 @@ fn check(source: &str, dir: &Path, warnings: &[(&str, usize)]) -> Counts {
     let mut by_code: BTreeMap<(String, &str), usize> = BTreeMap::new();
     for finding in blocks.diagnostics() {
         *by_code
-            .entry((finding.severity.to_string(), finding.code.name()))
+            .entry((finding.severity.to_string(), finding.code.id()))
             .or_default() += 1;
         if finding.severity >= Severity::Error {
             errors.push(finding.to_string());
@@ -150,7 +150,7 @@ fn sample_packs_blocks_json_loads_without_errors() {
     let samples = skip!(game_files::SAMPLE_PACKS);
     assert_eq!(on_disk(&samples), 1, "resource_pack/blocks.json");
     // `coral_block/sounds` is noted as an information: the game accepts the value without a word.
-    let counts = check("sample packs", &samples, &[("InvalidType", 2)]);
+    let counts = check("sample packs", &samples, &[("blocks_json/bad_textures", 2)]);
     assert_eq!(
         counts,
         Counts {

@@ -66,7 +66,7 @@ fn pm01_m3_an_unknown_piece_type_invalidates_the_piece() {
         r#"{ "piece_id": "aa8d3c95-f189-cf08-0ae3-5cc1e090343b", "piece_name": "hat", "piece_type": "persona_hat" }"#,
     );
     assert!(pieces.pieces.is_empty());
-    let finding = first(&pieces, "InvalidEnumValue");
+    let finding = first(&pieces, "core/invalid_enum_line");
     assert_eq!(finding.severity, Severity::Error);
     assert_eq!(message(&finding), "invalid enum value");
     // A model built by hand with such a text still answers `Unknown`.
@@ -129,7 +129,7 @@ fn pm02_m16_every_piece_type_of_the_enum() {
         assert_eq!(PieceType::from_name(name), Some(meta.piece_type()));
         assert!(!meta.piece_type().is_one_sided(), "{name}");
         let expected: Vec<&str> = if name == "persona_emote" {
-            vec!["error MissingRequiredField animation_sources"]
+            vec!["error persona/emote_invalid animation_sources"]
         } else {
             vec![]
         };
@@ -279,7 +279,10 @@ fn pm04_m8_the_body_variant() {
     // 1.26.20's "huge" was medium with a debug assert; the 1.26.40+ enum refuses it.
     let huge = hat_with(r#""body_variant": "huge""#);
     assert!(huge.pieces.is_empty());
-    assert_eq!(first(&huge, "InvalidEnumValue").severity, Severity::Error);
+    assert_eq!(
+        first(&huge, "core/invalid_enum_line").severity,
+        Severity::Error
+    );
 
     let absent = hat_with("");
     assert_eq!(found(&absent), Vec::<String>::new());
@@ -340,7 +343,7 @@ fn pm06_m10_the_forms_of_a_tint() {
             let pieces = hat_with(&format!(r#""{member}": {wrong}"#));
             assert_eq!(
                 refused(&pieces),
-                [format!("error InvalidType {member}")],
+                [format!("error core/invalid_type {member}")],
                 "{wrong}"
             );
         }
@@ -378,8 +381,8 @@ fn m10_a_channel_that_is_no_string() {
     assert_eq!(
         refused(&pieces),
         [
-            "error InvalidType tint_color/r_color",
-            "error UnrecognizedField tint_color/x"
+            "error core/invalid_type tint_color/r_color",
+            "error core/unrecognized_field tint_color/x"
         ]
     );
 }
@@ -387,7 +390,10 @@ fn m10_a_channel_that_is_no_string() {
 #[test]
 fn pm07_m11_a_colour_that_is_no_hex_colour() {
     let pieces = hat_with(r#""tint_color": { "r_color": "red" }"#);
-    assert_eq!(found(&pieces), ["info InvalidValue tint_color/r_color"]);
+    assert_eq!(
+        found(&pieces),
+        ["info core/invalid_value tint_color/r_color"]
+    );
     let Some(TintColorOrString::Channels(tint)) = &value(&pieces).tint_color else {
         panic!();
     };
@@ -422,7 +428,7 @@ fn pm07_m11_a_colour_that_is_no_hex_colour() {
         ] {
             assert_eq!(
                 found(&hat_with(&members)),
-                [format!("info InvalidValue {at}")],
+                [format!("info core/invalid_value {at}")],
                 "{bad:?}"
             );
         }
@@ -470,10 +476,14 @@ fn pm08_m12_the_forms_of_a_zone() {
     // `variant<vector<string>, string>`: any other JSON type is `0x8`, the piece is refused.
     for wrong in ["3", "true", "{}", "null"] {
         let pieces = hat_with(&format!(r#""zone": {wrong}"#));
-        assert_eq!(refused(&pieces), ["error InvalidType zone"], "{wrong}");
+        assert_eq!(
+            refused(&pieces),
+            ["error core/invalid_type zone"],
+            "{wrong}"
+        );
     }
     let mixed = hat_with(r#""zone": ["a", 3, "c"]"#);
-    assert_eq!(refused(&mixed), ["error InvalidType zone/1"]);
+    assert_eq!(refused(&mixed), ["error core/invalid_type zone/1"]);
 
     // The same member of a geometry source.
     let source = hat(
@@ -488,7 +498,7 @@ fn pm08_m12_the_forms_of_a_zone() {
     let source = hat_with(r#""geometry_sources": [{ "geometry": "g", "zone": 3 }]"#);
     assert_eq!(
         refused(&source),
-        ["error InvalidType geometry_sources/0/zone"]
+        ["error core/invalid_type geometry_sources/0/zone"]
     );
 }
 
@@ -499,19 +509,19 @@ fn pm09_m14_an_unknown_member_invalidates_the_piece() {
     assert_eq!(
         refused(&pieces),
         [
-            "error UnrecognizedField foo",
-            "error UnrecognizedField texture_sources/0/bar",
+            "error core/unrecognized_field foo",
+            "error core/unrecognized_field texture_sources/0/bar",
         ]
     );
-    let finding = first(&pieces, "UnrecognizedField");
+    let finding = first(&pieces, "core/unrecognized_field");
     // By legacy name: the variant and the definitions that were it.
-    assert!(matches!(finding.code.name(), "UnrecognizedField"));
+    assert!(matches!(finding.code.id(), "core/unrecognized_field"));
 }
 
 #[test]
 fn a_member_named_extra_is_an_unknown_member() {
     let pieces = hat_with(r#""extra": { "piece_name": "x" }"#);
-    assert_eq!(refused(&pieces), ["error UnrecognizedField extra"]);
+    assert_eq!(refused(&pieces), ["error core/unrecognized_field extra"]);
 }
 
 #[test]
@@ -519,15 +529,15 @@ fn pm10_m15_a_format_version_beside_flat_members_invalidates_the_piece() {
     // M15: from 1.26.40 the version is read; a flat file with one fails the two-member
     // envelope check (A9) at 1.26.40 and above, and has no slice (A2) below it.
     let pieces = hat_with(r#""format_version": "1.26.40""#);
-    assert_eq!(refused(&pieces), ["error MalformedInput"]);
+    assert_eq!(refused(&pieces), ["error core/document_member_count"]);
     assert_eq!(
-        message(&first(&pieces, "MalformedInput")),
+        message(&first(&pieces, "core/document_member_count")),
         "A Minecraft Document must have exactly two members: \"format_version\" and a payload member"
     );
     let pieces = hat_with(r#""format_version": "1.20.0""#);
     assert_eq!(
         refused(&pieces),
-        ["error UnsupportedVersion format_version"]
+        ["error core/no_parser_for_version format_version"]
     );
 }
 
@@ -555,8 +565,8 @@ fn pm11_a_document_with_the_envelope_is_read_from_its_payload() {
     assert_eq!(
         refused(&pieces),
         [
-            "error UnrecognizedField minecraft:persona_piece_meta/foo",
-            "error InvalidEnumValue minecraft:persona_piece_meta/body_variant",
+            "error core/unrecognized_field minecraft:persona_piece_meta/foo",
+            "error core/invalid_enum_line minecraft:persona_piece_meta/body_variant",
         ]
     );
 }
@@ -578,11 +588,11 @@ fn a_version_other_than_1_26_40_invalidates_the_piece() {
         ));
         assert_eq!(
             refused(&pieces),
-            ["error UnsupportedVersion format_version"],
+            ["error core/no_parser_for_version format_version"],
             "{version}"
         );
         assert!(
-            message(&first(&pieces, "UnsupportedVersion"))
+            message(&first(&pieces, "core/no_parser_for_version"))
                 .starts_with("unsupported version: no parser available for version "),
             "{version}"
         );
@@ -599,7 +609,7 @@ fn a_version_other_than_1_26_40_invalidates_the_piece() {
         ));
         assert_eq!(
             refused(&pieces),
-            ["error MalformedFormatVersion format_version"],
+            ["error core/malformed_format_version format_version"],
             "{version}"
         );
     }
@@ -611,25 +621,25 @@ fn only_the_two_member_document_is_an_envelope() {
     let pieces = load_hat(
         r#"{ "format_version": "1.26.40", "minecraft:persona_piece_meta": { "piece_type": "persona_top" }, "piece_name": "hat" }"#,
     );
-    assert_eq!(refused(&pieces), ["error MalformedInput"]);
+    assert_eq!(refused(&pieces), ["error core/document_member_count"]);
     // Two members, but no payload under the key (A10).
     let pieces = load_hat(r#"{ "format_version": "1.26.40", "minecraft:persona_piece": {} }"#);
-    assert_eq!(refused(&pieces), ["error MissingPayload"]);
+    assert_eq!(refused(&pieces), ["error core/missing_payload"]);
     // A payload that is no object (`0x8`).
     let pieces = load_hat(r#"{ "format_version": "1.26.40", "minecraft:persona_piece_meta": 3 }"#);
     assert_eq!(
         refused(&pieces),
-        ["error InvalidType minecraft:persona_piece_meta"]
+        ["error core/invalid_type minecraft:persona_piece_meta"]
     );
     // Without a version the payload key is an unknown member of the flat file.
     let pieces = load_hat(r#"{ "minecraft:persona_piece_meta": {} }"#);
     assert_eq!(
         refused(&pieces),
         [
-            "error UnrecognizedField minecraft:persona_piece_meta",
-            "error MissingRequiredField piece_id",
-            "error MissingRequiredField piece_name",
-            "error MissingRequiredField piece_type",
+            "error core/unrecognized_field minecraft:persona_piece_meta",
+            "error core/missing_required_field piece_id",
+            "error core/missing_required_field piece_name",
+            "error core/missing_required_field piece_type",
         ]
     );
 }
@@ -649,10 +659,10 @@ fn pm12_pm13_m2_a_meta_file_that_is_no_json_object_is_skipped() {
     ] {
         let pieces = load_hat(text);
         assert!(pieces.pieces.is_empty(), "{text}");
-        assert_eq!(found(&pieces), ["error MalformedInput"], "{text}");
-        let finding = first(&pieces, "MalformedInput");
+        assert_eq!(found(&pieces), ["error persona/meta_not_parsed"], "{text}");
+        let finding = first(&pieces, "persona/meta_not_parsed");
         // By legacy name: the variant and the definitions that were it.
-        assert!(matches!(finding.code.name(), "MalformedInput"));
+        assert!(matches!(finding.code.id(), "persona/meta_not_parsed"));
         assert_eq!(message(&finding), NOT_PARSED);
         assert_eq!(pieces.rejected.len(), 1);
         assert_eq!(pieces.rejected[0].origin.path.as_str(), FILE);
@@ -685,9 +695,9 @@ fn a_meta_file_is_read_as_the_game_s_reader_reads_it() {
 fn content_after_the_root_is_reported_and_ignored() {
     let text = format!("\u{feff}{} trailing", meta(""));
     let pieces = load_hat(&text);
-    assert_eq!(found(&pieces), ["info MalformedInput"]);
+    assert_eq!(found(&pieces), ["info core/syntax"]);
     assert_eq!(value(&pieces).piece_name.as_deref(), Some("hat"));
-    let finding = first(&pieces, "MalformedInput");
+    let finding = first(&pieces, "core/syntax");
     let span = finding.location.span.expect("the content's place");
     let start = span.offset as usize;
     assert_eq!(
@@ -722,10 +732,10 @@ fn m1_a_meta_file_that_cannot_be_read_is_skipped() {
     let pack = piece_pack(&[(FILE, &meta("")), ("texts/en_US.lang", NAMES)]);
     let pieces = PersonaPiece::load_all(&Unreadable(OfPack(&pack)));
     assert!(pieces.pieces.is_empty());
-    assert_eq!(found(&pieces), ["error ReadError"]);
-    let finding = first(&pieces, "ReadError");
+    assert_eq!(found(&pieces), ["error persona/meta_not_found"]);
+    let finding = first(&pieces, "persona/meta_not_found");
     assert!(
-        finding.code.name() == "ReadError"
+        finding.code.id() == "persona/meta_not_found"
             && matches!(
                 finding.detail.as_deref(),
                 Some(DiagnosticDetail::Io(std::io::ErrorKind::PermissionDenied))
@@ -750,7 +760,7 @@ fn pm16_m17_an_entry_with_an_empty_texture_is_skipped_deviation() {
     );
     assert_eq!(
         found(&pieces),
-        ["info MissingRequiredField texture_sources/0"]
+        ["info core/missing_required_field texture_sources/0"]
     );
     let meta = value(&pieces);
     assert_eq!(meta.texture_sources.as_ref().map(Vec::len), Some(2));
@@ -775,10 +785,10 @@ fn m17_a_geometry_source_is_an_entry_of_the_texture_builder_only_when_it_says_so
     assert_eq!(
         found(&pieces),
         [
-            "info MissingRequiredField geometry_sources/1",
-            "info MissingRequiredField geometry_sources/2",
-            "info MissingRequiredField geometry_sources/3",
-            "info MissingRequiredField geometry_sources/4",
+            "info core/missing_required_field geometry_sources/1",
+            "info core/missing_required_field geometry_sources/2",
+            "info core/missing_required_field geometry_sources/3",
+            "info core/missing_required_field geometry_sources/4",
         ]
     );
     let textures = value(&pieces).textures();
@@ -843,7 +853,7 @@ fn pm18_m18_use_face_uv_is_no_member_of_a_geometry_source() {
     );
     assert_eq!(
         refused(&pieces),
-        ["error UnrecognizedField geometry_sources/0/use_face_uv"]
+        ["error core/unrecognized_field geometry_sources/0/use_face_uv"]
     );
 }
 
@@ -872,7 +882,7 @@ fn a_member_of_the_wrong_json_type_invalidates_the_piece() {
         ));
         assert_eq!(
             refused(&pieces),
-            [format!("error InvalidType {member}")],
+            [format!("error core/invalid_type {member}")],
             "{member}: {wrong}"
         );
     }
@@ -885,18 +895,18 @@ fn a_member_of_the_wrong_json_type_has_that_one_finding_deviation() {
     let pieces = load_hat(
         r#"{ "piece_id": "aa8d3c95-f189-cf08-0ae3-5cc1e090343b", "piece_name": "hat", "piece_type": 14 }"#,
     );
-    assert_eq!(refused(&pieces), ["error InvalidType piece_type"]);
+    assert_eq!(refused(&pieces), ["error core/invalid_type piece_type"]);
 
     let pieces = hat_with(r#""texture_sources": [{ "texture": 5 }]"#);
     assert_eq!(
         refused(&pieces),
-        ["error InvalidType texture_sources/0/texture"]
+        ["error core/invalid_type texture_sources/0/texture"]
     );
     let pieces =
         hat_with(r#""geometry_sources": [{ "geometry": "g", "texture": 5, "frames": 2 }]"#);
     assert_eq!(
         refused(&pieces),
-        ["error InvalidType geometry_sources/0/texture"]
+        ["error core/invalid_type geometry_sources/0/texture"]
     );
     for wrong in ["5", "null"] {
         let pieces = hat_with(&format!(
@@ -904,7 +914,7 @@ fn a_member_of_the_wrong_json_type_has_that_one_finding_deviation() {
         ));
         assert_eq!(
             refused(&pieces),
-            ["error InvalidType geometry_sources/0/geometry"],
+            ["error core/invalid_type geometry_sources/0/geometry"],
             "{wrong}"
         );
     }
@@ -920,13 +930,13 @@ fn a_null_member_is_a_member_of_the_wrong_type() {
     assert_eq!(
         refused(&pieces),
         [
-            "error InvalidType piece_sub_type",
-            "error InvalidType body_variant",
-            "error InvalidType zone",
-            "error InvalidType texture_sources",
-            "error InvalidType tint_color",
-            "error UnrecognizedField color_swatches",
-            "error InvalidType allow_tint_override",
+            "error core/invalid_type piece_sub_type",
+            "error core/invalid_type body_variant",
+            "error core/invalid_type zone",
+            "error core/invalid_type texture_sources",
+            "error core/invalid_type tint_color",
+            "error core/unrecognized_field color_swatches",
+            "error core/invalid_type allow_tint_override",
         ]
     );
 }
@@ -957,7 +967,7 @@ fn the_members_of_an_entry_are_typed_too() {
         "animation_sources/0/animationFile",
     ]
     .iter()
-    .map(|member| format!("error InvalidType {member}"))
+    .map(|member| format!("error core/invalid_type {member}"))
     .collect();
     assert_eq!(refused(&pieces), expected);
 }
@@ -969,7 +979,7 @@ fn an_entry_that_is_no_object_invalidates_the_piece() {
         // The list's one finding is its bad entry, the earlier entry's dropped.
         assert_eq!(
             refused(&pieces),
-            [format!("error InvalidType {member}/1")],
+            [format!("error core/invalid_type {member}/1")],
             "{member}"
         );
     }
@@ -1000,7 +1010,7 @@ fn a_list_left_as_written_has_the_one_finding_of_its_bad_entry_deviation() {
         let pieces = hat_with(list);
         assert_eq!(
             refused(&pieces),
-            [format!("error InvalidType {bad}")],
+            [format!("error core/invalid_type {bad}")],
             "{list}"
         );
         assert_eq!(pieces.rejected[0].diagnostics.len(), 2, "{list}");
@@ -1010,17 +1020,20 @@ fn a_list_left_as_written_has_the_one_finding_of_its_bad_entry_deviation() {
     // is said of the file, not of an entry the model lacks.
     let pieces =
         hat_with(r#""texture_sources": [{ "texture": "", "foo": 1e999 }, 3, { "bar": -1e999 }]"#);
-    assert_eq!(refused(&pieces), ["error InvalidType texture_sources/1"]);
+    assert_eq!(
+        refused(&pieces),
+        ["error core/invalid_type texture_sources/1"]
+    );
     let told: Vec<String> = lines(&pieces)
         .into_iter()
-        .filter(|line| line.starts_with("info InvalidValue"))
+        .filter(|line| line.starts_with("info core/invalid_value"))
         .map(|line| line.replace(&format!(" {FILE}"), ""))
         .collect();
     assert_eq!(
         told,
         [
-            "info InvalidValue texture_sources/0/foo",
-            "info InvalidValue texture_sources/2/bar",
+            "info core/invalid_value texture_sources/0/foo",
+            "info core/invalid_value texture_sources/2/bar",
         ]
     );
     // A list every entry of which is read keeps the findings of each.
@@ -1028,9 +1041,9 @@ fn a_list_left_as_written_has_the_one_finding_of_its_bad_entry_deviation() {
     assert_eq!(
         refused(&pieces),
         [
-            "error UnrecognizedField texture_sources/0/foo",
-            "error UnrecognizedField texture_sources/1/bar",
-            "error MissingRequiredField texture_sources/1/texture",
+            "error core/unrecognized_field texture_sources/0/foo",
+            "error core/unrecognized_field texture_sources/1/bar",
+            "error core/missing_required_field texture_sources/1/texture",
         ]
     );
 }
@@ -1071,7 +1084,7 @@ fn frames_is_a_whole_number_of_32_bits() {
         } else {
             assert_eq!(
                 refused(&pieces),
-                ["error InvalidType texture_sources/0/frames"],
+                ["error core/invalid_type texture_sources/0/frames"],
                 "{frames}"
             );
         }
@@ -1135,7 +1148,7 @@ fn pg05_g4_the_arm_size_of_a_geometry_source() {
     let thin = hat_with(r#""geometry_sources": [{ "geometry": "g", "arm_size": "thin" }]"#);
     assert_eq!(
         refused(&thin),
-        ["error InvalidEnumValue geometry_sources/0/arm_size"]
+        ["error core/invalid_enum_line geometry_sources/0/arm_size"]
     );
 }
 
@@ -1156,7 +1169,7 @@ fn the_body_size_of_a_geometry_source() {
     let huge = hat_with(r#""geometry_sources": [{ "geometry": "g", "body_size": "huge" }]"#);
     assert_eq!(
         refused(&huge),
-        ["error InvalidEnumValue geometry_sources/0/body_size"]
+        ["error core/invalid_enum_line geometry_sources/0/body_size"]
     );
 }
 
@@ -1174,7 +1187,8 @@ fn sided(piece_type: &str, side: &str) -> PersonaPieces {
 /// log; G5a has none: informations of ours.
 #[test]
 fn pg06_g5_g5a_the_side_of_a_geometry_source_deviation() {
-    const G5: &str = "info InvalidValue geometry_sources/0/side";
+    const G5: &str = "info persona/side_not_arm_or_leg geometry_sources/0/side";
+    const G5A: &str = "info core/invalid_value geometry_sources/0/side";
     let side_findings = |piece_type: &str, side: &str| -> Vec<String> {
         found(&sided(piece_type, side))
             .into_iter()
@@ -1196,7 +1210,7 @@ fn pg06_g5_g5a_the_side_of_a_geometry_source_deviation() {
         for side in ["left", "right", "both"] {
             let findings = side_findings(piece_type, side);
             if side == "both" {
-                assert_eq!(findings, [G5], "{piece_type} {side}");
+                assert_eq!(findings, [G5A], "{piece_type} {side}");
                 let pieces = sided(piece_type, side);
                 assert!(!message(&first(&pieces, "/side")).contains("Trying to assign"));
             } else {
@@ -1288,7 +1302,7 @@ fn pg07_g6_is_face_is_a_string() {
         ));
         assert_eq!(
             refused(&pieces),
-            ["error InvalidType geometry_sources/0/is_face"]
+            ["error core/invalid_type geometry_sources/0/is_face"]
         );
     }
     // A model built by hand may hold a boolean.
@@ -1306,8 +1320,11 @@ fn a6_animation_sources_of_a_piece_that_is_no_emote_are_never_played() {
             r#"{ "animations": { "animation.wave": {} } }"#,
         )],
     );
-    assert_eq!(found(&pieces), ["info IgnoredMember animation_sources"]);
-    assert!(first(&pieces, "IgnoredMember").is(&codes::IGNORED_MEMBER));
+    assert_eq!(
+        found(&pieces),
+        ["info core/ignored_member animation_sources"]
+    );
+    assert!(first(&pieces, "core/ignored_member").is(&codes::IGNORED_MEMBER));
     // The entries are still checked and kept, as the game keeps them.
     assert_eq!(only(&pieces).animations.len(), 1);
     assert!(only(&pieces).emote.is_none());
@@ -1377,7 +1394,10 @@ fn m16_a_one_sided_piece_type_invalidates_the_piece() {
         let pieces = load_hat(&format!(
             r#"{{ "piece_id": "aa8d3c95-f189-cf08-0ae3-5cc1e090343b", "piece_name": "hat", "piece_type": "{name}" }}"#
         ));
-        assert_eq!(refused(&pieces), ["error InvalidEnumValue piece_type"]);
+        assert_eq!(
+            refused(&pieces),
+            ["error core/invalid_enum_line piece_type"]
+        );
     }
     // The two-sided types have a name in both builds.
     for name in ["persona_arms", "persona_legs"] {

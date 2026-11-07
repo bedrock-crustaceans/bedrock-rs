@@ -22,13 +22,13 @@ normalized = ""
 resolution = "not_found"
 
 [[diagnostics]]
-code = "ScriptImportNotFound"
+code = "core/script_import_not_found"
 severity = "info"
 text = "ReferenceError: Import [.js] not found."
 file = "scripts/main.js"
 
 [[diagnostics]]
-code = "ScriptImportNotFound"
+code = "core/script_import_not_found"
 severity = "info"
 text = "ReferenceError: Import [] not found."
 file = "scripts/main.js"

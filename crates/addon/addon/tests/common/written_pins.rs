@@ -54,7 +54,7 @@ pub fn parse<T: Content>(path: &str, text: &str) -> Result<Document<T>, String> 
         let mut codes: Vec<String> = rejected
             .diagnostics
             .iter()
-            .map(|finding| format!("{} {}", finding.code.name(), finding.location.json_path))
+            .map(|finding| format!("{} {}", finding.code.id(), finding.location.json_path))
             .collect();
         codes.sort();
         format!("rejected: {codes:?}")

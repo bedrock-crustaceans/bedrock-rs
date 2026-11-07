@@ -1,7 +1,7 @@
 # Validation rule 13.
 
 [[diagnostic]]
-kind = "UnrecognizedField"
+kind = "core/unrecognized_field"
 severity = "info"
 file = "behavior_trees/ticks.json"
 path = "minecraft:behavior_tree/minecraft:root/minecraft:wait_ticks/ticks"

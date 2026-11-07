@@ -111,23 +111,16 @@ fn a_typed_goal_refuses_a_wrong_type_and_an_unknown_member_and_reads_null_as_abs
     for (json, code, member) in [
         (
             r#"{"speed_multiplier": "fast"}"#,
-            "InvalidType",
+            "core/invalid_type",
             "speed_multiplier",
         ),
-        (r#"{"made_up": 1}"#, "UnrecognizedField", "made_up"),
+        (r#"{"made_up": 1}"#, "core/unrecognized_field", "made_up"),
     ] {
         let (goal, d) = at_version::<Panic>("minecraft:behavior.panic", json, (1, 26, 60));
         assert!(goal.is_none(), "{json}");
         let told: Vec<String> = errors(&d)
             .iter()
-            .map(|f| {
-                format!(
-                    "{} {:?} {}",
-                    f.code.name(),
-                    f.severity,
-                    f.location.json_path
-                )
-            })
+            .map(|f| format!("{} {:?} {}", f.code.id(), f.severity, f.location.json_path))
             .collect();
         assert_eq!(told, [format!("{code} Error {member}")], "{json}: {d:#?}");
     }
@@ -139,8 +132,13 @@ fn a_typed_goal_refuses_a_wrong_type_and_an_unknown_member_and_reads_null_as_abs
     let goal = goal.expect("a panic");
     assert_eq!(goal.speed_multiplier, None);
     assert!(errors(&d).is_empty(), "{d:#?}");
-    assert_finding(&d, "ValueRewritten", "speed_multiplier", Severity::Info);
-    assert_finding(&d, "ValueRewritten", "force", Severity::Info);
+    assert_finding(
+        &d,
+        "core/value_rewritten",
+        "speed_multiplier",
+        Severity::Info,
+    );
+    assert_finding(&d, "core/value_rewritten", "force", Severity::Info);
 }
 
 /// Below 1.26.60 the legacy goal parser reads the goal: a wrong type keeps the default with a
@@ -157,7 +155,7 @@ fn an_older_document_s_goal_is_converted_leniently() {
     assert!((goal.within_radius() - 4.0).abs() < f32::EPSILON);
     assert!(errors(&d).is_empty(), "{d:#?}");
     // The hand-written legacy reader takes the default without a word.
-    assert_finding(&d, "InvalidValue", "speed_multiplier", Severity::Info);
+    assert_finding(&d, "core/invalid_value", "speed_multiplier", Severity::Info);
 }
 
 /// The panic goal's damage sources in an older document: an empty list and `all`
@@ -186,7 +184,7 @@ fn the_legacy_panic_damage_sources_messages() {
             .map(|f| {
                 format!(
                     "{} {:?} {} {}",
-                    f.code.name(),
+                    f.code.id(),
                     f.severity,
                     f.location.json_path,
                     f.code
@@ -195,7 +193,9 @@ fn the_legacy_panic_damage_sources_messages() {
             .collect();
         assert_eq!(
             found,
-            [format!("InvalidValue {severity} damage_sources {text}")],
+            [format!(
+                "core/invalid_value_worded {severity} damage_sources {text}"
+            )],
             "{json}"
         );
         // At the typed version the reader has no such rule.
@@ -232,7 +232,7 @@ fn the_legacy_send_event_conversions() {
         .map(|f| {
             format!(
                 "{} {:?} {} {}",
-                f.code.name(),
+                f.code.id(),
                 f.severity,
                 f.location.json_path,
                 f.code
@@ -242,20 +242,20 @@ fn the_legacy_send_event_conversions() {
     assert_eq!(
         texts,
         [
-            "InvalidValue Warning event_choices/0/min_activation_range 'min_activation_range' must not be negative, defaulting to 1.0",
-            "InvalidValue Warning event_choices/0/max_activation_range 'max_activation_range' should not be negative, setting to 512.",
-            "InvalidValue Warning event_choices/1/min_activation_range 'min_activation_range' must be less than or equal to 'max_activation_range', swapping values.",
+            "core/invalid_value_worded Warning event_choices/0/min_activation_range 'min_activation_range' must not be negative, defaulting to 1.0",
+            "core/invalid_value_worded Warning event_choices/0/max_activation_range 'max_activation_range' should not be negative, setting to 512.",
+            "core/invalid_value_worded Warning event_choices/1/min_activation_range 'min_activation_range' must be less than or equal to 'max_activation_range', swapping values.",
         ]
     );
     assert_finding(
         &d,
-        "ValueRewritten",
+        "core/value_rewritten",
         "event_choices/0/cooldown_time",
         Severity::Info,
     );
     assert_finding(
         &d,
-        "ValueRewritten",
+        "core/value_rewritten",
         "event_choices/0/sequence/0/base_delay",
         Severity::Info,
     );
@@ -297,20 +297,13 @@ fn a_goal_written_null_is_absent() {
         let told: Vec<String> = found
             .iter()
             .filter(|f| f.location.json_path.to_string().contains("behavior."))
-            .map(|f| {
-                format!(
-                    "{:?} {} {}",
-                    f.severity,
-                    f.code.name(),
-                    f.location.json_path
-                )
-            })
+            .map(|f| format!("{:?} {} {}", f.severity, f.code.id(), f.location.json_path))
             .collect();
         assert_eq!(
             told,
             [
-                "Info ValueRewritten minecraft:entity/components/minecraft:behavior.panic",
-                "Info ValueRewritten minecraft:entity/components/minecraft:behavior.float",
+                "Info core/value_rewritten minecraft:entity/components/minecraft:behavior.panic",
+                "Info core/value_rewritten minecraft:entity/components/minecraft:behavior.float",
             ],
             "{version}"
         );
@@ -345,11 +338,11 @@ fn the_four_goals_are_typed_at_1_26_60_and_not_at_1_26_59() {
         assert!(goal.is_none(), "{key} 1.26.60");
         let told: Vec<String> = errors(&d)
             .iter()
-            .map(|f| format!("{} {}", f.code.name(), f.location.json_path))
+            .map(|f| format!("{} {}", f.code.id(), f.location.json_path))
             .collect();
         assert_eq!(
             told,
-            [format!("InvalidType {member}")],
+            [format!("core/invalid_type {member}")],
             "{key} 1.26.60: {d:#?}"
         );
     }

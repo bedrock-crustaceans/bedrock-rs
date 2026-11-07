@@ -1,7 +1,7 @@
 //! Every row of the fixtures: the list ("Fixtures to write", `l1`–`l9`) and
 //! the table (`d01`–`d27`), fixtures under `tests/fixtures/dialogue/dialogue/`.
 
-use bedrock_addon::diagnostic::{Code, Severity, codes};
+use bedrock_addon::diagnostic::{Code, Kind, Severity, codes};
 use bedrock_addon::document::{Content, Document};
 use bedrock_addon::families::dialogue::codes as dialogue_codes;
 use bedrock_addon::families::dialogue::{
@@ -147,7 +147,10 @@ fn d22_beta_loads_as_9999_with_an_information_deviation() {
         ),
         (9999, 9999, 9999)
     );
-    assert_eq!(names(file.diagnostics(), Severity::Info), ["InvalidValue"]);
+    assert_eq!(
+        names(file.diagnostics(), Severity::Info),
+        ["core/invalid_value"]
+    );
 }
 
 #[test]
@@ -232,7 +235,7 @@ fn d10_coerced_text_is_an_invalid_type_information_deviation() {
     let coerced = scene(stack.dialogue(), "number");
     assert_eq!(
         names(coerced.diagnostics(), Severity::Info),
-        ["InvalidType"]
+        ["core/invalid_type"]
     );
     assert!(
         coerced
@@ -493,7 +496,7 @@ fn l4_the_dropped_higher_scene_is_a_shadowed_definition_info_deviation() {
     let shadowed: Vec<_> = stack
         .dialogue()
         .diagnostics()
-        .filter(|d| d.code.name() == "ShadowedDefinition")
+        .filter(|d| d.code.id() == "core/shadowed_definition")
         .collect();
     assert_eq!(shadowed.len(), 1);
     assert_eq!(shadowed[0].severity, Severity::Info);
@@ -572,9 +575,7 @@ fn d21_the_same_tag_twice_in_one_file_keeps_the_first() {
     assert_eq!(scene(registry, "a").text, plain("First."));
     assert_eq!(registry.rejected()[0].origin.key.as_deref(), Some("a"));
     assert!(
-        registry
-            .diagnostics()
-            .all(|d| d.code.name() != "ShadowedDefinition"),
+        registry.diagnostics().all(|d| d.kind() != Kind::Shadowed),
         "one pack: nothing is shadowed"
     );
 }

@@ -150,7 +150,7 @@ mod geometry {
         assert_eq!(
             said(&found, &KINDS),
             [one(
-                "UnresolvedReference",
+                "core/unresolved_reference",
                 Severity::Info,
                 FILE,
                 "minecraft:block/components/minecraft:geometry",
@@ -177,7 +177,7 @@ mod geometry {
         assert_eq!(
             said(&found, &KINDS),
             [one(
-                "UnresolvedReference",
+                "core/unresolved_reference",
                 Severity::Info,
                 FILE,
                 "minecraft:block/components/minecraft:geometry/identifier",
@@ -201,7 +201,7 @@ mod geometry {
         assert_eq!(
             said(&found, &KINDS),
             [one(
-                "UnresolvedReference",
+                "core/unresolved_reference",
                 Severity::Info,
                 FILE,
                 "minecraft:block/permutations/0/components/minecraft:geometry",
@@ -235,7 +235,7 @@ mod geometry {
         assert_eq!(
             said(&found, &KINDS),
             [one(
-                "UnresolvedReference",
+                "core/unresolved_reference",
                 Severity::Error,
                 FILE,
                 "minecraft:block/components/minecraft:geometry/bone_visibility/tail",
@@ -345,7 +345,7 @@ fn b7_a_shape_nothing_defines_is_vanillas_kept_error() {
     assert_eq!(
         said(&found, &["voxel shape"]),
         [one(
-            "UnresolvedReference",
+            "core/unresolved_reference_worded",
             Severity::Error,
             FILE,
             "minecraft:block/components/minecraft:geometry/culling_shape",
@@ -428,7 +428,7 @@ mod texture {
         };
         let told = vec![
             (
-                "UnresolvedReference",
+                "core/unresolved_reference_worded",
                 Severity::Error,
                 "demo_lamps".to_owned()
             );
@@ -456,7 +456,7 @@ mod texture {
             said(&found, &KINDS),
             [
                 one(
-                    "UnresolvedReference",
+                    "core/unresolved_reference_worded",
                     Severity::Error,
                     FILE,
                     "minecraft:block/components/minecraft:material_instances/*/texture",
@@ -464,7 +464,7 @@ mod texture {
                     "demo_lamps"
                 ),
                 one(
-                    "UnresolvedReference",
+                    "core/unresolved_reference_worded",
                     Severity::Error,
                     FILE,
                     "minecraft:block/components/minecraft:destruction_particles/texture",
@@ -580,7 +580,7 @@ mod loot {
         assert_eq!(
             said(&found, &KINDS),
             [one(
-                "UnresolvedReference",
+                "core/unresolved_reference_worded",
                 Severity::Error,
                 FILE,
                 "minecraft:block/components/minecraft:loot",
@@ -678,7 +678,7 @@ mod lang {
             said(&found, &KINDS),
             [
                 one(
-                    "UnresolvedLangKey",
+                    "core/unresolved_lang_key",
                     Severity::Info,
                     FILE,
                     "minecraft:block/components/minecraft:display_name",
@@ -686,7 +686,7 @@ mod lang {
                     "tile.demo.lamp.name"
                 ),
                 one(
-                    "UnresolvedLangKey",
+                    "core/unresolved_lang_key",
                     Severity::Info,
                     FILE,
                     "minecraft:block/components/minecraft:crafting_table/table_name",
@@ -777,7 +777,7 @@ fn b12_a_block_nothing_defines_is_an_error_at_the_member_that_names_it() {
         said(&found, &BLOCK_KINDS),
         [
             one(
-                "UnresolvedReference",
+                "core/unresolved_reference_worded",
                 Severity::Error,
                 FILE,
                 &format!("{FILTER}/0"),
@@ -785,7 +785,7 @@ fn b12_a_block_nothing_defines_is_an_error_at_the_member_that_names_it() {
                 "demo:none"
             ),
             one(
-                "UnresolvedReference",
+                "core/unresolved_reference_worded",
                 Severity::Error,
                 FILE,
                 &format!("{FILTER}/1/name"),
@@ -830,7 +830,7 @@ fn b12_a_state_the_block_does_not_have_and_a_value_it_cannot_take_are_informatio
         said(&found, &BLOCK_KINDS),
         [
             one(
-                "UnresolvedReference",
+                "core/unresolved_reference",
                 Severity::Info,
                 FILE,
                 &format!("{FILTER}/0/states/demo:dim"),
@@ -838,7 +838,7 @@ fn b12_a_state_the_block_does_not_have_and_a_value_it_cannot_take_are_informatio
                 "demo:dim"
             ),
             one(
-                "InvalidReference",
+                "core/invalid_reference",
                 Severity::Info,
                 FILE,
                 &format!("{FILTER}/1/states/demo:lit"),
@@ -864,7 +864,7 @@ fn b12_the_blocks_a_corner_placement_connects_with_are_resolved() {
     assert_eq!(
         said(&found, &BLOCK_KINDS),
         [one(
-            "UnresolvedReference",
+            "core/unresolved_reference_worded",
             Severity::Error,
             FILE,
             "minecraft:block/description/traits/minecraft:placement_direction/blocks_to_corner_with/1",
@@ -892,7 +892,9 @@ fn load_references(file: &str) -> Vec<(&'static str, Severity, String, String)> 
     );
     blocks
         .diagnostics()
-        .filter(|finding| finding.code.name() == "UnresolvedReference")
+        .filter(|finding| {
+            finding.code.kind() == bedrock_addon::diagnostic::Kind::UnresolvedReference
+        })
         .map(|finding| {
             assert_eq!(finding.phase, bedrock_addon::diagnostic::Phase::Validate);
             let id = match finding.detail.as_deref() {
@@ -902,7 +904,7 @@ fn load_references(file: &str) -> Vec<(&'static str, Severity, String, String)> 
                 _ => String::new(),
             };
             (
-                finding.code.name(),
+                finding.code.id(),
                 finding.severity,
                 finding.location.json_path.to_string(),
                 id,
@@ -922,7 +924,7 @@ fn b9_an_instance_that_names_no_instance_is_a_load_information() {
     assert_eq!(
         load_references(&file),
         [(
-            "UnresolvedReference",
+            "core/unresolved_reference",
             Severity::Info,
             "minecraft:block/components/minecraft:material_instances/south".to_owned(),
             "sides".to_owned()
@@ -947,19 +949,19 @@ fn b13_a_deprecated_trigger_that_names_no_event_of_the_block_is_a_load_informati
         allow_listed_load_references(file),
         [
             (
-                "UnresolvedReference",
+                "core/unresolved_reference",
                 Severity::Info,
                 "minecraft:block/components/minecraft:on_interact/event".to_owned(),
                 "demo:missing".to_owned()
             ),
             (
-                "UnresolvedReference",
+                "core/unresolved_reference",
                 Severity::Info,
                 "minecraft:block/components/minecraft:random_ticking/on_tick/event".to_owned(),
                 "demo:gone".to_owned()
             ),
             (
-                "UnresolvedReference",
+                "core/unresolved_reference",
                 Severity::Info,
                 "minecraft:block/events/demo:there/sequence/0/trigger/event".to_owned(),
                 "demo:nowhere".to_owned()
@@ -986,7 +988,9 @@ fn allow_listed_load_references(file: &str) -> Vec<(&'static str, Severity, Stri
     );
     blocks
         .diagnostics()
-        .filter(|finding| finding.code.name() == "UnresolvedReference")
+        .filter(|finding| {
+            finding.code.kind() == bedrock_addon::diagnostic::Kind::UnresolvedReference
+        })
         .map(|finding| {
             let id = match finding.detail.as_deref() {
                 Some(bedrock_addon::diagnostic::DiagnosticDetail::Reference { id, .. }) => {
@@ -995,7 +999,7 @@ fn allow_listed_load_references(file: &str) -> Vec<(&'static str, Severity, Stri
                 _ => String::new(),
             };
             (
-                finding.code.name(),
+                finding.code.id(),
                 finding.severity,
                 finding.location.json_path.to_string(),
                 id,
@@ -1276,34 +1280,36 @@ fn a_finding_behind_a_permutation_left_out_and_inside_one_a_step_rebuilds_is_at_
     let told = |found: &Diagnostics| -> Vec<String> {
         let mut told: Vec<String> = found
             .iter()
-            .map(|f| format!("{} {}", f.code.name(), f.location.json_path))
+            .map(|f| format!("{} {}", f.code.id(), f.location.json_path))
             .collect();
         told.sort();
         told.dedup();
         told
     };
     let mut expected = vec![
-        format!("DroppedField {AT}/0"),
-        format!("DroppedField {AT}/2"),
+        format!("core/dropped_field {AT}/0"),
+        format!("core/dropped_field {AT}/2"),
         // The block-state rule's rejection of the condition: a kept error.
-        format!("InvalidMolang {AT}/0/condition"),
-        format!("InvalidMolang {AT}/2/condition"),
+        format!("core/invalid_molang {AT}/0/condition"),
+        format!("core/invalid_molang {AT}/2/condition"),
     ];
     for index in [1, 3] {
         // The step's own warning, at the component the file has.
-        expected.push(format!("DeprecatedMember {AT}/{index}/{TICKING}"));
+        expected.push(format!("core/deprecated_in_format {AT}/{index}/{TICKING}"));
         // Told by the reading of the rebuilt permutation, of `deprecated/queued_ticking`.
-        expected.push(format!("UnrecognizedField {AT}/{index}/{TICKING}/bogus"));
         expected.push(format!(
-            "UnresolvedReference {AT}/{index}/{TICKING}/on_tick/event"
+            "core/unrecognized_field {AT}/{index}/{TICKING}/bogus"
+        ));
+        expected.push(format!(
+            "core/unresolved_reference {AT}/{index}/{TICKING}/on_tick/event"
         ));
         // The Molang walk, of the rebuilt member.
         expected.push(format!(
-            "InvalidMolang {AT}/{index}/{TICKING}/on_tick/condition"
+            "core/invalid_molang {AT}/{index}/{TICKING}/on_tick/condition"
         ));
         // A rule of 1.26.20, told of the permutations as held once some are left out.
         expected.push(format!(
-            "InvalidValue {AT}/{index}/components/minecraft:light_dampening"
+            "core/invalid_value_formatted {AT}/{index}/components/minecraft:light_dampening"
         ));
     }
     expected.sort();

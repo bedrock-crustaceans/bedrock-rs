@@ -27,9 +27,11 @@ enum Read {
 /// `.material` file; an element or a define of a list), or, in a list, the
 /// finding of the `path` of the entry at `place`, missing or no string.
 fn says_dropped(finding: &crate::common::Rendered, place: &str, read: Read) -> bool {
-    let entry_path = matches!(finding.0, "InvalidType" | "MissingRequiredField")
-        && finding.2.strip_suffix("/path") == Some(place);
-    (finding.0 == "InvalidType" && finding.2 == place) || (read == Read::List && entry_path)
+    let entry_path = matches!(
+        finding.0,
+        "core/invalid_type" | "core/missing_required_field"
+    ) && finding.2.strip_suffix("/path") == Some(place);
+    (finding.0 == "core/invalid_type" && finding.2 == place) || (read == Read::List && entry_path)
 }
 
 /// The written text against the input, as JSON values: equal, or the rewrites the first read
@@ -56,7 +58,7 @@ fn compared_with_the_input(
     // Nothing is clamped without a finding of the kind.
     let invalid = findings
         .iter()
-        .filter(|finding| finding.0 == "InvalidValue")
+        .filter(|finding| finding.0 == "core/invalid_value")
         .count();
     assert!(
         found.clamped <= invalid,
@@ -350,7 +352,7 @@ fn every_generated_document_that_loads_writes_text_that_loads_back_equal() {
         // Nothing the reader drops is written: the second read drops nothing.
         let dropped = rendered(second.diagnostics().iter())
             .into_iter()
-            .filter(|finding| finding.0 == "InvalidType")
+            .filter(|finding| finding.0 == "core/invalid_type")
             .filter(|finding| {
                 let last = finding.2.rsplit('/').next().unwrap_or_default();
                 last.parse::<usize>().is_ok()
@@ -784,7 +786,7 @@ fn a_drop_is_matched_with_a_finding_at_its_own_path() {
     // One element is missing from the written text and one finding says that an element
     // was dropped, of another array: the counts agree, the places do not.
     let finding = crate::common::finding(
-        "InvalidType",
+        "core/invalid_type",
         bedrock_addon::diagnostic::Severity::Info,
         "x/states/1",
         "",

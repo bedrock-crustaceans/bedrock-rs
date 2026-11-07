@@ -67,7 +67,7 @@ fn findings(stack: &PackStack<Behavior>) -> Vec<(&'static str, Severity, String,
         .diagnostics()
         .map(|f| {
             (
-                f.code.name(),
+                f.code.id(),
                 f.severity,
                 f.location
                     .pack
@@ -86,7 +86,7 @@ fn findings(stack: &PackStack<Behavior>) -> Vec<(&'static str, Severity, String,
 
 fn shadowed(pack: &str, path: &str) -> (&'static str, Severity, String, String) {
     (
-        "ShadowedDefinition",
+        "core/shadowed_definition",
         Severity::Info,
         pack.to_owned(),
         path.to_owned(),
@@ -227,13 +227,13 @@ fn a_rejected_file_is_listed_and_binds_nothing() {
         found,
         [
             (
-                "InvalidValue",
+                "core/invalid_value",
                 Severity::Error,
                 "bp 1".to_owned(),
                 "shapes/shape.json".to_owned()
             ),
             (
-                "DocumentRejected",
+                "voxel_shape/failed_to_load",
                 Severity::Error,
                 "bp 1".to_owned(),
                 "shapes/shape.json".to_owned()

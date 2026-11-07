@@ -69,7 +69,7 @@ fn a05_a_key_that_is_no_number_fails_the_file_deviation() {
         assert_eq!(
             one_error::<CubemapSettings>(&illuminance(&format!(r#"{{"{key}": 1.0}}"#))),
             finding(
-                "InvalidType",
+                "deferred_settings/key_conversion",
                 &format!("{AT}/{key}"),
                 "String-to-float conversion failed"
             ),
@@ -134,7 +134,10 @@ fn a_hexadecimal_key_outside_the_day_is_dropped_like_any_other() {
             loads::<CubemapSettings>(&illuminance(&format!(r#"{{"{key}": 1.0, "0.5": 2.0}}"#)));
         assert_eq!(
             at(&infos(document.diagnostics())),
-            [("KeyframeOutOfDomain", format!("{AT}/{key}").as_str())],
+            [(
+                "core/keyframe_out_of_domain",
+                format!("{AT}/{key}").as_str()
+            )],
             "{key:?}"
         );
         assert_eq!(
@@ -175,7 +178,7 @@ fn merged(
     assert!(warnings(document.diagnostics()).is_empty());
     let (stands, dropped) = own(infos(document.diagnostics()))
         .into_iter()
-        .partition(|(code, _)| *code == "InvalidValue");
+        .partition(|(code, _)| *code == "core/invalid_value");
     (
         read.iter().map(|f| (f.time.to_bits(), f.value)).collect(),
         stands,
@@ -191,16 +194,16 @@ fn minus_zero_and_zero_are_one_time_and_the_later_key_stands_deviation() {
         merged(r#"{"0.0": 1, "-0": 2}"#),
         (
             vec![(zero, 2.0)],
-            vec![("InvalidValue", "/-0".to_owned())],
-            vec![("DroppedField", "/0.0".to_owned())],
+            vec![("core/invalid_value", "/-0".to_owned())],
+            vec![("core/dropped_field", "/0.0".to_owned())],
         )
     );
     assert_eq!(
         merged(r#"{"-0": 1, "0.0": 2}"#),
         (
             vec![(zero, 2.0)],
-            vec![("InvalidValue", "/0.0".to_owned())],
-            vec![("DroppedField", "/-0".to_owned())],
+            vec![("core/invalid_value", "/0.0".to_owned())],
+            vec![("core/dropped_field", "/-0".to_owned())],
         )
     );
     // Three spellings, among other keys: the last of them stands, each earlier one is reported.
@@ -213,12 +216,12 @@ fn minus_zero_and_zero_are_one_time_and_the_later_key_stands_deviation() {
                 (1.0_f32.to_bits(), 9.0)
             ],
             vec![
-                ("InvalidValue", "/0".to_owned()),
-                ("InvalidValue", "/-0e0".to_owned()),
+                ("core/invalid_value", "/0".to_owned()),
+                ("core/invalid_value", "/-0e0".to_owned()),
             ],
             vec![
-                ("DroppedField", "/-0.0".to_owned()),
-                ("DroppedField", "/0".to_owned()),
+                ("core/dropped_field", "/-0.0".to_owned()),
+                ("core/dropped_field", "/0".to_owned()),
             ],
         )
     );
@@ -231,7 +234,7 @@ fn minus_zero_and_zero_are_one_time_and_the_later_key_stands_deviation() {
 fn a06_an_empty_keyframe_object_is_refused() {
     assert_eq!(
         one_error::<CubemapSettings>(&illuminance("{}")),
-        finding("InvalidValue", AT, "invalid value")
+        finding("core/invalid_value", AT, "invalid value")
     );
 }
 
@@ -240,7 +243,7 @@ fn a6_a_keyframe_member_of_a_wrong_type_is_expected_keyframes() {
     for value in [r#""x""#, "true", "[1]", "[]"] {
         assert_eq!(
             one_error::<CubemapSettings>(&illuminance(value)),
-            finding("InvalidType", AT, "Expected keyframes."),
+            finding("deferred_settings/keyframes", AT, "Expected keyframes."),
             "{value}"
         );
     }
@@ -248,7 +251,7 @@ fn a6_a_keyframe_member_of_a_wrong_type_is_expected_keyframes() {
     assert_eq!(
         one_error::<CubemapSettings>(&illuminance(r#"{"0.5": "x"}"#)),
         finding(
-            "InvalidType",
+            "deferred_settings/must_be_number",
             &format!("{AT}/0.5"),
             "the input must be a number"
         )
@@ -272,22 +275,22 @@ fn a08_l13_a_key_outside_the_day_is_dropped_with_a_warning_deviation() {
         infos(document.diagnostics()),
         [
             finding(
-                "KeyframeOutOfDomain",
+                "core/keyframe_out_of_domain",
                 &format!("{AT}/1.5"),
                 "keyframe key outside [0, 1]; dropped"
             ),
             finding(
-                "KeyframeOutOfDomain",
+                "core/keyframe_out_of_domain",
                 &format!("{AT}/-0.1"),
                 "keyframe key outside [0, 1]; dropped"
             ),
             finding(
-                "KeyframeOutOfDomain",
+                "core/keyframe_out_of_domain",
                 &format!("{AT}/nan"),
                 "keyframe key outside [0, 1]; dropped"
             ),
             finding(
-                "KeyframeOutOfDomain",
+                "core/keyframe_out_of_domain",
                 &format!("{AT}/inf"),
                 "keyframe key outside [0, 1]; dropped"
             ),
@@ -316,7 +319,7 @@ fn the_bounds_of_the_day_are_inside_it() {
 fn keyframes_all_outside_the_day_fail_the_file_deviation() {
     // Ours; unverified in vanilla.
     let d = rejects::<CubemapSettings>(&illuminance(r#"{"1.5": 20, "2": 1}"#));
-    assert_eq!(at(&errors(&d)), [("InvalidValue", AT)]);
+    assert_eq!(at(&errors(&d)), [("core/invalid_value", AT)]);
     assert_eq!(infos(&d).len(), 2);
 }
 
@@ -340,10 +343,10 @@ fn two_keys_of_one_time_keep_the_later_value_deviation() {
     assert_eq!(
         infos(document.diagnostics()),
         [
-            finding("InvalidValue", &format!("{AT}/0.50"), "invalid value"),
-            finding("DroppedField", &format!("{AT}/0.5"), "field dropped"),
-            finding("InvalidValue", &format!("{AT}/0.5x"), "invalid value"),
-            finding("DroppedField", &format!("{AT}/0.50"), "field dropped"),
+            finding("core/invalid_value", &format!("{AT}/0.50"), "invalid value"),
+            finding("core/dropped_field", &format!("{AT}/0.5"), "field dropped"),
+            finding("core/invalid_value", &format!("{AT}/0.5x"), "invalid value"),
+            finding("core/dropped_field", &format!("{AT}/0.50"), "field dropped"),
         ]
     );
     round_trip(&loads::<CubemapSettings>(&document.to_json().unwrap()).into_value());
@@ -382,7 +385,11 @@ fn two_thousand_keyframes_load_sorted_and_are_written_back() {
 fn a_number_beyond_f32_is_outside_every_range() {
     for value in ["1e39", "-1e39", "1e999"] {
         let found = one_error::<CubemapSettings>(&illuminance(value));
-        assert_eq!((found.0, found.1.as_str()), ("InvalidValue", AT), "{value}");
+        assert_eq!(
+            (found.0, found.1.as_str()),
+            ("core/outside_accepted_range", AT),
+            "{value}"
+        );
     }
 }
 
@@ -415,7 +422,7 @@ fn an_unbounded_number_beyond_f32_is_the_largest_finite_float_with_a_warning_dev
         assert_eq!(read, Some(expected), "{value}");
         assert_eq!(
             infos(document.diagnostics()),
-            [finding("InvalidValue", AT, "invalid value")],
+            [finding("core/invalid_value", AT, "invalid value")],
             "{value}"
         );
         // What was read is written and reads back without a finding.
@@ -473,14 +480,14 @@ fn three_numbers_in_no_form_are_a_type_error() {
     for value in ["[1, 2]", "[1, 2, 3, 4]", "5", r#""1 2 3""#, "true"] {
         assert_eq!(
             one_error::<ColorGradingSettings>(&contrast(value)),
-            finding("InvalidType", AT, "Expected [x, y, z]."),
+            finding("deferred_settings/vec3", AT, "Expected [x, y, z]."),
             "{value}"
         );
     }
     assert_eq!(
         one_error::<ColorGradingSettings>(&contrast(r#"[1, "2", 3]"#)),
         finding(
-            "InvalidType",
+            "deferred_settings/must_be_number",
             &format!("{AT}/1"),
             "the input must be a number"
         )
@@ -493,7 +500,7 @@ fn three_numbers_in_no_form_are_a_type_error() {
     let document = loads::<ColorGradingSettings>(&contrast(r#"{"x": 1, "w": 9}"#));
     assert_eq!(
         at(&infos(document.diagnostics())),
-        [("UnrecognizedField", &*format!("{AT}/w"))]
+        [("core/unrecognized_field", &*format!("{AT}/w"))]
     );
     assert!(!document.to_json().unwrap().contains("\"w\""));
 }
@@ -509,7 +516,7 @@ fn a4_a5_a6_l4_the_keyframe_rules_hold_for_atmosphere_and_lighting_floats_and_co
         assert_eq!(
             one_error::<T>(&file(&format!(r#"{{"noon": {good}}}"#))),
             finding(
-                "InvalidType",
+                "deferred_settings/key_conversion",
                 &format!("{at}/noon"),
                 "String-to-float conversion failed"
             ),
@@ -518,13 +525,13 @@ fn a4_a5_a6_l4_the_keyframe_rules_hold_for_atmosphere_and_lighting_floats_and_co
         // A5 / L4: an empty keyframe object.
         assert_eq!(
             one_error::<T>(&file("{}")),
-            finding("InvalidValue", at, "invalid value"),
+            finding("core/invalid_value", at, "invalid value"),
             "{at}"
         );
         // A6 / L4: a member of a wrong JSON type.
         assert_eq!(
             one_error::<T>(&file("true")),
-            finding("InvalidType", at, "Expected keyframes."),
+            finding("deferred_settings/keyframes", at, "Expected keyframes."),
             "{at}"
         );
         // The same member with keys loads without a finding.

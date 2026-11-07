@@ -77,5 +77,5 @@ pub fn density(members: &str) -> String {
 /// Requires the closing line of a refused document.
 #[track_caller]
 pub fn refused(d: &Diagnostics) {
-    expect(d, "DocumentRejected", Severity::Error, FAILED);
+    expect(d, "fog/failed_to_validate", Severity::Error, FAILED);
 }

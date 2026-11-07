@@ -82,7 +82,7 @@ fn e27_marker_with_a_stray_member_keeps_it_and_reports_unrecognized_field() {
     let (marker, d) = strict::<RotationLockedToVehicle>(&fixture("e27_marker_stray_member.json"));
     assert!(has(
         &d,
-        |c| c.name() == "UnrecognizedField",
+        |c| c.id() == "core/unrecognized_field",
         Severity::Warning,
         "stray"
     ));
@@ -115,7 +115,12 @@ fn a_marker_that_is_not_an_object_is_a_warning_in_the_lenient_conversion() {
     let (value, d) = read_as::<UsesLegacyAmbientSounds>("[]", ConvertMode::Lenient);
     assert!(value.is_none(), "dropped");
     assert_eq!(d.len(), 1, "{d:?}");
-    assert!(has(&d, |c| c.name() == "InvalidValue", Severity::Info, ""));
+    assert!(has(
+        &d,
+        |c| c.id() == "core/invalid_value",
+        Severity::Info,
+        ""
+    ));
 }
 
 /// A marker the step of row `row` inserts reads as written there: `{}`.

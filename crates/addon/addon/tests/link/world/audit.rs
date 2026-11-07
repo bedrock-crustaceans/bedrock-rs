@@ -14,7 +14,7 @@
 //! (`f18_an_entry_naming_no_function_is_skipped_with_a_warning`) and `function/lines.rs`
 //! (`f10_…`, `f11_…`).
 
-use bedrock_addon::diagnostic::{Diagnostic, DiagnosticDetail, Diagnostics};
+use bedrock_addon::diagnostic::{Diagnostic, DiagnosticDetail, Diagnostics, Kind};
 #[allow(unused_imports, reason = "which rows compile depends on the features")]
 use bedrock_addon::load::LoadOptions;
 #[allow(unused_imports, reason = "which rows compile depends on the features")]
@@ -27,8 +27,8 @@ use super::super::common::stacks;
 /// carries a reference.
 fn is_reference(finding: &Diagnostic) -> bool {
     matches!(
-        finding.code.name(),
-        "UnresolvedReference" | "InvalidReference" | "ReferenceCycle"
+        finding.code.kind(),
+        Kind::UnresolvedReference | Kind::InvalidReference | Kind::Cycle
     ) || matches!(
         finding.detail.as_deref(),
         Some(DiagnosticDetail::Reference { .. })

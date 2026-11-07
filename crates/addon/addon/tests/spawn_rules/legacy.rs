@@ -1,6 +1,6 @@
 //! The standard (1.8.0-shaped) spawn rules: the fixture rows `s01`, `s05`–`s09o`.
 
-use bedrock_addon::diagnostic::{Code, Severity};
+use bedrock_addon::diagnostic::{Code, Disposition, Kind, Severity};
 use bedrock_addon::families::spawn_rules::{Difficulty, OneOrMany, PopulationControl};
 use bedrock_addon::id::EntityId;
 use bedrock_addon::shared::BlockDescriptor;
@@ -11,23 +11,19 @@ use super::common::{
 };
 
 fn invalid_type(code: &Code) -> bool {
-    // By legacy name: the variant and the definitions that were it.
-    matches!(code.name(), "InvalidType")
+    code.kind() == Kind::WrongType
 }
 
 fn invalid_value(code: &Code) -> bool {
-    // By legacy name: the variant and the definitions that were it.
-    matches!(code.name(), "InvalidValue")
+    code.kind() == Kind::InvalidValue
 }
 
 fn missing_field(code: &Code) -> bool {
-    // By legacy name: the variant and the definitions that were it.
-    matches!(code.name(), "MissingRequiredField")
+    code.kind() == Kind::MissingRequired
 }
 
 fn invalid_enum(code: &Code) -> bool {
-    // By legacy name: the variant and the definitions that were it.
-    matches!(code.name(), "InvalidEnumValue")
+    code.kind() == Kind::InvalidEnumValue
 }
 
 /// The object-form text of `key` for `x:mob`.
@@ -130,7 +126,7 @@ fn s05_below_floor() {
         has_text(
             &d,
             // By legacy name: the variant and the definitions that were it.
-            |c| matches!(c.name(), "UnsupportedVersion"),
+            |c| matches!(c.id(), "core/no_parser_for_version"),
             Severity::Error,
             "unsupported version: no parser available for version 1.7.0"
         ),
@@ -147,7 +143,7 @@ fn s06_permute_guaranteed_count() {
     assert_eq!(rules.guaranteed, vec![(2, EntityId::parse("x:a"))]);
     let unknown = with(&d, |c| {
         // By legacy name: the variant and the definitions that were it.
-        matches!(c.name(), "UnrecognizedField")
+        matches!(c.id(), "core/unrecognized_field")
     });
     assert_eq!(
         paths(&unknown),
@@ -166,7 +162,7 @@ fn s07_bad_format_version() {
         has_text(
             &d,
             // By legacy name: the variant and the definitions that were it.
-            |c| matches!(c.name(), "MalformedFormatVersion"),
+            |c| matches!(c.id(), "core/malformed_format_version"),
             Severity::Error,
             "Malformed format version"
         ),
@@ -191,7 +187,7 @@ fn s07a_array_format_version() {
 fn s07b_json_syntax_error() {
     let text = r#"{ "format_version": "1.8.0", "minecraft:spawn_rules": { "description": { "identifier": "x:mob" }, } "#;
     let d = rejected(text, &context());
-    assert_eq!(names(&d, Severity::Error), ["MalformedInput"], "{d:#?}");
+    assert_eq!(names(&d, Severity::Error), ["core/syntax"], "{d:#?}");
     // Vanilla logs nothing, not even "Failed to load spawn rules" (a deviation).
     assert!(!closes_with(&d, "Failed to load spawn rules"));
 }
@@ -351,9 +347,9 @@ fn s09d_unrecorded_defaults() {
 fn s09d_ignored_shapes_deviation() {
     // Vanilla ignores these shapes silently; ours warns.
     let (_, _, d) = condition(r#""minecraft:herd": "x""#);
-    assert_eq!(names(&d, Severity::Info), ["InvalidType"]);
+    assert_eq!(names(&d, Severity::Info), ["core/invalid_type"]);
     let (_, _, d) = condition(r#""minecraft:difficulty_filter": {"min": "extreme"}"#);
-    assert_eq!(names(&d, Severity::Info), ["InvalidEnumValue"]);
+    assert_eq!(names(&d, Severity::Info), ["core/invalid_enum_value"]);
 }
 
 #[test]
@@ -412,7 +408,7 @@ fn s09b_unknown_condition_key() {
     let (c, _, d) = condition(r#""minecraft:spawns_on_moon": {}"#);
     let found = with(&d, |c| {
         // By legacy name: the variant and the definitions that were it.
-        matches!(c.name(), "UnrecognizedField")
+        matches!(c.id(), "core/unrecognized_field")
     });
     assert_eq!(
         paths(&found),
@@ -426,7 +422,7 @@ fn s09b_unknown_condition_key() {
 fn s09b_unknown_condition_key_deviation() {
     // Vanilla never looks at the key; ours warns and keeps it.
     let (c, _, d) = condition(r#""minecraft:spawns_on_moon": {}"#);
-    assert_eq!(names(&d, Severity::Info), ["UnrecognizedField"]);
+    assert_eq!(names(&d, Severity::Info), ["core/unrecognized_field"]);
     let written = c.extra.get("minecraft:spawns_on_moon").unwrap();
     assert!(
         written
@@ -538,7 +534,7 @@ fn s09h_population_control_deviation() {
     let text = document("1.8.0", r#"{"description": {"identifier": "x:mob"}}"#);
     assert_eq!(
         names(loads(&text, &context()).diagnostics(), Severity::Info),
-        ["MissingRequiredField"]
+        ["core/missing_required_field"]
     );
 }
 
@@ -623,7 +619,7 @@ fn s09k_value_coercion_deviation() {
     // Vanilla coerces silently; ours warns, same value.
     let (c, _, d) = condition(r#""minecraft:weight": {"default": [1]}"#);
     assert_eq!(c.spawn_weight(), 0);
-    assert_eq!(names(&d, Severity::Info), ["InvalidType"]);
+    assert_eq!(names(&d, Severity::Info), ["core/invalid_type"]);
 }
 
 #[test]
@@ -671,7 +667,7 @@ fn s09m_permute_weight_zero() {
 fn s09m_permute_weight_zero_deviation() {
     // Vanilla leaves the entity out of the pick silently; ours is an information.
     let (_, _, d) = condition(r#""minecraft:permute_type": {"entity_type": "x:a", "weight": -1}"#);
-    assert_eq!(names(&d, Severity::Info), ["InvalidValue"]);
+    assert_eq!(names(&d, Severity::Info), ["core/invalid_value"]);
 }
 
 #[test]
@@ -775,7 +771,7 @@ fn a_missing_format_version_is_1_8_0_with_a_warning_deviation() {
     let document = loads(text, &context());
     assert_eq!(
         names(document.diagnostics(), Severity::Info),
-        ["MissingFormatVersion"]
+        ["core/missing_format_version"]
     );
     assert_eq!(standard(&document).effective_version().to_string(), "1.8.0");
 }
@@ -787,7 +783,7 @@ fn a_root_that_is_not_an_object_is_vanillas_message() {
         has_text(
             &d,
             // By legacy name: the variant and the definitions that were it.
-            |c| matches!(c.name(), "MalformedInput"),
+            |c| matches!(c.id(), "spawn/not_an_object"),
             Severity::Error,
             "Spawn rules json was not formatted as an object"
         ),
@@ -814,8 +810,7 @@ fn write_back_keeps_what_the_author_wrote() {
     }
     // Kept members are not reported again as unknown.
     let unknown = with(document.diagnostics(), |c| {
-        // By legacy name: the variant and the definitions that were it.
-        matches!(c.name(), "UnrecognizedField")
+        matches!(c.kind(), Kind::UnknownMember(Disposition::Kept))
     });
     assert!(unknown.is_empty(), "{unknown:#?}");
     let r = condition.to_spawn_rules();
@@ -841,7 +836,7 @@ fn unknown_root_description_and_in_object_members_deviation() {
     let document = loads(text, &context());
     let unknown = with(document.diagnostics(), |c| {
         // By legacy name: the variant and the definitions that were it.
-        matches!(c.name(), "UnrecognizedField")
+        matches!(c.id(), "core/unrecognized_field")
     });
     assert_eq!(
         paths(&unknown),

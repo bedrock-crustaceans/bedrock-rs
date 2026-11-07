@@ -947,7 +947,13 @@ impl Compared<'_> {
 
     /// Whether `path` is an unknown member, kept as it was read.
     fn unknown(&self, path: &str) -> bool {
-        self.found(Severity::Info, "UnrecognizedField", path)
+        [
+            "core/unrecognized_field",
+            "deferred_settings/needs_format_version",
+            "deferred_settings/no_longer_used",
+        ]
+        .iter()
+        .any(|code| self.found(Severity::Info, code, path))
     }
 
     /// Counts `class`; when `finding` is given, only if the load reported it.
@@ -1014,11 +1020,16 @@ impl Compared<'_> {
                 let path = path.join("/");
                 self.count(
                     Class::NewerMemberDropped,
-                    Some((Severity::Info, "UnrecognizedField", &path)),
+                    Some((
+                        Severity::Info,
+                        "deferred_settings/needs_format_version",
+                        &path,
+                    )),
                 );
                 // The member is gone: what a step puts at its path is no unknown member.
-                self.findings
-                    .retain(|(_, code, at)| !(*code == "UnrecognizedField" && *at == path));
+                self.findings.retain(|(_, code, at)| {
+                    !(*code == "deferred_settings/needs_format_version" && *at == path)
+                });
             }
         }
         self.forms(payload, &mut vec![key.to_owned()]);
@@ -1032,7 +1043,7 @@ impl Compared<'_> {
                     let path = format!("{key}/waves/sampleWidth");
                     self.count(
                         Class::StepDropped,
-                        Some((Severity::Info, "DroppedField", &path)),
+                        Some((Severity::Info, "core/dropped_field", &path)),
                     );
                 }
             }
@@ -1056,7 +1067,7 @@ impl Compared<'_> {
                             *earlier = light;
                             self.count(
                                 Class::BlockOfTwoSpellings,
-                                Some((Severity::Info, "DuplicateIdentifier", &path)),
+                                Some((Severity::Info, "core/duplicate_identifier", &path)),
                             );
                         }
                         None => standing.push((name, light)),
@@ -1105,7 +1116,7 @@ impl Compared<'_> {
                     let path = format!("{at}/{key}");
                     self.count(
                         Class::KeyOutsideTheDay,
-                        Some((Severity::Info, "KeyframeOutOfDomain", &path)),
+                        Some((Severity::Info, "core/keyframe_out_of_domain", &path)),
                     );
                     continue;
                 };
@@ -1122,15 +1133,15 @@ impl Compared<'_> {
                     let (lost, _) = standing.remove(earlier);
                     let lost = format!("{at}/{}", lost.split_once('\u{0}').unwrap().0);
                     let stands = format!("{at}/{key}");
-                    if self.found(Severity::Info, "InvalidValue", &stands) {
+                    if self.found(Severity::Info, "core/invalid_value", &stands) {
                         self.count(
                             Class::KeyOfOneTimeTwice,
-                            Some((Severity::Info, "DroppedField", &lost)),
+                            Some((Severity::Info, "core/dropped_field", &lost)),
                         );
                     } else {
                         self.count(
                             Class::KeyOfOneTimeTwice,
-                            Some((Severity::Info, "InvalidValue", &stands)),
+                            Some((Severity::Info, "core/invalid_value", &stands)),
                         );
                     }
                 }
@@ -1255,7 +1266,10 @@ impl Compared<'_> {
             }
             (Change::Replaced(Json::Num(before), Json::Num(after)), _) if raw => {
                 (before.real.is_infinite() && after.real == f64::MAX.copysign(before.real))
-                    .then_some((Class::BeyondADouble, Some((Severity::Info, "InvalidValue"))))
+                    .then_some((
+                        Class::BeyondADouble,
+                        Some((Severity::Info, "core/invalid_value")),
+                    ))
             }
             (Change::Respelt(before, after), _) => {
                 number_class(before, after).map(|class| (class, None))
@@ -1263,8 +1277,8 @@ impl Compared<'_> {
             (Change::Replaced(Json::Num(before), Json::Num(after)), _) => {
                 number_class(before, after).map(|class| {
                     let finding = match class {
-                        Class::BeyondAFloat => Some((Severity::Info, "InvalidValue")),
-                        Class::ChannelClamped => Some((Severity::Info, "ClampedValue")),
+                        Class::BeyondAFloat => Some((Severity::Info, "core/invalid_value")),
+                        Class::ChannelClamped => Some((Severity::Info, "core/clamped_value")),
                         _ => None,
                     };
                     (class, finding)
@@ -1413,7 +1427,7 @@ fn compare<T: Content>(
             .map(|finding| {
                 (
                     finding.severity,
-                    finding.code.name(),
+                    finding.code.id(),
                     finding.location.json_path.to_string(),
                 )
             })

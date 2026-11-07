@@ -816,7 +816,14 @@ mod tests {
 
     #[test]
     fn the_noise_constraint_follows_the_pack_area() {
-        let namespace = |c: Option<Code>| c.is_some_and(|c| c.name() == "NamespaceRule");
+        let namespace = |c: Option<Code>| {
+            c.is_some_and(|c| {
+                matches!(
+                    c.id(),
+                    "biome/namespace_invalid" | "biome/namespace_missing"
+                )
+            })
+        };
         assert_eq!(noise_constraint("test:grad", false), None);
         assert!(namespace(noise_constraint("minecraft:grad", false)));
         assert!(namespace(noise_constraint("MineCraft:grad", false)));

@@ -198,7 +198,7 @@ fn check_diagnostics(
             .and_then(|object| object.get("pack"))
             .and_then(|pack| pack.as_number()?.to_u64());
         let found = actual.iter().position(|diagnostic| {
-            diagnostic.code.name() == code
+            diagnostic.code.id() == code
                 && severity_name(diagnostic.severity) == severity
                 && text
                     .as_ref()
@@ -315,7 +315,7 @@ pub fn show(diagnostics: &[&Diagnostic]) -> String {
         writeln!(
             out,
             "  {} ({}) at `{}`: {:?}",
-            d.code.name(),
+            d.code.id(),
             severity_name(d.severity),
             d.location.json_path,
             d.code.to_string()
@@ -330,7 +330,7 @@ pub fn findings(stack: &PackStack<Resource>) -> Vec<(&'static str, Severity, Str
     stack
         .ui()
         .diagnostics()
-        .map(|d| (d.code.name(), d.severity, d.code.to_string()))
+        .map(|d| (d.code.id(), d.severity, d.code.to_string()))
         .collect()
 }
 

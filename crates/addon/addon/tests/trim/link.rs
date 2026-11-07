@@ -1,7 +1,7 @@
 //! Link pass, `lk01`–`lk06`: the rules T1–T4 and T7, which run in the link pass over the loot and item documents against `TrimData`. Written
 //! with their assertions, ignored until `StackSet::link` is implemented.
 
-use bedrock_addon::diagnostic::{Diagnostics, Severity};
+use bedrock_addon::diagnostic::{Diagnostics, Kind, Severity};
 use bedrock_addon::load::LoadOptions;
 use bedrock_addon::pack::{PackOrigin, PackRepository, PackSelection, StackSet, WorldPacks};
 use bedrock_addon::version::{BaseGameVersion, SemVersion};
@@ -41,7 +41,7 @@ fn loot_stacks(table: &'static [u8], options: LoadOptions) -> StackSet {
 fn found(d: &Diagnostics, name: &str, path: &str) -> Vec<(Severity, String)> {
     d.iter()
         .filter(|f| {
-            f.code.name() == name && f.location.path.as_ref().is_some_and(|p| p.as_str() == path)
+            f.code.id() == name && f.location.path.as_ref().is_some_and(|p| p.as_str() == path)
         })
         .map(|f| (f.severity, f.location.json_path.to_string()))
         .collect()
@@ -54,7 +54,7 @@ fn all_at(d: &Diagnostics, path: &str) -> Vec<(&'static str, Severity, String)> 
             f.severity > Severity::Debug
                 && f.location.path.as_ref().is_some_and(|p| p.as_str() == path)
         })
-        .map(|f| (f.code.name(), f.severity, f.location.json_path.to_string()))
+        .map(|f| (f.code.id(), f.severity, f.location.json_path.to_string()))
         .collect()
 }
 
@@ -78,7 +78,7 @@ fn lk01_an_unknown_pattern_is_an_unresolved_reference_deviation() {
     let d = set.link();
     // An information of ours: the game reads the name without a line.
     assert_eq!(
-        found(&d, "UnresolvedReference", LOOT),
+        found(&d, "core/unresolved_reference", LOOT),
         [(
             Severity::Info,
             "pools/0/entries/0/functions/0/pattern".to_owned()
@@ -98,7 +98,7 @@ fn lk02_an_unknown_material_is_an_unresolved_reference_deviation() {
     );
     let d = set.link();
     assert_eq!(
-        found(&d, "UnresolvedReference", LOOT),
+        found(&d, "core/unresolved_reference", LOOT),
         [(
             Severity::Info,
             "pools/0/entries/0/functions/0/material".to_owned()
@@ -116,7 +116,7 @@ fn lk03_a_function_without_pattern_and_material_misses_both() {
         LoadOptions::default(),
     );
     let d = set.link();
-    let mut missing = found(&d, "MissingRequiredField", LOOT);
+    let mut missing = found(&d, "core/missing_required_field", LOOT);
     missing.sort();
     assert_eq!(
         missing,
@@ -133,7 +133,11 @@ fn lk03_a_function_without_pattern_and_material_misses_both() {
         "{d:#?}"
     );
     // An absent name is not also an unknown one.
-    assert_eq!(found(&d, "UnresolvedReference", LOOT), [], "{d:#?}");
+    assert!(
+        d.iter().all(|f| f.code.kind() != Kind::UnresolvedReference
+            || f.location.path.as_ref().is_none_or(|p| p.as_str() != LOOT)),
+        "{d:#?}"
+    );
 }
 
 #[test]
@@ -155,7 +159,7 @@ fn lk05_a_custom_template_item_has_no_effect_deviation() {
     assert_eq!(set.behavior.items().len(), 1, "the item loads");
     let d = set.link();
     assert_eq!(
-        found(&d, "NoEffect", ITEM),
+        found(&d, "core/no_effect", ITEM),
         [(
             Severity::Info,
             "minecraft:item/components/minecraft:tags".to_owned()
@@ -178,12 +182,12 @@ fn lk06_trim_content_in_an_old_world_has_no_effect() {
         all_at(&d, LOOT),
         [
             (
-                "NoEffect",
+                "core/no_effect",
                 Severity::Info,
                 "pools/0/entries/0/functions/0".to_owned()
             ),
             (
-                "NoEffect",
+                "core/no_effect",
                 Severity::Info,
                 "pools/0/entries/1/functions/0".to_owned()
             ),

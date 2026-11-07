@@ -22,13 +22,13 @@ normalized = "shared_lib.js"
 resolution = "not_found"
 
 [[diagnostics]]
-code = "ScriptImportNotFound"
+code = "core/script_import_not_found"
 severity = "info"
 text = "ReferenceError: Import [shared_lib.js] not found."
 file = "scripts/main.js"
 
 [[diagnostics]]
-code = "ScriptImportNotFound"
+code = "core/script_import_not_found"
 severity = "info"
 text = "ReferenceError: Import [shared_lib.js] not found."
 file = "scripts/main.js"

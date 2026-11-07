@@ -1,6 +1,6 @@
 [
   {
-    "code": "MissingRequiredField",
+    "code": "crafting_catalog/no_catalog_payload",
     "severity": "error",
     "text": "The crafting item catalog needs to have an object minecraft:crafting_items_catalog"
   }

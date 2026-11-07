@@ -2,7 +2,7 @@
 //! `rc34`–`rc41` are in `molang.rs`, the stack rows `rc22`–`rc26` in `stack.rs`). A resource
 //! pack at `min_engine_version` 1.21.100 unless the row says otherwise.
 
-use bedrock_addon::diagnostic::Severity;
+use bedrock_addon::diagnostic::{Kind, Severity};
 use bedrock_addon::document::{Content, Document, Rejected};
 use bedrock_addon::families::render_controller::{
     BonePattern, RenderController, RenderControllerArrays, RenderControllerFile,
@@ -131,7 +131,7 @@ fn rc04_no_textures_drops_the_controller_and_keeps_its_sibling() {
     let document = loaded(parse(&text, &rp(1, 21, 100)));
     expect_at(
         document.diagnostics(),
-        "MissingRequiredField",
+        "render_controller/must_contain_textures",
         Severity::Error,
         "Render controller must contain textures.",
         "render_controllers/controller.render.test/textures",
@@ -147,7 +147,7 @@ fn rc05_below_floor() {
     let d = rejected(parse(&with("").replace("1.8.0", "1.7.0"), &rp(1, 21, 100)));
     expect(
         &d,
-        "UnsupportedVersion",
+        "core/version_below_min",
         Severity::Error,
         "Version 1.7.0 below min required version (1.8.0)",
     );
@@ -161,7 +161,7 @@ fn rc06_missing_version() {
     let d = rejected(parse(&text, &rp(1, 21, 100)));
     expect(
         &d,
-        "MissingFormatVersion",
+        "render_controller/required_child",
         Severity::Error,
         "Required child format_version not found",
     );
@@ -172,7 +172,7 @@ fn rc06_missing_render_controllers() {
     let d = rejected(parse(r#"{"format_version": "1.8.0"}"#, &rp(1, 21, 100)));
     expect(
         &d,
-        "MissingRequiredField",
+        "core/required_child",
         Severity::Error,
         "Required child render_controllers not found",
     );
@@ -180,7 +180,7 @@ fn rc06_missing_render_controllers() {
     let d = rejected(parse(&file(""), &rp(1, 21, 100)));
     expect(
         &d,
-        "MissingRequiredField",
+        "core/required_child",
         Severity::Error,
         r"Required child controller\.render\.[a-zA-Z0-9_.:-]+ not found",
     );
@@ -191,7 +191,12 @@ fn rc07_bad_version() {
     for written in ["1.8", "[1, 8, 0]", "\"beta\"", "\"abc\"", "\"*\"", "null"] {
         let text = with("").replace("\"1.8.0\"", written);
         let d = rejected(parse(&text, &rp(1, 21, 100)));
-        expect_prefix(&d, "UnsupportedVersion", Severity::Error, TYPE_ERROR);
+        expect_prefix(
+            &d,
+            "render_controller/unknown_option_type",
+            Severity::Error,
+            TYPE_ERROR,
+        );
         assert_eq!(d.len(), 1, "{written}: {:?}", lines(&d));
     }
 }
@@ -202,7 +207,7 @@ fn rc08_above_engine_loads_with_an_info_deviation() {
     clean(document.diagnostics());
     let info = find(
         document.diagnostics(),
-        "FormatVersionAboveEngine",
+        "core/format_version_above_engine",
         Severity::Info,
     )
     .unwrap();
@@ -214,7 +219,7 @@ fn rc08_above_engine_loads_with_an_info_deviation() {
     assert_eq!(
         count(
             document.diagnostics(),
-            "FormatVersionAboveEngine",
+            "core/format_version_above_engine",
             Severity::Info
         ),
         0
@@ -229,7 +234,7 @@ fn rc09_above_the_games_maximum_version() {
     ));
     expect(
         &d,
-        "UnsupportedVersion",
+        "render_controller/above_max_version",
         Severity::Error,
         "Version 65535.0.1 greater than max allowed version (65535.0.0)",
     );
@@ -249,7 +254,7 @@ fn rc08_prerelease_is_an_ordinary_version() {
     assert!(
         find(
             document.diagnostics(),
-            "PrereleaseFormatVersion",
+            "core/prerelease_format_version",
             Severity::Info
         )
         .is_some()
@@ -261,7 +266,7 @@ fn rc08_prerelease_is_an_ordinary_version() {
     ));
     expect_prefix(
         &d,
-        "UnsupportedVersion",
+        "core/version_below_min",
         Severity::Error,
         "Version 1.8.0-beta.1 below",
     );
@@ -278,7 +283,7 @@ fn rc10_unknown_member_skips_the_whole_file_deviation() {
     let d = rejected(parse(&text, &rp(1, 21, 100)));
     expect_at(
         &d,
-        "UnrecognizedField",
+        "core/child_not_valid",
         Severity::Error,
         "child 'is_invisible_color' not valid here.",
         "render_controllers/controller.render.test/is_invisible_color",
@@ -288,7 +293,7 @@ fn rc10_unknown_member_skips_the_whole_file_deviation() {
     let d = rejected(parse(&text, &rp(1, 21, 100)));
     expect(
         &d,
-        "UnrecognizedField",
+        "core/child_not_valid",
         Severity::Error,
         "child 'extra' not valid here.",
     );
@@ -308,7 +313,7 @@ fn rc10_a_key_that_is_no_controller_name_is_unknown() {
         let d = rejected(parse(&text, &rp(1, 21, 100)));
         expect(
             &d,
-            "UnrecognizedField",
+            "core/child_not_valid",
             Severity::Error,
             &format!("child '{key}' not valid here."),
         );
@@ -327,7 +332,7 @@ fn rc10_a_member_that_failed_is_not_reported_missing_too() {
     // The required check of a node runs only when all of its members validated.
     let text = file(r#""controller.render.test": {"geometry": 1, "textures": ["t"]}"#);
     let d = rejected(parse(&text, &rp(1, 21, 100)));
-    expect_prefix(&d, "InvalidType", Severity::Error, TYPE_ERROR);
+    expect_prefix(&d, "core/unknown_child_option", Severity::Error, TYPE_ERROR);
     assert_eq!(d.len(), 1, "{:?}", lines(&d));
     // Nor is a required member next to an unknown one.
     let text = file(r#""controller.render.test": {"nope": 1, "textures": ["t"]}"#);
@@ -343,7 +348,7 @@ fn rc10_missing_geometry_skips_the_file() {
     let d = rejected(parse(&text, &rp(1, 21, 100)));
     expect_at(
         &d,
-        "MissingRequiredField",
+        "core/required_child",
         Severity::Error,
         "Required child geometry not found",
         "render_controllers/controller.render.test",
@@ -379,7 +384,7 @@ fn rc10_wrong_types_are_type_errors() {
         ));
         let d = rejected(parse(&text, &rp(1, 21, 100)));
         assert!(
-            d.iter().any(|f| f.code.name() == "InvalidType"
+            d.iter().any(|f| f.code.id() == "core/unknown_child_option"
                 && f.severity == Severity::Error
                 && f.code.to_string().starts_with(TYPE_ERROR)),
             "{member}: {:?}",
@@ -393,7 +398,7 @@ fn rc10_wrong_types_are_type_errors() {
         file(r#""controller.render.test": []"#),
     ] {
         let d = rejected(parse(&text, &rp(1, 21, 100)));
-        expect_prefix(&d, "InvalidType", Severity::Error, TYPE_ERROR);
+        expect_prefix(&d, "core/unknown_child_option", Severity::Error, TYPE_ERROR);
     }
 }
 
@@ -402,7 +407,7 @@ fn rc11_filter_lighting_false() {
     let d = rejected(parse(&with(r#""filter_lighting": false"#), &rp(1, 21, 100)));
     expect_at(
         &d,
-        "InvalidValue",
+        "core/value_not_allowed",
         Severity::Error,
         "Value 'false' not allowed",
         "render_controllers/controller.render.test/filter_lighting",
@@ -420,7 +425,7 @@ fn rc12_uv_anim_needs_both_members() {
     ));
     expect(
         &d,
-        "MissingRequiredField",
+        "core/required_child",
         Severity::Error,
         "Required child scale not found",
     );
@@ -430,7 +435,7 @@ fn rc12_uv_anim_needs_both_members() {
     ));
     expect(
         &d,
-        "MissingRequiredField",
+        "core/required_child",
         Severity::Error,
         "Required child offset not found",
     );
@@ -444,7 +449,7 @@ fn rc13_uv_anim_arrays_have_exactly_two_elements() {
     ));
     expect_at(
         &d,
-        "InvalidValue",
+        "core/array_too_large",
         Severity::Error,
         "Array too large (3 > 2)",
         "render_controllers/controller.render.test/uv_anim/offset",
@@ -455,7 +460,7 @@ fn rc13_uv_anim_arrays_have_exactly_two_elements() {
     ));
     expect_at(
         &d,
-        "InvalidValue",
+        "core/array_too_small",
         Severity::Error,
         "Array too small (1 < 2)",
         "render_controllers/controller.render.test/uv_anim/scale",
@@ -478,7 +483,7 @@ fn rc14_bone_pattern_hyphen() {
     let d = rejected(parse(&text, &rp(1, 21, 100)));
     expect_at(
         &d,
-        "UnrecognizedField",
+        "core/child_not_valid",
         Severity::Error,
         "child 'left-arm' not valid here.",
         "render_controllers/controller.render.test/materials/0/left-arm",
@@ -490,7 +495,7 @@ fn rc14_bone_pattern_hyphen() {
     ));
     expect(
         &d,
-        "UnrecognizedField",
+        "core/child_not_valid",
         Severity::Error,
         "child 'left arm' not valid here.",
     );
@@ -537,12 +542,12 @@ fn rc16_apostrophe_quirk() {
     let d = rejected(parse(text, &rp(1, 21, 100)));
     expect_at(
         &d,
-        "UnrecognizedField",
+        "core/child_not_valid",
         Severity::Error,
         "child 'Geometry' not valid here.",
         "render_controllers/controller.render.a/Geometry",
     );
-    let hint = find(&d, "CaseFoldingDisabled", Severity::Info).unwrap();
+    let hint = find(&d, "core/case_folding_disabled_at_line", Severity::Info).unwrap();
     assert_eq!(
         hint.code.to_string(),
         "an apostrophe at line 3 disabled case folding"
@@ -555,7 +560,10 @@ fn rc16_apostrophe_quirk() {
     // apostrophe has no hint.
     loaded(parse(&text.replace("bob's", "bobs"), &rp(1, 21, 100)));
     let d = rejected(parse(&with(r#""nope": 1"#), &rp(1, 21, 100)));
-    assert!(find(&d, "CaseFoldingDisabled", Severity::Info).is_none());
+    assert!(
+        d.iter()
+            .all(|f| !(f.code.kind() == Kind::Lint && f.severity == Severity::Info))
+    );
 }
 
 #[test]
@@ -566,7 +574,7 @@ fn rc28_comments_and_the_vanilla_apostrophe() {
     assert!(
         find(
             document.diagnostics(),
-            "CaseFoldingDisabled",
+            "core/case_folding_disabled_at_line_unresolvable",
             Severity::Info
         )
         .is_none()
@@ -753,7 +761,7 @@ fn rc19_part_visibility_types() {
         &with(r#""part_visibility": [{"a": {}}]"#),
         &rp(1, 21, 100),
     ));
-    expect_prefix(&d, "InvalidType", Severity::Error, TYPE_ERROR);
+    expect_prefix(&d, "core/unknown_child_option", Severity::Error, TYPE_ERROR);
 }
 
 #[test]
@@ -803,7 +811,7 @@ fn rc27_invalid_json() {
     ));
     expect_prefix(
         &d,
-        "MalformedInput",
+        "render_controller/error_parsing",
         Severity::Error,
         "error parsing render_controllers/x.json:\n",
     );
@@ -815,7 +823,7 @@ fn rc33_empty_file() {
     let d = rejected(parse("", &rp(1, 21, 100)));
     expect_prefix(
         &d,
-        "MalformedInput",
+        "render_controller/error_parsing",
         Severity::Error,
         "error parsing render_controllers/x.json:\n",
     );
@@ -829,7 +837,7 @@ fn rc29_undeclared_array_deviation() {
     let document = loaded(parse(&text, &rp(1, 21, 100)));
     let warning = find(
         document.diagnostics(),
-        "UnresolvedReference",
+        "core/unresolved_reference",
         Severity::Info,
     )
     .unwrap();
@@ -844,7 +852,7 @@ fn rc29_undeclared_array_deviation() {
     assert_eq!(
         count(
             document.diagnostics(),
-            "UnresolvedReference",
+            "core/unresolved_reference",
             Severity::Info
         ),
         1
@@ -861,7 +869,7 @@ fn rc29_undeclared_array_deviation() {
     let at: Vec<String> = document
         .diagnostics()
         .iter()
-        .filter(|f| f.code.name() == "UnresolvedReference")
+        .filter(|f| f.code.id() == "core/unresolved_reference")
         .map(|f| f.location.json_path.to_string())
         .collect();
     assert_eq!(
@@ -900,7 +908,7 @@ fn rc31_empty_arrays_skip_the_whole_file() {
         let d = rejected(parse(&file, &rp(1, 21, 100)));
         expect_at(
             &d,
-            "InvalidValue",
+            "core/invalid_value_worded",
             Severity::Error,
             text,
             &format!("render_controllers/controller.render.test/{at}"),
@@ -914,7 +922,7 @@ fn rc31_empty_arrays_skip_the_whole_file() {
         let d = rejected(parse(&with(member), &rp(1, 21, 100)));
         expect(
             &d,
-            "MissingRequiredField",
+            "core/required_child",
             Severity::Error,
             &format!("Required child {pattern} not found"),
         );
@@ -1119,7 +1127,10 @@ fn a_name_that_kept_capitals_is_reported_as_unresolvable() {
     let warnings: Vec<(String, String)> = document
         .diagnostics()
         .iter()
-        .filter(|f| f.code.name() == "CaseFoldingDisabled" && f.severity == Severity::Info)
+        .filter(|f| {
+            f.code.id() == "core/case_folding_disabled_at_line_unresolvable"
+                && f.severity == Severity::Info
+        })
         .map(|f| (f.location.json_path.to_string(), f.code.to_string()))
         .collect();
     let text = "an apostrophe at line 2 disabled case folding; the game resolves no reference to this name";
@@ -1143,7 +1154,7 @@ fn a_name_that_kept_capitals_is_reported_as_unresolvable() {
     let document = loaded(parse(&escaped, &rp(1, 21, 100)));
     let warning = find(
         document.diagnostics(),
-        "CaseFoldingDisabled",
+        "core/case_folding_disabled_unresolvable",
         Severity::Info,
     )
     .unwrap();
@@ -1159,7 +1170,7 @@ fn a_name_that_kept_capitals_is_reported_as_unresolvable() {
     assert!(
         find(
             document.diagnostics(),
-            "CaseFoldingDisabled",
+            "core/case_folding_disabled_at_line_unresolvable",
             Severity::Info
         )
         .is_none()
@@ -1204,7 +1215,7 @@ fn an_array_reference_matches_its_declaration_ignoring_case() {
     let unresolved: Vec<String> = document
         .diagnostics()
         .iter()
-        .filter(|f| f.code.name() == "UnresolvedReference")
+        .filter(|f| f.code.id() == "core/unresolved_reference")
         .map(ToString::to_string)
         .collect();
     assert_eq!(unresolved.len(), 1, "{unresolved:?}");
@@ -1223,11 +1234,11 @@ fn rc29_a_dropped_controller_raises_no_array_finding() {
     ));
     let document = loaded(parse(&text, &rp(1, 21, 100)));
     assert_eq!(
-        count(
-            document.diagnostics(),
-            "UnresolvedReference",
-            Severity::Info
-        ),
+        document
+            .diagnostics()
+            .iter()
+            .filter(|f| f.code.kind() == Kind::UnresolvedReference && f.severity == Severity::Info)
+            .count(),
         0,
         "{:?}",
         lines(document.diagnostics())
@@ -1235,7 +1246,7 @@ fn rc29_a_dropped_controller_raises_no_array_finding() {
     assert_eq!(
         count(
             document.diagnostics(),
-            "MissingRequiredField",
+            "render_controller/must_contain_textures",
             Severity::Error
         ),
         1
@@ -1367,7 +1378,7 @@ fn a_molang_number_beyond_f32_is_read_as_the_largest_finite_float_deviation() {
     let warnings: Vec<String> = document
         .diagnostics()
         .iter()
-        .filter(|f| f.code.name() == "InvalidValue" && f.severity == Severity::Info)
+        .filter(|f| f.code.id() == "core/invalid_value" && f.severity == Severity::Info)
         .map(|f| {
             let span = f.location.span.expect("the number's token");
             let (from, to) = (span.offset as usize, (span.offset + span.len) as usize);
@@ -1386,7 +1397,12 @@ fn a_molang_number_beyond_f32_is_read_as_the_largest_finite_float_deviation() {
     round_trip(&document, |text| parse(text, &rp(1, 21, 100)));
     let written = document.to_json().unwrap();
     let again = loaded(parse(&written, &rp(1, 21, 100)));
-    assert!(find(again.diagnostics(), "InvalidValue", Severity::Info).is_none());
+    assert!(
+        again
+            .diagnostics()
+            .iter()
+            .all(|f| !(f.code.kind() == Kind::InvalidValue && f.severity == Severity::Info))
+    );
 }
 
 /// The schema takes a number as a `materials` value and the controller parser reads it
@@ -1404,10 +1420,10 @@ fn a_materials_number_is_told_at_the_member_as_the_file_spells_it() {
     let told: Vec<(String, Severity, String)> = document
         .diagnostics()
         .iter()
-        .filter(|f| f.code.name() == "InvalidType")
+        .filter(|f| f.code.id() == "core/invalid_type")
         .map(|f| {
             (
-                f.code.name().to_owned(),
+                f.code.id().to_owned(),
                 f.severity,
                 f.location.json_path.to_string(),
             )
@@ -1416,7 +1432,7 @@ fn a_materials_number_is_told_at_the_member_as_the_file_spells_it() {
     assert_eq!(
         told,
         [(
-            "InvalidType".to_owned(),
+            "core/invalid_type".to_owned(),
             Severity::Info,
             "render_controllers/controller.render.test/materials/1/bodyLayer_*".to_owned()
         )]
@@ -1437,22 +1453,22 @@ fn rc_v1_two_schema_errors_are_told_in_sorted_key_order() {
     let d = rejected(parse(&text, &rp(1, 21, 100)));
     let errors: Vec<(&str, String)> = d
         .iter()
-        .filter(|f| f.severity >= Severity::Error && f.code.name() != "DocumentRejected")
-        .map(|f| (f.code.name(), f.location.json_path.to_string()))
+        .filter(|f| f.severity >= Severity::Error && f.code.id() != "core/document_rejected")
+        .map(|f| (f.code.id(), f.location.json_path.to_string()))
         .collect();
     assert_eq!(
         errors,
         [
             (
-                "UnrecognizedField",
+                "core/child_not_valid",
                 "render_controllers/controller.render.ant/aaa".to_owned()
             ),
             (
-                "InvalidType",
+                "core/unknown_child_option",
                 "render_controllers/controller.render.ant/rebuild_animation_matrices".to_owned()
             ),
             (
-                "UnrecognizedField",
+                "core/child_not_valid",
                 "render_controllers/controller.render.ant/zzz".to_owned()
             ),
         ],
@@ -1461,7 +1477,7 @@ fn rc_v1_two_schema_errors_are_told_in_sorted_key_order() {
     );
     expect_at(
         &d,
-        "UnrecognizedField",
+        "core/child_not_valid",
         Severity::Error,
         "child 'aaa' not valid here.",
         "render_controllers/controller.render.ant/aaa",

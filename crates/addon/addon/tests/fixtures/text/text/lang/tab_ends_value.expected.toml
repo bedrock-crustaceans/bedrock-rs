@@ -4,5 +4,5 @@
 "a" = "b"
 
 [[diagnostics]]
-code = "IgnoredMember"
+code = "core/ignored_member"
 severity = "info"

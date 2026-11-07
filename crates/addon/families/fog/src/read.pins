@@ -1,139 +1,139 @@
 == {"description": {"identifier": "a:b"}}
 Some(FogSettings { description: FogDescription { identifier: Id<fog>("a:b"), extra: UnknownMembers({}) }, distance: None, volumetric: None, extra: UnknownMembers({}) })
 == {"description": {"identifier": "a:b", "x": 1}, "y": [1, {"z": null}]}
-Info|minecraft:fog_settings/description/x|UnrecognizedField|unrecognized field|Some((43, 1))|kept=false
-Info|minecraft:fog_settings/y|UnrecognizedField|unrecognized field|Some((52, 16))|kept=false
+Info|minecraft:fog_settings/description/x|core/unrecognized_field|unrecognized field|Some((43, 1))|kept=false
+Info|minecraft:fog_settings/y|core/unrecognized_field|unrecognized field|Some((52, 16))|kept=false
 Some(FogSettings { description: FogDescription { identifier: Id<fog>("a:b"), extra: UnknownMembers({"x": 1}) }, distance: None, volumetric: None, extra: UnknownMembers({"y": [1, {"z": null}]}) })
 == {"description": {}}
-Error|minecraft:fog_settings/description|MissingRequiredField|missing required field|Some((16, 2))|kept=false
+Error|minecraft:fog_settings/description|core/missing_required_field|missing required field|Some((16, 2))|kept=false
 None
 == {}
-Error|minecraft:fog_settings|MissingRequiredField|missing required field|Some((0, 2))|kept=false
+Error|minecraft:fog_settings|core/missing_required_field|missing required field|Some((0, 2))|kept=false
 None
 == []
-Error|minecraft:fog_settings|InvalidType|wrong JSON type|Some((0, 2))|kept=false
+Error|minecraft:fog_settings|core/invalid_type|wrong JSON type|Some((0, 2))|kept=false
 None
 == 5
-Error|minecraft:fog_settings|InvalidType|wrong JSON type|Some((0, 1))|kept=false
+Error|minecraft:fog_settings|core/invalid_type|wrong JSON type|Some((0, 1))|kept=false
 None
 == {"description": {"identifier": 5}}
-Error|minecraft:fog_settings/description/identifier|InvalidType|wrong JSON type|Some((31, 1))|kept=false
+Error|minecraft:fog_settings/description/identifier|core/invalid_type|wrong JSON type|Some((31, 1))|kept=false
 None
 == {"description": [], "distance": {}}
-Error|minecraft:fog_settings/description|InvalidType|wrong JSON type|Some((16, 2))|kept=false
+Error|minecraft:fog_settings/description|core/invalid_type|wrong JSON type|Some((16, 2))|kept=false
 None
 == {"description": {"identifier": "a:b"}, "description": {"identifier": "c:d"}}
 Some(FogSettings { description: FogDescription { identifier: Id<fog>("c:d"), extra: UnknownMembers({}) }, distance: None, volumetric: None, extra: UnknownMembers({}) })
 == {"description": {"identifier": "a:b", "identifier": 1}}
-Error|minecraft:fog_settings/description/identifier|InvalidType|wrong JSON type|Some((52, 1))|kept=false
+Error|minecraft:fog_settings/description/identifier|core/invalid_type|wrong JSON type|Some((52, 1))|kept=false
 None
 == {"description": {"identifier": "a\u0062"}} // a comment
 Some(FogSettings { description: FogDescription { identifier: Id<fog>("ab"), extra: UnknownMembers({}) }, distance: None, volumetric: None, extra: UnknownMembers({}) })
 == {"description": {"identifier": "a:b"}, "distance": {"air": {"fog_start": 1, "fog_end": 2.5, "render_distance_type": "fixed", "fog_color": "#aabbcc"}}}
 Some(FogSettings { description: FogDescription { identifier: Id<fog>("a:b"), extra: UnknownMembers({}) }, distance: Some(FogDistanceCollection { air: Some(FogDistanceSetting { fog_start: Some(1.0), fog_end: Some(2.5), render_distance_type: Some(Fixed), fog_color: Some(Hex("#aabbcc")), extra: UnknownMembers({}) }), weather: None, water: None, lava: None, lava_resistance: None, powder_snow: None, extra: UnknownMembers({}) }), volumetric: None, extra: UnknownMembers({}) })
 == {"description": {"identifier": "a:b"}, "distance": {"air": {"fog_start": "1", "fog_end": -1, "render_distance_type": "far", "fog_color": "#abc"}}}
-Error|minecraft:fog_settings/distance/air/fog_start|InvalidType|wrong JSON type|Some((73, 3))|kept=false
-Error|minecraft:fog_settings/distance/air/fog_end|InvalidValue|invalid value|Some((89, 2))|kept=false
-Error|minecraft:fog_settings/distance/air/render_distance_type|InvalidEnumValue|invalid enum value|Some((117, 5))|kept=false
-Error|minecraft:fog_settings/distance/air/fog_color|InvalidValue|invalid value|Some((137, 6))|kept=false
+Error|minecraft:fog_settings/distance/air/fog_start|core/invalid_type|wrong JSON type|Some((73, 3))|kept=false
+Error|minecraft:fog_settings/distance/air/fog_end|core/invalid_value|invalid value|Some((89, 2))|kept=false
+Error|minecraft:fog_settings/distance/air/render_distance_type|core/invalid_enum_value|invalid enum value|Some((117, 5))|kept=false
+Error|minecraft:fog_settings/distance/air/fog_color|core/invalid_value|invalid value|Some((137, 6))|kept=false
 None
 == {"description": {"identifier": "a:b"}, "distance": {"air": {"fog_start": true, "fog_end": null, "render_distance_type": 3, "fog_color": 7}}}
-Error|minecraft:fog_settings/distance/air/fog_start|InvalidType|wrong JSON type|Some((73, 4))|kept=false
-Error|minecraft:fog_settings/distance/air/fog_end|InvalidType|wrong JSON type|Some((90, 4))|kept=false
-Error|minecraft:fog_settings/distance/air/render_distance_type|InvalidType|wrong JSON type|Some((120, 1))|kept=false
-Error|minecraft:fog_settings/distance/air/fog_color|InvalidType|wrong JSON type|Some((136, 1))|kept=false
+Error|minecraft:fog_settings/distance/air/fog_start|core/invalid_type|wrong JSON type|Some((73, 4))|kept=false
+Error|minecraft:fog_settings/distance/air/fog_end|core/invalid_type|wrong JSON type|Some((90, 4))|kept=false
+Error|minecraft:fog_settings/distance/air/render_distance_type|core/invalid_type|wrong JSON type|Some((120, 1))|kept=false
+Error|minecraft:fog_settings/distance/air/fog_color|core/invalid_type|wrong JSON type|Some((136, 1))|kept=false
 None
 == {"description": {"identifier": "a:b"}, "distance": {"air": {"fog_color": [1, 300, -4]}}}
-Info|minecraft:fog_settings/distance/air/fog_color/1|ClampedValue|value clamped into its range|Some((77, 3))|kept=false
-Info|minecraft:fog_settings/distance/air/fog_color/2|ClampedValue|value clamped into its range|Some((82, 2))|kept=false
+Info|minecraft:fog_settings/distance/air/fog_color/1|core/clamped_value|value clamped into its range|Some((77, 3))|kept=false
+Info|minecraft:fog_settings/distance/air/fog_color/2|core/clamped_value|value clamped into its range|Some((82, 2))|kept=false
 Some(FogSettings { description: FogDescription { identifier: Id<fog>("a:b"), extra: UnknownMembers({}) }, distance: Some(FogDistanceCollection { air: Some(FogDistanceSetting { fog_start: None, fog_end: None, render_distance_type: None, fog_color: Some(Array([1, 255, 0])), extra: UnknownMembers({}) }), weather: None, water: None, lava: None, lava_resistance: None, powder_snow: None, extra: UnknownMembers({}) }), volumetric: None, extra: UnknownMembers({}) })
 == {"description": {"identifier": "a:b"}, "distance": {"air": {"fog_color": [1.0, 2, 3]}}}
-Error|minecraft:fog_settings/distance/air/fog_color/0|InvalidValue|invalid value|Some((74, 3))|kept=false
+Error|minecraft:fog_settings/distance/air/fog_color/0|core/invalid_value|invalid value|Some((74, 3))|kept=false
 None
 == {"description": {"identifier": "a:b"}, "distance": {"air": {"fog_color": [1, 2]}}}
-Error|minecraft:fog_settings/distance/air/fog_color|InvalidValue|invalid value|Some((73, 6))|kept=false
+Error|minecraft:fog_settings/distance/air/fog_color|core/invalid_value|invalid value|Some((73, 6))|kept=false
 None
 == {"description": {"identifier": "a:b"}, "distance": {"air": {"fog_color": [1, 2, 3, 4], "q": 1}}}
-Error|minecraft:fog_settings/distance/air/fog_color|InvalidValue|invalid value|Some((73, 12))|kept=false
-Info|minecraft:fog_settings/distance/air/q|UnrecognizedField|unrecognized field|Some((92, 1))|kept=false
+Error|minecraft:fog_settings/distance/air/fog_color|core/invalid_value|invalid value|Some((73, 12))|kept=false
+Info|minecraft:fog_settings/distance/air/q|core/unrecognized_field|unrecognized field|Some((92, 1))|kept=false
 None
 == {"description": {"identifier": "a:b"}, "distance": {"air": {"fog_color": ["1", 2, 1e2]}}}
-Error|minecraft:fog_settings/distance/air/fog_color/0|InvalidValue|invalid value|Some((74, 3))|kept=false
-Error|minecraft:fog_settings/distance/air/fog_color/2|InvalidValue|invalid value|Some((82, 3))|kept=false
+Error|minecraft:fog_settings/distance/air/fog_color/0|core/invalid_value|invalid value|Some((74, 3))|kept=false
+Error|minecraft:fog_settings/distance/air/fog_color/2|core/invalid_value|invalid value|Some((82, 3))|kept=false
 None
 == {"description": {"identifier": "a:b"}, "distance": {"air": {"fog_start": 1e39, "fog_end": 3.4028235e38}}}
-Error|minecraft:fog_settings/distance/air/fog_start|InvalidType|wrong JSON type|Some((73, 4))|kept=false
+Error|minecraft:fog_settings/distance/air/fog_start|core/invalid_type|wrong JSON type|Some((73, 4))|kept=false
 None
 == {"description": {"identifier": "a:b"}, "distance": {"weather": {}, "lava": {"fog_start": 0}, "lava_resistance": {"fog_end": 0}, "powder_snow": {"render_distance_type": "render"}, "other": {}}}
-Info|minecraft:fog_settings/distance/other|UnrecognizedField|unrecognized field|Some((188, 2))|kept=false
+Info|minecraft:fog_settings/distance/other|core/unrecognized_field|unrecognized field|Some((188, 2))|kept=false
 Some(FogSettings { description: FogDescription { identifier: Id<fog>("a:b"), extra: UnknownMembers({}) }, distance: Some(FogDistanceCollection { air: None, weather: Some(FogDistanceSetting { fog_start: None, fog_end: None, render_distance_type: None, fog_color: None, extra: UnknownMembers({}) }), water: None, lava: Some(FogDistanceSetting { fog_start: Some(0.0), fog_end: None, render_distance_type: None, fog_color: None, extra: UnknownMembers({}) }), lava_resistance: Some(FogDistanceSetting { fog_start: None, fog_end: Some(0.0), render_distance_type: None, fog_color: None, extra: UnknownMembers({}) }), powder_snow: Some(FogDistanceSetting { fog_start: None, fog_end: None, render_distance_type: Some(Render), fog_color: None, extra: UnknownMembers({}) }), extra: UnknownMembers({"other": {}}) }), volumetric: None, extra: UnknownMembers({}) })
 == {"description": {"identifier": "a:b"}, "distance": {"water": {"fog_start": 1, "transition_fog": {"init_fog": {"fog_start": 2}, "min_percent": 0.5, "mid_seconds": 1, "mid_percent": 2, "max_seconds": -1, "w": 0}}}}
-Error|minecraft:fog_settings/distance/water/transition_fog/mid_percent|InvalidValue|invalid value|Some((180, 1))|kept=false
-Error|minecraft:fog_settings/distance/water/transition_fog/max_seconds|InvalidValue|invalid value|Some((198, 2))|kept=false
-Info|minecraft:fog_settings/distance/water/transition_fog/w|UnrecognizedField|unrecognized field|Some((207, 1))|kept=false
+Error|minecraft:fog_settings/distance/water/transition_fog/mid_percent|core/invalid_value|invalid value|Some((180, 1))|kept=false
+Error|minecraft:fog_settings/distance/water/transition_fog/max_seconds|core/invalid_value|invalid value|Some((198, 2))|kept=false
+Info|minecraft:fog_settings/distance/water/transition_fog/w|core/unrecognized_field|unrecognized field|Some((207, 1))|kept=false
 None
 == {"description": {"identifier": "a:b"}, "distance": {"water": {"transition_fog": 5}}}
-Error|minecraft:fog_settings/distance/water/transition_fog|InvalidType|wrong JSON type|Some((80, 1))|kept=false
+Error|minecraft:fog_settings/distance/water/transition_fog|core/invalid_type|wrong JSON type|Some((80, 1))|kept=false
 None
 == {"description": {"identifier": "a:b"}, "distance": {"water": {"transition_fog": {"init_fog": []}}}}
-Error|minecraft:fog_settings/distance/water/transition_fog/init_fog|InvalidType|wrong JSON type|Some((93, 2))|kept=false
+Error|minecraft:fog_settings/distance/water/transition_fog/init_fog|core/invalid_type|wrong JSON type|Some((93, 2))|kept=false
 None
 == {"description": {"identifier": "a:b"}, "distance": []}
-Error|minecraft:fog_settings/distance|InvalidType|wrong JSON type|Some((51, 2))|kept=false
+Error|minecraft:fog_settings/distance|core/invalid_type|wrong JSON type|Some((51, 2))|kept=false
 None
 == {"description": {"identifier": "a:b"}, "volumetric": {"density": {"air": {"max_density": 0.5, "uniform": true, "zero_density_height": 0, "max_density_height": 300}}}}
 Some(FogSettings { description: FogDescription { identifier: Id<fog>("a:b"), extra: UnknownMembers({}) }, distance: None, volumetric: Some(FogVolumetricCollection { density: Some(FogVolumetricDensityCollection { air: Some(FogVolumetricDensitySetting { max_density: Some(Single(0.5)), uniform: Some(true), zero_density_height: Some(Single(0.0)), max_density_height: Some(Single(300.0)), extra: UnknownMembers({}) }), weather: None, water: None, lava: None, lava_resistance: None, extra: UnknownMembers({}) }), media_coefficients: None, henyey_greenstein_g: None, extra: UnknownMembers({}) }), extra: UnknownMembers({}) })
 == {"description": {"identifier": "a:b"}, "volumetric": {"density": {"air": {"max_density": 2, "uniform": 1, "zero_density_height": -100, "max_density_height": "x"}}}}
-Error|minecraft:fog_settings/volumetric/density/air/max_density|InvalidValue|invalid value|Some((89, 1))|kept=false
-Error|minecraft:fog_settings/volumetric/density/air/uniform|InvalidType|wrong JSON type|Some((103, 1))|kept=false
-Error|minecraft:fog_settings/volumetric/density/air/zero_density_height|InvalidValue|invalid value|Some((129, 4))|kept=false
-Error|minecraft:fog_settings/volumetric/density/air/max_density_height|InvalidType|wrong JSON type|Some((157, 3))|kept=false
+Error|minecraft:fog_settings/volumetric/density/air/max_density|core/invalid_value|invalid value|Some((89, 1))|kept=false
+Error|minecraft:fog_settings/volumetric/density/air/uniform|core/invalid_type|wrong JSON type|Some((103, 1))|kept=false
+Error|minecraft:fog_settings/volumetric/density/air/zero_density_height|core/invalid_value|invalid value|Some((129, 4))|kept=false
+Error|minecraft:fog_settings/volumetric/density/air/max_density_height|core/invalid_type|wrong JSON type|Some((157, 3))|kept=false
 None
 == {"description": {"identifier": "a:b"}, "volumetric": {"density": {"weather": {"max_density": {"0": 0.1, "0.5": 0.2, "1": 0.3}}, "water": {}, "lava": {}, "lava_resistance": {}, "fire": {}}}}
-Info|minecraft:fog_settings/volumetric/density/fire|UnrecognizedField|unrecognized field|Some((184, 2))|kept=false
+Info|minecraft:fog_settings/volumetric/density/fire|core/unrecognized_field|unrecognized field|Some((184, 2))|kept=false
 Some(FogSettings { description: FogDescription { identifier: Id<fog>("a:b"), extra: UnknownMembers({}) }, distance: None, volumetric: Some(FogVolumetricCollection { density: Some(FogVolumetricDensityCollection { air: None, weather: Some(FogVolumetricDensitySetting { max_density: Some(Keys([Keyframe { time: 0.0, value: 0.1 }, Keyframe { time: 0.5, value: 0.2 }, Keyframe { time: 1.0, value: 0.3 }])), uniform: None, zero_density_height: None, max_density_height: None, extra: UnknownMembers({}) }), water: Some(FogVolumetricDensitySetting { max_density: None, uniform: None, zero_density_height: None, max_density_height: None, extra: UnknownMembers({}) }), lava: Some(FogVolumetricDensitySetting { max_density: None, uniform: None, zero_density_height: None, max_density_height: None, extra: UnknownMembers({}) }), lava_resistance: Some(FogVolumetricDensitySetting { max_density: None, uniform: None, zero_density_height: None, max_density_height: None, extra: UnknownMembers({}) }), extra: UnknownMembers({"fire": {}}) }), media_coefficients: None, henyey_greenstein_g: None, extra: UnknownMembers({}) }), extra: UnknownMembers({}) })
 == {"description": {"identifier": "a:b"}, "volumetric": {"density": {"air": {"max_density": {"0": 0.1, "0.0": 0.2, "-0": 0.3, "x": 0.4, "nan": 0.1, "inf": 0.2, "1e40": 0.3, " 2 ": 0.5}}}}}
-Error|minecraft:fog_settings/volumetric/density/air/max_density/x|InvalidValue|invalid value|Some((128, 3))|kept=false
-Error|minecraft:fog_settings/volumetric/density/air/max_density/nan|InvalidValue|invalid value|Some((140, 3))|kept=false
-Error|minecraft:fog_settings/volumetric/density/air/max_density/inf|InvalidValue|invalid value|Some((152, 3))|kept=false
-Error|minecraft:fog_settings/volumetric/density/air/max_density/1e40|InvalidValue|invalid value|Some((165, 3))|kept=false
-Info|minecraft:fog_settings/volumetric/density/air/max_density/0|DroppedField|field dropped|Some((95, 3))|kept=false
-Info|minecraft:fog_settings/volumetric/density/air/max_density/0.0|DroppedField|field dropped|Some((107, 3))|kept=false
+Error|minecraft:fog_settings/volumetric/density/air/max_density/x|core/invalid_value|invalid value|Some((128, 3))|kept=false
+Error|minecraft:fog_settings/volumetric/density/air/max_density/nan|core/invalid_value|invalid value|Some((140, 3))|kept=false
+Error|minecraft:fog_settings/volumetric/density/air/max_density/inf|core/invalid_value|invalid value|Some((152, 3))|kept=false
+Error|minecraft:fog_settings/volumetric/density/air/max_density/1e40|core/invalid_value|invalid value|Some((165, 3))|kept=false
+Info|minecraft:fog_settings/volumetric/density/air/max_density/0|core/dropped_field|field dropped|Some((95, 3))|kept=false
+Info|minecraft:fog_settings/volumetric/density/air/max_density/0.0|core/dropped_field|field dropped|Some((107, 3))|kept=false
 None
 == {"description": {"identifier": "a:b"}, "volumetric": {"density": {"air": {"max_density": {"0": 2, "1": "a"}}}}}
-Error|minecraft:fog_settings/volumetric/density/air/max_density/0|InvalidValue|invalid value|Some((95, 1))|kept=false
-Error|minecraft:fog_settings/volumetric/density/air/max_density/1|InvalidType|wrong JSON type|Some((103, 3))|kept=false
+Error|minecraft:fog_settings/volumetric/density/air/max_density/0|core/invalid_value|invalid value|Some((95, 1))|kept=false
+Error|minecraft:fog_settings/volumetric/density/air/max_density/1|core/invalid_type|wrong JSON type|Some((103, 3))|kept=false
 None
 == {"description": {"identifier": "a:b"}, "volumetric": {"density": {"air": {"max_density": {}}}}}
 Some(FogSettings { description: FogDescription { identifier: Id<fog>("a:b"), extra: UnknownMembers({}) }, distance: None, volumetric: Some(FogVolumetricCollection { density: Some(FogVolumetricDensityCollection { air: Some(FogVolumetricDensitySetting { max_density: Some(Keys([])), uniform: None, zero_density_height: None, max_density_height: None, extra: UnknownMembers({}) }), weather: None, water: None, lava: None, lava_resistance: None, extra: UnknownMembers({}) }), media_coefficients: None, henyey_greenstein_g: None, extra: UnknownMembers({}) }), extra: UnknownMembers({}) })
 == {"description": {"identifier": "a:b"}, "volumetric": {"media_coefficients": {"air": {"absorption": [0.1, 0.2, 0.3], "scattering": "#000000"}, "water": {"absorption": {"0": [1, 1, 1], "1": "#ffffff"}}, "cloud": {"scattering": [1, 2]}, "fog": {}}}}
-Error|minecraft:fog_settings/volumetric/media_coefficients/cloud/scattering|InvalidValue|invalid value|Some((225, 6))|kept=false
-Info|minecraft:fog_settings/volumetric/media_coefficients/fog|UnrecognizedField|unrecognized field|Some((241, 2))|kept=false
+Error|minecraft:fog_settings/volumetric/media_coefficients/cloud/scattering|core/invalid_value|invalid value|Some((225, 6))|kept=false
+Info|minecraft:fog_settings/volumetric/media_coefficients/fog|core/unrecognized_field|unrecognized field|Some((241, 2))|kept=false
 None
 == {"description": {"identifier": "a:b"}, "volumetric": {"media_coefficients": {"air": {"absorption": ["a", 0.2, null], "scattering": 5, "e": 1}}}}
-Error|minecraft:fog_settings/volumetric/media_coefficients/air/absorption/0|InvalidType|wrong JSON type|Some((100, 3))|kept=false
-Error|minecraft:fog_settings/volumetric/media_coefficients/air/absorption/2|InvalidType|wrong JSON type|Some((110, 4))|kept=false
-Error|minecraft:fog_settings/volumetric/media_coefficients/air/scattering|InvalidType|wrong JSON type|Some((131, 1))|kept=false
-Info|minecraft:fog_settings/volumetric/media_coefficients/air/e|UnrecognizedField|unrecognized field|Some((139, 1))|kept=false
+Error|minecraft:fog_settings/volumetric/media_coefficients/air/absorption/0|core/invalid_type|wrong JSON type|Some((100, 3))|kept=false
+Error|minecraft:fog_settings/volumetric/media_coefficients/air/absorption/2|core/invalid_type|wrong JSON type|Some((110, 4))|kept=false
+Error|minecraft:fog_settings/volumetric/media_coefficients/air/scattering|core/invalid_type|wrong JSON type|Some((131, 1))|kept=false
+Info|minecraft:fog_settings/volumetric/media_coefficients/air/e|core/unrecognized_field|unrecognized field|Some((139, 1))|kept=false
 None
 == {"description": {"identifier": "a:b"}, "volumetric": {"henyey_greenstein_g": {"air": {"henyey_greenstein_g": -0.5}, "water": {"henyey_greenstein_g": {"0": 2, "1": -1}}, "cloud": {}}}}
-Error|minecraft:fog_settings/volumetric/henyey_greenstein_g/water/henyey_greenstein_g/0|InvalidValue|invalid value|Some((155, 1))|kept=false
-Info|minecraft:fog_settings/volumetric/henyey_greenstein_g/cloud|UnrecognizedField|unrecognized field|Some((178, 2))|kept=false
+Error|minecraft:fog_settings/volumetric/henyey_greenstein_g/water/henyey_greenstein_g/0|core/invalid_value|invalid value|Some((155, 1))|kept=false
+Info|minecraft:fog_settings/volumetric/henyey_greenstein_g/cloud|core/unrecognized_field|unrecognized field|Some((178, 2))|kept=false
 None
 == {"description": {"identifier": "a:b"}, "volumetric": {"henyey_greenstein_g": {"air": {"henyey_greenstein_g": true, "k": 1}}}, "volumetric": 5}
-Error|minecraft:fog_settings/volumetric|InvalidType|wrong JSON type|Some((140, 1))|kept=false
+Error|minecraft:fog_settings/volumetric|core/invalid_type|wrong JSON type|Some((140, 1))|kept=false
 None
 == {"description": {"identifier": "a:b"}, "volumetric": {"density": 1, "media_coefficients": [], "henyey_greenstein_g": "x", "v": 1}}
-Error|minecraft:fog_settings/volumetric/density|InvalidType|wrong JSON type|Some((65, 1))|kept=false
-Error|minecraft:fog_settings/volumetric/media_coefficients|InvalidType|wrong JSON type|Some((90, 2))|kept=false
-Error|minecraft:fog_settings/volumetric/henyey_greenstein_g|InvalidType|wrong JSON type|Some((117, 3))|kept=false
-Info|minecraft:fog_settings/volumetric/v|UnrecognizedField|unrecognized field|Some((127, 1))|kept=false
+Error|minecraft:fog_settings/volumetric/density|core/invalid_type|wrong JSON type|Some((65, 1))|kept=false
+Error|minecraft:fog_settings/volumetric/media_coefficients|core/invalid_type|wrong JSON type|Some((90, 2))|kept=false
+Error|minecraft:fog_settings/volumetric/henyey_greenstein_g|core/invalid_type|wrong JSON type|Some((117, 3))|kept=false
+Info|minecraft:fog_settings/volumetric/v|core/unrecognized_field|unrecognized field|Some((127, 1))|kept=false
 None
 == {"distance": {"air": {"fog_start": "x"}}, "description": {"identifier": "a:b"}}
-Error|minecraft:fog_settings/distance/air/fog_start|InvalidType|wrong JSON type|Some((35, 3))|kept=false
+Error|minecraft:fog_settings/distance/air/fog_start|core/invalid_type|wrong JSON type|Some((35, 3))|kept=false
 None
 == {"distance": {"air": {"fog_start": 1}}}
-Error|minecraft:fog_settings|MissingRequiredField|missing required field|Some((0, 39))|kept=false
+Error|minecraft:fog_settings|core/missing_required_field|missing required field|Some((0, 39))|kept=false
 None
 == {
   "description": {
@@ -219,7 +219,7 @@ Some(FogSettings { description: FogDescription { identifier: Id<fog>("minecraft:
   }
 }
 
-Info|minecraft:fog_settings/distance/water/unknown|UnrecognizedField|unrecognized field|Some((222, 1))|kept=false
+Info|minecraft:fog_settings/distance/water/unknown|core/unrecognized_field|unrecognized field|Some((222, 1))|kept=false
 Some(FogSettings { description: FogDescription { identifier: Id<fog>("determinism:fog"), extra: UnknownMembers({}) }, distance: Some(FogDistanceCollection { air: None, weather: None, water: Some(FogWaterDistanceSetting { fog_start: Some(0.0), fog_end: Some(60.0), render_distance_type: Some(Fixed), fog_color: Some(Hex("#44AFF5")), transition_fog: None, extra: UnknownMembers({"unknown": 1}) }), lava: None, lava_resistance: None, powder_snow: None, extra: UnknownMembers({}) }), volumetric: Some(FogVolumetricCollection { density: Some(FogVolumetricDensityCollection { air: Some(FogVolumetricDensitySetting { max_density: Some(Keys([Keyframe { time: 0.0, value: 0.02 }, Keyframe { time: 0.5, value: 0.1 }])), uniform: Some(true), zero_density_height: None, max_density_height: None, extra: UnknownMembers({}) }), weather: None, water: None, lava: None, lava_resistance: None, extra: UnknownMembers({}) }), media_coefficients: None, henyey_greenstein_g: None, extra: UnknownMembers({}) }), extra: UnknownMembers({}) })
 == {
   "description": {
@@ -275,8 +275,8 @@ Some(FogSettings { description: FogDescription { identifier: Id<fog>("determinis
   }
 }
 
-Info|minecraft:fog_settings/distance/air/fog_color/0|ClampedValue|value clamped into its range|Some((171, 3))|kept=false
-Info|minecraft:fog_settings/distance/air/transition_fog|UnrecognizedField|unrecognized field|Some((273, 282))|kept=false
+Info|minecraft:fog_settings/distance/air/fog_color/0|core/clamped_value|value clamped into its range|Some((171, 3))|kept=false
+Info|minecraft:fog_settings/distance/air/transition_fog|core/unrecognized_field|unrecognized field|Some((273, 282))|kept=false
 Some(FogSettings { description: FogDescription { identifier: Id<fog>("determinism:fog_old"), extra: UnknownMembers({}) }, distance: Some(FogDistanceCollection { air: Some(FogDistanceSetting { fog_start: Some(0.92), fog_end: Some(1.0), render_distance_type: Some(Render), fog_color: Some(Array([255, 64, 255])), extra: UnknownMembers({"transition_fog": {"init_fog": {"fog_start": 0, "fog_end": 0.01, "fog_color": "#44AFF5", "render_distance_type": "fixed"}, "min_percent": 0.25, "mid_seconds": 5, "mid_percent": 0.6, "max_seconds": 30}}) }), weather: None, water: None, lava: None, lava_resistance: None, powder_snow: None, extra: UnknownMembers({}) }), volumetric: Some(FogVolumetricCollection { density: Some(FogVolumetricDensityCollection { air: Some(FogVolumetricDensitySetting { max_density: Some(Single(0.05)), uniform: None, zero_density_height: Some(Single(320.0)), max_density_height: Some(Single(320.0)), extra: UnknownMembers({}) }), weather: None, water: None, lava: None, lava_resistance: None, extra: UnknownMembers({}) }), media_coefficients: Some(FogVolumetricMediaCoeffsCollection { air: Some(FogVolumetricMediaCoeffsSetting { absorption: Some(Single(Hex("#000000"))), scattering: Some(Single(Array([0.06, 0.06, 0.06]))), extra: UnknownMembers({}) }), water: None, cloud: None, extra: UnknownMembers({}) }), henyey_greenstein_g: Some(FogVolumetricHenyeyGreensteinGCollection { air: Some(FogVolumetricHenyeyGreensteinGSetting { henyey_greenstein_g: Some(Single(0.4)), extra: UnknownMembers({}) }), water: None, extra: UnknownMembers({}) }), extra: UnknownMembers({}) }), extra: UnknownMembers({}) })
 == {
   "description": {
@@ -509,5 +509,5 @@ Some(FogSettings { description: FogDescription { identifier: Id<fog>("demo:fog")
   }
 }
 
-Info|minecraft:fog_settings/distance/air/transition_fog|UnrecognizedField|unrecognized field|Some((261, 275))|kept=false
+Info|minecraft:fog_settings/distance/air/transition_fog|core/unrecognized_field|unrecognized field|Some((261, 275))|kept=false
 Some(FogSettings { description: FogDescription { identifier: Id<fog>("demo:fog"), extra: UnknownMembers({}) }, distance: Some(FogDistanceCollection { air: Some(FogDistanceSetting { fog_start: Some(0.9), fog_end: Some(1.0), render_distance_type: Some(Render), fog_color: Some(Array([128, 64, 255])), extra: UnknownMembers({"transition_fog": {"init_fog": {"fog_start": 0, "fog_end": 1, "fog_color": "#000000", "render_distance_type": "fixed"}, "min_percent": 0.2, "mid_seconds": 2, "mid_percent": 0.5, "max_seconds": 4}}) }), weather: None, water: Some(FogWaterDistanceSetting { fog_start: Some(0.0), fog_end: Some(60.0), render_distance_type: Some(Fixed), fog_color: Some(Hex("#44AFF5")), transition_fog: Some(FogTransitionSetting { init_fog: Some(FogDistanceSetting { fog_start: Some(0.0), fog_end: Some(0.01), render_distance_type: Some(Fixed), fog_color: Some(Hex("#44AFF5")), extra: UnknownMembers({}) }), min_percent: Some(0.25), mid_seconds: Some(5.0), mid_percent: Some(0.6), max_seconds: Some(30.0), extra: UnknownMembers({}) }), extra: UnknownMembers({}) }), lava: None, lava_resistance: None, powder_snow: None, extra: UnknownMembers({}) }), volumetric: None, extra: UnknownMembers({}) })

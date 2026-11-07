@@ -1,7 +1,7 @@
 //! The chain: contiguity, the range model's selection, floor, ceiling and beta; the Value round
 //! trip; history without upgrade; and the deviations the folder lists, each pinned by a test named `deviation`.
 
-use bedrock_addon::diagnostic::Severity;
+use bedrock_addon::diagnostic::{Kind, Severity};
 use bedrock_addon::document::{Content, JsonDocument};
 use bedrock_addon::families::block::Block;
 use bedrock_addon::families::block::component::{Friction, LightEmission};
@@ -89,9 +89,13 @@ fn a_prerelease_loads_through_the_struct_below_it_with_an_info() {
     );
     assert_eq!(block.version().parsed_as, FormatVersion::new(1, 21, 30));
     // By legacy name: the variant and the definitions that were it.
-    assert!(block.diagnostics().iter().any(
-        |f| matches!(f.code.name(), "PrereleaseFormatVersion") && f.severity == Severity::Info
-    ));
+    assert!(
+        block
+            .diagnostics()
+            .iter()
+            .any(|f| matches!(f.code.id(), "core/prerelease_format_version")
+                && f.severity == Severity::Info)
+    );
 }
 
 // `1.26.20-beta.1` sorts below 1.26.20, so the legacy struct
@@ -116,7 +120,7 @@ fn a_prerelease_of_1_26_20_is_read_from_the_raw_text_by_the_legacy_struct() {
     assert!(
         d.iter()
             // By legacy name: the variant and the definitions that were it.
-            .any(|f| matches!(f.code.name(), "MalformedInput"))
+            .any(|f| matches!(f.code.id(), "core/document_member_count"))
     );
 }
 
@@ -135,13 +139,13 @@ fn the_beta_literal_has_no_struct_whatever_the_beta_apis() {
         assert!(
             d.iter()
                 // By legacy name: the variant and the definitions that were it.
-                .any(|f| matches!(f.code.name(), "UnsupportedVersion")),
+                .any(|f| matches!(f.code.id(), "core/no_parser_for_version")),
             "{d:#?}"
         );
         assert!(
             !d.iter()
                 // By legacy name: the variant and the definitions that were it.
-                .any(|f| matches!(f.code.name(), "BetaFeaturesNotEnabled")),
+                .any(|f| f.code.kind() == Kind::Toggle),
             "{d:#?}"
         );
     }
@@ -236,7 +240,7 @@ fn a_document_below_1_16_0_is_rejected_deviation() {
     assert!(
         d.iter()
             // By legacy name: the variant and the definitions that were it.
-            .any(|f| matches!(f.code.name(), "UnsupportedVersion"))
+            .any(|f| matches!(f.code.id(), "core/use_format_version"))
     );
 }
 
@@ -296,7 +300,7 @@ fn a_third_root_member_below_1_26_20_is_reported_deviation() {
             .diagnostics()
             .iter()
             // By legacy name: the variant and the definitions that were it.
-            .any(|f| matches!(f.code.name(), "UnrecognizedField"))
+            .any(|f| matches!(f.code.id(), "core/unrecognized_field"))
     );
 }
 
@@ -332,7 +336,7 @@ fn events_of_a_1_26_20_document_reject_the_block() {
     assert!(
         d.iter().any(
             // By legacy name: the variant and the definitions that were it.
-            |f| matches!(f.code.name(), "DeprecatedMember")
+            |f| matches!(f.code.id(), "core/member_deprecated")
                 && f.severity == Severity::Error
                 && f.code.to_string() == "member \"events\" is deprecated"
                 && f.location.json_path.to_string().ends_with("events")

@@ -151,9 +151,9 @@ pub fn rt03_invalid_saved_values_fall_back_to_the_defaults_with_one_finding_each
     assert_eq!(
         names(&d, Severity::Info),
         [
-            "SettingTypeMismatch",
-            "SettingTypeMismatch",
-            "SettingUnknownOption"
+            "core/setting_type_mismatch",
+            "core/setting_type_mismatch",
+            "core/setting_unknown_option"
         ]
     );
     // The second run of the vanilla test: "grapes".
@@ -169,9 +169,9 @@ pub fn rt03_invalid_saved_values_fall_back_to_the_defaults_with_one_finding_each
     assert_eq!(
         names(&d, Severity::Info),
         [
-            "SettingTypeMismatch",
-            "SettingTypeMismatch",
-            "SettingUnknownOption"
+            "core/setting_type_mismatch",
+            "core/setting_type_mismatch",
+            "core/setting_unknown_option"
         ]
     );
 }
@@ -181,7 +181,7 @@ pub fn rt04_slider_clamp_clamps_and_does_not_snap_to_the_step() {
     let row = "rt04_slider_clamp";
     let (settings, d) = global_values(row, &saved(row));
     assert_eq!(current(&settings), values_of(&expected(row)));
-    assert_eq!(names(&d, Severity::Info), ["SettingClamped"]);
+    assert_eq!(names(&d, Severity::Info), ["core/setting_clamped"]);
     for (saved_value, value) in [("-3", 1.0), ("2.5", 2.5)] {
         let text = text(row, "saved.json").replace(": 42", &format!(": {saved_value}"));
         let document = SavedSettings::parse(text.as_bytes()).unwrap().into_value();
@@ -207,7 +207,7 @@ pub fn rt05_unknown_saved_name_is_ignored_and_gone_after_the_save() {
     )
     .unwrap();
     assert!(settings.value("banana:gone").is_none());
-    assert_eq!(names(&d, Severity::Info), ["SettingUnknownName"]);
+    assert_eq!(names(&d, Severity::Info), ["core/setting_unknown_name"]);
     let found = d
         .iter()
         .find(|f| f.is(&core_codes::SETTING_UNKNOWN_NAME))
@@ -716,12 +716,12 @@ pub fn a5_multiselect_values_need_every_entry_to_be_an_option() {
         settings.value("banana:fruits"),
         Some(&SettingValue::StringList(vec!["cherry".to_owned()]))
     );
-    assert_eq!(names(&d, Severity::Info), ["SettingUnknownOption"]);
+    assert_eq!(names(&d, Severity::Info), ["core/setting_unknown_option"]);
     // A string where a list belongs is a type mismatch.
     let text = text_of_value("banana:fruits", "\"apple\"");
     let document = SavedSettings::parse(text.as_bytes()).unwrap().into_value();
     let (_, d) = global_values(row, &document);
-    assert_eq!(names(&d, Severity::Info), ["SettingTypeMismatch"]);
+    assert_eq!(names(&d, Severity::Info), ["core/setting_type_mismatch"]);
 }
 
 /// A 1.26.40 document holding one value for the vanilla tests' pack.

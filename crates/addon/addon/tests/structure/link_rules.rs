@@ -39,7 +39,7 @@ fn s32_an_unknown_palette_block_is_an_unresolved_reference_information() {
     let d = set.link();
     let unresolved: Vec<_> = d
         .iter()
-        .filter(|f| f.code.name() == "UnresolvedReference")
+        .filter(|f| f.code.id() == "core/unresolved_reference")
         .collect();
     // Vanilla puts an unknown-block placeholder in its place in silence: an information (20
     // W25), at the palette entry; `minecraft:stone` is a built-in and resolves.

@@ -46,7 +46,7 @@ fn r20_molang_forms_anim() {
         assert!(
             file.diagnostics()
                 .at_least(Severity::Info)
-                .all(|d| d.code.name() != "InvalidMolang" && d.code.name() != "MolangLint"),
+                .all(|d| d.code.id() != "core/invalid_molang" && d.code.id() != "core/molang_lint"),
             "{json}: {:?}",
             lines(file.diagnostics())
         );
@@ -58,11 +58,14 @@ fn r20_molang_forms_anim() {
         ));
         expect_prefix(
             &d,
-            "InvalidType",
+            "core/unknown_child_option",
             Severity::Error,
             "unknown child schema option type.  Allowed types: ",
         );
-        assert!(d.iter().all(|f| f.code.name() != "InvalidMolang"), "{json}");
+        assert!(
+            d.iter().all(|f| f.code.id() != "core/invalid_molang"),
+            "{json}"
+        );
     }
 }
 
@@ -76,7 +79,7 @@ fn without_the_feature_a_document_with_expressions_is_not_checked() {
     assert!(
         file.diagnostics()
             .iter()
-            .any(|d| d.code.name() == "MolangNotChecked" && d.severity == Severity::Info),
+            .any(|d| d.code.id() == "core/molang_not_checked" && d.severity == Severity::Info),
         "{:?}",
         lines(file.diagnostics())
     );
@@ -97,7 +100,7 @@ mod compiled {
     /// The `InvalidMolang` findings: the compiler's code and the severity.
     fn invalid(d: &Diagnostics) -> Vec<(DiagCode, Severity)> {
         d.iter()
-            .filter(|f| f.code.name() == "InvalidMolang")
+            .filter(|f| f.code.id() == "core/invalid_molang")
             .map(|f| match f.detail.as_deref() {
                 Some(DiagnosticDetail::Molang(m)) => (m.code(), f.severity),
                 _ => (DiagCode::Syntax, f.severity),
@@ -223,13 +226,13 @@ mod compiled {
         let d = rejected(controller(&text, &bp(1, 16, 0)));
         assert!(
             d.iter()
-                .any(|f| f.code.name() == "InvalidMolang" && f.severity == Severity::Error),
+                .any(|f| f.code.id() == "core/invalid_molang" && f.severity == Severity::Error),
             "{:?}",
             lines(&d)
         );
         let d = rejected(controller(&text, &bp(1, 20, 50)));
         assert!(
-            d.iter().any(|f| f.code.name() == "InvalidMolang"
+            d.iter().any(|f| f.code.id() == "core/invalid_molang"
                 && f.severity == Severity::Error
                 && matches!(f.detail.as_deref(), Some(DiagnosticDetail::Molang(m)) if m.code() == DiagCode::Syntax && m.message().contains("No tokens found in expression"))),
             "{:?}",
@@ -258,7 +261,7 @@ mod compiled {
         assert!(
             file.diagnostics()
                 .iter()
-                .any(|f| f.code.name() == "InvalidMolang" && f.severity == Severity::Info),
+                .any(|f| f.code.id() == "core/invalid_molang" && f.severity == Severity::Info),
             "{:?}",
             lines(file.diagnostics())
         );
@@ -271,7 +274,7 @@ fn lints(d: &bedrock_addon::diagnostic::Diagnostics) -> Vec<String> {
     use bedrock_addon::diagnostic::DiagnosticDetail;
     d.iter()
         // By legacy name: the variant and the definitions that were it.
-        .filter(|f| matches!(f.code.name(), "MolangLint"))
+        .filter(|f| matches!(f.code.id(), "core/molang_lint"))
         .map(|f| {
             let code = match f.detail.as_deref() {
                 Some(DiagnosticDetail::Molang(m)) => format!("{:?}", m.code()),

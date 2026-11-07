@@ -6,7 +6,7 @@
 use bedrock_addon::pack::LinkOptions;
 
 use super::super::common::{hosted, link, link_with};
-use super::{FILE, kept_unresolved, said_of};
+use super::{FILE, kept_unresolved_plain, said_of};
 
 const WALK: &str = r#"{"format_version": "1.10.0", "animations": {"animation.demo.walk": {"loop": true, "timeline": {"0.0": "/say hi"}}}}"#;
 const MOVE: &str = r#"{"format_version": "1.10.0", "animation_controllers": {"controller.animation.demo.move": {"initial_state": "default", "states": {"default": {}}}}}"#;
@@ -43,7 +43,7 @@ fn e8_an_animation_or_controller_no_behavior_pack_defines_is_a_kept_error() {
         &[("animations/fly.animation.json", FLY)],
     );
     let a = |key: &str, id: &str| {
-        kept_unresolved(&format!("description/animations/{key}"), "animation", id)
+        kept_unresolved_plain(&format!("description/animations/{key}"), "animation", id)
     };
     assert_eq!(
         said_of(&found, "animation"),
@@ -68,7 +68,7 @@ fn e8_a_name_without_a_prefix_is_not_checked_and_a_host_answers_for_the_games() 
     let found = link(&files, &[]);
     assert_eq!(
         said_of(&found, "animation"),
-        [kept_unresolved(
+        [kept_unresolved_plain(
             "description/animations/sit",
             "animation",
             "animation.game.sit"

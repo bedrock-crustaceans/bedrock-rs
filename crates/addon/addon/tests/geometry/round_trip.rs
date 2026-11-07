@@ -687,7 +687,7 @@ fn a_loaded_legacy_cube_whose_only_member_is_an_unread_mirror_is_written_with_th
         let dropped: Vec<String> = document
             .diagnostics()
             .iter()
-            .filter(|f| f.code.name() == "DroppedField")
+            .filter(|f| f.code.id() == "core/dropped_field")
             .map(|f| f.location.json_path.to_string())
             .collect();
         assert_eq!(dropped, ["geometry.a/bones/0/cubes/1/mirror"], "{version}");

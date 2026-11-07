@@ -75,13 +75,13 @@ fn on_placed_null_or_not_a_string_rejects_the_structure() {
         let at: Vec<(String, String)> = d
             .iter()
             .filter(|f| f.severity == bedrock_addon::diagnostic::Severity::Error)
-            .filter(|f| f.code.name() != "DocumentRejected")
-            .map(|f| (f.code.name().to_owned(), f.location.json_path.to_string()))
+            .filter(|f| f.code.id() != "jigsaw/structure_failed")
+            .map(|f| (f.code.id().to_owned(), f.location.json_path.to_string()))
             .collect();
         // An array is reported at its first element, as facet places a wrong type below a
         // string member (the error is the member's).
         assert_eq!(at.len(), 1, "{value}: {at:?}");
-        assert_eq!(at[0].0, "InvalidType", "{value}");
+        assert_eq!(at[0].0, "core/invalid_type", "{value}");
         assert!(
             at[0].1.starts_with("minecraft:jigsaw/on_placed"),
             "{value}: {}",

@@ -124,11 +124,11 @@ fn the_mcb_originals_load_on_a_vanilla_stack_without_a_finding() {
             .iter()
             .map(|d| match d.detail.as_deref() {
                 Some(bedrock_addon::diagnostic::DiagnosticDetail::Reference { id, .. })
-                    if d.code.name() == "UnresolvedReference" =>
+                    if d.code.id() == "crafting_catalog/missing_item" =>
                 {
                     id.clone()
                 }
-                _ => format!("{} {}", d.code.name(), d.code),
+                _ => format!("{} {}", d.code.id(), d.code),
             })
             .collect();
         assert_eq!(referenced, Vec::<String>::new(), "{name}");

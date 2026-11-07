@@ -1,7 +1,7 @@
 # families/script_config fixtures.md, row sp05_inline_hash (review Pa, Pf, Ph).
 
 [[diagnostic]]
-code = "InvalidEnumValue"
+code = "server_config/bad_auto_attach"
 severity = "error"
 phase = "validate"
 file = "server.properties"
@@ -9,7 +9,7 @@ path = "script-debugger-auto-attach"
 text = "Unkown script debugger auto attach mode bogusB#c, expected one of [ 'connect', 'listen', 'disabled' ]"
 
 [[diagnostic]]
-code = "InvalidEnumValue"
+code = "server_config/bad_log_level"
 severity = "error"
 phase = "validate"
 file = "server.properties"
@@ -17,7 +17,7 @@ path = "content-log-level"
 text = "content-log-level was set to invalid value 'info#c'.  Accepted values are verbose, info, warning, and error.  Defaulting to info"
 
 [[diagnostic]]
-code = "InvalidValue"
+code = "core/invalid_value"
 severity = "info"
 phase = "validate"
 file = "server.properties"

@@ -1,8 +1,8 @@
 //! Write-back: what was read is written, nothing else; the
 //! history path; and values built in code.
 
-use bedrock_addon_core::diagnostic::Severity;
 use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, Kind, Severity};
 use bedrock_addon_core::document::{Content, JsonDocument};
 use bedrock_addon_core::id::ItemId;
 use bedrock_addon_core::json::Value;
@@ -12,6 +12,13 @@ use bedrock_addon_family_trade::history::{self, TradeHistory, v0};
 use bedrock_addon_family_trade::{Group, ItemList, Quantity, Tier, Trade, TradeItem, TradeTable};
 
 use super::common::{above_info, cx, doc, fixture, loads, with};
+
+/// The findings of `d` at `severity` of the kind `kind`.
+fn of_kind(d: &Diagnostics, kind: Kind, severity: Severity) -> Vec<&Diagnostic> {
+    d.iter()
+        .filter(|f| f.code.kind() == kind && f.severity == severity)
+        .collect()
+}
 
 /// JSON(C) text as a `Value`.
 fn json(text: &str) -> Value {
@@ -127,7 +134,7 @@ fn the_side_cars_are_written_back_in_the_legacy_shape_and_read_equal() {
     ));
     let written = legacy_rewritten(document.value());
     let again = loads(&written);
-    assert!(with(again.diagnostics(), "DeprecatedMember", Severity::Warning).is_empty());
+    assert!(of_kind(again.diagnostics(), Kind::Deprecated, Severity::Warning).is_empty());
 }
 
 /// What the written table says that the file did not is said when the file is loaded: a
@@ -141,7 +148,7 @@ fn the_side_cars_are_written_back_in_the_legacy_shape_and_read_equal() {
 fn k107_a_blob_written_under_its_deprecated_name_is_announced_at_the_member_of_the_file() {
     let announced = |d: &bedrock_addon_core::diagnostic::Diagnostics| -> Vec<String> {
         d.iter()
-            .filter(|f| f.code.name() == "ValueRewritten")
+            .filter(|f| f.code.id() == "core/value_rewritten")
             .map(|f| {
                 assert!(
                     f.is(&core_codes::VALUE_REWRITTEN),
@@ -216,16 +223,11 @@ fn k107_a_blob_written_under_its_deprecated_name_is_announced_at_the_member_of_t
         );
         // No finding of the first load has the game's deprecation text.
         assert_eq!(
-            with(document.diagnostics(), "DeprecatedMember", Severity::Info).len(),
+            of_kind(document.diagnostics(), Kind::Deprecated, Severity::Info).len(),
             0
         );
         assert_eq!(
-            with(
-                document.diagnostics(),
-                "DeprecatedMember",
-                Severity::Warning
-            )
-            .len(),
+            of_kind(document.diagnostics(), Kind::Deprecated, Severity::Warning).len(),
             0
         );
         // The written table is a legacy document when a blob was announced (no `__DEP_`
@@ -465,7 +467,7 @@ fn a_legacy_documents_unknown_members_are_written_back_in_its_own_shape() {
     // Each is reported once (the legacy parser does not read it), and kept.
     let d = as_written.diagnostics();
     for at in UNKNOWN {
-        super::common::found_at(d, "UnrecognizedField", Severity::Info, at);
+        super::common::found_at(d, "core/unrecognized_field", Severity::Info, at);
     }
     assert!(above_info(d).is_empty());
     let TradeHistory::V0(legacy) = as_written.value() else {
@@ -536,7 +538,12 @@ fn the_upgraded_table_drops_a_legacy_documents_unknown_members_deviation() {
     // the warning of the legacy read has said so.
     let document = loads(WITH_UNKNOWN);
     assert_eq!(
-        with(document.diagnostics(), "UnrecognizedField", Severity::Info).len(),
+        with(
+            document.diagnostics(),
+            "core/unrecognized_field",
+            Severity::Info
+        )
+        .len(),
         UNKNOWN.len()
     );
     let written = rewritten(document.value());
@@ -566,7 +573,7 @@ fn a_member_named_extra_is_an_unknown_member_like_any_other() {
     assert_eq!(
         with(
             as_written.diagnostics(),
-            "UnrecognizedField",
+            "core/unrecognized_field",
             Severity::Info
         )
         .len(),
@@ -583,13 +590,13 @@ fn a_member_named_extra_is_an_unknown_member_like_any_other() {
         .diagnostics
         .iter()
         .filter(|f| f.severity == Severity::Error)
-        .map(|f| format!("{} {}", f.code.name(), f.location.json_path))
+        .map(|f| format!("{} {}", f.code.id(), f.location.json_path))
         .collect();
     assert_eq!(
         errors,
         [
-            "UnrecognizedField tiers/0/extra",
-            "UnrecognizedField tiers/0/groups/0/trades/0/wants/0/extra"
+            "core/unrecognized_field tiers/0/extra",
+            "core/unrecognized_field tiers/0/groups/0/trades/0/wants/0/extra"
         ]
     );
 }

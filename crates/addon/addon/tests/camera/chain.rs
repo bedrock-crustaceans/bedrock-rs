@@ -163,7 +163,12 @@ fn the_beta_literal_selects_nothing() {
     ] {
         let found = errors(&outcome);
         assert!(
-            matches!(found[0].0, "BetaFeaturesNotEnabled" | "UnsupportedVersion"),
+            matches!(
+                found[0].0,
+                "core/beta_format_version"
+                    | "core/no_parser_for_version"
+                    | "core/unsupported_version"
+            ),
             "{found:?}"
         );
     }

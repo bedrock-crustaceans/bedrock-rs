@@ -167,7 +167,7 @@ fn a_json_item_without_a_version_is_refused() {
         "{d:#?}"
     );
     // By legacy name: the variant and the definitions that were it.
-    assert!(has(&d, |c| matches!(c.name(), "MissingFormatVersion")));
+    assert!(has(&d, |c| matches!(c.id(), "core/version_not_readable")));
 }
 
 #[test]
@@ -184,7 +184,7 @@ fn two_part_versions_are_read_as_x_y_0() {
     let d = rejects(&item("one.two", "demo:x", ""), &third_party());
     assert!(
         // By legacy name: the variant and the definitions that were it.
-        has(&d, |c| matches!(c.name(), "MalformedFormatVersion")),
+        has(&d, |c| matches!(c.id(), "item/version_not_readable")),
         "{d:#?}"
     );
 }

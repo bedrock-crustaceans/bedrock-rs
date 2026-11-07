@@ -1,7 +1,7 @@
 //! The identifier's namespace syntax and file name
 //! are checked against the file, logged and the rule kept.
 
-use bedrock_addon_core::diagnostic::Severity;
+use bedrock_addon_core::diagnostic::{Kind, Severity};
 use bedrock_addon_core::load::LoadContext;
 
 use super::common::*;
@@ -19,7 +19,7 @@ fn r05(
 #[test]
 fn r05_an_identifier_without_a_namespace_is_logged_and_the_rule_loads() {
     let document = r05("nonamespace.json", "feature_rules/nonamespace.json");
-    let found = with_code(document.diagnostics(), "InvalidValue");
+    let found = with_code(document.diagnostics(), "feature_rules/identifier_namespace");
     assert_eq!(found.len(), 1, "{:#?}", document.diagnostics());
     // the game's content-log error, the rule kept: a kept error
     assert_eq!((found[0].severity, found[0].kept), (Severity::Error, true));
@@ -36,7 +36,7 @@ fn r05_an_identifier_without_a_namespace_is_logged_and_the_rule_loads() {
 #[test]
 fn r05_an_identifier_that_does_not_match_the_file_name_is_logged_and_the_rule_loads() {
     let document = r05("a.json", "feature_rules/a.json");
-    let found = with_code(document.diagnostics(), "InvalidValue");
+    let found = with_code(document.diagnostics(), "feature_rules/identifier_mismatch");
     assert_eq!(found.len(), 1, "{:#?}", document.diagnostics());
     // the game's content-log error, the rule kept: a kept error
     assert_eq!((found[0].severity, found[0].kept), (Severity::Error, true));
@@ -88,7 +88,7 @@ fn rule_3_the_name_after_the_last_colon_is_compared_case_sensitively() {
 fn rule_11_a_minecraft_identifier_outside_the_base_game_is_not_rejected() {
     let text = rule("1.13.0", "surface_pass", None).replace("demo:test", "minecraft:test");
     let document = load_at("feature_rules/test.json", &text, &LoadContext::detached()).unwrap();
-    assert!(!has(document.diagnostics(), |c| c.name() == "InvalidValue"));
+    assert!(!has(document.diagnostics(), |c| c.kind() == Kind::InvalidValue));
 }
 
 // An object given to an identifier is a wrong type at the member, and reading it does not panic.
@@ -97,7 +97,7 @@ fn an_identifier_that_is_an_object_is_a_type_error_and_no_panic() {
     let json = rule("1.26.50", "first_pass", None).replace(r#""demo:test""#, "{}");
     assert!(json.contains(r#""identifier": {}"#));
     let d = rejects(&json);
-    let found = with_code(&d, "InvalidType");
+    let found = with_code(&d, "core/invalid_type");
     assert_eq!(found.len(), 1, "{d:#?}");
     assert_eq!(found[0].severity, Severity::Error);
     assert_eq!(

@@ -1,14 +1,14 @@
 # families/script_config fixtures.md, row sc12_version_suffix (probe B).
 
 [[diagnostic]]
-code = "InvalidValue"
+code = "core/invalid_value"
 severity = "info"
 phase = "parse"
 file = "config/default/permissions.json"
 path = "allowed_modules/0"
 
 [[diagnostic]]
-code = "ScriptModulePermission"
+code = "server_config/plugin_module_not_configured"
 severity = "error"
 phase = "link"
 file = "config/default/permissions.json"

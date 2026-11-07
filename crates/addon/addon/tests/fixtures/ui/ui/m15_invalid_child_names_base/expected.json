@@ -1,7 +1,7 @@
 {
   "diagnostics": [
     {
-      "code": "InvalidValue",
+      "code": "json_ui/invalid_names",
       "severity": "error",
       "text": "We have invalid names in the resource files. Make sure all your control children have unique names that aren't empty!\n\nControls:\nx\nFile name:ui/a.json",
       "pack": 0

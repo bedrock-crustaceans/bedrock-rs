@@ -332,7 +332,10 @@ mod tests {
         let error = parse_at_null_absent::<Bare>(JsonSlice::new(text)).unwrap_err();
         let code =
             crate::diagnostic::code_for_deserialize_error_kind(&error.error.kind, true, false);
-        assert!(code.name() == "MissingRequiredField", "{code:?} {error:?}");
+        assert!(
+            code.id() == "core/missing_required_field",
+            "{code:?} {error:?}"
+        );
         assert_eq!(error.path.to_string(), "inner/required");
     }
 

@@ -48,7 +48,7 @@ fn only_info(d: &Diagnostics) -> &Diagnostic {
 #[test]
 fn t12_tiers_that_is_no_array_rejects_the_table_with_vanillas_text() {
     let d = rejects(r#"{"tiers": {}}"#);
-    let finding = found_at(&d, "InvalidType", Severity::Error, "tiers");
+    let finding = found_at(&d, "trade/tiers_array", Severity::Error, "tiers");
     assert_eq!(finding.code.to_string(), "\"tiers\" must be an array");
     assert_eq!(above_info(&d).len(), 1);
 }
@@ -56,14 +56,14 @@ fn t12_tiers_that_is_no_array_rejects_the_table_with_vanillas_text() {
 #[test]
 fn a_missing_tiers_rejects_the_table_with_the_same_text() {
     let d = rejects(r#"{"tier": []}"#);
-    let finding = found_at(&d, "MissingPayload", Severity::Error, "");
+    let finding = found_at(&d, "trade/tiers_missing", Severity::Error, "");
     assert_eq!(finding.code.to_string(), "\"tiers\" must be an array");
 }
 
 #[test]
 fn a_null_document_is_the_must_containt_tiers_error() {
     let d = rejects("null");
-    let finding = found_at(&d, "MissingPayload", Severity::Error, "");
+    let finding = found_at(&d, "trade/must_contain_tiers", Severity::Error, "");
     assert_eq!(
         finding.code.to_string(),
         "Trade table file must containt \"tiers\""
@@ -74,7 +74,7 @@ fn a_null_document_is_the_must_containt_tiers_error() {
 #[test]
 fn groups_that_is_no_array_rejects_the_table_with_vanillas_text() {
     let d = rejects(r#"{"tiers": [{"groups": {}}]}"#);
-    let finding = found_at(&d, "InvalidType", Severity::Error, "tiers/0/groups");
+    let finding = found_at(&d, "trade/groups_array", Severity::Error, "tiers/0/groups");
     assert_eq!(finding.code.to_string(), "\"groups\" must be an array");
     // `null` is "no groups": the flat form is read instead.
     loads(&doc(None, r#"[{"groups": null, "trades": []}]"#));
@@ -90,11 +90,16 @@ fn t12_a_group_whose_trades_is_no_array_is_dropped_alone() {
         ),
     ));
     let d = document.diagnostics();
-    let wrong = found_at(d, "InvalidType", Severity::Error, "tiers/0/groups/0/trades");
+    let wrong = found_at(
+        d,
+        "trade/trades_array",
+        Severity::Error,
+        "tiers/0/groups/0/trades",
+    );
     assert_eq!(wrong.code.to_string(), "\"trades\" must be an array");
     let missing = found_at(
         d,
-        "MissingRequiredField",
+        "trade/trades_missing",
         Severity::Error,
         "tiers/0/groups/2/trades",
     );
@@ -109,7 +114,7 @@ fn t12_a_group_whose_trades_is_no_array_is_dropped_alone() {
 fn flat_trades_that_is_no_array_leaves_the_tier_without_groups() {
     let document = loads(&doc(None, r#"[{"trades": {}}]"#));
     let finding = only(document.diagnostics());
-    assert_eq!(finding.code.name(), "InvalidType");
+    assert_eq!(finding.code.id(), "trade/trades_array");
     assert_eq!(finding.location.json_path.to_string(), "tiers/0/trades");
     assert!(document.value().tiers[0].groups.is_empty());
 }
@@ -120,8 +125,8 @@ fn t12_a_trade_whose_wants_holds_only_an_empty_choice_is_dropped_alone() {
     let document = loads(&doc(None, &flat(&[empty.to_owned(), a_trade("")])));
     let finding = only(document.diagnostics());
     assert_eq!(
-        (finding.code.name(), finding.severity),
-        ("InvalidValue", Severity::Error)
+        (finding.code.id(), finding.severity),
+        ("trade/no_offers", Severity::Error)
     );
     assert_eq!(
         finding.location.json_path.to_string(),
@@ -148,8 +153,8 @@ fn a_trade_without_gives_is_dropped_alone_with_the_recieves_text() {
         let document = loads(&doc(None, &flat(&[a_trade(""), empty])));
         let finding = only(document.diagnostics());
         assert_eq!(
-            (finding.code.name(), finding.severity),
-            ("InvalidValue", Severity::Error)
+            (finding.code.id(), finding.severity),
+            ("trade/no_receives", Severity::Error)
         );
         assert_eq!(
             finding.location.json_path.to_string(),
@@ -189,8 +194,8 @@ fn t12_a_legacy_weight_of_zero_or_less_drops_the_trade_with_vanillas_text() {
         ));
         let finding = only(document.diagnostics());
         assert_eq!(
-            (finding.code.name(), finding.severity),
-            ("InvalidValue", Severity::Error)
+            (finding.code.id(), finding.severity),
+            ("trade/invalid_weight", Severity::Error)
         );
         assert_eq!(
             finding.location.json_path.to_string(),
@@ -209,8 +214,8 @@ fn t12_a_weight_in_a_flat_tier_is_warned_and_the_trade_kept() {
     let document = loads(&doc(None, &flat(&[a_trade(r#""weight": 3, "#)])));
     let finding = only(document.diagnostics());
     assert_eq!(
-        (finding.code.name(), finding.severity),
-        ("NoEffect", Severity::Warning)
+        (finding.code.id(), finding.severity),
+        ("trade/weight_no_effect", Severity::Warning)
     );
     assert_eq!(
         finding.location.json_path.to_string(),
@@ -229,7 +234,7 @@ fn the_weight_warning_needs_a_group_that_selects_every_trade() {
     for group in [r#""num_to_select": -1, "#, ""] {
         let document = loads(&doc(None, &grouped(group, &[weighted()])));
         let finding = only(document.diagnostics());
-        assert_eq!(finding.code.name(), "NoEffect");
+        assert_eq!(finding.code.id(), "trade/weight_no_effect");
         assert_eq!(
             finding.location.json_path.to_string(),
             "tiers/0/groups/0/trades/0/weight"
@@ -260,7 +265,7 @@ fn the_weight_warning_is_for_minus_one_only_not_for_another_negative_count() {
                     &[a_trade(r#""weight": 3, "#)],
                 ),
             ));
-            let found = with(document.diagnostics(), "NoEffect", severity);
+            let found = with(document.diagnostics(), "trade/weight_no_effect", severity);
             assert_eq!(found.len(), usize::from(warned), "{version:?} {selects}");
             assert_eq!(
                 above_info(document.diagnostics()).len(),
@@ -285,9 +290,13 @@ fn the_weight_note_from_1_21_30_is_an_information_deviation() {
         &grouped(r#""num_to_select": -1, "#, std::slice::from_ref(&weighted)),
     ));
     assert!(above_info(document.diagnostics()).is_empty());
-    let [finding] = with(document.diagnostics(), "NoEffect", Severity::Info)[..] else {
+    let [finding] = with(
+        document.diagnostics(),
+        "trade/weight_no_effect",
+        Severity::Info,
+    )[..] else {
         panic!(
-            "one NoEffect information: {}",
+            "one trade/weight_no_effect information: {}",
             summary(document.diagnostics())
         );
     };
@@ -308,7 +317,7 @@ fn t03_num_to_select_above_the_number_of_trades_is_the_exact_error() {
         ));
         let finding = found_at(
             &d,
-            "InvalidValue",
+            "trade/num_to_select",
             Severity::Error,
             "tiers/0/groups/0/num_to_select",
         );
@@ -334,7 +343,7 @@ fn t03_num_to_select_is_an_error_from_1_21_30_too_deviation() {
         Some("1.26.10"),
         &grouped(r#""num_to_select": 2, "#, &[a_trade("")]),
     ));
-    assert_eq!(with(&d, "InvalidValue", Severity::Error).len(), 1);
+    assert_eq!(with(&d, "trade/num_to_select", Severity::Error).len(), 1);
 }
 
 #[test]
@@ -349,7 +358,7 @@ fn legacy_num_to_select_is_compared_with_the_trades_that_were_kept() {
     ));
     let finding = found_at(
         &d,
-        "InvalidValue",
+        "trade/num_to_select",
         Severity::Error,
         "tiers/0/groups/0/num_to_select",
     );
@@ -366,7 +375,7 @@ fn empty_tiers_is_an_error_deviation() {
     // Vanilla loads an empty table with no message ().
     for version in [None, Some("1.21.30")] {
         let d = rejects(&doc(version, "[]"));
-        found_at(&d, "InvalidValue", Severity::Error, "tiers");
+        found_at(&d, "core/invalid_value", Severity::Error, "tiers");
         assert_eq!(above_info(&d).len(), 1);
     }
 }
@@ -377,15 +386,15 @@ fn empty_tiers_is_an_error_deviation() {
 #[track_caller]
 fn stamped_error(tiers: &str) -> (String, String) {
     let d = rejects(&doc(Some("1.21.30"), tiers));
-    let errors = with(&d, "InvalidValue", Severity::Error)
+    let errors = with(&d, "core/invalid_value", Severity::Error)
         .into_iter()
-        .chain(with(&d, "InvalidType", Severity::Error))
-        .chain(with(&d, "MissingRequiredField", Severity::Error))
+        .chain(with(&d, "core/invalid_type", Severity::Error))
+        .chain(with(&d, "core/missing_required_field", Severity::Error))
         .collect::<Vec<_>>();
     assert_eq!(errors.len(), 1, "{}", summary(&d));
     assert_eq!(above_info(&d).len(), 1, "{}", summary(&d));
     (
-        errors[0].code.name().to_owned(),
+        errors[0].code.id().to_owned(),
         errors[0].location.json_path.to_string(),
     )
 }
@@ -399,17 +408,17 @@ fn at(code: &str, path: &str) -> (String, String) {
 fn stamped_trades_wants_and_gives_need_one_element() {
     assert_eq!(
         stamped_error(r#"[{"total_exp_required": 0, "groups": [{"trades": []}]}]"#),
-        at("InvalidValue", "tiers/0/groups/0/trades")
+        at("core/invalid_value", "tiers/0/groups/0/trades")
     );
     let wants = r#"{"wants": [], "gives": [{"item": "minecraft:emerald"}]}"#;
     assert_eq!(
         stamped_error(&grouped("", &[wants.to_owned()])),
-        at("InvalidValue", "tiers/0/groups/0/trades/0/wants")
+        at("core/invalid_value", "tiers/0/groups/0/trades/0/wants")
     );
     let gives = r#"{"wants": [{"item": "minecraft:wheat"}], "gives": []}"#;
     assert_eq!(
         stamped_error(&grouped("", &[gives.to_owned()])),
-        at("InvalidValue", "tiers/0/groups/0/trades/0/gives")
+        at("core/invalid_value", "tiers/0/groups/0/trades/0/gives")
     );
     // `tiers[].groups` and `choice` have no size constraint.
     loads(&doc(
@@ -430,27 +439,33 @@ fn stamped_trades_wants_and_gives_need_one_element() {
 fn stamped_required_members_are_required() {
     assert_eq!(
         stamped_error(r#"[{"total_exp_required": 0}]"#),
-        at("MissingRequiredField", "tiers/0/groups")
+        at("core/missing_required_field", "tiers/0/groups")
     );
     assert_eq!(
         stamped_error(r#"[{"total_exp_required": 0, "groups": [{"num_to_select": 0}]}]"#),
-        at("MissingRequiredField", "tiers/0/groups/0/trades")
+        at("core/missing_required_field", "tiers/0/groups/0/trades")
     );
     let no_wants = r#"{"gives": [{"item": "minecraft:emerald"}]}"#;
     assert_eq!(
         stamped_error(&grouped("", &[no_wants.to_owned()])),
-        at("MissingRequiredField", "tiers/0/groups/0/trades/0/wants")
+        at(
+            "core/missing_required_field",
+            "tiers/0/groups/0/trades/0/wants"
+        )
     );
     let no_gives = r#"{"wants": [{"item": "minecraft:wheat"}]}"#;
     assert_eq!(
         stamped_error(&grouped("", &[no_gives.to_owned()])),
-        at("MissingRequiredField", "tiers/0/groups/0/trades/0/gives")
+        at(
+            "core/missing_required_field",
+            "tiers/0/groups/0/trades/0/gives"
+        )
     );
     let no_item = r#"{"wants": [{"quantity": 2}], "gives": [{"item": "minecraft:emerald"}]}"#;
     assert_eq!(
         stamped_error(&grouped("", &[no_item.to_owned()])),
         at(
-            "MissingRequiredField",
+            "core/missing_required_field",
             "tiers/0/groups/0/trades/0/wants/0/item"
         )
     );
@@ -459,7 +474,7 @@ fn stamped_required_members_are_required() {
     assert_eq!(
         stamped_error(&grouped("", &[no_choice_item.to_owned()])),
         at(
-            "MissingRequiredField",
+            "core/missing_required_field",
             "tiers/0/groups/0/trades/0/wants/0/choice/0/item"
         )
     );
@@ -471,7 +486,7 @@ fn a_stamped_weight_is_at_least_one() {
         let trade = a_trade(&format!(r#""weight": {weight}, "#));
         assert_eq!(
             stamped_error(&grouped("", &[trade])),
-            at("InvalidValue", "tiers/0/groups/0/trades/0/weight")
+            at("core/invalid_value", "tiers/0/groups/0/trades/0/weight")
         );
     }
     let document = loads(&doc(
@@ -487,23 +502,35 @@ fn stamped_scalars_take_their_json_type_only() {
     // type does not hold (the strict wrappers' reading: the member is a `u32` / `i32`, with no
     // constraint of its own to break).
     for (member, path, code) in [
-        (r#""trader_exp": "2", "#, "trader_exp", "InvalidType"),
-        (r#""trader_exp": true, "#, "trader_exp", "InvalidType"),
-        (r#""trader_exp": 2.5, "#, "trader_exp", "InvalidType"),
-        (r#""trader_exp": -1, "#, "trader_exp", "InvalidType"),
-        (r#""trader_exp": 4294967296, "#, "trader_exp", "InvalidType"),
-        (r#""max_uses": 1.5, "#, "max_uses", "InvalidType"),
-        (r#""max_uses": "7", "#, "max_uses", "InvalidType"),
-        (r#""max_uses": 2147483648, "#, "max_uses", "InvalidType"),
-        (r#""reward_exp": 1, "#, "reward_exp", "InvalidType"),
-        (r#""reward_exp": "true", "#, "reward_exp", "InvalidType"),
-        (r#""weight": "1", "#, "weight", "InvalidType"),
-        (r#""weight": [1], "#, "weight", "InvalidType"),
+        (r#""trader_exp": "2", "#, "trader_exp", "core/invalid_type"),
+        (r#""trader_exp": true, "#, "trader_exp", "core/invalid_type"),
+        (r#""trader_exp": 2.5, "#, "trader_exp", "core/invalid_type"),
+        (r#""trader_exp": -1, "#, "trader_exp", "core/invalid_type"),
+        (
+            r#""trader_exp": 4294967296, "#,
+            "trader_exp",
+            "core/invalid_type",
+        ),
+        (r#""max_uses": 1.5, "#, "max_uses", "core/invalid_type"),
+        (r#""max_uses": "7", "#, "max_uses", "core/invalid_type"),
+        (
+            r#""max_uses": 2147483648, "#,
+            "max_uses",
+            "core/invalid_type",
+        ),
+        (r#""reward_exp": 1, "#, "reward_exp", "core/invalid_type"),
+        (
+            r#""reward_exp": "true", "#,
+            "reward_exp",
+            "core/invalid_type",
+        ),
+        (r#""weight": "1", "#, "weight", "core/invalid_type"),
+        (r#""weight": [1], "#, "weight", "core/invalid_type"),
     ] {
         let d = rejects(&doc(Some("1.21.30"), &grouped("", &[a_trade(member)])));
         let errors: Vec<_> = d.iter().filter(|f| f.severity == Severity::Error).collect();
         assert_eq!(errors.len(), 1, "{member}: {}", summary(&d));
-        assert_eq!(errors[0].code.name(), code, "{member}");
+        assert_eq!(errors[0].code.id(), code, "{member}");
         assert_eq!(
             errors[0].location.json_path.to_string(),
             format!("tiers/0/groups/0/trades/0/{path}")
@@ -514,17 +541,17 @@ fn stamped_scalars_take_their_json_type_only() {
         (
             r#"[{"total_exp_required": "0", "groups": []}]"#.to_owned(),
             "tiers/0/total_exp_required",
-            "InvalidType",
+            "core/invalid_type",
         ),
         (
             r#"[{"total_exp_required": -1, "groups": []}]"#.to_owned(),
             "tiers/0/total_exp_required",
-            "InvalidType",
+            "core/invalid_type",
         ),
         (
             grouped(r#""num_to_select": "1", "#, &[a_trade("")]),
             "tiers/0/groups/0/num_to_select",
-            "InvalidType",
+            "core/invalid_type",
         ),
         (
             grouped(
@@ -536,7 +563,7 @@ fn stamped_scalars_take_their_json_type_only() {
                 ],
             ),
             "tiers/0/groups/0/trades/0/wants/0/price_multiplier",
-            "InvalidType",
+            "core/invalid_type",
         ),
         (
             grouped(
@@ -546,7 +573,7 @@ fn stamped_scalars_take_their_json_type_only() {
                     .to_owned()],
             ),
             "tiers/0/groups/0/trades/0/wants/0/functions",
-            "InvalidType",
+            "core/invalid_type",
         ),
     ] {
         assert_eq!(stamped_error(&tiers), at(code, path), "{tiers}");
@@ -555,7 +582,10 @@ fn stamped_scalars_take_their_json_type_only() {
     let numbered = r#"{"wants": [{"item": 5}], "gives": [{"item": "minecraft:emerald"}]}"#;
     assert_eq!(
         stamped_error(&grouped("", &[numbered.to_owned()])),
-        at("InvalidType", "tiers/0/groups/0/trades/0/wants/0/item")
+        at(
+            "core/invalid_type",
+            "tiers/0/groups/0/trades/0/wants/0/item"
+        )
     );
     let document = loads(&doc(None, &flat(&[numbered.to_owned()])));
     assert_eq!(
@@ -592,7 +622,7 @@ fn a_stamped_filter_is_checked_by_the_shared_filter_type() {
 #[test]
 fn a_syntax_error_rejects_the_file() {
     let d = rejects(r#"{"tiers": [}"#);
-    assert_eq!(with(&d, "MalformedInput", Severity::Error).len(), 1);
+    assert_eq!(with(&d, "core/document_json", Severity::Error).len(), 1);
 }
 
 #[test]
@@ -611,7 +641,7 @@ fn unknown_legacy_members_are_warned_and_ignored() {
         "tiers/0/groups/0/trades/0/wants/0/count",
         "tiers/0/groups/0/trades/0/gives/0/choice/0/amount",
     ] {
-        found_at(d, "UnrecognizedField", Severity::Info, path);
+        found_at(d, "core/unrecognized_field", Severity::Info, path);
     }
     assert!(above_info(d).is_empty(), "{}", summary(d));
 }
@@ -655,13 +685,18 @@ fn f6_6_item_4_an_unknown_key_at_1_21_30_rejects_the_file() {
         ),
     ] {
         let d = rejects(&doc(Some("1.21.30"), &tiers));
-        found_at(&d, "UnrecognizedField", Severity::Error, path);
+        found_at(&d, "core/unrecognized_field", Severity::Error, path);
         assert_eq!(above_info(&d).len(), 1, "{}", summary(&d));
         // The legacy parser ignores it (an information of ours (a)).
         if !path.ends_with("/item") {
             let document = loads(&doc(None, &tiers));
             assert_eq!(
-                with(document.diagnostics(), "UnrecognizedField", Severity::Info).len(),
+                with(
+                    document.diagnostics(),
+                    "core/unrecognized_field",
+                    Severity::Info
+                )
+                .len(),
                 1
             );
         }
@@ -675,12 +710,15 @@ fn a_third_root_member_fails_the_envelope_from_1_21_30() {
         grouped("", &[a_trade("")])
     );
     let d = rejects(&text);
-    assert_eq!(with(&d, "MalformedInput", Severity::Error).len(), 1);
+    assert_eq!(
+        with(&d, "core/document_member_count", Severity::Error).len(),
+        1
+    );
     // Below 1.21.30 the legacy parser reads the whole document and ignores the member.
     let document = loads(&text.replace("1.21.30", "1.21.20"));
     found_at(
         document.diagnostics(),
-        "UnrecognizedField",
+        "core/unrecognized_field",
         Severity::Info,
         "note",
     );
@@ -718,22 +756,22 @@ fn legacy_scalars_convert_as_jsoncpp_does_and_each_conversion_is_told() {
     // warning at its member. `1.0` is the number 1: nothing to tell.
     let told: Vec<(&str, Severity, String)> = infos(document.diagnostics())
         .iter()
-        .map(|f| (f.code.name(), f.severity, f.location.json_path.to_string()))
+        .map(|f| (f.code.id(), f.severity, f.location.json_path.to_string()))
         .collect();
     let at = |member: &str| format!("tiers/0/groups/0/trades/0/{member}");
     assert_eq!(
         told,
         [
             (
-                "InvalidType",
+                "core/invalid_type",
                 Severity::Info,
                 at("wants/0/price_multiplier")
             ),
-            ("InvalidType", Severity::Info, at("wants/0/item")),
-            ("InvalidValue", Severity::Info, at("trader_exp")),
-            ("InvalidType", Severity::Info, at("max_uses")),
-            ("InvalidType", Severity::Info, at("reward_exp")),
-            ("InvalidValue", Severity::Info, at("weight")),
+            ("core/invalid_type", Severity::Info, at("wants/0/item")),
+            ("core/invalid_value", Severity::Info, at("trader_exp")),
+            ("core/invalid_type", Severity::Info, at("max_uses")),
+            ("core/invalid_type", Severity::Info, at("reward_exp")),
+            ("core/invalid_value", Severity::Info, at("weight")),
         ]
     );
     let group = &document.value().tiers[0].groups[0];
@@ -758,11 +796,19 @@ fn legacy_scalars_convert_as_jsoncpp_does_and_each_conversion_is_told() {
 #[test]
 fn a_legacy_scalar_no_conversion_takes_is_warned_and_reads_as_absent() {
     for (member, key, code) in [
-        (r#""trader_exp": "2", "#, "trader_exp", "InvalidType"),
-        (r#""trader_exp": -1, "#, "trader_exp", "InvalidValue"),
-        (r#""max_uses": [7], "#, "max_uses", "InvalidType"),
-        (r#""max_uses": 3000000000, "#, "max_uses", "InvalidValue"),
-        (r#""reward_exp": "yes", "#, "reward_exp", "InvalidType"),
+        (r#""trader_exp": "2", "#, "trader_exp", "core/invalid_type"),
+        (r#""trader_exp": -1, "#, "trader_exp", "core/invalid_value"),
+        (r#""max_uses": [7], "#, "max_uses", "core/invalid_type"),
+        (
+            r#""max_uses": 3000000000, "#,
+            "max_uses",
+            "core/invalid_value",
+        ),
+        (
+            r#""reward_exp": "yes", "#,
+            "reward_exp",
+            "core/invalid_type",
+        ),
     ] {
         let document = loads(&doc(
             None,
@@ -770,7 +816,7 @@ fn a_legacy_scalar_no_conversion_takes_is_warned_and_reads_as_absent() {
         ));
         let finding = only_info(document.diagnostics());
         assert_eq!(
-            (finding.code.name(), finding.severity),
+            (finding.code.id(), finding.severity),
             (code, Severity::Info),
             "{member}"
         );
@@ -788,7 +834,7 @@ fn a_legacy_scalar_no_conversion_takes_is_warned_and_reads_as_absent() {
     let trade = r#"{"wants": [{"item": {}}], "gives": [{"item": "minecraft:emerald"}]}"#;
     let document = loads(&doc(None, &flat(&[trade.to_owned()])));
     let finding = only_info(document.diagnostics());
-    assert_eq!(finding.code.name(), "InvalidType");
+    assert_eq!(finding.code.id(), "core/invalid_type");
     assert_eq!(
         finding.location.json_path.to_string(),
         "tiers/0/trades/0/wants/0/item"
@@ -803,7 +849,7 @@ fn a_legacy_entry_that_is_no_object_is_warned_and_dropped() {
         "gives": [{"item": "minecraft:emerald"}]}"#;
     let document = loads(&doc(None, &flat(&[trade.to_owned()])));
     let finding = only_info(document.diagnostics());
-    assert_eq!(finding.code.name(), "InvalidType");
+    assert_eq!(finding.code.id(), "core/invalid_type");
     assert_eq!(
         finding.location.json_path.to_string(),
         "tiers/0/trades/0/wants/0"
@@ -814,13 +860,13 @@ fn a_legacy_entry_that_is_no_object_is_warned_and_dropped() {
 #[test]
 fn a_legacy_tier_that_is_no_object_rejects_the_table() {
     let d = rejects(&doc(None, "[3]"));
-    found_at(&d, "InvalidType", Severity::Error, "tiers/0");
+    found_at(&d, "core/invalid_type", Severity::Error, "tiers/0");
 }
 
 #[test]
 fn a_blank_file_is_an_empty_document_and_a_bom_is_skipped() {
     let d = rejects("  \n");
-    assert_eq!(with(&d, "EmptyDocument", Severity::Error).len(), 1);
+    assert_eq!(with(&d, "core/empty_document", Severity::Error).len(), 1);
     let text = format!("\u{feff}{}", doc(None, &flat(&[a_trade("")])));
     assert!(above_info(loads(&text).diagnostics()).is_empty());
 }
@@ -837,7 +883,7 @@ fn a_legacy_real_beyond_an_integer_member_is_a_value_warning() {
         ),
     ));
     let finding = only_info(document.diagnostics());
-    assert_eq!(finding.code.name(), "InvalidValue");
+    assert_eq!(finding.code.id(), "core/invalid_value");
     assert_eq!(
         finding.location.json_path.to_string(),
         "tiers/0/groups/0/trades/0/max_uses"
@@ -869,7 +915,7 @@ fn a_legacy_real_beyond_an_integer_member_is_a_value_warning() {
             &grouped(r#""num_to_select": 1, "#, &[a_trade(member)]),
         ));
         let finding = only_info(document.diagnostics());
-        assert_eq!(finding.code.name(), "InvalidValue", "{member}");
+        assert_eq!(finding.code.id(), "core/invalid_value", "{member}");
         assert!(finding.location.json_path.to_string().ends_with(key));
     }
 }
@@ -879,7 +925,7 @@ fn a_legacy_group_or_trade_that_is_no_object_is_dropped_by_its_message() {
     // A group that is no object has no `trades`.
     let document = loads(&doc(None, r#"[{"groups": [3]}]"#));
     let finding = only(document.diagnostics());
-    assert_eq!(finding.code.name(), "MissingRequiredField");
+    assert_eq!(finding.code.id(), "trade/trades_missing");
     assert_eq!(
         finding.location.json_path.to_string(),
         "tiers/0/groups/0/trades"
@@ -888,7 +934,7 @@ fn a_legacy_group_or_trade_that_is_no_object_is_dropped_by_its_message() {
     // A trade that is no object has no `wants`.
     let document = loads(&doc(None, &flat(&["5".to_owned(), a_trade("")])));
     let finding = only(document.diagnostics());
-    assert_eq!(finding.code.name(), "InvalidValue");
+    assert_eq!(finding.code.id(), "trade/no_offers");
     assert_eq!(
         finding.location.json_path.to_string(),
         "tiers/0/trades/0/wants"
@@ -897,7 +943,7 @@ fn a_legacy_group_or_trade_that_is_no_object_is_dropped_by_its_message() {
     // A tier with neither `groups` nor `trades` is read as the flat form: no `trades`.
     let document = loads(&doc(None, "[{}]"));
     let finding = only(document.diagnostics());
-    assert_eq!(finding.code.name(), "MissingRequiredField");
+    assert_eq!(finding.code.id(), "trade/trades_missing");
     assert_eq!(finding.location.json_path.to_string(), "tiers/0/trades");
     assert_eq!(finding.code.to_string(), "\"trades\" must be an array");
 }
@@ -916,13 +962,13 @@ fn a_legacy_choice_that_is_no_array_leaves_the_entry_a_bare_item() {
     let d = document.diagnostics();
     found_at(
         d,
-        "UnrecognizedField",
+        "core/unrecognized_field",
         Severity::Info,
         "tiers/0/trades/0/wants/0/choice",
     );
     found_at(
         d,
-        "UnrecognizedField",
+        "core/unrecognized_field",
         Severity::Info,
         "tiers/0/trades/0/wants/1/choice",
     );
@@ -936,7 +982,7 @@ fn an_unknown_member_of_a_bare_stamped_item_is_an_error_too() {
     let d = rejects(&doc(Some("1.21.30"), &grouped("", &[trade.to_owned()])));
     found_at(
         &d,
-        "UnrecognizedField",
+        "core/unrecognized_field",
         Severity::Error,
         "tiers/0/groups/0/trades/0/wants/0/biomes",
     );
@@ -971,18 +1017,18 @@ fn a_stamped_quantity_error_names_the_bound_and_the_kind() {
         stamped_error(&grouped("", &[trade]))
     };
     let base = "tiers/0/groups/0/trades/0/wants/0/quantity";
-    assert_eq!(error("0"), at("InvalidValue", base));
-    assert_eq!(error("-1"), at("InvalidValue", base));
-    assert_eq!(error("1.5"), at("InvalidType", base));
-    assert_eq!(error("true"), at("InvalidType", base));
-    assert_eq!(error(r#""2""#), at("InvalidType", base));
+    assert_eq!(error("0"), at("core/invalid_value", base));
+    assert_eq!(error("-1"), at("core/invalid_value", base));
+    assert_eq!(error("1.5"), at("core/invalid_type", base));
+    assert_eq!(error("true"), at("core/invalid_type", base));
+    assert_eq!(error(r#""2""#), at("core/invalid_type", base));
     assert_eq!(
         error(r#"{"min": 0}"#),
-        at("InvalidValue", &format!("{base}/min"))
+        at("core/invalid_value", &format!("{base}/min"))
     );
     assert_eq!(
         error(r#"{"min": 1, "max": 0}"#),
-        at("InvalidValue", &format!("{base}/max"))
+        at("core/invalid_value", &format!("{base}/max"))
     );
 }
 
@@ -1003,16 +1049,16 @@ fn the_legacy_reader_rejects_a_root_that_is_no_object() {
         at: JsonPath::new(),
     };
     for (text, code) in [
-        ("[]", "InvalidType"),
-        ("3", "InvalidType"),
-        ("{", "MalformedInput"),
+        ("[]", "core/invalid_type"),
+        ("3", "core/invalid_type"),
+        ("{", "core/syntax"),
     ] {
         let mut d = Diagnostics::default();
         assert!(v0::TradeTable::parse(JsonSlice::new(text), &cx, &mut d).is_none());
         assert_eq!(d.len(), 1, "{text}");
         let finding = d.iter().next().unwrap();
         assert_eq!(
-            (finding.code.name(), finding.severity),
+            (finding.code.id(), finding.severity),
             (code, Severity::Error),
             "{text}"
         );
@@ -1072,9 +1118,9 @@ fn a_stamped_value_of_the_wrong_json_type_is_an_invalid_type_at_its_own_path() {
         let errors: Vec<(String, String)> = d
             .iter()
             .filter(|f| f.severity == Severity::Error)
-            .map(|f| (f.code.name().to_owned(), f.location.json_path.to_string()))
+            .map(|f| (f.code.id().to_owned(), f.location.json_path.to_string()))
             .collect();
-        assert_eq!(errors, [at("InvalidType", &path)], "{tiers}");
+        assert_eq!(errors, [at("core/invalid_type", &path)], "{tiers}");
     }
 }
 
@@ -1132,7 +1178,11 @@ fn an_array_given_to_a_stamped_scalar_is_an_invalid_type_at_the_member() {
             format!("{trade}/wants/0/quantity/max"),
         ),
     ] {
-        assert_eq!(stamped_error(&tiers), at("InvalidType", &path), "{tiers}");
+        assert_eq!(
+            stamped_error(&tiers),
+            at("core/invalid_type", &path),
+            "{tiers}"
+        );
     }
 }
 
@@ -1150,7 +1200,7 @@ fn an_author_written_dep_member_rejects_the_table() {
     for member in ["__DEP_fnctns", "__DEP_fltrs"] {
         let finding = found_at(
             &d,
-            "DeprecatedMember",
+            "core/member_deprecated",
             Severity::Error,
             &format!("{base}/{member}"),
         );
@@ -1174,18 +1224,11 @@ fn an_author_written_dep_member_of_a_legacy_table_is_a_warning() {
     assert!(!d.has_errors(), "{d:#?}");
     let told: Vec<String> = infos(d)
         .iter()
-        .map(|f| {
-            format!(
-                "{:?} {} {}",
-                f.severity,
-                f.code.name(),
-                f.location.json_path
-            )
-        })
+        .map(|f| format!("{:?} {} {}", f.severity, f.code.id(), f.location.json_path))
         .collect();
     assert_eq!(
         told,
-        ["Info UnrecognizedField tiers/0/groups/0/trades/0/wants/0/__DEP_fnctns"],
+        ["Info core/unrecognized_field tiers/0/groups/0/trades/0/wants/0/__DEP_fnctns"],
         "{d:#?}"
     );
 }

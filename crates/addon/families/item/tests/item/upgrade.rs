@@ -152,7 +152,7 @@ fn codes(d: &Diagnostics, name: &str) -> usize {
 fn the_1_18_fixers_rename_and_map() {
     let (_, d) = step::<history::v1_16_100::Item>("i01_1_16_100_fixers_118", None, &allowlisted());
     // the string list of repair items is removed as a whole member
-    assert_eq!(codes(&d, "DroppedField"), 1);
+    assert_eq!(codes(&d, "core/dropped_field"), 1);
     // every saturation name, `high` included, and an unknown one
     for (name, expected) in [
         ("poor", 0.1),
@@ -208,7 +208,7 @@ fn an_unknown_saturation_name_keeps_the_item() {
     let finding = document
         .diagnostics()
         .iter()
-        .find(|f| f.code.name() == "InvalidValue")
+        .find(|f| f.code.id() == "item/saturation_modifier")
         .unwrap();
     assert_eq!((finding.severity, finding.kept), (Severity::Error, true));
 }
@@ -229,7 +229,9 @@ fn the_old_shapes_at_1_18_0_refuse_the_item() {
     let d = rejects(&json, &allowlisted());
     let told: Vec<(String, Severity)> = d
         .iter()
-        .filter(|f| f.code.name() == "InvalidValue" || f.code.name() == "MissingRequiredField")
+        .filter(|f| {
+            f.code.id() == "core/invalid_value" || f.code.id() == "core/missing_required_field"
+        })
         .map(|f| (f.location.json_path.to_string(), f.severity))
         .collect();
     assert_eq!(
@@ -274,7 +276,7 @@ fn armor_becomes_wearable_protection_and_category_menu_category() {
     let (doc, d) = step::<history::v1_20_0::Item>("i03_1_20_0_armor_menu", None, &allowlisted());
     // `armor.texture_type`, and the fixture's `minecraft:foil`, which no format from 1.20.20
     // on reads: the step that leaves the formats that read it tells that it goes.
-    assert_eq!(codes(&d, "DroppedField"), 2, "texture_type, foil");
+    assert_eq!(codes(&d, "core/dropped_field"), 2, "texture_type, foil");
     let Some(Component::Wearable(wearable)) = doc.components.get("minecraft:wearable") else {
         panic!("no wearable");
     };
@@ -311,7 +313,7 @@ fn on_consume_moves_to_the_side_car() {
         doc.deprecated.on_consume.as_ref().unwrap().event.as_deref(),
         Some("demo:ate")
     );
-    assert_eq!(codes(&d, "DeprecatedMember"), 1);
+    assert_eq!(codes(&d, "core/deprecated_member"), 1);
 }
 
 #[test]
@@ -345,7 +347,7 @@ fn the_six_triggers_and_render_offsets_move_whole() {
         Some("demo:block")
     );
     assert!(side.render_offsets.is_some());
-    assert_eq!(codes(&d, "DeprecatedMember"), 6);
+    assert_eq!(codes(&d, "core/deprecated_member"), 6);
     for gone in [
         "minecraft:on_use",
         "minecraft:on_use_on",
@@ -454,7 +456,7 @@ fn the_plain_copies_change_nothing_but_replace_block_item() {
 fn menu_category_custom_components_and_storage_split() {
     let (doc, d) =
         step::<history::v1_21_50::Item>("i13_1_21_50_menu_custom_storage", None, &allowlisted());
-    assert_eq!(codes(&d, "DeprecatedMember"), 1, "the group prefix");
+    assert_eq!(codes(&d, "core/deprecated_member"), 1, "the group prefix");
     let menu = doc.description.menu_category.as_ref().unwrap();
     assert_eq!(menu.category, Some(CreativeCategory::Items));
     assert_eq!(

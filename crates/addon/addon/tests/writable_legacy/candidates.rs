@@ -25,11 +25,11 @@ fn told<T: Content>(at: &str, cx: &LoadContext, text: &str) -> (Vec<String>, Str
     let told = document
         .diagnostics()
         .iter()
-        .filter(|f| f.code.name() != "MolangNotChecked")
+        .filter(|f| f.code.id() != "core/molang_not_checked")
         .map(|f| {
             format!(
                 "{} {:?} at {}",
-                f.code.name(),
+                f.code.id(),
                 f.severity,
                 f.location.json_path
             )
@@ -89,7 +89,7 @@ fn particle(components: &str, rest: &str) -> (Vec<String>, String) {
 fn fog1_a_distance_type_in_another_case_is_noted_at_the_member() {
     let member = "minecraft:fog_settings/distance/air/render_distance_type";
     let (found, written) = fog(r#""fog_start":0.5,"fog_end":1.0,"render_distance_type":"RENDER""#);
-    assert_eq!(found, [format!("ValueRewritten Info at {member}")]);
+    assert_eq!(found, [format!("core/value_rewritten Info at {member}")]);
     assert!(
         written.contains(r#""render_distance_type": "render""#),
         "{written}"
@@ -109,8 +109,8 @@ fn fog2_a_number_a_float_does_not_hold_as_written_is_noted_at_the_member() {
     assert_eq!(
         found,
         [
-            format!("LossyConversion Info at {air}/fog_end"),
-            format!("LossyConversion Info at {air}/fog_start"),
+            format!("core/lossy_conversion Info at {air}/fog_end"),
+            format!("core/lossy_conversion Info at {air}/fog_start"),
         ]
     );
     assert!(
@@ -134,8 +134,8 @@ fn geo7_a_number_a_float_does_not_hold_as_written_is_noted_at_the_member() {
     assert_eq!(
         found,
         [
-            "LossyConversion Info at minecraft:geometry/0/bones/0/pivot/0",
-            "LossyConversion Info at minecraft:geometry/0/bones/0/inflate",
+            "core/lossy_conversion Info at minecraft:geometry/0/bones/0/pivot/0",
+            "core/lossy_conversion Info at minecraft:geometry/0/bones/0/inflate",
         ]
     );
     assert!(
@@ -155,7 +155,7 @@ fn trd5_a_price_multiplier_a_float_does_not_hold_as_written_is_noted() {
     );
     assert_eq!(
         found,
-        ["LossyConversion Info at tiers/0/trades/0/wants/0/price_multiplier"]
+        ["core/lossy_conversion Info at tiers/0/trades/0/wants/0/price_multiplier"]
     );
     assert!(
         written.contains(r#""price_multiplier": 0.12345679"#),
@@ -184,7 +184,7 @@ fn cent4_a_controller_element_without_a_member_is_noted_where_it_is() {
     let (found, written) = entity(r#"{},{"move":"controller.animation.x.move"}"#);
     assert_eq!(
         found,
-        ["DroppedField Info at minecraft:client_entity/description/animation_controllers/0"]
+        ["core/dropped_field Info at minecraft:client_entity/description/animation_controllers/0"]
     );
     assert!(written.contains("controller__move"), "{written}");
     let (found, _) = entity(r#"{"move":"controller.animation.x.move"}"#);
@@ -200,16 +200,22 @@ fn geo5_a_cube_without_a_member_the_pre_1_8_step_removes_is_noted_where_it_is() 
         ));
         let found: Vec<String> = found
             .into_iter()
-            .filter(|f| !f.starts_with("MissingFormatVersion"))
+            .filter(|f| !f.starts_with("core/missing_format_version"))
             .collect();
         (found, written)
     };
     let first = r#"{"origin":[0,0,0],"size":[1,1,1],"uv":[0,0]}"#;
     let last = r#"{"origin":[1,2,3],"size":[2,2,2],"uv":[8,8]}"#;
     let (found, _) = file(&format!("{{}},{first},{last}"));
-    assert_eq!(found, ["DroppedField Info at geometry.a/bones/0/cubes/0"]);
+    assert_eq!(
+        found,
+        ["core/dropped_field Info at geometry.a/bones/0/cubes/0"]
+    );
     let (found, _) = file(&format!("{first},{{}},{last}"));
-    assert_eq!(found, ["DroppedField Info at geometry.a/bones/0/cubes/1"]);
+    assert_eq!(
+        found,
+        ["core/dropped_field Info at geometry.a/bones/0/cubes/1"]
+    );
     let (found, _) = file(&format!("{first},{last}"));
     assert_eq!(found, [] as [&str; 0]);
 }
@@ -224,7 +230,7 @@ fn geo6_a_boolean_written_as_a_text_is_noted_at_the_member() {
         ));
         let found: Vec<String> = found
             .into_iter()
-            .filter(|f| !f.starts_with("MissingFormatVersion"))
+            .filter(|f| !f.starts_with("core/missing_format_version"))
             .collect();
         (found, written)
     };
@@ -232,9 +238,9 @@ fn geo6_a_boolean_written_as_a_text_is_noted_at_the_member() {
     assert_eq!(
         found,
         [
-            "ValueRewritten Info at geometry.a/bones/0/reset",
-            "ValueRewritten Info at geometry.a/bones/0/mirror",
-            "ValueRewritten Info at geometry.a/bones/0/cubes/0/mirror",
+            "core/value_rewritten Info at geometry.a/bones/0/reset",
+            "core/value_rewritten Info at geometry.a/bones/0/mirror",
+            "core/value_rewritten Info at geometry.a/bones/0/cubes/0/mirror",
         ]
     );
     assert!(
@@ -283,13 +289,13 @@ fn trd3_trd4_an_empty_biomes_list_is_noted_and_a_list_with_names_is_converted() 
         r#"{"item":"minecraft:emerald","quantity":1,"biomes":[]}"#,
         "",
     );
-    assert_eq!(found, [format!("DroppedField Info at {at}")]);
+    assert_eq!(found, [format!("core/dropped_field Info at {at}")]);
     assert!(!written.contains("__DEP_fltrs"), "{written}");
     let (found, written) = trade(
         r#"{"item":"minecraft:emerald","quantity":1,"biomes":["plains","plains"]}"#,
         "",
     );
-    assert_eq!(found, [format!("ValueRewritten Info at {at}")]);
+    assert_eq!(found, [format!("core/value_rewritten Info at {at}")]);
     assert_eq!(written.matches("is_mark_variant").count(), 2, "{written}");
 }
 
@@ -323,9 +329,9 @@ fn prt4_a_boolean_at_a_molang_member_is_noted_at_the_member() {
         found,
         [
             format!(
-                "ValueRewritten Info at {components}/minecraft:emitter_rate_instant/num_particles"
+                "core/value_rewritten Info at {components}/minecraft:emitter_rate_instant/num_particles"
             ),
-            format!("ValueRewritten Info at {components}/minecraft:particle_initial_speed"),
+            format!("core/value_rewritten Info at {components}/minecraft:particle_initial_speed"),
         ]
     );
     assert!(
@@ -350,7 +356,7 @@ fn prt4_a_boolean_at_a_molang_member_is_noted_at_the_member() {
         as_read
             .diagnostics()
             .iter()
-            .all(|f| f.code.name() != "ValueRewritten"),
+            .all(|f| f.code.kind() != bedrock_addon::diagnostic::Kind::Rewritten),
         "{:?}",
         as_read.diagnostics()
     );
@@ -378,7 +384,7 @@ fn prt10_a_sequence_element_that_is_left_out_is_told_at_the_element() {
     // The legacy reader's content-log line, a kept error.
     assert_eq!(
         found,
-        ["InvalidValue Error at particle_effect/events/e/sequence/1"]
+        ["particle/event_no_data Error at particle_effect/events/e/sequence/1"]
     );
     assert!(written.contains(r#""randomize": []"#), "{written}");
 }
@@ -397,7 +403,7 @@ fn cb1_an_empty_ambient_addition_the_step_leaves_out_is_noted_at_the_member() {
         );
         let found: Vec<String> = found
             .into_iter()
-            .filter(|f| !f.starts_with("SynthesizedComponent"))
+            .filter(|f| !f.starts_with("core/synthesized_component"))
             .collect();
         (found, written)
     };
@@ -405,7 +411,7 @@ fn cb1_an_empty_ambient_addition_the_step_leaves_out_is_noted_at_the_member() {
     assert_eq!(
         found,
         [
-            "DroppedField Info at minecraft:client_biome/components/minecraft:ambient_sounds/addition"
+            "core/dropped_field Info at minecraft:client_biome/components/minecraft:ambient_sounds/addition"
         ]
     );
     assert!(!written.contains("addition"), "{written}");

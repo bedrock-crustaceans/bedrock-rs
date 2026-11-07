@@ -96,7 +96,7 @@ fn group(stack: &PackStack<Resource>) -> impl Iterator<Item = &Diagnostic> + '_ 
 /// The findings of the group that are not the capability hint (the fixtures declare no
 /// capability; `stack::ts70` to `ts74` are about it).
 fn findings(stack: &PackStack<Resource>) -> Vec<Rendered> {
-    rendered(group(stack).filter(|finding| finding.code.name() != "CapabilityHint"))
+    rendered(group(stack).filter(|finding| finding.code.id() != "core/capability_hint"))
 }
 
 /// An expected error.
@@ -111,10 +111,18 @@ fn warning(code: &'static str, at: &str, text: &str) -> Rendered {
 
 /// The line the client logs after a failed schema pass.
 fn schema_failed() -> Rendered {
-    error("InvalidValue", "", "Failed to validate schema")
+    error(
+        "texture_set/set_schema_failed",
+        "",
+        "Failed to validate schema",
+    )
 }
 
 /// The line the client logs after a failed post-validation (with its trailing space).
 fn post_failed() -> Rendered {
-    error("InvalidValue", "", "Failed to post-validate schema ")
+    error(
+        "texture_set/set_post_failed",
+        "",
+        "Failed to post-validate schema ",
+    )
 }

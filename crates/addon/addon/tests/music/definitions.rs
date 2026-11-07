@@ -106,7 +106,7 @@ fn md04_a_root_replace_drops_every_lower_definition() {
         .collect();
     assert_eq!(names, ["menu"]);
     // The `replace` member itself is no definition (rule 23).
-    let skipped = found(sounds, "InvalidValue");
+    let skipped = found(sounds, "core/invalid_value");
     assert_eq!(skipped.len(), 1, "{:#?}", describe(sounds));
     assert_eq!(skipped[0].severity, Severity::Info);
     assert_eq!(skipped[0].location.json_path.to_string(), "replace");
@@ -123,7 +123,7 @@ fn md05_an_empty_name_is_skipped() {
     assert_eq!(sounds.definitions.len(), 1);
     expect_one(
         sounds,
-        "InvalidValue",
+        "music/no_name",
         Severity::Warning,
         "Cannot define a music definition with no name.",
     );
@@ -179,7 +179,7 @@ fn md08_an_entry_that_is_no_object_is_skipped_deviation() {
     let sounds = stack.music();
     assert_eq!(sounds.definitions.len(), 1);
     assert!(sounds.get("format_version").is_none());
-    let skipped = found(sounds, "InvalidValue");
+    let skipped = found(sounds, "core/invalid_value");
     assert_eq!(skipped.len(), 1);
     assert_eq!(skipped[0].location.json_path.to_string(), "format_version");
     assert_eq!(skipped[0].severity, Severity::Info);
@@ -195,7 +195,7 @@ fn md09_a_non_empty_string_replaces() {
     let game = music(sounds, "game");
     assert_eq!(game.event_name, "");
     assert_eq!((game.max_delay, game.min_delay_ticks()), (0.0, 100));
-    let paths: Vec<String> = found(sounds, "InvalidValue")
+    let paths: Vec<String> = found(sounds, "core/invalid_value")
         .iter()
         .map(|d| d.location.json_path.to_string())
         .collect();
@@ -217,7 +217,12 @@ fn a_minimum_above_the_maximum_is_kept_with_a_warning() {
         ),
         (9.0, 3.0)
     );
-    expect_one(sounds, "InvalidValue", Severity::Info, "game/min_delay");
+    expect_one(
+        sounds,
+        "core/invalid_value",
+        Severity::Info,
+        "game/min_delay",
+    );
     // Equal bounds are fine.
     expect_clean(copies(MUSIC, &[r#"{"game": {"min_delay": 3, "max_delay": 3}}"#]).music());
 }
@@ -236,12 +241,17 @@ fn music_members_coerce_as_the_fork_does() {
     assert_eq!((game.min_delay, game.max_delay), (0.0, 0.0));
     assert!(game.play_in_order);
     assert_eq!(
-        found(sounds, "InvalidValue").len(),
+        found(sounds, "core/invalid_value").len(),
         3,
         "{:#?}",
         describe(sounds)
     );
-    expect_one(sounds, "UnrecognizedField", Severity::Info, "game/odd");
+    expect_one(
+        sounds,
+        "core/unrecognized_field",
+        Severity::Info,
+        "game/odd",
+    );
 }
 
 #[test]
@@ -251,7 +261,7 @@ fn an_unparsable_music_base_names_its_path() {
     assert!(sounds.definitions.is_empty());
     expect_one(
         sounds,
-        "MalformedInput",
+        "core/stack_top_unparsable",
         Severity::Error,
         "Could not parse file at the top of the stack: sounds/music_definitions.json.",
     );

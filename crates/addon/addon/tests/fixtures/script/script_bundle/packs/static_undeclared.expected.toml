@@ -14,7 +14,7 @@ normalized = "@minecraft/server-ui"
 resolution = "unrecognized"
 
 [[diagnostics]]
-code = "ScriptModuleUnrecognized"
+code = "core/script_module_unrecognized"
 severity = "error"
 text = "Module [@minecraft/server-ui] is unrecognized. If this is a Native module, did you remember to add it to your manifest.json?"
 file = "scripts/main.js"

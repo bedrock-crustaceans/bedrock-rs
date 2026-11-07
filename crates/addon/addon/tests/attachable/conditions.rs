@@ -34,20 +34,20 @@ fn am05_bool_and_number_conditions() {
     let (_, condition) = boolean.binding().unwrap();
     assert!(matches!(&condition, Condition::Molang(source) if source.as_str() == "true"));
     clean(boolean.diagnostics());
-    none(boolean.diagnostics(), "InvalidMolang");
+    none(boolean.diagnostics(), "core/invalid_molang");
     let number = loaded(attachable(&bound("1.10.0", "1"), &cx()));
     assert_eq!(stored(&number), &Molang::Const(1.0));
     let (_, condition) = number.binding().unwrap();
     assert!(matches!(&condition, Condition::Molang(source) if source.as_str().is_empty()));
     // The a16 warning only: the empty text is not compiled, so not reported as Molang.
-    none(number.diagnostics(), "InvalidMolang");
+    none(number.diagnostics(), "core/invalid_molang");
     // the drop is an information
     let told: Vec<_> = number
         .diagnostics()
         .at_least(Severity::Info)
-        .map(|f| f.code.name())
+        .map(|f| f.code.id())
         .collect();
-    assert_eq!(told, ["InvalidValue"]);
+    assert_eq!(told, ["core/invalid_value"]);
 }
 
 #[cfg(feature = "molang")]
@@ -91,7 +91,7 @@ mod compiled {
             let d = rejected(attachable(&ghost(version, members), &cx()));
             expect_at(
                 &d,
-                "InvalidMolang",
+                "core/invalid_molang",
                 Severity::Error,
                 "minecraft:attachable/description/scripts/parent_setup",
             );
@@ -104,7 +104,7 @@ mod compiled {
             let d = rejected(attachable(&bound(version, r#""query.not_a_query""#), &cx()));
             let invalid: Vec<_> = d
                 .iter()
-                .filter(|f| f.code.name() == "InvalidMolang")
+                .filter(|f| f.code.id() == "core/invalid_molang")
                 .collect();
             assert!(!invalid.is_empty());
             for found in &invalid {
@@ -130,7 +130,7 @@ mod compiled {
             let d = rejected(attachable(&bound(version, r#""q.is_sneaking &&""#), &cx()));
             expect_at(
                 &d,
-                "InvalidMolang",
+                "core/invalid_molang",
                 Severity::Error,
                 &format!("{ITEM_AT}/example:wand"),
             );
@@ -144,7 +144,7 @@ mod compiled {
         let d = rejected(attachable(&ghost("1.10.0", members), &cx()));
         expect_at(
             &d,
-            "InvalidMolang",
+            "core/invalid_molang",
             Severity::Error,
             &format!("{ITEM_AT}/example:b"),
         );
@@ -157,7 +157,7 @@ mod compiled {
             &ghost("1.10.0", r#""item": "q.is_sneaking &&""#),
             &cx(),
         ));
-        none(document.diagnostics(), "InvalidMolang");
+        none(document.diagnostics(), "core/invalid_molang");
     }
 }
 
@@ -167,7 +167,14 @@ fn a17c_without_the_molang_feature_the_binding_loads_deviation() {
     // Vanilla rejects the file by the schema's Molang compile: without the compile
     // check nothing can tell, and the binding is kept.
     let document = loaded(attachable(&bound("1.10.0", r#""q.is_sneaking &&""#), &cx()));
-    none(document.diagnostics(), "InvalidMolang");
-    assert!(find(document.diagnostics(), "MolangNotChecked", Severity::Info).is_some());
+    none(document.diagnostics(), "core/invalid_molang");
+    assert!(
+        find(
+            document.diagnostics(),
+            "core/molang_not_checked",
+            Severity::Info
+        )
+        .is_some()
+    );
     assert!(document.binding().is_some());
 }

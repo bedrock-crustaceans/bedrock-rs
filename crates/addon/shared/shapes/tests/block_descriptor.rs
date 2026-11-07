@@ -3,7 +3,7 @@
 
 mod common;
 
-use bedrock_addon_core::diagnostic::{JsonPath, Severity};
+use bedrock_addon_core::diagnostic::{JsonPath, Kind, Severity};
 use bedrock_addon_core::id::BlockId;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_shared_shapes::{BlockDescriptor, BlockSpecifier, StateValue};
@@ -18,7 +18,12 @@ fn text_of(descriptor: &BlockDescriptor) -> String {
     assert_eq!(finding.severity, Severity::Error);
     assert!(finding.kept);
     // By legacy name: the variant and the definitions that were it.
-    assert_eq!(finding.code.name(), "InvalidValue", "{:?}", finding.code);
+    assert_eq!(
+        finding.code.kind(),
+        Kind::InvalidValue,
+        "{:?}",
+        finding.code
+    );
     finding.code.vanilla().expect("a vanilla text")
 }
 

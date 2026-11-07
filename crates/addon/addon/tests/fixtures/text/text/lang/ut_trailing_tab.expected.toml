@@ -5,5 +5,5 @@
 "key.trailing_whitespace" = "Value followed by tab"
 
 [[diagnostics]]
-code = "IgnoredMember"
+code = "core/ignored_member"
 severity = "info"

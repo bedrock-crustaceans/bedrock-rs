@@ -1,7 +1,7 @@
 # families/script_config fixtures.md, row sc42_net_force_tls_false (probe F2 tlsfalse).
 
 [[diagnostic]]
-code = "NoEffect"
+code = "core/no_effect"
 severity = "info"
 phase = "parse"
 file = "config/default/permissions.json"

@@ -873,7 +873,7 @@ fn a_render_controller_the_game_registered_unfolded_resolves_by_its_folded_name(
         .resource
         .render_controllers()
         .diagnostics()
-        .filter(|finding| finding.code.name() == "CaseFoldingDisabled")
+        .filter(|finding| finding.code.id() == "core/case_folding_disabled_at_line_unresolvable")
         .count();
     assert_eq!(warned, 1, "{}", said(&set));
     for name in ["controller.render.foo", "controller.render.Foo"] {

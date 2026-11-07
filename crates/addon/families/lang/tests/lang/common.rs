@@ -255,7 +255,7 @@ pub fn findings(diagnostics: &Diagnostics) -> Vec<Finding> {
         .iter()
         .map(|d| {
             (
-                d.code.name().to_owned(),
+                d.code.id().to_owned(),
                 d.severity.to_string(),
                 vanilla_text(d),
             )
@@ -327,6 +327,6 @@ pub fn with_code<'d>(
 ) -> Vec<&'d Diagnostic> {
     diagnostics
         .iter()
-        .filter(|d| d.code.name() == code && d.severity == severity)
+        .filter(|d| d.code.id() == code && d.severity == severity)
         .collect()
 }

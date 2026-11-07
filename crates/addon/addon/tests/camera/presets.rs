@@ -104,7 +104,7 @@ fn cam02_a_preset_below_1_19_50_is_unsupported() {
             errors(&d),
             [
                 finding(
-                    "UnsupportedVersion",
+                    "core/no_parser_for_version",
                     "format_version",
                     &format!("unsupported version: no parser available for version {version}")
                 ),
@@ -123,7 +123,7 @@ fn cam02_a_preset_above_the_engine_is_unsupported() {
         errors(&d),
         [
             finding(
-                "UnsupportedVersion",
+                "core/no_parser_for_version",
                 "format_version",
                 "unsupported version: no parser available for version 1.26.61"
             ),
@@ -139,7 +139,7 @@ fn cam04_an_unknown_member_drops_the_preset_at_both_slices() {
         assert_eq!(
             errors(&d),
             [finding(
-                "UnrecognizedField",
+                "core/unrecognized_field_worded",
                 "minecraft:camera_preset/unexpected_field",
                 UNRECOGNIZED
             )],
@@ -157,7 +157,7 @@ fn cam04_an_unknown_member_of_aim_assist_drops_the_preset() {
     assert_eq!(
         errors(&d),
         [finding(
-            "UnrecognizedField",
+            "core/unrecognized_field_worded",
             "minecraft:camera_preset/aim_assist/strength",
             UNRECOGNIZED
         )]
@@ -173,7 +173,7 @@ fn cam05_align_target_and_camera_forward_is_unknown_at_1_21_70() {
     assert_eq!(
         errors(&d),
         [finding(
-            "UnrecognizedField",
+            "core/unrecognized_field_worded",
             "minecraft:camera_preset/align_target_and_camera_forward",
             UNRECOGNIZED
         )]
@@ -278,7 +278,7 @@ fn rule_4a_a_name_outside_an_enum_is_an_invalid_enum_value() {
     ] {
         let found = errors_of(members);
         assert_eq!(found.len(), 1, "{members}: {found:?}");
-        assert_eq!(found[0].0, "InvalidEnumValue", "{members}");
+        assert_eq!(found[0].0, "core/invalid_enum_value", "{members}");
         assert_eq!(found[0].1, format!("minecraft:camera_preset/{path}"));
     }
 }
@@ -291,7 +291,7 @@ fn rule_4a_a_preset_needs_a_namespaced_identifier() {
         errors(&d),
         [
             finding(
-                "MissingRequiredField",
+                "core/missing_required_field_worded",
                 "minecraft:camera_preset/identifier",
                 "missing required field"
             ),
@@ -314,7 +314,7 @@ fn rule_4a_a_preset_needs_a_namespaced_identifier() {
             errors(&d),
             [
                 finding(
-                    "InvalidValue",
+                    "camera/identifier",
                     &format!("minecraft:camera_preset/{path}"),
                     IDENTIFIER
                 ),
@@ -356,7 +356,14 @@ fn rule_4a_a_value_of_the_wrong_json_type_drops_the_preset() {
     ] {
         let found = errors_of(members);
         assert_eq!(found.len(), 1, "{members}: {found:?}");
-        assert_eq!(found[0].0, "InvalidType", "{members}");
+        // A non-object `aim_assist` is the object-expected finding; every other member is a
+        // plain wrong type.
+        let code = if members == r#""aim_assist": []"# {
+            "core/expected_object"
+        } else {
+            "core/invalid_type"
+        };
+        assert_eq!(found[0].0, code, "{members}");
         assert_eq!(found[0].1, format!("minecraft:camera_preset/{path}"));
     }
 }
@@ -428,7 +435,7 @@ fn c2_below_1_26_50_a_bool_takes_a_number_and_a_float_takes_a_bool() {
         );
         let places: Vec<String> = d
             .iter()
-            .filter(|f| f.code.name() == "ValueRewritten")
+            .filter(|f| f.code.id() == "core/value_rewritten")
             .map(|f| f.location.json_path.to_string())
             .collect();
         let expected: Vec<String> = coerced
@@ -468,7 +475,7 @@ fn c2_from_1_26_50_no_scalar_is_coerced() {
             assert_eq!(
                 (found[0].0, found[0].1.as_str()),
                 (
-                    "InvalidType",
+                    "core/invalid_type",
                     format!("minecraft:camera_preset/{path}").as_str()
                 ),
                 "{version} {members}"
@@ -485,7 +492,7 @@ fn c2_a_coerced_value_is_checked_against_its_range() {
     assert_eq!(
         found,
         [finding(
-            "InvalidValue",
+            "core/outside_accepted_range",
             "minecraft:camera_preset/radius",
             &range("0.100000", "64")
         )]
@@ -509,7 +516,7 @@ fn a_bad_element_of_a_fixed_array_is_reported_at_its_index() {
         let d = rejects(preset(&text));
         let found: Vec<_> = d
             .at_least(Severity::Error)
-            .filter(|f| f.code.name() != "DocumentRejected")
+            .filter(|f| f.code.id() != "camera/failed_presets")
             .collect();
         assert_eq!(found.len(), 1, "{members}: {found:#?}");
         assert_eq!(
@@ -574,7 +581,7 @@ fn cam08_values_outside_their_ranges_drop_the_preset() {
     ] {
         assert_eq!(
             errors_of(members),
-            [finding("InvalidValue", &path, &text)],
+            [finding("core/outside_accepted_range", &path, &text)],
             "{members}"
         );
     }
@@ -622,13 +629,13 @@ fn cam12_starting_rot_loads_at_1_26_50_only() {
     assert_eq!(
         errors(&d),
         [finding(
-            "UnrecognizedField",
+            "core/unrecognized_field_worded",
             "minecraft:camera_preset/starting_rot",
             UNRECOGNIZED
         )]
     );
     let d = rejects(preset(&preset_with("1.26.50", r#""starting_rot": [10]"#)));
-    assert_eq!(errors(&d)[0].0, "InvalidType");
+    assert_eq!(errors(&d)[0].0, "core/invalid_type");
 }
 
 /// The 1.26.50 preset schema binds `starting_rot`
@@ -645,7 +652,7 @@ fn cam12_apply_inherited_starting_rotation_is_an_unknown_member_at_every_version
         assert_eq!(
             errors(&d),
             [finding(
-                "UnrecognizedField",
+                "core/unrecognized_field_worded",
                 "minecraft:camera_preset/apply_inherited_starting_rotation",
                 UNRECOGNIZED
             )],
@@ -675,12 +682,12 @@ fn cam13_the_docs_starting_rot_x_and_y_are_unknown() {
         errors(&d),
         [
             finding(
-                "UnrecognizedField",
+                "core/unrecognized_field_worded",
                 "minecraft:camera_preset/starting_rot_x",
                 UNRECOGNIZED
             ),
             finding(
-                "UnrecognizedField",
+                "core/unrecognized_field_worded",
                 "minecraft:camera_preset/starting_rot_y",
                 UNRECOGNIZED
             )
@@ -694,7 +701,7 @@ fn cam14_the_vertical_limit_is_ordered_not_summed() {
     assert_eq!(
         errors_of(r#""vertical_rotation_limit": [90, 90]"#),
         [finding(
-            "InvalidValue",
+            "camera/vector_equal",
             at,
             "Vector's elements cannot equal each other!"
         )]
@@ -702,7 +709,7 @@ fn cam14_the_vertical_limit_is_ordered_not_summed() {
     assert_eq!(
         errors_of(r#""vertical_rotation_limit": [120, 45]"#),
         [finding(
-            "InvalidValue",
+            "camera/vector_order",
             at,
             "Vector's x must be less than y!"
         )]
@@ -710,7 +717,7 @@ fn cam14_the_vertical_limit_is_ordered_not_summed() {
     assert_eq!(
         errors_of(r#""vertical_rotation_limit": [0, 190]"#),
         [finding(
-            "InvalidValue",
+            "core/outside_accepted_range",
             &format!("{at}/1"),
             &range("0", "180")
         )]
@@ -718,7 +725,7 @@ fn cam14_the_vertical_limit_is_ordered_not_summed() {
     assert_eq!(
         errors_of(r#""vertical_rotation_limit": [-1, 90]"#),
         [finding(
-            "InvalidValue",
+            "core/outside_accepted_range",
             &format!("{at}/0"),
             &range("0", "180")
         )]
@@ -735,20 +742,20 @@ fn cam15_the_horizontal_limit_sums_to_at_most_360() {
     let total = "Vector elements added together cannot be greater than the defined constraint!";
     assert_eq!(
         errors_of(r#""horizontal_rotation_limit": [200, 200]"#),
-        [finding("InvalidValue", at, total)]
+        [finding("camera/vector_total", at, total)]
     );
     assert_eq!(
         errors_of(r#""horizontal_rotation_limit": [0.5, 360]"#),
-        [finding("InvalidValue", at, total)]
+        [finding("camera/vector_total", at, total)]
     );
     assert_eq!(
         errors_of(r#""horizontal_rotation_limit": [180.125, 180]"#),
-        [finding("InvalidValue", at, total)]
+        [finding("camera/vector_total", at, total)]
     );
     assert_eq!(
         errors_of(r#""horizontal_rotation_limit": [361, 0]"#),
         [finding(
-            "InvalidValue",
+            "core/outside_accepted_range",
             &format!("{at}/0"),
             &range("0", "360")
         )]
@@ -756,7 +763,7 @@ fn cam15_the_horizontal_limit_sums_to_at_most_360() {
     assert_eq!(
         errors_of(r#""horizontal_rotation_limit": [0, -1]"#),
         [finding(
-            "InvalidValue",
+            "core/outside_accepted_range",
             &format!("{at}/1"),
             &range("0", "360")
         )]
@@ -774,7 +781,7 @@ fn cam16_each_entity_offset_element_is_in_range() {
     assert_eq!(
         errors_of(r#""entity_offset": [0, 65, 0]"#),
         [finding(
-            "InvalidValue",
+            "core/outside_accepted_range",
             &format!("{at}/1"),
             &range("-64", "64")
         )]
@@ -782,7 +789,7 @@ fn cam16_each_entity_offset_element_is_in_range() {
     assert_eq!(
         errors_of(r#""entity_offset": [-64.5, 0, 0]"#),
         [finding(
-            "InvalidValue",
+            "core/outside_accepted_range",
             &format!("{at}/0"),
             &range("-64", "64")
         )]
@@ -790,7 +797,7 @@ fn cam16_each_entity_offset_element_is_in_range() {
     assert_eq!(
         errors_of(r#""entity_offset": [0, 0, 64.5]"#),
         [finding(
-            "InvalidValue",
+            "core/outside_accepted_range",
             &format!("{at}/2"),
             &range("-64", "64")
         )]
@@ -815,7 +822,7 @@ fn cam20_a_custom_preset_without_inherit_from_is_kept_with_a_kept_error_deviatio
         assert_eq!(
             errors(document.diagnostics()),
             [finding(
-                "MissingRequiredField",
+                "camera/missing_inherit",
                 "minecraft:camera_preset/inherit_from",
                 TEXT
             )],
@@ -858,7 +865,7 @@ fn p10_a_vanilla_camera_s_starting_rotation_is_kept_with_an_information_deviatio
         assert_eq!(
             infos(document.diagnostics()),
             [finding(
-                "InvalidValue",
+                "camera/vanilla_starting_rot",
                 "minecraft:camera_preset/starting_rot",
                 &format!("Preset {name} cannot change the starting rotation of a vanilla camera")
             )],
@@ -893,7 +900,7 @@ fn cam21_yaw_limits_out_of_order_are_kept_with_a_kept_error_deviation() {
     assert_eq!(
         errors(document.diagnostics()),
         [finding(
-            "InvalidValue",
+            "camera/yaw_order",
             "minecraft:camera_preset/yaw_limits_min",
             TEXT
         )]
@@ -938,14 +945,14 @@ fn a_duplicate_member_keeps_its_last_value_in_the_check_and_in_the_struct() {
     assert_eq!(
         errors_of(r#""radius": 5, "radius": 100"#),
         [finding(
-            "InvalidValue",
+            "core/outside_accepted_range",
             "minecraft:camera_preset/radius",
             &range("0.100000", "64")
         )]
     );
     let found = errors_of(r#""radius": 5, "radius": "far""#);
     assert_eq!(found.len(), 1, "{found:?}");
-    assert_eq!(found[0].0, "InvalidType");
+    assert_eq!(found[0].0, "core/invalid_type");
     // An unknown member written twice is one unknown member.
     let d = rejects(preset(&preset_with("1.21.60", r#""zoom": 1, "zoom": 2"#)));
     assert_eq!(errors(&d).len(), 1, "{d:#?}");
@@ -962,7 +969,7 @@ fn a_duplicate_member_keeps_its_last_value_in_the_check_and_in_the_struct() {
     assert_eq!(
         errors(&d),
         [finding(
-            "UnrecognizedField",
+            "core/unrecognized_field_worded",
             "minecraft:camera_preset/bogus",
             UNRECOGNIZED
         )]
@@ -977,28 +984,28 @@ fn an_error_only_the_typed_parse_finds_is_reported_the_same_beside_a_duplicate_m
         (
             r#""radius": 1, "radius": 5"#,
             r#""listener": "nobody""#,
-            "InvalidEnumValue",
+            "core/invalid_enum_value",
             "listener",
             r#""nobody""#,
         ),
         (
             r#""radius": 1, "radius": 5"#,
             r#""aim_assist": {"target_mode": "nearest"}"#,
-            "InvalidEnumValue",
+            "core/invalid_enum_value",
             "aim_assist/target_mode",
             r#""nearest""#,
         ),
         (
             r#""rot_y": 1, "rot_y": 2"#,
             r#""pos_x": 1e40"#,
-            "InvalidType",
+            "core/invalid_type",
             "pos_x",
             "1e40",
         ),
         (
             r#""pos_y": 0, "pos_y": 0"#,
             r#""control_scheme": "tank""#,
-            "InvalidEnumValue",
+            "core/invalid_enum_value",
             "control_scheme",
             r#""tank""#,
         ),
@@ -1010,7 +1017,7 @@ fn an_error_only_the_typed_parse_finds_is_reported_the_same_beside_a_duplicate_m
                 let doubled = rejects(preset(&text));
                 assert_eq!(errors(&doubled), errors(&plain), "{members} at {version}");
                 let first = doubled.iter().next().unwrap();
-                assert_eq!(first.code.name(), code, "{members}");
+                assert_eq!(first.code.id(), code, "{members}");
                 assert_eq!(
                     first.location.json_path.to_string(),
                     format!("minecraft:camera_preset/{path}")
@@ -1029,7 +1036,7 @@ fn an_error_only_the_typed_parse_finds_is_reported_the_same_beside_a_duplicate_m
     );
     let d = rejects(preset(&text));
     let first = d.iter().next().unwrap();
-    assert_eq!(first.code.name(), "InvalidEnumValue");
+    assert_eq!(first.code.id(), "core/invalid_enum_value");
     assert_eq!(
         first.location.json_path.to_string(),
         "minecraft:camera_preset/aim_assist/target_mode"

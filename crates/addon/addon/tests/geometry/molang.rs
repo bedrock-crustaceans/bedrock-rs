@@ -38,7 +38,7 @@ fn m01_binding_forms() {
         let document = loaded(load(&binding(value)));
         crate::common::expect_at(
             document.diagnostics(),
-            "InvalidType",
+            "core/unknown_child_option",
             Severity::Info,
             "minecraft:geometry/0/bones/0/binding",
             "unknown child schema option type.  Allowed types: ExpressionNode",
@@ -46,7 +46,7 @@ fn m01_binding_forms() {
         assert!(document.value().geometries[0].bones()[0].binding.is_none());
         crate::common::fails_schema(
             load(&binding(value).replace("1.16.0", "1.19.30")),
-            "InvalidType",
+            "core/unknown_child_option",
             "minecraft:geometry/0/bones/0/binding",
             "unknown child schema option type.  Allowed types: ExpressionNode",
         );
@@ -116,7 +116,7 @@ fn m04_binding_compile_error() {
     let d = rejected(load(text));
     let finding = d
         .iter()
-        .find(|f| f.code.name() == "InvalidMolang")
+        .find(|f| f.code.id() == "core/invalid_molang")
         .expect("the parser's message");
     assert_eq!(finding.severity, Severity::Error);
     assert_eq!(
@@ -129,11 +129,16 @@ fn m04_binding_compile_error() {
         finding.to_string(),
         "[error] app data | models/entity/x.json | minecraft:geometry/0/bones/0/binding | q.item_slot_to_bone_name(c.item_slot) + | Error: binary Add '+' operator at end of expression"
     );
-    assert_eq!(count(&d, "InvalidMolang", Severity::Error), 1);
-    expect(&d, "InvalidValue", Severity::Error, DID_NOT_VALIDATE);
+    assert_eq!(count(&d, "core/invalid_molang", Severity::Error), 1);
+    expect(
+        &d,
+        "geometry/did_not_validate",
+        Severity::Error,
+        DID_NOT_VALIDATE,
+    );
     // The same file in the strict era fails the same way.
     let d = rejected(load(&text.replace("1.16.0", "1.21.0")));
-    assert_eq!(count(&d, "InvalidMolang", Severity::Error), 1);
+    assert_eq!(count(&d, "core/invalid_molang", Severity::Error), 1);
     // A constant is not compiled.
     loaded(load_at("models/entity/x.json", &binding("7"), &rp()));
 }
@@ -156,28 +161,33 @@ fn m05_binding_invalid_pack_version() {
     // `QueryDeprecated`), the parser's two messages, and the schema's closing line.
     let found: Vec<String> = d
         .iter()
-        .map(|f| format!("{:?} {} {f}", f.severity, f.code.name()))
+        .map(|f| format!("{:?} {} {f}", f.severity, f.code.id()))
         .collect();
     assert_eq!(
         found,
         [
             format!(
-                "Info MolangLint [info] {AT}MolangVersion Invalid (-1): version-0 parser rules, no query resolves"
+                "Info core/molang_lint [info] {AT}MolangVersion Invalid (-1): version-0 parser rules, no query resolves"
             ),
             format!(
-                "Info MolangLint [info] {AT}query.item_slot_to_bone_name exists, but not at MolangVersion -1"
+                "Info core/molang_lint [info] {AT}query.item_slot_to_bone_name exists, but not at MolangVersion -1"
             ),
             format!(
-                "Error InvalidMolang [error] {AT}Failed to resolve query query.item_slot_to_bone_name.  Either the query does not exist or it is not supported in this context."
+                "Error core/invalid_molang [error] {AT}Failed to resolve query query.item_slot_to_bone_name.  Either the query does not exist or it is not supported in this context."
             ),
             format!(
-                "Error InvalidMolang [error] {AT}unrecognized token: q.item_slot_to_bone_name(c.item_slot)"
+                "Error core/invalid_molang [error] {AT}unrecognized token: q.item_slot_to_bone_name(c.item_slot)"
             ),
-            "Error InvalidValue [error] app data | models/entity/x.json | geometry file didn't validate"
+            "Error geometry/did_not_validate [error] app data | models/entity/x.json | geometry file didn't validate"
                 .to_owned(),
         ]
     );
-    expect(&d, "InvalidValue", Severity::Error, DID_NOT_VALIDATE);
+    expect(
+        &d,
+        "geometry/did_not_validate",
+        Severity::Error,
+        DID_NOT_VALIDATE,
+    );
 }
 
 #[cfg(not(feature = "molang"))]
@@ -185,7 +195,7 @@ fn m05_binding_invalid_pack_version() {
 fn m06_binding_feature_off() {
     let document = loaded(load(&binding(r#""1 +""#)));
     let d = document.diagnostics();
-    assert_eq!(count(d, "MolangNotChecked", Severity::Info), 1);
+    assert_eq!(count(d, "core/molang_not_checked", Severity::Info), 1);
     assert_eq!(d.len(), 1);
     let binding = document.value().geometries[0].bones()[0].binding.clone();
     assert_eq!(
@@ -203,7 +213,11 @@ fn m06_binding_is_stored_unchecked_without_a_compile_check() {
     cx.molang = None;
     let document = loaded(load_at("models/entity/x.json", &binding(r#""1 +""#), &cx));
     assert_eq!(
-        count(document.diagnostics(), "MolangNotChecked", Severity::Info),
+        count(
+            document.diagnostics(),
+            "core/molang_not_checked",
+            Severity::Info
+        ),
         1
     );
     assert_eq!(document.diagnostics().len(), 1);

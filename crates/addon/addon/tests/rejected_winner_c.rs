@@ -79,7 +79,7 @@ fn line(finding: &Diagnostic) -> String {
     format!(
         "{:?} {} pack {:?} {:?} | {}",
         finding.severity,
-        finding.code.name(),
+        finding.code.id(),
         finding
             .location
             .pack
@@ -102,7 +102,7 @@ fn reported<'a>(
 ) {
     let all: Vec<&Diagnostic> = findings.collect();
     let hit = all.iter().any(|f| {
-        f.code.name() == code
+        f.code.id() == code
             && f.severity == severity
             && f.location
                 .pack
@@ -147,7 +147,7 @@ fn client_animation_two_packs_a_refused_top_file_leaves_the_lower_animation_effe
     assert_eq!(registry.rejected().len(), 1);
     reported(
         registry.diagnostics(),
-        "UnrecognizedField",
+        "core/child_not_valid",
         Severity::Error,
         0,
         ANIMATIONS,
@@ -167,7 +167,7 @@ fn client_animation_three_packs_a_refused_top_file_leaves_the_middle_animation_e
     assert_eq!(registry.rejected().len(), 1);
     reported(
         registry.diagnostics(),
-        "UnrecognizedField",
+        "core/child_not_valid",
         Severity::Error,
         0,
         ANIMATIONS,
@@ -204,7 +204,7 @@ fn client_animation_controller_two_packs_a_refused_top_file_leaves_the_lower_con
     assert_eq!(registry.rejected().len(), 1);
     reported(
         registry.diagnostics(),
-        "UnrecognizedField",
+        "core/child_not_valid",
         Severity::Error,
         0,
         CONTROLLERS,
@@ -227,7 +227,7 @@ fn client_animation_controller_three_packs_a_refused_top_file_leaves_the_middle_
     assert_eq!(registry.rejected().len(), 1);
     reported(
         registry.diagnostics(),
-        "UnrecognizedField",
+        "core/child_not_valid",
         Severity::Error,
         0,
         CONTROLLERS,
@@ -263,7 +263,7 @@ fn fog_two_packs_a_refused_top_definition_leaves_the_lower_fog_effective() {
     assert_eq!(registry.rejected().len(), 1);
     reported(
         registry.diagnostics(),
-        "DocumentRejected",
+        "fog/failed_to_validate",
         Severity::Error,
         0,
         FOGS,
@@ -281,7 +281,7 @@ fn fog_three_packs_a_refused_top_definition_leaves_the_middle_fog_effective() {
     assert_eq!(registry.rejected().len(), 1);
     reported(
         registry.diagnostics(),
-        "DocumentRejected",
+        "fog/failed_to_validate",
         Severity::Error,
         0,
         FOGS,
@@ -338,7 +338,7 @@ fn client_entity_two_packs_a_top_document_above_the_stack_version_leaves_the_low
     assert!(registry.diagnostics().all(|f| f.severity < Severity::Error));
     reported(
         registry.diagnostics(),
-        "ClientEntityShadowed",
+        "core/client_entity_shadowed_above_stack",
         Severity::Info,
         0,
         ENTITIES,
@@ -367,7 +367,7 @@ fn client_entity_three_packs_a_top_document_above_the_stack_version_leaves_the_m
     assert!(registry.rejected().is_empty());
     reported(
         registry.diagnostics(),
-        "ClientEntityShadowed",
+        "core/client_entity_shadowed_above_stack",
         Severity::Info,
         0,
         ENTITIES,
@@ -385,7 +385,7 @@ fn client_entity_two_packs_a_refused_top_file_leaves_the_lower_entity_effective(
     assert_eq!(registry.rejected().len(), 1);
     reported(
         registry.diagnostics(),
-        "UnrecognizedField",
+        "core/child_not_valid",
         Severity::Error,
         0,
         ENTITIES,
@@ -413,7 +413,7 @@ fn client_entity_three_packs_a_refused_top_file_leaves_the_middle_entity_effecti
     assert_eq!(registry.rejected().len(), 1);
     reported(
         registry.diagnostics(),
-        "UnrecognizedField",
+        "core/child_not_valid",
         Severity::Error,
         0,
         ENTITIES,
@@ -459,7 +459,7 @@ fn atomic_client_entity_two_packs_a_refused_top_document_leaves_the_lower_entity
     assert_eq!(registry.rejected().len(), 1);
     reported(
         registry.diagnostics(),
-        "InvalidValue",
+        "atomic_client_entity/not_negative_text",
         Severity::Error,
         0,
         ATOMIC,
@@ -482,7 +482,7 @@ fn atomic_client_entity_three_packs_a_refused_top_document_leaves_the_middle_ent
     assert_eq!(registry.rejected().len(), 1);
     reported(
         registry.diagnostics(),
-        "InvalidValue",
+        "atomic_client_entity/not_negative_text",
         Severity::Error,
         0,
         ATOMIC,
@@ -522,7 +522,7 @@ fn sounds_two_packs_a_top_definition_that_is_no_object_takes_the_name() {
     assert!(sounds.sound_definitions.is_empty());
     let malformed: Vec<&Diagnostic> = sounds
         .diagnostics()
-        .filter(|f| f.code.name() == "InvalidValue")
+        .filter(|f| f.code.id() == "sound_definitions/malformed_sound")
         .collect();
     assert_eq!(malformed.len(), 1, "{malformed:#?}");
     // at information in the merged read
@@ -530,7 +530,7 @@ fn sounds_two_packs_a_top_definition_that_is_no_object_takes_the_name() {
     // In the pack whose value is no object, at its file.
     reported(
         sounds.diagnostics(),
-        "InvalidValue",
+        "sound_definitions/malformed_sound",
         Severity::Info,
         0,
         DEFINITIONS,
@@ -554,7 +554,7 @@ fn sounds_three_packs_a_top_definition_that_is_no_object_takes_the_name() {
     assert!(sounds.sound_definitions.is_empty());
     let malformed: Vec<&Diagnostic> = sounds
         .diagnostics()
-        .filter(|f| f.code.name() == "InvalidValue")
+        .filter(|f| f.code.id() == "sound_definitions/malformed_sound")
         .collect();
     assert_eq!(malformed.len(), 1, "{malformed:#?}");
     // at information in the merged read
@@ -562,7 +562,7 @@ fn sounds_three_packs_a_top_definition_that_is_no_object_takes_the_name() {
     // In the pack whose value is no object, at its file.
     reported(
         sounds.diagnostics(),
-        "InvalidValue",
+        "sound_definitions/malformed_sound",
         Severity::Info,
         0,
         DEFINITIONS,
@@ -579,7 +579,7 @@ fn sounds_two_packs_a_top_copy_that_is_no_json_leaves_the_lower_definition_effec
     assert_eq!(x.sounds[0].name, "sounds/l");
     reported(
         sounds.diagnostics(),
-        "MalformedInput",
+        "core/syntax",
         Severity::Info, // a copy that is no JSON, ours
         0,
         DEFINITIONS,
@@ -597,7 +597,7 @@ fn sounds_three_packs_a_top_copy_that_is_no_json_leaves_the_middle_definition_ef
     assert_eq!(x.sounds[0].name, "sounds/m");
     reported(
         sounds.diagnostics(),
-        "MalformedInput",
+        "core/syntax",
         Severity::Info, // a copy that is no JSON, ours
         0,
         DEFINITIONS,
@@ -637,7 +637,7 @@ fn server_sound_definitions_two_packs_a_refused_bottom_file_leaves_the_upper_def
     assert_eq!(registry.rejected().len(), 1);
     reported(
         registry.diagnostics(),
-        "UnrecognizedField",
+        "core/unrecognized_field",
         Severity::Error,
         1,
         METADATA,
@@ -655,7 +655,7 @@ fn server_sound_definitions_three_packs_a_refused_bottom_file_leaves_the_middle_
     assert_eq!(registry.rejected().len(), 1);
     reported(
         registry.diagnostics(),
-        "UnrecognizedField",
+        "core/unrecognized_field",
         Severity::Error,
         2,
         METADATA,
@@ -709,13 +709,13 @@ fn texture_set_two_packs_a_refused_top_set_takes_the_texture_path() {
     assert_eq!(rejected.origin.pack.index(), Some(0));
     assert_eq!(rejected.origin.path.as_str(), STONE_SET);
     assert!(rejected.diagnostics.iter().any(|f| {
-        f.code.name() == "InvalidValue"
+        f.code.id() == "texture_set/set_no_color"
             && f.severity == Severity::Error
             && f.code.to_string() == "There must at least be a color layer in any TextureSet"
     }));
     reported(
         textures.diagnostics(),
-        "InvalidValue",
+        "texture_set/set_no_color",
         Severity::Error,
         0,
         STONE_SET,
@@ -749,7 +749,7 @@ fn texture_set_three_packs_a_refused_top_set_takes_the_texture_path() {
     assert_eq!(rejected.origin.pack.index(), Some(0));
     reported(
         textures.diagnostics(),
-        "InvalidValue",
+        "texture_set/set_no_color",
         Severity::Error,
         0,
         STONE_SET,
@@ -785,7 +785,7 @@ fn blocks_json_two_packs_a_refused_top_copy_leaves_the_lower_entry_effective() {
     assert_eq!(block.sound(), "l");
     reported(
         registry.diagnostics(),
-        "MalformedInput",
+        "blocks_json/not_json",
         Severity::Info, // L2, refused without a game line
         0,
         BLOCKS,
@@ -807,7 +807,7 @@ fn blocks_json_three_packs_a_refused_top_copy_leaves_the_middle_fields_over_the_
     assert_eq!(block.origin().contributors[0].index(), Some(2));
     reported(
         registry.diagnostics(),
-        "MalformedInput",
+        "blocks_json/not_json",
         Severity::Info, // L2, refused without a game line
         0,
         BLOCKS,
@@ -826,7 +826,7 @@ fn blocks_json_two_packs_a_refused_top_field_leaves_the_lower_value_effective() 
     assert_eq!(block.sound(), "t");
     reported(
         registry.diagnostics(),
-        "InvalidType",
+        "blocks_json/bad_textures",
         Severity::Warning,
         0,
         BLOCKS,
@@ -845,7 +845,7 @@ fn blocks_json_three_packs_a_refused_top_field_leaves_the_middle_value_effective
     assert_eq!(block.sound(), "l");
     reported(
         registry.diagnostics(),
-        "InvalidType",
+        "blocks_json/bad_textures",
         Severity::Warning,
         0,
         BLOCKS,
@@ -892,14 +892,14 @@ fn render_controller_two_packs_a_refused_top_controller_leaves_the_lower_control
     // The refusal and the notice of the fallback: both in the refused pack, at its file.
     reported(
         registry.diagnostics(),
-        "MissingRequiredField",
+        "render_controller/must_contain_textures",
         Severity::Error,
         0,
         RENDER_CONTROLLERS,
     );
     reported(
         registry.diagnostics(),
-        "RenderControllerFallback",
+        "core/render_controller_fallback",
         Severity::Info, // ours
         0,
         RENDER_CONTROLLERS,
@@ -927,14 +927,14 @@ fn render_controller_three_packs_a_refused_top_controller_leaves_the_middle_cont
     assert_eq!(registry.rejected().len(), 1);
     reported(
         registry.diagnostics(),
-        "MissingRequiredField",
+        "render_controller/must_contain_textures",
         Severity::Error,
         0,
         RENDER_CONTROLLERS,
     );
     reported(
         registry.diagnostics(),
-        "RenderControllerFallback",
+        "core/render_controller_fallback",
         Severity::Info, // ours
         0,
         RENDER_CONTROLLERS,

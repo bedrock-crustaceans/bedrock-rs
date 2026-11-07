@@ -17,7 +17,7 @@ fn j01_unknown_member() {
     ));
     expect_at(
         &d,
-        "UnrecognizedField",
+        "core/child_not_valid",
         Severity::Error,
         "child 'fog_density' not valid here.",
         "minecraft:fog_settings/distance/air/fog_density",
@@ -34,7 +34,7 @@ fn j01_unknown_member() {
     ] {
         let d = rejected(parse(&doc("1.21.90", &members), &pack()));
         assert_eq!(
-            count(&d, "UnrecognizedField", Severity::Error),
+            count(&d, "core/child_not_valid", Severity::Error),
             1,
             "{members}: {:?}",
             lines(&d)
@@ -50,7 +50,7 @@ fn j01_unknown_member() {
     ));
     expect(
         &d,
-        "UnrecognizedField",
+        "core/child_not_valid",
         Severity::Error,
         "child 'x' not valid here.",
     );
@@ -72,7 +72,7 @@ fn j02_missing_required() {
         let d = rejected(parse(&doc("1.21.90", &air(without)), &pack()));
         expect_at(
             &d,
-            "MissingRequiredField",
+            "core/required_child",
             Severity::Error,
             &format!("Required child {name} not found"),
             "minecraft:fog_settings/distance/air",
@@ -111,7 +111,7 @@ fn j02_missing_required() {
         let d = rejected(parse(&doc("1.21.90", &members), &pack()));
         expect(
             &d,
-            "MissingRequiredField",
+            "core/required_child",
             Severity::Error,
             &format!("Required child {name} not found"),
         );
@@ -123,7 +123,7 @@ fn j02_missing_required() {
     ));
     expect(
         &d,
-        "UnrecognizedField",
+        "core/child_not_valid",
         Severity::Error,
         "child 'x' not valid here.",
     );
@@ -137,7 +137,7 @@ fn j03_range() {
     ));
     expect_at(
         &d,
-        "InvalidValue",
+        "core/outside_range",
         Severity::Error,
         "Value '1.500000' outside valid range [0.000000, 1.000000]",
         "minecraft:fog_settings/volumetric/density/air/max_density",
@@ -215,13 +215,13 @@ fn j03_v10a_negative_seconds_and_a_negative_init_fog_end_are_out_of_range() {
             ));
             expect_at(
                 &d,
-                "InvalidValue",
+                "core/outside_range",
                 Severity::Error,
                 &format!("Value '{value}' {RANGE}"),
                 &format!("minecraft:fog_settings/distance/water/transition_fog/{member}"),
             );
             assert_eq!(
-                count(&d, "InvalidValue", Severity::Error),
+                count(&d, "core/outside_range", Severity::Error),
                 1,
                 "{version} {member}: {:?}",
                 lines(&d)
@@ -231,7 +231,11 @@ fn j03_v10a_negative_seconds_and_a_negative_init_fog_end_are_out_of_range() {
         // Zero is inside each of the three ranges.
         let document = loaded(parse(&doc(version, &transition("0", "0", "0")), &pack()));
         assert_eq!(
-            count(document.diagnostics(), "InvalidValue", Severity::Error),
+            count(
+                document.diagnostics(),
+                "core/outside_range",
+                Severity::Error
+            ),
             0,
             "{version}"
         );
@@ -249,7 +253,7 @@ fn j04_height_range() {
     ));
     expect(
         &d,
-        "InvalidValue",
+        "core/outside_range",
         Severity::Error,
         "Value '400.000000' outside valid range [-64.000000, 320.000000]",
     );
@@ -299,7 +303,7 @@ fn j05_bad_render_type() {
         let d = rejected(parse(&with(kind), &pack()));
         expect_at(
             &d,
-            "InvalidValue",
+            "core/not_allowed_regex",
             Severity::Error,
             &format!(
                 "Value '{kind}' not allowed.  Must match at least one of the following regex patterns: fixed or render"
@@ -332,7 +336,7 @@ fn j06_alpha_hex() {
         let d = rejected(parse(&with(color), &pack()));
         expect_at(
             &d,
-            "InvalidValue",
+            "fog/color_format",
             Severity::Error,
             ALPHA,
             "minecraft:fog_settings/distance/air/fog_color",
@@ -351,7 +355,7 @@ fn j06_alpha_hex() {
         )
     };
     let d = rejected(parse(&media("#FFF"), &pack()));
-    expect(&d, "InvalidValue", Severity::Error, ALPHA);
+    expect(&d, "fog/color_format", Severity::Error, ALPHA);
     loaded(parse(&media("#0a0B0c"), &pack()));
 }
 
@@ -382,7 +386,7 @@ fn j07_bad_colour_shape() {
     let d = rejected(parse(&with("[1, 0]"), &pack()));
     expect(
         &d,
-        "InvalidValue",
+        "fog/color_shape",
         Severity::Error,
         "Expected [ r, g, b ] or \"#RRGGBB\".",
     );
@@ -413,7 +417,7 @@ fn j08_identifier_without_namespace() {
     ] {
         let d = rejected(parse(&named("1.21.90", identifier, ""), &pack()));
         assert!(
-            d.iter().any(|f| f.code.name() == "InvalidValue"
+            d.iter().any(|f| f.code.id() == "core/invalid_value"
                 && f.severity == Severity::Error
                 && f.location.json_path.to_string()
                     == "minecraft:fog_settings/description/identifier"),
@@ -438,12 +442,12 @@ fn j09_start_after_end_old_is_refused() {
     let d = rejected(parse(&doc("1.21.90", &members), &pack()));
     expect(
         &d,
-        "InvalidValue",
+        "fog/end_below_start",
         Severity::Error,
         "Value for 'fog_end' was less than 'fog_start', 'fog_start' has to be less than or equal to 'fog_end'.",
     );
     assert!(
-        d.iter().any(|f| f.code.name() == "InvalidValue"
+        d.iter().any(|f| f.code.id() == "fog/end_below_start"
             && f.location.json_path.to_string() == "minecraft:fog_settings/distance/air"),
         "{:?}",
         lines(&d)
@@ -467,7 +471,7 @@ fn wrong_types_fail_the_old_schema() {
     ] {
         let d = rejected(parse(&doc("1.21.90", &members), &pack()));
         assert!(
-            d.iter().any(|f| f.code.name() == "InvalidType"
+            d.iter().any(|f| f.code.id() == "core/unknown_child_option"
                 && f.code
                     .to_string()
                     .starts_with("unknown child schema option type.  Allowed types: ")),
@@ -501,9 +505,9 @@ fn an_element_of_a_legacy_colour_behind_the_third_is_noted_as_dropped() {
             .diagnostics()
             .iter()
             .filter(|f| f.location.json_path.to_string() == at)
-            .map(|f| format!("{} {:?}", f.code.name(), f.severity))
+            .map(|f| format!("{} {:?}", f.code.id(), f.severity))
             .collect();
-        assert_eq!(told, ["DroppedField Info"], "{at}");
+        assert_eq!(told, ["core/dropped_field Info"], "{at}");
     }
     let written = fog.to_json().expect("the fog writes");
     assert!(
@@ -522,7 +526,7 @@ fn members_are_read_in_sorted_key_order() {
     let d = rejected(parse(&doc("1.21.90", &members), &pack()));
     let told: Vec<_> = d
         .iter()
-        .filter(|f| f.code.name() == "InvalidType")
+        .filter(|f| f.code.id() == "core/unknown_child_option")
         .map(|f| f.location.json_path.to_string())
         .collect();
     assert_eq!(
@@ -545,7 +549,7 @@ fn a_float_that_narrows_is_told_as_lossy() {
     let told: Vec<_> = document
         .diagnostics()
         .iter()
-        .filter(|f| f.code.name() == "LossyConversion")
+        .filter(|f| f.code.id() == "core/lossy_conversion")
         .map(|f| (f.severity, f.location.json_path.to_string()))
         .collect();
     assert_eq!(

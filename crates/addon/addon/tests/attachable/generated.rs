@@ -652,7 +652,7 @@ fn expected(source: &str, document: &Document<Attachable>, counts: &mut Counts) 
         // '<name>'!" (with the `molang` feature); the member is not stored, so not written.
         let at = format!("minecraft:attachable/description/scripts/{name}");
         let dropped = document.diagnostics().iter().any(|found| {
-            found.code.name() == "DroppedField"
+            found.code.id() == "visual/failed_to_parse"
                 && found.kept
                 && found.location.json_path.to_string() == at
         });

@@ -13,9 +13,7 @@ use super::common::{
 
 /// The findings of the group named `code`.
 fn found<'a>(poi: &'a Poi, code: &str) -> Vec<&'a Diagnostic> {
-    poi.diagnostics()
-        .filter(|d| d.code.name() == code)
-        .collect()
+    poi.diagnostics().filter(|d| d.code.id() == code).collect()
 }
 
 /// A stack of one user pack of `files`.
@@ -44,7 +42,7 @@ fn block_experiment_gate_deviation() {
     assert_eq!(stack.poi().types.len(), 0);
     assert_eq!(
         names(stack.poi().diagnostics(), Severity::Info),
-        ["MissingToggles"]
+        ["core/missing_toggles"]
     );
     assert_eq!(stack.poi().diagnostics().count(), 1);
 }
@@ -58,7 +56,7 @@ fn block_last_load_wins_deviation() {
         .get(&PoiTypeId::from_static("test:forge"))
         .unwrap();
     assert_eq!(forge.tickets(), 2);
-    let shadowed = found(poi, "ShadowedDefinition");
+    let shadowed = found(poi, "core/shadowed_definition");
     assert_eq!(shadowed.len(), 1);
     assert_eq!(shadowed[0].severity, Severity::Info);
 }
@@ -99,7 +97,7 @@ fn block_claimed_twice_deviation() {
         poi.type_of_block(&BlockId::from_static("minecraft:anvil")),
         Some(&PoiTypeId::from_static("test:b"))
     );
-    let claimed = found(poi, "PoiBlockClaimedTwice");
+    let claimed = found(poi, "core/poi_block_claimed_twice");
     assert_eq!(claimed.len(), 1);
     assert_eq!(claimed[0].severity, Severity::Info);
 }
@@ -123,7 +121,7 @@ fn block_no_blocks_deviation() {
     let forge = loads::<PoiType>(&block_of("test:forge", "", "[]"));
     assert_eq!(
         names(forge.diagnostics().iter(), Severity::Info),
-        ["PoiNoBlocks"]
+        ["core/poi_no_blocks"]
     );
 }
 
@@ -137,7 +135,7 @@ fn block_duplicate_block_deviation() {
     assert_eq!(forge.blocks.len(), 1);
     assert_eq!(
         names(forge.diagnostics().iter(), Severity::Info),
-        ["NoEffect"]
+        ["core/no_effect"]
     );
 }
 
@@ -168,7 +166,7 @@ fn tag_experiment_gate_deviation() {
     assert_eq!(stack.poi().tags.len(), 0);
     assert_eq!(
         names(stack.poi().diagnostics(), Severity::Info),
-        ["MissingToggles"]
+        ["core/missing_toggles"]
     );
 }
 
@@ -185,7 +183,7 @@ fn tag_union_deviation() {
 fn tag_unknown_tag_deviation() {
     let stack = fixture_stack("poi32_unknown_tag_reference");
     let poi = stack.poi();
-    let missing = found(poi, "UnresolvedReference");
+    let missing = found(poi, "core/unresolved_reference");
     assert_eq!(missing.len(), 1);
     assert_eq!(missing[0].severity, Severity::Info);
     assert!(!poi.contains_tag(&PoiTagId::from_static("test:missing")));
@@ -202,7 +200,7 @@ fn tag_on_type_creates_leaf_deviation() {
 #[test]
 fn tag_cycle_deviation() {
     let stack = fixture_stack("poi34_tag_cycle");
-    let cycles = found(stack.poi(), "ReferenceCycle");
+    let cycles = found(stack.poi(), "poi/part_of_a_cycle");
     assert_eq!(cycles.len(), 3);
     assert!(cycles.iter().all(|d| d.severity == Severity::Info));
     assert!(
@@ -218,6 +216,6 @@ fn tag_self_edge_deviation() {
     assert!(a.parents().is_empty());
     assert_eq!(
         names(a.diagnostics().iter(), Severity::Info),
-        ["ReferenceCycle"]
+        ["poi/part_of_a_cycle"]
     );
 }

@@ -33,11 +33,11 @@ fn a10_1_8_controllers_rejected_deviation() {
     let d = rejected(attachable(&with, &cx()));
     expect(
         &d,
-        "UnrecognizedField",
+        "core/child_not_valid",
         Severity::Error,
         "child 'animation_controllers' not valid here.",
     );
-    expect_at(&d, "UnrecognizedField", Severity::Error, CONTROLLERS_AT);
+    expect_at(&d, "core/child_not_valid", Severity::Error, CONTROLLERS_AT);
     assert_eq!(d.len(), 1, "{}", lines(&d).join("\n"));
     // With or without `animations` beside it, and for an empty list too: the member is
     // what 1.10.0 lacks.
@@ -48,13 +48,13 @@ fn a10_1_8_controllers_rejected_deviation() {
     ] {
         for version in ["1.8.0", "1.9.9"] {
             let d = rejected(attachable(&ghost(version, members), &cx()));
-            expect_at(&d, "UnrecognizedField", Severity::Error, CONTROLLERS_AT);
+            expect_at(&d, "core/child_not_valid", Severity::Error, CONTROLLERS_AT);
         }
     }
     // A document without a version is a 1.8.0 one.
     let text = r#"{"minecraft:attachable": {"description": {"identifier": "demo:ghost", "animation_controllers": []}}}"#;
     let d = rejected(attachable(text, &cx()));
-    expect_at(&d, "UnrecognizedField", Severity::Error, CONTROLLERS_AT);
+    expect_at(&d, "core/child_not_valid", Severity::Error, CONTROLLERS_AT);
 }
 
 #[test]
@@ -66,7 +66,7 @@ fn a10_the_list_is_checked_by_the_1_8_schema_before_the_step_rejects_it() {
     ));
     expect(
         &d,
-        "UnrecognizedField",
+        "core/child_not_valid",
         Severity::Error,
         "child 'my:hold' not valid here.",
     );
@@ -74,7 +74,7 @@ fn a10_the_list_is_checked_by_the_1_8_schema_before_the_step_rejects_it() {
         &ghost("1.8.0", r#""animation_controllers": {}"#),
         &cx(),
     ));
-    assert!(find(&d, "InvalidType", Severity::Error).is_some());
+    assert!(find(&d, "core/unknown_child_option", Severity::Error).is_some());
 }
 
 #[test]

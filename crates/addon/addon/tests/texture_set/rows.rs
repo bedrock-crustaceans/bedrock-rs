@@ -40,7 +40,7 @@ fn layer(key: &str) -> String {
 /// V8a: the value fits none of the member's schema children.
 fn unknown_option(at: &str, allowed: &str) -> super::Rendered {
     error(
-        "InvalidType",
+        "core/unknown_child_option",
         at,
         &format!("unknown child schema option type.  Allowed types:{allowed}"),
     )
@@ -80,7 +80,7 @@ fn ts02_mers_in_a_1_16_100_file_is_an_unknown_member() {
         rejected(&stack, STONE),
         [
             error(
-                "UnrecognizedField",
+                "core/unrecognized_field",
                 &layer("metalness_emissive_roughness_subsurface"),
                 UNKNOWN
             ),
@@ -121,7 +121,7 @@ fn ts05_mer_and_mers_together_fail_the_post_validation() {
         rejected(&stack, STONE),
         [
             error(
-                "InvalidValue",
+                "texture_set/set_mer_and_mers",
                 PAYLOAD,
                 "TextureSet contains both `metalness_emissive_roughness` AND `metalness_emissive_roughness_subsurface` layers - this is not supported, and one should be removed"
             ),
@@ -133,7 +133,7 @@ fn ts05_mer_and_mers_together_fail_the_post_validation() {
 /// V3 with the client's text for the file.
 fn invalid_version() -> super::Rendered {
     warning(
-        "MalformedFormatVersion",
+        "texture_set/set_bad_version",
         "format_version",
         &format!("Invalid 'format_version' in JSON file ({STONE_SET})"),
     )
@@ -166,7 +166,7 @@ fn ts08_the_array_form_selects_the_schema_and_fails_it() {
 /// V4 for the file of texture `texture` and the version as the client prints it.
 fn unsupported(texture: &str, version: &str) -> super::Rendered {
     warning(
-        "UnsupportedVersion",
+        "texture_set/set_unsupported_version",
         "format_version",
         &format!(
             "Unsupported version value in \"format_version\" field: {version} ({texture}.texture_set.json)"
@@ -210,7 +210,7 @@ fn ts13_a_file_that_is_no_json_fails_to_parse() {
     assert_eq!(
         unclosed[0],
         warning(
-            "MalformedInput",
+            "texture_set/set_no_json",
             "",
             &format!("Failed to parse texture set JSON file ({A}.texture_set.json)")
         )
@@ -226,7 +226,7 @@ fn ts13_content_after_the_root_value_is_ignored_with_an_information() {
     assert!(document.color.is_some());
     let found = super::common::rendered(document.diagnostics().iter());
     assert_eq!(found.len(), 1, "{found:?}");
-    assert_eq!((found[0].0, found[0].1), ("MalformedInput", Info));
+    assert_eq!((found[0].0, found[0].1), ("core/syntax", Info));
 }
 
 #[test]
@@ -249,7 +249,7 @@ fn ts15_an_empty_file_is_the_assert_s_information_and_the_image_beside_it_is_no_
     assert_eq!(
         rejected(&stack, STONE),
         [(
-            "EmptyDocument",
+            "texture_set/set_empty",
             Info,
             String::new(),
             "load function reported OK, but storage is empty - is the file empty? Something went wrong.".to_owned()
@@ -266,7 +266,7 @@ fn ts16_another_root_member_is_an_unknown_member() {
     assert_eq!(
         rejected(&stack, STONE),
         [
-            error("UnrecognizedField", "description", UNKNOWN),
+            error("core/unrecognized_field", "description", UNKNOWN),
             schema_failed()
         ]
     );
@@ -319,7 +319,7 @@ fn ts22_six_digits_on_color_are_rejected() {
     assert_eq!(
         rejected(&stack, STONE),
         [
-            error("InvalidValue", &layer("color"), HEX_8),
+            error("texture_set/set_hex_8", &layer("color"), HEX_8),
             schema_failed()
         ]
     );
@@ -332,7 +332,7 @@ fn ts23_eight_digits_on_mer_are_rejected() {
         rejected(&stack, STONE),
         [
             error(
-                "InvalidValue",
+                "texture_set/set_hex_6",
                 &layer("metalness_emissive_roughness"),
                 HEX_6
             ),
@@ -390,7 +390,7 @@ fn ts27_a_real_is_255_and_a_value_outside_the_range_is_clamped_deviation() {
         document
             .diagnostics()
             .iter()
-            .filter(|finding| finding.code.name() == "InvalidValue")
+            .filter(|finding| finding.code.id() == "texture_set/not_integral")
             .all(|finding| finding.kept && finding.severity == Error)
     );
     assert_eq!(
@@ -401,19 +401,19 @@ fn ts27_a_real_is_255_and_a_value_outside_the_range_is_clamped_deviation() {
         findings(&stack),
         [
             finding(
-                "InvalidValue",
+                "texture_set/not_integral",
                 Error,
                 &format!("{}/0", layer("color")),
                 "Expected Integral Number."
             ),
             finding(
-                "ClampedValue",
+                "core/clamped_value",
                 Info,
                 &format!("{}/1", layer("color")),
                 CLAMPED
             ),
             finding(
-                "ClampedValue",
+                "core/clamped_value",
                 Info,
                 &format!("{}/2", layer("color")),
                 CLAMPED
@@ -435,13 +435,13 @@ fn r4_both_ends_of_the_range_are_inside_it() {
         findings(&stack),
         [
             finding(
-                "ClampedValue",
+                "core/clamped_value",
                 Info,
                 &format!("{}/1", layer("color")),
                 CLAMPED
             ),
             finding(
-                "ClampedValue",
+                "core/clamped_value",
                 Info,
                 &format!("{}/3", layer("color")),
                 CLAMPED
@@ -457,7 +457,7 @@ fn ts28_an_element_that_is_no_number_is_rejected() {
         rejected(&stack, STONE),
         [
             error(
-                "InvalidType",
+                "core/invalid_type",
                 &format!("{}/0", layer("color")),
                 "wrong JSON type"
             ),
@@ -502,7 +502,7 @@ fn ts31_an_object_colour_is_rejected_deviation() {
         rejected(&stack, STONE),
         [
             error(
-                "InvalidType",
+                "texture_set/bad_color",
                 &layer("color"),
                 "Expected [ r, g, b ] or [r, g, b, a] or \"#RRGGBB\"."
             ),
@@ -517,9 +517,9 @@ fn ts32_the_single_channel_keys_are_unknown_members() {
     assert_eq!(
         rejected(&stack, STONE),
         [
-            error("UnrecognizedField", &layer("metalness"), UNKNOWN),
-            error("UnrecognizedField", &layer("emissive"), UNKNOWN),
-            error("UnrecognizedField", &layer("roughness"), UNKNOWN),
+            error("core/unrecognized_field", &layer("metalness"), UNKNOWN),
+            error("core/unrecognized_field", &layer("emissive"), UNKNOWN),
+            error("core/unrecognized_field", &layer("roughness"), UNKNOWN),
             schema_failed()
         ]
     );
@@ -547,7 +547,7 @@ fn ts40_a_set_without_color_fails_before_the_other_rules() {
         rejected(&stack, STONE),
         [
             error(
-                "InvalidValue",
+                "texture_set/set_no_color",
                 PAYLOAD,
                 "There must at least be a color layer in any TextureSet"
             ),
@@ -563,7 +563,7 @@ fn ts41_heightmap_and_normal_together_fail() {
         rejected(&stack, STONE),
         [
             error(
-                "InvalidValue",
+                "texture_set/set_heightmap_and_normal",
                 PAYLOAD,
                 "TextureSet contains both `heightmap` AND `normal` layers - this is not currently supported, and one should be removed"
             ),

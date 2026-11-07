@@ -1,6 +1,6 @@
 [
   {
-    "code": "InvalidValue",
+    "code": "core/string_mismatch",
     "severity": "error",
     "text": "expected string to match the \"^(?:.)+:(?:.)+$\" regex"
   }

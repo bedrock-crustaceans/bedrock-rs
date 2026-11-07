@@ -22,7 +22,7 @@ fn lint(definitions: &str) -> Vec<(&'static str, String, String)> {
         .map(|d| {
             assert_eq!(d.severity, Severity::Info, "{d}");
             (
-                d.code.name(),
+                d.code.id(),
                 d.code.to_string(),
                 d.location.json_path.to_string(),
             )
@@ -133,13 +133,13 @@ fn a_type_is_reported_where_it_is_written() {
     // C1 once, at the base; the derived definition inherits the bad type silently
     expect(
         r#""bad": { "type": "nope" }, "k@a.bad": { "layer": 1 }"#,
-        "InvalidEnumValue",
+        "json_ui/type_not_recognized",
         "Type 'nope' not recognized for control: bad",
         "bad/type",
     );
     expect(
         r#""k": { "type": 5 }"#,
-        "InvalidType",
+        "json_ui/expected_string",
         "JSON UI parse failure - expected a string.",
         "k/type",
     );
@@ -177,7 +177,7 @@ fn a_child_that_cannot_be_created_is_reported_with_its_parent() {
     // a child is checked with the type it inherits
     expect(
         r#""leaf": { "type": "label", "text": "t" }, "p": { "type": "panel", "controls": [ { "c@a.leaf": { "button_mappings": [] } } ] }"#,
-        "UnusedProperty",
+        "core/unused_property",
         "property not read by this control type",
         "p/controls/0/c@a.leaf/button_mappings",
     );
@@ -215,7 +215,7 @@ fn ignored_takes_a_bool_an_integer_or_a_binding() {
     for value in ["0.5", r#""yes""#, "[]", "{}"] {
         expect(
             &format!(r#""k": {{ "type": "panel", "ignored": {value} }}"#),
-            "InvalidType",
+            "json_ui/ignored_invalid",
             "An invalid value was provided for \"ignored\" field.",
             "k/ignored",
         );
@@ -233,10 +233,10 @@ fn an_anim_reference_must_name_a_definition() {
         r#"[ "@a.fade", "a.fade", "fade", "@fade", "$dynamic" ]"#,
     ));
     let found = one(&anims(r#"[ "@a.fade", "@a.gone" ]"#));
-    assert_eq!(found.0, "UnresolvedReference");
+    assert_eq!(found.0, "json_ui/invalid_anim_reference");
     assert_eq!(found.1, "JSON UI parse failure: Invalid anim reference!");
     assert_eq!(found.2, "k/anims/1");
-    assert_eq!(one(&anims("[ 5 ]")).0, "UnresolvedReference");
+    assert_eq!(one(&anims("[ 5 ]")).0, "json_ui/invalid_anim_reference");
     assert_eq!(
         one(&anims(r#""@a.fade""#)).1,
         "JSON UI parse failure - expected an array."
@@ -251,7 +251,7 @@ fn a_grid_item_template_must_name_a_definition() {
     clean(r#""k": { "type": "grid", "grid_item_template": "$template" }"#);
     expect(
         r#""k": { "type": "grid", "grid_item_template": "a.gone" }"#,
-        "UnresolvedReference",
+        "json_ui/grid_item_template_not_created",
         "gridItemTemplate control tree could not be created! Control: k",
         "k/grid_item_template",
     );
@@ -330,14 +330,14 @@ fn an_unknown_or_non_string_binding_enum_falls_back_with_a_message() {
     };
     expect(
         &binding(r#""binding_condition": "sometimes""#),
-        "InvalidEnumValue",
+        "json_ui/binding_condition_unknown",
         "Unknown binding condition value: sometimes",
         "k/bindings/0/binding_condition",
     );
     for key in ["binding_type", "binding_condition"] {
         expect(
             &binding(&format!(r#""{key}": 5"#)),
-            "InvalidType",
+            "json_ui/expected_string",
             "JSON UI parse failure - expected a string.",
             &format!("k/bindings/0/{key}"),
         );
@@ -374,13 +374,13 @@ fn an_expression_reports_open_quotes_and_bare_hashes() {
     };
     expect(
         &binding("(#a = 'x)"),
-        "InvalidValue",
+        "json_ui/unclosed_quotes",
         "You didn't close your quotes >:( \n",
         "k/bindings/0/binding_name",
     );
     expect(
         &binding("(# = 1)"),
-        "InvalidValue",
+        "json_ui/bare_hash",
         "The # sign cannot be used without providing quotes around it!",
         "k/bindings/0/binding_name",
     );
@@ -388,7 +388,7 @@ fn an_expression_reports_open_quotes_and_bare_hashes() {
     // `source_property_name` and `requires` are expressions too
     assert_eq!(
         one(r##""k": { "type": "panel", "bindings": [ { "binding_type": "view", "source_property_name": "(#a <= 1)", "target_property_name": "#t" } ] }"##).0,
-        "UnsupportedOperator"
+        "core/unsupported_operator"
     );
     assert_eq!(
         one(r#""k": { "type": "panel", "variables": [ { "requires": "($a >= 1)", "$x": 1 } ] }"#).2,
@@ -396,7 +396,7 @@ fn an_expression_reports_open_quotes_and_bare_hashes() {
     );
     assert_eq!(
         one(r#""k": { "type": "panel", "variables": { "requires": "($a % 2)", "$x": 1 } }"#).0,
-        "UnsupportedOperator"
+        "core/unsupported_operator"
     );
     // a string that is no expression is not tokenized
     clean(&binding("#a >= 2"));
@@ -414,7 +414,7 @@ fn a_factory_needs_a_name_and_variable_names() {
     for members in [r#""control_name": "a.k""#, r#""name": """#] {
         expect(
             &factory(members),
-            "MissingRequiredField",
+            "json_ui/empty_factory_name",
             "JSON UI parse failure: The factory name should not be empty!",
             "k/factory/name",
         );
@@ -422,14 +422,14 @@ fn a_factory_needs_a_name_and_variable_names() {
     for variables in [r#"[ "$a", "b" ]"#, r"[ 5 ]", r#""$a""#] {
         expect(
             &factory(&format!(r#""name": "f", "factory_variables": {variables}"#)),
-            "InvalidValue",
+            "json_ui/factory_variables_not_variables",
             "JSON UI parse failure: factory_variables should all be strings of json variables created higher up the tree.",
             "k/factory/factory_variables",
         );
     }
     expect(
         r#""k": { "type": "panel", "factory": [] }"#,
-        "InvalidType",
+        "json_ui/expected_object",
         "JSON UI parse failure - expected an object.",
         "k/factory",
     );
@@ -443,25 +443,25 @@ fn a_focus_mapping_is_an_array_of_identified_overrides() {
     ));
     expect(
         &mapping("{}"),
-        "InvalidType",
+        "json_ui/focus_mapping_not_array",
         "JSON UI parse failure: Expected an array for property 'focus_mapping'.",
         "k/focus_mapping",
     );
     expect(
         &mapping("[ 5 ]"),
-        "InvalidType",
+        "json_ui/focus_mapping_entry_not_object",
         "JSON UI parse failure: Expected an object inside array for property 'focus_mapping'.",
         "k/focus_mapping/0",
     );
     expect(
         &mapping(r#"[ { "focus_change_down": "b" } ]"#),
-        "MissingRequiredField",
+        "json_ui/no_focus_identifier",
         "JSON UI parse failure: Expected a focus identifier.",
         "k/focus_mapping/0/focus_identifier",
     );
     expect(
         &mapping(r#"[ { "focus_identifier": "a" } ]"#),
-        "MissingRequiredField",
+        "json_ui/no_focus_direction",
         "JSON UI parse failure: Expected a focus direction override.",
         "k/focus_mapping/0",
     );
@@ -479,7 +479,7 @@ fn a_focus_mapping_is_an_array_of_identified_overrides() {
             &mapping(&format!(
                 r#"[ {{ "focus_identifier": "a", "focus_change_{key}": "" }} ]"#
             )),
-            "InvalidValue",
+            &format!("json_ui/{key}_override_blank"),
             &format!(
                 "JSON UI parse failure: {direction} Override set to blank string. This is redundant as blank strings imply no override."
             ),
@@ -510,7 +510,7 @@ fn only_the_four_mapping_types_are_known() {
     for (written, shown) in [(r#""released""#, "released"), (r#""""#, ""), ("5", "")] {
         expect(
             &mapping(&format!(r#""mapping_type": {written}"#)),
-            "InvalidEnumValue",
+            "json_ui/mapping_type_unrecognized",
             &format!("Unrecognized mapping type String: {shown}"),
             "k/button_mappings/0/mapping_type",
         );
@@ -566,7 +566,7 @@ fn the_compared_scopes_and_input_modes_are_read() {
     assert_eq!(
         findings(&stack),
         vec![(
-            "InvalidEnumValue",
+            "core/invalid_enum_value",
             Severity::Info,
             "invalid enum value".to_owned()
         )]
@@ -591,7 +591,12 @@ fn silent_fallbacks_are_reported_deviation() {
         ),
         (r#""k": { "anim_type": "spin" }"#, "k/anim_type"),
     ] {
-        expect(definition, "InvalidEnumValue", "invalid enum value", at);
+        expect(
+            definition,
+            "core/invalid_enum_value",
+            "invalid enum value",
+            at,
+        );
     }
     for definition in [
         r#""k": { "type": "custom", "renderer": "gradient_renderer", "gradient_direction": "horizontal" }"#,
@@ -612,7 +617,7 @@ fn focus_navigation_modes_are_checked() {
     for direction in ["up", "down", "left", "right"] {
         expect(
             &format!(r#""k": {{ "type": "panel", "focus_navigation_mode_{direction}": "wrap" }}"#),
-            "InvalidEnumValue",
+            "json_ui/focus_navigation_invalid",
             "Invalid Input for Focus Navigation",
             &format!("k/focus_navigation_mode_{direction}"),
         );
@@ -630,7 +635,7 @@ fn only_button_event_is_a_sound_event_type() {
     clean(&sounds(r#", "event_type": "button_event""#));
     expect(
         &sounds(r#", "event_type": "hover""#),
-        "InvalidEnumValue",
+        "json_ui/sound_event_unrecognized",
         "Unrecognized sound event type.\n",
         "k/sounds/0/event_type",
     );
@@ -642,7 +647,7 @@ fn a_renderer_must_be_one_the_game_has() {
     clean(r#""k": { "type": "custom", "renderer": "$renderer" }"#);
     expect(
         r#""k": { "type": "custom", "renderer": "my_renderer" }"#,
-        "InvalidEnumValue",
+        "json_ui/renderer_unrecognized",
         "Unrecognized renderer: 'my_renderer'",
         "k/renderer",
     );
@@ -669,14 +674,14 @@ fn l15_debug_colours() {
 fn arrays_with_their_own_texts() {
     expect(
         r#""k": { "type": "selection_wheel", "state_controls": {} }"#,
-        "InvalidType",
+        "json_ui/state_controls_not_array",
         "JSON UI parse failure: Must define state_controls as an array!",
         "k/state_controls",
     );
     clean(r#""k": { "type": "selection_wheel", "state_controls": [ { "control_name": "c" } ] }"#);
     expect(
         r#""k": { "type": "image_cycler", "images": {} }"#,
-        "InvalidType",
+        "json_ui/images_not_array",
         "JSON UI parse failure: Must define 'images' as an array!",
         "k/images",
     );
@@ -690,13 +695,13 @@ fn font_types_are_strings() {
     );
     expect(
         r#""k": { "type": "label", "text": "t", "font_type": 5 }"#,
-        "InvalidType",
+        "json_ui/font_type_not_string",
         "JSON UI parse failure: Expected a string for 'font_type'.",
         "k/font_type",
     );
     expect(
         r#""k": { "type": "label", "text": "t", "backup_font_type": [] }"#,
-        "InvalidType",
+        "json_ui/backup_font_type_not_string",
         "JSON UI parse failure: Expected a string for 'backup_font_type'.",
         "k/backup_font_type",
     );
@@ -741,13 +746,28 @@ fn each_getter_reports_its_type() {
         let found = one(&format!(r#""k": {{ "type": "label", {member} }}"#));
         assert_eq!(
             (found.0, found.1.as_str()),
-            ("InvalidType", text),
+            (
+                if text.ends_with("expected a string.") {
+                    "json_ui/expected_string"
+                } else if text.ends_with("expected a bool.") {
+                    "json_ui/expected_bool"
+                } else if text.ends_with("expected a number.") {
+                    "json_ui/expected_number"
+                } else if text.ends_with("expected an array.") {
+                    "json_ui/expected_array"
+                } else if text.ends_with("expected an array or a string.") {
+                    "json_ui/expected_array_or_string"
+                } else {
+                    "json_ui/expected_object"
+                },
+                text
+            ),
             "{member}"
         );
     }
     expect(
         r#""k": { "type": "image", "nineslice_size": "4" }"#,
-        "InvalidType",
+        "json_ui/expected_array_or_number",
         "JSON UI parse failure - expected an array or a number.",
         "k/nineslice_size",
     );
@@ -835,7 +855,22 @@ fn each_enum_miss_has_its_text() {
         let found = one(definition);
         assert_eq!(
             (found.0, found.1.as_str()),
-            ("InvalidEnumValue", text),
+            (
+                if text.starts_with("Unrecognized anchor") {
+                    "json_ui/anchor_unrecognized"
+                } else if text.starts_with("JSON UI parse failure - Text Alignment") {
+                    "json_ui/text_alignment_invalid"
+                } else if text.starts_with("Unknown Orientation") {
+                    "json_ui/orientation_unknown"
+                } else if text.starts_with("Unknown draggable") {
+                    "json_ui/draggable_unknown"
+                } else if text.starts_with("Unknown priority rule") {
+                    "json_ui/priority_rule_unknown"
+                } else {
+                    "json_ui/toggle_manager_unknown"
+                },
+                text
+            ),
             "{definition}"
         );
     }
@@ -970,7 +1005,13 @@ fn every_axis_message_and_every_layout_key() {
         for key in ["size", "offset", "min_size", "max_size"] {
             expect(
                 &format!(r#""k": {{ "type": "panel", "{key}": [ "100%", {axis} ] }}"#),
-                "InvalidValue",
+                if text.starts_with("Unrecognized token") {
+                    "json_ui/unrecognized_token"
+                } else if text.starts_with("Trying to give") {
+                    "json_ui/not_a_number"
+                } else {
+                    "json_ui/dangling_number"
+                },
                 text,
                 &format!("k/{key}/1"),
             );
@@ -992,7 +1033,7 @@ fn l05_anim_rules() {
 fn every_animation_rule() {
     expect(
         r#""k": { "anim_type": 5 }"#,
-        "InvalidType",
+        "json_ui/expected_string",
         "JSON UI parse failure - expected a string.",
         "k/anim_type",
     );
@@ -1010,7 +1051,7 @@ fn every_animation_rule() {
         for members in [r#""from": [0, 0]"#, r#""to": [0, 0]"#, r#""duration": 1"#] {
             expect(
                 &animation(members),
-                "MissingRequiredField",
+                "json_ui/no_axis_offset",
                 "The animation needs to have a specified axis offset.",
                 "k",
             );
@@ -1040,7 +1081,18 @@ fn every_animation_rule() {
             let found = one(&animation(members));
             assert_eq!(
                 (found.0, found.1.as_str()),
-                ("InvalidValue", text),
+                (
+                    if text.ends_with("same number y values.") {
+                        "json_ui/y_count_differs"
+                    } else if text.ends_with("same number x values.") {
+                        "json_ui/x_count_differs"
+                    } else if text.contains("operations") {
+                        "json_ui/operations_differ"
+                    } else {
+                        "json_ui/types_differ"
+                    },
+                    text
+                ),
                 "{members}"
             );
         }
@@ -1064,7 +1116,7 @@ fn animation_keys_only_some_types_read() {
     let unused = |definition: &str| -> Vec<String> {
         lint(definition)
             .into_iter()
-            .filter(|f| f.0 == "UnusedProperty")
+            .filter(|f| f.0 == "core/unused_property")
             .map(|f| f.2)
             .collect()
     };
@@ -1141,7 +1193,7 @@ fn keys_the_game_never_reads_are_unused_on_every_type() {
     ] {
         expect(
             &format!(r#""k": {{ "type": "panel", "{key}": 1 }}"#),
-            "UnusedProperty",
+            "core/unused_property",
             "property not read by this control type",
             &format!("k/{key}"),
         );
@@ -1169,11 +1221,11 @@ fn exempt_and_unknown_keys_are_not_reported() {
     clean(r#""k": { "type": "scroll_view", "scroll_speed": 2, "scrollbar_box": "b" }"#);
     assert_eq!(
         one(r#""k": { "type": "panel", "scroll_speed": 2 }"#).0,
-        "UnusedProperty"
+        "core/unused_property"
     );
     assert_eq!(
         one(r#""k": { "type": "collection_panel", "orientation": "vertical" }"#).0,
-        "UnusedProperty"
+        "core/unused_property"
     );
     clean(r#""k": { "type": "collection_panel", "collection_name": "c" }"#);
 }
@@ -1196,7 +1248,7 @@ fn a_number_endpoint_pairs_with_any_unit() {
 fn a_control_of_an_unknown_type_is_not_checked_for_unused_keys() {
     expect(
         r#""k": { "type": "nope", "button_mappings": [], "texture": "t" }"#,
-        "InvalidEnumValue",
+        "json_ui/type_not_recognized",
         "Type 'nope' not recognized for control: k",
         "k/type",
     );
@@ -1290,7 +1342,7 @@ fn a_renderers_own_key_is_not_unused_on_another_type() {
     // `renderer` itself is read by a custom control only
     assert_eq!(
         one(r#""k": { "type": "panel", "renderer": "hud_player_renderer" }"#).0,
-        "UnusedProperty"
+        "core/unused_property"
     );
 }
 
@@ -1308,7 +1360,7 @@ fn a_null_type_hides_the_inherited_one_where_it_is_written_and_is_not_handed_on(
     );
     let places: Vec<&str> = found.iter().map(|(_, _, place)| place.as_str()).collect();
     assert_eq!(places, ["k@near/text"], "{found:?}");
-    assert_eq!(found[0].0, "UnusedProperty");
+    assert_eq!(found[0].0, "core/unused_property");
 }
 
 #[test]
@@ -1330,6 +1382,6 @@ fn two_chains_of_one_table_keep_their_own_inherited_types() {
         ));
         let places: Vec<&str> = found.iter().map(|(_, _, place)| place.as_str()).collect();
         assert_eq!(places, [format!("{panel}3@{panel}2/text")], "{found:?}");
-        assert_eq!(found[0].0, "UnusedProperty");
+        assert_eq!(found[0].0, "core/unused_property");
     }
 }

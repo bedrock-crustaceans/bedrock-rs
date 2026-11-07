@@ -80,7 +80,7 @@ mod compiled {
         assert!(
             d.iter()
                 // By legacy name: the variant and the definitions that were it.
-                .any(|f| matches!(f.code.name(), "InvalidMolang"))
+                .any(|f| matches!(f.code.id(), "core/invalid_molang"))
         );
         let fine = r#""context.other->query.remaining_durability + 0.05 * context.other->query.max_durability""#;
         let (_, d) = repair_amount(&repairable(fine), &checking());
@@ -94,7 +94,7 @@ mod compiled {
         let finding = d
             .iter()
             // By legacy name: the variant and the definitions that were it.
-            .find(|f| matches!(f.code.name(), "InvalidMolang"))
+            .find(|f| matches!(f.code.id(), "core/invalid_molang"))
             .unwrap();
         assert_eq!((finding.severity, finding.kept), (Severity::Error, true));
     }
@@ -264,7 +264,7 @@ mod compiled {
                 let path = finding.location.json_path.to_string();
                 Some((
                     path.strip_prefix(list)?.to_owned(),
-                    finding.code.name(),
+                    finding.code.id(),
                     finding.severity,
                 ))
             })
@@ -274,9 +274,9 @@ mod compiled {
         assert_eq!(
             told,
             [
-                ("0".to_owned(), "InvalidValue", Severity::Error),
-                ("1".to_owned(), "InvalidValue", Severity::Error),
-                ("3".to_owned(), "InvalidValue", Severity::Error),
+                ("0".to_owned(), "core/invalid_value", Severity::Error),
+                ("1".to_owned(), "core/invalid_value", Severity::Error),
+                ("3".to_owned(), "core/invalid_value", Severity::Error),
             ],
             "{:#?}",
             d.iter().map(ToString::to_string).collect::<Vec<_>>()
@@ -310,7 +310,7 @@ fn block_descriptor_tags_are_version_13_whatever_the_format_version() {
 fn without_the_molang_feature_expressions_are_not_checked() {
     let (_, d) = repair_amount(&repairable(r#""'a' + 1""#), &third_party());
     assert!(
-        d.iter().any(|f| f.code.name() == "MolangNotChecked"),
+        d.iter().any(|f| f.code.id() == "core/molang_not_checked"),
         "{d:#?}"
     );
 }
@@ -320,7 +320,7 @@ fn without_the_molang_feature_expressions_are_not_checked() {
 fn without_a_compile_check_expressions_are_not_checked() {
     let (_, d) = repair_amount(&repairable(r#""'a' + 1""#), &third_party());
     assert!(
-        d.iter().any(|f| f.code.name() == "MolangNotChecked"),
+        d.iter().any(|f| f.code.id() == "core/molang_not_checked"),
         "{d:#?}"
     );
 }

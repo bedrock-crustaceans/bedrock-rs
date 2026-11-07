@@ -343,7 +343,7 @@
 []
 
 == {
-rejected: ["MalformedInput "]
+rejected: ["core/syntax "]
 == PIG, the second entry's volume set to 0.75 and the first's weight to 2, the category to "hostile"
 {
   "format_version": "1.26.50",

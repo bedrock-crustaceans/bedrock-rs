@@ -3,6 +3,6 @@ scope = "none"
 resolved = ["@minecraft/server 3.0.0-alpha"]
 
 [[diagnostic]]
-code = "ScriptAlphaDependency"
+code = "core/script_alpha_dependency"
 severity = "info"
 path = "dependencies/0"

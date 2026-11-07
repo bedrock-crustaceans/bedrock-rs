@@ -112,7 +112,7 @@ fn a_version_above_the_engine_is_unsupported_and_beta_is_the_literal() {
         rejected
             .diagnostics
             .iter()
-            .any(|f| f.code.name() == "UnsupportedVersion")
+            .any(|f| f.code.id() == "item/version_out_of_range")
     );
     // a pre-release selects the struct below its release and needs no toggle
     let pre = r#"{"format_version": "1.21.60-beta.3", "minecraft:item": {"description": {"identifier": "demo:x", "menu_category": {"group": "bundles"}}, "components": {"minecraft:max_stack_size": 2}}}"#;
@@ -122,7 +122,7 @@ fn a_version_above_the_engine_is_unsupported_and_beta_is_the_literal() {
         document
             .diagnostics()
             .iter()
-            .any(|f| f.code.name() == "PrereleaseFormatVersion")
+            .any(|f| f.code.id() == "core/prerelease_format_version")
     );
     assert_eq!(
         super::history::unpack(super::history::pack(1, 21, 110)),

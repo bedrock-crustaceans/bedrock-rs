@@ -180,7 +180,7 @@ fn e16_a_sound_of_a_component_the_game_reads_as_a_string_that_nothing_knows_is_a
     let found = link(&[(FILE, &pet(SOUNDS))], &[]);
     let s = |path: &str, id: &str| {
         miss(
-            "UnknownSound",
+            "core/unknown_sound",
             Severity::Info,
             &format!("minecraft:entity/components/minecraft:{path}"),
             "level sound event",
@@ -230,7 +230,7 @@ fn e16_a_sound_behind_one_the_lenient_conversion_drops_is_at_the_index_of_the_fi
     assert_eq!(
         said_of(&found, "level sound event"),
         [miss(
-            "UnknownSound",
+            "core/unknown_sound",
             Severity::Info,
             "minecraft:entity/components/minecraft:anger_level/on_increase_sounds/2/sound",
             "level sound event",
@@ -295,7 +295,7 @@ fn e16_a_typed_goals_unknown_sound_is_the_loads_finding_not_the_passs() {
                 .to_string()
                 .contains("behavior.sneeze")
         })
-        .map(|finding| (finding.code.name(), finding.severity))
+        .map(|finding| (finding.code.id(), finding.severity))
         .collect();
     assert!(
         load.iter().any(|(_, severity)| *severity == Severity::Info),

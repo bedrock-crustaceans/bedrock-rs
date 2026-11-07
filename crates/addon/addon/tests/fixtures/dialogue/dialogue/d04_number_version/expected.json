@@ -3,7 +3,7 @@
   "rejected": 1,
   "diagnostics": [
     {
-      "code": "MalformedFormatVersion",
+      "code": "dialogue/no_format_version_malformed_format_version",
       "severity": "error",
       "path": "dialogue/number.json",
       "json_path": "format_version",

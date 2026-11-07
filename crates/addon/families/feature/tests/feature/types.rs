@@ -34,16 +34,20 @@ fn f09_root_places_block_and_may_replace_are_unknown() {
     );
     error_at(
         &d,
-        "UnrecognizedField",
+        "core/child_not_valid",
         "minecraft:ore_feature/places_block",
     );
-    error_at(&d, "UnrecognizedField", "minecraft:ore_feature/may_replace");
+    error_at(
+        &d,
+        "core/child_not_valid",
+        "minecraft:ore_feature/may_replace",
+    );
 }
 
 #[test]
 fn f09_count_0_and_empty_replace_rules_are_invalid() {
     let d = rejects(&doc("1.13.0", "ore_feature", r#""count": 0"#), &cx());
-    error_at(&d, "InvalidValue", "count");
+    error_at(&d, "core/outside_range", "count");
     assert!(has_text(
         &d,
         "Value '0' outside valid range [1, 2147483647]"
@@ -56,7 +60,7 @@ fn f09_count_0_and_empty_replace_rules_are_invalid() {
         ),
         &cx(),
     );
-    error_at(&d, "InvalidValue", "replace_rules");
+    error_at(&d, "core/array_too_small", "replace_rules");
     assert!(has_text(&d, "Array too small (0 < 1)"));
 }
 
@@ -110,7 +114,7 @@ fn f13_a_cherry_trunk_base_of_1_is_invalid() {
         }"#,
     );
     let d = rejects(&json, &cx());
-    error_at(&d, "InvalidValue", "cherry_trunk/trunk_height/base");
+    error_at(&d, "core/outside_range", "cherry_trunk/trunk_height/base");
 }
 
 #[test]
@@ -130,7 +134,7 @@ fn f14_geode_ranges() {
         )
     };
     let d = rejects(&doc("1.13.0", "geode_feature", &members(11, "2.0")), &cx());
-    error_at(&d, "InvalidValue", "min_outer_wall_distance");
+    error_at(&d, "core/outside_range", "min_outer_wall_distance");
     loads(&doc("1.13.0", "geode_feature", &members(4, "5.0")), &cx());
 }
 
@@ -161,7 +165,7 @@ fn f15_facing_direction_up_is_invalid() {
         &format!(r#"{TEMPLATE}, "facing_direction": "up", "constraints": {{}}"#),
     );
     let d = rejects(&json, &cx());
-    error_at(&d, "InvalidValue", "facing_direction");
+    error_at(&d, "core/invalid_value", "facing_direction");
 }
 
 const CONDITIONAL: &str = r#""conditional_features": [{"places_feature": "demo:y", "condition": "1"}], "early_out_scheme": "none""#;
@@ -171,7 +175,7 @@ fn f16_early_out_scheme_none_is_invalid_before_engine_1_26_50() {
     let mut cx = engine(1, 26, 20);
     cx.is_base_game_pack = true;
     let d = rejects(&doc("1.13.0", "conditional_list", CONDITIONAL), &cx);
-    error_at(&d, "InvalidValue", "early_out_scheme");
+    error_at(&d, "core/invalid_value", "early_out_scheme");
     let Feature::ConditionalList(list) = loads(
         &doc("1.13.0", "conditional_list", CONDITIONAL),
         &base_game(),
@@ -192,7 +196,7 @@ fn f17_no_height_difference_is_warned_and_the_feature_loads() {
     let document = loads(&json, &engine(1, 26, 30));
     kept_at(
         document.diagnostics(),
-        "MissingRequiredField",
+        "feature/no_height_differences",
         "minecraft:height_difference_filter_feature",
     );
     assert!(has_text(
@@ -214,7 +218,7 @@ fn f17_a_missing_places_feature_loads_and_is_reported_at_placement() {
     assert!(
         with(
             document.diagnostics(),
-            "UnresolvedReference",
+            "core/unresolved_reference_worded",
             Severity::Warning
         )
         .is_empty()
@@ -252,33 +256,36 @@ fn f21_the_vanilla_orange_poplar_tree_loads_from_engine_1_26_40() {
         Some("minecraft:optional_shelf_mushroom_feature")
     );
     let d = rejects(&json, &engine(1, 26, 30));
-    error_at(&d, "UnrecognizedField", "poplar_trunk");
+    error_at(&d, "core/child_not_valid", "poplar_trunk");
 }
 
 #[test]
 fn f21_poplar_canopy_bounds() {
     let base = fixture("f21_orange_poplar_tree_feature.json");
-    for (from, to, tail) in [
+    for (from, to, tail, id) in [
         (
             r#""height":{"range_min":5,"range_max":6}"#,
             r#""height":{"range_min":3,"range_max":5}"#,
             "poplar_canopy/height",
+            "feature/range_min_out_of_range",
         ),
         (
             r#""side_hole_chance":0.15"#,
             r#""side_hole_chance":1.5"#,
             "poplar_canopy/side_hole_chance",
+            "core/outside_range",
         ),
         (
             r#""radius":[{"value":5,"weight":5},{"value":6,"weight":5},{"value":7,"weight":1},{"value":8,"weight":1}]"#,
             r#""radius":[]"#,
             "poplar_canopy/radius",
+            "core/array_too_small",
         ),
     ] {
         let compact = base.replace(['\n', ' '], "");
         assert!(compact.contains(from), "{from}");
         let d = rejects(&compact.replace(from, to), &engine(1, 26, 40));
-        error_at(&d, "InvalidValue", tail);
+        error_at(&d, id, tail);
     }
 }
 
@@ -297,7 +304,7 @@ fn unknown_feature_type(d: &bedrock_addon_core::diagnostic::Diagnostics, key: &s
     let finding = d.iter().next().unwrap();
     assert!(
         // By legacy name: the variant and the definitions that were it.
-        matches!(finding.code.name(), "UnknownPayloadKey"),
+        matches!(finding.code.id(), "core/unknown_payload_key"),
         "{d:#?}"
     );
     assert_eq!(finding.severity, Severity::Error);
@@ -314,7 +321,7 @@ fn f22_multi_block_below_its_floor_is_an_unknown_feature_type() {
     unknown_below_1_26_40("multi_block_feature", members);
     loads(&doc("1.26.40", "multi_block_feature", members), &cx());
     let d = rejects(&doc("1.26.40", "multi_block_feature", ""), &cx());
-    error_at(&d, "MissingRequiredField", "places_block");
+    error_at(&d, "core/required_child", "places_block");
 }
 
 const SNAP: &str = r#""feature_to_snap": "demo:y""#;
@@ -347,7 +354,7 @@ fn f23_vertical_search_range_is_renamed_search_range() {
         &format!(r#"{SNAP}, "search_range": 12"#),
     );
     let d = rejects(&early, &cx());
-    error_at(&d, "UnrecognizedField", "search_range");
+    error_at(&d, "core/child_not_valid", "search_range");
 }
 
 /// `_buildSchema<SnapToSurfaceFeature>` gates only the search-range name on
@@ -384,14 +391,14 @@ fn f24_height_differences_are_at_least_0_and_search_radius_is_required() {
         r#""places_feature": "demo:y", "search_radius": 2, "min_required_upward_height_diff": -1"#,
     );
     let d = rejects(&negative, &cx());
-    error_at(&d, "InvalidValue", "min_required_upward_height_diff");
+    error_at(&d, "core/outside_range", "min_required_upward_height_diff");
     let no_radius = doc(
         "1.26.30",
         "height_difference_filter_feature",
         r#""places_feature": "demo:y", "min_required_upward_height_diff": 1"#,
     );
     let d = rejects(&no_radius, &cx());
-    error_at(&d, "MissingRequiredField", "search_radius");
+    error_at(&d, "core/required_child", "search_radius");
 }
 
 #[test]
@@ -424,7 +431,11 @@ fn chance_takes_a_ratio_or_a_number() {
         r#"{"numerator": 1}"#,
     ] {
         let d = rejects(&json.replace("0.25", chance), &cx());
-        error_at(&d, "InvalidType", "trunk_decoration/decoration_chance");
+        error_at(
+            &d,
+            "core/invalid_type",
+            "trunk_decoration/decoration_chance",
+        );
     }
 }
 
@@ -438,7 +449,7 @@ fn f15_block_intersection_needs_one_of_its_two_names() {
     let d = rejects(&json, &cx());
     error_at(
         &d,
-        "MissingRequiredField",
+        "core/required_child",
         "block_intersection/block_allowlist",
     );
 }
@@ -465,7 +476,7 @@ fn an_all_req_container_is_optional_and_a_req_one_is_required() {
     );
     error_at(
         &rejects(&half, &cx()),
-        "MissingRequiredField",
+        "core/required_child",
         "branches/density",
     );
     let cherry = doc(
@@ -475,7 +486,7 @@ fn an_all_req_container_is_optional_and_a_req_one_is_required() {
     );
     error_at(
         &rejects(&cherry, &cx()),
-        "MissingRequiredField",
+        "core/required_child",
         "cherry_trunk/branches",
     );
 }
@@ -524,7 +535,7 @@ fn the_snap_range_name_changes_between_1_26_49_and_1_26_50() {
         ("1.26.50", "vertical_search_range"),
     ] {
         let d = rejects(&at(version, member), &cx());
-        error_at(&d, "UnrecognizedField", member);
+        error_at(&d, "core/child_not_valid", member);
     }
 }
 
@@ -535,7 +546,7 @@ fn an_explicit_none_needs_engine_1_26_50() {
     let mut below = engine(1, 26, 49);
     below.is_base_game_pack = true;
     let d = rejects(&doc("1.13.0", "conditional_list", CONDITIONAL), &below);
-    let found = with(&d, "InvalidValue", Severity::Error);
+    let found = with(&d, "core/invalid_value", Severity::Error);
     assert_eq!(found.len(), 1, "{d:#?}");
     assert!(
         found[0]
@@ -571,7 +582,7 @@ fn an_unknown_snap_surface_has_the_text_with_wall() {
             &format!(r#"{SNAP}, "{range}": 12, "surface": "side""#),
         );
         let d = rejects(&json, &cx());
-        error_at(&d, "InvalidValue", "surface");
+        error_at(&d, "feature/snap_surface", "surface");
         assert!(has_text(&d, text), "{version}: {d:#?}");
     }
 }

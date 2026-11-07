@@ -82,12 +82,12 @@ fn c2_a_bad_level_of_a_command_refuses_the_whole_file() {
         findings(&config),
         [
             (
-                "InvalidEnumValue".to_owned(),
+                "core/invalid_enum_value".to_owned(),
                 "error".to_owned(),
                 "permission_levels/say".to_owned()
             ),
             (
-                "InvalidType".to_owned(),
+                "core/invalid_type".to_owned(),
                 "error".to_owned(),
                 "permission_levels/op".to_owned()
             )
@@ -117,7 +117,7 @@ fn c2_members_of_the_wrong_type_refuse_the_file() {
         assert_eq!(config.commands, None, "{text}");
         assert_eq!(
             findings(&config),
-            one("InvalidType", "error", path),
+            one("core/invalid_type", "error", path),
             "{text}"
         );
     }
@@ -134,7 +134,10 @@ fn an_empty_commands_json_is_refused() {
     let config = commands("");
     assert_eq!(config.commands, None);
     let finding = config.diagnostics().first_error().unwrap();
-    assert_eq!(finding.code.name(), "EmptyDocument");
+    assert_eq!(
+        finding.code.id(),
+        "server_config/commands_malformed_empty_document"
+    );
     assert_eq!(
         finding.code.to_string(),
         "Failed to parse JSON in file 'config/commands.json'\n:  malformed input"
@@ -153,7 +156,7 @@ fn an_unreadable_commands_json_is_a_read_error() {
     });
     assert_eq!(config.commands, None);
     let finding = config.diagnostics().first_error().unwrap();
-    assert_eq!(finding.code.name(), "ReadError");
+    assert_eq!(finding.code.id(), "server_config/config_open_failed");
     assert_eq!(
         finding.code.to_string(),
         "Failed to open file 'config/commands.json'"
@@ -208,7 +211,10 @@ fn c6_the_first_of_two_members_stands_at_every_level() {
     let note = commands.extra.get("note").unwrap().as_object().unwrap();
     assert_eq!(note.get("a"), Some(&Value::from(1_i64)));
     // The later `permission_levels`, with its bad level, is never read.
-    assert_eq!(findings(&config), one("UnrecognizedField", "info", "note"));
+    assert_eq!(
+        findings(&config),
+        one("core/unrecognized_field", "info", "note")
+    );
 }
 
 #[test]
@@ -223,7 +229,7 @@ fn c6_keys_compare_by_their_value_and_strings_are_not_keys() {
     assert_eq!(config.commands, None);
     assert_eq!(
         findings(&config),
-        one("InvalidEnumValue", "error", "permission_levels/say")
+        one("core/invalid_enum_value", "error", "permission_levels/say")
     );
     let config = commands(&escaped(
         r#"{"permission_levels": {"list": "any", "lU+0069st": "internal"}}"#,
@@ -240,7 +246,7 @@ fn a_span_after_a_repeated_member_is_where_the_value_is() {
     let text = r#"{"permission_levels": {"list": "any"}, "permission_levels": {"x": "y"}, "default_permission_level": "bogus"}"#;
     let config = commands(text);
     let finding = config.diagnostics().first_error().unwrap();
-    assert_eq!(finding.code.name(), "InvalidEnumValue");
+    assert_eq!(finding.code.id(), "server_config/bad_level");
     let offset = u32::try_from(text.find("\"bogus\"").unwrap()).unwrap();
     assert_eq!(finding.location.span, Some(Span { offset, len: 7 }));
 }
@@ -268,7 +274,7 @@ fn c6_the_first_stands_also_when_content_follows_the_root() {
         let expected = if tail == "\n// c" {
             Vec::new()
         } else {
-            one("MalformedInput", "info", "")
+            one("core/syntax", "info", "")
         };
         assert_eq!(findings(&config), expected, "tail {tail:?}");
     }
@@ -287,12 +293,12 @@ fn c5_a_permission_level_for_a_command_the_game_does_not_have_is_a_note() {
         findings(&config),
         [
             (
-                "UnresolvedReference".to_owned(),
+                "core/unresolved_reference".to_owned(),
                 "info".to_owned(),
                 "permission_levels/nosuchcommand".to_owned()
             ),
             (
-                "UnresolvedReference".to_owned(),
+                "core/unresolved_reference".to_owned(),
                 "info".to_owned(),
                 "permission_levels/Give".to_owned()
             ),
@@ -346,7 +352,7 @@ fn c5_a_refused_commands_json_tells_no_command_note() {
     assert_eq!(
         findings(&config),
         one(
-            "InvalidEnumValue",
+            "core/invalid_enum_value",
             "error",
             "permission_levels/nosuchcommand"
         )
@@ -371,7 +377,7 @@ fn c1_a_syntax_fault_in_the_copy_of_a_member_that_loses_refuses_the_file() {
         assert_eq!(found.len(), 1, "{text}: {found:?}");
         assert_eq!(
             (found[0].0.as_str(), found[0].1.as_str()),
-            ("MalformedInput", "error"),
+            ("server_config/commands_malformed_malformed_input", "error"),
             "{text}"
         );
         assert_eq!(

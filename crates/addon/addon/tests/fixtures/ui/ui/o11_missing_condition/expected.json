@@ -13,7 +13,7 @@
   ],
   "diagnostics": [
     {
-      "code": "MissingRequiredField",
+      "code": "json_ui/pack_missing_condition",
       "severity": "error",
       "text": "ui/a.json (root): Missing condition on operation 'remove'.",
       "pack": 1,

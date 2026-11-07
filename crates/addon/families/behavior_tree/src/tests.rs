@@ -55,7 +55,7 @@ fn linked(trees: &[(&str, &str)]) -> Vec<(&'static str, String, String)> {
                 Some(0)
             );
             (
-                finding.code.name(),
+                finding.code.id(),
                 finding.location.path.as_ref().unwrap().as_str().to_owned(),
                 finding.location.json_path.to_string(),
             )
@@ -79,7 +79,7 @@ fn at(code: &'static str, name: &str) -> (&'static str, String, String) {
 #[test]
 fn bt22_a_subtree_id_that_names_no_tree_is_unresolved() {
     let found = linked(&[("orphan", &subtree("nope"))]);
-    assert_eq!(found, [at("UnresolvedReference", "orphan")]);
+    assert_eq!(found, [at("core/unresolved_reference", "orphan")]);
     // the finding names what it could not find
     let registry = registry(&[("orphan", &subtree("nope"))]);
     let findings = link::link(&registry);
@@ -100,12 +100,15 @@ fn bt22_subtrees_that_form_a_cycle() {
     let found = linked(&[("a", &subtree("b")), ("b", &subtree("a"))]);
     assert_eq!(
         found,
-        [at("ReferenceCycle", "a"), at("ReferenceCycle", "b")]
+        [
+            at("core/reference_cycle", "a"),
+            at("core/reference_cycle", "b")
+        ]
     );
     // a tree that is its own subtree
     assert_eq!(
         linked(&[("me", &subtree("me"))]),
-        [at("ReferenceCycle", "me")]
+        [at("core/reference_cycle", "me")]
     );
     // a longer cycle, and a tree that only leads into it
     let found = linked(&[
@@ -117,9 +120,9 @@ fn bt22_subtrees_that_form_a_cycle() {
     assert_eq!(
         found,
         [
-            at("ReferenceCycle", "a"),
-            at("ReferenceCycle", "b"),
-            at("ReferenceCycle", "c")
+            at("core/reference_cycle", "a"),
+            at("core/reference_cycle", "b"),
+            at("core/reference_cycle", "c")
         ]
     );
 }
@@ -151,13 +154,13 @@ fn every_subtree_node_of_a_tree_is_checked_at_its_own_path() {
         found,
         [
             (
-                "UnresolvedReference",
+                "core/unresolved_reference",
                 "behavior_trees/t.json".to_owned(),
                 format!("{children}/1/minecraft:inverter/child/minecraft:subtree/subtree_id")
             ),
             // an absent subtree_id names no tree either
             (
-                "UnresolvedReference",
+                "core/unresolved_reference",
                 "behavior_trees/t.json".to_owned(),
                 format!("{children}/2/minecraft:subtree/subtree_id")
             ),
@@ -180,12 +183,12 @@ fn a_cycle_beside_a_missing_tree() {
         found,
         [
             (
-                "ReferenceCycle",
+                "core/reference_cycle",
                 "behavior_trees/a.json".to_owned(),
                 format!("{children}/1/minecraft:subtree/subtree_id")
             ),
             (
-                "UnresolvedReference",
+                "core/unresolved_reference",
                 "behavior_trees/a.json".to_owned(),
                 format!("{children}/0/minecraft:subtree/subtree_id")
             ),
@@ -295,7 +298,7 @@ fn a_long_chain_and_a_long_cycle() {
     let found = linked(&borrowed);
     assert_eq!(found.len(), TREES);
     for (index, finding) in found.iter().enumerate() {
-        assert_eq!(finding, &at("ReferenceCycle", &name(index)));
+        assert_eq!(finding, &at("core/reference_cycle", &name(index)));
     }
     // two cycles joined by one edge: the joining node is on neither
     let found = linked(&[
@@ -318,10 +321,10 @@ fn a_long_chain_and_a_long_cycle() {
     assert_eq!(
         codes,
         [
-            ("ReferenceCycle", "behavior_trees/a.json"),
-            ("ReferenceCycle", "behavior_trees/b.json"),
-            ("ReferenceCycle", "behavior_trees/c.json"),
-            ("ReferenceCycle", "behavior_trees/d.json"),
+            ("core/reference_cycle", "behavior_trees/a.json"),
+            ("core/reference_cycle", "behavior_trees/b.json"),
+            ("core/reference_cycle", "behavior_trees/c.json"),
+            ("core/reference_cycle", "behavior_trees/d.json"),
         ]
     );
 }

@@ -20,7 +20,7 @@ fn p01_a_condition_at_1_20_60_is_an_unknown_member() {
         errors(&rejects(&fixture("p01_1_20_60_with_condition.json"))),
         [
             error(
-                "UnrecognizedField",
+                "core/unrecognized_field_worded",
                 &format!("-> rules[0] -> condition: {NOT_IN_SCHEMA}"),
                 &at("rules/0/condition")
             ),
@@ -36,7 +36,7 @@ fn p02_the_flag_at_1_20_60_is_an_unknown_member() {
         errors(&rejects(&fixture("p02_1_20_60_with_flag.json"))),
         [
             error(
-                "UnrecognizedField",
+                "core/unrecognized_field_worded",
                 &format!("-> rules[0] -> cull_against_full_and_opaque: {NOT_IN_SCHEMA}"),
                 &at("rules/0/cull_against_full_and_opaque")
             ),
@@ -53,7 +53,11 @@ fn the_1_21_80_members_are_unknown_one_patch_below_and_known_at_1_21_80() {
     let codes: Vec<&str> = found.iter().map(|f| f.0).collect();
     assert_eq!(
         codes,
-        ["UnrecognizedField", "UnrecognizedField", "DocumentRejected"]
+        [
+            "core/unrecognized_field_worded",
+            "core/unrecognized_field_worded",
+            "block_culling/failed_to_parse"
+        ]
     );
     loads(&super::common::document("1.21.80", "a:b", &[rule]));
 }
@@ -65,7 +69,7 @@ fn p03_a_condition_outside_the_three_names() {
         errors(&rejects(&fixture("p03_bad_condition.json"))),
         [
             error(
-                "InvalidEnumValue",
+                "core/invalid_enum_value_worded",
                 "-> rules[0] -> condition: This value is bound to 'Rule Condition' and expects one of the following strings: 'same_culling_layer', 'same_block', 'same_block_permutation'. Found: 'invalid_condition'",
                 &at("rules/0/condition")
             ),
@@ -76,7 +80,10 @@ fn p03_a_condition_outside_the_three_names() {
     let not_defined = latest(&[
         r#"{"condition": "not_defined", "geometry_part": {"bone": "b"}, "direction": "up"}"#,
     ]);
-    assert_eq!(errors(&rejects(&not_defined))[0].0, "InvalidEnumValue");
+    assert_eq!(
+        errors(&rejects(&not_defined))[0].0,
+        "core/invalid_enum_value_worded"
+    );
 }
 
 #[test]
@@ -86,7 +93,7 @@ fn p04_a_flag_that_is_not_a_boolean() {
         errors(&rejects(&fixture("p04_bad_flag_value.json"))),
         [
             error(
-                "InvalidType",
+                "core/invalid_type_worded",
                 "-> rules[0] -> cull_against_full_and_opaque: invalid numeric value",
                 &at("rules/0/cull_against_full_and_opaque")
             ),
@@ -98,7 +105,7 @@ fn p04_a_flag_that_is_not_a_boolean() {
             r#"{{"cull_against_full_and_opaque": {value}, "geometry_part": {{"bone": "b"}}, "direction": "up"}}"#
         );
         let found = errors(&rejects(&latest(&[&rule])));
-        assert_eq!(found[0].0, "InvalidType", "{value}");
+        assert_eq!(found[0].0, "core/invalid_type_worded", "{value}");
     }
     for value in ["true", "false"] {
         let rule = format!(
@@ -119,7 +126,7 @@ fn p05_a_rule_without_direction() {
         errors(&rejects(&fixture("p05_missing_direction.json"))),
         [
             error(
-                "MissingRequiredField",
+                "core/missing_required_field_worded",
                 "-> rules[0] -> direction: missing required field",
                 &at("rules/0/direction")
             ),
@@ -136,22 +143,22 @@ fn p06_unknown_members_and_both_missing_ones_are_all_reported() {
         errors(&rejects(&fixture("p06_unknown_fields_only.json"))),
         [
             error(
-                "UnrecognizedField",
+                "core/unrecognized_field_worded",
                 &format!("-> rules[0] -> unrecognized_field1: {NOT_IN_SCHEMA}"),
                 &at("rules/0/unrecognized_field1")
             ),
             error(
-                "UnrecognizedField",
+                "core/unrecognized_field_worded",
                 &format!("-> rules[0] -> unrecognized_field2: {NOT_IN_SCHEMA}"),
                 &at("rules/0/unrecognized_field2")
             ),
             error(
-                "MissingRequiredField",
+                "core/missing_required_field_worded",
                 "-> rules[0] -> geometry_part: missing required field",
                 &at("rules/0/geometry_part")
             ),
             error(
-                "MissingRequiredField",
+                "core/missing_required_field_worded",
                 "-> rules[0] -> direction: missing required field",
                 &at("rules/0/direction")
             ),
@@ -185,7 +192,7 @@ fn every_required_member_is_required() {
         assert_eq!(found.len(), 2, "{json}: {found:#?}");
         assert_eq!(
             (found[0].0, found[0].1.as_str()),
-            ("MissingRequiredField", text)
+            ("core/missing_required_field_worded", text)
         );
         assert_eq!(found[1], failed_to_parse());
     }
@@ -197,7 +204,7 @@ fn every_required_member_is_required() {
     assert_eq!(
         errors(&rejects(&second))[0],
         error(
-            "MissingRequiredField",
+            "core/missing_required_field_worded",
             "-> rules[1] -> direction: missing required field",
             &at("rules/1/direction")
         )
@@ -215,7 +222,7 @@ fn p07_a_cube_below_zero() {
         errors(&rejects(&latest(&[&rule("-1")]))),
         [
             error(
-                "InvalidValue",
+                "core/invalid_value_worded",
                 "-> rules[0] -> geometry_part -> cube: the input must be a number >= 0",
                 &at("rules/0/geometry_part/cube")
             ),
@@ -235,12 +242,12 @@ fn p07_a_cube_below_zero() {
     );
     assert_eq!(
         errors(&rejects(&latest(&[&rule("-0.5")])))[0].0,
-        "InvalidValue"
+        "core/invalid_value_worded"
     );
     // Ours: a fraction, an index beyond `int` or beyond any float is no cube index.
     for cube in ["1.5", "2147483648", "1e39", "1e999"] {
         let found = errors(&rejects(&latest(&[&rule(cube)])));
-        assert_eq!(found[0].0, "InvalidValue", "{cube}");
+        assert_eq!(found[0].0, "core/invalid_value", "{cube}");
         assert_eq!(found[0].2, at("rules/0/geometry_part/cube"), "{cube}");
     }
     for cube in [r#""0""#, "true", "null", "[0]"] {
@@ -248,7 +255,7 @@ fn p07_a_cube_below_zero() {
         assert_eq!(
             (found[0].0, found[0].1.as_str()),
             (
-                "InvalidType",
+                "core/invalid_type_worded",
                 "-> rules[0] -> geometry_part -> cube: invalid numeric value"
             ),
             "{cube}"
@@ -265,7 +272,7 @@ fn p08_a_direction_or_face_outside_the_six_names() {
         errors(&rejects(&bad_direction)),
         [
             error(
-                "InvalidEnumValue",
+                "core/invalid_enum_value_worded",
                 &format!("-> rules[0] -> direction: {facing} 'northeast'"),
                 &at("rules/0/direction")
             ),
@@ -278,7 +285,7 @@ fn p08_a_direction_or_face_outside_the_six_names() {
     assert_eq!(
         errors(&rejects(&bad_face))[0],
         error(
-            "InvalidEnumValue",
+            "core/invalid_enum_value_worded",
             &format!("-> rules[0] -> geometry_part -> face: {facing} 'North'"),
             &at("rules/0/geometry_part/face")
         )
@@ -288,7 +295,7 @@ fn p08_a_direction_or_face_outside_the_six_names() {
     assert_eq!(
         errors(&rejects(&number))[0],
         error(
-            "InvalidType",
+            "core/invalid_type_worded",
             "-> rules[0] -> direction: This value is bound to 'Facing' and expects a \"named value\" (i.e. a string)",
             &at("rules/0/direction")
         )
@@ -309,7 +316,7 @@ fn p09_an_unknown_member_at_every_level() {
             found,
             [
                 error(
-                    "UnrecognizedField",
+                    "core/unrecognized_field_worded",
                     &format!("{crumb}: {NOT_IN_SCHEMA}"),
                     &at(path)
                 ),
@@ -337,7 +344,7 @@ fn p09_an_unknown_member_at_every_level() {
     let json = latest(&[r#"{"geometry_part": {"bone": "b"}, "direction": "up", "foo": 1}"#]);
     assert_eq!(
         errors(&rejects_in(&json, &base_game()))[0].0,
-        "UnrecognizedField"
+        "core/unrecognized_field_worded"
     );
 }
 
@@ -354,7 +361,7 @@ fn members_of_the_wrong_json_type_fail_the_file() {
     ];
     for json in cases {
         let found = errors(&rejects(json));
-        assert_eq!(found[0].0, "InvalidType", "{json}: {found:#?}");
+        assert_eq!(found[0].0, "core/invalid_type", "{json}: {found:#?}");
         assert_eq!(found.last(), Some(&failed_to_parse()), "{json}");
     }
 }
@@ -380,9 +387,17 @@ fn a_cube_beyond_a_double_fails_the_file() {
             r#"{{"geometry_part": {{"bone": "b", "cube": {cube}, "face": "up"}}, "direction": "up"}}"#
         )]));
         let found = errors(&d);
+        // Below zero it is the minimum that refuses it, otherwise the value.
+        let expected = if cube.starts_with('-') {
+            "core/invalid_value_worded"
+        } else {
+            "core/invalid_value"
+        };
         assert!(
-            found.iter().any(|(code, _, path)| *code == "InvalidValue"
-                && *path == at("rules/0/geometry_part/cube")),
+            found
+                .iter()
+                .any(|(code, _, path)| *code == expected
+                    && *path == at("rules/0/geometry_part/cube")),
             "{cube}: {found:#?}"
         );
     }
@@ -401,7 +416,7 @@ fn a_cube_beyond_64_bits_is_a_number_out_of_range() {
             .filter(|(_, _, path)| *path == at("rules/0/geometry_part/cube"))
             .map(|(code, _, _)| code)
             .collect();
-        assert_eq!(found, ["InvalidValue"], "{cube}");
+        assert_eq!(found, ["core/invalid_value"], "{cube}");
     }
     // Below zero it is vanilla's minimum that refuses it.
     let d = rejects(&latest(&[
@@ -412,7 +427,7 @@ fn a_cube_beyond_64_bits_is_a_number_out_of_range() {
         .filter(|(_, _, path)| *path == at("rules/0/geometry_part/cube"))
         .collect();
     assert_eq!(found.len(), 1, "{found:#?}");
-    assert_eq!(found[0].0, "InvalidValue");
+    assert_eq!(found[0].0, "core/invalid_value_worded");
     assert!(
         found[0].1.contains("rules[0] -> geometry_part -> cube"),
         "{found:#?}"
@@ -445,7 +460,11 @@ fn findings_carry_the_span_of_the_value_their_path_names() {
         let at = finding.location.json_path.to_string();
         let Some(span) = finding.location.span else {
             // The line that says the file failed is about the file, not about a value.
-            assert_eq!(finding.code.name(), "DocumentRejected", "no span at {at}");
+            assert_eq!(
+                finding.code.id(),
+                "block_culling/failed_to_parse",
+                "no span at {at}"
+            );
             continue;
         };
         assert!(finding.location.path.is_some(), "{at}");

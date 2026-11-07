@@ -2,16 +2,57 @@
 //! tags) are audited in `audit.rs`.
 
 #![allow(unused_imports, reason = "which rows compile depends on the features")]
+#![allow(dead_code, reason = "which rows compile depends on the features")]
 
 use bedrock_addon::pack::LinkOptions;
 
 use super::super::common::{hosted, link, link_with};
-use super::{said, texts, unresolved_error, unresolved_info};
+use super::{Said, finding, said, texts};
+use bedrock_addon::diagnostic::Severity;
 
 const POOL: &str = "worldgen/template_pools/pool.json";
 const STRUCTURE: &str = "worldgen/structures/ruin.json";
 const SET: &str = "worldgen/structure_sets/ruins.json";
 const PROCESSORS: &str = "worldgen/processors/weather.json";
+
+/// A jigsaw reference the game's registry logs as an error, of the code `code`.
+fn jigsaw_error(code: &'static str, file: &str, path: &str, kind: &'static str, id: &str) -> Said {
+    finding(code, Severity::Error, file, path, kind, id)
+}
+
+fn missing_asset_error(file: &str, path: &str, kind: &'static str, id: &str) -> Said {
+    jigsaw_error("jigsaw/missing_asset", file, path, kind, id)
+}
+
+fn block_missing_error(file: &str, path: &str, kind: &'static str, id: &str) -> Said {
+    jigsaw_error("jigsaw/block_missing", file, path, kind, id)
+}
+
+fn invalid_asset_path_error(file: &str, path: &str, kind: &'static str, id: &str) -> Said {
+    jigsaw_error("jigsaw/invalid_asset_path", file, path, kind, id)
+}
+
+fn structure_missing_info(file: &str, path: &str, kind: &'static str, id: &str) -> Said {
+    finding(
+        "jigsaw/structure_missing",
+        Severity::Info,
+        file,
+        path,
+        kind,
+        id,
+    )
+}
+
+fn feature_missing_info(file: &str, path: &str, kind: &'static str, id: &str) -> Said {
+    finding(
+        "jigsaw/feature_missing",
+        Severity::Info,
+        file,
+        path,
+        kind,
+        id,
+    )
+}
 
 /// A template pool `id` with `members` after its description and the elements `elements`.
 fn pool(id: &str, members: &str, elements: &str) -> String {
@@ -92,31 +133,31 @@ fn w16_a_pool_nothing_defines_is_an_error_at_each_member() {
     assert_eq!(
         said(&found, &["template pool"]),
         [
-            unresolved_error(
+            missing_asset_error(
                 STRUCTURE,
                 &jigsaw("start_pool"),
                 "template pool",
                 "demo:nowhere"
             ),
-            unresolved_error(
+            missing_asset_error(
                 STRUCTURE,
                 &jigsaw("pool_aliases/0/target"),
                 "template pool",
                 "demo:t"
             ),
-            unresolved_error(
+            missing_asset_error(
                 STRUCTURE,
                 &jigsaw("pool_aliases/1/targets/1/data"),
                 "template pool",
                 "demo:u"
             ),
-            unresolved_error(
+            missing_asset_error(
                 STRUCTURE,
                 &jigsaw("pool_aliases/2/groups/0/data/0/target"),
                 "template pool",
                 "demo:v"
             ),
-            unresolved_error(
+            missing_asset_error(
                 POOL,
                 "minecraft:template_pool/fallback",
                 "template pool",
@@ -162,7 +203,7 @@ fn w17_a_template_a_pack_has_or_the_game_has_resolves_without_its_namespace() {
     );
     assert_eq!(
         said(&found, &["structure"]),
-        [unresolved_info(
+        [structure_missing_info(
             POOL,
             "minecraft:template_pool/elements/2/element/location",
             "structure",
@@ -212,7 +253,7 @@ fn w17_a_legacy_template_resolves_in_a_pack_of_the_game_and_nowhere_else() {
     // The game's validator line beside each miss is `linked_asset.rs`'s.
     assert_eq!(
         said(&crate::common::family_findings(&set.link()), &["structure"]),
-        [unresolved_info(
+        [structure_missing_info(
             POOL,
             "minecraft:template_pool/elements/2/element/location",
             "structure",
@@ -271,8 +312,8 @@ fn w18_a_processor_list_resolves_and_the_empty_name_is_none() {
     assert_eq!(
         said(&found, &["processor list"]),
         [
-            unresolved_error(POOL, &at(2), "processor list", "demo:gone"),
-            unresolved_error(POOL, &at(3), "processor list", "minecraft:mossify"),
+            missing_asset_error(POOL, &at(2), "processor list", "demo:gone"),
+            missing_asset_error(POOL, &at(3), "processor list", "minecraft:mossify"),
         ]
     );
     assert_eq!(
@@ -300,7 +341,7 @@ fn w19_a_feature_of_a_pool_resolves_or_is_a_warning_with_the_rows_text() {
     let found = link(&files, &[]);
     assert_eq!(
         said(&found, &["feature"]),
-        [unresolved_info(
+        [feature_missing_info(
             POOL,
             "minecraft:template_pool/elements/1/element/feature",
             "feature",
@@ -347,7 +388,7 @@ fn w20_a_structure_of_a_set_resolves_or_is_an_error() {
     let found = link(&files, &[]);
     assert_eq!(
         said(&found, &["jigsaw structure"]),
-        [unresolved_error(
+        [missing_asset_error(
             SET,
             "minecraft:structure_set/structures/0/structure",
             "jigsaw structure",
@@ -400,26 +441,26 @@ fn w21_a_block_nothing_defines_is_one_warning_per_member() {
     assert_eq!(
         said(&found, &["block"]),
         [
-            unresolved_error(PROCESSORS, &at("0/blocks/0"), "block", "demo:lamp"),
-            unresolved_error(
+            block_missing_error(PROCESSORS, &at("0/blocks/0"), "block", "demo:lamp"),
+            block_missing_error(
                 PROCESSORS,
                 &at("1/rules/0/input_predicate/block"),
                 "block",
                 "demo:lamp"
             ),
-            unresolved_error(
+            block_missing_error(
                 PROCESSORS,
                 &at("1/rules/0/location_predicate/block"),
                 "block",
                 "demo:lamp"
             ),
-            unresolved_error(
+            block_missing_error(
                 PROCESSORS,
                 &at("1/rules/0/output_state"),
                 "block",
                 "demo:lamp"
             ),
-            unresolved_error(
+            block_missing_error(
                 PROCESSORS,
                 &at("1/rules/1/input_predicate/block_state"),
                 "block",
@@ -475,7 +516,7 @@ fn w22_a_loot_table_resolves_with_or_without_its_extension_or_is_an_error() {
     let found = link(&files, &[]);
     assert_eq!(
         said(&found, &["loot table"]),
-        [unresolved_error(
+        [invalid_asset_path_error(
             PROCESSORS,
             "minecraft:processor_list/processors/0/rules/3/block_entity_modifier/loot_table",
             "loot table",

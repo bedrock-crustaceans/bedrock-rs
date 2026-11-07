@@ -1,7 +1,7 @@
 //! `c01`–`c14`; `c15` is a unit test beside
 //! the rule): a document read at 1.26.20.
 
-use bedrock_addon::diagnostic::{Diagnostics, Severity, codes};
+use bedrock_addon::diagnostic::{Diagnostics, Kind, Severity, codes};
 use bedrock_addon::document::Content;
 use bedrock_addon::families::fog::{ColorNorm, DistanceType, FogColor, FogSettings, Keyframed};
 
@@ -35,7 +35,12 @@ fn air_of(document: &FogSettings) -> &bedrock_addon::families::fog::FogDistanceS
 #[test]
 fn c01_unknown_member_deviation() {
     let document = loaded(parse(&latest(&air(r#""fog_density": 1"#)), &pack()));
-    let warning = find(document.diagnostics(), "UnrecognizedField", Severity::Info).unwrap();
+    let warning = find(
+        document.diagnostics(),
+        "core/unrecognized_field",
+        Severity::Info,
+    )
+    .unwrap();
     // Our own finding: no text of the game's.
     assert!(warning.code.is(&codes::UNRECOGNIZED_FIELD));
     assert_eq!(
@@ -55,7 +60,11 @@ fn c01_unknown_member_deviation() {
     );
     let document = loaded(parse(&everywhere, &pack()));
     assert_eq!(
-        count(document.diagnostics(), "UnrecognizedField", Severity::Info),
+        count(
+            document.diagnostics(),
+            "core/unrecognized_field",
+            Severity::Info
+        ),
         14,
         "{:?}",
         lines(document.diagnostics())
@@ -79,7 +88,11 @@ fn c01_unknown_member_deviation() {
 fn c01_a_member_named_extra_is_an_unknown_member_like_any_other() {
     let document = loaded(parse(&latest(r#""extra": {"deep": true}"#), &pack()));
     assert_eq!(
-        count(document.diagnostics(), "UnrecognizedField", Severity::Info),
+        count(
+            document.diagnostics(),
+            "core/unrecognized_field",
+            Severity::Info
+        ),
         1
     );
     assert!(document.extra.get("extra").is_some());
@@ -101,7 +114,7 @@ fn c03_start_after_end() {
     ));
     expect_at(
         &d,
-        "InvalidValue",
+        "fog/end_below_start",
         Severity::Error,
         V15,
         "minecraft:fog_settings/distance/air",
@@ -122,7 +135,7 @@ fn c03_start_after_end() {
         let d = rejected(parse(&latest(&members), &pack()));
         expect_at(
             &d,
-            "InvalidValue",
+            "fog/end_below_start",
             Severity::Error,
             V15,
             &format!("minecraft:fog_settings/distance/{entry}"),
@@ -132,7 +145,7 @@ fn c03_start_after_end() {
     let d = rejected(parse(&latest(init), &pack()));
     expect_at(
         &d,
-        "InvalidValue",
+        "fog/end_below_start",
         Severity::Error,
         V15,
         "minecraft:fog_settings/distance/water/transition_fog/init_fog",
@@ -153,8 +166,8 @@ fn c04_render_ranges() {
     for place in ["air", "water", "init_fog"] {
         let document = loaded(parse(&latest(&wrap(place, both)), &pack()));
         let d = document.diagnostics();
-        expect(d, "InvalidValue", Severity::Warning, V16);
-        expect(d, "InvalidValue", Severity::Warning, V16B);
+        expect(d, "fog/render_start_above", Severity::Warning, V16);
+        expect(d, "fog/render_end_above", Severity::Warning, V16B);
         assert_eq!(d.len(), 2, "{place}: {:?}", lines(d));
         // Without `fog_end` nothing is checked.
         let document = loaded(parse(&latest(&wrap(place, alone)), &pack()));
@@ -203,13 +216,13 @@ fn v13_a_negative_fog_end_of_init_fog_is_a_constraint_violation() {
     let d = rejected(parse(&init("-5"), &pack()));
     let errors: Vec<(&str, String)> = d
         .iter()
-        .filter(|f| f.severity >= Severity::Error && f.code.name() != "DocumentRejected")
-        .map(|f| (f.code.name(), f.location.json_path.to_string()))
+        .filter(|f| f.severity >= Severity::Error && f.code.id() != "fog/failed_to_validate")
+        .map(|f| (f.code.id(), f.location.json_path.to_string()))
         .collect();
     assert_eq!(
         errors,
         [(
-            "InvalidValue",
+            "core/invalid_value",
             "minecraft:fog_settings/distance/water/transition_fog/init_fog/fog_end".to_owned()
         )],
         "{:?}",
@@ -236,7 +249,7 @@ fn c05_mid_max_seconds() {
         let d = rejected(parse(&transition(members), &pack()));
         expect_at(
             &d,
-            "InvalidValue",
+            "fog/mid_below_max",
             Severity::Error,
             V17,
             "minecraft:fog_settings/distance/water/transition_fog",
@@ -258,7 +271,7 @@ fn c05_mid_max_seconds() {
         &pack(),
     ));
     assert_eq!(
-        count(&d, "InvalidValue", Severity::Error),
+        count(&d, "core/invalid_value", Severity::Error),
         1,
         "{:?}",
         lines(&d)
@@ -280,14 +293,14 @@ fn c06_uniform_with_heights() {
         ));
         expect_at(
             &d,
-            "InvalidValue",
+            "fog/uniform_heights",
             Severity::Error,
             V18,
             "minecraft:fog_settings/volumetric/density/air",
         );
         // V18 only: the lambda returns before V19–V20, also with zero below max.
         assert_eq!(
-            count(&d, "InvalidValue", Severity::Error),
+            count(&d, "fog/uniform_heights", Severity::Error),
             1,
             "{:?}",
             lines(&d)
@@ -305,9 +318,13 @@ fn c07_heights_required() {
         r#""max_density": 0.1, "uniform": false"#,
     ] {
         let d = rejected(parse(&latest(&density(members)), &pack()));
-        expect(&d, "InvalidValue", Severity::Error, V19);
-        expect(&d, "InvalidValue", Severity::Error, V19A);
-        assert_eq!(count(&d, "InvalidValue", Severity::Error), 2);
+        expect(&d, "fog/max_height_required", Severity::Error, V19);
+        expect(&d, "fog/zero_height_required", Severity::Error, V19A);
+        assert_eq!(
+            count(&d, "fog/max_height_required", Severity::Error)
+                + count(&d, "fog/zero_height_required", Severity::Error),
+            2
+        );
         refused(&d);
     }
     // One height alone misses the other.
@@ -340,7 +357,7 @@ fn c07_heights_required() {
         let d = rejected(parse(&latest(&members), &pack()));
         expect_at(
             &d,
-            "InvalidValue",
+            "fog/max_height_required",
             Severity::Error,
             V19,
             &format!("minecraft:fog_settings/volumetric/density/{entry}"),
@@ -356,8 +373,8 @@ fn c08_zero_below_max() {
         )),
         &pack(),
     ));
-    expect(&d, "InvalidValue", Severity::Error, V20);
-    assert_eq!(count(&d, "InvalidValue", Severity::Error), 1);
+    expect(&d, "fog/zero_below_max", Severity::Error, V20);
+    assert_eq!(count(&d, "fog/zero_below_max", Severity::Error), 1);
     refused(&d);
     for heights in [
         r#""zero_density_height": 20, "max_density_height": 20"#,
@@ -414,7 +431,7 @@ fn c09_constraints() {
         let d = rejected(parse(&latest(&members), &pack()));
         let errors: Vec<_> = d
             .iter()
-            .filter(|f| f.severity == Severity::Error && f.code.name() == "InvalidValue")
+            .filter(|f| f.severity == Severity::Error && f.code.id() == "core/invalid_value")
             .collect();
         assert_eq!(errors.len(), 1, "{members}: {:?}", lines(&d));
         assert_eq!(
@@ -460,7 +477,7 @@ fn c10_colour_255_deviation() {
         Some(FogColor::Array([255, 0, 0]))
     );
     assert_eq!(
-        count(document.diagnostics(), "ClampedValue", Severity::Info),
+        count(document.diagnostics(), "core/clamped_value", Severity::Info),
         2
     );
     assert_eq!(document.diagnostics().len(), 2);
@@ -487,7 +504,11 @@ fn c10_colour_255_deviation() {
             &latest(&air(&format!(r#""fog_color": {color}"#))),
             &pack(),
         ));
-        assert_eq!(count(&d, "InvalidValue", Severity::Error), 1, "{color}");
+        assert_eq!(
+            count(&d, "core/invalid_value", Severity::Error),
+            1,
+            "{color}"
+        );
         refused(&d);
     }
 }
@@ -546,21 +567,26 @@ fn c11_colour_float_array_deviation() {
             &pack(),
         ));
         assert!(
-            count(&d, "InvalidValue", Severity::Error) >= 1,
+            count(&d, "core/invalid_value", Severity::Error) >= 1,
             "{color}: {:?}",
             lines(&d)
         );
         refused(&d);
     }
     let d = rejected(parse(&latest(&air(r#""fog_color": 7"#)), &pack()));
-    assert_eq!(count(&d, "InvalidType", Severity::Error), 1);
+    assert_eq!(count(&d, "core/invalid_type", Severity::Error), 1);
 }
 
 #[test]
 fn c12_transition_on_air() {
     let members = air(r#""fog_start": 0, "transition_fog": {"min_percent": 0.5}"#);
     let document = loaded(parse(&latest(&members), &pack()));
-    let unknown = find(document.diagnostics(), "UnrecognizedField", Severity::Info).unwrap();
+    let unknown = find(
+        document.diagnostics(),
+        "core/unrecognized_field",
+        Severity::Info,
+    )
+    .unwrap();
     assert_eq!(
         unknown.location.json_path.to_string(),
         "minecraft:fog_settings/distance/air/transition_fog"
@@ -599,7 +625,7 @@ fn c13_partial_setting_zero_fill() {
 fn c14_keyframes_engine_gate() {
     let keyed = density(r#""uniform": true, "max_density": {"0.5": 0.1, "0.0": 0.02}"#);
     let d = rejected(parse(&latest(&keyed), &engine(1, 26, 20)));
-    let gate = find(&d, "UnsupportedValueForm", Severity::Error).unwrap();
+    let gate = find(&d, "core/unsupported_value_form", Severity::Error).unwrap();
     assert_eq!(
         gate.location.json_path.to_string(),
         "minecraft:fog_settings/volumetric/density/air/max_density"
@@ -638,7 +664,7 @@ fn c14_keyframes_engine_gate() {
         "henyey_greenstein_g": {"water": {"henyey_greenstein_g": {"0.25": 0.5}}}}"##;
     let d = rejected(parse(&latest(all), &engine(1, 26, 20)));
     assert_eq!(
-        count(&d, "UnsupportedValueForm", Severity::Error),
+        count(&d, "core/unsupported_value_form", Severity::Error),
         5,
         "{:?}",
         lines(&d)
@@ -654,7 +680,7 @@ fn c14_keyframes_engine_gate() {
     ] {
         let d = rejected(parse(&latest(&members), &pack()));
         assert_eq!(
-            count(&d, "InvalidValue", Severity::Error),
+            count(&d, "core/invalid_value", Severity::Error),
             1,
             "{members}: {:?}",
             lines(&d)
@@ -665,7 +691,7 @@ fn c14_keyframes_engine_gate() {
         &doc("1.21.90", &density(r#""max_density": {"0": 0.5}"#)),
         &pack(),
     ));
-    assert_eq!(count(&d, "InvalidType", Severity::Error), 1);
+    assert_eq!(count(&d, "core/unknown_child_option", Severity::Error), 1);
 }
 
 #[test]
@@ -695,7 +721,12 @@ fn c14_keyframed_heights_are_compared_at_equal_keys_deviation() {
         let result = parse(&latest(&density(heights)), &pack());
         assert_eq!(result.is_ok(), ok, "{heights}");
         if let Err(rejected) = result {
-            expect(&rejected.diagnostics, "InvalidValue", Severity::Error, V20);
+            expect(
+                &rejected.diagnostics,
+                "fog/zero_below_max",
+                Severity::Error,
+                V20,
+            );
         }
     }
 }
@@ -714,7 +745,7 @@ fn wrong_types_fail_the_cereal_parse() {
     ] {
         let d = rejected(parse(&latest(&members), &pack()));
         assert_eq!(
-            count(&d, "InvalidType", Severity::Error),
+            count(&d, "core/invalid_type", Severity::Error),
             1,
             "{members}: {:?}",
             lines(&d)
@@ -722,7 +753,7 @@ fn wrong_types_fail_the_cereal_parse() {
         // Our own finding: no text of the game's.
         assert!(
             d.iter()
-                .all(|f| !(f.code.name() == "InvalidType" && f.vanilla().is_some()))
+                .all(|f| !(f.code.kind() == Kind::WrongType && f.vanilla().is_some()))
         );
         refused(&d);
     }
@@ -732,7 +763,11 @@ fn wrong_types_fail_the_cereal_parse() {
             &latest(&air(&format!(r#""render_distance_type": "{kind}""#))),
             &pack(),
         ));
-        assert_eq!(count(&d, "InvalidEnumValue", Severity::Error), 1, "{kind}");
+        assert_eq!(
+            count(&d, "core/invalid_enum_value", Severity::Error),
+            1,
+            "{kind}"
+        );
         refused(&d);
     }
 }
@@ -806,7 +841,7 @@ fn max_density(document: &FogSettings) -> Keyframed<f32> {
 /// The paths of the dropped keyframes, in the order they were reported.
 fn dropped_keyframes(d: &Diagnostics) -> Vec<String> {
     d.iter()
-        .filter(|f| f.code.name() == "DroppedField" && f.severity == Severity::Info)
+        .filter(|f| f.code.id() == "core/dropped_field" && f.severity == Severity::Info)
         .map(|f| f.location.json_path.to_string())
         .collect()
 }
@@ -852,7 +887,7 @@ fn c14_a_dropped_keyframe_is_reported_at_its_key() {
         ["1", "0", "0.5", "0.0", "5e-1"].map(|key| format!("{AT}/{key}"))
     );
     assert_eq!(document.diagnostics().iter().count(), 5);
-    let finding = find(document.diagnostics(), "DroppedField", Severity::Info).unwrap();
+    let finding = find(document.diagnostics(), "core/dropped_field", Severity::Info).unwrap();
     let span = finding.location.span.unwrap();
     let text = latest(&keyed);
     let start = usize::try_from(span.offset).unwrap();
@@ -877,7 +912,7 @@ fn c14_a_key_that_is_no_finite_number_fails_the_document() {
             r#""uniform": true, "max_density": {{"{key}": 0.1}}"#
         ));
         let d = rejected(parse(&latest(&keyed), &pack()));
-        let at = find(&d, "InvalidValue", Severity::Error).unwrap();
+        let at = find(&d, "core/invalid_value", Severity::Error).unwrap();
         assert_eq!(
             at.location.json_path.to_string(),
             format!("minecraft:fog_settings/volumetric/density/air/max_density/{key}"),
@@ -891,7 +926,7 @@ fn c14_keyframed_heights_at_minus_zero_and_zero_are_compared() {
     // `-0` and `0` are one time: the heights at them are a pair V20 checks.
     let heights = r#""zero_density_height": {"0": 10}, "max_density_height": {"-0": 50}"#;
     let d = rejected(parse(&latest(&density(heights)), &pack()));
-    expect(&d, "InvalidValue", Severity::Error, V20);
+    expect(&d, "fog/zero_below_max", Severity::Error, V20);
     let heights = r#""zero_density_height": {"-0": 10}, "max_density_height": {"0": 5}"#;
     loaded(parse(&latest(&density(heights)), &pack()));
 }

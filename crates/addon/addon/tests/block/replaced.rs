@@ -23,7 +23,7 @@ fn told_in(version: &str, payload: &str, cx: &LoadContext) -> (Vec<String>, Stri
         .diagnostics()
         .iter()
         .map(|f| {
-            let code: String = f.code.name().to_owned();
+            let code: String = f.code.id().to_owned();
             format!("{code} {:?} at {}", f.severity, f.location.json_path)
         })
         .collect();
@@ -49,7 +49,7 @@ fn refused(version: &str, payload: &str) -> Vec<String> {
     super::common::rejected(&document(version, payload), &context())
         .iter()
         .map(|f| {
-            let code: String = f.code.name().to_owned();
+            let code: String = f.code.id().to_owned();
             format!("{code} {:?} at {}", f.severity, f.location.json_path)
         })
         .collect()
@@ -73,7 +73,7 @@ fn case_13_a_menu_category_of_the_file_replaced_by_a_creative_category_is_told()
     );
     has(
         &found,
-        "DroppedField Info at minecraft:block/description/menu_category",
+        "core/dropped_field Info at minecraft:block/description/menu_category",
     );
     assert!(
         written.contains(r#""menu_category": { "category": "items""#),
@@ -86,7 +86,7 @@ fn case_13_a_menu_category_of_the_file_replaced_by_a_creative_category_is_told()
         r#"{"description": {"identifier": "demo:x", "menu_category": {"category": "items"}}, "components": {"minecraft:creative_category": {"category": "items"}}}"#,
     );
     assert!(
-        !found.iter().any(|f| f.starts_with("DroppedField")),
+        !found.iter().any(|f| f.starts_with("core/dropped_field")),
         "{found:#?}"
     );
     // Of two components the later one wins (the base first, then each permutation): the
@@ -97,7 +97,7 @@ fn case_13_a_menu_category_of_the_file_replaced_by_a_creative_category_is_told()
     );
     has(
         &found,
-        "DroppedField Info at minecraft:block/components/minecraft:creative_category",
+        "core/dropped_field Info at minecraft:block/components/minecraft:creative_category",
     );
     assert!(written.contains(r#""category": "nature""#), "{written}");
 }
@@ -110,11 +110,11 @@ fn case_14_a_flammable_modifier_replaced_by_the_odds_is_told() {
     );
     has(
         &found,
-        "DroppedField Info at minecraft:block/components/minecraft:flammable/catch_chance_modifier",
+        "core/dropped_field Info at minecraft:block/components/minecraft:flammable/catch_chance_modifier",
     );
     has(
         &found,
-        "DroppedField Info at minecraft:block/components/minecraft:flammable/destroy_chance_modifier",
+        "core/dropped_field Info at minecraft:block/components/minecraft:flammable/destroy_chance_modifier",
     );
     assert!(
         written.contains(r#""catch_chance_modifier": 5"#),
@@ -130,7 +130,7 @@ fn case_14_a_flammable_modifier_replaced_by_the_odds_is_told() {
         r#"{"description": {"identifier": "demo:x"}, "components": {"minecraft:flammable": {"flame_odds": 5, "burn_odds": 7, "catch_chance_modifier": 5, "destroy_chance_modifier": 7.0}}}"#,
     );
     assert!(
-        !found.iter().any(|f| f.starts_with("DroppedField")),
+        !found.iter().any(|f| f.starts_with("core/dropped_field")),
         "{found:#?}"
     );
     // The table's name beside the description it is made of (1.18.0).
@@ -141,7 +141,7 @@ fn case_14_a_flammable_modifier_replaced_by_the_odds_is_told() {
     );
     has(
         &found,
-        "DroppedField Info at minecraft:block/components/minecraft:crafting_table/table_name",
+        "core/dropped_field Info at minecraft:block/components/minecraft:crafting_table/table_name",
     );
     assert!(written.contains(r#""table_name": "A""#), "{written}");
 }
@@ -155,11 +155,13 @@ fn case_15_a_permutation_that_goes_for_a_gated_component_is_told_at_the_permutat
     // The gate's finding names the component the file has, not the one the step made of it.
     let gate: Vec<&String> = found
         .iter()
-        .filter(|f| f.starts_with("MissingToggles"))
+        .filter(|f| f.starts_with("core/toggle_use_format_version"))
         .collect();
     assert_eq!(
         gate,
-        ["MissingToggles Error at minecraft:block/permutations/0/components/minecraft:rotation"],
+        [
+            "core/toggle_use_format_version Error at minecraft:block/permutations/0/components/minecraft:rotation"
+        ],
         "{found:#?}"
     );
     // A permutation's toggle lines are level 3 and a failing permutation fails the component
@@ -177,7 +179,7 @@ fn a_permutation_that_goes_for_a_gated_component_is_told_too() {
     );
     has(
         &found,
-        "MissingToggles Error at minecraft:block/permutations/1/components/minecraft:sound",
+        "core/turn_on_toggle_before Error at minecraft:block/permutations/1/components/minecraft:sound",
     );
 }
 
@@ -202,7 +204,7 @@ fn a_finding_of_a_member_a_step_moved_names_the_member_of_the_file() {
     ] {
         has(
             &found,
-            &format!("InvalidType Error at minecraft:block/{at}"),
+            &format!("core/invalid_type Error at minecraft:block/{at}"),
         );
     }
     for gone in [
@@ -224,7 +226,7 @@ fn a_finding_of_a_member_a_step_moved_names_the_member_of_the_file() {
     );
     has(
         &found,
-        "InvalidType Error at minecraft:block/components/minecraft:destroy_time/destroy_time",
+        "core/invalid_type Error at minecraft:block/components/minecraft:destroy_time/destroy_time",
     );
     // `rotation` of 1.19.40 and `properties`, in a permutation too.
     let found = refused(
@@ -233,7 +235,7 @@ fn a_finding_of_a_member_a_step_moved_names_the_member_of_the_file() {
     );
     has(
         &found,
-        "InvalidType Error at minecraft:block/components/minecraft:rotation/1",
+        "core/invalid_type Error at minecraft:block/components/minecraft:rotation/1",
     );
     assert!(
         found
@@ -259,9 +261,9 @@ fn a_second_version_of_a_component_is_told_at_the_section_that_has_it() {
     );
     has(
         &found,
-        "DuplicateComponentVersion Error at minecraft:block/permutations/0/components/minecraft:destructible_by_mining",
+        "core/duplicate_component_version Error at minecraft:block/permutations/0/components/minecraft:destructible_by_mining",
     );
-    assert!(!found.iter().any(|f| f == "DuplicateComponentVersion Error at minecraft:block/components/minecraft:destructible_by_mining"), "{found:#?}");
+    assert!(!found.iter().any(|f| f == "core/duplicate_component_version Error at minecraft:block/components/minecraft:destructible_by_mining"), "{found:#?}");
     assert!(!written.contains('9'), "{written}");
 }
 
@@ -279,11 +281,26 @@ fn a_component_that_goes_whole_for_one_member_of_another_type_is_told_at_the_com
         );
         has(
             &found,
-            "InvalidType Error at minecraft:block/components/minecraft:flammable/catch_chance_modifier",
+            "core/invalid_type Error at minecraft:block/components/minecraft:flammable/catch_chance_modifier",
         );
         // The refusal is the one finding: no component is dropped from a refused block.
+        // Every definition that was `DroppedComponent`.
+        const DROPPED: [&str; 10] = [
+            "block/component_missing_field",
+            "block/duplicate_component",
+            "block/part_visibility_deprecated",
+            "block/part_visibility_unsupported",
+            "core/dropped_component",
+            "entity/component_removed_by_upgrade",
+            "entity/damage_sensor_not_added",
+            "entity/null_group_removed",
+            "item/foil_ignored",
+            "core/dropped_component_worded",
+        ];
         assert!(
-            !found.iter().any(|f| f.starts_with("DroppedComponent")),
+            !found
+                .iter()
+                .any(|f| DROPPED.iter().any(|id| f.starts_with(id))),
             "{found:#?}"
         );
     }
@@ -309,7 +326,7 @@ fn case_r2_5_an_is_hidden_in_commands_the_1_19_30_step_writes_over_is_noted() {
     );
     has(
         &found,
-        "DroppedField Info at minecraft:block/description/menu_category/is_hidden_in_commands",
+        "core/dropped_field Info at minecraft:block/description/menu_category/is_hidden_in_commands",
     );
     assert!(
         !written.contains(r#""is_hidden_in_commands": true"#),
@@ -321,7 +338,7 @@ fn case_r2_5_an_is_hidden_in_commands_the_1_19_30_step_writes_over_is_noted() {
         r#"{"description": {"identifier": "demo:x", "menu_category": {"category": "construction", "is_hidden_in_commands": false}}, "components": {}}"#,
     );
     assert!(
-        !found.iter().any(|f| f.starts_with("DroppedField")),
+        !found.iter().any(|f| f.starts_with("core/dropped_field")),
         "{found:#?}"
     );
     // The 1.19.10 step copies `{category, group}` of the component alone; what else
@@ -332,11 +349,11 @@ fn case_r2_5_an_is_hidden_in_commands_the_1_19_30_step_writes_over_is_noted() {
     );
     has(
         &found,
-        "UnrecognizedField Info at minecraft:block/components/minecraft:creative_category/is_hidden_in_commands",
+        "core/unrecognized_field Info at minecraft:block/components/minecraft:creative_category/is_hidden_in_commands",
     );
     has(
         &found,
-        "UnrecognizedField Info at minecraft:block/components/minecraft:creative_category/zz",
+        "core/unrecognized_field Info at minecraft:block/components/minecraft:creative_category/zz",
     );
     assert!(
         !written.contains(r#""is_hidden_in_commands": true"#) && !written.contains("zz"),
@@ -357,15 +374,15 @@ fn case_r2_6_what_the_queued_ticking_conversion_does_not_name_is_carried_or_told
     );
     has(
         &found,
-        "UnrecognizedField Warning at minecraft:block/components/minecraft:random_ticking/zz",
+        "core/unrecognized_field Warning at minecraft:block/components/minecraft:random_ticking/zz",
     );
     has(
         &found,
-        "UnrecognizedField Warning at minecraft:block/components/minecraft:queued_ticking/zz",
+        "core/unrecognized_field Warning at minecraft:block/components/minecraft:queued_ticking/zz",
     );
     has(
         &found,
-        "UnrecognizedField Info at minecraft:block/components/minecraft:queued_ticking/interval_range/2",
+        "core/unrecognized_field Info at minecraft:block/components/minecraft:queued_ticking/interval_range/2",
     );
     assert!(
         written.contains(r#""min_ticks": 5, "max_ticks": 2"#),
@@ -385,7 +402,7 @@ fn a_menu_category_group_and_the_commands_category_a_step_rewrites_are_told() {
     );
     has(
         &found,
-        "DeprecatedMember Info at minecraft:block/description/menu_category/group",
+        "core/deprecated_member Info at minecraft:block/description/menu_category/group",
     );
     assert!(
         written.contains(r#""group": "minecraft:itemGroup.name.ore""#),
@@ -397,7 +414,7 @@ fn a_menu_category_group_and_the_commands_category_a_step_rewrites_are_told() {
     );
     has(
         &found,
-        "DeprecatedMember Info at minecraft:block/description/menu_category/category",
+        "core/deprecated_member Info at minecraft:block/description/menu_category/category",
     );
     assert!(written.contains(r#""category": "none""#), "{written}");
     // A category the step keeps says nothing.
@@ -406,7 +423,9 @@ fn a_menu_category_group_and_the_commands_category_a_step_rewrites_are_told() {
         r#"{"description": {"identifier": "demo:x", "menu_category": {"category": "nature"}}, "components": {}}"#,
     );
     assert!(
-        !found.iter().any(|f| f.starts_with("DeprecatedMember")),
+        !found
+            .iter()
+            .any(|f| f.starts_with("core/deprecated_member")),
         "{found:#?}"
     );
 }
@@ -490,7 +509,7 @@ fn a_custom_component_of_the_file_under_a_name_of_the_v1_list_is_told_and_nothin
         };
         has(
             &found,
-            &format!("DroppedField Info at minecraft:block/components/{name}"),
+            &format!("core/dropped_field Info at minecraft:block/components/{name}"),
         );
         assert!(!written.contains(r#""p": 1"#), "{written}");
         assert!(written.contains(r#""demo:a": {}"#), "{written}");
@@ -501,7 +520,7 @@ fn a_custom_component_of_the_file_under_a_name_of_the_v1_list_is_told_and_nothin
         r#"{"description": {"identifier": "demo:x"}, "components": {"demo:a": {}, "minecraft:custom_components": ["demo:a"]}}"#,
     );
     assert!(
-        !found.iter().any(|f| f.starts_with("DroppedField")),
+        !found.iter().any(|f| f.starts_with("core/dropped_field")),
         "{found:#?}"
     );
 }
@@ -514,13 +533,13 @@ fn what_a_step_takes_apart_and_does_not_read_is_told_where_the_file_has_it() {
         (
             "1.16.100",
             r#"{"description": {"identifier": "demo:x"}, "components": {"minecraft:explosion_resistance": {"resistance": 3, "zz": 3}}}"#,
-            "DroppedField Error at minecraft:block/components/minecraft:explosion_resistance",
+            "block/members_thrown_away Error at minecraft:block/components/minecraft:explosion_resistance",
             "zz",
         ),
         (
             "1.16.100",
             r#"{"description": {"identifier": "demo:x"}, "components": {"minecraft:loot": {"loot_table": "loot_tables/x.json", "zz": 3}}}"#,
-            "DroppedField Error at minecraft:block/components/minecraft:loot",
+            "block/members_thrown_away Error at minecraft:block/components/minecraft:loot",
             "zz",
         ),
         // The members of the block this library writes for an allow-listed legacy block
@@ -529,19 +548,19 @@ fn what_a_step_takes_apart_and_does_not_read_is_told_where_the_file_has_it() {
         (
             "1.19.40",
             r#"{"description": {"identifier": "demo:x"}, "components": {}, "deprecated_event_handlers": {"a": {"responses": [{"run_command": {"command": ["say hi"]}}]}}}"#,
-            "UnrecognizedField Info at minecraft:block/deprecated_event_handlers",
+            "core/unrecognized_field Info at minecraft:block/deprecated_event_handlers",
             "say hi",
         ),
         (
             "1.19.40",
             r#"{"description": {"identifier": "demo:x"}, "components": {}, "deprecated": {"unit_cube": true}}"#,
-            "UnrecognizedField Info at minecraft:block/deprecated",
+            "core/unrecognized_field Info at minecraft:block/deprecated",
             "unit_cube",
         ),
         (
             "1.19.80",
             r#"{"description": {"identifier": "demo:x", "states": {"demo:open": [true, false]}}, "components": {}, "permutations": [{"condition": "q.block_state('demo:open')", "components": {"minecraft:friction": 0.3}, "deprecated": {"unit_cube": true}}]}"#,
-            "UnrecognizedField Info at minecraft:block/permutations/0/deprecated",
+            "core/unrecognized_field Info at minecraft:block/permutations/0/deprecated",
             "unit_cube",
         ),
         // A `minecraft:tags` beside `tag:` components keeps its names; an element
@@ -549,7 +568,7 @@ fn what_a_step_takes_apart_and_does_not_read_is_told_where_the_file_has_it() {
         (
             "1.26.0",
             r#"{"description": {"identifier": "demo:x"}, "components": {"tag:ore": {}, "minecraft:tags": [7, "stone"]}}"#,
-            "InvalidType Info at minecraft:block/components/minecraft:tags/0",
+            "core/invalid_type Info at minecraft:block/components/minecraft:tags/0",
             "7",
         ),
     ];
@@ -599,7 +618,7 @@ fn a_set_block_state_beside_the_set_block_property_it_is_made_of_is_noted_and_no
         let (found, written) = told_in("1.19.70", &payload, &allow_listed());
         has(
             &found,
-            &format!("DroppedField Info at minecraft:block/events/{at}/set_block_state"),
+            &format!("core/dropped_field Info at minecraft:block/events/{at}/set_block_state"),
         );
         assert!(!written.contains(r#""demo:a": 0"#), "{written}");
         if at == "e" {
@@ -616,7 +635,7 @@ fn a_set_block_state_beside_the_set_block_property_it_is_made_of_is_noted_and_no
         &allow_listed(),
     );
     assert!(
-        !found.iter().any(|f| f.starts_with("DroppedField")),
+        !found.iter().any(|f| f.starts_with("core/dropped_field")),
         "{found:#?}"
     );
 }
@@ -634,7 +653,7 @@ fn an_end_of_a_ticking_range_the_step_bounds_or_rounds_is_told_at_the_end() {
     let (found, written) = told_in("1.18.0", &ticking("[-5, 3]"), &allow_listed());
     has(
         &found,
-        "ClampedValue Info at minecraft:block/components/minecraft:ticking/range/0",
+        "core/clamped_value Info at minecraft:block/components/minecraft:ticking/range/0",
     );
     assert!(
         written.contains(r#""min_ticks": 0, "max_ticks": 60"#),
@@ -645,11 +664,11 @@ fn an_end_of_a_ticking_range_the_step_bounds_or_rounds_is_told_at_the_end() {
     let (found, written) = told_in("1.18.0", &ticking("[0.01, 0.02]"), &allow_listed());
     has(
         &found,
-        "InvalidValue Info at minecraft:block/components/minecraft:ticking/range/0",
+        "core/invalid_value Info at minecraft:block/components/minecraft:ticking/range/0",
     );
     has(
         &found,
-        "InvalidValue Info at minecraft:block/components/minecraft:ticking/range/1",
+        "core/invalid_value Info at minecraft:block/components/minecraft:ticking/range/1",
     );
     assert!(
         written.contains(r#""min_ticks": 0, "max_ticks": 0"#),
@@ -659,7 +678,7 @@ fn an_end_of_a_ticking_range_the_step_bounds_or_rounds_is_told_at_the_end() {
     let (found, _) = told_in("1.18.0", &ticking("[3, -5]"), &allow_listed());
     has(
         &found,
-        "ClampedValue Info at minecraft:block/components/minecraft:ticking/range/1",
+        "core/clamped_value Info at minecraft:block/components/minecraft:ticking/range/1",
     );
     assert!(!found.iter().any(|f| f.ends_with("range/0")), "{found:#?}");
     // Whole ticks, nothing below 0: nothing is told of the range.
@@ -677,11 +696,11 @@ fn an_end_of_a_ticking_range_the_step_bounds_or_rounds_is_told_at_the_end() {
     );
     has(
         &found,
-        "ClampedValue Info at minecraft:block/permutations/0/components/minecraft:ticking/range/0",
+        "core/clamped_value Info at minecraft:block/permutations/0/components/minecraft:ticking/range/0",
     );
     has(
         &found,
-        "InvalidValue Info at minecraft:block/permutations/0/components/minecraft:ticking/range/1",
+        "core/invalid_value Info at minecraft:block/permutations/0/components/minecraft:ticking/range/1",
     );
 }
 
@@ -701,7 +720,7 @@ fn an_end_of_a_ticking_range_beyond_a_tick_count_is_bounded_and_the_block_is_kep
             .iter()
             .filter(|f| f.contains("/range"))
             .collect::<Vec<_>>(),
-        ["ClampedValue Info at minecraft:block/components/minecraft:ticking/range/1"],
+        ["core/clamped_value Info at minecraft:block/components/minecraft:ticking/range/1"],
         "{found:#?}"
     );
     assert!(
@@ -716,14 +735,14 @@ fn an_end_of_a_ticking_range_beyond_a_tick_count_is_bounded_and_the_block_is_kep
     let (found, written) = told_in("1.18.0", &ticking("[0, 214748364.8]"), &allow_listed());
     has(
         &found,
-        "ClampedValue Info at minecraft:block/components/minecraft:ticking/range/1",
+        "core/clamped_value Info at minecraft:block/components/minecraft:ticking/range/1",
     );
     assert!(written.contains(r#""max_ticks": 4294967295"#), "{written}");
     // The ends are sorted: the large end written first is told at the index of the file.
     let (found, _) = told_in("1.18.0", &ticking("[1e12, 1]"), &allow_listed());
     has(
         &found,
-        "ClampedValue Info at minecraft:block/components/minecraft:ticking/range/0",
+        "core/clamped_value Info at minecraft:block/components/minecraft:ticking/range/0",
     );
     assert!(!found.iter().any(|f| f.ends_with("range/1")), "{found:#?}");
 }
@@ -739,7 +758,7 @@ fn an_end_of_an_interval_range_the_side_car_refuses_is_told_at_the_end() {
         let found: Vec<String> = diagnostics
             .iter()
             .map(|f| {
-                let code: String = f.code.name().to_owned();
+                let code: String = f.code.id().to_owned();
                 format!("{code} {:?} at {}", f.severity, f.location.json_path)
             })
             .collect();
@@ -792,7 +811,7 @@ fn a_grid_size_the_1_16_100_step_removes_is_told_where_the_file_has_it() {
     );
     has(
         &found,
-        "DroppedField Info at minecraft:block/permutations/0/components/minecraft:crafting_table/grid_size",
+        "core/dropped_field Info at minecraft:block/permutations/0/components/minecraft:crafting_table/grid_size",
     );
     assert!(!written.contains("grid_size"), "{written}");
     let (found, written) = told_in(
@@ -802,11 +821,11 @@ fn a_grid_size_the_1_16_100_step_removes_is_told_where_the_file_has_it() {
     );
     has(
         &found,
-        "DroppedField Info at minecraft:block/components/minecraft:crafting_table/grid_size",
+        "core/dropped_field Info at minecraft:block/components/minecraft:crafting_table/grid_size",
     );
     has(
         &found,
-        "DroppedField Info at minecraft:block/permutations/0/components/minecraft:crafting_table/grid_size",
+        "core/dropped_field Info at minecraft:block/permutations/0/components/minecraft:crafting_table/grid_size",
     );
     assert!(!written.contains("grid_size"), "{written}");
     // No `grid_size`: nothing is told of one.
@@ -835,7 +854,7 @@ fn a_use_beta_features_of_a_legacy_block_is_carried() {
         );
         has(
             &found,
-            "UnrecognizedField Warning at minecraft:block/description/use_beta_features",
+            "core/unrecognized_field Warning at minecraft:block/description/use_beta_features",
         );
         // In a cereal document the member is unknown, `0x4` in a strict slice: the block is
         // not loaded.
@@ -843,7 +862,7 @@ fn a_use_beta_features_of_a_legacy_block_is_carried() {
         assert!(
             d.iter().any(
                 // By legacy name: the variant and the definitions that were it.
-                |f| matches!(f.code.name(), "UnrecognizedField")
+                |f| matches!(f.code.id(), "core/unrecognized_field")
                     && f.severity == Severity::Error
                     && f.location.json_path.to_string()
                         == "minecraft:block/description/use_beta_features"
@@ -867,7 +886,7 @@ fn a_legacy_event_with_a_sequence_or_a_randomize_is_carried() {
     assert_eq!(
         found
             .iter()
-            .filter(|f| f.starts_with("IgnoredMember"))
+            .filter(|f| f.starts_with("shapes/event_both_randomize_and_sequence"))
             .count(),
         1,
         "{found:#?}"
@@ -875,7 +894,8 @@ fn a_legacy_event_with_a_sequence_or_a_randomize_is_carried() {
     assert!(
         found
             .iter()
-            .all(|f| f.starts_with("MolangNotChecked") || f.starts_with("IgnoredMember")),
+            .all(|f| f.starts_with("core/molang_not_checked")
+                || f.starts_with("shapes/event_both_randomize_and_sequence")),
         "{found:#?}"
     );
     assert!(
@@ -896,7 +916,7 @@ fn a_legacy_event_with_a_sequence_or_a_randomize_is_carried() {
     assert!(
         d.iter().any(
             // By legacy name: the variant and the definitions that were it.
-            |f| matches!(f.code.name(), "UnrecognizedField")
+            |f| matches!(f.code.id(), "core/unrecognized_field")
                 && f.severity == Severity::Error
                 && f.location.json_path.to_string() == "minecraft:block/deprecated_event_handlers"
         ),
@@ -917,9 +937,12 @@ fn what_is_told_of_a_legacy_event_names_the_member_of_the_file() {
     // told of them is an information.
     has(
         &found,
-        "InvalidType Info at minecraft:block/events/e/randomize/0/weight",
+        "core/invalid_type Info at minecraft:block/events/e/randomize/0/weight",
     );
-    has(&found, "DroppedField Info at minecraft:block/events/e");
+    has(
+        &found,
+        "core/dropped_field Info at minecraft:block/events/e",
+    );
     assert!(
         !found
             .iter()
@@ -938,7 +961,7 @@ fn what_is_told_of_a_legacy_event_names_the_member_of_the_file() {
     );
     has(
         &found,
-        "UnrecognizedField Info at minecraft:block/events/e/sequence/0/trigger/zz",
+        "core/unrecognized_field Info at minecraft:block/events/e/sequence/0/trigger/zz",
     );
     assert!(written.contains(r#""zz": 3"#), "{written}");
     // The newest format has no such member: the document is refused at it.
@@ -952,7 +975,7 @@ fn what_is_told_of_a_legacy_event_names_the_member_of_the_file() {
     assert!(
         d.iter().any(
             // By legacy name: the variant and the definitions that were it.
-            |f| matches!(f.code.name(), "UnrecognizedField") && f.severity == Severity::Error
+            |f| matches!(f.code.id(), "core/unrecognized_field") && f.severity == Severity::Error
         ),
         "{d:#?}"
     );
@@ -969,7 +992,7 @@ fn an_emission_object_without_its_emission_is_discarded_as_the_game_discards_it(
     );
     has(
         &found,
-        "DroppedComponent Error at minecraft:block/components/minecraft:block_light_emission",
+        "block/component_missing_field Error at minecraft:block/components/minecraft:block_light_emission",
     );
     assert!(!written.contains("light_emission"), "{written}");
 }

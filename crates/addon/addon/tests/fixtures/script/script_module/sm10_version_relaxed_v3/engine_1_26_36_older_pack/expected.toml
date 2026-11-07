@@ -4,6 +4,6 @@ resolved = ["@minecraft/server 2.8.0"]
 engine = "1.26.36"
 
 [[diagnostic]]
-code = "FieldSinceEngine"
+code = "core/field_since_engine"
 severity = "info"
 path = "dependencies/0/version"

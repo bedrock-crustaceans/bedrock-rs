@@ -43,7 +43,7 @@ fn cr01_a_pack_s_credits_are_ignored_and_the_file_parses_on_its_own_deviation() 
     let found: Vec<_> = vain.iter().collect();
     assert_eq!(
         codes(found.iter().copied()),
-        [("IgnoredFile", Severity::Info)]
+        [("core/ignored_file", Severity::Info)]
     );
     assert_eq!(
         found[0].location.path.as_ref().unwrap().as_str(),
@@ -76,7 +76,7 @@ fn the_stack_s_credits_are_the_game_s_own_copy() {
     assert_eq!(codes(merged.diagnostics()), []);
     assert_eq!(
         codes(in_vain(&stack).iter()),
-        [("IgnoredFile", Severity::Info)]
+        [("core/ignored_file", Severity::Info)]
     );
     // Without the app data's copy: no credits, and no finding of a stack without the file.
     let stack = stack_with(&[&[]], LoadOptions::default());
@@ -94,7 +94,7 @@ fn the_game_s_own_checks_are_informations_on_the_app_data_copy() {
     assert_eq!(
         stack.credits().diagnostics().map(shown).collect::<Vec<_>>(),
         [(
-            "InvalidType",
+            "credits/root_not_array",
             Severity::Info,
             "The root must be an array".to_owned()
         )]
@@ -103,7 +103,7 @@ fn the_game_s_own_checks_are_informations_on_the_app_data_copy() {
     assert_eq!(
         stack.credits().diagnostics().map(shown).collect::<Vec<_>>(),
         [(
-            "MalformedInput",
+            "credits/empty_file",
             Severity::Error,
             "File is not supposed to be empty".to_owned()
         )]
@@ -115,13 +115,13 @@ fn cr02_a_root_object() {
     let stack = stack_of(&[&[("credits/credits.json", "{}")]]);
     assert_eq!(
         codes(in_vain(&stack).iter()),
-        [("IgnoredFile", Severity::Info)]
+        [("core/ignored_file", Severity::Info)]
     );
     let doc = parse("{}");
     assert_eq!(
         texts(&doc),
         [(
-            "InvalidType",
+            "credits/root_not_array",
             Severity::Info,
             "The root must be an array".to_owned()
         )]
@@ -181,9 +181,17 @@ fn the_shape_checks_carry_the_game_s_texts() {
 
 #[test]
 fn an_empty_file_and_a_file_that_is_not_json_are_refused() {
-    for (bytes, text) in [
-        (&b""[..], "File is not supposed to be empty"),
-        (&b"[ nope"[..], "Failed to load json file"),
+    for (bytes, id, text) in [
+        (
+            &b""[..],
+            "credits/empty_file",
+            "File is not supposed to be empty",
+        ),
+        (
+            &b"[ nope"[..],
+            "credits/not_json",
+            "Failed to load json file",
+        ),
     ] {
         let rejected = Credits::parse(
             &PackPath::from_static("credits/credits.json"),
@@ -192,10 +200,7 @@ fn an_empty_file_and_a_file_that_is_not_json_are_refused() {
         )
         .unwrap_err();
         let found: Vec<_> = rejected.diagnostics.iter().map(shown).collect();
-        assert_eq!(
-            found,
-            [("MalformedInput", Severity::Error, text.to_owned())]
-        );
+        assert_eq!(found, [(id, Severity::Error, text.to_owned())]);
     }
 }
 
@@ -265,7 +270,7 @@ fn tb01_ap01_ap03_files_only_the_game_s_data_supplies_are_ignored_in_a_pack_devi
         let found: Vec<_> = vain.iter().collect();
         assert_eq!(
             codes(found.iter().copied()),
-            [("IgnoredFile", Severity::Info)],
+            [("core/ignored_file", Severity::Info)],
             "{name}"
         );
         assert_eq!(found[0].location.path.as_ref().unwrap().as_str(), name);
@@ -317,7 +322,7 @@ fn a_copy_in_the_active_subpack_is_reported_at_its_own_path() {
     let found: Vec<String> = in_vain(&set.resource)
         .iter()
         .map(|d| {
-            assert_eq!(d.code.name(), "IgnoredFile");
+            assert_eq!(d.code.id(), "core/ignored_file");
             d.location.path.as_ref().unwrap().to_string()
         })
         .collect();
@@ -339,7 +344,7 @@ fn ap02_starter_seeds_on_their_own() {
     let found = check_starter_seeds(b"123\r\nabc\r\n\r\n-5");
     assert_eq!(
         located(&found),
-        [("InvalidValue", Severity::Info, "2".to_owned())]
+        [("core/invalid_value", Severity::Info, "2".to_owned())]
     );
     assert_eq!(
         check_starter_seeds(b"1\n2\n").len(),
@@ -365,7 +370,10 @@ fn pe01_a_persona_folder_in_a_resource_pack_is_not_read() {
     let found: Vec<String> = in_vain(&stack)
         .iter()
         .map(|d| {
-            assert_eq!((d.code.name(), d.severity), ("IgnoredFile", Severity::Info));
+            assert_eq!(
+                (d.code.id(), d.severity),
+                ("core/ignored_file", Severity::Info)
+            );
             d.location.path.as_ref().unwrap().to_string()
         })
         .collect();

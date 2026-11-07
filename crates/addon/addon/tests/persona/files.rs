@@ -153,10 +153,10 @@ fn pg02_g3_a_model_of_the_array_layout_is_not_found() {
     assert_eq!(
         found(&pieces),
         [format!(
-            "error UnresolvedReference {META} geometry_sources/0/geometry"
+            "error persona/geometry_name_not_found {META} geometry_sources/0/geometry"
         )]
     );
-    assert_eq!(text_of(&pieces, "UnresolvedReference"), NOT_ON);
+    assert_eq!(text_of(&pieces, "persona/geometry_name_not_found"), NOT_ON);
     let finding = pieces.report().next().unwrap();
     assert!(finding.is(&persona_codes::GEOMETRY_NAME_NOT_FOUND));
     assert!(matches!(
@@ -173,12 +173,12 @@ fn pg03_g3_geometry_sources_without_a_geometry_file() {
     assert_eq!(
         found(&pieces),
         [format!(
-            "error UnresolvedReference {META} geometry_sources/0/geometry"
+            "error persona/geometry_name_not_found {META} geometry_sources/0/geometry"
         )]
     );
     assert!(only(&pieces).geometry.is_none());
     assert_eq!(
-        text_of(&pieces, "UnresolvedReference"),
+        text_of(&pieces, "persona/geometry_name_not_found"),
         "Couldn't find geometry name geometry.hat on pieces/hat."
     );
 }
@@ -197,11 +197,11 @@ fn g3_each_source_is_looked_up() {
     assert_eq!(
         found(&pieces),
         [
-            format!("error UnresolvedReference {META} geometry_sources/1/geometry"),
-            format!("error UnresolvedReference {META} geometry_sources/2/geometry"),
-            format!("error UnresolvedReference {META} geometry_sources/3/geometry"),
+            format!("error persona/geometry_name_not_found {META} geometry_sources/1/geometry"),
+            format!("error persona/geometry_name_not_found {META} geometry_sources/2/geometry"),
+            format!("error persona/geometry_name_not_found {META} geometry_sources/3/geometry"),
             // The empty name is looked up like any other (a source without one is refused).
-            format!("error UnresolvedReference {META} geometry_sources/4/geometry"),
+            format!("error persona/geometry_name_not_found {META} geometry_sources/4/geometry"),
         ]
     );
     // A geometry file whose root is no object has no models.
@@ -209,7 +209,7 @@ fn g3_each_source_is_looked_up() {
     assert_eq!(
         found(&pieces),
         [format!(
-            "error UnresolvedReference {META} geometry_sources/0/geometry"
+            "error persona/geometry_name_not_found {META} geometry_sources/0/geometry"
         )]
     );
 }
@@ -220,10 +220,10 @@ fn pg04_g2_a_geometry_file_that_is_no_json() {
     // The broken file is what is reported: nobody could look a name up in it.
     assert_eq!(
         found(&pieces),
-        ["error MalformedInput pieces/hat/hat.geometry.json"]
+        ["error persona/geometry_not_parsed pieces/hat/hat.geometry.json"]
     );
     assert_eq!(
-        text_of(&pieces, "MalformedInput"),
+        text_of(&pieces, "persona/geometry_not_parsed"),
         "Could not parse geometry file pieces/hat/hat.geometry.json"
     );
     let piece = only(&pieces);
@@ -349,17 +349,21 @@ fn g1_a_geometry_file_that_cannot_be_read() {
     let pieces = PersonaPiece::load_all(&watched);
     assert_eq!(
         found(&pieces),
-        ["error ReadError pieces/hat/hat.geometry.json"]
+        ["error persona/geometry_not_found pieces/hat/hat.geometry.json"]
     );
     assert_eq!(
-        text_of(&pieces, "ReadError"),
+        text_of(&pieces, "persona/geometry_not_found"),
         "Missing expected geometry file pieces/hat/hat.geometry.json"
     );
-    assert!(pieces.report().any(|found| found.code.name() == "ReadError"
-        && matches!(
-            found.detail.as_deref(),
-            Some(DiagnosticDetail::Io(std::io::ErrorKind::PermissionDenied))
-        )));
+    assert!(
+        pieces
+            .report()
+            .any(|found| found.code.id() == "persona/geometry_not_found"
+                && matches!(
+                    found.detail.as_deref(),
+                    Some(DiagnosticDetail::Io(std::io::ErrorKind::PermissionDenied))
+                ))
+    );
     assert!(only(&pieces).geometry.is_none());
 }
 
@@ -374,7 +378,7 @@ fn pm14_m13_a_texture_that_is_no_file_of_the_folder() {
     assert_eq!(
         found(&pieces),
         [format!(
-            "info UnresolvedReference {META} texture_sources/0/texture"
+            "info core/unresolved_reference {META} texture_sources/0/texture"
         )]
     );
     let finding = pieces.report().next().unwrap();
@@ -409,7 +413,7 @@ fn pm15_m13_a_texture_resolves_with_or_without_its_extension() {
         assert_eq!(
             found(&pieces),
             [format!(
-                "info UnresolvedReference {META} texture_sources/0/texture"
+                "info core/unresolved_reference {META} texture_sources/0/texture"
             )],
             "{file}"
         );
@@ -435,7 +439,7 @@ fn m13_every_image_member_is_looked_up() {
     let members = r#""clothing_map": "c", "face_clothing_map": "f", "texture_sources": [{ "texture": "t0", "tint_map": "m0" }, { "texture": "t1", "tint_map": "m1" }], "geometry_sources": [{ "geometry": "g", "texture": "t2", "tint_map": "m2" }]"#;
     let geometry = ("hat.geometry.json", r#"{ "g": {} }"#);
     let none = hat(&meta(members), &[geometry]);
-    let at = |member: &str| format!("info UnresolvedReference {META} {member}");
+    let at = |member: &str| format!("info core/unresolved_reference {META} {member}");
     assert_eq!(
         found(&none),
         [
@@ -476,7 +480,7 @@ fn m13_an_entry_the_game_skips_has_nothing_to_look_up() {
     assert_eq!(
         found(&pieces),
         [format!(
-            "info MissingRequiredField {META} texture_sources/0"
+            "info core/missing_required_field {META} texture_sources/0"
         )]
     );
 }
@@ -551,7 +555,7 @@ fn the_pack_root_geometry_file_is_named_and_not_read() {
     assert_eq!(
         found(&pieces),
         [format!(
-            "error UnresolvedReference {META} geometry_sources/0/geometry"
+            "error persona/geometry_name_not_found {META} geometry_sources/0/geometry"
         )]
     );
     assert!(only(&pieces).geometry.is_none());
@@ -609,7 +613,7 @@ fn emote(sources: &str, files: &[(&str, &str)]) -> PersonaPieces {
 
 const WAVE: &str = r#"[{ "name": "animation.wave", "animationFile": "wave.animation.json" }]"#;
 /// A5: the game's level-3 line, after which the piece is kept: a kept error.
-const A5: &str = "error MissingRequiredField pieces/hat/hat.meta.json animation_sources";
+const A5: &str = "error persona/emote_invalid pieces/hat/hat.meta.json animation_sources";
 
 #[test]
 fn pe01_an_emote_s_animation_is_stored_under_the_piece_s_id() {
@@ -706,7 +710,9 @@ fn an_emote_with_a_hip_and_a_waist_bone_keeps_the_later_and_says_so() {
     );
     assert_eq!(
         found(&pieces),
-        ["info DuplicateBone pieces/hat/wave.animation.json animations/animation.wave/bones/hip"]
+        [
+            "info core/duplicate_bone pieces/hat/wave.animation.json animations/animation.wave/bones/hip"
+        ]
     );
     let (waist, names) = waist_of(&pieces);
     assert_eq!(waist, r#"{"rotation":[2,0,0]}"#);
@@ -724,7 +730,9 @@ fn an_emote_with_a_hip_and_a_waist_bone_keeps_the_later_and_says_so() {
     );
     assert_eq!(
         found(&pieces),
-        ["info DuplicateBone pieces/hat/wave.animation.json animations/animation.wave/bones/waist"]
+        [
+            "info core/duplicate_bone pieces/hat/wave.animation.json animations/animation.wave/bones/waist"
+        ]
     );
     let (waist, names) = waist_of(&pieces);
     assert_eq!(waist, r#"{"rotation":[1,0,0]}"#);
@@ -746,8 +754,8 @@ fn every_animation_of_an_emote_s_file_is_renamed_and_says_what_it_lost() {
     assert_eq!(
         found(&pieces),
         [
-            "info DuplicateBone pieces/hat/wave.animation.json animations/animation.wave/bones/hip",
-            "info DuplicateBone pieces/hat/wave.animation.json animations/animation.other/bones/waist",
+            "info core/duplicate_bone pieces/hat/wave.animation.json animations/animation.wave/bones/hip",
+            "info core/duplicate_bone pieces/hat/wave.animation.json animations/animation.other/bones/waist",
         ]
     );
 }
@@ -845,11 +853,11 @@ fn pe02_a1_an_animation_file_that_is_not_there() {
     assert_eq!(
         found(&pieces),
         [format!(
-            "error ReadError {META} animation_sources/0/animationFile"
+            "error persona/animation_file_missing {META} animation_sources/0/animationFile"
         )]
     );
     assert_eq!(
-        text_of(&pieces, "ReadError"),
+        text_of(&pieces, "persona/animation_file_missing"),
         format!(
             "Trying to parse emote {PIECE_PACK} with missing anim file: pieces/hat/wave.animation.json"
         )
@@ -878,14 +886,18 @@ fn a1_an_animation_file_that_cannot_be_read() {
     assert_eq!(
         found(&pieces),
         [format!(
-            "error ReadError {META} animation_sources/0/animationFile"
+            "error persona/animation_file_missing {META} animation_sources/0/animationFile"
         )]
     );
-    assert!(pieces.report().any(|found| found.code.name() == "ReadError"
-        && matches!(
-            found.detail.as_deref(),
-            Some(DiagnosticDetail::Io(std::io::ErrorKind::PermissionDenied))
-        )));
+    assert!(
+        pieces
+            .report()
+            .any(|found| found.code.id() == "persona/animation_file_missing"
+                && matches!(
+                    found.detail.as_deref(),
+                    Some(DiagnosticDetail::Io(std::io::ErrorKind::PermissionDenied))
+                ))
+    );
 }
 
 #[test]
@@ -905,14 +917,18 @@ fn a1_an_animation_file_the_pack_does_not_list_is_never_asked_for() {
     assert_eq!(
         found(&pieces),
         [format!(
-            "error ReadError {META} animation_sources/0/animationFile"
+            "error persona/animation_file_missing {META} animation_sources/0/animationFile"
         )]
     );
-    assert!(pieces.report().any(|found| found.code.name() == "ReadError"
-        && matches!(
-            found.detail.as_deref(),
-            Some(DiagnosticDetail::Io(std::io::ErrorKind::NotFound))
-        )));
+    assert!(
+        pieces
+            .report()
+            .any(|found| found.code.id() == "persona/animation_file_missing"
+                && matches!(
+                    found.detail.as_deref(),
+                    Some(DiagnosticDetail::Io(std::io::ErrorKind::NotFound))
+                ))
+    );
     assert_eq!(*watched.read.borrow(), [META, "texts/en_US.lang"]);
 }
 
@@ -925,12 +941,12 @@ fn a2_an_animation_file_that_is_no_json_object_is_told_as_a4() {
         assert_eq!(
             found(&pieces),
             [format!(
-                "error UnresolvedReference {META} animation_sources/0/name"
+                "error persona/animation_not_in_file {META} animation_sources/0/name"
             )],
             "{text}"
         );
         assert_eq!(
-            text_of(&pieces, "UnresolvedReference"),
+            text_of(&pieces, "persona/animation_not_in_file"),
             format!(
                 "Animation animation.wave declared by emote piece {PIECE_PACK} was not found in file pieces/hat/wave.animation.json"
             )
@@ -949,7 +965,7 @@ fn pe03_a3_an_animation_file_without_animations_is_told_as_a4() {
         assert_eq!(
             found(&pieces),
             [format!(
-                "error UnresolvedReference {META} animation_sources/0/name"
+                "error persona/animation_not_in_file {META} animation_sources/0/name"
             )],
             "{text}"
         );
@@ -968,11 +984,11 @@ fn pe04_a4_a_name_that_is_no_animation_of_the_file() {
     assert_eq!(
         found(&pieces),
         [format!(
-            "error UnresolvedReference {META} animation_sources/0/name"
+            "error persona/animation_not_in_file {META} animation_sources/0/name"
         )]
     );
     assert_eq!(
-        text_of(&pieces, "UnresolvedReference"),
+        text_of(&pieces, "persona/animation_not_in_file"),
         format!(
             "Animation animation.nope declared by emote piece {PIECE_PACK} was not found in file pieces/hat/wave.animation.json"
         )
@@ -982,7 +998,7 @@ fn pe04_a4_a_name_that_is_no_animation_of_the_file() {
     assert_eq!(
         found(&pieces),
         [format!(
-            "error UnresolvedReference {META} animation_sources/0/name"
+            "error persona/animation_not_in_file {META} animation_sources/0/name"
         )]
     );
 }
@@ -1024,8 +1040,8 @@ fn pe06_the_key_is_animation_file_in_camel_case() {
     assert_eq!(
         crate::common::refused_at(&pieces, META),
         [
-            "error UnrecognizedField animation_sources/0/animation_file",
-            "error MissingRequiredField animation_sources/0/animationFile",
+            "error core/unrecognized_field animation_sources/0/animation_file",
+            "error core/missing_required_field animation_sources/0/animationFile",
         ]
     );
     // An empty name is joined to the folder, as the game joins it.
@@ -1037,7 +1053,7 @@ fn pe06_the_key_is_animation_file_in_camel_case() {
         )],
     );
     assert_eq!(
-        text_of(&pieces, "ReadError"),
+        text_of(&pieces, "persona/animation_file_missing"),
         format!("Trying to parse emote {PIECE_PACK} with missing anim file: pieces/hat/")
     );
 }
@@ -1062,7 +1078,7 @@ fn of_several_animations_the_first_alone_is_checked_and_played() {
     assert_eq!(
         found(&pieces),
         [format!(
-            "error UnresolvedReference {META} animation_sources/0/name"
+            "error persona/animation_not_in_file {META} animation_sources/0/name"
         )]
     );
     let piece = only(&pieces);
@@ -1105,7 +1121,7 @@ fn the_animations_of_a_piece_that_is_no_emote_are_not_told() {
     // The member's own note (the meta reader ignores it for this type) and nothing else.
     assert_eq!(
         found(&pieces),
-        ["info IgnoredMember pieces/hat/hat.meta.json animation_sources"]
+        ["info core/ignored_member pieces/hat/hat.meta.json animation_sources"]
     );
 }
 
@@ -1189,7 +1205,7 @@ fn pe07_an_emote_s_molang_is_of_version_0() {
     assert!(
         findings
             .iter()
-            .any(|line| line.starts_with("error InvalidMolang")),
+            .any(|line| line.starts_with("error core/invalid_molang")),
         "{findings:?}"
     );
 }
@@ -1232,7 +1248,7 @@ fn ps02_s1_a_store_info_that_is_no_json_object_is_ignored() {
         let pieces = with_store(store);
         assert_eq!(
             found(&pieces),
-            [format!("info MalformedInput {STORE}")],
+            [format!("info core/syntax {STORE}")],
             "{store}"
         );
         let piece = only(&pieces);
@@ -1252,7 +1268,7 @@ fn a_store_info_that_cannot_be_read_is_ignored() {
     let watched = Watched::new(&pack, &[STORE]);
     let pieces = PersonaPiece::load_all(&watched);
     // The game ignores it in silence: an information of ours.
-    assert_eq!(found(&pieces), [format!("info ReadError {STORE}")]);
+    assert_eq!(found(&pieces), [format!("info core/read_error {STORE}")]);
     assert_eq!(only(&pieces).name_key(), "persona.hat.title");
 }
 
@@ -1270,7 +1286,9 @@ fn ps03_s2_the_thumbnail_with_and_without_its_extension() {
         ));
         assert_eq!(
             found(&pieces),
-            [format!("info UnresolvedReference {STORE} piece_thumbnail")],
+            [format!(
+                "info core/unresolved_reference {STORE} piece_thumbnail"
+            )],
             "{thumbnail}"
         );
     }
@@ -1282,7 +1300,7 @@ fn ps04_s4_a_piece_s_texts_without_en_us() {
         &meta(""),
         &[("texts/de_DE.lang", "persona.offer.title=Hut\n")],
     );
-    assert_eq!(found(&other), ["info IgnoredFile pieces/hat/texts"]);
+    assert_eq!(found(&other), ["info core/ignored_file pieces/hat/texts"]);
     assert!(
         other
             .report()
@@ -1312,9 +1330,9 @@ fn ps05_s5_a_store_info_blanks_what_it_does_not_set() {
     assert_eq!(
         found(&pieces),
         [
-            format!("info MissingRequiredField {STORE} piece_store_name"),
+            format!("info core/missing_required_field {STORE} piece_store_name"),
             // The blank name has no translation.
-            format!("info UnresolvedLangKey {META}"),
+            format!("info core/unresolved_lang_key {META}"),
         ]
     );
     let piece = only(&pieces);
@@ -1323,7 +1341,9 @@ fn ps05_s5_a_store_info_blanks_what_it_does_not_set() {
     let pieces = with_store(r#"{ "piece_store_name": "b" }"#);
     assert_eq!(
         found(&pieces),
-        [format!("info MissingRequiredField {STORE} piece_thumbnail")]
+        [format!(
+            "info core/missing_required_field {STORE} piece_thumbnail"
+        )]
     );
     assert_eq!(only(&pieces).thumbnail(), Some(""));
 
@@ -1331,9 +1351,9 @@ fn ps05_s5_a_store_info_blanks_what_it_does_not_set() {
     assert_eq!(
         found(&pieces),
         [
-            format!("info MissingRequiredField {STORE} piece_store_name"),
-            format!("info MissingRequiredField {STORE} piece_thumbnail"),
-            format!("info UnresolvedLangKey {META}"),
+            format!("info core/missing_required_field {STORE} piece_store_name"),
+            format!("info core/missing_required_field {STORE} piece_thumbnail"),
+            format!("info core/unresolved_lang_key {META}"),
         ]
     );
 }
@@ -1369,7 +1389,10 @@ fn s3_a_name_no_text_translates() {
     );
     let unnamed = piece_pack(&[piece, ("texts/en_US.lang", "persona.hat.title=Hat\n")]);
     let pieces = crate::common::load(&unnamed);
-    assert_eq!(found(&pieces), [format!("info UnresolvedLangKey {META}")]);
+    assert_eq!(
+        found(&pieces),
+        [format!("info core/unresolved_lang_key {META}")]
+    );
     let finding = pieces.report().next().unwrap();
     assert!(finding.is(&codes::UNRESOLVED_LANG_KEY));
     assert!(matches!(
@@ -1408,7 +1431,7 @@ fn s3_a_name_no_text_translates() {
     let other = piece_pack(&[piece, ("pieces/hat/texts/en_US.lang", "persona.other=x\n")]);
     assert_eq!(
         found(&crate::common::load(&other)),
-        [format!("info UnresolvedLangKey {META}")]
+        [format!("info core/unresolved_lang_key {META}")]
     );
 }
 
@@ -1419,8 +1442,8 @@ fn s5_a_member_of_another_json_type_is_not_a_missing_one() {
     assert_eq!(
         found(&pieces),
         [
-            format!("info InvalidType {STORE} piece_store_name"),
-            format!("info UnresolvedLangKey {META}"),
+            format!("info core/invalid_type {STORE} piece_store_name"),
+            format!("info core/unresolved_lang_key {META}"),
         ]
     );
     assert_eq!(only(&pieces).name_key(), "persona..title");
@@ -1428,14 +1451,16 @@ fn s5_a_member_of_another_json_type_is_not_a_missing_one() {
     let pieces = with_store(r#"{ "piece_store_name": "b", "piece_thumbnail": null }"#);
     assert_eq!(
         found(&pieces),
-        [format!("info MissingRequiredField {STORE} piece_thumbnail")]
+        [format!(
+            "info core/missing_required_field {STORE} piece_thumbnail"
+        )]
     );
     // An unknown member is kept and named.
     let pieces =
         with_store(r#"{ "piece_store_name": "b", "piece_thumbnail": "textures/x", "price": 3 }"#);
     assert_eq!(
         found(&pieces),
-        [format!("info UnrecognizedField {STORE} price")]
+        [format!("info core/unrecognized_field {STORE} price")]
     );
     let store = only(&pieces).store_info.as_ref().unwrap().value();
     assert!(store.extra.get("price").is_some());
@@ -1484,7 +1509,7 @@ fn a_piece_at_the_pack_root_has_the_root_texts_as_its_own() {
     // The root piece is shown by its offer title (no S3); a piece of another folder is not.
     assert_eq!(
         found(&pieces),
-        ["info UnresolvedLangKey pieces/cap/cap.meta.json"]
+        ["info core/unresolved_lang_key pieces/cap/cap.meta.json"]
     );
     let root = &pieces.pieces[0];
     assert_eq!(root.directory.as_str(), "");
@@ -1503,7 +1528,10 @@ fn a_piece_at_the_pack_root_has_the_root_texts_as_its_own() {
         ("texts/de_DE.lang", "persona.offer.title=Der Hut\n"),
     ]);
     let pieces = crate::common::load(&pack);
-    assert_eq!(found(&pieces), ["info UnresolvedLangKey root.meta.json"]);
+    assert_eq!(
+        found(&pieces),
+        ["info core/unresolved_lang_key root.meta.json"]
+    );
     assert_eq!(only(&pieces).texts, None);
     assert_eq!(only(&pieces).offer_title, None);
 }
@@ -1549,10 +1577,12 @@ fn a_file_nested_past_the_reader_s_bound_is_no_json() {
     assert_eq!(
         found(&pieces),
         [
-            "info UnrecognizedField pieces/hat/hat.store_info.json deep".to_owned(),
-            "info MissingRequiredField pieces/hat/hat.store_info.json piece_store_name".to_owned(),
-            "info MissingRequiredField pieces/hat/hat.store_info.json piece_thumbnail".to_owned(),
-            "info UnresolvedLangKey pieces/hat/hat.meta.json".to_owned(),
+            "info core/unrecognized_field pieces/hat/hat.store_info.json deep".to_owned(),
+            "info core/missing_required_field pieces/hat/hat.store_info.json piece_store_name"
+                .to_owned(),
+            "info core/missing_required_field pieces/hat/hat.store_info.json piece_thumbnail"
+                .to_owned(),
+            "info core/unresolved_lang_key pieces/hat/hat.meta.json".to_owned(),
         ]
     );
     let piece = only(&pieces);
@@ -1563,14 +1593,17 @@ fn a_file_nested_past_the_reader_s_bound_is_no_json() {
     let pieces = hat(&deep_meta, &[("wave.animation.json", &animation)]);
     assert_eq!(
         crate::common::refused_at(&pieces, META),
-        ["error UnrecognizedField deep"]
+        ["error core/unrecognized_field deep"]
     );
     drop(pieces);
 
     // One level more: no JSON to the reader, in each of the four files.
     let past = nested(MAX_JSON_DEPTH);
     let pieces = hat(&past, &[]);
-    assert_eq!(found(&pieces), [format!("error MalformedInput {META}")]);
+    assert_eq!(
+        found(&pieces),
+        [format!("error persona/meta_not_parsed {META}")]
+    );
     assert!(pieces.pieces.is_empty());
     // The reader's message names the byte of the bracket that is one too deep: after
     // `{ "deep": ` (10 bytes) and the 127 arrays the bound allows.
@@ -1600,9 +1633,9 @@ fn a_file_nested_past_the_reader_s_bound_is_no_json() {
     assert_eq!(
         found(&pieces),
         [
-            "error MalformedInput pieces/hat/hat.geometry.json",
-            "error UnresolvedReference pieces/hat/hat.meta.json animation_sources/0/name",
-            "info MalformedInput pieces/hat/hat.store_info.json",
+            "error persona/geometry_not_parsed pieces/hat/hat.geometry.json",
+            "error persona/animation_not_in_file pieces/hat/hat.meta.json animation_sources/0/name",
+            "info core/syntax pieces/hat/hat.store_info.json",
         ]
     );
     // The animation file is told as A4, without the reader's message.

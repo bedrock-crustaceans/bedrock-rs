@@ -244,7 +244,7 @@ fn a_kept_field_reports_its_rejection_as_a_kept_error() {
     let errors: Vec<(Severity, bool)> = checked
         .diagnostics
         .iter()
-        .filter(|d| d.code.name() == "InvalidMolang")
+        .filter(|d| d.code.id() == "core/invalid_molang")
         .map(|d| (d.severity, d.kept))
         .collect();
     assert!(!errors.is_empty());
@@ -358,7 +358,7 @@ fn a_client_only_query_on_the_server_is_an_info_lint() {
     let lints: Vec<(DiagCode, Severity)> = checked
         .diagnostics
         .iter()
-        .filter(|d| d.code.name() == "MolangLint")
+        .filter(|d| d.code.id() == "core/molang_lint")
         .filter_map(|d| match d.detail.as_deref() {
             Some(DiagnosticDetail::Molang(m)) => Some((m.code(), d.severity)),
             _ => None,
@@ -375,7 +375,7 @@ fn lints_of(text: &str, side: Side) -> Vec<(DiagCode, Severity)> {
     checked
         .diagnostics
         .iter()
-        .filter(|d| d.code.name() == "MolangLint")
+        .filter(|d| d.code.id() == "core/molang_lint")
         .filter_map(|d| match d.detail.as_deref() {
             Some(DiagnosticDetail::Molang(m)) => Some((m.code(), d.severity)),
             _ => None,
@@ -562,7 +562,7 @@ fn an_empty_text_is_rejected_when_compiled() {
         checked
             .diagnostics
             .iter()
-            .all(|d| d.code.name() == "MolangLint" && d.severity == Severity::Info)
+            .all(|d| d.code.id() == "core/molang_lint" && d.severity == Severity::Info)
     );
 }
 

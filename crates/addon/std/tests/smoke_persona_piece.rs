@@ -76,7 +76,7 @@ impl PieceSource for OnDisk {
 
 /// The variant name of a finding's code.
 fn code_name(found: &Diagnostic) -> String {
-    found.code.name().to_owned()
+    found.code.id().to_owned()
 }
 
 /// The findings of a load counted by severity and code.
@@ -187,7 +187,7 @@ fn builtin_pack_loads(entry: &str, data: &Path) {
             // The four bodies and the four skeletons are named by no text of this pack.
             // (`is_face: "true"`, two sources in each body piece, is the string 1.26.40 types
             // the member as: no finding.)
-            ("info UnresolvedLangKey", 8),
+            ("info core/unresolved_lang_key", 8),
         ]),
         "{entry}"
     );
@@ -199,7 +199,7 @@ fn builtin_pack_loads(entry: &str, data: &Path) {
     let named = PersonaPiece::load_all_with_texts(&pack, &[&lang]);
     assert_eq!(
         by_code(&named),
-        counts(&[("info UnresolvedLangKey", 4)]),
+        counts(&[("info core/unresolved_lang_key", 4)]),
         "{entry}"
     );
     let unnamed: BTreeSet<String> = named
@@ -209,7 +209,7 @@ fn builtin_pack_loads(entry: &str, data: &Path) {
             piece
                 .findings()
                 .iter()
-                .any(|found| code_name(found) == "UnresolvedLangKey")
+                .any(|found| code_name(found) == "core/unresolved_lang_key")
         })
         .map(PersonaPiece::name_key)
         .collect();
@@ -426,7 +426,9 @@ fn persona_geometry_loads(data: &Path) -> BTreeMap<String, (usize, usize)> {
         let warnings = document
             .diagnostics()
             .iter()
-            .filter(|found| found.severity == Severity::Info && found.code.name() != "InvalidValue")
+            .filter(|found| {
+                found.severity == Severity::Info && found.code.id() != "geometry/bone_lower_cased"
+            })
             .inspect(|found| kinds.borrow_mut().push(code_name(found)))
             .count();
         let name = relative.rsplit('/').next().unwrap().to_owned();
@@ -439,7 +441,11 @@ fn persona_geometry_loads(data: &Path) -> BTreeMap<String, (usize, usize)> {
     // warning (asserted per file above).
     assert_eq!(
         kinds,
-        ["InvalidType", "UnrecognizedField", "UnresolvedReference"]
+        [
+            "core/unknown_child_option",
+            "core/unrecognized_field_worded",
+            "geometry/bone_parent_missing"
+        ]
     );
     found
 }

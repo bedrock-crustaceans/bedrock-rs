@@ -2,7 +2,7 @@
 //! define. Each needs the behaviour stack or another resource collection beside this one, so
 //! it is the link stage's: each test calls `StackSet::link()`.
 
-use bedrock_addon::diagnostic::{Diagnostic, Diagnostics, Severity};
+use bedrock_addon::diagnostic::{Diagnostic, Diagnostics, Kind, Severity};
 use bedrock_addon::load::LoadOptions;
 use bedrock_addon::pack::{PackOrigin, PackRepository, WorldPacks};
 
@@ -81,7 +81,7 @@ fn a_key_that_names_no_block() {
             ),
         );
         assert_eq!(missing.len(), 1, "{key}: {found:#?}");
-        assert_eq!(missing[0].code.name(), "UnresolvedReference");
+        assert_eq!(missing[0].code.id(), "core/unresolved_reference_worded");
         assert_eq!(missing[0].severity, Severity::Warning);
     }
     // A behaviour-pack block and a built-in block exist.
@@ -134,7 +134,7 @@ fn texture_names_against_the_terrain_atlas() {
     assert_eq!(beyond.len(), 1, "{found:#?}");
     // Silent in the game: ours, an information.
     assert_eq!(beyond[0].severity, Severity::Info);
-    assert_eq!(beyond[0].code.name(), "UnresolvedReference");
+    assert_eq!(beyond[0].code.id(), "core/unresolved_reference");
     // An atlas entry without elements: vanilla's content-log warning. A name the
     // atlas lacks: the atlas's developer-log line, an information.
     for (key, text, severity) in [
@@ -249,7 +249,7 @@ fn a_sound_that_sounds_json_does_not_define() {
     );
     let unknown: Vec<&Diagnostic> = found
         .iter()
-        .filter(|f| f.code.name() == "UnknownSound")
+        .filter(|f| f.code.id() == "core/unknown_sound")
         .collect();
     assert_eq!(unknown.len(), 1, "{found:#?}");
     assert_eq!(
@@ -264,7 +264,9 @@ fn a_sound_that_sounds_json_does_not_define() {
         &[("blocks.json", &file(r#""glass": {"sound": "squeaky"}"#))],
     );
     assert!(
-        found.iter().all(|f| f.code.name() != "UnknownSound"),
+        found
+            .iter()
+            .all(|f| f.code.kind() != Kind::UnresolvedReference),
         "{found:#?}"
     );
 }

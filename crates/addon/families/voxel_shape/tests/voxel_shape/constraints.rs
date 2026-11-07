@@ -23,7 +23,7 @@ fn vs19_a_33rd_box_is_one_too_many() {
         errors(&rejects(&of_boxes(33))),
         [
             error(
-                "InvalidValue",
+                "voxel_shape/too_many_boxes",
                 " -> shape -> boxes: too many input elements, expected no more than 32",
                 BOXES
             ),
@@ -41,7 +41,10 @@ fn a_shape_may_have_32_boxes() {
 fn vs20_a_shape_without_a_box_fails_the_file() {
     assert_eq!(
         kinds(&rejects(&of_boxes(0))),
-        [kind("InvalidValue", BOXES), kind("DocumentRejected", "")]
+        [
+            kind("core/invalid_value", BOXES),
+            kind("voxel_shape/failed_to_load", "")
+        ]
     );
 }
 
@@ -57,8 +60,8 @@ fn vs22_an_identifier_of_257_bytes_fails_the_file() {
     assert_eq!(
         kinds(&rejects(&named(&long))),
         [
-            kind("InvalidValue", IDENTIFIER),
-            kind("DocumentRejected", "")
+            kind("core/invalid_value", IDENTIFIER),
+            kind("voxel_shape/failed_to_load", "")
         ]
     );
 }
@@ -80,8 +83,8 @@ fn the_identifier_s_length_is_counted_in_bytes() {
     assert_eq!(
         kinds(&rejects(&named(&wide))),
         [
-            kind("InvalidValue", IDENTIFIER),
-            kind("DocumentRejected", "")
+            kind("core/invalid_value", IDENTIFIER),
+            kind("voxel_shape/failed_to_load", "")
         ]
     );
     // At the boundary with multi-byte characters: 255 and 256 bytes load, 257 do not.
@@ -97,8 +100,8 @@ fn the_identifier_s_length_is_counted_in_bytes() {
     assert_eq!(
         kinds(&rejects(&named(&bytes_257))),
         [
-            kind("InvalidValue", IDENTIFIER),
-            kind("DocumentRejected", "")
+            kind("core/invalid_value", IDENTIFIER),
+            kind("voxel_shape/failed_to_load", "")
         ]
     );
 }

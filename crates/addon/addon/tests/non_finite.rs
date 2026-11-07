@@ -248,7 +248,7 @@ fn places(document: &str, more: &[(&'static str, &'static str, &'static str)]) -
 
 /// The variant name of a finding's code.
 fn code(finding: &Diagnostic) -> String {
-    finding.code.name().to_owned()
+    finding.code.id().to_owned()
 }
 
 /// Whether `finding` is at the number: at its path, or at the end of it where the family's
@@ -267,11 +267,17 @@ fn is_at(finding: &Diagnostic, place: &Place) -> bool {
 
 /// The codes a family reports a replaced number with (`ClampedValue` is the client
 /// block's; every other family's is `InvalidValue`).
-const CLAMP_CODES: &[&str] = &["InvalidValue", "ClampedValue"];
+const CLAMP_CODES: &[&str] = &["core/invalid_value", "core/clamped_value"];
 
 /// The codes that say a member's name is not known, and nothing of its value: a number in
 /// such a member is the clamp's to tell (core's `json::spoken_for`).
-const NAME_CODES: &[&str] = &["UnrecognizedField", "UnrecognizedComponent", "UnknownSound"];
+const NAME_CODES: &[&str] = &[
+    "core/unrecognized_field",
+    "core/unrecognized_component",
+    "core/unknown_sound",
+    "core/unknown_sound_worded",
+    "sounds_json/not_an_event",
+];
 
 /// The objects whose unknown member the family does not keep, and the one outcome of the
 /// nine texts of each: `(document type, object, outcome)`.
@@ -299,7 +305,7 @@ const EXACT: &[(&str, &str, &str)] = &[
     (
         "manifest",
         "metadata",
-        "not held / not taken (InvalidValue)",
+        "not held / not taken (core/invalid_value)",
     ),
     // a third root member is refused (it was the raw-text path of 1.10.0).
     ("terrain_texture", "texture_data", "not held"),
@@ -307,12 +313,12 @@ const EXACT: &[(&str, &str, &str)] = &[
     (
         "music_definitions",
         "(root)",
-        "clamped (InvalidValue) / told by the member (InvalidValue)",
+        "clamped (core/invalid_value) / told by the member (core/invalid_value)",
     ),
     (
         "sound_definitions",
         "sound_definitions",
-        "clamped (InvalidValue) / told by the member (InvalidValue)",
+        "clamped (core/invalid_value) / told by the member (sound_definitions/malformed_sound)",
     ),
 ];
 

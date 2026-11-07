@@ -1,7 +1,7 @@
 # families/script_config fixtures.md, row sp01_key_trailing_space (P1).
 
 [[diagnostic]]
-code = "InvalidEnumValue"
+code = "server_config/bad_log_level"
 severity = "error"
 phase = "validate"
 file = "server.properties"

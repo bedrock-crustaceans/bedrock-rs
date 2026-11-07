@@ -3,7 +3,7 @@
   "rejected": 1,
   "diagnostics": [
     {
-      "code": "MissingFormatVersion",
+      "code": "dialogue/no_format_version_missing_format_version",
       "severity": "error",
       "path": "dialogue/unversioned.json",
       "json_path": "format_version",

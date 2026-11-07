@@ -42,7 +42,7 @@ fn error(json: &str) -> (&'static str, String, String) {
     let found: Diagnostics = rejects(json);
     let error = one_error(&found);
     (
-        error.code.name(),
+        error.code.id(),
         error.location.json_path.to_string(),
         error.code.to_string(),
     )
@@ -53,7 +53,7 @@ fn missing(json: &str, path: &str) {
     let (code, at, _) = error(json);
     assert_eq!(
         (code, at.as_str()),
-        ("MissingRequiredField", path),
+        ("core/missing_required_field", path),
         "{json}"
     );
 }
@@ -61,7 +61,7 @@ fn missing(json: &str, path: &str) {
 #[track_caller]
 fn wrong_type(json: &str, path: &str) {
     let (code, at, _) = error(json);
-    assert_eq!((code, at.as_str()), ("MalformedInput", path), "{json}");
+    assert_eq!((code, at.as_str()), ("core/syntax", path), "{json}");
 }
 
 #[test]
@@ -121,7 +121,7 @@ fn l6_the_four_category_names_are_read_with_case() {
         assert_eq!(
             (code, at.as_str()),
             (
-                "InvalidValue",
+                "core/invalid_value",
                 "minecraft:crafting_items_catalog/categories/0/category_name"
             ),
             "{name}"
@@ -143,7 +143,7 @@ fn l7_a_group_name_needs_a_namespace() {
     }
     for name in ["group", "", ":", "::", ":b", "a:", "a:b\\nc", "a\\r:b"] {
         let (code, at, text) = error(&with_identifier(&format!(r#"{{"name": "{name}"}}"#)));
-        assert_eq!(code, "InvalidValue", "{name:?}");
+        assert_eq!(code, "crafting_catalog/group_name", "{name:?}");
         assert_eq!(
             at,
             format!("{ROOT}/categories/0/groups/0/group_identifier/name")
@@ -166,13 +166,17 @@ fn l8_an_item_name_needs_a_namespace_in_both_forms_and_as_an_icon() {
         let (code, at, text) = error(&with_item(&format!(r#""{name}""#)));
         assert_eq!(
             (code, at.as_str(), text.as_str()),
-            ("InvalidValue", items.as_str(), ITEM_NAME_TEXT),
+            ("core/string_mismatch", items.as_str(), ITEM_NAME_TEXT),
             "{name:?}"
         );
         let (code, at, text) = error(&with_item(&format!(r#"{{"name": "{name}"}}"#)));
         assert_eq!(
             (code, at, text.as_str()),
-            ("InvalidValue", format!("{items}/name"), ITEM_NAME_TEXT),
+            (
+                "core/string_mismatch",
+                format!("{items}/name"),
+                ITEM_NAME_TEXT
+            ),
             "{name:?}"
         );
         let (code, at, text) = error(&with_identifier(&format!(
@@ -181,7 +185,7 @@ fn l8_an_item_name_needs_a_namespace_in_both_forms_and_as_an_icon() {
         assert_eq!(
             (code, at, text.as_str()),
             (
-                "InvalidValue",
+                "core/string_mismatch",
                 format!("{ROOT}/categories/0/groups/0/group_identifier/icon"),
                 ITEM_NAME_TEXT
             ),
@@ -266,14 +270,14 @@ fn l9_every_failure_of_a_file_is_reported() {
     let found = rejects(&document(
         r#"{"categories": [{"category_name": "blocks", "groups": [{"items": ["stone", 5]}]}, 7]}"#,
     ));
-    let codes: Vec<&str> = errors(&found).iter().map(|f| f.code.name()).collect();
+    let codes: Vec<&str> = errors(&found).iter().map(|f| f.code.id()).collect();
     assert_eq!(
         codes,
         [
-            "InvalidValue",
-            "InvalidValue",
-            "MalformedInput",
-            "MalformedInput"
+            "core/invalid_value",
+            "core/string_mismatch",
+            "core/syntax",
+            "core/syntax"
         ]
     );
 }

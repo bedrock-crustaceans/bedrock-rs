@@ -5,7 +5,7 @@ others = []
 
 # ours: the module starts no plugin, so main.js is listed and not read (no import site)
 [[diagnostics]]
-code = "InvalidEnumValue"
+code = "script/plugin_unsupported_runtime"
 severity = "error"
 text = "Plugin [SB_lang_lua - 1.0.0] - using unsupported runtime []."
 file = "manifest.json"

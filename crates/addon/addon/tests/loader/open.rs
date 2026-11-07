@@ -464,9 +464,12 @@ fn the_vanilla_encrypted_test_pack_opens_without_a_key() {
         .report()
         .diagnostics()
         .at_least(Severity::Warning)
-        .map(|d| d.code.name())
+        .map(|d| d.code.id())
         .collect();
-    assert!(warnings.contains(&"UnsupportedFileFormat"), "{warnings:?}");
+    assert!(
+        warnings.contains(&"core/unsupported_file_format"),
+        "{warnings:?}"
+    );
     assert!(matches!(
         pack.read(&path("test/test.json")),
         Err(StorageError::MissingContentKey)

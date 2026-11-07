@@ -1,7 +1,7 @@
 //! The chain of geometry files: the struct each version selects, what each upgrade step does
 //! (the callbacks of the steps run one at a time), and the upgrade rows u01–u15.
 
-use bedrock_addon::diagnostic::Severity;
+use bedrock_addon::diagnostic::{Kind, Severity};
 use bedrock_addon::families::geometry::history::{
     self, GeometryHistory, VERSIONS, v0_0_0, v1_8_0, v1_12_0, v1_14_0, v1_16_0, v1_19_30, v1_21_0,
 };
@@ -140,12 +140,12 @@ fn a_shelf_in_an_older_file_fails_the_file() {
         .diagnostics
         .iter()
         .filter(|d| d.severity == Severity::Error)
-        .map(|d| format!("{} {}", d.code.name(), d.code))
+        .map(|d| format!("{} {}", d.code.id(), d.code))
         .collect();
     assert_eq!(
         errors,
-        [format!("InvalidValue {text}")],
-        "not the one `InvalidValue` error with vanilla's text"
+        [format!("geometry/shelf_too_old {text}")],
+        "not the one `geometry/shelf_too_old` error with vanilla's text"
     );
     let shelf = |index: usize| {
         out.payload
@@ -323,20 +323,20 @@ fn u01_pre18_mirror_reset() {
     let d = document.diagnostics();
     expect(
         d,
-        "MissingFormatVersion",
+        "core/missing_format_version",
         Severity::Info,
         "no format_version",
     );
     expect_at(
         d,
-        "InvalidType",
+        "core/unknown_child_option",
         Severity::Info,
         "geometry.pig/bones/0/cubes/1/mirror",
         "unknown child schema option type.  Allowed types: bool, string",
     );
     expect_at(
         d,
-        "DroppedField",
+        "core/dropped_field",
         Severity::Info,
         "geometry.pig/bones/0/reset",
         "field dropped",
@@ -376,22 +376,28 @@ fn a_bone_parent_below_1_8_is_removed_by_the_lenient_validation() {
         let document = loaded(load(&file(version)));
         expect_at(
             document.diagnostics(),
-            "UnrecognizedField",
+            "core/unrecognized_field_worded",
             Severity::Info,
             "geometry.pig/bones/1/parent",
             "child 'parent' not valid here (removed; format_version < 1.19.30)",
         );
         assert_eq!(
-            count(document.diagnostics(), "UnrecognizedField", Severity::Info),
+            count(
+                document.diagnostics(),
+                "core/unrecognized_field_worded",
+                Severity::Info
+            ),
             1,
             "{version}"
         );
         assert_eq!(
-            count(
-                document.diagnostics(),
-                "UnresolvedReference",
-                Severity::Info
-            ),
+            document
+                .diagnostics()
+                .iter()
+                .filter(
+                    |f| f.code.kind() == Kind::UnresolvedReference && f.severity == Severity::Info
+                )
+                .count(),
             0,
             "{version}"
         );
@@ -423,7 +429,7 @@ fn u02_pre18_preserve_model_pose() {
     assert!(document.value().geometries[0].legacy.is_empty());
     expect(
         document.diagnostics(),
-        "UnrecognizedField",
+        "core/unrecognized_field_worded",
         Severity::Info,
         "child 'preserve_model_pose' not valid here (removed; format_version < 1.19.30)",
     );
@@ -455,7 +461,7 @@ fn u03_pre18_locator_object() {
     let document = loaded(load(&text("1.8.0")));
     expect_at(
         document.diagnostics(),
-        "InvalidType",
+        "core/unknown_child_option",
         Severity::Info,
         "geometry.x/bones/0/locators/lead",
         "unknown child schema option type.  Allowed types: array",
@@ -523,7 +529,7 @@ fn u07_18_cape_dropped() {
     assert_eq!(document.value().geometries[0].cape, None);
     expect_at(
         document.diagnostics(),
-        "DroppedField",
+        "geometry/cape_dropped",
         Severity::Info,
         "geometry.x/cape",
         "cape is not carried over from format 1.8 geometry",
@@ -565,7 +571,7 @@ fn u09_114_binding_dropped() {
         assert!(document.value().geometries[0].bones()[0].binding.is_none());
         expect_at(
             document.diagnostics(),
-            "UnrecognizedField",
+            "core/unrecognized_field_worded",
             Severity::Info,
             "minecraft:geometry/0/bones/0/binding",
             "child 'binding' not valid here (removed; format_version < 1.19.30)",
@@ -640,7 +646,11 @@ fn u13_pre18_non_object_cubes() {
     assert_eq!(cubes.len(), 1);
     assert_eq!(cubes[0].size, Some([1.0, 1.0, 1.0]));
     assert_eq!(
-        count(document.diagnostics(), "InvalidType", Severity::Info),
+        count(
+            document.diagnostics(),
+            "core/unknown_child_option",
+            Severity::Info
+        ),
         2
     );
 }
@@ -669,7 +679,7 @@ fn u15_121_fixed_out_of_range_copied() {
     for member in ["fixed", "shelf"] {
         expect_at(
             document.diagnostics(),
-            "InvalidValue",
+            "geometry/transform_out_of_bounds",
             Severity::Error,
             &format!("minecraft:geometry/0/item_display_transforms/{member}/scale"),
             text,

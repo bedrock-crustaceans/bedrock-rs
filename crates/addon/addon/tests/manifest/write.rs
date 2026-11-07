@@ -558,13 +558,13 @@ fn an_unknown_member_of_a_legacy_metadata_is_told_as_not_kept() {
         .map(|f| {
             format!(
                 "{} {:?} at {}",
-                f.code.name(),
+                f.code.id(),
                 f.severity,
                 f.location.json_path
             )
         })
         .collect();
-    assert_eq!(told, ["MemberNotKept Info at metadata/x_meta"]);
+    assert_eq!(told, ["core/member_not_kept Info at metadata/x_meta"]);
     let written = document.to_json().unwrap();
     assert!(!written.contains("x_meta"), "{written}");
     assert!(written.contains(r#""license": "MIT""#), "{written}");
@@ -578,7 +578,7 @@ fn an_unknown_member_of_a_legacy_metadata_is_told_as_not_kept() {
     assert!(
         v0.diagnostics()
             .iter()
-            .any(|f| f.code.name() == "MemberNotKept"
+            .any(|f| f.code.id() == "core/member_not_kept"
                 && f.location.json_path.to_string() == "header/metadata/x_meta"),
         "{:?}",
         v0.diagnostics()
@@ -601,7 +601,7 @@ fn a_format_0_manifest_is_written_as_format_1_and_the_load_says_so() {
         .map(|f| {
             format!(
                 "{} {:?} at `{}`",
-                f.code.name(),
+                f.code.id(),
                 f.severity,
                 f.location.json_path
             )
@@ -611,8 +611,8 @@ fn a_format_0_manifest_is_written_as_format_1_and_the_load_says_so() {
     assert_eq!(
         told,
         [
-            "DeprecatedMember Warning at `format_version`",
-            "UnusualFormatVersion Info at ``"
+            "core/deprecated_member_worded Warning at `format_version`",
+            "core/unusual_format_version Info at ``"
         ]
     );
     let written = document.to_json().unwrap();

@@ -46,7 +46,7 @@ fn said(finding: &Diagnostic) -> Said {
         .map(bedrock_addon::pack::PackRef::name);
     let path = finding.location.path.as_ref().map(ToString::to_string);
     (
-        finding.code.name(),
+        finding.code.id(),
         finding.severity,
         pack.unwrap_or_default().to_owned(),
         path.unwrap_or_default(),
@@ -130,12 +130,12 @@ fn f16_a_glyph_sheet_of_another_shape_is_a_glyph_sheet_shape_information() {
     assert_eq!(
         all_said(&found),
         [
-            info("GlyphSheetShape", "rp 2", "font/default8.png", ""),
-            info("GlyphSheetShape", "rp 2", "font/ascii_sga.png", ""),
-            info("GlyphSheetShape", "rp 2", "font/glyph_4E.png", ""),
-            info("GlyphSheetShape", "rp 2", "font/glyph_E2.png", ""),
+            info("core/glyph_sheet_shape", "rp 2", "font/default8.png", ""),
+            info("core/glyph_sheet_shape", "rp 2", "font/ascii_sga.png", ""),
+            info("core/glyph_sheet_shape", "rp 2", "font/glyph_4E.png", ""),
+            info("core/glyph_sheet_shape", "rp 2", "font/glyph_E2.png", ""),
             info(
-                "GlyphSheetShape",
+                "core/glyph_sheet_shape",
                 "rp 2",
                 "texts/ja_JP/font/glyph_30.png",
                 ""
@@ -160,7 +160,12 @@ fn f16_the_sheet_checked_is_the_highest_pack_s() {
     let found = linked(vec![bad, good], LoadOptions::default(), options);
     assert_eq!(
         all_said(&found),
-        [info("GlyphSheetShape", "rp 3", "font/glyph_E2.png", "")]
+        [info(
+            "core/glyph_sheet_shape",
+            "rp 3",
+            "font/glyph_E2.png",
+            ""
+        )]
     );
 }
 
@@ -180,8 +185,8 @@ fn f16_the_sheets_of_a_bitmap_font_of_the_font_list_are_checked() {
     assert_eq!(
         all_said(&found),
         [
-            info("GlyphSheetShape", "rp 2", "font/mine8.png", ""),
-            info("GlyphSheetShape", "rp 2", "font/mine_0B.png", ""),
+            info("core/glyph_sheet_shape", "rp 2", "font/mine8.png", ""),
+            info("core/glyph_sheet_shape", "rp 2", "font/mine_0B.png", ""),
         ]
     );
 }
@@ -230,23 +235,13 @@ fn f24_a_header_that_is_not_0_and_another_size_are_informations() {
         all_said(&found),
         [
             info(
-                "MalformedInput",
+                "font/fontdata_version",
                 "rp 2",
                 "font/smooth/smooth_41.fontdata",
                 ""
             ),
-            info(
-                "MalformedInput",
-                "rp 2",
-                "font/smooth/smooth_42.fontdata",
-                ""
-            ),
-            info(
-                "MalformedInput",
-                "rp 2",
-                "font/smooth/smooth_43.fontdata",
-                ""
-            ),
+            info("core/syntax", "rp 2", "font/smooth/smooth_42.fontdata", ""),
+            info("core/syntax", "rp 2", "font/smooth/smooth_43.fontdata", ""),
         ]
     );
     // The header's finding carries the game's line.
@@ -270,7 +265,7 @@ fn f25_an_advance_that_is_not_positive_is_the_readers_information() {
     assert_eq!(
         all_said(&link(&files)),
         [info(
-            "InvalidValue",
+            "core/invalid_value",
             "rp 2",
             "font/smooth/smooth_41.fontdata",
             "65"
@@ -308,12 +303,12 @@ fn f24_the_pages_of_an_msdf_font_of_the_font_list_are_checked_from_the_highest_p
     );
     let errors: Vec<Said> = all_said(&found)
         .into_iter()
-        .filter(|said| said.0 == "MalformedInput")
+        .filter(|said| said.0 == "font/fontdata_version")
         .collect();
     assert_eq!(
         errors,
         [(
-            "MalformedInput",
+            "font/fontdata_version",
             Severity::Info,
             "rp 2".to_owned(),
             "font/mine/page_00.fontdata".to_owned(),
@@ -347,8 +342,8 @@ fn f26_trailing_bytes_and_a_character_mapped_twice_are_informations() {
     assert_eq!(
         all_said(&found),
         [
-            info("MalformedInput", "rp 2", "font/smooth/remapping.dat", "2"),
-            info("MalformedInput", "rp 2", "font/smooth/remapping.dat", ""),
+            info("core/syntax", "rp 2", "font/smooth/remapping.dat", "2"),
+            info("core/syntax", "rp 2", "font/smooth/remapping.dat", ""),
         ]
     );
 }
@@ -394,7 +389,7 @@ fn f26_a_record_onto_a_page_without_a_file_names_each_missing_file_once() {
     let missing = |index: &str, file: &str| {
         (
             // The game checks nothing: ours, an information.
-            info("MalformedInput", "rp 2", "font/smooth/remapping.dat", index),
+            info("core/syntax", "rp 2", "font/smooth/remapping.dat", index),
             ("font file", format!("{SMOOTH}{file}")),
         )
     };
@@ -468,7 +463,7 @@ fn the_font_files_of_a_pack_that_is_not_loaded_are_named_and_not_judged() {
         .iter()
         .map(|finding| {
             let path = finding.location.path.as_ref().map(ToString::to_string);
-            (finding.code.name(), path.unwrap_or_default())
+            (finding.code.id(), path.unwrap_or_default())
         })
         .filter(|(_, path)| path.starts_with("font/"))
         .collect();
@@ -476,8 +471,11 @@ fn the_font_files_of_a_pack_that_is_not_loaded_are_named_and_not_judged() {
     assert_eq!(
         told,
         [
-            ("FileNotLoaded", "font/glyph_E2.png".to_owned()),
-            ("FileNotLoaded", "font/smooth/smooth_41.fontdata".to_owned()),
+            ("core/file_not_loaded", "font/glyph_E2.png".to_owned()),
+            (
+                "core/file_not_loaded",
+                "font/smooth/smooth_41.fontdata".to_owned()
+            ),
         ]
     );
 }

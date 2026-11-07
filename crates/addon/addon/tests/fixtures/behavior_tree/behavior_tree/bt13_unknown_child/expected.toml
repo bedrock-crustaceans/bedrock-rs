@@ -1,7 +1,7 @@
 # Validation rule 6, a child: the game logs its level-3 line, the child is dropped and the tree loads, so the finding is a kept error.
 
 [[diagnostic]]
-kind = "UnknownNode"
+kind = "core/unknown_node"
 severity = "error"
 file = "behavior_trees/dance.json"
 path = "minecraft:behavior_tree/minecraft:root/minecraft:sequence/children/1/minecraft:dance"

@@ -80,7 +80,7 @@ fn spanned(packs: &[Files<'_>]) -> Vec<Spanned> {
                 None => assert_eq!(covered, None, "{finding:#?}"),
             }
             (
-                finding.code.name(),
+                finding.code.id(),
                 path,
                 pack,
                 file,
@@ -116,28 +116,28 @@ fn a_finding_of_the_merge_has_the_span_of_its_value_in_the_copy_that_wrote_it() 
         spanned(packs),
         [
             at(
-                "InvalidValue",
+                "core/invalid_value",
                 "materials/x/depthFunc",
                 "pack 3",
                 A,
                 r#""Sometimes""#
             ),
             at(
-                "UnrecognizedField",
+                "core/unrecognized_field",
                 "materials/x/+vertexShader",
                 "pack 1",
                 A,
                 r#""s""#
             ),
             at(
-                "InvalidValue",
+                "core/invalid_value",
                 "materials/x/blendSrc",
                 "pack 2",
                 A,
                 r#""Worse""#
             ),
             at(
-                "InvalidValue",
+                "material/state_unknown",
                 "materials/x/states/0",
                 "pack 1",
                 A,
@@ -157,7 +157,7 @@ fn a_span_is_found_under_the_key_and_the_wrapper_of_its_own_copy() {
     let found = spanned(packs);
     let covered: Vec<(&str, &str, Option<&str>)> = found
         .iter()
-        .filter(|f| f.0 == "InvalidValue")
+        .filter(|f| f.0 == "core/invalid_value")
         .map(|f| (f.1.as_str(), f.2.as_str(), f.4.as_deref()))
         .collect();
     assert_eq!(
@@ -177,7 +177,7 @@ fn a_span_is_found_under_the_key_and_the_wrapper_of_its_own_copy() {
     // The key that takes over a lower key under another spelling (V20) has its own value.
     let shadowed: Vec<&Spanned> = found
         .iter()
-        .filter(|f| f.0 == "ShadowedDefinition")
+        .filter(|f| f.0 == "core/shadowed_definition")
         .collect();
     assert_eq!(shadowed.len(), 1, "{found:#?}");
     assert_eq!(
@@ -199,15 +199,15 @@ fn the_findings_of_one_copy_and_of_a_list_have_their_spans() {
         .map(|f| (f.0, f.1.as_str(), f.3.as_str(), f.4.as_deref()))
         .collect();
     assert!(
-        covered.contains(&("InvalidValue", "x/depthBias", A, Some("1e999"))),
+        covered.contains(&("core/invalid_value", "x/depthBias", A, Some("1e999"))),
         "{covered:#?}"
     );
     assert!(
-        covered.contains(&("InvalidType", "x/defines/1", A, Some("3"))),
+        covered.contains(&("core/invalid_type", "x/defines/1", A, Some("3"))),
         "{covered:#?}"
     );
     assert!(
-        covered.contains(&("InvalidType", "x/defines/3", A, Some("{}"))),
+        covered.contains(&("core/invalid_type", "x/defines/3", A, Some("{}"))),
         "{covered:#?}"
     );
     let again = format!(r#"{{"path": "{A}"}}"#);
@@ -215,8 +215,8 @@ fn the_findings_of_one_copy_and_of_a_list_have_their_spans() {
     assert_eq!(
         of_list,
         [
-            &("InvalidType", "2", COMMON, Some("7")),
-            &("NoEffect", "1", COMMON, Some(again.as_str())),
+            &("core/invalid_type", "2", COMMON, Some("7")),
+            &("core/no_effect", "1", COMMON, Some(again.as_str())),
         ]
     );
     // Every finding with a path has a span here.
@@ -306,15 +306,15 @@ fn a_finding_of_a_group_names_a_list_entry_by_its_index_in_the_file() {
     let found = spanned(packs);
     let of_groups: Vec<(&str, &str, Option<&str>)> = found
         .iter()
-        .filter(|f| matches!(f.0, "NoEffect" | "IgnoredFile"))
+        .filter(|f| matches!(f.0, "core/no_effect" | "core/ignored_file"))
         .map(|f| (f.0, f.1.as_str(), f.4.as_deref()))
         .collect();
     let again = format!(r#"{{"path": "{A}"}}"#);
     assert_eq!(
         of_groups,
         [
-            ("IgnoredFile", "3/path", Some(r#""notes.txt""#)),
-            ("NoEffect", "4", Some(again.as_str())),
+            ("core/ignored_file", "3/path", Some(r#""notes.txt""#)),
+            ("core/no_effect", "4", Some(again.as_str())),
         ],
         "{found:#?}"
     );

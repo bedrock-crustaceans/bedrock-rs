@@ -281,20 +281,13 @@ mod tests {
         told.name_as_the_file_has_it();
         let notes: Vec<String> = told
             .iter()
-            .map(|f| {
-                format!(
-                    "{} {:?} {}",
-                    f.code.name(),
-                    f.severity,
-                    f.location.json_path
-                )
-            })
+            .map(|f| format!("{} {:?} {}", f.code.id(), f.severity, f.location.json_path))
             .collect();
         assert_eq!(
             notes,
             [
-                format!("DroppedField Info {description}/animations/controller__move"),
-                format!("DroppedField Info {description}/animation_controllers/0/move"),
+                format!("core/dropped_field Info {description}/animations/controller__move"),
+                format!("core/dropped_field Info {description}/animation_controllers/0/move"),
             ]
         );
     }

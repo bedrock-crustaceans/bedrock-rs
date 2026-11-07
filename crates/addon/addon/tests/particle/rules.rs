@@ -37,7 +37,7 @@ fn refusal(text: &str) -> String {
 fn rule_1_the_range_is_the_floor_to_the_engine() {
     for version in ["1.9.99", "1.0.0", "0.0.0"] {
         assert!(
-            refusal(&effect(version, "")).contains("UnsupportedVersion"),
+            refusal(&effect(version, "")).contains("core/no_parser_for_version"),
             "{version}"
         );
     }
@@ -46,7 +46,7 @@ fn rule_1_the_range_is_the_floor_to_the_engine() {
     ] {
         loaded(&effect(version, ""));
     }
-    assert!(refusal(&effect("1.26.61", "")).contains("UnsupportedVersion"));
+    assert!(refusal(&effect("1.26.61", "")).contains("core/no_parser_for_version"));
     // The struct follows the version.
     assert_eq!(
         loaded(&effect("1.20.79", ""))
@@ -72,7 +72,7 @@ fn rule_2_a_missing_format_version_is_the_floor_with_a_warning_deviation() {
     let effect = loaded(&text);
     assert_eq!(
         findings(effect.diagnostics()),
-        ["Info  MissingFormatVersion: no format_version"]
+        ["Info  core/missing_format_version: no format_version"]
     );
     assert_eq!(effect.version().parsed_as.to_string(), "1.10.0");
     assert_eq!(effect.version().written, None);
@@ -91,7 +91,7 @@ fn rule_2_an_unreadable_format_version_is_malformed() {
     for version in [r#""x""#, "true", "{}", "null", "[1, 2]", r#"[1, 2, "3"]"#] {
         let text = effect(LEGACY, "").replace(r#""1.10.0""#, version);
         assert!(
-            refusal(&text).contains("MalformedFormatVersion"),
+            refusal(&text).contains("core/malformed_format_version"),
             "{version}: {}",
             refusal(&text)
         );
@@ -146,19 +146,19 @@ fn rule_3_a_legacy_document_without_a_description_or_an_identifier_is_rejected_d
     for (members, expected) in [
         (
             format!(r#""description": 1, {components}"#),
-            "Error particle_effect/description MissingRequiredField: Particle effects file has no description block!",
+            "Error particle_effect/description particle/no_description: Particle effects file has no description block!",
         ),
         (
             format!(
                 r#""description": {{"basic_render_parameters": {{"material": "m", "texture": "t"}}}}, {components}"#
             ),
-            "Error particle_effect/description/identifier MissingRequiredField: Particle effect description has no identifier field!",
+            "Error particle_effect/description/identifier particle/no_identifier: Particle effect description has no identifier field!",
         ),
         (
             format!(
                 r#""description": {{"identifier": 1, "basic_render_parameters": {{"material": "m", "texture": "t"}}}}, {components}"#
             ),
-            "Error particle_effect/description/identifier MissingRequiredField: Particle effect description has no identifier field!",
+            "Error particle_effect/description/identifier particle/no_identifier: Particle effect description has no identifier field!",
         ),
     ] {
         assert_eq!(refusal(&payload(&members)), expected);
@@ -185,11 +185,11 @@ fn rule_3_missing_render_parameters_or_components_leave_the_effect_as_far_as_it_
         assert_eq!(
             findings(effect.diagnostics()),
             [
-                "Error particle_effect/description/basic_render_parameters MissingRequiredField: basic_render_parameters not found when reading in particle effect",
+                "Error particle_effect/description/basic_render_parameters particle/no_render_parameters: basic_render_parameters not found when reading in particle effect",
                 // What the parser does not get to is noted where the file has it.
-                "Info particle_effect/curves DroppedField: field dropped",
-                "Info particle_effect/events DroppedField: field dropped",
-                "Info particle_effect/components DroppedField: field dropped",
+                "Info particle_effect/curves core/dropped_field: field dropped",
+                "Info particle_effect/events core/dropped_field: field dropped",
+                "Info particle_effect/components core/dropped_field: field dropped",
             ],
             "{description}"
         );
@@ -209,7 +209,7 @@ fn rule_3_missing_render_parameters_or_components_leave_the_effect_as_far_as_it_
         assert_eq!(
             findings(effect.diagnostics()),
             [
-                "Error particle_effect/components MissingRequiredField: no components found when reading in particle effect"
+                "Error particle_effect/components particle/no_components: no components found when reading in particle effect"
             ],
             "{members}"
         );
@@ -231,7 +231,7 @@ fn rule_3_missing_render_parameters_or_components_leave_the_effect_as_far_as_it_
         let text = payload(&members).replace("1.10.0", CEREAL);
         assert_eq!(
             refusal(&text),
-            format!("Error {at} MissingRequiredField: missing required field")
+            format!("Error {at} core/missing_required_field: missing required field")
         );
     }
 }
@@ -249,15 +249,17 @@ fn rule_3_missing_render_parameters_stop_the_legacy_parser() {
     for (parameters, expected) in [
         (
             r#"{"texture": "t"}"#,
-            format!("Error {brp}/material MissingRequiredField: particle has no material!"),
+            format!("Error {brp}/material particle/no_material: particle has no material!"),
         ),
         (
             r#"{"material": 1, "texture": "t"}"#,
-            format!("Error {brp}/material InvalidValue: particle material field isn't a string"),
+            format!(
+                "Error {brp}/material particle/material_not_string: particle material field isn't a string"
+            ),
         ),
         (
             r#"{"material": "m"}"#,
-            format!("Error {brp}/texture MissingRequiredField: particle has no texture!"),
+            format!("Error {brp}/texture particle/no_texture: particle has no texture!"),
         ),
     ] {
         let effect = loaded(&with(parameters));
@@ -266,8 +268,8 @@ fn rule_3_missing_render_parameters_stop_the_legacy_parser() {
             [
                 expected,
                 // What the parser does not get to is noted where the file has it.
-                "Info particle_effect/curves DroppedField: field dropped".to_owned(),
-                "Info particle_effect/components DroppedField: field dropped".to_owned(),
+                "Info particle_effect/curves core/dropped_field: field dropped".to_owned(),
+                "Info particle_effect/components core/dropped_field: field dropped".to_owned(),
             ],
             "{parameters}"
         );
@@ -279,9 +281,11 @@ fn rule_3_missing_render_parameters_stop_the_legacy_parser() {
     assert_eq!(
         findings(effect.diagnostics()),
         [
-            format!("Error {brp}/texture InvalidValue: particle texture field isn't a string"),
             format!(
-                "Error {brp}/texture MissingRequiredField: Unable to find a texture when reading in particle effect .json!"
+                "Error {brp}/texture particle/texture_not_string: particle texture field isn't a string"
+            ),
+            format!(
+                "Error {brp}/texture particle/texture_not_found: Unable to find a texture when reading in particle effect .json!"
             ),
         ]
     );
@@ -292,18 +296,18 @@ fn rule_3_missing_render_parameters_stop_the_legacy_parser() {
     assert_eq!(
         findings(effect.diagnostics()),
         [format!(
-            "Error {brp}/material MissingRequiredField: Unable to find a material when reading in particle effect .json!"
+            "Error {brp}/material particle/material_not_found: Unable to find a material when reading in particle effect .json!"
         )]
     );
     // The 1.20.80 reader requires both members and has no such lines.
     let cereal = |parameters: &str| with(parameters).replace("1.10.0", CEREAL);
     assert_eq!(
         refusal(&cereal(r#"{"texture": "t"}"#)),
-        format!("Error {brp}/material MissingRequiredField: missing required field")
+        format!("Error {brp}/material core/missing_required_field: missing required field")
     );
     assert_eq!(
         refusal(&cereal(r#"{"material": "m"}"#)),
-        format!("Error {brp}/texture MissingRequiredField: missing required field")
+        format!("Error {brp}/texture core/missing_required_field: missing required field")
     );
     assert_eq!(
         found(&cereal(r#"{"material": "", "texture": ""}"#)),
@@ -313,8 +317,8 @@ fn rule_3_missing_render_parameters_stop_the_legacy_parser() {
 
 #[test]
 fn rule_3_a_legacy_effect_needs_a_lifetime_and_a_rate_component() {
-    let lifetime = "Error particle_effect/components MissingRequiredField: Particle effect needs an emitter lifetime component!";
-    let rate = "Error particle_effect/components MissingRequiredField: Particle effect needs an emitter rate component!";
+    let lifetime = "Error particle_effect/components particle/needs_lifetime: Particle effect needs an emitter lifetime component!";
+    let rate = "Error particle_effect/components particle/needs_rate: Particle effect needs an emitter rate component!";
     let with = |version: &str, components: &str| {
         document(version, &format!(r#""components": {{{components}}}"#))
     };
@@ -342,7 +346,7 @@ fn rule_4_a_legacy_component_without_a_name_is_skipped() {
     assert_eq!(
         findings(effect.diagnostics()),
         [format!(
-            "Error {COMPONENTS}/ InvalidValue: Attempting to extract a particle effect component that has no name"
+            "Error {COMPONENTS}/ particle/component_without_name: Attempting to extract a particle effect component that has no name"
         )]
     );
     assert_eq!(effect.components.len(), 2);
@@ -354,7 +358,7 @@ fn rule_4_a_legacy_component_without_a_name_is_skipped() {
 fn rule_5_an_unknown_member_refuses_a_cereal_document_and_is_dropped_from_a_legacy_one() {
     let sphere = r#""minecraft:emitter_shape_sphere": {"radius": 1, "radious": 2}"#;
     let line = format!(
-        "{COMPONENTS}/minecraft:emitter_shape_sphere/radious UnrecognizedField: unrecognized field"
+        "{COMPONENTS}/minecraft:emitter_shape_sphere/radious core/unrecognized_field: unrecognized field"
     );
     // 1.20.80 and later: the strict mask 0xfffc, an error.
     let refused = rejected(&effect(CEREAL, sphere));
@@ -366,8 +370,9 @@ fn rule_5_an_unknown_member_refuses_a_cereal_document_and_is_dropped_from_a_lega
     // At the top of the payload too.
     let refused = rejected(&effect_with(CEREAL, r#""zz": 1"#));
     assert!(
-        findings(&refused)
-            .contains(&"Error particle_effect/zz UnrecognizedField: unrecognized field".to_owned()),
+        findings(&refused).contains(
+            &"Error particle_effect/zz core/unrecognized_field: unrecognized field".to_owned()
+        ),
         "{:?}",
         findings(&refused)
     );
@@ -392,7 +397,7 @@ fn a_null_member_refuses_a_cereal_document() {
     assert!(
         errors(&refused)
             .iter()
-            .any(|f| f.code.name() == "InvalidType"
+            .any(|f| f.code.id() == "core/invalid_type"
                 && f.location.json_path.to_string()
                     == format!("{COMPONENTS}/minecraft:emitter_rate_instant/num_particles")),
         "{:?}",
@@ -402,7 +407,7 @@ fn a_null_member_refuses_a_cereal_document() {
     assert!(
         errors(&refused)
             .iter()
-            .any(|f| f.code.name() == "InvalidType"
+            .any(|f| f.code.id() == "core/invalid_type"
                 && f.location.json_path.to_string() == "particle_effect/curves"),
         "{:?}",
         findings(&refused)
@@ -434,7 +439,7 @@ fn rule_6_the_legacy_molang_reader_takes_a_number_or_a_string() {
         assert_eq!(
             findings(effect.diagnostics()),
             [format!(
-                "Error {at_radius} InvalidValue: field is not a number or a Molang expression"
+                "Error {at_radius} particle/not_molang: field is not a number or a Molang expression"
             )],
             "{bad}"
         );
@@ -447,7 +452,7 @@ fn rule_6_the_legacy_molang_reader_takes_a_number_or_a_string() {
         } else {
             let refused = refusal(&sphere(CEREAL, bad));
             assert!(
-                refused.starts_with(&format!("Error {at_radius} InvalidType")),
+                refused.starts_with(&format!("Error {at_radius} core/invalid_type")),
                 "{bad}"
             );
         }
@@ -459,12 +464,12 @@ fn rule_6_the_legacy_molang_reader_takes_a_number_or_a_string() {
     assert_eq!(
         findings(effect.diagnostics()),
         [format!(
-            "Info {at_radius} ValueRewritten: value held in another form than it is written in"
+            "Info {at_radius} core/value_rewritten: value held in another form than it is written in"
         )]
     );
     assert_eq!(radius(&effect), Some(number(1.0)));
     assert_eq!(radius(&loaded(&sphere(LEGACY, "false"))), Some(number(0.0)));
-    assert!(refusal(&sphere(CEREAL, "true")).contains("InvalidType"));
+    assert!(refusal(&sphere(CEREAL, "true")).contains("core/invalid_type"));
     // A present but unusable `creation_expression` is 1, an absent one 0.
     let init = loaded(&effect_legacy(
         r#""minecraft:emitter_initialization": {"creation_expression": []}"#,
@@ -510,7 +515,7 @@ fn rule_6_a_legacy_required_molang_member_that_is_missing_is_its_default() {
             assert_eq!(
                 findings(loaded(&effect(LEGACY, components)).diagnostics()),
                 [format!(
-                    "Error {COMPONENTS}/{at} InvalidValue: offset field required!"
+                    "Error {COMPONENTS}/{at} particle/offset_required: offset field required!"
                 )],
                 "{components}"
             );
@@ -520,7 +525,7 @@ fn rule_6_a_legacy_required_molang_member_that_is_missing_is_its_default() {
         assert_eq!(
             findings(effect.diagnostics()),
             [format!(
-                "Error {COMPONENTS}/{at} InvalidValue: required field does not exist"
+                "Error {COMPONENTS}/{at} particle/required_missing: required field does not exist"
             )],
             "{components}"
         );
@@ -555,7 +560,9 @@ fn rule_12_a_legacy_array_has_its_exact_length_and_usable_elements() {
         let effect = loaded(&billboard(bad));
         assert_eq!(
             findings(effect.diagnostics()),
-            [format!("Error {at_size} InvalidValue: error reading array")],
+            [format!(
+                "Error {at_size} particle/array_error: error reading array"
+            )],
             "{bad}"
         );
         assert_eq!(size(&effect), [number(1.0), number(1.0)], "{bad}");
@@ -566,9 +573,9 @@ fn rule_12_a_legacy_array_has_its_exact_length_and_usable_elements() {
     assert_eq!(
         findings(effect.diagnostics()),
         [
-            format!("Error {at_size}/0 InvalidValue: field does not exist"),
+            format!("Error {at_size}/0 particle/array_element_missing: field does not exist"),
             format!(
-                "Error {at_size}/1 InvalidValue: array field is not a number or a Molang expression"
+                "Error {at_size}/1 particle/array_element_not_molang: array field is not a number or a Molang expression"
             ),
         ]
     );
@@ -577,7 +584,7 @@ fn rule_12_a_legacy_array_has_its_exact_length_and_usable_elements() {
     let cereal = effect_cereal_billboard("[1, true]");
     assert_eq!(
         refusal(&cereal),
-        format!("Error {at_size}/1 InvalidType: wrong JSON type")
+        format!("Error {at_size}/1 core/invalid_type: wrong JSON type")
     );
 }
 
@@ -598,7 +605,7 @@ fn a_number_beyond_f32_is_the_largest_finite_float_with_a_warning_deviation() {
             version,
             r#""minecraft:emitter_shape_sphere": {"radius": 1e39}, "minecraft:particle_kill_plane": [0, -1e39, 0, 1e39], "minecraft:particle_motion_collision": {"collision_radius": 0.1, "collision_drag": -1e300}"#,
         ));
-        let at = |rest: &str| format!("Info {COMPONENTS}/{rest} InvalidValue: invalid value");
+        let at = |rest: &str| format!("Info {COMPONENTS}/{rest} core/invalid_value: invalid value");
         assert_eq!(
             findings(effect.diagnostics()),
             [
@@ -629,7 +636,7 @@ fn a_number_beyond_f32_is_the_largest_finite_float_with_a_warning_deviation() {
         assert_eq!(
             texts(&refused),
             [
-                "Error  MalformedInput: Failed to parse the Minecraft Document JSON: Number too big to be stored in double."
+                "Error  core/document_json: Failed to parse the Minecraft Document JSON: Number too big to be stored in double."
             ],
             "{version}"
         );
@@ -723,7 +730,7 @@ fn an_integer_literal_beyond_64_bits_is_read_as_the_float_it_is() {
         assert_eq!(
             findings(effect.diagnostics()),
             [format!(
-                "Info {COMPONENTS}/minecraft:particle_kill_plane/1 InvalidValue: invalid value"
+                "Info {COMPONENTS}/minecraft:particle_kill_plane/1 core/invalid_value: invalid value"
             )],
             "{version}"
         );
@@ -739,7 +746,7 @@ fn an_integer_literal_beyond_64_bits_is_read_as_the_float_it_is() {
         let unknown = loaded(&unknown_text);
         assert_eq!(
             findings(unknown.diagnostics()),
-            ["Info particle_effect/x UnrecognizedField: unrecognized field"]
+            ["Info particle_effect/x core/unrecognized_field: unrecognized field"]
         );
         assert_eq!(
             super::common::at(&written(&unknown), "particle_effect/x"),
@@ -772,9 +779,12 @@ fn a_long_run_of_digits_in_a_string_a_key_or_a_comment_is_no_number() {
         assert_eq!(
             findings(effect.diagnostics()),
             [
-                format!("Info particle_effect/{DIGITS} UnrecognizedField: unrecognized field"),
-                "Info particle_effect/escaped UnrecognizedField: unrecognized field".to_owned(),
-                "Info particle_effect/x UnrecognizedField: unrecognized field".to_owned(),
+                format!(
+                    "Info particle_effect/{DIGITS} core/unrecognized_field: unrecognized field"
+                ),
+                "Info particle_effect/escaped core/unrecognized_field: unrecognized field"
+                    .to_owned(),
+                "Info particle_effect/x core/unrecognized_field: unrecognized field".to_owned(),
             ],
             "{version}"
         );
@@ -797,7 +807,7 @@ fn content_after_the_root_value_refuses_the_document() {
             assert_eq!(
                 texts(&refused),
                 [
-                    "Error  MalformedInput: Failed to parse the Minecraft Document JSON: The document root must not be followed by other values."
+                    "Error  core/document_json: Failed to parse the Minecraft Document JSON: The document root must not be followed by other values."
                 ],
                 "{version}{tail}"
             );
@@ -896,21 +906,41 @@ fn rule_8_the_collision_radius_is_0_to_one_half() {
             );
         }
     }
-    for (outside, clamped, line) in [
-        ("-0.001", 0.0, "radius is too small, clamping to 0"),
-        ("-7", 0.0, "radius is too small, clamping to 0"),
-        ("0.501", 0.5, "radius is too large, clamping to 0.5"),
-        ("9", 0.5, "radius is too large, clamping to 0.5"),
+    for (outside, clamped, id, line) in [
+        (
+            "-0.001",
+            0.0,
+            "radius_too_small",
+            "radius is too small, clamping to 0",
+        ),
+        (
+            "-7",
+            0.0,
+            "radius_too_small",
+            "radius is too small, clamping to 0",
+        ),
+        (
+            "0.501",
+            0.5,
+            "radius_too_large",
+            "radius is too large, clamping to 0.5",
+        ),
+        (
+            "9",
+            0.5,
+            "radius_too_large",
+            "radius is too large, clamping to 0.5",
+        ),
     ] {
         let effect = loaded(&collision(LEGACY, outside));
         assert_eq!(
             findings(effect.diagnostics()),
-            [format!("Error {at_radius} InvalidValue: {line}")]
+            [format!("Error {at_radius} particle/{id}: {line}")]
         );
         assert_eq!(radius(&effect), clamped, "{outside}");
         assert_eq!(
             refusal(&collision(CEREAL, outside)),
-            format!("Error {at_radius} InvalidValue: invalid value"),
+            format!("Error {at_radius} core/invalid_value: invalid value"),
             "{outside}"
         );
     }
@@ -922,7 +952,7 @@ fn rule_8_the_collision_radius_is_0_to_one_half() {
     assert_eq!(
         findings(effect.diagnostics()),
         [format!(
-            "Error {at_radius} InvalidValue: required field does not exist"
+            "Error {at_radius} particle/required_missing: required field does not exist"
         )]
     );
     assert_eq!(radius(&effect), 0.0);
@@ -930,12 +960,12 @@ fn rule_8_the_collision_radius_is_0_to_one_half() {
     assert_eq!(
         findings(effect.diagnostics()),
         [format!(
-            "Error {at_radius} InvalidValue: value is not a float"
+            "Error {at_radius} particle/radius_not_float: value is not a float"
         )]
     );
     assert_eq!(
         refusal(&effect_cereal_collision("{}")),
-        format!("Error {at_radius} MissingRequiredField: missing required field")
+        format!("Error {at_radius} core/missing_required_field: missing required field")
     );
 }
 
@@ -956,14 +986,18 @@ fn the_legacy_collision_reader_logs_its_lines_and_keeps_the_defaults() {
     assert_eq!(
         findings(effect.diagnostics()),
         [
-            format!("Error {at}/collision_drag InvalidValue: collision_drag is not a float"),
             format!(
-                "Error {at}/coefficient_of_restitution InvalidValue: coefficient_of_restitution value is not a float"
+                "Error {at}/collision_drag particle/drag_not_float: collision_drag is not a float"
             ),
             format!(
-                "Error {at}/expire_on_contact InvalidValue: expire_on_contact needs to be true/false"
+                "Error {at}/coefficient_of_restitution particle/restitution_not_float: coefficient_of_restitution value is not a float"
             ),
-            format!("Error {at}/events InvalidValue: is not an array of min-speed/event pairs"),
+            format!(
+                "Error {at}/expire_on_contact particle/expire_not_bool: expire_on_contact needs to be true/false"
+            ),
+            format!(
+                "Error {at}/events particle/events_not_pairs: is not an array of min-speed/event pairs"
+            ),
         ]
     );
     let stored = effect.components.get::<ParticleMotionCollision>().unwrap();
@@ -983,13 +1017,15 @@ fn the_legacy_collision_reader_logs_its_lines_and_keeps_the_defaults() {
     assert_eq!(
         findings(effect.diagnostics()),
         [
-            format!("Error {at}/events/0 InvalidValue: event is not a min-speed/event pair"),
-            format!("Error {at}/events/1/event InvalidValue: no 'event' field!"),
-            format!("Info {at}/events/4/min_speed InvalidValue: invalid value"),
-            format!("Info {at}/events/5/min_speed InvalidValue: invalid value"),
-            format!("Info {at}/events/5/min_speed InvalidValue: invalid value"),
+            format!(
+                "Error {at}/events/0 particle/event_not_pair: event is not a min-speed/event pair"
+            ),
+            format!("Error {at}/events/1/event particle/no_event_field: no 'event' field!"),
+            format!("Info {at}/events/4/min_speed core/invalid_value: invalid value"),
+            format!("Info {at}/events/5/min_speed core/invalid_value: invalid value"),
+            format!("Info {at}/events/5/min_speed core/invalid_value: invalid value"),
             // The entry without an `event` goes whole.
-            format!("Info {at}/events/1 DroppedField: field dropped"),
+            format!("Info {at}/events/1 core/dropped_field: field dropped"),
         ]
     );
     let stored = effect.components.get::<ParticleMotionCollision>().unwrap();
@@ -1041,7 +1077,9 @@ fn required_components_are_refused() {
     for (components, at) in cases {
         assert_eq!(
             refusal(&effect(CEREAL, &components)),
-            format!("Error particle_effect/{at} MissingRequiredField: missing required field"),
+            format!(
+                "Error particle_effect/{at} core/missing_required_field: missing required field"
+            ),
             "{components}"
         );
     }
@@ -1103,7 +1141,9 @@ fn required_members_of_curves_and_events_are_refused() {
     for (members, at) in members {
         assert_eq!(
             refusal(&effect_with(CEREAL, members)),
-            format!("Error particle_effect/{at} MissingRequiredField: missing required field"),
+            format!(
+                "Error particle_effect/{at} core/missing_required_field: missing required field"
+            ),
             "{members}"
         );
     }
@@ -1116,13 +1156,13 @@ fn rule_10_every_required_member_of_the_1_20_80_reader() {
     // The payload's own two.
     assert_eq!(
         refusal(r#"{"format_version": "1.26.10", "particle_effect": {"components": {}}}"#),
-        "Error particle_effect/description MissingRequiredField: missing required field"
+        "Error particle_effect/description core/missing_required_field: missing required field"
     );
     assert_eq!(
         refusal(&format!(
             r#"{{"format_version": "1.26.10", "particle_effect": {{{DESCRIPTION}}}}}"#
         )),
-        "Error particle_effect/components MissingRequiredField: missing required field"
+        "Error particle_effect/components core/missing_required_field: missing required field"
     );
     // With every required member, each of these loads.
     assert_eq!(
@@ -1139,42 +1179,42 @@ fn components_of_the_wrong_type_are_refused_at_their_path() {
         (
             r#""minecraft:emitter_local_space": {"position": 1}"#,
             "minecraft:emitter_local_space/position",
-            "InvalidType: wrong JSON type",
+            "core/invalid_type: wrong JSON type",
         ),
         (
             r#""minecraft:emitter_local_space": 1"#,
             "minecraft:emitter_local_space",
-            "InvalidType: wrong JSON type",
+            "core/invalid_type: wrong JSON type",
         ),
         (
             r#""minecraft:particle_appearance_lighting": []"#,
             "minecraft:particle_appearance_lighting",
-            "InvalidType: wrong JSON type",
+            "core/invalid_type: wrong JSON type",
         ),
         (
             r#""minecraft:emitter_lifetime_once": []"#,
             "minecraft:emitter_lifetime_once",
-            "InvalidType: wrong JSON type",
+            "core/invalid_type: wrong JSON type",
         ),
         (
             r#""minecraft:emitter_shape_sphere": {"direction": "up"}"#,
             "minecraft:emitter_shape_sphere/direction",
-            "InvalidValue: invalid value",
+            "core/invalid_value: invalid value",
         ),
         (
             r#""minecraft:emitter_shape_sphere": {"direction": 1}"#,
             "minecraft:emitter_shape_sphere/direction",
-            "InvalidType: wrong JSON type",
+            "core/invalid_type: wrong JSON type",
         ),
         (
             r#""minecraft:emitter_shape_disc": {"plane_normal": "w"}"#,
             "minecraft:emitter_shape_disc/plane_normal",
-            "InvalidValue: invalid value",
+            "core/invalid_value: invalid value",
         ),
         (
             r#""minecraft:emitter_shape_sphere": {"surface_only": "yes"}"#,
             "minecraft:emitter_shape_sphere/surface_only",
-            "InvalidType: wrong JSON type",
+            "core/invalid_type: wrong JSON type",
         ),
     ]);
 }
@@ -1185,77 +1225,77 @@ fn particle_components_of_the_wrong_type_are_refused_at_their_path() {
         (
             r#""minecraft:particle_kill_plane": [0, 1, 0]"#,
             "minecraft:particle_kill_plane",
-            "InvalidType: wrong JSON type",
+            "core/invalid_type: wrong JSON type",
         ),
         (
             r#""minecraft:particle_kill_plane": [0, 1, 0, "x"]"#,
             "minecraft:particle_kill_plane/3",
-            "InvalidType: wrong JSON type",
+            "core/invalid_type: wrong JSON type",
         ),
         (
             r#""minecraft:particle_expire_if_in_blocks": "minecraft:air""#,
             "minecraft:particle_expire_if_in_blocks",
-            "InvalidType: wrong JSON type",
+            "core/invalid_type: wrong JSON type",
         ),
         (
             r#""minecraft:particle_expire_if_not_in_blocks": ["a", 1]"#,
             "minecraft:particle_expire_if_not_in_blocks/1",
-            "InvalidType: wrong JSON type",
+            "core/invalid_type: wrong JSON type",
         ),
         (
             r#""minecraft:particle_initial_speed": [1, 2]"#,
             "minecraft:particle_initial_speed",
-            "InvalidType: wrong JSON type",
+            "core/invalid_type: wrong JSON type",
         ),
         (
             r#""minecraft:particle_initial_speed": true"#,
             "minecraft:particle_initial_speed",
-            "InvalidType: wrong JSON type",
+            "core/invalid_type: wrong JSON type",
         ),
         (
             r#""minecraft:emitter_lifetime_events": {"creation_event": 1}"#,
             "minecraft:emitter_lifetime_events/creation_event",
-            "InvalidType: wrong JSON type",
+            "core/invalid_type: wrong JSON type",
         ),
         (
             r#""minecraft:emitter_lifetime_events": {"creation_event": ["a", 1]}"#,
             "minecraft:emitter_lifetime_events/creation_event/1",
-            "InvalidType: wrong JSON type",
+            "core/invalid_type: wrong JSON type",
         ),
         (
             r#""minecraft:emitter_lifetime_events": {"timeline": []}"#,
             "minecraft:emitter_lifetime_events/timeline",
-            "InvalidType: wrong JSON type",
+            "core/invalid_type: wrong JSON type",
         ),
         (
             r#""minecraft:emitter_lifetime_events": {"looping_travel_distance_events": [{"distance": -0.5, "effects": "e"}]}"#,
             "minecraft:emitter_lifetime_events/looping_travel_distance_events/0/distance",
-            "InvalidValue: invalid value",
+            "core/invalid_value: invalid value",
         ),
         (
             r#""minecraft:particle_appearance_billboard": {"size": [1, 1], "direction": {"mode": "sideways"}}"#,
             "minecraft:particle_appearance_billboard/direction/mode",
-            "InvalidValue: invalid value",
+            "core/invalid_value: invalid value",
         ),
         (
             r#""minecraft:particle_appearance_billboard": {"size": [1, 1], "uv": {"texture_width": 16.5}}"#,
             "minecraft:particle_appearance_billboard/uv/texture_width",
-            "InvalidType: wrong JSON type",
+            "core/invalid_type: wrong JSON type",
         ),
         (
             r#""minecraft:particle_appearance_billboard": {"size": [1, 1], "uv": {"flipbook": {"base_UV": [0, 0], "max_frame": 1, "size_UV": [1]}}}"#,
             "minecraft:particle_appearance_billboard/uv/flipbook/size_UV",
-            "InvalidType: wrong JSON type",
+            "core/invalid_type: wrong JSON type",
         ),
         (
             r#""minecraft:particle_appearance_tinting": {"color": [1, 1]}"#,
             "minecraft:particle_appearance_tinting/color",
-            "InvalidType: wrong JSON type",
+            "core/invalid_type: wrong JSON type",
         ),
         (
             r#""minecraft:particle_appearance_tinting": {"color": 1}"#,
             "minecraft:particle_appearance_tinting/color",
-            "InvalidType: wrong JSON type",
+            "core/invalid_type: wrong JSON type",
         ),
     ]);
 }
@@ -1308,7 +1348,7 @@ fn the_1_20_80_reader_refuses_a_value_of_the_wrong_type_at_its_path() {
     ] {
         assert_eq!(
             refusal(&effect_with(CEREAL, members)),
-            format!("Error particle_effect/{at} InvalidType: wrong JSON type"),
+            format!("Error particle_effect/{at} core/invalid_type: wrong JSON type"),
             "{members}"
         );
     }
@@ -1317,7 +1357,7 @@ fn the_1_20_80_reader_refuses_a_value_of_the_wrong_type_at_its_path() {
             CEREAL,
             r#""events": {"e": {"particle_effect": {"effect": "x", "type": "none"}}}"#
         )),
-        "Error particle_effect/events/e/particle_effect/type InvalidValue: invalid value"
+        "Error particle_effect/events/e/particle_effect/type core/invalid_value: invalid value"
     );
 }
 
@@ -1329,7 +1369,7 @@ fn the_texture_is_at_most_256_characters_from_1_20_80() {
     assert_eq!(found(&with(CEREAL, 256)), [] as [&str; 0]);
     assert_eq!(
         refusal(&with(CEREAL, 257)),
-        "Error particle_effect/description/basic_render_parameters/texture InvalidValue: invalid value"
+        "Error particle_effect/description/basic_render_parameters/texture core/invalid_value: invalid value"
     );
     assert_eq!(found(&with(LEGACY, 257)), [] as [&str; 0]);
 }
@@ -1347,7 +1387,7 @@ fn rule_13_a_custom_direction_mode_needs_its_direction() {
         // The legacy billboard adds its own line when `_parseDirection` fails,
         // a content-log error after which the effect loads: a kept error.
         let first = format!(
-            "Error {at} InvalidValue: The 'direction' sub section is not defined as a proper json object!"
+            "Error {at} particle/direction_custom: The 'direction' sub section is not defined as a proper json object!"
         );
         if version == LEGACY {
             assert_eq!(
@@ -1355,7 +1395,7 @@ fn rule_13_a_custom_direction_mode_needs_its_direction() {
                 [
                     first,
                     format!(
-                        "Error {at} InvalidValue: The direction sub section is not properly defined!"
+                        "Error {at} particle/direction_not_properly_defined: The direction sub section is not properly defined!"
                     )
                 ]
             );
@@ -1383,18 +1423,20 @@ fn rule_13_a_custom_direction_mode_needs_its_direction() {
         findings(loaded(&legacy("1")).diagnostics()),
         [
             format!(
-                "Error {at} InvalidValue: The direction subsection is not defined as a proper json object!"
+                "Error {at} particle/direction_not_object: The direction subsection is not defined as a proper json object!"
             ),
-            format!("Error {at} InvalidValue: The direction sub section is not properly defined!"),
             format!(
-                "Info {COMPONENTS}/minecraft:particle_appearance_billboard/uv InvalidValue: invalid value"
+                "Error {at} particle/direction_not_properly_defined: The direction sub section is not properly defined!"
+            ),
+            format!(
+                "Info {COMPONENTS}/minecraft:particle_appearance_billboard/uv core/invalid_value: invalid value"
             ),
         ]
     );
     assert_eq!(
         found(&legacy(r#"{"mode": "sideways"}"#))[0],
         format!(
-            "Error {at}/mode InvalidValue: The 'direction' sub section is not using a valid mode!"
+            "Error {at}/mode particle/direction_mode: The 'direction' sub section is not using a valid mode!"
         )
     );
     let uv = effect(
@@ -1404,12 +1446,12 @@ fn rule_13_a_custom_direction_mode_needs_its_direction() {
     let at_uv = format!("{COMPONENTS}/minecraft:particle_appearance_billboard/uv");
     let lines = found(&uv);
     for line in [
-        format!("Error {at_uv}/flipbook InvalidValue: bad data!"),
+        format!("Error {at_uv}/flipbook particle/bad_flipbook: bad data!"),
         format!(
-            "Error {at_uv}/texturewidth InvalidValue: texture width field needs to be named 'texture_width'"
+            "Error {at_uv}/texturewidth particle/texture_width_name: texture width field needs to be named 'texture_width'"
         ),
         format!(
-            "Error {at_uv}/textureheight InvalidValue: texture height field needs to be named 'texture_height'"
+            "Error {at_uv}/textureheight particle/texture_height_name: texture height field needs to be named 'texture_height'"
         ),
     ] {
         assert!(lines.contains(&line), "{line} in {lines:#?}");
@@ -1432,9 +1474,9 @@ fn rule_13_curves_of_an_unknown_type_are_left_out_in_both_eras() {
         assert_eq!(
             findings(effect.diagnostics()),
             [
-                "Error particle_effect/curves/variable.a/type InvalidValue: Particle effect curve has invalid type",
+                "Error particle_effect/curves/variable.a/type particle/curve_type: Particle effect curve has invalid type",
                 // The curve goes with its `input` and `nodes`.
-                "Info particle_effect/curves/variable.a DroppedField: field dropped",
+                "Info particle_effect/curves/variable.a core/dropped_field: field dropped",
             ],
             "{version}"
         );
@@ -1462,10 +1504,10 @@ fn rule_13_a_chain_node_needs_a_value_and_a_slope_on_both_sides() {
     };
     let at = "particle_effect/curves/variable.c/nodes/0.5";
     let value = format!(
-        "Error {at} InvalidValue: Particle curve bezier chain node is missing required value field"
+        "Error {at} particle/chain_value: Particle curve bezier chain node is missing required value field"
     );
     let slope = format!(
-        "Error {at} InvalidValue: Particle curve bezier chain node is missing required slope field"
+        "Error {at} particle/chain_slope: Particle curve bezier chain node is missing required slope field"
     );
     for (members, expected) in [
         (r#""value": 1, "slope": 0"#, vec![]),
@@ -1495,47 +1537,51 @@ fn the_legacy_curve_reader_logs_its_lines_and_leaves_the_curve_out() {
     assert_eq!(
         found(&curves("1")),
         [format!(
-            "Error {at} InvalidValue: No curves found in curves section!"
+            "Error {at} particle/no_curves: No curves found in curves section!"
         )]
     );
     assert_eq!(loaded(&curves("1")).curves, None);
     for (entries, expected) in [
         (
             r#"{"": {"type": "linear", "input": 0, "nodes": [0]}}"#,
-            format!("Error {at}/ InvalidValue: Attempting to extract a curve with an empty name!"),
+            format!(
+                "Error {at}/ particle/curve_without_name: Attempting to extract a curve with an empty name!"
+            ),
         ),
         (
             r#"{"variable.c": 1}"#,
-            format!("Error {at}/variable.c InvalidValue: Particle effect curve has no valid data!"),
+            format!(
+                "Error {at}/variable.c particle/curve_no_data: Particle effect curve has no valid data!"
+            ),
         ),
         (
             r#"{"variable.c": {"input": 0, "nodes": [0]}}"#,
             format!(
-                "Error {at}/variable.c/type InvalidValue: Particle effect curve has invalid type"
+                "Error {at}/variable.c/type particle/curve_type: Particle effect curve has invalid type"
             ),
         ),
         (
             r#"{"variable.c": {"type": 7, "input": 0, "nodes": [0]}}"#,
             format!(
-                "Error {at}/variable.c/type InvalidValue: Particle effect curve has invalid type"
+                "Error {at}/variable.c/type particle/curve_type: Particle effect curve has invalid type"
             ),
         ),
         (
             r#"{"variable.c": {"type": "linear", "input": 0, "nodes": 1}}"#,
             format!(
-                "Error {at}/variable.c/nodes InvalidValue: Particle curve declared with invalid nodes array"
+                "Error {at}/variable.c/nodes particle/curve_nodes: Particle curve declared with invalid nodes array"
             ),
         ),
         (
             r#"{"variable.c": {"type": "linear", "input": 0}}"#,
             format!(
-                "Error {at}/variable.c/nodes InvalidValue: Particle curve declared with invalid nodes array"
+                "Error {at}/variable.c/nodes particle/curve_nodes: Particle curve declared with invalid nodes array"
             ),
         ),
         (
             r#"{"variable.c": {"type": "bezier_chain", "input": 0, "nodes": []}}"#,
             format!(
-                "Error {at}/variable.c/nodes InvalidValue: Particle curve declared with invalid node data"
+                "Error {at}/variable.c/nodes particle/curve_node_data: Particle curve declared with invalid node data"
             ),
         ),
     ] {
@@ -1543,7 +1589,9 @@ fn the_legacy_curve_reader_logs_its_lines_and_leaves_the_curve_out() {
         // The parser's line, and the note of a curve that is an object and goes whole.
         let mut lines = vec![expected];
         if entries.contains(r#""variable.c": {"#) {
-            lines.push(format!("Info {at}/variable.c DroppedField: field dropped"));
+            lines.push(format!(
+                "Info {at}/variable.c core/dropped_field: field dropped"
+            ));
         }
         assert_eq!(findings(effect.diagnostics()), lines, "{entries}");
         assert_eq!(
@@ -1559,7 +1607,7 @@ fn the_legacy_curve_reader_logs_its_lines_and_leaves_the_curve_out() {
     assert_eq!(
         findings(effect.diagnostics()),
         [format!(
-            "Error {at}/variable.c/nodes/0 InvalidValue: Particle curve declared with invalid node data"
+            "Error {at}/variable.c/nodes/0 particle/curve_node_data: Particle curve declared with invalid node data"
         )]
     );
 }
@@ -1569,56 +1617,62 @@ fn legacy_event_cases(at: &str) -> Vec<(&'static str, String)> {
     vec![
         (
             r#"{"": {}}"#,
-            format!("{at}/ InvalidValue: Attempting to extract an event with an empty name!"),
+            format!(
+                "{at}/ particle/event_without_name: Attempting to extract an event with an empty name!"
+            ),
         ),
         (
             r#"{"e": 1}"#,
-            format!("{at}/e InvalidValue: Particle effect event has no valid data!"),
+            format!("{at}/e particle/event_no_data: Particle effect event has no valid data!"),
         ),
         (
             r#"{"e": {"sequence": 1}}"#,
-            format!("{at}/e/sequence InvalidValue: Error reading sequence field!"),
+            format!("{at}/e/sequence particle/sequence: Error reading sequence field!"),
         ),
         (
             r#"{"e": {"randomize": 1}}"#,
-            format!("{at}/e/randomize InvalidValue: Error reading random field!"),
+            format!("{at}/e/randomize particle/random: Error reading random field!"),
         ),
         (
             r#"{"e": {"randomize": [{"weight": "x"}]}}"#,
             format!(
-                "{at}/e/randomize/0/weight InvalidValue: Error reading weight field!  Ignoring random option"
+                "{at}/e/randomize/0/weight particle/weight: Error reading weight field!  Ignoring random option"
             ),
         ),
         (
             r#"{"e": {"randomize": [{"weight": -0.5}]}}"#,
             format!(
-                "{at}/e/randomize/0/weight InvalidValue: Weight field must be zero or greater.  Ignoring random option"
+                "{at}/e/randomize/0/weight particle/weight_negative: Weight field must be zero or greater.  Ignoring random option"
             ),
         ),
         (
             r#"{"e": {"particle_effect": 1}}"#,
-            format!("{at}/e/particle_effect InvalidValue: particle_effect section is invalid"),
+            format!(
+                "{at}/e/particle_effect particle/effect_section: particle_effect section is invalid"
+            ),
         ),
         (
             r#"{"e": {"particle_effect": {"type": "emitter"}}}"#,
-            format!("{at}/e/particle_effect/effect InvalidValue: Effect field missing!"),
+            format!("{at}/e/particle_effect/effect particle/effect_missing: Effect field missing!"),
         ),
         (
             r#"{"e": {"particle_effect": {"effect": "x"}}}"#,
-            format!("{at}/e/particle_effect/type InvalidValue: Type field missing!"),
+            format!("{at}/e/particle_effect/type particle/type_missing: Type field missing!"),
         ),
         (
             r#"{"e": {"particle_effect": {"effect": "x", "type": "none"}}}"#,
-            format!("{at}/e/particle_effect/type InvalidValue: Type field missing!"),
+            format!("{at}/e/particle_effect/type particle/type_missing: Type field missing!"),
         ),
         (
             r#"{"e": {"sound_effect": 1}}"#,
-            format!("{at}/e/sound_effect InvalidValue: sound_effect section should be an object"),
+            format!(
+                "{at}/e/sound_effect particle/sound_section: sound_effect section should be an object"
+            ),
         ),
         (
             r#"{"e": {"sound_effect": {"event_name": 1}}}"#,
             format!(
-                "{at}/e/sound_effect/event_name InvalidValue: sound_effect.event_name should be a string"
+                "{at}/e/sound_effect/event_name particle/sound_name: sound_effect.event_name should be a string"
             ),
         ),
     ]
@@ -1631,7 +1685,7 @@ fn the_legacy_event_reader_logs_its_lines_and_leaves_the_part_out() {
     assert_eq!(
         found(&events("[]")),
         [format!(
-            "Error {at} InvalidValue: No events found in events section!"
+            "Error {at} particle/no_events: No events found in events section!"
         )]
     );
     for (entries, expected) in legacy_event_cases(at) {
@@ -1640,13 +1694,15 @@ fn the_legacy_event_reader_logs_its_lines_and_leaves_the_part_out() {
         let mut lines = vec![format!("Error {expected}")];
         for section in ["particle_effect", "sound_effect"] {
             if entries.contains(&format!(r#""{section}": {{"#)) {
-                lines.push(format!("Info {at}/e/{section} DroppedField: field dropped"));
+                lines.push(format!(
+                    "Info {at}/e/{section} core/dropped_field: field dropped"
+                ));
             }
         }
         // A random option that is skipped for its weight.
         if entries.contains(r#""randomize": [{"#) {
             lines.push(format!(
-                "Info {at}/e/randomize/0 DroppedField: field dropped"
+                "Info {at}/e/randomize/0 core/dropped_field: field dropped"
             ));
         }
         assert_eq!(findings(effect.diagnostics()), lines, "{entries}");
@@ -1687,9 +1743,9 @@ fn the_legacy_event_reader_logs_its_lines_and_leaves_the_part_out() {
     assert_eq!(
         findings(silent.diagnostics()),
         [
-            format!("Info {at}/e/expression InvalidType: wrong JSON type"),
+            format!("Info {at}/e/expression core/invalid_type: wrong JSON type"),
             format!(
-                "Info {at}/e/particle_effect/pre_effect_expression InvalidType: wrong JSON type"
+                "Info {at}/e/particle_effect/pre_effect_expression core/invalid_type: wrong JSON type"
             ),
         ]
     );
@@ -1726,10 +1782,10 @@ fn components_without_data_keep_their_defaults() {
         findings(effect.diagnostics()),
         [
             format!(
-                "Error {COMPONENTS}/minecraft:emitter_shape_sphere InvalidValue: Component has no data fields!"
+                "Error {COMPONENTS}/minecraft:emitter_shape_sphere particle/no_data_fields: Component has no data fields!"
             ),
             format!(
-                "Error {COMPONENTS}/minecraft:emitter_rate_manual InvalidValue: Component has no data fields!"
+                "Error {COMPONENTS}/minecraft:emitter_rate_manual particle/no_data_fields: Component has no data fields!"
             ),
         ]
     );
@@ -1749,9 +1805,11 @@ fn components_without_data_keep_their_defaults() {
     assert_eq!(
         findings(quiet.diagnostics()),
         [
-            format!("Info {COMPONENTS}/minecraft:emitter_local_space InvalidType: wrong JSON type"),
             format!(
-                "Info {COMPONENTS}/minecraft:particle_appearance_lighting InvalidType: wrong JSON type"
+                "Info {COMPONENTS}/minecraft:emitter_local_space core/invalid_type: wrong JSON type"
+            ),
+            format!(
+                "Info {COMPONENTS}/minecraft:particle_appearance_lighting core/invalid_type: wrong JSON type"
             ),
         ]
     );
@@ -1775,10 +1833,10 @@ fn block_lists_and_shapes_log_their_lines() {
         findings(blocks.diagnostics()),
         [
             format!(
-                "Error {COMPONENTS}/minecraft:particle_expire_if_in_blocks/1 InvalidValue: Block name is not a string!"
+                "Error {COMPONENTS}/minecraft:particle_expire_if_in_blocks/1 particle/block_not_string: Block name is not a string!"
             ),
             format!(
-                "Error {COMPONENTS}/minecraft:particle_expire_if_not_in_blocks InvalidValue: Component has no block list!"
+                "Error {COMPONENTS}/minecraft:particle_expire_if_not_in_blocks particle/no_block_list: Component has no block list!"
             ),
         ]
     );
@@ -1798,10 +1856,10 @@ fn block_lists_and_shapes_log_their_lines() {
         found(&shapes),
         [
             format!(
-                "Error {COMPONENTS}/minecraft:emitter_shape_sphere/direction InvalidValue: direction has invalid value"
+                "Error {COMPONENTS}/minecraft:emitter_shape_sphere/direction particle/direction_invalid: direction has invalid value"
             ),
             format!(
-                "Error {COMPONENTS}/minecraft:emitter_shape_disc/plane_normal InvalidValue: plane_normal has invalid value"
+                "Error {COMPONENTS}/minecraft:emitter_shape_disc/plane_normal particle/plane_normal_invalid: plane_normal has invalid value"
             ),
         ]
     );
@@ -1817,22 +1875,24 @@ fn lifetime_events_log_their_lines() {
     assert_eq!(
         findings(events.diagnostics()),
         [
-            format!("Error {at}/creation_event InvalidValue: Error reading field"),
-            format!("Error {at}/expiration_event/1 InvalidValue: Error reading array element"),
-            format!("Error {at}/timeline InvalidValue: Error reading timeline"),
+            format!("Error {at}/creation_event particle/event_field: Error reading field"),
             format!(
-                "Error {at}/travel_distance_events InvalidValue: Error reading travel_distance_events"
+                "Error {at}/expiration_event/1 particle/event_element: Error reading array element"
+            ),
+            format!("Error {at}/timeline particle/timeline: Error reading timeline"),
+            format!(
+                "Error {at}/travel_distance_events particle/travel_distance: Error reading travel_distance_events"
             ),
             format!(
-                "Error {at}/looping_travel_distance_events/0 InvalidValue: Error reading looping_travel_distance_events"
+                "Error {at}/looping_travel_distance_events/0 particle/looping: Error reading looping_travel_distance_events"
             ),
             // Each at the index the file has the entry at, behind the element that is no
             // object.
             format!(
-                "Error {at}/looping_travel_distance_events/1 InvalidValue: Error reading and individual event from looping_travel_distance_events"
+                "Error {at}/looping_travel_distance_events/1 particle/looping_entry: Error reading and individual event from looping_travel_distance_events"
             ),
             format!(
-                "Error {at}/looping_travel_distance_events/2 InvalidValue: Error reading and individual event from looping_travel_distance_events"
+                "Error {at}/looping_travel_distance_events/2 particle/looping_entry: Error reading and individual event from looping_travel_distance_events"
             ),
         ]
     );
@@ -1856,7 +1916,7 @@ fn lifetime_events_log_their_lines() {
     assert_eq!(
         found(&looping),
         [format!(
-            "Error {at}/looping_travel_distance_events InvalidValue: Error reading looping_travel_distance_events"
+            "Error {at}/looping_travel_distance_events particle/looping: Error reading looping_travel_distance_events"
         )]
     );
 }
@@ -1875,27 +1935,31 @@ fn effect_legacy(components: &str) -> String {
 #[test]
 fn the_legacy_colour_reader_logs_its_lines_and_the_tint_is_white() {
     let at = format!("{COMPONENTS}/minecraft:particle_appearance_tinting/color");
-    let invalid = format!("Error {at} InvalidValue: Component has invalid color field!");
+    let invalid = format!("Error {at} particle/invalid_color: Component has invalid color field!");
     for (color, line) in [
         (
             "1",
-            format!("Error {at} InvalidValue: Color value isn't a string or array of values"),
+            format!(
+                "Error {at} particle/color_shape: Color value isn't a string or array of values"
+            ),
         ),
         (
             r#""red""#,
-            format!("Error {at} InvalidValue: Color value string has problems!"),
+            format!("Error {at} particle/color_string: Color value string has problems!"),
         ),
         (
             "[1, 1]",
-            format!("Error {at} InvalidValue: Color value has wrong number of elements"),
+            format!("Error {at} particle/color_count: Color value has wrong number of elements"),
         ),
         (
             "[1, 1, 1, 1, 1]",
-            format!("Error {at} InvalidValue: Color value has wrong number of elements"),
+            format!("Error {at} particle/color_count: Color value has wrong number of elements"),
         ),
         (
             r#"{"gradient": 1, "interpolant": 0}"#,
-            format!("Error {at}/gradient InvalidValue: Color gradient area not set up correctly"),
+            format!(
+                "Error {at}/gradient particle/gradient: Color gradient area not set up correctly"
+            ),
         ),
     ] {
         let effect = loaded(&effect_legacy(&format!(
@@ -1918,7 +1982,7 @@ fn the_legacy_colour_reader_logs_its_lines_and_the_tint_is_white() {
     ));
     assert_has(
         effect.diagnostics(),
-        &format!("Error {at}/gradient InvalidValue: Color gradient area not set up correctly"),
+        &format!("Error {at}/gradient particle/gradient: Color gradient area not set up correctly"),
     );
     // The hex forms: `#` and one to eight hexadecimal digits.
     for (text, fine) in [
@@ -1978,7 +2042,7 @@ fn the_halves_the_mutation_pass_found_unpinned() {
     assert_eq!(
         texts(&d),
         [
-            "Error particle_effect/curves/variable.c/nodes MissingRequiredField: missing required field"
+            "Error particle_effect/curves/variable.c/nodes core/missing_required_field: missing required field"
         ]
     );
     // A sign is no hexadecimal digit.
@@ -1994,7 +2058,7 @@ fn the_halves_the_mutation_pass_found_unpinned() {
     assert_eq!(
         findings(&unnamed),
         [format!(
-            "Error {COMPONENTS}/ UnrecognizedComponent: unrecognized component"
+            "Error {COMPONENTS}/ core/unrecognized_component: unrecognized component"
         )]
     );
 }
@@ -2011,8 +2075,8 @@ fn what_the_legacy_parser_leaves_out_beside_a_member_is_noted_where_it_is() {
             .diagnostics()
             .iter()
             .filter(|f| f.severity == bedrock_addon::diagnostic::Severity::Info)
-            .filter(|f| matches!(f.code.name(), "DroppedField" | "InvalidType"))
-            .map(|f| format!("{} {}", f.code.name(), f.location.json_path))
+            .filter(|f| matches!(f.code.id(), "core/dropped_field" | "core/invalid_type"))
+            .map(|f| format!("{} {}", f.code.id(), f.location.json_path))
             .collect()
     };
     // The parser stops at the material: the rest of the effect is not read.
@@ -2022,9 +2086,9 @@ fn what_the_legacy_parser_leaves_out_beside_a_member_is_noted_where_it_is() {
     assert_eq!(
         noted(&stopped),
         [
-            "DroppedField particle_effect/curves",
-            "DroppedField particle_effect/events",
-            "DroppedField particle_effect/components",
+            "core/dropped_field particle_effect/curves",
+            "core/dropped_field particle_effect/events",
+            "core/dropped_field particle_effect/components",
         ]
     );
     // An event's sections and Molang.
@@ -2035,10 +2099,10 @@ fn what_the_legacy_parser_leaves_out_beside_a_member_is_noted_where_it_is() {
     assert_eq!(
         noted(&events),
         [
-            "InvalidType particle_effect/events/e/expression",
-            "InvalidType particle_effect/events/e/particle_effect/pre_effect_expression",
-            "DroppedField particle_effect/events/e/particle_effect",
-            "DroppedField particle_effect/events/e/sound_effect",
+            "core/invalid_type particle_effect/events/e/expression",
+            "core/invalid_type particle_effect/events/e/particle_effect/pre_effect_expression",
+            "core/dropped_field particle_effect/events/e/particle_effect",
+            "core/dropped_field particle_effect/events/e/sound_effect",
         ]
     );
     // A collision event without its `event`.
@@ -2049,7 +2113,7 @@ fn what_the_legacy_parser_leaves_out_beside_a_member_is_noted_where_it_is() {
     assert_eq!(
         noted(&collision),
         [format!(
-            "DroppedField {COMPONENTS}/minecraft:particle_motion_collision/events/1"
+            "core/dropped_field {COMPONENTS}/minecraft:particle_motion_collision/events/1"
         )]
     );
 }
@@ -2079,7 +2143,7 @@ fn an_unknown_payload_member_of_an_effect_the_legacy_parser_stopped_in_is_told()
         let unknown: Vec<String> = document
             .diagnostics()
             .iter()
-            .filter(|f| f.code.name() == "UnrecognizedField")
+            .filter(|f| f.code.id() == "core/unrecognized_field")
             .map(|f| f.location.json_path.to_string())
             .collect();
         assert_eq!(
@@ -2106,7 +2170,7 @@ fn a_curve_or_a_random_option_that_goes_whole_for_one_member_is_noted_where_it_i
         loaded(text)
             .diagnostics()
             .iter()
-            .filter(|f| f.code.name() == "DroppedField")
+            .filter(|f| f.code.id() == "core/dropped_field")
             .map(|f| format!("{:?} {}", f.severity, f.location.json_path))
             .collect()
     };

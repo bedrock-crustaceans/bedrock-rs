@@ -1,6 +1,6 @@
 //! The listed deviations from vanilla, one test each (named `..._deviation`).
 
-use bedrock_addon::diagnostic::Severity;
+use bedrock_addon::diagnostic::{Kind, Severity};
 use bedrock_addon::id::AnimationRef;
 use bedrock_addon::pack::PackType;
 
@@ -32,12 +32,19 @@ fn legacy_event_skipping_is_per_file_deviation() {
 fn animation_above_the_engine_is_reported_deviation() {
     let text = r#"{"format_version": "1.26.61", "animations": {"animation.x": {}}}"#;
     let behavior = loaded(animation(text, &bp(1, 16, 0)));
-    assert!(find(behavior.diagnostics(), "UnsupportedVersion", Severity::Info).is_some());
+    assert!(
+        find(
+            behavior.diagnostics(),
+            "core/unsupported_version",
+            Severity::Info
+        )
+        .is_some()
+    );
     let resource = loaded(animation(text, &rp(1, 21, 0)));
     assert!(
         find(
             resource.diagnostics(),
-            "FormatVersionAboveEngine",
+            "core/format_version_above_engine",
             Severity::Info
         )
         .is_some()
@@ -83,7 +90,7 @@ fn files_of_one_pack_combine_in_sorted_order_deviation() {
     assert!(
         registry
             .diagnostics()
-            .any(|d| d.code.name() == "DuplicateIdentifier")
+            .any(|d| d.code.id() == "core/duplicate_identifier")
     );
 }
 
@@ -99,7 +106,7 @@ fn events_without_a_command_version_are_reported_deviation() {
     assert!(
         find(
             file.diagnostics(),
-            "MissingMinEngineVersion",
+            "core/missing_min_engine_version",
             Severity::Info
         )
         .is_some(),
@@ -116,11 +123,11 @@ fn added_rules_report_what_vanilla_is_silent_on_deviation() {
         r#"{"format_version": "1.8.0", "animations": {"animation.x": {"bones": {"A": {"scale": 1}, "a": {"scale": 1}}, "timeline": {"0": "@a x"}}}}"#,
         &rp(1, 21, 0),
     ));
-    assert!(find(file.diagnostics(), "DuplicateBone", Severity::Info).is_some());
+    assert!(find(file.diagnostics(), "core/duplicate_bone", Severity::Info).is_some());
     assert!(
         find(
             file.diagnostics(),
-            "UnrecognizedEventString",
+            "core/unrecognized_event_string",
             Severity::Info
         )
         .is_some()
@@ -137,7 +144,7 @@ fn added_rules_report_what_vanilla_is_silent_on_deviation() {
         set.resource
             .animations()
             .diagnostics()
-            .any(|d| d.code.name() == "ShadowedDefinition" && d.severity == Severity::Info)
+            .any(|d| d.code.id() == "core/shadowed_definition" && d.severity == Severity::Info)
     );
 }
 
@@ -155,7 +162,7 @@ fn a_molang_number_beyond_f32_is_read_as_the_largest_finite_float_deviation() {
     let warnings: Vec<String> = document
         .diagnostics()
         .iter()
-        .filter(|f| f.code.name() == "InvalidValue" && f.severity == Severity::Info)
+        .filter(|f| f.code.id() == "core/invalid_value" && f.severity == Severity::Info)
         .map(|f| {
             let span = f.location.span.expect("the number's token");
             let (from, to) = (span.offset as usize, (span.offset + span.len) as usize);
@@ -176,11 +183,21 @@ fn a_molang_number_beyond_f32_is_read_as_the_largest_finite_float_deviation() {
     let written = document.to_json().unwrap();
     let again = loaded(animation(&written, &rp(1, 21, 0)));
     assert_eq!(again.value(), document.value(), "{written}");
-    assert!(find(again.diagnostics(), "InvalidValue", Severity::Info).is_none());
+    assert!(
+        !again
+            .diagnostics()
+            .iter()
+            .any(|f| f.kind() == Kind::InvalidValue && f.severity == Severity::Info)
+    );
     // The largest float itself is no deviation.
     let text = r#"{"format_version": "1.8.0", "animations": {"animation.x": {"blend_weight": 3.4028235e38}}}"#;
     let document = loaded(animation(text, &rp(1, 21, 0)));
-    assert!(find(document.diagnostics(), "InvalidValue", Severity::Info).is_none());
+    assert!(
+        !document
+            .diagnostics()
+            .iter()
+            .any(|f| f.kind() == Kind::InvalidValue && f.severity == Severity::Info)
+    );
 }
 
 /// W1: the members of an animation are read in the file's order: the findings follow it.
@@ -190,7 +207,7 @@ fn members_are_read_in_document_order() {
     let d = super::common::rejected(animation(text, &rp(1, 21, 0)));
     let told: Vec<_> = d
         .iter()
-        .filter(|f| f.code.name() == "InvalidType")
+        .filter(|f| f.code.id() == "core/unknown_child_option")
         .map(|f| f.location.json_path.to_string())
         .collect();
     assert_eq!(
@@ -214,7 +231,7 @@ fn a_float_that_narrows_is_not_told_as_lossy() {
         document
             .diagnostics()
             .iter()
-            .all(|f| f.code.name() != "LossyConversion"),
+            .all(|f| f.code.id() != "core/lossy_conversion"),
         "{:?}",
         lines(document.diagnostics())
     );

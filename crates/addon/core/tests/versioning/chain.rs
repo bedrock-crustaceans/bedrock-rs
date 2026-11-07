@@ -265,7 +265,7 @@ fn the_chain_parses_a_struct_without_upgrading_it() {
     assert!(none.is_none());
     assert!(
         d.first_error()
-            .is_some_and(|e| e.code.name() == "UnsupportedVersion")
+            .is_some_and(|e| e.code.id() == "core/no_parser_for_version")
     );
     assert_eq!(
         d.first_error().unwrap().location.json_path.to_string(),
@@ -355,7 +355,7 @@ fn a_family_rule_rejects_the_document() {
         outcome
             .diagnostics
             .first_error()
-            .is_some_and(|e| e.code.name() == "InvalidValue")
+            .is_some_and(|e| e.code.id() == "core/invalid_value")
     );
 }
 
@@ -475,8 +475,8 @@ fn a_beta_only_family_loads_only_beta_documents() {
             outcome
                 .diagnostics
                 .first_error()
-                .is_some_and(|e| e.code.name() == "UnsupportedVersion"
-                    || e.code.name() == "MissingFormatVersion")
+                .is_some_and(|e| e.code.id() == "core/no_parser_for_version"
+                    || e.code.id() == "core/no_valid_version")
         );
     }
 }

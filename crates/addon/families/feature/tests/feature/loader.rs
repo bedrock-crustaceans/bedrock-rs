@@ -45,7 +45,7 @@ fn f08_an_internal_type_needs_a_base_game_pack() {
         r#""feature_areas": [{"feature": "demo:y", "area_dimensions": [4, 4]}]"#,
     );
     let d = rejects(&json, &cx());
-    error_at(&d, "MissingToggles", "minecraft:rect_layout");
+    error_at(&d, "feature/internal_type", "minecraft:rect_layout");
     assert!(has_text(
         &d,
         "The feature uses the feature type 'minecraft:rect_layout', which is considered internal and thus not compatible with this engine version of the game."
@@ -72,21 +72,21 @@ fn f11_the_four_loader_errors() {
     ));
 
     let d = reject_bytes(br#"{"format_version": "1.13.0", "minecraft:ore_feature": {"description": {}, "count": 1}}"#);
-    error_at(&d, "MissingRequiredField", "");
+    error_at(&d, "feature/missing_identifier", "");
     assert!(has_text(
         &d,
         "[Feature Registry] Missing description identifier for JSON in the following file: features/x.json"
     ));
 
     let d = reject_bytes(br#"{"format_version": "1.13.0", "minecraft:ore_feature": {"description": {"identifier": ""}, "count": 1}}"#);
-    error_at(&d, "InvalidValue", "");
+    error_at(&d, "feature/empty_identifier", "");
     assert!(has_text(
         &d,
         "[Feature Registry] Empty description identifier for JSON in the following file: features/x.json"
     ));
 
     let d = reject_bytes(br#"{"format_version": "1.13.0", "minecraft:ore_feature": {"description": {"identifier": "foo"}, "count": 1}}"#);
-    error_at(&d, "NamespaceRule", "");
+    error_at(&d, "feature/not_namespaced", "");
     assert!(has_text(
         &d,
         "The feature identifier 'foo' should be in the format namespace:id"
@@ -151,20 +151,20 @@ fn an_unknown_member_anywhere_rejects_the_file() {
     );
     error_at(
         &d,
-        "UnrecognizedField",
+        "core/child_not_valid",
         "minecraft:ore_feature/places_block",
     );
     let d = rejects(
         r#"{"format_version": "1.13.0", "minecraft:ore_feature": {"description": {"identifier": "demo:x", "extra": 1}, "count": 1}}"#,
         &cx(),
     );
-    error_at(&d, "UnrecognizedField", "description/extra");
+    error_at(&d, "core/child_not_valid", "description/extra");
 }
 
 #[test]
 fn a_wrong_type_rejects_the_file() {
     let d = rejects(&doc("1.13.0", "ore_feature", r#""count": "4""#), &cx());
-    error_at(&d, "InvalidType", "count");
+    error_at(&d, "core/invalid_type", "count");
 }
 
 #[test]
@@ -172,7 +172,7 @@ fn an_integral_real_is_an_integer_as_jsoncpp_reads_it() {
     // The vanilla geode writes `"crack_point_offset": 2.0`.
     loads(&doc("1.13.0", "ore_feature", r#""count": 4.0"#), &cx());
     let d = rejects(&doc("1.13.0", "ore_feature", r#""count": 4.5"#), &cx());
-    error_at(&d, "InvalidType", "count");
+    error_at(&d, "core/invalid_type", "count");
 }
 
 #[test]

@@ -86,7 +86,7 @@ fn r02_arrays() {
     );
     expect(
         &d,
-        "AtomicUnsupportedRenderController",
+        "core/atomic_unsupported_render_controller",
         Severity::Warning,
         UNSUPPORTED,
     );
@@ -105,7 +105,7 @@ fn r03_part_visibility() {
     );
     expect(
         &d,
-        "AtomicUnsupportedRenderController",
+        "core/atomic_unsupported_render_controller",
         Severity::Warning,
         UNSUPPORTED,
     );
@@ -124,7 +124,7 @@ fn r04_filter_lighting() {
     );
     expect(
         &d,
-        "AtomicFilterLightingIgnored",
+        "core/atomic_filter_lighting_ignored",
         Severity::Warning,
         FILTER_LIGHTING,
     );
@@ -136,7 +136,7 @@ fn r04_filter_lighting() {
             r#""filter_lighting": false"#,
         )]),
     );
-    none(&d, "AtomicFilterLightingIgnored");
+    none(&d, "core/atomic_filter_lighting_ignored");
 }
 
 // The rule is compiled with its target's feature.
@@ -150,7 +150,12 @@ fn r05_light_multiplier_expression() {
             r#""light_color_multiplier": "query.is_baby ? 2.0 : 1.0""#,
         )]),
     );
-    expect(&d, "NoEffect", Severity::Warning, LIGHT_EXPRESSION);
+    expect(
+        &d,
+        "core/no_effect_worded",
+        Severity::Warning,
+        LIGHT_EXPRESSION,
+    );
 }
 
 // The rule is compiled with its target's feature.
@@ -204,7 +209,7 @@ fn r07_two_controllers_one_bad() {
     );
     let unsupported: Vec<_> = d
         .iter()
-        .filter(|f| f.code.name() == "AtomicUnsupportedRenderController")
+        .filter(|f| f.code.id() == "core/atomic_unsupported_render_controller")
         .collect();
     assert_eq!(unsupported.len(), 1);
     // At the second name of the document's list.
@@ -257,7 +262,7 @@ fn linked_in(set: &StackSet) -> Diagnostics {
 /// The names the `UnresolvedReference` findings of `d` are about, in order.
 fn unresolved(d: &Diagnostics) -> Vec<String> {
     d.iter()
-        .filter(|f| f.code.name() == "UnresolvedReference")
+        .filter(|f| f.code.id() == "core/unresolved_reference")
         .filter_map(|f| match f.detail.as_deref() {
             Some(DiagnosticDetail::Reference { id, .. }) => Some(id.clone()),
             _ => None,
@@ -270,7 +275,7 @@ fn unresolved(d: &Diagnostics) -> Vec<String> {
 /// ours, at info.
 #[track_caller]
 fn one_lint(d: &Diagnostics, path: &str, id: &str) {
-    expect_at(d, "UnresolvedReference", Severity::Info, path);
+    expect_at(d, "core/unresolved_reference", Severity::Info, path);
     assert_eq!(unresolved(d), [id.to_owned()], "{}", lines(d).join("\n"));
     assert!(
         d.iter().all(|f| f.severity < Severity::Warning),
@@ -414,17 +419,17 @@ fn cross_references_of_the_five_maps() {
         if path.contains("sound_effects") {
             // One code per kind of miss: a sound event is `UnknownSound`, as
             // for a client entity (R8).
-            expect_at(&d, "UnknownSound", Severity::Info, &path);
+            expect_at(&d, "core/unknown_sound", Severity::Info, &path);
             let about: Vec<_> = d
                 .iter()
                 .filter_map(|f| match f.detail.as_deref() {
                     Some(DiagnosticDetail::Reference { kind, id, .. }) => {
-                        Some((f.code.name(), *kind, id.as_str()))
+                        Some((f.code.id(), *kind, id.as_str()))
                     }
                     _ => None,
                 })
                 .collect();
-            assert_eq!(about, [("UnknownSound", "sound event", id)]);
+            assert_eq!(about, [("core/unknown_sound", "sound event", id)]);
             assert!(d.iter().all(|f| f.severity < Severity::Warning));
             continue;
         }

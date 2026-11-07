@@ -1,14 +1,14 @@
 {
   "diagnostics": [
     {
-      "code": "UnmatchedCondition",
+      "code": "core/unmatched_condition",
       "severity": "info",
       "text": "condition matched no element",
       "pack": 1,
       "at": "root/modifications"
     },
     {
-      "code": "WhereArrayNeverMatches",
+      "code": "core/where_array_never_matches",
       "severity": "info",
       "text": "an array-valued `where` never matches",
       "pack": 1,

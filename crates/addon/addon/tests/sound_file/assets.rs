@@ -46,7 +46,7 @@ fn as01_one_pack_is_probed_fsb_then_ogg_then_wav() {
             ("sounds/x.wav", "sounds/x.fsb")
         ]
     );
-    let shadowed = found(sounds, "ShadowedDefinition");
+    let shadowed = found(sounds, "core/shadowed_definition");
     assert_eq!(shadowed.len(), 2);
     assert!(shadowed.iter().all(|d| d.severity == Severity::Info));
     assert_eq!(sounds.findings().count(), 2, "{:#?}", describe(sounds));
@@ -103,7 +103,7 @@ fn as07_a_file_of_another_extension_is_never_loaded() {
         .map(|(_, path)| path.as_str())
         .collect();
     assert_eq!(ignored, ["sounds/x.mp3", "sounds/y.OGG"]);
-    let infos = found(sounds, "IgnoredFile");
+    let infos = found(sounds, "core/ignored_file");
     assert_eq!(infos.len(), 2);
     assert!(infos.iter().all(|d| d.severity == Severity::Info));
     assert!(sounds.by_name.is_empty());
@@ -232,12 +232,12 @@ fn the_audio_of_a_base_game_pack_is_listed_and_not_judged() {
     assert_eq!(sounds.by_name.len(), 1);
     assert_eq!(sounds.ignored.len(), 1);
     assert_eq!(
-        found(sounds, "IgnoredFile").len(),
+        found(sounds, "core/ignored_file").len(),
         1,
         "{:#?}",
         describe(sounds)
     );
-    assert_eq!(found(sounds, "ShadowedDefinition").len(), 1);
+    assert_eq!(found(sounds, "core/shadowed_definition").len(), 1);
     assert_eq!(sounds.findings().count(), 2);
 }
 

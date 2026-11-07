@@ -101,7 +101,7 @@ fn found(d: &Diagnostics, file: &str) -> Vec<(&'static str, Severity, String)> {
             f.severity > Severity::Debug
                 && f.location.path.as_ref().is_some_and(|p| p.as_str() == file)
         })
-        .map(|f| (f.code.name(), f.severity, f.code.to_string()))
+        .map(|f| (f.code.id(), f.severity, f.code.to_string()))
         .collect()
 }
 
@@ -123,7 +123,7 @@ fn x01_a_client_entity_naming_an_undefined_material_is_reported() {
     assert_eq!(
         found(&d, ENTITY_FILE),
         [(
-            "UnresolvedReference",
+            "core/unresolved_reference_worded",
             Severity::Error,
             format!(
                 "Material \"no_such_material\" is referenced in file \"{ENTITY_FILE}\" but not defined."
@@ -181,7 +181,7 @@ fn x02_a_material_with_a_custom_shader_stem_cannot_be_drawn_for_an_entity_deviat
     assert_eq!(found.len(), 1, "{found:#?}");
     assert_eq!(
         (found[0].0, found[0].1),
-        ("InvalidReference", Severity::Error)
+        ("core/invalid_reference_worded", Severity::Error)
     );
     // Level 3 at draw time, the `Actor` variant drawn: a kept error.
     assert!(d.iter().any(|f| f.kept), "{d:#?}");
@@ -238,7 +238,10 @@ fn v16_a_glint_and_multiplicative_tint_material_needs_three_textures() {
     assert_eq!(found.len(), 1, "{found:#?}");
     // The controller's `textures` has a length the material does not accept: the code of a
     // value outside what its member takes, with the game's text.
-    assert_eq!((found[0].0, found[0].1), ("InvalidValue", Severity::Error));
+    assert_eq!(
+        (found[0].0, found[0].1),
+        ("core/invalid_value_worded", Severity::Error)
+    );
     // The material's texture validation, level 3 at draw time: a kept error.
     assert!(d.iter().any(|f| f.kept), "{d:#?}");
     assert_eq!(

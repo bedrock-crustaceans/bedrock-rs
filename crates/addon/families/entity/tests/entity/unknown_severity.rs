@@ -41,7 +41,7 @@ fn told(payload: &str) -> String {
                 out,
                 "  {:?} {} {}",
                 finding.severity,
-                finding.code.name(),
+                finding.code.id(),
                 finding.location.json_path
             );
         }
@@ -56,22 +56,22 @@ fn an_unknown_root_member_is_graded_by_the_version() {
     assert_eq!(
         found,
         r"1.21.88 loaded
-  Warning UnrecognizedField minecraft:entity/made_up
+  Warning core/unrecognized_field minecraft:entity/made_up
 1.21.89 refused
-  Error UnrecognizedField minecraft:entity/made_up
-  Error DocumentRejected 
+  Error core/unrecognized_field minecraft:entity/made_up
+  Error entity/failed_to_load 
 1.26.20 refused
-  Error UnrecognizedField minecraft:entity/made_up
-  Error DocumentRejected 
+  Error core/unrecognized_field minecraft:entity/made_up
+  Error entity/failed_to_load 
 1.26.50 refused
-  Error UnrecognizedField minecraft:entity/made_up
-  Error DocumentRejected 
+  Error core/unrecognized_field minecraft:entity/made_up
+  Error entity/failed_to_load 
 1.26.60 refused
-  Error UnrecognizedField minecraft:entity/made_up
-  Error DocumentRejected 
+  Error core/unrecognized_field minecraft:entity/made_up
+  Error entity/failed_to_load 
 beta refused
-  Error UnrecognizedField minecraft:entity/made_up
-  Error DocumentRejected 
+  Error core/unrecognized_field minecraft:entity/made_up
+  Error entity/failed_to_load 
 ",
         "\n{found}"
     );
@@ -84,22 +84,22 @@ fn an_unknown_description_member_is_graded_by_the_version() {
     assert_eq!(
         found,
         r"1.21.88 loaded
-  Warning UnrecognizedField minecraft:entity/description/demo_note
+  Warning core/unrecognized_field minecraft:entity/description/demo_note
 1.21.89 refused
-  Error UnrecognizedField minecraft:entity/description/demo_note
-  Error DocumentRejected 
+  Error core/unrecognized_field minecraft:entity/description/demo_note
+  Error entity/failed_to_load 
 1.26.20 refused
-  Error UnrecognizedField minecraft:entity/description/demo_note
-  Error DocumentRejected 
+  Error core/unrecognized_field minecraft:entity/description/demo_note
+  Error entity/failed_to_load 
 1.26.50 refused
-  Error UnrecognizedField minecraft:entity/description/demo_note
-  Error DocumentRejected 
+  Error core/unrecognized_field minecraft:entity/description/demo_note
+  Error entity/failed_to_load 
 1.26.60 refused
-  Error UnrecognizedField minecraft:entity/description/demo_note
-  Error DocumentRejected 
+  Error core/unrecognized_field minecraft:entity/description/demo_note
+  Error entity/failed_to_load 
 beta refused
-  Error UnrecognizedField minecraft:entity/description/demo_note
-  Error DocumentRejected 
+  Error core/unrecognized_field minecraft:entity/description/demo_note
+  Error entity/failed_to_load 
 ",
         "\n{found}"
     );
@@ -112,22 +112,22 @@ fn an_unknown_component_is_graded_by_the_version() {
     assert_eq!(
         found,
         r"1.21.88 loaded
-  Warning UnrecognizedComponent minecraft:entity/components/demo:made_up
+  Warning core/unrecognized_component minecraft:entity/components/demo:made_up
 1.21.89 refused
-  Error UnrecognizedComponent minecraft:entity/components/demo:made_up
-  Error DocumentRejected 
+  Error core/unrecognized_component minecraft:entity/components/demo:made_up
+  Error entity/failed_to_load 
 1.26.20 refused
-  Error UnrecognizedComponent minecraft:entity/components/demo:made_up
-  Error DocumentRejected 
+  Error core/unrecognized_component minecraft:entity/components/demo:made_up
+  Error entity/failed_to_load 
 1.26.50 refused
-  Error UnrecognizedComponent minecraft:entity/components/demo:made_up
-  Error DocumentRejected 
+  Error core/unrecognized_component minecraft:entity/components/demo:made_up
+  Error entity/failed_to_load 
 1.26.60 refused
-  Error UnrecognizedComponent minecraft:entity/components/demo:made_up
-  Error DocumentRejected 
+  Error core/unrecognized_component minecraft:entity/components/demo:made_up
+  Error entity/failed_to_load 
 beta refused
-  Error UnrecognizedComponent minecraft:entity/components/demo:made_up
-  Error DocumentRejected 
+  Error core/unrecognized_component minecraft:entity/components/demo:made_up
+  Error entity/failed_to_load 
 ",
         "\n{found}"
     );
@@ -141,27 +141,27 @@ fn an_unknown_member_of_a_typed_component_is_graded_by_the_version() {
     assert_eq!(
         found,
         r"1.21.88 loaded
-  Error UnrecognizedField minecraft:entity/components/minecraft:pushable_by_block/unexpected_field
-  Info ValueRewritten minecraft:entity/components/minecraft:pushable_by_block
-  Info DroppedField minecraft:entity/components/minecraft:pushable_by_block/unexpected_field
+  Error core/child_not_valid minecraft:entity/components/minecraft:pushable_by_block/unexpected_field
+  Info core/value_rewritten minecraft:entity/components/minecraft:pushable_by_block
+  Info core/dropped_field minecraft:entity/components/minecraft:pushable_by_block/unexpected_field
 1.21.89 loaded
-  Error UnrecognizedField minecraft:entity/components/minecraft:pushable_by_block/unexpected_field
-  Info ValueRewritten minecraft:entity/components/minecraft:pushable_by_block
-  Info DroppedField minecraft:entity/components/minecraft:pushable_by_block/unexpected_field
+  Error core/child_not_valid minecraft:entity/components/minecraft:pushable_by_block/unexpected_field
+  Info core/value_rewritten minecraft:entity/components/minecraft:pushable_by_block
+  Info core/dropped_field minecraft:entity/components/minecraft:pushable_by_block/unexpected_field
 1.26.20 loaded
-  Error UnrecognizedField minecraft:entity/components/minecraft:pushable_by_block/unexpected_field
-  Info ValueRewritten minecraft:entity/components/minecraft:pushable_by_block
-  Info DroppedField minecraft:entity/components/minecraft:pushable_by_block/unexpected_field
+  Error core/child_not_valid minecraft:entity/components/minecraft:pushable_by_block/unexpected_field
+  Info core/value_rewritten minecraft:entity/components/minecraft:pushable_by_block
+  Info core/dropped_field minecraft:entity/components/minecraft:pushable_by_block/unexpected_field
 1.26.50 loaded
-  Error UnrecognizedField minecraft:entity/components/minecraft:pushable_by_block/unexpected_field
-  Info ValueRewritten minecraft:entity/components/minecraft:pushable_by_block
-  Info DroppedField minecraft:entity/components/minecraft:pushable_by_block/unexpected_field
+  Error core/child_not_valid minecraft:entity/components/minecraft:pushable_by_block/unexpected_field
+  Info core/value_rewritten minecraft:entity/components/minecraft:pushable_by_block
+  Info core/dropped_field minecraft:entity/components/minecraft:pushable_by_block/unexpected_field
 1.26.60 refused
-  Error UnrecognizedField minecraft:entity/components/minecraft:pushable_by_block/unexpected_field
-  Error DocumentRejected 
+  Error core/unrecognized_field minecraft:entity/components/minecraft:pushable_by_block/unexpected_field
+  Error entity/failed_to_load 
 beta refused
-  Error UnrecognizedField minecraft:entity/components/minecraft:pushable_by_block/unexpected_field
-  Error DocumentRejected 
+  Error core/unrecognized_field minecraft:entity/components/minecraft:pushable_by_block/unexpected_field
+  Error entity/failed_to_load 
 ",
         "\n{found}"
     );
@@ -175,21 +175,21 @@ fn an_unknown_member_of_a_goal_is_graded_by_the_version() {
     assert_eq!(
         found,
         r"1.21.88 loaded
-  Info UnrecognizedField minecraft:entity/components/minecraft:behavior.float/plain
+  Info core/unrecognized_field minecraft:entity/components/minecraft:behavior.float/plain
 1.21.89 loaded
-  Info UnrecognizedField minecraft:entity/components/minecraft:behavior.float/plain
+  Info core/unrecognized_field minecraft:entity/components/minecraft:behavior.float/plain
 1.26.20 refused
-  Error UnrecognizedField minecraft:entity/components/minecraft:behavior.float/plain
-  Error DocumentRejected 
+  Error core/unrecognized_field minecraft:entity/components/minecraft:behavior.float/plain
+  Error entity/failed_to_load 
 1.26.50 refused
-  Error UnrecognizedField minecraft:entity/components/minecraft:behavior.float/plain
-  Error DocumentRejected 
+  Error core/unrecognized_field minecraft:entity/components/minecraft:behavior.float/plain
+  Error entity/failed_to_load 
 1.26.60 refused
-  Error UnrecognizedField minecraft:entity/components/minecraft:behavior.float/plain
-  Error DocumentRejected 
+  Error core/unrecognized_field minecraft:entity/components/minecraft:behavior.float/plain
+  Error entity/failed_to_load 
 beta refused
-  Error UnrecognizedField minecraft:entity/components/minecraft:behavior.float/plain
-  Error DocumentRejected 
+  Error core/unrecognized_field minecraft:entity/components/minecraft:behavior.float/plain
+  Error entity/failed_to_load 
 ",
         "\n{found}"
     );
@@ -203,36 +203,36 @@ fn an_unknown_member_of_a_component_group_is_graded_by_the_version() {
     assert_eq!(
         found,
         r"1.21.88 loaded
-  Warning UnrecognizedComponent minecraft:entity/component_groups/g/demo:made_up
-  Error UnrecognizedField minecraft:entity/component_groups/g/minecraft:pushable_by_block/unexpected_field
-  Info ValueRewritten minecraft:entity/component_groups/g/minecraft:pushable_by_block
-  Info DroppedField minecraft:entity/component_groups/g/minecraft:pushable_by_block/unexpected_field
+  Warning core/unrecognized_component minecraft:entity/component_groups/g/demo:made_up
+  Error core/child_not_valid minecraft:entity/component_groups/g/minecraft:pushable_by_block/unexpected_field
+  Info core/value_rewritten minecraft:entity/component_groups/g/minecraft:pushable_by_block
+  Info core/dropped_field minecraft:entity/component_groups/g/minecraft:pushable_by_block/unexpected_field
 1.21.89 refused
-  Error UnrecognizedComponent minecraft:entity/component_groups/g/demo:made_up
-  Error UnrecognizedField minecraft:entity/component_groups/g/minecraft:pushable_by_block/unexpected_field
-  Info ValueRewritten minecraft:entity/component_groups/g/minecraft:pushable_by_block
-  Info DroppedField minecraft:entity/component_groups/g/minecraft:pushable_by_block/unexpected_field
-  Error DocumentRejected 
+  Error core/unrecognized_component minecraft:entity/component_groups/g/demo:made_up
+  Error core/child_not_valid minecraft:entity/component_groups/g/minecraft:pushable_by_block/unexpected_field
+  Info core/value_rewritten minecraft:entity/component_groups/g/minecraft:pushable_by_block
+  Info core/dropped_field minecraft:entity/component_groups/g/minecraft:pushable_by_block/unexpected_field
+  Error entity/failed_to_load 
 1.26.20 refused
-  Error UnrecognizedComponent minecraft:entity/component_groups/g/demo:made_up
-  Error UnrecognizedField minecraft:entity/component_groups/g/minecraft:pushable_by_block/unexpected_field
-  Info ValueRewritten minecraft:entity/component_groups/g/minecraft:pushable_by_block
-  Info DroppedField minecraft:entity/component_groups/g/minecraft:pushable_by_block/unexpected_field
-  Error DocumentRejected 
+  Error core/unrecognized_component minecraft:entity/component_groups/g/demo:made_up
+  Error core/child_not_valid minecraft:entity/component_groups/g/minecraft:pushable_by_block/unexpected_field
+  Info core/value_rewritten minecraft:entity/component_groups/g/minecraft:pushable_by_block
+  Info core/dropped_field minecraft:entity/component_groups/g/minecraft:pushable_by_block/unexpected_field
+  Error entity/failed_to_load 
 1.26.50 refused
-  Error UnrecognizedComponent minecraft:entity/component_groups/g/demo:made_up
-  Error UnrecognizedField minecraft:entity/component_groups/g/minecraft:pushable_by_block/unexpected_field
-  Info ValueRewritten minecraft:entity/component_groups/g/minecraft:pushable_by_block
-  Info DroppedField minecraft:entity/component_groups/g/minecraft:pushable_by_block/unexpected_field
-  Error DocumentRejected 
+  Error core/unrecognized_component minecraft:entity/component_groups/g/demo:made_up
+  Error core/child_not_valid minecraft:entity/component_groups/g/minecraft:pushable_by_block/unexpected_field
+  Info core/value_rewritten minecraft:entity/component_groups/g/minecraft:pushable_by_block
+  Info core/dropped_field minecraft:entity/component_groups/g/minecraft:pushable_by_block/unexpected_field
+  Error entity/failed_to_load 
 1.26.60 refused
-  Error UnrecognizedComponent minecraft:entity/component_groups/g/demo:made_up
-  Error UnrecognizedField minecraft:entity/component_groups/g/minecraft:pushable_by_block/unexpected_field
-  Error DocumentRejected 
+  Error core/unrecognized_component minecraft:entity/component_groups/g/demo:made_up
+  Error core/unrecognized_field minecraft:entity/component_groups/g/minecraft:pushable_by_block/unexpected_field
+  Error entity/failed_to_load 
 beta refused
-  Error UnrecognizedComponent minecraft:entity/component_groups/g/demo:made_up
-  Error UnrecognizedField minecraft:entity/component_groups/g/minecraft:pushable_by_block/unexpected_field
-  Error DocumentRejected 
+  Error core/unrecognized_component minecraft:entity/component_groups/g/demo:made_up
+  Error core/unrecognized_field minecraft:entity/component_groups/g/minecraft:pushable_by_block/unexpected_field
+  Error entity/failed_to_load 
 ",
         "\n{found}"
     );
@@ -248,21 +248,21 @@ fn a_deprecated_component_is_graded_by_the_version() {
     assert_eq!(
         found,
         r"1.21.88 loaded
-  Warning UnrecognizedComponent minecraft:entity/components/minecraft:foot_size
+  Warning core/component_not_in_schema minecraft:entity/components/minecraft:foot_size
 1.21.89 refused
-  Error UnrecognizedComponent minecraft:entity/components/minecraft:foot_size
-  Error DocumentRejected 
+  Error core/component_not_in_schema minecraft:entity/components/minecraft:foot_size
+  Error entity/failed_to_load 
 1.26.20 refused
-  Error UnrecognizedComponent minecraft:entity/components/minecraft:foot_size
-  Error DocumentRejected 
+  Error core/component_not_in_schema minecraft:entity/components/minecraft:foot_size
+  Error entity/failed_to_load 
 1.26.50 refused
-  Error UnrecognizedComponent minecraft:entity/components/minecraft:foot_size
-  Error DocumentRejected 
+  Error core/component_not_in_schema minecraft:entity/components/minecraft:foot_size
+  Error entity/failed_to_load 
 1.26.60 refused
-  Error UnrecognizedComponent minecraft:entity/components/minecraft:foot_size
-  Error DocumentRejected 
+  Error core/component_not_in_schema minecraft:entity/components/minecraft:foot_size
+  Error entity/failed_to_load 
 beta refused
-  Error UnsupportedVersion 
+  Error core/no_parser_for_version 
 ",
         "\n{found}"
     );
@@ -282,26 +282,26 @@ fn an_unread_member_of_entity_version_is_graded_by_the_version() {
     assert_eq!(
         found,
         r"1.21.88 loaded
-  Warning UnrecognizedField minecraft:entity/description/entity_version
-  Warning UnrecognizedField minecraft:entity/upgrades
+  Warning core/unrecognized_field minecraft:entity/description/entity_version
+  Warning core/unrecognized_field minecraft:entity/upgrades
 1.21.89 refused
-  Error UnrecognizedField minecraft:entity/description/entity_version
-  Error UnrecognizedField minecraft:entity/upgrades
-  Error DocumentRejected 
+  Error core/unrecognized_field minecraft:entity/description/entity_version
+  Error core/unrecognized_field minecraft:entity/upgrades
+  Error entity/failed_to_load 
 1.26.20 loaded
-  Info MissingToggles minecraft:entity/description/entity_version
-  Info UnrecognizedField minecraft:entity/description/entity_version/yy
-  Info UnrecognizedField minecraft:entity/description/entity_version/upgrades/0/zz
+  Info core/turn_on_toggle_before minecraft:entity/description/entity_version
+  Info core/unrecognized_field minecraft:entity/description/entity_version/yy
+  Info core/unrecognized_field minecraft:entity/description/entity_version/upgrades/0/zz
 1.26.50 loaded
-  Info UnrecognizedField minecraft:entity/description/entity_version/yy
-  Info UnrecognizedField minecraft:entity/description/entity_version/upgrades/0/zz
+  Info core/unrecognized_field minecraft:entity/description/entity_version/yy
+  Info core/unrecognized_field minecraft:entity/description/entity_version/upgrades/0/zz
 1.26.60 loaded
-  Info UnrecognizedField minecraft:entity/description/entity_version/yy
-  Info UnrecognizedField minecraft:entity/description/entity_version/upgrades/0/zz
+  Info core/unrecognized_field minecraft:entity/description/entity_version/yy
+  Info core/unrecognized_field minecraft:entity/description/entity_version/upgrades/0/zz
 beta refused
-  Info UnrecognizedField minecraft:entity/description/entity_version/yy
-  Info UnrecognizedField minecraft:entity/description/entity_version/upgrades/0/zz
-  Error UnsupportedVersion 
+  Info core/unrecognized_field minecraft:entity/description/entity_version/yy
+  Info core/unrecognized_field minecraft:entity/description/entity_version/upgrades/0/zz
+  Error core/no_parser_for_version 
 ",
         "\n{found}"
     );

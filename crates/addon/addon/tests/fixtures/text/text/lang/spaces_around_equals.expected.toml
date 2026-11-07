@@ -4,5 +4,5 @@
 "key " = " v"
 
 [[diagnostics]]
-code = "LangKeyTrailingSpace"
+code = "core/lang_key_trailing_space"
 severity = "info"

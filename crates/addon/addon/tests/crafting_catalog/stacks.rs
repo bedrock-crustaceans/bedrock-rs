@@ -197,7 +197,7 @@ pub fn found(merged: &Merged<CraftingCatalog>) -> Vec<(String, Severity, String,
         .filter(|f| f.severity > Severity::Info)
         .map(|f| {
             (
-                f.code.name().to_owned(),
+                f.code.id().to_owned(),
                 f.severity,
                 pack_of(f),
                 f.code.to_string(),

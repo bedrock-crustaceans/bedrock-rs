@@ -255,9 +255,9 @@ fn a_single_file_reports_what_a_stack_reports_for_its_lowest_copy() {
         &LoadContext::detached(),
     )
     .unwrap();
-    let codes: Vec<&str> = parsed.diagnostics().iter().map(|d| d.code.name()).collect();
+    let codes: Vec<&str> = parsed.diagnostics().iter().map(|d| d.code.id()).collect();
     // The zeroed distance, and the entry `pitch` the 1.14.0 step removes.
-    assert_eq!(codes, ["DroppedField", "DroppedField"]);
+    assert_eq!(codes, ["core/dropped_field", "core/dropped_field"]);
     assert_eq!(
         parsed
             .diagnostics()
@@ -277,8 +277,8 @@ fn a_single_file_reports_what_a_stack_reports_for_its_lowest_copy() {
     .unwrap_err();
     assert!(rejected.diagnostics.has_errors());
     assert_eq!(
-        rejected.diagnostics.iter().next().unwrap().code.name(),
-        "MalformedInput"
+        rejected.diagnostics.iter().next().unwrap().code.id(),
+        "core/syntax"
     );
 }
 

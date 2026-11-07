@@ -1,7 +1,7 @@
 {
   "diagnostics": [
     {
-      "code": "InvalidEnumValue",
+      "code": "json_ui/anchor_unrecognized",
       "severity": "info",
       "text": "Unrecognized anchor or alignment value: 'middle'",
       "at": "k/anchor_from"

@@ -1,7 +1,7 @@
 //! `scatter_feature`: the 1.21.10 move into `distribution`, the strict schema of both eras and
 //! the runtime scatter checks (fixtures f01–f03).
 
-use bedrock_addon::diagnostic::Severity;
+use bedrock_addon::diagnostic::{Kind, Severity};
 use bedrock_addon::document::Content;
 use bedrock_addon::families::feature::{Feature, ScatterFeature};
 use bedrock_addon::families::feature_rules::{
@@ -12,7 +12,7 @@ use bedrock_addon::load::LoadContext;
 use bedrock_addon::molang::Molang;
 use bedrock_addon::storage::PackPath;
 
-use super::common::{above_info, cx, doc, error_at, fixture, kept_at, loads, rejects, with};
+use super::common::{above_info, cx, doc, error_at, fixture, kept_at, loads, rejects};
 
 /// The scatter feature of a loaded document.
 #[track_caller]
@@ -145,7 +145,7 @@ fn f02_a_1_21_10_document_with_root_iterations_is_rejected() {
     let d = rejects(&json, &cx());
     error_at(
         &d,
-        "UnrecognizedField",
+        "core/child_not_valid",
         "minecraft:scatter_feature/iterations",
     );
 }
@@ -160,7 +160,7 @@ fn f02_a_1_21_10_document_without_distribution_is_rejected() {
     let d = rejects(&json, &cx());
     error_at(
         &d,
-        "MissingRequiredField",
+        "core/required_child",
         "minecraft:scatter_feature/distribution",
     );
 }
@@ -175,7 +175,7 @@ fn f02b_a_1_13_0_document_with_distribution_is_rejected() {
     let d = rejects(&json, &cx());
     error_at(
         &d,
-        "UnrecognizedField",
+        "core/child_not_valid",
         "minecraft:scatter_feature/distribution",
     );
     assert!(super::common::has_text(
@@ -192,7 +192,7 @@ fn f02c_a_distribution_without_y_is_rejected() {
         r#""places_feature": "demo:y", "distribution": {"iterations": 1, "x": 0, "z": 0}"#,
     );
     let d = rejects(&json, &cx());
-    error_at(&d, "MissingRequiredField", "distribution/y");
+    error_at(&d, "core/required_child", "distribution/y");
     assert!(super::common::has_text(&d, "Required child y not found"));
 }
 
@@ -204,7 +204,7 @@ fn f02c_an_unknown_member_of_distribution_is_rejected() {
         r#""places_feature": "demo:y", "distribution": {"iterations": 1, "x": 0, "y": 0, "z": 0, "foo": 1}"#,
     );
     let d = rejects(&json, &cx());
-    error_at(&d, "UnrecognizedField", "distribution/foo");
+    error_at(&d, "core/child_not_valid", "distribution/foo");
 }
 
 #[test]
@@ -221,13 +221,30 @@ fn f02d_runtime_values_are_replaced_and_warned_and_the_feature_loads() {
         }"#,
     );
     let document = loads(&json, &cx());
-    let warnings = with(document.diagnostics(), "ScatterParamValue", Severity::Error);
+    let warnings: Vec<_> = document
+        .diagnostics()
+        .iter()
+        .filter(|f| {
+            f.severity == Severity::Error
+                && matches!(
+                    f.code.id(),
+                    "feature/iterations_negative"
+                        | "feature/scatter_chance_percent"
+                        | "feature/step_size_not_grid"
+                        | "feature/extent_order"
+                )
+        })
+        .collect();
     assert_eq!(warnings.len(), 4, "{:#?}", document.diagnostics());
     let d = document.diagnostics();
-    kept_at(d, "ScatterParamValue", "distribution/iterations");
-    kept_at(d, "ScatterParamValue", "distribution/scatter_chance");
-    kept_at(d, "ScatterParamValue", "distribution/x/step_size");
-    kept_at(d, "ScatterParamValue", "distribution/y/extent");
+    kept_at(d, "feature/iterations_negative", "distribution/iterations");
+    kept_at(
+        d,
+        "feature/scatter_chance_percent",
+        "distribution/scatter_chance",
+    );
+    kept_at(d, "feature/step_size_not_grid", "distribution/x/step_size");
+    kept_at(d, "feature/extent_order", "distribution/y/extent");
     for text in [
         "Bad value for iterations - should be >= 0",
         "Bad value for scatter_chance - should be between 0 and 100 (exclusive)",
@@ -256,7 +273,7 @@ fn f02d_runtime_values_are_replaced_and_warned_and_the_feature_loads() {
     let document = loads(&json, &cx());
     kept_at(
         document.diagnostics(),
-        "ScatterParamValue",
+        "feature/scatter_chance_fraction",
         "distribution/scatter_chance",
     );
     assert!(super::common::has_text(
@@ -283,23 +300,23 @@ fn a_rule_of_a_1_13_0_scatter_feature_names_the_member_at_the_root() {
     let document = loads(&json, &cx());
     let mut found: Vec<(&str, String)> = above_info(document.diagnostics())
         .iter()
-        .map(|f| (f.code.name(), f.location.json_path.to_string()))
+        .map(|f| (f.code.id(), f.location.json_path.to_string()))
         .collect();
     found.sort();
     assert_eq!(
         found,
         [
             (
-                "ScatterParamValue",
+                "feature/extent_order",
+                "minecraft:scatter_feature/x/extent".to_owned()
+            ),
+            (
+                "feature/iterations_negative",
                 "minecraft:scatter_feature/iterations".to_owned()
             ),
             (
-                "ScatterParamValue",
+                "feature/scatter_chance_percent",
                 "minecraft:scatter_feature/scatter_chance".to_owned()
-            ),
-            (
-                "ScatterParamValue",
-                "minecraft:scatter_feature/x/extent".to_owned()
             ),
         ]
     );
@@ -324,7 +341,7 @@ fn f02e_a_1_13_0_document_without_x_loads_and_is_warned() {
     // The rule names the member where a 1.13.0 file has it, at the root.
     kept_at(
         document.diagnostics(),
-        "ScatterParamValue",
+        "feature/must_be_provided",
         "minecraft:scatter_feature/x",
     );
     assert!(super::common::has_text(
@@ -355,7 +372,7 @@ fn a_cereal_minimum_in_a_coordinate_rejects_the_feature() {
         r#""places_feature": "demo:y", "distribution": {"iterations": 1, "x": {"distribution": "fixed_grid", "extent": [0, 4], "step_size": 0}, "y": 0, "z": 0}"#,
     );
     let d = rejects(&json, &cx());
-    assert!(d.iter().any(|f| f.code.name() == "InvalidValue"
+    assert!(d.iter().any(|f| f.code.id() == "core/outside_range"
         && f.location.json_path.to_string().ends_with("x/step_size")));
 }
 
@@ -395,7 +412,7 @@ fn check_clamped_coordinate(
     let found: Vec<_> = document
         .diagnostics()
         .iter()
-        .filter(|f| f.code.name() == "InvalidValue")
+        .filter(|f| f.code.id() == "core/invalid_value")
         .collect();
     assert_eq!(
         found.len(),
@@ -481,7 +498,7 @@ fn a_scatter_number_beyond_f32_is_the_largest_finite_float_with_a_warning_deviat
         );
         let mut found: Vec<(&str, String)> = above_info(document.diagnostics())
             .iter()
-            .map(|f| (f.code.name(), f.location.json_path.to_string()))
+            .map(|f| (f.code.id(), f.location.json_path.to_string()))
             .collect();
         found.sort();
         assert_eq!(
@@ -490,7 +507,10 @@ fn a_scatter_number_beyond_f32_is_the_largest_finite_float_with_a_warning_deviat
                 // The clamp's information is not above info.
                 // The range rule runs on the upgraded document and names the member
                 // where the file has it.
-                ("ScatterParamValue", format!("{base}/scatter_chance")),
+                (
+                    "feature/scatter_chance_percent",
+                    format!("{base}/scatter_chance")
+                ),
             ],
             "{version}"
         );
@@ -498,7 +518,7 @@ fn a_scatter_number_beyond_f32_is_the_largest_finite_float_with_a_warning_deviat
         let text = scatter_doc(version, r#""x": 0, "y": 0, "z": 0"#)
             .replace(r#""iterations": 1"#, r#""iterations": 1e39"#);
         let refused = rejects(&text, &cx());
-        error_at(&refused, "InvalidType", "/iterations");
+        error_at(&refused, "core/invalid_type", "/iterations");
         // A number a float holds raises nothing.
         let fits = loads(
             &scatter_doc(
@@ -510,7 +530,7 @@ fn a_scatter_number_beyond_f32_is_the_largest_finite_float_with_a_warning_deviat
         assert!(
             fits.diagnostics()
                 .iter()
-                .all(|f| f.code.name() != "InvalidValue"),
+                .all(|f| f.kind() != Kind::InvalidValue),
             "{version}: {:#?}",
             fits.diagnostics()
         );

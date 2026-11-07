@@ -1,16 +1,16 @@
 # server_install: the findings of link() over the packs copied through PackWriter, every file resident: the rules that read image and font bytes run
-     63  E UnresolvedReference [atlas key] @ items
-     23  I TextureNotFound [-] @ textures
-     14  I UnknownSound [sound event] @ sounds.json
-     49  I UnresolvedReference [animation] @ definitions         # R3/R4/R5 (lint): the 55 attachables of the server's app data (`definitions/attachables`) name the client's geometries, animations and render controllers; the server has none of them
-      1  I UnresolvedReference [animation] @ entity              # R4 (lint): animations and controllers a client entity names that no file defines (`animation.camel.look_at_target`, `controller.animation.player.base`, …); vanilla keeps the name and plays nothing
-    609  I UnresolvedReference [atlas key] @ blocks.json
-     23  I UnresolvedReference [atlas key] @ textures
-      1  I UnresolvedReference [block] @ aim_assist              # C5: `minecraft:oak_button`, which is no block, in a key of a category's `priorities.blocks`, which the game keeps without a word: an information
-     63  I UnresolvedReference [geometry] @ definitions          # R3/R4/R5 (lint): the 55 attachables of the server's app data (`definitions/attachables`) name the client's geometries, animations and render controllers; the server has none of them
-      1  I UnresolvedReference [geometry] @ entity               # R3 (lint): `geometry.boat` and `geometry.chest_boat`, which no file defines: the game builds the two models in code
-     12  I UnresolvedReference [item] @ entities                 # E15 (lint): the twelve `minecraft:sulfur_cube_archetype_…` names of the sulfur cube's `shareables` are item tags the game gives its own items; without a host nothing lists them
-      3  I UnresolvedReference [loot table] @ entities           # E12 (lint): `loot_tables/entities/fox.json` and `…/piglin.json`, which no pack has; vanilla resolves a table when it is rolled and says nothing
-     55  I UnresolvedReference [render controller] @ definitions # R3/R4/R5 (lint): the 55 attachables of the server's app data (`definitions/attachables`) name the client's geometries, animations and render controllers; the server has none of them
-      1  I UnresolvedReference [render controller] @ entity
-      2  I UnresolvedReference [sound file] @ sounds
+     63  E core/unresolved_reference_worded [atlas key] @ items
+     14  I core/unknown_sound [sound event] @ sounds.json
+     49  I core/unresolved_reference [animation] @ definitions         # R3/R4/R5 (lint): the 55 attachables of the server's app data (`definitions/attachables`) name the client's geometries, animations and render controllers; the server has none of them
+      1  I core/unresolved_reference [animation] @ entity              # R4 (lint): animations and controllers a client entity names that no file defines (`animation.camel.look_at_target`, `controller.animation.player.base`, …); vanilla keeps the name and plays nothing
+     23  I core/unresolved_reference [atlas key] @ textures
+      1  I core/unresolved_reference [block] @ aim_assist              # C5: `minecraft:oak_button`, which is no block, in a key of a category's `priorities.blocks`, which the game keeps without a word: an information
+     63  I core/unresolved_reference [geometry] @ definitions          # R3/R4/R5 (lint): the 55 attachables of the server's app data (`definitions/attachables`) name the client's geometries, animations and render controllers; the server has none of them
+      1  I core/unresolved_reference [geometry] @ entity               # R3 (lint): `geometry.boat` and `geometry.chest_boat`, which no file defines: the game builds the two models in code
+     12  I core/unresolved_reference [item] @ entities                 # E15 (lint): the twelve `minecraft:sulfur_cube_archetype_…` names of the sulfur cube's `shareables` are item tags the game gives its own items; without a host nothing lists them
+      3  I core/unresolved_reference [loot table] @ entities           # E12 (lint): `loot_tables/entities/fox.json` and `…/piglin.json`, which no pack has; vanilla resolves a table when it is rolled and says nothing
+     55  I core/unresolved_reference [render controller] @ definitions # R3/R4/R5 (lint): the 55 attachables of the server's app data (`definitions/attachables`) name the client's geometries, animations and render controllers; the server has none of them
+      1  I core/unresolved_reference [render controller] @ entity
+      2  I core/unresolved_reference [sound file] @ sounds
+    609  I core/unresolved_reference_worded [atlas key] @ blocks.json
+     23  I flipbooks/no_metadata [-] @ textures

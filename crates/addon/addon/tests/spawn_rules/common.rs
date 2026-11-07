@@ -142,7 +142,7 @@ pub fn has_text(
 pub fn names(diagnostics: &Diagnostics, severity: Severity) -> Vec<&'static str> {
     diagnostics
         .at_least(severity)
-        .map(|d| d.code.name())
+        .map(|d| d.code.id())
         .collect()
 }
 
@@ -157,9 +157,10 @@ pub fn paths(diagnostics: &[&Diagnostic]) -> Vec<String> {
 /// Whether the rejection ends with vanilla's closing line `text`.
 pub fn closes_with(diagnostics: &Diagnostics, text: &str) -> bool {
     diagnostics.iter().last().is_some_and(|d| {
-        // By legacy name: the variant and the definitions that were it.
-        d.code.name() == "DocumentRejected"
-            && d.severity == Severity::Error
+        matches!(
+            d.code.id(),
+            "spawn_rules/failed_rules" | "spawn_groups/failed_groups"
+        ) && d.severity == Severity::Error
             && d.code.to_string() == text
     })
 }

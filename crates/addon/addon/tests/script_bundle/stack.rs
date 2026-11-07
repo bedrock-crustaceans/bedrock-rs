@@ -115,7 +115,7 @@ fn l20_a_pack_of_the_game_without_a_script_module_is_not_told_that_its_scripts_n
         );
         let codes: Vec<(&str, Severity)> = bundle
             .findings()
-            .map(|finding| (finding.code.name(), finding.severity))
+            .map(|finding| (finding.code.id(), finding.severity))
             .collect();
         (bundle.files.len(), codes)
     };
@@ -135,7 +135,7 @@ fn l20_a_pack_of_the_game_without_a_script_module_is_not_told_that_its_scripts_n
     ] {
         assert_eq!(
             told_of(origin),
-            (2, vec![("ScriptFileNotLoadable", Severity::Info)]),
+            (2, vec![("core/script_file_not_loadable", Severity::Info)]),
             "{origin:?}"
         );
     }
@@ -184,8 +184,8 @@ fn a_resource_pack_s_bundle_is_run_by_its_client_script_module() {
     assert_eq!(bundles[0].findings().count(), 0);
     assert_eq!(bundles[1].entry, None);
     assert_eq!(bundles[1].side, PackSide::Resource);
-    let codes: Vec<&str> = bundles[1].findings().map(|f| f.code.name()).collect();
-    assert_eq!(codes, ["ScriptFileNotLoadable"]);
+    let codes: Vec<&str> = bundles[1].findings().map(|f| f.code.id()).collect();
+    assert_eq!(codes, ["core/script_file_not_loadable"]);
 }
 
 #[test]
@@ -218,10 +218,10 @@ fn a_client_script_module_is_checked_as_one_that_runs_whatever_the_stack_enables
         assert!(bundle.graph.is_some());
         bundle
             .findings()
-            .map(|f| (f.code.name(), f.severity))
+            .map(|f| (f.code.id(), f.severity))
             .collect()
     };
-    let wanted = [("ScriptImportNotFound", Severity::Error)];
+    let wanted = [("core/script_import_not_found", Severity::Error)];
     assert_eq!(findings(false), wanted);
     assert_eq!(findings(true), wanted);
 }
@@ -259,7 +259,7 @@ fn l15_a_js_file_outside_scripts_is_a_note_in_a_pack_whose_module_has_another_la
         .findings()
         .map(|f| {
             (
-                f.code.name(),
+                f.code.id(),
                 f.severity,
                 f.location
                     .path
@@ -271,9 +271,21 @@ fn l15_a_js_file_outside_scripts_is_a_note_in_a_pack_whose_module_has_another_la
     assert_eq!(
         found,
         [
-            ("InvalidEnumValue", Severity::Error, Some("manifest.json")),
-            ("ScriptFileNotLoadable", Severity::Info, Some("b.js")),
-            ("ScriptFileNotLoadable", Severity::Info, Some("src/a.js")),
+            (
+                "script/plugin_unsupported_runtime",
+                Severity::Error,
+                Some("manifest.json")
+            ),
+            (
+                "core/script_file_not_loadable",
+                Severity::Info,
+                Some("b.js")
+            ),
+            (
+                "core/script_file_not_loadable",
+                Severity::Info,
+                Some("src/a.js")
+            ),
         ]
     );
     assert_eq!(bundle.entry, None);
@@ -296,14 +308,17 @@ fn a_base_game_pack_imports_the_bindings_a_world_s_pack_may_not() {
             .expect("a behaviour pack");
         let codes: Vec<&'static str> = stack.scripts()[0]
             .findings()
-            .map(|finding| finding.code.name())
+            .map(|finding| finding.code.id())
             .collect();
         codes
     };
     assert_eq!(pack(PackOrigin::Package), Vec::<&str>::new());
     assert_eq!(
         pack(PackOrigin::User),
-        ["ScriptModuleUnrecognized", "ScriptModuleRestricted"]
+        [
+            "core/script_module_unrecognized",
+            "core/script_module_restricted"
+        ]
     );
 }
 
@@ -402,7 +417,7 @@ fn a_subpack_s_script_stands_in_for_the_pack_s_file_of_its_name() {
         .findings()
         .map(|f| {
             (
-                f.code.name(),
+                f.code.id(),
                 f.location
                     .path
                     .as_ref()
@@ -413,7 +428,7 @@ fn a_subpack_s_script_stands_in_for_the_pack_s_file_of_its_name() {
     assert_eq!(
         found,
         [(
-            "ScriptFileNotLoadable",
+            "core/script_file_not_loadable",
             Some("subpacks/other/scripts/never.js")
         )]
     );
@@ -461,10 +476,10 @@ fn a_subpack_s_manifest_stands_in_for_the_pack_s_and_stage_1_reads_its_bytes() {
     assert_eq!(bundles.len(), 1);
     let found: Vec<(&str, Option<&str>, String)> = bundles[0]
         .findings()
-        .filter(|f| f.code.name() == "IgnoredMember")
+        .filter(|f| f.code.id() == "core/ignored_member")
         .map(|f| {
             (
-                f.code.name(),
+                f.code.id(),
                 f.location
                     .path
                     .as_ref()
@@ -476,7 +491,7 @@ fn a_subpack_s_manifest_stands_in_for_the_pack_s_and_stage_1_reads_its_bytes() {
     assert_eq!(
         found,
         [(
-            "IgnoredMember",
+            "core/ignored_member",
             Some("subpacks/sp/manifest.json"),
             "dependencies/0/optional".to_owned()
         )]
@@ -546,7 +561,7 @@ fn told(bundle: &bedrock_addon::families::script::ScriptBundle) -> Vec<Told> {
         .map(|f| {
             assert_eq!(f.location.pack.as_ref(), Some(&bundle.pack), "{f:?}");
             (
-                f.code.name(),
+                f.code.id(),
                 f.severity,
                 f.location
                     .path
@@ -577,7 +592,7 @@ fn m8_a_legacy_optional_is_told_through_scripts() {
     assert_eq!(
         told(bundle),
         [finding(
-            "IgnoredMember",
+            "core/ignored_member",
             Severity::Info,
             "dependencies/0/optional"
         )]
@@ -614,7 +629,7 @@ fn m14_the_relaxed_form_in_a_pack_for_an_older_engine_is_told_through_scripts() 
     assert_eq!(
         load("1.26.29"),
         [finding(
-            "FieldSinceEngine",
+            "core/field_since_engine",
             Severity::Info,
             "dependencies/0/version"
         )]
@@ -640,7 +655,7 @@ fn s1_a_later_script_module_is_told_once_at_the_module() {
     assert_eq!(
         told(bundle),
         [finding(
-            "MultipleScriptModules",
+            "core/multiple_script_modules",
             Severity::Warning,
             "modules/1"
         )]
@@ -662,7 +677,7 @@ fn s3_another_language_is_told_once_at_the_member() {
     assert_eq!(
         told(bundle),
         [finding(
-            "InvalidEnumValue",
+            "script/plugin_unsupported_runtime",
             Severity::Error,
             "modules/0/language"
         )]
@@ -687,14 +702,18 @@ fn s4_an_entry_that_is_absent_or_no_js_file_is_told_once() {
     assert_eq!(
         load(""),
         [finding(
-            "MissingRequiredField",
+            "script/plugin_entry_not_supported_missing_required_field",
             Severity::Error,
             "modules/0"
         )]
     );
     assert_eq!(
         load(r#", "entry": "scripts/main.ts""#),
-        [finding("InvalidValue", Severity::Error, "modules/0/entry")]
+        [finding(
+            "script/plugin_entry_not_supported_invalid_value",
+            Severity::Error,
+            "modules/0/entry"
+        )]
     );
 }
 
@@ -714,7 +733,7 @@ fn s5_a_missing_main_file_is_told_once_with_the_file_that_differs_in_case() {
         assert_eq!(
             told(bundle),
             [finding(
-                "UnresolvedReference",
+                "script/plugin_missing_main_file",
                 Severity::Error,
                 "modules/0/entry"
             )]
@@ -767,7 +786,7 @@ fn s2_one_discovery_serves_the_stack_and_skips_a_module_a_higher_pack_brought() 
         assert_eq!(
             told(lower),
             [finding(
-                "DuplicateIdentifier",
+                "script/plugin_module_exists",
                 Severity::Warning,
                 "modules/0"
             )]
@@ -800,7 +819,7 @@ fn the_versions_a_pack_asks_for_are_resolved_through_scripts() {
         ),
         (
             vec![finding(
-                "ScriptModuleVersionUnavailable",
+                "core/script_module_version_unavailable",
                 Severity::Error,
                 "dependencies/0"
             )],
@@ -817,7 +836,7 @@ fn the_versions_a_pack_asks_for_are_resolved_through_scripts() {
         conflict,
         (
             vec![finding(
-                "ScriptModuleVersionConflict",
+                "core/script_module_version_conflict",
                 Severity::Error,
                 "dependencies/1"
             )],
@@ -829,7 +848,11 @@ fn the_versions_a_pack_asks_for_are_resolved_through_scripts() {
     assert_eq!(
         load(beta, false),
         (
-            vec![finding("MissingToggles", Severity::Error, "dependencies/0")],
+            vec![finding(
+                "script/plugin_beta_apis",
+                Severity::Error,
+                "dependencies/0"
+            )],
             false
         )
     );
@@ -842,7 +865,7 @@ fn the_versions_a_pack_asks_for_are_resolved_through_scripts() {
         ),
         (
             vec![finding(
-                "UnresolvedReference",
+                "script/plugin_unknown_module",
                 Severity::Error,
                 "dependencies/0"
             )],
@@ -884,9 +907,13 @@ fn a_dependency_discovery_dropped_is_no_module_of_the_script() {
     assert_eq!(
         found,
         [
-            ("DroppedField", Severity::Info, "manifest.json".to_owned()),
             (
-                "ScriptModuleUnrecognized",
+                "core/dropped_field",
+                Severity::Info,
+                "manifest.json".to_owned()
+            ),
+            (
+                "core/script_module_unrecognized",
                 Severity::Info,
                 "scripts/main.js".to_owned()
             ),
@@ -1012,7 +1039,7 @@ fn a_load_asks_for_the_scripts_of_a_pack_whose_module_runs_and_of_no_other() {
             .findings()
             .map(|f| {
                 (
-                    f.code.name(),
+                    f.code.id(),
                     f.location
                         .path
                         .as_ref()
@@ -1025,11 +1052,11 @@ fn a_load_asks_for_the_scripts_of_a_pack_whose_module_runs_and_of_no_other() {
     assert_eq!(
         codes(1),
         [
-            ("InvalidEnumValue", Some("manifest.json")),
-            ("ScriptFileNotLoadable", Some("tool.js")),
+            ("script/plugin_unsupported_runtime", Some("manifest.json")),
+            ("core/script_file_not_loadable", Some("tool.js")),
         ]
     );
-    assert_eq!(codes(2), [("ScriptFileNotLoadable", None)]);
+    assert_eq!(codes(2), [("core/script_file_not_loadable", None)]);
 }
 
 /// The script modules of a stack that a server configuration is held against: the way from
@@ -1189,8 +1216,16 @@ fn stage_1_places_a_legacy_finding_in_the_file_past_a_dropped_element() {
         told,
         (
             vec![
-                finding("IgnoredMember", Severity::Info, "dependencies/1/optional"),
-                finding("UnresolvedReference", Severity::Error, "dependencies/2"),
+                finding(
+                    "core/ignored_member",
+                    Severity::Info,
+                    "dependencies/1/optional"
+                ),
+                finding(
+                    "script/plugin_unknown_module",
+                    Severity::Error,
+                    "dependencies/2"
+                ),
             ],
             false
         )
@@ -1226,7 +1261,7 @@ fn stage_1_places_a_relaxed_version_in_the_file_past_a_pack_dependency() {
         told,
         (
             vec![finding(
-                "FieldSinceEngine",
+                "core/field_since_engine",
                 Severity::Info,
                 "dependencies/1/version"
             )],

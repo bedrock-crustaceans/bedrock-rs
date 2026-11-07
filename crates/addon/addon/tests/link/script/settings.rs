@@ -39,7 +39,7 @@ fn told(found: &bedrock_addon::diagnostic::Diagnostics) -> Vec<(String, String, 
     found
         .iter()
         .map(|f| {
-            assert_eq!(f.code.name(), "UnresolvedReference", "{f}");
+            assert_eq!(f.code.id(), "core/unresolved_reference", "{f}");
             assert_eq!((f.severity, f.phase), (Severity::Info, Phase::Link), "{f}");
             assert!(
                 f.location
@@ -130,12 +130,12 @@ fn s11_a_malformed_pack_id_is_the_load_s_information_and_is_not_told_again() {
     let load: Vec<(&str, Severity, String)> = file
         .diagnostics()
         .iter()
-        .map(|f| (f.code.name(), f.severity, f.location.json_path.to_string()))
+        .map(|f| (f.code.id(), f.severity, f.location.json_path.to_string()))
         .collect();
     assert_eq!(
         load,
         [(
-            "InvalidValue",
+            "core/invalid_value",
             Severity::Info,
             "minecraft:pack_settings/settings/0/pack_id".to_owned()
         )]
@@ -207,18 +207,18 @@ fn s12_a_saved_value_for_no_setting_or_no_option_is_a_warning_of_the_load() {
     .expect("the pack has settings");
     let told: Vec<(&str, Severity, String)> = found
         .iter()
-        .map(|f| (f.code.name(), f.severity, f.location.json_path.to_string()))
+        .map(|f| (f.code.id(), f.severity, f.location.json_path.to_string()))
         .collect();
     assert_eq!(
         told,
         [
             (
-                "SettingUnknownOption",
+                "core/setting_unknown_option",
                 Severity::Info,
                 "values/demo:mode".to_owned()
             ),
             (
-                "SettingUnknownName",
+                "core/setting_unknown_name",
                 Severity::Info,
                 "values/demo:gone".to_owned()
             ),
@@ -295,7 +295,7 @@ fn s13_the_setting_a_pack_setting_query_names_stays_run() {
     let lints: Vec<Severity> = in_file
         .iter()
         // By legacy name: the variant and the definitions that were it.
-        .filter(|f| matches!(f.code.name(), "MolangLint"))
+        .filter(|f| matches!(f.code.id(), "core/molang_lint"))
         .map(|f| f.severity)
         .collect();
     assert_eq!(lints, [Severity::Info], "{in_file:?}");
@@ -306,7 +306,7 @@ fn s13_the_setting_a_pack_setting_query_names_stays_run() {
             Some(DiagnosticDetail::Reference { .. })
         ) || format!("{f}").contains("nothing_defines_me")
             // By legacy name: the variant and the definitions that were it.
-            && !matches!(f.code.name(), "MolangLint")
+            && !matches!(f.code.id(), "core/molang_lint")
     };
     assert_eq!(in_file.iter().copied().filter(is_reference).count(), 0);
     let linked = set.link();

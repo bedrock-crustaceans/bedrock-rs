@@ -13,7 +13,7 @@
   ],
   "diagnostics": [
     {
-      "code": "MissingRequiredField",
+      "code": "json_ui/pack_missing_value",
       "severity": "error",
       "text": "ui/a.json (root): Missing the value for the operation 'replace'.",
       "pack": 1,

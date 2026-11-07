@@ -129,15 +129,13 @@ fn text_debug(code: &Code) -> String {
     }
 }
 
-/// Whether `code` tells what a legacy code of the variant `name` with the game's sentence
-/// `line` told: the same legacy name, `line` as its line and as its game's sentence. A site
-/// that held the game's sentence as a legacy text raises a definition with the sentence; this
-/// is the equality the pins of such a site keep until the pin rename.
-// hidden: a bridge for the pins of the migration, deleted with the legacy names
+/// Whether `code` is of the definition `id` and tells `line` as its line and as its game's
+/// sentence: what a site that held the game's sentence as a legacy text raises.
+// hidden: a bridge for the pins of the migration
 #[doc(hidden)]
 #[must_use]
-pub fn same_line(code: &Code, name: &str, line: &str) -> bool {
-    code.name() == name && code.to_string() == line && code.vanilla().as_deref() == Some(line)
+pub fn same_line(code: &Code, id: &str, line: &str) -> bool {
+    code.id() == id && code.to_string() == line && code.vanilla().as_deref() == Some(line)
 }
 
 /// The `Debug` of a structured `VanillaText` a definition renders, by the definition's id.
@@ -217,19 +215,23 @@ mod tests {
         Diagnostic::error(code)
     }
 
-    /// A worded definition with the sentence tells what the legacy code with the text told;
-    /// another sentence, another name or a line that is not the game's does not.
+    /// A worded definition with the sentence tells its line; another sentence, another
+    /// definition or a line that is not the game's does not.
     #[test]
     fn a_worded_definition_tells_the_line_of_the_legacy_text() {
-        let legacy = "UnresolvedReference";
+        let id = "core/unresolved_reference_worded";
         let worded = codes::UNRESOLVED_REFERENCE_WORDED.with(["no block a:b"]);
-        assert!(same_line(&worded, legacy, "no block a:b"));
+        assert!(same_line(&worded, id, "no block a:b"));
         let other = codes::UNRESOLVED_REFERENCE_WORDED.with(["no block c:d"]);
-        assert!(!same_line(&other, legacy, "no block a:b"));
+        assert!(!same_line(&other, id, "no block a:b"));
         let renamed = codes::INVALID_REFERENCE_WORDED.with(["no block a:b"]);
-        assert!(!same_line(&renamed, legacy, "no block a:b"));
+        assert!(!same_line(&renamed, id, "no block a:b"));
         let own = Code::from(&codes::UNRESOLVED_REFERENCE);
-        assert!(!same_line(&own, legacy, &own.to_string()));
+        assert!(!same_line(
+            &own,
+            "core/unresolved_reference",
+            &own.to_string()
+        ));
     }
 
     /// The engine version a field needs renders as the legacy payload's typed version.

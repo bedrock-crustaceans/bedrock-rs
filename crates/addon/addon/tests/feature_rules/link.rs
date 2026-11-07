@@ -77,7 +77,10 @@ fn r15_pregeneration_pass_places_only_cave_carvers() {
         );
     let d = link(&scatter, PackOrigin::World);
     assert!(has(&d, Severity::Error, text), "{d:#?}");
-    assert!(d.iter().any(|f| f.code.name() == "InvalidReference"));
+    assert!(
+        d.iter()
+            .any(|f| f.code.id() == "core/invalid_reference_worded")
+    );
     let carver = bp(2)
         .file(
             "feature_rules/r.json",
@@ -111,7 +114,10 @@ fn r16_a_non_base_game_rule_cannot_place_an_internal_vanilla_feature() {
     );
     let d = link_all(&[(&world, PackOrigin::World), (&game, PackOrigin::Package)]);
     assert!(has(&d, Severity::Error, text), "{d:#?}");
-    assert!(d.iter().any(|f| f.code.name() == "InvalidReference"));
+    assert!(
+        d.iter()
+            .any(|f| f.code.id() == "core/invalid_reference_worded")
+    );
     // The same rule in the game's own pack.
     let base_game = bp(2).file("features/layout.json", layout).file(
         "feature_rules/r.json",
@@ -130,7 +136,7 @@ fn rule_9_a_places_feature_no_feature_defines_is_an_info() {
     let d = link(&spec, PackOrigin::World);
     assert!(
         d.iter()
-            .any(|f| f.severity == Severity::Info && f.code.name() == "UnresolvedReference"),
+            .any(|f| f.severity == Severity::Info && f.code.id() == "core/unresolved_reference"),
         "{d:#?}"
     );
     assert!(!d.iter().any(|f| f.severity > Severity::Info));

@@ -9,7 +9,7 @@ reachable_static = ["main.js"]
 reachable_dynamic = []
 
 [[diagnostics]]
-code = "ScriptSyntaxError"
+code = "core/script_syntax_error"
 severity = "error"
 text = "syntax error in a script file"
 file = "scripts/main.js"

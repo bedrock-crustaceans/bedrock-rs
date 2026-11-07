@@ -23,7 +23,7 @@ fn link(files: &[(&str, &[u8])]) -> Diagnostics {
 
 fn found(d: &Diagnostics, code: &str) -> Vec<(Severity, String)> {
     d.iter()
-        .filter(|f| f.code.name() == code)
+        .filter(|f| f.code.id() == code)
         .map(|f| {
             let path = f.location.path.as_ref().map(ToString::to_string);
             (f.severity, path.unwrap_or_default())
@@ -53,12 +53,12 @@ fn f16_f24_f26_the_font_files_of_a_stack_are_checked_from_their_bytes() {
         ("font/smooth/remapping.dat", &[1, 2, 3, 0x41, 5]),
     ]);
     assert_eq!(
-        found(&d, "GlyphSheetShape"),
+        found(&d, "core/glyph_sheet_shape"),
         [(Severity::Info, "font/glyph_E2.png".to_owned())],
         "{d:?}"
     );
     assert_eq!(
-        found(&d, "MalformedInput"),
+        [found(&d, "core/syntax"), found(&d, "font/fontdata_version")].concat(),
         [
             // F26 and F24 are the game's silence and its assert: informations
             (Severity::Info, "font/smooth/remapping.dat".to_owned()),

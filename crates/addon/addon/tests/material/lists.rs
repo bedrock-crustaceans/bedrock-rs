@@ -85,7 +85,7 @@ fn m13_a_tag_is_reported_with_the_clients_text_and_the_entry_loads() {
     assert_eq!(
         found(text),
         [finding(
-            "DeprecatedMember",
+            "material/key_removed",
             Error,
             "0/tag",
             "key \"tag\" is no longer supported, please remove"
@@ -134,8 +134,15 @@ fn base_defines_of_each_key_alone() {
 fn an_entry_the_client_cannot_use_is_dropped_with_a_warning() {
     let text = r#"[5, {"path": "materials/a.material"}, {}, {"path": 7}, {"path": null},
                    "materials/b.material", {"path": ""}]"#;
-    let wrong = |at: &str| finding("InvalidType", Info, at, "wrong JSON type");
-    let missing = |at: &str| finding("MissingRequiredField", Info, at, "missing required field");
+    let wrong = |at: &str| finding("core/invalid_type", Info, at, "wrong JSON type");
+    let missing = |at: &str| {
+        finding(
+            "core/missing_required_field",
+            Info,
+            at,
+            "missing required field",
+        )
+    };
     assert_eq!(
         found(text),
         [
@@ -155,7 +162,7 @@ fn an_entry_the_client_cannot_use_is_dropped_with_a_warning() {
 fn defines_of_the_wrong_type_are_kept_and_entries_that_are_no_string_dropped() {
     let text =
         r#"[{"path": "a", "defines": "FANCY", "+defines": ["A", 5, null, "B"], "-defines": {}}]"#;
-    let wrong = |at: &str| finding("InvalidType", Info, at, "wrong JSON type");
+    let wrong = |at: &str| finding("core/invalid_type", Info, at, "wrong JSON type");
     assert_eq!(
         found(text),
         [
@@ -189,7 +196,7 @@ fn a_root_that_is_no_array_is_rejected_and_an_empty_array_is_a_list() {
         let rejected = parse_list("materials/common.json", text).expect_err("no list");
         assert_eq!(
             rendered(rejected.diagnostics.iter()),
-            [finding("InvalidType", Error, "", "wrong JSON type")],
+            [finding("core/invalid_type", Error, "", "wrong JSON type")],
             "{text}"
         );
     }
@@ -203,7 +210,10 @@ fn a_list_that_is_no_json_is_rejected_with_the_clients_text() {
     let rejected = parse_list("materials/sad.json", "[{").expect_err("no JSON");
     let findings = rendered(rejected.diagnostics.iter());
     assert_eq!(findings.len(), 1);
-    assert_eq!((findings[0].0, findings[0].1), ("MalformedInput", Error));
+    assert_eq!(
+        (findings[0].0, findings[0].1),
+        ("material/parse_error", Error)
+    );
     assert!(
         findings[0]
             .3

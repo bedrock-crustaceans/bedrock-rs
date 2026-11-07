@@ -246,7 +246,7 @@ pub fn seen<'a>(diagnostics: impl IntoIterator<Item = &'a Diagnostic>) -> Vec<Fi
     diagnostics
         .into_iter()
         .map(|d| Finding {
-            code: d.code.name().to_owned(),
+            code: d.code.id().to_owned(),
             severity: d.severity.to_string(),
             phase: phase(d.phase).to_owned(),
             file: d

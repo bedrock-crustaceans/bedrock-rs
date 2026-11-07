@@ -52,7 +52,12 @@ fn linear(what: &str, end: &str, code: &str, findings: impl Fn(usize) -> usize) 
 
 #[test]
 fn a_base_chain_of_20_000_types_resolves_in_linear_time() {
-    linear("block bases, a chain", "", "ReferenceCycle", |_| 0);
+    linear(
+        "block bases, a chain",
+        "",
+        "sounds_json/recursive_base",
+        |_| 0,
+    );
     let text = chain(20_000, "");
     let stack = copies(BINDINGS, &[&text]);
     let bindings = stack.sounds_json();
@@ -66,13 +71,16 @@ fn a_base_chain_of_20_000_types_resolves_in_linear_time() {
 #[test]
 fn a_base_cycle_of_20_000_types_is_reported_for_each_in_linear_time() {
     // One finding per type of the cycle, as before.
-    linear("block bases, a cycle", "b0", "ReferenceCycle", |count| {
-        count
-    });
+    linear(
+        "block bases, a cycle",
+        "b0",
+        "sounds_json/recursive_base",
+        |count| count,
+    );
     let text = chain(20_000, "b0");
     let stack = copies(BINDINGS, &[&text]);
     let sounds = stack.sounds_json();
-    let first = found(sounds, "ReferenceCycle")[0];
+    let first = found(sounds, "sounds_json/recursive_base")[0];
     assert!(
         first
             .to_string()
@@ -87,10 +95,10 @@ fn a_base_cycle_of_20_000_types_is_reported_for_each_in_linear_time() {
 #[test]
 fn a_chain_into_a_missing_base_names_it_for_every_type() {
     let text = chain(2_000, "nope");
-    let (_, findings) = load(&text, "UnresolvedReference");
+    let (_, findings) = load(&text, "sounds_json/unknown_base");
     assert_eq!(findings, 2_000);
     let stack = copies(BINDINGS, &[&text]);
-    let lines: Vec<String> = found(stack.sounds_json(), "UnresolvedReference")
+    let lines: Vec<String> = found(stack.sounds_json(), "sounds_json/unknown_base")
         .iter()
         .map(|d| d.code.to_string())
         .collect();

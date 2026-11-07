@@ -1,14 +1,14 @@
 # families/script_config fixtures.md, row sc39_net_bad_type (probe F netbadtype).
 
 [[diagnostic]]
-code = "InvalidType"
+code = "core/invalid_type"
 severity = "error"
 phase = "parse"
 file = "config/default/permissions.json"
 path = "module_permissions/@minecraft~1server-net/force_tls"
 
 [[diagnostic]]
-code = "NetConfigRejected"
+code = "core/net_config_rejected"
 severity = "error"
 phase = "parse"
 file = "config/default/permissions.json"

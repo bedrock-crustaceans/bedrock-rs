@@ -1,7 +1,7 @@
 # Validation rule 5.
 
 [[diagnostic]]
-kind = "InvalidRoot"
+kind = "core/invalid_root"
 severity = "error"
 file = "behavior_trees/two.json"
 path = "minecraft:behavior_tree/minecraft:root"

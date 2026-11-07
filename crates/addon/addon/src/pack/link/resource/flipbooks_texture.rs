@@ -317,7 +317,7 @@ mod tests {
             .iter()
             .map(|finding| {
                 (
-                    finding.code.name(),
+                    finding.code.id(),
                     finding.severity,
                     finding
                         .location
@@ -332,7 +332,7 @@ mod tests {
 
     fn not_loaded(file: &str) -> (&'static str, Severity, String, String) {
         (
-            "FileNotLoaded",
+            "core/file_not_loaded",
             Severity::Info,
             file.to_owned(),
             String::new(),
@@ -356,7 +356,7 @@ mod tests {
             [
                 not_loaded(LAVA),
                 (
-                    "InvalidValue",
+                    "flipbooks/bad_atlas_index",
                     Severity::Error,
                     FLIPBOOKS.to_owned(),
                     "1/atlas_index".to_owned()
@@ -365,13 +365,13 @@ mod tests {
                 // lacks may be the game's, an information (the tile check follows the view
                 // of the terrain atlas).
                 (
-                    "UnresolvedReference",
+                    "core/unresolved_reference",
                     Severity::Info,
                     FLIPBOOKS.to_owned(),
                     "2/atlas_tile".to_owned()
                 ),
                 (
-                    "TextureNotFound",
+                    "flipbooks/no_metadata",
                     Severity::Info,
                     FLIPBOOKS.to_owned(),
                     "2/flipbook_texture".to_owned()
@@ -561,7 +561,7 @@ mod checker {
                 assert_eq!(f.phase, crate::diagnostic::Phase::Link);
                 assert_eq!(f.location.path.as_ref().unwrap().as_str(), FLIPBOOKS);
                 (
-                    f.code.name(),
+                    f.code.id(),
                     f.severity,
                     f.location.json_path.to_string(),
                     f.to_string(),
@@ -621,8 +621,8 @@ mod checker {
                       { "atlas_tile": "ghost", "atlas_index": 1, "flipbook_texture": "textures/s" } ]"#
             ),
             [
-                found("UnresolvedReference", Info, "0/atlas_tile", silent),
-                found("UnresolvedReference", Error, "1/atlas_tile", text),
+                found("core/unresolved_reference", Info, "0/atlas_tile", silent),
+                found("flipbooks/tile_missing", Error, "1/atlas_tile", text),
             ]
         );
     }
@@ -641,8 +641,8 @@ mod checker {
                       { "atlas_tile": "dirt", "atlas_index": 1, "flipbook_texture": "textures/s" } ]"#
             ),
             [
-                found("InvalidValue", Error, "0/atlas_index", &text(2)),
-                found("InvalidValue", Error, "1/atlas_index", &text(-1)),
+                found("flipbooks/bad_atlas_index", Error, "0/atlas_index", &text(2)),
+                found("flipbooks/bad_atlas_index", Error, "1/atlas_index", &text(-1)),
             ]
         );
     }
@@ -650,7 +650,14 @@ mod checker {
     #[test]
     fn a_variant_outside_the_index_is_clamped() {
         // The game clamps to variant 0 silently. Index 1 has three variants, index 0 one.
-        let clamped = |at: &str| found("ClampedValue", Info, at, "value clamped into its range");
+        let clamped = |at: &str| {
+            found(
+                "core/clamped_value",
+                Info,
+                at,
+                "value clamped into its range",
+            )
+        };
         assert_eq!(
             with_dirt(
                 br#"[ { "atlas_tile": "dirt", "atlas_index": 1, "atlas_tile_variant": 3, "flipbook_texture": "textures/s" },
@@ -689,8 +696,8 @@ mod checker {
                 br#"[ { "atlas_tile": "dirt", "flipbook_texture": "textures/s", "frames": [0, 1, 2, -1] } ]"#
             ),
             [
-                found("InvalidValue", Info, "0/frames/2", FRAME),
-                found("InvalidValue", Info, "0/frames/3", FRAME),
+                found("flipbooks/frame_out_of_range", Info, "0/frames/2", FRAME),
+                found("flipbooks/frame_out_of_range", Info, "0/frames/3", FRAME),
             ]
         );
     }
@@ -704,7 +711,7 @@ mod checker {
         assert_eq!(
             linked(&[&[(FLIPBOOKS, book), ("textures/s.png", &wide)]]),
             [found(
-                "InvalidValue",
+                "flipbooks/no_frames",
                 Info,
                 "0/flipbook_texture",
                 "Flipbook texture should have at least one frame. "
@@ -726,7 +733,7 @@ mod checker {
                 br#"[ { "atlas_tile": "x", "flipbook_texture": "textures/blocks/nope" } ]"#
             )]]),
             [found(
-                "TextureNotFound",
+                "flipbooks/no_metadata",
                 Info,
                 "0/flipbook_texture",
                 "Texture metadata for texture: textures/blocks/nope is invalid"
@@ -747,7 +754,12 @@ mod checker {
         let png = png_header(16, 32, 6);
         // A 16x16 JPEG: one frame.
         let jpg = [0xFF, 0xD8, 0xFF, 0xC0, 0, 11, 8, 0, 16, 0, 16, 3];
-        let out_of_range = [found("InvalidValue", Info, "0/frames/0", FRAME)];
+        let out_of_range = [found(
+            "flipbooks/frame_out_of_range",
+            Info,
+            "0/frames/0",
+            FRAME,
+        )];
         // The top pack's `.tga` beats its `.png`, and the lower pack's `.jpg`.
         assert_eq!(
             linked(&[

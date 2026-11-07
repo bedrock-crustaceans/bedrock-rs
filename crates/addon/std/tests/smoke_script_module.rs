@@ -128,7 +128,7 @@ impl Outcome {
         let mut counts = BTreeMap::new();
         for (_, found) in &self.scripts {
             for diagnostic in found.diagnostics() {
-                let name: String = diagnostic.code.name().to_owned();
+                let name: String = diagnostic.code.id().to_owned();
                 *counts.entry(name).or_insert(0) += 1;
             }
         }
@@ -297,7 +297,7 @@ fn server_install_script_packs_resolve() {
     );
     assert_eq!(
         outcome.by_code(),
-        BTreeMap::from([("DroppedField".to_owned(), 1)])
+        BTreeMap::from([("script/plugin_not_editor_world".to_owned(), 1)])
     );
 
     // The gates are what lets it through: as a pack that is not bundled it is refused.
@@ -307,7 +307,7 @@ fn server_install_script_packs_resolve() {
     };
     let refused = discover_all(&server, &catalog, &unbundled);
     assert_eq!(refused.running(), 0);
-    assert_eq!(refused.by_code().get("MissingToggles"), Some(&1));
+    assert_eq!(refused.by_code().get("script/plugin_beta_apis"), Some(&1));
 }
 
 #[test]
@@ -337,7 +337,7 @@ fn client_install_b_script_packs_resolve() {
     );
     assert_eq!(
         outcome.by_code(),
-        BTreeMap::from([("DroppedField".to_owned(), 1)])
+        BTreeMap::from([("script/plugin_not_editor_world".to_owned(), 1)])
     );
 }
 
@@ -381,8 +381,8 @@ fn client_install_a_script_packs_resolve() {
     assert_eq!(
         outcome.by_code(),
         BTreeMap::from([
-            ("DroppedField".to_owned(), 3),
-            ("UnresolvedReference".to_owned(), 1)
+            ("script/plugin_not_editor_world".to_owned(), 3),
+            ("script/plugin_missing_main_file".to_owned(), 1)
         ])
     );
     // The fourth names an entry file it does not ship.
@@ -464,7 +464,23 @@ fn in_an_editor_world_the_editor_packs_get_the_editor_module() {
             );
         }
         let codes = outcome.by_code();
-        assert_eq!(codes.get("DroppedField"), None, "{source}: {codes:?}");
+        // No finding of a member that is dropped, under any of the definitions that drop one.
+        assert!(
+            !codes.keys().any(|code| [
+                "block/bone_visibility_boolean",
+                "block/members_thrown_away",
+                "core/dropped_field",
+                "core/dropped_field_worded",
+                "entity/actor_properties_not_loaded",
+                "entity/member_removed_by_upgrade",
+                "function/failed_header_dropped",
+                "geometry/cape_dropped",
+                "script/plugin_not_editor_world",
+                "visual/failed_to_parse",
+            ]
+            .contains(&code.as_str())),
+            "{source}: {codes:?}"
+        );
         // Client install A's spawn-rules pack keeps its one error; nothing else.
         let errors = outcome.errors();
         if source == game_files::CLIENT_INSTALL_A {

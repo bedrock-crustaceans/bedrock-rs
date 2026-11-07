@@ -5,7 +5,7 @@
 //! ignored until the link pass exists. What loading alone says is pinned below, not
 //! ignored.
 
-use bedrock_addon::diagnostic::{DiagnosticDetail, Diagnostics, Severity};
+use bedrock_addon::diagnostic::{DiagnosticDetail, Diagnostics, Kind, Severity};
 use bedrock_addon::document::Document;
 use bedrock_addon::families::client_entity::{AnimationKind, ClientEntity};
 use bedrock_addon::id::EntityId;
@@ -99,25 +99,25 @@ fn l06_unknown_particle() {
     // kept error.
     expect(
         &d,
-        "UnresolvedReference",
+        "core/unresolved_reference_worded",
         Severity::Error,
         "Entity .json 'entity/ghost.entity.json' referenced particle 'demo:nope' that doesn't exist",
     );
     expect_at(
         &d,
-        "UnresolvedReference",
+        "core/unresolved_reference_worded",
         Severity::Error,
         "minecraft:client_entity/description/particle_effects/x",
     );
     assert!(
         d.iter()
-            .filter(|f| f.code.name() == "UnresolvedReference")
+            .filter(|f| f.code.id() == "core/unresolved_reference_worded")
             .all(|f| f.kept),
         "{d:#?}"
     );
     assert_eq!(
         d.iter()
-            .filter(|f| f.code.name() == "UnresolvedReference")
+            .filter(|f| f.code.id() == "core/unresolved_reference_worded")
             .count(),
         1
     );
@@ -139,7 +139,7 @@ fn rule_18_undefined_material() {
     // file kept: a kept error.
     expect(
         &d,
-        "UnresolvedReference",
+        "core/unresolved_reference_worded",
         Severity::Error,
         "Material \"no_such_material\" is referenced in file \"entity/ghost.entity.json\" but not defined.",
     );
@@ -177,7 +177,7 @@ fn l06_the_document_loads_and_loading_does_not_resolve_references() {
 /// The names the `UnresolvedReference` findings of `d` are about, in order.
 fn unresolved(d: &Diagnostics) -> Vec<String> {
     d.iter()
-        .filter(|f| f.code.name() == "UnresolvedReference")
+        .filter(|f| f.code.id() == "core/unresolved_reference")
         .filter_map(|f| match f.detail.as_deref() {
             Some(DiagnosticDetail::Reference { id, .. }) => Some(id.clone()),
             _ => None,
@@ -189,11 +189,11 @@ fn unresolved(d: &Diagnostics) -> Vec<String> {
 /// vanilla resolves lazily and never logs is kept and reported at info.
 #[track_caller]
 fn one_lazy_reference(d: &Diagnostics, path: &str, id: &str) {
-    expect_at(d, "UnresolvedReference", Severity::Info, path);
+    expect_at(d, "core/unresolved_reference", Severity::Info, path);
     assert_eq!(unresolved(d), [id.to_owned()], "{}", lines(d).join("\n"));
     assert!(
         d.iter()
-            .filter(|f| f.code.name() == "UnresolvedReference")
+            .filter(|f| f.code.id() == "core/unresolved_reference")
             .all(|f| f.severity == Severity::Info),
         "{}",
         lines(d).join("\n")
@@ -241,7 +241,11 @@ fn reference_check_unknown_geometry() {
     // With every geometry defined nothing is said.
     let text = ghost("1.10.0", r#""geometry": {"default": "geometry.ghost"}"#);
     let d = linked(&text, &[("models/entity/ghost.geo.json", GEOMETRY)]);
-    none(&d, "UnresolvedReference");
+    assert!(
+        d.iter().all(|f| f.code.kind() != Kind::UnresolvedReference),
+        "{}",
+        lines(&d).join("\n")
+    );
 }
 
 const ANIMATION: &str =
@@ -272,13 +276,13 @@ fn reference_check_unknown_animation() {
     let d = linked_in(&set);
     expect_at(
         &d,
-        "UnresolvedReference",
+        "core/unresolved_reference",
         Severity::Info,
         "minecraft:client_entity/description/animations/nope",
     );
     expect_at(
         &d,
-        "UnresolvedReference",
+        "core/unresolved_reference",
         Severity::Info,
         "minecraft:client_entity/description/animations/nope_too",
     );
@@ -332,13 +336,13 @@ fn reference_check_unknown_render_controller() {
     let d = linked_in(&set);
     expect_at(
         &d,
-        "UnresolvedReference",
+        "core/unresolved_reference",
         Severity::Info,
         "minecraft:client_entity/description/render_controllers/1",
     );
     expect_at(
         &d,
-        "UnresolvedReference",
+        "core/unresolved_reference",
         Severity::Info,
         "minecraft:client_entity/description/render_controllers/3/Controller.Render.Nope_Too",
     );
@@ -395,7 +399,7 @@ fn l21_a_link_finding_beside_an_empty_conditional_object_is_at_the_index_of_the_
     let d = linked(&text, &[]);
     let at: Vec<String> = d
         .iter()
-        .filter(|f| f.code.name() == "UnresolvedReference")
+        .filter(|f| f.code.id() == "core/unresolved_reference")
         .map(|f| f.location.json_path.to_string())
         .collect();
     assert_eq!(

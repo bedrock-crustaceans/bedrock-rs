@@ -1,7 +1,7 @@
 //! Both ends of every range and every half of every compound condition of the loot walk
 //! (reviewers mutate each rule; a test here fails for each mutation).
 
-use bedrock_addon_core::diagnostic::{Diagnostic, Severity};
+use bedrock_addon_core::diagnostic::{Diagnostic, Kind, Severity};
 use bedrock_addon_core::document::{Content, Document, UnknownMembers};
 use bedrock_addon_core::json::{EncodeError, Unrepresentable};
 use bedrock_addon_core::load::{Experiment, LoadContext};
@@ -49,7 +49,7 @@ fn conditions(table: &Document<LootTable>) -> Vec<ConditionKind> {
 fn summary(table: &Document<LootTable>) -> Vec<(&'static str, Severity, String)> {
     findings(table)
         .into_iter()
-        .map(|d| (d.code.name(), d.severity, path(d)))
+        .map(|d| (d.code.id(), d.severity, path(d)))
         .collect()
 }
 
@@ -57,7 +57,16 @@ fn summary(table: &Document<LootTable>) -> Vec<(&'static str, Severity, String)>
 fn paths_of(table: &Document<LootTable>, name: &str) -> Vec<String> {
     findings(table)
         .into_iter()
-        .filter(|d| d.code.name() == name)
+        .filter(|d| d.code.id() == name)
+        .map(path)
+        .collect()
+}
+
+/// The paths of the findings of kind `kind`.
+fn paths_of_kind(table: &Document<LootTable>, kind: Kind) -> Vec<String> {
+    findings(table)
+        .into_iter()
+        .filter(|d| d.code.kind() == kind)
         .map(path)
         .collect()
 }
@@ -84,7 +93,7 @@ fn nesting_past_the_depth_limit_and_invalid_utf8_are_invalid_tables() {
     for bytes in [deep.as_bytes(), &b"{\"pools\": \"\xFF\"}"[..]] {
         let rejected = LootTable::parse(&table_path(), bytes, &cx()).unwrap_err();
         let error = rejected.diagnostics.first_error().unwrap();
-        assert_eq!(error.code.name(), "MalformedInput");
+        assert_eq!(error.code.id(), "loot/invalid_table");
         assert_eq!(
             text(&error.code),
             "Loot table for loot_tables/test.json is invalid."
@@ -107,7 +116,7 @@ fn format_version_is_silent_at_the_root_only() {
     assert_eq!(
         summary(&table),
         [(
-            "UnrecognizedField",
+            "core/unrecognized_field",
             Severity::Info,
             "pools/0/format_version".to_owned()
         )]
@@ -128,7 +137,7 @@ fn an_integer_member_takes_the_whole_i32_range_and_truncates_reals() {
             .iter()
             .map(|e| e.weight)
             .collect();
-        (weights, paths_of(&table, "InvalidType"))
+        (weights, paths_of(&table, "core/invalid_type"))
     };
     let (read, wrong) = weights(
         r#"{"type": "empty", "weight": 2147483647}, {"type": "empty", "weight": -2147483648},
@@ -157,7 +166,7 @@ fn an_integer_member_takes_the_whole_i32_range_and_truncates_reals() {
            {"type": "empty", "weight": -2147483648.5}]}]}"#,
     );
     assert_eq!(
-        paths_of(&table, "InvalidValue"),
+        paths_of(&table, "core/invalid_value"),
         ["pools/0/entries/0/weight", "pools/0/entries/3/weight"]
     );
 
@@ -190,7 +199,7 @@ fn a_float_member_takes_any_finite_number() {
             .map(|chance| ConditionKind::RandomChance { chance })
     );
     assert_eq!(
-        paths_of(&table, "InvalidType"),
+        paths_of(&table, "core/invalid_type"),
         [
             "pools/0/conditions/2/chance",
             "pools/0/conditions/3/chance",
@@ -224,7 +233,7 @@ fn bool_and_string_members_take_only_their_own_type() {
         ]
     );
     assert_eq!(
-        paths_of(&table, "InvalidType"),
+        paths_of(&table, "core/invalid_type"),
         [
             "pools/0/conditions/1/domain",
             "pools/0/conditions/1/value",
@@ -258,7 +267,7 @@ fn bounds_take_a_number_or_an_object_and_nothing_else() {
     assert_eq!((pools[1].rolls().min(), pools[1].rolls().max()), (0.0, 4.0));
     assert_eq!(pools[1].bonus_rolls, None);
     assert_eq!(
-        paths_of(&table, "InvalidType"),
+        paths_of(&table, "core/invalid_type"),
         ["pools/0/rolls", "pools/1/bonus_rolls"]
     );
 }
@@ -288,7 +297,7 @@ fn string_lists_take_a_string_or_an_array_and_skip_other_elements() {
         ]
     );
     assert_eq!(
-        paths_of(&table, "InvalidType"),
+        paths_of(&table, "core/invalid_type"),
         [
             "pools/0/entries/0/functions/1/lore/1",
             "pools/0/entries/0/functions/1/lore/3",
@@ -330,7 +339,7 @@ fn int_ranges_take_the_json_util_forms() {
         ]
     );
     assert_eq!(
-        paths_of(&table, "InvalidType"),
+        paths_of(&table, "core/invalid_type"),
         [
             "pools/0/conditions/1/count",
             "pools/0/conditions/1/durability",
@@ -384,7 +393,7 @@ fn nested_objects_of_the_wrong_type_are_warned() {
         ]
     );
     assert_eq!(
-        paths_of(&table, "InvalidType"),
+        paths_of(&table, "core/invalid_type"),
         [
             "pools/0/conditions/0/enchantments",
             "pools/0/conditions/1/enchantments/0",
@@ -394,7 +403,7 @@ fn nested_objects_of_the_wrong_type_are_warned() {
         ]
     );
     assert_eq!(
-        paths_of(&table, "UnrecognizedField"),
+        paths_of(&table, "core/unrecognized_field"),
         ["pools/0/conditions/1/enchantments/1/note"]
     );
 }
@@ -410,7 +419,7 @@ fn an_entry_type_is_matched_exactly_and_printed_as_written() {
     );
     assert!(table.pools.as_deref().unwrap()[0].entries().is_empty());
     let found = findings(&table);
-    assert!(found.iter().all(|d| d.code.name() == "InvalidValue"
+    assert!(found.iter().all(|d| d.code.id() == "loot/entry_type"
         && d.code.vanilla().is_some()
         && d.severity == Severity::Error));
     let given: Vec<String> = texts(&found)
@@ -442,12 +451,12 @@ fn an_entrys_conditions_are_read_before_its_type_is_checked() {
         summary(&table),
         [
             (
-                "InvalidType",
+                "loot/condition_object",
                 Severity::Error,
                 "pools/0/entries/0/conditions/0".to_owned()
             ),
             (
-                "InvalidValue",
+                "loot/entry_type",
                 Severity::Error,
                 "pools/0/entries/0".to_owned()
             ),
@@ -474,12 +483,12 @@ fn every_entry_type_takes_an_inline_sub_table_and_only_items_take_functions() {
         summary(&table),
         [
             (
-                "UnrecognizedField",
+                "core/unrecognized_field",
                 Severity::Info,
                 "pools/0/entries/1/functions".to_owned()
             ),
             (
-                "InvalidType",
+                "core/invalid_type",
                 Severity::Info,
                 "pools/0/entries/2/pools".to_owned()
             ),
@@ -523,7 +532,7 @@ fn a_function_name_is_split_at_its_last_colon_and_printed_as_written() {
     assert!(
         found
             .iter()
-            .all(|d| d.code.name() == "UnrecognizedComponent"
+            .all(|d| d.code.id() == "loot/unsupported_function"
                 && d.code.vanilla().is_some()
                 && d.severity == Severity::Error)
     );
@@ -548,11 +557,11 @@ fn a_functions_conditions_are_read_before_its_name_is_looked_up() {
         summary(&table),
         [
             (
-                "UnrecognizedComponent",
+                "loot/unknown_condition",
                 Severity::Info,
                 format!("{F0}/conditions/0")
             ),
-            ("UnrecognizedComponent", Severity::Error, F0.to_owned()),
+            ("loot/unsupported_function", Severity::Error, F0.to_owned()),
         ]
     );
 }
@@ -680,12 +689,12 @@ fn set_data_warns_only_when_neither_key_is_written() {
         summary(&table),
         [
             (
-                "InvalidType",
+                "core/invalid_type",
                 Severity::Info,
                 "pools/0/entries/0/functions/2/data".to_owned()
             ),
             (
-                "MissingRequiredField",
+                "loot/set_data_key",
                 Severity::Warning,
                 "pools/0/entries/0/functions/3".to_owned()
             ),
@@ -746,7 +755,7 @@ fn a_banner_type_is_a_name_or_0_or_1() {
         ]
     );
     let found = findings(&table);
-    assert!(found.iter().all(|d| d.code.name() == "InvalidValue"
+    assert!(found.iter().all(|d| d.code.id() == "loot/banner_type"
         && d.code.vanilla().is_some()
         && d.severity == Severity::Error));
     assert_eq!(
@@ -876,12 +885,12 @@ fn patterns_need_a_default_banner() {
         summary(&table),
         [
             (
-                "InvalidValue",
+                "loot/banner_non_default",
                 Severity::Error,
                 "pools/0/entries/0/functions/1/patterns".to_owned()
             ),
             (
-                "InvalidValue",
+                "loot/banner_type",
                 Severity::Error,
                 "pools/0/entries/0/functions/2/type".to_owned()
             ),
@@ -902,7 +911,7 @@ fn a_pattern_without_a_name_is_dropped_with_vanillas_text() {
     let found = findings(&table);
     let unresolved: Vec<_> = found
         .iter()
-        .filter(|d| d.code.name() == "UnresolvedReference" && d.code.vanilla().is_some())
+        .filter(|d| d.code.id() == "loot/banner_pattern" && d.code.vanilla().is_some())
         .collect();
     assert_eq!(unresolved.len(), 4);
     assert!(
@@ -917,12 +926,12 @@ fn a_pattern_without_a_name_is_dropped_with_vanillas_text() {
             .map(|(name, _, at)| (name, at))
             .collect::<Vec<_>>(),
         [
-            ("UnresolvedReference", format!("{F0}/patterns/0")),
-            ("UnresolvedReference", format!("{F0}/patterns/1")),
-            ("UnresolvedReference", format!("{F0}/patterns/2")),
-            ("UnresolvedReference", format!("{F0}/patterns/3")),
-            ("InvalidType", format!("{F0}/patterns/4/pattern")),
-            ("UnrecognizedField", format!("{F0}/patterns/5/tint")),
+            ("loot/banner_pattern", format!("{F0}/patterns/0")),
+            ("loot/banner_pattern", format!("{F0}/patterns/1")),
+            ("loot/banner_pattern", format!("{F0}/patterns/2")),
+            ("loot/banner_pattern", format!("{F0}/patterns/3")),
+            ("core/invalid_type", format!("{F0}/patterns/4/pattern")),
+            ("core/unrecognized_field", format!("{F0}/patterns/5/tint")),
         ]
     );
 }
@@ -979,7 +988,7 @@ fn an_enchantment_is_named_without_a_namespace() {
         .collect();
     assert_eq!(ids, ["sharpness", "infinity", "bow_infinity"]);
     assert_eq!(
-        paths_of(&table, "UnresolvedReference"),
+        paths_of(&table, "core/unresolved_reference"),
         [
             format!("{F0}/enchants/3"),
             format!("{F0}/enchants/4"),
@@ -1020,23 +1029,23 @@ fn specific_enchants_take_a_single_value_and_objects_with_or_without_a_level() {
             .collect::<Vec<_>>(),
         [
             (
-                "UnrecognizedField",
+                "core/unrecognized_field",
                 "pools/0/entries/0/functions/1/enchants/note".to_owned()
             ),
             (
-                "UnresolvedReference",
+                "core/unresolved_reference",
                 "pools/0/entries/0/functions/2/enchants/1".to_owned()
             ),
             (
-                "InvalidType",
+                "core/invalid_type",
                 "pools/0/entries/0/functions/2/enchants/2/id".to_owned()
             ),
             (
-                "InvalidType",
+                "core/invalid_type",
                 "pools/0/entries/0/functions/2/enchants/3".to_owned()
             ),
             (
-                "InvalidType",
+                "core/invalid_type",
                 "pools/0/entries/0/functions/2/enchants/4/level".to_owned()
             ),
         ]
@@ -1097,17 +1106,20 @@ fn enchant_book_options_read_whole_levels_and_keep_other_members() {
             .map(|(name, _, at)| (name, at))
             .collect::<Vec<_>>(),
         [
-            ("UnrecognizedField", format!("{F0}/enchantments/0/weight")),
-            ("InvalidType", format!("{F0}/enchantments/1/min")),
-            ("InvalidType", format!("{F0}/enchantments/1/max")),
-            ("UnresolvedReference", format!("{F0}/enchantments/2")),
-            ("UnresolvedReference", format!("{F0}/enchantments/3")),
-            ("UnresolvedReference", format!("{F0}/enchantments/4")),
+            (
+                "core/unrecognized_field",
+                format!("{F0}/enchantments/0/weight")
+            ),
+            ("core/invalid_type", format!("{F0}/enchantments/1/min")),
+            ("core/invalid_type", format!("{F0}/enchantments/1/max")),
+            ("loot/enchant_name", format!("{F0}/enchantments/2")),
+            ("loot/enchant_name", format!("{F0}/enchantments/3")),
+            ("loot/enchant_name", format!("{F0}/enchantments/4")),
         ]
     );
     let names: Vec<String> = findings(&table)
         .into_iter()
-        .filter(|d| d.code.name() == "UnresolvedReference")
+        .filter(|d| d.code.id() == "loot/enchant_name")
         .map(|d| text(&d.code))
         .collect();
     assert_eq!(
@@ -1488,12 +1500,12 @@ fn a_single_value_form_is_reported_at_the_members_own_path() {
             .map(|(name, _, at)| (name, at))
             .collect::<Vec<_>>(),
         [
-            ("InvalidType", at(0, "enchants")),
-            ("UnresolvedReference", at(1, "enchants")),
-            ("UnresolvedReference", at(2, "patterns")),
-            ("InvalidValue", at(3, "patterns/color")),
-            ("InvalidType", at(4, "effects")),
-            ("InvalidType", at(5, "effects/id")),
+            ("core/invalid_type", at(0, "enchants")),
+            ("core/unresolved_reference", at(1, "enchants")),
+            ("loot/banner_pattern", at(2, "patterns")),
+            ("loot/banner_pattern_color", at(3, "patterns/color")),
+            ("core/invalid_type", at(4, "effects")),
+            ("core/invalid_type", at(5, "effects/id")),
         ]
     );
     // An array keeps its indices.
@@ -1557,7 +1569,7 @@ fn an_enchantment_the_provider_does_not_know_is_told_and_dropped() {
         .collect();
     assert_eq!(names, ["sharpness"]);
     assert_eq!(
-        paths_of(&table, "UnresolvedReference"),
+        paths_of_kind(&table, Kind::UnresolvedReference),
         [
             format!("{F0}/enchants/1"),
             "pools/0/entries/0/functions/1/enchantments/1".to_owned()

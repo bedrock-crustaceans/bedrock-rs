@@ -1,14 +1,14 @@
 # families/script_config fixtures.md, row sc40_net_range (probe F2 neg, wsbig).
 
 [[diagnostic]]
-code = "InvalidValue"
+code = "core/invalid_value"
 severity = "error"
 phase = "parse"
 file = "config/neg/permissions.json"
 path = "module_permissions/@minecraft~1server-net/max_concurrent_requests"
 
 [[diagnostic]]
-code = "NetConfigRejected"
+code = "core/net_config_rejected"
 severity = "error"
 phase = "parse"
 file = "config/neg/permissions.json"
@@ -16,14 +16,14 @@ path = "module_permissions/@minecraft~1server-net"
 text = "Failed to load config for @minecraft/server-net due to error(s):  -> max_concurrent_requests:  invalid numeric value"
 
 [[diagnostic]]
-code = "InvalidValue"
+code = "core/invalid_value"
 severity = "error"
 phase = "parse"
 file = "config/wsbig/permissions.json"
 path = "module_permissions/@minecraft~1server-net/max_websocket_connections"
 
 [[diagnostic]]
-code = "NetConfigRejected"
+code = "core/net_config_rejected"
 severity = "error"
 phase = "parse"
 file = "config/wsbig/permissions.json"

@@ -90,7 +90,7 @@ fn r01c_up_1_8_string_entry_is_rejected() {
     ));
     expect_prefix(
         &d,
-        "InvalidType",
+        "core/unknown_child_option",
         Severity::Error,
         "unknown child schema option type.  Allowed types: ",
     );
@@ -193,7 +193,7 @@ fn r05_controller_versions_outside_the_range_are_rejected() {
     let d = rejected(controller(&ctrl("1.7.0", "{}"), &cx));
     expect(
         &d,
-        "UnsupportedVersion",
+        "animation_controller/unknown_format_version",
         Severity::Error,
         "Unknown/unsupported version value specified in \"format_version\" field: 1.7.0",
     );
@@ -201,14 +201,14 @@ fn r05_controller_versions_outside_the_range_are_rejected() {
     let d = rejected(controller(missing, &cx));
     expect(
         &d,
-        "MissingFormatVersion",
+        "animation_controller/ill_formatted_missing_format_version",
         Severity::Error,
         "Error: ill-formatted/missing \"format_version\" field. Skipping.",
     );
     let d = rejected(controller(&ctrl("99.0.0", "{}"), &cx));
     expect(
         &d,
-        "UnsupportedVersion",
+        "animation_controller/exceeds_game",
         Severity::Error,
         "Error: animation controller file format version: 99.0.0 exceeds game version: 1.26.60.  Skipping.",
     );
@@ -216,7 +216,7 @@ fn r05_controller_versions_outside_the_range_are_rejected() {
     let d = rejected(controller(&number, &cx));
     expect(
         &d,
-        "UnsupportedVersion",
+        "animation_controller/ill_formatted_unsupported_version",
         Severity::Error,
         "Error: ill-formatted/missing \"format_version\" field. Skipping.",
     );
@@ -224,7 +224,7 @@ fn r05_controller_versions_outside_the_range_are_rejected() {
     let d = rejected(controller(&array, &cx));
     expect_prefix(
         &d,
-        "UnsupportedVersion",
+        "animation_controller/unknown_option_type",
         Severity::Error,
         "unknown child schema option type.  Allowed types: ",
     );
@@ -247,20 +247,25 @@ fn r07_animation_versions() {
     let d = rejected(animation(r#"{"animations": {"animation.x": {}}}"#, &cx));
     expect(
         &d,
-        "MissingRequiredField",
+        "core/required_child",
         Severity::Error,
         "Required child format_version not found",
     );
     let d = rejected(animation(&anim("1.5.0", "{}"), &cx));
     expect(
         &d,
-        "UnsupportedVersion",
+        "core/version_below_min",
         Severity::Error,
         "Version 1.5.0 below min required version (1.8.0)",
     );
     let above = loaded(animation(&anim("99.0.0", "{}"), &cx));
     assert!(
-        find(above.diagnostics(), "UnsupportedVersion", Severity::Info).is_some(),
+        find(
+            above.diagnostics(),
+            "core/unsupported_version",
+            Severity::Info
+        )
+        .is_some(),
         "{:?}",
         lines(above.diagnostics())
     );
@@ -310,7 +315,7 @@ fn r09_timeline_forms() {
     let unrecognized = file
         .diagnostics()
         .iter()
-        .filter(|d| d.code.name() == "UnrecognizedEventString" && d.severity == Severity::Info)
+        .filter(|d| d.code.id() == "core/unrecognized_event_string" && d.severity == Severity::Info)
         .count();
     assert_eq!(unrecognized, 2, "{:?}", lines(file.diagnostics()));
 }
@@ -349,7 +354,7 @@ fn r11_names_lowercased() {
     );
     expect(
         controller.diagnostics(),
-        "UnresolvedReference",
+        "animation_controller/state_not_found",
         Severity::Info,
         "Error: state Default not found - defaulting to using state 0",
     );
@@ -387,7 +392,7 @@ fn r13_unknown_member_rejects_the_file() {
     let d = rejected(controller(&ctrl("1.10.0", r#"{"foo": 1}"#), &bp(1, 16, 0)));
     expect(
         &d,
-        "UnrecognizedField",
+        "core/child_not_valid",
         Severity::Error,
         "child 'foo' not valid here.",
     );
@@ -431,7 +436,7 @@ fn r15_anim_bind_to_actor_true_is_rejected() {
     let d = rejected(animation(&event(r#", "bind_to_actor": true"#), &cx));
     expect(
         &d,
-        "InvalidValue",
+        "core/value_not_allowed",
         Severity::Error,
         "Value 'true' not allowed",
     );
@@ -447,7 +452,7 @@ fn r16_timeline_bad_key_rejects_the_file() {
     ));
     expect(
         &d,
-        "UnrecognizedField",
+        "core/child_not_valid",
         Severity::Error,
         "child '.5' not valid here.",
     );
@@ -462,7 +467,7 @@ fn r17_controller_value_sets() {
     ));
     expect(
         &d,
-        "InvalidValue",
+        "core/value_not_allowed",
         Severity::Error,
         "Value 'false' not allowed",
     );
@@ -479,7 +484,7 @@ fn r17_controller_value_sets() {
     ));
     expect(
         &d,
-        "InvalidValue",
+        "core/value_not_allowed",
         Severity::Error,
         "Value 'true' not allowed",
     );
@@ -494,7 +499,7 @@ fn r18_controller_counts_and_keys() {
     ));
     expect(
         &d,
-        "InvalidValue",
+        "core/too_many_children",
         Severity::Error,
         "Node has too many children (2 > 1)",
     );
@@ -593,13 +598,13 @@ fn invalid_json_skips_either_file_kind() {
     let cx = bp(1, 16, 0);
     expect_prefix(
         &rejected(animation("{\"format_version\" 1}", &cx)),
-        "MalformedInput",
+        "core/parse_error",
         Severity::Error,
         "parse error:\n",
     );
     expect_prefix(
         &rejected(controller("[1, ", &cx)),
-        "MalformedInput",
+        "core/parse_error",
         Severity::Error,
         "parse error:\n",
     );
@@ -615,7 +620,7 @@ fn events_in_a_pack_without_min_engine_version_have_no_command_version() {
     assert!(
         find(
             file.diagnostics(),
-            "MissingMinEngineVersion",
+            "core/missing_min_engine_version",
             Severity::Info
         )
         .is_some(),
@@ -629,7 +634,7 @@ fn events_in_a_pack_without_min_engine_version_have_no_command_version() {
     assert!(
         find(
             file.diagnostics(),
-            "MissingMinEngineVersion",
+            "core/missing_min_engine_version",
             Severity::Info
         )
         .is_some()
@@ -645,7 +650,7 @@ fn required_controller_members_are_reported() {
     ));
     expect(
         &d,
-        "MissingRequiredField",
+        "core/required_child",
         Severity::Error,
         "Required child states not found",
     );
@@ -655,7 +660,7 @@ fn required_controller_members_are_reported() {
     ));
     expect(
         &d,
-        "MissingRequiredField",
+        "core/required_child",
         Severity::Error,
         "Required child input not found",
     );
@@ -665,7 +670,7 @@ fn required_controller_members_are_reported() {
     ));
     expect(
         &d,
-        "MissingRequiredField",
+        "core/required_child",
         Severity::Error,
         "Required child effect not found",
     );
@@ -679,7 +684,7 @@ fn a_loop_string_matches_case_sensitively() {
     ));
     expect_prefix(
         &d,
-        "InvalidValue",
+        "core/not_allowed_regex",
         Severity::Error,
         "Value 'Hold_On_Last_Frame' not allowed.",
     );

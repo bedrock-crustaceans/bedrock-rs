@@ -2,7 +2,7 @@
 //! their bind constraints (errors) and `ScatterParams::fillFromData`'s runtime checks (warnings
 //! with vanilla's text, the value replaced or ignored).
 
-use bedrock_addon_core::diagnostic::Severity;
+use bedrock_addon_core::diagnostic::{Kind, Severity};
 use bedrock_addon_core::document::Document;
 use bedrock_addon_core::molang::Molang;
 use bedrock_addon_family_feature_rules::{
@@ -39,7 +39,7 @@ fn warnings(document: &Document<FeatureRule>) -> Vec<(String, String)> {
     document
         .diagnostics()
         .iter()
-        .filter(|f| f.severity == Severity::Error && f.kept && f.code.name() == "InvalidValue")
+        .filter(|f| f.severity == Severity::Error && f.kept && f.code.kind() == Kind::InvalidValue)
         .map(|f| (f.location.json_path.to_string(), f.code.to_string()))
         .collect()
 }
@@ -104,7 +104,7 @@ fn r10_a_numerator_below_1_is_a_constraint_error_and_the_file_is_skipped() {
         r#"{"numerator": 1, "denominator": 0}"#,
     ] {
         let d = rejects(&with_chance(chance));
-        let found = with_code(&d, "InvalidValue");
+        let found = with_code(&d, "core/invalid_value");
         assert_eq!(found.len(), 1, "{chance}: {d:#?}");
         assert_eq!(found[0].severity, Severity::Error);
     }
@@ -219,7 +219,7 @@ fn rule_6_a_grid_member_below_its_minimum_is_a_constraint_error() {
         r#"{"distribution": "fixed_grid", "extent": [0, 15], "grid_offset": -1}"#,
     ] {
         let d = rejects(&with_x(x));
-        let found = with_code(&d, "InvalidValue");
+        let found = with_code(&d, "core/invalid_value");
         assert_eq!(found.len(), 1, "{x}: {d:#?}");
         assert_eq!(found[0].severity, Severity::Error);
     }
@@ -282,9 +282,9 @@ fn a_distribution_number_beyond_f32_is_refused_where_it_stands() {
         let errors: Vec<(&str, String)> = found
             .iter()
             .filter(|f| f.severity == Severity::Error)
-            .map(|f| (f.code.name(), f.location.json_path.to_string()))
+            .map(|f| (f.code.id(), f.location.json_path.to_string()))
             .collect();
-        assert_eq!(errors, [("InvalidType", at.to_owned())], "{text}");
+        assert_eq!(errors, [("core/invalid_type", at.to_owned())], "{text}");
     }
     // A number no double holds refuses the document, as the game's JSON reader does.
     let found = rejects(&with_x(
@@ -293,9 +293,9 @@ fn a_distribution_number_beyond_f32_is_refused_where_it_stands() {
     let errors: Vec<(&str, String)> = found
         .iter()
         .filter(|f| f.severity == Severity::Error)
-        .map(|f| (f.code.name(), f.location.json_path.to_string()))
+        .map(|f| (f.code.id(), f.location.json_path.to_string()))
         .collect();
-    assert_eq!(errors, [("MalformedInput", String::new())]);
+    assert_eq!(errors, [("core/document_json", String::new())]);
     // The largest float itself is a number like any other.
     let document = loads(&with_x(
         r#"{"distribution": "uniform", "extent": [0, 3.4028235e38]}"#,

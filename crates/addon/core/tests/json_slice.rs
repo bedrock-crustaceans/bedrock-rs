@@ -274,8 +274,8 @@ fn an_empty_array_for_a_map_level_is_a_type_error_at_that_level() {
                 !error.path.is_empty(),
                 false
             )
-            .name()
-                == "InvalidType",
+            .id()
+                == "core/invalid_type",
             "{text}: {}",
             error.error
         );

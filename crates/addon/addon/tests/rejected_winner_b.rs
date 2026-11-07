@@ -88,7 +88,7 @@ fn errors_at<'a>(
         .filter(|f| f.severity == Severity::Error)
         .filter(|f| f.location.pack.as_ref().is_some_and(|p| p.name() == pack))
         .filter(|f| f.location.path.as_ref().is_some_and(|p| p.as_str() == path))
-        .map(|f| f.code.name())
+        .map(|f| f.code.id())
         .collect()
 }
 
@@ -125,7 +125,7 @@ fn dimension_two_packs_a_refused_lowest_file_leaves_the_higher_dimension_effecti
     assert_eq!(rejected_packs(dimensions.rejected()), ["low"]);
     assert_eq!(
         errors_at(dimensions.diagnostics(), "low", DIMENSION_PATH),
-        ["MissingRequiredField"]
+        ["core/missing_required_field"]
     );
 }
 
@@ -144,7 +144,7 @@ fn dimension_three_packs_a_refused_lowest_file_leaves_the_middle_dimension_effec
     assert_eq!(rejected_packs(dimensions.rejected()), ["low"]);
     assert_eq!(
         errors_at(dimensions.diagnostics(), "low", DIMENSION_PATH),
-        ["MissingRequiredField"]
+        ["core/missing_required_field"]
     );
 }
 
@@ -184,7 +184,7 @@ fn poi_two_packs_a_refused_top_type_leaves_the_lower_type_effective() {
     assert_eq!(
         errors_at(poi.diagnostics(), "top", POI_PATH),
         // The cause, then the loader's closing line "Failed to load POI Type".
-        ["MissingRequiredField", "DocumentRejected"]
+        ["core/missing_required_field", "poi/failed_to_load"]
     );
 }
 
@@ -197,7 +197,7 @@ fn poi_three_packs_a_refused_top_type_leaves_the_middle_type_effective() {
     assert_eq!(
         errors_at(poi.diagnostics(), "top", POI_PATH),
         // The cause, then the loader's closing line "Failed to load POI Type".
-        ["MissingRequiredField", "DocumentRejected"]
+        ["core/missing_required_field", "poi/failed_to_load"]
     );
 }
 
@@ -230,7 +230,7 @@ fn dialogue_two_packs_a_skipped_lowest_scene_leaves_the_higher_scene_effective()
     assert_eq!(rejected_packs(scenes.rejected()), ["low"]);
     assert_eq!(
         errors_at(scenes.diagnostics(), "low", DIALOGUE_PATH),
-        ["MissingRequiredField"]
+        ["dialogue/no_text"]
     );
 }
 
@@ -249,12 +249,12 @@ fn dialogue_three_packs_a_skipped_lowest_scene_leaves_the_middle_scene_effective
     assert_eq!(rejected_packs(scenes.rejected()), ["low"]);
     assert_eq!(
         errors_at(scenes.diagnostics(), "low", DIALOGUE_PATH),
-        ["MissingRequiredField"]
+        ["dialogue/no_text"]
     );
     // The top pack's scene is told that the middle one keeps the tag.
     assert_eq!(
         errors_at(scenes.diagnostics(), "top", DIALOGUE_PATH),
-        ["DuplicateIdentifier"]
+        ["dialogue/duplicate"]
     );
 }
 
@@ -287,7 +287,7 @@ fn function_two_packs_a_refused_top_function_leaves_the_lower_function_effective
     assert_eq!(rejected_packs(functions.rejected()), ["top"]);
     assert_eq!(
         errors_at(functions.diagnostics(), "top", FUNCTION_PATH),
-        ["DocumentRejected", "UnresolvedReference"]
+        ["function/failed_header", "function/unknown_command"]
     );
 }
 
@@ -306,7 +306,7 @@ fn function_three_packs_a_refused_top_function_leaves_the_middle_function_effect
     assert_eq!(rejected_packs(functions.rejected()), ["top"]);
     assert_eq!(
         errors_at(functions.diagnostics(), "top", FUNCTION_PATH),
-        ["DocumentRejected", "UnresolvedReference"]
+        ["function/failed_header", "function/unknown_command"]
     );
 }
 
@@ -338,7 +338,7 @@ fn trading_two_packs_a_refused_top_copy_leaves_the_path_without_a_table() {
     assert_eq!(rejected_packs(tables.rejected()), ["top"]);
     assert_eq!(
         errors_at(tables.diagnostics(), "top", TRADE_PATH),
-        ["MissingRequiredField"]
+        ["core/missing_required_field"]
     );
 }
 
@@ -353,7 +353,7 @@ fn trading_three_packs_a_refused_top_copy_leaves_the_path_without_a_table() {
     assert_eq!(rejected_packs(tables.rejected()), ["top"]);
     assert_eq!(
         errors_at(tables.diagnostics(), "top", TRADE_PATH),
-        ["MissingRequiredField"]
+        ["core/missing_required_field"]
     );
 }
 
@@ -381,7 +381,7 @@ fn voxel_shape_two_packs_a_refused_top_shape_leaves_the_lower_shape_effective() 
     assert_eq!(rejected_packs(shapes.rejected()), ["top"]);
     assert_eq!(
         errors_at(shapes.diagnostics(), "top", SHAPE_PATH),
-        ["MissingRequiredField", "DocumentRejected"]
+        ["core/missing_required_field", "voxel_shape/failed_to_load"]
     );
 }
 
@@ -396,7 +396,7 @@ fn voxel_shape_three_packs_a_refused_top_shape_leaves_the_middle_shape_effective
     assert_eq!(rejected_packs(shapes.rejected()), ["top"]);
     assert_eq!(
         errors_at(shapes.diagnostics(), "top", SHAPE_PATH),
-        ["MissingRequiredField", "DocumentRejected"]
+        ["core/missing_required_field", "voxel_shape/failed_to_load"]
     );
 }
 
@@ -425,7 +425,7 @@ fn aim_assist_two_packs_a_refused_top_preset_leaves_the_lower_preset_effective()
     assert_eq!(rejected_packs(aim.presets.rejected()), ["top"]);
     assert_eq!(
         errors_at(aim.diagnostics(), "top", AIM_PATH),
-        ["UnrecognizedField"]
+        ["core/unrecognized_field_worded"]
     );
 }
 
@@ -440,7 +440,7 @@ fn aim_assist_three_packs_a_refused_top_preset_leaves_the_middle_preset_effectiv
     assert_eq!(rejected_packs(aim.presets.rejected()), ["top"]);
     assert_eq!(
         errors_at(aim.diagnostics(), "top", AIM_PATH),
-        ["UnrecognizedField"]
+        ["core/unrecognized_field_worded"]
     );
 }
 
@@ -473,7 +473,7 @@ fn animation_two_packs_a_refused_top_file_leaves_the_lower_animation_effective()
     assert_eq!(rejected_packs(animations.rejected()), ["top"]);
     assert_eq!(
         errors_at(animations.diagnostics(), "top", ANIMATION_PATH),
-        ["UnrecognizedField"]
+        ["core/child_not_valid"]
     );
 }
 
@@ -492,7 +492,7 @@ fn animation_three_packs_a_refused_top_file_leaves_the_middle_animation_effectiv
     assert_eq!(rejected_packs(animations.rejected()), ["top"]);
     assert_eq!(
         errors_at(animations.diagnostics(), "top", ANIMATION_PATH),
-        ["UnrecognizedField"]
+        ["core/child_not_valid"]
     );
 }
 
@@ -523,7 +523,7 @@ fn animation_controller_two_packs_a_refused_top_file_leaves_the_lower_controller
     assert_eq!(rejected_packs(controllers.rejected()), ["top"]);
     assert_eq!(
         errors_at(controllers.diagnostics(), "top", CONTROLLER_PATH),
-        ["UnrecognizedField"]
+        ["core/child_not_valid"]
     );
 }
 
@@ -542,7 +542,7 @@ fn animation_controller_three_packs_a_refused_top_file_leaves_the_middle_control
     assert_eq!(rejected_packs(controllers.rejected()), ["top"]);
     assert_eq!(
         errors_at(controllers.diagnostics(), "top", CONTROLLER_PATH),
-        ["UnrecognizedField"]
+        ["core/child_not_valid"]
     );
 }
 
@@ -575,7 +575,7 @@ fn behavior_tree_two_packs_a_refused_top_tree_takes_the_name_from_the_lower_tree
     assert_eq!(rejected_packs(trees.rejected()), ["top"]);
     assert_eq!(
         errors_at(trees.diagnostics(), "top", TREE_PATH),
-        ["InvalidRoot"]
+        ["core/invalid_root"]
     );
 }
 
@@ -590,7 +590,7 @@ fn behavior_tree_three_packs_a_refused_top_tree_takes_the_name_from_both_lower_t
     assert_eq!(rejected_packs(trees.rejected()), ["top"]);
     assert_eq!(
         errors_at(trees.diagnostics(), "top", TREE_PATH),
-        ["InvalidRoot"]
+        ["core/invalid_root"]
     );
 }
 
@@ -602,7 +602,7 @@ fn behavior_tree_two_packs_an_unreadable_top_file_leaves_the_lower_tree_effectiv
     assert_eq!(rejected_packs(trees.rejected()), ["top"]);
     assert_eq!(
         errors_at(trees.diagnostics(), "top", TREE_PATH),
-        ["MalformedInput"]
+        ["behavior_tree/parse_error"]
     );
 }
 
@@ -617,7 +617,7 @@ fn behavior_tree_three_packs_an_unreadable_top_file_leaves_the_middle_tree_effec
     assert_eq!(rejected_packs(trees.rejected()), ["top"]);
     assert_eq!(
         errors_at(trees.diagnostics(), "top", TREE_PATH),
-        ["MalformedInput"]
+        ["behavior_tree/parse_error"]
     );
 }
 
@@ -653,7 +653,7 @@ fn camera_two_packs_a_refused_top_file_leaves_the_lower_preset_effective() {
     assert_eq!(rejected_packs(cameras.presets.rejected()), ["top"]);
     assert_eq!(
         errors_at(cameras.diagnostics(), "top", CAMERA_PATH),
-        ["UnrecognizedField"]
+        ["core/unrecognized_field_worded"]
     );
 }
 
@@ -672,7 +672,7 @@ fn camera_three_packs_a_refused_top_file_leaves_the_middle_preset_effective() {
     assert_eq!(rejected_packs(cameras.presets.rejected()), ["top"]);
     assert_eq!(
         errors_at(cameras.diagnostics(), "top", CAMERA_PATH),
-        ["UnrecognizedField"]
+        ["core/unrecognized_field_worded"]
     );
 }
 
@@ -685,7 +685,7 @@ fn camera_two_packs_a_discarded_top_preset_takes_the_identifier_from_the_lower_p
     // The camera loader's line and the linked-asset validator's line beside it.
     assert_eq!(
         errors_at(cameras.diagnostics(), "top", CAMERA_PATH),
-        ["UnresolvedReference", "UnresolvedReference"]
+        ["camera/unknown_parent", "core/unresolved_reference_worded"]
     );
 }
 
@@ -705,6 +705,6 @@ fn camera_three_packs_a_discarded_top_preset_takes_the_identifier_from_both_lowe
     // The camera loader's line and the linked-asset validator's line beside it.
     assert_eq!(
         errors_at(cameras.diagnostics(), "top", CAMERA_PATH),
-        ["UnresolvedReference", "UnresolvedReference"]
+        ["camera/unknown_parent", "core/unresolved_reference_worded"]
     );
 }

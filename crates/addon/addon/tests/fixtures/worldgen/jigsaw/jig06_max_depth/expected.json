@@ -10,25 +10,25 @@
   },
   "diagnostics": [
     {
-      "code": "InvalidValue",
+      "code": "core/invalid_value",
       "severity": "error",
       "path": "worldgen/structures/deeper.json",
       "json_path": "minecraft:jigsaw/max_depth"
     },
     {
-      "code": "DocumentRejected",
+      "code": "jigsaw/structure_failed",
       "severity": "error",
       "path": "worldgen/structures/deeper.json",
       "text": "Failed to parse jigsaw structure definition 'worldgen/structures/deeper.json'."
     },
     {
-      "code": "MissingRequiredField",
+      "code": "core/missing_required_field",
       "severity": "error",
       "path": "worldgen/structures/none.json",
       "json_path": "minecraft:jigsaw/max_depth"
     },
     {
-      "code": "DocumentRejected",
+      "code": "jigsaw/structure_failed",
       "severity": "error",
       "path": "worldgen/structures/none.json",
       "text": "Failed to parse jigsaw structure definition 'worldgen/structures/none.json'."

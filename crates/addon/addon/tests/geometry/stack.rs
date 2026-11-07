@@ -34,7 +34,7 @@ fn findings(registry: &Registry<Geometry>, severity: Severity) -> Vec<String> {
     registry
         .diagnostics()
         .filter(|d| d.severity >= severity)
-        .map(|d| format!("{} @{} {}", d.code.name(), d.location.json_path, d.code))
+        .map(|d| format!("{} @{} {}", d.code.id(), d.location.json_path, d.code))
         .collect()
 }
 
@@ -83,7 +83,7 @@ fn s02_blocks_over_entity() {
     // Ours: each replaced definition is noted.
     assert_eq!(
         findings(registry, Severity::Info),
-        ["ShadowedDefinition @ definition shadowed by a higher-priority source"; 3]
+        ["core/shadowed_definition @ definition shadowed by a higher-priority source"; 3]
     );
 }
 
@@ -169,8 +169,8 @@ fn s03_a_child_without_its_parent_is_not_loaded() {
     assert_eq!(
         errors,
         [
-            "UnresolvedReference @ geometry 'geometry.guard' inherits from 'geometry.npc', which is not defined",
-            "UnresolvedReference @ geometry 'geometry.npc' inherits from 'geometry.humanoid', which is not defined",
+            "geometry/parent_not_defined @ geometry 'geometry.guard' inherits from 'geometry.npc', which is not defined",
+            "geometry/parent_not_defined @ geometry 'geometry.npc' inherits from 'geometry.humanoid', which is not defined",
         ]
     );
 }
@@ -191,7 +191,11 @@ fn a_cycle_of_legacy_parents_loads_none_of_its_members() {
     assert!(registry.is_empty());
     let errors = findings(registry, Severity::Error);
     assert_eq!(errors.len(), 4, "{errors:?}");
-    assert!(errors.iter().all(|e| e.starts_with("ReferenceCycle @ ")));
+    assert!(
+        errors
+            .iter()
+            .all(|e| e.starts_with("core/reference_cycle @ "))
+    );
 }
 
 /// A chain as long as a pack makes it resolves without recursion; every level sees every
@@ -309,7 +313,7 @@ fn g09_the_identifier_loop_keeps_the_geometries_before_the_one_it_stops_at() {
     assert_eq!(
         findings(registry, Severity::Error),
         [
-            "InvalidValue @minecraft:geometry/1/description/identifier Error: namespaces are not supported for custom geometry: identifier: demo:geometry.x"
+            "geometry/no_namespace_custom @minecraft:geometry/1/description/identifier Error: namespaces are not supported for custom geometry: identifier: demo:geometry.x"
         ]
     );
     assert_eq!(
@@ -335,7 +339,7 @@ fn g20_an_empty_file_is_skipped_and_a_pack_without_mobs_json_says_nothing() {
     assert!(
         notes
             .iter()
-            .all(|d| d.code.name() == "EmptyDocument" && d.severity == Severity::Info)
+            .all(|d| d.code.id() == "core/empty_document" && d.severity == Severity::Info)
     );
     let set = stack(&[&[("models/entity/x.json", &x)]]);
     assert_eq!(set.resource.geometries().diagnostics().count(), 0);
@@ -362,14 +366,14 @@ fn a_file_that_fails_is_rejected_whole_and_a_geometry_s_findings_travel_with_it(
             .unwrap()
             .diagnostics()
             .iter()
-            .map(|d| d.code.name())
+            .map(|d| d.code.id())
             .collect::<Vec<_>>()
     };
     assert!(of("geometry.clean").is_empty());
-    assert_eq!(of("geometry.warned"), ["UnresolvedReference"]);
+    assert_eq!(of("geometry.warned"), ["geometry/bone_parent_missing"]);
     assert_eq!(
         of("geometry.old"),
-        ["DroppedField"],
+        ["geometry/cape_dropped"],
         "a step's finding below the legacy key"
     );
     assert!(of("geometry.plain").is_empty());
@@ -428,7 +432,11 @@ fn a_legacy_child_s_bone_parent_is_looked_up_in_the_bones_it_inherits() {
     let orphan = r#"{"format_version": "1.8.0", "geometry.orphan": {"bones": [{"name": "nose", "parent": "head"}]}}"#;
     let alone = crate::common::loaded(crate::common::load(orphan));
     assert_eq!(
-        crate::common::count(alone.diagnostics(), "UnresolvedReference", Severity::Info),
+        crate::common::count(
+            alone.diagnostics(),
+            "geometry/bone_parent_missing",
+            Severity::Info
+        ),
         1
     );
 }
@@ -504,8 +512,8 @@ fn a_bone_of_another_branch_of_the_inheritance_tree_is_no_parent() {
     assert_eq!(
         found,
         [
-            "UnresolvedReference @minecraft:geometry/1/bones/1/parent bone 'moss' has parent 'twig', which is not a bone of geometry 'geometry.a'",
-            "UnresolvedReference @minecraft:geometry/2/bones/0/parent bone 'twig' has parent 'leaf', which is not a bone of geometry 'geometry.b'",
+            "geometry/bone_parent_missing @minecraft:geometry/1/bones/1/parent bone 'moss' has parent 'twig', which is not a bone of geometry 'geometry.a'",
+            "geometry/bone_parent_missing @minecraft:geometry/2/bones/0/parent bone 'twig' has parent 'leaf', which is not a bone of geometry 'geometry.b'",
         ]
     );
 }
@@ -530,9 +538,9 @@ fn a_lower_definition_does_not_come_back_when_the_winning_one_is_rejected() {
     assert_eq!(
         found,
         [
-            "ShadowedDefinition @ definition shadowed by a higher-priority source",
-            "UnresolvedReference @ geometry 'geometry.a' inherits from 'geometry.nowhere', which is not defined",
-            "UnresolvedReference @ geometry 'geometry.b' inherits from 'geometry.gone', which is not defined",
+            "core/shadowed_definition @ definition shadowed by a higher-priority source",
+            "geometry/parent_not_defined @ geometry 'geometry.a' inherits from 'geometry.nowhere', which is not defined",
+            "geometry/parent_not_defined @ geometry 'geometry.b' inherits from 'geometry.gone', which is not defined",
         ]
     );
     // Three packs: the top one rejected, two valid ones below it: none is registered.
@@ -553,7 +561,7 @@ fn a_lower_definition_does_not_come_back_when_the_winning_one_is_rejected() {
     assert_eq!(
         findings(registry, Severity::Info)
             .iter()
-            .filter(|f| f.starts_with("ShadowedDefinition"))
+            .filter(|f| f.starts_with("core/shadowed_definition"))
             .count(),
         3,
         "both lower `geometry.a` and the lowest `geometry.other`"
@@ -623,7 +631,7 @@ fn a_geometry_file_that_cannot_be_read_is_skipped_with_the_loader_s_text() {
             .filter_map(|f| match f.detail.as_deref() {
                 // The read-error definitions carry the host's kind as the detail.
                 Some(bedrock_addon::diagnostic::DiagnosticDetail::Io(kind))
-                    if f.code.name() == "ReadError" =>
+                    if f.code.id() == "core/read_error_worded" =>
                 {
                     Some((
                         f.location.path.as_ref()?.as_str().to_owned(),

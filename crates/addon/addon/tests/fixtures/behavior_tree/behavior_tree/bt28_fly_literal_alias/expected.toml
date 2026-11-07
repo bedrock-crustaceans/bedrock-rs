@@ -1,7 +1,7 @@
 # Validation rule 10a: both literals are present in both.json.
 
 [[diagnostic]]
-kind = "LiteralIgnored"
+kind = "core/literal_ignored"
 severity = "info"
 file = "behavior_trees/both.json"
 path = "minecraft:behavior_tree/minecraft:root/minecraft:fly/should_be_flying_bool"

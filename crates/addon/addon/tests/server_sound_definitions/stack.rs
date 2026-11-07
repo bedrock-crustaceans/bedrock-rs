@@ -75,7 +75,18 @@ fn timed(seconds: u32) -> String {
 fn named(registry: &Registry<SoundMetadata>, code: &str) -> Vec<String> {
     registry
         .diagnostics()
-        .filter(|d| d.code.name() == code)
+        .filter(|d| d.code.id() == code)
+        .map(ToString::to_string)
+        .collect()
+}
+
+fn named_of_kind(
+    registry: &Registry<SoundMetadata>,
+    kind: bedrock_addon::diagnostic::Kind,
+) -> Vec<String> {
+    registry
+        .diagnostics()
+        .filter(|d| d.code.kind() == kind)
         .map(ToString::to_string)
         .collect()
 }
@@ -97,7 +108,7 @@ fn ssd17_a_duplicate_in_one_file_keeps_the_first() {
     let registry = stack.server_sound_definitions();
     assert_eq!(registry.len(), 1);
     assert!(click(registry).duration_info.is_some());
-    let duplicates = named(registry, "DuplicateIdentifier");
+    let duplicates = named(registry, "server_sound_definitions/duplicate");
     assert_eq!(duplicates.len(), 1);
     assert!(duplicates[0].contains(DUPLICATE) && duplicates[0].starts_with("[error]"));
 }
@@ -113,7 +124,7 @@ fn ssd18_across_packs_the_lowest_pack_wins() {
     assert_eq!(click(registry).origin().pack.index(), Some(1));
     let duplicates: Vec<_> = registry
         .diagnostics()
-        .filter(|d| d.code.name() == "DuplicateIdentifier")
+        .filter(|d| d.code.id() == "server_sound_definitions/duplicate")
         .collect();
     assert_eq!(duplicates.len(), 1);
     assert_eq!(
@@ -138,7 +149,10 @@ fn ssd25_three_packs_report_each_later_definition_deviation() {
         Some(SoundDuration::Ticks(600)),
         "pack C's"
     );
-    assert_eq!(named(registry, "DuplicateIdentifier").len(), 2);
+    assert_eq!(
+        named(registry, "server_sound_definitions/duplicate").len(),
+        2
+    );
 }
 
 #[test]
@@ -147,7 +161,7 @@ fn ssd19_names_compare_with_case() {
     let stack = stack(vec![pack(10, &[(PATH, &text)])]);
     let registry = stack.server_sound_definitions();
     assert_eq!(registry.len(), 2);
-    assert!(named(registry, "DuplicateIdentifier").is_empty());
+    assert!(named_of_kind(registry, bedrock_addon::diagnostic::Kind::Duplicate).is_empty());
     assert_eq!(registry.diagnostics().count(), 0);
 }
 
@@ -162,7 +176,7 @@ fn ssd09_a_rejected_file_registers_nothing_and_the_rest_of_the_stack_loads() {
     assert_eq!(registry.len(), 1);
     assert!(registry.contains(&SoundEventName::parse("demo:other")));
     assert_eq!(registry.rejected().len(), 1);
-    assert_eq!(named(registry, "UnrecognizedField").len(), 1);
+    assert_eq!(named(registry, "core/unrecognized_field").len(), 1);
 }
 
 #[test]
@@ -216,7 +230,7 @@ fn ssd20_a_subpack_copy_replaces_the_packs() {
     let registry = stack.server_sound_definitions();
     assert_eq!(click(registry).duration(), Some(SoundDuration::Ticks(20)));
     assert_eq!(registry.len(), 1);
-    assert!(named(registry, "DuplicateIdentifier").is_empty());
+    assert!(named_of_kind(registry, bedrock_addon::diagnostic::Kind::Duplicate).is_empty());
 }
 
 #[cfg(feature = "sound_definitions")]
@@ -275,7 +289,7 @@ fn ssd23_a_name_without_a_resource_pack_definition_is_an_info() {
     let report = stacks.link();
     let unknown: Vec<&Diagnostic> = report
         .iter()
-        .filter(|d| d.code.name() == "UnknownSound")
+        .filter(|d| d.code.id() == "core/unknown_sound")
         .collect();
     assert_eq!(unknown.len(), 1, "{:#?}", lines(&report));
     assert_eq!(unknown[0].severity, Severity::Info);

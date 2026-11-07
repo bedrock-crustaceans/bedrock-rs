@@ -127,7 +127,7 @@ fn the_engine_s_experimental_field_template_names_an_unknown_component() {
         refused
             .diagnostics
             .iter()
-            .any(|d| d.code.name() == "UnrecognizedComponent"
+            .any(|d| d.code.id() == "core/unrecognized_component"
                 && d.severity == Severity::Error
                 && d.location.json_path.to_string()
                     == "minecraft:entity/components/test:experimental_component"),

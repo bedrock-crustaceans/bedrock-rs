@@ -1,7 +1,7 @@
 //! The two `Upgrade` impls of `families::client_entity::history`, the chain's shape, and
 //! `s01`–`s02d`.
 
-use bedrock_addon::diagnostic::{Diagnostics, Severity};
+use bedrock_addon::diagnostic::{Diagnostics, Disposition, Kind, Severity};
 use bedrock_addon::document::JsonDocument as _;
 use bedrock_addon::families::client_entity::ClientEntity;
 use bedrock_addon::families::client_entity::history::{
@@ -168,7 +168,7 @@ fn the_1_10_step_keeps_the_string_elements_of_the_script_lists_and_drops_the_res
     assert!(
         out.diagnostics
             .iter()
-            .filter(|f| f.code.name() == "DroppedField" && f.severity == Severity::Info)
+            .filter(|f| f.code.id() == "core/dropped_field" && f.severity == Severity::Info)
             .count()
             == 2,
         "each dropped element is reported",
@@ -321,7 +321,7 @@ fn s01b_existing_animate_is_no_member_of_1_8() {
     let d = rejected(entity(&ghost("1.8.0", members), &cx()));
     expect(
         &d,
-        "UnrecognizedField",
+        "core/child_not_valid",
         Severity::Error,
         "child 'animate' not valid here.",
     );
@@ -349,13 +349,13 @@ fn s01d_no_animations_deviation() {
     let d = rejected(entity(&ghost("1.8.0", members), &cx()));
     expect(
         &d,
-        "UnrecognizedField",
+        "core/child_not_valid",
         Severity::Error,
         "child 'animation_controllers' not valid here.",
     );
     expect_at(
         &d,
-        "UnrecognizedField",
+        "core/child_not_valid",
         Severity::Error,
         "minecraft:client_entity/description/animation_controllers",
     );
@@ -374,7 +374,7 @@ fn s01e_multi_member_element_deviation() {
     assert!(!animations.contains_key("controller__b"));
     expect_at(
         document.diagnostics(),
-        "DroppedField",
+        "core/dropped_field",
         Severity::Info,
         "minecraft:client_entity/description/animation_controllers/0/b",
     );
@@ -382,7 +382,7 @@ fn s01e_multi_member_element_deviation() {
         document
             .diagnostics()
             .iter()
-            .filter(|f| f.code.name() == "DroppedField")
+            .filter(|f| f.code.id() == "core/dropped_field")
             .count(),
         1
     );
@@ -394,13 +394,13 @@ fn s01g_bad_1_8_schema() {
     let d = rejected(entity(&ghost("1.8.0", members), &cx()));
     expect_prefix(
         &d,
-        "InvalidType",
+        "core/unknown_child_option",
         Severity::Error,
         "unknown child schema option type.  Allowed types: ",
     );
     expect_at(
         &d,
-        "InvalidType",
+        "core/unknown_child_option",
         Severity::Error,
         "minecraft:client_entity/description/render_controllers/0",
     );
@@ -519,7 +519,7 @@ fn the_1_8_step_converts_nothing_of_a_controller_list_without_animations() {
     ));
     assert!(
         out.diagnostics.iter().any(|f| {
-            f.code.name() == "UnrecognizedField"
+            f.code.id() == "core/child_not_valid"
                 && f.severity == Severity::Error
                 && f.code.to_string() == "child 'animation_controllers' not valid here."
                 && f.location.json_path.to_string()
@@ -550,7 +550,7 @@ fn an_animation_of_the_file_under_a_controller_s_name_is_noted_as_replaced() {
     let document = loaded(entity(&text("animation.x.mine"), &cx()));
     expect_at(
         document.diagnostics(),
-        "DroppedField",
+        "core/dropped_field",
         Severity::Info,
         "minecraft:client_entity/description/animations/controller__move",
     );
@@ -559,7 +559,14 @@ fn an_animation_of_the_file_under_a_controller_s_name_is_noted_as_replaced() {
         "controller.animation.pig.move"
     );
     let document = loaded(entity(&text("controller.animation.pig.move"), &cx()));
-    none(document.diagnostics(), "DroppedField");
+    assert!(
+        document
+            .diagnostics()
+            .iter()
+            .all(|f| f.code.kind() != Kind::UnknownMember(Disposition::Dropped)),
+        "{}",
+        lines(document.diagnostics()).join("\n")
+    );
 }
 
 /// two elements of `animation_controllers` with one
@@ -580,7 +587,7 @@ fn a_controller_a_later_element_of_the_same_key_replaces_is_noted_at_its_element
     let document = loaded(entity(&text("controller.animation.x.a"), &cx()));
     expect_at(
         document.diagnostics(),
-        "DroppedField",
+        "core/dropped_field",
         Severity::Info,
         "minecraft:client_entity/description/animation_controllers/0/move",
     );
@@ -598,7 +605,14 @@ fn a_controller_a_later_element_of_the_same_key_replaces_is_noted_at_its_element
         "controller.animation.x.b"
     );
     let document = loaded(entity(&text("controller.animation.x.b"), &cx()));
-    none(document.diagnostics(), "DroppedField");
+    assert!(
+        document
+            .diagnostics()
+            .iter()
+            .all(|f| f.code.kind() != Kind::UnknownMember(Disposition::Dropped)),
+        "{}",
+        lines(document.diagnostics()).join("\n")
+    );
 }
 
 /// below 1.18.20 the loader lower-cases a script's
@@ -615,7 +629,7 @@ fn a_script_literal_the_lower_casing_changes_is_noted_at_the_script() {
         let told: Vec<String> = document
             .diagnostics()
             .iter()
-            .filter(|f| f.code.name() == "ValueRewritten")
+            .filter(|f| f.code.id() == "core/value_rewritten")
             .map(|f| format!("{:?} {}", f.severity, f.location.json_path))
             .collect();
         (second, told)
@@ -661,7 +675,7 @@ fn a_controller_a_later_one_of_its_key_writes_over_is_noted_at_its_element() {
         document
             .diagnostics()
             .iter()
-            .filter(|f| f.code.name() == "DroppedField")
+            .filter(|f| f.code.id() == "core/dropped_field")
             .map(|f| format!("{:?} {}", f.severity, f.location.json_path))
             .collect()
     };

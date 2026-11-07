@@ -225,7 +225,7 @@ fn ingredient_data_beyond_f32_is_the_largest_finite_float_with_one_warning_devia
                 assert_eq!(
                     raised.len(),
                     1,
-                    "{case}: one InvalidValue warning at {path}\n{:#?}",
+                    "{case}: one core/invalid_value warning at {path}\n{:#?}",
                     document.diagnostics()
                 );
                 // It is core's finding, at this file of this pack.

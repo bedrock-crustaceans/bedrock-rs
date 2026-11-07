@@ -28,7 +28,7 @@ fn rule_7_a_missing_world_origin_is_required() {
     ] {
         let finding = fails_with(
             &doc(origin, BODY),
-            "MissingRequiredField",
+            "structure/required",
             &required("structure_world_origin"),
         );
         assert_eq!(
@@ -42,7 +42,7 @@ fn rule_7_a_missing_world_origin_is_required() {
 fn rule_7_a_world_origin_of_2_ints_expects_3_elements() {
     fails_with(
         &doc("structure_world_origin: [1, 2],", BODY),
-        "InvalidValue",
+        "structure/three_elements",
         "The \"structure_world_origin\" field expects 3 elements.",
     );
 }
@@ -53,7 +53,7 @@ fn rule_6_a_missing_size_is_required() {
         &bytes(&format!(
             "{{format_version: 1, structure_world_origin: [0, 0, 0], structure: {{{BODY}}}}}"
         )),
-        "MissingRequiredField",
+        "structure/required",
         &required("size"),
     );
 }
@@ -73,7 +73,7 @@ fn rule_8_a_structure_that_is_not_a_compound_is_required() {
         &bytes(
             "{format_version: 1, size: [1, 1, 1], structure_world_origin: [0, 0, 0], structure: [1]}",
         ),
-        "MissingRequiredField",
+        "structure/required",
         &required("structure"),
     );
 }
@@ -87,7 +87,7 @@ fn rule_9_block_indices_missing_or_not_a_list_is_required() {
                 "structure_world_origin: [0, 0, 0],",
                 &format!("{indices} {rest}"),
             ),
-            "MissingRequiredField",
+            "structure/required",
             &required("block_indices"),
         );
         assert_eq!(
@@ -112,7 +112,7 @@ fn rule_10_the_volume_is_an_i32_product_and_wraps() {
         &bytes(
             "{format_version: 1, size: [65536, 65536, 1], structure_world_origin: [0, 0, 0], structure: {block_indices: [[0], [-1]], entities: [], palette: {}}}",
         ),
-        "InvalidValue",
+        "structure/volume",
         "The \"block_indices\" field should have as many elements as defined by the \"size\" field.",
     );
 }
@@ -135,7 +135,7 @@ fn rule_11_a_palette_that_is_not_a_compound_is_required() {
             "structure_world_origin: [0, 0, 0],",
             "block_indices: [[0], [-1]], entities: [], palette: [1]",
         ),
-        "MissingRequiredField",
+        "structure/required",
         &required("palette"),
     );
 }
@@ -145,7 +145,7 @@ fn rule_12_a_palette_without_block_palette_is_the_required_field_error() {
     for block_palette in ["", "block_palette: 1,"] {
         let finding = fails_with(
             &with_palette(&format!("{block_palette} block_position_data: {{}}"), "[]"),
-            "MissingRequiredField",
+            "structure/required",
             &required("block_palette"),
         );
         assert_eq!(
@@ -188,7 +188,7 @@ fn rule_12_a_tick_delay_of_another_type_reads_as_0() {
 fn rule_11_palettes_are_read_before_entities() {
     fails_with(
         &with_palette("block_position_data: {}", "[4]"),
-        "MissingRequiredField",
+        "structure/required",
         &required("block_palette"),
     );
 }
@@ -215,7 +215,7 @@ fn rule_1_a_file_that_is_not_nbt_reads_as_an_empty_compound() {
         truncated,
         &not_a_compound,
     ] {
-        let finding = fails_with(input, "MalformedInput", &required("format_version"));
+        let finding = fails_with(input, "structure/not_nbt", &required("format_version"));
         assert_eq!(finding.location.json_path.to_string(), "");
     }
 }
@@ -281,7 +281,7 @@ fn a_container_tag_of_another_type_is_missing_as_vanilla_reads_it() {
         ),
     ];
     for (field, input, at) in cases {
-        let finding = fails_with(&input, "MissingRequiredField", &required(field));
+        let finding = fails_with(&input, "structure/required", &required(field));
         assert_eq!(finding.location.json_path.to_string(), at);
     }
     // `block_palette` of another type: rule_12 above.

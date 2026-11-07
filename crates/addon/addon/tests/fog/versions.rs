@@ -1,6 +1,6 @@
 //! `v01`–`v14`) and the gates before either parser
 
-use bedrock_addon::diagnostic::Severity;
+use bedrock_addon::diagnostic::{Kind, Severity};
 use bedrock_addon::families::fog::{DistanceType, FogColor, Keyframed};
 use bedrock_addon::version::{ENGINE_VERSION, FormatVersion, FormatVersionInput};
 use bedrock_addon::versioning::{RangeModel, Selection, select_versions};
@@ -25,7 +25,7 @@ fn versioned(written: &str) -> String {
 fn v01_missing_version() {
     let text = doc("1.21.90", "").replace(r#""format_version": "1.21.90", "#, "");
     let d = rejected(parse(&text, &pack()));
-    expect(&d, "MissingFormatVersion", Severity::Error, INVALID);
+    expect(&d, "fog/invalid_version", Severity::Error, INVALID);
     assert_eq!(d.len(), 1, "{:?}", lines(&d));
 }
 
@@ -33,7 +33,7 @@ fn v01_missing_version() {
 fn v02_number_version() {
     for written in ["1.16", "null", "true", "{}", "\"abc\"", "\"\"", "[1, 2]"] {
         let d = rejected(parse(&versioned(written), &pack()));
-        expect(&d, "MissingFormatVersion", Severity::Error, INVALID);
+        expect(&d, "fog/invalid_version", Severity::Error, INVALID);
         assert_eq!(d.len(), 1, "{written}: {:?}", lines(&d));
     }
 }
@@ -42,7 +42,7 @@ fn v02_number_version() {
 fn v03_below_floor() {
     for version in ["1.16.0", "1.16.99", "1.16.100-beta.1", "0.0.1"] {
         let d = rejected(parse(&doc(version, ""), &pack()));
-        expect(&d, "UnsupportedVersion", Severity::Error, UNSUPPORTED);
+        expect(&d, "fog/unsupported_version", Severity::Error, UNSUPPORTED);
         assert_eq!(d.len(), 1, "{version}: {:?}", lines(&d));
     }
     // The floor itself is read.
@@ -108,7 +108,7 @@ fn v05_1_21_0_weather_density() {
     let d = rejected(parse(&doc("1.20.80", weather), &pack()));
     expect_at(
         &d,
-        "UnrecognizedField",
+        "core/child_not_valid",
         Severity::Error,
         "child 'weather' not valid here.",
         "minecraft:fog_settings/volumetric/density/weather",
@@ -141,7 +141,7 @@ fn v06_1_21_90_henyey_greenstein() {
     ));
     expect_at(
         &d,
-        "UnrecognizedField",
+        "core/child_not_valid",
         Severity::Error,
         "child 'henyey_greenstein_g' not valid here.",
         "minecraft:fog_settings/volumetric/henyey_greenstein_g",
@@ -189,7 +189,7 @@ fn v08_above_engine() {
     let d = rejected(parse(&doc(&above, ""), &pack()));
     expect(
         &d,
-        "UnsupportedVersion",
+        "core/no_parser_for_version",
         Severity::Error,
         &format!("unsupported version: no parser available for version {above}"),
     );
@@ -202,7 +202,7 @@ fn v08b_above_latest_below_engine() {
     let d = rejected(parse(&doc("1.26.30", ""), &engine(1, 26, 30)));
     expect(
         &d,
-        "UnsupportedVersion",
+        "core/no_parser_for_version",
         Severity::Error,
         "unsupported version: no parser available for version 1.26.30",
     );
@@ -211,7 +211,7 @@ fn v08b_above_latest_below_engine() {
     let d = rejected(parse(&doc("1.26.21", ""), &pack()));
     expect_prefix(
         &d,
-        "UnsupportedVersion",
+        "core/no_parser_for_version",
         Severity::Error,
         "unsupported version",
     );
@@ -221,10 +221,10 @@ fn v08b_above_latest_below_engine() {
 fn v09_prerelease() {
     let g = r#""volumetric": {"henyey_greenstein_g": {"air": {"henyey_greenstein_g": 0.4}}}"#;
     let d = rejected(parse(&doc("1.21.90-beta.1", g), &pack()));
-    assert!(find(&d, "PrereleaseFormatVersion", Severity::Info).is_some());
+    assert!(find(&d, "core/prerelease_format_version", Severity::Info).is_some());
     expect(
         &d,
-        "UnrecognizedField",
+        "core/child_not_valid",
         Severity::Error,
         "child 'henyey_greenstein_g' not valid here.",
     );
@@ -233,7 +233,7 @@ fn v09_prerelease() {
     assert!(
         find(
             document.diagnostics(),
-            "PrereleaseFormatVersion",
+            "core/prerelease_format_version",
             Severity::Info
         )
         .is_some()
@@ -246,13 +246,13 @@ fn v09_prerelease() {
 #[test]
 fn v10_beta_literal_deviation() {
     let d = rejected(parse(&doc("beta", ""), &pack()));
-    assert_eq!(count(&d, "UnsupportedVersion", Severity::Error), 1);
+    assert_eq!(count(&d, "core/no_parser_for_version", Severity::Error), 1);
     assert_eq!(d.len(), 1, "{:?}", lines(&d));
 
     let mut toggled = pack();
     toggled.beta_apis = true;
     let d = rejected(parse(&doc("beta", ""), &toggled));
-    assert_eq!(count(&d, "UnsupportedVersion", Severity::Error), 1);
+    assert_eq!(count(&d, "core/no_parser_for_version", Severity::Error), 1);
     assert_eq!(d.len(), 1, "{:?}", lines(&d));
 }
 
@@ -285,7 +285,10 @@ fn v11_partial_version() {
 fn v12_array_version_deviation() {
     for written in ["[1, 21, 90]", "[1, 26, 20]"] {
         let d = rejected(parse(&versioned(written), &pack()));
-        assert_eq!(count(&d, "MalformedFormatVersion", Severity::Error), 1);
+        assert_eq!(
+            count(&d, "core/malformed_format_version", Severity::Error),
+            1
+        );
         assert_eq!(d.len(), 1, "{written}: {:?}", lines(&d));
     }
 }
@@ -297,7 +300,7 @@ fn v13_boundary_1_26_20() {
         let d = rejected(parse(&doc(version, &members), &pack()));
         expect_at(
             &d,
-            "UnrecognizedField",
+            "core/child_not_valid",
             Severity::Error,
             "child 'fog_density' not valid here.",
             "minecraft:fog_settings/distance/air/fog_density",
@@ -310,7 +313,12 @@ fn v13_boundary_1_26_20() {
 
     let document = loaded(parse(&doc("1.26.20", &members), &pack()));
     assert_eq!(document.version().parsed_as, V1_26_20);
-    let unknown = find(document.diagnostics(), "UnrecognizedField", Severity::Info).unwrap();
+    let unknown = find(
+        document.diagnostics(),
+        "core/unrecognized_field",
+        Severity::Info,
+    )
+    .unwrap();
     assert_eq!(
         unknown.location.json_path.to_string(),
         "minecraft:fog_settings/distance/air/fog_density"
@@ -323,7 +331,7 @@ fn v14_extra_root_member() {
     let d = rejected(parse(&extra("1.26.20"), &pack()));
     expect(
         &d,
-        "MalformedInput",
+        "core/document_member_count",
         Severity::Error,
         "A Minecraft Document must have exactly two members: \"format_version\" and a payload member",
     );
@@ -332,7 +340,7 @@ fn v14_extra_root_member() {
     let d = rejected(parse(&extra("1.21.90"), &pack()));
     expect_at(
         &d,
-        "UnrecognizedField",
+        "core/child_not_valid",
         Severity::Error,
         "child 'extra' not valid here.",
         "extra",
@@ -345,7 +353,7 @@ fn v14_extra_root_member() {
 #[test]
 fn a_syntax_error_is_the_reader_s_parse_error() {
     let d = rejected(parse(r#"{"format_version": "1.26.20","#, &pack()));
-    expect_prefix(&d, "MalformedInput", Severity::Error, "parse error:\n");
+    expect_prefix(&d, "fog/parse_error", Severity::Error, "parse error:\n");
     assert_eq!(d.len(), 1, "{:?}", lines(&d));
 }
 
@@ -354,7 +362,7 @@ fn s03_an_empty_file_and_an_empty_value() {
     let d = rejected(parse("", &pack()));
     expect(
         &d,
-        "EmptyDocument",
+        "fog/empty_resource",
         Severity::Error,
         "The raw Json in was empty after getting resources.",
     );
@@ -362,7 +370,7 @@ fn s03_an_empty_file_and_an_empty_value() {
         let d = rejected(parse(text, &pack()));
         expect(
             &d,
-            "EmptyDocument",
+            "fog/empty_after_parse",
             Severity::Error,
             "The raw Json was empty after parse.",
         );
@@ -385,7 +393,7 @@ fn the_identifier_is_read_before_the_version() {
         doc("1.21.90", "").replace("\"demo:fog\"", "[]"),
     ] {
         let d = rejected(parse(&text, &pack()));
-        expect(&d, "MissingIdentifier", Severity::Error, TEXT);
+        expect(&d, "fog/no_identifier", Severity::Error, TEXT);
         assert_eq!(d.len(), 1, "{text}: {:?}", lines(&d));
     }
 }
@@ -395,7 +403,7 @@ fn a_gate_s_finding_has_no_closing_line() {
     for text in [doc("1.16.0", ""), versioned("7"), "{}".to_owned()] {
         let d = rejected(parse(&text, &pack()));
         assert!(
-            d.iter().all(|f| f.code.name() != "DocumentRejected"),
+            d.iter().all(|f| f.code.kind() != Kind::Closing),
             "{:?}",
             lines(&d)
         );

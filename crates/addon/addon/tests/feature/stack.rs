@@ -1,7 +1,7 @@
 //! `bp.features()`: the walk of `features/` top-down, the app's `definitions/features` after the
 //! packs, the first definition claiming its identifier (fixtures f10, f20).
 
-use bedrock_addon::diagnostic::{Severity, codes};
+use bedrock_addon::diagnostic::{Kind, Severity, codes};
 use bedrock_addon::families::feature::Feature;
 use bedrock_addon::id::FeatureId;
 use bedrock_addon::load::{AppData, LoadOptions};
@@ -111,6 +111,6 @@ fn the_apps_definitions_come_after_every_pack() {
     assert!(
         !features
             .diagnostics()
-            .any(|f| f.code.name() == "DuplicateIdentifier")
+            .any(|f| f.code.kind() == Kind::Duplicate)
     );
 }

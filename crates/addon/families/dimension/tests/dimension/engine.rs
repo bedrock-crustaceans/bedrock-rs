@@ -27,7 +27,7 @@ fn a_null_member_of_a_cereal_slice_is_a_type_error_that_rejects() {
             "minecraft:nether",
             &format!("{member}, {VOID}"),
         ));
-        let found = with_code(&d, "InvalidType");
+        let found = with_code(&d, "core/invalid_type");
         assert_eq!(found.len(), 1, "{version} {member}: {d:#?}");
         assert_eq!(found[0].severity, Severity::Error);
         let name = member.split('"').nth(1).unwrap();
@@ -152,7 +152,7 @@ fn height_failure(content_log: &str) -> String {
 fn rejected_for_height(text: &str, content_log: &str, at: &str) {
     let d = rejects(text);
     assert_eq!(errors(&d), [height_failure(content_log)], "{text}");
-    let found = with_code(&d, "InvalidValue");
+    let found = with_code(&d, "dimension/validation_failed");
     assert_eq!(found[0].location.json_path.to_string(), at);
 }
 
@@ -296,7 +296,7 @@ fn part_b_a_vanilla_dimension_takes_no_default_biome() {
         let d = rejects(&render("case-19", &[identifier, "minecraft:plains"]));
         assert_eq!(errors(&d), [custom_failure(VANILLA_BIOME)], "{identifier}");
         assert_eq!(
-            with_code(&d, "InvalidValue")[0]
+            with_code(&d, "dimension/validation_failed")[0]
                 .location
                 .json_path
                 .to_string(),
@@ -352,7 +352,7 @@ fn part_b_a_custom_identifier_needs_a_namespace_other_than_minecraft() {
                 "{template} {identifier}"
             );
             assert_eq!(
-                with_code(&d, "InvalidValue")[0]
+                with_code(&d, "dimension/validation_failed")[0]
                     .location
                     .json_path
                     .to_string(),
@@ -405,7 +405,7 @@ fn clouds_out_of_range_reject() {
             ["the input is outside of the accepted range [-512, 512]".to_owned()]
         );
         assert_eq!(
-            with_code(&d, "InvalidValue")[0]
+            with_code(&d, "core/outside_accepted_range")[0]
                 .location
                 .json_path
                 .to_string(),
@@ -421,10 +421,13 @@ fn clouds_out_of_range_reject() {
         )
     };
     assert_eq!(
-        with_code(&rejects(&clouds("{}")), "MissingRequiredField").len(),
+        with_code(&rejects(&clouds("{}")), "core/missing_required_field").len(),
         1
     );
-    assert_eq!(with_code(&rejects(&clouds("null")), "InvalidType").len(), 1);
+    assert_eq!(
+        with_code(&rejects(&clouds("null")), "core/invalid_type").len(),
+        1
+    );
 }
 
 #[test]
@@ -438,7 +441,7 @@ fn part_b_a_vanilla_dimension_takes_no_clouds() {
         let d = rejects(&text);
         assert_eq!(errors(&d), [custom_failure(VANILLA_CLOUDS)], "{identifier}");
         assert_eq!(
-            with_code(&d, "InvalidValue")[0]
+            with_code(&d, "dimension/validation_failed")[0]
                 .location
                 .json_path
                 .to_string(),
@@ -519,7 +522,7 @@ fn part_c_an_unknown_generator_is_told_and_the_document_kept() {
 fn a_document_without_minecraft_generation_is_rejected() {
     // case-18 (incorrect structure): `minecraft:generation` is a required member of `Components`.
     let d = rejects(&engine("case-18.json"));
-    let found = with_code(&d, "MissingRequiredField");
+    let found = with_code(&d, "core/missing_required_field");
     assert_eq!(found.len(), 1, "{d:#?}");
     assert_eq!(errors(&d).len(), 1, "{d:#?}");
     assert_eq!(

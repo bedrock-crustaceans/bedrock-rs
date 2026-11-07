@@ -1176,14 +1176,7 @@ mod tests {
     /// The findings as `<code> <severity> <path>`.
     fn told(d: &Diagnostics) -> Vec<String> {
         d.iter()
-            .map(|f| {
-                format!(
-                    "{} {:?} {}",
-                    f.code.name(),
-                    f.severity,
-                    f.location.json_path
-                )
-            })
+            .map(|f| format!("{} {:?} {}", f.code.id(), f.severity, f.location.json_path))
             .collect()
     }
 
@@ -1203,6 +1196,6 @@ mod tests {
             &mut d,
         );
         assert_eq!(text, None);
-        assert_eq!(told(&d), ["InvalidValue Info "]);
+        assert_eq!(told(&d), ["core/invalid_value Info "]);
     }
 }

@@ -13,12 +13,12 @@
   },
   "diagnostics": [
     {
-      "code": "ShadowedDefinition",
+      "code": "core/shadowed_definition",
       "severity": "info",
       "path": "worldgen/structures/ruin.json"
     },
     {
-      "code": "ShadowedDefinition",
+      "code": "core/shadowed_definition",
       "severity": "info",
       "path": "worldgen/structures/z_dup.json"
     }

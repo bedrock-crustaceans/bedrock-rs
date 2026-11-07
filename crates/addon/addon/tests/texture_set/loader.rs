@@ -138,7 +138,7 @@ fn a_stack_with_a_thousand_listed_images_asks_for_the_bytes_of_none() {
             .texture_atlases()
             .terrain_atlas
             .diagnostics()
-            .filter(|f| f.code.name() == "TextureNotFound")
+            .filter(|f| f.code.id() == "core/texture_not_found")
             .map(|f| f.location.json_path.to_string())
             .collect();
         assert_eq!(missing.len(), 1, "{order:?}: {missing:?}");
@@ -164,7 +164,7 @@ fn a_stack_with_a_thousand_listed_images_asks_for_the_bytes_of_none() {
             !set.resource
                 .report()
                 .iter()
-                .any(|f| f.code.name() == "FileNotLoaded"),
+                .any(|f| f.code.id() == "core/file_not_loaded"),
             "{order:?}"
         );
     }
@@ -226,7 +226,7 @@ fn found(set: &StackSet) -> Vec<(&'static str, String)> {
     crate::group(&set.resource)
         .map(|f| {
             let file = f.location.path.as_ref().map_or("", |path| path.as_str());
-            (f.code.name(), file.to_owned())
+            (f.code.id(), file.to_owned())
         })
         .collect()
 }
@@ -257,7 +257,7 @@ fn a_subpack_list_over_the_pack_s_list_is_not_called_incomplete() {
     assert_eq!(
         found(&set),
         [(
-            "InvalidValue",
+            "core/invalid_value",
             "subpacks/hd/textures/textures_list.json".to_owned()
         )]
     );
@@ -287,14 +287,14 @@ fn a_subpack_s_manifest_json_does_not_declare_the_pack_s_capabilities() {
     let (set, _, _) = load_world(with_subpack(&without), Some("hd"), Order::Issue);
     assert_eq!(
         found(&set),
-        [("CapabilityHint", "manifest.json".to_owned())]
+        [("core/capability_hint", "manifest.json".to_owned())]
     );
     // With it, the same: the subpack's file is no manifest, so its `pbr` is not the pack's,
     // and the pack's own capabilities are known all the same (the sets still load).
     let (set, _, _) = load_world(with_subpack(&files), Some("hd"), Order::Issue);
     assert_eq!(
         found(&set),
-        [("CapabilityHint", "manifest.json".to_owned())]
+        [("core/capability_hint", "manifest.json".to_owned())]
     );
     assert_eq!(set.resource.texture_sets().sets().count(), 2);
 }
@@ -366,7 +366,7 @@ fn lints(set: &StackSet) -> Vec<(&'static str, Option<usize>)> {
                 .pack
                 .as_ref()
                 .and_then(bedrock_addon::pack::PackRef::index);
-            (f.code.name(), pack)
+            (f.code.id(), pack)
         })
         .collect()
 }
@@ -386,11 +386,14 @@ fn a_manifest_json_in_the_subpack_does_not_hide_that_the_pack_turns_vibrant_visu
         files,
     };
     let plain = load_packs(&[pack(vec![])]);
-    assert_eq!(lints(&plain), [("VibrantVisualsDisabledByPack", Some(0))]);
+    assert_eq!(
+        lints(&plain),
+        [("core/vibrant_visuals_disabled_by_pack", Some(0))]
+    );
     let shadowed = load_packs(&[pack(vec![SUBPACK_MANIFEST])]);
     assert_eq!(
         lints(&shadowed),
-        [("VibrantVisualsDisabledByPack", Some(0))]
+        [("core/vibrant_visuals_disabled_by_pack", Some(0))]
     );
     // Below the version the rule starts at, neither says anything.
     let older = load_packs(&[WorldPack {
@@ -420,9 +423,9 @@ fn a_manifest_json_in_a_subpack_does_not_silence_the_hint_for_the_stack() {
             },
         ])
     };
-    assert_eq!(lints(&stack(vec![])), [("CapabilityHint", Some(1))]);
+    assert_eq!(lints(&stack(vec![])), [("core/capability_hint", Some(1))]);
     assert_eq!(
         lints(&stack(vec![SUBPACK_MANIFEST])),
-        [("CapabilityHint", Some(1))]
+        [("core/capability_hint", Some(1))]
     );
 }

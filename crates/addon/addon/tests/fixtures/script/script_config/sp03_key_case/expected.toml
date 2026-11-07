@@ -1,7 +1,7 @@
 # families/script_config fixtures.md, row sp03_key_case (P1).
 
 [[diagnostic]]
-code = "UnrecognizedField"
+code = "core/unrecognized_field"
 severity = "info"
 phase = "parse"
 file = "server.properties"

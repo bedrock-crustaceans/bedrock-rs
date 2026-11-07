@@ -38,7 +38,7 @@ fn unknown_paths() -> Vec<String> {
 /// `(severity, path)` of every `UnrecognizedField` finding.
 fn unrecognized(d: &Diagnostics) -> Vec<(Severity, String)> {
     d.iter()
-        .filter(|f| f.code.name() == "UnrecognizedField")
+        .filter(|f| f.code.id() == "core/unrecognized_field")
         .map(|f| (f.severity, f.location.json_path.to_string()))
         .collect()
 }

@@ -14,10 +14,19 @@ fn without_the_compile_check_molang_is_stored_unchecked_deviation() {
         &unchecked(),
     ));
     assert_eq!(
-        count(document.diagnostics(), "MolangNotChecked", Severity::Info),
+        count(
+            document.diagnostics(),
+            "core/molang_not_checked",
+            Severity::Info
+        ),
         1
     );
-    let info = find(document.diagnostics(), "MolangNotChecked", Severity::Info).unwrap();
+    let info = find(
+        document.diagnostics(),
+        "core/molang_not_checked",
+        Severity::Info,
+    )
+    .unwrap();
     // geometry, one material, one texture and the multiplier.
     // The text names the cause that holds: the feature is off, or it is on and the load was
     // given no check (K98).
@@ -64,7 +73,7 @@ mod checked {
         ));
         let d = rejected(parse(&text, &rp(1, 21, 100)));
         assert!(
-            count(&d, "InvalidMolang", Severity::Error) >= 1,
+            count(&d, "core/invalid_molang", Severity::Error) >= 1,
             "{:?}",
             lines(&d)
         );
@@ -94,7 +103,7 @@ mod checked {
             ));
             let d = rejected(parse(&text, &rp(1, 21, 100)));
             assert!(
-                count(&d, "InvalidMolang", Severity::Error) >= 1,
+                count(&d, "core/invalid_molang", Severity::Error) >= 1,
                 "{member}: {:?}",
                 lines(&d)
             );
@@ -114,7 +123,11 @@ mod checked {
                 "{members}"
             );
             assert!(
-                count(document.diagnostics(), "InvalidMolang", Severity::Error) >= 1,
+                count(
+                    document.diagnostics(),
+                    "core/invalid_molang",
+                    Severity::Error
+                ) >= 1,
                 "{:?}",
                 lines(document.diagnostics())
             );
@@ -193,10 +206,10 @@ mod checked {
         assert_eq!(invalid.molang_version, RawVersion(-1));
         let a = with(r#""part_visibility": [{"*": "query.is_baby"}]"#);
         let d = rejected(parse(&a, &invalid));
-        expect_line(&d, "InvalidMolang", Severity::Error, UNRESOLVED);
+        expect_line(&d, "core/invalid_molang", Severity::Error, UNRESOLVED);
         expect_line(
             &d,
-            "InvalidMolang",
+            "core/invalid_molang",
             Severity::Error,
             "unrecognized token: query.is_baby",
         );
@@ -206,8 +219,8 @@ mod checked {
         );
         // The crate's own notes: the version that did not parse, and the query that exists at
         // another version. Neither is a parser line; both stay infos.
-        expect_line(&d, "MolangLint", Severity::Info, INVALID_VERSION);
-        expect_line(&d, "MolangLint", Severity::Info, NOT_AT_VERSION);
+        expect_line(&d, "core/molang_lint", Severity::Info, INVALID_VERSION);
+        expect_line(&d, "core/molang_lint", Severity::Info, NOT_AT_VERSION);
 
         let document = loaded(parse(&b, &invalid));
         assert_eq!(
@@ -215,15 +228,15 @@ mod checked {
             ["controller.render.ok"]
         );
         let d = document.diagnostics();
-        expect_line(d, "InvalidMolang", Severity::Error, UNRESOLVED);
+        expect_line(d, "core/invalid_molang", Severity::Error, UNRESOLVED);
         expect_line(
             d,
-            "InvalidMolang",
+            "core/invalid_molang",
             Severity::Error,
             "unrecognized token: query.is_baby",
         );
-        expect_line(d, "MolangLint", Severity::Info, INVALID_VERSION);
-        expect_line(d, "MolangLint", Severity::Info, NOT_AT_VERSION);
+        expect_line(d, "core/molang_lint", Severity::Info, INVALID_VERSION);
+        expect_line(d, "core/molang_lint", Severity::Info, NOT_AT_VERSION);
         // The errors are the dropped controller's `geometry` alone.
         assert!(
             d.iter().filter(|f| f.severity >= Severity::Error).all(|f| f
@@ -250,13 +263,13 @@ mod checked {
         let d = document.diagnostics();
         expect_line(
             d,
-            "InvalidMolang",
+            "core/invalid_molang",
             Severity::Error,
             "Error: binary Add '+' operator at end of expression",
         );
         expect(
             d,
-            "InvalidMolang",
+            "core/invalid_molang",
             Severity::Error,
             "Error parsing: texture.a +",
         );
@@ -284,7 +297,7 @@ mod checked {
         // The game logs it at level 3 and the expression compiles: a kept error.
         expect_line(
             document.diagnostics(),
-            "InvalidMolang",
+            "core/invalid_molang",
             Severity::Error,
             "error parsing float string, expected '+' or '-' after 'e':",
         );
@@ -306,7 +319,7 @@ mod checked {
             .diagnostics()
             .iter()
             // By legacy name: the variant and the definitions that were it.
-            .filter(|d| matches!(d.code.name(), "MolangLint"))
+            .filter(|d| matches!(d.code.id(), "core/molang_lint"))
             .filter(|d| {
                 matches!(d.detail.as_deref(), Some(DiagnosticDetail::Molang(m)) if m.code() == DiagCode::QueryArity)
             })
@@ -330,7 +343,7 @@ mod checked {
         let document = loaded(parse(&text, &rp(1, 21, 100)));
         expect_line(
             document.diagnostics(),
-            "InvalidMolang",
+            "core/invalid_molang",
             Severity::Error,
             "No tokens found in expression",
         );
@@ -347,7 +360,7 @@ mod checked {
         );
         let d = document.diagnostics();
         assert_eq!(
-            count(d, "InvalidMolang", Severity::Error),
+            count(d, "core/invalid_molang", Severity::Error),
             0,
             "{:?}",
             lines(d)
@@ -355,12 +368,17 @@ mod checked {
         assert_eq!(d.at_least(Severity::Error).count(), 0, "{:?}", lines(d));
         expect_line(
             d,
-            "MolangLint",
+            "core/molang_lint",
             Severity::Info,
             "empty expression: rejected without a message below MolangVersion 4",
         );
         // The number itself is told by the reader, at the member.
-        assert_eq!(count(d, "InvalidType", Severity::Info), 1, "{:?}", lines(d));
+        assert_eq!(
+            count(d, "core/invalid_type", Severity::Info),
+            1,
+            "{:?}",
+            lines(d)
+        );
         // A written empty string is a schema-typed source: it fails the file, at 13 with the
         // parser's line and at 0, where the parser has none, with one error of the member's
         // severity beside the note.
@@ -368,7 +386,7 @@ mod checked {
         rejected(parse(&written, &rp(1, 21, 100)));
         let d = rejected(parse(&written, &rp(1, 16, 0)));
         assert_eq!(
-            count(&d, "InvalidMolang", Severity::Error),
+            count(&d, "core/invalid_molang", Severity::Error),
             1,
             "{:?}",
             lines(&d)
@@ -440,7 +458,7 @@ mod checked {
             "render_controllers/controller.render.two/textures/2",
         ] {
             assert!(
-                d.iter().any(|f| f.code.name() == "InvalidMolang"
+                d.iter().any(|f| f.code.id() == "core/invalid_molang"
                     && f.severity == Severity::Error
                     && f.location.json_path.to_string() == path
                     && super::super::common::line(f).contains(LINE)),

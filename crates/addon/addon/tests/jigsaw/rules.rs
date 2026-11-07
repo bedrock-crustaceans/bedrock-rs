@@ -5,7 +5,7 @@
 use bedrock_addon::diagnostic::codes;
 use std::sync::Arc;
 
-use bedrock_addon::diagnostic::{Diagnostics, Severity};
+use bedrock_addon::diagnostic::{Diagnostics, Kind, Severity};
 use bedrock_addon::families::jigsaw::{JigsawStructure, ProcessorList, StructureSet, TemplatePool};
 use bedrock_addon::load::{BuiltIns, LoadOptions};
 use bedrock_addon::pack::{Behavior, PackStack};
@@ -31,7 +31,7 @@ fn errors(d: &Diagnostics) -> Vec<&'static str> {
 /// The finding of `d` with `code`, and its JSON path.
 fn at(d: &Diagnostics, code: &str) -> String {
     d.iter()
-        .find(|f| f.code.name() == code)
+        .find(|f| f.code.id() == code)
         .unwrap_or_else(|| panic!("no {code}: {d:?}"))
         .location
         .json_path
@@ -49,7 +49,7 @@ fn rule_3_a_version_that_is_no_version_is_malformed() {
         let d = rejected::<JigsawStructure>(PATH, &text);
         assert_eq!(
             errors(&d),
-            ["MalformedFormatVersion", "DocumentRejected"],
+            ["core/malformed_format_version", "jigsaw/structure_failed"],
             "{version}"
         );
     }
@@ -72,7 +72,10 @@ fn rule_3_a_third_root_member_rejects_the_document() {
         structure("")
     );
     let d = rejected::<JigsawStructure>(PATH, &text);
-    assert_eq!(errors(&d), ["MalformedInput", "DocumentRejected"]);
+    assert_eq!(
+        errors(&d),
+        ["core/document_member_count", "jigsaw/structure_failed"]
+    );
     assert!(d.iter().any(|f| f.code.is(&codes::DOCUMENT_MEMBER_COUNT)));
 }
 
@@ -82,7 +85,7 @@ fn rule_5_an_unreadable_file_gets_the_family_line() {
         Ok(_) => panic!("loaded"),
         Err(r) => r.diagnostics,
     };
-    assert_eq!(errors(&d).last(), Some(&"DocumentRejected"));
+    assert_eq!(errors(&d).last(), Some(&"jigsaw/structure_failed"));
     let bytes = [0xff_u8, 0xfe, 0x00];
     let d = <JigsawStructure as bedrock_addon::document::Content>::parse(
         &PackPath::new(PATH).unwrap(),
@@ -91,7 +94,7 @@ fn rule_5_an_unreadable_file_gets_the_family_line() {
     )
     .expect_err("not UTF-8")
     .diagnostics;
-    assert_eq!(errors(&d), ["MalformedInput", "DocumentRejected"]);
+    assert_eq!(errors(&d), ["core/syntax", "jigsaw/structure_failed"]);
 }
 
 #[test]
@@ -123,10 +126,10 @@ fn structural_unknown_enum_names_are_invalid_enum_values() {
             rejected::<JigsawStructure>(PATH, &document("1.21.20", "minecraft:jigsaw", &payload));
         assert_eq!(
             errors(&d),
-            ["InvalidEnumValue", "DocumentRejected"],
+            ["core/invalid_enum_value", "jigsaw/structure_failed"],
             "{path}"
         );
-        assert_eq!(at(&d, "InvalidEnumValue"), path);
+        assert_eq!(at(&d, "core/invalid_enum_value"), path);
     }
 }
 
@@ -150,8 +153,12 @@ fn structural_wrong_json_types_are_invalid_types() {
             PATH,
             &document("1.21.20", "minecraft:jigsaw", &structure(extra)),
         );
-        assert_eq!(errors(&d), ["InvalidType", "DocumentRejected"], "{extra}");
-        assert_eq!(at(&d, "InvalidType"), path);
+        assert_eq!(
+            errors(&d),
+            ["core/invalid_type", "jigsaw/structure_failed"],
+            "{extra}"
+        );
+        assert_eq!(at(&d, "core/invalid_type"), path);
     }
     let d = rejected::<JigsawStructure>(
         PATH,
@@ -161,7 +168,7 @@ fn structural_wrong_json_types_are_invalid_types() {
             &structure("").replace(r#""max_depth": 1"#, r#""max_depth": "1""#),
         ),
     );
-    assert_eq!(errors(&d), ["InvalidType", "DocumentRejected"]);
+    assert_eq!(errors(&d), ["core/invalid_type", "jigsaw/structure_failed"]);
 }
 
 #[test]
@@ -172,7 +179,7 @@ fn structural_numbers_outside_the_storage_type_reject_the_file() {
         "worldgen/template_pools/p.json",
         &document("1.21.20", "minecraft:template_pool", pool),
     );
-    assert_eq!(errors(&d), ["InvalidType", "DocumentRejected"]);
+    assert_eq!(errors(&d), ["core/invalid_type", "jigsaw/pool_failed"]);
     let d = rejected::<JigsawStructure>(
         PATH,
         &document(
@@ -181,7 +188,7 @@ fn structural_numbers_outside_the_storage_type_reject_the_file() {
             &structure("").replace(r#""absolute": 0"#, r#""absolute": 40000"#),
         ),
     );
-    assert_eq!(errors(&d), ["InvalidType", "DocumentRejected"]);
+    assert_eq!(errors(&d), ["core/invalid_type", "jigsaw/structure_failed"]);
 }
 
 #[test]
@@ -204,10 +211,10 @@ fn structural_missing_members_are_missing_required_fields() {
             rejected::<JigsawStructure>(PATH, &document("1.21.20", "minecraft:jigsaw", &payload));
         assert_eq!(
             errors(&d),
-            ["MissingRequiredField", "DocumentRejected"],
+            ["core/missing_required_field", "jigsaw/structure_failed"],
             "{path}"
         );
-        assert_eq!(at(&d, "MissingRequiredField"), path);
+        assert_eq!(at(&d, "core/missing_required_field"), path);
     }
 }
 
@@ -218,9 +225,12 @@ fn structural_a_limit_object_whose_type_names_the_other_form() {
         "worldgen/processors/l.json",
         &document("1.21.20", "minecraft:processor_list", list),
     );
-    assert_eq!(errors(&d), ["InvalidEnumValue", "DocumentRejected"]);
     assert_eq!(
-        at(&d, "InvalidEnumValue"),
+        errors(&d),
+        ["core/invalid_enum_value", "jigsaw/processors_failed"]
+    );
+    assert_eq!(
+        at(&d, "core/invalid_enum_value"),
         "minecraft:processor_list/processors/0/limit/type"
     );
     let string = list.replace(r#"{"type": "uniform", "value": 2}"#, r#""2""#);
@@ -228,7 +238,10 @@ fn structural_a_limit_object_whose_type_names_the_other_form() {
         "worldgen/processors/l.json",
         &document("1.21.20", "minecraft:processor_list", &string),
     );
-    assert_eq!(errors(&d), ["InvalidType", "DocumentRejected"]);
+    assert_eq!(
+        errors(&d),
+        ["core/invalid_type", "jigsaw/processors_failed"]
+    );
 }
 
 #[test]
@@ -241,7 +254,7 @@ fn structural_file_references_hold_at_most_256_bytes() {
         "worldgen/template_pools/p.json",
         &document("1.21.20", "minecraft:template_pool", &pool),
     );
-    assert_eq!(errors(&d), ["InvalidValue", "DocumentRejected"]);
+    assert_eq!(errors(&d), ["core/invalid_value", "jigsaw/pool_failed"]);
     let ok = pool.replace(&long, &"a".repeat(256));
     loads::<TemplatePool>(
         "worldgen/template_pools/p.json",
@@ -258,10 +271,10 @@ fn structural_shared_members_report_their_unknown_members() {
     );
     assert_eq!(
         names(loaded.diagnostics(), Severity::Warning),
-        ["UnrecognizedField"]
+        ["core/unrecognized_field"]
     );
     assert_eq!(
-        at(loaded.diagnostics(), "UnrecognizedField"),
+        at(loaded.diagnostics(), "core/unrecognized_field"),
         "minecraft:processor_list/processors/0/rules/0/output_state/demo"
     );
 }
@@ -307,7 +320,7 @@ fn rule_11_pool_names_collide_after_lowercasing_or_with_a_built_in() {
     let found: Vec<(String, String)> = stack
         .jigsaw()
         .diagnostics()
-        .filter(|d| d.code.name() == "DuplicateIdentifier")
+        .filter(|d| d.code.id() == "jigsaw/pool_name_registered")
         .map(|d| {
             assert_eq!(d.severity, Severity::Info);
             (
@@ -341,7 +354,7 @@ fn rule_20_an_empty_leading_string_has_no_version() {
     )
     .expect_err("no version")
     .diagnostics;
-    assert_eq!(errors(&d), ["MissingFormatVersion"]);
+    assert_eq!(errors(&d), ["core/no_valid_version"]);
     let d = <bedrock_addon::families::jigsaw::JigsawMetadata as bedrock_addon::document::Content>::parse(
         &PackPath::new("worldgen/metadata/a.dat").unwrap(),
         &[9, b'1'],
@@ -349,7 +362,7 @@ fn rule_20_an_empty_leading_string_has_no_version() {
     )
     .expect_err("the stream ends inside the string")
     .diagnostics;
-    assert_eq!(errors(&d), ["MalformedFormatVersion"]);
+    assert_eq!(errors(&d), ["jigsaw/bad_format_version_string"]);
 }
 
 #[test]
@@ -390,10 +403,10 @@ fn rule_9_spacing_equal_to_twice_the_separation_is_rejected() {
         "worldgen/structure_sets/s.json",
         &document("1.21.20", "minecraft:structure_set", &spaced_set(4, 8)),
     );
-    assert_eq!(errors(&d), ["InvalidValue"]);
+    assert_eq!(errors(&d), ["jigsaw/spacing_separation"]);
     assert_eq!(
         d.iter()
-            .find(|f| f.code.name() == "InvalidValue")
+            .find(|f| f.code.id() == "jigsaw/spacing_separation")
             .unwrap()
             .code
             .to_string(),
@@ -423,10 +436,13 @@ fn a_third_root_member_below_1_21_20_gets_the_member_count_text_deviation() {
         structure("")
     );
     let d = rejected::<JigsawStructure>(PATH, &text);
-    assert_eq!(errors(&d), ["MalformedInput", "DocumentRejected"]);
+    assert_eq!(
+        errors(&d),
+        ["core/document_member_count", "jigsaw/structure_failed"]
+    );
     assert!(d.iter().any(|f| f.code.is(&codes::DOCUMENT_MEMBER_COUNT)));
     assert!(
-        !d.iter().any(|f| f.code.name() == "UnsupportedVersion"),
+        !d.iter().any(|f| f.kind() == Kind::UnsupportedVersion),
         "{d:?}"
     );
 }
@@ -467,7 +483,7 @@ fn packs_of(stack: &PackStack<Behavior>, code: &str, severity: Severity) -> Vec<
     stack
         .jigsaw()
         .diagnostics()
-        .filter(|d| d.code.name() == code && d.severity == severity)
+        .filter(|d| d.code.id() == code && d.severity == severity)
         .map(|d| {
             d.location
                 .pack
@@ -487,12 +503,12 @@ fn rule_9_two_packs_a_set_refused_at_registration_keeps_the_lower_set_out() {
     let stack = set_stack(&[Some((4, 8)), Some((4, 9))]);
     assert_eq!(effective_set(&stack), None);
     assert_eq!(
-        packs_of(&stack, "InvalidValue", Severity::Error),
+        packs_of(&stack, "jigsaw/spacing_separation", Severity::Error),
         [Some(0)],
         "rule 9 is reported on the top pack's set"
     );
     assert_eq!(
-        packs_of(&stack, "ShadowedDefinition", Severity::Info),
+        packs_of(&stack, "core/shadowed_definition", Severity::Info),
         [Some(1)],
         "the lower set is reported as shadowed (ours; vanilla drops it silently)"
     );
@@ -502,9 +518,12 @@ fn rule_9_two_packs_a_set_refused_at_registration_keeps_the_lower_set_out() {
 fn rule_9_three_packs_a_set_refused_at_registration_keeps_both_lower_sets_out() {
     let stack = set_stack(&[Some((4, 8)), Some((4, 10)), Some((4, 12))]);
     assert_eq!(effective_set(&stack), None);
-    assert_eq!(packs_of(&stack, "InvalidValue", Severity::Error), [Some(0)]);
     assert_eq!(
-        packs_of(&stack, "ShadowedDefinition", Severity::Info),
+        packs_of(&stack, "jigsaw/spacing_separation", Severity::Error),
+        [Some(0)]
+    );
+    assert_eq!(
+        packs_of(&stack, "core/shadowed_definition", Severity::Info),
         [Some(1), Some(2)]
     );
     // A refused set in the middle changes nothing for the top pack's set.

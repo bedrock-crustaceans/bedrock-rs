@@ -602,10 +602,10 @@ fn a_json_document_that_fails_is_rejected_in_its_file_and_closed_once() {
         matches!(
             codes
                 .iter()
-                .map(|code| code.name())
+                .map(|code| code.id())
                 .collect::<Vec<_>>()
                 .as_slice(),
-            ["MalformedInput", "DocumentRejected"]
+            ["core/syntax", "glint/failed"]
         ),
         "{codes:?}"
     );
@@ -751,7 +751,7 @@ fn a_json_document_parses_as_written_without_upgrading() {
     let closings = rejected
         .diagnostics
         .iter()
-        .filter(|d| d.code.name() == "DocumentRejected")
+        .filter(|d| d.code.id() == "glint/failed")
         .count();
     assert_eq!(closings, 1, "closed once");
 }
@@ -1051,7 +1051,7 @@ fn registry_loads_a_json_definition_as_the_hand_written_loader_does() {
     assert!(
         generic
             .diagnostics()
-            .any(|d| d.code.name() == "ShadowedDefinition"),
+            .any(|d| d.code.id() == "core/shadowed_definition"),
         "the family's rule: each replaced glint noted"
     );
     assert!(GLINTS.needs.is_empty() && GLINTS.then.is_none());
@@ -1373,7 +1373,7 @@ fn a_beta_document_a_family_built_opens_and_closes_once() {
 const VANILLA_FLARE: &str = r#"{"format_version": "1.0.0", "demo:flare": {"description": {"identifier": "minecraft:sun"}, "level": 1}}"#;
 
 fn is_namespace_rule(d: &Diagnostic) -> bool {
-    d.code.name() == "NamespaceRule"
+    d.code.id() == "core/namespace_rule"
 }
 
 #[test]
@@ -1548,7 +1548,7 @@ fn impl_no_molang_states_a_struct_without_molang_fields() {
         !read
             .diagnostics()
             .iter()
-            .any(|d| d.code.name() == "MolangNotChecked"),
+            .any(|d| d.code.id() == "core/molang_not_checked"),
         "nothing to check"
     );
 }
@@ -1628,7 +1628,7 @@ fn single_walks_its_struct_for_molang_pass_two_as_a_chain_of_one_does() {
         single
             .diagnostics
             .iter()
-            .any(|d| d.code.name() == "MolangNotChecked"),
+            .any(|d| d.code.id() == "core/molang_not_checked"),
         "pass 2 reached the condition: {:?}",
         single.diagnostics
     );

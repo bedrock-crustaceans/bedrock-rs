@@ -1,7 +1,7 @@
 {
   "diagnostics": [
     {
-      "code": "MalformedInput",
+      "code": "json_ui/parse_error",
       "severity": "error",
       "pack": 1
     }

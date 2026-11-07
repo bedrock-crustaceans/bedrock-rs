@@ -72,7 +72,7 @@ pub fn line(f: &Diagnostic) -> String {
     format!(
         "{:?} {} {} {}{}",
         f.severity,
-        f.code.name(),
+        f.code.id(),
         f.location.json_path,
         f.code,
         detail.unwrap_or_default()
@@ -87,13 +87,13 @@ pub fn lines(d: &Diagnostics) -> Vec<String> {
 /// The finding with code `name` and severity, if any.
 pub fn find<'d>(d: &'d Diagnostics, name: &str, severity: Severity) -> Option<&'d Diagnostic> {
     d.iter()
-        .find(|f| f.code.name() == name && f.severity == severity)
+        .find(|f| f.code.id() == name && f.severity == severity)
 }
 
 /// How many findings have code `name` and `severity`.
 pub fn count(d: &Diagnostics, name: &str, severity: Severity) -> usize {
     d.iter()
-        .filter(|f| f.code.name() == name && f.severity == severity)
+        .filter(|f| f.code.id() == name && f.severity == severity)
         .count()
 }
 
@@ -102,7 +102,7 @@ pub fn count(d: &Diagnostics, name: &str, severity: Severity) -> usize {
 pub fn expect(d: &Diagnostics, name: &str, severity: Severity, text: &str) {
     assert!(
         d.iter()
-            .any(|f| f.code.name() == name && f.severity == severity && f.code.to_string() == text),
+            .any(|f| f.code.id() == name && f.severity == severity && f.code.to_string() == text),
         "no {severity:?} {name} \"{text}\" in\n{}",
         lines(d).join("\n")
     );
@@ -112,7 +112,7 @@ pub fn expect(d: &Diagnostics, name: &str, severity: Severity, text: &str) {
 #[track_caller]
 pub fn expect_at(d: &Diagnostics, name: &str, severity: Severity, text: &str, at: &str) {
     assert!(
-        d.iter().any(|f| f.code.name() == name
+        d.iter().any(|f| f.code.id() == name
             && f.severity == severity
             && f.code.to_string() == text
             && f.location.json_path.to_string() == at),
@@ -125,7 +125,7 @@ pub fn expect_at(d: &Diagnostics, name: &str, severity: Severity, text: &str, at
 #[track_caller]
 pub fn expect_prefix(d: &Diagnostics, name: &str, severity: Severity, prefix: &str) {
     assert!(
-        d.iter().any(|f| f.code.name() == name
+        d.iter().any(|f| f.code.id() == name
             && f.severity == severity
             && f.code.to_string().starts_with(prefix)),
         "no {severity:?} {name} \"{prefix}…\" in\n{}",
@@ -138,7 +138,7 @@ pub fn expect_prefix(d: &Diagnostics, name: &str, severity: Severity, prefix: &s
 pub fn expect_line(d: &Diagnostics, name: &str, severity: Severity, needle: &str) {
     assert!(
         d.iter()
-            .any(|f| f.code.name() == name && f.severity == severity && line(f).contains(needle)),
+            .any(|f| f.code.id() == name && f.severity == severity && line(f).contains(needle)),
         "no {severity:?} {name} with \"{needle}\" in\n{}",
         lines(d).join("\n")
     );

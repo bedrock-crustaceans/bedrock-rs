@@ -143,7 +143,7 @@ fn the_engine_snap_bodies_load_at_their_formats() {
     };
     assert_eq!(snap.surface, Some(Surface::Ceiling));
     let d = rejects(&engine_snap(30, "1.26.50"), &cx());
-    error_at(&d, "MissingRequiredField", "search_range");
+    error_at(&d, "core/required_child", "search_range");
 }
 
 /// Parses `json`, writes it, parses the written text again: the same feature, and the second

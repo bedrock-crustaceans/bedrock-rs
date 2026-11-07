@@ -14,7 +14,7 @@ fn errors_of(name: &str, members: &str) -> Vec<(&'static str, String, String)> {
     let mut found = errors(&d);
     assert_eq!(
         found.pop(),
-        Some(finding("DocumentRejected", "", FAILED)),
+        Some(finding("camera/splines_failed", "", FAILED)),
         "{d:#?}"
     );
     found
@@ -30,7 +30,7 @@ fn cam11_spline_names_types_and_times_are_constrained() {
         assert_eq!(
             errors_of(name, ""),
             [finding(
-                "InvalidValue",
+                "camera/spline_name",
                 &at("name"),
                 "\"name\" must be in \"namespace:name\" format."
             )],
@@ -41,7 +41,7 @@ fn cam11_spline_names_types_and_times_are_constrained() {
         assert_eq!(
             errors_of("ex:s", &format!(r#""spline_type": "{spline_type}""#)),
             [finding(
-                "InvalidValue",
+                "camera/spline_type",
                 &at("spline_type"),
                 "\"spline_type\" must be either \"catmullrom\" or \"linear\"."
             )],
@@ -54,7 +54,7 @@ fn cam11_spline_names_types_and_times_are_constrained() {
             r#""progress_key_frames": [{"progress": 0.5, "time": 0}, {"progress": 1, "time": -0.5}]"#
         ),
         [finding(
-            "InvalidValue",
+            "camera/spline_progress_time",
             &at("progress_key_frames/1/time"),
             "Time cannot be a negative value."
         )]
@@ -77,7 +77,7 @@ fn cam22_each_spline_constraint_has_its_own_text() {
     assert_eq!(
         errors_of("ex:s", r#""total_time": -1"#),
         [finding(
-            "InvalidValue",
+            "camera/spline_total_time",
             &at("total_time"),
             "Total time cannot be a negative value."
         )]
@@ -89,7 +89,7 @@ fn cam22_each_spline_constraint_has_its_own_text() {
                 &format!(r#""progress_key_frames": [{{"progress": {progress}, "time": 0}}]"#)
             ),
             [finding(
-                "InvalidValue",
+                "camera/spline_progress",
                 &at("progress_key_frames/0/progress"),
                 "The progress values must be between 0.0 and 1.0."
             )],
@@ -103,7 +103,7 @@ fn cam22_each_spline_constraint_has_its_own_text() {
             r#""rotation_key_frames": [{"rotation": [0, 0, 0], "time": -1}]"#
         ),
         [finding(
-            "InvalidValue",
+            "camera/spline_rotation_time",
             &at("rotation_key_frames/0/time"),
             "Time cannot be a negative value"
         )]
@@ -117,14 +117,20 @@ fn cam22_each_spline_constraint_has_its_own_text() {
 
 #[test]
 fn rule_6_every_required_spline_member_is_required() {
-    let missing = |path: &str| finding("MissingRequiredField", &at(path), "missing required field");
+    let missing = |path: &str| {
+        finding(
+            "core/missing_required_field_worded",
+            &at(path),
+            "missing required field",
+        )
+    };
     let d = rejects(spline(
         r#"{"format_version": "1.26.0", "minecraft:camera_custom_splines": {}}"#,
     ));
     assert_eq!(
         errors(&d)[0],
         finding(
-            "MissingRequiredField",
+            "core/missing_required_field_worded",
             "minecraft:camera_custom_splines/splines",
             "missing required field"
         )
@@ -164,7 +170,7 @@ fn rule_6_every_required_spline_member_is_required() {
     assert_eq!(
         errors_of("ex:s", r#""loop": true"#),
         [finding(
-            "UnrecognizedField",
+            "core/unrecognized_field_worded",
             &at("loop"),
             "this member was found in the input, but is not present in the Schema"
         )]
@@ -172,7 +178,10 @@ fn rule_6_every_required_spline_member_is_required() {
     let found = errors_of("ex:s", r#""control_points": [{"position": [0, 0]}]"#);
     assert_eq!(
         (found[0].0, found[0].1.as_str()),
-        ("InvalidType", at("control_points/0/position").as_str())
+        (
+            "core/invalid_type",
+            at("control_points/0/position").as_str()
+        )
     );
 }
 
@@ -205,7 +214,7 @@ fn cam25_easing_is_one_of_the_32_names() {
         assert_eq!(found.len(), 1, "{found:?}");
         assert_eq!(
             (found[0].0, found[0].1.clone()),
-            ("InvalidEnumValue", at(&format!("{frames}/0/easing")))
+            ("core/invalid_enum_value", at(&format!("{frames}/0/easing")))
         );
     }
 

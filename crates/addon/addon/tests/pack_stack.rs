@@ -132,7 +132,7 @@ fn icon_lints(
         })
         .map(|f| {
             (
-                f.code.name(),
+                f.code.id(),
                 f.severity,
                 f.location
                     .pack
@@ -166,9 +166,14 @@ fn a_stack_reports_the_icon_lints_of_its_packs_lowest_first() {
     assert_eq!(
         icon_lints(&stack.report()),
         [
-            ("PackIconShape", Severity::Info, Some(2), at.clone()),
-            ("InvalidValue", Severity::Info, Some(1), at.clone()),
-            ("PackIconMissing", Severity::Info, Some(0), at.clone()),
+            ("core/pack_icon_shape", Severity::Info, Some(2), at.clone()),
+            ("core/invalid_value", Severity::Info, Some(1), at.clone()),
+            (
+                "core/pack_icon_missing",
+                Severity::Info,
+                Some(0),
+                at.clone()
+            ),
         ]
     );
     let stack = PackStack::<Behavior>::of(
@@ -178,7 +183,7 @@ fn a_stack_reports_the_icon_lints_of_its_packs_lowest_first() {
     .expect("behaviour packs");
     assert_eq!(
         icon_lints(&stack.report()),
-        [("PackIconMissing", Severity::Info, Some(1), at)]
+        [("core/pack_icon_missing", Severity::Info, Some(1), at)]
     );
 }
 
@@ -219,13 +224,13 @@ fn a_base_game_pack_without_an_icon_is_not_reported() {
         icon_lints(&stack.report()),
         [
             (
-                "PackIconMissing",
+                "core/pack_icon_missing",
                 Severity::Info,
                 Some(2),
                 "pack_icon.png".to_owned()
             ),
             (
-                "PackIconShape",
+                "core/pack_icon_shape",
                 Severity::Info,
                 Some(1),
                 "pack_icon.png".to_owned()

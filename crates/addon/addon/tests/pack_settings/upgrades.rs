@@ -107,7 +107,7 @@ fn manifest_multiselect_since_engine() {
     let document = manifest("mv15_multiselect").expect("the manifest loads");
     assert!(matches!(document.settings[0], Setting::Multiselect { .. }));
     let found = count(document.diagnostics(), Severity::Info, "settings/0", |c| {
-        c.name() == "FieldSinceEngine"
+        c.id() == "core/field_since_engine"
     });
     assert_eq!(found, 1);
 }

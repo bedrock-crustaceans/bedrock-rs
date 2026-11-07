@@ -75,12 +75,12 @@ fn vanilla_warnings_are_only_the_refused_chemistry_capability_and_the_format_1_c
     let mut warnings = std::collections::BTreeMap::<&str, usize>::new();
     for relative in vanilla_manifests() {
         for diagnostic in parse(&fixture(&relative)).unwrap().diagnostics() {
-            *warnings.entry(diagnostic.code.name()).or_default() += 1;
+            *warnings.entry(diagnostic.code.id()).or_default() += 1;
         }
     }
     let expected = std::collections::BTreeMap::from([
-        ("InvalidCapability", 14),
-        ("MinEngineVersionCapFormatVersion1", 5),
+        ("core/invalid_capability", 14),
+        ("core/min_engine_version_cap_format_version1", 5),
     ]);
     assert_eq!(warnings, expected);
 }

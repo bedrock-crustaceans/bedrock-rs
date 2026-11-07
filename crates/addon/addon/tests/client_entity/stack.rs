@@ -23,7 +23,14 @@ fn entities(set: &StackSet) -> &Registry<ClientEntity> {
 fn shadowed(set: &StackSet) -> Vec<String> {
     entities(set)
         .diagnostics()
-        .filter(|f| f.code.name() == "ClientEntityShadowed")
+        .filter(|f| {
+            matches!(
+                f.code.id(),
+                "core/client_entity_shadowed"
+                    | "core/client_entity_shadowed_older"
+                    | "core/client_entity_shadowed_above_stack"
+            )
+        })
         .map(|f| {
             assert_eq!(f.severity, Severity::Info);
             format!(
@@ -39,7 +46,14 @@ fn shadowed(set: &StackSet) -> Vec<String> {
 fn shadow_texts(set: &StackSet) -> Vec<String> {
     entities(set)
         .diagnostics()
-        .filter(|f| f.code.name() == "ClientEntityShadowed")
+        .filter(|f| {
+            matches!(
+                f.code.id(),
+                "core/client_entity_shadowed"
+                    | "core/client_entity_shadowed_older"
+                    | "core/client_entity_shadowed_above_stack"
+            )
+        })
         .map(|f| f.code.to_string())
         .collect()
 }
@@ -478,7 +492,7 @@ fn a_2_000_identifier_stack_merges_and_ignores_by_min_engine_version() {
 fn an_unreadable_entity_file_is_reported_once_by_the_stack() {
     fn unread<'a>(findings: impl Iterator<Item = &'a Diagnostic>) -> Vec<(String, Severity)> {
         let mut found: Vec<(String, Severity)> = findings
-            .filter(|f| f.code.name() == "ReadError")
+            .filter(|f| f.code.id() == "core/read_error")
             .map(|f| {
                 (
                     format!(

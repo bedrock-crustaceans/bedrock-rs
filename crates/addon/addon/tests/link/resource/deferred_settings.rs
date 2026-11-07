@@ -28,7 +28,7 @@ fn told(finding: &Diagnostic) -> Told {
         _ => ("", String::new()),
     };
     (
-        finding.code.name(),
+        finding.code.id(),
         finding.severity,
         finding.phase,
         finding
@@ -131,7 +131,10 @@ mod caustics {
             LoadOptions::default(),
         );
         let found = set.link();
-        assert_eq!(at(&found, WATER), [error("TextureNotFound")]);
+        assert_eq!(
+            at(&found, WATER),
+            [error("deferred_settings/caustics_not_found")]
+        );
         let texts: Vec<String> = crate::common::in_file(&found, WATER)
             .iter()
             .map(|finding| finding.code.to_string())
@@ -147,12 +150,15 @@ mod caustics {
     #[test]
     fn render_r51_an_image_that_is_no_whole_number_of_frames_or_does_not_decode_is_a_kept_error() {
         // Both sides of "the height is a multiple of the width".
-        assert_eq!(linked(&[(IMAGE, png(16, 40))]), [error("InvalidTexture")]);
+        assert_eq!(
+            linked(&[(IMAGE, png(16, 40))]),
+            [error("deferred_settings/caustics_frames")]
+        );
         assert_eq!(linked(&[(IMAGE, png(16, 48))]), []);
         // A file that is no PNG under a PNG's name.
         assert_eq!(
             linked(&[(IMAGE, b"not an image")]),
-            [error("InvalidTexture")]
+            [error("deferred_settings/caustics_undecodable")]
         );
     }
 
@@ -171,7 +177,10 @@ mod caustics {
             at(&set.link(), WATER)
         };
         assert_eq!(judged(png(16, 16), png(16, 40)), []);
-        assert_eq!(judged(png(16, 40), png(16, 16)), [error("InvalidTexture")]);
+        assert_eq!(
+            judged(png(16, 40), png(16, 16)),
+            [error("deferred_settings/caustics_frames")]
+        );
     }
 
     #[test]
@@ -193,7 +202,7 @@ mod caustics {
                 .iter()
                 .map(|told| (told.0, told.1))
                 .collect::<Vec<_>>(),
-            [("FileNotLoaded", Severity::Info)]
+            [("core/file_not_loaded", Severity::Info)]
         );
         // Without the lints the file is skipped in silence.
         let quiet = set.link_with(&LinkOptions {
@@ -244,7 +253,7 @@ mod local_lights {
 
     fn error(block: &str) -> Told {
         (
-            "UnresolvedReference",
+            "deferred_settings/not_a_block",
             Severity::Error,
             Phase::Link,
             "rp 2".to_owned(),

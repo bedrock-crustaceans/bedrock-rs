@@ -9,6 +9,6 @@
 scope = "pack"
 
 [[diagnostic]]
-code = "InvalidType"
+code = "core/invalid_type"
 severity = "error"
 path = "dependencies/0/version"

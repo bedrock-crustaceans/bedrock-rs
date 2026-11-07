@@ -34,7 +34,10 @@ fn local(members: &str) -> String {
 /// The one error must be an `InvalidValue` at `path` with cereal's range text.
 #[track_caller]
 pub fn out_of_range(found: &(&'static str, String, String), path: &str) {
-    assert_eq!((found.0, found.1.as_str()), ("InvalidValue", path));
+    assert_eq!(
+        (found.0, found.1.as_str()),
+        ("core/outside_accepted_range", path)
+    );
     assert!(found.2.starts_with(RANGE), "{}", found.2);
 }
 
@@ -97,7 +100,7 @@ fn h2_a_texel_size_with_a_fraction_or_of_another_type_is_refused() {
     assert_eq!(
         one_error::<ShadowSettings>(&shadows(r#""texel_size": 16.5"#)),
         finding(
-            "InvalidValue",
+            "core/invalid_value",
             "minecraft:shadow_settings/texel_size",
             "invalid value"
         )
@@ -105,14 +108,14 @@ fn h2_a_texel_size_with_a_fraction_or_of_another_type_is_refused() {
     assert_eq!(
         one_error::<ShadowSettings>(&shadows(r#""texel_size": "16""#)),
         finding(
-            "InvalidType",
+            "deferred_settings/must_be_number",
             "minecraft:shadow_settings/texel_size",
             NUMBER
         )
     );
     assert_eq!(
         one_error::<ShadowSettings>(&shadows(r#""texel_size": [16]"#)).0,
-        "InvalidType"
+        "deferred_settings/must_be_number"
     );
     // A real token without a fraction is the integer (ours; unverified in vanilla).
     assert_eq!(
@@ -127,19 +130,28 @@ fn h1_an_unknown_shadow_style_is_an_enum_error() {
         at(&[one_error::<ShadowSettings>(&shadows(
             r#""shadow_style": "hard_shadows""#
         ))]),
-        [("InvalidEnumValue", "minecraft:shadow_settings/shadow_style")]
+        [(
+            "core/invalid_enum_value",
+            "minecraft:shadow_settings/shadow_style"
+        )]
     );
     assert_eq!(
         at(&[one_error::<ShadowSettings>(&shadows(
             r#""shadow_style": 1"#
         ))]),
-        [("InvalidType", "minecraft:shadow_settings/shadow_style")]
+        [(
+            "core/invalid_type",
+            "minecraft:shadow_settings/shadow_style"
+        )]
     );
     assert_eq!(
         at(&[one_error::<ShadowSettings>(&shadows(
             r#""shadow_style": "Soft_Shadows""#
         ))]),
-        [("InvalidEnumValue", "minecraft:shadow_settings/shadow_style")]
+        [(
+            "core/invalid_enum_value",
+            "minecraft:shadow_settings/shadow_style"
+        )]
     );
 }
 
@@ -149,8 +161,14 @@ fn every_failing_member_of_a_file_is_reported() {
     assert_eq!(
         at(&errors(&d)),
         [
-            ("InvalidEnumValue", "minecraft:shadow_settings/shadow_style"),
-            ("InvalidValue", "minecraft:shadow_settings/texel_size"),
+            (
+                "core/invalid_enum_value",
+                "minecraft:shadow_settings/shadow_style"
+            ),
+            (
+                "core/outside_accepted_range",
+                "minecraft:shadow_settings/texel_size"
+            ),
         ]
     );
 }
@@ -214,7 +232,7 @@ fn p01_integral_floats_are_channel_values_and_a_fraction_is_refused() {
             r#""blocks": {{"{MERS_KEY}": [0, 0, 254.5, 0]}}"#
         ))),
         finding(
-            "InvalidValue",
+            "core/invalid_value",
             &format!("{PBR}/blocks/{MERS_KEY}/2"),
             "invalid value"
         )
@@ -289,17 +307,17 @@ fn p06_p2a_an_array_element_outside_0_255_is_clamped_with_an_info_deviation() {
         infos(document.diagnostics()),
         [
             finding(
-                "ClampedValue",
+                "core/clamped_value",
                 &format!("{PBR}/blocks/{MERS_KEY}/2"),
                 "value clamped into its range"
             ),
             finding(
-                "ClampedValue",
+                "core/clamped_value",
                 &format!("{PBR}/blocks/{MERS_KEY}/3"),
                 "value clamped into its range"
             ),
             finding(
-                "ClampedValue",
+                "core/clamped_value",
                 &format!("{PBR}/actors/{MER_KEY}/0"),
                 "value clamped into its range"
             ),
@@ -331,7 +349,7 @@ fn p2_a_value_in_neither_form_is_a_type_error_with_the_colour_text() {
                 r#""blocks": {{"{MERS_KEY}": {value}}}"#
             ))),
             finding(
-                "InvalidType",
+                "deferred_settings/rgba",
                 &format!("{PBR}/blocks/{MERS_KEY}"),
                 RGBA_TEXT
             ),
@@ -348,7 +366,11 @@ fn p2_a_value_in_neither_form_is_a_type_error_with_the_colour_text() {
             one_error::<PbrFallbackSettings>(&pbr(&format!(
                 r#""items": {{"{MER_KEY}": {value}}}"#
             ))),
-            finding("InvalidType", &format!("{PBR}/items/{MER_KEY}"), RGB_TEXT),
+            finding(
+                "deferred_settings/rgb",
+                &format!("{PBR}/items/{MER_KEY}"),
+                RGB_TEXT
+            ),
             "{value}"
         );
     }
@@ -358,7 +380,7 @@ fn p2_a_value_in_neither_form_is_a_type_error_with_the_colour_text() {
             r#""blocks": {{"{MERS_KEY}": [0, "a", 0, 0]}}"#
         ))),
         finding(
-            "InvalidType",
+            "deferred_settings/rgba",
             &format!("{PBR}/blocks/{MERS_KEY}/1"),
             RGBA_TEXT
         )
@@ -374,7 +396,10 @@ fn a_kind_with_both_members_is_read_by_the_four_value_one() {
     assert_eq!(document.blocks(), mers(4, 5, 6, 7));
     assert_eq!(
         at(&infos(document.diagnostics())),
-        [("UnrecognizedField", &*format!("{PBR}/blocks/{MER_KEY}"))]
+        [(
+            "core/unrecognized_field",
+            &*format!("{PBR}/blocks/{MER_KEY}")
+        )]
     );
 }
 
@@ -383,7 +408,7 @@ fn a_kind_that_is_no_object_is_a_type_error() {
     assert_eq!(
         one_error::<PbrFallbackSettings>(&pbr(r#""blocks": [0, 0, 255, 0]"#)),
         finding(
-            "InvalidType",
+            "core/expected_object",
             &format!("{PBR}/blocks"),
             "expected an object"
         )
@@ -498,7 +523,7 @@ fn k3_a_cubemap_without_description_loads_unnamed_deviation() {
     assert_eq!(
         infos(document.diagnostics()),
         [finding(
-            "MissingIdentifier",
+            "core/missing_identifier",
             CUBEMAP,
             "no usable identifier"
         )]
@@ -508,7 +533,7 @@ fn k3_a_cubemap_without_description_loads_unnamed_deviation() {
             r#""description": {}"#
         ))]),
         [(
-            "MissingRequiredField",
+            "core/missing_required_field",
             "minecraft:cubemap_settings/description/identifier"
         )]
     );
@@ -517,7 +542,7 @@ fn k3_a_cubemap_without_description_loads_unnamed_deviation() {
             r#""description": {"identifier": 5}"#
         ))]),
         [(
-            "InvalidType",
+            "core/invalid_type",
             "minecraft:cubemap_settings/description/identifier"
         )]
     );
@@ -530,7 +555,7 @@ fn an_identifier_without_a_namespace_loads_with_an_info_deviation() {
     assert_eq!(
         infos(document.diagnostics()),
         [finding(
-            "NamespaceRule",
+            "core/namespace_rule",
             "minecraft:cubemap_settings/description/identifier",
             "namespace rule failed"
         )]
@@ -559,7 +584,7 @@ fn an_identifier_without_a_namespace_is_an_info_in_every_payload_deviation() {
     }
     let note = |key: &str| {
         vec![finding(
-            "NamespaceRule",
+            "core/namespace_rule",
             &format!("{key}/description/identifier"),
             "namespace rule failed",
         )]
@@ -616,14 +641,17 @@ fn unknown_members_are_kept_at_their_level() {
         at(&infos(document.diagnostics())),
         [
             (
-                "UnrecognizedField",
+                "core/unrecognized_field",
                 "minecraft:cubemap_settings/description/author"
             ),
             (
-                "UnrecognizedField",
+                "core/unrecognized_field",
                 "minecraft:cubemap_settings/lighting/glow"
             ),
-            ("UnrecognizedField", "minecraft:cubemap_settings/other"),
+            (
+                "core/unrecognized_field",
+                "minecraft:cubemap_settings/other"
+            ),
         ]
     );
     let written = document.to_json().unwrap();
@@ -684,7 +712,7 @@ fn t06_t1_an_unknown_light_type_fails_the_whole_file() {
     assert_eq!(
         at(&errors(&d)),
         [(
-            "InvalidEnumValue",
+            "core/invalid_enum_value",
             "minecraft:local_light_settings/minecraft:lantern/light_type"
         )]
     );
@@ -704,7 +732,7 @@ fn t2_a_malformed_light_colour_fails_the_whole_file() {
                 r#""minecraft:torch": {{"light_color": {value}}}"#
             ))),
             finding(
-                "InvalidType",
+                "deferred_settings/rgb",
                 "minecraft:local_light_settings/minecraft:torch/light_color",
                 RGB_TEXT
             ),
@@ -739,11 +767,11 @@ fn l5a_a_colour_element_outside_0_255_is_clamped_with_an_info_deviation() {
         at(&infos(document.diagnostics())),
         [
             (
-                "ClampedValue",
+                "core/clamped_value",
                 "minecraft:local_light_settings/minecraft:torch/light_color/0"
             ),
             (
-                "ClampedValue",
+                "core/clamped_value",
                 "minecraft:local_light_settings/minecraft:torch/light_color/1"
             ),
         ]
@@ -755,7 +783,7 @@ fn an_entry_that_is_no_object_fails_the_file() {
     assert_eq!(
         one_error::<LocalLightSettings>(&local(r##""minecraft:torch": "#FFFFFF""##)),
         finding(
-            "InvalidType",
+            "core/expected_object",
             "minecraft:local_light_settings/minecraft:torch",
             "expected an object"
         )
@@ -769,7 +797,7 @@ fn an_entry_keeps_its_unknown_members() {
     assert_eq!(
         at(&infos(document.diagnostics())),
         [(
-            "UnrecognizedField",
+            "core/unrecognized_field",
             "minecraft:local_light_settings/minecraft:torch/radius"
         )]
     );
@@ -792,7 +820,7 @@ fn two_spellings_of_one_block_keep_the_later_entry_deviation() {
     assert_eq!(
         at(&infos(document.diagnostics())),
         [(
-            "DuplicateIdentifier",
+            "core/duplicate_identifier",
             "minecraft:local_light_settings/minecraft:torch"
         )]
     );
@@ -841,11 +869,11 @@ fn an_empty_identifier_names_nothing_deviation() {
         infos(document.diagnostics()),
         [
             finding(
-                "NamespaceRule",
+                "core/namespace_rule",
                 "minecraft:cubemap_settings/description/identifier",
                 "namespace rule failed"
             ),
-            finding("MissingIdentifier", CUBEMAP, "no usable identifier")
+            finding("core/missing_identifier", CUBEMAP, "no usable identifier")
         ]
     );
     // Written back as it was.
@@ -880,7 +908,7 @@ fn the_two_scattering_flags_are_read_and_written_either_way() {
             r#""lighting": {"affected_by_atmospheric_scattering": "true"}"#
         ))]),
         [(
-            "InvalidType",
+            "core/invalid_type",
             "minecraft:cubemap_settings/lighting/affected_by_atmospheric_scattering"
         )]
     );
@@ -901,5 +929,5 @@ fn a_deeply_nested_unknown_member_is_kept() {
     let depth = 600;
     let nested = format!("{}1{}", "[".repeat(depth), "]".repeat(depth));
     let d = rejects::<ShadowSettings>(&shadows(&format!(r#""deep": {nested}"#)));
-    assert_eq!(at(&errors(&d)), [("MalformedInput", "")]);
+    assert_eq!(at(&errors(&d)), [("core/syntax", "")]);
 }

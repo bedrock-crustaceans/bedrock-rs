@@ -49,7 +49,10 @@ fn v09_full_chain_1_16_0() {
     assert!(codes(&found, Severity::Warning).is_empty(), "{found:#?}");
     assert_eq!(
         super::steps::removed(&found),
-        ["DroppedComponent", "DroppedField"],
+        [
+            "entity/component_removed_by_upgrade",
+            "entity/member_removed_by_upgrade"
+        ],
         "{found:#?}"
     );
 }

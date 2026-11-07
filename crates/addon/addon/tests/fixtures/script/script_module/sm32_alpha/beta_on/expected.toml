@@ -4,6 +4,6 @@ resolved = ["@minecraft/server 3.0.0-alpha"]
 beta_apis = true
 
 [[diagnostic]]
-code = "ScriptAlphaDependency"
+code = "core/script_alpha_dependency"
 severity = "info"
 path = "dependencies/0"

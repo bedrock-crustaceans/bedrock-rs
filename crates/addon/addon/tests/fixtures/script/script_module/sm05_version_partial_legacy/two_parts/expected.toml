@@ -2,7 +2,7 @@
 scope = "pack"
 
 [[diagnostic]]
-code = "MalformedPropertyVersion"
+code = "core/manifest_not_semver"
 severity = "error"
 path = "dependencies/0/version"
 text = "Provided '/dependencies/0/version' element is not SemVer (semver.org) compliant in pack manifest."

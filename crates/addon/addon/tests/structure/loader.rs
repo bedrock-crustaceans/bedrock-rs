@@ -91,7 +91,7 @@ fn a_base_game_pack_s_nbt_templates_are_never_asked_for() {
         let structures = set.behavior.structures();
         let ignored: Vec<&str> = structures
             .diagnostics()
-            .filter(|f| f.code.name() == "IgnoredFile")
+            .filter(|f| f.code.id() == "core/ignored_file")
             .inspect(|f| assert_eq!(f.severity, Severity::Info))
             .filter_map(|f| {
                 f.location

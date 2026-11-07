@@ -66,7 +66,7 @@ fn texts(doc: &Document<FontMetadata>) -> Vec<(String, Severity, String, String)
         .iter()
         .map(|d| {
             (
-                d.code.name().to_owned(),
+                d.code.id().to_owned(),
                 d.severity,
                 d.location.json_path.to_string(),
                 d.code.to_string(),
@@ -103,7 +103,7 @@ fn file_findings(
         .diagnostics()
         .map(|d: &Diagnostic| {
             (
-                d.code.name(),
+                d.code.id(),
                 d.severity,
                 pack_number(d, count).unwrap(),
                 d.location.path.as_ref().unwrap().to_string(),
@@ -133,25 +133,25 @@ fn fo01_glyph_page_names() {
         file_findings(&stack, 1),
         [
             (
-                "IgnoredFile",
+                "core/ignored_file",
                 Severity::Info,
                 0,
                 "font/glyph_100.png".to_owned()
             ),
             (
-                "IgnoredFile",
+                "core/ignored_file",
                 Severity::Info,
                 0,
                 "font/glyph_4e.png".to_owned()
             ),
             (
-                "IgnoredFile",
+                "core/ignored_file",
                 Severity::Info,
                 0,
                 "font/glyph_G0.tga".to_owned()
             ),
             (
-                "IgnoredFile",
+                "core/ignored_file",
                 Severity::Info,
                 0,
                 "texts/ja_JP/font/glyph_3.png".to_owned()
@@ -235,14 +235,20 @@ fn fo02_a_higher_pack_s_own_sheet_stands_before_a_lower_pack_s_language_sheet() 
 #[test]
 fn fo03_fo25_sheet_shapes() {
     let shape = |width, height| codes(&check_glyph_sheet(&png(width, height)));
-    assert_eq!(shape(200, 256), [("GlyphSheetShape", Severity::Info)]);
-    assert_eq!(shape(256, 200), [("GlyphSheetShape", Severity::Info)]);
+    assert_eq!(
+        shape(200, 256),
+        [("core/glyph_sheet_shape", Severity::Info)]
+    );
+    assert_eq!(
+        shape(256, 200),
+        [("core/glyph_sheet_shape", Severity::Info)]
+    );
     assert_eq!(
         shape(200, 200),
-        [("GlyphSheetShape", Severity::Info)],
+        [("core/glyph_sheet_shape", Severity::Info)],
         "200 is no multiple of 16"
     );
-    assert_eq!(shape(0, 0), [("GlyphSheetShape", Severity::Info)]);
+    assert_eq!(shape(0, 0), [("core/glyph_sheet_shape", Severity::Info)]);
     for side in [16, 128, 256, 512, 1024] {
         assert_eq!(shape(side, side), [], "{side}");
     }
@@ -285,21 +291,17 @@ fn fo05_fo08_a_version_that_is_not_the_integer_one() {
         assert_eq!(
             found,
             [(
-                "UnsupportedVersion",
+                "font/version",
                 Severity::Info,
                 "Unsupported version number.".to_owned()
             )],
             "{version}"
         );
     }
-    assert_eq!(
-        refused(r#"{ "fonts": [] }"#)[0].0,
-        "UnsupportedVersion",
-        "absent"
-    );
+    assert_eq!(refused(r#"{ "fonts": [] }"#)[0].0, "font/version", "absent");
     assert_eq!(
         refused("[1]")[0].0,
-        "UnsupportedVersion",
+        "font/version",
         "a root that is no object"
     );
     assert_eq!(codes(metadata(r#"{ "version": 1 }"#).diagnostics()), []);
@@ -310,7 +312,7 @@ fn f2_a_font_list_that_is_not_json() {
     assert_eq!(
         refused("{ nope"),
         [(
-            "MalformedInput",
+            "font/not_json",
             Severity::Info,
             "Couldn't parse font_metadata.json".to_owned()
         )]
@@ -330,33 +332,61 @@ fn fo06_fo11_entries_without_their_required_members() {
         "",
     );
     let warning = Severity::Info;
-    let missing = |at: &str, text: &str| {
-        (
-            "MissingRequiredField".to_owned(),
-            warning,
-            at.to_owned(),
-            text.to_owned(),
-        )
-    };
+    let missing =
+        |id: &str, at: &str, text: &str| (id.to_owned(), warning, at.to_owned(), text.to_owned());
     assert_eq!(
         texts(&doc),
         [
-            missing("fonts/0/font_format", "Font is missing font_format."),
-            missing("fonts/1/font_name", "Font is missing font_name."),
-            missing("fonts/2/font_format", "Font is missing font_format."),
-            missing("fonts/3/font_name", "Font is missing font_name."),
-            missing("fonts/4/font_format", "Font is missing font_format."),
             missing(
+                "font/no_format",
+                "fonts/0/font_format",
+                "Font is missing font_format."
+            ),
+            missing(
+                "font/no_name",
+                "fonts/1/font_name",
+                "Font is missing font_name."
+            ),
+            missing(
+                "font/no_format",
+                "fonts/2/font_format",
+                "Font is missing font_format."
+            ),
+            missing(
+                "font/no_name",
+                "fonts/3/font_name",
+                "Font is missing font_name."
+            ),
+            missing(
+                "font/no_format",
+                "fonts/4/font_format",
+                "Font is missing font_format."
+            ),
+            missing(
+                "font/no_bitmap_file",
                 "fonts/5",
                 "Bitmap font must have either an ascii_font_file or a unicode_file_prefix specified"
             ),
             missing(
+                "font/no_bitmap_file",
                 "fonts/6",
                 "Bitmap font must have either an ascii_font_file or a unicode_file_prefix specified"
             ),
-            missing("fonts/7/font_file", "TTF is missing font_file."),
-            missing("fonts/8/font_file", "TTF is missing font_file."),
-            missing("fonts/9/font_file", "MSDF is missing font_file."),
+            missing(
+                "font/no_ttf_file",
+                "fonts/7/font_file",
+                "TTF is missing font_file."
+            ),
+            missing(
+                "font/no_ttf_file",
+                "fonts/8/font_file",
+                "TTF is missing font_file."
+            ),
+            missing(
+                "font/no_msdf_file",
+                "fonts/9/font_file",
+                "MSDF is missing font_file."
+            ),
         ]
     );
     let names: Vec<&str> = doc
@@ -384,9 +414,9 @@ fn fo06_fo11_entries_without_their_required_members() {
 #[test]
 fn f6b_a_path_too_long_for_the_game_s_buffer_is_left_empty() {
     for (format, member, also) in [
-        ("bitmap", "ascii_font_file", "MissingRequiredField"),
-        ("bitmap", "unicode_file_prefix", "MissingRequiredField"),
-        ("msdf", "font_file", "MissingRequiredField"),
+        ("bitmap", "ascii_font_file", "font/no_bitmap_file"),
+        ("bitmap", "unicode_file_prefix", "font/no_bitmap_file"),
+        ("msdf", "font_file", "font/no_msdf_file"),
     ] {
         let entry = |length: usize| {
             format!(
@@ -402,7 +432,11 @@ fn f6b_a_path_too_long_for_the_game_s_buffer_is_left_empty() {
         let doc = list(&entry(1024), "");
         assert_eq!(
             located(doc.diagnostics())[0],
-            ("InvalidValue", Severity::Info, format!("fonts/0/{member}")),
+            (
+                "core/invalid_value",
+                Severity::Info,
+                format!("fonts/0/{member}")
+            ),
         );
         assert_eq!(
             codes(doc.diagnostics())[1].0,
@@ -438,7 +472,7 @@ fn f8b_an_unknown_font_format_loads_nothing() {
         assert_eq!(
             located(doc.diagnostics()),
             [(
-                "InvalidValue",
+                "core/invalid_value",
                 Severity::Info,
                 "fonts/0/font_format".to_owned()
             )]
@@ -464,7 +498,12 @@ fn fo08b_generate_pages_on_start() {
     assert_eq!(fonts[1].generate_pages_on_start, None);
     let invalid = |at: &str, text: &str| {
         (
-            "InvalidValue".to_owned(),
+            if text.starts_with("Invalid format") {
+                "font/pages_format"
+            } else {
+                "core/invalid_value"
+            }
+            .to_owned(),
             Severity::Info,
             at.to_owned(),
             text.to_owned(),
@@ -521,43 +560,47 @@ fn fo08c_alias_failures() {
         .collect();
     let want = [
         (
-            "MissingRequiredField",
+            "font/no_reference",
             "font_aliases/0/fonts/1/font_reference",
             "Font alias missing font_reference",
         ),
         (
-            "InvalidType",
+            "font/range_bounds",
             "font_aliases/1/fonts/0/font_ranges/0",
             "Font alias font_ranges first and last values must be integers.",
         ),
         (
-            "InvalidType",
+            "font/ranges",
             "font_aliases/2/fonts/0/font_ranges",
             "Font alias font_ranges must be an array",
         ),
         (
-            "InvalidType",
+            "font/language_code",
             "font_aliases/2/fonts/0/font_language_code",
             "Font alias font_language_code must be a string",
         ),
-        ("InvalidValue", "font_aliases/3/fonts", "invalid value"),
         (
-            "MissingRequiredField",
+            "core/invalid_value",
+            "font_aliases/3/fonts",
+            "invalid value",
+        ),
+        (
+            "font/no_alias",
             "font_aliases/4/alias",
             "Font Alias missing alias.",
         ),
         (
-            "InvalidType",
+            "font/alias_fonts",
             "font_aliases/5/fonts",
             "Font Alias property fonts must be an array.",
         ),
         (
-            "MissingRequiredField",
+            "font/no_reference",
             "font_aliases/6/fonts/0/font_reference",
             "Font alias missing font_reference",
         ),
         (
-            "InvalidType",
+            "font/range_bounds",
             "font_aliases/8/fonts/0/font_ranges/0",
             "Font alias font_ranges first and last values must be integers.",
         ),
@@ -614,7 +657,7 @@ fn fo08d_fo19b_low_performance_compatible_is_converted() {
             &[]
         } else {
             &[(
-                "InvalidValue",
+                "core/invalid_value",
                 Severity::Info,
                 "fonts/0/lowPerformanceCompatible".to_owned(),
             )]
@@ -645,17 +688,17 @@ fn fo09_f18_a_scale_must_be_written_as_a_decimal_deviation() {
         located(doc.diagnostics()),
         [
             (
-                "InvalidValue",
+                "core/invalid_value",
                 Severity::Info,
                 "font_aliases/1/fonts/0/font_scale".to_owned()
             ),
             (
-                "InvalidValue",
+                "core/invalid_value",
                 Severity::Info,
                 "font_aliases/1/font_scale_factor_override".to_owned()
             ),
             (
-                "InvalidValue",
+                "core/invalid_value",
                 Severity::Info,
                 "font_aliases/2/font_scale_factor_override".to_owned()
             ),
@@ -691,12 +734,12 @@ fn a_scale_beyond_a_float_is_the_largest_finite_float_deviation() {
             // `ClampedValue`: a finding of its own, not F18's `InvalidValue`.
             [
                 (
-                    "ClampedValue",
+                    "core/clamped_value",
                     Severity::Info,
                     "font_aliases/0/fonts/0/font_scale".to_owned()
                 ),
                 (
-                    "ClampedValue",
+                    "core/clamped_value",
                     Severity::Info,
                     "font_aliases/0/font_scale_factor_override".to_owned()
                 ),
@@ -735,9 +778,13 @@ fn fo10_ttf_defaults_deviation() {
     assert_eq!(
         located(doc.diagnostics()),
         [
-            ("InvalidValue", Severity::Info, "fonts/1/version".to_owned()),
             (
-                "InvalidValue",
+                "core/invalid_value",
+                Severity::Info,
+                "fonts/1/version".to_owned()
+            ),
+            (
+                "core/invalid_value",
                 Severity::Info,
                 "fonts/1/target_font_render_size".to_owned()
             ),
@@ -769,7 +816,7 @@ fn fo20_the_render_size_is_narrowed_to_a_byte_deviation() {
         );
         let want: &[_] = if reported {
             &[(
-                "InvalidValue",
+                "core/invalid_value",
                 Severity::Info,
                 "fonts/0/target_font_render_size".to_owned(),
             )]
@@ -790,12 +837,12 @@ fn fo21_the_vanilla_font_list() {
         located(doc.diagnostics()),
         [
             (
-                "InvalidValue",
+                "core/invalid_value",
                 Severity::Info,
                 "font_aliases/3/font_scale_factor_override".to_owned()
             ),
             (
-                "InvalidValue",
+                "core/invalid_value",
                 Severity::Info,
                 "font_aliases/2/fonts/1/font_reference".to_owned()
             ),
@@ -843,17 +890,17 @@ fn fo22_f29_a_repeated_name_is_the_later_entry() {
         located(doc.diagnostics()),
         [
             (
-                "FontNameOverridden",
+                "core/font_name_overridden",
                 Severity::Info,
                 "fonts/1/font_name".to_owned()
             ),
             (
-                "FontNameOverridden",
+                "core/font_name_overridden",
                 Severity::Info,
                 "font_aliases/1/alias".to_owned()
             ),
             (
-                "FontNameOverridden",
+                "core/font_name_overridden",
                 Severity::Info,
                 "font_aliases/2/alias".to_owned()
             ),
@@ -874,7 +921,7 @@ fn f29_is_reported_at_the_file_s_index() {
     assert_eq!(
         found.last().unwrap(),
         &(
-            "FontNameOverridden",
+            "core/font_name_overridden",
             Severity::Info,
             "fonts/3/font_name".to_owned()
         ),
@@ -888,7 +935,7 @@ fn f29_is_reported_at_the_file_s_index() {
     assert_eq!(
         found.last().unwrap(),
         &(
-            "FontNameOverridden",
+            "core/font_name_overridden",
             Severity::Info,
             "fonts/c/font_name".to_owned()
         ),
@@ -907,17 +954,17 @@ fn fo23_f28_a_reference_names_a_font_registered_before_it_deviation() {
         located(doc.diagnostics()),
         [
             (
-                "InvalidValue",
+                "core/invalid_value",
                 Severity::Info,
                 "font_aliases/0/fonts/0/font_reference".to_owned()
             ),
             (
-                "InvalidValue",
+                "core/invalid_value",
                 Severity::Info,
                 "font_aliases/0/fonts/1/font_reference".to_owned()
             ),
             (
-                "InvalidValue",
+                "core/invalid_value",
                 Severity::Info,
                 "font_aliases/0/fonts/2/font_reference".to_owned()
             ),
@@ -952,11 +999,11 @@ fn the_two_lists_are_iterated_as_the_game_does_and_unknown_members_are_kept() {
         located(doc.diagnostics()),
         [
             (
-                "UnrecognizedField",
+                "core/unrecognized_field",
                 Severity::Info,
                 "fonts/a/extra".to_owned()
             ),
-            ("UnrecognizedField", Severity::Info, "note".to_owned()),
+            ("core/unrecognized_field", Severity::Info, "note".to_owned()),
         ]
     );
     assert_eq!(doc.extra.get("note"), Some(&json("1")));
@@ -1066,8 +1113,8 @@ fn generated_font_lists_round_trip() {
                     .collect()
             };
             // The scale's own finding is `ClampedValue`.
-            let warned = of("InvalidValue");
-            if of("ClampedValue")
+            let warned = of("core/invalid_value");
+            if of("core/clamped_value")
                 .iter()
                 .any(|at| at.ends_with("font_scale") || at.ends_with("font_scale_factor_override"))
             {
@@ -1125,9 +1172,9 @@ fn fo07_a_code_written_as_the_character_itself() {
     assert_eq!(
         located(doc.diagnostics()),
         [
-            ("InvalidValue", Severity::Info, "0/code".to_owned()),
-            ("InvalidValue", Severity::Info, "0/name".to_owned()),
-            ("InvalidValue", Severity::Info, "1".to_owned()),
+            ("core/invalid_value", Severity::Info, "0/code".to_owned()),
+            ("core/invalid_value", Severity::Info, "0/name".to_owned()),
+            ("core/invalid_value", Severity::Info, "1".to_owned()),
         ]
     );
     assert_eq!(
@@ -1148,8 +1195,12 @@ fn fo07b_emoticon_codes() {
     assert_eq!(
         located(doc.diagnostics()),
         [
-            ("FontNameOverridden", Severity::Info, "2/name".to_owned()),
-            ("InvalidValue", Severity::Info, "3/code".to_owned()),
+            (
+                "core/font_name_overridden",
+                Severity::Info,
+                "2/name".to_owned()
+            ),
+            ("core/invalid_value", Severity::Info, "3/code".to_owned()),
         ]
     );
 }
@@ -1198,14 +1249,18 @@ fn f17b_f17d_entries_the_game_skips_or_never_matches() {
     assert_eq!(
         located(doc.diagnostics()),
         [
-            ("InvalidValue", Severity::Info, "0".to_owned()),
-            ("InvalidValue", Severity::Info, "1".to_owned()),
-            ("InvalidValue", Severity::Info, "2".to_owned()),
-            ("InvalidValue", Severity::Info, "3".to_owned()),
-            ("InvalidValue", Severity::Info, "4".to_owned()),
-            ("InvalidValue", Severity::Info, "5/name".to_owned()),
-            ("InvalidValue", Severity::Info, "6/name".to_owned()),
-            ("UnrecognizedField", Severity::Info, "7/tag".to_owned()),
+            ("core/invalid_value", Severity::Info, "0".to_owned()),
+            ("core/invalid_value", Severity::Info, "1".to_owned()),
+            ("core/invalid_value", Severity::Info, "2".to_owned()),
+            ("core/invalid_value", Severity::Info, "3".to_owned()),
+            ("core/invalid_value", Severity::Info, "4".to_owned()),
+            ("core/invalid_value", Severity::Info, "5/name".to_owned()),
+            ("core/invalid_value", Severity::Info, "6/name".to_owned()),
+            (
+                "core/unrecognized_field",
+                Severity::Info,
+                "7/tag".to_owned()
+            ),
         ]
     );
     assert_eq!(doc.emoticons.len(), 3);
@@ -1232,7 +1287,7 @@ fn f17_an_emoticon_file_the_game_cannot_use() {
     assert_eq!(
         doc.diagnostics().iter().map(shown).collect::<Vec<_>>(),
         [(
-            "MalformedInput",
+            "core/syntax",
             Severity::Info,
             "the root is not an array".to_owned()
         )]
@@ -1247,7 +1302,7 @@ fn f17_an_emoticon_file_the_game_cannot_use() {
     assert_eq!(
         rejected.diagnostics.iter().map(shown).collect::<Vec<_>>(),
         [(
-            "MalformedInput",
+            "font/malformed",
             Severity::Info,
             "Malformed JSON".to_owned()
         )]
@@ -1326,7 +1381,7 @@ fn fo13_a_header_that_is_not_zero() {
         assert_eq!(
             refused.iter().map(shown).collect::<Vec<_>>(),
             [(
-                "MalformedInput",
+                "font/fontdata_version",
                 Severity::Info,
                 "Version of MSDF data file should be 0".to_owned()
             )]
@@ -1341,7 +1396,7 @@ fn fo14_a_short_file_leaves_the_missing_advances_at_zero_deviation() {
     assert!(page.advances[128..].iter().all(|advance| *advance == 0.0));
     assert_eq!(
         codes(&diagnostics),
-        [("MalformedInput", Severity::Info)],
+        [("core/syntax", Severity::Info)],
         "the absent slots are not reported one by one"
     );
     // A cut float is no advance.
@@ -1356,7 +1411,7 @@ fn f24_bytes_after_the_last_advance_are_ignored() {
     let mut bytes = fontdata(0, &[0.5; 256]);
     bytes.extend([9; 5]);
     let (page, diagnostics) = GlyphPage::from_bytes(&bytes).expect("header 0");
-    assert_eq!(codes(&diagnostics), [("MalformedInput", Severity::Info)]);
+    assert_eq!(codes(&diagnostics), [("core/syntax", Severity::Info)]);
     assert_eq!(page.to_bytes(), fontdata(0, &[0.5; 256]));
     assert_eq!(
         codes(&GlyphPage::from_bytes(&fontdata(0, &[0.5; 256])).unwrap().1),
@@ -1375,8 +1430,8 @@ fn fo26_f25_an_advance_that_is_not_positive() {
     assert_eq!(
         located(&diagnostics),
         [
-            ("InvalidValue", Severity::Info, "65".to_owned()),
-            ("InvalidValue", Severity::Info, "66".to_owned()),
+            ("core/invalid_value", Severity::Info, "65".to_owned()),
+            ("core/invalid_value", Severity::Info, "66".to_owned()),
         ]
     );
     assert_eq!(page.width(0x42), -8.0, "the stored value is the width");
@@ -1389,14 +1444,14 @@ fn fo27_a_file_too_short_for_its_header() {
         assert_eq!(
             codes(&refused),
             [
-                ("MalformedInput", Severity::Info),
-                ("MalformedInput", Severity::Info)
+                ("core/syntax", Severity::Info),
+                ("font/fontdata_version", Severity::Info)
             ],
             "{length} bytes"
         );
     }
     let (page, diagnostics) = GlyphPage::from_bytes(&[0; 4]).expect("a whole header");
-    assert_eq!(codes(&diagnostics), [("MalformedInput", Severity::Info)]);
+    assert_eq!(codes(&diagnostics), [("core/syntax", Severity::Info)]);
     assert!(page.advances.iter().all(|advance| *advance == 0.0));
 }
 
@@ -1427,8 +1482,8 @@ fn fo15_remapping_records() {
     assert_eq!(
         located(&diagnostics),
         [
-            ("MalformedInput", Severity::Info, "1".to_owned()),
-            ("MalformedInput", Severity::Info, String::new()),
+            ("core/syntax", Severity::Info, "1".to_owned()),
+            ("core/syntax", Severity::Info, String::new()),
         ]
     );
     assert_eq!(remapping.to_bytes(), whole);
@@ -1465,7 +1520,7 @@ fn fo16_an_msdf_font_with_its_own_page_prefix_deviation() {
     assert_eq!(
         file_findings(&stack, 1),
         [(
-            "IgnoredFile",
+            "core/ignored_file",
             Severity::Info,
             0,
             "font/myfont/page_41.png".to_owned()
@@ -1515,19 +1570,19 @@ fn an_msdf_prefix_outside_font_is_found() {
         file_findings(&stack, 1),
         [
             (
-                "FontFileMissing",
+                "font/msdf_info_missing",
                 Severity::Info,
                 0,
                 "glyphs/sub/p01.png".to_owned()
             ),
             (
-                "IgnoredFile",
+                "core/ignored_file",
                 Severity::Info,
                 0,
                 "glyphs/sub/p01.png".to_owned()
             ),
             (
-                "IgnoredFile",
+                "core/ignored_file",
                 Severity::Info,
                 0,
                 "glyphs/q02.fontdata".to_owned()
@@ -1542,7 +1597,7 @@ fn fo17_an_msdf_page_without_metrics() {
     assert_eq!(
         file_findings(&stack, 2),
         [(
-            "FontFileMissing",
+            "font/msdf_info_missing",
             Severity::Info,
             1,
             "font/smooth/smooth_41.png".to_owned()
@@ -1578,7 +1633,7 @@ fn fo17_an_msdf_page_without_metrics() {
     ]);
     assert_eq!(
         codes(stack.fonts().diagnostics()),
-        [("MixedFontPage", Severity::Info)]
+        [("core/mixed_font_page", Severity::Info)]
     );
     // Metrics without an atlas are no finding.
     let stack = stack_of(&[&[("font/smooth/smooth_41.fontdata", "")]]);
@@ -1595,7 +1650,7 @@ fn fo24_f30_a_page_whose_files_come_from_two_packs() {
     let found: Vec<&Diagnostic> = stack.fonts().diagnostics().collect();
     assert_eq!(
         codes(found.iter().copied()),
-        [("MixedFontPage", Severity::Info)]
+        [("core/mixed_font_page", Severity::Info)]
     );
     assert_eq!(pack_number(found[0], 2), Some(1), "at the higher file");
     assert_eq!(
@@ -1654,7 +1709,7 @@ fn f27_smooth_pages_the_client_does_not_draw_deviation() {
         let want: &[_] = if drawn {
             &[]
         } else {
-            &[("IgnoredFile", Severity::Info)]
+            &[("core/ignored_file", Severity::Info)]
         };
         assert_eq!(codes(stack.fonts().diagnostics()), want, "{page}");
     }
@@ -1691,22 +1746,22 @@ fn fo18_f21_a_true_type_file_no_pack_has() {
         found,
         [
             (
-                "FontFileMissing",
+                "font/font_load_failed",
                 Severity::Info,
                 "fonts/0/font_file".to_owned()
             ),
             (
-                "FontFileMissing",
+                "font/font_load_failed",
                 Severity::Info,
                 "fonts/1/font_file".to_owned()
             ),
             (
-                "FontFileMissing",
+                "font/font_load_failed",
                 Severity::Info,
                 "fonts/3/font_file".to_owned()
             ),
             (
-                "FontFileMissing",
+                "font/font_load_failed",
                 Severity::Info,
                 "fonts/5/font_file".to_owned()
             ),
@@ -1718,7 +1773,7 @@ fn fo18_f21_a_true_type_file_no_pack_has() {
         stack
             .fonts()
             .diagnostics()
-            .filter(|d| d.code.name() == "FontFileMissing")
+            .filter(|d| d.code.id() == "font/font_load_failed")
             .all(|d| d.code.to_string() == "Failed to load font from resource pack")
     );
 }
@@ -1731,7 +1786,7 @@ fn fo18_f21_the_paths_the_game_tries_for_a_missing_true_type_file() {
     let tried: Vec<String> = stack
         .fonts()
         .diagnostics()
-        .filter(|d| d.code.name() == "FontFileMissing")
+        .filter(|d| d.code.id() == "font/font_load_failed")
         .map(|d| {
             d.detail
                 .as_ref()
@@ -1752,7 +1807,7 @@ fn fo18_f21_the_paths_the_game_tries_for_a_missing_true_type_file() {
     let listed: Vec<Vec<String>> = stack
         .fonts()
         .diagnostics()
-        .filter(|d| d.code.name() == "FontFileMissing")
+        .filter(|d| d.code.id() == "font/font_load_failed")
         .map(tried_paths)
         .collect();
     assert_eq!(
@@ -1916,7 +1971,7 @@ fn the_highest_font_list_is_read_whole_and_a_refused_one_leaves_the_built_in_fon
             let found = codes(fonts.diagnostics());
             assert_eq!(found.len(), 2, "{found:?}");
             assert_eq!(found[0].1, Severity::Info);
-            assert_eq!(found[1], ("MalformedInput", Severity::Info));
+            assert_eq!(found[1], ("font/malformed", Severity::Info));
             assert!(
                 fonts
                     .diagnostics()

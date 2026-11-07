@@ -1,7 +1,7 @@
 # families/script_config fixtures.md, row sc09_non_uuid_folder (probe C2).
 
 [[diagnostic]]
-code = "MalformedInput"
+code = "server_config/config_parse_failed_malformed_input"
 severity = "error"
 phase = "parse"
 file = "config/not-a-uuid/permissions.json"
@@ -9,7 +9,7 @@ path = ""
 text = "Failed to parse JSON in file 'config/not-a-uuid/permissions.json'"
 
 [[diagnostic]]
-code = "UnmatchedConfigFolder"
+code = "core/unmatched_config_folder"
 severity = "info"
 phase = "link"
 file = "config/not-a-uuid"

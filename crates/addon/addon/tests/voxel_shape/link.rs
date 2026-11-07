@@ -77,7 +77,7 @@ fn stacks_with_resources(spec: &Spec) -> StackSet {
 /// The findings about culling shapes among `d`.
 fn unresolved(d: &Diagnostics) -> Vec<(Severity, String)> {
     d.iter()
-        .filter(|f| f.code.name() == "UnresolvedReference")
+        .filter(|f| f.code.id() == "core/unresolved_reference_worded")
         .map(|f| (f.severity, f.code.to_string()))
         .collect()
 }

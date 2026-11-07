@@ -148,7 +148,14 @@ fn c4_a_category_nothing_defines_is_an_error_at_each_member() {
 
 /// An `UnresolvedReference` information: a name the game keeps without a word.
 fn unresolved_info(file: &str, path: &str, kind: &'static str, id: &str) -> Said {
-    super::finding("UnresolvedReference", Severity::Info, file, path, kind, id)
+    super::finding(
+        "core/unresolved_reference",
+        Severity::Info,
+        file,
+        path,
+        kind,
+        id,
+    )
 }
 
 /// A preset and a category that name the block, the entity and the item `name` in every

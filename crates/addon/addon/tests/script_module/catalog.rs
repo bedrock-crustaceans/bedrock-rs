@@ -164,7 +164,7 @@ fn an_empty_catalog_knows_no_module() {
         &ScriptContext::default(),
     );
     assert!(found.plugin().is_none());
-    assert_eq!(codes(&found), ["UnresolvedReference"]);
+    assert_eq!(codes(&found), ["script/plugin_unknown_module"]);
     // Without a dependency a script needs no module.
     let alone = discover(&ModuleCatalog::new(), "", &ScriptContext::default());
     assert!(alone.plugin().is_some());
@@ -425,7 +425,7 @@ fn on_the_shipped_catalog_the_uuid_dependency_is_0_1_0() {
         r#"{ "uuid": "b26a4d4c-afdf-4690-88f8-931846312678", "version": [0, 1, 0] }"#,
         &ScriptContext::default(),
     );
-    assert_eq!(codes(&found), ["DeprecatedMember"]);
+    assert_eq!(codes(&found), ["script/plugin_dependency_by_uuid"]);
     assert_eq!(resolved(&found), ["@minecraft/server 0.1.0"]);
 }
 
@@ -447,7 +447,7 @@ fn on_the_shipped_catalog_the_server_ui_uuid_dependency_is_0_1_0() {
         r#"{ "uuid": "2bd50a27-ab5f-4f40-a596-3641627c635e", "version": [0, 1, 0] }"#,
         &ScriptContext::default(),
     );
-    assert_eq!(codes(&found), ["DeprecatedMember"]);
+    assert_eq!(codes(&found), ["script/plugin_dependency_by_uuid"]);
     assert_eq!(resolved(&found), ["@minecraft/server-ui 0.1.0"]);
     // By name the 0.1.0 is behind the Beta APIs gate like every major 0.
     let named = discover(
@@ -455,7 +455,7 @@ fn on_the_shipped_catalog_the_server_ui_uuid_dependency_is_0_1_0() {
         &dependency("@minecraft/server-ui", "0.1.0"),
         &ScriptContext::default(),
     );
-    assert_eq!(codes(&named), ["MissingToggles"]);
+    assert_eq!(codes(&named), ["script/plugin_beta_apis"]);
     let named = discover(
         &catalog,
         &dependency("@minecraft/server-ui", "0.1.0"),
@@ -546,7 +546,7 @@ fn on_the_shipped_catalog_vanillas_editor_packs_resolve_in_an_editor_world() {
     };
     assert_eq!(
         codes(&discover(&catalog, &editor, &world)),
-        ["MissingToggles", "MissingToggles"]
+        ["script/plugin_beta_apis", "script/plugin_beta_apis"]
     );
     let beta = ScriptContext {
         beta_apis: true,
@@ -561,7 +561,7 @@ fn on_the_shipped_catalog_vanillas_editor_packs_resolve_in_an_editor_world() {
     );
     // Outside an editor world the dependency is dropped as before.
     let outside = discover(&catalog, &editor, &BETA);
-    assert_eq!(codes(&outside), ["DroppedField"]);
+    assert_eq!(codes(&outside), ["script/plugin_not_editor_world"]);
     assert_eq!(resolved(&outside), ["@minecraft/server 2.11.0-beta"]);
 }
 
@@ -584,7 +584,7 @@ fn on_the_shipped_catalog_the_probes_with_a_transitive_request_come_out_alike() 
     assert!(
         codes(&q34)
             .iter()
-            .all(|code| code == "ScriptModuleVersionConflict"),
+            .all(|code| code == "core/script_module_version_conflict"),
         "{:?}",
         codes(&q34)
     );

@@ -17,13 +17,13 @@ fn refused(version: &str, members: &str, path: &str, allowed: &str) {
     let d = rejected(attachable(&ghost(version, members), &cx()));
     expect(
         &d,
-        "InvalidType",
+        "core/unknown_child_option",
         Severity::Error,
         &format!("{TYPE_ERROR}{allowed}"),
     );
     expect_at(
         &d,
-        "InvalidType",
+        "core/unknown_child_option",
         Severity::Error,
         &format!("{DESCRIPTION}/{path}"),
     );
@@ -79,7 +79,7 @@ fn a_null_description_member_fails_the_file_at_every_version() {
     ));
     expect(
         &d,
-        "UnrecognizedField",
+        "core/child_not_valid",
         Severity::Error,
         "child 'queryable_geometry' not valid here.",
     );
@@ -92,13 +92,13 @@ fn a_null_identifier_is_a_wrong_type() {
         let d = rejected(attachable(&doc(version, r#"{"identifier": null}"#), &cx()));
         expect(
             &d,
-            "InvalidType",
+            "core/unknown_child_option",
             Severity::Error,
             &format!("{TYPE_ERROR}string"),
         );
         expect_at(
             &d,
-            "InvalidType",
+            "core/unknown_child_option",
             Severity::Error,
             &format!("{DESCRIPTION}/identifier"),
         );
@@ -232,7 +232,7 @@ fn a_null_payload_or_description_is_no_object() {
     ));
     expect(
         &d,
-        "InvalidType",
+        "core/unknown_child_option",
         Severity::Error,
         &format!("{TYPE_ERROR}object"),
     );

@@ -116,7 +116,7 @@ fn check_stack(source: &str, dirs: &[&Path], world_behavior: &[u8]) -> (usize, u
             continue;
         }
         if finding.severity == Severity::Warning {
-            count(&mut warnings, finding.code.name());
+            count(&mut warnings, finding.code.id());
         }
         if finding.is(&core_codes::UNSUPPORTED_FILE_FORMAT) {
             mcb += 1;
@@ -175,7 +175,7 @@ fn check_files(source: &str, dir: &Path) -> (usize, usize, usize) {
                     stamped += usize::from(document.version().written == Some(stamp));
                     for finding in document.diagnostics() {
                         if finding.severity == Severity::Warning {
-                            count(&mut warnings, finding.code.name());
+                            count(&mut warnings, finding.code.id());
                         }
                     }
                     // What was read is written back and reads the same.

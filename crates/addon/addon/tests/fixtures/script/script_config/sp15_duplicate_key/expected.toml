@@ -1,7 +1,7 @@
 # families/script_config fixtures.md, row sp15_duplicate_key (review Pe).
 
 [[diagnostic]]
-code = "InvalidEnumValue"
+code = "server_config/bad_auto_attach"
 severity = "error"
 phase = "validate"
 file = "server.properties"

@@ -89,12 +89,12 @@ impl Tally {
         let mut unsupported = Vec::new();
         for diagnostic in registry.diagnostics() {
             let diagnostic: &Diagnostic = diagnostic;
-            if diagnostic.code.name() == "UnsupportedFileFormat" {
+            if diagnostic.code.id() == "core/unsupported_file_format" {
                 unsupported.push(diagnostic.to_string());
             } else if diagnostic.severity >= Severity::Error {
                 self.errors.push(format!("{}: {diagnostic}", at.display()));
             } else {
-                let key = format!("{:?} {}", diagnostic.severity, diagnostic.code.name());
+                let key = format!("{:?} {}", diagnostic.severity, diagnostic.code.id());
                 if diagnostic.severity == Severity::Warning
                     && self.findings.get(&key).is_none_or(|n| *n < 3)
                 {
@@ -325,11 +325,21 @@ fn assert_install_layers(source: &str, root: &Path) {
     assert_eq!(tally.warnings(), 0, "{:?}", tally.findings);
     // No vanilla attachable sets a `min_engine_version`: nothing is ignored or replaced.
     assert!(
-        !tally.findings.contains_key("Info AttachableShadowed"),
+        ![
+            "core/attachable_shadowed",
+            "core/attachable_shadowed_above_stack",
+            "core/attachable_shadowed_older",
+        ]
+        .iter()
+        .any(|id| tally.findings.contains_key(&format!("Info {id}"))),
         "{:?}",
         tally.findings
     );
-    assert!(!tally.findings.contains_key("Info ItemBindingShadowed"));
+    assert!(
+        !tally
+            .findings
+            .contains_key("Info core/item_binding_shadowed")
+    );
     let index = ItemBindings::from_registry(registry);
     let boots = index.get("minecraft:chainmail_boots");
     let shown: Vec<String> = boots

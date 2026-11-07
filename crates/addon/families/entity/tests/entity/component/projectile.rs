@@ -1,7 +1,7 @@
 //! `projectile`: the 1.26.50 struct, its `on_hit` subcomponents, the value messages
 //! and the lenient conversion of the legacy reader's JSON.
 
-use bedrock_addon_core::diagnostic::Severity;
+use bedrock_addon_core::diagnostic::{Kind, Severity};
 use bedrock_addon_core::versioning::ConvertMode;
 use bedrock_addon_family_entity::component::{
     DifficultyRandomization, EffectDuration, Projectile, ProjectileAnchor, ProjectileOffset,
@@ -97,7 +97,7 @@ fn spawn_chance_above_one_is_an_error() {
     assert!(has(
         &d,
         // By legacy name: the variant and the definitions that were it.
-        |c| matches!(c.name(), "InvalidValue"),
+        |c| matches!(c.id(), "core/invalid_value"),
         Severity::Error,
         "on_hit/spawn_chance/first_spawn_chance"
     ));
@@ -160,7 +160,7 @@ fn e34_the_lenient_conversion_maps_integer_anchors() {
     assert!(has(
         &d,
         // By legacy name: the variant and the definitions that were it.
-        |c| matches!(c.name(), "InvalidValue"),
+        |c| matches!(c.id(), "core/invalid_value"),
         Severity::Info,
         "anchor"
     ));
@@ -193,7 +193,7 @@ fn v14_legacy_aliases_are_read_by_the_lenient_conversion_only() {
     assert!(has(
         &d,
         // By legacy name: the variant and the definitions that were it.
-        |c| matches!(c.name(), "UnrecognizedField"),
+        |c| matches!(c.id(), "core/unrecognized_field"),
         Severity::Warning,
         "reflectOnHurt"
     ));
@@ -217,7 +217,7 @@ fn the_lenient_conversion_maps_impact_damage_aliases_when_the_member_is_absent()
     assert!(has(
         &d,
         // By legacy name: the variant and the definitions that were it.
-        |c| matches!(c.name(), "UnrecognizedField"),
+        |c| matches!(c.id(), "core/unrecognized_field"),
         Severity::Warning,
         "on_hit/impact_damage/powermultiplier"
     ));
@@ -289,9 +289,8 @@ fn legacy_spawn_chances_are_read_as_the_game_reads_them() {
     );
     assert_eq!((first, second, count), (0.125, 0.031_25, 4));
     assert!(
-        d.iter().all(|f| f.severity < Severity::Warning
-            // By legacy name: the variant and the definitions that were it.
-            && !matches!(f.code.name(), "InvalidValue")),
+        d.iter()
+            .all(|f| f.severity < Severity::Warning && f.code.kind() != Kind::InvalidValue),
         "{d:?}"
     );
     // A percent chance is read and divided by 100; an absent pair is one in 100.
@@ -302,7 +301,7 @@ fn legacy_spawn_chances_are_read_as_the_game_reads_them() {
     assert!(
         !d.iter()
             // By legacy name: the variant and the definitions that were it.
-            .any(|f| matches!(f.code.name(), "UnrecognizedField")),
+            .any(|f| matches!(f.code.id(), "core/unrecognized_field")),
         "{d:?}"
     );
     // A negative percent falls back to the one-in-N member, the camel spellings included.
@@ -384,7 +383,7 @@ fn a_legacy_spawn_chance_read_as_another_number_is_told_as_rewritten() {
         let mut at: Vec<_> = d
             .iter()
             // By legacy name: the variant and the definitions that were it.
-            .filter(|f| matches!(f.code.name(), "ValueRewritten"))
+            .filter(|f| matches!(f.code.id(), "core/value_rewritten"))
             .map(|f| (f.location.json_path.to_string(), f.severity))
             .collect();
         at.sort();
@@ -488,7 +487,7 @@ fn owner_launch_immunity_ticks_is_no_member() {
             has(
                 &d,
                 // By legacy name: the variant and the definitions that were it.
-                |c| matches!(c.name(), "UnrecognizedField"),
+                |c| matches!(c.id(), "core/unrecognized_field"),
                 Severity::Warning,
                 "owner_launch_immunity_ticks"
             ),
@@ -551,7 +550,7 @@ fn the_legacy_on_hit_camel_case_spellings_are_the_members_below_1_26_50() {
         has(
             &d,
             // By legacy name: the variant and the definitions that were it.
-            |c| matches!(c.name(), "UnrecognizedField"),
+            |c| matches!(c.id(), "core/unrecognized_field"),
             Severity::Warning,
             "on_hit/catch_fire/onFireTime"
         ),
@@ -589,7 +588,7 @@ fn a_lone_mob_effect_object_is_an_error_at_1_26_50() {
         has(
             &d,
             // By legacy name: the variant and the definitions that were it.
-            |c| matches!(c.name(), "InvalidType"),
+            |c| matches!(c.id(), "core/invalid_type"),
             Severity::Error,
             "on_hit/mob_effect/effects"
         ),

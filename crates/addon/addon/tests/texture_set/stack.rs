@@ -164,7 +164,7 @@ fn no_image(key: &str) -> super::Rendered {
     // `_addImageToLayer` logs it with `_contentLog(true, 1, 32)`, an information;
     // the set is still not loaded.
     finding(
-        "TextureNotFound",
+        "texture_set/set_no_image",
         Info,
         &format!("minecraft:texture_set/{key}"),
         "Specified image could not be found",
@@ -198,7 +198,7 @@ fn ts61_a_path_no_pack_has_resolves_to_nothing_deviation() {
     let found = findings(&stack);
     assert_eq!(found.len(), 1, "{found:?}");
     // atlas rule 14; an information
-    assert_eq!((found[0].0, found[0].1), ("TextureNotFound", Info));
+    assert_eq!((found[0].0, found[0].1), ("core/texture_not_found", Info));
 }
 
 // Loading reads no image, so the channel rule is the caller's to run on the bytes it
@@ -219,7 +219,7 @@ fn ts62_a_three_channel_image_on_mers_is_the_wrong_format_deviation() {
     assert_eq!(
         rendered([&found]),
         [finding(
-            "LayerImageFormat",
+            "core/layer_image_format",
             Error,
             "minecraft:texture_set/metalness_emissive_roughness_subsurface",
             "layer image has an unsupported channel count"
@@ -258,7 +258,7 @@ fn checked(layers: &str, bytes: &[u8]) -> Option<&'static str> {
     assert_eq!(images.len(), 1, "{:?}", findings(&stack));
     images[0].check(bytes).map(|found| {
         assert_eq!(found.severity, Error);
-        found.code.name()
+        found.code.id()
     })
 }
 
@@ -266,7 +266,7 @@ fn checked(layers: &str, bytes: &[u8]) -> Option<&'static str> {
 fn v13_each_layer_takes_its_own_channel_counts() {
     const C: &str = r#""color": [1, 2, 3, 4]"#;
     let (grey, rgb, grey_alpha, rgba) = (png(0), png(2), png(4), png(6));
-    let bad = Some("LayerImageFormat");
+    let bad = Some("core/layer_image_format");
     // color, normal and metalness_emissive_roughness: 3 or 4.
     for layer in [
         r#""color": "x""#.to_owned(),
@@ -294,11 +294,11 @@ fn v13_each_layer_takes_its_own_channel_counts() {
 fn v12_an_image_whose_header_does_not_decode_is_undecodable_deviation() {
     assert_eq!(
         checked(r#""color": "x""#, b"not a png"),
-        Some("LayerImageUndecodable")
+        Some("core/layer_image_undecodable")
     );
     assert_eq!(
         checked(r#""color": "x""#, b""),
-        Some("LayerImageUndecodable")
+        Some("core/layer_image_undecodable")
     );
 }
 
@@ -352,7 +352,7 @@ fn lints(stack: &PackStack<Resource>) -> Vec<(&'static str, usize)> {
                 found.location.path.as_ref().unwrap().as_str(),
                 "manifest.json"
             );
-            (found.code.name(), crate::common::pack_index(found).unwrap())
+            (found.code.id(), crate::common::pack_index(found).unwrap())
         })
         .collect()
 }
@@ -363,7 +363,7 @@ const OLD: [u16; 3] = [1, 21, 0];
 #[test]
 fn ts70_texture_sets_without_a_capability_get_a_hint() {
     let stack = stack_of(vec![pack(1, OLD, &[], WITH_SET, PackOrigin::User)]);
-    assert_eq!(lints(&stack), [("CapabilityHint", 0)]);
+    assert_eq!(lints(&stack), [("core/capability_hint", 0)]);
     // A pack without texture sets gets none.
     let none = stack_of(vec![pack(1, OLD, &[], &[], PackOrigin::User)]);
     assert_eq!(lints(&none), []);
@@ -405,13 +405,16 @@ fn r3_a_capability_of_any_pack_of_the_stack_silences_the_hint() {
         pack(1, OLD, &[], &[], PackOrigin::User),
         pack(2, OLD, &["other"], WITH_SET, PackOrigin::User),
     ]);
-    assert_eq!(lints(&stack), [("CapabilityHint", 1)]);
+    assert_eq!(lints(&stack), [("core/capability_hint", 1)]);
 }
 
 #[test]
 fn ts73_a_pack_from_1_21_110_without_pbr_turns_vibrant_visuals_off() {
     let stack = stack_of(vec![pack(1, [1, 21, 110], &[], &[], PackOrigin::User)]);
-    assert_eq!(lints(&stack), [("VibrantVisualsDisabledByPack", 0)]);
+    assert_eq!(
+        lints(&stack),
+        [("core/vibrant_visuals_disabled_by_pack", 0)]
+    );
     // `raytraced` alone does not count.
     let stack = stack_of(vec![pack(
         1,
@@ -420,7 +423,10 @@ fn ts73_a_pack_from_1_21_110_without_pbr_turns_vibrant_visuals_off() {
         &[],
         PackOrigin::User,
     )]);
-    assert_eq!(lints(&stack), [("VibrantVisualsDisabledByPack", 0)]);
+    assert_eq!(
+        lints(&stack),
+        [("core/vibrant_visuals_disabled_by_pack", 0)]
+    );
     // `pbr` does.
     let stack = stack_of(vec![pack(1, [1, 21, 110], &["pbr"], &[], PackOrigin::User)]);
     assert_eq!(lints(&stack), []);

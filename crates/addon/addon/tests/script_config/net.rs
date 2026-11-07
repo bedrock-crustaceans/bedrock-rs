@@ -132,12 +132,12 @@ fn n2_each_integer_member_has_its_range() {
                 findings(&config),
                 [
                     (
-                        "InvalidValue".to_owned(),
+                        "core/invalid_value".to_owned(),
                         "error".to_owned(),
                         member.to_owned()
                     ),
                     (
-                        "NetConfigRejected".to_owned(),
+                        "core/net_config_rejected".to_owned(),
                         "error".to_owned(),
                         String::new()
                     )
@@ -158,7 +158,7 @@ fn n2_an_integer_wider_than_64_bits_is_out_of_range_not_a_wrong_type() {
     let config = net(r#"{"max_body_bytes": 123456789012345678901234567890}"#);
     assert_eq!(
         findings(&config)[0],
-        one("InvalidValue", "error", "max_body_bytes")[0]
+        one("core/invalid_value", "error", "max_body_bytes")[0]
     );
     // So is a number beyond every double: one finding, the range.
     let config = net(r#"{"max_body_bytes": 1e999}"#);
@@ -166,12 +166,12 @@ fn n2_an_integer_wider_than_64_bits_is_out_of_range_not_a_wrong_type() {
         findings(&config),
         [
             (
-                "InvalidValue".to_owned(),
+                "core/invalid_value".to_owned(),
                 "error".to_owned(),
                 "max_body_bytes".to_owned()
             ),
             (
-                "NetConfigRejected".to_owned(),
+                "core/net_config_rejected".to_owned(),
                 "error".to_owned(),
                 String::new()
             )
@@ -182,7 +182,7 @@ fn n2_an_integer_wider_than_64_bits_is_out_of_range_not_a_wrong_type() {
         let config = net(&format!("{{\"max_body_bytes\": {wrong}}}"));
         assert_eq!(
             findings(&config)[0],
-            one("InvalidType", "error", "max_body_bytes")[0],
+            one("core/invalid_type", "error", "max_body_bytes")[0],
             "{wrong}"
         );
         assert_eq!(config.default.permissions.server_net, ServerNet::Denied);
@@ -210,12 +210,12 @@ fn n2_wrong_types_of_the_other_members_refuse_the_entry() {
             findings(&config),
             [
                 (
-                    "InvalidType".to_owned(),
+                    "core/invalid_type".to_owned(),
                     "error".to_owned(),
                     path.to_owned()
                 ),
                 (
-                    "NetConfigRejected".to_owned(),
+                    "core/net_config_rejected".to_owned(),
                     "error".to_owned(),
                     String::new()
                 )
@@ -262,12 +262,12 @@ fn n3_force_https_replaces_a_force_tls_beside_it() {
         findings(&config),
         [
             (
-                "DeprecatedMember".to_owned(),
+                "core/deprecated_member".to_owned(),
                 "info".to_owned(),
                 "force_https".to_owned()
             ),
             (
-                "NoEffect".to_owned(),
+                "core/no_effect".to_owned(),
                 "info".to_owned(),
                 "force_https".to_owned()
             )
@@ -326,7 +326,10 @@ fn n6_an_entry_that_is_no_absolute_uri_is_a_warning() {
         let found = findings(&config);
         assert_eq!(found.len(), count, "{uri}: {found:?}");
         for finding in found {
-            assert_eq!(finding, one("InvalidValue", "info", "allowed_uris/0")[0]);
+            assert_eq!(
+                finding,
+                one("core/invalid_value", "info", "allowed_uris/0")[0]
+            );
         }
         // A warning only: the entry loads.
         assert_eq!(
@@ -344,7 +347,7 @@ fn n6_an_entry_with_an_upper_case_scheme_admits_no_request_and_is_warned() {
         let config = net(&format!("{{\"allowed_uris\": [\"{uri}\"]}}"));
         assert_eq!(
             findings(&config),
-            one("InvalidValue", "info", "allowed_uris/0"),
+            one("core/invalid_value", "info", "allowed_uris/0"),
             "{uri}"
         );
         let net = configured(&config);
@@ -358,7 +361,10 @@ fn n6_an_entry_with_an_upper_case_scheme_admits_no_request_and_is_warned() {
 #[test]
 fn n7_an_empty_allow_list_refuses_every_request() {
     let config = net(r#"{"allowed_uris": []}"#);
-    assert_eq!(findings(&config), one("NoEffect", "info", "allowed_uris"));
+    assert_eq!(
+        findings(&config),
+        one("core/no_effect", "info", "allowed_uris")
+    );
     let net = configured(&config);
     assert_eq!(net.allowed_uris.as_deref(), Some(&[][..]));
     assert!(!net.allows_uri("https://example.com/"));
@@ -407,7 +413,7 @@ fn a_span_after_a_member_written_twice_is_where_the_value_is() {
         ..ScriptConfigFiles::default()
     });
     let finding = config.diagnostics().iter().next().unwrap();
-    assert_eq!(finding.code.name(), "InvalidValue");
+    assert_eq!(finding.code.id(), "core/invalid_value");
     let offset = u32::try_from(text.find("-1").unwrap()).unwrap();
     assert_eq!(finding.location.span, Some(Span { offset, len: 2 }));
 }

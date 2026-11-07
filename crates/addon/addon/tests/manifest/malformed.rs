@@ -2,7 +2,7 @@
 //! finding it must produce (code by `matches!`, severity, JSON path). The rows that
 //! differ from the corpus's own expectation table name the reason.
 
-use bedrock_addon::diagnostic::{Code as C, Severity};
+use bedrock_addon::diagnostic::{Code as C, Kind, Severity};
 use bedrock_addon::manifest::ModuleType;
 use bedrock_addon::version::SemVersion;
 use bedrock_addon_core::diagnostic::codes as core_codes;
@@ -28,96 +28,96 @@ const I: Severity = Severity::Info;
 const TABLE: &[Row] = &[
     // fv0 metadata is read from the header, strictly: error 9.
     // By legacy name: the variant and the definitions that were it.
-    Row { file: "fv0_metadata_wrong_type.json", loads: false, severity: E, path: "header/metadata", code: |c| matches!(c.name(), "WrongTypeProperty") },
+    Row { file: "fv0_metadata_wrong_type.json", loads: false, severity: E, path: "header/metadata", code: |c| matches!(c.id(), "core/wrong_type_property") },
     // 256 is version 256.0.0 (a number read as its text), above the comprehensive slice
     // [3.0.0, 3.0.0]: no parser.
     // By legacy name: the variant and the definitions that were it.
-    Row { file: "fv_256.json", loads: false, severity: E, path: "format_version", code: |c| matches!(c.name(), "UnsupportedVersion") },
+    Row { file: "fv_256.json", loads: false, severity: E, path: "format_version", code: |c| matches!(c.id(), "core/no_parser_for_version") },
     // 258 is 258.0.0: no parser.
     // By legacy name: the variant and the definitions that were it.
-    Row { file: "fv_258.json", loads: false, severity: E, path: "format_version", code: |c| matches!(c.name(), "UnsupportedVersion") },
+    Row { file: "fv_258.json", loads: false, severity: E, path: "format_version", code: |c| matches!(c.id(), "core/no_parser_for_version") },
     // A number is read as its text: 3 is the comprehensive format, which refuses the
     // array version of this format-2 fixture.
     // By legacy name: the variant and the definitions that were it.
-    Row { file: "fv_3.json", loads: false, severity: E, path: "header/version", code: |c| matches!(c.name(), "InvalidType") },
+    Row { file: "fv_3.json", loads: false, severity: E, path: "header/version", code: |c| matches!(c.id(), "core/invalid_type") },
     // Absent → 0: the deprecated path looks for `pack_id`.
     // By legacy name: the variant and the definitions that were it.
-    Row { file: "fv_absent.json", loads: false, severity: E, path: "header/pack_id", code: |c| matches!(c.name(), "MissingProperty") },
+    Row { file: "fv_absent.json", loads: false, severity: E, path: "header/pack_id", code: |c| matches!(c.id(), "core/missing_property") },
     // The game gives no version for these: "Malformed format version", nothing read.
     // By legacy name: the variant and the definitions that were it.
-    Row { file: "fv_array.json", loads: false, severity: E, path: "format_version", code: |c| matches!(c.name(), "MalformedFormatVersion") },
+    Row { file: "fv_array.json", loads: false, severity: E, path: "format_version", code: |c| matches!(c.id(), "core/malformed_format_version") },
     // By legacy name: the variant and the definitions that were it.
-    Row { file: "fv_bool.json", loads: false, severity: E, path: "format_version", code: |c| matches!(c.name(), "MalformedFormatVersion") },
+    Row { file: "fv_bool.json", loads: false, severity: E, path: "format_version", code: |c| matches!(c.id(), "core/malformed_format_version") },
     // By legacy name: the variant and the definitions that were it.
-    Row { file: "fv_neg1.json", loads: false, severity: E, path: "format_version", code: |c| matches!(c.name(), "MalformedFormatVersion") },
+    Row { file: "fv_neg1.json", loads: false, severity: E, path: "format_version", code: |c| matches!(c.id(), "core/malformed_format_version") },
     // By legacy name: the variant and the definitions that were it.
-    Row { file: "fv_null.json", loads: false, severity: E, path: "format_version", code: |c| matches!(c.name(), "MalformedFormatVersion") },
+    Row { file: "fv_null.json", loads: false, severity: E, path: "format_version", code: |c| matches!(c.id(), "core/malformed_format_version") },
     // By legacy name: the variant and the definitions that were it.
-    Row { file: "fv_object.json", loads: false, severity: E, path: "format_version", code: |c| matches!(c.name(), "MalformedFormatVersion") },
+    Row { file: "fv_object.json", loads: false, severity: E, path: "format_version", code: |c| matches!(c.id(), "core/malformed_format_version") },
     // By legacy name: the variant and the definitions that were it.
-    Row { file: "fv_string.json", loads: false, severity: I, path: "format_version", code: |c| matches!(c.name(), "WrongTypeProperty") },
+    Row { file: "fv_string.json", loads: false, severity: I, path: "format_version", code: |c| matches!(c.id(), "core/wrong_type_property") },
     // By legacy name: the variant and the definitions that were it.
-    Row { file: "header_absent.json", loads: false, severity: E, path: "header", code: |c| matches!(c.name(), "MissingProperty") },
+    Row { file: "header_absent.json", loads: false, severity: E, path: "header", code: |c| matches!(c.id(), "core/missing_property") },
     // By legacy name: the variant and the definitions that were it.
-    Row { file: "header_wrong_type.json", loads: false, severity: E, path: "header", code: |c| matches!(c.name(), "WrongTypeProperty") },
+    Row { file: "header_wrong_type.json", loads: false, severity: E, path: "header", code: |c| matches!(c.id(), "core/wrong_type_property") },
     // Syntax errors: `MalformedInput` (vanilla 5), nothing read (the corpus expected
     // vanilla's partial-tree warning).
     // By legacy name: the variant and the definitions that were it.
-    Row { file: "malformed_nan.json", loads: false, severity: E, path: "", code: |c| matches!(c.name(), "MalformedInput") },
+    Row { file: "malformed_nan.json", loads: false, severity: E, path: "", code: |c| matches!(c.id(), "core/syntax") },
     // By legacy name: the variant and the definitions that were it.
-    Row { file: "malformed_single_quotes.json", loads: false, severity: E, path: "", code: |c| matches!(c.name(), "MalformedInput") },
+    Row { file: "malformed_single_quotes.json", loads: false, severity: E, path: "", code: |c| matches!(c.id(), "core/syntax") },
     // Deviation: a trailing comma is accepted; the fixture then lacks
     // `min_engine_version`.
     // By legacy name: the variant and the definitions that were it.
-    Row { file: "malformed_trailing_comma.json", loads: false, severity: E, path: "header/min_engine_version", code: |c| matches!(c.name(), "MissingProperty") },
+    Row { file: "malformed_trailing_comma.json", loads: false, severity: E, path: "header/min_engine_version", code: |c| matches!(c.id(), "core/missing_property") },
     // By legacy name: the variant and the definitions that were it.
-    Row { file: "malformed_unquoted_key.json", loads: false, severity: E, path: "", code: |c| matches!(c.name(), "MalformedInput") },
+    Row { file: "malformed_unquoted_key.json", loads: false, severity: E, path: "", code: |c| matches!(c.id(), "core/syntax") },
     // By legacy name: the variant and the definitions that were it.
-    Row { file: "malformed_unterminated.json", loads: false, severity: E, path: "", code: |c| matches!(c.name(), "MalformedInput") },
+    Row { file: "malformed_unterminated.json", loads: false, severity: E, path: "", code: |c| matches!(c.id(), "core/syntax") },
     Row { file: "min_engine_above_current.json", loads: false, severity: E, path: "header/min_engine_version", code: |c| c.args_of(&core_codes::VERSION_TOO_HIGH).is_some_and(|args| args[0] == "1.99.0") },
     Row { file: "min_engine_below_1_13.json", loads: false, severity: E, path: "header/min_engine_version", code: |c| c.args_of(&core_codes::VERSION_TOO_LOW).is_some_and(|args| args == ["1.5.0", "1.13.0"]) },
     // Strict path: an absent `modules` is error 9, not warning 20.
     // By legacy name: the variant and the definitions that were it.
-    Row { file: "modules_absent.json", loads: false, severity: E, path: "modules", code: |c| matches!(c.name(), "WrongTypeProperty") },
+    Row { file: "modules_absent.json", loads: false, severity: E, path: "modules", code: |c| matches!(c.id(), "core/wrong_type_property") },
     // By legacy name: the variant and the definitions that were it.
-    Row { file: "modules_missing_type.json", loads: false, severity: E, path: "modules/0/type", code: |c| matches!(c.name(), "InvalidProperty") },
+    Row { file: "modules_missing_type.json", loads: false, severity: E, path: "modules/0/type", code: |c| matches!(c.id(), "core/manifest_invalid_value") },
     // Lenient path: warning 19 and `resources`.
     // By legacy name: the variant and the definitions that were it.
-    Row { file: "modules_unknown_type_fv0.json", loads: true, severity: W, path: "header/modules/0/type", code: |c| matches!(c.name(), "InvalidProperty") },
+    Row { file: "modules_unknown_type_fv0.json", loads: true, severity: W, path: "header/modules/0/type", code: |c| matches!(c.id(), "core/invalid_property") },
     // By legacy name: the variant and the definitions that were it.
-    Row { file: "modules_unknown_type_fv2.json", loads: false, severity: E, path: "modules/0/type", code: |c| matches!(c.name(), "InvalidProperty") },
+    Row { file: "modules_unknown_type_fv2.json", loads: false, severity: E, path: "modules/0/type", code: |c| matches!(c.id(), "core/manifest_invalid_value") },
     // fv0: warning 11, the UUID as the name.
     // By legacy name: the variant and the definitions that were it.
-    Row { file: "name_empty_fv0.json", loads: true, severity: W, path: "header/name", code: |c| matches!(c.name(), "EmptyProperty") },
+    Row { file: "name_empty_fv0.json", loads: true, severity: W, path: "header/name", code: |c| matches!(c.id(), "core/empty_property") },
     // fv2: `manifestvalidation.noname` and no report entry, not the corpus's error 10:
     // an information, ours.
     // By legacy name: the variant and the definitions that were it.
-    Row { file: "name_empty_fv2.json", loads: true, severity: I, path: "header/name", code: |c| matches!(c.name(), "EmptyProperty") },
+    Row { file: "name_empty_fv2.json", loads: true, severity: I, path: "header/name", code: |c| matches!(c.id(), "core/empty_property") },
     // By legacy name: the variant and the definitions that were it.
-    Row { file: "root_not_object.json", loads: false, severity: E, path: "header", code: |c| matches!(c.name(), "MissingProperty") },
+    Row { file: "root_not_object.json", loads: false, severity: E, path: "header", code: |c| matches!(c.id(), "core/missing_property") },
     // a missing UUID is `missing_property` and rejected (vanilla: random).
     // By legacy name: the variant and the definitions that were it.
-    Row { file: "uuid_absent.json", loads: false, severity: E, path: "header/uuid", code: |c| matches!(c.name(), "MissingProperty") },
+    Row { file: "uuid_absent.json", loads: false, severity: E, path: "header/uuid", code: |c| matches!(c.id(), "core/missing_property") },
     // By legacy name: the variant and the definitions that were it.
-    Row { file: "uuid_empty.json", loads: false, severity: E, path: "header/uuid", code: |c| matches!(c.name(), "EmptyProperty") },
+    Row { file: "uuid_empty.json", loads: false, severity: E, path: "header/uuid", code: |c| matches!(c.id(), "core/empty_property") },
     // By legacy name: the variant and the definitions that were it.
-    Row { file: "uuid_malformed.json", loads: false, severity: E, path: "header/uuid", code: |c| matches!(c.name(), "MalformedPropertyUuid") },
+    Row { file: "uuid_malformed.json", loads: false, severity: E, path: "header/uuid", code: |c| matches!(c.id(), "core/malformed_property_uuid") },
     // By legacy name: the variant and the definitions that were it.
-    Row { file: "uuid_malformed_fv0.json", loads: true, severity: W, path: "header/pack_id", code: |c| matches!(c.name(), "MalformedPropertyUuid") },
+    Row { file: "uuid_malformed_fv0.json", loads: true, severity: W, path: "header/pack_id", code: |c| matches!(c.id(), "core/malformed_property_uuid") },
     // By legacy name: the variant and the definitions that were it.
-    Row { file: "uuid_nil_explicit.json", loads: false, severity: E, path: "header/uuid", code: |c| matches!(c.name(), "MalformedPropertyUuid") },
+    Row { file: "uuid_nil_explicit.json", loads: false, severity: E, path: "header/uuid", code: |c| matches!(c.id(), "core/malformed_property_uuid") },
     // By legacy name: the variant and the definitions that were it.
-    Row { file: "uuid_wrong_type.json", loads: false, severity: E, path: "header/uuid", code: |c| matches!(c.name(), "WrongTypeProperty") },
+    Row { file: "uuid_wrong_type.json", loads: false, severity: E, path: "header/uuid", code: |c| matches!(c.id(), "core/wrong_type_property") },
     // By legacy name: the variant and the definitions that were it.
-    Row { file: "version_absent.json", loads: false, severity: E, path: "header/version", code: |c| matches!(c.name(), "MissingProperty") },
+    Row { file: "version_absent.json", loads: false, severity: E, path: "header/version", code: |c| matches!(c.id(), "core/missing_property") },
     // By legacy name: the variant and the definitions that were it.
-    Row { file: "version_long.json", loads: false, severity: E, path: "header/version", code: |c| matches!(c.name(), "WrongTypeProperty") },
+    Row { file: "version_long.json", loads: false, severity: E, path: "header/version", code: |c| matches!(c.id(), "core/manifest_wrong_type") },
     // By legacy name: the variant and the definitions that were it.
-    Row { file: "version_out_of_range.json", loads: false, severity: E, path: "header/version", code: |c| matches!(c.name(), "WrongTypeProperty") },
+    Row { file: "version_out_of_range.json", loads: false, severity: E, path: "header/version", code: |c| matches!(c.id(), "core/manifest_wrong_type") },
     // By legacy name: the variant and the definitions that were it.
-    Row { file: "version_short.json", loads: false, severity: E, path: "header/version", code: |c| matches!(c.name(), "WrongTypeProperty") },
+    Row { file: "version_short.json", loads: false, severity: E, path: "header/version", code: |c| matches!(c.id(), "core/manifest_wrong_type") },
     // By legacy name: the variant and the definitions that were it.
-    Row { file: "version_string_component.json", loads: false, severity: E, path: "header/version", code: |c| matches!(c.name(), "WrongTypeProperty") },
+    Row { file: "version_string_component.json", loads: false, severity: E, path: "header/version", code: |c| matches!(c.id(), "core/manifest_wrong_type") },
 ];
 
 /// The fixtures that produce no finding at the member they exercise.
@@ -163,7 +163,7 @@ fn each_malformed_fixture_produces_its_code() {
                     format!(
                         "{} {} at {:?}",
                         d.severity,
-                        d.code.name(),
+                        d.code.id(),
                         d.location.json_path.to_string()
                     )
                 })
@@ -245,7 +245,7 @@ fn deviation_a_trailing_comma_is_accepted() {
         !findings(&result)
             .iter()
             // By legacy name: the variant and the definitions that were it.
-            .any(|d| matches!(d.code.name(), "MalformedInput"))
+            .any(|d| d.code.kind() == Kind::Syntax)
     );
     assert!(parse(&with_engine("malformed_trailing_comma.json")).is_ok());
 }
@@ -262,7 +262,7 @@ fn a_syntax_error_keeps_its_file_offset() {
         let finding = findings(&result)
             .iter()
             // By legacy name: the variant and the definitions that were it.
-            .find(|d| matches!(d.code.name(), "MalformedInput"))
+            .find(|d| matches!(d.code.id(), "core/syntax"))
             .expect("a syntax error");
         let span = finding.location.span.expect("the syntax error's span");
         assert_eq!(span.offset, offset, "{finding:?}");
@@ -277,7 +277,7 @@ fn told(text: &str) -> Vec<(String, Severity, String)> {
         .iter()
         .map(|d| {
             (
-                d.code.name().to_owned(),
+                d.code.id().to_owned(),
                 d.severity,
                 d.location.json_path.to_string(),
             )
@@ -315,7 +315,11 @@ fn an_empty_format_3_name_is_an_information() {
         .collect();
     assert_eq!(
         at_name,
-        [("EmptyProperty".to_owned(), I, "header/name".to_owned())]
+        [(
+            "core/empty_property".to_owned(),
+            I,
+            "header/name".to_owned()
+        )]
     );
 }
 
@@ -327,7 +331,7 @@ fn a_format_0_manifest_is_told_deprecated_at_level_2() {
     let found: Vec<_> = document
         .diagnostics()
         .iter()
-        .filter(|d| d.code.name() == "DeprecatedMember")
+        .filter(|d| d.code.id() == "core/deprecated_member_worded")
         .collect();
     assert_eq!(found.len(), 1, "{:#?}", document.diagnostics());
     assert_eq!(found[0].severity, Severity::Warning);
@@ -342,10 +346,12 @@ fn a_format_0_manifest_is_told_deprecated_at_level_2() {
             &format!("\"format_version\": {format}"),
             1,
         );
+        let document = parse(text.as_bytes()).unwrap_or_else(|r| panic!("{:#?}", r.diagnostics));
         assert!(
-            told(&text)
+            document
+                .diagnostics()
                 .iter()
-                .all(|(name, ..)| name != "DeprecatedMember"),
+                .all(|d| d.code.kind() != Kind::Deprecated),
             "format {format}"
         );
     }

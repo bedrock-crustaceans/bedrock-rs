@@ -40,7 +40,7 @@ fn told(payload: &str) -> String {
                 out,
                 "  {:?} {} {}",
                 finding.severity,
-                finding.code.name(),
+                finding.code.id(),
                 finding.location.json_path
             );
         }
@@ -56,20 +56,20 @@ fn an_unknown_root_member_is_graded_by_the_version() {
     assert_eq!(
         found,
         r"1.10.0 loaded
-  Info LegacyItemFormat minecraft:item
+  Info core/legacy_item_format minecraft:item
 1.16.100 refused
-  Warning UnrecognizedField minecraft:item/made_up
-  Error MissingToggles 
+  Warning core/unrecognized_field minecraft:item/made_up
+  Error core/toggle_use_format_version 
 1.21.60 loaded
-  Warning UnrecognizedField minecraft:item/made_up
-  Info ValueRewritten minecraft:item/description/menu_category
-  Info InvalidValue minecraft:item/made_up
+  Warning core/unrecognized_field minecraft:item/made_up
+  Info core/value_rewritten minecraft:item/description/menu_category
+  Info core/invalid_value minecraft:item/made_up
 1.26.30 refused
-  Error UnrecognizedField minecraft:item/made_up
+  Error core/unrecognized_field minecraft:item/made_up
 1.26.60 refused
-  Error UnrecognizedField minecraft:item/made_up
+  Error core/unrecognized_field minecraft:item/made_up
 beta refused
-  Error UnrecognizedField minecraft:item/made_up
+  Error core/unrecognized_field minecraft:item/made_up
 ",
         "\n{found}"
     );
@@ -83,20 +83,20 @@ fn an_unknown_description_member_is_graded_by_the_version() {
     assert_eq!(
         found,
         r"1.10.0 loaded
-  Info LegacyItemFormat minecraft:item
+  Info core/legacy_item_format minecraft:item
 1.16.100 refused
-  Warning UnrecognizedField minecraft:item/description/note
-  Error MissingToggles 
+  Warning core/unrecognized_field minecraft:item/description/note
+  Error core/toggle_use_format_version 
 1.21.60 loaded
-  Warning UnrecognizedField minecraft:item/description/note
-  Info ValueRewritten minecraft:item/description/menu_category
-  Info InvalidValue minecraft:item/description/note
+  Warning core/unrecognized_field minecraft:item/description/note
+  Info core/value_rewritten minecraft:item/description/menu_category
+  Info core/invalid_value minecraft:item/description/note
 1.26.30 refused
-  Error UnrecognizedField minecraft:item/description/note
+  Error core/unrecognized_field minecraft:item/description/note
 1.26.60 refused
-  Error UnrecognizedField minecraft:item/description/note
+  Error core/unrecognized_field minecraft:item/description/note
 beta refused
-  Error UnrecognizedField minecraft:item/description/note
+  Error core/unrecognized_field minecraft:item/description/note
 ",
         "\n{found}"
     );
@@ -110,16 +110,16 @@ fn an_unknown_component_is_graded_by_the_version() {
     assert_eq!(
         found,
         r"1.10.0 loaded
-  Info LegacyItemFormat minecraft:item
+  Info core/legacy_item_format minecraft:item
 1.16.100 refused
-  Error MissingToggles 
+  Error core/toggle_use_format_version 
 1.21.60 loaded
-  Info UnrecognizedComponent minecraft:item/components/demo:made_up
-  Info ValueRewritten minecraft:item/description/menu_category
+  Info core/unrecognized_component minecraft:item/components/demo:made_up
+  Info core/value_rewritten minecraft:item/description/menu_category
 1.26.30 loaded
 1.26.60 loaded
 beta refused
-  Error UnsupportedVersion 
+  Error core/no_parser_for_version 
 ",
         "\n{found}"
     );
@@ -133,19 +133,19 @@ fn an_unknown_member_of_a_component_is_graded_by_the_version() {
     assert_eq!(
         found,
         r"1.10.0 loaded
-  Info LegacyItemFormat minecraft:item
+  Info core/legacy_item_format minecraft:item
 1.16.100 refused
-  Error MissingToggles 
+  Error core/toggle_use_format_version 
 1.21.60 loaded
-  Warning UnrecognizedField minecraft:item/components/minecraft:tags/note
-  Info ValueRewritten minecraft:item/description/menu_category
-  Info InvalidValue minecraft:item/components/minecraft:tags/note
+  Warning core/unrecognized_field minecraft:item/components/minecraft:tags/note
+  Info core/value_rewritten minecraft:item/description/menu_category
+  Info core/invalid_value minecraft:item/components/minecraft:tags/note
 1.26.30 refused
-  Error UnrecognizedField minecraft:item/components/minecraft:tags/note
+  Error core/unrecognized_field minecraft:item/components/minecraft:tags/note
 1.26.60 refused
-  Error UnrecognizedField minecraft:item/components/minecraft:tags/note
+  Error core/unrecognized_field minecraft:item/components/minecraft:tags/note
 beta refused
-  Error UnrecognizedField minecraft:item/components/minecraft:tags/note
+  Error core/unrecognized_field minecraft:item/components/minecraft:tags/note
 ",
         "\n{found}"
     );
@@ -160,18 +160,18 @@ fn a_legacy_only_member_is_graded_by_the_version() {
     assert_eq!(
         found,
         r"1.10.0 loaded
-  Info LegacyItemFormat minecraft:item
+  Info core/legacy_item_format minecraft:item
 1.16.100 refused
-  Error MissingToggles 
+  Error core/toggle_use_format_version 
 1.21.60 loaded
-  Info ValueRewritten minecraft:item/description/menu_category
-  Info InvalidValue minecraft:item/events
+  Info core/value_rewritten minecraft:item/description/menu_category
+  Info core/invalid_value minecraft:item/events
 1.26.30 refused
-  Error UnrecognizedField minecraft:item/events
+  Error core/unrecognized_field minecraft:item/events
 1.26.60 refused
-  Error UnrecognizedField minecraft:item/events
+  Error core/unrecognized_field minecraft:item/events
 beta refused
-  Error UnrecognizedField minecraft:item/events
+  Error core/unrecognized_field minecraft:item/events
 ",
         "\n{found}"
     );

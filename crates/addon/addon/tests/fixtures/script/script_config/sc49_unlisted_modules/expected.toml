@@ -1,7 +1,7 @@
 # families/script_config fixtures.md, row sc49_unlisted_modules (review GR).
 
 [[diagnostic]]
-code = "ScriptModulePermission"
+code = "server_config/plugin_module_not_configured"
 severity = "error"
 phase = "link"
 file = "config/default/permissions.json"
@@ -9,7 +9,7 @@ path = ""
 text = "Plugin [gfxbeta - 1.0.0] - requesting dependency on module [@minecraft/server-graphics] but it is not configured to use it."
 
 [[diagnostic]]
-code = "ScriptModulePermission"
+code = "server_config/plugin_module_not_configured"
 severity = "error"
 phase = "link"
 file = "config/default/permissions.json"
@@ -17,7 +17,7 @@ path = ""
 text = "Plugin [gfx100 - 1.0.0] - requesting dependency on module [@minecraft/server-graphics] but it is not configured to use it."
 
 [[diagnostic]]
-code = "ScriptModulePermission"
+code = "server_config/plugin_module_not_configured"
 severity = "error"
 phase = "link"
 file = "config/default/permissions.json"

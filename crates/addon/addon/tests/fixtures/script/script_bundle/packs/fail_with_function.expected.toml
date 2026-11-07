@@ -13,7 +13,7 @@ normalized = "@minecraft/server"
 resolution = "not_checked"
 
 [[diagnostics]]
-code = "UnresolvedReference"
+code = "script/plugin_missing_main_file"
 severity = "error"
 text = "Plugin [SB_fail_with_function - 1.0.0] - does not contain main file [missing.js]."
 file = "manifest.json"

@@ -3,8 +3,8 @@
 //! version fallback; what a step's `UpgradeCx` carries; the older era's
 //! `from_only` component enum; Molang through the component map.
 
-use bedrock_addon_core::diagnostic::Severity;
 use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Kind, Severity};
 use bedrock_addon_core::document::{ComponentRef, VersionInfo};
 use bedrock_addon_core::json::JsonSlice;
 use bedrock_addon_core::load::LoadContext;
@@ -120,7 +120,7 @@ fn parse_as_written_rejects_as_load_does() {
         parsed
             .diagnostics
             .first_error()
-            .is_some_and(|e| e.code.name() == "BetaFeaturesNotEnabled")
+            .is_some_and(|e| e.code.id() == "core/beta_format_version")
     );
     let missing = r#"{"minecraft:toy": {"description": {"identifier": "demo:x"}}}"#;
     let parsed = parse_as_written::<Strict>(JsonSlice::new(missing), &cx);
@@ -201,7 +201,7 @@ fn the_payload_version_stands_in_for_an_absent_envelope_version() {
     assert!(
         !codes(&outcome)
             .iter()
-            .any(|(code, _)| code.name() == "MissingFormatVersion")
+            .any(|(code, _)| code.kind() == Kind::FormatVersion)
     );
     // The envelope's version wins when present; without either, the floor and a warning.
     let both = r#"{"format_version": "1.2.0", "minecraft:toy": {"format_version": "1.1.0", "description": {"identifier": "demo:x"}}}"#;
@@ -347,7 +347,7 @@ fn molang_pass_two_runs_with_a_check() {
         &cx,
     );
     let error = outcome.diagnostics.first_error().expect("an error");
-    assert!(error.code.name() == "InvalidMolang", "{:?}", error.code);
+    assert!(error.code.id() == "core/invalid_molang", "{:?}", error.code);
     assert_eq!(
         error.location.json_path.to_string(),
         "minecraft:toy/components/toy:light/condition"

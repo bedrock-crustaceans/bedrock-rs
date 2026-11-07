@@ -205,7 +205,7 @@ where
         .map(|d| {
             (
                 d.location.json_path.to_string(),
-                d.code.name().to_owned(),
+                d.code.id().to_owned(),
                 d.severity,
                 d.location.span,
             )
@@ -265,7 +265,7 @@ fn a_bare_scalar_of_a_one_member_payload_is_that_member() {
             damage(5),
             vec![(
                 String::new(),
-                "InvalidType".to_owned(),
+                "core/invalid_type".to_owned(),
                 Severity::Error,
                 None
             )]
@@ -316,7 +316,7 @@ fn a_bare_scalar_no_arm_of_the_member_takes_is_refused_at_the_component_without_
         told,
         [(
             String::new(),
-            "InvalidType".to_owned(),
+            "core/invalid_type".to_owned(),
             Severity::Error,
             None
         )],
@@ -346,7 +346,7 @@ fn a_bare_null_follows_the_null_rule_as_the_object_form_does() {
             None,
             vec![told(
                 "value",
-                "InvalidType",
+                "core/invalid_type",
                 Severity::Error,
                 Some(at(31, 7))
             )]
@@ -356,7 +356,7 @@ fn a_bare_null_follows_the_null_rule_as_the_object_form_does() {
         read_under::<Damage, Shorthands>(r#"{"value": null}"#, STRICT, absent),
         (
             damage(0),
-            vec![told("value", "ValueRewritten", Severity::Info, None)]
+            vec![told("value", "core/value_rewritten", Severity::Info, None)]
         )
     );
     // The bare `null`: the same, at the component and spanning the text.
@@ -364,7 +364,12 @@ fn a_bare_null_follows_the_null_rule_as_the_object_form_does() {
         read_under::<Damage, Shorthands>("null", STRICT, rejected),
         (
             None,
-            vec![told("", "InvalidType", Severity::Error, Some(at(30, 4)))]
+            vec![told(
+                "",
+                "core/invalid_type",
+                Severity::Error,
+                Some(at(30, 4))
+            )]
         ),
         "under `Rejected` a bare null is a type error, as the member's null is"
     );
@@ -372,7 +377,7 @@ fn a_bare_null_follows_the_null_rule_as_the_object_form_does() {
         read_under::<Damage, Shorthands>("null", STRICT, absent),
         (
             damage(0),
-            vec![told("", "ValueRewritten", Severity::Info, None)]
+            vec![told("", "core/value_rewritten", Severity::Info, None)]
         ),
         "under `Absent` a bare null is the member left out"
     );
@@ -389,14 +394,19 @@ fn a_one_member_payload_whose_member_is_optional_reads_a_bare_scalar_and_a_bare_
         read_under::<Maybe, Misshapen>("null", STRICT, Some(NullRule::Rejected)),
         (
             None,
-            vec![told("", "InvalidType", Severity::Error, Some(at(30, 4)))]
+            vec![told(
+                "",
+                "core/invalid_type",
+                Severity::Error,
+                Some(at(30, 4))
+            )]
         )
     );
     assert_eq!(
         read_under::<Maybe, Misshapen>("null", STRICT, Some(NullRule::Absent)),
         (
             maybe(None),
-            vec![told("", "ValueRewritten", Severity::Info, None)]
+            vec![told("", "core/value_rewritten", Severity::Info, None)]
         )
     );
 }
@@ -407,5 +417,8 @@ fn under_default_and_tell_a_wrong_typed_bare_scalar_keeps_the_component_with_its
     let (value, found) = read::<Damage, Shorthands>("true", rules);
     assert_eq!(value, Some(Shorthands::Damage(Damage { value: 0 })));
     // Told as the member's defaulted scalar is, at the component.
-    assert_eq!(found, [told("", "InvalidValue", Severity::Info, None)]);
+    assert_eq!(
+        found,
+        [told("", "core/invalid_value", Severity::Info, None)]
+    );
 }

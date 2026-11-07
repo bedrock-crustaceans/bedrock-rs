@@ -47,7 +47,7 @@ fn under_spans<'a>(
                     .to_owned()
             });
             (
-                finding.code.name().to_owned(),
+                finding.code.id().to_owned(),
                 finding.location.json_path.to_string(),
                 under,
             )
@@ -102,7 +102,7 @@ fn a_block_read_by_the_versioned_load_has_its_spans_in_the_file_as_written() {
     assert_same_text_under_every_span::<bedrock_addon::families::block::Block>(
         "blocks/x.json",
         r#"{"format_version": "1.26.20", "minecraft:block": {"description": {"identifier": "demo:x"}, "components": {"minecraft:friction": {"oops": 1}, "demo:kept": {"n": -1e999}}}} tail"#,
-        &[("MalformedInput", "", "-1e999")],
+        &[("core/document_json", "", "-1e999")],
     );
 }
 
@@ -111,7 +111,7 @@ fn a_loot_table_read_by_its_own_reader_has_its_spans_in_the_file_as_written() {
     assert_same_text_under_every_span::<bedrock_addon::families::loot::LootTable>(
         "loot_tables/x.json",
         r#"{"pools": [{"rolls": 1, "entries": [{"type": "item", "name": "minecraft:stone"}], "zz": [0, 1e999]}]} tail"#,
-        &[("InvalidValue", "pools/0/zz/1", "1e999")],
+        &[("core/invalid_value", "pools/0/zz/1", "1e999")],
     );
 }
 
@@ -129,7 +129,7 @@ fn a_copy_read_by_a_stack_walk_has_its_spans_in_the_file_as_written() {
     assert_eq!(with_mark, plain, "{with_mark:#?}");
     assert!(
         with_mark.contains(&(
-            "InvalidValue".to_owned(),
+            "core/invalid_value".to_owned(),
             "texture_data/x/zz".to_owned(),
             Some("-1e999".to_owned())
         )),
@@ -148,7 +148,7 @@ fn a_render_controller_with_a_capital_key_has_its_spans_in_the_file_as_written()
         "render_controllers/x.json",
         r#"{"format_version": "1.8.0", "render_controllers": {"controller.render.test": {"geometry": "Geometry.default", "materials": [{"*": "Material.default"}, {"bodyLayer_*": 7}], "textures": ["Texture.default"]}}}"#,
         &[(
-            "InvalidType",
+            "core/invalid_type",
             "render_controllers/controller.render.test/materials/1/bodyLayer_*",
             "7",
         )],
@@ -216,19 +216,25 @@ document_types!(families);
 
 /// Whether `file` loads as `T`, and its findings as `code severity path`.
 fn outcome<T: Content>(path: &'static str, file: &[u8]) -> (bool, Vec<String>) {
-    let said = |d: &Diagnostic| {
-        format!(
-            "{} {:?} {}",
-            d.code.name(),
-            d.severity,
-            d.location.json_path
-        )
-    };
+    let said =
+        |d: &Diagnostic| format!("{} {:?} {}", d.code.id(), d.severity, d.location.json_path);
     match T::parse(&PackPath::from_static(path), file, &LoadContext::detached()) {
         Ok(document) => (true, document.diagnostics().iter().map(said).collect()),
         Err(rejected) => (false, rejected.diagnostics.iter().map(said).collect()),
     }
 }
+
+/// The definitions of a document with no text in it.
+const EMPTY_DOCUMENT: &[&str] = &[
+    "core/empty_document",
+    "core/empty_document_worded",
+    "fog/empty_after_parse",
+    "fog/empty_resource",
+    "loot/invalid_table_empty",
+    "server_config/commands_malformed_empty_document",
+    "server_config/config_parse_failed_empty_document",
+    "texture_set/set_empty",
+];
 
 /// A file that is only a byte-order mark is the empty file.
 /// Vanilla's reader skips the mark, so what is left is no text at all, and each family says
@@ -243,7 +249,12 @@ fn a_file_that_is_only_a_byte_order_mark_is_the_empty_file() {
             // One outcome across the families: the file is refused as an empty document
             // (the geometry's is an INFO by its folder's rule 0: vanilla is silent there).
             assert_eq!(marked.1.len(), 1, "{}", $path);
-            assert!(marked.1[0].starts_with("EmptyDocument "), "{}: {:?}", $path, marked.1);
+            assert!(
+                EMPTY_DOCUMENT.iter().any(|id| marked.1[0].starts_with(&format!("{id} "))),
+                "{}: {:?}",
+                $path,
+                marked.1
+            );
             assert!(!empty.0, "{}: an empty file is no document", $path);
         )*};
     }

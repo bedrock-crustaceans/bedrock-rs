@@ -3,14 +3,14 @@
   "rejected": 2,
   "diagnostics": [
     {
-      "code": "MissingPayload",
+      "code": "dialogue/no_payload",
       "severity": "error",
       "path": "dialogue/absent.json",
       "json_path": "minecraft:npc_dialogue",
       "text": "JSON: absent.json has an error: \n Couldn't find 'minecraft:npc_dialogue' object."
     },
     {
-      "code": "MissingPayload",
+      "code": "dialogue/no_payload",
       "severity": "error",
       "path": "dialogue/null.json",
       "json_path": "minecraft:npc_dialogue",

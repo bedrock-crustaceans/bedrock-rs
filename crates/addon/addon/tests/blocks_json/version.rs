@@ -19,13 +19,13 @@ const INVALID: &str = "Warning: The blocks.json \"format_version\" field is inva
 
 /// V2 at `format_version`.
 fn invalid() -> Found {
-    vanilla("MalformedFormatVersion", W, "format_version", INVALID)
+    vanilla("blocks_json/version_invalid", W, "format_version", INVALID)
 }
 
 /// V3 for the version text `written`.
 fn above(written: &str) -> Found {
     vanilla(
-        "UnsupportedVersion",
+        "blocks_json/version_above_ceiling",
         W,
         "format_version",
         &format!(
@@ -36,7 +36,7 @@ fn above(written: &str) -> Found {
 
 /// L1 at the legacy key `key`.
 fn split_warning(key: &str) -> Found {
-    ours("DeprecatedMember", I, key)
+    ours("core/deprecated_member", I, key)
 }
 
 /// V6 for `wool`.
@@ -65,7 +65,7 @@ fn wool_is_an_old_name() -> Found {
         out
     });
     vanilla(
-        "DeprecatedMember",
+        "blocks_json/old_name",
         E,
         "wool",
         &format!(
@@ -130,7 +130,7 @@ fn bj03_a_missing_version_is_1_1_0_with_vanilla_s_warning() {
     assert_eq!(
         loaded.found(),
         [
-            vanilla("MissingFormatVersion", W, "", NOT_GIVEN),
+            vanilla("blocks_json/version_not_given", W, "", NOT_GIVEN),
             split_warning("dirt")
         ]
     );
@@ -140,7 +140,7 @@ fn bj03_a_missing_version_is_1_1_0_with_vanilla_s_warning() {
     // The same for the two test keys.
     let (keys, found) = read(None);
     assert_eq!(keys, (Read::Split, Read::Split));
-    assert_eq!(found[0].code, "MissingFormatVersion");
+    assert_eq!(found[0].code, "blocks_json/version_not_given");
 }
 
 #[test]
@@ -185,7 +185,7 @@ fn bj04_the_any_version_star_is_0_0_0_and_gates_like_1_1_0() {
 #[test]
 fn bj04_a_partial_version_is_kept_and_skips_the_ceiling_deviation() {
     // `vanilla = "misleading V2"`: the client says 1.1.0 and reads 1.21.0. L15 says so.
-    let partial = ours("UnusualFormatVersion", I, "format_version");
+    let partial = ours("core/unusual_format_version", I, "format_version");
     let (keys, found) = read(Some(r#""1.21""#));
     assert_eq!(
         keys,
@@ -360,18 +360,14 @@ fn one_file_parses_with_its_findings() {
         "file order, `format_version` apart"
     );
     assert_eq!(document.version().effective, FormatVersion::new(1, 1, 0));
-    let codes: Vec<&str> = document
-        .diagnostics()
-        .iter()
-        .map(|f| f.code.name())
-        .collect();
+    let codes: Vec<&str> = document.diagnostics().iter().map(|f| f.code.id()).collect();
     assert_eq!(
         codes,
         [
-            "MalformedFormatVersion",
-            "IgnoredMember",
-            "DeprecatedMember",
-            "InvalidType"
+            "blocks_json/version_invalid",
+            "core/ignored_member",
+            "core/deprecated_member",
+            "core/invalid_type"
         ]
     );
     assert!(

@@ -28,7 +28,7 @@ fn stacks(spec: &Spec) -> StackSet {
 fn messages(d: &Diagnostics, name: &str, severity: Severity, path: &str) -> Vec<String> {
     d.iter()
         .filter(|f| {
-            f.code.name() == name
+            f.code.id() == name
                 && f.severity == severity
                 && f.location.path.as_ref().is_some_and(|p| p.as_str() == path)
         })
@@ -58,7 +58,7 @@ fn lt09_an_unknown_item_name_is_warned_with_vanillas_text() {
     assert_eq!(
         messages(
             &d,
-            "UnresolvedReference",
+            "core/unresolved_reference_worded",
             Severity::Error,
             "loot_tables/bad_item.json"
         ),
@@ -67,7 +67,7 @@ fn lt09_an_unknown_item_name_is_warned_with_vanillas_text() {
     );
     assert!(
         d.iter()
-            .filter(|f| f.code.name() == "UnresolvedReference")
+            .filter(|f| f.code.id() == "core/unresolved_reference_worded")
             .all(|f| f.kept),
         "{d:#?}"
     );
@@ -94,7 +94,7 @@ fn l2_an_unresolved_loot_table_reference_is_an_info_deviation() {
     let found: Vec<_> = d
         .iter()
         .filter(|f| {
-            f.code.name() == "UnresolvedReference"
+            f.code.id() == "core/unresolved_reference"
                 && f.location
                     .path
                     .as_ref()
@@ -110,7 +110,7 @@ fn l2_an_unresolved_loot_table_reference_is_an_info_deviation() {
 fn unresolved(d: &Diagnostics) -> Vec<(Severity, String)> {
     d.iter()
         .filter(|f| {
-            f.code.name() == "UnresolvedReference"
+            f.code.id() == "core/unresolved_reference"
                 && f.location
                     .path
                     .as_ref()

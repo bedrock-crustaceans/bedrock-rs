@@ -103,7 +103,7 @@ fn sk02_k11_serialize_name_is_not_read_deviation() {
     ] {
         let doc = parse(&format!(r#"{{ {members}, "skins": [] }}"#));
         let want: &[_] = if mismatch {
-            &[("SkinPackNameMismatch", Severity::Info)]
+            &[("core/skin_pack_name_mismatch", Severity::Info)]
         } else {
             &[]
         };
@@ -131,7 +131,7 @@ fn sk03_k6_an_entry_that_is_no_object() {
         found,
         ["skins/0", "skins/2", "skins/3", "skins/4"].map(|at| (
             at.to_owned(),
-            ("InvalidType", Severity::Error, text.to_owned())
+            ("skin/entry_not_object", Severity::Error, text.to_owned())
         ))
     );
     // The game logs the line at level 3 and goes on to the next entry.
@@ -149,7 +149,7 @@ fn sk04_sk05_a_skin_whose_files_the_pack_lacks_is_left_out() {
         |doc: &Document<SkinPack>| doc.diagnostics().iter().map(shown).collect::<Vec<_>>();
     let invalid = |tail: &str| {
         vec![(
-            "InvalidValue",
+            "skin/invalid_skin",
             Severity::Error,
             format!("Trying to add an invalid classic skin.{tail}"),
         )]
@@ -219,7 +219,7 @@ fn sk06_k12_custom_geometry() {
         assert_eq!(
             located(doc.diagnostics()),
             [(
-                "InvalidValue",
+                "core/invalid_value",
                 Severity::Info,
                 "skins/0/geometry".to_owned()
             )],
@@ -233,7 +233,10 @@ fn sk06_k12_custom_geometry() {
         None,
         &["a.png"],
     );
-    assert_eq!(codes(doc.diagnostics()), [("InvalidValue", Severity::Info)]);
+    assert_eq!(
+        codes(doc.diagnostics()),
+        [("core/invalid_value", Severity::Info)]
+    );
 }
 
 /// A `geometry.json` that is not JSON is named once, at the file; the pack loads without custom
@@ -251,7 +254,7 @@ fn a_geometry_file_that_is_not_json_is_named_once_and_no_skin_is_blamed() {
     let found: Vec<_> = doc.diagnostics().iter().collect();
     assert_eq!(
         codes(found.iter().copied()),
-        [("MalformedInput", Severity::Info)]
+        [("core/syntax", Severity::Info)]
     );
     assert_eq!(
         found[0].location.path.as_ref().unwrap().as_str(),
@@ -264,7 +267,7 @@ fn a_geometry_file_that_is_not_json_is_named_once_and_no_skin_is_blamed() {
     assert_eq!(
         located(doc.diagnostics()),
         [(
-            "InvalidValue",
+            "core/invalid_value",
             Severity::Info,
             "skins/0/geometry".to_owned()
         )]
@@ -284,12 +287,20 @@ fn k7_k8_k12_are_reported_at_the_file_s_index() {
     assert_eq!(
         located(doc.diagnostics()),
         [
-            ("InvalidType", Severity::Error, "skins/0".to_owned()),
-            ("InvalidType", Severity::Error, "skins/2".to_owned()),
-            ("InvalidValue", Severity::Error, "skins/1".to_owned()),
-            ("InvalidValue", Severity::Error, "skins/3".to_owned()),
             (
-                "InvalidValue",
+                "skin/entry_not_object",
+                Severity::Error,
+                "skins/0".to_owned()
+            ),
+            (
+                "skin/entry_not_object",
+                Severity::Error,
+                "skins/2".to_owned()
+            ),
+            ("skin/invalid_skin", Severity::Error, "skins/1".to_owned()),
+            ("skin/invalid_skin", Severity::Error, "skins/3".to_owned()),
+            (
+                "core/invalid_value",
                 Severity::Info,
                 "skins/4/geometry".to_owned()
             ),
@@ -303,11 +314,15 @@ fn k7_k8_k12_are_reported_at_the_file_s_index() {
     assert_eq!(
         located(doc.diagnostics()),
         [
-            ("InvalidValue", Severity::Info, "skins".to_owned()),
-            ("InvalidType", Severity::Error, "skins/a".to_owned()),
-            ("InvalidValue", Severity::Error, "skins/b".to_owned()),
+            ("core/invalid_value", Severity::Info, "skins".to_owned()),
             (
-                "InvalidValue",
+                "skin/entry_not_object",
+                Severity::Error,
+                "skins/a".to_owned()
+            ),
+            ("skin/invalid_skin", Severity::Error, "skins/b".to_owned()),
+            (
+                "core/invalid_value",
                 Severity::Info,
                 "skins/c/geometry".to_owned()
             ),
@@ -357,7 +372,11 @@ fn k10_a_type_that_is_neither_free_nor_paid() {
             "{written}"
         );
         let want: &[_] = if reported {
-            &[("InvalidValue", Severity::Info, "skins/0/type".to_owned())]
+            &[(
+                "core/invalid_value",
+                Severity::Info,
+                "skins/0/type".to_owned(),
+            )]
         } else {
             &[]
         };
@@ -378,7 +397,7 @@ fn sk08_k3_k4_k5_a_pack_the_game_rejects() {
     assert_eq!(
         refused(None),
         [(
-            "MissingRequiredField",
+            "skin/not_found",
             Severity::Error,
             "Failed to load skinpack, skins.json not found".to_owned()
         )]
@@ -386,7 +405,7 @@ fn sk08_k3_k4_k5_a_pack_the_game_rejects() {
     assert_eq!(
         refused(Some(b"{ nope")),
         [(
-            "MalformedInput",
+            "skin/not_json",
             Severity::Error,
             "Failed to load skinpack, failed to parse manifest".to_owned()
         )]
@@ -395,7 +414,7 @@ fn sk08_k3_k4_k5_a_pack_the_game_rejects() {
         assert_eq!(
             refused(Some(root.as_bytes())),
             [(
-                "InvalidType",
+                "skin/not_object",
                 Severity::Error,
                 "Skin manifest failed to load.  Pack Name:  /nAuthor: , /nUUID: ".to_owned()
             )],
@@ -420,7 +439,7 @@ fn sk09_the_optional_members_are_kept_as_written() {
     assert_eq!(
         located(doc.diagnostics()),
         [(
-            "UnrecognizedField",
+            "core/unrecognized_field",
             Severity::Info,
             "skins/0/tag".to_owned()
         )]
@@ -447,8 +466,12 @@ fn sk10_k14_a_skins_object_gives_its_member_values() {
     assert_eq!(
         located(doc.diagnostics()),
         [
-            ("InvalidValue", Severity::Info, "skins".to_owned()),
-            ("InvalidType", Severity::Error, "skins/w".to_owned()),
+            ("core/invalid_value", Severity::Info, "skins".to_owned()),
+            (
+                "skin/entry_not_object",
+                Severity::Error,
+                "skins/w".to_owned()
+            ),
         ]
     );
     // A scalar gives none.
@@ -459,7 +482,7 @@ fn sk10_k14_a_skins_object_gives_its_member_values() {
         assert_eq!(doc.skins, Some(Vec::new()), "{scalar}");
         assert_eq!(
             located(doc.diagnostics()),
-            [("InvalidValue", Severity::Info, "skins".to_owned())],
+            [("core/invalid_value", Severity::Info, "skins".to_owned())],
             "{scalar}"
         );
     }
@@ -482,8 +505,16 @@ fn k9_a_path_too_long_for_the_game_s_buffer_reads_as_empty() {
             &[]
         } else {
             &[
-                ("InvalidValue", Severity::Info, "skins/0/texture".to_owned()),
-                ("InvalidValue", Severity::Info, "skins/0/cape".to_owned()),
+                (
+                    "core/invalid_value",
+                    Severity::Info,
+                    "skins/0/texture".to_owned(),
+                ),
+                (
+                    "core/invalid_value",
+                    Severity::Info,
+                    "skins/0/cape".to_owned(),
+                ),
             ]
         };
         assert_eq!(located(doc.diagnostics()), want, "{length}");
@@ -501,7 +532,11 @@ fn k13_creator_rules() {
     assert_eq!(codes(parse(&many(80)).diagnostics()), []);
     assert_eq!(
         located(parse(&many(81)).diagnostics()),
-        [("SkinPackCreatorRule", Severity::Info, "skins".to_owned())]
+        [(
+            "core/skin_pack_creator_rule",
+            Severity::Info,
+            "skins".to_owned()
+        )]
     );
     let png = |width: u32, height: u32| {
         let mut bytes = b"\x89PNG\r\n\x1a\n\x00\x00\x00\x0dIHDR".to_vec();
@@ -518,7 +553,7 @@ fn k13_creator_rules() {
         (256, 256, false, false),
     ] {
         let rule = |found: bedrock_addon::diagnostic::Diagnostics| {
-            codes(&found) == [("SkinPackCreatorRule", Severity::Info)]
+            codes(&found) == [("core/skin_pack_creator_rule", Severity::Info)]
         };
         assert_eq!(
             !rule(check_texture(&png(width, height))),

@@ -2,7 +2,9 @@
 //! struct included, and the closed entry points that run it once per file.
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{Code, Diagnostic, Diagnostics, Location, Phase, Severity};
+use bedrock_addon_core::diagnostic::{
+    Code, Diagnostic, Diagnostics, Kind, Location, Phase, Severity,
+};
 use bedrock_addon_core::json::JsonSlice;
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::pack_identity::PackPath;
@@ -135,8 +137,8 @@ fn unsupported<F: Family>(text: &str) -> Vec<Code> {
     load::<F>(JsonSlice::new(text), &LoadContext::detached())
         .diagnostics
         .iter()
-        // By legacy name: the variant and the definitions that were it.
-        .filter(|d| d.code.name() == "UnsupportedVersion")
+        // By kind: every definition of an unsupported version.
+        .filter(|d| d.code.kind() == Kind::UnsupportedVersion)
         .map(|d| d.code.clone())
         .collect()
 }

@@ -167,7 +167,12 @@ fn a_backslash_as_the_last_byte_of_the_file_is_kept() {
 
 /// The template and arguments of the one `MalformedInput` warning of a file.
 fn no_equals_warning(diagnostics: &Diagnostics) -> (&'static str, Vec<String>) {
-    let found = with_code(diagnostics, "MalformedInput", Severity::Warning);
+    let mut found = with_code(diagnostics, "lang/new_line_in_key", Severity::Warning);
+    found.extend(with_code(
+        diagnostics,
+        "lang/null_in_key",
+        Severity::Warning,
+    ));
     assert_eq!(found.len(), 1, "{diagnostics:#?}");
     for line in [&codes::NEW_LINE_IN_KEY, &codes::NULL_IN_KEY] {
         if let Some(args) = found[0].code.args_of(line) {

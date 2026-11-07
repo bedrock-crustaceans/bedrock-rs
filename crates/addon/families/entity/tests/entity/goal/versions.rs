@@ -98,7 +98,7 @@ fn e29c_charge_speed_multiplier_is_live_below_1_26_0() {
     let (g, d) = at_version::<goal::AquaticChargeAttack>(KEY, &old, (1, 26, 0));
     assert_finding(
         &d,
-        "DeprecatedMember",
+        "core/deprecated_member_worded",
         "charge_speed_multiplier",
         Severity::Error,
     );
@@ -115,7 +115,7 @@ fn e32_stop_if_holding_item_is_gated_at_1_26_30() {
     let (g, d) = at_version::<goal::PickupItems>(KEY, json, (1, 26, 20));
     assert_finding(
         &d,
-        "UnrecognizedField",
+        "core/unrecognized_field",
         "stop_if_holding_item",
         Severity::Error,
     );
@@ -128,7 +128,7 @@ fn e32_stop_if_holding_item_is_gated_at_1_26_30() {
     let (_, d) = at_version::<goal::PickupItems>(KEY, json, (1, 26, 10));
     assert_finding(
         &d,
-        "UnrecognizedField",
+        "core/unrecognized_field",
         "stop_if_holding_item",
         Severity::Info,
     );
@@ -200,7 +200,7 @@ fn move_to_goals_take_the_base_defaults_and_bounds() {
     ] {
         let (g, d) = strict("minecraft:behavior.harvest_farm_block", json);
         assert!(g.is_none());
-        assert_finding(&d, "InvalidValue", member, Severity::Error);
+        assert_finding(&d, "core/invalid_value", member, Severity::Error);
     }
 }
 
@@ -239,7 +239,7 @@ fn target_goal_bounds_hold_for_derived_goals() {
             let json = format!(r#"{{"{member}": -1}}"#);
             let (g, d) = strict(key, &json);
             assert!(g.is_none(), "{key} {member}");
-            assert_finding(&d, "InvalidValue", member, Severity::Error);
+            assert_finding(&d, "core/invalid_value", member, Severity::Error);
         }
         let (g, d) = strict(key, r#"{"attack_interval": [2, 4]}"#);
         assert!(g.is_some() && d.is_empty(), "{key}: {d:?}");
@@ -249,7 +249,7 @@ fn target_goal_bounds_hold_for_derived_goals() {
         r#"{"persist_time": -1}"#,
     );
     assert!(g.is_none());
-    assert_finding(&d, "InvalidValue", "persist_time", Severity::Error);
+    assert_finding(&d, "core/invalid_value", "persist_time", Severity::Error);
     let (g, _) = goal::<goal::NearestPrioritizedAttackableTarget>(
         "minecraft:behavior.nearest_prioritized_attackable_target",
         r#"{"attack_interval": [2, 4]}"#,
@@ -313,7 +313,12 @@ fn vector_objects_keep_unknown_members() {
     const KEY: &str = "minecraft:behavior.drop_item_for";
     let json = r#"{"target_range": {"x": 6, "y": 6, "z": 6, "w": 1}}"#;
     let d = super::round_trip::<goal::DropItemFor>(KEY, json, ConvertMode::Strict).expect("kept");
-    assert_finding(&d, "UnrecognizedField", "target_range/w", Severity::Warning);
+    assert_finding(
+        &d,
+        "core/unrecognized_field",
+        "target_range/w",
+        Severity::Warning,
+    );
     let (g, _) = goal::<goal::DropItemFor>(KEY, json, ConvertMode::Strict);
     let range = g.expect("kept").target_range.expect("target_range");
     assert!(range.extra.get("w").is_some());

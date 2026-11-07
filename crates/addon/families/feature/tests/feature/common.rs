@@ -83,7 +83,7 @@ pub fn doc(version: &str, key: &str, members: &str) -> String {
 /// The findings whose code is `name` at `severity`.
 pub fn with<'a>(d: &'a Diagnostics, name: &str, severity: Severity) -> Vec<&'a Diagnostic> {
     d.iter()
-        .filter(|f| f.code.name() == name && f.severity == severity)
+        .filter(|f| f.code.id() == name && f.severity == severity)
         .collect()
 }
 

@@ -12,7 +12,7 @@
   ],
   "diagnostics": [
     {
-      "code": "UnresolvedReference",
+      "code": "json_ui/pack_missing_control",
       "severity": "error",
       "text": "ui/a.json: Can't find the control: root/nope",
       "pack": 1,

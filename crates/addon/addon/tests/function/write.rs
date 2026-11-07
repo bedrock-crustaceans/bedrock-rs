@@ -339,19 +339,19 @@ fn a_single_tick_list_does_not_resolve_its_names() {
 fn a_rejected_tick_list_is_an_error_for_the_single_file() {
     let path = PackPath::new("functions/tick.json").unwrap();
     for (text, code) in [
-        ("{", "MalformedInput"),
-        ("", "MalformedInput"),
-        ("{}", "MissingRequiredField"),
-        ("null", "MissingRequiredField"),
-        ("{\"values\": {}}", "InvalidType"),
-        ("{\"values\": 1}", "InvalidType"),
+        ("{", "function/tick_not_json"),
+        ("", "function/tick_not_json"),
+        ("{}", "function/tick_no_values"),
+        ("null", "function/tick_no_values"),
+        ("{\"values\": {}}", "function/tick_values_not_array"),
+        ("{\"values\": 1}", "function/tick_values_not_array"),
     ] {
         let rejected =
             TickList::parse(&path, text.as_bytes(), &LoadContext::detached()).expect_err(text);
         let [finding] = rejected.diagnostics.iter().collect::<Vec<_>>()[..] else {
             panic!("{text}: one finding");
         };
-        assert_eq!(finding.code.name(), code, "{text}");
+        assert_eq!(finding.code.id(), code, "{text}");
         assert_eq!(finding.severity, Severity::Error, "{text}");
     }
 }

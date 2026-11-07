@@ -94,7 +94,7 @@ fn malformed_json_is_rejected() {
     let rejected = WorldPacks::parse(Some(b"[ { \"pack_id\": "), None).expect_err("malformed");
     let (code, file, _) = rejection(&rejected);
     // By legacy name: the variant and the definitions that were it.
-    assert!(matches!(code.name(), "MalformedInput"));
+    assert!(matches!(code.id(), "core/syntax"));
     assert_eq!(file, WorldPacks::BEHAVIOR_FILE);
     assert_eq!(rejected.origin.path.as_str(), WorldPacks::BEHAVIOR_FILE);
 }
@@ -105,7 +105,7 @@ fn a_root_that_is_not_an_array_is_rejected() {
         WorldPacks::parse(None, Some(br#"{ "pack_id": "x" }"#)).expect_err("not an array");
     let (code, file, _) = rejection(&rejected);
     // By legacy name: the variant and the definitions that were it.
-    assert!(matches!(code.name(), "InvalidType"));
+    assert!(matches!(code.id(), "core/invalid_type"));
     assert_eq!(file, WorldPacks::RESOURCE_FILE);
 }
 
@@ -118,7 +118,7 @@ fn an_entry_without_a_version_is_rejected() {
     .expect_err("no version");
     let (code, _, json_path) = rejection(&rejected);
     // By legacy name: the variant and the definitions that were it.
-    assert!(matches!(code.name(), "MissingRequiredField"));
+    assert!(matches!(code.id(), "core/missing_required_field"));
     assert_eq!(json_path, "0/version");
 }
 
@@ -131,7 +131,7 @@ fn an_entry_with_a_malformed_uuid_or_version_is_rejected_at_the_member() {
     .expect_err("bad uuid");
     let (code, _, json_path) = rejection(&bad_uuid);
     // By legacy name: the variant and the definitions that were it.
-    assert!(matches!(code.name(), "InvalidValue"));
+    assert!(matches!(code.id(), "core/invalid_value"));
     assert_eq!(json_path, "0/pack_id");
     let bad_version = WorldPacks::parse(
         None,
@@ -143,7 +143,7 @@ fn an_entry_with_a_malformed_uuid_or_version_is_rejected_at_the_member() {
     .expect_err("bad version");
     let (code, _, json_path) = rejection(&bad_version);
     // By legacy name: the variant and the definitions that were it.
-    assert!(matches!(code.name(), "InvalidValue"));
+    assert!(matches!(code.id(), "core/invalid_value"));
     assert_eq!(json_path, "0/version");
 }
 
@@ -158,7 +158,7 @@ fn a_subpack_that_is_not_a_string_is_rejected() {
     .expect_err("numeric subpack");
     let (code, _, json_path) = rejection(&rejected);
     // By legacy name: the variant and the definitions that were it.
-    assert!(matches!(code.name(), "InvalidType"));
+    assert!(matches!(code.id(), "core/invalid_type"));
     assert_eq!(json_path, "0/subpack");
 }
 
@@ -183,7 +183,7 @@ fn a_pack_id_takes_only_the_32_and_36_character_forms() {
         let (code, _, json_path) = rejection(&rejected);
         assert!(
             // By legacy name: the variant and the definitions that were it.
-            matches!(code.name(), "InvalidValue"),
+            matches!(code.id(), "core/invalid_value"),
             "{refused}"
         );
         assert_eq!(json_path, "0/pack_id");
@@ -196,7 +196,7 @@ fn a_pack_id_that_is_not_a_string_is_the_wrong_type() {
         .expect_err("numeric pack_id");
     let (code, _, json_path) = rejection(&rejected);
     // By legacy name: the variant and the definitions that were it.
-    assert!(matches!(code.name(), "InvalidType"));
+    assert!(matches!(code.id(), "core/invalid_type"));
     assert_eq!(json_path, "0/pack_id");
 }
 

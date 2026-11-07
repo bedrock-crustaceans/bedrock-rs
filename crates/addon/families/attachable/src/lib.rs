@@ -1089,7 +1089,7 @@ mod tests {
         let count = |name: &str| {
             registry
                 .diagnostics()
-                .filter(|found| found.code.name() == name)
+                .filter(|found| found.code.id() == name)
                 .count()
         };
         let bindings: usize = registry
@@ -1099,15 +1099,15 @@ mod tests {
         match shape {
             Shape::Colliding => {
                 assert_eq!(registry.len(), n / 2);
-                assert_eq!(count("AttachableShadowed"), n / 4);
+                assert_eq!(count("core/attachable_shadowed_older"), n / 4);
                 // Each identifier's own binding, and the merged half's second one.
                 assert_eq!(bindings, n / 2 + n / 4);
-                assert_eq!(count("ItemBindingOverlap"), n / 2 - 1);
+                assert_eq!(count("core/item_binding_overlap"), n / 2 - 1);
             }
             Shape::Replaced => {
                 assert_eq!(registry.len(), 1);
                 assert_eq!(bindings, n);
-                assert_eq!(count("ItemBindingShadowed"), n - 1);
+                assert_eq!(count("core/item_binding_shadowed"), n - 1);
                 let (_, one) = registry.iter().next().expect("one definition");
                 assert!(
                     one.bound_items()[..n - 1]
@@ -1119,7 +1119,7 @@ mod tests {
             Shape::OneItem => {
                 assert_eq!(registry.len(), n);
                 assert_eq!(bindings, n);
-                assert_eq!(count("ItemBindingOverlap"), n - 1);
+                assert_eq!(count("core/item_binding_overlap"), n - 1);
             }
         }
         took

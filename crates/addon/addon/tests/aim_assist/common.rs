@@ -67,7 +67,7 @@ pub fn errors<'a>(
         .filter(|f| f.severity == Severity::Error)
         .map(|f| {
             (
-                f.code.name(),
+                f.code.id(),
                 f.location.json_path.to_string(),
                 f.code.to_string(),
             )

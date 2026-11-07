@@ -80,7 +80,7 @@ pub fn errors(d: &Diagnostics) -> Vec<(&'static str, String, String)> {
             assert_eq!(f.severity, Severity::Error, "{f:#?}");
             assert_eq!(f.location.path.as_ref().map(PackPath::as_str), Some(PATH));
             (
-                f.code.name(),
+                f.code.id(),
                 f.code.to_string(),
                 f.location.json_path.to_string(),
             )
@@ -108,7 +108,7 @@ pub fn missing_object(code: &'static str, path: &str) -> (&'static str, String, 
 /// The closing line after a version without a parser or a strict parse error.
 pub fn failed_to_parse() -> (&'static str, String, String) {
     error(
-        "DocumentRejected",
+        "block_culling/failed_to_parse",
         "Failed to parse block culling file 'block_culling/test.json'.",
         "",
     )
@@ -117,7 +117,7 @@ pub fn failed_to_parse() -> (&'static str, String, String) {
 /// The closing line after a failed identifier or rule check.
 pub fn failed_internal() -> (&'static str, String, String) {
     error(
-        "DocumentRejected",
+        "block_culling/failed_internal",
         "Failed to parse block culling file 'block_culling/test.json' into internal format",
         "",
     )

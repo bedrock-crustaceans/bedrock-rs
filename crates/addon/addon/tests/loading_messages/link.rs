@@ -22,7 +22,7 @@ fn link(files: &[(&str, &[u8])]) -> Diagnostics {
 
 fn found(d: &Diagnostics, code: &str) -> Vec<(Severity, String)> {
     d.iter()
-        .filter(|f| f.code.name() == code)
+        .filter(|f| f.code.id() == code)
         .map(|f| {
             let path = f.location.path.as_ref().map(ToString::to_string);
             (f.severity, path.unwrap_or_default())
@@ -42,7 +42,7 @@ fn l9_a_loading_message_no_lang_file_translates() {
         ("texts/en_US.lang", b"tips.known=A tip\n"),
     ]);
     assert_eq!(
-        found(&d, "UnresolvedLangKey"),
+        found(&d, "core/unresolved_lang_key"),
         [(Severity::Info, "loading_messages.json".to_owned())],
         "{d:?}"
     );

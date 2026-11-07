@@ -154,7 +154,10 @@ fn a_built_document_validates_through_the_loader() {
         },
     );
     let d = structure.validate(&super::common::context());
-    assert!(d.iter().any(|f| f.code.name() == "InvalidValue"), "{d:?}");
+    assert!(
+        d.iter().any(|f| f.code.id() == "core/invalid_value"),
+        "{d:?}"
+    );
     structure.max_depth = 20;
     assert!(structure.validate(&super::common::context()).is_empty());
 }
@@ -176,13 +179,13 @@ fn a_metadata_entrys_unknown_members_are_reported_and_written_back() {
             .diagnostics
             .iter()
             .filter(|d| d.severity == Severity::Warning)
-            .map(|d| format!("{} {}", d.code.name(), d.location.json_path))
+            .map(|d| format!("{} {}", d.code.id(), d.location.json_path))
             .collect();
         assert_eq!(
             warnings,
             [
-                "UnrecognizedField minecraft:jigsaw_structure_metadata/metadata/42/demo_entry",
-                "UnrecognizedField minecraft:jigsaw_structure_metadata/metadata/42/markers/0/demo_marker",
+                "core/unrecognized_field minecraft:jigsaw_structure_metadata/metadata/42/demo_entry",
+                "core/unrecognized_field minecraft:jigsaw_structure_metadata/metadata/42/markers/0/demo_marker",
             ],
             "{version}"
         );

@@ -1,7 +1,7 @@
 {
   "diagnostics": [
     {
-      "code": "InvalidEnumValue",
+      "code": "json_ui/debug_color_unrecognized",
       "severity": "info",
       "text": "unrecognized debug color specified: ",
       "at": "c/debug"

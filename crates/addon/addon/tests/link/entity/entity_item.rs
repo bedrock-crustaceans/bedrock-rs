@@ -86,7 +86,7 @@ fn e15_an_item_nothing_defines_is_an_information() {
             i("equippable/slots/0/item", "demo:none10"),
             // An item or an item tag: a lint (see the shareables test).
             miss(
-                "UnresolvedReference",
+                "core/unresolved_reference",
                 Severity::Info,
                 "minecraft:entity/components/minecraft:shareables/items/0/item",
                 "item",
@@ -174,7 +174,7 @@ fn e15_an_item_tag_is_a_lint_and_a_tag_expression_is_not_checked() {
     assert_eq!(
         said_of(&found, "item tag"),
         [miss(
-            "UnresolvedReference",
+            "core/unresolved_reference",
             Severity::Info,
             "minecraft:entity/components/minecraft:behavior.pickup_items/excluded_items/0/item_tag",
             "item tag",
@@ -253,14 +253,14 @@ fn e15_a_shareables_item_may_be_an_item_tag() {
         said_of(&found, "item"),
         [
             miss(
-                "UnresolvedReference",
+                "core/unresolved_reference",
                 Severity::Info,
                 &format!("{at}/2/item"),
                 "item",
                 "minecraft:is_food"
             ),
             miss(
-                "UnresolvedReference",
+                "core/unresolved_reference",
                 Severity::Info,
                 &format!("{at}/3/craft_into"),
                 "item",

@@ -48,7 +48,7 @@ fn v00_missing_version() {
     ));
     expect(
         &d,
-        "MissingRequiredField",
+        "core/required_child",
         Severity::Error,
         "Required child format_version not found",
     );
@@ -59,7 +59,7 @@ fn v01_number_version() {
     let text = r#"{"format_version": 1.8, "animations": {"animation.x": {}}}"#;
     expect_prefix(
         &rejected(animation(text, &rp(1, 21, 0))),
-        "InvalidType",
+        "core/unknown_child_option",
         Severity::Error,
         TYPE_ERROR,
     );
@@ -70,7 +70,7 @@ fn v02_below_floor() {
     let d = rejected(animation(&file("1.7.0", "{}"), &rp(1, 21, 0)));
     expect(
         &d,
-        "UnsupportedVersion",
+        "core/version_below_min",
         Severity::Error,
         "Version 1.7.0 below min required version (1.8.0)",
     );
@@ -81,7 +81,7 @@ fn v03_prerelease_floor() {
     let d = rejected(animation(&file("1.8.0-beta.1", "{}"), &rp(1, 21, 0)));
     expect(
         &d,
-        "UnsupportedVersion",
+        "core/version_below_min",
         Severity::Error,
         "Version 1.8.0-beta.1 below min required version (1.8.0)",
     );
@@ -109,7 +109,7 @@ fn v06_above_engine() {
     assert!(
         find(
             document.diagnostics(),
-            "FormatVersionAboveEngine",
+            "core/format_version_above_engine",
             Severity::Info
         )
         .is_some(),
@@ -122,7 +122,7 @@ fn v06_above_engine() {
 fn v07_beta_literal() {
     expect_prefix(
         &rejected(animation(&file("beta", "{}"), &rp(1, 21, 0))),
-        "InvalidType",
+        "core/unknown_child_option",
         Severity::Error,
         TYPE_ERROR,
     );
@@ -133,7 +133,7 @@ fn v07_beta_literal() {
 #[test]
 fn s00_invalid_json_and_the_trailing_comma_deviation() {
     let d = rejected(animation(r#"{"format_version" "1.8.0"}"#, &rp(1, 21, 0)));
-    expect_prefix(&d, "MalformedInput", Severity::Error, "parse error:\n");
+    expect_prefix(&d, "core/parse_error", Severity::Error, "parse error:\n");
     // Ours: facet-json accepts a trailing comma that jsoncpp rejects.
     loaded(animation(
         &file("1.8.0", r#"{"loop": true,}"#),
@@ -147,7 +147,7 @@ fn s01_unknown_member_drops_every_animation_of_the_file() {
     let d = rejected(animation(text, &rp(1, 21, 0)));
     expect(
         &d,
-        "UnrecognizedField",
+        "core/child_not_valid",
         Severity::Error,
         "child 'loops' not valid here.",
     );
@@ -159,7 +159,7 @@ fn s02_bad_identifier() {
     let d = rejected(animation(text, &rp(1, 21, 0)));
     expect(
         &d,
-        "UnrecognizedField",
+        "core/child_not_valid",
         Severity::Error,
         "child 'animation:foo' not valid here.",
     );
@@ -173,7 +173,7 @@ fn s03_bad_bone_name() {
     ));
     expect(
         &d,
-        "UnrecognizedField",
+        "core/child_not_valid",
         Severity::Error,
         "child 'left arm' not valid here.",
     );
@@ -185,18 +185,18 @@ fn s04_bad_time_key() {
     let d = rejected(animation(&anim(body), &rp(1, 21, 0)));
     let unknown: Vec<_> = d
         .iter()
-        .filter(|f| f.code.name() == "UnrecognizedField")
+        .filter(|f| f.code.id() == "core/child_not_valid")
         .collect();
     assert_eq!(unknown.len(), 2, "{:?}", lines(&d));
     expect(
         &d,
-        "UnrecognizedField",
+        "core/child_not_valid",
         Severity::Error,
         "child '.5' not valid here.",
     );
     expect(
         &d,
-        "UnrecognizedField",
+        "core/child_not_valid",
         Severity::Error,
         "child '1e1' not valid here.",
     );
@@ -208,7 +208,7 @@ fn s05_scalar_keyframe() {
         &anim(r#"{"bones": {"a": {"scale": {"0.0": 1.0}}}}"#),
         &rp(1, 21, 0),
     ));
-    expect_prefix(&d, "InvalidType", Severity::Error, TYPE_ERROR);
+    expect_prefix(&d, "core/unknown_child_option", Severity::Error, TYPE_ERROR);
 }
 
 #[test]
@@ -219,7 +219,7 @@ fn s06_vec2_keyframe() {
     ));
     expect(
         &d,
-        "InvalidValue",
+        "core/array_too_small",
         Severity::Error,
         "Array too small (2 < 3)",
     );
@@ -230,7 +230,7 @@ fn s07_loop_string() {
     let d = rejected(animation(&anim(r#"{"loop": "hold"}"#), &rp(1, 21, 0)));
     expect(
         &d,
-        "InvalidValue",
+        "core/not_allowed_regex",
         Severity::Error,
         "Value 'hold' not allowed.  Must match at least one of the following regex patterns: hold_on_last_frame",
     );
@@ -244,7 +244,7 @@ fn s08_relative_to() {
     ));
     expect_prefix(
         &d,
-        "InvalidValue",
+        "core/not_allowed_regex",
         Severity::Error,
         "Value 'parent' not allowed.",
     );
@@ -254,7 +254,7 @@ fn s08_relative_to() {
     ));
     expect(
         &d,
-        "UnrecognizedField",
+        "core/child_not_valid",
         Severity::Error,
         "child 'position' not valid here.",
     );
@@ -268,7 +268,7 @@ fn s09_bad_molang_drops_the_file() {
         &rp(1, 21, 0),
     ));
     assert!(
-        find(&d, "InvalidMolang", Severity::Error).is_some(),
+        find(&d, "core/invalid_molang", Severity::Error).is_some(),
         "{:?}",
         lines(&d)
     );
@@ -289,7 +289,7 @@ fn s11_channel_vec2_fails_the_predicate() {
     ));
     expect(
         &empty,
-        "UnrecognizedField",
+        "core/child_not_valid",
         Severity::Error,
         "child 'position' not valid here.",
     );
@@ -299,7 +299,7 @@ fn s11_channel_vec2_fails_the_predicate() {
     ));
     expect(
         &d,
-        "UnrecognizedField",
+        "core/child_not_valid",
         Severity::Error,
         "child 'position' not valid here.",
     );
@@ -317,7 +317,7 @@ fn s12_object_in_position() {
     ));
     let found = d
         .iter()
-        .find(|f| f.code.name() == "InvalidType")
+        .find(|f| f.code.id() == "core/unknown_child_option")
         .unwrap_or_else(|| panic!("{:?}", lines(&d)));
     assert!(
         found.location.json_path.to_string().ends_with("position/0"),
@@ -332,7 +332,7 @@ fn s13_empty_required_groups() {
     let d = rejected(animation(&anim(r#"{"bones": {}}"#), &cx));
     expect(
         &d,
-        "MissingRequiredField",
+        "core/required_child",
         Severity::Error,
         "Required child [a-zA-Z0-9_.-]+ not found",
     );
@@ -342,7 +342,7 @@ fn s13_empty_required_groups() {
     ));
     expect(
         &d,
-        "MissingRequiredField",
+        "core/required_child",
         Severity::Error,
         r"Required child animation\.[a-zA-Z0-9_.-]+ not found",
     );
@@ -352,7 +352,7 @@ fn s13_empty_required_groups() {
     ));
     expect(
         &d,
-        "MissingRequiredField",
+        "core/required_child",
         Severity::Error,
         r"Required child [0-9]+(\.[0-9]+)? not found",
     );
@@ -377,7 +377,7 @@ fn s14_lerp_case() {
     ));
     expect_prefix(
         &d,
-        "InvalidValue",
+        "core/not_allowed_keys",
         Severity::Error,
         "Value 'step' not allowed.  Must match at least one of the following keys: ",
     );
@@ -412,7 +412,7 @@ fn s17_bind_to_actor_true() {
     ));
     expect(
         &d,
-        "InvalidValue",
+        "core/value_not_allowed",
         Severity::Error,
         "Value 'true' not allowed",
     );
@@ -490,7 +490,7 @@ fn m04_unknown_query_drops_the_file() {
     ));
     let invalid = d
         .iter()
-        .filter(|f| f.code.name() == "InvalidMolang" && f.severity == Severity::Error)
+        .filter(|f| f.code.id() == "core/invalid_molang" && f.severity == Severity::Error)
         .count();
     assert_eq!(invalid, 2, "{:?}", lines(&d));
 }
@@ -503,7 +503,12 @@ fn m05_timeline_rejected_is_a_kept_error() {
         &rp(1, 21, 0),
     ));
     assert!(
-        find(document.diagnostics(), "InvalidMolang", Severity::Error).is_some(),
+        find(
+            document.diagnostics(),
+            "core/invalid_molang",
+            Severity::Error
+        )
+        .is_some(),
         "{:?}",
         lines(document.diagnostics())
     );
@@ -520,7 +525,7 @@ fn m06_timeline_split_compiles_only_molang() {
         document
             .diagnostics()
             .iter()
-            .all(|f| f.code.name() != "InvalidMolang" && f.code.name() != "MolangLint"),
+            .all(|f| f.code.id() != "core/invalid_molang" && f.code.id() != "core/molang_lint"),
         "{:?}",
         lines(document.diagnostics())
     );
@@ -546,7 +551,7 @@ fn m07_version_from_pack() {
     clean(loaded(animation(&body, &rp(1, 16, 0))).diagnostics());
     let d = rejected(animation(&body, &rp(1, 21, 0)));
     assert!(
-        find(&d, "InvalidMolang", Severity::Error).is_some(),
+        find(&d, "core/invalid_molang", Severity::Error).is_some(),
         "{:?}",
         lines(&d)
     );
@@ -555,8 +560,8 @@ fn m07_version_from_pack() {
 #[test]
 fn m08_null_member_is_a_type_error() {
     let d = rejected(animation(&anim(r#"{"loop_delay": null}"#), &rp(1, 21, 0)));
-    expect_prefix(&d, "InvalidType", Severity::Error, TYPE_ERROR);
-    assert!(d.iter().all(|f| f.code.name() != "InvalidMolang"));
+    expect_prefix(&d, "core/unknown_child_option", Severity::Error, TYPE_ERROR);
+    assert!(d.iter().all(|f| f.code.id() != "core/invalid_molang"));
 }
 
 // ---- shapes and semantics ----
@@ -611,7 +616,7 @@ fn c03_axis_sequence_on_position() {
     let body = r#"{"bones": {"body": {"position": [{"y": 1}, {"x": 2}, {"y": 3}]}}}"#;
     expect_prefix(
         &rejected(animation(&anim(body), &rp(1, 21, 0))),
-        "InvalidType",
+        "core/unknown_child_option",
         Severity::Error,
         TYPE_ERROR,
     );
@@ -716,7 +721,7 @@ fn c10_case_folding_and_duplicates_in_one_pack() {
     assert!(
         registry
             .diagnostics()
-            .any(|d| d.code.name() == "DuplicateIdentifier" && d.severity == Severity::Info),
+            .any(|d| d.code.id() == "core/duplicate_identifier" && d.severity == Severity::Info),
         "{registry:?}"
     );
     let alone = stacks(&[], &[&[("animations/a.json", first)]]);
@@ -863,7 +868,7 @@ fn k00_override_replaces_whole() {
     assert!(
         registry
             .diagnostics()
-            .any(|d| d.code.name() == "ShadowedDefinition" && d.severity == Severity::Info)
+            .any(|d| d.code.id() == "core/shadowed_definition" && d.severity == Severity::Info)
     );
 }
 
@@ -948,7 +953,12 @@ fn bones_colliding_after_lower_casing_are_both_kept_with_a_warning() {
     ));
     assert_eq!(the(&document).bones.as_ref().unwrap().len(), 2);
     assert!(
-        find(document.diagnostics(), "DuplicateBone", Severity::Info).is_some(),
+        find(
+            document.diagnostics(),
+            "core/duplicate_bone",
+            Severity::Info
+        )
+        .is_some(),
         "{:?}",
         lines(document.diagnostics())
     );
@@ -997,7 +1007,7 @@ fn r15_effect_keys_resolve_against_the_using_client_entity() {
     let found: Vec<_> = set
         .link()
         .iter()
-        .filter(|d| d.code.name() == "UnresolvedReference")
+        .filter(|d| d.code.id() == "core/unresolved_reference")
         .map(|d| (d.severity, d.location.json_path.to_string()))
         .collect();
     // `Smoke` matches `smoke`; only `nowhere` is unresolved.
@@ -1018,7 +1028,7 @@ fn a_keyframe_array_of_four_is_too_large() {
     ));
     expect(
         &d,
-        "InvalidValue",
+        "core/array_too_large",
         Severity::Error,
         "Array too large (4 > 3)",
     );
@@ -1028,7 +1038,7 @@ fn a_keyframe_array_of_four_is_too_large() {
     ));
     expect(
         &d,
-        "InvalidValue",
+        "core/array_too_large",
         Severity::Error,
         "Array too large (4 > 3)",
     );
@@ -1043,7 +1053,7 @@ fn an_unreadable_file_is_a_parse_error() {
             bytes,
             &rp(1, 21, 0),
         ));
-        expect_prefix(&d, "MalformedInput", Severity::Error, "parse error:\n");
+        expect_prefix(&d, "core/parse_error", Severity::Error, "parse error:\n");
     }
 }
 

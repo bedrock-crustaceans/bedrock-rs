@@ -151,7 +151,7 @@ fn place(finding: &Diagnostic) -> (String, String, String, &'static str) {
             .map(|path| path.as_str().to_owned())
             .unwrap_or_default(),
         finding.location.json_path.to_string(),
-        finding.code.name(),
+        finding.code.id(),
     )
 }
 

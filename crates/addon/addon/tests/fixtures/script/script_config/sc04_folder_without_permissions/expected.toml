@@ -1,14 +1,14 @@
 # families/script_config fixtures.md, row sc04_folder_without_permissions (probe A).
 
 [[diagnostic]]
-code = "PackConfigShadowsDefault"
+code = "core/pack_config_shadows_default"
 severity = "info"
 phase = "parse"
 file = "config/a0000000-0000-4000-8000-000000000001/permissions.json"
 path = ""
 
 [[diagnostic]]
-code = "ScriptModulePermission"
+code = "server_config/plugin_module_not_configured"
 severity = "error"
 phase = "link"
 file = "config/a0000000-0000-4000-8000-000000000001/permissions.json"

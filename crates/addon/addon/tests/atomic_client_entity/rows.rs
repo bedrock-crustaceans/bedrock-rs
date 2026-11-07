@@ -2,7 +2,7 @@
 //! `s01`–`s14`, the stack `k01`–`k04` and `r08`. The render-controller lint `r01`–`r07` is the
 //! link pass's (`link.rs`).
 
-use bedrock_addon::diagnostic::Severity;
+use bedrock_addon::diagnostic::{Diagnostics, Kind, Severity};
 use bedrock_addon::document::{Content, Placed};
 use bedrock_addon::families::atomic_client_entity::{
     AabbDimensions, AtomicClientEntity, CompanionBlockAvoidance, CompanionBlockClipping,
@@ -16,6 +16,26 @@ use bedrock_addon::visual::{ControllerUse, HasVisuals};
 
 use super::common::*;
 use super::in_files::assert_in_files;
+
+/// Requires no finding of `kind`.
+#[track_caller]
+fn none_of_kind(d: &Diagnostics, kind: Kind) {
+    assert!(
+        d.iter().all(|f| f.kind() != kind),
+        "{}",
+        lines(d).join("\n")
+    );
+}
+
+/// Requires no finding with one of the definitions `ids`.
+#[track_caller]
+fn none_of_ids(d: &Diagnostics, ids: &[&str]) {
+    assert!(
+        d.iter().all(|f| !ids.contains(&f.code.id())),
+        "{}",
+        lines(d).join("\n")
+    );
+}
 
 const FAMILY: &str = "atomic_client_entity";
 const NO_PARSER: &str = "unsupported version: no parser available for version ";
@@ -65,7 +85,7 @@ fn v02_beta_normal_pack_no_experiments() {
     let cx: LoadContext = cx();
     assert!(!cx.beta_apis && !cx.is_base_game_pack);
     let document = loaded(atomic(&wisp("", ""), &cx));
-    none(document.diagnostics(), "BetaFeaturesNotEnabled");
+    none_of_kind(document.diagnostics(), Kind::Toggle);
 }
 
 #[test]
@@ -75,7 +95,7 @@ fn v03_numeric_version() {
         let d = rejected(atomic(&text, &cx()));
         expect(
             &d,
-            "UnsupportedVersion",
+            "core/no_parser_for_version",
             Severity::Error,
             &format!("{NO_PARSER}{version}"),
         );
@@ -88,11 +108,11 @@ fn v04_prerelease_version() {
     let d = rejected(atomic(&text, &cx()));
     expect(
         &d,
-        "UnsupportedVersion",
+        "core/no_parser_for_version",
         Severity::Error,
         &format!("{NO_PARSER}1.26.40-beta.1"),
     );
-    none(&d, "PrereleaseFormatVersion");
+    none(&d, "core/prerelease_format_version");
 }
 
 #[test]
@@ -103,17 +123,17 @@ fn v05_missing_version() {
     let d = rejected(atomic(text, &cx()));
     expect(
         &d,
-        "MalformedInput",
+        "core/document_member_count",
         Severity::Error,
         "A Minecraft Document must have exactly two members: \"format_version\" and a payload member",
     );
-    none(&d, "MissingFormatVersion");
+    none_of_kind(&d, Kind::FormatVersion);
     // Two members, neither of them the version: the Puv loader's text.
     let text = r#"{"other": 1, "minecraft:atomic_client_entity": {"description": {"identifier": "demo:wisp"}}}"#;
     let d = rejected(atomic(text, &cx()));
     expect(
         &d,
-        "MissingFormatVersion",
+        "core/no_valid_version",
         Severity::Error,
         "no valid version passed by the caller or found in the input",
     );
@@ -122,7 +142,7 @@ fn v05_missing_version() {
     let d = rejected(atomic(&text, &cx()));
     expect(
         &d,
-        "MalformedInput",
+        "core/document_member_count",
         Severity::Error,
         "A Minecraft Document must have exactly two members: \"format_version\" and a payload member",
     );
@@ -134,26 +154,29 @@ fn v06_malformed_version() {
     // version 1.26.0, which has no parser.
     let text = wisp("", "").replace("\"beta\"", "1.26");
     let d = rejected(atomic(&text, &cx()));
-    let codes: Vec<&str> = d.iter().map(|f| f.code.name()).collect();
-    assert_eq!(codes, ["UnsupportedVersion"]);
-    expect_prefix(&d, "UnsupportedVersion", Severity::Error, NO_PARSER);
+    let codes: Vec<&str> = d.iter().map(|f| f.code.id()).collect();
+    assert_eq!(codes, ["core/no_parser_for_version"]);
+    expect_prefix(&d, "core/no_parser_for_version", Severity::Error, NO_PARSER);
     for version in ["true", "{}", "\"soon\""] {
         let text = wisp("", "").replace("\"beta\"", version);
         let d = rejected(atomic(&text, &cx()));
         expect(
             &d,
-            "MalformedFormatVersion",
+            "core/malformed_format_version",
             Severity::Error,
             "Malformed format version",
         );
         expect(
             &d,
-            "MissingFormatVersion",
+            "core/no_valid_version",
             Severity::Error,
             "no valid version passed by the caller or found in the input",
         );
-        let texts: Vec<&str> = d.iter().map(|f| f.code.name()).collect();
-        assert_eq!(texts, ["MalformedFormatVersion", "MissingFormatVersion"]);
+        let texts: Vec<&str> = d.iter().map(|f| f.code.id()).collect();
+        assert_eq!(
+            texts,
+            ["core/malformed_format_version", "core/no_valid_version"]
+        );
     }
 }
 
@@ -164,7 +187,7 @@ fn v07_wrong_payload_key() {
     // The game builds its input with the key `minecraft:atomic_client_entity`, so the document input refuses the other key.
     expect(
         &d,
-        "MissingPayload",
+        "core/payload_under_other_key",
         Severity::Error,
         "The payload key does not match the expected one. Expected: 'minecraft:atomic_client_entity'. Actual: 'minecraft:client_entity'.",
     );
@@ -184,16 +207,16 @@ fn v08_non_json_extension_and_v09_empty_file() {
     assert!(entities.is_empty());
     assert_eq!(entities.rejected().len(), 1);
     let found: Vec<String> = entities.diagnostics().map(line).collect();
-    assert_eq!(found, ["Info EmptyDocument  empty document"]);
+    assert_eq!(found, ["Info core/empty_document  empty document"]);
     // Read directly, an empty file is not loaded, with the info only.
     let d = rejected(atomic("", &cx()));
-    assert_eq!(lines(&d), ["Info EmptyDocument  empty document"]);
+    assert_eq!(lines(&d), ["Info core/empty_document  empty document"]);
 }
 
 #[test]
 fn rule_v3_text_that_is_no_json_is_malformed_input() {
     let d = rejected(atomic(r#"{"format_version": "beta", "#, &cx()));
-    assert!(find(&d, "MalformedInput", Severity::Error).is_some());
+    assert!(find(&d, "core/document_json", Severity::Error).is_some());
 }
 
 #[test]
@@ -284,7 +307,7 @@ fn s02_unknown_description_member() {
         let name = member.split('"').nth(1).unwrap();
         expect_at(
             &d,
-            "UnrecognizedField",
+            "core/unrecognized_field",
             Severity::Error,
             &format!("{DESCRIPTION}/{name}"),
         );
@@ -305,7 +328,7 @@ fn s03_unknown_script_member() {
         let name = member.split('"').nth(1).unwrap();
         expect_at(
             &d,
-            "UnrecognizedField",
+            "core/unrecognized_field",
             Severity::Error,
             &format!("{DESCRIPTION}/scripts/{name}"),
         );
@@ -318,7 +341,7 @@ fn s04_conditional_render_controller() {
     let d = rejected(atomic(&wisp(members, ""), &cx()));
     expect_at(
         &d,
-        "InvalidType",
+        "core/invalid_type",
         Severity::Error,
         &format!("{DESCRIPTION}/render_controllers/1"),
     );
@@ -333,7 +356,7 @@ fn s05_conditional_animate() {
     ));
     expect_at(
         &d,
-        "InvalidType",
+        "core/invalid_type",
         Severity::Error,
         &format!("{DESCRIPTION}/scripts/animate/0"),
     );
@@ -404,7 +427,7 @@ fn rule_d6_wrong_json_types() {
         ),
     ] {
         let d = rejected(atomic(&wisp(members, rest), &cx()));
-        expect_at(&d, "InvalidType", Severity::Error, &at);
+        expect_at(&d, "core/invalid_type", Severity::Error, &at);
         assert_eq!(d.len(), 1, "{members} {rest}: {}", lines(&d).join("\n"));
     }
     let d = rejected(atomic(
@@ -413,7 +436,7 @@ fn rule_d6_wrong_json_types() {
     ));
     expect_at(
         &d,
-        "InvalidType",
+        "core/invalid_type",
         Severity::Error,
         &format!("{DESCRIPTION}/identifier"),
     );
@@ -426,22 +449,46 @@ fn s06_unknown_component() {
     let d = rejected(atomic(&wisp("", rest), &cx()));
     expect_at(
         &d,
-        "UnrecognizedComponent",
+        "core/unrecognized_component",
         Severity::Error,
         "minecraft:atomic_client_entity/components/minecraft:collision_box",
     );
-    none(&d, "UnrecognizedField");
+    none_of_ids(
+        &d,
+        &[
+            "block_culling/missing_object_unrecognized_field",
+            "camera/unrecognized_field",
+            "core/child_not_valid",
+            "core/member_not_in_schema",
+            "core/unrecognized_field",
+            "core/unrecognized_field_worded",
+            "deferred_settings/needs_format_version",
+            "deferred_settings/no_longer_used",
+            "entity/invalid_filter_member",
+        ],
+    );
     // An unknown member inside the known component is a member, not a component.
     let rest =
         r#""components": {"minecraft:aabb_dimensions": {"width": 1, "height": 1, "depth": 1}}"#;
     let d = rejected(atomic(&wisp("", rest), &cx()));
     expect_at(
         &d,
-        "UnrecognizedField",
+        "core/unrecognized_field",
         Severity::Error,
         "minecraft:atomic_client_entity/components/minecraft:aabb_dimensions/depth",
     );
-    none(&d, "UnrecognizedComponent");
+    none_of_ids(
+        &d,
+        &[
+            "block/child_not_valid",
+            "core/component_not_in_schema",
+            "core/unrecognized_component",
+            "core/unrecognized_component_worded",
+            "loot/unknown_condition",
+            "loot/unsupported_function",
+            "particle/unrecognized_component",
+        ],
+    );
 }
 
 #[test]
@@ -449,12 +496,17 @@ fn s07_missing_identifier_and_rule_d3_missing_description() {
     let d = rejected(atomic(&beta(r#"{"description": {}}"#), &cx()));
     expect_at(
         &d,
-        "MissingRequiredField",
+        "core/missing_required_field",
         Severity::Error,
         &format!("{DESCRIPTION}/identifier"),
     );
     let d = rejected(atomic(&beta("{}"), &cx()));
-    expect_at(&d, "MissingRequiredField", Severity::Error, DESCRIPTION);
+    expect_at(
+        &d,
+        "core/missing_required_field",
+        Severity::Error,
+        DESCRIPTION,
+    );
 }
 
 #[test]
@@ -465,13 +517,13 @@ fn s08_identifier_no_namespace() {
     ));
     expect(
         &d,
-        "InvalidValue",
+        "atomic_client_entity/namespace_text",
         Severity::Error,
         "string must be prefixed with a namespace (eg. namespace:value)",
     );
     expect_at(
         &d,
-        "InvalidValue",
+        "atomic_client_entity/namespace_text",
         Severity::Error,
         &format!("{DESCRIPTION}/identifier"),
     );
@@ -484,7 +536,7 @@ fn s13_identifier_namespace_edges() {
         let d = rejected(atomic(&text, &cx()));
         expect(
             &d,
-            "InvalidValue",
+            "atomic_client_entity/namespace_text",
             Severity::Error,
             "string must be prefixed with a namespace (eg. namespace:value)",
         );
@@ -511,15 +563,25 @@ fn s09_negative_width() {
     let d = rejected(atomic(&boxed("-1", "1"), &cx()));
     expect(
         &d,
-        "InvalidValue",
+        "atomic_client_entity/not_negative_text",
         Severity::Error,
         "the input must be a number >= 0",
     );
-    expect_at(&d, "InvalidValue", Severity::Error, &format!("{at}/width"));
+    expect_at(
+        &d,
+        "atomic_client_entity/not_negative_text",
+        Severity::Error,
+        &format!("{at}/width"),
+    );
     assert_eq!(d.len(), 1);
     // The height has the same bound, and both are reported.
     let d = rejected(atomic(&boxed("1", "-0.5"), &cx()));
-    expect_at(&d, "InvalidValue", Severity::Error, &format!("{at}/height"));
+    expect_at(
+        &d,
+        "atomic_client_entity/not_negative_text",
+        Severity::Error,
+        &format!("{at}/height"),
+    );
     assert_eq!(rejected(atomic(&boxed("-1", "-1"), &cx())).len(), 2);
 }
 
@@ -530,7 +592,7 @@ fn s10_missing_height() {
     let d = rejected(atomic(&wisp("", rest), &cx()));
     expect_at(
         &d,
-        "MissingRequiredField",
+        "core/missing_required_field",
         Severity::Error,
         &format!("{at}/height"),
     );
@@ -538,7 +600,7 @@ fn s10_missing_height() {
     let d = rejected(atomic(&wisp("", rest), &cx()));
     expect_at(
         &d,
-        "MissingRequiredField",
+        "core/missing_required_field",
         Severity::Error,
         &format!("{at}/width"),
     );
@@ -562,7 +624,7 @@ fn s12_unknown_root_member() {
     let d = rejected(atomic(&wisp("", r#""events": {}"#), &cx()));
     expect_at(
         &d,
-        "UnrecognizedField",
+        "core/unrecognized_field",
         Severity::Error,
         "minecraft:atomic_client_entity/events",
     );
@@ -659,7 +721,7 @@ fn k01_top_pack_wins() {
     assert_eq!(entity.origin().pack.name(), "pack 1");
     let shadowed: Vec<_> = entities
         .diagnostics()
-        .filter(|f| f.code.name() == "AtomicClientEntityShadowed")
+        .filter(|f| f.code.id() == "core/atomic_client_entity_shadowed")
         .collect();
     assert_eq!(shadowed.len(), 1);
     assert_eq!(shadowed[0].severity, Severity::Info);
@@ -711,7 +773,7 @@ fn k03_failed_top_keeps_lower() {
     assert!(
         entities
             .diagnostics()
-            .all(|f| f.code.name() != "AtomicClientEntityShadowed")
+            .all(|f| f.code.id() != "core/atomic_client_entity_shadowed")
     );
 }
 
@@ -770,13 +832,13 @@ fn a_box_size_beyond_f32_is_read_as_the_largest_finite_float_deviation() {
     );
     expect_at(
         document.diagnostics(),
-        "InvalidValue",
+        "core/invalid_value",
         Severity::Info,
         &format!("{at}/width"),
     );
     expect_at(
         document.diagnostics(),
-        "InvalidValue",
+        "core/invalid_value",
         Severity::Info,
         &format!("{at}/height"),
     );
@@ -786,7 +848,7 @@ fn a_box_size_beyond_f32_is_read_as_the_largest_finite_float_deviation() {
     let d = rejected(atomic(&boxed("1e39", "1e999"), &cx()));
     expect(
         &d,
-        "MalformedInput",
+        "core/document_json",
         Severity::Error,
         "Failed to parse the Minecraft Document JSON: Number too big to be stored in double.",
     );
@@ -794,7 +856,7 @@ fn a_box_size_beyond_f32_is_read_as_the_largest_finite_float_deviation() {
     let d = rejected(atomic(&boxed("-1e39", "1"), &cx()));
     expect(
         &d,
-        "InvalidValue",
+        "atomic_client_entity/not_negative_text",
         Severity::Error,
         "the input must be a number >= 0",
     );
@@ -991,7 +1053,7 @@ fn a01_the_1_26_45_collision_box_is_an_unknown_component() {
     let d = rejected(atomic(&text, &cx()));
     expect_at(
         &d,
-        "UnrecognizedComponent",
+        "core/unrecognized_component",
         Severity::Error,
         &format!("{COMPONENTS}/minecraft:collision_box"),
     );
@@ -1038,10 +1100,10 @@ fn a02_companion_block_avoidance_reads_its_offsets_and_defaults() {
     round_trip(&document, |text| atomic(text, &cx()));
     let at = format!("{COMPONENTS}/minecraft:companion_block_avoidance");
     for (bad, code) in [
-        ("65536", "InvalidType"),
-        ("-1", "InvalidType"),
-        ("1.5", "InvalidType"),
-        ("\"200\"", "InvalidType"),
+        ("65536", "core/invalid_type"),
+        ("-1", "core/invalid_type"),
+        ("1.5", "core/invalid_type"),
+        ("\"200\"", "core/invalid_type"),
     ] {
         let text = with_components(&format!(
             r#""minecraft:companion_block_avoidance": {{"backup_anchor_offsets": [], "anchor_switch_cooldown": {bad}}}"#
@@ -1059,7 +1121,7 @@ fn a02_companion_block_avoidance_reads_its_offsets_and_defaults() {
     let d = rejected(atomic(&text, &cx()));
     expect_at(
         &d,
-        "MissingRequiredField",
+        "core/missing_required_field",
         Severity::Error,
         &format!("{at}/backup_anchor_offsets"),
     );
@@ -1071,7 +1133,7 @@ fn a02_companion_block_avoidance_reads_its_offsets_and_defaults() {
     // The typed read fails on the list of three-number arrays: a wrong type at the list.
     expect_at(
         &d,
-        "InvalidType",
+        "core/invalid_type",
         Severity::Error,
         &format!("{at}/backup_anchor_offsets"),
     );
@@ -1179,10 +1241,15 @@ fn a04_the_companion_floats_are_at_least_zero() {
         };
         loaded(atomic(&text("0"), &cx()));
         let d = rejected(atomic(&text("-0.001"), &cx()));
-        expect(&d, "InvalidValue", Severity::Error, NOT_NEGATIVE);
+        expect(
+            &d,
+            "atomic_client_entity/not_negative_text",
+            Severity::Error,
+            NOT_NEGATIVE,
+        );
         expect_at(
             &d,
-            "InvalidValue",
+            "atomic_client_entity/not_negative_text",
             Severity::Error,
             &format!("{clipping}/{at}"),
         );
@@ -1201,10 +1268,15 @@ fn a04_the_companion_floats_are_at_least_zero() {
     ] {
         let text = with_components(&format!(r#""minecraft:aabb_dimensions": {{{members}}}"#));
         let d = rejected(atomic(&text, &cx()));
-        expect(&d, "InvalidValue", Severity::Error, NOT_NEGATIVE);
+        expect(
+            &d,
+            "atomic_client_entity/not_negative_text",
+            Severity::Error,
+            NOT_NEGATIVE,
+        );
         expect_at(
             &d,
-            "InvalidValue",
+            "atomic_client_entity/not_negative_text",
             Severity::Error,
             &format!("{COMPONENTS}/minecraft:aabb_dimensions/{at}"),
         );
@@ -1241,7 +1313,7 @@ fn a05_a_null_member_is_a_wrong_type() {
         ),
     ] {
         let d = rejected(atomic(&wisp(members, rest), &cx()));
-        expect_at(&d, "InvalidType", Severity::Error, &at);
+        expect_at(&d, "core/invalid_type", Severity::Error, &at);
     }
 }
 

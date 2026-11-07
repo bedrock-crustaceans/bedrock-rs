@@ -255,14 +255,14 @@ pub fn reference(finding: &Diagnostic) -> Option<Reference> {
 pub fn references(findings: &Diagnostics, code: &str) -> Vec<Reference> {
     findings
         .iter()
-        .filter(|finding| finding.code.name() == code)
+        .filter(|finding| finding.code.id() == code)
         .filter_map(reference)
         .collect()
 }
 
 /// The `UnresolvedReference` findings: `(kind, name as written, severity, JSON path)`.
 pub fn unresolved(findings: &Diagnostics) -> Vec<Reference> {
-    references(findings, "UnresolvedReference")
+    references(findings, "core/unresolved_reference_worded")
 }
 
 /// The findings in the file `path`.

@@ -219,8 +219,8 @@ fn the_deferred_settings_keep_the_last_copy_inside_the_payload() {
         &LoadContext::detached(),
     )
     .unwrap_err();
-    let codes: Vec<&str> = rejected.diagnostics.iter().map(|f| f.code.name()).collect();
-    assert_eq!(codes, ["MalformedInput"]);
+    let codes: Vec<&str> = rejected.diagnostics.iter().map(|f| f.code.id()).collect();
+    assert_eq!(codes, ["core/document_member_count"]);
 }
 
 #[cfg(feature = "geometry")]

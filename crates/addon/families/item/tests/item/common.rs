@@ -66,7 +66,7 @@ pub fn findings(json: &str, cx: &LoadContext) -> Diagnostics {
 
 /// The findings whose code is `name`.
 pub fn with_code<'a>(d: &'a Diagnostics, name: &str) -> Vec<&'a Diagnostic> {
-    d.iter().filter(|f| f.code.name() == name).collect()
+    d.iter().filter(|f| f.code.id() == name).collect()
 }
 
 /// Whether a finding's message contains `text`.
@@ -82,7 +82,7 @@ pub fn above_info(d: &Diagnostics) -> Vec<&Diagnostic> {
 /// The `UnrecognizedField` findings of `d`, at any severity.
 pub fn unknown_members(d: &Diagnostics) -> Vec<&Diagnostic> {
     d.iter()
-        .filter(|f| f.code.name() == "UnrecognizedField")
+        .filter(|f| f.code.id() == "core/unrecognized_field")
         .collect()
 }
 

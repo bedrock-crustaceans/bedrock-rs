@@ -72,8 +72,8 @@ fn vs21c_a_corner_that_is_neither_form_fails_with_both_texts() {
         assert_eq!(
             errors(&rejects(&one(corner, "[16, 8, 16]"))),
             [
-                error("InvalidType", EXPECTED, MIN),
-                error("InvalidType", AN_OBJECT, MIN),
+                error("voxel_shape/expected_x_y_z", EXPECTED, MIN),
+                error("core/expected_object", AN_OBJECT, MIN),
                 failed()
             ],
             "min: {corner}"
@@ -81,8 +81,8 @@ fn vs21c_a_corner_that_is_neither_form_fails_with_both_texts() {
         assert_eq!(
             errors(&rejects(&one("[0, 0, 0]", corner))),
             [
-                error("InvalidType", EXPECTED, MAX),
-                error("InvalidType", AN_OBJECT, MAX),
+                error("voxel_shape/expected_x_y_z", EXPECTED, MAX),
+                error("core/expected_object", AN_OBJECT, MAX),
                 failed()
             ],
             "max: {corner}"
@@ -95,7 +95,11 @@ fn vs21c_an_unknown_member_of_an_object_corner_fails_the_file() {
     assert_eq!(
         errors(&rejects(&one(r#"{"x": 0, "w": 1}"#, "[16, 8, 16]"))),
         [
-            error("UnrecognizedField", NOT_IN_SCHEMA, &format!("{MIN}/w")),
+            error(
+                "core/member_not_in_schema",
+                NOT_IN_SCHEMA,
+                &format!("{MIN}/w")
+            ),
             failed()
         ]
     );
@@ -106,8 +110,16 @@ fn vs21c_an_unknown_member_of_an_object_corner_fails_the_file() {
             r#"{"X": 16, "x": 16, "y": 8, "z": 16, "extra": 0}"#
         ))),
         [
-            error("UnrecognizedField", NOT_IN_SCHEMA, &format!("{MAX}/X")),
-            error("UnrecognizedField", NOT_IN_SCHEMA, &format!("{MAX}/extra")),
+            error(
+                "core/member_not_in_schema",
+                NOT_IN_SCHEMA,
+                &format!("{MAX}/X")
+            ),
+            error(
+                "core/member_not_in_schema",
+                NOT_IN_SCHEMA,
+                &format!("{MAX}/extra")
+            ),
             failed()
         ]
     );
@@ -127,8 +139,12 @@ fn a_member_of_an_object_corner_that_is_no_number_fails_both_forms() {
         assert_eq!(
             errors(&rejects(&one(corner, "[16, 8, 16]"))),
             [
-                error("InvalidType", EXPECTED, MIN),
-                error("InvalidType", "wrong JSON type", &format!("{MIN}/{member}")),
+                error("voxel_shape/expected_x_y_z", EXPECTED, MIN),
+                error(
+                    "core/invalid_type",
+                    "wrong JSON type",
+                    &format!("{MIN}/{member}")
+                ),
                 failed()
             ],
             "{corner}"
@@ -145,10 +161,10 @@ fn every_bad_corner_of_a_file_is_reported() {
     assert_eq!(
         errors(&rejects(&text)),
         [
-            error("InvalidType", EXPECTED, MIN),
-            error("InvalidType", AN_OBJECT, MIN),
+            error("voxel_shape/expected_x_y_z", EXPECTED, MIN),
+            error("core/expected_object", AN_OBJECT, MIN),
             error(
-                "UnrecognizedField",
+                "core/member_not_in_schema",
                 NOT_IN_SCHEMA,
                 "minecraft:voxel_shape/shape/boxes/1/max/q"
             ),

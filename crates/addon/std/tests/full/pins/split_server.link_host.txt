@@ -1,5 +1,5 @@
 # split_server: the findings of link() with a host that answers for the kinds the crate has no list of (support::TheGameHasIt)
-      1  I FileNotLoaded [-] @ textures             # frame: a rule that reads image headers (R35 flipbook frames, texture_set V12/V13 layer images) is skipped for a file the pack lists and does not hold after a default load, and says so once a file
-     23  I TextureNotFound [-] @ textures
-     14  I UnknownSound [sound event] @ sounds.json
-      1  I UnresolvedReference [block] @ aim_assist # C5: `minecraft:oak_button`, which is no block, in a key of a category's `priorities.blocks`, which the game keeps without a word: an information
+      1  I core/file_not_loaded [-] @ textures            # frame: a rule that reads image headers (R35 flipbook frames, texture_set V12/V13 layer images) is skipped for a file the pack lists and does not hold after a default load, and says so once a file
+     14  I core/unknown_sound [sound event] @ sounds.json
+      1  I core/unresolved_reference [block] @ aim_assist # C5: `minecraft:oak_button`, which is no block, in a key of a category's `priorities.blocks`, which the game keeps without a word: an information
+     23  I flipbooks/no_metadata [-] @ textures

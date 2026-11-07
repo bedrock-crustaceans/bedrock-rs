@@ -69,7 +69,7 @@ fn check<'a>(
     for finding in findings {
         match finding.severity {
             Severity::Error => errors.push(finding.to_string()),
-            Severity::Warning => *warnings.entry(finding.code.name()).or_default() += 1,
+            Severity::Warning => *warnings.entry(finding.code.id()).or_default() += 1,
             _ => {}
         }
     }

@@ -91,7 +91,7 @@ fn a_load_reads_the_lists_and_the_material_files_and_nothing_that_only_looks_lik
     // The listed `.material.bin` exists and is not read: the entry says so.
     let found: Vec<_> = materials
         .diagnostics()
-        .map(|f| (f.code.name(), f.location.json_path.to_string()))
+        .map(|f| (f.code.id(), f.location.json_path.to_string()))
         .collect();
-    assert_eq!(found, [("IgnoredFile", "1/path".to_owned())]);
+    assert_eq!(found, [("core/ignored_file", "1/path".to_owned())]);
 }

@@ -151,7 +151,7 @@ fn an_edited_document_without_the_object_leaves_its_unknown_members_out_and_tell
     let finding = &told[0];
     assert!(
         // By legacy name: the variant and the definitions that were it.
-        matches!(finding.code.name(), "DroppedField"),
+        matches!(finding.code.id(), "core/dropped_field_worded"),
         "{finding:?}"
     );
     assert_eq!(finding.severity, Severity::Warning);

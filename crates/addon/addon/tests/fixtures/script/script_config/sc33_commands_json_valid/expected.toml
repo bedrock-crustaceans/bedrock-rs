@@ -1,7 +1,7 @@
 # families/script_config fixtures.md, row sc33_commands_json_valid (probe D cmd_list_internal).
 
 [[diagnostic]]
-code = "UnrecognizedField"
+code = "core/unrecognized_field"
 severity = "info"
 phase = "parse"
 file = "config/commands.json"

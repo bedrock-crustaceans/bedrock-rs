@@ -3,7 +3,7 @@
   "rejected": 1,
   "diagnostics": [
     {
-      "code": "InvalidType",
+      "code": "dialogue/npc_name",
       "severity": "error",
       "path": "dialogue/names.json",
       "json_path": "minecraft:npc_dialogue/scenes/0/npc_name",

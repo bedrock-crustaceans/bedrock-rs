@@ -199,7 +199,7 @@ fn findings(diagnostics: &Diagnostics) -> BTreeSet<Finding> {
         .iter()
         .map(|f| {
             (
-                f.code.name().to_owned(),
+                f.code.id().to_owned(),
                 format!("{:?}", f.severity),
                 f.location.json_path.to_string(),
             )
@@ -545,7 +545,7 @@ fn load(behavior: Pack, resource: Pack, options: &LoadOptions) -> Loaded {
         .iter()
         .map(|f| {
             (
-                f.code.name().to_owned(),
+                f.code.id().to_owned(),
                 format!("{:?}", f.severity),
                 f.location
                     .path
@@ -976,13 +976,13 @@ const ANNOUNCED: &[Announced] = &[
     // deprecated names the game rejects), whose upgrade announces them again.
     (
         "trade_table",
-        ("ValueRewritten", "filters"),
-        ("ValueRewritten", &["filters", "biomes", "functions"]),
+        ("core/value_rewritten", "filters"),
+        ("core/value_rewritten", &["filters", "biomes", "functions"]),
     ),
     (
         "trade_table",
-        ("ValueRewritten", "functions"),
-        ("ValueRewritten", &["functions"]),
+        ("core/value_rewritten", "functions"),
+        ("core/value_rewritten", &["functions"]),
     ),
 ];
 
@@ -1786,7 +1786,7 @@ fn read_only_an_mcb_document_is_written_as_json_text_where_its_body_is_decoded()
             .findings
             .iter()
             .filter(|(code, _, file, _)| {
-                code == "UnsupportedFileFormat" && file == "items/ruby.json"
+                code == "core/unsupported_file_format" && file == "items/ruby.json"
             })
             .collect();
         // (The item loader is the one that reads `items/`, and so the one that tells.)

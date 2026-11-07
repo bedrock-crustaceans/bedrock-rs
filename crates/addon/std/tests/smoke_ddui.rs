@@ -140,11 +140,11 @@ fn load(root: &Path, source: &str) -> Tally {
     tally.rejected.sort();
     let mut unsupported = 0;
     for diagnostic in ui.diagnostics() {
-        let name = diagnostic.code.name();
-        if name == "UnsupportedFileFormat" {
+        let name = diagnostic.code.id();
+        if name == "core/unsupported_file_format" {
             unsupported += 1;
         } else if diagnostic.severity >= Severity::Error {
-            if name != "DocumentRejected" {
+            if name != "ddui/failed_to_load" {
                 tally.errors.push(format!("{name}: {diagnostic}"));
             }
         } else if diagnostic.severity == Severity::Warning {
@@ -234,12 +234,12 @@ fn client_install_a_roots_that_use_container_item_are_refused_by_the_later_catal
         .iter()
         .map(|(code, count)| (&**code, *count))
         .collect();
-    assert_eq!(infos, [("FieldUntilEngine", 6)]);
+    assert_eq!(infos, [("core/field_until_engine", 6)]);
     assert!(
         tally
             .errors
             .iter()
-            .all(|error| error.starts_with("InvalidValue: ")),
+            .all(|error| error.starts_with("core/invalid_value: ")),
         "{:#?}",
         tally.errors
     );

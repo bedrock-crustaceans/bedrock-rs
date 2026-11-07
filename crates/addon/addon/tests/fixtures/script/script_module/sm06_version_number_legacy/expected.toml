@@ -2,7 +2,7 @@
 scope = "pack"
 
 [[diagnostic]]
-code = "WrongTypeProperty"
+code = "core/manifest_wrong_type"
 severity = "error"
 path = "dependencies/0/version"
 text = "Required '/dependencies/0/version' element is the wrong type in pack manifest."

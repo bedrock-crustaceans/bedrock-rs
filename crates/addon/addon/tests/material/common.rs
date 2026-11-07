@@ -81,7 +81,7 @@ pub fn rendered<'a>(diagnostics: impl IntoIterator<Item = &'a Diagnostic>) -> Ve
         .into_iter()
         .map(|finding| {
             (
-                finding.code.name(),
+                finding.code.id(),
                 finding.severity,
                 finding.location.json_path.to_string(),
                 finding.code.to_string(),
@@ -97,7 +97,7 @@ pub fn finding(code: &'static str, severity: Severity, at: &str, text: &str) -> 
 
 /// The findings of `diagnostics` with the code `code`.
 pub fn of_code(diagnostics: &Diagnostics, code: &str) -> Vec<Rendered> {
-    rendered(diagnostics.iter().filter(|f| f.code.name() == code))
+    rendered(diagnostics.iter().filter(|f| f.code.id() == code))
 }
 
 /// A format-2 resource manifest with UUID `n`.

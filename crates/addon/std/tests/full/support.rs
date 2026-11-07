@@ -16,7 +16,7 @@
 //! again after the game's files or a rule changed. A pin file whose aspect needs a sentence beside
 //! every number (the link pass) fails while one is missing.
 //!
-//! Nothing of the game's files is in a pin file but counts, the names of diagnostic codes and
+//! Nothing of the game's files is in a pin file but counts, the ids of diagnostic definitions and
 //! of reference kinds, the names of folders, and a sentence per number.
 
 #![allow(
@@ -445,17 +445,21 @@ fn folder(finding: &Diagnostic) -> String {
     path.split('/').next().unwrap_or(path).to_owned()
 }
 
-/// The key of a finding of the load: `W DeprecatedMember @ entities`.
+/// The environment variable that points the pin files at another folder than
+/// `tests/full/pins`: the scratch run of the pin rename writes there, never into the repository.
+const PIN_DIR: &str = "BEDROCK_ADDON_CORPUS_PIN_DIR";
+
+/// The key of a finding of the load: `W core/deprecated_member @ entities`.
 pub fn load_key(finding: &Diagnostic) -> String {
     format!(
         "{} {} @ {}",
         letter(finding.severity),
-        finding.code.name(),
+        finding.code.id(),
         folder(finding)
     )
 }
 
-/// The key of a finding of the link pass: `W UnresolvedReference [material] @ particles`. The
+/// The key of a finding of the link pass: `W core/unresolved_reference [material] @ particles`. The
 /// kind is the kind of the target the reference names, the folder the family that holds the
 /// reference: together with the code they name the rule.
 pub fn link_key(finding: &Diagnostic) -> String {
@@ -466,18 +470,18 @@ pub fn link_key(finding: &Diagnostic) -> String {
     format!(
         "{} {} [{}] @ {}",
         letter(finding.severity),
-        finding.code.name(),
+        finding.code.id(),
         kind,
         folder(finding)
     )
 }
 
-/// The key of an error-level finding of the load: `UnrecognizedField @ entity/husk.entity.json`,
+/// The key of an error-level finding of the load: `core/unrecognized_field @ entity/husk.entity.json`,
 /// the code and the file; `-` for a finding that names no file.
 pub fn error_key(finding: &Diagnostic) -> String {
     format!(
         "{} @ {}",
-        finding.code.name(),
+        finding.code.id(),
         finding
             .location
             .path
@@ -526,7 +530,7 @@ pub fn line(finding: &Diagnostic) -> String {
     format!(
         "{} {} | {} | {} | {} | {}",
         letter(finding.severity),
-        finding.code.name(),
+        finding.code.id(),
         finding,
         location
             .pack
@@ -549,7 +553,7 @@ pub fn line(finding: &Diagnostic) -> String {
 
 fn comparable(finding: &Diagnostic) -> Finding {
     (
-        finding.code.name().to_owned(),
+        finding.code.id().to_owned(),
         format!("{:?}", finding.severity),
         finding
             .location
@@ -857,8 +861,11 @@ pub fn loaded(tree: Tree, root: &Path, run: Run) -> Arc<Facts> {
 const PIN: &str = "BEDROCK_ADDON_CORPUS_PIN";
 
 fn pin_path(name: &str) -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("tests/full/pins")
+    std::env::var_os(PIN_DIR)
+        .map_or_else(
+            || Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/full/pins"),
+            PathBuf::from,
+        )
         .join(format!("{name}.txt"))
 }
 

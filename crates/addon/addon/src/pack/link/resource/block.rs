@@ -330,11 +330,14 @@ mod tests {
             .map(|finding| {
                 // By legacy name: the definitions that were `NoEffect` or
                 // `ShadowedDefinition`, plain (no sentence) and worded.
-                let text = matches!(finding.code.name(), "NoEffect" | "ShadowedDefinition")
-                    .then(|| finding.vanilla())
-                    .flatten();
+                let text = matches!(
+                    finding.code.id(),
+                    "core/no_effect_worded" | "core/shadowed_definition"
+                )
+                .then(|| finding.vanilla())
+                .flatten();
                 (
-                    finding.code.name(),
+                    finding.code.id(),
                     finding.severity,
                     finding
                         .location
@@ -361,7 +364,7 @@ mod tests {
                 // `lamp` has textures in a pack (the base game's), so the client draws it the
                 // old way: the crate's own lint, an information.
                 (
-                    "ShadowedDefinition",
+                    "core/shadowed_definition",
                     Severity::Info,
                     "pack 3".to_owned(),
                     "lamp".to_owned(),
@@ -370,7 +373,7 @@ mod tests {
                 // `vine` has textures in no pack; the line is at the error level and the block
                 // keeps its geometry: a kept error.
                 (
-                    "NoEffect",
+                    "core/no_effect_worded",
                     Severity::Error,
                     "pack 3".to_owned(),
                     "vine".to_owned(),
@@ -387,8 +390,8 @@ mod tests {
             },
             &[tessellation],
         );
-        let codes: Vec<&str> = found.iter().map(|finding| finding.code.name()).collect();
-        assert_eq!(codes, ["NoEffect"]);
+        let codes: Vec<&str> = found.iter().map(|finding| finding.code.id()).collect();
+        assert_eq!(codes, ["core/no_effect_worded"]);
     }
 
     #[test]
@@ -426,8 +429,8 @@ mod tests {
             &creator_features(),
         );
         let found = link_with_rules(&world, LinkOptions::default(), &[tessellation]);
-        let codes: Vec<&str> = found.iter().map(|finding| finding.code.name()).collect();
-        assert_eq!(codes, ["FileNotLoaded"]);
+        let codes: Vec<&str> = found.iter().map(|finding| finding.code.id()).collect();
+        assert_eq!(codes, ["core/file_not_loaded"]);
     }
 
     #[test]
@@ -444,7 +447,7 @@ mod tests {
         assert_eq!(
             all_said(&found),
             [(
-                "UnresolvedReference",
+                "core/unresolved_reference_worded",
                 Severity::Warning,
                 "wool".to_owned(),
                 "block",

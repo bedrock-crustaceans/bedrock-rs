@@ -188,8 +188,8 @@ fn a_syntax_fault_in_a_copy_that_loses_is_the_document_s_fault() {
         );
         assert_eq!(fault.span, written.span, "`{text}` as `{cleaned}`");
         assert!(
-            code_for_deserialize_error_kind(&fault.kind, fault.path.is_some(), false).name()
-                == "MalformedInput",
+            code_for_deserialize_error_kind(&fault.kind, fault.path.is_some(), false).id()
+                == "core/syntax",
             "`{text}`: {fault:?}"
         );
         // Kept members of a family's exception are no exception to this.

@@ -79,7 +79,7 @@ fn lm02_a_legacy_list_with_an_element_is_every_stage() {
     assert_eq!(
         texts(&doc),
         ["realms", "addons", "creative", "editor"].map(|screen| (
-            "MissingRequiredField",
+            "loading_messages/list_missing",
             Severity::Info,
             missing(&format!("{screen}_loading_messages"))
         ))
@@ -106,7 +106,7 @@ fn lm04_a_file_without_beginner_messages() {
     assert_eq!(
         found[0],
         (
-            "MissingRequiredField",
+            "loading_messages/beginner_missing",
             Severity::Info,
             BEGINNER_MISSING.to_owned()
         )
@@ -114,7 +114,7 @@ fn lm04_a_file_without_beginner_messages() {
     assert_eq!(
         found[1..],
         ["late_game", "realms", "addons", "creative", "editor"].map(|list| (
-            "MissingRequiredField",
+            "loading_messages/list_missing",
             Severity::Info,
             missing(&format!("{list}_loading_messages"))
         ))
@@ -127,7 +127,7 @@ fn l3_an_empty_beginner_list() {
     assert_eq!(
         texts(&doc),
         [(
-            "InvalidValue",
+            "loading_messages/beginner_empty",
             Severity::Info,
             "ProgressTips::getProgressTipStage called before loading the tips!".to_owned()
         )]
@@ -151,17 +151,17 @@ fn lm05_conditions_deviation() {
         located(doc.diagnostics()),
         [
             (
-                "InvalidValue",
+                "core/invalid_value",
                 Severity::Info,
                 "mid_game_loading_messages/1/condition".to_owned()
             ),
             (
-                "MissingRequiredField",
+                "core/missing_required_field",
                 Severity::Info,
                 "mid_game_loading_messages/2/message".to_owned()
             ),
             (
-                "InvalidValue",
+                "core/invalid_value",
                 Severity::Info,
                 "mid_game_loading_messages/3".to_owned()
             ),
@@ -192,27 +192,27 @@ fn message_and_condition_are_read_as_the_game_reads_strings() {
         located(doc.diagnostics()),
         [
             (
-                "InvalidType",
+                "core/invalid_type",
                 Severity::Info,
                 "mid_game_loading_messages/0/message".to_owned()
             ),
             (
-                "InvalidType",
+                "core/invalid_type",
                 Severity::Info,
                 "mid_game_loading_messages/1/message".to_owned()
             ),
             (
-                "InvalidType",
+                "core/invalid_type",
                 Severity::Info,
                 "mid_game_loading_messages/1/condition".to_owned()
             ),
             (
-                "InvalidValue",
+                "core/invalid_value",
                 Severity::Info,
                 "mid_game_loading_messages/1/condition".to_owned()
             ),
             (
-                "InvalidType",
+                "core/invalid_type",
                 Severity::Info,
                 "mid_game_loading_messages/2/message".to_owned()
             ),
@@ -237,7 +237,7 @@ fn lm06_a_missing_screen_list() {
     assert_eq!(
         texts(&doc),
         [(
-            "MissingRequiredField",
+            "loading_messages/list_missing",
             Severity::Info,
             missing("editor_loading_messages")
         )]
@@ -259,7 +259,11 @@ fn l4_every_list_the_game_asks_for_is_named_when_missing() {
         let doc = parse(&facet_json::to_string(&root).unwrap());
         assert_eq!(
             texts(&doc),
-            [("MissingRequiredField", Severity::Info, missing(list.key()))],
+            [(
+                "loading_messages/list_missing",
+                Severity::Info,
+                missing(list.key())
+            )],
             "{list:?}"
         );
     }
@@ -327,7 +331,7 @@ fn lm08_a_file_that_is_not_json() {
     assert_eq!(
         found,
         [(
-            "MalformedInput",
+            "loading_messages/loading_not_json",
             Severity::Error,
             "Failed to read loading messages file".to_owned()
         )]
@@ -350,7 +354,7 @@ fn l1_a_broken_highest_copy_leaves_no_tips_and_the_lower_file_is_not_used() {
         assert_eq!(merged.value(), &LoadingMessages::default());
         assert_eq!(
             codes(merged.diagnostics()),
-            [("MalformedInput", Severity::Error)]
+            [("loading_messages/loading_not_json", Severity::Error)]
         );
         assert_eq!(merged.layers().len(), lower.len());
     }
@@ -377,17 +381,17 @@ fn l8_tooltips_are_converted() {
         located(doc.diagnostics()),
         [
             (
-                "InvalidValue",
+                "core/invalid_value",
                 Severity::Info,
                 "store_progress_tooltips/1".to_owned()
             ),
             (
-                "InvalidValue",
+                "core/invalid_value",
                 Severity::Info,
                 "store_progress_tooltips/2".to_owned()
             ),
             (
-                "InvalidValue",
+                "core/invalid_value",
                 Severity::Info,
                 "store_progress_tooltips/3".to_owned()
             ),
@@ -412,12 +416,12 @@ fn a_list_that_is_no_array_is_iterated_as_the_game_does() {
         located(doc.diagnostics()),
         [
             (
-                "InvalidType",
+                "core/invalid_type",
                 Severity::Info,
                 "mid_game_loading_messages".to_owned()
             ),
             (
-                "InvalidType",
+                "core/invalid_type",
                 Severity::Info,
                 "late_game_loading_messages".to_owned()
             ),
@@ -426,7 +430,7 @@ fn a_list_that_is_no_array_is_iterated_as_the_game_does() {
     let doc = parse("[1]");
     assert_eq!(
         codes(doc.diagnostics())[0],
-        ("InvalidType", Severity::Info),
+        ("core/invalid_type", Severity::Info),
         "a root that is no object"
     );
     // No list; the root is kept as written beside them.
@@ -449,8 +453,12 @@ fn unknown_members_are_kept_and_reported() {
     assert_eq!(
         located(doc.diagnostics()),
         [
-            ("UnrecognizedField", Severity::Info, "extra".to_owned()),
-            ("UnrecognizedField", Severity::Info, "note".to_owned()),
+            (
+                "core/unrecognized_field",
+                Severity::Info,
+                "extra".to_owned()
+            ),
+            ("core/unrecognized_field", Severity::Info, "note".to_owned()),
         ]
     );
     assert_eq!(json(&doc.to_json().unwrap()), json(&text));

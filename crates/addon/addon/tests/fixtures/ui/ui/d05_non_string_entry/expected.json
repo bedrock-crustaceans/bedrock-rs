@@ -1,7 +1,7 @@
 {
   "diagnostics": [
     {
-      "code": "UnresolvedReference",
+      "code": "json_ui/not_loaded",
       "severity": "info",
       "text": "The following file could not be loaded: . Make sure the file exists or remove the reference in '_ui_defs.json'"
     }

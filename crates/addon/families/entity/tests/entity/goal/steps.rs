@@ -121,7 +121,7 @@ fn e33b_the_1_26_40_shape_migrations() {
 
     let (g, d) = ranged("ranged_attack_pair_and_scalar");
     assert_eq!(g.attack_interval(), (1.0, 3.0), "the pair wins");
-    assert_finding(&d, "DroppedField", "attack_interval", Severity::Info);
+    assert_finding(&d, "core/dropped_field", "attack_interval", Severity::Info);
 
     let (g, d) = convert::<goal::Beg>("minecraft:behavior.beg", &fixture_member(NAME, "beg"));
     assert!(d.is_empty());
@@ -154,7 +154,7 @@ fn e33b_the_1_26_40_shape_migrations() {
     ] {
         let (value, d) = super::strict(key, &fixture_member(NAME, case));
         assert!(value.is_none(), "{key} {case}: dropped at 1.26.40");
-        assert_finding(&d, "InvalidValue", member, Severity::Error);
+        assert_finding(&d, "core/invalid_value", member, Severity::Error);
     }
 }
 
@@ -180,7 +180,7 @@ fn e34_ranged_attack_range_and_movement_mode() {
     assert_eq!(g.attack_range(), (0.0, 10.0));
     assert_finding(
         &d,
-        "UnrecognizedField",
+        "core/unrecognized_field",
         "in_range_movement_mode",
         Severity::Info,
     );
@@ -210,10 +210,15 @@ fn e34_ranged_attack_range_and_movement_mode() {
     let (g, d) =
         at_version::<goal::RangedAttack>(RANGED, &fixture_member(NAME, "new_shape"), (1, 26, 40));
     // The 1.26.40 struct has neither member: a strict slice refuses them.
-    assert_finding(&d, "UnrecognizedField", "attack_range", Severity::Error);
     assert_finding(
         &d,
-        "UnrecognizedField",
+        "core/unrecognized_field",
+        "attack_range",
+        Severity::Error,
+    );
+    assert_finding(
+        &d,
+        "core/unrecognized_field",
         "in_range_movement_mode",
         Severity::Error,
     );
@@ -225,7 +230,12 @@ fn e34_ranged_attack_range_and_movement_mode() {
         (1, 26, 40),
     );
     assert!(g.is_none());
-    assert_finding(&d, "InvalidValue", "attack_interval_min", Severity::Error);
+    assert_finding(
+        &d,
+        "core/invalid_value",
+        "attack_interval_min",
+        Severity::Error,
+    );
 
     // A 1.26.50 document: the new shape, the old members unknown.
     let (g, d) =
@@ -233,7 +243,12 @@ fn e34_ranged_attack_range_and_movement_mode() {
     assert!(d.is_empty(), "{d:?}");
     assert_eq!(g.expect("kept").attack_range(), (4.0, 15.0));
     let (g, d) = at_version::<goal::RangedAttack>(RANGED, r#"{"attack_radius": 9}"#, (1, 26, 50));
-    assert_finding(&d, "UnrecognizedField", "attack_radius", Severity::Error);
+    assert_finding(
+        &d,
+        "core/unrecognized_field",
+        "attack_radius",
+        Severity::Error,
+    );
     assert!(g.is_none(), "the document is refused");
     let (g, d) = goal::<goal::RangedAttack>(
         RANGED,
@@ -253,7 +268,7 @@ fn e24_breed_lenient_conversion_defaults_a_wrong_typed_member() {
     assert_eq!(g.speed_multiplier, None);
     assert_eq!(g.speed_multiplier(), 1.0);
     assert_eq!(g.priority(), 3);
-    assert_finding(&d, "InvalidValue", "speed_multiplier", Severity::Info);
+    assert_finding(&d, "core/invalid_value", "speed_multiplier", Severity::Info);
 }
 
 /// `e29b_1_21_130_look_at_interact_jump`, the goal part: `min_look_time` /
@@ -271,7 +286,8 @@ fn e29b_look_at_goals_take_a_look_time_range() {
             .is_none(),
         "target_distance is gone"
     );
-    let dropped = super::finding(&d, "DroppedField", "target_distance").expect("reported");
+    let dropped =
+        super::finding(&d, "core/dropped_field_worded", "target_distance").expect("reported");
     // The game drops it without a word: an information.
     assert_eq!(dropped.severity, Severity::Info);
     assert_eq!(
@@ -309,7 +325,7 @@ fn e29c_charge_speed_multiplier_becomes_charge_speed() {
     let g = g.expect("kept");
     assert_finding(
         &d,
-        "DeprecatedMember",
+        "core/deprecated_member_worded",
         "charge_speed_multiplier",
         Severity::Error,
     );
@@ -396,7 +412,12 @@ fn the_goals_the_steps_write_read_as_typed_goals() {
         if name.starts_with("e00f") {
             // The 1.16.0 A-op writes `set_persistent` into `melee_attack`, whose typed struct
             // (`MeleeAttackBase`) has no such member: kept and reported.
-            assert_finding(&d, "UnrecognizedField", "set_persistent", Severity::Warning);
+            assert_finding(
+                &d,
+                "core/unrecognized_field",
+                "set_persistent",
+                Severity::Warning,
+            );
             assert_eq!(d.len(), 1, "{name}: {d:?}");
         } else {
             assert!(d.is_empty(), "{name}: {d:?}");
@@ -449,7 +470,7 @@ fn e00d_target_when_pushed_keeps_the_quirk_keys_as_unknown_members() {
     let (g, d) = convert::<goal::TargetWhenPushed>("minecraft:behavior.target_when_pushed", json);
     assert_finding(
         &d,
-        "UnrecognizedField",
+        "core/unrecognized_field",
         "entity_types/0/minecraft:filters",
         Severity::Warning,
     );
@@ -498,7 +519,7 @@ fn a_nested_lenient_failure_drops_only_the_failing_value() {
     );
     assert_eq!(potions[0].id(), 3);
     assert_eq!(potions[1].id(), 21);
-    assert_finding(&d, "InvalidValue", "potions/0/chance", Severity::Info);
+    assert_finding(&d, "core/invalid_value", "potions/0/chance", Severity::Info);
     // An `id` that does not read is −1: the legacy reader drops the potion with its
     // content-log error, a kept error.
     let (g, d) = goal::<goal::DrinkPotion>(
@@ -560,9 +581,9 @@ fn the_search_cooldown_a_bad_leader_filters_leaves_unread_is_told_as_dropped() {
     let at: Vec<_> = d
         .iter()
         .filter(|f| f.location.json_path.to_string() == "search_cooldown")
-        .map(|f| (f.code.name(), f.severity))
+        .map(|f| (f.code.id(), f.severity))
         .collect();
-    assert_eq!(at, [("DroppedField", Severity::Info)], "{d:?}");
+    assert_eq!(at, [("core/dropped_field", Severity::Info)], "{d:?}");
     let (_, d) = goal::<goal::FollowTargetLeader>(
         "minecraft:behavior.follow_target_leader",
         r#"{"priority": 2, "leader_filters": {"test": 5}}"#,

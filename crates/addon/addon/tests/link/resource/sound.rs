@@ -2,7 +2,7 @@
 //! (`sounds/sound_definitions.json` of a behaviour pack, beta) against the sound events the
 //! resource packs define (the file of the same name on the resource side). A lint.
 
-use bedrock_addon::diagnostic::{Diagnostic, DiagnosticDetail, Phase, Severity};
+use bedrock_addon::diagnostic::{Diagnostic, DiagnosticDetail, Kind, Phase, Severity};
 use bedrock_addon::load::{BuiltIns, LoadOptions};
 use bedrock_addon::pack::LinkOptions;
 use std::sync::Arc;
@@ -60,7 +60,7 @@ fn unknown_with(
     let found = set.link_with(&options);
     found
         .iter()
-        .filter(|finding| finding.code.name() == "UnknownSound")
+        .filter(|finding| finding.code.id() == "core/unknown_sound")
         .cloned()
         .collect()
 }
@@ -177,7 +177,7 @@ fn r44_each_pack_s_definitions_are_told_at_their_own_file() {
     let found = set.link();
     let mut told: Vec<(String, String, String)> = found
         .iter()
-        .filter(|finding| finding.code.name() == "UnknownSound")
+        .filter(|finding| finding.code.id() == "core/unknown_sound")
         .map(|finding| {
             let pack = finding.location.pack.as_ref().expect("a pack").name();
             let (path, name) = named(std::slice::from_ref(finding)).remove(0);
@@ -210,7 +210,7 @@ fn r44_without_a_resource_pack_every_name_is_told() {
     let found = set.link();
     let unknown: Vec<Diagnostic> = found
         .iter()
-        .filter(|finding| finding.code.name() == "UnknownSound")
+        .filter(|finding| finding.code.id() == "core/unknown_sound")
         .cloned()
         .collect();
     assert_eq!(named(&unknown), [at(0, "demo:a")]);
@@ -230,7 +230,7 @@ fn r44_a_file_that_is_not_resident_is_not_read() {
     assert!(
         found
             .iter()
-            .all(|finding| finding.code.name() != "UnknownSound"),
+            .all(|finding| finding.code.kind() != Kind::UnresolvedReference),
         "{found:?}"
     );
 }

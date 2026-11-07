@@ -91,8 +91,8 @@ fn load_tables(dirs: &[PathBuf]) -> Outcome {
         let mut mcb = 0;
         for finding in tables.diagnostics() {
             match finding.severity {
-                Severity::Warning => outcome.warnings.push(finding.code.name().to_owned()),
-                Severity::Info => outcome.infos.push(finding.code.name().to_owned()),
+                Severity::Warning => outcome.warnings.push(finding.code.id().to_owned()),
+                Severity::Info => outcome.infos.push(finding.code.id().to_owned()),
                 _ => {}
             }
             if finding.severity < Severity::Error {

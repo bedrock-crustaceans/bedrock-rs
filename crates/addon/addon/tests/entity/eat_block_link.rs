@@ -15,13 +15,13 @@ fn v12_eat_block_unknown_block_is_reported_with_vanillas_text() {
     );
     let found = d
         .iter()
-        .find(|f| f.code.name() == "UnresolvedReference")
+        .find(|f| f.code.id() == "core/unresolved_reference_worded")
         .unwrap_or_else(|| panic!("{d:?}"));
     assert_eq!(found.severity, Severity::Error);
     assert!(
         bedrock_addon::diagnostic::testing::same_line(
             &found.code,
-            "UnresolvedReference",
+            "core/unresolved_reference_worded",
             "Block demo:nothing on \"eat_and_replace_block_pairs\" on \"minecraft:behavior.eat_block\" is not a valid block."
         ),
         "{:?}",

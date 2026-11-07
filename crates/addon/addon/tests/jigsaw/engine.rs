@@ -43,7 +43,7 @@ fn round_trips<T: Content + PartialEq + std::fmt::Debug>(path: &str, text: &str)
 fn found(d: &Diagnostics) -> Vec<(&'static str, Severity, String)> {
     d.iter()
         .filter(|f| f.severity >= Severity::Warning)
-        .map(|f| (f.code.name(), f.severity, f.location.json_path.to_string()))
+        .map(|f| (f.code.id(), f.severity, f.location.json_path.to_string()))
         .collect()
 }
 
@@ -119,7 +119,11 @@ fn the_parser_test_s_processor_list_with_an_invalid_version_is_refused() {
     assert!(!errors.is_empty());
     assert_eq!(
         (errors[0].0, errors[0].1, errors[0].2.as_str()),
-        ("MalformedFormatVersion", Severity::Error, "format_version"),
+        (
+            "core/malformed_format_version",
+            Severity::Error,
+            "format_version"
+        ),
         "{errors:?}"
     );
     assert!(errors.iter().all(|e| e.1 == Severity::Error), "{errors:?}");
@@ -137,7 +141,7 @@ fn the_unit_test_library_s_structures() {
         .expect_err("refused");
     let errors = found(&refused.diagnostics);
     assert!(
-        errors.iter().any(|e| e.0 == "InvalidValue"
+        errors.iter().any(|e| e.0 == "core/invalid_value"
             && e.1 == Severity::Error
             && e.2 == "minecraft:jigsaw/max_depth"),
         "{errors:?}"

@@ -139,7 +139,7 @@ fn check(source: &str, dirs: &[PathBuf], definitions: usize) -> Tally {
         match finding.severity {
             Severity::Error => errors.push(finding.to_string()),
             Severity::Warning => {
-                *tally.warnings.entry(finding.code.name()).or_default() += 1;
+                *tally.warnings.entry(finding.code.id()).or_default() += 1;
                 // one line per distinct text, without what differs per control
                 let kind = text
                     .split(['\'', ':', '"'])
@@ -147,7 +147,7 @@ fn check(source: &str, dirs: &[PathBuf], definitions: usize) -> Tally {
                     .unwrap_or_default()
                     .to_owned();
                 *texts
-                    .entry(format!("{} | {kind}", finding.code.name()))
+                    .entry(format!("{} | {kind}", finding.code.id()))
                     .or_default() += 1;
                 if std::env::var_os("BEDROCK_ADDON_SMOKE_VERBOSE").is_some() {
                     eprintln!("{source}: {finding}");

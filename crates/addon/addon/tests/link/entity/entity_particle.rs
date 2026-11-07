@@ -6,7 +6,7 @@ use bedrock_addon::diagnostic::Severity;
 use bedrock_addon::pack::LinkOptions;
 
 use super::super::common::{hosted, link, link_with};
-use super::{FILE, entity_with, kept_unresolved, said_of, unresolved};
+use super::{FILE, entity_with, kept_unresolved_plain, said_of, unresolved};
 
 const SPARK: &str = r#"{"format_version": "1.10.0", "particle_effect": {"description": {"identifier": "demo:spark", "basic_render_parameters": {"material": "particles_alpha", "texture": "textures/particle/particles"}}, "components": {"minecraft:emitter_lifetime_once": {}, "minecraft:emitter_rate_instant": {"num_particles": 1}}}}"#;
 
@@ -45,7 +45,7 @@ fn e17_a_particle_nothing_defines_is_a_kept_error_an_unknown_particle_type_an_in
     assert_eq!(
         said_of(&found, "particle"),
         [
-            kept_unresolved(
+            kept_unresolved_plain(
                 &format!("{c}explode/particle_effect"),
                 "particle",
                 "demo:none1"
@@ -61,7 +61,7 @@ fn e17_a_particle_nothing_defines_is_a_kept_error_an_unknown_particle_type_an_in
                 "particle",
                 "demo:none4"
             ),
-            kept_unresolved(
+            kept_unresolved_plain(
                 "events/demo:puff/sequence/0/emit_particle/particle",
                 "particle",
                 "demo:none5"
@@ -86,7 +86,7 @@ fn e17_a_built_in_particle_type_and_a_packs_particle_effect_resolve() {
     let found = link(&[(FILE, &text)], &[("particles/spark.json", SPARK)]);
     assert_eq!(
         said_of(&found, "particle"),
-        [kept_unresolved(
+        [kept_unresolved_plain(
             "events/demo:puff/sequence/0/emit_particle/particle",
             "particle",
             "demo:Spark"

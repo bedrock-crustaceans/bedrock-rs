@@ -1,14 +1,14 @@
 # families/script_config fixtures.md, row sp13_long_line (rule from [bds-dis]).
 
 [[diagnostic]]
-code = "MalformedInput"
+code = "core/syntax"
 severity = "error"
 phase = "parse"
 file = "server.properties"
 path = ""
 
 [[diagnostic]]
-code = "InvalidEnumValue"
+code = "server_config/bad_log_level"
 severity = "error"
 phase = "validate"
 file = "server.properties"

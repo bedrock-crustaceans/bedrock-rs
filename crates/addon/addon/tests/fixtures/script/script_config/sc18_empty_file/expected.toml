@@ -1,7 +1,7 @@
 # families/script_config fixtures.md, row sc18_empty_file (probe C).
 
 [[diagnostic]]
-code = "EmptyDocument"
+code = "server_config/config_parse_failed_empty_document"
 severity = "error"
 phase = "parse"
 file = "config/a0000000-0000-4000-8000-000000000001/permissions.json"
@@ -9,7 +9,7 @@ path = ""
 text = "Failed to parse JSON in file 'config/a0000000-0000-4000-8000-000000000001/permissions.json'"
 
 [[diagnostic]]
-code = "ScriptModulePermission"
+code = "server_config/plugin_module_not_configured"
 severity = "error"
 phase = "link"
 file = "config/a0000000-0000-4000-8000-000000000001/permissions.json"

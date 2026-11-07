@@ -102,7 +102,7 @@ fn unknown_members_are_told_at_their_level_and_not_kept() {
     assert_eq!(
         findings(&errors)
             .iter()
-            .filter(|line| line.starts_with("Error") && line.contains("UnrecognizedField"))
+            .filter(|line| line.starts_with("Error") && line.contains("core/unrecognized_field"))
             .count(),
         7,
         "{:#?}",
@@ -114,7 +114,7 @@ fn unknown_members_are_told_at_their_level_and_not_kept() {
         findings(effect.diagnostics())
             .iter()
             // the legacy parser reads past them silently: informations
-            .filter(|line| line.starts_with("Info") && line.contains("UnrecognizedField"))
+            .filter(|line| line.starts_with("Info") && line.contains("core/unrecognized_field"))
             .count(),
         7,
         "{:#?}",
@@ -147,14 +147,12 @@ fn a_legacy_document_with_unknown_keys_writes_without_them_and_reads_back_equal(
     assert!(
         codes
             .iter()
-            .any(|line| line.starts_with("Info particle_effect/zz UnrecognizedField")),
+            .any(|line| line.starts_with("Info particle_effect/zz core/unrecognized_field")),
         "{codes:?}"
     );
     assert!(
-        codes
-            .iter()
-            .any(|line| line
-                .starts_with("Error particle_effect/components/x:y UnrecognizedComponent")),
+        codes.iter().any(|line| line
+            .starts_with("Error particle_effect/components/x:y particle/unrecognized_component")),
         "{codes:?}"
     );
     assert!(document.extra.is_empty());
@@ -1269,9 +1267,9 @@ fn a_legacy_effect_the_parser_stopped_in_is_written_whole_at_its_defaults() {
     };
     let brp = "particle_effect/description/basic_render_parameters";
     let not_found = format!(
-        "Error {brp} MissingRequiredField: basic_render_parameters not found when reading in particle effect"
+        "Error {brp} particle/no_render_parameters: basic_render_parameters not found when reading in particle effect"
     );
-    let no_components = "Error particle_effect/components MissingRequiredField: no components found when reading in particle effect".to_owned();
+    let no_components = "Error particle_effect/components particle/no_components: no components found when reading in particle effect".to_owned();
     // The written document of an effect that has only its description.
     let bare = |material: &str, texture: &str| {
         format!(
@@ -1298,19 +1296,21 @@ fn a_legacy_effect_the_parser_stopped_in_is_written_whole_at_its_defaults() {
         (
             "no material",
             with(r#"{"texture": "t"}"#),
-            format!("Error {brp}/material MissingRequiredField: particle has no material!"),
+            format!("Error {brp}/material particle/no_material: particle has no material!"),
             bare("", "t"),
         ),
         (
             "a material that is no string",
             with(r#"{"material": 1, "texture": "t"}"#),
-            format!("Error {brp}/material InvalidValue: particle material field isn't a string"),
+            format!(
+                "Error {brp}/material particle/material_not_string: particle material field isn't a string"
+            ),
             bare("", "t"),
         ),
         (
             "no texture",
             with(r#"{"material": "m"}"#),
-            format!("Error {brp}/texture MissingRequiredField: particle has no texture!"),
+            format!("Error {brp}/texture particle/no_texture: particle has no texture!"),
             bare("m", ""),
         ),
         (
@@ -1341,7 +1341,7 @@ fn a_legacy_effect_the_parser_stopped_in_is_written_whole_at_its_defaults() {
             notes
                 .iter()
                 .all(|note| note.starts_with("Info particle_effect/")
-                    && note.ends_with(" DroppedField: field dropped")),
+                    && note.ends_with(" core/dropped_field: field dropped")),
             "{stop}: {notes:#?}"
         );
         // Written: exactly this document.

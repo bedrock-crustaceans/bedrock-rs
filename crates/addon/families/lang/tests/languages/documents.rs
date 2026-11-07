@@ -459,13 +459,13 @@ fn a_name_or_code_that_is_no_string_is_read_as_vanilla_reads_it_and_told() {
     let told: Vec<(&str, Severity, String)> = document
         .diagnostics()
         .iter()
-        .map(|f| (f.code.name(), f.severity, f.location.json_path.to_string()))
+        .map(|f| (f.code.id(), f.severity, f.location.json_path.to_string()))
         .collect();
     assert_eq!(
         told,
         [
-            ("InvalidType", Severity::Info, "0/1".to_owned()),
-            ("InvalidType", Severity::Info, "1/0".to_owned())
+            ("core/invalid_type", Severity::Info, "0/1".to_owned()),
+            ("core/invalid_type", Severity::Info, "1/0".to_owned())
         ]
     );
     let entries: Vec<(&str, &str)> = document

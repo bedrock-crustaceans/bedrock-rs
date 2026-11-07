@@ -5,7 +5,7 @@ use super::LOADER;
 use super::link::{Targets, link};
 use super::validate::identifier_failure;
 use super::{Jigsaw, JigsawMetadata};
-use bedrock_addon_core::diagnostic::{Diagnostic, Severity};
+use bedrock_addon_core::diagnostic::{Diagnostic, Kind, Severity};
 use bedrock_addon_core::id::{BlockId, FeatureId, LootTablePath, StructureId};
 use bedrock_addon_core::load::LoadOptions;
 use bedrock_addon_core::load::{LoadContext, StackCx, WalkFile};
@@ -86,7 +86,7 @@ fn a_long_version_string_round_trips_through_a_two_byte_length() {
         rejected
             .diagnostics
             .iter()
-            .any(|d| d.code.name() == "MalformedFormatVersion"),
+            .any(|d| d.code.id() == "jigsaw/bad_format_version_string"),
         "{:?}",
         rejected.diagnostics
     );
@@ -173,7 +173,7 @@ fn linked(jigsaw: &Jigsaw) -> Vec<(String, String)> {
                 Severity::Info
             };
             assert_eq!(d.severity, expected, "{d:?}");
-            assert_eq!(d.code.name(), "UnresolvedReference");
+            assert_eq!(d.code.kind(), Kind::UnresolvedReference);
             assert_eq!(d.phase, bedrock_addon_core::diagnostic::Phase::Link);
             (d.location.json_path.to_string(), d.code.to_string())
         })

@@ -26,7 +26,7 @@ fn found<'r>(
 ) -> Vec<&'r Diagnostic> {
     registry
         .diagnostics()
-        .filter(|f| f.code.name() == name && f.severity == severity)
+        .filter(|f| f.code.id() == name && f.severity == severity)
         .collect()
 }
 
@@ -50,7 +50,7 @@ fn rc22_stack_override_the_highest_pack_wins_with_a_shadow_info_deviation() {
     assert_eq!(cow.origin().key.as_deref(), Some("controller.render.cow"));
     // The name folds case like the file does.
     assert!(registry.get(&id("Controller.Render.COW")).is_some());
-    let shadowed = found(registry, "RenderControllerShadowed", Severity::Info);
+    let shadowed = found(registry, "core/render_controller_shadowed", Severity::Info);
     assert_eq!(shadowed.len(), 1, "{:?}", all(registry));
     assert_eq!(
         shadowed[0]
@@ -60,7 +60,7 @@ fn rc22_stack_override_the_highest_pack_wins_with_a_shadow_info_deviation() {
             .and_then(bedrock_addon::pack::PackRef::index),
         Some(1)
     );
-    assert!(found(registry, "RenderControllerFallback", Severity::Info).is_empty());
+    assert!(found(registry, "core/render_controller_fallback", Severity::Info).is_empty());
 }
 
 #[test]
@@ -84,13 +84,17 @@ fn rc23_stack_fallback_a_failed_override_keeps_the_lower_definition_deviation() 
     let cow = registry.get(&id("controller.render.cow")).unwrap();
     assert_eq!(cow.geometry.as_str(), "geometry.bottom");
     assert_eq!(cow.origin().pack.index(), Some(1));
-    let errors = found(registry, "MissingRequiredField", Severity::Error);
+    let errors = found(
+        registry,
+        "render_controller/must_contain_textures",
+        Severity::Error,
+    );
     assert_eq!(errors.len(), 1, "{:?}", all(registry));
     assert_eq!(
         errors[0].code.to_string(),
         "Render controller must contain textures."
     );
-    let fallback = found(registry, "RenderControllerFallback", Severity::Info);
+    let fallback = found(registry, "core/render_controller_fallback", Severity::Info);
     assert_eq!(fallback.len(), 1, "{:?}", all(registry));
     assert_eq!(
         fallback[0]
@@ -100,7 +104,7 @@ fn rc23_stack_fallback_a_failed_override_keeps_the_lower_definition_deviation() 
             .and_then(bedrock_addon::pack::PackRef::index),
         Some(0)
     );
-    assert!(found(registry, "RenderControllerShadowed", Severity::Info).is_empty());
+    assert!(found(registry, "core/render_controller_shadowed", Severity::Info).is_empty());
     assert_eq!(registry.rejected().len(), 1);
 }
 
@@ -110,7 +114,7 @@ fn rc23_a_failed_controller_with_nothing_below_is_no_fallback() {
     let set = stacks(&[&[("render_controllers/cow.json", &p0)]]);
     let registry = set.resource.render_controllers();
     assert!(registry.is_empty());
-    assert!(found(registry, "RenderControllerFallback", Severity::Info).is_empty());
+    assert!(found(registry, "core/render_controller_fallback", Severity::Info).is_empty());
 }
 
 #[test]
@@ -125,10 +129,10 @@ fn rc24_stack_file_failure_removes_nothing() {
     let cow = registry.get(&id("controller.render.cow")).unwrap();
     assert_eq!(cow.geometry.as_str(), "geometry.bottom");
     assert_eq!(
-        found(registry, "UnrecognizedField", Severity::Error).len(),
+        found(registry, "core/child_not_valid", Severity::Error).len(),
         1
     );
-    assert!(found(registry, "RenderControllerShadowed", Severity::Info).is_empty());
+    assert!(found(registry, "core/render_controller_shadowed", Severity::Info).is_empty());
 }
 
 #[test]
@@ -156,7 +160,11 @@ fn rc04_no_textures_from_the_registry() {
     let ok = registry.get(&id("controller.render.ok")).unwrap();
     assert!(ok.diagnostics().is_empty(), "{:?}", ok.diagnostics());
     // Reported once in the registry, at the dropped controller.
-    let errors = found(registry, "MissingRequiredField", Severity::Error);
+    let errors = found(
+        registry,
+        "render_controller/must_contain_textures",
+        Severity::Error,
+    );
     assert_eq!(errors.len(), 1, "{:?}", all(registry));
     assert_eq!(
         errors[0].location.json_path.to_string(),
@@ -212,7 +220,7 @@ fn rc26_file_selection_deviation() {
     assert_eq!(registry.len(), 1, "{:?}", all(registry));
     let ok = registry.get(&id("controller.render.ok")).unwrap();
     assert_eq!(ok.origin().path.as_str(), "render_controllers/sub/y.json");
-    let ignored = found(registry, "IgnoredFile", Severity::Info);
+    let ignored = found(registry, "core/ignored_file", Severity::Info);
     let mut paths: Vec<_> = ignored
         .iter()
         .map(|f| f.location.path.as_ref().unwrap().as_str().to_owned())
@@ -246,7 +254,7 @@ fn files_of_one_pack_are_read_in_sorted_path_order_deviation() {
         let cow = registry.get(&id("controller.render.cow")).unwrap();
         assert_eq!(cow.geometry.as_str(), "geometry.b");
         assert_eq!(cow.origin().path.as_str(), "render_controllers/b.json");
-        let shadowed = found(registry, "RenderControllerShadowed", Severity::Info);
+        let shadowed = found(registry, "core/render_controller_shadowed", Severity::Info);
         assert_eq!(shadowed.len(), 1, "{:?}", all(registry));
         assert_eq!(
             shadowed[0].location.path.as_ref().unwrap().as_str(),
@@ -291,7 +299,11 @@ fn a_name_the_game_cannot_resolve_is_registered_folded_deviation() {
     let registry = set.resource.render_controllers();
     let foo = registry.get(&id("controller.render.foo")).unwrap();
     assert_eq!(foo.origin().key.as_deref(), Some("controller.render.Foo"));
-    let warnings = found(registry, "CaseFoldingDisabled", Severity::Info);
+    let warnings = found(
+        registry,
+        "core/case_folding_disabled_at_line_unresolvable",
+        Severity::Info,
+    );
     assert_eq!(warnings.len(), 1, "{:?}", all(registry));
 }
 
@@ -347,17 +359,18 @@ fn a_stack_load_asks_for_the_json_files_only() {
         let registry = set.resource.render_controllers();
         assert_eq!(registry.len(), 1, "{order:?}");
         // RC-V.1 #1 all the same, lowest pack first and each pack's files in path order.
-        let ignored: Vec<(Option<usize>, &str)> = found(registry, "IgnoredFile", Severity::Info)
-            .iter()
-            .map(|f| {
-                let pack = f
-                    .location
-                    .pack
-                    .as_ref()
-                    .and_then(bedrock_addon::pack::PackRef::index);
-                (pack, f.location.path.as_ref().unwrap().as_str())
-            })
-            .collect();
+        let ignored: Vec<(Option<usize>, &str)> =
+            found(registry, "core/ignored_file", Severity::Info)
+                .iter()
+                .map(|f| {
+                    let pack = f
+                        .location
+                        .pack
+                        .as_ref()
+                        .and_then(bedrock_addon::pack::PackRef::index);
+                    (pack, f.location.path.as_ref().unwrap().as_str())
+                })
+                .collect();
         assert_eq!(
             ignored,
             [
@@ -403,7 +416,7 @@ fn the_layers_of_a_name_defined_twice_in_a_pack() {
         ]
     );
     let shadowed: Vec<(Option<usize>, &str)> =
-        found(registry, "RenderControllerShadowed", Severity::Info)
+        found(registry, "core/render_controller_shadowed", Severity::Info)
             .into_iter()
             .map(|f| {
                 (

@@ -3,7 +3,7 @@
 //! document, the new components and the changed rules. The game's own test
 //! documents under `fixtures/block/block/engine/` are the data.
 
-use bedrock_addon::diagnostic::{Code, Diagnostics, Severity};
+use bedrock_addon::diagnostic::{Code, Diagnostics, Kind, Severity};
 use bedrock_addon::load::LoadContext;
 
 use super::common::{context, document, fixture, load, loads, rejected, ucf};
@@ -23,17 +23,26 @@ fn at<'d>(
 
 fn unrecognized_field(c: &Code) -> bool {
     // By legacy name: the variant and the definitions that were it.
-    matches!(c.name(), "UnrecognizedField")
+    matches!(c.id(), "core/unrecognized_field")
 }
 
 fn unrecognized_component(c: &Code) -> bool {
     // By legacy name: the variant and the definitions that were it.
-    matches!(c.name(), "UnrecognizedComponent")
+    matches!(
+        c.id(),
+        "block/child_not_valid"
+            | "core/component_not_in_schema"
+            | "core/unrecognized_component"
+            | "core/unrecognized_component_worded"
+            | "loot/unknown_condition"
+            | "loot/unsupported_function"
+            | "particle/unrecognized_component"
+    )
 }
 
 fn invalid_type(c: &Code) -> bool {
     // By legacy name: the variant and the definitions that were it.
-    matches!(c.name(), "InvalidType")
+    matches!(c.id(), "core/invalid_type")
 }
 
 /// A base-game context (the game's test blocks are `minecraft:` blocks).
@@ -142,7 +151,7 @@ fn a_null_member_of_a_legacy_block_is_the_legacy_reader_s() {
 fn the_members_of_ours_reject_a_cereal_block() {
     let deprecated_member =
         // By legacy name: the variant and the definitions that were it.
-        |c: &Code| matches!(c.name(), "DeprecatedMember");
+        |c: &Code| matches!(c.id(), "core/member_deprecated");
     for (member, code, path) in [
         (
             r#""deprecated": {}"#,
@@ -870,7 +879,7 @@ fn a_container_and_its_rules() {
     assert!(
         d.iter().any(
             // By legacy name: the variant and the definitions that were it.
-            |f| matches!(f.code.name(), "MissingRequiredField")
+            |f| matches!(f.code.id(), "core/missing_required_field")
                 && f.severity == Severity::Error
                 && f.location
                     .json_path
@@ -1144,7 +1153,7 @@ fn a_cereal_constraint_fails_the_block_at_the_member() {
         assert!(
             d.iter()
                 // By legacy name: the variant and the definitions that were it.
-                .any(|f| matches!(f.code.name(), "InvalidValue")
+                .any(|f| f.code.kind() == Kind::InvalidValue
                     && f.severity == Severity::Error
                     && f.location.json_path.to_string() == format!("minecraft:block/{path}")),
             "{bad}: {d:#?}"
@@ -1191,17 +1200,17 @@ fn errors_at<'d>(
 
 fn invalid_value(c: &Code) -> bool {
     // By legacy name: the variant and the definitions that were it.
-    matches!(c.name(), "InvalidValue")
+    c.kind() == Kind::InvalidValue
 }
 
 fn missing_toggles(c: &Code) -> bool {
     // By legacy name: the variant and the definitions that were it.
-    matches!(c.name(), "MissingToggles")
+    c.kind() == Kind::Toggle
 }
 
 fn deprecated(c: &Code) -> bool {
     // By legacy name: the variant and the definitions that were it.
-    matches!(c.name(), "DeprecatedMember")
+    c.kind() == Kind::Deprecated
 }
 
 /// The game's box type sorts each axis, so a box whose `min` is
@@ -1814,12 +1823,12 @@ fn a_failed_component_read_rejects_a_block_under_both_slices() {
     for (components, code_name, at) in [
         (
             r#"{"minecraft:flammable": {"catch_chance_modifier": "x"}, "minecraft:friction": 0.3}"#,
-            "InvalidType",
+            "core/invalid_type",
             "minecraft:block/components/minecraft:flammable/catch_chance_modifier",
         ),
         (
             r#"{"minecraft:movable": {}, "minecraft:friction": 0.3}"#,
-            "MissingRequiredField",
+            "core/missing_required_field",
             "minecraft:block/components/minecraft:movable/movement_type",
         ),
     ] {
@@ -1843,7 +1852,7 @@ fn a_failed_component_read_rejects_a_block_under_both_slices() {
 }
 
 fn code_name_of(code: &Code) -> String {
-    code.name().to_owned()
+    code.id().to_owned()
 }
 
 // The Cereal constraints carry the game's generic texts.
@@ -1899,11 +1908,11 @@ fn the_cereal_constraints_carry_the_game_texts() {
         let found: Vec<_> = d
             .iter()
             .filter(|f| f.location.json_path.to_string() == at && f.severity == Severity::Error)
-            .map(|f| (f.code.name(), f.severity, f.code.to_string()))
+            .map(|f| (f.code.kind(), f.severity, f.code.to_string()))
             .collect();
         assert_eq!(
             found,
-            [("InvalidValue", Severity::Error, text)],
+            [(Kind::InvalidValue, Severity::Error, text)],
             "{bad}: {d:#?}"
         );
     }
@@ -1937,7 +1946,7 @@ fn a_legacy_horizontal_multi_block_without_ucf_has_one_diagnostic() {
         })
         .collect();
     assert_eq!(errors.len(), 1, "{d:#?}");
-    assert_eq!(errors[0].code.name(), "MissingToggles");
+    assert_eq!(errors[0].code.id(), "core/turn_on_toggle_before");
     assert_eq!(
         errors[0].location.json_path.to_string(),
         "minecraft:block/description/traits/minecraft:multi_block"
@@ -1966,7 +1975,7 @@ fn the_crafting_table_and_culling_layer_constraints_as_the_game_reads_them() {
         assert!(
             d.iter()
                 // By legacy name: the variant and the definitions that were it.
-                .any(|f| matches!(f.code.name(), "InvalidValue")
+                .any(|f| f.code.kind() == Kind::InvalidValue
                     && f.severity == Severity::Error
                     && f.location.json_path.to_string()
                         == format!("minecraft:block/components/{path}")

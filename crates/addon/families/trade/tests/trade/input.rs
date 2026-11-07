@@ -33,7 +33,7 @@ fn a_format_version_that_gives_no_version_is_malformed() {
         assert_eq!(errors.len(), 1, "{version}: {d:#?}");
         assert!(
             // By legacy name: the variant and the definitions that were it.
-            errors[0].code.name() == "MalformedFormatVersion",
+            errors[0].code.id() == "core/malformed_format_version",
             "{version}: {:?}",
             errors[0].code
         );
@@ -80,12 +80,12 @@ fn a_null_member_of_a_cereal_table_rejects_it() {
         ),
     ] {
         let d = rejects(&cereal(extra));
-        found_at(&d, "InvalidType", Severity::Error, path);
+        found_at(&d, "core/invalid_type", Severity::Error, path);
     }
     let group = cereal("").replace(r#""groups": [{"#, r#""groups": [{"num_to_select": null, "#);
     found_at(
         &rejects(&group),
-        "InvalidType",
+        "core/invalid_type",
         Severity::Error,
         "tiers/0/groups/0/num_to_select",
     );
@@ -95,7 +95,7 @@ fn a_null_member_of_a_cereal_table_rejects_it() {
     );
     found_at(
         &rejects(&quantity),
-        "InvalidType",
+        "core/invalid_type",
         Severity::Error,
         "tiers/0/groups/0/trades/0/wants/0/quantity",
     );
@@ -105,7 +105,7 @@ fn a_null_member_of_a_cereal_table_rejects_it() {
     );
     found_at(
         &rejects(&bound),
-        "InvalidType",
+        "core/invalid_type",
         Severity::Error,
         "tiers/0/groups/0/trades/0/wants/0/quantity/min",
     );

@@ -28,14 +28,14 @@ fn e10_an_eat_block_pair_naming_a_block_nothing_defines_is_an_error_with_vanilla
         said_of(&found, "block"),
         [
             super::miss(
-                "UnresolvedReference",
+                "core/unresolved_reference_worded",
                 Severity::Error,
                 &format!("{at}/1/replace_block"),
                 "block",
                 "demo:nothing"
             ),
             super::miss(
-                "UnresolvedReference",
+                "core/unresolved_reference_worded",
                 Severity::Error,
                 &format!("{at}/2/eat_block"),
                 "block",
@@ -47,7 +47,7 @@ fn e10_an_eat_block_pair_naming_a_block_nothing_defines_is_an_error_with_vanilla
     assert!(
         bedrock_addon::diagnostic::testing::same_line(
             &texts[0],
-            "UnresolvedReference",
+            "core/unresolved_reference_worded",
             "Block demo:nothing on \"eat_and_replace_block_pairs\" on \"minecraft:behavior.eat_block\" is not a valid block."
         ),
         "{:?}",
@@ -89,7 +89,7 @@ fn e10_a_pair_of_a_component_group_is_told_once_at_its_first_unknown_name() {
     assert_eq!(
         said_of(&found, "block"),
         [super::miss(
-            "UnresolvedReference",
+            "core/unresolved_reference_worded",
             Severity::Error,
             "minecraft:entity/component_groups/hungry/minecraft:behavior.eat_block/eat_and_replace_block_pairs/0/eat_block",
             "block",
@@ -211,7 +211,11 @@ fn e11_a_block_list_naming_a_block_nothing_defines_is_a_kept_error_a_name_an_inf
     );
     // Each error is kept and carries the game's line; an information has no text.
     for finding in found.iter().filter(|finding| said(finding).4 == "block") {
-        assert_eq!(finding.code.name(), "UnresolvedReference", "{finding:?}");
+        assert_eq!(
+            finding.code.kind(),
+            bedrock_addon::diagnostic::Kind::UnresolvedReference,
+            "{finding:?}"
+        );
         let text = finding.vanilla();
         if finding.severity == Severity::Error {
             assert!(finding.kept, "{finding:?}");
@@ -254,7 +258,7 @@ fn e11_a_state_the_block_does_not_have_is_the_notifiers_kept_error_and_another_r
                 "demo:dim"
             ),
             super::miss(
-                "InvalidReference",
+                "core/invalid_reference",
                 Severity::Info,
                 &format!(
                     "minecraft:entity/{c}inside_block_notifier/block_list/1/block/states/demo:lit"
@@ -277,7 +281,7 @@ fn e11_a_state_the_block_does_not_have_is_the_notifiers_kept_error_and_another_r
     assert!(
         bedrock_addon::diagnostic::testing::same_line(
             &kept.code,
-            "UnresolvedReference",
+            "core/unresolved_reference_worded",
             "Block of type 'demo:lamp' does not have the state 'demo:dim'. This block will not be added to InsideBlockNotifierComponent's watch list due to an invalid state."
         ),
         "{:?}",
@@ -371,7 +375,7 @@ fn e11_a_name_of_a_list_of_block_names_is_linked_as_a_block_name() {
             found
                 .iter()
                 .all(|finding| finding.severity == Severity::Info
-                    && finding.code.name() == "UnresolvedReference"),
+                    && finding.code.id() == "core/unresolved_reference"),
             "{component}: {found:?}"
         );
     }

@@ -47,7 +47,7 @@ fn sp01_a_copy_without_can_merge_replaces_the_lower_splashes() {
     let found: Vec<_> = stack.splashes().diagnostics().collect();
     assert_eq!(
         codes(found.iter().copied()),
-        [("SplashesReplaced", Severity::Info)]
+        [("core/splashes_replaced", Severity::Info)]
     );
     assert_eq!(pack_number(found[0], 2), Some(1), "about the top pack");
     assert_eq!(
@@ -73,7 +73,10 @@ fn s3_can_merge_false_replaces_and_is_reported() {
         )],
     ]);
     assert_eq!(pool(&stack), ["c"]);
-    assert_eq!(stack_codes(&stack), [("SplashesReplaced", Severity::Info)]);
+    assert_eq!(
+        stack_codes(&stack),
+        [("core/splashes_replaced", Severity::Info)]
+    );
 }
 
 #[test]
@@ -111,8 +114,8 @@ fn sp03_a_string_true_does_not_merge() {
     assert_eq!(
         located(stack.splashes().diagnostics()),
         [
-            ("InvalidValue", Severity::Info, "canMerge".to_owned()),
-            ("SplashesReplaced", Severity::Info, String::new()),
+            ("core/invalid_value", Severity::Info, "canMerge".to_owned()),
+            ("core/splashes_replaced", Severity::Info, String::new()),
         ]
     );
 }
@@ -124,7 +127,7 @@ fn s2_every_non_boolean_can_merge_replaces() {
         assert!(!doc.merges(), "{written}");
         assert_eq!(
             located(doc.diagnostics()),
-            [("InvalidValue", Severity::Info, "canMerge".to_owned())],
+            [("core/invalid_value", Severity::Info, "canMerge".to_owned())],
             "{written}"
         );
     }
@@ -151,7 +154,7 @@ fn sp04_three_packs_the_middle_one_replaces_and_the_top_one_adds() {
     let found: Vec<_> = stack.splashes().diagnostics().collect();
     assert_eq!(
         codes(found.iter().copied()),
-        [("SplashesReplaced", Severity::Info)]
+        [("core/splashes_replaced", Severity::Info)]
     );
     assert_eq!(pack_number(found[0], 3), Some(1));
     assert!(
@@ -170,8 +173,8 @@ fn sp05_an_empty_replacing_copy_leaves_no_splash() {
     assert_eq!(
         stack_codes(&stack),
         [
-            ("SplashesReplaced", Severity::Info),
-            ("NoSplashes", Severity::Info)
+            ("core/splashes_replaced", Severity::Info),
+            ("core/no_splashes", Severity::Info)
         ]
     );
 }
@@ -194,7 +197,10 @@ fn sp06_conditional_splashes_are_added_after_the_pool_is_emptied() {
         )],
     ]);
     assert_eq!(pool(&stack), ["x"]);
-    assert_eq!(stack_codes(&stack), [("SplashesReplaced", Severity::Info)]);
+    assert_eq!(
+        stack_codes(&stack),
+        [("core/splashes_replaced", Severity::Info)]
+    );
 }
 
 #[test]
@@ -208,9 +214,21 @@ fn sp07_a_conditional_entry_without_requires_is_never_used() {
     assert_eq!(
         located(doc.diagnostics()),
         [
-            ("InvalidValue", Severity::Info, "conditional/0".to_owned()),
-            ("InvalidValue", Severity::Info, "conditional/1".to_owned()),
-            ("InvalidValue", Severity::Info, "conditional/2".to_owned()),
+            (
+                "core/invalid_value",
+                Severity::Info,
+                "conditional/0".to_owned()
+            ),
+            (
+                "core/invalid_value",
+                Severity::Info,
+                "conditional/1".to_owned()
+            ),
+            (
+                "core/invalid_value",
+                Severity::Info,
+                "conditional/2".to_owned()
+            ),
         ]
     );
 }
@@ -224,7 +242,11 @@ fn s5_a_conditional_that_is_no_array_is_ignored() {
     assert_eq!(pool, ["a"]);
     assert_eq!(
         located(doc.diagnostics()),
-        [("InvalidValue", Severity::Info, "conditional".to_owned())]
+        [(
+            "core/invalid_value",
+            Severity::Info,
+            "conditional".to_owned()
+        )]
     );
     assert_eq!(codes(parse(r#"{ "conditional": null }"#).diagnostics()), []);
 }
@@ -299,7 +321,7 @@ fn s7_each_category_is_matched_against_its_own_list_and_only_strings_count() {
         assert_eq!(
             located(doc.diagnostics()),
             [(
-                "InvalidValue",
+                "core/invalid_value",
                 Severity::Info,
                 format!("conditional/0/requires/{member}")
             )],
@@ -375,7 +397,7 @@ fn sp10_a_copy_that_is_not_json_is_skipped_deviation() {
     assert_eq!(
         codes(found.iter().copied()),
         // A refused file is an error.
-        [("MalformedInput", Severity::Error)]
+        [("core/syntax", Severity::Error)]
     );
     assert_eq!(pack_number(found[0], 3), Some(1));
     assert_eq!(stack.splashes().layers().len(), 2);
@@ -388,7 +410,7 @@ fn sp10_a_broken_top_copy_does_not_replace() {
         &[("splashes.json", "[")],
     ]);
     assert_eq!(pool(&stack), ["a"]);
-    assert_eq!(stack_codes(&stack), [("MalformedInput", Severity::Error)]);
+    assert_eq!(stack_codes(&stack), [("core/syntax", Severity::Error)]);
 }
 
 #[test]
@@ -398,10 +420,26 @@ fn sp11_non_strings_are_converted() {
     assert_eq!(
         located(doc.diagnostics()),
         [
-            ("InvalidValue", Severity::Info, "splashes/1".to_owned()),
-            ("InvalidValue", Severity::Info, "splashes/2".to_owned()),
-            ("InvalidValue", Severity::Info, "splashes/3".to_owned()),
-            ("InvalidValue", Severity::Info, "splashes/4".to_owned()),
+            (
+                "core/invalid_value",
+                Severity::Info,
+                "splashes/1".to_owned()
+            ),
+            (
+                "core/invalid_value",
+                Severity::Info,
+                "splashes/2".to_owned()
+            ),
+            (
+                "core/invalid_value",
+                Severity::Info,
+                "splashes/3".to_owned()
+            ),
+            (
+                "core/invalid_value",
+                Severity::Info,
+                "splashes/4".to_owned()
+            ),
         ]
     );
     // A conditional entry's splashes are read the same way.
@@ -410,7 +448,7 @@ fn sp11_non_strings_are_converted() {
     assert_eq!(
         located(doc.diagnostics()),
         [(
-            "InvalidValue",
+            "core/invalid_value",
             Severity::Info,
             "conditional/0/splashes/0".to_owned()
         )]
@@ -427,11 +465,14 @@ fn a_splashes_member_that_is_no_array_is_iterated_as_the_game_does() {
     );
     assert_eq!(
         located(doc.diagnostics()),
-        [("InvalidType", Severity::Info, "splashes".to_owned())]
+        [("core/invalid_type", Severity::Info, "splashes".to_owned())]
     );
     let doc = parse(r#"{ "splashes": "one" }"#);
     assert_eq!(doc.texts(), [] as [&str; 0], "a scalar gives nothing");
-    assert_eq!(codes(doc.diagnostics()), [("InvalidType", Severity::Info)]);
+    assert_eq!(
+        codes(doc.diagnostics()),
+        [("core/invalid_type", Severity::Info)]
+    );
 }
 
 #[test]
@@ -457,9 +498,9 @@ fn sp13_a_root_that_is_no_object_replaces_and_adds_nothing() {
     assert_eq!(
         stack_codes(&stack),
         [
-            ("InvalidValue", Severity::Info),
-            ("SplashesReplaced", Severity::Info),
-            ("NoSplashes", Severity::Info),
+            ("core/invalid_value", Severity::Info),
+            ("core/splashes_replaced", Severity::Info),
+            ("core/no_splashes", Severity::Info),
         ]
     );
     for root in ["3", "\"a\"", "null", "true"] {
@@ -474,7 +515,7 @@ fn sp13_a_root_that_is_no_object_replaces_and_adds_nothing() {
         assert_eq!(json(&doc.to_json().unwrap()), json(root));
         assert_eq!(
             codes(doc.diagnostics()),
-            [("InvalidValue", Severity::Info)],
+            [("core/invalid_value", Severity::Info)],
             "{root}"
         );
     }
@@ -487,14 +528,14 @@ fn s8_unknown_members_are_kept_and_reported() {
     assert_eq!(
         located(doc.diagnostics()),
         [
-            ("UnrecognizedField", Severity::Info, "note".to_owned()),
+            ("core/unrecognized_field", Severity::Info, "note".to_owned()),
             (
-                "UnrecognizedField",
+                "core/unrecognized_field",
                 Severity::Info,
                 "conditional/0/tag".to_owned()
             ),
             (
-                "UnrecognizedField",
+                "core/unrecognized_field",
                 Severity::Info,
                 "conditional/0/requires/why".to_owned()
             ),

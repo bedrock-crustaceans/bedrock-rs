@@ -117,7 +117,7 @@ fn j3_the_parser_test_s_set_with_too_much_separation_is_refused() {
     let d = rejected::<StructureSet>("worldgen/structure_sets/trail_ruins.json", &text);
     let found: Vec<_> = d
         .iter()
-        .filter(|f| f.code.name() == "InvalidValue")
+        .filter(|f| f.code.id() == "jigsaw/spacing_separation")
         .collect();
     assert_eq!(found.len(), 1);
     assert_eq!(found[0].severity, Severity::Error);

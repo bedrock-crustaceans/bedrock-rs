@@ -14,7 +14,8 @@ const GHOST: &str = "entity/ghost.entity.json";
 const INFO: Severity = Severity::Info;
 const WARNING: Severity = Severity::Warning;
 const ERROR: Severity = Severity::Error;
-const UNRESOLVED: &str = "UnresolvedReference";
+const UNRESOLVED: &str = "core/unresolved_reference_worded";
+const UNRESOLVED_NOTE: &str = "core/unresolved_reference";
 
 fn at(member: &str) -> String {
     format!("minecraft:client_entity/description/{member}")
@@ -99,7 +100,7 @@ mod r1 {
         assert!(
             found
                 .iter()
-                .filter(|finding| finding.code.name() == UNRESOLVED)
+                .filter(|finding| finding.code.id() == UNRESOLVED)
                 .all(|finding| finding.kept),
             "{found:#?}"
         );
@@ -194,7 +195,7 @@ mod r1 {
             //  and falls back to the `Actor`
             // variant: a kept error.
             [says(
-                "InvalidReference",
+                "core/invalid_reference_worded",
                 ERROR,
                 &at("materials/D"),
                 "material",
@@ -202,7 +203,7 @@ mod r1 {
             )]
         );
         assert_eq!(
-            text_of(&found, GHOST, "InvalidReference"),
+            text_of(&found, GHOST, "core/invalid_reference_worded"),
             "Material shader \"shaders/my.vertex\" cannot be assigned to an entity"
         );
     }
@@ -346,7 +347,7 @@ mod r3 {
         assert_eq!(
             ghost(members, &more),
             [says(
-                UNRESOLVED,
+                UNRESOLVED_NOTE,
                 INFO,
                 &at("geometry/Other"),
                 "geometry",
@@ -367,7 +368,7 @@ mod r3 {
         assert_eq!(
             ghost(members, &[]),
             [says(
-                UNRESOLVED,
+                UNRESOLVED_NOTE,
                 INFO,
                 &at("geometry/default"),
                 "geometry",
@@ -422,21 +423,21 @@ mod r4 {
             ghost(members, &more),
             [
                 says(
-                    UNRESOLVED,
+                    UNRESOLVED_NOTE,
                     INFO,
                     &at("animations/A"),
                     "animation",
                     "animation.ghost.nope"
                 ),
                 says(
-                    UNRESOLVED,
+                    UNRESOLVED_NOTE,
                     INFO,
                     &at("animations/b"),
                     "animation",
                     "controller.animation.ghost.float"
                 ),
                 says(
-                    UNRESOLVED,
+                    UNRESOLVED_NOTE,
                     INFO,
                     &at("animations/c"),
                     "animation",
@@ -458,7 +459,7 @@ mod r4 {
         assert_eq!(
             ghost(members, &[]),
             [says(
-                UNRESOLVED,
+                UNRESOLVED_NOTE,
                 INFO,
                 &at("animations/base"),
                 "animation",
@@ -484,14 +485,14 @@ mod r4 {
             told(&found, "rp 2", GHOST),
             [
                 says(
-                    UNRESOLVED,
+                    UNRESOLVED_NOTE,
                     INFO,
                     &at("animations/float"),
                     "animation",
                     "animation.ghost.nope"
                 ),
                 says(
-                    UNRESOLVED,
+                    UNRESOLVED_NOTE,
                     INFO,
                     &at("animation_controllers/1/turn"),
                     "animation",
@@ -539,7 +540,7 @@ mod r5 {
             ghost(members, &more),
             [
                 says(
-                    UNRESOLVED,
+                    UNRESOLVED_NOTE,
                     INFO,
                     &at("render_controllers/1"),
                     "render controller",
@@ -547,7 +548,7 @@ mod r5 {
                 ),
                 // The object form: the member that names the controller, its key as written.
                 says(
-                    UNRESOLVED,
+                    UNRESOLVED_NOTE,
                     INFO,
                     &at("render_controllers/2/Controller.Render.Nope_Too"),
                     "render controller",
@@ -569,7 +570,7 @@ mod r5 {
         assert_eq!(
             ghost(members, &[]),
             [says(
-                UNRESOLVED,
+                UNRESOLVED_NOTE,
                 INFO,
                 &at("render_controllers/0"),
                 "render controller",
@@ -620,7 +621,7 @@ mod r7 {
         assert_eq!(
             told(&found, "rp 2", GHOST),
             [says(
-                "TextureNotFound",
+                "core/texture_not_found_worded",
                 WARNING,
                 &at("textures/Other"),
                 "texture",
@@ -678,7 +679,7 @@ mod r7 {
         );
         let texts: Vec<String> = found
             .iter()
-            .filter(|f| f.code.name() == "TextureNotFound")
+            .filter(|f| f.code.id() == "core/texture_not_found_worded")
             .map(|f| f.code.to_string())
             .collect();
         assert_eq!(
@@ -697,7 +698,7 @@ mod r7 {
         assert_eq!(
             found,
             [says(
-                "TextureNotFound",
+                "core/texture_not_found_worded",
                 WARNING,
                 &at("textures/default"),
                 "texture",
@@ -781,14 +782,14 @@ mod r8 {
             ghost(members, &more),
             [
                 says(
-                    "UnknownSound",
+                    "core/unknown_sound",
                     INFO,
                     &at("sound_effects/Upper"),
                     "sound event",
                     "Ghost.Hum"
                 ),
                 says(
-                    "UnknownSound",
+                    "core/unknown_sound",
                     INFO,
                     &at("sound_effects/s"),
                     "sound event",
@@ -810,7 +811,7 @@ mod r8 {
         assert_eq!(
             ghost(members, &[]),
             [says(
-                "UnknownSound",
+                "core/unknown_sound",
                 INFO,
                 &at("sound_effects/click"),
                 "sound event",
@@ -867,7 +868,7 @@ fn r10_a_client_entity_of_no_entity_is_a_note_and_a_lint() {
     assert_eq!(
         identified("Demo:Nobody", LoadOptions::default(), true),
         [says(
-            UNRESOLVED,
+            UNRESOLVED_NOTE,
             INFO,
             &at("identifier"),
             "entity",

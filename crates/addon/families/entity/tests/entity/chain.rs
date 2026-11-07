@@ -77,7 +77,7 @@ fn a_floor_document_reaches_the_newest_struct() {
 fn below_the_floor_is_unsupported_with_the_floor_text() {
     let outcome = outcome(&doc("1.7.0", MINIMAL), &cx());
     assert!(outcome.value.is_none());
-    let found = with_code(&outcome.diagnostics, "UnsupportedVersion");
+    let found = with_code(&outcome.diagnostics, "core/use_format_version");
     assert_eq!(found.len(), 1);
     assert_eq!(
         found[0].code,
@@ -89,12 +89,12 @@ fn below_the_floor_is_unsupported_with_the_floor_text() {
 #[test]
 fn above_the_engine_is_unsupported_with_vanillas_resource_pack_text() {
     let document = super::common::parse(&doc("1.26.61", MINIMAL)).unwrap_err();
-    let found = with_code(&document.diagnostics, "UnsupportedVersion");
+    let found = with_code(&document.diagnostics, "entity/actor_above_engine");
     assert!(
         found[0].is(&bedrock_addon_family_entity::codes::ACTOR_ABOVE_ENGINE)
             && bedrock_addon_core::diagnostic::testing::same_line(
                 &found[0].code,
-                "UnsupportedVersion",
+                "entity/actor_above_engine",
                 "Error: actor resource file has format version: 1.26.61 exceeds game version: 1.26.60. Skipping."
             ),
         "{:?}",
@@ -110,7 +110,7 @@ fn a_missing_version_is_an_information_and_parses_at_the_floor_deviation() {
     let outcome = outcome(&text, &cx());
     assert!(matches!(outcome.value, Some(Loaded::Stable(_))));
     assert_eq!(outcome.version.parsed_as, v("1.8.0"));
-    let found = with_code(&outcome.diagnostics, "MissingFormatVersion");
+    let found = with_code(&outcome.diagnostics, "core/no_format_version_field");
     assert_eq!(found.len(), 1);
     assert_eq!(found[0].severity, Severity::Info);
     assert_eq!(
@@ -128,7 +128,7 @@ fn the_in_payload_version_stands_in_for_a_missing_root_one() {
     assert!(outcome.value.is_none());
     assert_eq!(
         codes(&outcome.diagnostics, Severity::Info),
-        ["UnsupportedVersion"]
+        ["core/use_format_version"]
     );
     // An in-payload version the chain covers is read and not written back.
     let text = r#"{"minecraft:entity": {"format_version": "1.26.50", "description": {"identifier": "demo:new"}, "components": {}}}"#;
@@ -157,7 +157,7 @@ fn a_beta_document_needs_the_beta_apis_toggle() {
     assert!(refused.value.is_none());
     assert_eq!(
         codes(&refused.diagnostics, Severity::Error),
-        ["BetaFeaturesNotEnabled"]
+        ["core/beta_format_version"]
     );
     let mut beta = cx();
     beta.beta_apis = true;
@@ -181,7 +181,7 @@ fn a_prerelease_version_selects_the_struct_below_its_release() {
     assert_eq!(outcome.version.parsed_as, v("1.21.89"));
     assert_eq!(
         codes(&outcome.diagnostics, Severity::Info),
-        ["PrereleaseFormatVersion"]
+        ["core/prerelease_format_version"]
     );
 }
 

@@ -79,7 +79,7 @@ fn found(stack: &PackStack<Resource>, code: impl Fn(&Code) -> bool) -> Vec<(Stri
 
 fn shadowed(code: &Code) -> bool {
     // By legacy name: the variant and the definitions that were it.
-    matches!(code.name(), "ShadowedDefinition")
+    matches!(code.id(), "core/shadowed_definition")
 }
 
 #[test]
@@ -177,14 +177,14 @@ fn a_file_that_fails_leaves_the_effect_below_it_in_place() {
         .particles()
         .diagnostics()
         .filter(|d| d.severity == Severity::Error)
-        .map(|d| (place(d), d.location.json_path.to_string(), d.code.name()))
+        .map(|d| (place(d), d.location.json_path.to_string(), d.code.id()))
         .collect();
     assert_eq!(
         errors,
         [(
             ("top".to_owned(), "particles/a.json".to_owned()),
             "particle_effect/components/minecraft:emitter_rate_instant/num_particles".to_owned(),
-            "MissingRequiredField"
+            "core/missing_required_field"
         )]
     );
 }
@@ -513,7 +513,7 @@ fn unresolved(d: &Diagnostics) -> Vec<(String, &'static str)> {
             let path = f.location.path.as_ref();
             path.is_some_and(|path| path.as_str().starts_with("particles/"))
         })
-        .map(|f| (f.location.json_path.to_string(), f.code.name()))
+        .map(|f| (f.location.json_path.to_string(), f.code.id()))
         .collect()
 }
 
@@ -546,14 +546,14 @@ fn r38_a_material_or_texture_no_pack_has_is_unresolved() {
     assert_eq!(
         unresolved(&found),
         [
-            (format!("{brp}/material"), "UnresolvedReference"),
-            (format!("{brp}/texture"), "TextureNotFound"),
+            (format!("{brp}/material"), "core/unresolved_reference"),
+            (format!("{brp}/texture"), "core/texture_not_found_worded"),
         ]
     );
     // The texture is the validator's file reference, a content-log error;
     // the material is looked up at draw time without a line: ours, an information.
     assert!(found.iter().all(|f| f.severity
-        == if f.code.name() == "TextureNotFound" {
+        == if f.code.id() == "core/texture_not_found_worded" {
             Severity::Error
         } else {
             Severity::Info
@@ -591,19 +591,19 @@ fn r39_a_reference_to_a_particle_event_sound_or_block_that_does_not_exist_is_unr
         [
             (
                 format!("{components}/minecraft:emitter_lifetime_events/creation_event"),
-                "UnresolvedReference"
+                "core/unresolved_reference"
             ),
             (
                 format!("{components}/minecraft:particle_expire_if_in_blocks/0"),
-                "UnresolvedReference"
+                "core/unresolved_reference_worded"
             ),
             (
                 "particle_effect/events/burst/particle_effect/effect".to_owned(),
-                "UnresolvedReference"
+                "core/unresolved_reference"
             ),
             (
                 "particle_effect/events/burst/sound_effect/event_name".to_owned(),
-                "UnknownSound"
+                "core/unknown_sound"
             ),
         ]
     );

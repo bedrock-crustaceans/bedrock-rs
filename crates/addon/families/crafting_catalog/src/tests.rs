@@ -13,7 +13,7 @@ use super::link::{Definitions, link_group_names, link_placements};
 use super::{
     CatalogItem, CatalogKey, Category, CategoryName, CraftingCatalog, Group, GroupIdentifier, PATH,
 };
-use bedrock_addon_core::diagnostic::{Diagnostics, Phase, Severity};
+use bedrock_addon_core::diagnostic::{Diagnostics, Kind, Phase, Severity};
 use bedrock_addon_core::document::{Document, Merged, Origin, VersionInfo};
 use bedrock_addon_core::id::ItemId;
 use bedrock_addon_shared_shapes::{CreativeCategory, MenuCategory};
@@ -165,7 +165,7 @@ fn listed(found: &Diagnostics) -> Vec<(&'static str, Severity, String)> {
                 Some(PATH)
             );
             (
-                finding.code.name(),
+                finding.code.id(),
                 finding.severity,
                 finding.code.to_string(),
             )
@@ -197,11 +197,19 @@ fn m10_another_category_and_another_group_are_two_warnings_with_vanilla_s_texts(
     assert_eq!(
         listed(&found),
         [
-            ("InvalidValue", Severity::Warning, CATEGORY.to_owned()),
-            ("InvalidValue", Severity::Warning, GROUP.to_owned()),
+            (
+                "crafting_catalog/category_mismatch",
+                Severity::Warning,
+                CATEGORY.to_owned()
+            ),
+            (
+                "crafting_catalog/group_mismatch",
+                Severity::Warning,
+                GROUP.to_owned()
+            ),
         ]
     );
-    assert!(found.iter().all(|f| f.code.name() == "InvalidValue"));
+    assert!(found.iter().all(|f| f.code.kind() == Kind::InvalidValue));
 }
 
 #[test]
@@ -212,7 +220,11 @@ fn m4_the_same_category_is_no_warning() {
     );
     assert_eq!(
         listed(&link_placements(&catalog, &item1())),
-        [("InvalidValue", Severity::Warning, GROUP.to_owned())]
+        [(
+            "crafting_catalog/group_mismatch",
+            Severity::Warning,
+            GROUP.to_owned()
+        )]
     );
 }
 
@@ -224,7 +236,11 @@ fn m5_the_same_group_a_loose_target_and_an_empty_group_are_no_warning() {
     );
     assert_eq!(
         listed(&link_placements(&same, &item1())),
-        [("InvalidValue", Severity::Warning, CATEGORY.to_owned())]
+        [(
+            "crafting_catalog/category_mismatch",
+            Severity::Warning,
+            CATEGORY.to_owned()
+        )]
     );
     let loose = merged(
         CategoryName::Construction,
@@ -232,7 +248,11 @@ fn m5_the_same_group_a_loose_target_and_an_empty_group_are_no_warning() {
     );
     assert_eq!(
         listed(&link_placements(&loose, &item1())),
-        [("InvalidValue", Severity::Warning, CATEGORY.to_owned())]
+        [(
+            "crafting_catalog/category_mismatch",
+            Severity::Warning,
+            CATEGORY.to_owned()
+        )]
     );
     let named = merged(
         CategoryName::Nature,
@@ -314,7 +334,7 @@ fn m4_the_definition_is_found_whatever_the_aux_value_and_the_text_has_the_catalo
     assert_eq!(
         listed(&found),
         [(
-            "InvalidValue",
+            "crafting_catalog/category_mismatch",
             Severity::Warning,
             "The item custom:item1:3 was created with the category set to 'nature', and is now being set to 'items'"
                 .to_owned()
@@ -341,7 +361,7 @@ fn m4_every_category_is_named_as_item_definitions_spell_it() {
         assert_eq!(
             listed(&found),
             [(
-                "InvalidValue",
+                "crafting_catalog/category_mismatch",
                 Severity::Warning,
                 format!(
                     "The item custom:item1 was created with the category set to '{own_name}', and is now being set to '{name}'"
@@ -382,7 +402,7 @@ fn m4_a_definition_whose_author_wrote_none_is_warned() {
     assert_eq!(
         listed(&link_placements(&catalog, &definitions)),
         [(
-            "InvalidValue",
+            "crafting_catalog/category_mismatch",
             Severity::Warning,
             "The item custom:item1 was created with the category set to 'none', and is now being set to 'construction'"
                 .to_owned()

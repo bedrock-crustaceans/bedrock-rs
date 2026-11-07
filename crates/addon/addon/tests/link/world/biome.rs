@@ -82,25 +82,25 @@ fn w12_a_biome_nothing_defines_is_an_error_at_each_member_with_vanillas_text() {
         said(&found, &["biome"]),
         [
             error(
-                "UnresolvedReference",
+                "core/unresolved_reference_worded",
                 &format!("{rules}/hills_transformation"),
                 "biome",
                 "demo:gone"
             ),
             error(
-                "UnresolvedReference",
+                "core/unresolved_reference_worded",
                 &format!("{rules}/mutate_transformation/1"),
                 "biome",
                 "demo:gone"
             ),
             error(
-                "UnresolvedReference",
+                "core/unresolved_reference_worded",
                 &format!("{rules}/river_transformation/1/0"),
                 "biome",
                 "demo:gone"
             ),
             error(
-                "UnresolvedReference",
+                "core/unresolved_reference_worded",
                 &format!("{rules}/shore_transformation"),
                 "biome",
                 "demo:gone"
@@ -168,19 +168,19 @@ fn w13_a_target_nothing_defines_is_an_error_whatever_its_spelling_open_o4() {
         said(&found, &["biome"]),
         [
             error(
-                "UnresolvedReference",
+                "core/unresolved_reference_worded",
                 &format!("{TARGETS}/1"),
                 "biome",
                 "nowhere"
             ),
             error(
-                "UnresolvedReference",
+                "core/unresolved_reference_worded",
                 &format!("{TARGETS}/2"),
                 "biome",
                 "minecraft:nowhere"
             ),
             error(
-                "UnresolvedReference",
+                "core/unresolved_reference_worded",
                 &format!("{TARGETS}/3"),
                 "biome",
                 "demo:gone"
@@ -218,7 +218,7 @@ fn w13_a_target_that_is_no_biome_of_the_game_is_an_error() {
     assert_eq!(
         said(&found, &["biome"]),
         [error(
-            "InvalidReference",
+            "core/invalid_reference_worded",
             &format!("{TARGETS}/0"),
             "biome",
             "demo:fen"
@@ -315,7 +315,14 @@ fn w14_a_block_nothing_defines_is_an_error_at_each_member_with_vanillas_text() {
     let found = crate::common::without_validator_lines(&link(&[(MOOR, moor.as_str())], &[]));
     let expected: Vec<_> = members
         .iter()
-        .map(|(member, _)| error("UnresolvedReference", member, "block", "demo:lamp"))
+        .map(|(member, _)| {
+            error(
+                "core/unresolved_reference_worded",
+                member,
+                "block",
+                "demo:lamp",
+            )
+        })
         .collect();
     assert_eq!(said(&found, &["block"]), expected);
     let expected: Vec<String> = members
@@ -339,7 +346,7 @@ fn w14_a_state_the_block_does_not_have_is_an_error() {
     assert_eq!(
         said(&found, &["block", "block state"]),
         [error(
-            "UnresolvedReference",
+            "core/unresolved_reference",
             "minecraft:mountain_parameters/steep_material_adjustment/material/states/demo:dim",
             "block state",
             "demo:dim"

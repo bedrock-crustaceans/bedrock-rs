@@ -1,14 +1,14 @@
 # families/script_config fixtures.md, row sp06_second_equals (P2).
 
 [[diagnostic]]
-code = "NoEffect"
+code = "core/no_effect"
 severity = "info"
 phase = "parse"
 file = "server.properties"
 path = "content-log-level"
 
 [[diagnostic]]
-code = "InvalidEnumValue"
+code = "server_config/bad_log_level"
 severity = "error"
 phase = "validate"
 file = "server.properties"

@@ -6,16 +6,26 @@
 use std::sync::Arc;
 
 use bedrock_addon::diagnostic::{
-    Diagnostic, DiagnosticDetail, Diagnostics, Phase, ReferenceHint, Severity,
+    Diagnostic, DiagnosticDetail, Diagnostics, Kind, Phase, ReferenceHint, Severity,
 };
 use bedrock_addon::families::sound_file::SOUND_FILE_KIND;
 use bedrock_addon::load::{BuiltIns, LoadOptions};
 use bedrock_addon::pack::{Pack, PackOrigin, StackSet};
 
 use super::common::{
-    DEFINITIONS, Findable, describe, expect_clean, expect_none, files, found, linked_user, pack_of,
+    DEFINITIONS, Findable, describe, expect_clean, files, found, linked_user, pack_of,
     pack_with_origin, plays, stack_set, vorbis,
 };
+
+/// Requires no unresolved reference in `link`.
+#[track_caller]
+fn expect_no_unresolved(link: &Diagnostics) {
+    assert!(
+        link.iter().all(|d| d.kind() != Kind::UnresolvedReference),
+        "no unresolved reference in {:#?}",
+        describe(link)
+    );
+}
 
 /// Built-ins that know the listed sound files.
 struct VanillaIndex(&'static [&'static str]);
@@ -51,7 +61,7 @@ fn judged<'a>(set: &'a StackSet, link: &'a Diagnostics) -> Vec<&'a Diagnostic> {
 
 /// The names of the unresolved sound files, with the case hint of each.
 fn unresolved(findings: &impl Findable) -> Vec<(String, Option<String>)> {
-    found(findings, "UnresolvedReference")
+    found(findings, "core/unresolved_reference")
         .iter()
         .map(|d| match d.detail.as_deref() {
             Some(DiagnosticDetail::Reference { kind, id, hint }) => {
@@ -98,7 +108,7 @@ fn as03_a_name_without_a_file_deviation() {
     let set = with_index(packs(), &[]);
     let link = set.link();
     assert_eq!(unresolved(&link), [("sounds/nope".to_owned(), None)]);
-    let finding = found(&link, "UnresolvedReference")[0];
+    let finding = found(&link, "core/unresolved_reference")[0];
     assert_eq!(
         finding.location.json_path.to_string(),
         "sound_definitions/a/sounds/0"
@@ -106,10 +116,10 @@ fn as03_a_name_without_a_file_deviation() {
     assert_eq!(pack_of(finding), Some(0));
     // Without the client's own files in view (no built-ins, no base-game pack that lists
     // audio) nothing is said: an add-on's listing is partial by nature.
-    expect_none(&linked_user(packs()), "UnresolvedReference");
+    expect_no_unresolved(&linked_user(packs()));
     let mut with_audio = packs();
     with_audio.push(files(20, &[("sounds/other.ogg", vorbis())]));
-    expect_none(&linked_user(with_audio), "UnresolvedReference");
+    expect_no_unresolved(&linked_user(with_audio));
 }
 
 #[test]
@@ -172,7 +182,7 @@ fn as06_a_name_with_an_extension() {
         &[],
     );
     let link = set.link();
-    let warned: Vec<String> = found(&link, "InvalidValue")
+    let warned: Vec<String> = found(&link, "core/invalid_value")
         .iter()
         .map(|d| d.location.json_path.to_string())
         .collect();
@@ -184,7 +194,7 @@ fn as06_a_name_with_an_extension() {
         ]
     );
     assert!(
-        found(&link, "InvalidValue")
+        found(&link, "core/invalid_value")
             .iter()
             .all(|d| d.severity == Severity::Info && d.phase == Phase::Link)
     );
@@ -203,7 +213,7 @@ fn as06_a_name_with_an_extension() {
     );
     let link = set.link();
     assert!(unresolved(&link).is_empty());
-    assert_eq!(found(&link, "InvalidValue").len(), 1);
+    assert_eq!(found(&link, "core/invalid_value").len(), 1);
 }
 
 #[test]
@@ -243,7 +253,7 @@ fn as11_the_sounds_of_an_external_event_are_not_checked() {
     let findings = judged(&set, &link);
     assert!(unresolved(&findings).is_empty());
     assert_eq!(
-        found(&findings, "InvalidValue").len(),
+        found(&findings, "core/invalid_value").len(),
         1,
         "rule 8's error only"
     );
@@ -294,7 +304,7 @@ fn a_dangling_name_is_judged_only_with_the_clients_files_in_view() {
     assert_eq!(
         found(
             &link(with_client, LoadOptions::default()),
-            "UnresolvedReference"
+            "core/unresolved_reference"
         )
         .len(),
         1

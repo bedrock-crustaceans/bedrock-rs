@@ -2,7 +2,7 @@
 //! (bounds), 17 (component value messages), and (triggers, filters, Molang).
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{Code, Severity};
+use bedrock_addon_core::diagnostic::{Code, Kind, Severity};
 use bedrock_addon_core::molang::{self, MolangFieldMut, MolangVersion, MolangVersionSource};
 use bedrock_addon_core::versioning::ConvertMode;
 use bedrock_addon_family_entity::codes as entity_codes;
@@ -48,7 +48,7 @@ fn rule15_wrong_json_types_fail_the_strict_parse() {
     ] {
         let (value, d) = strict(key, json);
         assert!(value.is_none(), "{key} {json}: dropped");
-        assert_finding(&d, "InvalidType", member, Severity::Error);
+        assert_finding(&d, "core/invalid_type", member, Severity::Error);
     }
 }
 
@@ -91,7 +91,7 @@ fn rule15_unknown_names_fail_the_strict_parse() {
         assert_eq!(found.severity, Severity::Error);
         assert!(
             // By legacy name: the variant and the definitions that were it.
-            matches!(found.code.name(), "InvalidType" | "InvalidEnumValue"),
+            found.code.id() == "core/invalid_type" || found.code.kind() == Kind::InvalidEnumValue,
             "{found:?}"
         );
     }
@@ -123,7 +123,12 @@ fn unknown_sound_names_are_warnings() {
             mode,
         );
         assert_eq!(g.expect("kept").celebration_sound(), "party");
-        assert_finding(&d, "UnknownSound", "celebration_sound", Severity::Info);
+        assert_finding(
+            &d,
+            "core/unknown_sound",
+            "celebration_sound",
+            Severity::Info,
+        );
         assert!(errors(&d).is_empty());
     }
     let (g, d) = strict(
@@ -131,7 +136,12 @@ fn unknown_sound_names_are_warnings() {
         r#"{"celebration_sound": 3}"#,
     );
     assert!(g.is_none());
-    assert_finding(&d, "InvalidType", "celebration_sound", Severity::Error);
+    assert_finding(
+        &d,
+        "core/invalid_type",
+        "celebration_sound",
+        Severity::Error,
+    );
     for (key, json, member) in [
         (
             "minecraft:behavior.admire_item",
@@ -162,7 +172,7 @@ fn unknown_sound_names_are_warnings() {
     ] {
         let (g, d) = strict(key, json);
         assert!(g.is_some(), "{key}");
-        assert_finding(&d, "UnknownSound", member, Severity::Info);
+        assert_finding(&d, "core/unknown_sound", member, Severity::Info);
     }
     let (g, d) = goal::<goal::Sneeze>(
         "minecraft:behavior.sneeze",
@@ -171,7 +181,7 @@ fn unknown_sound_names_are_warnings() {
     );
     let g = g.expect("kept");
     assert!(
-        d.iter().all(|f| f.code.name() != "UnknownSound") || g.sound() == "sneeze",
+        d.iter().all(|f| f.code.kind() != Kind::UnresolvedReference) || g.sound() == "sneeze",
         "{d:?}"
     );
 }
@@ -342,11 +352,11 @@ fn rule16_bounds_are_errors_strictly_and_defaults_leniently() {
     ] {
         let (value, d) = strict(key, json);
         assert!(value.is_none(), "{key} {json}: dropped");
-        assert_finding(&d, "InvalidValue", member, Severity::Error);
+        assert_finding(&d, "core/invalid_value", member, Severity::Error);
         let (value, d) = lenient(key, json);
         assert!(value.is_some(), "{key} {json}: kept leniently");
         // The typed bound is ours in the lenient conversion: an information.
-        assert_finding(&d, "InvalidValue", member, Severity::Info);
+        assert_finding(&d, "core/invalid_value", member, Severity::Info);
         assert!(errors(&d).is_empty());
     }
     let (g, _) = goal::<goal::TransportItems>(
@@ -382,10 +392,10 @@ fn charge_held_item_needs_items() {
     let key = "minecraft:behavior.charge_held_item";
     let (value, d) = strict(key, r#"{"priority": 3}"#);
     assert!(value.is_none());
-    assert_finding(&d, "MissingRequiredField", "items", Severity::Error);
+    assert_finding(&d, "core/missing_required_field", "items", Severity::Error);
     let (value, d) = strict(key, r#"{"items": []}"#);
     assert!(value.is_none());
-    assert_finding(&d, "InvalidValue", "items", Severity::Error);
+    assert_finding(&d, "core/invalid_value", "items", Severity::Error);
     let (value, d) = strict(key, r#"{"items": ["minecraft:fire_charge"]}"#);
     assert!(value.is_some() && d.is_empty(), "{d:?}");
 }
@@ -401,7 +411,7 @@ fn v12_transport_items_search_distance_must_be_positive() {
         (ConvertMode::Lenient, Severity::Error),
     ] {
         let (g, d) = goal::<goal::TransportItems>(key, json, mode);
-        let found = finding(&d, "InvalidValue", "search_distance").expect("reported");
+        let found = finding(&d, "entity/search_distance", "search_distance").expect("reported");
         assert_eq!(found.severity, severity);
         assert_eq!(found.code, Code::from(&entity_codes::SEARCH_DISTANCE));
         let g = g.expect("the goal is kept");
@@ -484,7 +494,7 @@ fn d5_goal_triggers_keep_and_report_a_legacy_condition() {
     let g = g.expect("kept");
     assert_finding(
         &d,
-        "UnrecognizedField",
+        "core/unrecognized_field",
         "on_start/condition",
         Severity::Warning,
     );
@@ -517,7 +527,7 @@ fn d5_a_legacy_condition_beyond_f32_is_kept_as_written_deviation() {
     assert_eq!(d.iter().count(), 1, "{d:#?}");
     assert_finding(
         &d,
-        "UnrecognizedField",
+        "core/unrecognized_field",
         "on_start/condition",
         Severity::Warning,
     );
@@ -570,7 +580,7 @@ fn entity_types_take_one_descriptor_or_a_list() {
     let (g, d) = goal::<goal::AvoidMobType>(key, list, ConvertMode::Strict);
     assert_finding(
         &d,
-        "UnrecognizedField",
+        "core/unrecognized_field",
         "entity_types/1/zzz",
         Severity::Warning,
     );
@@ -586,7 +596,12 @@ fn unknown_goal_members_are_kept_and_written_back() {
     let json = r#"{"priority": 1, "speed_multiplier": 1.25, "demo_member": [1, 2]}"#;
     let d = super::round_trip::<goal::Breed>("minecraft:behavior.breed", json, ConvertMode::Strict)
         .expect("kept");
-    assert_finding(&d, "UnrecognizedField", "demo_member", Severity::Warning);
+    assert_finding(
+        &d,
+        "core/unrecognized_field",
+        "demo_member",
+        Severity::Warning,
+    );
 }
 
 /// Vectors take `[x, y, z]` and `{x, y, z}` and are written in the form read.
@@ -653,7 +668,7 @@ fn d5_m1_eat_block_success_chance_is_molang() {
     );
     assert!(g.expect("kept").success_chance.is_some());
     let (g, d) = goal::<goal::EatBlock>(key, object, ConvertMode::Lenient);
-    assert_finding(&d, "InvalidType", "success_chance", Severity::Info);
+    assert_finding(&d, "core/invalid_type", "success_chance", Severity::Info);
     assert!(g.expect("kept").success_chance.is_none());
 }
 

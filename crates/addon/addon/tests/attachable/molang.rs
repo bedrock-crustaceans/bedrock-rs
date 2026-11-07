@@ -2,7 +2,7 @@
 //! Molang, at which version, where they compile and what a rejected one does. Resource pack at
 //! `min_engine_version` 1.21.0 unless the row says otherwise.
 
-use bedrock_addon::diagnostic::Severity;
+use bedrock_addon::diagnostic::{Diagnostics, Disposition, Kind, Severity};
 #[cfg(feature = "molang")]
 use bedrock_addon::molang::{Molang, RawVersion, pack_molang_version};
 use bedrock_addon::version::{FormatVersion, MinEngineVersion};
@@ -10,12 +10,22 @@ use bedrock_addon::visual::HeldItemScale;
 
 use super::common::*;
 
+/// Requires no finding of `kind`.
+#[track_caller]
+fn none_of_kind(d: &Diagnostics, kind: Kind) {
+    assert!(
+        d.iter().all(|f| f.code.kind() != kind),
+        "{}",
+        lines(d).join("\n")
+    );
+}
+
 /// The Molang version of a pack at `min_engine_version` `a.b.c`.
 fn pack_version(a: u16, b: u16, c: u16) -> RawVersion {
     pack_molang_version(Some(&MinEngineVersion::new(a, b, c)))
 }
 
-const INVALID: &str = "InvalidMolang";
+const INVALID: &str = "core/invalid_molang";
 
 // ---- versions and shapes: with and without the compile check ----
 
@@ -120,7 +130,7 @@ fn an_object_form_expression_is_a_wrong_type() {
     ] {
         let d = rejected(attachable(&ghost("1.10.0", members), &cx()));
         assert!(
-            find(&d, "InvalidType", Severity::Error).is_some(),
+            find(&d, "core/invalid_type", Severity::Error).is_some(),
             "{members}"
         );
     }
@@ -137,7 +147,7 @@ fn m11_held_item_scale_molang_shapes() {
     ));
     // A Molang scale has no constant value.
     assert_eq!(document.held_item_scale(), 1.0);
-    none(document.diagnostics(), "InvalidValue");
+    none_of_kind(document.diagnostics(), Kind::InvalidValue);
     let boolean = loaded(attachable(
         &ghost("1.26.0", r#""held_item_scale": true"#),
         &cx(),
@@ -154,7 +164,7 @@ fn m11_held_item_scale_molang_shapes() {
     let d = rejected(attachable(&ghost("1.26.0", string), &older));
     expect(
         &d,
-        "InvalidType",
+        "core/unknown_child_option",
         Severity::Error,
         "unknown child schema option type.  Allowed types: float",
     );
@@ -169,7 +179,7 @@ fn m11_held_item_scale_molang_shapes() {
         // A `null` too: no type option of the schema takes it (`nulls.rs`).
         let d = rejected(attachable(&ghost("1.26.0", &members), &cx()));
         assert!(
-            find(&d, "InvalidType", Severity::Error).is_some(),
+            find(&d, "core/unknown_child_option", Severity::Error).is_some(),
             "{value}"
         );
     }
@@ -272,7 +282,7 @@ mod compiled {
             Severity::Error,
             "minecraft:attachable/description/scripts/pre_animation/0",
         );
-        none(&d, "DroppedField");
+        none_of_kind(&d, Kind::UnknownMember(Disposition::Dropped));
         // So is a 1.8.0 one, which passes the same schema node.
         let d = rejected(attachable(&ghost("1.8.0", members), &cx()));
         assert!(find(&d, INVALID, Severity::Error).is_some());
@@ -297,7 +307,7 @@ mod compiled {
                 "minecraft:attachable/description/scripts/animate/0/walk",
             );
             // The schema rejects it: the loader's "Failed to parse" line never comes.
-            none(&d, "DroppedField");
+            none_of_kind(&d, Kind::UnknownMember(Disposition::Dropped));
         }
         let members = r#""render_controllers": [{"controller.render.x": "q.is_baby +"}]"#;
         let d = rejected(attachable(&ghost("1.10.0", members), &cx()));
@@ -328,7 +338,7 @@ mod compiled {
         let d = rejected(attachable(&ghost("1.10.0", members), &cx()));
         let told: Vec<String> = d
             .iter()
-            .filter(|f| f.code.name() == INVALID)
+            .filter(|f| f.code.id() == INVALID)
             .map(|f| {
                 assert_eq!(
                     f.location.json_path.to_string(),
@@ -353,7 +363,7 @@ mod compiled {
         let d = document.diagnostics();
         // The parser's lines first, as kept errors (the file loads), then the
         // loader's line.
-        let invalid: Vec<_> = d.iter().filter(|f| f.code.name() == INVALID).collect();
+        let invalid: Vec<_> = d.iter().filter(|f| f.code.id() == INVALID).collect();
         assert!(!invalid.is_empty());
         assert!(
             invalid
@@ -369,15 +379,15 @@ mod compiled {
         );
         expect(
             d,
-            "DroppedField",
+            "visual/failed_to_parse",
             Severity::Error,
             "Failed to parse 'pre_animation'!",
         );
         let dropped = d
             .iter()
-            .position(|f| f.code.name() == "DroppedField")
+            .position(|f| f.code.id() == "visual/failed_to_parse")
             .unwrap();
-        let first_invalid = d.iter().position(|f| f.code.name() == INVALID).unwrap();
+        let first_invalid = d.iter().position(|f| f.code.id() == INVALID).unwrap();
         assert!(first_invalid < dropped);
         // That script is dropped; the others stay.
         let scripts = document.description.slots.scripts.as_ref().unwrap();
@@ -394,19 +404,19 @@ mod compiled {
         let d = document.diagnostics();
         expect(
             d,
-            "DroppedField",
+            "visual/failed_to_parse",
             Severity::Error,
             "Failed to parse 'pre_animation'!",
         );
         expect(
             d,
-            "DroppedField",
+            "visual/failed_to_parse",
             Severity::Error,
             "Failed to parse 'initialize'!",
         );
         expect_at(
             d,
-            "DroppedField",
+            "visual/failed_to_parse",
             Severity::Error,
             "minecraft:attachable/description/scripts/pre_animation",
         );
@@ -414,7 +424,7 @@ mod compiled {
         // past, kept errors.
         let parser: Vec<(Severity, bool)> = d
             .iter()
-            .filter(|f| f.code.name() == "InvalidMolang")
+            .filter(|f| f.code.id() == "core/invalid_molang")
             .map(|f| (f.severity, f.kept))
             .collect();
         assert_eq!(
@@ -486,8 +496,18 @@ fn without_the_molang_feature_nothing_compiles() {
     for version in ["1.10.0", "1.26.0"] {
         let document = loaded(attachable(&ghost(version, members), &cx()));
         none(document.diagnostics(), INVALID);
-        none(document.diagnostics(), "DroppedField");
-        assert!(find(document.diagnostics(), "MolangNotChecked", Severity::Info).is_some());
+        none_of_kind(
+            document.diagnostics(),
+            Kind::UnknownMember(Disposition::Dropped),
+        );
+        assert!(
+            find(
+                document.diagnostics(),
+                "core/molang_not_checked",
+                Severity::Info
+            )
+            .is_some()
+        );
         assert!(document.pre_animation().is_some());
     }
 }

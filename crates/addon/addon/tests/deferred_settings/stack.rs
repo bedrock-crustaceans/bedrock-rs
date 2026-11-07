@@ -182,13 +182,13 @@ fn c10_the_higher_pack_wins_per_identifier_deviation() {
         located(settings.diagnostics(), Severity::Info),
         [
             (
-                "ShadowedDefinition",
+                "core/shadowed_definition",
                 Some(1),
                 "lighting/middle.json".to_owned(),
                 "definition shadowed by a higher-priority source".to_owned()
             ),
             (
-                "ShadowedDefinition",
+                "core/shadowed_definition",
                 Some(2),
                 "lighting/bottom.json".to_owned(),
                 "definition shadowed by a higher-priority source".to_owned()
@@ -222,20 +222,20 @@ fn c11_e8_the_second_file_of_an_identifier_in_one_pack_is_an_error() {
         located(settings.diagnostics(), Severity::Error),
         [
             (
-                "DuplicateIdentifier",
+                "deferred_settings/identifier_in_pack",
                 Some(0),
                 "lighting/b.json".to_owned(),
                 text.to_owned()
             ),
             (
-                "DuplicateIdentifier",
+                "deferred_settings/identifier_in_pack",
                 Some(0),
                 "lighting/c.json".to_owned(),
                 text.to_owned()
             ),
             // The check is per pack: the lower pack's second file too.
             (
-                "DuplicateIdentifier",
+                "deferred_settings/identifier_in_pack",
                 Some(1),
                 "lighting/z.json".to_owned(),
                 text.to_owned()
@@ -247,7 +247,7 @@ fn c11_e8_the_second_file_of_an_identifier_in_one_pack_is_an_error() {
     assert_eq!(
         located(settings.diagnostics(), Severity::Info),
         [(
-            "ShadowedDefinition",
+            "core/shadowed_definition",
             Some(1),
             "lighting/y.json".to_owned(),
             "definition shadowed by a higher-priority source".to_owned()
@@ -282,14 +282,14 @@ fn c12_a_file_that_fails_does_not_hide_a_lower_packs() {
             .iter()
             .map(|f| (f.0, f.1, f.2.as_str()))
             .collect::<Vec<_>>(),
-        [("InvalidValue", Some(0), "water/foo.json")]
+        [("core/outside_accepted_range", Some(0), "water/foo.json")]
     );
     assert_eq!(
         located(settings.diagnostics(), Severity::Info)
             .iter()
             .map(|f| (f.0, f.1, f.2.as_str()))
             .collect::<Vec<_>>(),
-        [("ShadowedDefinition", Some(2), "water/baz.json")]
+        [("core/shadowed_definition", Some(2), "water/baz.json")]
     );
 }
 
@@ -313,7 +313,7 @@ fn c13_the_default_identifier_is_the_top_loadable_default_files() {
             .iter()
             .map(|f| (f.0, f.1, f.2.as_str()))
             .collect::<Vec<_>>(),
-        [("MalformedInput", Some(0), "lighting/global.json")]
+        [("core/document_json", Some(0), "lighting/global.json")]
     );
 }
 
@@ -391,7 +391,7 @@ fn a_default_file_without_an_identifier_leaves_the_choice_to_a_lower_pack() {
             .iter()
             .map(|f| (f.0, f.1, f.2.as_str()))
             .collect::<Vec<_>>(),
-        [("MissingIdentifier", Some(0), "lighting/global.json")]
+        [("core/missing_identifier", Some(0), "lighting/global.json")]
     );
     assert_eq!(located(settings.diagnostics(), Severity::Error), []);
     assert!(settings.lighting.rejected().is_empty());
@@ -467,14 +467,14 @@ fn h05_the_highest_loadable_single_file_wins_deviation() {
             .iter()
             .map(|f| (f.0, f.1))
             .collect::<Vec<_>>(),
-        [("InvalidValue", Some(0))]
+        [("core/outside_accepted_range", Some(0))]
     );
     assert_eq!(
         located(settings.diagnostics(), Severity::Info)
             .iter()
             .map(|f| (f.0, f.1, f.2.as_str()))
             .collect::<Vec<_>>(),
-        [("ShadowedDefinition", Some(2), "shadows/global.json")]
+        [("core/shadowed_definition", Some(2), "shadows/global.json")]
     );
     let all = stack(&[
         &[("shadows/global.json", shadows(8))],
@@ -492,8 +492,8 @@ fn h05_the_highest_loadable_single_file_wins_deviation() {
             .map(|f| (f.0, f.1))
             .collect::<Vec<_>>(),
         [
-            ("ShadowedDefinition", Some(1)),
-            ("ShadowedDefinition", Some(2))
+            ("core/shadowed_definition", Some(1)),
+            ("core/shadowed_definition", Some(2))
         ]
     );
     assert_eq!(settings.diagnostics().count(), 2);
@@ -516,7 +516,7 @@ fn p3_the_highest_loadable_pbr_file_wins_deviation() {
             .iter()
             .map(|f| (f.0, f.1, f.2.as_str()))
             .collect::<Vec<_>>(),
-        [("ShadowedDefinition", Some(2), "pbr/global.json")]
+        [("core/shadowed_definition", Some(2), "pbr/global.json")]
     );
 }
 
@@ -574,7 +574,7 @@ fn t02_local_lights_merge_per_block_deviation() {
         .diagnostics()
         .map(|f| {
             (
-                f.code.name(),
+                f.code.id(),
                 f.severity,
                 f.location
                     .pack
@@ -588,19 +588,19 @@ fn t02_local_lights_merge_per_block_deviation() {
         found,
         [
             (
-                "ShadowedDefinition",
+                "core/shadowed_definition",
                 Severity::Info,
                 Some(1),
                 "minecraft:local_light_settings/minecraft:torch".to_owned()
             ),
             (
-                "ShadowedDefinition",
+                "core/shadowed_definition",
                 Severity::Info,
                 Some(2),
                 "minecraft:local_light_settings/minecraft:torch".to_owned()
             ),
             (
-                "ShadowedDefinition",
+                "core/shadowed_definition",
                 Severity::Info,
                 Some(2),
                 "minecraft:local_light_settings/minecraft:lantern".to_owned()
@@ -636,7 +636,7 @@ fn t3a_a_local_light_file_that_fails_contributes_nothing() {
             .iter()
             .map(|f| (f.0, f.1))
             .collect::<Vec<_>>(),
-        [("InvalidEnumValue", Some(0))]
+        [("core/invalid_enum_value", Some(0))]
     );
     assert_eq!(located(settings.diagnostics(), Severity::Info), []);
 }
@@ -670,7 +670,7 @@ fn c20_h04_t03_c15_files_the_game_does_not_read_are_not_read_deviation() {
     // silent), in the order of the pack's listing; the two files that are read get none.
     let ignored = |path: &str| {
         (
-            "IgnoredFile",
+            "core/ignored_file",
             Some(0),
             path.to_owned(),
             "file ignored".to_owned(),
@@ -714,7 +714,7 @@ fn ignored_files_are_reported_per_pack_from_the_top_and_only_below_the_settings_
     assert_eq!(located(settings.diagnostics(), Severity::Error), []);
     let ignored = |pack: usize, path: &str| {
         (
-            "IgnoredFile",
+            "core/ignored_file",
             Some(pack),
             path.to_owned(),
             "file ignored".to_owned(),
@@ -747,7 +747,7 @@ fn a_nested_local_light_file_is_read_by_its_suffix_deviation() {
     assert_eq!(
         located(settings.diagnostics(), Severity::Info),
         [(
-            "IgnoredFile",
+            "core/ignored_file",
             Some(0),
             "local_lighting/more/local_lighting.json".to_owned(),
             "file ignored".to_owned()
@@ -830,7 +830,7 @@ fn link_warnings(d: &Diagnostics) -> Vec<(&'static str, String, String, String)>
         .inspect(|f| assert!(f.severity == Severity::Error && f.kept, "{f:?}"))
         .map(|f| {
             (
-                f.code.name(),
+                f.code.id(),
                 f.location
                     .path
                     .as_ref()
@@ -861,7 +861,7 @@ fn t04_t05_a_local_light_of_no_block_is_an_unresolved_reference_warning() {
     assert_eq!(
         link_warnings(&d),
         [(
-            "UnresolvedReference",
+            "deferred_settings/not_a_block",
             "local_lighting/local_lighting.json".to_owned(),
             "minecraft:local_light_settings/demo:nothing".to_owned(),
             "demo:nothing is not a block".to_owned()
@@ -923,13 +923,13 @@ fn w06_a_caustics_texture_that_is_missing_or_misshapen_is_a_warning() {
         link_warnings(&d),
         [
             (
-                "TextureNotFound",
+                "deferred_settings/caustics_not_found",
                 "water/missing.json".to_owned(),
                 "minecraft:water_settings/caustics/texture".to_owned(),
                 "Resource pack caustics texture could not be loaded. No texture could be found at \"textures/environment/none\".".to_owned()
             ),
             (
-                "InvalidTexture",
+                "deferred_settings/caustics_frames",
                 "water/uneven.json".to_owned(),
                 "minecraft:water_settings/caustics/texture".to_owned(),
                 "Caustics texture \"textures/environment/uneven\" provided in resource pack does not evenly divide into frames. Ensure the texture height is evenly divisible by the width.".to_owned()
@@ -986,8 +986,8 @@ fn hinted(packs: Vec<bedrock_addon::pack::Pack>) -> Vec<Option<usize>> {
         .diagnostics()
         .map(|f| {
             assert_eq!(
-                (f.code.name(), f.severity, f.location.path.as_ref()),
-                ("CapabilityHint", Severity::Info, None),
+                (f.code.id(), f.severity, f.location.path.as_ref()),
+                ("deferred_settings/pbr_capability_hint", Severity::Info, None),
                 "{f:?}"
             );
             // The folder's sentence.
@@ -1137,14 +1137,14 @@ fn a_lower_single_file_that_fails_keeps_its_findings_deviation() {
             .iter()
             .map(|f| (f.0, f.1))
             .collect::<Vec<_>>(),
-        [("InvalidValue", Some(1))]
+        [("core/outside_accepted_range", Some(1))]
     );
     assert_eq!(
         located(settings.diagnostics(), Severity::Info)
             .iter()
             .map(|f| (f.0, f.1))
             .collect::<Vec<_>>(),
-        [("ShadowedDefinition", Some(2))]
+        [("core/shadowed_definition", Some(2))]
     );
     assert_eq!(settings.shadows.rejected().len(), 1);
 }
@@ -1167,8 +1167,8 @@ fn an_empty_identifier_is_not_indexed_and_names_no_default() {
             .map(|f| (f.0, f.1, f.2.as_str()))
             .collect::<Vec<_>>(),
         [
-            ("NamespaceRule", Some(0), "lighting/global.json"),
-            ("MissingIdentifier", Some(0), "lighting/global.json")
+            ("core/namespace_rule", Some(0), "lighting/global.json"),
+            ("core/missing_identifier", Some(0), "lighting/global.json")
         ]
     );
 }

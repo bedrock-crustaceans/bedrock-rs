@@ -1,12 +1,13 @@
 //! How one `sounds.json` reads outside a stack and in one: a single copy does not judge a
 //! `base` it cannot see, and the member vanilla's own file carries beside `sound`.
 
+use bedrock_addon::diagnostic::Kind;
 use bedrock_addon::document::Content;
 use bedrock_addon::families::sounds_json::SoundBindings;
 use bedrock_addon::load::LoadContext;
 use bedrock_addon::storage::PackPath;
 
-use super::common::{BINDINGS, copies, expect_clean, found};
+use super::common::{BINDINGS, Findable, copies, expect_clean, found};
 
 #[test]
 fn a_single_copy_does_not_judge_a_base_it_cannot_see() {
@@ -18,13 +19,9 @@ fn a_single_copy_does_not_judge_a_base_it_cannot_see() {
         &LoadContext::detached(),
     )
     .expect("the file loads");
-    let codes: Vec<&str> = document
-        .diagnostics()
-        .iter()
-        .map(|d| d.code.name())
-        .collect();
+    let codes: Vec<&str> = document.diagnostics().iter().map(|d| d.code.id()).collect();
     // A cycle is in the file itself; the unknown base may be a lower pack's.
-    assert_eq!(codes, ["ReferenceCycle"]);
+    assert_eq!(codes, ["sounds_json/recursive_base"]);
     assert_eq!(
         document.block_sound("known", "hit").unwrap().sound,
         "hit.stone"
@@ -32,11 +29,20 @@ fn a_single_copy_does_not_judge_a_base_it_cannot_see() {
     assert!(document.block_sound("copper_chest", "hit").is_none());
     // The stack, which sees every copy, reports it.
     let stack = copies(BINDINGS, &[text]);
-    assert_eq!(found(stack.sounds_json(), "UnresolvedReference").len(), 1);
+    assert_eq!(
+        found(stack.sounds_json(), "sounds_json/unknown_base").len(),
+        1
+    );
     // And resolves it when a lower pack defines the base.
     let lower = r#"{"block_sounds": {"copper": {"events": {"hit": "hit.copper"}}}}"#;
     let stack = copies(BINDINGS, &[lower, text]);
-    assert!(found(stack.sounds_json(), "UnresolvedReference").is_empty());
+    assert!(
+        stack
+            .sounds_json()
+            .findings()
+            .iter()
+            .all(|d| d.code.kind() != Kind::UnresolvedReference)
+    );
     assert_eq!(
         stack
             .sounds_json()

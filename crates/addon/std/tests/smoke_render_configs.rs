@@ -160,8 +160,8 @@ fn load_pack(driver: &mut Driver, root: &Path, outcome: &mut Outcome) {
             finding.code,
         );
         match finding.severity {
-            Severity::Warning => outcome.warnings.push(finding.code.name().to_owned()),
-            Severity::Info => outcome.infos.push(finding.code.name().to_owned()),
+            Severity::Warning => outcome.warnings.push(finding.code.id().to_owned()),
+            Severity::Info => outcome.infos.push(finding.code.id().to_owned()),
             _ => {}
         }
         if finding.severity < Severity::Error {
@@ -315,7 +315,7 @@ fn client_install_b_settings_load_without_errors() {
         [15, 17, 2, 14, 1, 1, 0, 0],
         0,
         &[],
-        &["1 × DroppedField"],
+        &["1 × core/dropped_field"],
     );
 }
 
@@ -332,6 +332,6 @@ fn client_install_a_settings_load_without_errors() {
         [15, 17, 2, 14, 1, 1, 0, 1],
         96,
         &[],
-        &["1 × DroppedField"],
+        &["1 × core/dropped_field"],
     );
 }

@@ -30,19 +30,19 @@ resolution = "not_found"
 hint = "EscapesRoot"
 
 [[diagnostics]]
-code = "ScriptImportNotFound"
+code = "core/script_import_not_found"
 severity = "info"
 text = "ReferenceError: Import [libx.js] not found."
 file = "scripts/main.js"
 
 [[diagnostics]]
-code = "ScriptImportNotFound"
+code = "core/script_import_not_found"
 severity = "info"
 text = "ReferenceError: Import [libx.js] not found."
 file = "scripts/main.js"
 
 [[diagnostics]]
-code = "ScriptImportNotFound"
+code = "core/script_import_not_found"
 severity = "info"
 text = "ReferenceError: Import [../../libpack/scripts/libx.js] not found."
 file = "scripts/main.js"

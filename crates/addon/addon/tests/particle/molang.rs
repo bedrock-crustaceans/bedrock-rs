@@ -40,15 +40,8 @@ fn num_particles(effect: &ParticleEffect) -> Molang {
 fn molang_findings(d: &Diagnostics) -> Vec<String> {
     d.iter()
         // By legacy name: the variant and the definitions that were it.
-        .filter(|f| matches!(f.code.name(), "InvalidMolang" | "MolangLint"))
-        .map(|f| {
-            format!(
-                "{:?} {} {}",
-                f.severity,
-                f.location.json_path,
-                f.code.name()
-            )
-        })
+        .filter(|f| matches!(f.code.id(), "core/invalid_molang" | "core/molang_lint"))
+        .map(|f| format!("{:?} {} {}", f.severity, f.location.json_path, f.code.id()))
         .collect()
 }
 
@@ -105,7 +98,7 @@ fn p25_molang_forms() {
     assert_eq!(
         texts(&rejected(&rate(CEREAL, "true"))),
         [
-            "Error particle_effect/components/minecraft:emitter_rate_instant/num_particles InvalidType: wrong JSON type"
+            "Error particle_effect/components/minecraft:emitter_rate_instant/num_particles core/invalid_type: wrong JSON type"
         ]
     );
     // An empty expression is no expression: not compiled, nothing said.
@@ -134,7 +127,7 @@ fn without_the_molang_feature_the_expressions_are_counted_and_kept() {
     assert_eq!(
         texts(effect.diagnostics()),
         [
-            "Info particle_effect MolangNotChecked: 3 Molang field(s) not checked: the `molang` feature is off"
+            "Info particle_effect core/molang_not_checked: 3 Molang field(s) not checked: the `molang` feature is off"
         ]
     );
     let sphere = effect.components.get::<EmitterShapeSphere>().unwrap();
@@ -159,7 +152,7 @@ fn p26_molang_version_edges() {
     assert_eq!(num_particles(&future), object("query.is_baby", 99));
     let found = molang_findings(future.diagnostics());
     assert!(
-        found.contains(&format!("Error {at} InvalidMolang")),
+        found.contains(&format!("Error {at} core/invalid_molang")),
         "{found:#?}"
     );
     let messages: Vec<String> = future
@@ -230,7 +223,7 @@ fn p28_molang_legacy_failure() {
     assert_eq!(radius(&legacy), Some(number(1.0)));
     assert_eq!(
         molang_findings(legacy.diagnostics()),
-        [format!("Error {at} InvalidMolang")]
+        [format!("Error {at} core/invalid_molang")]
     );
     assert!(
         !legacy.diagnostics().has_errors(),
@@ -243,7 +236,7 @@ fn p28_molang_legacy_failure() {
     );
     assert_eq!(
         molang_findings(cereal.diagnostics()),
-        [format!("Error {at} InvalidMolang")]
+        [format!("Error {at} core/invalid_molang")]
     );
     assert!(
         !cereal.diagnostics().has_errors(),
@@ -259,7 +252,7 @@ fn p28_molang_legacy_failure() {
     );
     assert_eq!(
         molang_findings(event.diagnostics()),
-        ["Error particle_effect/events/e/expression InvalidMolang"]
+        ["Error particle_effect/events/e/expression core/invalid_molang"]
     );
     assert!(
         !event.diagnostics().has_errors(),
@@ -280,9 +273,9 @@ fn a_rejected_expression_behind_a_node_left_out_is_at_the_index_of_the_file() {
     assert_eq!(
         molang_findings(event.diagnostics()),
         [
-            format!("{at}/sequence/1/expression InvalidMolang"),
-            format!("{at}/randomize/1/sequence/2/expression InvalidMolang"),
-            format!("{at}/randomize/1/expression InvalidMolang"),
+            format!("{at}/sequence/1/expression core/invalid_molang"),
+            format!("{at}/randomize/1/sequence/2/expression core/invalid_molang"),
+            format!("{at}/randomize/1/expression core/invalid_molang"),
         ]
     );
 }
@@ -331,9 +324,9 @@ fn a_rejected_legacy_member_becomes_its_own_default() {
     let mut found = molang_findings(effect.diagnostics());
     found.dedup();
     assert_eq!(found.len(), 7, "{found:#?}");
-    assert!(
-        found.contains(&"Error particle_effect/curves/variable.c/nodes/0 InvalidMolang".to_owned())
-    );
+    assert!(found.contains(
+        &"Error particle_effect/curves/variable.c/nodes/0 core/invalid_molang".to_owned()
+    ));
     // The upgraded document, read again, has nothing left to report.
     let again = loaded(&bedrock_addon::document::Content::to_json(effect.value()).unwrap());
     assert_eq!(texts(again.diagnostics()), [] as [&str; 0]);

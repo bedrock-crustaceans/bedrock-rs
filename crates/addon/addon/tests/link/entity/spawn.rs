@@ -22,7 +22,12 @@ fn rules(id: &str, condition: &str) -> String {
 
 fn at(path: &str, severity: Severity, kind: &'static str, id: &str) -> Said {
     (
-        "UnresolvedReference",
+        // The game words the errors; an information is ours.
+        if severity == Severity::Info {
+            "core/unresolved_reference"
+        } else {
+            "core/unresolved_reference_worded"
+        },
         severity,
         RULES.to_owned(),
         format!("minecraft:spawn_rules/{path}"),
@@ -211,7 +216,7 @@ fn sr1_sr2_a_spawn_group_is_checked_like_spawn_rules() {
                 return None;
             };
             Some((
-                finding.code.name(),
+                finding.code.id(),
                 finding.severity,
                 finding.location.path.as_ref()?.as_str().to_owned(),
                 finding.location.json_path.to_string(),
@@ -229,7 +234,11 @@ fn sr1_sr2_a_spawn_group_is_checked_like_spawn_rules() {
             Severity::Error
         };
         (
-            "UnresolvedReference",
+            if severity == Severity::Info {
+                "core/unresolved_reference"
+            } else {
+                "core/unresolved_reference_worded"
+            },
             severity,
             "definitions/spawn_groups/raid.json".to_owned(),
             format!("minecraft:spawn_groups/conditions/0/minecraft:{path}"),

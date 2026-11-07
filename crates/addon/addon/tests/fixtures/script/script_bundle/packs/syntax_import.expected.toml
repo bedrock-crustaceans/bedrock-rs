@@ -14,7 +14,7 @@ normalized = "bad.js"
 resolution = "file"
 
 [[diagnostics]]
-code = "ScriptSyntaxError"
+code = "core/script_syntax_error"
 severity = "error"
 text = "syntax error in a script file"
 file = "scripts/bad.js"

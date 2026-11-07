@@ -126,7 +126,7 @@ mod group_name {
         assert_eq!(
             told(&found),
             [(
-                "UnresolvedLangKey",
+                "core/unresolved_lang_key",
                 Severity::Info,
                 format!("{GROUP}/group_identifier/name"),
                 "demo:gems".to_owned()
@@ -190,13 +190,13 @@ fn m3_an_item_placed_outside_its_own_category_and_group_is_vanillas_two_warnings
         told(&found),
         [
             (
-                "InvalidValue",
+                "crafting_catalog/category_mismatch",
                 Severity::Warning,
                 format!("{GROUP}/items/0"),
                 "The item demo:gem was created with the category set to 'nature', and is now being set to 'construction'".to_owned()
             ),
             (
-                "InvalidValue",
+                "crafting_catalog/group_mismatch",
                 Severity::Warning,
                 format!("{GROUP}/items/0"),
                 "The item demo:gem was created with the group set to 'demo:stones', but is now being set to 'demo:gems'".to_owned()

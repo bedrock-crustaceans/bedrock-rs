@@ -634,18 +634,14 @@ mod tests {
                 })
                 .map(|finding| {
                     let pack = finding.location.pack.as_ref().expect("its pack");
-                    (
-                        pack.name().to_owned(),
-                        finding.code.name(),
-                        finding.severity,
-                    )
+                    (pack.name().to_owned(), finding.code.id(), finding.severity)
                 })
                 .collect();
             found.sort();
             found
         };
-        let missing = |name: &str| (name.to_owned(), "PackIconMissing", Severity::Info);
-        let refused = ("not png".to_owned(), "InvalidValue", Severity::Info);
+        let missing = |name: &str| (name.to_owned(), "core/pack_icon_missing", Severity::Info);
+        let refused = ("not png".to_owned(), "core/invalid_value", Severity::Info);
         // Each stack says it of its own packs.
         assert_eq!(
             icons(&set.behavior.report()),

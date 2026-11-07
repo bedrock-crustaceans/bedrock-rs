@@ -121,7 +121,7 @@ fn a_side_file_that_is_no_json_object_is_rejected() {
         let finding = rejected.diagnostics.iter().next().unwrap();
         assert!(
             // By legacy name: the variant and the definitions that were it.
-            matches!(finding.code.name(), "MalformedInput"),
+            matches!(finding.code.id(), "core/syntax"),
             "{text}"
         );
         assert_eq!(finding.severity, Severity::Error);

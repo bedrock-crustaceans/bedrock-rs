@@ -2,7 +2,7 @@
 //! packs, and the creation of the materials.
 
 use bedrock_addon::diagnostic::Severity::{Error, Info};
-use bedrock_addon::diagnostic::{Diagnostic, DiagnosticDetail};
+use bedrock_addon::diagnostic::{Diagnostic, DiagnosticDetail, Kind};
 use bedrock_addon::families::material::{
     KeyRules, MaterialFileForm, MaterialGroupKind, MaterialKey, MaterialListKind, Materials,
 };
@@ -278,7 +278,7 @@ fn s05_a_copy_that_is_no_json_is_skipped_and_the_other_copies_merge() {
     let ((code, severity, at, text), pack, file) = &found[0];
     assert_eq!(
         (*code, *severity, at.as_str()),
-        ("MalformedInput", Error, "")
+        ("material/parse_error", Error, "")
     );
     assert!(
         text.starts_with("Error parsing materials/entity.material :\n "),
@@ -308,7 +308,7 @@ fn the_drop_4_empty_entity_material_is_skipped_with_the_parse_error() {
     let ((code, severity, at, text), pack, file) = &found[0];
     assert_eq!(
         (*code, *severity, at.as_str()),
-        ("MalformedInput", Error, "")
+        ("material/parse_error", Error, "")
     );
     assert!(
         text.starts_with("Error parsing materials/entity.material :\n "),
@@ -329,7 +329,7 @@ fn a_copy_whose_root_is_no_object_is_skipped_with_an_error() {
     let materials = stack.materials();
     assert_eq!(
         all(materials),
-        [finding("InvalidType", Error, "", "wrong JSON type")]
+        [finding("core/invalid_type", Error, "", "wrong JSON type")]
     );
     assert!(materials.common.contains("x"));
 }
@@ -343,7 +343,7 @@ fn s06_v20_a_key_that_drops_the_parent_of_the_key_below_is_reported_deviation() 
         placed(materials),
         [(
             finding(
-                "ShadowedDefinition",
+                "core/shadowed_definition",
                 Info,
                 "materials/entity_alphatest",
                 "definition shadowed by a higher-priority source"
@@ -382,7 +382,7 @@ fn v20_a_changed_parent_is_reported_once_by_the_pack_that_changes_it_deviation()
     ]);
     let found = placed(stack.materials());
     assert_eq!(found.len(), 1);
-    assert_eq!(found[0].0.0, "ShadowedDefinition");
+    assert_eq!(found[0].0.0, "core/shadowed_definition");
     assert_eq!(found[0].0.2, "materials/x:q");
     assert_eq!(found[0].1.as_deref(), Some("pack 2"));
     assert_eq!(
@@ -412,7 +412,7 @@ fn g07_v17_a_barrier_file_no_list_asks_for_is_not_loaded_deviation() {
     assert_eq!(
         placed(materials),
         [(
-            finding("IgnoredFile", Info, "", "file ignored"),
+            finding("core/ignored_file", Info, "", "file ignored"),
             Some("pack 2".to_owned()),
             Some(BARRIER.to_owned())
         )]
@@ -444,7 +444,7 @@ fn g08_a_request_for_the_barrier_file_falls_back_to_the_sprite_file_of_each_pack
         [
             (
                 finding(
-                    "ShadowedDefinition",
+                    "core/shadowed_definition",
                     Info,
                     "",
                     "definition shadowed by a higher-priority source"
@@ -456,7 +456,7 @@ fn g08_a_request_for_the_barrier_file_falls_back_to_the_sprite_file_of_each_pack
             // already has from the barrier request (V18).
             (
                 finding(
-                    "DuplicateIdentifier",
+                    "core/duplicate_identifier",
                     Info,
                     "materials/camera_facing_sprite",
                     "duplicate identifier"
@@ -494,8 +494,8 @@ fn g08_a_pack_with_its_own_barrier_file_contributes_that_one() {
     assert_eq!(
         fallbacks,
         [
-            ("ShadowedDefinition", Some("pack 1")),
-            ("ShadowedDefinition", Some("pack 3"))
+            ("core/shadowed_definition", Some("pack 1")),
+            ("core/shadowed_definition", Some("pack 3"))
         ]
     );
     assert_eq!(names(&materials.common), ["low", "mid", "shared", "top"]);
@@ -515,7 +515,7 @@ fn g08_a_pack_with_its_own_barrier_file_contributes_that_one() {
     // The middle pack's sprite file is asked for by nobody.
     assert!(!materials.common.contains("unused"));
     // No V17: a list asks for the barrier file.
-    assert!(found.iter().all(|f| f.0.0 != "IgnoredFile"));
+    assert!(materials.diagnostics().all(|f| f.code.kind() != Kind::Io));
 }
 
 #[test]
@@ -581,12 +581,12 @@ fn s08_v19_a_path_listed_twice_in_one_list_is_used_once_deviation() {
         placed(materials),
         [
             (
-                finding("NoEffect", Info, "2", "member has no effect"),
+                finding("core/no_effect", Info, "2", "member has no effect"),
                 Some("pack 1".to_owned()),
                 Some(COMMON.to_owned())
             ),
             (
-                finding("NoEffect", Info, "3", "member has no effect"),
+                finding("core/no_effect", Info, "3", "member has no effect"),
                 Some("pack 1".to_owned()),
                 Some(COMMON.to_owned())
             ),
@@ -611,7 +611,10 @@ fn v19_a_path_two_packs_list_once_each_says_nothing_and_twice_in_the_lower_one_d
     ]);
     let found = placed(twice.materials());
     assert_eq!(found.len(), 1);
-    assert_eq!((found[0].0.0, found[0].0.2.as_str()), ("NoEffect", "1"));
+    assert_eq!(
+        (found[0].0.0, found[0].0.2.as_str()),
+        ("core/no_effect", "1")
+    );
     assert_eq!(found[0].1.as_deref(), Some("pack 1"));
     // The same path in two different lists is two loads.
     let both = stack(&[&[(COMMON, &list(&[A])), (FANCY, &list(&[A])), (A, &file)]]);
@@ -630,7 +633,7 @@ fn m03_v13_a_parent_the_file_does_not_define_leaves_the_material_uncreated_devia
     assert_eq!(
         all(materials),
         [finding(
-            "UnresolvedReference",
+            "core/unresolved_reference",
             Info,
             "materials/x:does_not_exist",
             "unresolved reference"
@@ -664,7 +667,14 @@ fn m04_v13_a_cycle_leaves_every_material_of_it_uncreated_deviation() {
         ),
     ]]);
     let materials = stack.materials();
-    let unresolved = |at: &str| finding("UnresolvedReference", Info, at, "unresolved reference");
+    let unresolved = |at: &str| {
+        finding(
+            "core/unresolved_reference",
+            Info,
+            at,
+            "unresolved reference",
+        )
+    };
     assert_eq!(
         all(materials),
         [
@@ -702,7 +712,7 @@ fn m14_v13_a_parent_in_another_file_of_the_group_does_not_resolve_deviation() {
     assert_eq!(
         all(materials),
         [finding(
-            "UnresolvedReference",
+            "core/unresolved_reference",
             Info,
             "materials/my:entity_alphatest",
             "unresolved reference"
@@ -772,7 +782,7 @@ fn m16_v18_a_later_definition_of_an_existing_name_is_ignored_deviation() {
         placed(materials),
         [(
             finding(
-                "DuplicateIdentifier",
+                "core/duplicate_identifier",
                 Info,
                 "materials/x",
                 "duplicate identifier"
@@ -798,8 +808,8 @@ fn v18_is_reported_by_each_later_file_and_not_within_one_file_deviation() {
     assert_eq!(
         files,
         [
-            ("DuplicateIdentifier", Some(B)),
-            ("DuplicateIdentifier", Some(c))
+            ("core/duplicate_identifier", Some(B)),
+            ("core/duplicate_identifier", Some(c))
         ]
     );
     // Two keys of one name in one file are V2's, once.
@@ -809,7 +819,10 @@ fn v18_is_reported_by_each_later_file_and_not_within_one_file_deviation() {
         .into_iter()
         .map(|f| (f.0, f.2))
         .collect();
-    assert_eq!(codes, [("DuplicateIdentifier", "materials/x:q".to_owned())]);
+    assert_eq!(
+        codes,
+        [("material/defined_twice", "materials/x:q".to_owned())]
+    );
     assert_eq!(
         stack.materials().common.get("x").unwrap().parent.as_deref(),
         Some("p")
@@ -846,7 +859,7 @@ fn materials_are_created_parent_first_in_key_order() {
 /// The V26 finding at `at` for the variant `name`.
 fn replaced(at: &str, name: &str) -> Rendered {
     finding(
-        "ShadowedDefinition",
+        "material/variant_replaced",
         Info,
         at,
         &format!("Variant: {name} was replaced with a new version"),
@@ -907,7 +920,14 @@ fn variants_beside_plus_variants_is_the_one_that_is_read() {
 
 #[test]
 fn v11_a_nested_variant_needs_its_parent_variant_first_deviation() {
-    let missing = |at: &str| finding("UnresolvedReference", Info, at, "unresolved reference");
+    let missing = |at: &str| {
+        finding(
+            "core/unresolved_reference",
+            Info,
+            at,
+            "unresolved reference",
+        )
+    };
     let file = wrapped(
         r#""p": {"variants": [{"a.b": {}}, {"a": {}}, {"a.b": {}}, {"a.b.c": {}}, {"x.y.z": {}}]},
            "adds:p": {"+variants": [{"a.d": {}}]},
@@ -957,14 +977,19 @@ fn v4_a_material_with_an_unknown_keyword_is_refused_and_keeps_its_name_taken_dev
     assert_eq!(
         found,
         [
-            at("InvalidValue", Error, "materials/bad/blendSrc", A),
-            at("UnresolvedReference", Info, "materials/kid:bad", A),
-            at("UnresolvedReference", Info, "materials/grandkid:kid", A),
+            at("core/invalid_value", Error, "materials/bad/blendSrc", A),
+            at("core/unresolved_reference", Info, "materials/kid:bad", A),
+            at(
+                "core/unresolved_reference",
+                Info,
+                "materials/grandkid:kid",
+                A
+            ),
             // The later file does not stand in for the refused material: neither its own
             // definition, nor an extension, nor a child.
-            at("UnresolvedReference", Info, "materials/+bad", B),
-            at("DuplicateIdentifier", Info, "materials/bad", B),
-            at("UnresolvedReference", Info, "materials/later:bad", B),
+            at("core/unresolved_reference", Info, "materials/+bad", B),
+            at("core/duplicate_identifier", Info, "materials/bad", B),
+            at("core/unresolved_reference", Info, "materials/later:bad", B),
         ]
     );
     assert_eq!(names(&materials.common), ["ok"]);
@@ -987,11 +1012,15 @@ fn v4_a_refused_keyword_in_a_variant_body_or_an_extension_refuses_that_much() {
         codes,
         [
             (
-                "InvalidValue",
+                "core/invalid_value",
                 Error,
                 "materials/x/variants/0/v/depthFunc".to_owned()
             ),
-            ("InvalidValue", Error, "materials/+y/msaaSupport".to_owned()),
+            (
+                "core/invalid_value",
+                Error,
+                "materials/+y/msaaSupport".to_owned()
+            ),
         ]
     );
     // `x` is refused whole; `y` stays as the first file made it.
@@ -1036,8 +1065,8 @@ fn a_winning_key_whose_parent_does_not_resolve_does_not_fall_back_to_the_key_bel
         assert_eq!(
             codes,
             [
-                ("ShadowedDefinition", "materials/x:nope".to_owned()),
-                ("UnresolvedReference", "materials/x:nope".to_owned())
+                ("core/shadowed_definition", "materials/x:nope".to_owned()),
+                ("core/unresolved_reference", "materials/x:nope".to_owned())
             ]
         );
     }
@@ -1054,7 +1083,7 @@ fn an_uncreated_material_does_not_take_its_name_from_a_later_file() {
     let codes: Vec<_> = all(materials).into_iter().map(|f| (f.0, f.2)).collect();
     assert_eq!(
         codes,
-        [("UnresolvedReference", "materials/x:nope".to_owned())]
+        [("core/unresolved_reference", "materials/x:nope".to_owned())]
     );
     assert_eq!(materials.common.get("x").unwrap().file.as_str(), B);
 }
@@ -1072,7 +1101,7 @@ fn three_packs_a_refused_or_uncreated_top_definition_over_two_good_ones() {
     let refused = stack(&[base, &[(A, &other)], &[(A, &bad)]]);
     assert!(refused.materials().common.get("x").is_none());
     let codes: Vec<_> = all(refused.materials()).into_iter().map(|f| f.0).collect();
-    assert_eq!(codes, ["InvalidValue"]);
+    assert_eq!(codes, ["core/invalid_value"]);
     // V13 on top: the merged key is the top pack's, and its parent does not resolve.
     let orphan = wrapped(r#""x:nope": {}"#);
     let uncreated = stack(&[base, &[(A, &other)], &[(A, &orphan)]]);
@@ -1081,7 +1110,7 @@ fn three_packs_a_refused_or_uncreated_top_definition_over_two_good_ones() {
         .into_iter()
         .map(|f| f.0)
         .collect();
-    assert!(codes.contains(&"UnresolvedReference"), "{codes:?}");
+    assert!(codes.contains(&"core/unresolved_reference"), "{codes:?}");
 }
 
 #[test]
@@ -1149,9 +1178,13 @@ fn the_key_rules_of_a_material_are_those_of_the_highest_copy_that_names_it() {
     assert_eq!(
         found,
         [
-            ("ShadowedDefinition", "a:c".to_owned(), "pack 2".to_owned()),
             (
-                "NoEffect",
+                "core/shadowed_definition",
+                "a:c".to_owned(),
+                "pack 2".to_owned()
+            ),
+            (
+                "core/no_effect",
                 "materials/a/+states".to_owned(),
                 "pack 1".to_owned()
             ),
@@ -1188,12 +1221,17 @@ fn the_findings_of_a_copy_name_its_pack_and_those_of_the_merge_the_pack_that_wro
         [
             // Of the copies, lowest pack first: each at the path it has in its file, the
             // wrapper's member included.
-            at("DuplicateIdentifier", "materials/x:q", "pack 1", A),
-            at("UnsupportedVersion", "materials/version", "pack 2", A),
+            at("material/defined_twice", "materials/x:q", "pack 1", A),
+            at("core/unsupported_version", "materials/version", "pack 2", A),
             // Of the merged file, in its order: the top copy's members first. The top copy is
             // read flat (its wrapper does not pass the gate), the low one is wrapped.
-            at("UnrecognizedField", "y/varient", "pack 2", A),
-            at("InvalidValue", "materials/x:p/+states/0", "pack 1", A),
+            at("core/unrecognized_field", "y/varient", "pack 2", A),
+            at(
+                "material/state_unknown",
+                "materials/x:p/+states/0",
+                "pack 1",
+                A
+            ),
         ]
     );
 }
@@ -1208,13 +1246,18 @@ fn a_finding_names_the_pack_that_wrote_the_member_not_the_highest_pack_naming_th
         written(packs.materials()),
         [
             at(
-                "UnrecognizedField",
+                "core/unrecognized_field",
                 "materials/x/+vertexShader",
                 "pack 1",
                 A
             ),
-            at("InvalidValue", "materials/x/blendSrc", "pack 1", A),
-            at("InvalidValue", "materials/x/states/0", "pack 1", A),
+            at("core/invalid_value", "materials/x/blendSrc", "pack 1", A),
+            at(
+                "material/state_unknown",
+                "materials/x/states/0",
+                "pack 1",
+                A
+            ),
         ]
     );
     // Three packs: the middle one overrides one member with a bad value of its own, the top
@@ -1229,15 +1272,20 @@ fn a_finding_names_the_pack_that_wrote_the_member_not_the_highest_pack_naming_th
     assert_eq!(
         written(packs.materials()),
         [
-            at("InvalidValue", "materials/x/depthFunc", "pack 3", A),
+            at("core/invalid_value", "materials/x/depthFunc", "pack 3", A),
             at(
-                "UnrecognizedField",
+                "core/unrecognized_field",
                 "materials/x/+vertexShader",
                 "pack 1",
                 A
             ),
-            at("InvalidValue", "materials/x/blendSrc", "pack 2", A),
-            at("InvalidValue", "materials/x/states/0", "pack 1", A),
+            at("core/invalid_value", "materials/x/blendSrc", "pack 2", A),
+            at(
+                "material/state_unknown",
+                "materials/x/states/0",
+                "pack 1",
+                A
+            ),
         ]
     );
 }
@@ -1253,16 +1301,21 @@ fn a_finding_has_the_path_of_the_file_that_wrote_the_member_wrapped_or_flat() {
         written(packs.materials()),
         [
             // V20: the key that drops the parent, where pack 2 writes it.
-            at("ShadowedDefinition", "materials/x", "pack 2", A),
-            at("InvalidValue", "materials/x/depthFunc", "pack 2", A),
+            at("core/shadowed_definition", "materials/x", "pack 2", A),
+            at("core/invalid_value", "materials/x/depthFunc", "pack 2", A),
             at(
-                "InvalidValue",
+                "core/invalid_value",
                 "materials/x/frontFace/stencilPassOp",
                 "pack 2",
                 A
             ),
-            at("InvalidValue", "x:p/frontFace/stencilFunc", "pack 1", A),
-            at("InvalidValue", "x:p/blendSrc", "pack 1", A),
+            at(
+                "core/invalid_value",
+                "x:p/frontFace/stencilFunc",
+                "pack 1",
+                A
+            ),
+            at("core/invalid_value", "x:p/blendSrc", "pack 1", A),
         ]
     );
     // The reverse: the wrapped copy below, the flat one on top.
@@ -1272,8 +1325,8 @@ fn a_finding_has_the_path_of_the_file_that_wrote_the_member_wrapped_or_flat() {
     assert_eq!(
         written(packs.materials()),
         [
-            at("InvalidValue", "x/depthFunc", "pack 2", A),
-            at("InvalidValue", "materials/x/blendSrc", "pack 1", A),
+            at("core/invalid_value", "x/depthFunc", "pack 2", A),
+            at("core/invalid_value", "materials/x/blendSrc", "pack 1", A),
         ]
     );
 }
@@ -1293,13 +1346,13 @@ fn an_array_element_is_written_by_the_pack_whose_array_reaches_it() {
         written(packs.materials()),
         [
             at(
-                "InvalidValue",
+                "core/invalid_value",
                 "materials/x/samplerStates/0/textureFilter",
                 "pack 2",
                 A
             ),
             at(
-                "InvalidValue",
+                "core/invalid_value",
                 "materials/x/samplerStates/1/textureWrap",
                 "pack 1",
                 A
@@ -1318,8 +1371,8 @@ fn a_finding_of_the_creation_names_the_pack_that_wrote_what_it_is_about() {
     assert_eq!(
         written(packs.materials()),
         [
-            at("ShadowedDefinition", "materials/x:nope", "pack 2", A),
-            at("UnresolvedReference", "materials/x:nope", "pack 2", A),
+            at("core/shadowed_definition", "materials/x:nope", "pack 2", A),
+            at("core/unresolved_reference", "materials/x:nope", "pack 2", A),
         ]
     );
     let high = wrapped(r#""p": {}, "x:p": {"depthFunc": "Always"}"#);
@@ -1327,8 +1380,13 @@ fn a_finding_of_the_creation_names_the_pack_that_wrote_what_it_is_about() {
     assert_eq!(
         written(packs.materials()),
         [
-            at("ShadowedDefinition", "materials/x:p", "pack 2", A),
-            at("UnresolvedReference", "x/+variants/0/a.b", "pack 1", A),
+            at("core/shadowed_definition", "materials/x:p", "pack 2", A),
+            at(
+                "core/unresolved_reference",
+                "x/+variants/0/a.b",
+                "pack 1",
+                A
+            ),
         ]
     );
 }
@@ -1347,7 +1405,7 @@ fn a_bias_of_the_largest_double_is_reported_in_the_pack_that_wrote_it_out() {
     let materials = stack.materials();
     let invalid: Vec<_> = placed(materials)
         .into_iter()
-        .filter(|found| found.0.0 == "InvalidValue")
+        .filter(|found| found.0.0 == "core/invalid_value")
         .map(|found| (found.0.2, found.1.unwrap_or_default()))
         .collect();
     let at = |path: &str, pack: &str| (path.to_owned(), pack.to_owned());
@@ -1380,23 +1438,23 @@ fn a_file_read_on_its_own_has_its_findings_at_the_paths_of_the_file() {
     assert_eq!(
         paths(&wrapped(members)),
         [
-            ("InvalidValue", "materials/y/depthBias".to_owned()),
-            ("DuplicateIdentifier", "materials/x:p".to_owned()),
-            ("InvalidValue", "materials/x/blendSrc".to_owned()),
+            ("core/invalid_value", "materials/y/depthBias".to_owned()),
+            ("material/defined_twice", "materials/x:p".to_owned()),
+            ("core/invalid_value", "materials/x/blendSrc".to_owned()),
         ]
     );
     assert_eq!(
         paths(&flat(members)),
         [
-            ("InvalidValue", "y/depthBias".to_owned()),
-            ("DuplicateIdentifier", "x:p".to_owned()),
-            ("InvalidValue", "x/blendSrc".to_owned()),
+            ("core/invalid_value", "y/depthBias".to_owned()),
+            ("material/defined_twice", "x:p".to_owned()),
+            ("core/invalid_value", "x/blendSrc".to_owned()),
         ]
     );
     // A single material inside a wrapper.
     assert_eq!(
         paths(r#"{"materials": {"version": "1.0.0", "vertexShader": "s", "blendSrc": "Bad"}}"#),
-        [("InvalidValue", "materials/blendSrc".to_owned())]
+        [("core/invalid_value", "materials/blendSrc".to_owned())]
     );
     // What `to_json` refuses is named at the same path.
     let mut file = crate::common::file(&wrapped(r#""x": {}"#)).value().clone();
@@ -1425,12 +1483,17 @@ fn a_list_that_cannot_be_read_is_skipped_and_the_lists_of_the_other_packs_load()
         found,
         [
             (
-                "MalformedInput",
+                "material/parse_error",
                 Error,
                 "pack 2".to_owned(),
                 COMMON.to_owned()
             ),
-            ("InvalidType", Error, "pack 3".to_owned(), COMMON.to_owned()),
+            (
+                "core/invalid_type",
+                Error,
+                "pack 3".to_owned(),
+                COMMON.to_owned()
+            ),
         ]
     );
     assert_eq!(materials.lists.len(), 1);
@@ -1446,7 +1509,7 @@ fn the_findings_of_a_list_are_reported_with_the_group() {
         placed(materials),
         [(
             finding(
-                "DeprecatedMember",
+                "material/key_removed",
                 Error,
                 "0/tag",
                 "key \"tag\" is no longer supported, please remove"
@@ -1490,7 +1553,7 @@ fn a_material_file_no_list_names_is_merged_and_creates_nothing() {
     let materials = stack.materials();
     // The findings of a file are reported whether or not a list names it.
     let codes: Vec<_> = all(materials).into_iter().map(|f| (f.0, f.2)).collect();
-    assert_eq!(codes, [("InvalidValue", "c/blendSrc".to_owned())]);
+    assert_eq!(codes, [("core/invalid_value", "c/blendSrc".to_owned())]);
     let files: Vec<&str> = materials.files.keys().map(PackPath::as_str).collect();
     assert_eq!(files, ["deep/dir/c.material", B]);
     assert_eq!(materials.files[&path(B)].materials.len(), 2);
@@ -1519,7 +1582,7 @@ fn a_listed_path_that_is_no_material_file_is_not_read_deviation() {
     assert_eq!(
         placed(materials),
         [(
-            finding("IgnoredFile", Info, "0/path", "file ignored"),
+            finding("core/ignored_file", Info, "0/path", "file ignored"),
             Some("pack 1".to_owned()),
             Some(COMMON.to_owned())
         )]
@@ -1579,8 +1642,11 @@ fn a_finding_of_a_file_two_groups_load_is_reported_once() {
     assert_eq!(
         codes,
         [
-            ("ShadowedDefinition", "materials/p/variants/1/v".to_owned()),
-            ("UnresolvedReference", "materials/x:nope".to_owned()),
+            (
+                "material/variant_replaced",
+                "materials/p/variants/1/v".to_owned()
+            ),
+            ("core/unresolved_reference", "materials/x:nope".to_owned()),
         ]
     );
 }
@@ -1747,13 +1813,13 @@ fn v20_a_key_over_two_lower_keys_of_its_name_is_reported_once_deviation() {
     let stack = stack(&[&[(COMMON, &list(&[A])), (A, &low)], &[(A, &top)]]);
     let shadowed: Vec<_> = placed(stack.materials())
         .into_iter()
-        .filter(|found| found.0.0 == "ShadowedDefinition")
+        .filter(|found| found.0.0 == "core/shadowed_definition")
         .collect();
     assert_eq!(
         shadowed,
         [(
             finding(
-                "ShadowedDefinition",
+                "core/shadowed_definition",
                 Info,
                 "materials/x:p",
                 "definition shadowed by a higher-priority source"
@@ -1794,7 +1860,7 @@ fn a_list_that_fails_to_load_is_a_rejected_file_of_the_group() {
                     .diagnostics
                     .iter()
                     .filter(|finding| finding.severity == Error)
-                    .map(|finding| finding.code.name())
+                    .map(|finding| finding.code.id())
                     .collect(),
             )
         })
@@ -1802,8 +1868,16 @@ fn a_list_that_fails_to_load_is_a_rejected_file_of_the_group() {
     assert_eq!(
         rejected,
         [
-            ("pack 2".to_owned(), FANCY.to_owned(), vec!["InvalidType"]),
-            ("pack 1".to_owned(), SAD.to_owned(), vec!["MalformedInput"]),
+            (
+                "pack 2".to_owned(),
+                FANCY.to_owned(),
+                vec!["core/invalid_type"]
+            ),
+            (
+                "pack 1".to_owned(),
+                SAD.to_owned(),
+                vec!["material/parse_error"]
+            ),
         ]
     );
     // The list that loads is the group's only list, and creates its material.
@@ -1889,7 +1963,7 @@ fn m22_the_index_is_the_same_as_without_the_minus_variants_key_deviation() {
     assert_eq!(
         with_warnings,
         [finding(
-            "UnrecognizedField",
+            "core/unrecognized_field",
             Info,
             "materials/c:entity_static/-variants",
             "unrecognized field"
@@ -1927,7 +2001,7 @@ fn v2_two_spellings_of_one_name_in_one_copy_tell_the_members_of_both_keys() {
     // Both keys well formed: the first is the material.
     let valid = flat(r#""p": {}, "q": {}, "x:p": {"+defines": ["P"]}, "x:q": {"+defines": ["Q"]}"#);
     let alone = stack(&[&[(COMMON, &list(&[A])), (A, &valid)]]);
-    assert_eq!(told(&alone), [say("DuplicateIdentifier", "x:q", TWICE)]);
+    assert_eq!(told(&alone), [say("material/defined_twice", "x:q", TWICE)]);
     let group = alone.materials().group(MaterialGroupKind::Common);
     assert_eq!(names(group), ["p", "q", "x"]);
     assert_eq!(group.get("x").unwrap().parent.as_deref(), Some("p"));
@@ -1943,12 +2017,12 @@ fn v2_two_spellings_of_one_name_in_one_copy_tell_the_members_of_both_keys() {
     assert_eq!(
         told(&alone),
         [
-            say("DuplicateIdentifier", "x:q", TWICE),
-            say("InvalidValue", "x:p/blendSrc", "invalid value"),
-            say("InvalidValue", "x:q/depthFunc", "invalid value"),
+            say("material/defined_twice", "x:q", TWICE),
+            say("core/invalid_value", "x:p/blendSrc", "invalid value"),
+            say("core/invalid_value", "x:q/depthFunc", "invalid value"),
             // The first key's material was refused and its name stays taken, so the
             // second key is also told as the definition of a taken name.
-            say("DuplicateIdentifier", "x:q", "duplicate identifier"),
+            say("core/duplicate_identifier", "x:q", "duplicate identifier"),
         ]
     );
     assert!(
@@ -1967,9 +2041,9 @@ fn v2_two_spellings_of_one_name_in_one_copy_tell_the_members_of_both_keys() {
     assert_eq!(
         told(&under),
         [
-            say("DuplicateIdentifier", "x:q", TWICE),
-            say("InvalidValue", "x:p/blendSrc", "invalid value"),
-            say("InvalidValue", "x:q/depthFunc", "invalid value"),
+            say("material/defined_twice", "x:q", TWICE),
+            say("core/invalid_value", "x:p/blendSrc", "invalid value"),
+            say("core/invalid_value", "x:q/depthFunc", "invalid value"),
         ]
     );
 }

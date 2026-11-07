@@ -2,7 +2,7 @@
 //! row runs through `StackSet::link`; the checker itself is also pinned in
 //! `src/families/behavior_tree/tests.rs`. bt24 is about what a server sends, which is no load finding.
 
-use bedrock_addon::diagnostic::Phase;
+use bedrock_addon::diagnostic::{Diagnostic, Kind, Phase};
 use bedrock_addon::load::LoadOptions;
 use bedrock_addon::pack::{PackOrigin, PackRepository, WorldPacks};
 
@@ -10,6 +10,11 @@ use super::common::*;
 
 /// The link findings of fixture `name`'s stack, in `expected.toml`'s terms.
 fn link_fixture(name: &str) -> Vec<Finding> {
+    link_fixture_with(name, finding_of)
+}
+
+/// The link findings of fixture `name`'s stack, each read by `read`.
+fn link_fixture_with<T>(name: &str, read: impl Fn(&Diagnostic) -> T) -> Vec<T> {
     let packs = fixture_packs(name);
     let entries: Vec<String> = packs
         .iter()
@@ -31,7 +36,7 @@ fn link_fixture(name: &str) -> Vec<Finding> {
         .link()
         .iter()
         .filter(|finding| finding.phase == Phase::Link)
-        .map(finding_of)
+        .map(read)
         .collect()
 }
 
@@ -52,10 +57,9 @@ fn bt22_an_unresolved_subtree_and_a_cycle_are_link_warnings() {
 #[test]
 fn bt21_a_subtree_of_a_built_in_tree_resolves() {
     let found = link_fixture("bt21_subtree");
+    let kinds = link_fixture_with("bt21_subtree", |finding| finding.code.kind());
     assert!(
-        found
-            .iter()
-            .all(|finding| finding.kind != "UnresolvedReference"),
+        kinds.iter().all(|kind| *kind != Kind::UnresolvedReference),
         "{found:#?}"
     );
 }

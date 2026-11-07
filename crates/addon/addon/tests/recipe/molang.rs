@@ -64,7 +64,7 @@ fn invalid_molang(
         .diagnostics()
         .iter()
         // By legacy name: the variant and the definitions that were it.
-        .filter(|d| matches!(d.code.name(), "InvalidMolang"))
+        .filter(|d| matches!(d.code.id(), "core/invalid_molang"))
         .collect()
 }
 
@@ -154,7 +154,7 @@ fn data_molang_object_is_not_a_molang_value() {
     );
     assert!(finding.kept);
     // By legacy name: the variant and the definitions that were it.
-    assert!(matches!(finding.code.name(), "InvalidType"));
+    assert!(matches!(finding.code.id(), "recipe/data_not_molang"));
     assert_eq!(args(finding), ["7"]);
     let ingredient = &shaped(&document).key["#"];
     assert_eq!(ingredient.aux(), 0);

@@ -1,7 +1,7 @@
 //! The locale overlay `texts/<code>/` (README "Locale overlay"): the `overlay/` rows of
 //! fixtures.md resolved with `locale_overlay_paths`, and the lints L15 and L16.
 
-use bedrock_addon::diagnostic::Severity;
+use bedrock_addon::diagnostic::{Kind, Severity};
 use bedrock_addon::families::lang::{Language, locale_overlay_paths};
 use bedrock_addon::pack::{PackStack, Resource};
 use bedrock_addon::storage::PackPath;
@@ -150,7 +150,7 @@ fn infos(stack: &PackStack<Resource>, code: &str) -> Vec<(String, Option<usize>)
     stack
         .languages()
         .diagnostics()
-        .filter(|d| d.code.name() == code && d.severity == Severity::Info)
+        .filter(|d| d.code.id() == code && d.severity == Severity::Info)
         .map(|d| {
             (
                 d.location
@@ -179,7 +179,7 @@ fn an_overlay_file_that_is_no_font_sheet_is_reported_as_shadowing_deviation() {
     // L15, vanilla = "silent per-file overlay (ResourcePack::getResource)"
     let stack = resource_stack(fixture_packs("overlay/any_path", "resources"));
     assert_eq!(
-        infos(&stack, "ShadowedDefinition"),
+        infos(&stack, "core/shadowed_definition"),
         [("texts/ja_JP/textures/blocks/stone.png".to_owned(), Some(0))]
     );
     assert!(
@@ -208,7 +208,7 @@ fn only_the_folder_named_font_is_exempt() {
         "texts/ja_JP/font.png",
         "texts/ja_JP/texts/en_US.lang",
     ]);
-    let found: Vec<String> = infos(&stack, "ShadowedDefinition")
+    let found: Vec<String> = infos(&stack, "core/shadowed_definition")
         .into_iter()
         .map(|(path, _)| path)
         .collect();
@@ -231,14 +231,19 @@ fn an_overlay_folder_of_an_unlisted_code_is_reported_once_deviation() {
         "texts/zz_ZZ/a.json",
     ]);
     assert_eq!(
-        infos(&stack, "IgnoredFile"),
+        infos(&stack, "core/ignored_file"),
         [
             ("texts/xx_XX".to_owned(), Some(0)),
             ("texts/zz_ZZ".to_owned(), Some(0)),
         ]
     );
     // a folder that can never be active shadows nothing
-    assert!(infos(&stack, "ShadowedDefinition").is_empty());
+    assert!(
+        !stack
+            .languages()
+            .diagnostics()
+            .any(|d| d.code.kind() == Kind::Shadowed && d.severity == Severity::Info)
+    );
     assert_eq!(stack.languages().diagnostics().count(), 2);
 }
 
@@ -256,7 +261,7 @@ fn each_pack_with_the_folder_is_reported() {
         ),
     ]);
     assert_eq!(
-        infos(&stack, "IgnoredFile"),
+        infos(&stack, "core/ignored_file"),
         [
             ("texts/xx_XX".to_owned(), Some(1)),
             ("texts/xx_XX".to_owned(), Some(0)),

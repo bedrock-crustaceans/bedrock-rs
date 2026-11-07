@@ -4,7 +4,7 @@
 //! with `NotRepresentable` and a path. A 1.26.0 document is also written as it was read: its
 //! text equals the source's, but for the recorded differences, each applied by name below.
 
-use bedrock_addon::diagnostic::Severity;
+use bedrock_addon::diagnostic::{Disposition, Kind, Severity};
 use bedrock_addon::document::JsonDocument as _;
 use bedrock_addon::families::client_entity::ClientEntity;
 use bedrock_addon::families::client_entity::history::ClientEntityHistory;
@@ -524,7 +524,8 @@ fn expected(
         // '<name>'!" (with the `molang` feature); the member is not stored, so not written.
         let at = format!("minecraft:client_entity/description/scripts/{name}");
         let dropped = document.diagnostics().iter().any(|found| {
-            found.code.name() == "DroppedField" && found.location.json_path.to_string() == at
+            found.code.id() == "visual/failed_to_parse"
+                && found.location.json_path.to_string() == at
         });
         if dropped && expected.remove(&SCRIPTS, name) {
             counts.scripts_dropped += 1;
@@ -641,10 +642,10 @@ fn check(source: &str, shape: Shape, cx: &LoadContext, counts: &mut Counts) {
         // document written below 1.18.20 has its statements lower-cased, a later one keeps
         // them; an element that is no string is dropped with a note.
         let dropped = |severity: Severity| {
-            document
-                .diagnostics()
-                .iter()
-                .any(|found| found.code.name() == "DroppedField" && found.severity == severity)
+            document.diagnostics().iter().any(|found| {
+                found.code.kind() == Kind::UnknownMember(Disposition::Dropped)
+                    && found.severity == severity
+            })
         };
         // The version as the numbers it spells, whatever its spelling: the steps key on it.
         let version = version_of(&mut Canon::of_text(source));

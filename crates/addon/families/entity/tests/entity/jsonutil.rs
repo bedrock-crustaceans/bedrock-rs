@@ -50,7 +50,7 @@ fn kept(found: &Diagnostics) -> Vec<(String, String, String)> {
         .map(|f: &Diagnostic| {
             assert_eq!(f.severity, Severity::Error, "{f:#?}");
             (
-                f.code.name().to_owned(),
+                f.code.id().to_owned(),
                 f.location.json_path.to_string(),
                 f.code.to_string(),
             )
@@ -82,7 +82,7 @@ fn an_unknown_member_of_a_schema_read_component_is_a_kept_error_and_defaults_the
     assert_eq!(
         kept(&found),
         [(
-            "UnrecognizedField".to_owned(),
+            "core/child_not_valid".to_owned(),
             "minecraft:entity/components/minecraft:ageable/bogus".to_owned(),
             "child 'bogus' not valid here.".to_owned()
         )],
@@ -107,12 +107,14 @@ fn below_1_15_0_an_unknown_member_is_taken_out_and_the_rest_read() {
     assert!(kept(&found).is_empty(), "{found:#?}");
     assert!(loud(&found).is_empty(), "{found:#?}");
     assert!(
-        found.iter().any(|f| f.code.name() == "UnrecognizedField"
-            && f.severity == Severity::Info
-            && f.location
-                .json_path
-                .to_string()
-                .ends_with("minecraft:ageable/bogus")),
+        found
+            .iter()
+            .any(|f| f.code.id() == "core/unrecognized_field"
+                && f.severity == Severity::Info
+                && f.location
+                    .json_path
+                    .to_string()
+                    .ends_with("minecraft:ageable/bogus")),
         "{found:#?}"
     );
     assert_eq!(ageable, Some(json(r#"{"duration": 30}"#)));
@@ -136,7 +138,7 @@ fn a_value_of_another_type_is_a_kept_error_in_both_modes() {
         assert_eq!(
             kept(&found),
             [(
-                "InvalidType".to_owned(),
+                "core/unknown_child_option".to_owned(),
                 "minecraft:entity/components/minecraft:ageable/duration".to_owned(),
                 "unknown child schema option type.  Allowed types:  'float'".to_owned()
             )],
@@ -193,7 +195,7 @@ fn an_unknown_member_of_an_event_s_responses_is_a_kept_error() {
         assert_eq!(
             kept(&loaded.diagnostics),
             [(
-                "UnrecognizedField".to_owned(),
+                "core/child_not_valid".to_owned(),
                 format!("minecraft:entity/{at}"),
                 format!("child '{name}' not valid here.")
             )],
@@ -222,7 +224,7 @@ fn a_failed_response_collection_drops_the_node_s_responses() {
     assert_eq!(kept(&found).len(), 1, "{found:#?}");
     for member in ["queue_command", "bogus_response"] {
         assert!(
-            found.iter().any(|f| f.code.name() == "DroppedField"
+            found.iter().any(|f| f.code.id() == "core/dropped_field"
                 && f.severity == Severity::Info
                 && f.location.json_path.to_string()
                     == format!("minecraft:entity/events/demo:e/{member}")),
@@ -268,7 +270,7 @@ fn a_member_beside_a_sequence_is_passed_over_without_a_word() {
         loaded
             .diagnostics
             .iter()
-            .any(|f| f.code.name() == "UnrecognizedField"
+            .any(|f| f.code.id() == "core/unrecognized_field"
                 && f.severity == Severity::Info
                 && f.location.json_path.to_string().ends_with("demo:e/bogus")),
         "{:#?}",
@@ -339,7 +341,7 @@ fn a_legacy_goal_value_out_of_its_bound_is_the_game_s_kept_error_and_takes_the_d
     for (key, value, member, text, default) in rows {
         let (written, found) = read(&wrapped("1.20.0", key, value), key);
         let expected = vec![(
-            "InvalidValue".to_owned(),
+            "core/invalid_value_worded".to_owned(),
             format!("{c}/{key}/{member}"),
             text.to_owned(),
         )];

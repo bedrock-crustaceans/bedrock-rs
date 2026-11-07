@@ -34,7 +34,7 @@ fn ps09_unknown_member_is_an_error_and_drops_the_file() {
         name,
         "minecraft:pack_settings/settings/0/comment",
         // By legacy name: the variant and the definitions that were it.
-        |c| matches!(c.name(), "UnrecognizedField"),
+        |c| matches!(c.id(), "core/unrecognized_field"),
     );
 }
 
@@ -46,7 +46,7 @@ fn an_unknown_member_of_the_document_is_an_error_too() {
         WORLD,
         "minecraft:pack_settings/comment",
         // By legacy name: the variant and the definitions that were it.
-        |c| matches!(c.name(), "UnrecognizedField"),
+        |c| matches!(c.id(), "core/unrecognized_field"),
     );
 }
 
@@ -61,7 +61,7 @@ fn a_member_named_like_a_kept_field_is_an_unknown_member() {
         WORLD,
         "minecraft:pack_settings/settings/0/extra",
         // By legacy name: the variant and the definitions that were it.
-        |c| matches!(c.name(), "UnrecognizedField"),
+        |c| matches!(c.id(), "core/unrecognized_field"),
     );
 }
 
@@ -72,7 +72,7 @@ pub fn ps10_bad_uuid_loads_as_the_nil_uuid_with_an_information_deviation() {
     // The game's setter cannot report: an information of ours.
     assert_eq!(
         names(loaded.diagnostics(), Severity::Info),
-        ["InvalidValue"]
+        ["core/invalid_value"]
     );
     assert!(names(loaded.diagnostics(), Severity::Warning).is_empty());
     let information = at(
@@ -126,7 +126,7 @@ fn ps10_a_non_string_pack_id_is_a_type_error() {
         name,
         "minecraft:pack_settings/settings/0/pack_id",
         // By legacy name: the variant and the definitions that were it.
-        |c| matches!(c.name(), "InvalidType"),
+        |c| matches!(c.id(), "core/invalid_type"),
     );
 }
 
@@ -136,7 +136,7 @@ pub fn ps11_duplicate_pack_id_loads_with_a_warning_and_the_first_entry_wins_devi
     assert_eq!(loaded.settings.len(), 2, "the later entry is kept");
     assert_eq!(
         names(loaded.diagnostics(), Severity::Info),
-        ["DuplicateIdentifier"]
+        ["core/duplicate_identifier"]
     );
     let warning = at(
         loaded.diagnostics(),
@@ -165,7 +165,7 @@ pub fn ps15_foreign_payload_key_loads_with_a_warning_deviation() {
     assert_eq!(loaded.settings[0].pack_id, PACK);
     assert_eq!(
         names(loaded.diagnostics(), Severity::Info),
-        ["PayloadKeyMismatch"]
+        ["core/payload_key_mismatch"]
     );
     assert_eq!(at(loaded.diagnostics(), "minecraft:settings").len(), 1);
 }
@@ -178,7 +178,7 @@ fn ps15_findings_under_a_foreign_payload_key_keep_their_file_offsets() {
     let typed = found
         .iter()
         // By legacy name: the variant and the definitions that were it.
-        .find(|d| matches!(d.code.name(), "InvalidType"))
+        .find(|d| matches!(d.code.id(), "core/invalid_type"))
         .expect("the type error");
     let span = typed.location.span.expect("a span");
     let start = usize::try_from(span.offset).unwrap();
@@ -204,7 +204,7 @@ fn d6_a_missing_required_member_is_an_error() {
         let found = refused_text(WORLD, &document("\"1.21.100\"", &payload));
         fails_at(&found, WORLD, path, |c| {
             // By legacy name: the variant and the definitions that were it.
-            matches!(c.name(), "MissingRequiredField")
+            matches!(c.id(), "core/missing_required_field")
         });
     }
 }
@@ -230,7 +230,7 @@ fn d8_a_null_object_or_mixed_array_value_is_a_type_error() {
             WORLD,
             "minecraft:pack_settings/settings/0/values/banana:x",
             // By legacy name: the variant and the definitions that were it.
-            |c| matches!(c.name(), "InvalidType"),
+            |c| matches!(c.id(), "core/invalid_type"),
         );
     }
 }
@@ -250,7 +250,7 @@ fn d8_last_used_must_be_an_unsigned_integer() {
             WORLD,
             "minecraft:pack_settings/settings/0/last_used",
             // By legacy name: the variant and the definitions that were it.
-            |c| matches!(c.name(), "InvalidType"),
+            |c| matches!(c.id(), "core/invalid_type"),
         );
     }
 }
@@ -262,7 +262,7 @@ fn d8_settings_must_be_an_array() {
         let found = refused_text(WORLD, &document("\"1.21.100\"", &payload));
         fails_at(&found, WORLD, "minecraft:pack_settings/settings", |c| {
             // By legacy name: the variant and the definitions that were it.
-            matches!(c.name(), "InvalidType")
+            matches!(c.id(), "core/invalid_type")
         });
     }
 }
@@ -288,6 +288,8 @@ fn d8_an_entry_values_or_payload_of_another_type_is_a_type_error_at_its_path() {
     ] {
         let found = refused_text(WORLD, &document("\"1.21.100\"", payload));
         // By legacy name: the variant and the definitions that were it.
-        fails_at(&found, WORLD, path, |c| matches!(c.name(), "InvalidType"));
+        fails_at(&found, WORLD, path, |c| {
+            matches!(c.id(), "core/invalid_type")
+        });
     }
 }

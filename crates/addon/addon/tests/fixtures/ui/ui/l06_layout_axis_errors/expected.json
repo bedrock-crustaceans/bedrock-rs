@@ -1,19 +1,19 @@
 {
   "diagnostics": [
     {
-      "code": "InvalidValue",
+      "code": "json_ui/dangling_number",
       "severity": "info",
       "text": "Dangling number (no % or px in Size)",
       "at": "p1/size/0"
     },
     {
-      "code": "InvalidValue",
+      "code": "json_ui/modifier_without_percent",
       "severity": "info",
       "text": "% modifier given without '%' symbol!",
       "at": "p1/size/1"
     },
     {
-      "code": "InvalidValue",
+      "code": "json_ui/unknown_sibling_axis",
       "severity": "info",
       "text": "An unknown sibling axis type was found: q",
       "at": "p2/size/0"

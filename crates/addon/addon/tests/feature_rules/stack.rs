@@ -41,7 +41,7 @@ fn shadowed(
     rules
         .diagnostics()
         // By legacy name: the variant and the definitions that were it.
-        .filter(|f| matches!(f.code.name(), "ShadowedDefinition"))
+        .filter(|f| matches!(f.code.id(), "core/shadowed_definition"))
         .map(|f| {
             (
                 f.severity,
@@ -318,7 +318,7 @@ fn rule_10_what_the_group_keeps_of_a_rule_written_twice_in_one_pack() {
                 (Some(pack), Some(path)) => place(pack, path),
                 _ => String::new(),
             };
-            format!("{} {at}", finding.code.name())
+            format!("{} {at}", finding.code.id())
         })
         .collect();
     assert_eq!(
@@ -326,10 +326,10 @@ fn rule_10_what_the_group_keeps_of_a_rule_written_twice_in_one_pack() {
         // The failed files' findings first, then the pass's registry: the dropped copy's
         // findings and its notice are the registry's now, in walk order.
         [
-            "MalformedInput bp 1 feature_rules/c/broken.json",
-            "InvalidValue bp 1 feature_rules/b/y.json",
-            "ShadowedDefinition bp 1 feature_rules/b/y.json",
-            "ShadowedDefinition bp 2 feature_rules/x.json",
+            "core/document_json bp 1 feature_rules/c/broken.json",
+            "feature_rules/identifier_mismatch bp 1 feature_rules/b/y.json",
+            "core/shadowed_definition bp 1 feature_rules/b/y.json",
+            "core/shadowed_definition bp 2 feature_rules/x.json",
         ]
     );
 }

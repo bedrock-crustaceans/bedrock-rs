@@ -55,7 +55,7 @@ fn v00_missing_version() {
     ));
     expect(
         &d,
-        "MissingFormatVersion",
+        "animation_controller/ill_formatted_missing_format_version",
         Severity::Error,
         "Error: ill-formatted/missing \"format_version\" field. Skipping.",
     );
@@ -72,7 +72,9 @@ fn v01_case_insensitive_key() {
     let infos: Vec<_> = document
         .diagnostics()
         .iter()
-        .filter(|d| d.severity >= Severity::Warning || d.code.name() != "NonCanonicalMemberCase")
+        .filter(|d| {
+            d.severity >= Severity::Warning || d.code.id() != "core/non_canonical_member_case"
+        })
         .collect();
     assert!(
         infos.iter().all(|d| d.severity < Severity::Warning),
@@ -82,7 +84,7 @@ fn v01_case_insensitive_key() {
     assert!(
         find(
             document.diagnostics(),
-            "NonCanonicalMemberCase",
+            "core/non_canonical_member_case",
             Severity::Info
         )
         .is_some()
@@ -94,7 +96,7 @@ fn v02_below_floor() {
     let d = rejected(controller(&ctrl("1.7.0", "{}"), &rp(1, 16, 0)));
     expect(
         &d,
-        "UnsupportedVersion",
+        "animation_controller/unknown_format_version",
         Severity::Error,
         "Unknown/unsupported version value specified in \"format_version\" field: 1.7.0",
     );
@@ -105,7 +107,7 @@ fn v03_above_engine() {
     let d = rejected(controller(&ctrl("99.0.0", "{}"), &rp(1, 16, 0)));
     expect(
         &d,
-        "UnsupportedVersion",
+        "animation_controller/exceeds_game",
         Severity::Error,
         "Error: animation controller file format version: 99.0.0 exceeds game version: 1.26.60.  Skipping.",
     );
@@ -122,7 +124,7 @@ fn v05_array_version() {
     let text = ctrl("1.10.0", "{}").replace("\"1.10.0\"", "[1, 10, 0]");
     expect_prefix(
         &rejected(controller(&text, &rp(1, 16, 0))),
-        "UnsupportedVersion",
+        "animation_controller/unknown_option_type",
         Severity::Error,
         TYPE_ERROR,
     );
@@ -135,7 +137,7 @@ fn v06_prerelease_is_the_1_8_range() {
     assert!(
         find(
             document.diagnostics(),
-            "PrereleaseFormatVersion",
+            "core/prerelease_format_version",
             Severity::Info
         )
         .is_some()
@@ -147,19 +149,19 @@ fn v07_vanilla_unit_tests() {
     let cx = rp(1, 16, 0);
     expect(
         &rejected(controller(&ctrl("0.9.0", "{}"), &cx)),
-        "UnsupportedVersion",
+        "animation_controller/unknown_format_version",
         Severity::Error,
         "Unknown/unsupported version value specified in \"format_version\" field: 0.9.0",
     );
     expect(
         &rejected(controller(r#"{"animation_controllers": {}}"#, &cx)),
-        "MissingFormatVersion",
+        "animation_controller/ill_formatted_missing_format_version",
         Severity::Error,
         "Error: ill-formatted/missing \"format_version\" field. Skipping.",
     );
     expect_prefix(
         &rejected(controller(&ctrl("1.26.61", "{}"), &cx)),
-        "UnsupportedVersion",
+        "animation_controller/exceeds_game",
         Severity::Error,
         "Error: animation controller file format version: 1.26.61 exceeds game version: ",
     );
@@ -201,7 +203,7 @@ fn u03_more_curves_than_parameters() {
     let d = rejected(controller(&text, &unchecked()));
     let found = d
         .iter()
-        .find(|f| f.code.name() == "InvalidType")
+        .find(|f| f.code.id() == "core/unknown_child_option")
         .unwrap_or_else(|| panic!("{:?}", lines(&d)));
     assert!(
         found
@@ -224,7 +226,7 @@ fn u03b_a_parameter_no_curve_reads_is_noted_as_dropped() {
         let file = loaded(controller(&ctrl("1.8.0", state), &unchecked()));
         file.diagnostics()
             .iter()
-            .filter(|f| f.code.name() == "DroppedField")
+            .filter(|f| f.code.id() == "core/dropped_field")
             .map(|f| format!("{:?} {}", f.severity, f.location.json_path))
             .collect()
     };
@@ -259,7 +261,7 @@ fn u03c_a_curve_a_later_entry_of_its_name_writes_over_is_noted_as_dropped() {
         let file = loaded(controller(&ctrl("1.8.0", state), &unchecked()));
         file.diagnostics()
             .iter()
-            .filter(|f| f.code.name() == "DroppedField")
+            .filter(|f| f.code.id() == "core/dropped_field")
             .map(|f| format!("{:?} {}", f.severity, f.location.json_path))
             .collect()
     };
@@ -286,7 +288,7 @@ fn u04_string_animation_rejected() {
             &ctrl("1.8.0", r#"{"animations": ["walk"]}"#),
             &unchecked(),
         )),
-        "InvalidType",
+        "core/unknown_child_option",
         Severity::Error,
         TYPE_ERROR,
     );
@@ -300,7 +302,7 @@ fn u05_v1_10_member_in_1_8() {
     ));
     expect(
         &d,
-        "UnrecognizedField",
+        "core/child_not_valid",
         Severity::Error,
         "child 'sound_effects' not valid here.",
     );
@@ -314,7 +316,7 @@ fn u07_two_member_animation_element() {
     ));
     expect(
         &d,
-        "InvalidValue",
+        "core/too_many_children",
         Severity::Error,
         "Node has too many children (2 > 1)",
     );
@@ -331,7 +333,7 @@ fn u08_bind_to_actor_true_1_8() {
     ));
     expect(
         &d,
-        "InvalidValue",
+        "core/value_not_allowed",
         Severity::Error,
         "Value 'true' not allowed",
     );
@@ -346,7 +348,7 @@ fn u06_uppercase_parameters_key_survives_and_fails() {
     let d = rejected(controller(&text, &unchecked()));
     expect(
         &d,
-        "UnrecognizedField",
+        "core/child_not_valid",
         Severity::Error,
         "child 'Parameters' not valid here.",
     );
@@ -444,7 +446,7 @@ fn p05_initial_state_absent_no_default() {
     assert!(
         find(
             document.diagnostics(),
-            "ImplicitInitialState",
+            "core/implicit_initial_state",
             Severity::Info
         )
         .is_some()
@@ -457,7 +459,7 @@ fn p06_initial_state_case() {
     let document = loaded(controller(text, &rp(1, 16, 0)));
     expect(
         document.diagnostics(),
-        "UnresolvedReference",
+        "animation_controller/state_not_found",
         Severity::Info,
         "Error: state Walk not found - defaulting to using state 0",
     );
@@ -471,7 +473,7 @@ fn p07_transition_target_missing() {
     ));
     expect(
         document.diagnostics(),
-        "UnresolvedReference",
+        "animation_controller/state_not_found",
         Severity::Info,
         "Error: state nowhere not found - defaulting to using state 0",
     );
@@ -492,7 +494,7 @@ fn p08_transition_case_1_10() {
     assert!(
         find(
             document.diagnostics(),
-            "CaseFoldedTransition",
+            "core/case_folded_transition",
             Severity::Info
         )
         .is_some()
@@ -514,7 +516,7 @@ fn p09_transition_case_1_17_30() {
     assert!(
         find(
             document.diagnostics(),
-            "CaseFoldedTransition",
+            "core/case_folded_transition",
             Severity::Info
         )
         .is_none()
@@ -528,7 +530,7 @@ fn p10_unknown_member() {
             &ctrl("1.10.0", r#"{"comment": "x"}"#),
             &rp(1, 16, 0),
         )),
-        "UnrecognizedField",
+        "core/child_not_valid",
         Severity::Error,
         "child 'comment' not valid here.",
     );
@@ -566,7 +568,7 @@ fn p12_bad_prefix() {
     let text = r#"{"format_version": "1.10.0", "animation_controllers": {"animation.pig.move": {"states": {"a": {}}}}}"#;
     expect(
         &rejected(controller(text, &rp(1, 16, 0))),
-        "UnrecognizedField",
+        "core/child_not_valid",
         Severity::Error,
         "child 'animation.pig.move' not valid here.",
     );
@@ -590,7 +592,7 @@ fn p14_member_case() {
     let infos = document
         .diagnostics()
         .iter()
-        .filter(|d| d.code.name() == "NonCanonicalMemberCase" && d.severity == Severity::Info)
+        .filter(|d| d.code.id() == "core/non_canonical_member_case" && d.severity == Severity::Info)
         .count();
     assert_eq!(infos, 4, "{:?}", lines(document.diagnostics()));
     let set = stacks(&[], &[&[("animation_controllers/pig.json", text)]]);
@@ -614,7 +616,7 @@ fn p14b_a_member_another_spelling_of_its_name_replaces_is_told_where_it_is() {
         loaded(controller(text, &rp(1, 16, 0)))
             .diagnostics()
             .iter()
-            .filter(|d| d.code.name() == "DroppedField")
+            .filter(|d| d.code.id() == "core/dropped_field")
             .map(|d| format!("{:?} {}", d.severity, d.location.json_path))
             .collect()
     };
@@ -656,7 +658,7 @@ fn p14c_two_spellings_of_one_member_with_the_same_value_say_nothing() {
         loaded(controller(text, &rp(1, 16, 0)))
             .diagnostics()
             .iter()
-            .filter(|d| d.code.name() == "DroppedField")
+            .filter(|d| d.code.id() == "core/dropped_field")
             .map(|d| format!("{:?} {}", d.severity, d.location.json_path))
             .collect()
     };
@@ -683,7 +685,7 @@ fn p15_key_full_match() {
             &no_initial(r#"{"my state": {}}"#),
             &rp(1, 16, 0),
         )),
-        "UnrecognizedField",
+        "core/child_not_valid",
         Severity::Error,
         "child 'my state' not valid here.",
     );
@@ -696,7 +698,7 @@ fn p17_shortest_path_false() {
             &ctrl("1.10.0", r#"{"blend_via_shortest_path": false}"#),
             &rp(1, 16, 0),
         )),
-        "InvalidValue",
+        "core/value_not_allowed",
         Severity::Error,
         "Value 'false' not allowed",
     );
@@ -716,7 +718,7 @@ fn p18_bind_to_actor_true() {
             ),
             &rp(1, 16, 0),
         )),
-        "InvalidValue",
+        "core/value_not_allowed",
         Severity::Error,
         "Value 'true' not allowed",
     );
@@ -738,13 +740,13 @@ fn p19_transition_member_count() {
             &ctrl("1.10.0", r#"{"transitions": [{"a": "q.x", "b": "q.y"}]}"#),
             &cx,
         )),
-        "InvalidValue",
+        "core/too_many_children",
         Severity::Error,
         "Node has too many children (2 > 1)",
     );
     expect(
         &rejected(controller(&ctrl("1.10.0", r#"{"transitions": [{}]}"#), &cx)),
-        "InvalidValue",
+        "core/too_few_children",
         Severity::Error,
         "Node has too few children (0 < 1)",
     );
@@ -801,7 +803,7 @@ fn p16_remap_curve() {
     assert!(
         find(
             document.diagnostics(),
-            "UnorderedRemapCurve",
+            "core/unordered_remap_curve",
             Severity::Info
         )
         .is_some()
@@ -968,7 +970,7 @@ mod compiled {
 
     fn invalid(d: &Diagnostics) -> Vec<(DiagCode, Severity)> {
         d.iter()
-            .filter(|f| f.code.name() == "InvalidMolang")
+            .filter(|f| f.code.id() == "core/invalid_molang")
             .map(|f| match f.detail.as_deref() {
                 Some(DiagnosticDetail::Molang(m)) => (m.code(), f.severity),
                 _ => (DiagCode::Syntax, f.severity),
@@ -1028,7 +1030,7 @@ mod compiled {
             document
                 .diagnostics()
                 .iter()
-                .filter(|d| d.code.name() == "InvalidMolang")
+                .filter(|d| d.code.id() == "core/invalid_molang")
                 .all(|d| d.location.json_path.to_string().ends_with("on_entry/0")),
             "{:?}",
             lines(document.diagnostics())
@@ -1088,7 +1090,8 @@ mod compiled {
             document
                 .diagnostics()
                 .iter()
-                .any(|d| d.code.name() == "CaseFoldedTransition" && d.severity == Severity::Info)
+                .any(|d| d.code.id() == "core/case_folded_transition"
+                    && d.severity == Severity::Info)
         );
     }
 
@@ -1149,7 +1152,9 @@ fn s01_override() {
             .states
             .contains_key("top")
     );
-    assert!(registry.diagnostics().any(|d| d.code.name() == "AnimationControllerShadowed" && d.severity == Severity::Info));
+    assert!(registry.diagnostics().any(
+        |d| d.code.id() == "core/animation_controller_shadowed" && d.severity == Severity::Info
+    ));
 }
 
 #[test]
@@ -1278,7 +1283,7 @@ fn v14_v15_effect_keys_resolve_against_the_using_client_entity() {
     let mut found: Vec<_> = set
         .link()
         .iter()
-        .filter(|d| d.code.name() == "UnresolvedReference")
+        .filter(|d| d.code.id() == "core/unresolved_reference")
         .map(|d| (d.severity, d.location.json_path.to_string()))
         .collect();
     found.sort();

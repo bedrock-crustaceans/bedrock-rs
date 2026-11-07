@@ -71,7 +71,7 @@ pub fn said(finding: &Diagnostic) -> Said {
         _ => ("", String::new()),
     };
     (
-        finding.code.name(),
+        finding.code.id(),
         finding.severity,
         finding
             .location
@@ -118,7 +118,7 @@ pub fn miss(
 /// `minecraft:entity`: a miss the game reads without a content-log line.
 pub fn unresolved(path: &str, kind: &'static str, id: &str) -> Said {
     miss(
-        "UnresolvedReference",
+        "core/unresolved_reference",
         Severity::Info,
         &format!("minecraft:entity/{path}"),
         kind,
@@ -130,7 +130,19 @@ pub fn unresolved(path: &str, kind: &'static str, id: &str) -> Said {
 /// a miss the game logs at the content log's error level and goes on from. The `kept` flag is asserted by the test.
 pub fn kept_unresolved(path: &str, kind: &'static str, id: &str) -> Said {
     miss(
-        "UnresolvedReference",
+        "core/unresolved_reference_worded",
+        Severity::Error,
+        &format!("minecraft:entity/{path}"),
+        kind,
+        id,
+    )
+}
+
+/// [`kept_unresolved`] for the sites that raise the plain definition: a kept error without
+/// the game's own sentence.
+pub fn kept_unresolved_plain(path: &str, kind: &'static str, id: &str) -> Said {
+    miss(
+        "core/unresolved_reference",
         Severity::Error,
         &format!("minecraft:entity/{path}"),
         kind,

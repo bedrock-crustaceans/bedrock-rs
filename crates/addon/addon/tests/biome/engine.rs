@@ -114,7 +114,7 @@ fn the_engine_s_biomes_without_a_version_are_refused() {
         only(
             &found,
             // By legacy name: the variant and the definitions that were it.
-            |c| matches!(c.name(), "MissingFormatVersion"),
+            |c| matches!(c.id(), "core/no_valid_version"),
             "",
         );
     }
@@ -129,14 +129,14 @@ fn the_engine_s_biomes_below_the_floor_are_refused() {
         only(
             &found,
             // By legacy name: the variant and the definitions that were it.
-            |c| matches!(c.name(), "UnsupportedVersion"),
+            |c| matches!(c.id(), "core/no_parser_for_version"),
             "format_version",
         );
         assert!(
             found
                 .iter()
                 // By legacy name: the variant and the definitions that were it.
-                .any(|d| matches!(d.code.name(), "BiomeFormatHint")),
+                .any(|d| matches!(d.code.id(), "core/biome_format_hint_experimental")),
             "{name}"
         );
     }
@@ -150,7 +150,7 @@ fn the_engine_s_swamp_builder_in_the_nether_is_refused() {
     only(
         &found,
         // By legacy name: the variant and the definitions that were it.
-        |c| matches!(c.name(), "InvalidValue"),
+        |c| matches!(c.id(), "biome/nether_builders"),
         "minecraft:biome/components/minecraft:surface_builder/builder/type",
     );
     assert!(found.iter().any(|d| d.code.to_string()
@@ -165,7 +165,7 @@ fn the_engine_s_attributes_outside_the_beta_struct_refuse_the_biome() {
     only(
         &found.diagnostics,
         // By legacy name: the variant and the definitions that were it.
-        |c| matches!(c.name(), "UnrecognizedField"),
+        |c| matches!(c.id(), "core/unrecognized_field"),
         "minecraft:biome/environment_attributes",
     );
 }

@@ -1,7 +1,7 @@
 # families/script_config fixtures.md, row sc38_net_unknown_member (probe F netunknown).
 
 [[diagnostic]]
-code = "NetConfigRejected"
+code = "core/net_config_rejected"
 severity = "error"
 phase = "parse"
 file = "config/default/permissions.json"

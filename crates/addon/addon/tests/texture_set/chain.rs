@@ -104,18 +104,30 @@ fn the_version_and_parse_failures_are_the_loader_s_warnings_and_reject_the_set()
         assert_eq!(found[0].1, Warning);
         found[0].0
     };
-    assert_eq!(rejects("{"), "MalformedInput");
-    assert_eq!(rejects(&doc("x", "")), "MalformedFormatVersion");
+    assert_eq!(rejects("{"), "texture_set/set_no_json");
+    assert_eq!(rejects(&doc("x", "")), "texture_set/set_bad_version");
     assert_eq!(
         rejects(r#"{ "format_version": 1 }"#),
-        "MalformedFormatVersion"
+        "texture_set/set_bad_version"
     );
-    assert_eq!(rejects("[]"), "MalformedFormatVersion");
-    assert_eq!(rejects(&doc("1.21.31", "")), "UnsupportedVersion");
-    assert_eq!(rejects(&doc("1.16.99", "")), "UnsupportedVersion");
+    assert_eq!(rejects("[]"), "texture_set/set_bad_version");
+    assert_eq!(
+        rejects(&doc("1.21.31", "")),
+        "texture_set/set_unsupported_version"
+    );
+    assert_eq!(
+        rejects(&doc("1.16.99", "")),
+        "texture_set/set_unsupported_version"
+    );
     // A partial version is a version: 1.21 is 1.21.0, which has no schema.
-    assert_eq!(rejects(&doc("1.21", "")), "UnsupportedVersion");
-    assert_eq!(rejects(&doc("*", "")), "UnsupportedVersion");
+    assert_eq!(
+        rejects(&doc("1.21", "")),
+        "texture_set/set_unsupported_version"
+    );
+    assert_eq!(
+        rejects(&doc("*", "")),
+        "texture_set/set_unsupported_version"
+    );
 }
 
 #[test]
@@ -131,7 +143,7 @@ fn a_file_without_the_payload_misses_a_required_child() {
     assert_eq!(
         (found[0].0, found[0].3.as_str()),
         (
-            "MissingPayload",
+            "texture_set/set_required_child",
             "Required child minecraft:texture_set not found"
         )
     );
@@ -147,7 +159,7 @@ fn a_file_without_the_payload_misses_a_required_child() {
     assert_eq!(
         (found[0].0, found[0].3.as_str()),
         (
-            "InvalidType",
+            "core/unknown_child_option",
             "unknown child schema option type.  Allowed types: 'object'"
         )
     );

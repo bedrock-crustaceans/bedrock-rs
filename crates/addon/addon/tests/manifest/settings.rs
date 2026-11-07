@@ -43,7 +43,7 @@ fn texts(diagnostics: &Diagnostics) -> Vec<Code> {
 
 fn invalid_at(diagnostics: &Diagnostics, path: &str) -> bool {
     has(diagnostics, Severity::Error, path, |c| {
-        c.name() == "InvalidValue"
+        c.id() == "core/invalid_value"
     })
 }
 
@@ -207,7 +207,7 @@ fn mv15_multiselect_with_no_and_two_defaults_is_valid() {
         document.diagnostics(),
         Severity::Info,
         "settings/0",
-        |c| c.name() == "FieldSinceEngine"
+        |c| c.id() == "core/field_since_engine"
     ));
 }
 
@@ -263,13 +263,13 @@ fn mv18_the_shape_not_the_type_decides_the_kind() {
 fn mv19_an_entry_that_fits_no_kind_rejects_the_manifest() {
     let diagnostics = refused("mv19_fits_nothing");
     assert!(has(&diagnostics, Severity::Error, "settings/0/step", |c| c
-        .name()
-        == "MissingRequiredField"));
+        .id()
+        == "core/missing_required_field"));
     assert!(has(
         &diagnostics,
         Severity::Error,
         "settings/0/default",
-        |c| c.name() == "MissingRequiredField"
+        |c| c.id() == "core/missing_required_field"
     ));
 }
 
@@ -488,7 +488,7 @@ fn a_multiselect_s_selection_text_loads() {
         let rejected = parse(text.as_bytes()).unwrap_err();
         assert!(
             has(&rejected.diagnostics, Severity::Error, "settings/0", |c| {
-                c.name() == "InvalidType"
+                c.id() == "core/invalid_type"
             }),
             "{value}: {:#?}",
             rejected.diagnostics

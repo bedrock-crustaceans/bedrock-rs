@@ -13,7 +13,7 @@ fn named(identifier: &str) -> String {
 /// V2's one finding for `identifier`.
 fn not_valid_for_custom(identifier: &str) -> [(&'static str, String, String); 1] {
     [error(
-        "InvalidValue",
+        "voxel_shape/namespace_not_valid",
         &format!("The `minecraft` namespace is not valid for custom voxel shape: `{identifier}`"),
         IDENTIFIER,
     )]
@@ -22,7 +22,7 @@ fn not_valid_for_custom(identifier: &str) -> [(&'static str, String, String); 1]
 /// V1's one finding for `identifier`.
 fn required_for_vanilla(identifier: &str) -> [(&'static str, String, String); 1] {
     [error(
-        "InvalidValue",
+        "voxel_shape/namespace_required",
         &format!("The `minecraft` namespace is required for Vanilla shape: `{identifier}`"),
         IDENTIFIER,
     )]

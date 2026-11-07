@@ -43,7 +43,7 @@ fn text_that_is_not_utf8_is_malformed() {
     let mut bytes = tree_text("x", r#"{"minecraft:wait": {}}"#).into_bytes();
     bytes.push(0xff);
     let rejected = parse_bytes(&bytes).unwrap_err();
-    let finding = one(&rejected.diagnostics, "MalformedInput", Severity::Error, "");
+    let finding = one(&rejected.diagnostics, "core/syntax", Severity::Error, "");
     // not a text of vanilla's: its reader does not check the encoding
     assert!(finding.is(&codes::SYNTAX));
     assert_eq!(finding.vanilla(), None);
@@ -62,7 +62,12 @@ fn comments_are_accepted() {
 fn only_a_file_of_no_bytes_is_an_empty_document() {
     // white space is text that is not JSON: vanilla logs its parse error
     let rejected = rejected("  \n");
-    let finding = one(&rejected.diagnostics, "MalformedInput", Severity::Error, "");
+    let finding = one(
+        &rejected.diagnostics,
+        "behavior_tree/parse_error",
+        Severity::Error,
+        "",
+    );
     assert!(finding.is(&bt_codes::PARSE_ERROR));
     assert_eq!(rejected.diagnostics.len(), 1);
     // a null document parses: it has no name
@@ -70,14 +75,19 @@ fn only_a_file_of_no_bytes_is_an_empty_document() {
         let rejected = super::common::rejected(text);
         one(
             &rejected.diagnostics,
-            "MissingRequiredField",
+            "core/missing_required_field",
             Severity::Error,
             "minecraft:behavior_tree/minecraft:name",
         );
         assert_eq!(rejected.diagnostics.len(), 1, "{text}");
     }
     let rejected = parse_bytes(b"").unwrap_err();
-    one(&rejected.diagnostics, "EmptyDocument", Severity::Info, "");
+    one(
+        &rejected.diagnostics,
+        "core/empty_document",
+        Severity::Info,
+        "",
+    );
     assert_eq!(rejected.diagnostics.len(), 1);
 }
 
@@ -110,7 +120,7 @@ fn a_tree_nested_past_the_limit_is_rejected_quickly() {
     // one level more (the leaf's body an array: 2 + 2n + 1 for n = 63)
     let just_over = nested(63, "5").replace(": 5}", ": []}");
     let rejected = rejected(&just_over);
-    let finding = one(&rejected.diagnostics, "MalformedInput", Severity::Error, "");
+    let finding = one(&rejected.diagnostics, "core/syntax", Severity::Error, "");
     assert!(finding.is(&codes::SYNTAX));
     assert_eq!(finding.vanilla(), None);
     assert_eq!(rejected.diagnostics.len(), 1);
@@ -118,11 +128,11 @@ fn a_tree_nested_past_the_limit_is_rejected_quickly() {
     let started = Instant::now();
     let huge = nested(200_000, "{}");
     let rejected = super::common::rejected(&huge);
-    one(&rejected.diagnostics, "MalformedInput", Severity::Error, "");
+    one(&rejected.diagnostics, "core/syntax", Severity::Error, "");
     // only brackets were counted
     let unbalanced = "{".repeat(1_000_000);
     let rejected = super::common::rejected(&unbalanced);
-    one(&rejected.diagnostics, "MalformedInput", Severity::Error, "");
+    one(&rejected.diagnostics, "core/syntax", Severity::Error, "");
     // A guard against a hang, not a cost bound: 23 ms measured in the dev profile,
     // 200 times under the bound.
     assert!(
@@ -256,7 +266,7 @@ fn a_bool_or_string_literal_takes_only_its_type() {
     assert_eq!(*block_name, param(String::new(), ""));
     one(
         findings,
-        "LiteralIgnored",
+        "core/literal_ignored",
         Severity::Info,
         &format!("{ROOT}/minecraft:find_block/block_name"),
     );
@@ -279,7 +289,7 @@ fn a_bool_or_string_literal_takes_only_its_type() {
     assert_eq!(*should_be_flying, param(false, "should_be_flying"));
     one(
         findings,
-        "LiteralIgnored",
+        "core/literal_ignored",
         Severity::Info,
         &format!("{ROOT}/minecraft:fly/should_be_flying_bool"),
     );
@@ -298,7 +308,7 @@ fn wait_duration_of_another_type_is_an_ignored_literal() {
     // A bool is integral, and told (ours).
     assert_eq!(
         wait(r#"{"wait_duration": true}"#),
-        (param(1, ""), vec!["InvalidType"])
+        (param(1, ""), vec!["core/invalid_type"])
     );
     // the same member read as text: a number, an array or an object is ""
     for body in [
@@ -306,7 +316,11 @@ fn wait_duration_of_another_type_is_an_ignored_literal() {
         r#"{"wait_duration": [1]}"#,
         r#"{"wait_duration": {}}"#,
     ] {
-        assert_eq!(wait(body), (param(0, ""), vec!["LiteralIgnored"]), "{body}");
+        assert_eq!(
+            wait(body),
+            (param(0, ""), vec!["core/literal_ignored"]),
+            "{body}"
+        );
     }
     assert_eq!(
         wait(r#"{"wait_duration": null}"#),
@@ -325,7 +339,7 @@ fn look_at(block_pos: &str) -> (Param<[i32; 3]>, Vec<String>) {
     };
     let found = findings
         .iter()
-        .map(|d| format!("{} {}", d.code.name(), d.location.json_path))
+        .map(|d| format!("{} {}", d.code.id(), d.location.json_path))
         .collect();
     (block_pos.clone(), found)
 }
@@ -335,7 +349,7 @@ fn a_block_position_is_an_array_of_exactly_three() {
     let at = format!("{ROOT}/minecraft:look_at/block_pos");
     let ignored = (
         param([0; 3], "target_block_pos"),
-        vec![format!("LiteralIgnored {at}")],
+        vec![format!("core/literal_ignored {at}")],
     );
     assert_eq!(look_at("[1, 2, 3]"), (param([1, 2, 3], ""), vec![]));
     assert_eq!(look_at("[1, 2]"), ignored);
@@ -347,7 +361,10 @@ fn a_block_position_is_an_array_of_exactly_three() {
 
 #[test]
 fn an_element_of_a_block_position() {
-    let at = |index: usize| format!("InvalidType {ROOT}/minecraft:look_at/block_pos/{index}");
+    let at = |index: usize| format!("core/invalid_type {ROOT}/minecraft:look_at/block_pos/{index}");
+    let not_integral = |index: usize| {
+        format!("behavior_tree/expected_integral {ROOT}/minecraft:look_at/block_pos/{index}")
+    };
     // a null element stays 0 and a bool is integral: each read so, and told (ours)
     assert_eq!(
         look_at("[null, true, -3]"),
@@ -356,9 +373,15 @@ fn an_element_of_a_block_position() {
     // a real is not integral, in every position
     assert_eq!(
         look_at("[1.5, 2.0, \"3\"]"),
-        (param([0, 0, 0], ""), vec![at(0), at(1), at(2)])
+        (
+            param([0, 0, 0], ""),
+            vec![not_integral(0), not_integral(1), not_integral(2)]
+        )
     );
-    assert_eq!(look_at("[1, 2, [3]]"), (param([1, 2, 0], ""), vec![at(2)]));
+    assert_eq!(
+        look_at("[1, 2, [3]]"),
+        (param([1, 2, 0], ""), vec![not_integral(2)])
+    );
 }
 
 #[test]
@@ -377,7 +400,7 @@ fn an_element_of_a_position_of_numbers() {
     for index in [1, 2] {
         one(
             &findings,
-            "InvalidType",
+            "core/invalid_type",
             Severity::Info,
             &format!("{ROOT}/minecraft:move_to/block_pos/{index}"),
         );
@@ -388,7 +411,7 @@ fn an_element_of_a_position_of_numbers() {
     // The game's level-3 line, and the tree loads: a kept error.
     let finding = one(
         &findings,
-        "InvalidType",
+        "behavior_tree/expected_number",
         Severity::Error,
         &format!("{ROOT}/minecraft:move_to/block_pos/1"),
     );
@@ -398,7 +421,7 @@ fn an_element_of_a_position_of_numbers() {
     assert_eq!(findings.len(), 1);
     let (pos, findings) = move_to("[1, 2]");
     assert_eq!(pos, param([0.0; 3], "target_block_pos"));
-    assert_eq!(kinds(&findings), ["LiteralIgnored"]);
+    assert_eq!(kinds(&findings), ["core/literal_ignored"]);
     let (pos, findings) = move_to("null");
     assert_eq!(pos, param([0.0; 3], "target_block_pos"));
     silent(&findings);
@@ -428,7 +451,11 @@ fn the_fly_alias_is_reported_once_and_only_when_both_literals_are_read() {
             .iter()
             .map(|d| d.location.json_path.to_string())
             .collect();
-        assert!(findings.iter().all(|d| d.code.name() == "LiteralIgnored"));
+        assert!(
+            findings
+                .iter()
+                .all(|d| d.code.id() == "core/literal_ignored")
+        );
         (should_be_flying.clone(), throw_if_no_change.clone(), found)
     };
     let at = |key: &str| format!("{ROOT}/minecraft:fly/{key}");
@@ -474,7 +501,7 @@ fn children_absent_null_or_no_array_is_an_information_and_an_empty_array_is_not(
             assert_eq!(*children, None, "{kind} {body}");
             one(
                 findings,
-                "InvalidType",
+                "core/invalid_type",
                 Severity::Info,
                 &format!("{ROOT}/{kind}/children"),
             );
@@ -498,7 +525,7 @@ fn an_element_of_children_is_a_one_member_object() {
         panic!()
     };
     assert_eq!(children.as_ref().unwrap().len(), 1);
-    assert_eq!(kinds(findings), ["InvalidNode"; 4]);
+    assert_eq!(kinds(findings), ["core/invalid_node"; 4]);
     let paths: Vec<String> = findings
         .iter()
         .map(|d| d.location.json_path.to_string())
@@ -525,12 +552,12 @@ fn a_child_is_a_one_member_object_of_a_known_type() {
             };
             let found: Vec<String> = findings
                 .iter()
-                .map(|d| format!("{} {} {}", d.code.name(), d.severity, d.location.json_path))
+                .map(|d| format!("{} {} {}", d.code.id(), d.severity, d.location.json_path))
                 .collect();
             (child.clone(), found)
         };
         let at = format!("{ROOT}/{kind}/child");
-        let invalid = vec![format!("InvalidNode info {at}")];
+        let invalid = vec![format!("core/invalid_node info {at}")];
         for body in [
             "{}",
             r#"{"child": null}"#,
@@ -546,7 +573,7 @@ fn a_child_is_a_one_member_object_of_a_known_type() {
             child_of(r#"{"child": {"minecraft:dance": {}}}"#),
             (
                 None,
-                vec![format!("UnknownNode error {at}/minecraft:dance")]
+                vec![format!("core/unknown_node error {at}/minecraft:dance")]
             )
         );
         let (child, found) = child_of(r#"{"child": {"minecraft:consume_item": {}}}"#);
@@ -560,21 +587,25 @@ fn only_the_root_of_a_tree_makes_an_unknown_type_an_error() {
     let rejected = rejected(&tree_text("r", r#"{"minecraft:dance": {}}"#));
     one(
         &rejected.diagnostics,
-        "UnknownNode",
+        "core/unknown_node",
         Severity::Error,
         &format!("{ROOT}/minecraft:dance"),
     );
     // the node types of older headers are unknown today
     for kind in ["minecraft:set_variable", "minecraft:have_item", "sequence"] {
         let rejected = super::common::rejected(&tree_text("r", &format!(r#"{{"{kind}": {{}}}}"#)));
-        assert_eq!(kinds(&rejected.diagnostics), ["UnknownNode"], "{kind}");
+        assert_eq!(
+            kinds(&rejected.diagnostics),
+            ["core/unknown_node"],
+            "{kind}"
+        );
     }
     let (_, findings) = root_of(
         r#"{"minecraft:inverter": {"child": {"minecraft:sequence": {"children": [{"minecraft:dance": 1}]}}}}"#,
     );
     let finding = one(
         &findings,
-        "UnknownNode",
+        "core/unknown_node",
         Severity::Error,
         &format!("{ROOT}/minecraft:inverter/child/minecraft:sequence/children/0/minecraft:dance"),
     );
@@ -587,14 +618,14 @@ fn the_root_is_an_object_with_exactly_one_member() {
         let rejected = rejected(&tree_text("r", root));
         one(
             &rejected.diagnostics,
-            "InvalidRoot",
+            "core/invalid_root",
             Severity::Error,
             "minecraft:behavior_tree/minecraft:root",
         );
         assert_eq!(rejected.diagnostics.len(), 1, "{root}");
     }
     let rejected = rejected(r#"{"minecraft:behavior_tree": {"minecraft:name": "r"}}"#);
-    assert_eq!(kinds(&rejected.diagnostics), ["InvalidRoot"]);
+    assert_eq!(kinds(&rejected.diagnostics), ["core/invalid_root"]);
 }
 
 // ---- subtree (rule 14) and unknown keys (rule 13) ---------------------------------------------
@@ -616,7 +647,7 @@ fn subtree(body: &str) -> (String, Vec<(String, String)>, Vec<String>) {
         .map(|d| {
             format!(
                 "{} {} {}",
-                d.code.name(),
+                d.code.id(),
                 d.severity,
                 d.location
                     .json_path
@@ -650,7 +681,7 @@ fn data_items_is_one_item_or_an_array_of_items() {
             (
                 String::new(),
                 vec![],
-                vec!["InvalidType info data_items".to_owned()]
+                vec!["core/invalid_type info data_items".to_owned()]
             ),
             "{item}"
         );
@@ -661,7 +692,7 @@ fn data_items_is_one_item_or_an_array_of_items() {
         (
             String::new(),
             vec![pair("b", "b")],
-            vec!["InvalidType info data_items/0".to_owned()]
+            vec!["core/invalid_type info data_items/0".to_owned()]
         )
     );
     // `from` and `to` are read as text: a bool is its word, a number is empty, null is empty
@@ -680,7 +711,7 @@ fn subtree_id_is_read_as_text() {
     // there is no `subtree_id_id`: it is an unknown key
     assert_eq!(
         subtree(r#"{"subtree_id_id": "k"}"#).2,
-        ["UnrecognizedField info subtree_id_id"]
+        ["core/unrecognized_field info subtree_id_id"]
     );
 }
 
@@ -725,8 +756,8 @@ fn every_unknown_key_of_a_body_is_reported_and_kept_in_order() {
         .iter()
         .map(|d| {
             assert_eq!(
-                (d.code.name(), d.severity),
-                ("UnrecognizedField", Severity::Info)
+                (d.code.id(), d.severity),
+                ("core/unrecognized_field", Severity::Info)
             );
             d.location.json_path.to_string()
         })

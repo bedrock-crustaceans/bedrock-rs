@@ -54,7 +54,7 @@ pub fn ps06b_between_structs_loads_with_an_info_that_vanilla_rejects_it_deviatio
         assert_eq!(loaded.version().parsed_as, FormatVersion::new(1, 21, 100));
         assert_eq!(
             names(loaded.diagnostics(), Severity::Info),
-            ["VanillaRejectsVersion"],
+            ["core/vanilla_rejects_version"],
             "{version}"
         );
         assert!(names(loaded.diagnostics(), Severity::Warning).is_empty());
@@ -93,7 +93,7 @@ pub fn ps08_array_version_loads_with_an_info() {
     );
     assert_eq!(
         names(loaded.diagnostics(), Severity::Info),
-        ["FormatVersionArray"]
+        ["core/format_version_array"]
     );
     assert_eq!(loaded.diagnostics().len(), 1);
 }

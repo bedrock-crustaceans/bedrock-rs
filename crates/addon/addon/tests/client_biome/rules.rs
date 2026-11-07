@@ -2,7 +2,7 @@
 //! the members a struct's version does not bind yet, colours, the client's own checks, and the
 //! round trip.
 
-use bedrock_addon::diagnostic::Severity;
+use bedrock_addon::diagnostic::{Disposition, Kind, Severity};
 use bedrock_addon::document::{Content, Placed};
 use bedrock_addon::families::client_biome::component::{
     AmbientSounds, ClientBiomeComponent, FoliageAppearance, FoliageColor, FoliageColorMap,
@@ -28,7 +28,7 @@ fn a_failed_strict_load_carries_vanillas_two_texts() {
             has_at(
                 &found,
                 // By legacy name: the variant and the definitions that were it.
-                |c| matches!(c.name(), "MissingRequiredField"),
+                |c| matches!(c.id(), "core/missing_required_field"),
                 Severity::Error,
                 "/minecraft:client_biome/components/minecraft:sky_color/sky_color",
             ),
@@ -60,7 +60,7 @@ fn a_failed_strict_load_carries_vanillas_two_texts() {
         let found = rejected(&super::common::document("1.21.130", payload), &context());
         assert_eq!(
             // By legacy name: the variant and the definitions that were it.
-            count(&found, |c| matches!(c.name(), "MissingRequiredField")),
+            count(&found, |c| matches!(c.id(), "core/missing_required_field")),
             1,
             "{payload}: {:?}",
             texts(&found)
@@ -70,7 +70,7 @@ fn a_failed_strict_load_carries_vanillas_two_texts() {
     let found = rejected(r#"{"format_version": "1.21.40"}"#, &context());
     assert_eq!(
         // By legacy name: the variant and the definitions that were it.
-        count(&found, |c| matches!(c.name(), "MissingRequiredField")),
+        count(&found, |c| matches!(c.id(), "core/missing_required_field")),
         1
     );
 }
@@ -84,7 +84,7 @@ fn a_component_of_the_wrong_type_is_an_error() {
     );
     assert!(
         // By legacy name: the variant and the definitions that were it.
-        count(&found, |c| matches!(c.name(), "InvalidType")) >= 1,
+        count(&found, |c| matches!(c.id(), "core/invalid_type")) >= 1,
         "{:?}",
         texts(&found)
     );
@@ -99,7 +99,7 @@ fn a_component_of_the_wrong_type_is_an_error() {
     assert!(has_at(
         &found,
         // By legacy name: the variant and the definitions that were it.
-        |c| matches!(c.name(), "InvalidType"),
+        |c| matches!(c.id(), "core/invalid_type"),
         Severity::Error,
         "/minecraft:client_biome/components/minecraft:biome_music/volume_multiplier",
     ));
@@ -159,7 +159,7 @@ fn a_member_of_a_later_struct_is_an_error_below_its_version() {
             has_at(
                 &found,
                 // By legacy name: the variant and the definitions that were it.
-                |c| matches!(c.name(), "UnsupportedVersion"),
+                |c| matches!(c.id(), "core/use_format_version"),
                 Severity::Error,
                 &format!("/minecraft:client_biome/components/minecraft:{component}/{member}"),
             ) && has(
@@ -176,7 +176,9 @@ fn a_member_of_a_later_struct_is_an_error_below_its_version() {
         // One finding for the member: it is not also an unknown member.
         assert_eq!(
             // By legacy name: the variant and the definitions that were it.
-            count(&found, |c| matches!(c.name(), "UnrecognizedField")),
+            count(&found, |c| {
+                matches!(c.kind(), Kind::UnknownMember(Disposition::Kept))
+            }),
             0
         );
         // Raised while the struct is read: a finding of the parse.
@@ -184,7 +186,7 @@ fn a_member_of_a_later_struct_is_an_error_below_its_version() {
             found
                 .iter()
                 // By legacy name: the variant and the definitions that were it.
-                .filter(|f| matches!(f.code.name(), "UnsupportedVersion"))
+                .filter(|f| matches!(f.code.id(), "core/use_format_version"))
                 .all(|f| f.phase == bedrock_addon::diagnostic::Phase::Parse),
             "{below} {member}"
         );
@@ -209,7 +211,7 @@ fn the_dry_foliage_map_is_an_enum_error_below_1_21_70() {
         has_at(
             &found,
             // By legacy name: the variant and the definitions that were it.
-            |c| matches!(c.name(), "InvalidEnumValue"),
+            |c| matches!(c.id(), "core/invalid_enum_value"),
             Severity::Error,
             "/minecraft:client_biome/components/minecraft:foliage_appearance/color/color_map",
         ),
@@ -261,7 +263,7 @@ fn a_colour_map_container_is_checked() {
     assert!(has_at(
         &unknown,
         // By legacy name: the variant and the definitions that were it.
-        |c| matches!(c.name(), "InvalidEnumValue"),
+        |c| matches!(c.id(), "core/invalid_enum_value"),
         Severity::Error,
         at
     ));
@@ -269,7 +271,7 @@ fn a_colour_map_container_is_checked() {
     assert!(has_at(
         &missing,
         // By legacy name: the variant and the definitions that were it.
-        |c| matches!(c.name(), "MissingRequiredField"),
+        |c| matches!(c.id(), "core/missing_required_field"),
         Severity::Error,
         at
     ));
@@ -277,7 +279,7 @@ fn a_colour_map_container_is_checked() {
     assert!(has_at(
         &wrong,
         // By legacy name: the variant and the definitions that were it.
-        |c| matches!(c.name(), "InvalidType"),
+        |c| matches!(c.id(), "core/invalid_type"),
         Severity::Error,
         at
     ));
@@ -291,7 +293,7 @@ fn a_colour_map_container_is_checked() {
     assert!(has_at(
         &extra,
         // By legacy name: the variant and the definitions that were it.
-        |c| matches!(c.name(), "UnrecognizedField"),
+        |c| matches!(c.id(), "core/unrecognized_field"),
         Severity::Error,
         "/minecraft:client_biome/components/minecraft:grass_appearance/color/note",
     ));
@@ -331,7 +333,7 @@ fn a_colour_of_another_form_is_vanillas_error() {
                 has_at(
                     &found,
                     // By legacy name: the variant and the definitions that were it.
-                    |c| matches!(c.name(), "InvalidType"),
+                    |c| matches!(c.id(), "client_biome/color"),
                     Severity::Error,
                     &format!("/minecraft:client_biome/components/minecraft:{component}/{member}"),
                 ) && has(&found, |_| true, Severity::Error, COLOR_TEXT),
@@ -366,14 +368,17 @@ fn a_colour_channel_out_of_range_is_clamped_deviation() {
         assert!(has_at(
             loaded.diagnostics(),
             // By legacy name: the variant and the definitions that were it.
-            |c| matches!(c.name(), "InvalidValue"),
+            |c| matches!(c.id(), "core/invalid_value"),
             Severity::Info,
             &format!("/minecraft:client_biome/components/minecraft:sky_color/sky_color/{index}"),
         ));
     }
     assert_eq!(
         // By legacy name: the variant and the definitions that were it.
-        count(loaded.diagnostics(), |c| matches!(c.name(), "InvalidValue")),
+        count(loaded.diagnostics(), |c| matches!(
+            c.id(),
+            "core/invalid_value"
+        )),
         2
     );
     let sky = loaded.components.get::<SkyColor>().unwrap();
@@ -402,8 +407,7 @@ fn glue(bad: &str, good: &[&str], at: &str, text: &str) {
     assert!(
         has_at(
             &found,
-            // By legacy name: the variant and the definitions that were it.
-            |c| matches!(c.name(), "InvalidValue"),
+            |c| c.kind() == Kind::InvalidValue,
             Severity::Error,
             at
         ) && has(&found, |_| true, Severity::Error, text),
@@ -609,7 +613,7 @@ fn a_nested_format_version_selects_the_legacy_parser_which_finds_none_at_the_roo
         found
             .iter()
             // By legacy name: the variant and the definitions that were it.
-            .any(|f| matches!(f.code.name(), "MissingRequiredField")
+            .any(|f| matches!(f.code.id(), "client_biome/no_version_string")
                 && f.severity == Severity::Error
                 && f.location.json_path.to_string() == "format_version"
                 && f.code.to_string()
@@ -643,7 +647,7 @@ fn an_empty_document_is_rejected() {
         let found = rejected(text, &context());
         assert_eq!(
             // By legacy name: the variant and the definitions that were it.
-            count(&found, |c| matches!(c.name(), "EmptyDocument")),
+            count(&found, |c| matches!(c.id(), "core/empty_document")),
             1,
             "{text:?}: {:?}",
             texts(&found)
@@ -672,7 +676,7 @@ fn a_gated_member_name_in_another_component_is_an_unknown_member() {
     let unknown: Vec<_> = found
         .iter()
         // By legacy name: the variant and the definitions that were it.
-        .filter(|d| matches!(d.code.name(), "UnrecognizedField"))
+        .filter(|d| matches!(d.code.id(), "core/unrecognized_field"))
         .collect();
     assert_eq!(unknown.len(), 2, "{:?}", texts(&found));
     assert!(unknown.iter().all(|d| d.severity == Severity::Error));
@@ -690,7 +694,7 @@ fn a_text_that_is_no_json_and_has_no_version_keeps_its_syntax_finding_deviation(
         assert_eq!(errors.len(), 1, "{text}: {:?}", texts(&found));
         assert!(
             // By legacy name: the variant and the definitions that were it.
-            matches!(errors[0].code.name(), "MalformedInput"),
+            matches!(errors[0].code.id(), "core/document_json"),
             "{text}"
         );
         assert_eq!(errors[0].severity, Severity::Error);
@@ -705,7 +709,7 @@ fn a_text_that_is_no_json_and_has_no_version_keeps_its_syntax_finding_deviation(
         );
         assert_eq!(
             // By legacy name: the variant and the definitions that were it.
-            count(&found, |c| matches!(c.name(), "MissingFormatVersion")),
+            count(&found, |c| c.kind() == Kind::FormatVersion),
             0
         );
     }
@@ -738,7 +742,7 @@ fn a_null_member_refuses_the_client_biome_on_every_slice() {
             has_at(
                 &found,
                 // By legacy name: the variant and the definitions that were it.
-                |c| matches!(c.name(), "InvalidType"),
+                |c| matches!(c.id(), "core/invalid_type"),
                 Severity::Error,
                 &format!("{at}/minecraft:water_appearance/surface_opacity")
             ),
@@ -756,7 +760,7 @@ fn a_null_member_refuses_the_client_biome_on_every_slice() {
             has_at(
                 &found,
                 // By legacy name: the variant and the definitions that were it.
-                |c| matches!(c.name(), "InvalidType"),
+                |c| matches!(c.id(), "core/invalid_type"),
                 Severity::Error,
                 &format!("{at}/minecraft:sky_color")
             ),
@@ -777,7 +781,7 @@ fn a_null_member_refuses_the_client_biome_on_every_slice() {
         has_at(
             &beta.diagnostics,
             // By legacy name: the variant and the definitions that were it.
-            |c| matches!(c.name(), "InvalidType"),
+            |c| matches!(c.id(), "core/invalid_type"),
             Severity::Error,
             &format!("{at}/minecraft:water_appearance/surface_opacity")
         ),

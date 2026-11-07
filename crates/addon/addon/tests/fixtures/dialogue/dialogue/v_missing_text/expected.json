@@ -3,14 +3,14 @@
   "rejected": 2,
   "diagnostics": [
     {
-      "code": "MissingRequiredField",
+      "code": "dialogue/no_text",
       "severity": "error",
       "path": "dialogue/textless.json",
       "json_path": "minecraft:npc_dialogue/scenes/0/text",
       "text": "JSON: textless.json has an error: \n Each scene needs a 'text' value to display to the reader, was not found. Skipping scene..."
     },
     {
-      "code": "MissingRequiredField",
+      "code": "dialogue/no_text",
       "severity": "error",
       "path": "dialogue/textless.json",
       "json_path": "minecraft:npc_dialogue/scenes/1/text",

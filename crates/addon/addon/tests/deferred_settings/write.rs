@@ -438,7 +438,7 @@ fn an_unknown_number_beyond_a_double_is_kept_as_the_largest_finite_one_with_a_wa
             let span = f.location.span.expect("a span");
             let (from, len) = (span.offset as usize, span.len as usize);
             (
-                f.code.name(),
+                f.code.id(),
                 f.location.json_path.to_string(),
                 &text[from..from + len],
             )
@@ -447,16 +447,16 @@ fn an_unknown_number_beyond_a_double_is_kept_as_the_largest_finite_one_with_a_wa
     assert_eq!(
         found,
         [
-            ("UnrecognizedField", format!("{key}/zz"), "1e999"),
-            ("InvalidValue", format!("{key}/zz"), "1e999"),
+            ("core/unrecognized_field", format!("{key}/zz"), "1e999"),
+            ("core/invalid_value", format!("{key}/zz"), "1e999"),
             (
-                "UnrecognizedField",
+                "core/unrecognized_field",
                 format!("{key}/yy"),
                 r#"{"deep": [1, -1e999, {"n": 1e400}], "s": "1e999"}"#
             ),
-            ("InvalidValue", format!("{key}/yy/deep/1"), "-1e999"),
-            ("InvalidValue", format!("{key}/yy/deep/2/n"), "1e400"),
-            ("UnrecognizedField", format!("{key}/ok"), "1e39"),
+            ("core/invalid_value", format!("{key}/yy/deep/1"), "-1e999"),
+            ("core/invalid_value", format!("{key}/yy/deep/2/n"), "1e400"),
+            ("core/unrecognized_field", format!("{key}/ok"), "1e39"),
         ]
     );
     // The three unknown members and the three replaced numbers are all informations of ours
@@ -479,9 +479,9 @@ fn an_unknown_number_beyond_a_double_is_kept_as_the_largest_finite_one_with_a_wa
     assert_eq!(
         at(&infos(again.diagnostics())),
         [
-            ("UnrecognizedField", format!("{key}/zz").as_str()),
-            ("UnrecognizedField", format!("{key}/yy").as_str()),
-            ("UnrecognizedField", format!("{key}/ok").as_str()),
+            ("core/unrecognized_field", format!("{key}/zz").as_str()),
+            ("core/unrecognized_field", format!("{key}/yy").as_str()),
+            ("core/unrecognized_field", format!("{key}/ok").as_str()),
         ]
     );
     assert_eq!(again.to_json().unwrap(), written);

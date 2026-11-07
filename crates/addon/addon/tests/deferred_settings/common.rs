@@ -80,7 +80,7 @@ pub fn found<'a>(
         .filter(|f| f.severity == severity)
         .map(|f| {
             (
-                f.code.name(),
+                f.code.id(),
                 f.location.json_path.to_string(),
                 f.code.to_string(),
             )
@@ -194,7 +194,7 @@ pub fn located<'a>(
         .filter(|f| f.severity == severity)
         .map(|f| {
             (
-                f.code.name(),
+                f.code.id(),
                 f.location
                     .pack
                     .as_ref()

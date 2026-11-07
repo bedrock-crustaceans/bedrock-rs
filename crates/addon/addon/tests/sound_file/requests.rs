@@ -1,6 +1,7 @@
 //! What a load of the sound families asks the host for: the three documents, and the bytes of no
 //! audio file. The audio a sound name resolves to is read from the pack's file listing.
 
+use bedrock_addon::diagnostic::Kind;
 use bedrock_addon::families::sound_file::AudioExt;
 use bedrock_addon::load::{
     Collection, CollectionSet, LoadOptions, RepositoryLoader, Request, Residency, RootId, Source,
@@ -100,14 +101,14 @@ fn a_stack_with_listed_sound_files_requests_the_bytes_of_none_of_them() {
         assert_eq!(sounds.by_name.len(), 3);
         assert_eq!(sounds.shadowed.len(), 1);
         assert_eq!(sounds.ignored.len(), 1);
-        let codes: Vec<&str> = sounds.findings().map(|d| d.code.name()).collect();
+        let codes: Vec<&str> = sounds.findings().map(|d| d.code.id()).collect();
         // A world pack is no base-game pack: its dangling name is not judged.
-        assert_eq!(codes, ["IgnoredFile", "ShadowedDefinition"]);
+        assert_eq!(codes, ["core/ignored_file", "core/shadowed_definition"]);
         assert!(
             stack
                 .link()
                 .iter()
-                .all(|d| d.code.name() != "UnresolvedReference"),
+                .all(|d| d.kind() != Kind::UnresolvedReference),
             "the dangling name of a world pack is not judged by the link pass either"
         );
         // Nothing was skipped for want of bytes.
@@ -116,7 +117,7 @@ fn a_stack_with_listed_sound_files_requests_the_bytes_of_none_of_them() {
                 .resource
                 .report()
                 .iter()
-                .all(|d| d.code.name() != "FileNotLoaded")
+                .all(|d| d.code.id() != "core/file_not_loaded")
         );
     }
     // The lazy accessor on a stack whose files are only indexed asks for nothing at all and

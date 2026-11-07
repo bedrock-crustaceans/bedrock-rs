@@ -10,20 +10,20 @@
   },
   "diagnostics": [
     {
-      "code": "InvalidValue",
+      "code": "jigsaw/spacing_separation",
       "severity": "error",
       "path": "worldgen/structure_sets/a_trail_ruins.json",
       "json_path": "minecraft:structure_set/placement",
       "text": "Invalid spacing and separation combination for structure set 'minecraft:trail_ruins'. Value 'separation' must be less than half of 'spacing'."
     },
     {
-      "code": "InvalidValue",
+      "code": "core/invalid_value",
       "severity": "error",
       "path": "worldgen/structure_sets/c_zero.json",
       "json_path": "minecraft:structure_set/placement/spacing"
     },
     {
-      "code": "DocumentRejected",
+      "code": "jigsaw/set_failed",
       "severity": "error",
       "path": "worldgen/structure_sets/c_zero.json",
       "text": "Failed to parse structure set definition 'worldgen/structure_sets/c_zero.json'."

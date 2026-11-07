@@ -2,7 +2,7 @@
 //! existence half), the events its components fire, the effect and the sound an event starts,
 //! and the blocks a particle expires in (R39).
 
-use bedrock_addon::diagnostic::{Diagnostic, DiagnosticDetail, Diagnostics, Phase, Severity};
+use bedrock_addon::diagnostic::{Diagnostic, DiagnosticDetail, Diagnostics, Kind, Phase, Severity};
 use bedrock_addon::load::LoadOptions;
 use bedrock_addon::pack::LinkOptions;
 
@@ -96,7 +96,7 @@ fn said(finding: &Diagnostic) -> Said {
         other => panic!("no reference: {other:?}"),
     };
     (
-        finding.code.name(),
+        finding.code.id(),
         finding.severity,
         finding.location.json_path.to_string(),
         kind,
@@ -175,7 +175,7 @@ mod material {
         assert_eq!(
             all_said(&found),
             [info(
-                "UnresolvedReference",
+                "core/unresolved_reference",
                 &path,
                 "material",
                 "no_such_material"
@@ -191,7 +191,7 @@ mod material {
         for name in ["Mine", "mine.dim", "mine "] {
             assert_eq!(
                 all_said(&drawn_with(name, LoadOptions::default())),
-                [info("UnresolvedReference", &path, "material", name)],
+                [info("core/unresolved_reference", &path, "material", name)],
                 "{name}"
             );
         }
@@ -201,7 +201,7 @@ mod material {
     fn r38_a_material_of_the_game_resolves_with_a_host_that_has_it_and_not_without_one() {
         let path = format!("{BRP}/material");
         let missing = [info(
-            "UnresolvedReference",
+            "core/unresolved_reference",
             &path,
             "material",
             "particles_alpha",
@@ -236,7 +236,7 @@ mod material {
         );
         let path = format!("{BRP}/material");
         let told = [info(
-            "UnresolvedReference",
+            "core/unresolved_reference",
             &path,
             "material",
             "no_such_material",
@@ -261,7 +261,7 @@ mod material {
         let path = format!("{BRP}/material");
         assert_eq!(
             all_said(&linked(&text)),
-            [info("UnresolvedReference", &path, "material", "nope")]
+            [info("core/unresolved_reference", &path, "material", "nope")]
         );
     }
 
@@ -312,7 +312,16 @@ mod texture {
         let found = linked_with(&text, &[], load, LinkOptions::default());
         placed(&found);
         let mut said = all_said(&found);
-        said.retain(|said| said.0 == "TextureNotFound");
+        said.retain(|said| {
+            matches!(
+                said.0,
+                "core/texture_not_found"
+                    | "core/texture_not_found_worded"
+                    | "deferred_settings/caustics_not_found"
+                    | "flipbooks/no_metadata"
+                    | "texture_set/set_no_image"
+            )
+        });
         said
     }
 
@@ -330,7 +339,7 @@ mod texture {
         assert_eq!(
             drawn_with("textures/particle/none", LoadOptions::default()),
             [error(
-                "TextureNotFound",
+                "core/texture_not_found_worded",
                 &path,
                 "texture",
                 "textures/particle/none"
@@ -340,7 +349,12 @@ mod texture {
         for texture in ["particle/mine", "textures/particle"] {
             assert_eq!(
                 drawn_with(texture, LoadOptions::default()),
-                [error("TextureNotFound", &path, "texture", texture)],
+                [error(
+                    "core/texture_not_found_worded",
+                    &path,
+                    "texture",
+                    texture
+                )],
                 "{texture}"
             );
         }
@@ -353,7 +367,12 @@ mod texture {
     fn r38_a_texture_of_the_game_is_missing_unless_its_pack_is_on_the_stack_or_the_host_has_it() {
         let path = format!("{BRP}/texture");
         let vanilla = "textures/particle/particles";
-        let missing = [error("TextureNotFound", &path, "texture", vanilla)];
+        let missing = [error(
+            "core/texture_not_found_worded",
+            &path,
+            "texture",
+            vanilla,
+        )];
         assert_eq!(drawn_with(vanilla, LoadOptions::default()), missing);
         assert_eq!(
             drawn_with(
@@ -376,7 +395,12 @@ mod texture {
         for other in ["atlas.Terrain", "atlas.blocks", "atlas"] {
             assert_eq!(
                 drawn_with(other, LoadOptions::default()),
-                [error("TextureNotFound", &path, "texture", other)],
+                [error(
+                    "core/texture_not_found_worded",
+                    &path,
+                    "texture",
+                    other
+                )],
                 "{other}"
             );
         }
@@ -403,9 +427,16 @@ fn r38_without_the_texture_families_no_texture_is_looked_up() {
     let text = effect_at("1.26.10", "mine", "textures/particle/none", &components(""));
     let found = linked(&text);
     assert!(
-        found
-            .iter()
-            .all(|finding| finding.code.name() != "TextureNotFound"),
+        found.iter().all(|finding| {
+            !matches!(
+                finding.code.id(),
+                "core/texture_not_found"
+                    | "core/texture_not_found_worded"
+                    | "deferred_settings/caustics_not_found"
+                    | "flipbooks/no_metadata"
+                    | "texture_set/set_no_image"
+            )
+        }),
         "{found:?}"
     );
 }
@@ -424,7 +455,7 @@ fn firing(more: &str) -> String {
 /// nothing (vanilla's own `obsidian_tear` fires `hit_ground` and defines no event).
 fn event(path: &str, name: &str) -> Said {
     (
-        "UnresolvedReference",
+        "core/unresolved_reference",
         Severity::Info,
         path.to_owned(),
         "particle event",
@@ -547,7 +578,7 @@ fn r39_an_effect_nothing_defines_is_an_unresolved_reference_at_every_node_that_s
     placed(&found);
     let at = |node: &str, name: &str| {
         let path = format!("particle_effect/events/{node}/particle_effect/effect");
-        info("UnresolvedReference", &path, "particle", name)
+        info("core/unresolved_reference", &path, "particle", name)
     };
     assert_eq!(
         all_said(&found),
@@ -598,7 +629,7 @@ fn r39_an_effect_of_the_game_resolves_with_a_host_that_has_it_and_not_without_on
     ));
     let path = "particle_effect/events/x/particle_effect/effect";
     let missing = [info(
-        "UnresolvedReference",
+        "core/unresolved_reference",
         path,
         "particle",
         "minecraft:basic_smoke_particle",
@@ -660,7 +691,7 @@ fn r39_a_name_behind_an_element_the_older_reader_leaves_out_is_at_the_index_of_t
     );
     let at = |node: &str, name: &str| {
         let path = format!("particle_effect/events/{node}/particle_effect/effect");
-        info("UnresolvedReference", &path, "particle", name)
+        info("core/unresolved_reference", &path, "particle", name)
     };
     assert_eq!(
         of("particle"),
@@ -689,7 +720,7 @@ mod sound {
     const AT: &str = "particle_effect/events/x/sequence/0/sound_effect/event_name";
 
     fn unknown(name: &str) -> Said {
-        error("UnknownSound", AT, "level sound event", name)
+        error("core/unknown_sound", AT, "level sound event", name)
     }
 
     #[test]
@@ -722,7 +753,7 @@ mod sound {
         assert_eq!(
             all_said(&linked(&text)),
             [error(
-                "UnknownSound",
+                "core/unknown_sound",
                 at,
                 "level sound event",
                 "no_such_sound"
@@ -774,7 +805,7 @@ mod block {
     fn block(component: &str, index: usize, name: &str) -> Said {
         let path = format!("{COMPONENTS}/minecraft:{component}/{index}");
         // The game's link pass holds each name.
-        error("UnresolvedReference", &path, "block", name)
+        error("core/unresolved_reference_worded", &path, "block", name)
     }
 
     fn with_lamp(text: &str, load: LoadOptions) -> Vec<Diagnostic> {
@@ -886,7 +917,7 @@ fn r38_and_r39_are_informations_left_out_without_the_lints() {
     let found = linked(&text);
     let said = all_said(&found);
     assert!(said.contains(&info(
-        "UnresolvedReference",
+        "core/unresolved_reference",
         "particle_effect/events/x/particle_effect/effect",
         "particle",
         "demo:none"
@@ -919,7 +950,7 @@ fn r39_only_the_effect_in_effect_is_checked() {
     assert!(
         found
             .iter()
-            .all(|finding| finding.code.name() != "UnresolvedReference"),
+            .all(|finding| finding.kind() != Kind::UnresolvedReference),
         "{found:?}"
     );
 }

@@ -4,7 +4,7 @@ resolved = ["@minecraft/server 2.8.0"]
 main = "main.js"
 
 [[diagnostic]]
-code = "MultipleScriptModules"
+code = "core/multiple_script_modules"
 severity = "warning"
 path = "modules/1"
 text = "Plugin [sm20 - 3.2.2] - skipped, only one script module allowed per pack."

@@ -47,7 +47,7 @@ fn said(finding: &Diagnostic) -> Said {
         .map(bedrock_addon::pack::PackRef::name);
     let path = finding.location.path.as_ref().map(ToString::to_string);
     (
-        finding.code.name(),
+        finding.code.id(),
         finding.severity,
         pack.unwrap_or_default().to_owned(),
         path.unwrap_or_default(),
@@ -94,7 +94,7 @@ mod tips {
                 let (code, severity, pack, file, path) = said(finding);
                 assert_eq!(
                     (code, severity, pack.as_str(), file.as_str()),
-                    ("UnresolvedLangKey", Severity::Info, "rp 2", MESSAGES),
+                    ("core/unresolved_lang_key", Severity::Info, "rp 2", MESSAGES),
                     "{finding}"
                 );
                 let (kind, key) = named(finding);
@@ -316,7 +316,7 @@ fn l9_without_the_text_feature_no_tip_is_looked_up() {
     assert!(
         found
             .iter()
-            .all(|finding| finding.code.name() != "UnresolvedLangKey"),
+            .all(|finding| finding.code.id() != "core/unresolved_lang_key"),
         "{found:?}"
     );
 }

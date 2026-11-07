@@ -148,7 +148,7 @@ pub fn removed(diagnostics: &Diagnostics) -> Vec<&'static str> {
                 || d.is(&entity_codes::COMPONENT_REMOVED_BY_UPGRADE)
         })
         .inspect(|d| assert_eq!(d.severity, Severity::Info, "{d:?}"))
-        .map(|d| d.code.name())
+        .map(|d| d.code.id())
         .collect();
     names
 }
@@ -202,7 +202,11 @@ fn e00d_1_12_0_triggers_pushable() {
     // `fall_damage: 0.5` replaces by `true` is told as dropped.
     assert_eq!(
         removed(&found),
-        ["DroppedComponent", "DroppedField", "DroppedField"],
+        [
+            "entity/component_removed_by_upgrade",
+            "entity/member_removed_by_upgrade",
+            "entity/member_removed_by_upgrade"
+        ],
         "{found:#?}"
     );
     // The last is a note (INFO): the game's own fixer writes over the member.
@@ -232,19 +236,12 @@ fn e00d_1_12_0_triggers_pushable() {
     let found = step::<v1_12_0::Entity>("e00d_1_12_0_turtle_lightning", Run::default());
     let noted: Vec<String> = found
         .iter()
-        .map(|f| {
-            format!(
-                "{} {:?} {}",
-                f.code.name(),
-                f.severity,
-                f.location.json_path
-            )
-        })
+        .map(|f| format!("{} {:?} {}", f.code.id(), f.severity, f.location.json_path))
         .collect();
     assert_eq!(
         noted,
         [
-            "DroppedField Info minecraft:entity/components/minecraft:damage_sensor/0/damage_multiplier"
+            "core/dropped_field Info minecraft:entity/components/minecraft:damage_sensor/0/damage_multiplier"
         ]
     );
 }
@@ -318,7 +315,11 @@ fn e00d_a_scheduled_event_without_its_member_is_dropped_deviation() {
         "components": {"minecraft:scheduler": {"scheduled_events": [{"scheduled_event": {"event": "x:e"}}, {"weight": 1}]}}
     }}"#;
     let (out, found) = run_text::<v1_12_0::Entity>(before, Run::default(), &cx());
-    assert_eq!(removed(&found), ["DroppedField"], "{found:#?}");
+    assert_eq!(
+        removed(&found),
+        ["entity/member_removed_by_upgrade"],
+        "{found:#?}"
+    );
     let scheduler = out
         .as_object()
         .and_then(|p| p.get("components"))
@@ -335,7 +336,7 @@ fn e00d_a_scheduled_event_without_its_member_is_dropped_deviation() {
 #[test]
 fn e00e_1_13_0_melee_chance_spawn() {
     let found = step::<v1_13_0::Entity>("e00e_1_13_0_bee_melee", Run::default());
-    assert_eq!(removed(&found), ["DroppedField"; 4]);
+    assert_eq!(removed(&found), ["entity/member_removed_by_upgrade"; 4]);
     let melee = "components/minecraft:behavior.melee_attack";
     assert_eq!(
         texts(&found),
@@ -353,7 +354,11 @@ fn e00e_1_13_0_melee_chance_spawn() {
         "e00e_1_13_0_wolf",
     ] {
         let found = step::<v1_13_0::Entity>(name, Run::default());
-        assert_eq!(removed(&found), ["DroppedField"], "{name}");
+        assert_eq!(
+            removed(&found),
+            ["entity/member_removed_by_upgrade"],
+            "{name}"
+        );
     }
     // Diagnostics: the old member a group loses without a replacement warns.
     for name in [
@@ -362,7 +367,7 @@ fn e00e_1_13_0_melee_chance_spawn() {
     ] {
         let found = step::<v1_13_0::Entity>(name, Run::default());
         let expected: &[&str] = if name.ends_with("anchor") {
-            &["DroppedField"]
+            &["entity/member_removed_by_upgrade"]
         } else {
             &[]
         };
@@ -404,7 +409,13 @@ fn e00e_1_13_0_melee_chance_spawn() {
         "e00e_1_13_0_spawn_entity",
     ]);
     let found = step::<v1_13_0::Entity>("e00e_1_13_0_search_count", Run::default());
-    assert_eq!(removed(&found), ["DroppedField", "DroppedField"]);
+    assert_eq!(
+        removed(&found),
+        [
+            "entity/member_removed_by_upgrade",
+            "entity/member_removed_by_upgrade"
+        ]
+    );
     let found = step::<v1_13_0::Entity>("e00e_1_13_0_snowball_damage_sensor", Run::default());
     let sensor = Code::from(&entity_codes::DAMAGE_SENSOR_NOT_ADDED);
     assert_eq!(
@@ -519,7 +530,7 @@ fn e00e_silverfish_attack_interval() {
         components,
         &json(r#"{"minecraft:behavior.nearest_attackable_target": {"entity_types": [{}]}}"#)
     );
-    assert_eq!(removed(&found), ["DroppedField"]);
+    assert_eq!(removed(&found), ["entity/member_removed_by_upgrade"]);
 }
 
 #[test]
@@ -529,7 +540,13 @@ fn e01_1_16_0_restriction_split() {
         "e01_1_16_0_restriction_split_guardian",
     ]);
     let found = step::<v1_16_0::Entity>("e01_1_16_0_restriction_split_custom", Run::default());
-    assert_eq!(removed(&found), ["DroppedComponent", "DroppedComponent"]);
+    assert_eq!(
+        removed(&found),
+        [
+            "entity/component_removed_by_upgrade",
+            "entity/component_removed_by_upgrade"
+        ]
+    );
     let goal = "minecraft:behavior.move_towards_restriction";
     assert_eq!(
         texts(&found),
@@ -578,7 +595,7 @@ fn e01b_1_16_0_boat_bubble_columns() {
 #[test]
 fn e01c_1_16_0_component_rewrites() {
     let found = step::<v1_16_0::Entity>("e01c_1_16_0_component_rewrites", Run::default());
-    assert_eq!(removed(&found), ["DroppedComponent"]);
+    assert_eq!(removed(&found), ["entity/component_removed_by_upgrade"]);
     assert_eq!(
         texts(&found),
         [
@@ -605,7 +622,7 @@ fn e04_1_17_10_knockback_roar_v2() {
 #[test]
 fn e05_1_17_20_controlling_seat() {
     let found = step::<v1_17_20::Entity>("e05_1_17_20_controlling_seat", Run::default());
-    assert_eq!(removed(&found), ["DroppedField"]);
+    assert_eq!(removed(&found), ["entity/member_removed_by_upgrade"]);
     assert_eq!(
         texts(&found),
         [
@@ -769,7 +786,7 @@ fn e15_1_20_70_interact_slots_spawn_category() {
     assert!(outcome.value.is_none());
     assert_eq!(
         super::common::codes(&outcome.diagnostics, Severity::Warning),
-        ["MissingIdentifier"]
+        ["core/missing_identifier"]
     );
 }
 
@@ -792,7 +809,7 @@ fn e18_1_21_10_follow_owner_dolphin() {
 fn e19_1_21_20_looked_at_home_damage_sensor() {
     let found =
         step::<v1_21_20::Entity>("e19_1_21_20_looked_at_home_damage_sensor", Run::default());
-    assert_eq!(removed(&found), ["DroppedField"]);
+    assert_eq!(removed(&found), ["entity/member_removed_by_upgrade"]);
     assert_eq!(
         texts(&found),
         [
@@ -821,7 +838,7 @@ fn e22_1_21_70_leashable_presets() {
 fn e23_1_21_80_null_groups() {
     let found = step::<v1_21_80::Entity>("e23_1_21_80_null_groups", Run::default());
     let legacy = [(
-        "DroppedComponent",
+        "entity/null_group_removed",
         "component group 'gone' is null and was removed",
     )];
     let codes: Vec<_> = found.iter().map(|d| d.code.clone()).collect();
@@ -881,11 +898,11 @@ fn e29b_1_21_130_look_at_interact_jump() {
     let noted: Vec<String> = found
         .iter()
         .filter(|f| f.severity == Severity::Info)
-        .map(|f| format!("{} {}", f.code.name(), f.location.json_path))
+        .map(|f| format!("{} {}", f.code.id(), f.location.json_path))
         .collect();
     assert!(
         noted.contains(
-            &"DroppedField minecraft:entity/components/minecraft:jump.dynamic/regular_skip_data"
+            &"core/dropped_field minecraft:entity/components/minecraft:jump.dynamic/regular_skip_data"
                 .to_owned()
         ),
         "{noted:?}"
@@ -893,7 +910,8 @@ fn e29b_1_21_130_look_at_interact_jump() {
     assert!(
         noted
             .iter()
-            .any(|n| n.starts_with("DroppedField ") && n.ends_with("/target_distance")),
+            .any(|n| n.starts_with("entity/member_removed_by_upgrade ")
+                && n.ends_with("/target_distance")),
         "{noted:?}"
     );
     assert_eq!(
@@ -999,7 +1017,7 @@ fn e33_1_26_30_on_kill_overlap() {
             && codes[0] == Code::from(&core_codes::DROPPED_FIELD)
             && same_line(
                 &codes[1],
-                "InvalidValue",
+                "entity/not_a_valid_value",
                 "'bogus' is not a valid 'should_bounce' value."
             ),
         "{codes:?}"
@@ -1017,7 +1035,7 @@ fn e33b_1_26_30_shape_migrations() {
     let before = r#"{"format_version": "1.26.30", "minecraft:entity": {"description": {"identifier": "demo:x"},
         "components": {"minecraft:behavior.ranged_attack": {"attack_interval": 2, "attack_interval_min": 1}}}}"#;
     let (out, found) = run_text::<v1_26_30::Entity>(before, Run::default(), &cx());
-    assert_eq!(removed(&found), ["DroppedField"]);
+    assert_eq!(removed(&found), ["entity/member_removed_by_upgrade"]);
     assert_eq!(
         texts(&found),
         [
@@ -1073,7 +1091,7 @@ fn e34_1_26_40_ranged_projectile() {
     assert_eq!(
         found
             .iter()
-            .filter(|d| d.code.name() == "InvalidValue")
+            .filter(|d| d.code.id() == "entity/not_a_valid_value")
             .count(),
         1,
         "{found:#?}"
@@ -1234,7 +1252,7 @@ fn misread(version: &str, components: &str) -> (Vec<String>, String) {
         .filter(|f| {
             f.phase == Phase::Upgrade
                 && f.severity == Severity::Info
-                && f.code.name() == "InvalidType"
+                && f.code.id() == "core/invalid_type"
         })
         .map(|f| f.location.json_path.to_string())
         .collect();
@@ -1349,7 +1367,7 @@ fn said(version: &str, identifier: &str, components: &str) -> (Vec<String>, Stri
             let path = path
                 .strip_prefix("minecraft:entity/components/")
                 .unwrap_or(&path);
-            format!("{} {:?} {path}", f.code.name(), f.severity)
+            format!("{} {:?} {path}", f.code.id(), f.severity)
         })
         .collect();
     (said, entity.to_json().expect("the entity writes"))
@@ -1367,35 +1385,35 @@ fn a_value_a_step_or_the_typed_read_takes_as_another_is_told_at_the_member() {
             "1.21.120",
             "demo:x",
             r#"{"minecraft:breedable": {"breeds_with": [{"mate_type": 7, "baby_type": "demo:x", "breed_event": {"event": "e"}}]}}"#,
-            "InvalidType Info minecraft:breedable/breeds_with/0/mate_type",
+            "core/invalid_type Info minecraft:breedable/breeds_with/0/mate_type",
             r#""breeds_with": {}"#,
         ),
         (
             "1.21.120",
             "demo:x",
             r#"{"minecraft:breedable": {"breeds_with": "demo:x"}}"#,
-            "InvalidType Info minecraft:breedable/breeds_with",
+            "core/invalid_type Info minecraft:breedable/breeds_with",
             r#""breeds_with": {}"#,
         ),
         (
             "1.21.130",
             "demo:x",
             r#"{"minecraft:breedable": {"breeds_with": {"baby_type": "demo:x"}}}"#,
-            "MissingRequiredField Info minecraft:breedable/breeds_with",
+            "core/missing_required_field Info minecraft:breedable/breeds_with",
             r#""breeds_with": {}"#,
         ),
         (
             "1.21.130",
             "demo:x",
             r#"{"minecraft:breedable": {"breeds_with": [{"mate_type": "demo:x", "weight": 2}]}}"#,
-            "UnrecognizedField Info minecraft:breedable/breeds_with/0/weight",
+            "core/unrecognized_field Info minecraft:breedable/breeds_with/0/weight",
             r#""breeds_with": { "demo:x": {} }"#,
         ),
         (
             "1.21.120",
             "demo:x",
             r#"{"minecraft:ageable": {"feed_items": "wheat", "transform_to_item": "bowl"}}"#,
-            "DroppedField Info minecraft:ageable/transform_to_item",
+            "core/dropped_field Info minecraft:ageable/transform_to_item",
             r#""minecraft:ageable": {"#,
         ),
         (
@@ -1404,91 +1422,91 @@ fn a_value_a_step_or_the_typed_read_takes_as_another_is_told_at_the_member() {
             // No `feed_items` at all (vanilla's own axolotl): nothing is fed, so nothing is
             // lost but the member; the game drops it without a word: INFO.
             r#"{"minecraft:ageable": {"transform_to_item": "bowl"}}"#,
-            "DroppedField Info minecraft:ageable/transform_to_item",
+            "core/dropped_field Info minecraft:ageable/transform_to_item",
             r#""minecraft:ageable": {"#,
         ),
         (
             "1.12.0",
             "demo:x",
             r#"{"minecraft:fall_damage": {"value": "2"}}"#,
-            "InvalidType Info minecraft:fall_damage/value",
+            "core/invalid_type Info minecraft:fall_damage/value",
             r#""deals_damage": "no""#,
         ),
         (
             "1.12.0",
             "demo:x",
             r#"{"minecraft:damage_sensor": [{"cause": "fall", "deals_damage": false}], "minecraft:fall_damage": {"value": 2}}"#,
-            "DroppedField Info minecraft:damage_sensor/0/deals_damage",
+            "core/dropped_field Info minecraft:damage_sensor/0/deals_damage",
             r#""damage_multiplier": 2.0"#,
         ),
         (
             "1.16.0",
             "demo:x",
             r#"{"minecraft:behavior.explore_outskirts": {"wait_time": "600"}}"#,
-            "InvalidType Info minecraft:behavior.explore_outskirts/wait_time",
+            "core/invalid_type Info minecraft:behavior.explore_outskirts/wait_time",
             r#""max_wait_time": 0.0"#,
         ),
         (
             "1.16.0",
             "demo:x",
             r#"{"minecraft:behavior.explore_outskirts": {"wait_time": 1e39}}"#,
-            "InvalidValue Info minecraft:behavior.explore_outskirts/wait_time",
+            "core/invalid_value Info minecraft:behavior.explore_outskirts/wait_time",
             r#""max_wait_time": 1"#,
         ),
         (
             "1.13.0",
             "demo:x",
             r#"{"minecraft:behavior.circle_around_anchor": {"radius_change_chance": "5", "height_change_chance": 4}}"#,
-            "InvalidType Info minecraft:behavior.circle_around_anchor/radius_change_chance",
+            "core/invalid_type Info minecraft:behavior.circle_around_anchor/radius_change_chance",
             r#""radius_adjustment_chance": 1.0"#,
         ),
         (
             "1.13.0",
             "demo:x",
             r#"{"minecraft:behavior.circle_around_anchor": {"radius_change_chance": 5, "height_change_chance": 0.5}}"#,
-            "InvalidValue Info minecraft:behavior.circle_around_anchor/height_change_chance",
+            "core/invalid_value Info minecraft:behavior.circle_around_anchor/height_change_chance",
             r#""height_adjustment_chance": 1.0"#,
         ),
         (
             "1.13.0",
             "minecraft:cod",
             r#"{"minecraft:behavior.swim_wander": {"interval": "x"}}"#,
-            "InvalidType Info minecraft:behavior.swim_wander/interval",
+            "core/invalid_type Info minecraft:behavior.swim_wander/interval",
             r#""interval": 1.0"#,
         ),
         (
             "1.21.70",
             "demo:x",
             r#"{"minecraft:leashable": {"soft_distance": 2, "presets": {"soft_distance": 4}}}"#,
-            "InvalidType Info minecraft:leashable/presets",
+            "core/invalid_type Info minecraft:leashable/presets",
             r#""presets": [ { "soft_distance": 2, "spring_type": "bouncy""#,
         ),
         (
             "1.19.0",
             "demo:x",
             r#"{"minecraft:behavior.take_flower": {"filters": {"all_of": {"test": "is_family", "value": "x"}}}}"#,
-            "InvalidType Info minecraft:behavior.take_flower/filters/all_of",
+            "core/invalid_type Info minecraft:behavior.take_flower/filters/all_of",
             r#""all_of": [ { "test": "is_daytime", "value": true } ]"#,
         ),
         (
             "1.19.0",
             "demo:x",
             r#"{"minecraft:behavior.offer_flower": {"filters": {"all_of": 7}}}"#,
-            "InvalidType Info minecraft:behavior.offer_flower/filters/all_of",
+            "core/invalid_type Info minecraft:behavior.offer_flower/filters/all_of",
             r#""all_of": [ { "test": "is_daytime", "value": true } ]"#,
         ),
         (
             "1.19.50",
             "demo:x",
             r#"{"minecraft:behavior.trade_with_player": {"filters": {"all_of": "x"}}}"#,
-            "InvalidType Info minecraft:behavior.trade_with_player/filters/all_of",
+            "core/invalid_type Info minecraft:behavior.trade_with_player/filters/all_of",
             r#""all_of": [ { "test": "in_water", "value": false }"#,
         ),
         (
             "1.12.0",
             "minecraft:iron_golem",
             r#"{"minecraft:behavior.target_when_pushed": {"priority": 1, "entity_types": 7}}"#,
-            "InvalidType Info minecraft:behavior.target_when_pushed/entity_types",
+            "core/invalid_type Info minecraft:behavior.target_when_pushed/entity_types",
             // The fixer's `minecraft:filters` is no member the descriptor reads: told, not
             // kept.
             r#""entity_types": [ {} ]"#,
@@ -1498,7 +1516,7 @@ fn a_value_a_step_or_the_typed_read_takes_as_another_is_told_at_the_member() {
             "1.26.40",
             "demo:x",
             r#"{"minecraft:behavior.beg": null}"#,
-            "ValueRewritten Info minecraft:behavior.beg",
+            "core/value_rewritten Info minecraft:behavior.beg",
             r#""description""#,
         ),
         // An object where a number or a range stands: the member the range does not read.
@@ -1509,14 +1527,14 @@ fn a_value_a_step_or_the_typed_read_takes_as_another_is_told_at_the_member() {
             // The legacy schema reader takes a number only: its type line, the goal at its
             // defaults.
             r#"{"minecraft:behavior.ranged_attack": {"attack_interval": {"a": 1}}}"#,
-            "InvalidType Error minecraft:behavior.ranged_attack/attack_interval",
+            "core/unknown_child_option Error minecraft:behavior.ranged_attack/attack_interval",
             r#""minecraft:behavior.ranged_attack": { "in_range_movement_mode": "hold_position" }"#,
         ),
         (
             "1.26.30",
             "demo:x",
             r#"{"minecraft:behavior.beg": {"look_time": {"a": 1, "min": 2}}}"#,
-            "UnrecognizedField Info minecraft:behavior.beg/look_time/a",
+            "core/unrecognized_field Info minecraft:behavior.beg/look_time/a",
             // beg's `look_time` is read by the integer range reader, which reads `min`.
             r#""look_time": { "min": 2 }"#,
         ),
@@ -1524,14 +1542,14 @@ fn a_value_a_step_or_the_typed_read_takes_as_another_is_told_at_the_member() {
             "1.21.100",
             "demo:x",
             r#"{"minecraft:behavior.take_block": {"xz_range": {"a": 1}}}"#,
-            "UnrecognizedField Info minecraft:behavior.take_block/xz_range/a",
+            "core/unrecognized_field Info minecraft:behavior.take_block/xz_range/a",
             r#""xz_range": {}"#,
         ),
         (
             "1.16.0",
             "demo:x",
             r#"{"minecraft:projectile": {"on_hit": {"impact_damage": {"damage": {"a": 1}}}}}"#,
-            "UnrecognizedField Info minecraft:projectile/on_hit/impact_damage/damage/a",
+            "core/unrecognized_field Info minecraft:projectile/on_hit/impact_damage/damage/a",
             r#""damage": {}"#,
         ),
     ];
@@ -1555,7 +1573,10 @@ fn a_value_a_step_or_the_typed_read_takes_as_another_is_told_at_the_member() {
     assert!(wrong.is_empty(), "{}", wrong.join("\n"));
     // A `components` that is `null` is an absent one (an information marks it), and a well-formed value says nothing.
     let (null, _) = said("1.26.40", "demo:x", "null");
-    assert_eq!(null, ["ValueRewritten Info minecraft:entity/components"]);
+    assert_eq!(
+        null,
+        ["core/value_rewritten Info minecraft:entity/components"]
+    );
     for (version, components) in [
         (
             "1.21.120",
@@ -1995,7 +2016,7 @@ fn projectile_and_follow_mob_get_their_1_26_50_members_below_it() {
         "minecraft:entity/component_groups/g/minecraft:behavior.follow_mob/abort_navigation_on_stop",
     ] {
         assert!(
-            found.iter().any(|f| f.code.name() == "MemberNotKept"
+            found.iter().any(|f| f.code.id() == "core/member_not_kept"
                 && f.severity == Severity::Info
                 && f.location.json_path.to_string() == at),
             "{at}: {found:#?}"
@@ -2113,16 +2134,16 @@ fn the_1_26_50_gates_hold_at_1_26_49_and_not_at_1_26_50() {
         found
             .iter()
             .filter(|f| f.location.json_path.to_string() == at)
-            .map(|f| format!("{} {:?}", f.code.name(), f.severity))
+            .map(|f| format!("{} {:?}", f.code.id(), f.severity))
             .collect()
     };
     let (_, found) = super::common::stable(&follow("1.26.49"), &cx());
-    assert_eq!(said(&found), ["MemberNotKept Info"], "{found:#?}");
+    assert_eq!(said(&found), ["core/member_not_kept Info"], "{found:#?}");
     let refused = super::common::outcome(&follow("1.26.50"), &cx());
     assert!(refused.value.is_none());
     assert_eq!(
         said(&refused.diagnostics),
-        ["DeprecatedMember Error"],
+        ["core/deprecated_member_worded Error"],
         "{:#?}",
         refused.diagnostics
     );
@@ -2142,7 +2163,8 @@ fn the_iron_golem_fixer_s_prefixed_filter_is_not_read() {
     assert!(
         found
             .iter()
-            .any(|f| f.code.name() == "UnrecognizedField" && f.location.json_path.to_string() == at),
+            .any(|f| f.code.id() == "core/unrecognized_field"
+                && f.location.json_path.to_string() == at),
         "{found:#?}"
     );
     let written = entity.to_json().unwrap();
@@ -2162,7 +2184,7 @@ fn e00e_an_interval_beyond_an_int_is_an_information() {
         let (_, found) = run_text::<v1_13_0::Entity>(&before, Run::default(), &cx());
         let severities: Vec<Severity> = found
             .iter()
-            .filter(|d| d.code.name() == "InvalidValue")
+            .filter(|d| d.code.id() == "core/invalid_value")
             .map(|d| d.severity)
             .collect();
         assert_eq!(severities, [Severity::Info], "{interval}");

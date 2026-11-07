@@ -102,7 +102,7 @@ fn a_beta_document_needs_the_beta_apis() {
         Err(rejected) => rejected.diagnostics,
     };
     // By legacy name: the variant and the definitions that were it.
-    assert!(has(&d, |c| matches!(c.name(), "BetaFeaturesNotEnabled")));
+    assert!(has(&d, |c| matches!(c.id(), "core/beta_documents")));
     // a base-game pack may not either: the JSON path gates on the toggle alone
     // `a_json_beta_item_needs_the_beta_apis_even_in_a_base_game_pack`)
 }
@@ -113,7 +113,7 @@ fn unknown(
     d: &bedrock_addon_core::diagnostic::Diagnostics,
 ) -> Vec<(String, bedrock_addon_core::diagnostic::Severity)> {
     d.iter()
-        .filter(|f| f.code.name() == "UnrecognizedField")
+        .filter(|f| f.code.id() == "core/unrecognized_field")
         .map(|f| (f.location.json_path.to_string(), f.severity))
         .collect()
 }
@@ -121,7 +121,7 @@ fn unknown(
 fn told(d: &bedrock_addon_core::diagnostic::Diagnostics) -> Vec<(String, &'static str)> {
     above_info(d)
         .into_iter()
-        .map(|f| (f.location.json_path.to_string(), f.code.name()))
+        .map(|f| (f.location.json_path.to_string(), f.code.id()))
         .collect()
 }
 
@@ -185,7 +185,7 @@ fn a_json_beta_item_needs_the_beta_apis_even_in_a_base_game_pack() {
         Err(rejected) => rejected.diagnostics,
     };
     // By legacy name: the variant and the definitions that were it.
-    assert!(has(&d, |c| matches!(c.name(), "BetaFeaturesNotEnabled")));
+    assert!(has(&d, |c| matches!(c.id(), "core/beta_documents")));
     assert!(
         has_text(
             &d,
@@ -346,7 +346,7 @@ fn routing_wins_over_the_components_min_size_and_beta_meets_it() {
         d.iter().any(
             |f| f.severity == bedrock_addon_core::diagnostic::Severity::Error
                 // By legacy name: the variant and the definitions that were it.
-                && matches!(f.code.name(), "MissingRequiredField")
+                && matches!(f.code.id(), "core/missing_required_field")
                 && f.location.json_path.to_string() == "minecraft:item/components"
         ),
         "{d:#?}"
@@ -367,7 +367,7 @@ fn a_beta_file_read_as_an_item_is_refused_in_its_file() {
         .diagnostics
         .iter()
         // By legacy name: the variant and the definitions that were it.
-        .find(|d| matches!(d.code.name(), "UnsupportedVersion"))
+        .find(|d| matches!(d.code.id(), "core/no_parser_for_version"))
         .unwrap_or_else(|| panic!("{:#?}", refused.diagnostics));
     assert_eq!(
         refusal.code,

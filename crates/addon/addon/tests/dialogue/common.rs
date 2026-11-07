@@ -204,7 +204,7 @@ fn matches(finding: &Diagnostic, entry: &Value) -> bool {
     let json_path_ok = string(entry, "json_path")
         .is_none_or(|json_path| finding.location.json_path.to_string() == json_path);
     let text_ok = string(entry, "text").is_none_or(|text| finding.code.to_string() == text);
-    finding.code.name() == code && finding.severity == level && path_ok && json_path_ok && text_ok
+    finding.code.id() == code && finding.severity == level && path_ok && json_path_ok && text_ok
 }
 
 /// Compares the registry with the expected scene tags (in load order), rejected count and
@@ -245,7 +245,7 @@ pub fn check_expected(name: &str, registry: &Registry<DialogueScene>, expected: 
             None => panic!(
                 "{name}: unexpected {} {} at {:?} {}: {:?}\nall: {}",
                 finding.severity,
-                finding.code.name(),
+                finding.code.id(),
                 finding.location.path.as_ref().map(PackPath::as_str),
                 finding.location.json_path,
                 finding.code.to_string(),
@@ -269,7 +269,7 @@ pub fn describe(findings: &[&Diagnostic]) -> String {
             out,
             "\n  {} {} {:?} {} {:?}",
             f.severity,
-            f.code.name(),
+            f.code.id(),
             f.location.path.as_ref().map(PackPath::as_str),
             f.location.json_path,
             f.code.to_string()
@@ -335,6 +335,6 @@ pub fn names(diagnostics: &Diagnostics, severity: Severity) -> Vec<&'static str>
     diagnostics
         .iter()
         .filter(|d| d.severity == severity)
-        .map(|d| d.code.name())
+        .map(|d| d.code.id())
         .collect()
 }

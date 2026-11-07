@@ -32,12 +32,12 @@ fn rejected(version: &str, payload: &str, cx: &LoadContext) -> Vec<&'static str>
 fn a_custom_minecraft_identifier_is_rejected() {
     assert_eq!(
         rejected("1.26.50", &payload("minecraft:my_mob", ""), &cx()),
-        ["NamespaceRule"]
+        ["core/namespace_rule"]
     );
     // The rule's text is ours, so none is attached.
     let outcome = outcome(&doc("1.26.50", &payload("minecraft:my_mob", "")), &cx());
     assert_eq!(
-        with_code(&outcome.diagnostics, "NamespaceRule")[0].code,
+        with_code(&outcome.diagnostics, "core/namespace_rule")[0].code,
         Code::from(&core_codes::NAMESPACE_RULE)
     );
 }
@@ -63,7 +63,7 @@ fn a_payload_without_description_is_an_information_in_a_base_game_pack() {
     // The game finds no identifier and returns without a log: in a base-game pack the
     // skip is told as an information.
     let text = r#"{ "components": { "minecraft:conditional_bandwidth_optimization": {} } }"#;
-    assert_eq!(rejected("1.13.0", text, &cx()), ["MissingIdentifier"]);
+    assert_eq!(rejected("1.13.0", text, &cx()), ["core/missing_identifier"]);
     let mut base = cx();
     base.is_base_game_pack = true;
     let outcome = outcome(&doc("1.13.0", text), &base);
@@ -76,17 +76,17 @@ fn a_payload_without_description_is_an_information_in_a_base_game_pack() {
     );
     assert_eq!(
         codes(&outcome.diagnostics, Severity::Info),
-        ["MissingIdentifier"]
+        ["core/missing_identifier"]
     );
 }
 
 #[test]
 fn a_leading_digit_warns_below_1_20_30_and_is_rejected_from_it() {
     let (_, found) = stable(&doc("1.20.20", &payload("x:1abc", "")), &cx());
-    assert_eq!(codes(&found, Severity::Info), ["InvalidValue"]);
+    assert_eq!(codes(&found, Severity::Info), ["core/invalid_value"]);
     assert_eq!(
         rejected("1.20.30", &payload("x:1abc", ""), &cx()),
-        ["InvalidValue"]
+        ["core/invalid_value"]
     );
 }
 
@@ -94,7 +94,7 @@ fn a_leading_digit_warns_below_1_20_30_and_is_rejected_from_it() {
 fn an_identifier_without_namespace_is_rejected() {
     assert_eq!(
         rejected("1.26.50", &payload("nonamespace", ""), &cx()),
-        ["NamespaceRule"]
+        ["core/namespace_rule"]
     );
 }
 
@@ -102,7 +102,7 @@ fn an_identifier_without_namespace_is_rejected() {
 fn aliases_below_1_21_10_move_to_the_side_car_with_a_warning() {
     let payload = r#"{ "description": { "identifier": "demo:x", "aliases": { "demo:y": {} } }, "components": {} }"#;
     let (entity, found) = stable(&doc("1.21.0", payload), &cx());
-    assert_eq!(codes(&found, Severity::Info), ["DeprecatedMember"]);
+    assert_eq!(codes(&found, Severity::Info), ["core/deprecated_member"]);
     let side_car = entity.deprecated.as_ref().expect("the side-car");
     assert_eq!(side_car.aliases["demo:y"], json("{}"));
     assert_eq!(super::common::reparse(&entity), entity);
@@ -113,7 +113,7 @@ fn aliases_from_1_21_10_are_dropped_with_vanillas_text() {
     let payload = r#"{ "description": { "identifier": "demo:x", "aliases": { "demo:y": {} } }, "components": {} }"#;
     let (entity, found) = stable(&doc("1.21.10", payload), &cx());
     assert!(entity.deprecated.is_none());
-    let deprecated = with_code(&found, "DeprecatedMember");
+    let deprecated = with_code(&found, "entity/aliases_deprecated");
     assert_eq!(
         deprecated[0].code,
         Code::from(&entity_codes::ALIASES_DEPRECATED)
@@ -137,7 +137,7 @@ fn a_root_event_filter_below_1_19_20_is_dropped() {
     assert!(node.get("filters").is_none());
     // The game drops it without a line: an information of ours.
     assert!(codes(&found, Severity::Warning).is_empty(), "{found:#?}");
-    assert_eq!(codes(&found, Severity::Info), ["DroppedField"]);
+    assert_eq!(codes(&found, Severity::Info), ["core/dropped_field"]);
     // The text is ours: none is attached.
     assert_eq!(
         found.iter().next().unwrap().code,
@@ -195,7 +195,10 @@ fn entity_version_at_1_26_20_without_upcoming_creator_features_loads_with_a_note
     // 1.26.60 has no such gate: the changelog's toggle is told as an
     // information of the crate's own, and the version and its handlers load.
     assert!(codes(&found, Severity::Warning).is_empty(), "{found:#?}");
-    assert_eq!(codes(&found, Severity::Info), ["MissingToggles"]);
+    assert_eq!(
+        codes(&found, Severity::Info),
+        ["core/turn_on_toggle_before"]
+    );
     assert_eq!(
         found.iter().next().unwrap().code,
         core_codes::TURN_ON_TOGGLE_BEFORE.with([
@@ -230,12 +233,12 @@ fn entity_version_below_1_26_20_is_an_unknown_member() {
     assert!(refused.value.is_none());
     assert_eq!(
         codes(&refused.diagnostics, Severity::Error),
-        ["UnrecognizedField", "UnrecognizedField"]
+        ["core/unrecognized_field", "core/unrecognized_field"]
     );
     let (entity, found) = stable(&text("1.21.80"), &cx());
     assert_eq!(
         codes(&found, Severity::Warning),
-        ["UnrecognizedField", "UnrecognizedField"]
+        ["core/unrecognized_field", "core/unrecognized_field"]
     );
     assert!(entity.description.entity_version.is_none());
     let payload = bedrock_addon_core::diagnostic::JsonPath::of_keys(["minecraft:entity"]);
@@ -251,9 +254,9 @@ fn entity_version_below_1_26_20_is_an_unknown_member() {
 /// One structure check: `entity_version` as written gives `text`, and both members are
 /// dropped. The game's checks are kept errors (its level-3 lines, the entity loads
 /// versionless); the handler lookup's text is ours, an information.
-fn structure(version_json: &str, line: &str) {
+fn structure(id: &str, version_json: &str, line: &str) {
     let (entity, found) = stable(&doc("1.26.30", &versioned(version_json, HANDLERS)), &cx());
-    let invalid = with_code(&found, "InvalidValue");
+    let invalid = with_code(&found, id);
     assert_eq!(invalid.len(), 1, "{version_json}: {found:#?}");
     if line.starts_with("upgrade handler ") {
         assert_eq!(invalid[0].severity, Severity::Info, "{version_json}");
@@ -266,11 +269,7 @@ fn structure(version_json: &str, line: &str) {
     }
     assert!(
         invalid[0].code.id().starts_with("entity/")
-            && bedrock_addon_core::diagnostic::testing::same_line(
-                &invalid[0].code,
-                "InvalidValue",
-                line
-            ),
+            && bedrock_addon_core::diagnostic::testing::same_line(&invalid[0].code, id, line),
         "{version_json}: {:?}",
         invalid[0].code
     );
@@ -281,46 +280,57 @@ fn structure(version_json: &str, line: &str) {
 #[test]
 fn every_vanilla_structure_message() {
     structure(
+        "entity/version_not_object",
         "[]",
         "Error loading 'entity_version' as it is not a JSON object.",
     );
     structure(
+        "entity/upgrades_not_array",
         r#"{ "upgrades": {} }"#,
         "Error loading 'entity_version' as 'upgrades' is not an array.",
     );
     structure(
+        "entity/upgrade_entry_not_object",
         r#"{ "upgrades": [ 1 ] }"#,
         "Error loading 'entity_version' as 'upgrades' contains an entry that is not a JSON object.",
     );
     structure(
+        "entity/no_integer_upgrade_to",
         r#"{ "upgrades": [ { "upgrade_to": "1", "name": "x:v1" } ] }"#,
         "Error loading 'entity_version' as an upgrade entry does not contain an integer 'upgrade_to'.",
     );
     structure(
+        "entity/no_string_name",
         r#"{ "upgrades": [ { "upgrade_to": 1 } ] }"#,
         "Error loading 'entity_version' as an upgrade entry does not contain a string 'name'.",
     );
     structure(
+        "entity/empty_name",
         r#"{ "upgrades": [ { "upgrade_to": 1, "name": "" } ] }"#,
         "Error loading 'entity_version' as an upgrade entry's 'name' is empty.",
     );
     structure(
+        "entity/upgrade_to_zero",
         r#"{ "upgrades": [ { "upgrade_to": 0, "name": "x:v1" } ] }"#,
         "Error loading 'entity_version' as an upgrade entry 'upgrade_to' version is 0, which is reserved for versionless entities.",
     );
     structure(
+        "entity/version_not_from_one",
         r#"{ "upgrades": [ { "upgrade_to": 2, "name": "x:v2" } ] }"#,
         "Error loading 'entity_version' as its version does not start at 1.",
     );
     structure(
+        "entity/version_duplicate",
         r#"{ "upgrades": [ { "upgrade_to": 1, "name": "x:v1" }, { "upgrade_to": 1, "name": "x:v2" } ] }"#,
         "Error loading 'entity_version' as it contains multiple upgrade entries for version 1.",
     );
     structure(
+        "entity/version_gap",
         r#"{ "upgrades": [ { "upgrade_to": 1, "name": "x:v1" }, { "upgrade_to": 3, "name": "x:v2" } ] }"#,
         "Error loading 'x:golem' as it contains a non-contiguous version between 1 and 3.",
     );
     structure(
+        "entity/upgrade_handler_undefined",
         r#"{ "upgrades": [ { "upgrade_to": 1, "name": "x:missing" } ] }"#,
         "upgrade handler 'x:missing' is not defined in 'upgrades'",
     );
@@ -336,10 +346,10 @@ const BRAIN: &str = r#""brain": { "memories": [
 fn brain_without_the_experiment_rejects_the_entity() {
     assert_eq!(
         rejected("1.26.50", &payload("x:bee", BRAIN), &cx()),
-        ["MissingToggles"]
+        ["core/turn_on_toggle"]
     );
     let outcome = outcome(&doc("1.26.50", &payload("x:bee", BRAIN)), &cx());
-    let found = with_code(&outcome.diagnostics, "MissingToggles");
+    let found = with_code(&outcome.diagnostics, "core/turn_on_toggle");
     assert_eq!(
         found[0].to_string().rsplit(" | ").next(),
         Some("To use member 'brain', turn on the 'brain_prototype' toggle in settings")
@@ -384,7 +394,7 @@ fn brain_keeps_the_first_of_two_memories_of_one_name_and_type() {
     // later entry is dropped with an information of the crate's own.
     assert_eq!(memories.len(), 1);
     assert_eq!(memories[0].persists, Some(true));
-    assert_eq!(codes(&found, Severity::Info), ["InvalidValue"]);
+    assert_eq!(codes(&found, Severity::Info), ["core/invalid_value"]);
     assert_eq!(
         found.iter().next().unwrap().location.json_path.to_string(),
         "minecraft:entity/brain/memories/1"
@@ -401,7 +411,7 @@ fn brain_beehive_mapping_must_name_a_bool_memory() {
     );
     let (_, found) = stable(&doc("1.26.50", &text), &brain);
     // No line of the game: an information of the crate's own.
-    assert_eq!(codes(&found, Severity::Info), ["UnresolvedReference"]);
+    assert_eq!(codes(&found, Severity::Info), ["core/unresolved_reference"]);
 }
 
 #[test]
@@ -411,11 +421,14 @@ fn brain_below_1_21_130_is_an_unknown_member() {
     assert!(refused.value.is_none());
     assert_eq!(
         codes(&refused.diagnostics, Severity::Error),
-        ["UnrecognizedField"]
+        ["core/unrecognized_field"]
     );
     let (entity, found) = stable(&doc("1.21.80", &payload("x:bee", BRAIN)), &cx());
     assert!(entity.brain.is_none());
-    assert_eq!(codes(&found, Severity::Warning), ["UnrecognizedField"]);
+    assert_eq!(
+        codes(&found, Severity::Warning),
+        ["core/unrecognized_field"]
+    );
     let payload = bedrock_addon_core::diagnostic::JsonPath::of_keys(["minecraft:entity"]);
     assert!(found.unknown().get(&payload, "brain").is_none());
 }
@@ -427,7 +440,7 @@ fn an_event_naming_an_undefined_group_is_reported_and_kept() {
         r#""component_groups": { "demo:a": {} }, "events": { "demo:go": { "add": { "component_groups": ["demo:a", "demo:b"] } } }"#,
     );
     let (entity, found) = stable(&doc("1.26.50", &text), &cx());
-    let unresolved = with_code(&found, "UnresolvedReference");
+    let unresolved = with_code(&found, "core/unresolved_reference");
     assert_eq!(unresolved.len(), 1);
     // The game stores the names and says nothing at load: the crate's own, an information.
     assert_eq!(unresolved[0].severity, Severity::Info);
@@ -448,7 +461,10 @@ fn an_event_with_randomize_and_sequence_warns() {
         r#""events": { "demo:go": { "randomize": [ { "weight": 1 } ], "sequence": [ {} ] } }"#,
     );
     let (_, found) = stable(&doc("1.26.50", &text), &cx());
-    assert_eq!(codes(&found, Severity::Warning), ["IgnoredMember"]);
+    assert_eq!(
+        codes(&found, Severity::Warning),
+        ["shapes/event_both_randomize_and_sequence"]
+    );
 }
 
 /// Today's behaviour, not capture-checked: the game's text says the sequence is ignored, yet
@@ -460,7 +476,7 @@ fn an_event_with_randomize_and_sequence_still_validates_both_lists() {
         r#""events": { "demo:go": { "randomize": [ { "weight": 1, "add": { "component_groups": ["demo:r"] } } ], "sequence": [ { "add": { "component_groups": ["demo:s"] } } ] } }"#,
     );
     let (_, found) = stable(&doc("1.26.50", &text), &cx());
-    let ignored = with_code(&found, "IgnoredMember");
+    let ignored = with_code(&found, "shapes/event_both_randomize_and_sequence");
     assert_eq!(ignored.len(), 1);
     assert_eq!(ignored[0].severity, Severity::Warning);
     assert_eq!(
@@ -470,7 +486,7 @@ fn an_event_with_randomize_and_sequence_still_validates_both_lists() {
     assert!(
         bedrock_addon_core::diagnostic::testing::same_line(
             &ignored[0].code,
-            "IgnoredMember",
+            "shapes/event_both_randomize_and_sequence",
             bedrock_addon_core::diagnostic::EVENT_BOTH_RANDOMIZE_AND_SEQUENCE
         ),
         "{:?}",
@@ -482,7 +498,7 @@ fn an_event_with_randomize_and_sequence_still_validates_both_lists() {
     );
     // The ignored sequence's group reference is still checked, after the randomize's (the
     // document's order).
-    let unresolved: Vec<String> = with_code(&found, "UnresolvedReference")
+    let unresolved: Vec<String> = with_code(&found, "core/unresolved_reference")
         .iter()
         .map(|d| d.location.json_path.to_string())
         .collect();
@@ -504,7 +520,7 @@ fn an_unknown_or_item_response_is_an_unknown_member() {
     let (_, found) = stable(&doc("1.26.50", &text), &cx());
     assert_eq!(
         codes(&found, Severity::Warning),
-        ["UnrecognizedField", "UnrecognizedField"]
+        ["core/child_not_valid", "core/child_not_valid"]
     );
 }
 
@@ -524,15 +540,15 @@ fn event_response_gates() {
         ),
         &cx(),
     );
-    assert_eq!(codes(&found, Severity::Info), ["MissingToggles"]);
+    assert_eq!(codes(&found, Severity::Info), ["core/missing_toggles"]);
     let (_, found) = stable(&doc("1.26.50", &event(r#""set_memory": {}"#)), &cx());
-    assert_eq!(codes(&found, Severity::Info), ["MissingToggles"]);
+    assert_eq!(codes(&found, Severity::Info), ["core/turn_on_toggle"]);
     // `unleash` arrived in 1.26.30.
     let (_, found) = stable(
         &doc("1.26.20", &event(r#""unleash": { "unleash_self": true }"#)),
         &cx(),
     );
-    assert_eq!(codes(&found, Severity::Warning), ["UnrecognizedField"]);
+    assert_eq!(codes(&found, Severity::Warning), ["core/child_not_valid"]);
     let (_, found) = stable(
         &doc("1.26.30", &event(r#""unleash": { "unleash_self": true }"#)),
         &cx(),
@@ -544,7 +560,7 @@ fn event_response_gates() {
     let (_, found) = stable(&doc("1.26.20", &home), &cx());
     // The crate's own: an information.
     assert!(codes(&found, Severity::Warning).is_empty(), "{found:#?}");
-    assert_eq!(codes(&found, Severity::Info), ["MissingToggles"]);
+    assert_eq!(codes(&found, Severity::Info), ["core/turn_on_toggle"]);
     let mut ucf = cx();
     ucf.upcoming_creator_features = true;
     let mut base = cx();
@@ -578,7 +594,10 @@ fn an_unknown_filter_test_in_an_event_warns() {
         r#""events": { "demo:go": { "trigger": { "event": "demo:y", "filters": { "test": "no_such_test" } } } }"#,
     );
     let (_, found) = stable(&doc("1.26.50", &text), &cx());
-    assert_eq!(codes(&found, Severity::Warning), ["UnresolvedReference"]);
+    assert_eq!(
+        codes(&found, Severity::Warning),
+        ["core/filter_test_not_found"]
+    );
 }
 
 #[test]
@@ -591,7 +610,7 @@ fn spawn_egg_interaction_without_offspring_is_kept_with_the_game_line() {
         with_code(&found, "DroppedComponent").is_empty(),
         "{found:#?}"
     );
-    let told = with_code(&found, "MissingRequiredField");
+    let told = with_code(&found, "entity/spawn_egg_needs_offspring");
     assert_eq!(told.len(), 1, "{found:#?}");
     assert_eq!(
         told[0].code,
@@ -617,7 +636,7 @@ fn a_null_group_from_1_21_90_is_dropped() {
     // A `null` member is absent, so the group
     // is not there, without a line of the game's: an information of the crate's own.
     assert!(codes(&found, Severity::Warning).is_empty(), "{found:#?}");
-    assert_eq!(codes(&found, Severity::Info), ["InvalidValue"]);
+    assert_eq!(codes(&found, Severity::Info), ["core/invalid_value"]);
     assert_eq!(entity.component_groups.len(), 1);
 }
 
@@ -760,7 +779,7 @@ fn two_versions_of_one_component_keep_the_newer() {
         &cx(),
     );
     assert!(
-        with_code(&found, "DuplicateComponentVersion").len() == 1,
+        with_code(&found, "core/duplicate_component_version").len() == 1,
         "{found:#?}"
     );
     let keys = component_keys(&entity);
@@ -776,7 +795,7 @@ fn generic_component_metadata() {
     let text = with_components("1.26.20", r#""minecraft:bounciness": {}"#);
     let gated = outcome(&text, &cx());
     assert_eq!(
-        with_code(&gated.diagnostics, "MissingToggles").len(),
+        with_code(&gated.diagnostics, "core/turn_on_toggle_before").len(),
         1,
         "{:#?}",
         gated.diagnostics
@@ -784,7 +803,10 @@ fn generic_component_metadata() {
     let mut beta = cx();
     beta.beta_apis = true;
     let (_, found) = stable(&text, &beta);
-    assert!(with_code(&found, "MissingToggles").is_empty(), "{found:#?}");
+    assert!(
+        with_code(&found, "core/turn_on_toggle_before").is_empty(),
+        "{found:#?}"
+    );
 
     // from its deprecation the component is no member of the schema: an
     // error in the strict slice of 1.21.100 that rejects the entity.
@@ -796,7 +818,7 @@ fn generic_component_metadata() {
         &cx(),
     );
     assert!(refused.value.is_none(), "{:#?}", refused.diagnostics);
-    let unknown = with_code(&refused.diagnostics, "UnrecognizedComponent");
+    let unknown = with_code(&refused.diagnostics, "core/component_not_in_schema");
     assert_eq!(unknown.len(), 1, "{:#?}", refused.diagnostics);
     assert_eq!(unknown[0].severity, Severity::Error);
     assert!(with_code(&refused.diagnostics, "DeprecatedMember").is_empty());
@@ -821,7 +843,7 @@ fn e32_the_stop_if_holding_item_insert_is_not_reported_by_the_gate() {
     assert!(refused.value.is_none());
     assert_eq!(
         codes(&refused.diagnostics, Severity::Error),
-        ["UnrecognizedField"]
+        ["core/unrecognized_field"]
     );
 }
 
@@ -838,7 +860,7 @@ fn brain_components_need_the_brain_prototype() {
     let (entity, found) = stable(&text, &cx());
     assert_eq!(
         codes(&found, Severity::Info),
-        ["MissingToggles"],
+        ["core/turn_on_toggle"],
         "{found:#?}"
     );
     assert_eq!(
@@ -878,7 +900,7 @@ fn each_superseded_legacy_key_is_deprecated_from_its_version() {
         // component, a warning that drops it in the legacy slice (below 1.21.89), an error that
         // rejects the entity in a strict one.
         let loaded = outcome(&text, &no_upgrade);
-        let unknown = with_code(&loaded.diagnostics, "UnrecognizedComponent");
+        let unknown = with_code(&loaded.diagnostics, "core/component_not_in_schema");
         assert_eq!(unknown.len(), 1, "{key}: {:#?}", loaded.diagnostics);
         assert_eq!(
             unknown[0].location.json_path.to_string(),
@@ -932,7 +954,7 @@ fn a_bad_property_drops_the_whole_property_group() {
             entity.properties().is_empty(),
             "{bad}: the group is dropped"
         );
-        let dropped = with_code(&found, "DroppedField");
+        let dropped = with_code(&found, "entity/actor_properties_not_loaded");
         assert_eq!(dropped.len(), 1, "{bad}: {found:#?}");
         assert_eq!(
             dropped[0].code,
@@ -978,7 +1000,10 @@ fn property_memory_mapping_needs_the_brain_prototype() {
 #[test]
 fn a_newest_payload_without_description_only_warns_in_a_base_game_pack() {
     let text = r#"{ "components": {} }"#;
-    assert_eq!(rejected("1.26.50", text, &cx()), ["MissingRequiredField"]);
+    assert_eq!(
+        rejected("1.26.50", text, &cx()),
+        ["core/missing_required_field"]
+    );
     let mut base = cx();
     base.is_base_game_pack = true;
     let outcome = outcome(&doc("1.26.50", text), &base);
@@ -990,7 +1015,7 @@ fn a_newest_payload_without_description_only_warns_in_a_base_game_pack() {
     );
     assert_eq!(
         codes(&outcome.diagnostics, Severity::Info),
-        ["MissingRequiredField"]
+        ["core/missing_required_field"]
     );
 }
 
@@ -1012,7 +1037,7 @@ fn a_randomize_weight_must_be_a_number() {
     let (_, found) = stable(&text("2"), &cx());
     assert!(found.is_empty(), "{found:#?}");
     let (_, found) = stable(&text(r#""2""#), &cx());
-    assert_eq!(codes(&found, Severity::Info), ["InvalidType"]);
+    assert_eq!(codes(&found, Severity::Info), ["core/invalid_type"]);
     assert_eq!(
         found.iter().next().unwrap().location.json_path.to_string(),
         "minecraft:entity/events/x:go/randomize/0/weight"
@@ -1035,7 +1060,7 @@ fn a_finding_in_a_legacy_single_interaction_is_at_the_member_as_written() {
         // The legacy schema reader's type line, strict at 1.21.0.
         found
             .iter()
-            .filter(|f| f.kept && f.code.name() == "InvalidType")
+            .filter(|f| f.kept && f.code.id() == "core/unknown_child_option")
             .map(|f| f.location.json_path.to_string())
             .filter(|at| at.contains("minecraft:interact"))
             .collect()
@@ -1072,7 +1097,7 @@ fn an_unknown_goal_member_is_told_whatever_characters_its_key_holds() {
         let refused = outcome(&text, &cx());
         assert!(refused.value.is_none());
         let found = refused.diagnostics;
-        let told: Vec<(Severity, String)> = with_code(&found, "UnrecognizedField")
+        let told: Vec<(Severity, String)> = with_code(&found, "core/unrecognized_field")
             .iter()
             .map(|f| (f.severity, f.location.json_path.to_string()))
             .collect();
@@ -1085,7 +1110,7 @@ fn an_unknown_goal_member_is_told_whatever_characters_its_key_holds() {
             "{key:?}"
         );
         // The path's last step is the key as the file has it.
-        let unknown = with_code(&found, "UnrecognizedField")[0];
+        let unknown = with_code(&found, "core/unrecognized_field")[0];
         assert_eq!(
             unknown.location.json_path.segments().last(),
             Some(bedrock_addon_core::diagnostic::JsonPathSegment::Key(key))
@@ -1122,14 +1147,7 @@ fn told_at_the_root(text: &str, cx: &LoadContext) -> (Vec<String>, bool) {
     };
     let said = found
         .iter()
-        .map(|f| {
-            format!(
-                "{} {:?} {}",
-                f.code.name(),
-                f.severity,
-                f.location.json_path
-            )
-        })
+        .map(|f| format!("{} {:?} {}", f.code.id(), f.severity, f.location.json_path))
         .collect();
     (said, loaded)
 }
@@ -1168,7 +1186,7 @@ fn a_root_member_beside_the_version_and_the_payload_is_passed_over() {
             assert!(loaded, "{text}\n{found:#?}");
             assert_eq!(
                 found,
-                [format!("UnrecognizedField Info {member}")],
+                [format!("core/unrecognized_field Info {member}")],
                 "{text}"
             );
             let parsed = parse_as_written::<Entity>(JsonSlice::new(&text), context);
@@ -1200,7 +1218,9 @@ fn the_uncounted_root_still_needs_its_payload() {
     let (found, loaded) = told_at_the_root(&no_payload, &cx());
     assert!(!loaded, "{found:#?}");
     assert!(
-        found.iter().any(|f| f.starts_with("MissingPayload Error")),
+        found
+            .iter()
+            .any(|f| f.starts_with("core/missing_payload Error")),
         "{found:#?}"
     );
     assert!(
@@ -1221,7 +1241,7 @@ fn a_file_refused_before_the_read_is_placed_in_its_file() {
             Entity::parse(&path, bytes, &cx()).unwrap_err(),
             Entity::parse_as_written(&path, bytes, &cx()).unwrap_err(),
         ] {
-            let refusal = with_code(&rejected.diagnostics, "MalformedInput")[0];
+            let refusal = with_code(&rejected.diagnostics, "core/syntax")[0];
             assert!(refusal.location.pack.is_some(), "{refusal:#?}");
             assert_eq!(refusal.location.path.as_ref(), Some(&path));
         }
@@ -1278,7 +1298,7 @@ fn an_element_left_out_for_what_it_is_is_told_at_the_element_the_file_has() {
     let (_, found) = stable(&text, &cx());
     let at: Vec<String> = found
         .iter()
-        .map(|finding| format!("{} {}", finding.code.name(), finding.location.json_path))
+        .map(|finding| format!("{} {}", finding.code.id(), finding.location.json_path))
         .filter(|told| told.contains("/components/"))
         .collect();
     // `home`'s legacy reader is a schema reader (typed first at 1.26.50): the element no
@@ -1287,9 +1307,9 @@ fn an_element_left_out_for_what_it_is_is_told_at_the_element_the_file_has() {
     assert_eq!(
         at,
         [
-            "InvalidType minecraft:entity/components/minecraft:home/home_block_list/1",
-            "ValueRewritten minecraft:entity/components/minecraft:home",
-            "DroppedField minecraft:entity/components/minecraft:home/home_block_list"
+            "core/unknown_child_option minecraft:entity/components/minecraft:home/home_block_list/1",
+            "core/value_rewritten minecraft:entity/components/minecraft:home",
+            "core/dropped_field minecraft:entity/components/minecraft:home/home_block_list"
         ],
         "{found:#?}"
     );
@@ -1311,7 +1331,7 @@ fn the_upgrade_of_a_document_as_written_tells_what_the_load_tells_behind_an_elem
     let path = PackPath::new("entities/test.json").unwrap();
     let told = |d: &bedrock_addon_core::diagnostic::Diagnostics| -> Vec<String> {
         d.iter()
-            .map(|f| format!("{} {}", f.code.name(), f.location.json_path))
+            .map(|f| format!("{} {}", f.code.id(), f.location.json_path))
             .collect()
     };
     let loaded = Entity::parse(&path, text.as_bytes(), &cx()).expect("it loads");
@@ -1360,7 +1380,7 @@ fn a_timer_with_time_and_random_time_choices_is_a_warning() {
     let (_, found) = stable(&group, &cx());
     assert_eq!(
         codes(&found, Severity::Warning),
-        ["IgnoredMember"],
+        ["entity/timer_both"],
         "{found:#?}"
     );
     for alone in [
@@ -1403,7 +1423,7 @@ fn a_preferred_path_block_in_two_cost_groups_is_an_error() {
         .map(|f| {
             format!(
                 "{} {:?} {} {}",
-                f.code.name(),
+                f.code.id(),
                 f.phase,
                 f.location.json_path,
                 f.code
@@ -1413,7 +1433,7 @@ fn a_preferred_path_block_in_two_cost_groups_is_an_error() {
     assert_eq!(
         errors,
         [
-            "InvalidValue Validate minecraft:entity/components/minecraft:preferred_path/preferred_path_blocks/1 Duplicate block descriptors in two costing groups minecraft:stone"
+            "entity/duplicate_path_block Validate minecraft:entity/components/minecraft:preferred_path/preferred_path_blocks/1 Duplicate block descriptors in two costing groups minecraft:stone"
         ],
         "{:#?}",
         refused.diagnostics
@@ -1439,7 +1459,7 @@ fn an_unknown_component_has_the_game_text_at_the_component() {
         .diagnostics
         .iter()
         // By legacy name: the variant and the definitions that were it.
-        .filter(|f| matches!(f.code.name(), "UnrecognizedComponent"))
+        .filter(|f| matches!(f.code.id(), "core/component_not_in_schema"))
         .map(|f| {
             (
                 f.severity,
@@ -1464,7 +1484,7 @@ fn an_unknown_component_has_the_game_text_at_the_component() {
             .diagnostics
             .iter()
             // By legacy name: the variant and the definitions that were it.
-            .all(|f| !matches!(f.code.name(), "UnrecognizedComponent")),
+            .all(|f| !matches!(f.code.id(), "core/component_not_in_schema")),
         "{:#?}",
         earlier.diagnostics
     );
@@ -1481,12 +1501,12 @@ fn a_deprecated_component_is_a_warning_at_1_21_88_and_rejects_at_1_21_89() {
     };
     let legacy = outcome(&text("1.21.88"), &cx());
     assert!(legacy.value.is_some(), "{:#?}", legacy.diagnostics);
-    let found = with_code(&legacy.diagnostics, "UnrecognizedComponent");
+    let found = with_code(&legacy.diagnostics, "core/component_not_in_schema");
     assert_eq!(found.len(), 1, "{:#?}", legacy.diagnostics);
     assert_eq!(found[0].severity, Severity::Warning);
     let strict = outcome(&text("1.21.89"), &cx());
     assert!(strict.value.is_none(), "{:#?}", strict.diagnostics);
-    let found = with_code(&strict.diagnostics, "UnrecognizedComponent");
+    let found = with_code(&strict.diagnostics, "core/component_not_in_schema");
     assert_eq!(found.len(), 1, "{:#?}", strict.diagnostics);
     assert_eq!(found[0].severity, Severity::Error);
     assert_eq!(

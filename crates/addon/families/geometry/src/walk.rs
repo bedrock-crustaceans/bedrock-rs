@@ -275,11 +275,11 @@ mod tests {
                 format!(
                     "{:?} {} at {}",
                     d.severity,
-                    d.code.name(),
+                    d.code.id(),
                     d.location.json_path
                 )
             })
             .collect();
-        assert_eq!(findings, ["Info LossyConversion at x"]);
+        assert_eq!(findings, ["Info core/lossy_conversion at x"]);
     }
 }

@@ -21,7 +21,10 @@ fn n01_an_add_on_root_in_the_minecraft_namespace_is_refused() {
     let d = rejects(root(&text));
     assert_eq!(
         found(&d),
-        [error("NamespaceRule", ROOT_ID, EXTERNAL), failed_to_load()]
+        [
+            error("ddui/external_namespace", ROOT_ID, EXTERNAL),
+            failed_to_load()
+        ]
     );
     assert_eq!(spanned(&text, d.iter().next().unwrap()), r#""minecraft:x""#);
 }
@@ -39,10 +42,10 @@ fn n02_minecraft_anywhere_in_an_add_on_identifier_is_refused_with_a_hint_deviati
         assert_eq!(
             found(&rejects(root(&named(identifier)))),
             [
-                error("NamespaceRule", ROOT_ID, EXTERNAL),
+                error("ddui/external_namespace", ROOT_ID, EXTERNAL),
                 // Ours: the identifier is not in the `minecraft` namespace and is refused all
                 // the same.
-                info("NamespaceRule", ROOT_ID, "namespace rule failed"),
+                info("core/namespace_rule", ROOT_ID, "namespace rule failed"),
                 failed_to_load()
             ],
             "{identifier}"
@@ -69,7 +72,10 @@ fn n04_a_shipped_root_without_minecraft_is_refused() {
     for identifier in ["demo:x", "Minecraft:x", "minecraf:t"] {
         assert_eq!(
             found(&rejects(root_in(&named(identifier), &cx(E20, true)))),
-            [error("NamespaceRule", ROOT_ID, BUILTIN), failed_to_load()],
+            [
+                error("ddui/builtin_namespace", ROOT_ID, BUILTIN),
+                failed_to_load()
+            ],
             "{identifier}"
         );
     }
@@ -89,7 +95,7 @@ fn n06_the_rule_holds_for_compositions() {
     assert_eq!(
         found(&rejects(composition(&text))),
         [
-            error("NamespaceRule", COMPOSITION_ID, EXTERNAL),
+            error("ddui/external_namespace", COMPOSITION_ID, EXTERNAL),
             failed_to_load()
         ]
     );
@@ -98,7 +104,7 @@ fn n06_the_rule_holds_for_compositions() {
     assert_eq!(
         found(&rejects(composition_in(&text, &cx(E20, true)))),
         [
-            error("NamespaceRule", COMPOSITION_ID, BUILTIN),
+            error("ddui/builtin_namespace", COMPOSITION_ID, BUILTIN),
             failed_to_load()
         ]
     );
@@ -114,7 +120,7 @@ fn an_add_on_composition_with_an_extension_point_is_refused() {
         found(&d),
         [
             error(
-                "InvalidValue",
+                "ddui/extension_point_overridden",
                 "minecraft:ui-composition/attribs/extension_point",
                 OVERRIDEN
             ),
@@ -138,9 +144,9 @@ fn the_namespace_rule_and_the_extension_point_rule_are_both_reported() {
     assert_eq!(
         found(&rejects(composition(&text))),
         [
-            error("NamespaceRule", COMPOSITION_ID, EXTERNAL),
+            error("ddui/external_namespace", COMPOSITION_ID, EXTERNAL),
             error(
-                "InvalidValue",
+                "ddui/extension_point_overridden",
                 "minecraft:ui-composition/attribs/extension_point",
                 OVERRIDEN
             ),
@@ -153,6 +159,12 @@ fn the_namespace_rule_and_the_extension_point_rule_are_both_reported() {
 #[test]
 fn a_file_that_fails_the_parse_is_not_validated() {
     let text = root_json("minecraft:x", r#"{ "component": "Nope" }"#);
-    let got = found(&rejects(root(&text)));
-    assert!(got.iter().all(|f| f.1 != "NamespaceRule"), "{got:#?}");
+    let rejected = rejects(root(&text));
+    let got = found(&rejected);
+    assert!(
+        rejected
+            .iter()
+            .all(|f| f.code.kind() != bedrock_addon::diagnostic::Kind::Identifier),
+        "{got:#?}"
+    );
 }

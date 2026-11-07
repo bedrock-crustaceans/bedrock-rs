@@ -144,7 +144,7 @@ pub fn only(pieces: &PersonaPieces) -> &PersonaPiece {
 
 /// The variant name of a finding's code.
 pub fn code_name(found: &Diagnostic) -> String {
-    found.code.name().to_owned()
+    found.code.id().to_owned()
 }
 
 /// One finding as `<severity> <Code> <file> <json path>`.
@@ -223,7 +223,7 @@ pub fn refused_at(pieces: &PersonaPieces, file: &str) -> Vec<String> {
     assert_eq!(pieces.rejected.len(), 1, "{:#?}", lines(pieces));
     let diagnostics: Vec<&Diagnostic> = pieces.rejected[0].diagnostics.iter().collect();
     let last = diagnostics.last().expect("a finding");
-    assert_eq!(line(last), format!("error MalformedInput {file}"));
+    assert_eq!(line(last), format!("error persona/meta_not_parsed {file}"));
     assert_eq!(
         message(last),
         format!("Could not parse metafile json file {file}")

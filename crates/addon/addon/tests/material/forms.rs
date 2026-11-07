@@ -18,7 +18,7 @@ fn keys(text: &str) -> Vec<String> {
 /// The one finding of a wrapper the client does not unwrap.
 fn v15() -> Vec<crate::common::Rendered> {
     vec![finding(
-        "UnsupportedVersion",
+        "core/unsupported_version",
         Info,
         "materials/version",
         "unsupported format_version",
@@ -222,7 +222,7 @@ fn m02_two_keys_with_one_base_name_are_reported_with_the_clients_text() {
     assert_eq!(
         found(&text),
         [finding(
-            "DuplicateIdentifier",
+            "material/defined_twice",
             Error,
             "materials/a:c",
             "Material \"a\" is defined twice in \"materials/test.material\" as \"a:b\" and \"a:c\". You cannot redefine a material.",
@@ -239,7 +239,7 @@ fn every_later_key_of_a_base_name_is_reported_against_the_first_in_key_order() {
     let text = wrapped(r#""a:z": {}, "a": {}, "a:m:k": {}, "ab": {}, "+a": {}"#);
     let twice = |first: &str, second: &str| {
         finding(
-            "DuplicateIdentifier",
+            "material/defined_twice",
             Error,
             &format!("materials/{second}"),
             &format!(
@@ -265,7 +265,7 @@ fn a_root_member_that_is_no_object_is_no_material_deviation() {
             .collect::<Vec<_>>(),
         ["format_version", "n", "l"]
     );
-    let wrong = |at: &str| finding("InvalidType", Info, at, "wrong JSON type");
+    let wrong = |at: &str| finding("core/invalid_type", Info, at, "wrong JSON type");
     assert_eq!(
         found(text),
         [wrong("format_version"), wrong("n"), wrong("l")]
@@ -291,7 +291,7 @@ fn a_copy_that_is_no_json_is_rejected_with_the_clients_text() {
     assert_eq!(
         (*code, *severity, at.as_str()),
         (
-            "MalformedInput",
+            "material/parse_error",
             bedrock_addon::diagnostic::Severity::Error,
             ""
         )
@@ -310,7 +310,7 @@ fn a_root_that_is_no_object_is_rejected() {
         assert_eq!(
             rendered(rejected.diagnostics.iter()),
             [finding(
-                "InvalidType",
+                "core/invalid_type",
                 bedrock_addon::diagnostic::Severity::Error,
                 "",
                 "wrong JSON type"
@@ -354,7 +354,7 @@ fn a_wrapped_file_whose_map_has_a_string_vertex_shader_is_a_single_material_too(
     assert_eq!(
         rendered(document.diagnostics().iter()),
         [finding(
-            "NoEffect",
+            "core/no_effect",
             Info,
             "materials/+states",
             "member has no effect"
@@ -373,7 +373,7 @@ fn content_after_the_root_value_is_reported_and_the_file_loads() {
     // left unread, once per file.
     let trailing = |at: &str| {
         finding(
-            "MalformedInput",
+            "core/syntax",
             Info,
             at,
             "content after the JSON value is ignored",
@@ -413,7 +413,7 @@ fn content_after_the_root_value_is_reported_and_the_file_loads() {
         .diagnostics()
         .map(|f| {
             (
-                f.code.name(),
+                f.code.id(),
                 crate::common::pack_name(f).unwrap(),
                 f.location.path.as_ref().unwrap().to_string(),
             )
@@ -423,12 +423,12 @@ fn content_after_the_root_value_is_reported_and_the_file_loads() {
         found,
         [
             (
-                "MalformedInput",
+                "core/syntax",
                 "pack 2".to_owned(),
                 "materials/sad.json".to_owned()
             ),
             (
-                "MalformedInput",
+                "core/syntax",
                 "pack 2".to_owned(),
                 "materials/a.material".to_owned()
             ),

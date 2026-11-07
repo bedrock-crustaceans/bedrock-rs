@@ -103,7 +103,7 @@ fn misses(group: &AimAssist) -> Vec<(String, String)> {
     link::link(group, &World)
         .iter()
         .map(|finding| {
-            assert_eq!(finding.code.name(), "UnresolvedReference");
+            assert_eq!(finding.code.id(), "core/unresolved_reference");
             assert_eq!(finding.severity, Severity::Info);
             assert_eq!(finding.phase, Phase::Link);
             assert!(finding.location.path.is_some());

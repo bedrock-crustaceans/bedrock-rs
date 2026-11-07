@@ -1,13 +1,13 @@
 # Validation rule 14: an object without `to`, and a number.
 
 [[diagnostic]]
-kind = "InvalidType"
+kind = "core/invalid_type"
 severity = "info"
 file = "behavior_trees/sub.json"
 path = "minecraft:behavior_tree/minecraft:root/minecraft:subtree/data_items/2"
 
 [[diagnostic]]
-kind = "InvalidType"
+kind = "core/invalid_type"
 severity = "info"
 file = "behavior_trees/sub.json"
 path = "minecraft:behavior_tree/minecraft:root/minecraft:subtree/data_items/3"

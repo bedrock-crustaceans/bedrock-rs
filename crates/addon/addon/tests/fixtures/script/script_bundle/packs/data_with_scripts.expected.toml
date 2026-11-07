@@ -4,6 +4,6 @@ members = ["main.js"]
 others = []
 
 [[diagnostics]]
-code = "ScriptFileNotLoadable"
+code = "core/script_file_not_loadable"
 severity = "info"
 text = "script file can never be loaded"

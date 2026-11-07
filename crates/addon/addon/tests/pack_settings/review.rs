@@ -61,7 +61,7 @@ fn a_list_takes_strings_only_whatever_the_size_of_a_number_in_it() {
         let found = refused_text(WORLD, &text);
         assert_eq!(
             names(&found, Severity::Error),
-            ["InvalidType", "DocumentRejected"],
+            ["core/invalid_type", "pack_settings/load_failed"],
             "{list}"
         );
     }
@@ -88,7 +88,7 @@ fn a_pack_id_that_is_a_number_of_any_size_is_a_type_error() {
         let found = refused_text(WORLD, &text);
         assert_eq!(
             names(&found, Severity::Error),
-            ["InvalidType", "DocumentRejected"],
+            ["core/invalid_type", "pack_settings/load_failed"],
             "{id}"
         );
         assert!(names(&found, Severity::Warning).is_empty(), "{id}");
@@ -106,7 +106,7 @@ fn mismatches(found: &Diagnostics) -> usize {
     found
         .iter()
         // By legacy name: the variant and the definitions that were it.
-        .filter(|d| matches!(d.code.name(), "PayloadKeyMismatch"))
+        .filter(|d| matches!(d.code.id(), "core/payload_key_mismatch"))
         .count()
 }
 
@@ -128,7 +128,7 @@ fn a_comment_between_a_foreign_key_and_its_value_does_not_hide_the_key() {
             .diagnostics()
             .iter()
             // By legacy name: the variant and the definitions that were it.
-            .find(|d| matches!(d.code.name(), "PayloadKeyMismatch"))
+            .find(|d| matches!(d.code.id(), "core/payload_key_mismatch"))
             .unwrap();
         let span = warning.location.span.unwrap();
         let start = usize::try_from(span.offset).unwrap();
@@ -280,11 +280,11 @@ fn a_number_beyond_f32_is_read_as_the_largest_finite_float_with_an_information_d
             .diagnostics()
             .iter()
             .filter(|d| d.severity == Severity::Info)
-            .map(|d| (d.code.name(), d.location.json_path.to_string()))
+            .map(|d| (d.code.id(), d.location.json_path.to_string()))
             .collect();
         let expected_warnings: &[_] = if warned {
             &[(
-                "InvalidValue",
+                "core/invalid_value",
                 "minecraft:pack_settings/settings/0/values/banana:x".to_owned(),
             )]
         } else {
@@ -339,11 +339,11 @@ fn an_integer_beyond_128_bits_is_read_as_the_double_it_spells() {
             .diagnostics()
             .iter()
             .filter(|d| d.severity == Severity::Info)
-            .map(|d| (d.code.name(), d.location.json_path.to_string()))
+            .map(|d| (d.code.id(), d.location.json_path.to_string()))
             .collect();
         let expected_warnings: &[_] = if warned {
             &[(
-                "InvalidValue",
+                "core/invalid_value",
                 "minecraft:pack_settings/settings/0/values/banana:x".to_owned(),
             )]
         } else {

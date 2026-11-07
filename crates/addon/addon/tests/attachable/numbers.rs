@@ -19,7 +19,7 @@ const DESCRIPTION: &str = "minecraft:attachable/description";
 fn clamp_warnings(d: &Diagnostics, path: &str) -> usize {
     d.iter()
         .filter(|f| {
-            f.code.name() == "InvalidValue"
+            f.code.id() == "core/invalid_value"
                 && f.severity == Severity::Info
                 && f.code.to_string() == "invalid value"
                 && f.location.json_path.to_string() == path
@@ -41,7 +41,7 @@ fn clamped(version: &str, members: &str, paths: &[&str]) -> (Attachable, String)
             .diagnostics()
             .iter()
             .filter(|f| {
-                f.code.name() == "InvalidValue"
+                f.code.id() == "core/invalid_value"
                     && f.severity == Severity::Info
                     && f.location.json_path.to_string() == at
                     && f.location.span.is_some()
@@ -170,7 +170,7 @@ fn an_item_condition_beyond_f32_is_read_as_the_largest_finite_float_deviation() 
             .iter()
             .filter(|f| {
                 // the clamp's warning and the a16 information
-                f.code.name() == "InvalidValue" && f.location.json_path.to_string() == at
+                f.code.id() == "core/invalid_value" && f.location.json_path.to_string() == at
             })
             .collect();
         assert_eq!(
@@ -196,7 +196,7 @@ fn an_item_condition_beyond_f32_is_read_as_the_largest_finite_float_deviation() 
             again
                 .diagnostics()
                 .iter()
-                .filter(|f| f.code.name() == "InvalidValue")
+                .filter(|f| f.code.id() == "core/invalid_value")
                 .count(),
             1,
             "{written}"
@@ -240,7 +240,7 @@ fn a_statement_beyond_f32_is_dropped_as_any_number_before_1_26_deviation() {
     assert_eq!(
         lines(&d),
         [format!(
-            "Error UnrecognizedField {DESCRIPTION}/scripts/initialize child 'initialize' not valid here."
+            "Error core/child_not_valid {DESCRIPTION}/scripts/initialize child 'initialize' not valid here."
         )]
     );
     let d = rejected(attachable(
@@ -250,7 +250,7 @@ fn a_statement_beyond_f32_is_dropped_as_any_number_before_1_26_deviation() {
     assert_eq!(
         lines(&d),
         [format!(
-            "Error InvalidType {DESCRIPTION}/scripts/initialize/0 unknown child schema option type.  Allowed types: string"
+            "Error core/unknown_child_option {DESCRIPTION}/scripts/initialize/0 unknown child schema option type.  Allowed types: string"
         )]
     );
 }
@@ -314,7 +314,7 @@ fn a_number_beyond_f32_where_no_number_is_declared_is_the_wrong_type_alone() {
         assert_eq!(
             lines(&d),
             [format!(
-                "Error InvalidType {DESCRIPTION}/{at} unknown child schema option type.  Allowed types: {allowed}"
+                "Error core/unknown_child_option {DESCRIPTION}/{at} unknown child schema option type.  Allowed types: {allowed}"
             )],
             "{version} {members}"
         );
@@ -599,7 +599,7 @@ fn an_integer_beyond_64_bits_where_a_string_is_declared_is_the_wrong_type() {
                 assert_eq!(
                     lines(&d),
                     [format!(
-                        "Error InvalidType {DESCRIPTION}/{at} unknown child schema option type.  Allowed types: string"
+                        "Error core/unknown_child_option {DESCRIPTION}/{at} unknown child schema option type.  Allowed types: string"
                     )],
                     "{version} {members} {wide}"
                 );
@@ -610,13 +610,13 @@ fn an_integer_beyond_64_bits_where_a_string_is_declared_is_the_wrong_type() {
             let d = rejected(attachable(&text.replace("{n}", &wide), &cx()));
             expect(
                 &d,
-                "InvalidType",
+                "core/unknown_child_option",
                 Severity::Error,
                 "unknown child schema option type.  Allowed types: string",
             );
             expect_at(
                 &d,
-                "InvalidType",
+                "core/unknown_child_option",
                 Severity::Error,
                 &format!("{DESCRIPTION}/identifier"),
             );
@@ -629,7 +629,7 @@ fn an_integer_beyond_64_bits_where_a_string_is_declared_is_the_wrong_type() {
             assert_eq!(
                 lines(&d),
                 [format!(
-                    "Error InvalidValue {DESCRIPTION}/item unknown child schema option type.  Allowed types: string, object"
+                    "Error attachable/unknown_item_type {DESCRIPTION}/item unknown child schema option type.  Allowed types: string, object"
                 )],
                 "{version} {wide}"
             );

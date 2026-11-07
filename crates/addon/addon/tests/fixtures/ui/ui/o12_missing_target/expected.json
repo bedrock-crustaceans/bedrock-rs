@@ -14,7 +14,7 @@
   ],
   "diagnostics": [
     {
-      "code": "UnresolvedReference",
+      "code": "json_ui/pack_missing_control_target",
       "severity": "error",
       "text": "ui/a.json (root): Can't find the control 'nope' during operation 'remove'",
       "pack": 1,

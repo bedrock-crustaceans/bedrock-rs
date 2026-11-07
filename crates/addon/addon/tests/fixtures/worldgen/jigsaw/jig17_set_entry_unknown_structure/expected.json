@@ -10,14 +10,14 @@
   },
   "diagnostics": [
     {
-      "code": "InvalidValue",
+      "code": "jigsaw/no_namespace",
       "severity": "error",
       "path": "worldgen/structure_sets/set.json",
       "json_path": "minecraft:structure_set/structures/1/structure",
       "text": "Identifier must have a namespace"
     },
     {
-      "code": "InvalidValue",
+      "code": "jigsaw/set_register",
       "severity": "error",
       "path": "worldgen/structure_sets/set.json",
       "json_path": "minecraft:structure_set/structures/1/structure",

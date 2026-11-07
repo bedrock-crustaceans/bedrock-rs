@@ -95,8 +95,16 @@ fn found(code: &str, severity: &str, file: &str) -> (String, String, String) {
     (code.to_owned(), severity.to_owned(), file.to_owned())
 }
 
-const SYNTAX: &str = "ScriptSyntaxError";
-const NOT_FOUND: &str = "ScriptImportNotFound";
+const SYNTAX: &str = "script/script_invalid_utf8";
+/// Every code that was `ScriptSyntaxError`.
+const SYNTAX_IDS: [&str; 5] = [
+    "core/script_syntax_error",
+    "script/not_utf8_after_error",
+    "script/script_expecting_semicolon",
+    "script/script_invalid_utf8",
+    "script/unread_not_utf8",
+];
+const NOT_FOUND: &str = "core/script_import_not_found";
 
 #[test]
 fn script_files_are_the_dot_js_files_below_scripts() {
@@ -155,8 +163,8 @@ fn l13_a_non_literal_dynamic_import_is_a_note() {
     assert_eq!(
         findings(&bundle),
         [
-            found("ScriptImportNotChecked", "info", "scripts/main.js"),
-            found("ScriptImportNotChecked", "info", "scripts/main.js"),
+            found("core/script_import_not_checked", "info", "scripts/main.js"),
+            found("core/script_import_not_checked", "info", "scripts/main.js"),
         ]
     );
     let main = bundle.main().unwrap();
@@ -184,15 +192,15 @@ fn l15_a_js_file_outside_scripts_is_a_note_per_file_of_a_pack_with_a_module() {
     assert_eq!(
         findings(&with),
         [
-            found("ScriptFileNotLoadable", "info", "b.js"),
-            found("ScriptFileNotLoadable", "info", "src/a.js"),
+            found("core/script_file_not_loadable", "info", "b.js"),
+            found("core/script_file_not_loadable", "info", "src/a.js"),
         ]
     );
     // Without a module nothing runs at all: one note for the pack (L20), none per file.
     let without = scan_with(&files, None, ScanOptions::default());
     assert_eq!(
         findings(&without),
-        [found("ScriptFileNotLoadable", "info", "")]
+        [found("core/script_file_not_loadable", "info", "")]
     );
 }
 
@@ -203,7 +211,10 @@ fn l20_is_one_note_however_many_files_and_none_without_script_files() {
         None,
         ScanOptions::default(),
     );
-    assert_eq!(findings(&two), [found("ScriptFileNotLoadable", "info", "")]);
+    assert_eq!(
+        findings(&two),
+        [found("core/script_file_not_loadable", "info", "")]
+    );
     assert_eq!(two.entry, None);
     assert_eq!(two.graph, None);
     let none = scan_with(&[("scripts/readme.txt", b"")], None, ScanOptions::default());
@@ -248,7 +259,7 @@ fn the_parser_reads_only_the_files_the_entry_reaches() {
     assert_eq!(parsed(&data_only), [false; 4]);
     assert_eq!(
         findings(&data_only),
-        [found("ScriptFileNotLoadable", "info", "")]
+        [found("core/script_file_not_loadable", "info", "")]
     );
     // Nor where the main file is missing, or the imports are not scanned.
     let no_main = scan_with(&files[1..], Some(&Host::default()), ScanOptions::default());
@@ -328,7 +339,10 @@ fn l19_scanning_off_says_so_once_and_resolves_nothing() {
         Some(&host),
         ScanOptions::default().with_imports(false),
     );
-    assert_eq!(findings(&off), [found("ScriptsNotChecked", "info", "")]);
+    assert_eq!(
+        findings(&off),
+        [found("core/scripts_not_checked", "info", "")]
+    );
     assert_eq!(off.graph, None);
     assert!(off.entry.is_some());
     assert!(
@@ -346,7 +360,11 @@ fn l19_scanning_off_says_so_once_and_resolves_nothing() {
         findings(&on),
         [
             found(NOT_FOUND, "error", "scripts/main.js"),
-            found("ScriptImportCrashesEngine", "error", "scripts/main.js"),
+            found(
+                "core/script_import_crashes_engine",
+                "error",
+                "scripts/main.js"
+            ),
         ]
     );
 }
@@ -382,7 +400,7 @@ fn l6_l7_invalid_utf8_is_an_error_where_the_entry_reaches_and_a_note_elsewhere_d
         [
             found(SYNTAX, "error", "scripts/d.js"),
             found(SYNTAX, "error", "scripts/s.js"),
-            found(SYNTAX, "info", "scripts/u.js"),
+            found("script/unread_not_utf8", "info", "scripts/u.js"),
         ]
     );
 }
@@ -392,7 +410,7 @@ fn syntax_of(bundle: &ScriptBundle, file: &str) -> Vec<(String, String)> {
     bundle
         .findings()
         .map(finding_of)
-        .filter(|finding| finding.code == SYNTAX && finding.file == file)
+        .filter(|finding| SYNTAX_IDS.contains(&finding.code.as_str()) && finding.file == file)
         .map(|finding| (finding.severity, finding.text))
         .collect()
 }
@@ -499,9 +517,9 @@ fn a_lexical_error_is_an_error_in_the_static_graph_and_a_note_elsewhere() {
     assert_eq!(
         by_reach(b"export const v = \"open\n"),
         [
-            found(SYNTAX, "info", "scripts/d.js"),
-            found(SYNTAX, "error", "scripts/s.js"),
-            found(SYNTAX, "info", "scripts/u.js"),
+            found("core/script_syntax_error", "info", "scripts/d.js"),
+            found("core/script_syntax_error", "error", "scripts/s.js"),
+            found("core/script_syntax_error", "info", "scripts/u.js"),
         ]
     );
     let bundle = scan(&[("scripts/main.js", b"import \"./a.js\";\n/* open")]);
@@ -528,8 +546,8 @@ fn l12_attributes_fail_the_file_they_are_in_by_its_reach() {
     assert_eq!(
         by_reach(b"import \"@minecraft/server\" with { type: \"json\" };"),
         [
-            found(SYNTAX, "info", "scripts/d.js"),
-            found(SYNTAX, "error", "scripts/s.js"),
+            found("script/script_expecting_semicolon", "info", "scripts/d.js"),
+            found("script/script_expecting_semicolon", "error", "scripts/s.js"),
         ]
     );
     // Without attributes the same import is nothing.
@@ -570,10 +588,14 @@ fn l10_l11_unknown_and_restricted_modules_by_how_they_are_imported() {
     assert_eq!(
         findings(&bundle),
         [
-            found("ScriptModuleUnrecognized", "error", "scripts/main.js"),
-            found("ScriptModuleUnrecognized", "info", "scripts/main.js"),
-            found("ScriptModuleRestricted", "error", "scripts/main.js"),
-            found("ScriptModuleRestricted", "info", "scripts/main.js"),
+            found(
+                "core/script_module_unrecognized",
+                "error",
+                "scripts/main.js"
+            ),
+            found("core/script_module_unrecognized", "info", "scripts/main.js"),
+            found("core/script_module_restricted", "error", "scripts/main.js"),
+            found("core/script_module_restricted", "info", "scripts/main.js"),
         ]
     );
     let restricted = bundle.findings().nth(2).unwrap();
@@ -649,8 +671,12 @@ fn l16_l17_are_raised_in_reached_files_only() {
     assert_eq!(
         findings(&bundle),
         [
-            found("ScriptEvalWithoutCapability", "info", "scripts/s.js"),
-            found("ScriptImportMetaEmpty", "info", "scripts/s.js"),
+            found(
+                "core/script_eval_without_capability",
+                "info",
+                "scripts/s.js"
+            ),
+            found("core/script_import_meta_empty", "info", "scripts/s.js"),
         ]
     );
     let capable = Host {
@@ -660,7 +686,11 @@ fn l16_l17_are_raised_in_reached_files_only() {
     let bundle = scan_with(&files, Some(&capable), ScanOptions::default());
     assert_eq!(
         findings(&bundle),
-        [found("ScriptImportMetaEmpty", "info", "scripts/s.js")]
+        [found(
+            "core/script_import_meta_empty",
+            "info",
+            "scripts/s.js"
+        )]
     );
 }
 
@@ -712,8 +742,16 @@ fn l21_a_crash_specifier_is_an_error_in_a_file_nothing_reaches() {
     assert_eq!(
         findings(&bundle),
         [
-            found("ScriptImportCrashesEngine", "error", "scripts/unreached.js"),
-            found("ScriptImportCrashesEngine", "error", "scripts/unreached.js"),
+            found(
+                "core/script_import_crashes_engine",
+                "error",
+                "scripts/unreached.js"
+            ),
+            found(
+                "core/script_import_crashes_engine",
+                "error",
+                "scripts/unreached.js"
+            ),
         ]
     );
     let sites = &bundle.files[&ScriptPath::new("unreached.js")].imports();
@@ -726,7 +764,7 @@ fn l21_a_crash_specifier_is_an_error_in_a_file_nothing_reaches() {
     let without = scan_with(&files, None, ScanOptions::default());
     assert_eq!(
         findings(&without),
-        [found("ScriptFileNotLoadable", "info", "")]
+        [found("core/script_file_not_loadable", "info", "")]
     );
 }
 
@@ -846,7 +884,14 @@ fn the_entry_rules_run_in_vanilla_s_order() {
         Some(&host),
         ScanOptions::default(),
     );
-    assert_eq!(findings(&bundle), [found("InvalidValue", "error", "")]);
+    assert_eq!(
+        findings(&bundle),
+        [found(
+            "script/plugin_entry_not_supported_invalid_value",
+            "error",
+            ""
+        )]
+    );
     assert_eq!(bundle.graph, None);
     // An entry without the prefix whose file is missing is L3 alone, never L4.
     let host = Host {
@@ -860,7 +905,7 @@ fn the_entry_rules_run_in_vanilla_s_order() {
     );
     assert_eq!(
         findings(&bundle),
-        [found("UnresolvedReference", "error", "")]
+        [found("script/plugin_missing_main_file", "error", "")]
     );
     let entry = bundle.entry.as_ref().expect("the entry as written");
     assert_eq!(
@@ -887,7 +932,7 @@ fn the_entry_rules_run_in_vanilla_s_order() {
     );
     assert_eq!(
         findings(&bundle),
-        [found("UnresolvedReference", "error", "")]
+        [found("script/plugin_missing_main_file", "error", "")]
     );
     assert_eq!(
         bundle.entry.as_ref().unwrap().main.as_str(),

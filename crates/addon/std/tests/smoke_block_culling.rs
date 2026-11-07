@@ -64,7 +64,7 @@ fn check(source: &str, dir: &Path) -> (usize, usize, usize) {
     let mut errors = Vec::new();
     for finding in culling.diagnostics() {
         *by_code
-            .entry((finding.severity.to_string(), finding.code.name()))
+            .entry((finding.severity.to_string(), finding.code.id()))
             .or_default() += 1;
         if finding.severity >= Severity::Error {
             errors.push(finding.to_string());

@@ -3,7 +3,7 @@
   "rejected": 1,
   "diagnostics": [
     {
-      "code": "DuplicateIdentifier",
+      "code": "dialogue/duplicate",
       "severity": "error",
       "path": "dialogue/twice.json",
       "json_path": "minecraft:npc_dialogue/scenes/1",

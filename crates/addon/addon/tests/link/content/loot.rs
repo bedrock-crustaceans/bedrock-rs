@@ -94,7 +94,7 @@ fn l2_a_table_nothing_defines_is_an_information_at_each_member_that_names_it() {
         said(&found, &TABLE_KINDS),
         [
             one(
-                "UnresolvedReference",
+                "core/unresolved_reference",
                 Severity::Info,
                 FILE,
                 "pools/0/entries/0/name",
@@ -102,7 +102,7 @@ fn l2_a_table_nothing_defines_is_an_information_at_each_member_that_names_it() {
                 "minecraft:loot_tables/chests/missing.json"
             ),
             one(
-                "UnresolvedReference",
+                "core/unresolved_reference",
                 Severity::Info,
                 FILE,
                 "pools/0/entries/1/functions/0/loot_table",
@@ -139,7 +139,7 @@ fn l2_a_reference_in_a_nested_table_is_told_at_its_own_path() {
     assert_eq!(
         said(&found, &TABLE_KINDS),
         [one(
-            "UnresolvedReference",
+            "core/unresolved_reference",
             Severity::Info,
             FILE,
             "pools/0/entries/0/pools/0/entries/0/name",
@@ -216,7 +216,7 @@ mod item {
         assert_eq!(
             said(&found, &KINDS),
             [one(
-                "UnresolvedReference",
+                "core/unresolved_reference_worded",
                 Severity::Error,
                 FILE,
                 "pools/0/entries/0/name",
@@ -255,7 +255,7 @@ mod item {
         assert_eq!(
             said(&found, &KINDS),
             [one(
-                "UnresolvedReference",
+                "core/unresolved_reference_worded",
                 Severity::Error,
                 FILE,
                 "pools/0/entries/0/name",
@@ -348,7 +348,7 @@ mod item {
         .into_iter()
         .map(|path| {
             one(
-                "UnresolvedReference",
+                "core/unresolved_reference",
                 Severity::Info,
                 FILE,
                 path,
@@ -420,7 +420,7 @@ mod item {
             said(&found, &TRIM_KINDS),
             [
                 one(
-                    "UnresolvedReference",
+                    "core/unresolved_reference",
                     Severity::Info,
                     FILE,
                     &format!("{FUNCTION}/pattern"),
@@ -428,7 +428,7 @@ mod item {
                     "Ward"
                 ),
                 one(
-                    "UnresolvedReference",
+                    "core/unresolved_reference",
                     Severity::Info,
                     FILE,
                     &format!("{FUNCTION}/material"),
@@ -508,12 +508,12 @@ mod item {
                 told,
                 [
                     (
-                        "MissingRequiredField",
+                        "core/missing_required_field",
                         Severity::Info,
                         format!("{FUNCTION}/pattern")
                     ),
                     (
-                        "MissingRequiredField",
+                        "core/missing_required_field",
                         Severity::Info,
                         format!("{FUNCTION}/material")
                     ),
@@ -531,7 +531,10 @@ mod item {
             .collect();
         assert_eq!(
             told,
-            [("MissingRequiredField", format!("{FUNCTION}/material"))]
+            [(
+                "core/missing_required_field",
+                format!("{FUNCTION}/material")
+            )]
         );
     }
 
@@ -554,7 +557,10 @@ mod item {
             .filter(|said| said.2 == FILE)
             .map(|said| (said.0, said.1, said.3))
             .collect();
-        assert_eq!(told, [("NoEffect", Severity::Info, FUNCTION.to_owned())]);
+        assert_eq!(
+            told,
+            [("core/no_effect", Severity::Info, FUNCTION.to_owned())]
+        );
         // A lint.
         let found = linked(&[(FILE, &file)], world(1, 19, 80), NO_LINTS);
         assert_eq!(found.iter().filter(|f| said_of(f).2 == FILE).count(), 0);
@@ -566,7 +572,10 @@ mod item {
             .filter(|said| said.2 == FILE)
             .map(|said| said.0)
             .collect();
-        assert_eq!(told, ["UnresolvedReference", "MissingRequiredField"]);
+        assert_eq!(
+            told,
+            ["core/unresolved_reference", "core/missing_required_field"]
+        );
     }
 }
 
@@ -642,7 +651,7 @@ mod entity {
         .into_iter()
         .map(|path| {
             one(
-                "UnresolvedReference",
+                "core/unresolved_reference",
                 Severity::Info,
                 FILE,
                 path,

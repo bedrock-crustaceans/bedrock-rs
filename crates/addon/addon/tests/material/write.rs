@@ -267,8 +267,8 @@ fn a_list_drops_the_numbers_where_text_belongs(number: &str) {
     assert_eq!(
         found,
         [
-            ("InvalidType", "0/defines/1".to_owned()),
-            ("InvalidType", "1/path".to_owned())
+            ("core/invalid_type", "0/defines/1".to_owned()),
+            ("core/invalid_type", "1/path".to_owned())
         ]
     );
     assert_eq!(list.entries.len(), 1);
@@ -291,7 +291,7 @@ fn an_integer_beyond_64_bits_is_the_double_it_spells_in_every_member() {
     let digits = digits.as_str();
     let two_64 = 18_446_744_073_709_551_616.0_f64;
     let member = |key: &str, number: &str| flat(&format!(r#""x": {{"{key}": {number}}}"#));
-    let invalid = |key: &str| vec![("InvalidValue", format!("x/{key}"))];
+    let invalid = |key: &str| vec![("core/invalid_value", format!("x/{key}"))];
     let number_of = |def: &MaterialDef, key: &str| {
         let kept = def.extra.get(key).and_then(|value| value.as_number());
         kept.map(facet_value::VNumber::to_f64_lossy)
@@ -873,7 +873,7 @@ fn a_negative_zero_is_written_with_its_sign_or_noted() {
                 );
                 assert_eq!(found.len(), 1, "{member} {zero}: {found:?}");
                 assert!(
-                    found[0].contains("ValueRewritten") && found[0].contains("Info"),
+                    found[0].contains("core/value_rewritten") && found[0].contains("Info"),
                     "{member} {zero}: {found:?}"
                 );
             }

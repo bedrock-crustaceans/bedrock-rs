@@ -1,13 +1,13 @@
 {
   "diagnostics": [
     {
-      "code": "InvalidEnumValue",
+      "code": "json_ui/binding_type_unknown",
       "severity": "info",
       "text": "Unknown binding type value: bogus",
       "at": "k/bindings/3/binding_type"
     },
     {
-      "code": "MissingRequiredField",
+      "code": "json_ui/no_binding_name",
       "severity": "info",
       "text": "JSON UI parse failure: Must define a binding name!",
       "at": "k/bindings/3/binding_name"

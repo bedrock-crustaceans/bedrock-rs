@@ -191,7 +191,13 @@ fn cam23_every_default_is_the_schemas() {
 #[test]
 fn cam24_camera_entity_errors() {
     let at = |path: &str| format!("minecraft:camera_entity/{path}");
-    let missing = |path: &str| finding("MissingRequiredField", &at(path), "missing required field");
+    let missing = |path: &str| {
+        finding(
+            "core/missing_required_field_worded",
+            &at(path),
+            "missing required field",
+        )
+    };
     let d = rejects(entity(&entity_json(
         "minecraft:free",
         r#""minecraft:camera": {}"#,
@@ -223,7 +229,7 @@ fn cam24_camera_entity_errors() {
         assert_eq!(
             errors(&d),
             [finding(
-                "InvalidValue",
+                "camera/target_horizontal_range",
                 &limit,
                 "x and y components of the horizontal rotation must be in the [0, 360] range."
             )],
@@ -234,7 +240,7 @@ fn cam24_camera_entity_errors() {
     assert_eq!(
         errors(&d),
         [finding(
-            "InvalidValue",
+            "camera/target_horizontal_sum",
             &limit,
             "The sum of the [x, y] horizontal rotation limits must not exceed 360.0 degrees."
         )]
@@ -247,7 +253,7 @@ fn cam24_camera_entity_errors() {
         assert_eq!(
             errors(&d),
             [finding(
-                "InvalidValue",
+                "camera/entity_identifier",
                 &at("description/identifier"),
                 "\"identifier\" must contain a namespace and a name, separated by a colon"
             )],
@@ -259,7 +265,13 @@ fn cam24_camera_entity_errors() {
 #[test]
 fn rule_7_the_camera_entity_envelope_and_required_members() {
     let at = |path: &str| format!("minecraft:camera_entity/{path}");
-    let missing = |path: &str| finding("MissingRequiredField", &at(path), "missing required field");
+    let missing = |path: &str| {
+        finding(
+            "core/missing_required_field_worded",
+            &at(path),
+            "missing required field",
+        )
+    };
     let d = rejects(entity(
         r#"{"format_version": "1.26.10", "minecraft:camera_entity": {}}"#,
     ));
@@ -274,14 +286,20 @@ fn rule_7_the_camera_entity_envelope_and_required_members() {
         loads(entity(&text));
     }
     let text = entity_json("minecraft:free", "").replace("1.26.10", "1.26.61");
-    assert_eq!(errors(&rejects(entity(&text)))[0].0, "UnsupportedVersion");
+    assert_eq!(
+        errors(&rejects(entity(&text)))[0].0,
+        "core/no_parser_for_version"
+    );
     // The envelope is checked: two members, the payload under its key, a version.
     let text = entity_json("minecraft:free", "").replacen('{', r#"{"extra": 1, "#, 1);
-    assert_eq!(errors(&rejects(entity(&text)))[0].0, "MalformedInput");
+    assert_eq!(
+        errors(&rejects(entity(&text)))[0].0,
+        "core/document_member_count"
+    );
     let d = rejects(entity(
         r#"{"minecraft:camera_entity": {"description": {"identifier": "a:b"}, "components": {}}}"#,
     ));
-    assert_eq!(errors(&d)[0].0, "MissingFormatVersion");
+    assert_eq!(errors(&d)[0].0, "core/no_valid_version");
     // The written document carries the version vanilla ships.
     let document = loads(entity(&entity_json("minecraft:free", "")));
     assert!(
@@ -366,7 +384,7 @@ fn rule_7_camera_entity_ranges_enums_and_unknown_components() {
         let d = rejects(entity(&entity_json("minecraft:free", component)));
         assert_eq!(
             errors(&d),
-            [finding("InvalidValue", &at(path), &text)],
+            [finding("core/outside_accepted_range", &at(path), &text)],
             "{component}"
         );
     }
@@ -403,7 +421,7 @@ fn rule_7_camera_entity_lower_bound_only_members() {
         assert_eq!(found.len(), 1, "{component}: {found:?}");
         assert_eq!(
             (found[0].0, found[0].1.clone()),
-            ("InvalidValue", at(path)),
+            ("core/invalid_value", at(path)),
             "{component}"
         );
     }
@@ -446,7 +464,7 @@ fn rule_7_camera_entity_enums_and_unknown_components() {
         assert_eq!(errors(&d).len(), 1, "{component}");
         assert_eq!(
             (errors(&d)[0].0, errors(&d)[0].1.clone()),
-            ("InvalidEnumValue", at(path))
+            ("core/invalid_enum_value", at(path))
         );
     }
     let d = rejects(entity(&entity_json(
@@ -456,11 +474,11 @@ fn rule_7_camera_entity_enums_and_unknown_components() {
     assert_eq!(errors(&d).len(), 1);
     assert_eq!(
         (errors(&d)[0].0, errors(&d)[0].1.clone()),
-        ("UnrecognizedComponent", at("minecraft:camera_zoom"))
+        ("core/unrecognized_component", at("minecraft:camera_zoom"))
     );
     let d = rejects(entity(&entity_json(
         "minecraft:free",
         r#""minecraft:camera_first_person": {"fov": 1}"#,
     )));
-    assert_eq!(errors(&d)[0].0, "UnrecognizedField");
+    assert_eq!(errors(&d)[0].0, "core/unrecognized_field_worded");
 }

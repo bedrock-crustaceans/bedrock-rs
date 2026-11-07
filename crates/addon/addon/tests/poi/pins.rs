@@ -14,7 +14,7 @@ fn errors_at(findings: &Diagnostics) -> Vec<(&'static str, String)> {
     findings
         .iter()
         .filter(|d| d.severity == Severity::Error && !is_closing(d))
-        .map(|d| (d.code.name(), d.location.json_path.to_string()))
+        .map(|d| (d.code.id(), d.location.json_path.to_string()))
         .collect()
 }
 
@@ -100,7 +100,7 @@ fn cyclic_tag_graphs_terminate_quickly_with_their_findings() {
     let poi = stack.poi();
     assert_eq!(
         names(poi.diagnostics(), Severity::Info),
-        ["ReferenceCycle", "ReferenceCycle"]
+        ["poi/part_of_a_cycle", "poi/part_of_a_cycle"]
     );
     let a = PoiTagId::from_static("test:a");
     assert!(poi.parents(&a).is_empty() && poi.children(&a).is_empty());
@@ -149,7 +149,7 @@ fn cyclic_tag_graphs_terminate_quickly_with_their_findings() {
     );
     assert!(
         poi.diagnostics()
-            .all(|d| d.code.name() == "ReferenceCycle" && d.severity == Severity::Info)
+            .all(|d| d.code.id() == "poi/part_of_a_cycle" && d.severity == Severity::Info)
     );
     for i in [1, 299, 599] {
         assert_eq!(
@@ -182,7 +182,10 @@ fn a_non_string_entry_is_one_type_error_whatever_follows_it() {
     let d = rejected::<PoiType>(&block_of("test:forge", "", r#"[5, "minecraft:anvil"]"#));
     assert_eq!(
         errors_at(&d),
-        [("InvalidType", "minecraft:poi_block/blocks/0".to_owned())]
+        [(
+            "core/invalid_type",
+            "minecraft:poi_block/blocks/0".to_owned()
+        )]
     );
     let d = rejected::<PoiType>(&block_of(
         "test:forge",
@@ -191,7 +194,7 @@ fn a_non_string_entry_is_one_type_error_whatever_follows_it() {
     ));
     assert_eq!(
         errors_at(&d),
-        [("InvalidType", "minecraft:poi_block/tags/0".to_owned())]
+        [("core/invalid_type", "minecraft:poi_block/tags/0".to_owned())]
     );
     for member in ["children", "parents"] {
         let d = rejected::<PoiTag>(&tag_of(
@@ -201,8 +204,8 @@ fn a_non_string_entry_is_one_type_error_whatever_follows_it() {
         assert_eq!(
             errors_at(&d),
             [
-                ("InvalidType", format!("minecraft:poi_tag/{member}/0")),
-                ("InvalidType", format!("minecraft:poi_tag/{member}/2")),
+                ("core/invalid_type", format!("minecraft:poi_tag/{member}/0")),
+                ("core/invalid_type", format!("minecraft:poi_tag/{member}/2")),
             ]
         );
     }
@@ -218,7 +221,7 @@ fn the_struct_parse_gives_no_value_once_it_reported_an_error() {
         r#"{"description": {"identifier": "forge"}, "blocks": ["minecraft:anvil"]}"#,
     );
     assert!(value.is_none(), "a pattern miss");
-    assert_eq!(names(d.iter(), Severity::Error), ["InvalidValue"]);
+    assert_eq!(names(d.iter(), Severity::Error), ["core/invalid_value"]);
     let (value, d) = parse_struct::<PoiType>(
         "minecraft:poi_block",
         r#"{"description": {"identifier": "test:forge"}, "blocks": ["minecraft:anvil"], "radius": 2}"#,
@@ -226,17 +229,23 @@ fn the_struct_parse_gives_no_value_once_it_reported_an_error() {
     // An unknown member is the struct's warning; the slice's mask (0xfffc) makes it the
     // loader's error.
     assert!(value.is_some(), "an unknown member alone");
-    assert_eq!(names(d.iter(), Severity::Warning), ["UnrecognizedField"]);
+    assert_eq!(
+        names(d.iter(), Severity::Warning),
+        ["core/unrecognized_field"]
+    );
     let d = rejected::<PoiType>(&block(
         r#"{"description": {"identifier": "test:forge"}, "blocks": ["minecraft:anvil"], "radius": 2}"#,
     ));
-    assert_eq!(names(d.iter(), Severity::Error), ["UnrecognizedField"]);
+    assert_eq!(
+        names(d.iter(), Severity::Error),
+        ["core/unrecognized_field"]
+    );
     let (value, d) = parse_struct::<PoiTag>(
         "minecraft:poi_tag",
         r#"{"description": {"identifier": "test:civic"}, "parents": ["Village"]}"#,
     );
     assert!(value.is_none(), "a pattern miss in a list");
-    assert_eq!(names(d.iter(), Severity::Error), ["InvalidValue"]);
+    assert_eq!(names(d.iter(), Severity::Error), ["core/invalid_value"]);
     // A clean payload is a value and no finding.
     let (value, d) = parse_struct::<PoiTag>(
         "minecraft:poi_tag",
@@ -269,7 +278,7 @@ fn a_claimed_block_is_reported_at_its_own_entry() {
     let claimed: Vec<String> = stack
         .poi()
         .diagnostics()
-        .filter(|d| d.code.name() == "PoiBlockClaimedTwice")
+        .filter(|d| d.code.id() == "core/poi_block_claimed_twice")
         .map(|d| d.location.json_path.to_string())
         .collect();
     assert_eq!(claimed, ["minecraft:poi_block/blocks/2"]);
@@ -293,27 +302,27 @@ fn the_as_written_parse_and_the_upgrade_are_gated_too() {
     let closed = PoiType::parse_as_written(&path, forge.as_bytes(), &off).expect_err("gated");
     assert_eq!(
         names(closed.diagnostics.iter(), Severity::Info),
-        ["MissingToggles"]
+        ["core/missing_toggles"]
     );
     assert_eq!(closed.diagnostics.len(), 1);
     let closed = PoiTag::parse_as_written(&path, civic.as_bytes(), &off).expect_err("gated");
     assert_eq!(
         names(closed.diagnostics.iter(), Severity::Info),
-        ["MissingToggles"]
+        ["core/missing_toggles"]
     );
 
     let written = PoiType::parse_as_written(&path, forge.as_bytes(), &on).expect("parses");
     let closed = history::upgrade_type(written, &off).expect_err("gated");
     assert_eq!(
         names(closed.diagnostics.iter(), Severity::Info),
-        ["MissingToggles"]
+        ["core/missing_toggles"]
     );
     assert_eq!(closed.diagnostics.len(), 1);
     let written = PoiTag::parse_as_written(&path, civic.as_bytes(), &on).expect("parses");
     let closed = history::upgrade_tag(written, &off).expect_err("gated");
     assert_eq!(
         names(closed.diagnostics.iter(), Severity::Info),
-        ["MissingToggles"]
+        ["core/missing_toggles"]
     );
 }
 
@@ -329,11 +338,14 @@ fn json_nested_past_the_limit_is_malformed_input() {
         )
     };
     let d = rejected::<PoiType>(&nested(200));
-    assert_eq!(names(d.iter(), Severity::Error), ["MalformedInput"]);
+    assert_eq!(names(d.iter(), Severity::Error), ["core/syntax"]);
     let d = rejected::<PoiType>(&nested(20));
     assert_eq!(
         errors_at(&d),
-        [("InvalidType", "minecraft:poi_block/blocks/0".to_owned())]
+        [(
+            "core/invalid_type",
+            "minecraft:poi_block/blocks/0".to_owned()
+        )]
     );
 }
 
@@ -378,7 +390,7 @@ fn a_documents_findings_carry_its_pack_and_file() {
         .diagnostics()
         .map(|d| {
             (
-                d.code.name(),
+                d.code.id(),
                 d.location
                     .pack
                     .as_ref()
@@ -394,9 +406,9 @@ fn a_documents_findings_carry_its_pack_and_file() {
     assert_eq!(
         found,
         [
-            ("DocumentRejected", Some(0), Some("poi/blocks/bad.json")),
-            ("InvalidValue", Some(0), Some("poi/blocks/bad.json")),
-            ("PoiNoBlocks", Some(1), Some("poi/blocks/empty.json")),
+            ("core/invalid_value", Some(0), Some("poi/blocks/bad.json")),
+            ("core/poi_no_blocks", Some(1), Some("poi/blocks/empty.json")),
+            ("poi/failed_to_load", Some(0), Some("poi/blocks/bad.json")),
         ]
     );
 }

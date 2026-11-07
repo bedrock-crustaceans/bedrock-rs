@@ -60,7 +60,7 @@ pub fn doc(version: Option<&str>, tiers: &str) -> String {
 /// The findings whose code is `name` at `severity`.
 pub fn with<'a>(d: &'a Diagnostics, name: &str, severity: Severity) -> Vec<&'a Diagnostic> {
     d.iter()
-        .filter(|f| f.code.name() == name && f.severity == severity)
+        .filter(|f| f.code.id() == name && f.severity == severity)
         .collect()
 }
 
@@ -82,7 +82,7 @@ pub fn summary(d: &Diagnostics) -> String {
             out,
             "\n  {:?} {} at {}",
             f.severity,
-            f.code.name(),
+            f.code.id(),
             f.location.json_path
         )
         .expect("writing to a String cannot fail");

@@ -1,14 +1,14 @@
-     21  I ClampedValue [-] @ textures
-    143  I InvalidValue [-] @ font
-     21  I UnknownSound [sound event] @ sounds.json
-      4  I UnresolvedReference [animation] @ entity
-      1  I UnresolvedReference [block] @ aim_assist
-      5  I UnresolvedReference [entity] @ entity
-     12  I UnresolvedReference [feature] @ feature_rules
-     29  I UnresolvedReference [feature] @ features
-      2  I UnresolvedReference [geometry] @ entity
-      3  I UnresolvedReference [loot table] @ entities
-      1  I UnresolvedReference [particle event] @ particles
-     39  I UnresolvedReference [sound file] @ sounds
-      1  W TextureNotFound [texture] @ attachables
-     11  W TextureNotFound [texture] @ entity
+     21  I core/clamped_value [-] @ textures
+    143  I core/invalid_value [-] @ font
+     21  I core/unknown_sound [sound event] @ sounds.json
+      4  I core/unresolved_reference [animation] @ entity
+      1  I core/unresolved_reference [block] @ aim_assist
+      5  I core/unresolved_reference [entity] @ entity
+     12  I core/unresolved_reference [feature] @ feature_rules
+     29  I core/unresolved_reference [feature] @ features
+      2  I core/unresolved_reference [geometry] @ entity
+      3  I core/unresolved_reference [loot table] @ entities
+      1  I core/unresolved_reference [particle event] @ particles
+     39  I core/unresolved_reference [sound file] @ sounds
+      1  W core/texture_not_found_worded [texture] @ attachables
+     11  W core/texture_not_found_worded [texture] @ entity

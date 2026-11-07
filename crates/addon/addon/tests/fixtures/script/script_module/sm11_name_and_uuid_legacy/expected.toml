@@ -4,6 +4,6 @@ resolved = []
 main = "main.js"
 
 [[diagnostic]]
-code = "InvalidProperty"
+code = "core/invalid_property"
 severity = "warning"
 path = "dependencies/0"

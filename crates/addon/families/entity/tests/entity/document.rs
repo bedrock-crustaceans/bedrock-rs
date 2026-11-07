@@ -99,14 +99,14 @@ fn unknown_members_are_told_at_their_level_and_not_kept() {
     assert!(refused.value.is_none());
     assert_eq!(
         codes(&refused.diagnostics, Severity::Error),
-        ["UnrecognizedField", "UnrecognizedField"],
+        ["core/unrecognized_field", "core/unrecognized_field"],
         "{:#?}",
         refused.diagnostics
     );
     let (entity, diagnostics) = stable(&doc("1.21.80", payload), &cx());
     assert_eq!(
         codes(&diagnostics, Severity::Warning),
-        ["UnrecognizedField", "UnrecognizedField"],
+        ["core/unrecognized_field", "core/unrecognized_field"],
         "{diagnostics:#?}"
     );
     let _ = entity;
@@ -143,7 +143,7 @@ fn an_unknown_component_is_reported_and_not_kept() {
     let (entity, diagnostics) = stable(&doc("1.21.80", payload), &cx());
     assert_eq!(
         codes(&diagnostics, Severity::Warning),
-        ["UnrecognizedComponent"]
+        ["core/unrecognized_component"]
     );
     assert!(entity.components.iter().all(|entry| !matches!(
         entry,
@@ -218,7 +218,7 @@ fn an_identifier_that_is_an_object_is_a_type_error_and_no_panic() {
     let found: Vec<_> = rejected
         .diagnostics
         .iter()
-        .filter(|f| f.code.name() == "InvalidType")
+        .filter(|f| f.code.id() == "core/invalid_type")
         .collect();
     assert_eq!(found.len(), 1, "{:#?}", rejected.diagnostics);
     assert_eq!(found[0].severity, Severity::Error);
@@ -238,18 +238,13 @@ fn a_null_member_of_a_typed_component_takes_its_default() {
     // the place carries an information.
     let told: Vec<String> = diagnostics
         .iter()
-        .map(|f| {
-            format!(
-                "{:?} {} {}",
-                f.severity,
-                f.code.name(),
-                f.location.json_path
-            )
-        })
+        .map(|f| format!("{:?} {} {}", f.severity, f.code.id(), f.location.json_path))
         .collect();
     assert_eq!(
         told,
-        ["Info ValueRewritten minecraft:entity/components/minecraft:insomnia/days_until_insomnia"],
+        [
+            "Info core/value_rewritten minecraft:entity/components/minecraft:insomnia/days_until_insomnia"
+        ],
         "{diagnostics:#?}"
     );
     let insomnia = entity
@@ -314,14 +309,7 @@ fn parsed(text: &str) -> (Vec<String>, Vec<String>, bool) {
     };
     let told = found
         .iter()
-        .map(|f| {
-            format!(
-                "{:?} {} {}",
-                f.severity,
-                f.code.name(),
-                f.location.json_path
-            )
-        })
+        .map(|f| format!("{:?} {} {}", f.severity, f.code.id(), f.location.json_path))
         .collect();
     let texts = found
         .iter()
@@ -475,14 +463,15 @@ fn unknown_members_and_components_refuse_from_1_21_89() {
         let (told, _, loaded) = parsed(&goal(version));
         assert!(!loaded, "{version}: {told:#?}");
         assert!(told.contains(&
-            "Error UnrecognizedField minecraft:entity/components/minecraft:behavior.aquatic_charge_attack/made_up".to_owned()), "{version}: {told:#?}");
+            "Error core/unrecognized_field minecraft:entity/components/minecraft:behavior.aquatic_charge_attack/made_up".to_owned()), "{version}: {told:#?}");
     }
     for version in ["1.21.90", "1.26.50"] {
         let (told, _, loaded) = parsed(&component(version));
         assert!(!loaded, "{version}: {told:#?}");
         assert!(
             told.contains(
-                &"Error UnrecognizedComponent minecraft:entity/components/demo:made_up".to_owned()
+                &"Error core/unrecognized_component minecraft:entity/components/demo:made_up"
+                    .to_owned()
             ),
             "{version}: {told:#?}"
         );
@@ -491,7 +480,8 @@ fn unknown_members_and_components_refuse_from_1_21_89() {
     assert!(loaded, "{told:#?}");
     assert!(
         told.contains(
-            &"Warning UnrecognizedComponent minecraft:entity/components/demo:made_up".to_owned()
+            &"Warning core/unrecognized_component minecraft:entity/components/demo:made_up"
+                .to_owned()
         ),
         "{told:#?}"
     );
@@ -505,12 +495,12 @@ fn strictness_starts_at_1_21_89_not_1_21_88() {
         (
             r#"{"description": {"identifier": "demo:x"}, "components": {"demo:made_up": {}}}"#,
             "minecraft:entity/components/demo:made_up",
-            "UnrecognizedComponent",
+            "core/unrecognized_component",
         ),
         (
             r#"{"description": {"identifier": "demo:x"}, "components": {}, "made_up": {}}"#,
             "minecraft:entity/made_up",
-            "UnrecognizedField",
+            "core/unrecognized_field",
         ),
     ] {
         let text = |version: &str| doc(version, body);
@@ -542,7 +532,7 @@ fn a_converted_goal_s_unknown_member_is_an_information() {
     assert!(loaded, "{told:#?}");
     assert!(
         told.contains(
-            &"Info UnrecognizedField minecraft:entity/components/minecraft:behavior.panic/made_up"
+            &"Info core/unrecognized_field minecraft:entity/components/minecraft:behavior.panic/made_up"
                 .to_owned()
         ),
         "{told:#?}"
@@ -593,7 +583,7 @@ fn the_1_26_60_components_refuse_a_bad_member_at_their_typed_version() {
     assert!(
         // The hand-written legacy `attack` reader reads four keys and ignores the rest: an information.
         told.contains(
-            &"Info UnrecognizedField minecraft:entity/components/minecraft:attack/unexpected_field"
+            &"Info core/unrecognized_field minecraft:entity/components/minecraft:attack/unexpected_field"
                 .to_owned()
         ),
         "{told:#?}"
@@ -613,7 +603,7 @@ fn a_beta_document_s_unknown_member_refuses_it() {
     assert!(refused.value.is_none(), "{:#?}", refused.diagnostics);
     assert_eq!(
         codes(&refused.diagnostics, Severity::Error),
-        ["UnrecognizedField"]
+        ["core/unrecognized_field"]
     );
 }
 
@@ -658,7 +648,7 @@ fn a_legacy_reader_s_unknown_member_is_an_information_where_the_game_is_silent()
     ] {
         let (told, _, loaded) = parsed(&entity(version, components));
         assert!(loaded, "{version} {components}: {told:#?}");
-        let line = format!("Info UnrecognizedField minecraft:entity/components/{at}");
+        let line = format!("Info core/unrecognized_field minecraft:entity/components/{at}");
         assert!(told.contains(&line), "{version} {components}: {told:#?}");
     }
     // From 1.15.0 the schema reader logs the member at error level and keeps the
@@ -670,7 +660,7 @@ fn a_legacy_reader_s_unknown_member_is_an_information_where_the_game_is_silent()
     assert!(loaded, "{told:#?}");
     assert!(
         told.contains(
-            &"Error UnrecognizedField minecraft:entity/components/minecraft:rideable/priority"
+            &"Error core/child_not_valid minecraft:entity/components/minecraft:rideable/priority"
                 .to_owned()
         ),
         "{told:#?}"
@@ -708,7 +698,7 @@ fn a_legacy_reader_s_out_of_bounds_value_is_an_information() {
         );
         let (told, _, loaded) = parsed(&text);
         assert!(loaded, "{components}: {told:#?}");
-        let line = format!("Info InvalidValue minecraft:entity/components/{at}");
+        let line = format!("Info core/invalid_value minecraft:entity/components/{at}");
         assert!(told.contains(&line), "{components}: {told:#?}");
     }
 }
@@ -830,7 +820,7 @@ fn a_beta_file_read_on_its_own_is_refused_in_its_file() {
         .diagnostics
         .iter()
         // By legacy name: the variant and the definitions that were it.
-        .find(|d| d.code.name() == "UnsupportedVersion")
+        .find(|d| d.code.id() == "core/no_parser_for_version")
         .unwrap_or_else(|| panic!("{:#?}", refused.diagnostics));
     assert_eq!(
         refusal.code,

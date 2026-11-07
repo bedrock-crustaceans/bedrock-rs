@@ -164,7 +164,7 @@ pub fn text(d: &Diagnostic) -> String {
         "{:?} {} {}: {}",
         d.severity,
         d.location.json_path,
-        d.code.name(),
+        d.code.id(),
         d.code
     )
 }
@@ -174,7 +174,7 @@ pub fn findings(diagnostics: &Diagnostics) -> Vec<String> {
     diagnostics
         .iter()
         // By legacy name: the variant and the definitions that were it.
-        .filter(|d| !matches!(d.code.name(), "MolangNotChecked"))
+        .filter(|d| !matches!(d.code.id(), "core/molang_not_checked"))
         .map(text)
         .collect()
 }

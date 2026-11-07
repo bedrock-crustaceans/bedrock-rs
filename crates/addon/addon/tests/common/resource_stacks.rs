@@ -104,7 +104,7 @@ pub fn subpack_stacks(files: &[(&str, &[u8])]) -> StackSet {
 /// A finding as `(code name, severity, text)`.
 pub fn shown(diagnostic: &Diagnostic) -> (&'static str, Severity, String) {
     (
-        diagnostic.code.name(),
+        diagnostic.code.id(),
         diagnostic.severity,
         diagnostic.code.to_string(),
     )
@@ -116,7 +116,7 @@ pub fn codes<'a>(
 ) -> Vec<(&'static str, Severity)> {
     diagnostics
         .into_iter()
-        .map(|d| (d.code.name(), d.severity))
+        .map(|d| (d.code.id(), d.severity))
         .collect()
 }
 
@@ -126,7 +126,7 @@ pub fn located<'a>(
 ) -> Vec<(&'static str, Severity, String)> {
     diagnostics
         .into_iter()
-        .map(|d| (d.code.name(), d.severity, d.location.json_path.to_string()))
+        .map(|d| (d.code.id(), d.severity, d.location.json_path.to_string()))
         .collect()
 }
 
@@ -146,7 +146,7 @@ pub fn in_vain(
     stack
         .report()
         .iter()
-        .filter(|d| d.code.name() == "IgnoredFile")
+        .filter(|d| d.code.id() == "core/ignored_file")
         .cloned()
         .collect()
 }

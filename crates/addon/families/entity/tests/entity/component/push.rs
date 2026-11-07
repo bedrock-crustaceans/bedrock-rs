@@ -74,7 +74,7 @@ fn apply_knockback_rules_slowdown_scale_above_one_is_an_error() {
     assert!(value.is_none());
     assert!(has(
         &d,
-        |c| c.name() == "InvalidValue",
+        |c| c.id() == "core/invalid_value",
         Severity::Error,
         "presets/0/slowdown_scale"
     ));
@@ -88,7 +88,7 @@ fn deviation_apply_knockback_rules_empty_presets_is_an_error() {
     assert!(value.is_none());
     assert!(has(
         &d,
-        |c| c.name() == "InvalidValue",
+        |c| c.id() == "core/invalid_value",
         Severity::Error,
         "presets"
     ));
@@ -128,7 +128,7 @@ fn a_floor_knockback_preset_does_not_know_the_1_26_30_members() {
     assert!(floor.is_some());
     assert!(has(
         &d,
-        |c| c.name() == "UnrecognizedField",
+        |c| c.id() == "core/unrecognized_field",
         Severity::Warning,
         "presets/0/knockback_mode"
     ));
@@ -212,7 +212,7 @@ fn a_1_26_30_pushable_preset_does_not_know_require_collision_overlap() {
     assert!(old.is_some());
     assert!(has(
         &d,
-        |c| c.name() == "UnrecognizedField",
+        |c| c.id() == "core/unrecognized_field",
         Severity::Warning,
         "presets/0/require_collision_overlap"
     ));

@@ -267,7 +267,7 @@ reading_toy!(ClampsByText, clamps_by_text, {
 fn invalid_values<F: Family>(outcome: &bedrock_addon_core::versioning::LoadOutcome<F>) -> usize {
     codes(outcome)
         .into_iter()
-        .filter(|(code, _)| code.name() == "InvalidValue")
+        .filter(|(code, _)| code.id() == "core/invalid_value")
         .count()
 }
 

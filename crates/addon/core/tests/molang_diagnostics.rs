@@ -222,7 +222,7 @@ fn mapped(text: &str) -> Vec<(&'static str, Severity, bool)> {
     );
     diagnostics
         .iter()
-        .map(|d| (d.code.name(), d.severity, d.kept))
+        .map(|d| (d.code.id(), d.severity, d.kept))
         .collect()
 }
 
@@ -232,13 +232,16 @@ fn mapped(text: &str) -> Vec<(&'static str, Severity, bool)> {
 /// the game's, so the crate reports it as an information.
 #[test]
 fn the_messages_that_keep_the_expression_and_molang_s_own_lints_map_as_the_game_logs() {
-    assert_eq!(mapped("1e"), [("InvalidMolang", Severity::Error, true)]);
+    assert_eq!(
+        mapped("1e"),
+        [("core/invalid_molang", Severity::Error, true)]
+    );
     assert_eq!(
         mapped("t.x.y = 1;"),
-        [("InvalidMolang", Severity::Error, true)]
+        [("core/invalid_molang", Severity::Error, true)]
     );
     assert_eq!(
         mapped("query.is_item_equipped('main_hand', 'x')"),
-        [("MolangLint", Severity::Info, false)]
+        [("core/molang_lint", Severity::Info, false)]
     );
 }

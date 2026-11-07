@@ -14,7 +14,7 @@ normalized = "@minecraft/server"
 resolution = "native"
 
 [[diagnostics]]
-code = "ScriptSyntaxError"
+code = "script/unread_not_utf8"
 severity = "info"
 text = "bad.js is not UTF-8 at line 2; nothing imports the file, so the engine never reads it"
 file = "scripts/bad.js"

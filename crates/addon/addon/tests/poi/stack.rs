@@ -38,9 +38,7 @@ fn sorted<K: bedrock_addon::id::Kind>(ids: &[bedrock_addon::id::Id<K>]) -> Vec<&
 
 /// The findings of the group named `code`.
 fn found<'a>(poi: &'a Poi, code: &str) -> Vec<&'a Diagnostic> {
-    poi.diagnostics()
-        .filter(|d| d.code.name() == code)
-        .collect()
+    poi.diagnostics().filter(|d| d.code.id() == code).collect()
 }
 
 /// The file of a finding.
@@ -97,7 +95,7 @@ fn poi11_no_experiment_parses_nothing_and_says_so_once() {
     assert_eq!(all.len(), 1, "{}", describe(poi.diagnostics()));
     assert!(
         // By legacy name: the variant and the definitions that were it.
-        matches!(all[0].code.name(), "MissingToggles"),
+        matches!(all[0].code.id(), "core/missing_toggles"),
         "{:?}",
         all[0].code
     );
@@ -129,7 +127,7 @@ fn the_gate_reports_once_per_pack_at_its_first_file() {
     let bare = pack(30, &[("blocks/x.json", "{}")]);
     let stack = stack_with(vec![top, low, bare], LoadOptions::default());
     let poi = stack.poi();
-    let infos = found(poi, "MissingToggles");
+    let infos = found(poi, "core/missing_toggles");
     assert_eq!(
         poi.diagnostics().count(),
         2,
@@ -171,14 +169,17 @@ fn without_the_experiment_a_broken_file_is_not_even_read() {
     );
     let poi = stack.poi();
     assert_eq!(names(poi.diagnostics(), Severity::Error), [] as [&str; 0]);
-    assert_eq!(names(poi.diagnostics(), Severity::Info), ["MissingToggles"]);
+    assert_eq!(
+        names(poi.diagnostics(), Severity::Info),
+        ["core/missing_toggles"]
+    );
     // With the experiment the same file is an error.
     let stack = one_pack(&[("poi/blocks/broken.json", "{ this is not JSON")]);
     assert_eq!(
         names(stack.poi().diagnostics(), Severity::Error),
-        ["MalformedInput"]
+        ["core/document_json"]
     );
-    assert_eq!(found(stack.poi(), "MissingToggles").len(), 0);
+    assert_eq!(found(stack.poi(), "core/missing_toggles").len(), 0);
 }
 
 #[test]
@@ -192,14 +193,14 @@ fn a_single_file_load_without_the_experiment_is_rejected_unparsed() {
         assert_eq!(rejected.diagnostics.iter().count(), 1);
         let finding = rejected.diagnostics.iter().next().unwrap();
         // By legacy name: the variant and the definitions that were it.
-        assert!(matches!(finding.code.name(), "MissingToggles"));
+        assert!(matches!(finding.code.id(), "core/missing_toggles"));
         assert_eq!(finding.severity, Severity::Info);
     }
     let rejected =
         load_with::<PoiTag>(&tag_of("test:civic", ""), &cx).expect_err("the gate is closed");
     assert_eq!(
         names(rejected.diagnostics.iter(), Severity::Info),
-        ["MissingToggles"]
+        ["core/missing_toggles"]
     );
 }
 
@@ -261,7 +262,7 @@ fn a_document_in_the_other_document_s_directory_is_rejected_by_that_directory_s_
             .filter(|f| {
                 f.severity == Severity::Error
                     // By legacy name: the variant and the definitions that were it.
-                    && matches!(f.code.name(), "MissingPayload")
+                    && matches!(f.code.id(), "core/payload_under_other_key")
             })
             .collect();
         assert_eq!(
@@ -384,7 +385,7 @@ fn poi32_unknown_tag_reference_is_dropped_with_a_warning() {
     let all: Vec<&Diagnostic> = poi.diagnostics().collect();
     assert_eq!(all.len(), 1, "{}", describe(poi.diagnostics()));
     // By legacy name: the variant and the definitions that were it.
-    assert!(matches!(all[0].code.name(), "UnresolvedReference"));
+    assert!(matches!(all[0].code.id(), "core/unresolved_reference"));
     assert_eq!(all[0].severity, Severity::Info);
     assert_eq!(file(all[0]), Some("poi/tags/a.json"));
     assert_eq!(
@@ -413,7 +414,7 @@ fn a_parent_naming_no_tag_is_dropped_with_a_warning() {
     let all: Vec<&Diagnostic> = poi.diagnostics().collect();
     assert_eq!(all.len(), 1, "{}", describe(poi.diagnostics()));
     // By legacy name: the variant and the definitions that were it.
-    assert!(matches!(all[0].code.name(), "UnresolvedReference"));
+    assert!(matches!(all[0].code.id(), "core/unresolved_reference"));
     assert_eq!(all[0].severity, Severity::Info);
     assert_eq!(
         all[0].location.json_path.to_string(),
@@ -477,7 +478,7 @@ fn the_tags_of_a_type_that_did_not_load_are_not_created() {
 fn poi34_tag_cycle_keeps_the_tags_and_ignores_the_cycle() {
     let stack = fixture_stack("poi34_tag_cycle");
     let poi = stack.poi();
-    let cycles = found(poi, "ReferenceCycle");
+    let cycles = found(poi, "poi/part_of_a_cycle");
     assert_eq!(
         poi.diagnostics().count(),
         3,
@@ -570,7 +571,7 @@ fn an_edge_into_a_cycle_member_is_kept_but_does_not_travel_round_the_cycle() {
         ),
     ]);
     let poi = stack.poi();
-    let mut texts: Vec<String> = found(poi, "ReferenceCycle")
+    let mut texts: Vec<String> = found(poi, "poi/part_of_a_cycle")
         .iter()
         .map(|d| d.code.to_string())
         .collect();
@@ -617,7 +618,7 @@ fn a_cycle_through_a_tag_without_a_document_is_reported_for_both() {
         ),
     ]);
     let poi = stack.poi();
-    let cycles = found(poi, "ReferenceCycle");
+    let cycles = found(poi, "poi/part_of_a_cycle");
     let mut texts: Vec<String> = cycles.iter().map(|d| d.code.to_string()).collect();
     texts.sort();
     assert_eq!(
@@ -677,7 +678,7 @@ fn poi36_shadowed_type_the_higher_pack_wins() {
     let all: Vec<&Diagnostic> = poi.diagnostics().collect();
     assert_eq!(all.len(), 1, "{}", describe(poi.diagnostics()));
     // By legacy name: the variant and the definitions that were it.
-    assert!(matches!(all[0].code.name(), "ShadowedDefinition"));
+    assert!(matches!(all[0].code.id(), "core/shadowed_definition"));
     assert_eq!(all[0].severity, Severity::Info);
     assert_eq!(
         all[0]
@@ -707,7 +708,7 @@ fn two_definitions_in_one_pack_the_later_file_wins_with_the_same_info() {
     let all: Vec<&Diagnostic> = poi.diagnostics().collect();
     assert_eq!(all.len(), 1, "{}", describe(poi.diagnostics()));
     // By legacy name: the variant and the definitions that were it.
-    assert!(matches!(all[0].code.name(), "ShadowedDefinition"));
+    assert!(matches!(all[0].code.id(), "core/shadowed_definition"));
     assert_eq!(all[0].severity, Severity::Info);
     assert_eq!(file(all[0]), Some("poi/blocks/a.json"));
 }
@@ -751,7 +752,7 @@ fn poi37_block_claimed_twice_the_later_type_takes_it() {
     let all: Vec<&Diagnostic> = poi.diagnostics().collect();
     assert_eq!(all.len(), 1, "{}", describe(poi.diagnostics()));
     // By legacy name: the variant and the definitions that were it.
-    assert!(matches!(all[0].code.name(), "PoiBlockClaimedTwice"));
+    assert!(matches!(all[0].code.id(), "core/poi_block_claimed_twice"));
     assert_eq!(all[0].severity, Severity::Info);
     // It names both types: it is at the one that took the block and carries the other.
     assert_eq!(file(all[0]), Some("poi/blocks/b.json"));
@@ -781,7 +782,7 @@ fn a_block_goes_to_the_type_loaded_last_whatever_its_name() {
         stack.poi().type_of_block(&bl("minecraft:anvil")),
         Some(&ty("test:a"))
     );
-    let claimed = found(stack.poi(), "PoiBlockClaimedTwice");
+    let claimed = found(stack.poi(), "core/poi_block_claimed_twice");
     assert_eq!(claimed.len(), 1);
     assert_eq!(file(claimed[0]), Some("poi/blocks/a.json"));
     assert_eq!(referenced(claimed[0]), Some(("poi type", "test:b")));
@@ -814,7 +815,7 @@ fn an_overriding_definition_claims_its_blocks_when_it_is_loaded() {
         poi.type_of_block(&bl("minecraft:anvil")),
         Some(&ty("test:a"))
     );
-    let claimed = found(poi, "PoiBlockClaimedTwice");
+    let claimed = found(poi, "core/poi_block_claimed_twice");
     assert_eq!(claimed.len(), 1, "{}", describe(poi.diagnostics()));
     assert_eq!(
         claimed[0]
@@ -953,7 +954,7 @@ fn poi40_all_blocks_unknown_loads_the_type_without_a_no_blocks_warning() {
     let forge = poi.types.get(&ty("test:forge")).expect("the type loads");
     assert_eq!(forge.blocks, [bl("test:not_a_block")]);
     assert_eq!(
-        found(poi, "PoiNoBlocks").len(),
+        found(poi, "core/poi_no_blocks").len(),
         0,
         "the document's list was not empty"
     );
@@ -971,7 +972,7 @@ fn poi41_cycle_keeps_direct_types() {
             "test:t{n} holds only its own type"
         );
     }
-    let cycles = found(poi, "ReferenceCycle");
+    let cycles = found(poi, "poi/part_of_a_cycle");
     assert_eq!(cycles.len(), 3, "{}", describe(poi.diagnostics()));
     assert_eq!(poi.diagnostics().count(), 3);
     assert!(cycles.iter().all(|d| d.severity == Severity::Info));

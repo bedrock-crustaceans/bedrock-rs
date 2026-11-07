@@ -96,7 +96,7 @@ fn vs24b_a_format_version_that_is_no_version_is_malformed() {
             errors(&rejects(&text)),
             [
                 error(
-                    "MalformedFormatVersion",
+                    "core/malformed_format_version",
                     "Malformed format version",
                     "format_version"
                 ),
@@ -122,7 +122,7 @@ fn vs24b_a_third_root_member_is_an_envelope_error() {
         errors(&rejects(&text)),
         [
             error(
-                "MalformedInput",
+                "core/document_member_count",
                 "A Minecraft Document must have exactly two members: \"format_version\" and a payload member",
                 ""
             ),
@@ -143,7 +143,7 @@ fn vs25_a_version_above_the_engine_has_no_parser() {
         errors(&rejects(&text)),
         [
             error(
-                "UnsupportedVersion",
+                "core/no_parser_for_version",
                 &format!("unsupported version: no parser available for version {above}"),
                 "format_version"
             ),
@@ -170,7 +170,7 @@ fn a_pre_release_above_the_floor_loads_with_an_info_and_no_closing_line() {
     let found: Vec<_> = shape
         .diagnostics()
         .iter()
-        .map(|f| (f.code.name(), f.severity))
+        .map(|f| (f.code.id(), f.severity))
         .collect();
-    assert_eq!(found, [("PrereleaseFormatVersion", Severity::Info)]);
+    assert_eq!(found, [("core/prerelease_format_version", Severity::Info)]);
 }

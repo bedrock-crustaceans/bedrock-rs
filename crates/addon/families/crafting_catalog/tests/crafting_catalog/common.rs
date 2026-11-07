@@ -78,7 +78,7 @@ pub fn listed(d: &Diagnostics) -> Vec<(String, String, String)> {
         .filter(|f| f.severity > Severity::Info)
         .map(|f| {
             (
-                f.code.name().to_owned(),
+                f.code.id().to_owned(),
                 f.severity.to_string(),
                 f.code.to_string(),
             )

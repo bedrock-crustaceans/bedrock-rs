@@ -317,7 +317,7 @@ fn parse_as_written_strips_a_bom_and_refuses_what_parse_refuses() {
         .map(|_| ()),
     ] {
         let d = result.unwrap_err().diagnostics;
-        assert!(has(&d, |c| c.name() == "MalformedInput"), "{d:#?}");
+        assert!(has(&d, |c| c.id() == "core/syntax"), "{d:#?}");
     }
     // nested past the depth limit: MalformedInput before any parse
     let deep = format!(
@@ -326,7 +326,7 @@ fn parse_as_written_strips_a_bom_and_refuses_what_parse_refuses() {
         "]".repeat(200)
     );
     let d = as_written(deep.as_bytes()).unwrap_err().diagnostics;
-    assert!(has(&d, |c| c.name() == "MalformedInput"), "{d:#?}");
+    assert!(has(&d, |c| c.id() == "core/syntax"), "{d:#?}");
 }
 
 // ---- `menu_category`: what the author wrote ---------------------------------
@@ -627,7 +627,7 @@ fn a_new_item_without_a_component_is_written_as_the_legacy_document_it_is() {
         again
             .diagnostics()
             .iter()
-            .all(|f| f.code.name() == "LegacyItemFormat"),
+            .all(|f| f.code.id() == "core/legacy_item_format"),
         "{:?}",
         again.diagnostics()
     );
@@ -664,7 +664,7 @@ fn told_at_components(document: &bedrock_addon_core::document::Document<Item>) -
         .diagnostics()
         .iter()
         .filter(|f| {
-            f.code.name() == "InvalidValue"
+            f.code.id() == "core/invalid_value"
                 && f.severity == bedrock_addon_core::diagnostic::Severity::Info
                 && f.phase == bedrock_addon_core::diagnostic::Phase::Validate
                 && f.location.json_path.to_string() == "minecraft:item/components"
@@ -878,7 +878,7 @@ fn the_block_and_the_frame_count_of_a_component_based_item_are_written_back() {
                     f.location.json_path.to_string().contains(":block")
                         || f.location.json_path.to_string().contains("frame_count")
                 })
-                .map(|f| f.code.name().to_owned())
+                .map(|f| f.code.id().to_owned())
                 .collect();
             assert_eq!(told, [] as [&str; 0], "{version} {member}");
             let read = read.into_value();
@@ -925,7 +925,7 @@ fn an_undefined_category_the_newest_format_cannot_spell_is_told_at_the_load() {
             .map(|f| {
                 format!(
                     "{} {:?} {:?} at {}",
-                    f.code.name(),
+                    f.code.id(),
                     f.severity,
                     f.phase,
                     f.location.json_path
@@ -935,7 +935,8 @@ fn an_undefined_category_the_newest_format_cannot_spell_is_told_at_the_load() {
         (told, document.into_value())
     };
     // Ours: an information.
-    let expected = ["ValueRewritten Info Upgrade at minecraft:item/description/menu_category"];
+    let expected =
+        ["core/value_rewritten Info Upgrade at minecraft:item/description/menu_category"];
     for version in ["1.21.60", "1.21.100"] {
         for description in ["", r#", "menu_category": {"category": "none"}"#] {
             let (found, item) = told(version, description);
@@ -1023,7 +1024,7 @@ const LEGACY_ROWS: &[Row] = &[
         "1.20.0",
         true,
         "description:\"category\": \"Nature\"",
-        Told("InvalidValue", "minecraft:item/description/category"),
+        Told("core/invalid_value", "minecraft:item/description/category"),
     ),
     (
         "block",
@@ -1045,7 +1046,7 @@ const LEGACY_ROWS: &[Row] = &[
         true,
         r#""minecraft:mining_speed": 2"#,
         Told(
-            "DroppedField",
+            "core/dropped_field",
             "minecraft:item/components/minecraft:mining_speed",
         ),
     ),
@@ -1055,7 +1056,7 @@ const LEGACY_ROWS: &[Row] = &[
         false,
         r#""minecraft:mining_speed": 2"#,
         Told(
-            "DeprecatedMember",
+            "item/mining_speed_deprecated",
             "minecraft:item/components/minecraft:mining_speed",
         ),
     ),
@@ -1079,7 +1080,7 @@ const LEGACY_ROWS: &[Row] = &[
         true,
         r#""minecraft:creative_category": {"parent": "x"}"#,
         Told(
-            "DroppedField",
+            "core/dropped_field",
             "minecraft:item/components/minecraft:creative_category",
         ),
     ),
@@ -1089,7 +1090,7 @@ const LEGACY_ROWS: &[Row] = &[
         false,
         r#""minecraft:creative_category": {"parent": "x"}"#,
         Told(
-            "DeprecatedMember",
+            "item/creative_category_deprecated",
             "minecraft:item/components/minecraft:creative_category",
         ),
     ),
@@ -1105,14 +1106,17 @@ const LEGACY_ROWS: &[Row] = &[
         "1.26.30",
         false,
         r#""tag:a": {}"#,
-        Told("DeprecatedMember", "minecraft:item/components/tag:a"),
+        Told("item/tag_deprecated", "minecraft:item/components/tag:a"),
     ),
     (
         "is_glint",
         "1.20.0",
         true,
         r#""minecraft:foil": true"#,
-        Told("DroppedField", "minecraft:item/components/minecraft:foil"),
+        Told(
+            "core/dropped_field",
+            "minecraft:item/components/minecraft:foil",
+        ),
     ),
     (
         "is_glint",
@@ -1120,7 +1124,7 @@ const LEGACY_ROWS: &[Row] = &[
         false,
         r#""minecraft:foil": true"#,
         Told(
-            "DeprecatedMember",
+            "item/foil_deprecated",
             "minecraft:item/components/minecraft:foil",
         ),
     ),
@@ -1129,7 +1133,10 @@ const LEGACY_ROWS: &[Row] = &[
         "1.16.100",
         true,
         r#""minecraft:seed": {"crop_result": "a"}"#,
-        Told("DroppedField", "minecraft:item/components/minecraft:seed"),
+        Told(
+            "core/dropped_field",
+            "minecraft:item/components/minecraft:seed",
+        ),
     ),
     (
         "seed",
@@ -1137,7 +1144,7 @@ const LEGACY_ROWS: &[Row] = &[
         false,
         r#""minecraft:seed": {"crop_result": "a"}"#,
         Told(
-            "DeprecatedMember",
+            "item/seed_deprecated",
             "minecraft:item/components/minecraft:seed",
         ),
     ),
@@ -1154,7 +1161,7 @@ const LEGACY_ROWS: &[Row] = &[
         true,
         r#""minecraft:use_modifiers": {"use_duration": 1.6, "movement_modifier": 0.5}"#,
         Told(
-            "DroppedField",
+            "core/dropped_field",
             "minecraft:item/components/minecraft:use_modifiers",
         ),
     ),
@@ -1232,14 +1239,19 @@ fn every_member_of_the_legacy_reading_is_written_or_told() {
                 use bedrock_addon_core::diagnostic::Severity;
                 let severity = match *code {
                     // (`seed`'s is the level-2 `upgradeJson` line)
-                    "DeprecatedMember" if *field == "seed" => Severity::Warning,
-                    "DeprecatedMember" => Severity::Error,
-                    "UnrecognizedField" | "MemberNotKept" => Severity::Warning,
+                    "item/seed_deprecated" => Severity::Warning,
+                    "item/mining_speed_deprecated"
+                    | "item/creative_category_deprecated"
+                    | "item/tag_deprecated"
+                    | "item/foil_deprecated" => Severity::Error,
+                    "core/unrecognized_field"
+                    | "core/member_not_kept"
+                    | "core/member_not_kept_worded" => Severity::Warning,
                     _ => Severity::Info,
                 };
                 let document = loads(&legacy_probe(version, &description, &components), &cx);
                 assert!(
-                    document.diagnostics().iter().any(|f| f.code.name() == *code
+                    document.diagnostics().iter().any(|f| f.code.id() == *code
                         && f.severity == severity
                         && f.location.json_path.to_string() == *at),
                     "{field} at {version}: no {code} at {at} in {:?}",
@@ -1317,7 +1329,7 @@ fn loader_perf_tests_1_the_perf_item_is_refused_for_its_group_as_in_the_game() {
     let d = rejects(&text, &third_party());
     let found = above_info(&d);
     assert_eq!(found.len(), 1, "{d:#?}");
-    assert!(found[0].code.name() == "NamespaceRule", "{d:#?}");
+    assert!(found[0].code.id() == "item/group_namespace", "{d:#?}");
     assert_eq!(found[0].severity, Severity::Error);
     assert_eq!(
         found[0].location.json_path.to_string(),
@@ -1391,7 +1403,7 @@ fn a_document_refused_by_the_gates_after_a_kept_member_is_rejected() {
         rejected
             .diagnostics
             .iter()
-            .any(|d| d.code.name() == "MissingToggles"),
+            .any(|d| d.code.id() == "core/toggle_use_format_version"),
         "{:?}",
         rejected.diagnostics
     );

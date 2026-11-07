@@ -117,7 +117,7 @@ fn a_member_named_extra_is_an_undeclared_member_like_any_other() {
     let d = rejected(attachable(&ghost("1.26.0", r#""extra": 1"#), &cx()));
     expect(
         &d,
-        "UnrecognizedField",
+        "core/child_not_valid",
         bedrock_addon::diagnostic::Severity::Error,
         "child 'extra' not valid here.",
     );
@@ -139,7 +139,7 @@ fn of_a_member_written_twice_the_last_stands() {
     assert!(
         find(
             &d,
-            "UnsupportedVersion",
+            "visual/unknown_version",
             bedrock_addon::diagnostic::Severity::Error
         )
         .is_some()

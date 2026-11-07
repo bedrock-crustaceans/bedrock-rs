@@ -33,12 +33,12 @@ fn v07_a_bad_melee_attack_is_kept_leniently_and_dropped_strictly() {
     assert_eq!(kept.speed_multiplier(), 1.0);
     assert_eq!(kept.priority(), 2);
     assert!(kept.track_target());
-    assert_finding(&d, "InvalidValue", "speed_multiplier", Severity::Info);
+    assert_finding(&d, "core/invalid_value", "speed_multiplier", Severity::Info);
     assert!(errors(&d).is_empty());
 
     let (dropped, d) = strict("minecraft:behavior.melee_attack", json);
     assert!(dropped.is_none(), "the strict parse drops the goal");
-    assert_finding(&d, "InvalidType", "speed_multiplier", Severity::Error);
+    assert_finding(&d, "core/invalid_type", "speed_multiplier", Severity::Error);
 }
 
 /// `v13_deprecated_inherited_names`: `delayed_attack.cooldown_time`,
@@ -50,8 +50,8 @@ fn v07_a_bad_melee_attack_is_kept_leniently_and_dropped_strictly() {
 fn v13_deprecated_inherited_names_are_reported_and_dropped() {
     const NAME: &str = "v13_deprecated_inherited_names";
     let deprecated = |d: &Diagnostics, member: &str, text: &'static str| {
-        let found =
-            finding(d, "DeprecatedMember", member).unwrap_or_else(|| panic!("{member}: {d:?}"));
+        let found = finding(d, "core/deprecated_member_worded", member)
+            .unwrap_or_else(|| panic!("{member}: {d:?}"));
         assert_eq!(found.severity, Severity::Error);
         assert_eq!(
             found.code,

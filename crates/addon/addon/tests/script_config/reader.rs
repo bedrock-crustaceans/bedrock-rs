@@ -84,7 +84,7 @@ fn m5_a_wildcard_beside_other_modules_is_an_info() {
     );
     let findings: Vec<_> = config.diagnostics().iter().collect();
     assert_eq!(findings.len(), 1);
-    assert_eq!(findings[0].code.name(), "NoEffect");
+    assert_eq!(findings[0].code.id(), "core/no_effect");
     assert_eq!(findings[0].severity, Severity::Info);
     assert_eq!(
         findings[0].location.json_path.to_string(),
@@ -121,7 +121,10 @@ fn sc17_syntax_error_permissions_names_the_right_file_deviation() {
     let config = check_config("sc17_syntax_error_permissions");
     assert!(modules(&config, MODULE).is_empty());
     let finding = config.diagnostics().first_error().unwrap();
-    assert_eq!(finding.code.name(), "MalformedInput");
+    assert_eq!(
+        finding.code.id(),
+        "server_config/config_parse_failed_malformed_input"
+    );
     assert!(finding.code.to_string().ends_with("/permissions.json'"));
 }
 
@@ -132,8 +135,8 @@ fn sc18_empty_file_is_refused() {
     // White space alone is an empty file too.
     let blank = permissions("default", " \n\t");
     assert_eq!(
-        blank.diagnostics().first_error().unwrap().code.name(),
-        "EmptyDocument"
+        blank.diagnostics().first_error().unwrap().code.id(),
+        "server_config/config_parse_failed_empty_document"
     );
 }
 
@@ -164,7 +167,7 @@ fn a_span_counts_from_the_start_of_the_file_the_bom_included() {
     let text = "\u{feff}{\"allowed_modules\": [5]}";
     let config = permissions("default", text);
     let finding = config.diagnostics().iter().next().unwrap();
-    assert_eq!(finding.code.name(), "InvalidType");
+    assert_eq!(finding.code.id(), "core/invalid_type");
     let offset = u32::try_from(text.find('5').unwrap()).unwrap();
     assert_eq!(finding.location.span, Some(Span { offset, len: 1 }));
 }
@@ -198,7 +201,7 @@ fn f5_a_string_or_number_root_is_a_warning_and_empty() {
         let config = permissions("default", text);
         let findings: Vec<_> = config.diagnostics().iter().collect();
         assert_eq!(findings.len(), 1, "{text}");
-        assert_eq!(findings[0].code.name(), "InvalidType");
+        assert_eq!(findings[0].code.id(), "core/invalid_type");
         assert_eq!(findings[0].severity, Severity::Info);
         assert_eq!(config.default, ScriptConfig::default().default);
     }
@@ -220,7 +223,7 @@ fn sc25_unreadable_is_a_read_error_and_the_part_is_empty() {
     assert!(config.packs[MODULE].variables.is_empty());
     assert_eq!(modules(&config, MODULE), ["@minecraft/server"]);
     let finding = config.diagnostics().first_error().unwrap();
-    assert_eq!(finding.code.name(), "ReadError");
+    assert_eq!(finding.code.id(), "server_config/config_open_failed");
     assert_eq!(
         finding.detail.as_deref(),
         Some(&bedrock_addon::diagnostic::DiagnosticDetail::Io(
@@ -252,7 +255,7 @@ fn f2_an_unreadable_permissions_file_names_itself_deviation() {
     };
     let config = ScriptConfig::parse(&files);
     let finding = config.diagnostics().first_error().unwrap();
-    assert_eq!(finding.code.name(), "ReadError");
+    assert_eq!(finding.code.id(), "server_config/config_open_failed");
     assert_eq!(
         finding.detail.as_deref(),
         Some(&bedrock_addon::diagnostic::DiagnosticDetail::Io(
@@ -286,7 +289,10 @@ fn f6_a_file_nested_128_levels_loads_and_one_nested_129_is_refused() {
     // 129 levels.
     let past_it = nested(128);
     let finding = past_it.diagnostics().first_error().unwrap();
-    assert_eq!(finding.code.name(), "MalformedInput");
+    assert_eq!(
+        finding.code.id(),
+        "server_config/config_parse_failed_malformed_input"
+    );
     assert_eq!(past_it.diagnostics().len(), 1);
     assert!(past_it.default.variables.is_empty());
 }
@@ -300,8 +306,8 @@ fn a_file_that_is_not_utf8_is_refused() {
         ..ScriptConfigFiles::default()
     });
     assert_eq!(
-        config.diagnostics().first_error().unwrap().code.name(),
-        "MalformedInput"
+        config.diagnostics().first_error().unwrap().code.id(),
+        "server_config/config_parse_failed_malformed_input"
     );
 }
 
@@ -386,7 +392,7 @@ fn an_empty_array_is_no_object_at_any_map_level() {
         let config = permissions("default", text);
         let findings = crate::common::seen(config.diagnostics());
         assert_eq!(findings.len(), 1, "{text}");
-        assert_eq!(findings[0].code, "InvalidType", "{text}");
+        assert_eq!(findings[0].code, "core/invalid_type", "{text}");
         assert_eq!(findings[0].severity, "info", "{text}");
         assert_eq!(findings[0].path, path, "{text}");
         assert!(config.default.permissions.module_permissions.is_empty());
@@ -405,7 +411,7 @@ fn an_empty_array_is_no_object_at_any_map_level() {
         });
         let findings = crate::common::seen(config.diagnostics());
         assert_eq!(findings.len(), 1, "{file}");
-        assert_eq!(findings[0].code, "InvalidType", "{file}");
+        assert_eq!(findings[0].code, "core/invalid_type", "{file}");
         assert_eq!(findings[0].file, format!("config/default/{file}.json"));
     }
 }
@@ -415,7 +421,7 @@ fn m7_module_permissions_that_is_no_object_is_a_warning() {
     let config = permissions("default", r#"{"module_permissions": [1]}"#);
     let findings: Vec<_> = config.diagnostics().iter().collect();
     assert_eq!(findings.len(), 1);
-    assert_eq!(findings[0].code.name(), "InvalidType");
+    assert_eq!(findings[0].code.id(), "core/invalid_type");
     assert_eq!(findings[0].severity, Severity::Info);
     assert_eq!(
         findings[0].location.json_path.to_string(),
@@ -430,7 +436,7 @@ fn m7_module_permissions_that_is_no_object_is_a_warning() {
     let paths: Vec<String> = config
         .diagnostics()
         .iter()
-        .filter(|d| d.code.name() == "InvalidType")
+        .filter(|d| d.code.id() == "core/invalid_type")
         .map(|d| d.location.json_path.to_string())
         .collect();
     assert_eq!(paths, ["module_permissions/@minecraft~1server"]);
@@ -557,7 +563,7 @@ fn a_number_too_large_for_a_double_is_held_to_the_largest_deviation() {
     let findings: Vec<_> = config.diagnostics().iter().collect();
     assert_eq!(findings.len(), 2);
     for (finding, path) in findings.iter().zip(["huge/0", "huge/1"]) {
-        assert_eq!(finding.code.name(), "InvalidValue");
+        assert_eq!(finding.code.id(), "core/invalid_value");
         assert_eq!(finding.severity, Severity::Info);
         assert_eq!(finding.location.json_path.to_string(), path);
     }
@@ -686,9 +692,16 @@ fn f3_a_syntax_fault_in_the_copy_of_a_member_that_loses_refuses_the_file() {
         let found: Vec<(&str, Severity)> = config
             .diagnostics()
             .iter()
-            .map(|f| (f.code.name(), f.severity))
+            .map(|f| (f.code.id(), f.severity))
             .collect();
-        assert_eq!(found, [("MalformedInput", Severity::Error)], "{what}");
+        assert_eq!(
+            found,
+            [(
+                "server_config/config_parse_failed_malformed_input",
+                Severity::Error
+            )],
+            "{what}"
+        );
     };
     for text in [
         r#"{"allowed_modules": bogus, "allowed_modules": ["*"]}"#,

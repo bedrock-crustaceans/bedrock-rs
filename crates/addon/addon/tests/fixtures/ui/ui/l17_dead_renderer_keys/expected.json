@@ -1,12 +1,12 @@
 {
   "diagnostics": [
     {
-      "code": "UnusedProperty",
+      "code": "core/unused_property",
       "severity": "info",
       "at": "k/rotate_speed"
     },
     {
-      "code": "UnusedProperty",
+      "code": "core/unused_property",
       "severity": "info",
       "at": "k/always_rotate"
     }

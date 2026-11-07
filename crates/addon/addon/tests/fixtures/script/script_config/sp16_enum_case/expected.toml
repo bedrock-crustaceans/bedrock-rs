@@ -1,7 +1,7 @@
 # families/script_config fixtures.md, row sp16_enum_case (review Ph).
 
 [[diagnostic]]
-code = "InvalidEnumValue"
+code = "server_config/bad_auto_attach"
 severity = "error"
 phase = "validate"
 file = "server.properties"
@@ -9,7 +9,7 @@ path = "script-debugger-auto-attach"
 text = "Unkown script debugger auto attach mode DISABLED, expected one of [ 'connect', 'listen', 'disabled' ]"
 
 [[diagnostic]]
-code = "InvalidEnumValue"
+code = "server_config/bad_log_level"
 severity = "error"
 phase = "validate"
 file = "server.properties"

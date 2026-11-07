@@ -1,14 +1,14 @@
 # families/script_config fixtures.md, row sc14_string_not_array (probe C).
 
 [[diagnostic]]
-code = "InvalidType"
+code = "core/invalid_type"
 severity = "info"
 phase = "parse"
 file = "config/default/permissions.json"
 path = "allowed_modules"
 
 [[diagnostic]]
-code = "ScriptModulePermission"
+code = "server_config/plugin_module_not_configured"
 severity = "error"
 phase = "link"
 file = "config/default/permissions.json"

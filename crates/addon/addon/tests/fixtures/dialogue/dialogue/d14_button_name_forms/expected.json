@@ -5,7 +5,7 @@
   "rejected": 0,
   "diagnostics": [
     {
-      "code": "InvalidType",
+      "code": "dialogue/no_button_name_invalid_type",
       "severity": "error",
       "path": "dialogue/names.json",
       "json_path": "minecraft:npc_dialogue/scenes/0/buttons/1/name",

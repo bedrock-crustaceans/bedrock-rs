@@ -2,7 +2,7 @@
 scope = "module"
 
 [[diagnostic]]
-code = "MissingToggles"
+code = "script/plugin_beta_apis"
 severity = "error"
 path = "dependencies/0"
 text = "Plugin [sm27 - 3.2.1] - requesting dependency on beta APIs [@minecraft/server - 2.9.0-beta], but the Beta APIs experiment is not enabled."

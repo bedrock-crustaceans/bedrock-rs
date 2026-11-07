@@ -10,7 +10,7 @@
   },
   "diagnostics": [
     {
-      "code": "SkippedCacheDocument",
+      "code": "core/skipped_cache_document",
       "severity": "info",
       "path": "worldgen/metadata/a.dat"
     }

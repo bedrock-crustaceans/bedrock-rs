@@ -13,37 +13,37 @@
   },
   "diagnostics": [
     {
-      "code": "InvalidEnumValue",
+      "code": "core/invalid_enum_value",
       "severity": "error",
       "path": "worldgen/processors/e_block_age.json",
       "json_path": "minecraft:processor_list/processors"
     },
     {
-      "code": "DocumentRejected",
+      "code": "jigsaw/processors_failed",
       "severity": "error",
       "path": "worldgen/processors/e_block_age.json",
       "text": "Failed to parse jigsaw structure processor list 'worldgen/processors/e_block_age.json'."
     },
     {
-      "code": "InvalidEnumValue",
+      "code": "core/invalid_enum_value",
       "severity": "error",
       "path": "worldgen/processors/f_gravity.json",
       "json_path": "minecraft:processor_list/processors"
     },
     {
-      "code": "DocumentRejected",
+      "code": "jigsaw/processors_failed",
       "severity": "error",
       "path": "worldgen/processors/f_gravity.json",
       "text": "Failed to parse jigsaw structure processor list 'worldgen/processors/f_gravity.json'."
     },
     {
-      "code": "InvalidEnumValue",
+      "code": "core/invalid_enum_value",
       "severity": "error",
       "path": "worldgen/processors/g_capped_capped.json",
       "json_path": "minecraft:processor_list/processors/0/delegate"
     },
     {
-      "code": "DocumentRejected",
+      "code": "jigsaw/processors_failed",
       "severity": "error",
       "path": "worldgen/processors/g_capped_capped.json",
       "text": "Failed to parse jigsaw structure processor list 'worldgen/processors/g_capped_capped.json'."

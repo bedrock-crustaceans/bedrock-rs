@@ -1,7 +1,7 @@
 # a.json is replaced by b.json, the last path of the pack (validation rule 4).
 
 [[diagnostic]]
-kind = "DuplicateIdentifier"
+kind = "core/duplicate_identifier"
 severity = "info"
 file = "behavior_trees/a.json"
 path = ""

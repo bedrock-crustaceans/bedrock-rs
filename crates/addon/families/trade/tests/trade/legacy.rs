@@ -66,7 +66,7 @@ fn t01_a_stamped_tier_without_total_exp_required_is_an_error() {
     ));
     found_at(
         &d,
-        "MissingRequiredField",
+        "core/missing_required_field",
         Severity::Error,
         "tiers/0/total_exp_required",
     );
@@ -189,7 +189,7 @@ fn a_legacy_trade_or_group_that_goes_whole_for_one_member_is_told_where_it_is() 
         "tiers/0/groups/0/trades/3",
         "tiers/0/groups/1",
     ] {
-        found_at(d, "DroppedField", Severity::Info, at);
+        found_at(d, "core/dropped_field", Severity::Info, at);
     }
     assert_eq!(document.tiers[0].groups.len(), 1);
     assert_eq!(document.tiers[0].groups[0].trades.len(), 1);
@@ -201,7 +201,7 @@ fn a_legacy_trade_or_group_that_goes_whole_for_one_member_is_told_where_it_is() 
     ));
     found_at(
         document.diagnostics(),
-        "DroppedField",
+        "core/dropped_field",
         Severity::Info,
         "tiers/0/groups/0",
     );
@@ -217,7 +217,7 @@ fn a_member_of_the_material_function_the_expansion_does_not_read_is_told() {
     ));
     found_at(
         document.diagnostics(),
-        "UnrecognizedField",
+        "core/unrecognized_field",
         Severity::Info,
         "tiers/0/trades/0/gives/0/functions/0/zz",
     );
@@ -245,15 +245,15 @@ fn a_finding_of_the_step_behind_what_the_reader_leaves_out_is_at_the_index_of_th
     let upgrade: Vec<String> = d
         .iter()
         .filter(|f| f.phase == bedrock_addon_core::diagnostic::Phase::Upgrade)
-        .map(|f| format!("{} {}", f.code.name(), f.location.json_path))
+        .map(|f| format!("{} {}", f.code.id(), f.location.json_path))
         .collect();
     assert_eq!(
         upgrade,
         [
-            "InvalidValue tiers/0/groups/1/trades",
-            "DroppedField tiers/0/groups/1",
-            "InvalidType tiers/0/groups/2/trades/1/wants/1/quantity",
-            "InvalidType tiers/0/groups/2/trades/1/gives/1/choice/1/quantity",
+            "core/invalid_value tiers/0/groups/1/trades",
+            "core/dropped_field tiers/0/groups/1",
+            "core/invalid_type tiers/0/groups/2/trades/1/wants/1/quantity",
+            "core/invalid_type tiers/0/groups/2/trades/1/gives/1/choice/1/quantity",
         ],
         "{d:#?}"
     );
@@ -266,7 +266,7 @@ fn a_finding_of_the_step_behind_what_the_reader_leaves_out_is_at_the_index_of_th
     );
     found_at(
         document.diagnostics(),
-        "InvalidType",
+        "core/invalid_type",
         Severity::Info,
         "tiers/0/trades/1/wants/0/quantity",
     );
@@ -292,7 +292,7 @@ fn the_step_run_on_a_document_as_written_tells_its_findings_at_the_index_of_the_
     let upgraded = bedrock_addon_family_trade::history::upgrade(written, &cx).expect("it loads");
     let told = |d: &bedrock_addon_core::diagnostic::Diagnostics| -> Vec<String> {
         d.iter()
-            .map(|f| format!("{} {}", f.code.name(), f.location.json_path))
+            .map(|f| format!("{} {}", f.code.id(), f.location.json_path))
             .collect()
     };
     assert_eq!(
@@ -301,7 +301,7 @@ fn the_step_run_on_a_document_as_written_tells_its_findings_at_the_index_of_the_
     );
     found_at(
         upgraded.diagnostics(),
-        "InvalidType",
+        "core/invalid_type",
         Severity::Info,
         "tiers/0/groups/1/trades/1/wants/1/quantity",
     );

@@ -25,13 +25,13 @@ fn v01_a_file_that_is_not_a_json_object_is_not_loaded() {
         let nothing = !bytes.starts_with(b"{") && !bytes.starts_with(b"\"");
         assert_eq!(
             // By legacy name: the variant and the definitions that were it.
-            matches!(error.code.name(), "EmptyDocument"),
+            matches!(error.code.id(), "loot/invalid_table_empty"),
             nothing,
             "{error:?}"
         );
         assert_eq!(
             // By legacy name: the variant and the definitions that were it.
-            matches!(error.code.name(), "MalformedInput"),
+            matches!(error.code.id(), "loot/invalid_table"),
             !nothing,
             "{error:?}"
         );
@@ -91,7 +91,7 @@ fn v04_entries_that_are_not_an_array_are_the_game_s_content_log_error() {
     assert!(table.pools.as_deref().unwrap()[0].entries().is_empty());
     let found = findings(&table);
     assert_eq!(found.len(), 1, "{found:?}");
-    assert!(found[0].code.name() == "InvalidType" && found[0].code.vanilla().is_some());
+    assert!(found[0].code.id() == "loot/entries_array" && found[0].code.vanilla().is_some());
     assert_eq!(found[0].severity, Severity::Error);
     // A kept error: the table loads with it.
     assert!(found[0].kept, "{found:?}");
@@ -110,7 +110,7 @@ fn v05_an_entry_that_is_not_an_object_is_skipped() {
     assert!(matches!(entries[0].kind, EntryKind::Empty));
     let found = findings(&table);
     assert_eq!(found.len(), 1, "{found:?}");
-    assert!(found[0].code.name() == "InvalidType" && found[0].code.vanilla().is_some());
+    assert!(found[0].code.id() == "loot/entry_object" && found[0].code.vanilla().is_some());
     assert_eq!(found[0].severity, Severity::Error);
     assert_eq!(path(found[0]), "pools/0/entries/0");
     assert_eq!(
@@ -132,7 +132,7 @@ fn v08_a_function_that_is_not_an_object_is_skipped() {
     assert_eq!(functions.as_deref().unwrap().len(), 1);
     let found = findings(&table);
     assert_eq!(found.len(), 1, "{found:?}");
-    assert!(found[0].code.name() == "InvalidType" && found[0].code.vanilla().is_some());
+    assert!(found[0].code.id() == "loot/function_object" && found[0].code.vanilla().is_some());
     assert_eq!(found[0].severity, Severity::Error);
     assert_eq!(path(found[0]), "pools/0/entries/0/functions/0");
     assert_eq!(
@@ -150,7 +150,7 @@ fn v12_a_condition_that_is_not_an_object_is_skipped() {
     assert_eq!(pool.conditions.as_deref().unwrap().len(), 1);
     let found = findings(&table);
     assert_eq!(found.len(), 1, "{found:?}");
-    assert!(found[0].code.name() == "InvalidType" && found[0].code.vanilla().is_some());
+    assert!(found[0].code.id() == "loot/condition_object" && found[0].code.vanilla().is_some());
     assert_eq!(found[0].severity, Severity::Error);
     assert_eq!(path(found[0]), "pools/0/conditions/0");
     assert_eq!(

@@ -6,12 +6,12 @@ others = []
 main = "other/main.js"
 
 [[diagnostics]]
-code = "UnresolvedReference"
+code = "script/plugin_missing_main_file"
 severity = "error"
 text = "Plugin [SB_entry_outside - 1.0.0] - does not contain main file [other/main.js]."
 file = "manifest.json"
 [[diagnostics]]
-code = "ScriptFileNotLoadable"
+code = "core/script_file_not_loadable"
 severity = "info"
 text = "script file can never be loaded"
 file = "other/main.js"

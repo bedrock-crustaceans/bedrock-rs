@@ -97,7 +97,7 @@ fn check_rules(source: &str, dirs: &[&Path], world_behavior: &[u8]) {
         let mut warnings: BTreeMap<&str, usize> = BTreeMap::new();
         for finding in rules.diagnostics() {
             if finding.severity == Severity::Warning {
-                *warnings.entry(finding.code.name()).or_default() += 1;
+                *warnings.entry(finding.code.id()).or_default() += 1;
             }
             if finding.severity < Severity::Error {
                 continue;

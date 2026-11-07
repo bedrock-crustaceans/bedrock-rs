@@ -119,7 +119,7 @@ pub fn found<'a>(holder: &'a impl Findable, code: &str) -> Vec<&'a Diagnostic> {
     holder
         .findings()
         .into_iter()
-        .filter(|d| d.code.name() == code)
+        .filter(|d| d.code.id() == code)
         .collect()
 }
 
@@ -131,7 +131,7 @@ pub fn describe(holder: &impl Findable) -> Vec<String> {
         .map(|d| {
             format!(
                 "{} {:?} {} | {}",
-                d.code.name(),
+                d.code.id(),
                 d.severity,
                 d.location.json_path,
                 d

@@ -88,7 +88,7 @@ fn rule_10_a_default_biome_no_biome_defines_is_an_info() {
     let d = repository.stacks(&world, LoadOptions::default()).link();
     assert!(
         d.iter()
-            .any(|f| f.severity == Severity::Info && f.code.name() == "UnresolvedReference")
+            .any(|f| f.severity == Severity::Info && f.code.id() == "core/unresolved_reference")
     );
 }
 
@@ -156,7 +156,7 @@ fn unknown_members_warn_below_1_21_60_deviation() {
         r#""identifier": "minecraft:nether", "foo": 1"#,
     );
     let document = loads(&text);
-    let found = with_code(document.diagnostics(), "UnrecognizedField");
+    let found = with_code(document.diagnostics(), "core/unrecognized_field");
     assert_eq!(found.len(), 1);
     assert_eq!(found[0].severity, Severity::Info);
 }
@@ -218,7 +218,7 @@ fn an_identifier_that_is_an_object_is_a_type_error_and_no_panic() {
         dimension("1.26.50", "minecraft:overworld", "").replace(r#""minecraft:overworld""#, "{}");
     assert!(json.contains(r#""identifier": {}"#));
     let d = rejects(&json);
-    let found = with_code(&d, "InvalidType");
+    let found = with_code(&d, "core/invalid_type");
     assert_eq!(found.len(), 1, "{d:#?}");
     assert_eq!(found[0].severity, Severity::Error);
     assert_eq!(

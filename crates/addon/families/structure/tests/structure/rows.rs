@@ -60,7 +60,7 @@ fn s02_a_format_version_of_0_or_none_is_the_required_field_error() {
     for name in ["s02_format_0", "s02_format_missing"] {
         let finding = fails_with(
             &fixture(name),
-            "MissingRequiredField",
+            "structure/required",
             &required("format_version"),
         );
         assert_eq!(finding.location.json_path.to_string(), "format_version");
@@ -71,7 +71,7 @@ fn s02_a_format_version_of_0_or_none_is_the_required_field_error() {
 fn s03_a_format_version_short_reads_as_0() {
     fails_with(
         &fixture("s03_format_short"),
-        "MissingRequiredField",
+        "structure/required",
         &required("format_version"),
     );
 }
@@ -80,7 +80,7 @@ fn s03_a_format_version_short_reads_as_0() {
 fn s04_a_format_version_of_2_is_larger_than_the_current_version() {
     let finding = fails_with(
         &fixture("s04_format_2"),
-        "UnsupportedVersion",
+        "structure/larger_version",
         "\"format_version\" field has a value larger than the current version.  We expect a format version with a value at most 1 and got 2.",
     );
     assert_eq!(finding.location.json_path.to_string(), "format_version");
@@ -90,7 +90,7 @@ fn s04_a_format_version_of_2_is_larger_than_the_current_version() {
 fn s05_a_format_version_of_minus_1_is_smaller_than_the_current_version() {
     fails_with(
         &fixture("s05_format_neg1"),
-        "UnsupportedVersion",
+        "structure/smaller_version",
         "\"format_version\" field has a value smaller than the current version.  We expect a format version with a value at most 1 and got -1.",
     );
 }
@@ -100,7 +100,7 @@ fn s06_a_neighbor_aware_version_outside_0_to_1_is_an_invalid_value() {
     for (name, value) in [("s06_nabu_2", 2), ("s06_nabu_neg1", -1)] {
         let finding = fails_with(
             &fixture(name),
-            "InvalidValue",
+            "structure/invalid_value",
             &format!(
                 "\"neighbor_aware_block_upgrade_version\" field has an invalid value of {value}. Valid values are 0 and up to 1."
             ),
@@ -116,7 +116,7 @@ fn s06_a_neighbor_aware_version_outside_0_to_1_is_an_invalid_value() {
 fn s07_a_neighbor_aware_version_string_is_not_an_integer() {
     fails_with(
         &fixture("s07_nabu_string"),
-        "InvalidValue",
+        "structure/not_an_integer",
         "\"neighbor_aware_block_upgrade_version\" field is not an integer.",
     );
 }
@@ -139,7 +139,7 @@ fn s09_a_size_of_2_or_4_ints_expects_3_elements() {
     for name in ["s09_size_2elems", "s09_size_4elems"] {
         let finding = fails_with(
             &fixture(name),
-            "InvalidValue",
+            "structure/three_elements",
             "The \"size\" field expects 3 elements.",
         );
         assert_eq!(finding.location.json_path.to_string(), "size");
@@ -150,7 +150,7 @@ fn s09_a_size_of_2_or_4_ints_expects_3_elements() {
 fn s10_a_negative_size_component_fails() {
     fails_with(
         &fixture("s10_size_negative"),
-        "InvalidValue",
+        "structure/negative",
         "The \"size\" field shouldn't have any negative values.",
     );
 }
@@ -159,7 +159,7 @@ fn s10_a_negative_size_component_fails() {
 fn s11_a_size_int_array_is_not_a_list() {
     fails_with(
         &fixture("s11_size_not_list"),
-        "MissingRequiredField",
+        "structure/required",
         &required("size"),
     );
 }
@@ -174,7 +174,7 @@ fn s12_a_negative_world_origin_loads() {
 fn s13_a_root_without_structure_is_the_required_field_error() {
     let finding = fails_with(
         &fixture("s13_no_structure"),
-        "MissingRequiredField",
+        "structure/required",
         &required("structure"),
     );
     assert_eq!(finding.location.json_path.to_string(), "structure");
@@ -185,7 +185,7 @@ fn s14_block_indices_must_have_exactly_2_layers() {
     for (name, count) in [("s14_indices_1_layer", 1), ("s14_indices_3_layers", 3)] {
         let finding = fails_with(
             &fixture(name),
-            "InvalidValue",
+            "structure/two_arrays",
             &format!(
                 "The \"block_indices\" field should be an array with 2 arrays and instead we have {count} arrays."
             ),
@@ -203,7 +203,7 @@ fn s15_a_layer_that_is_not_a_list_fails() {
     // IntArrays and the first is reported.
     fails_with(
         &fixture("s15_indices_layer_not_list"),
-        "InvalidValue",
+        "structure/first_array",
         "The \"block_indices\" field's first array is either missing or not a list.",
     );
 }
@@ -212,7 +212,7 @@ fn s15_a_layer_that_is_not_a_list_fails() {
 fn s16_layers_of_unequal_length_fail() {
     fails_with(
         &fixture("s16_indices_unequal"),
-        "InvalidValue",
+        "structure/same_size",
         "The \"block_indices\" field's arrays need to both be the same size.",
     );
 }
@@ -221,7 +221,7 @@ fn s16_layers_of_unequal_length_fail() {
 fn s17_an_index_count_other_than_the_volume_fails() {
     fails_with(
         &fixture("s17_indices_volume"),
-        "InvalidValue",
+        "structure/volume",
         "The \"block_indices\" field should have as many elements as defined by the \"size\" field.",
     );
 }
@@ -243,7 +243,7 @@ fn s19_indices_of_another_type_decode_as_0() {
 fn s20_a_structure_without_entities_is_the_required_field_error() {
     let finding = fails_with(
         &fixture("s20_entities_missing"),
-        "MissingRequiredField",
+        "structure/required",
         &required("entities"),
     );
     assert_eq!(finding.location.json_path.to_string(), "structure/entities");
@@ -253,7 +253,7 @@ fn s20_a_structure_without_entities_is_the_required_field_error() {
 fn s21_an_entity_that_is_not_a_compound_fails_the_file() {
     let finding = fails_with(
         &fixture("s21_entities_int"),
-        "InvalidValue",
+        "structure/invalid_entity",
         "At index 0 while reading \"entities\", we found an invalid entity in the list of entities.",
     );
     assert_eq!(
@@ -266,7 +266,7 @@ fn s21_an_entity_that_is_not_a_compound_fails_the_file() {
 fn s22_a_structure_without_palette_is_the_required_field_error() {
     let finding = fails_with(
         &fixture("s22_palette_missing"),
-        "MissingRequiredField",
+        "structure/required",
         &required("palette"),
     );
     assert_eq!(finding.location.json_path.to_string(), "structure/palette");
@@ -276,7 +276,7 @@ fn s22_a_structure_without_palette_is_the_required_field_error() {
 fn s23_a_palette_that_is_not_a_compound_fails() {
     let finding = fails_with(
         &fixture("s23_palette_value_int"),
-        "InvalidValue",
+        "structure/compound_elements",
         "Expected a compound tag when parsing elements of \"palette\" field.",
     );
     assert_eq!(
@@ -295,7 +295,7 @@ fn s24_an_empty_palette_compound_loads_without_palettes() {
 fn s25_a_block_palette_entry_that_is_not_a_compound_fails() {
     let finding = fails_with(
         &fixture("s25_block_palette_int_elem"),
-        "InvalidValue",
+        "structure/invalid_block",
         "At index 0 while reading \"block_palette\", we found an invalid block in the palette, we were expecting a compound tag here.",
     );
     assert_eq!(
@@ -308,7 +308,7 @@ fn s25_a_block_palette_entry_that_is_not_a_compound_fails() {
 fn s26_a_palette_without_block_position_data_is_the_required_field_error() {
     let finding = fails_with(
         &fixture("s26_bpd_missing"),
-        "MissingRequiredField",
+        "structure/required",
         &required("block_position_data"),
     );
     assert_eq!(
@@ -321,7 +321,7 @@ fn s26_a_palette_without_block_position_data_is_the_required_field_error() {
 fn s27_a_block_position_key_that_is_not_a_number_fails() {
     fails_with(
         &fixture("s27_bpd_key_nonnumeric"),
-        "InvalidValue",
+        "structure/not_a_number",
         "Expected a string formatted as a number when parsing contents of the \"block_position_data\" field, but got \"a\"",
     );
 }
@@ -330,7 +330,7 @@ fn s27_a_block_position_key_that_is_not_a_number_fails() {
 fn s28_a_block_position_value_that_is_not_a_compound_fails() {
     let finding = fails_with(
         &fixture("s28_bpd_value_int"),
-        "InvalidValue",
+        "structure/compound_value",
         "Expected a compound tag when parsing elements of \"block_position_data\" field at the value for \"0\".",
     );
     assert_eq!(
@@ -343,7 +343,7 @@ fn s28_a_block_position_value_that_is_not_a_compound_fails() {
 fn s29_a_block_entity_that_is_not_a_compound_fails() {
     fails_with(
         &fixture("s29_bed_not_compound"),
-        "InvalidValue",
+        "structure/compound_field",
         "Expected a compound tag for the \"block_entity_data\" field.",
     );
 }
@@ -352,12 +352,12 @@ fn s29_a_block_entity_that_is_not_a_compound_fails() {
 fn s30_tick_queue_data_must_be_a_list_of_compounds() {
     fails_with(
         &fixture("s30_tqd_not_list"),
-        "InvalidValue",
+        "structure/list_field",
         "Expected a list tag for the \"tick_queue_data\" field.",
     );
     let finding = fails_with(
         &fixture("s30_tqd_int_elem"),
-        "InvalidValue",
+        "structure/compound_at",
         "Expected a compound tag at index 0 when parsing elements of \"tick_queue_data\" field.",
     );
     assert_eq!(
@@ -423,7 +423,7 @@ fn infos(document: &bedrock_addon_core::document::Document<Structure>) -> Vec<(S
         .diagnostics()
         .iter()
         .filter(|f| f.severity == bedrock_addon_core::diagnostic::Severity::Info)
-        .map(|f| (f.code.name().to_owned(), f.location.json_path.to_string()))
+        .map(|f| (f.code.id().to_owned(), f.location.json_path.to_string()))
         .collect()
 }
 
@@ -436,7 +436,7 @@ fn n09_negative_indices_load_and_below_minus_1_is_noted_deviation() {
     assert_eq!(
         infos(&document),
         [(
-            "InvalidValue".to_owned(),
+            "core/invalid_value".to_owned(),
             "structure/block_indices/0/1".to_owned()
         )]
     );
@@ -450,7 +450,7 @@ fn n10_an_index_past_the_palette_loads_with_an_info_deviation() {
     assert_eq!(
         infos(&document),
         [(
-            "InvalidValue".to_owned(),
+            "core/invalid_value".to_owned(),
             "structure/block_indices/0/0".to_owned()
         )]
     );

@@ -73,15 +73,15 @@ struct Tally {
 impl Tally {
     /// Adds one finding of the pack at `dir`, whose `texts/` holds `on_disk` MCB documents.
     fn add(&mut self, dir: &Path, on_disk: usize, seen: &mut usize, diagnostic: &Diagnostic) {
-        if diagnostic.code.name() == "UnsupportedFileFormat" && *seen < on_disk {
+        if diagnostic.code.id() == "core/unsupported_file_format" && *seen < on_disk {
             *seen += 1;
             self.mcb += 1;
         } else if diagnostic.severity >= Severity::Error {
             self.errors.push(format!("{}: {diagnostic}", dir.display()));
         } else if diagnostic.severity == Severity::Warning {
-            *self.warnings.entry(diagnostic.code.name()).or_insert(0) += 1;
+            *self.warnings.entry(diagnostic.code.id()).or_insert(0) += 1;
         } else if diagnostic.severity == Severity::Info {
-            *self.infos.entry(diagnostic.code.name()).or_insert(0) += 1;
+            *self.infos.entry(diagnostic.code.id()).or_insert(0) += 1;
         }
     }
 
@@ -116,7 +116,7 @@ impl Tally {
                 .path
                 .as_ref()
                 .is_some_and(|path| path.as_str().to_ascii_lowercase().starts_with("texts/"));
-            if in_texts && diagnostic.code.name() == "UnsupportedFileFormat" {
+            if in_texts && diagnostic.code.id() == "core/unsupported_file_format" {
                 self.add(dir, on_disk, &mut seen, diagnostic);
             }
         }
@@ -256,7 +256,7 @@ fn sample_packs_resource_pack_texts_load() {
     );
     // A key that ends with a space is an information of the crate's own (`LangKeyTrailingSpace`):
     // the game stores such a key as written, and vanilla writes the space on purpose.
-    assert_eq!(tally.infos.get("LangKeyTrailingSpace"), Some(&783));
+    assert_eq!(tally.infos.get("core/lang_key_trailing_space"), Some(&783));
     // 29 language codes with `en_US` first, 29 name pairs
     assert_eq!(tally.codes, 29);
     assert_eq!(tally.names, 29);

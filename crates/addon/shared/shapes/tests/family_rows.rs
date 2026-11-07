@@ -12,7 +12,7 @@
 )]
 mod common;
 
-use bedrock_addon_core::diagnostic::{JsonPath, Severity};
+use bedrock_addon_core::diagnostic::{JsonPath, Kind, Severity};
 use bedrock_addon_core::molang::SourceForm;
 use bedrock_addon_shared_shapes::{
     BlockDescriptor, BlockSpecifier, CreativeCategory, ItemDescriptor, MenuCategory,
@@ -34,7 +34,7 @@ fn block_text(descriptor: &BlockDescriptor) -> String {
     assert_eq!(found.len(), 1);
     let code = &found.iter().next().unwrap().code;
     // By legacy name: the variant and the definitions that were it.
-    assert_eq!(code.name(), "InvalidValue", "{code:?}");
+    assert_eq!(code.kind(), Kind::InvalidValue, "{code:?}");
     code.vanilla().expect("a vanilla text")
 }
 

@@ -57,7 +57,10 @@ fn sc01_default_only_refuses_the_unlisted_module() {
     assert!(!verdicts[0].runs);
     assert!(verdicts[0].dropped.is_empty());
     let finding = verdicts[0].diagnostics.first_error().unwrap();
-    assert_eq!(finding.code.name(), "ScriptModulePermission");
+    assert_eq!(
+        finding.code.id(),
+        "server_config/plugin_module_not_configured"
+    );
     assert_eq!(
         config.for_module(uuid(MODULE)).source,
         ConfigSource::Default
@@ -269,7 +272,7 @@ fn m1_a_pack_folder_that_lacks_what_default_has_is_warned_deviation() {
     let shadows = |config: &ScriptConfig| -> Vec<String> {
         seen(config.diagnostics())
             .into_iter()
-            .filter(|f| f.code == "PackConfigShadowsDefault")
+            .filter(|f| f.code == "core/pack_config_shadows_default")
             .inspect(|f| assert_eq!(f.severity, "info"))
             .map(|f| f.file)
             .collect()
@@ -437,7 +440,7 @@ fn d1_d2_each_refused_dependency_has_its_own_finding() {
         .collect();
     let refused = |module: &str| {
         (
-            "ScriptModulePermission".to_owned(),
+            "server_config/plugin_module_not_configured".to_owned(),
             "error".to_owned(),
             format!(
                 "Plugin [many - 1.0.0] - requesting dependency on module [{module}] but it is not configured to use it."
@@ -445,7 +448,7 @@ fn d1_d2_each_refused_dependency_has_its_own_finding() {
         )
     };
     let dropped = (
-        "DroppedField".to_owned(),
+        "core/dropped_field".to_owned(),
         "info".to_owned(),
         "field dropped".to_owned(),
     );
@@ -573,7 +576,7 @@ fn sc44_net_payload_size_is_newer_than_an_older_engine() {
         let findings = config.engine_findings(older);
         let found = seen(&findings);
         assert_eq!(found.len(), 1);
-        assert_eq!(found[0].code, "FieldSinceEngine");
+        assert_eq!(found[0].code, "core/field_since_engine");
         // The crate's prediction of an older engine: an information.
         assert_eq!(found[0].severity, "info");
         assert_eq!(found[0].file, "config/default/permissions.json");

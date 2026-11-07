@@ -42,17 +42,18 @@ fn commands(text: &str) -> ScriptConfig {
 /// level or above, and none of the reader's own notes, informations (a value of
 /// the wrong type or form, one with no effect).
 fn clean(config: &ScriptConfig) -> bool {
-    const NOTES: [&str; 4] = [
-        "InvalidType",
-        "InvalidValue",
-        "InvalidEnumValue",
-        "NoEffect",
+    const NOTES: [&str; 5] = [
+        "core/invalid_type",
+        "core/invalid_value",
+        "core/invalid_enum_value",
+        "server_config/bad_log_level",
+        "core/no_effect",
     ];
     config.diagnostics().max_severity() < Some(Severity::Warning)
         && !config
             .diagnostics()
             .iter()
-            .any(|d| NOTES.contains(&d.code.name()))
+            .any(|d| NOTES.contains(&d.code.id()))
 }
 
 /// A JSON value in a form that compares member for member whatever the member order:

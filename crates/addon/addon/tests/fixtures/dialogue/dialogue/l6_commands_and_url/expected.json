@@ -5,7 +5,7 @@
   "rejected": 0,
   "diagnostics": [
     {
-      "code": "InvalidValue",
+      "code": "dialogue/commands_and_url",
       "severity": "error",
       "path": "dialogue/both.json",
       "json_path": "minecraft:npc_dialogue/scenes/0/buttons/0",

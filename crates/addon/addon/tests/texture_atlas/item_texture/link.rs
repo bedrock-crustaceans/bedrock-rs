@@ -65,7 +65,7 @@ fn found(d: &Diagnostics) -> Vec<(&'static str, Severity, String)> {
             f.severity > Severity::Debug
                 && f.location.path.as_ref().is_some_and(|p| p.as_str() == ITEM)
         })
-        .map(|f| (f.code.name(), f.severity, f.to_string()))
+        .map(|f| (f.code.id(), f.severity, f.to_string()))
         .collect()
 }
 
@@ -76,7 +76,7 @@ fn missing(d: &Diagnostics, name: &str, hint: &str) {
     assert_eq!(found.len(), 1, "{found:#?}");
     assert_eq!(
         (found[0].0, found[0].1),
-        ("UnresolvedReference", Severity::Error)
+        ("core/unresolved_reference_worded", Severity::Error)
     );
     assert!(d.iter().any(|f| f.kept), "{d:#?}");
     let text = format!("-> components -> minecraft:icon:  Missing referenced asset {name}{hint}");
@@ -193,7 +193,7 @@ fn t21_a_reference_to_a_dropped_tile_is_unresolved() {
         .item_atlas
         .diagnostics()
         .collect();
-    assert_eq!(atlas[0].code.name(), "MissingRequiredField");
+    assert_eq!(atlas[0].code.id(), "texture_atlas/missing_textures");
     assert_eq!(atlas[0].code.to_string(), "Missing textures \"a\".");
     missing(&set.link(), "a", "");
 }

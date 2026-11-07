@@ -101,7 +101,7 @@ pub fn fails_with(bytes: &[u8], code: &str, text: &str) -> Diagnostic {
     assert_eq!(found.len(), 1, "one finding: {d:#?}");
     let finding = found[0];
     assert_eq!(finding.severity, Severity::Error, "{finding:#?}");
-    assert_eq!(finding.code.name(), code, "{finding:#?}");
+    assert_eq!(finding.code.id(), code, "{finding:#?}");
     assert_eq!(finding.code.to_string(), text, "{finding:#?}");
     finding.clone()
 }

@@ -146,7 +146,7 @@ fn n05_a_broken_top_copy_falls_through_to_the_lower_pack_deviation() {
     let findings: Vec<_> = structures.diagnostics().collect();
     assert_eq!(findings.len(), 1, "{findings:#?}");
     assert_eq!(findings[0].severity, Severity::Error);
-    assert_eq!(findings[0].code.name(), "UnsupportedVersion");
+    assert_eq!(findings[0].code.id(), "structure/larger_version");
     assert_eq!(findings[0].location.pack.as_ref().unwrap().name(), "bp 1");
     assert_eq!(structures.rejected().len(), 1);
     assert_eq!(

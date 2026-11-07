@@ -82,13 +82,13 @@ fn f18_an_entry_naming_no_function_is_skipped_with_a_warning() {
     assert_eq!(
         rendered(tick.diagnostics()),
         [
-            finding("UnresolvedReference", Severity::Warning, &not_found("")),
+            finding("function/tick_not_found", Severity::Warning, &not_found("")),
             finding(
-                "UnresolvedReference",
+                "function/tick_not_found",
                 Severity::Warning,
                 &not_found("missing")
             ),
-            finding("UnresolvedReference", Severity::Warning, &not_found("")),
+            finding("function/tick_not_found", Severity::Warning, &not_found("")),
         ]
     );
     let paths: Vec<String> = tick
@@ -120,9 +120,21 @@ fn a_tick_entry_must_match_a_name_byte_for_byte() {
     assert_eq!(
         rendered(stack.tick_functions().diagnostics()),
         [
-            finding("UnresolvedReference", Severity::Warning, &not_found("A/B")),
-            finding("UnresolvedReference", Severity::Warning, &not_found("a//b")),
-            finding("UnresolvedReference", Severity::Warning, &not_found("a/b/")),
+            finding(
+                "function/tick_not_found",
+                Severity::Warning,
+                &not_found("A/B")
+            ),
+            finding(
+                "function/tick_not_found",
+                Severity::Warning,
+                &not_found("a//b")
+            ),
+            finding(
+                "function/tick_not_found",
+                Severity::Warning,
+                &not_found("a/b/")
+            ),
         ]
     );
 }
@@ -138,7 +150,7 @@ fn a_tick_entry_resolves_against_the_functions_vanilla_creates() {
     assert_eq!(
         rendered(stack.tick_functions().diagnostics()),
         [finding(
-            "UnresolvedReference",
+            "function/tick_not_found",
             Severity::Warning,
             &not_found("broken")
         )]
@@ -157,10 +169,10 @@ fn f19_a_tick_list_without_a_values_array_is_skipped() {
     assert_eq!(
         rendered(tick.diagnostics()),
         [
-            finding("MissingRequiredField", Severity::Error, NO_VALUES),
-            finding("InvalidType", Severity::Error, NO_VALUES),
-            finding("MissingRequiredField", Severity::Error, NO_VALUES),
-            finding("MissingRequiredField", Severity::Error, NO_VALUES),
+            finding("function/tick_no_values", Severity::Error, NO_VALUES),
+            finding("function/tick_values_not_array", Severity::Error, NO_VALUES),
+            finding("function/tick_no_values", Severity::Error, NO_VALUES),
+            finding("function/tick_no_values", Severity::Error, NO_VALUES),
         ]
     );
     let packs: Vec<Option<usize>> = tick

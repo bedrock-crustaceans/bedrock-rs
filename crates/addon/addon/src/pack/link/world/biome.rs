@@ -290,7 +290,7 @@ mod tests {
             .iter()
             .map(|f| {
                 (
-                    f.code.name(),
+                    f.code.id(),
                     f.severity,
                     f.location.path.as_ref().map(ToString::to_string),
                     f.location.json_path.to_string(),
@@ -301,7 +301,7 @@ mod tests {
         assert_eq!(
             found,
             [(
-                "InvalidValue",
+                "core/invalid_value_worded",
                 Severity::Error,
                 Some("biomes/c.json".to_owned()),
                 "minecraft:biome/description/identifier".to_owned(),

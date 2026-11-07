@@ -1,19 +1,19 @@
 # Validation rule 3: no name, a number, an empty string.
 
 [[diagnostic]]
-kind = "MissingRequiredField"
+kind = "core/missing_required_field"
 severity = "error"
 file = "behavior_trees/no_name.json"
 path = "minecraft:behavior_tree/minecraft:name"
 
 [[diagnostic]]
-kind = "MissingRequiredField"
+kind = "core/missing_required_field"
 severity = "error"
 file = "behavior_trees/number_name.json"
 path = "minecraft:behavior_tree/minecraft:name"
 
 [[diagnostic]]
-kind = "MissingRequiredField"
+kind = "core/missing_required_field"
 severity = "error"
 file = "behavior_trees/empty_name.json"
 path = "minecraft:behavior_tree/minecraft:name"

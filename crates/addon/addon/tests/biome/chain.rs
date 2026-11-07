@@ -87,7 +87,7 @@ fn a_prerelease_loads_through_the_struct_below_it_with_an_info() {
         document
             .diagnostics()
             .iter()
-            .any(|f| matches!(f.code.name(), "PrereleaseFormatVersion")
+            .any(|f| matches!(f.code.id(), "core/prerelease_format_version")
                 && f.severity == Severity::Info)
     );
 }
@@ -111,7 +111,7 @@ fn a_prerelease_of_1_21_120_is_read_from_the_raw_text_by_the_legacy_struct() {
     assert!(
         d.iter().any(
             // By legacy name: the variant and the definitions that were it.
-            |f| matches!(f.code.name(), "UnrecognizedField")
+            |f| matches!(f.code.id(), "core/unrecognized_field")
                 && f.severity == Severity::Error
                 && f.location.json_path.to_string() == "x"
         ),
@@ -120,14 +120,14 @@ fn a_prerelease_of_1_21_120_is_read_from_the_raw_text_by_the_legacy_struct() {
     assert!(
         !d.iter()
             // By legacy name: the variant and the definitions that were it.
-            .any(|f| matches!(f.code.name(), "MalformedInput"))
+            .any(|f| matches!(f.code.id(), "core/document_member_count"))
     );
     // The release itself is the checked envelope: a third root member rejects the document.
     let d = rejected(&three("1.21.120"), &context());
     assert!(
         d.iter()
             // By legacy name: the variant and the definitions that were it.
-            .any(|f| matches!(f.code.name(), "MalformedInput"))
+            .any(|f| matches!(f.code.id(), "core/document_member_count"))
     );
 }
 
@@ -208,11 +208,11 @@ fn unknown_components_and_members_refuse_a_cereal_biome() {
         );
         let components = with(&found, |c| {
             // By legacy name: the variant and the definitions that were it.
-            matches!(c.name(), "UnrecognizedComponent")
+            matches!(c.id(), "core/unrecognized_component")
         });
         let fields = with(&found, |c| {
             // By legacy name: the variant and the definitions that were it.
-            matches!(c.name(), "UnrecognizedField")
+            matches!(c.id(), "core/unrecognized_field")
         });
         assert_eq!(components.len(), 1, "{version}: {found:#?}");
         assert_eq!(
@@ -242,7 +242,7 @@ fn an_unknown_component_refuses_a_beta_biome() {
     let found = load_beta(&text, &base_game()).expect_err("refused");
     let components = with(&found.diagnostics, |c| {
         // By legacy name: the variant and the definitions that were it.
-        matches!(c.name(), "UnrecognizedComponent")
+        matches!(c.id(), "core/unrecognized_component")
     });
     assert_eq!(components.len(), 1, "{:#?}", found.diagnostics);
     assert_eq!(components[0].severity, Severity::Error);
@@ -279,7 +279,7 @@ fn a_missing_format_version_is_an_error_deviation() {
     );
     assert!(
         // By legacy name: the variant and the definitions that were it.
-        with(&found, |c| matches!(c.name(), "MissingFormatVersion"))
+        with(&found, |c| matches!(c.id(), "core/no_valid_version"))
             .iter()
             .all(|d| d.severity == Severity::Error)
     );

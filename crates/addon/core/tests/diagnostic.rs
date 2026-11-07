@@ -99,14 +99,14 @@ fn diagnostics_keep_insertion_order() {
     let diagnostics = mixed_findings();
     assert_eq!(diagnostics.len(), 4);
     assert!(!diagnostics.is_empty());
-    let codes: Vec<_> = diagnostics.iter().map(|d| d.code.name()).collect();
+    let codes: Vec<_> = diagnostics.iter().map(|d| d.code.id()).collect();
     assert_eq!(
         codes,
         [
-            "UnknownSound",
-            "InvalidValue",
-            "NoSplashes",
-            "MissingRequiredField"
+            "core/unknown_sound",
+            "core/invalid_value",
+            "core/no_splashes",
+            "core/missing_required_field"
         ]
     );
     let by_ref: Vec<_> = (&diagnostics).into_iter().map(|d| d.severity).collect();
@@ -157,11 +157,15 @@ fn at_least_filters_by_severity_in_order() {
     let diagnostics = mixed_findings();
     let warnings_up: Vec<_> = diagnostics
         .at_least(Severity::Warning)
-        .map(|d| d.code.name())
+        .map(|d| d.code.id())
         .collect();
     assert_eq!(
         warnings_up,
-        ["UnknownSound", "InvalidValue", "MissingRequiredField"]
+        [
+            "core/unknown_sound",
+            "core/invalid_value",
+            "core/missing_required_field"
+        ]
     );
     assert_eq!(diagnostics.at_least(Severity::Error).count(), 2);
     assert_eq!(diagnostics.at_least(Severity::Debug).count(), 4);

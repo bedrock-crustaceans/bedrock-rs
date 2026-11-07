@@ -11,7 +11,7 @@ use super::{Told, atomic, says, told};
 const WISP: &str = "atomic_client_entities/wisp.json";
 const INFO: Severity = Severity::Info;
 const WARNING: Severity = Severity::Warning;
-const UNRESOLVED: &str = "UnresolvedReference";
+const UNRESOLVED: &str = "core/unresolved_reference";
 
 fn at(member: &str) -> String {
     format!("minecraft:atomic_client_entity/description/{member}")
@@ -150,7 +150,7 @@ fn r13_a_sound_event_nothing_defines_is_an_unknown_sound_note() {
     assert_eq!(
         wisp(members, &more),
         [says(
-            "UnknownSound",
+            "core/unknown_sound",
             INFO,
             &at("sound_effects/s"),
             "sound event",
@@ -177,7 +177,7 @@ fn r7_a_texture_of_an_atomic_client_entity_no_pack_has_is_the_game_s_warning() {
     assert_eq!(
         found,
         [says(
-            "TextureNotFound",
+            "core/texture_not_found_worded",
             WARNING,
             &at("textures/other"),
             "texture",
@@ -194,7 +194,7 @@ mod controllers {
     use super::*;
 
     const FILE: &str = "render_controllers/wisp.render_controllers.json";
-    const UNSUPPORTED: &str = "AtomicUnsupportedRenderController";
+    const UNSUPPORTED: &str = "core/atomic_unsupported_render_controller";
 
     fn named(controller: &str) -> Vec<Told> {
         wisp(
@@ -300,13 +300,19 @@ mod controllers {
             [
                 says(UNSUPPORTED, WARNING, &at("render_controllers/0"), "", ""),
                 says(
-                    "AtomicFilterLightingIgnored",
+                    "core/atomic_filter_lighting_ignored",
                     WARNING,
                     &at("render_controllers/1"),
                     "",
                     ""
                 ),
-                says("NoEffect", WARNING, &at("render_controllers/2"), "", ""),
+                says(
+                    "core/no_effect_worded",
+                    WARNING,
+                    &at("render_controllers/2"),
+                    "",
+                    ""
+                ),
             ]
         );
         assert_eq!(
@@ -314,11 +320,11 @@ mod controllers {
             "Skipping an Atomic Entity - Unsupported render controller features (conditional enable, dynamic resources, multiple materials, or part visibility)."
         );
         assert_eq!(
-            text_of(&found, WISP, "AtomicFilterLightingIgnored"),
+            text_of(&found, WISP, "core/atomic_filter_lighting_ignored"),
             "Atomic Entity - filter_lighting is not supported."
         );
         assert_eq!(
-            text_of(&found, WISP, "NoEffect"),
+            text_of(&found, WISP, "core/no_effect_worded"),
             "Atomic Entity - light_color_multiplier expressions are not supported."
         );
     }

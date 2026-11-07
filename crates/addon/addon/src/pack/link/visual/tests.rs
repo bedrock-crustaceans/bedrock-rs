@@ -242,26 +242,26 @@ mod cost {
                 Some(DiagnosticDetail::Reference { kind, .. }) => *kind,
                 _ => "",
             };
-            *by_kind.entry((finding.code.name(), kind)).or_default() += 1;
+            *by_kind.entry((finding.code.id(), kind)).or_default() += 1;
         }
         let expected: BTreeMap<(&str, &str), usize> = [
             // Of 4 client entities and 4 attachables, 2 each name what nothing defines.
-            (("UnresolvedReference", "material"), 4),
-            (("UnresolvedReference", "geometry"), 4),
-            (("UnresolvedReference", "animation"), 4),
-            (("UnresolvedReference", "particle"), 4),
-            (("UnresolvedReference", "render controller"), 4),
+            (("core/unresolved_reference_worded", "material"), 4),
+            (("core/unresolved_reference", "geometry"), 4),
+            (("core/unresolved_reference", "animation"), 4),
+            (("core/unresolved_reference_worded", "particle"), 4),
+            (("core/unresolved_reference", "render controller"), 4),
             // No behaviour pack defines the entities or the items.
-            (("UnresolvedReference", "entity"), 4),
-            (("UnresolvedReference", "item"), 4),
+            (("core/unresolved_reference", "entity"), 4),
+            (("core/unresolved_reference", "item"), 4),
             // `demo.step` is no sound event (client entities only: 2 keys each).
-            (("UnknownSound", "sound event"), 8),
+            (("core/unknown_sound", "sound event"), 8),
             // The shared animation's `nowhere`, and of the two own animations in use nothing:
             // each is played by the one entity that has its key.
-            (("UnresolvedReference", "sound effect"), 1),
+            (("core/unresolved_reference", "sound effect"), 1),
             // The shared controller's `Texture.missing`; an own controller's `t_<i>` is its
             // user's.
-            (("UnresolvedReference", "texture slot"), 1),
+            (("core/unresolved_reference", "texture slot"), 1),
         ]
         .into_iter()
         .collect();

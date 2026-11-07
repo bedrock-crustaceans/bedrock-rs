@@ -184,7 +184,7 @@ pub const ROOT: &str = "minecraft:behavior_tree/minecraft:root";
 pub fn at<'d>(diagnostics: &'d Diagnostics, kind: &str, path: &str) -> Vec<&'d Diagnostic> {
     diagnostics
         .iter()
-        .filter(|d| d.code.name() == kind && d.location.json_path.to_string() == path)
+        .filter(|d| d.code.id() == kind && d.location.json_path.to_string() == path)
         .collect()
 }
 
@@ -216,7 +216,7 @@ pub fn silent(diagnostics: &Diagnostics) {
 
 /// The codes of `diagnostics`, in order.
 pub fn kinds(diagnostics: &Diagnostics) -> Vec<&'static str> {
-    diagnostics.iter().map(|d| d.code.name()).collect()
+    diagnostics.iter().map(|d| d.code.id()).collect()
 }
 
 // ---- expected.json ---------------------------------------------------------------------------
@@ -670,7 +670,7 @@ pub fn finding_of(diagnostic: &Diagnostic) -> Finding {
             .map(|path| path.as_str().to_owned())
             .unwrap_or_default(),
         path: diagnostic.location.json_path.to_string(),
-        kind: diagnostic.code.name().to_owned(),
+        kind: diagnostic.code.id().to_owned(),
         severity: diagnostic.severity.to_string(),
         pack: diagnostic
             .location

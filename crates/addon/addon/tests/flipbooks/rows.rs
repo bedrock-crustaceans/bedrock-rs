@@ -50,7 +50,7 @@ fn tiles(stack: &PackStack<Resource>) -> Vec<&str> {
 }
 
 fn invalid(at: &str) -> Rendered {
-    finding("InvalidValue", Info, at, "invalid value")
+    finding("core/invalid_value", Info, at, "invalid value")
 }
 
 // The vanilla file is `resource_pack/textures/flipbook_textures.json`,
@@ -156,7 +156,7 @@ fn m06_duplicates_of_the_lowest_file_are_merged_deviation() {
     assert_eq!(
         findings(&stack),
         [finding(
-            "DuplicateIdentifier",
+            "core/duplicate_identifier",
             Info,
             "1",
             "duplicate identifier"
@@ -177,7 +177,7 @@ fn m07_a_duplicate_in_a_higher_file_merges_into_the_first() {
     assert_eq!(
         findings(&stack),
         [finding(
-            "DuplicateIdentifier",
+            "core/duplicate_identifier",
             Info,
             "1",
             "duplicate identifier"
@@ -196,8 +196,8 @@ fn m08_a_parse_error_in_the_lowest_file_skips_that_file_deviation() {
     let found: Vec<_> = stack.flipbooks().diagnostics().collect();
     assert_eq!(found.len(), 1);
     assert_eq!(
-        (found[0].code.name(), found[0].severity),
-        ("MalformedInput", Error)
+        (found[0].code.id(), found[0].severity),
+        ("core/syntax", Error)
     );
     // `packs/0` is the lower of the two.
     assert_eq!(pack_index(found[0]), Some(1));
@@ -211,8 +211,8 @@ fn m09_a_parse_error_in_the_middle_skips_that_file_deviation() {
     let found: Vec<_> = stack.flipbooks().diagnostics().collect();
     assert_eq!(found.len(), 1);
     assert_eq!(
-        (found[0].code.name(), found[0].severity),
-        ("MalformedInput", Error)
+        (found[0].code.id(), found[0].severity),
+        ("core/syntax", Error)
     );
     assert_eq!(pack_index(found[0]), Some(1));
     assert_eq!(stack.flipbooks().layers().len(), 2);
@@ -323,7 +323,7 @@ fn p03_members_of_the_wrong_type_are_coerced_as_vanilla_does_deviation() {
             invalid("0/frames/1"),
             invalid("0/frames/2"),
             finding(
-                "ClampedValue",
+                "core/clamped_value",
                 Info,
                 "0/ticks_per_frame",
                 "value clamped into its range"
@@ -409,7 +409,7 @@ fn p06_an_unknown_member_is_kept_deviation() {
     assert_eq!(
         findings(&stack),
         [finding(
-            "UnrecognizedField",
+            "core/unrecognized_field",
             Info,
             "0/fps",
             "unrecognized field"
@@ -448,7 +448,7 @@ fn p09_integers_outside_32_bits_wrap_and_reals_saturate() {
             invalid("0/ticks_per_frame"),
             invalid("0/replicate"),
             finding(
-                "ClampedValue",
+                "core/clamped_value",
                 Info,
                 "0/ticks_per_frame",
                 "value clamped into its range"
@@ -468,13 +468,13 @@ fn v03_ticks_per_frame_below_one_is_treated_as_one_deviation() {
         findings(&stack),
         [
             finding(
-                "ClampedValue",
+                "core/clamped_value",
                 Info,
                 "0/ticks_per_frame",
                 "value clamped into its range"
             ),
             finding(
-                "ClampedValue",
+                "core/clamped_value",
                 Info,
                 "1/ticks_per_frame",
                 "value clamped into its range"

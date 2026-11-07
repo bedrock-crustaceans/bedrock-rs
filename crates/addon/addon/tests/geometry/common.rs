@@ -97,7 +97,7 @@ pub fn lines(d: &Diagnostics) -> Vec<String> {
             format!(
                 "{:?} {} {} {}",
                 f.severity,
-                f.code.name(),
+                f.code.id(),
                 f.location.json_path,
                 f.code
             )
@@ -108,7 +108,7 @@ pub fn lines(d: &Diagnostics) -> Vec<String> {
 /// How many findings have code `name` and `severity`.
 pub fn count(d: &Diagnostics, name: &str, severity: Severity) -> usize {
     d.iter()
-        .filter(|f| f.code.name() == name && f.severity == severity)
+        .filter(|f| f.code.id() == name && f.severity == severity)
         .count()
 }
 
@@ -117,7 +117,7 @@ pub fn count(d: &Diagnostics, name: &str, severity: Severity) -> usize {
 pub fn expect(d: &Diagnostics, name: &str, severity: Severity, text: &str) {
     assert!(
         d.iter()
-            .any(|f| f.code.name() == name && f.severity == severity && f.code.to_string() == text),
+            .any(|f| f.code.id() == name && f.severity == severity && f.code.to_string() == text),
         "no {severity:?} {name} \"{text}\" in\n{}",
         lines(d).join("\n")
     );
@@ -127,7 +127,7 @@ pub fn expect(d: &Diagnostics, name: &str, severity: Severity, text: &str) {
 #[track_caller]
 pub fn expect_at(d: &Diagnostics, name: &str, severity: Severity, at: &str, text: &str) {
     assert!(
-        d.iter().any(|f| f.code.name() == name
+        d.iter().any(|f| f.code.id() == name
             && f.severity == severity
             && f.location.json_path.to_string() == at
             && f.code.to_string() == text),
@@ -150,7 +150,13 @@ pub fn fails_schema(
 ) {
     let d = rejected(result);
     expect_at(&d, name, Severity::Error, at, text);
-    expect_at(&d, "InvalidValue", Severity::Error, "", DID_NOT_VALIDATE);
+    expect_at(
+        &d,
+        "geometry/did_not_validate",
+        Severity::Error,
+        "",
+        DID_NOT_VALIDATE,
+    );
 }
 
 /// Requires no finding at warning level or above.

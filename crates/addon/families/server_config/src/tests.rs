@@ -14,7 +14,7 @@ use super::{
     ConfigFolder, NetModuleConfig, PackPermissions, SERVER_NET_MODULE, ScriptConfig,
     ScriptConfigFiles, ServerNet, ServerProperties, UnreadableFile,
 };
-use bedrock_addon_core::diagnostic::Diagnostics;
+use bedrock_addon_core::diagnostic::{Diagnostics, Kind};
 use bedrock_addon_core::json::{EncodeError, Value};
 use bedrock_addon_core::test_cost::{assert_each_linear_at, assert_linear_at};
 
@@ -136,8 +136,14 @@ fn values_nested_to_the_depth_limit_load_write_and_drop_on_a_small_stack() {
             ..ScriptConfigFiles::default()
         };
         let config = ScriptConfig::parse(&files);
-        let codes: Vec<&str> = config.diagnostics().iter().map(|f| f.code.name()).collect();
-        assert!(!codes.contains(&"MalformedInput"), "{codes:?}");
+        let codes: Vec<&str> = config.diagnostics().iter().map(|f| f.code.id()).collect();
+        assert!(
+            config
+                .diagnostics()
+                .iter()
+                .all(|f| f.kind() != Kind::Syntax),
+            "{codes:?}"
+        );
         assert_eq!(config.default.variables.len(), 1);
         assert!(config.default.secrets.is_empty());
         assert_eq!(config.default.permissions.module_permissions.len(), 2);
@@ -170,8 +176,8 @@ fn values_nested_to_the_depth_limit_load_write_and_drop_on_a_small_stack() {
         });
         assert!(refused.default.variables.is_empty());
         assert_eq!(
-            refused.diagnostics().first_error().map(|f| f.code.name()),
-            Some("MalformedInput")
+            refused.diagnostics().first_error().map(|f| f.code.id()),
+            Some("server_config/config_parse_failed_malformed_input")
         );
     };
     std::thread::Builder::new()
@@ -254,8 +260,8 @@ fn a_held_server_net_entry_is_written_as_held_only_while_its_file_stays_within_t
             ..ScriptConfigFiles::default()
         });
         assert_eq!(again.default.permissions, at_the_limit);
-        let codes: Vec<&str> = again.diagnostics().iter().map(|f| f.code.name()).collect();
-        assert_eq!(codes, ["InvalidType", "NetConfigRejected"]);
+        let codes: Vec<&str> = again.diagnostics().iter().map(|f| f.code.id()).collect();
+        assert_eq!(codes, ["core/invalid_type", "core/net_config_rejected"]);
         // 129 levels: the file would be refused whole, so the entry is not read as what
         // denies, and a denied server-net without such an entry has no JSON form.
         let past_it = permissions_with_a_deep_net_entry(126, ServerNet::Denied);
@@ -318,8 +324,14 @@ fn no_writer_writes_a_file_the_reader_refuses_for_its_depth() {
     };
     let reads = |permissions: Option<String>, variables: Option<String>| {
         let config = parse(permissions, variables, None);
-        let codes: Vec<&str> = config.diagnostics().iter().map(|f| f.code.name()).collect();
-        assert!(!codes.contains(&"MalformedInput"), "{codes:?}");
+        let codes: Vec<&str> = config.diagnostics().iter().map(|f| f.code.id()).collect();
+        assert!(
+            config
+                .diagnostics()
+                .iter()
+                .all(|f| f.kind() != Kind::Syntax),
+            "{codes:?}"
+        );
         config
     };
     let run = move || {

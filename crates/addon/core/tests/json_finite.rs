@@ -276,7 +276,7 @@ mod clamp_text {
         let found: Vec<(String, &str)> = d
             .iter()
             .map(|f| {
-                assert_eq!(f.code.name(), "InvalidValue");
+                assert_eq!(f.code.id(), "core/invalid_value");
                 assert_eq!(f.code.to_string(), "invalid value");
                 assert_eq!(f.severity, Severity::Info);
                 assert_eq!(f.phase, Phase::Parse);
@@ -404,7 +404,7 @@ mod clamp_beyond_double {
         let found: Vec<(String, &str)> = d
             .iter()
             .map(|f| {
-                assert_eq!(f.code.name(), "InvalidValue");
+                assert_eq!(f.code.id(), "core/invalid_value");
                 assert_eq!(f.severity, Severity::Info);
                 let span = f.location.span.unwrap();
                 let from = span.offset as usize - 10;

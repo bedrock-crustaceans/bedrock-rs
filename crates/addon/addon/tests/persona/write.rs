@@ -496,9 +496,9 @@ fn a_number_past_a_double_is_held_at_the_largest_and_written() {
     assert_eq!(
         findings,
         [
-            "info InvalidValue pieces/hat/hat.meta.json texture_sources/0/frames",
-            "error InvalidType pieces/hat/hat.meta.json texture_sources/0/frames",
-            "error MalformedInput pieces/hat/hat.meta.json",
+            "info core/invalid_value pieces/hat/hat.meta.json texture_sources/0/frames",
+            "error core/invalid_type pieces/hat/hat.meta.json texture_sources/0/frames",
+            "error persona/meta_not_parsed pieces/hat/hat.meta.json",
         ]
     );
     let document = PieceStoreInfo::parse(
@@ -515,9 +515,9 @@ fn a_number_past_a_double_is_held_at_the_largest_and_written() {
     assert_eq!(
         findings,
         [
-            "info InvalidValue pieces/hat/hat.store_info.json foo/0",
-            "info InvalidValue pieces/hat/hat.store_info.json foo/1",
-            "info UnrecognizedField pieces/hat/hat.store_info.json foo",
+            "info core/invalid_value pieces/hat/hat.store_info.json foo/0",
+            "info core/invalid_value pieces/hat/hat.store_info.json foo/1",
+            "info core/unrecognized_field pieces/hat/hat.store_info.json foo",
         ]
     );
     let written = document.to_json().expect("finite numbers");
@@ -587,8 +587,8 @@ fn a_wide_integer_in_a_meta_file_is_a_number_of_the_wrong_type() {
         assert_eq!(
             errors,
             [
-                format!("error InvalidType {path}"),
-                "error MalformedInput".to_owned()
+                format!("error core/invalid_type {path}"),
+                "error persona/meta_not_parsed".to_owned()
             ],
             "{members}"
         );
@@ -623,9 +623,9 @@ fn a_wide_integer_in_a_store_info_is_a_number_of_the_wrong_type() {
     assert_eq!(
         findings,
         [
-            "info InvalidType piece_store_name",
-            "info InvalidType piece_thumbnail",
-            "info UnrecognizedField price",
+            "info core/invalid_type piece_store_name",
+            "info core/invalid_type piece_thumbnail",
+            "info core/unrecognized_field price",
         ]
     );
     let read = document.value();

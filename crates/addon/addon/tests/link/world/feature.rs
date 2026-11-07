@@ -556,7 +556,7 @@ fn w3_a_state_the_block_does_not_have_and_a_value_it_cannot_take_are_information
             // The states are the crate's own check, which the game does not make:
             // informations.
             finding(
-                "UnresolvedReference",
+                "core/unresolved_reference",
                 Severity::Info,
                 "features/ore.json",
                 &format!("{rule}/0/states/demo:dim"),
@@ -564,7 +564,7 @@ fn w3_a_state_the_block_does_not_have_and_a_value_it_cannot_take_are_information
                 "demo:dim"
             ),
             finding(
-                "InvalidReference",
+                "core/invalid_reference",
                 Severity::Info,
                 "features/ore.json",
                 &format!("{rule}/1/states/demo:lit"),
@@ -641,7 +641,7 @@ fn w4_a_block_single_block_places_that_nothing_defines_is_a_kept_error_with_vani
         assert!(
             found
                 .iter()
-                .filter(|finding| finding.code.name() == "UnresolvedReference")
+                .filter(|finding| finding.code.id() == "core/unresolved_reference_worded")
                 .all(|finding| finding.kept),
             "{found:#?}"
         );
@@ -723,11 +723,11 @@ fn multi_block_findings(places: &str, options: LoadOptions) -> (Vec<super::Said>
     let said: Vec<_> = found
         .iter()
         .map(super::said_of)
-        .filter(|said| said.0 == "InvalidReference")
+        .filter(|said| said.0 == "core/invalid_reference_worded")
         .collect();
     let texts = found
         .iter()
-        .filter(|finding| finding.code.name() == "InvalidReference")
+        .filter(|finding| finding.code.id() == "core/invalid_reference_worded")
         .map(|finding| finding.code.to_string())
         .collect();
     (said, texts)
@@ -761,7 +761,7 @@ fn w5_a_block_that_is_no_multi_block_is_an_error_with_vanillas_text() {
         assert_eq!(
             found,
             [finding(
-                "InvalidReference",
+                "core/invalid_reference_worded",
                 Severity::Error,
                 "features/place.json",
                 &format!("minecraft:multi_block_feature/places_block{member}"),
@@ -787,7 +787,7 @@ fn w5_a_part_other_than_the_starting_one_is_an_error_with_vanillas_text() {
     assert_eq!(
         found,
         [finding(
-            "InvalidReference",
+            "core/invalid_reference_worded",
             Severity::Error,
             "features/place.json",
             "minecraft:multi_block_feature/places_block/states/minecraft:multi_block_part",
@@ -886,7 +886,7 @@ fn w6_a_ground_level_above_the_height_of_the_structure_is_a_warning() {
         let set = world_with_structures(&text, LoadOptions::default());
         set.link()
             .iter()
-            .filter(|finding| finding.code.name() == "InvalidValue")
+            .filter(|finding| finding.code.id() == "core/invalid_value_worded")
             .map(|finding| (super::said_of(finding), finding.code.to_string()))
             .collect::<Vec<_>>()
     };
@@ -895,7 +895,7 @@ fn w6_a_ground_level_above_the_height_of_the_structure_is_a_warning() {
         found(4),
         [(
             finding(
-                "InvalidValue",
+                "core/invalid_value_worded",
                 Severity::Warning,
                 "features/template.json",
                 "minecraft:structure_template_feature/ground_level",

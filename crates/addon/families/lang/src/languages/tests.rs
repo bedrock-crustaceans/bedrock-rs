@@ -57,7 +57,7 @@ fn findings(
 fn describe(diagnostic: &Diagnostic) -> (&'static str, Severity, String, String) {
     assert_eq!(diagnostic.location.pack.as_ref(), Some(&pack()));
     (
-        diagnostic.code.name(),
+        diagnostic.code.id(),
         diagnostic.severity,
         diagnostic
             .location
@@ -71,7 +71,7 @@ fn describe(diagnostic: &Diagnostic) -> (&'static str, Severity, String, String)
 
 fn unused(path: &str, key: &str) -> (&'static str, Severity, String, String) {
     (
-        "IgnoredMember",
+        "core/ignored_member",
         Severity::Info,
         path.to_owned(),
         key.to_owned(),
@@ -80,7 +80,7 @@ fn unused(path: &str, key: &str) -> (&'static str, Severity, String, String) {
 
 fn unresolved(field: &str) -> (&'static str, Severity, String, String) {
     (
-        "UnresolvedLangKey",
+        "core/unresolved_lang_key",
         Severity::Info,
         "manifest.json".to_owned(),
         format!("header/{field}"),

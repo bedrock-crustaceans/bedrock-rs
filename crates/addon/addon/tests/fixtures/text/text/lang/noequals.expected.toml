@@ -4,6 +4,6 @@
 [entries]
 
 [[diagnostics]]
-code = "MalformedInput"
+code = "lang/new_line_in_key"
 severity = "warning"
 text = "Line: 1 - Invalid lang file format. New line character was found while parsing key: 'noequals'."

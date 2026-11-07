@@ -74,7 +74,7 @@ fn at_flipbooks(found: &Diagnostics) -> Vec<Diagnostic> {
 /// What a finding says: its code, severity, JSON path and text.
 fn said(finding: &Diagnostic) -> (&'static str, Severity, String, String) {
     (
-        finding.code.name(),
+        finding.code.id(),
         finding.severity,
         finding.location.json_path.to_string(),
         finding.code.to_string(),
@@ -113,7 +113,7 @@ fn r34_a_tile_no_atlas_has_is_an_information_at_the_tile_inside_the_missing_tile
     assert_eq!(
         all_said(&found),
         [told(
-            "UnresolvedReference",
+            "core/unresolved_reference",
             Severity::Info,
             "0/atlas_tile",
             "unresolved reference"
@@ -123,7 +123,7 @@ fn r34_a_tile_no_atlas_has_is_an_information_at_the_tile_inside_the_missing_tile
     assert_eq!(
         all_said(&outside),
         [told(
-            "UnresolvedReference",
+            "flipbooks/tile_missing",
             Severity::Error,
             "0/atlas_tile",
             "Texture ghost is missing from atlas textures"
@@ -152,7 +152,7 @@ fn r34_a_tile_no_atlas_has_is_an_information_at_the_tile_inside_the_missing_tile
 fn r34_a_tile_is_compared_as_written() {
     let found = linked(&entry(r#""atlas_tile": "Lava""#));
     assert_eq!(all_said(&found).len(), 1, "{found:#?}");
-    assert_eq!(said(&found[0]).0, "UnresolvedReference");
+    assert_eq!(said(&found[0]).0, "core/unresolved_reference");
 }
 
 #[test]
@@ -172,16 +172,16 @@ fn r34_a_tile_only_the_game_has_resolves_when_the_host_says_so() {
         );
         at_flipbooks(&found)
             .iter()
-            .map(|f| f.code.name())
+            .map(|f| f.code.id())
             .collect::<Vec<_>>()
     };
     // The game's tile: its indices are not known here and not checked.
     assert_eq!(world(hosted(&[("atlas key", "water")])), [] as [&str; 0]);
     assert_eq!(
         world(hosted(&[("atlas key", "lava")])),
-        ["UnresolvedReference"]
+        ["flipbooks/tile_missing"]
     );
-    assert_eq!(world(LoadOptions::default()), ["UnresolvedReference"]);
+    assert_eq!(world(LoadOptions::default()), ["flipbooks/tile_missing"]);
 }
 
 #[test]
@@ -201,7 +201,7 @@ fn r34_an_index_outside_the_tile_is_an_error_on_both_sides() {
         assert_eq!(
             all_said(&found),
             [told(
-                "InvalidValue",
+                "flipbooks/bad_atlas_index",
                 Severity::Error,
                 "0/atlas_index",
                 &text(index)
@@ -225,7 +225,7 @@ fn r34_a_variant_outside_the_index_is_a_clamp_warning_on_both_sides() {
         assert_eq!(
             all_said(&found),
             [told(
-                "ClampedValue",
+                "core/clamped_value",
                 Severity::Info,
                 "0/atlas_tile_variant",
                 "value clamped into its range"
@@ -251,7 +251,7 @@ fn r35_an_image_no_pack_has_is_a_lint() {
     assert_eq!(
         all_said(&found),
         [told(
-            "TextureNotFound",
+            "flipbooks/no_metadata",
             Severity::Info,
             "0/flipbook_texture",
             "Texture metadata for texture: textures/blocks/nope is invalid"
@@ -298,8 +298,18 @@ fn r35_a_frame_outside_the_image_is_an_information_on_both_sides() {
     assert_eq!(
         framed("[2, 3, 0, -1]", 16, 48),
         [
-            told("InvalidValue", Severity::Info, "0/frames/1", FRAME),
-            told("InvalidValue", Severity::Info, "0/frames/3", FRAME),
+            told(
+                "flipbooks/frame_out_of_range",
+                Severity::Info,
+                "0/frames/1",
+                FRAME
+            ),
+            told(
+                "flipbooks/frame_out_of_range",
+                Severity::Info,
+                "0/frames/3",
+                FRAME
+            ),
         ]
     );
 }
@@ -310,7 +320,7 @@ fn r35_an_image_wider_than_tall_has_no_frame() {
     assert_eq!(
         framed("[]", 32, 16),
         [told(
-            "InvalidValue",
+            "flipbooks/no_frames",
             Severity::Info,
             "0/flipbook_texture",
             "Flipbook texture should have at least one frame. "

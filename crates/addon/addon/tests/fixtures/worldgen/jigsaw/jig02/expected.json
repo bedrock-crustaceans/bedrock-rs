@@ -8,53 +8,53 @@
   },
   "diagnostics": [
     {
-      "code": "UnsupportedVersion",
+      "code": "core/no_parser_for_version",
       "severity": "error",
       "path": "worldgen/structures/ruin.json",
       "json_path": "format_version",
       "text": "unsupported version: no parser available for version 1.21.10"
     },
     {
-      "code": "DocumentRejected",
+      "code": "jigsaw/structure_failed",
       "severity": "error",
       "path": "worldgen/structures/ruin.json",
       "text": "Failed to parse jigsaw structure definition 'worldgen/structures/ruin.json'."
     },
     {
-      "code": "UnsupportedVersion",
+      "code": "core/no_parser_for_version",
       "severity": "error",
       "path": "worldgen/template_pools/start.json",
       "json_path": "format_version",
       "text": "unsupported version: no parser available for version 1.21.10"
     },
     {
-      "code": "DocumentRejected",
+      "code": "jigsaw/pool_failed",
       "severity": "error",
       "path": "worldgen/template_pools/start.json",
       "text": "Failed to parse jigsaw structure template pool 'worldgen/template_pools/start.json'."
     },
     {
-      "code": "UnsupportedVersion",
+      "code": "core/no_parser_for_version",
       "severity": "error",
       "path": "worldgen/structure_sets/ruins.json",
       "json_path": "format_version",
       "text": "unsupported version: no parser available for version 1.21.10"
     },
     {
-      "code": "DocumentRejected",
+      "code": "jigsaw/set_failed",
       "severity": "error",
       "path": "worldgen/structure_sets/ruins.json",
       "text": "Failed to parse structure set definition 'worldgen/structure_sets/ruins.json'."
     },
     {
-      "code": "UnsupportedVersion",
+      "code": "core/no_parser_for_version",
       "severity": "error",
       "path": "worldgen/processors/rot.json",
       "json_path": "format_version",
       "text": "unsupported version: no parser available for version 1.21.10"
     },
     {
-      "code": "DocumentRejected",
+      "code": "jigsaw/processors_failed",
       "severity": "error",
       "path": "worldgen/processors/rot.json",
       "text": "Failed to parse jigsaw structure processor list 'worldgen/processors/rot.json'."

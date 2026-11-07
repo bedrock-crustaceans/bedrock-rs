@@ -160,7 +160,7 @@ mod readers {
         let findings = parsed
             .diagnostics()
             .iter()
-            .map(|finding| format!("{:?} {}", finding.severity, finding.code.name()))
+            .map(|finding| format!("{:?} {}", finding.severity, finding.code.id()))
             .collect();
         assert!(
             parsed

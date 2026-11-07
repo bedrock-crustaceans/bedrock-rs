@@ -84,7 +84,7 @@ mod items {
         }
         let miss = |severity, below: &str, id: &str| {
             (
-                "UnresolvedReference",
+                "core/unresolved_reference",
                 severity,
                 format!("{AT}{below}"),
                 "item",
@@ -130,7 +130,7 @@ mod items {
         }
         let lint = |tag: &str| {
             (
-                "UnresolvedReference",
+                "core/unresolved_reference",
                 Severity::Info,
                 format!("{AT}/item_tag"),
                 "item tag",
@@ -225,14 +225,14 @@ mod blocks {
             all_said(&told(true, rule)),
             [
                 miss(
-                    "UnresolvedReference",
+                    "core/unresolved_reference",
                     Severity::Warning,
                     "",
                     "block",
                     "demo:none"
                 ),
                 miss(
-                    "UnresolvedReference",
+                    "core/unresolved_reference",
                     Severity::Error,
                     "/name",
                     "block",
@@ -240,7 +240,7 @@ mod blocks {
                 ),
                 // A block that is missing is reported once: its states are not looked at.
                 miss(
-                    "UnresolvedReference",
+                    "core/unresolved_reference",
                     Severity::Info,
                     "/name",
                     "block",
@@ -300,28 +300,28 @@ mod blocks {
             all_said(&told(true, rule)),
             [
                 miss(
-                    "UnresolvedReference",
+                    "core/unresolved_reference",
                     i,
                     "/states/demo:none",
                     "block state",
                     "demo:none"
                 ),
                 miss(
-                    "InvalidReference",
+                    "core/invalid_reference",
                     i,
                     "/states/demo:level",
                     "block state",
                     "demo:level"
                 ),
                 miss(
-                    "InvalidReference",
+                    "core/invalid_reference",
                     Severity::Error,
                     "/states/demo:level",
                     "block state",
                     "demo:level"
                 ),
                 miss(
-                    "InvalidReference",
+                    "core/invalid_reference",
                     i,
                     "/states/demo:lit",
                     "block state",
@@ -385,23 +385,29 @@ mod blocks {
             all_said(&found),
             [
                 miss(
-                    "UnresolvedReference",
+                    "core/unresolved_reference",
                     Severity::Error,
                     "",
                     "block",
                     "demo:none"
                 ),
-                miss("UnresolvedReference", w, "/name", "block", "Demo:Lamp"),
+                miss(
+                    "core/unresolved_reference",
+                    w,
+                    "/name",
+                    "block",
+                    "Demo:Lamp"
+                ),
                 // The states are the crate's own check: informations.
                 miss(
-                    "UnresolvedReference",
+                    "core/unresolved_reference",
                     Severity::Info,
                     "/states/demo:none",
                     "block state",
                     "demo:none"
                 ),
                 miss(
-                    "InvalidReference",
+                    "core/invalid_reference",
                     Severity::Info,
                     "/states/demo:lit",
                     "block state",

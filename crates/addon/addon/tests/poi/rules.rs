@@ -2,7 +2,7 @@
 //! both ends of its range and on each half of its condition, and the constructors.
 
 use bedrock_addon::diagnostic::codes;
-use bedrock_addon::diagnostic::{Diagnostic, Diagnostics, Severity};
+use bedrock_addon::diagnostic::{Diagnostic, Diagnostics, Kind, Severity};
 use bedrock_addon::document::{Content, Placed};
 use bedrock_addon::families::poi::{PoiTag, PoiType};
 use bedrock_addon::id::{BlockId, PoiTagId, PoiTypeId};
@@ -19,7 +19,7 @@ fn errors_at(findings: &Diagnostics) -> Vec<(&'static str, String)> {
     findings
         .iter()
         .filter(|d| d.severity == Severity::Error && !is_closing(d))
-        .map(|d| (d.code.name(), d.location.json_path.to_string()))
+        .map(|d| (d.code.id(), d.location.json_path.to_string()))
         .collect()
 }
 
@@ -111,7 +111,7 @@ fn e2_the_ceiling_is_the_engine_version() {
     let above_tag = tag_of("test:civic", "").replace("1.26.40", &above);
     assert_eq!(
         names(rejected::<PoiTag>(&above_tag).iter(), Severity::Error),
-        ["UnsupportedVersion"]
+        ["core/no_parser_for_version"]
     );
 }
 
@@ -140,7 +140,7 @@ fn e4_a_malformed_format_version_is_rejected() {
         assert_eq!(errors.len(), 1, "{version}: {}", describe(d.iter()));
         assert!(
             // By legacy name: the variant and the definitions that were it.
-            matches!(errors[0].code.name(), "MalformedFormatVersion"),
+            matches!(errors[0].code.id(), "core/malformed_format_version"),
             "{version}: {:?}",
             errors[0].code
         );
@@ -171,7 +171,7 @@ fn e4_a_number_is_read_as_its_text() {
         assert_eq!(errors.len(), 1, "{version}: {}", describe(d.iter()));
         assert!(
             // By legacy name: the variant and the definitions that were it.
-            matches!(errors[0].code.name(), "UnsupportedVersion"),
+            matches!(errors[0].code.id(), "core/no_parser_for_version"),
             "{version}: {:?}",
             errors[0].code
         );
@@ -197,34 +197,46 @@ fn e5_a_tag_with_a_third_root_member_is_rejected() {
 #[test]
 fn e6_each_document_type_takes_only_its_own_payload_key() {
     let d = rejected::<PoiTag>(&block(FORGE));
-    assert_eq!(names(d.iter(), Severity::Error), ["MissingPayload"]);
+    assert_eq!(
+        names(d.iter(), Severity::Error),
+        ["core/payload_under_other_key"]
+    );
     let d = rejected::<PoiType>(&tag_of("test:civic", ""));
-    assert_eq!(names(d.iter(), Severity::Error), ["MissingPayload"]);
+    assert_eq!(
+        names(d.iter(), Severity::Error),
+        ["core/payload_under_other_key"]
+    );
 }
 
 #[test]
 fn the_beta_literal_has_no_struct() {
     // No beta struct: no parser for `beta`, with or without the toggle.
     let d = rejected::<PoiType>(&block_document("beta", FORGE));
-    assert_eq!(names(d.iter(), Severity::Error), ["UnsupportedVersion"]);
+    assert_eq!(
+        names(d.iter(), Severity::Error),
+        ["core/no_parser_for_version"]
+    );
     let mut options = super::common::poi_options();
     options.beta_apis = true;
     let text = block_document("beta", FORGE);
     let d = super::common::load_with::<PoiType>(&text, &context_with(&options, false))
         .expect_err("no beta struct")
         .diagnostics;
-    assert_eq!(names(d.iter(), Severity::Error), ["UnsupportedVersion"]);
+    assert_eq!(
+        names(d.iter(), Severity::Error),
+        ["core/no_parser_for_version"]
+    );
 }
 
 #[test]
 fn an_empty_or_malformed_file_is_rejected() {
     assert_eq!(
         names(rejected::<PoiType>("").iter(), Severity::Error),
-        ["EmptyDocument"]
+        ["core/empty_document"]
     );
     assert_eq!(
         names(rejected::<PoiTag>(r#""a string""#).iter(), Severity::Error),
-        ["MalformedInput"]
+        ["core/document_json"]
     );
     let mut deep = String::new();
     for _ in 0..200 {
@@ -232,7 +244,7 @@ fn an_empty_or_malformed_file_is_rejected() {
     }
     assert_eq!(
         names(rejected::<PoiType>(&deep).iter(), Severity::Error),
-        ["MalformedInput"]
+        ["core/syntax"]
     );
     let d = PoiType::parse(
         &bedrock_addon::storage::PackPath::new("poi/latin1.json").unwrap(),
@@ -241,7 +253,7 @@ fn an_empty_or_malformed_file_is_rejected() {
     )
     .expect_err("not UTF-8")
     .diagnostics;
-    assert_eq!(names(d.iter(), Severity::Error), ["MalformedInput"]);
+    assert_eq!(names(d.iter(), Severity::Error), ["core/syntax"]);
 }
 
 #[test]
@@ -259,7 +271,10 @@ fn a_byte_order_mark_and_comments_are_read_through() {
 #[test]
 fn b1_description_is_required() {
     let d = rejected::<PoiType>(&block(r#"{"blocks": ["minecraft:anvil"]}"#));
-    assert_eq!(names(d.iter(), Severity::Error), ["MissingRequiredField"]);
+    assert_eq!(
+        names(d.iter(), Severity::Error),
+        ["core/missing_required_field"]
+    );
 }
 
 #[test]
@@ -267,7 +282,10 @@ fn b2_identifier_is_required() {
     let d = rejected::<PoiType>(&block(
         r#"{"description": {}, "blocks": ["minecraft:anvil"]}"#,
     ));
-    assert_eq!(names(d.iter(), Severity::Error), ["MissingRequiredField"]);
+    assert_eq!(
+        names(d.iter(), Severity::Error),
+        ["core/missing_required_field"]
+    );
     assert!(
         d.iter()
             .next()
@@ -318,7 +336,7 @@ fn b3_the_identifier_is_word_colon_word() {
         let text = block_of(&name.replace('\n', "\\n"), "", r#"["minecraft:anvil"]"#);
         type_error(
             &text,
-            "InvalidValue",
+            "core/invalid_value",
             "minecraft:poi_block/description/identifier",
         );
     }
@@ -331,7 +349,11 @@ fn b3_an_identifier_that_is_not_a_string_is_a_type_error() {
             r#"{{"description": {{"identifier": {value}}}, "blocks": ["minecraft:anvil"]}}"#
         ));
         let d = rejected::<PoiType>(&text);
-        assert_eq!(names(d.iter(), Severity::Error), ["InvalidType"], "{value}");
+        assert_eq!(
+            names(d.iter(), Severity::Error),
+            ["core/invalid_type"],
+            "{value}"
+        );
     }
 }
 
@@ -342,7 +364,11 @@ fn b4_blocks_must_be_an_array() {
             r#"{{"description": {{"identifier": "test:forge"}}, "blocks": {value}}}"#
         ));
         let d = rejected::<PoiType>(&text);
-        assert_eq!(names(d.iter(), Severity::Error), ["InvalidType"], "{value}");
+        assert_eq!(
+            names(d.iter(), Severity::Error),
+            ["core/invalid_type"],
+            "{value}"
+        );
     }
 }
 
@@ -355,7 +381,11 @@ fn b5_every_block_is_a_string_matching_the_pattern() {
             &format!(r#"["minecraft:anvil", {value}]"#),
         );
         let d = rejected::<PoiType>(&text);
-        assert_eq!(names(d.iter(), Severity::Error), ["InvalidType"], "{value}");
+        assert_eq!(
+            names(d.iter(), Severity::Error),
+            ["core/invalid_type"],
+            "{value}"
+        );
     }
     for name in GOOD_NAMES {
         loads::<PoiType>(&block_of("test:forge", "", &format!(r#"["{name}"]"#)));
@@ -367,7 +397,7 @@ fn b5_every_block_is_a_string_matching_the_pattern() {
             "",
             &format!(r#"["minecraft:anvil", "{name}"]"#),
         );
-        type_error(&text, "InvalidValue", "minecraft:poi_block/blocks/1");
+        type_error(&text, "core/invalid_value", "minecraft:poi_block/blocks/1");
     }
 }
 
@@ -375,12 +405,16 @@ fn b5_every_block_is_a_string_matching_the_pattern() {
 fn b6_every_tag_is_a_string_matching_the_pattern() {
     for value in ["5", "false", "null", "{}"] {
         let d = rejected::<PoiType>(&forge_with(&format!(r#""tags": [{value}]"#)));
-        assert_eq!(names(d.iter(), Severity::Error), ["InvalidType"], "{value}");
+        assert_eq!(
+            names(d.iter(), Severity::Error),
+            ["core/invalid_type"],
+            "{value}"
+        );
     }
     for value in [r#""test:civic""#, "null", "5", "{}"] {
         type_error(
             &forge_with(&format!(r#""tags": {value}"#)),
-            "InvalidType",
+            "core/invalid_type",
             "minecraft:poi_block/tags",
         );
     }
@@ -392,7 +426,7 @@ fn b6_every_tag_is_a_string_matching_the_pattern() {
         let name = name.replace('\n', "\\n");
         type_error(
             &forge_with(&format!(r#""tags": ["test:civic", "{name}"]"#)),
-            "InvalidValue",
+            "core/invalid_value",
             "minecraft:poi_block/tags/1",
         );
     }
@@ -409,14 +443,14 @@ fn b7_tickets_is_an_integer_from_0_to_255() {
     for value in ["256", "-1", "1000", "-256", "4294967296"] {
         type_error(
             &forge_with(&format!(r#""tickets": {value}"#)),
-            "InvalidValue",
+            "core/invalid_value",
             "minecraft:poi_block/tickets",
         );
     }
     for value in ["1.5", r#""3""#, "true", "null", "[1]", "{}"] {
         type_error(
             &forge_with(&format!(r#""tickets": {value}"#)),
-            "InvalidType",
+            "core/invalid_type",
             "minecraft:poi_block/tickets",
         );
     }
@@ -433,14 +467,14 @@ fn b8_usable_distance_is_an_integer_from_0_to_255() {
     for value in ["256", "300", "-1"] {
         type_error(
             &forge_with(&format!(r#""usable_distance": {value}"#)),
-            "InvalidValue",
+            "core/invalid_value",
             "minecraft:poi_block/usable_distance",
         );
     }
     for value in ["2.5", r#""1""#, "false", "null"] {
         type_error(
             &forge_with(&format!(r#""usable_distance": {value}"#)),
-            "InvalidType",
+            "core/invalid_type",
             "minecraft:poi_block/usable_distance",
         );
     }
@@ -452,18 +486,18 @@ fn b9_an_unknown_member_anywhere_rejects_the_type() {
         &block(
             r#"{"description": {"identifier": "test:forge", "name": "x"}, "blocks": ["minecraft:anvil"]}"#,
         ),
-        "UnrecognizedField",
+        "core/unrecognized_field",
         "minecraft:poi_block/description/name",
     );
     // A member named like nothing the struct has, `extra` included.
     type_error(
         &forge_with(r#""extra": 1"#),
-        "UnrecognizedField",
+        "core/unrecognized_field",
         "minecraft:poi_block/extra",
     );
     type_error(
         &forge_with(r#""children": []"#),
-        "UnrecognizedField",
+        "core/unrecognized_field",
         "minecraft:poi_block/children",
     );
     // Two unknown members are two errors.
@@ -471,8 +505,14 @@ fn b9_an_unknown_member_anywhere_rejects_the_type() {
     assert_eq!(
         errors_at(&d),
         [
-            ("UnrecognizedField", "minecraft:poi_block/radius".to_owned()),
-            ("UnrecognizedField", "minecraft:poi_block/range".to_owned())
+            (
+                "core/unrecognized_field",
+                "minecraft:poi_block/radius".to_owned()
+            ),
+            (
+                "core/unrecognized_field",
+                "minecraft:poi_block/range".to_owned()
+            )
         ]
     );
 }
@@ -507,7 +547,7 @@ fn b11_each_repeat_of_a_block_is_reported_and_removed() {
         .map(|d| {
             assert!(
                 // By legacy name: the variant and the definitions that were it.
-                matches!(d.code.name(), "NoEffect"),
+                matches!(d.code.id(), "core/no_effect"),
                 "{:?}",
                 d.code
             );
@@ -541,12 +581,21 @@ fn every_failed_pattern_of_a_document_is_reported() {
         errors_at(&d),
         [
             (
-                "InvalidValue",
+                "core/invalid_value",
                 "minecraft:poi_block/description/identifier".to_owned()
             ),
-            ("InvalidValue", "minecraft:poi_block/blocks/0".to_owned()),
-            ("InvalidValue", "minecraft:poi_block/blocks/2".to_owned()),
-            ("InvalidValue", "minecraft:poi_block/tags/0".to_owned()),
+            (
+                "core/invalid_value",
+                "minecraft:poi_block/blocks/0".to_owned()
+            ),
+            (
+                "core/invalid_value",
+                "minecraft:poi_block/blocks/2".to_owned()
+            ),
+            (
+                "core/invalid_value",
+                "minecraft:poi_block/tags/0".to_owned()
+            ),
         ]
     );
 }
@@ -564,11 +613,20 @@ fn an_empty_tags_list_keeps_its_presence() {
 #[test]
 fn t1_description_and_identifier_are_required() {
     let d = rejected::<PoiTag>(&tag("{}"));
-    assert_eq!(names(d.iter(), Severity::Error), ["MissingRequiredField"]);
+    assert_eq!(
+        names(d.iter(), Severity::Error),
+        ["core/missing_required_field"]
+    );
     let d = rejected::<PoiTag>(&tag(r#"{"description": {}}"#));
-    assert_eq!(names(d.iter(), Severity::Error), ["MissingRequiredField"]);
+    assert_eq!(
+        names(d.iter(), Severity::Error),
+        ["core/missing_required_field"]
+    );
     let d = rejected::<PoiTag>(&tag(r#"{"parents": []}"#));
-    assert_eq!(names(d.iter(), Severity::Error), ["MissingRequiredField"]);
+    assert_eq!(
+        names(d.iter(), Severity::Error),
+        ["core/missing_required_field"]
+    );
 }
 
 #[test]
@@ -580,12 +638,12 @@ fn t2_the_tag_identifier_is_word_colon_word() {
     for name in BAD_NAMES {
         tag_error(
             &tag_of(&name.replace('\n', "\\n"), ""),
-            "InvalidValue",
+            "core/invalid_value",
             "minecraft:poi_tag/description/identifier",
         );
     }
     let d = rejected::<PoiTag>(&tag(r#"{"description": {"identifier": 5}}"#));
-    assert_eq!(names(d.iter(), Severity::Error), ["InvalidType"]);
+    assert_eq!(names(d.iter(), Severity::Error), ["core/invalid_type"]);
 }
 
 #[test]
@@ -598,14 +656,14 @@ fn t3_every_parent_and_child_is_a_string_matching_the_pattern() {
             ));
             assert_eq!(
                 names(d.iter(), Severity::Error),
-                ["InvalidType"],
+                ["core/invalid_type"],
                 "{member} {value}"
             );
         }
         for value in [r#""test:a""#, "null", "5", "{}"] {
             tag_error(
                 &tag_of("test:civic", &format!(r#", "{member}": {value}"#)),
-                "InvalidType",
+                "core/invalid_type",
                 &format!("minecraft:poi_tag/{member}"),
             );
         }
@@ -622,7 +680,7 @@ fn t3_every_parent_and_child_is_a_string_matching_the_pattern() {
                     "test:civic",
                     &format!(r#", "{member}": ["test:a", "{name}"]"#),
                 ),
-                "InvalidValue",
+                "core/invalid_value",
                 &format!("minecraft:poi_tag/{member}/1"),
             );
         }
@@ -633,17 +691,17 @@ fn t3_every_parent_and_child_is_a_string_matching_the_pattern() {
 fn t4_an_unknown_member_anywhere_rejects_the_tag() {
     tag_error(
         &tag_of("test:civic", r#", "blocks": []"#),
-        "UnrecognizedField",
+        "core/unrecognized_field",
         "minecraft:poi_tag/blocks",
     );
     tag_error(
         &tag(r#"{"description": {"identifier": "test:civic", "note": 1}}"#),
-        "UnrecognizedField",
+        "core/unrecognized_field",
         "minecraft:poi_tag/description/note",
     );
     tag_error(
         &tag_of("test:civic", r#", "extra": {}"#),
-        "UnrecognizedField",
+        "core/unrecognized_field",
         "minecraft:poi_tag/extra",
     );
 }
@@ -660,7 +718,7 @@ fn t5_a_tag_naming_itself_loses_that_edge_only() {
     );
     let warnings: Vec<&Diagnostic> = a.diagnostics().iter().collect();
     assert_eq!(warnings.len(), 1);
-    assert_eq!(warnings[0].code.name(), "ReferenceCycle");
+    assert_eq!(warnings[0].code.id(), "poi/part_of_a_cycle");
     assert_eq!(warnings[0].severity, Severity::Info);
     assert_eq!(
         warnings[0].location.json_path.to_string(),
@@ -684,7 +742,7 @@ fn t5_a_tag_naming_itself_loses_that_edge_only() {
         .diagnostics()
         .iter()
         .map(|d| {
-            assert_eq!(d.code.name(), "ReferenceCycle");
+            assert_eq!(d.code.id(), "poi/part_of_a_cycle");
             assert_eq!(d.code.to_string(), "test:a was a part of a cycle");
             d.location.json_path.to_string()
         })
@@ -769,7 +827,7 @@ fn validate_runs_the_rules_on_a_built_value() {
     let empty = PoiType::new(PoiTypeId::from_static("test:forge"), Vec::new());
     assert_eq!(
         names(empty.validate(&cx).iter(), Severity::Info),
-        ["PoiNoBlocks"]
+        ["core/poi_no_blocks"]
     );
     let bad = PoiType::new(
         PoiTypeId::parse("forge"),
@@ -779,10 +837,13 @@ fn validate_runs_the_rules_on_a_built_value() {
         errors_at(&bad.validate(&cx)),
         [
             (
-                "InvalidValue",
+                "core/invalid_value",
                 "minecraft:poi_block/description/identifier".to_owned()
             ),
-            ("InvalidValue", "minecraft:poi_block/blocks/0".to_owned()),
+            (
+                "core/invalid_value",
+                "minecraft:poi_block/blocks/0".to_owned()
+            ),
         ]
     );
     let looped = PoiTag {
@@ -791,7 +852,7 @@ fn validate_runs_the_rules_on_a_built_value() {
     };
     assert_eq!(
         names(looped.validate(&cx).iter(), Severity::Info),
-        ["ReferenceCycle"]
+        ["poi/part_of_a_cycle"]
     );
     assert!(
         PoiTag::new(PoiTagId::from_static("test:a"))
@@ -802,7 +863,7 @@ fn validate_runs_the_rules_on_a_built_value() {
     let off = context_with(&LoadOptions::default(), false);
     assert_eq!(
         names(good.validate(&off).iter(), Severity::Info),
-        ["MissingToggles"]
+        ["core/missing_toggles"]
     );
 }
 
@@ -815,7 +876,7 @@ fn closes_with_failed_to_load(d: &Diagnostics) {
     let last = d.iter().last().expect("a finding");
     assert!(
         // By legacy name: the variant and the definitions that were it.
-        matches!(last.code.name(), "DocumentRejected"),
+        matches!(last.code.id(), "poi/failed_to_load"),
         "{}",
         describe(d.iter())
     );
@@ -825,7 +886,7 @@ fn closes_with_failed_to_load(d: &Diagnostics) {
     let closing = d
         .iter()
         // By legacy name: the variant and the definitions that were it.
-        .filter(|f| matches!(f.code.name(), "DocumentRejected"))
+        .filter(|f| matches!(f.code.id(), "poi/failed_to_load"))
         .count();
     assert_eq!(closing, 1, "one closing line");
 }
@@ -850,8 +911,8 @@ fn a_file_that_loads_or_is_gated_has_no_closing_line() {
         !loaded
             .diagnostics()
             .iter()
-            // By legacy name: the variant and the definitions that were it.
-            .any(|f| matches!(f.code.name(), "DocumentRejected"))
+            // By kind: the definitions that were `DocumentRejected` and their neighbours.
+            .any(|f| f.code.kind() == Kind::Closing)
     );
     let off = context_with(&LoadOptions::default(), false);
     let gated = super::common::load_with::<PoiType>(&block(FORGE), &off).expect_err("gated");
@@ -859,7 +920,7 @@ fn a_file_that_loads_or_is_gated_has_no_closing_line() {
         !gated
             .diagnostics
             .iter()
-            // By legacy name: the variant and the definitions that were it.
-            .any(|f| matches!(f.code.name(), "DocumentRejected"))
+            // By kind: the definitions that were `DocumentRejected` and their neighbours.
+            .any(|f| f.code.kind() == Kind::Closing)
     );
 }

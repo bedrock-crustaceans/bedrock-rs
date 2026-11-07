@@ -15,7 +15,7 @@ resolution = "not_found"
 hint = "BarePackage"
 
 [[diagnostics]]
-code = "ScriptImportNotFound"
+code = "core/script_import_not_found"
 severity = "error"
 text = "ReferenceError: Import [unknown-pkg.js] not found."
 file = "scripts/main.js"

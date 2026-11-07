@@ -5,34 +5,34 @@
   "rejected": 4,
   "diagnostics": [
     {
-      "code": "MalformedFormatVersion",
+      "code": "dialogue/no_format_version_malformed_format_version",
       "severity": "error",
       "path": "dialogue/abc.json",
       "json_path": "format_version",
       "text": "JSON: abc.json has an error: \n Couldn't find 'format_version' property."
     },
     {
-      "code": "MalformedFormatVersion",
+      "code": "dialogue/no_format_version_malformed_format_version",
       "severity": "error",
       "path": "dialogue/any.json",
       "json_path": "format_version",
       "text": "JSON: any.json has an error: \n Couldn't find 'format_version' property."
     },
     {
-      "code": "InvalidValue",
+      "code": "core/invalid_value",
       "severity": "info",
       "path": "dialogue/beta.json",
       "json_path": "format_version"
     },
     {
-      "code": "UnsupportedVersion",
+      "code": "dialogue/out_of_range",
       "severity": "error",
       "path": "dialogue/one.json",
       "json_path": "format_version",
       "text": "JSON: one.json has an error: \n 'format_version' was out of range of expected values. Must be greater than 1.14.0"
     },
     {
-      "code": "MalformedFormatVersion",
+      "code": "dialogue/no_format_version_malformed_format_version",
       "severity": "error",
       "path": "dialogue/zero.json",
       "json_path": "format_version",

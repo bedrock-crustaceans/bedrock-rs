@@ -56,7 +56,7 @@ fn e01_a_point_below_a_context_list_is_declared_from_1_26_60() {
     let d = rejects(root_in(&text, &cx(E45, false)));
     let refused: Vec<_> = found(&d)
         .into_iter()
-        .filter(|f| f.0 == Severity::Error && f.1 == "InvalidValue")
+        .filter(|f| f.0 == Severity::Error && f.1 == "core/invalid_value")
         .map(|f| f.2)
         .collect();
     assert_eq!(
@@ -82,14 +82,14 @@ fn e08_an_extension_point_without_a_string_name_refuses_the_root_deviation() {
     assert_eq!(
         codes(&d),
         [
-            (Severity::Error, "InvalidValue", path(0)),
-            (Severity::Error, "InvalidValue", path(1)),
-            (Severity::Error, "InvalidValue", path(2)),
+            (Severity::Error, "core/invalid_value", path(0)),
+            (Severity::Error, "core/invalid_value", path(1)),
+            (Severity::Error, "core/invalid_value", path(2)),
         ]
     );
     let spans: Vec<&str> = d
         .iter()
-        .filter(|f| f.code.name() == "InvalidValue")
+        .filter(|f| f.code.id() == "core/invalid_value")
         .map(|f| spanned(&text, f))
         .collect();
     assert_eq!(spans[0], r#"{ "component": "ExtensionPoint" }"#);
@@ -125,7 +125,7 @@ fn e08_only_a_string_name_in_an_object_declares_a_point() {
     assert!(
         refusing
             .iter()
-            .all(|f| f.0 == Severity::Error && f.1 == "InvalidValue")
+            .all(|f| f.0 == Severity::Error && f.1 == "core/invalid_value")
     );
     // The good ones alone declare their names.
     let good = [point("demo:slot"), point("")];

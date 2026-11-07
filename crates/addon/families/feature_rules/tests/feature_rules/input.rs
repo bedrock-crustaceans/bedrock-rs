@@ -17,11 +17,11 @@ fn with_distribution(distribution: &str) -> String {
 fn null_rejects(json: &str, tail: &str) {
     let d = rejects(json);
     assert!(
-        with_code(&d, "InvalidType")
+        with_code(&d, "core/invalid_type")
             .iter()
             .any(|f| f.severity == Severity::Error
                 && f.location.json_path.to_string().ends_with(tail)),
-        "no InvalidType at …{tail}: {d:#?}"
+        "no core/invalid_type at …{tail}: {d:#?}"
     );
 }
 
@@ -82,7 +82,7 @@ fn an_unknown_member_stays_a_warning() {
         r#"{{"iterations": 1, "x": {UNIFORM}, "y": 0, "z": {UNIFORM}, "spread": 2}}"#
     ));
     let document = loads(&json);
-    let found = with_code(document.diagnostics(), "UnrecognizedField");
+    let found = with_code(document.diagnostics(), "core/unrecognized_field");
     assert_eq!(found.len(), 1, "{:#?}", document.diagnostics());
     assert_eq!(found[0].severity, Severity::Warning);
     assert!(

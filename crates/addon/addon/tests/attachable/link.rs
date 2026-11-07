@@ -5,7 +5,7 @@
 //! written against `StackSet::link` and ignored until the link pass exists. What
 //! loading alone says is pinned below, not ignored.
 
-use bedrock_addon::diagnostic::{DiagnosticDetail, Diagnostics, ReferenceHint, Severity};
+use bedrock_addon::diagnostic::{DiagnosticDetail, Diagnostics, Kind, ReferenceHint, Severity};
 use bedrock_addon::families::attachable::ItemBindings;
 use bedrock_addon::id::AttachableId;
 use bedrock_addon::load::LoadOptions;
@@ -22,6 +22,16 @@ fn wand(members: &str) -> String {
         "1.10.0",
         &format!(r#"{{"identifier": "example:wand"{comma}{members}}}"#),
     )
+}
+
+/// Requires no finding of `kind`.
+#[track_caller]
+fn none_of_kind(d: &Diagnostics, kind: Kind) {
+    assert!(
+        d.iter().all(|f| f.code.kind() != kind),
+        "{}",
+        lines(d).join("\n")
+    );
 }
 
 /// The link findings about `attachables/wand.json` of `set`.
@@ -48,7 +58,7 @@ fn item(identifier: &str) -> String {
 /// The reference a finding is about: its kind, name and hint.
 fn reference(d: &Diagnostics) -> Vec<(&'static str, String, Option<ReferenceHint>)> {
     d.iter()
-        .filter(|f| f.code.name() == "UnresolvedReference")
+        .filter(|f| f.code.kind() == Kind::UnresolvedReference)
         .filter_map(|f| match f.detail.as_deref() {
             Some(DiagnosticDetail::Reference { kind, id, hint }) => {
                 Some((*kind, id.clone(), hint.clone()))
@@ -68,7 +78,7 @@ fn a17_item_case_mismatch() {
     let d = linked(&set);
     expect_at(
         &d,
-        "UnresolvedReference",
+        "core/unresolved_reference",
         Severity::Info,
         "minecraft:attachable/description/item/Minecraft:Bow",
     );
@@ -92,14 +102,14 @@ fn a17_item_case_mismatch() {
     let set = stack(&[pack(&[(WAND, &wand)])]);
     expect_at(
         &linked(&set),
-        "UnresolvedReference",
+        "core/unresolved_reference",
         Severity::Info,
         "minecraft:attachable/description/item",
     );
     // The item as vanilla spells it resolves.
     let wand = self::wand(r#""item": {"minecraft:bow": "1"}"#);
     let set = stack(&[pack(&[(WAND, &wand)])]);
-    none(&linked(&set), "UnresolvedReference");
+    none_of_kind(&linked(&set), Kind::UnresolvedReference);
 }
 
 #[test]
@@ -118,7 +128,7 @@ fn a18_item_unknown() {
     let d = linked(&set);
     expect_at(
         &d,
-        "UnresolvedReference",
+        "core/unresolved_reference",
         Severity::Info,
         "minecraft:attachable/description/item/example:nothing",
     );
@@ -135,7 +145,7 @@ fn a18_item_unknown() {
         &[pack(&resource)],
         LoadOptions::default(),
     );
-    none(&linked(&set), "UnresolvedReference");
+    none_of_kind(&linked(&set), Kind::UnresolvedReference);
     let bare = self::wand(r#""item": "wand""#);
     let resource = [(WAND, bare.as_str())];
     let set = stacks(
@@ -162,13 +172,13 @@ fn a24_identifier_collides_with_client_entity_deviation() {
     // The identifiers compare in lower case; the finding is at the attachable.
     expect_at(
         &d,
-        "IdentifierCollision",
+        "core/identifier_collision",
         Severity::Info,
         "minecraft:attachable/description/identifier",
     );
     assert_eq!(
         d.iter()
-            .filter(|f| f.code.name() == "IdentifierCollision")
+            .filter(|f| f.code.id() == "core/identifier_collision")
             .count(),
         1
     );
@@ -228,13 +238,13 @@ fn r12_undefined_material() {
     // materials on the stack, is `tests/link/visual/attachable.rs`.
     expect(
         &d,
-        "UnresolvedReference",
+        "core/unresolved_reference_worded",
         Severity::Info,
         "Material \"no_such_material\" is referenced in file \"attachables/wand.json\" but not defined.",
     );
     expect_at(
         &d,
-        "UnresolvedReference",
+        "core/unresolved_reference_worded",
         Severity::Info,
         "minecraft:attachable/description/materials/default",
     );
@@ -255,26 +265,26 @@ fn r12_unknown_particle() {
     let d = linked(&stack(&[pack(&files)]));
     expect(
         &d,
-        "UnresolvedReference",
+        "core/unresolved_reference_worded",
         Severity::Error,
         "Entity .json 'attachables/wand.json' referenced particle 'demo:nope' that doesn't exist",
     );
     expect_at(
         &d,
-        "UnresolvedReference",
+        "core/unresolved_reference_worded",
         Severity::Error,
         "minecraft:attachable/description/particle_effects/x",
     );
     // Level 3, the entry skipped, the file kept: a kept error.
     assert!(
         d.iter()
-            .filter(|f| f.code.name() == "UnresolvedReference")
+            .filter(|f| f.code.id() == "core/unresolved_reference_worded")
             .all(|f| f.kept)
     );
     assert_eq!(kinds(&d), ["particle"]);
     assert_eq!(
         d.iter()
-            .filter(|f| f.code.name() == "UnresolvedReference")
+            .filter(|f| f.code.id() == "core/unresolved_reference_worded")
             .count(),
         1
     );
@@ -294,11 +304,11 @@ fn kinds(d: &Diagnostics) -> Vec<&'static str> {
 /// vanilla resolves lazily and never logs is kept and reported at info.
 #[track_caller]
 fn one_lazy_reference(d: &Diagnostics, path: &str, id: &str) {
-    expect_at(d, "UnresolvedReference", Severity::Info, path);
+    expect_at(d, "core/unresolved_reference", Severity::Info, path);
     assert_eq!(unresolved(d), [id.to_owned()], "{}", lines(d).join("\n"));
     assert!(
         d.iter()
-            .filter(|f| f.code.name() == "UnresolvedReference")
+            .filter(|f| f.code.kind() == Kind::UnresolvedReference)
             .all(|f| f.severity == Severity::Info),
         "{}",
         lines(d).join("\n")
@@ -341,7 +351,7 @@ fn r12_unknown_geometry() {
         (WAND, wand.as_str()),
         ("models/entity/wand.geo.json", GEOMETRY),
     ];
-    none(&linked(&stack(&[pack(&files)])), "UnresolvedReference");
+    none_of_kind(&linked(&stack(&[pack(&files)])), Kind::UnresolvedReference);
 }
 
 const ANIMATION: &str =
@@ -369,13 +379,13 @@ fn r12_unknown_animation() {
     let d = linked(&set);
     expect_at(
         &d,
-        "UnresolvedReference",
+        "core/unresolved_reference",
         Severity::Info,
         "minecraft:attachable/description/animations/nope",
     );
     expect_at(
         &d,
-        "UnresolvedReference",
+        "core/unresolved_reference",
         Severity::Info,
         "minecraft:attachable/description/animations/nope_too",
     );
@@ -432,13 +442,13 @@ fn r12_unknown_render_controller() {
     let d = linked(&set);
     expect_at(
         &d,
-        "UnresolvedReference",
+        "core/unresolved_reference",
         Severity::Info,
         "minecraft:attachable/description/render_controllers/1",
     );
     expect_at(
         &d,
-        "UnresolvedReference",
+        "core/unresolved_reference",
         Severity::Info,
         "minecraft:attachable/description/render_controllers/3/Controller.Render.Nope_Too",
     );
@@ -498,7 +508,7 @@ fn l21_a_link_finding_beside_an_empty_conditional_object_is_at_the_index_of_the_
     let d = linked(&stack(&[pack(&[(WAND, wand.as_str())])]));
     let at: Vec<String> = d
         .iter()
-        .filter(|f| f.code.name() == "UnresolvedReference")
+        .filter(|f| f.code.kind() == Kind::UnresolvedReference)
         .map(|f| f.location.json_path.to_string())
         .collect();
     assert_eq!(
@@ -579,12 +589,12 @@ fn the_document_loads_and_loading_resolves_no_reference() {
     assert!(
         own.diagnostics()
             .iter()
-            .all(|f| f.code.name() == "MolangNotChecked")
+            .all(|f| f.code.id() == "core/molang_not_checked")
     );
     assert!(
         attachables
             .diagnostics()
-            .all(|f| f.code.name() == "MolangNotChecked")
+            .all(|f| f.code.id() == "core/molang_not_checked")
     );
     assert_eq!(own.bound_items().len(), 1);
     assert!(

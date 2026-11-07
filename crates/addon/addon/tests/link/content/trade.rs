@@ -201,7 +201,7 @@ mod item {
         .into_iter()
         .map(|(path, id)| {
             one(
-                "UnresolvedReference",
+                "core/unresolved_reference_worded",
                 Severity::Error,
                 FILE,
                 &format!("{TRADE}/{path}"),

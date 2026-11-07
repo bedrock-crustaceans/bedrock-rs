@@ -61,7 +61,7 @@ fn r01_a_1_13_0_rule_with_distribution_and_biome_filter_loads_unchanged() {
 #[test]
 fn r02_the_vanilla_test_input_at_1_11_0_is_unsupported_with_the_puv_text() {
     let d = rejects(&vanilla_input("without_distribution", "1.11.0"));
-    let found = with_code(&d, "UnsupportedVersion");
+    let found = with_code(&d, "core/no_parser_for_version");
     assert_eq!(found.len(), 1, "{d:#?}");
     assert_eq!(
         found[0].severity,

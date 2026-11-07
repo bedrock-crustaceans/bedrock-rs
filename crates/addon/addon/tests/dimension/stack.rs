@@ -2,7 +2,7 @@
 //! `dimensions/*.json` (exactly `json`, not recursive) from the last stack entry to the first,
 //! and the first file walked wins.
 
-use bedrock_addon::diagnostic::Severity;
+use bedrock_addon::diagnostic::{Kind, Severity};
 use bedrock_addon::id::DimensionId;
 use bedrock_addon::load::LoadOptions;
 use bedrock_addon::pack::{Behavior, PackStack};
@@ -23,7 +23,7 @@ fn shadowed(stack: &PackStack<Behavior>) -> Vec<(Severity, String)> {
         .dimensions()
         .diagnostics()
         // By legacy name: the variant and the definitions that were it.
-        .filter(|f| matches!(f.code.name(), "ShadowedDefinition"))
+        .filter(|f| matches!(f.code.id(), "core/shadowed_definition"))
         .map(|f| {
             (
                 f.severity,
@@ -132,7 +132,10 @@ fn dim18_a_pack_definition_replaces_a_script_registered_dimension() {
     let found: Vec<_> = dimensions.diagnostics().collect();
     assert_eq!(found.len(), 1, "{found:#?}");
     // By legacy name: the variant and the definitions that were it.
-    assert!(matches!(found[0].code.name(), "ShadowedDefinition"));
+    assert!(matches!(
+        found[0].code.id(),
+        "dimension/replaced_registration"
+    ));
     assert_eq!(found[0].severity, Severity::Warning);
     assert_eq!(
         found[0].code.to_string(),
@@ -181,8 +184,8 @@ fn dim18_a_pack_definition_replaces_a_script_registered_dimension() {
         stack
             .dimensions()
             .diagnostics()
-            // By legacy name: the variant and the definitions that were it.
-            .all(|f| !matches!(f.code.name(), "ShadowedDefinition"))
+            // By kind: the definitions that were `ShadowedDefinition` and their neighbours.
+            .all(|f| f.code.kind() != Kind::Shadowed)
     );
 
     // Without the registration the custom dimension loads, and nothing is said.
@@ -215,7 +218,7 @@ fn a_rejected_file_names_the_identifier_of_its_last_copy() {
     assert_eq!(found.len(), 1, "{found:#?}");
     assert!(
         // By legacy name: the variant and the definitions that were it.
-        matches!(found[0].code.name(), "MissingRequiredField"),
+        matches!(found[0].code.id(), "core/missing_required_field"),
         "{found:#?}"
     );
 }

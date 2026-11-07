@@ -1,7 +1,7 @@
 # Validation rule 2. The message is "parse error:\n" and the reader's text, which the row's test checks.
 
 [[diagnostic]]
-kind = "MalformedInput"
+kind = "behavior_tree/parse_error"
 severity = "error"
 file = "behavior_trees/truncated.json"
 path = ""

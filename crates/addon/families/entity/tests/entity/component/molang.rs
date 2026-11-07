@@ -78,7 +78,7 @@ fn m02_experience_reward_string_takes_the_pack_molang_version() {
         assert!(has(
             &d,
             // By legacy name: the variant and the definitions that were it.
-            |c| matches!(c.name(), "InvalidMolang"),
+            |c| matches!(c.id(), "core/invalid_molang"),
             Severity::Error,
             "on_death"
         ));
@@ -120,7 +120,7 @@ fn m03_experience_reward_object_form_in_the_lenient_conversion_is_invalid_type()
     assert!(has(
         &d,
         // By legacy name: the variant and the definitions that were it.
-        |c| matches!(c.name(), "InvalidType"),
+        |c| matches!(c.id(), "core/invalid_type"),
         Severity::Info,
         "on_death"
     ));
@@ -175,7 +175,7 @@ fn experience_reward_bool_is_rejected_by_the_strict_reader_of_pass_one() {
     assert!(
         d.iter()
             // By legacy name: the variant and the definitions that were it.
-            .any(|f| matches!(f.code.name(), "InvalidType")),
+            .any(|f| matches!(f.code.id(), "core/invalid_type")),
         "{d:?}"
     );
 }
@@ -239,7 +239,7 @@ fn v13_experience_reward_arrays_are_deprecated_names_in_1_21_110() {
     assert!(has(
         &d,
         // By legacy name: the variant and the definitions that were it.
-        |c| matches!(c.name(), "DeprecatedMember"),
+        |c| matches!(c.id(), "core/member_deprecated"),
         Severity::Error,
         "on_bred_array"
     ));
@@ -310,7 +310,7 @@ fn anger_level_sound_with_an_object_condition_is_dropped_by_the_lenient_conversi
     assert!(has(
         &d,
         // By legacy name: the variant and the definitions that were it.
-        |c| matches!(c.name(), "InvalidType"),
+        |c| matches!(c.id(), "core/invalid_type"),
         Severity::Info,
         "on_increase_sounds/0/condition"
     ));
@@ -373,7 +373,7 @@ fn m08_descriptor_tags_compile_at_13_with_the_tag_queries_only() {
         assert!(has(
             &d,
             // By legacy name: the variant and the definitions that were it.
-            |c| matches!(c.name(), "InvalidMolang"),
+            |c| matches!(c.id(), "core/invalid_molang"),
             Severity::Error,
             "blocks/0/tags"
         ));
@@ -413,7 +413,7 @@ fn a_lenient_experience_reward_string_that_does_not_compile_is_a_warning_and_the
     assert!(has(
         &d,
         // By legacy name: the variant and the definitions that were it.
-        |c| matches!(c.name(), "InvalidMolang"),
+        |c| matches!(c.id(), "core/invalid_molang"),
         Severity::Error,
         "on_death"
     ));
@@ -444,7 +444,7 @@ fn a_lenient_anger_sound_whose_condition_does_not_compile_is_dropped_with_a_warn
     assert!(has(
         &d,
         // By legacy name: the variant and the definitions that were it.
-        |c| matches!(c.name(), "InvalidMolang"),
+        |c| matches!(c.id(), "core/invalid_molang"),
         Severity::Error,
         "on_increase_sounds/0/condition"
     ));

@@ -100,7 +100,7 @@ fn a_hand_built_extra_is_written_after_the_known_members_and_refused_on_read() {
     let found = rejects(&written);
     let unknown: Vec<String> = found
         .iter()
-        .filter(|f| f.code.name() == "UnrecognizedField")
+        .filter(|f| f.code.id() == "core/unrecognized_field")
         .map(|f| {
             assert_eq!(f.severity, bedrock_addon_core::diagnostic::Severity::Error);
             f.location.json_path.to_string()

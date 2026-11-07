@@ -1,7 +1,7 @@
 # client_install_b: the findings of link() with a host that answers for the kinds the crate has no list of (support::TheGameHasIt)
-     21  I ClampedValue [-] @ textures                      # R34 (lint, an information): vanilla's `flipbook_textures.json` writes `atlas_tile_variant` on 21 tiles that have no variations; the game uses variant 0 and says nothing
-    129  I FileNotLoaded [-] @ font                         # frame: the `.fontdata` and glyph files the font rules (F16, F24, F26) would read are not resident after a default load
-     21  I UnknownSound [sound event] @ sounds.json
-      1  I UnresolvedReference [block] @ aim_assist         # C5: `minecraft:oak_button`, which is no block, in a key of a category's `priorities.blocks`, which the game keeps without a word: an information
-      5  I UnresolvedReference [entity] @ entity            # R10 (lint): client entities of things that are no behaviour-pack entity and are in no list (`minecraft:bed`, `skull`, `leash_knot`, `decorated_pot`, `trial_spawner`; two more are in experimental packs): the game draws them from code
-      1  I UnresolvedReference [particle event] @ particles # R39 (lint, an information): `obsidian_tear` fires `hit_ground` on collision and has no `events`; the game's own file, and the game fires nothing and says nothing
+     21  I core/clamped_value [-] @ textures                      # R34 (lint, an information): vanilla's `flipbook_textures.json` writes `atlas_tile_variant` on 21 tiles that have no variations; the game uses variant 0 and says nothing
+    129  I core/file_not_loaded [-] @ font                        # frame: the `.fontdata` and glyph files the font rules (F16, F24, F26) would read are not resident after a default load
+     21  I core/unknown_sound [sound event] @ sounds.json
+      1  I core/unresolved_reference [block] @ aim_assist         # C5: `minecraft:oak_button`, which is no block, in a key of a category's `priorities.blocks`, which the game keeps without a word: an information
+      5  I core/unresolved_reference [entity] @ entity            # R10 (lint): client entities of things that are no behaviour-pack entity and are in no list (`minecraft:bed`, `skull`, `leash_knot`, `decorated_pot`, `trial_spawner`; two more are in experimental packs): the game draws them from code
+      1  I core/unresolved_reference [particle event] @ particles # R39 (lint, an information): `obsidian_tear` fires `hit_ground` on collision and has no `events`; the game's own file, and the game fires nothing and says nothing

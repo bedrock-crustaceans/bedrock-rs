@@ -36,7 +36,7 @@ fn a_document_nests_to_the_json_limit_and_no_further() {
             &cx(),
         ));
         assert_eq!(d.len(), 1);
-        let found = find(&d, "MalformedInput", Severity::Error).unwrap();
+        let found = find(&d, "core/syntax", Severity::Error).unwrap();
         assert_eq!(
             found.code.to_string(),
             "the JSON nests too deeply",
@@ -50,7 +50,7 @@ fn a_null_at_the_json_limit_is_found() {
     // In a declared member, as deep as a file may go: the scan reaches it.
     let text = nested("render_controllers", MAX_JSON_DEPTH - OWN, "null");
     let d = rejected(attachable(&text, &cx()));
-    assert!(find(&d, "InvalidType", Severity::Error).is_some());
+    assert!(find(&d, "core/unknown_child_option", Severity::Error).is_some());
     // In `min_engine_version` it is part of the value as written.
     let text = nested("min_engine_version", MAX_JSON_DEPTH - OWN, "null");
     let document = loaded(attachable(&text, &cx()));
@@ -72,12 +72,12 @@ fn a_file_nested_beyond_the_limit_is_rejected_in_a_stack_before_anything_reads_i
     assert_eq!(attachables.rejected().len(), 1);
     let rejected = &attachables.rejected()[0];
     assert_eq!(rejected.origin.path.as_str(), "attachables/deep.json");
-    let found = find(&rejected.diagnostics, "MalformedInput", Severity::Error).unwrap();
+    let found = find(&rejected.diagnostics, "core/syntax", Severity::Error).unwrap();
     assert_eq!(found.code.to_string(), "the JSON nests too deeply");
     // An unclosed run of brackets is as deep.
     let open = "[".repeat(100_000);
     let d = rejected_text(&open);
-    assert!(find(&d, "MalformedInput", Severity::Error).is_some());
+    assert!(find(&d, "core/syntax", Severity::Error).is_some());
 }
 
 fn rejected_text(text: &str) -> bedrock_addon::diagnostic::Diagnostics {
@@ -96,7 +96,7 @@ fn content_after_the_root_is_warned_about_and_the_document_loads() {
         let warnings: Vec<_> = document.diagnostics().at_least(Severity::Info).collect();
         assert_eq!(warnings.len(), 1, "{trailing:?}");
         let found = warnings[0];
-        assert_eq!(found.code.name(), "MalformedInput");
+        assert_eq!(found.code.id(), "core/syntax");
         assert_eq!(found.severity, Severity::Info);
         assert_eq!(
             found.code.to_string(),
@@ -127,7 +127,7 @@ fn content_after_the_root_does_not_change_which_payload_the_file_is() {
         let d = rejected(attachable(&text, &cx()));
         expect_at(
             &d,
-            "IgnoredPayload",
+            "core/ignored_payload",
             bedrock_addon::diagnostic::Severity::Error,
             "minecraft:attachable",
         );
@@ -138,7 +138,7 @@ fn content_after_the_root_does_not_change_which_payload_the_file_is() {
         assert_eq!(
             attachables
                 .diagnostics()
-                .filter(|f| f.code.name() == "IgnoredPayload")
+                .filter(|f| f.code.id() == "core/ignored_payload")
                 .count(),
             1
         );
@@ -149,7 +149,7 @@ fn content_after_the_root_does_not_change_which_payload_the_file_is() {
     assert!(
         find(
             &d,
-            "UnsupportedVersion",
+            "visual/unknown_version",
             bedrock_addon::diagnostic::Severity::Error
         )
         .is_some()

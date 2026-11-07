@@ -125,7 +125,7 @@ fn bc01_single_file_raw_and_bc07_bare_key() {
     assert_eq!(entry.water_surface_color, Some(rgba(0x44, 0xAF, 0xF5)));
     assert_eq!(entry.water_surface_transparency, None);
     // By legacy name: the variant and the definitions that were it.
-    let ignored = found(&stack, |c| matches!(c.name(), "LegacyFogIgnored"));
+    let ignored = found(&stack, |c| matches!(c.id(), "core/legacy_fog_ignored"));
     assert_eq!(ignored.len(), 1, "{ignored:#?}");
     assert_eq!(ignored[0].severity, Severity::Info);
     assert_eq!(
@@ -160,7 +160,7 @@ fn bc01_single_file_raw_and_bc07_bare_key() {
     ]);
     assert_eq!(ids(plains(&listed)), ["a:f", "b:g"]);
     // By legacy name: the variant and the definitions that were it.
-    assert!(found(&listed, |c| matches!(c.name(), "LegacyFogIgnored")).is_empty());
+    assert!(found(&listed, |c| matches!(c.id(), "core/legacy_fog_ignored")).is_empty());
     // A `null` entry under a bare key is dropped, not renamed.
     let null = merged(&[r#"{"biomes": {"plains": null, "default": {}}}"#]);
     assert!(legacy(&null).biomes.is_empty());
@@ -186,7 +186,7 @@ fn bc02_second_file_replaces_fog() {
     assert!(plains(&stack).old_fog.is_none());
     assert_eq!(
         // By legacy name: the variant and the definitions that were it.
-        found(&stack, |c| matches!(c.name(), "LegacyFogIgnored")).len(),
+        found(&stack, |c| matches!(c.id(), "core/legacy_fog_ignored")).len(),
         1
     );
     assert_eq!(
@@ -269,7 +269,7 @@ fn bc04_default_remove_all_prior() {
     );
     assert!(legacy(&cleared).origin(&BiomeId::parse("a:one")).is_none());
     // By legacy name: the variant and the definitions that were it.
-    let discarded = found(&cleared, |c| matches!(c.name(), "ShadowedDefinition"));
+    let discarded = found(&cleared, |c| matches!(c.id(), "core/shadowed_definition"));
     assert_eq!(discarded.len(), 1);
     assert_eq!(discarded[0].severity, Severity::Info);
     assert_eq!(discarded[0].location.pack.as_ref().unwrap().name(), "pack0");
@@ -281,7 +281,17 @@ fn bc04_default_remove_all_prior() {
         Some(rgba(0, 0, 1))
     );
     // By legacy name: the variant and the definitions that were it.
-    assert!(found(&kept, |c| matches!(c.name(), "ShadowedDefinition")).is_empty());
+    assert!(
+        found(&kept, |c| matches!(
+            c.id(),
+            "core/shadowed_definition"
+                | "core/shadowed_definition_worded"
+                | "dimension/replaced_registration"
+                | "item/overridden_by_a_higher_pack"
+                | "material/variant_replaced"
+        ))
+        .is_empty()
+    );
 }
 
 /// `bc05_remove_all_prior_on_biome`: the flag is read on `default` only.
@@ -294,7 +304,7 @@ fn bc05_remove_all_prior_on_biome() {
     assert_eq!(legacy(&stack).biomes.len(), 2);
     assert_eq!(plains(&stack).water_surface_transparency, Some(0.25));
     // By legacy name: the variant and the definitions that were it.
-    let none = found(&stack, |c| matches!(c.name(), "NoEffect"));
+    let none = found(&stack, |c| matches!(c.id(), "core/no_effect"));
     assert_eq!(none.len(), 1);
     assert_eq!(none[0].severity, Severity::Info);
     assert_eq!(
@@ -307,7 +317,18 @@ fn bc05_remove_all_prior_on_biome() {
         r#"{"biomes": {"default": {"remove_all_prior_fog": true}, "minecraft:plains": {"remove_all_prior_fog": false}}}"#,
     ]);
     // By legacy name: the variant and the definitions that were it.
-    assert!(found(&fine, |c| matches!(c.name(), "NoEffect")).is_empty());
+    assert!(
+        found(&fine, |c| matches!(
+            c.id(),
+            "biome/no_effect_in_nether"
+                | "core/no_effect"
+                | "core/no_effect_worded"
+                | "material/state_ignored"
+                | "recipe/no_tags"
+                | "trade/weight_no_effect"
+        ))
+        .is_empty()
+    );
 }
 
 /// `bc06_back_compat_fog`: old-style fog members over an entry make it a back-compat fog; the
@@ -417,7 +438,9 @@ fn bc09_world_gate() {
             .map(|id| id.as_str().to_owned())
             .collect();
         // By legacy name: the variant and the definitions that were it.
-        let skipped = found(&stack, |c| matches!(c.name(), "VanillaBiomesClientSkipped"));
+        let skipped = found(&stack, |c| {
+            matches!(c.id(), "core/vanilla_biomes_client_skipped")
+        });
         (keys, skipped)
     };
     let version = |a, b, c| BaseGameVersion::new(SemVersion::new(a, b, c));
@@ -464,7 +487,7 @@ fn bc10_transparency() {
         let stack = with(value);
         assert_eq!(plains(&stack).water_surface_transparency, Some(clamped));
         // By legacy name: the variant and the definitions that were it.
-        let warned = found(&stack, |c| matches!(c.name(), "ClampedValue"));
+        let warned = found(&stack, |c| matches!(c.id(), "core/clamped_value"));
         assert_eq!(warned.len(), 1);
         assert_eq!(warned[0].severity, Severity::Info);
         assert_eq!(
@@ -480,7 +503,7 @@ fn bc10_transparency() {
     let text = with(r#""x""#);
     assert_eq!(plains(&text).water_surface_transparency, None);
     // By legacy name: the variant and the definitions that were it.
-    let wrong = found(&text, |c| matches!(c.name(), "InvalidType"));
+    let wrong = found(&text, |c| matches!(c.id(), "core/invalid_type"));
     assert_eq!(wrong.len(), 1);
     assert_eq!(wrong[0].severity, Severity::Info);
     // The other members of the wrong type are ignored the same way.
@@ -492,7 +515,7 @@ fn bc10_transparency() {
     assert!(plains(&others).old_fog.is_none());
     assert_eq!(
         // By legacy name: the variant and the definitions that were it.
-        found(&others, |c| matches!(c.name(), "InvalidType")).len(),
+        found(&others, |c| matches!(c.id(), "core/invalid_type")).len(),
         4
     );
 }
@@ -513,7 +536,7 @@ fn bc11_invalid_json_skipped_deviation() {
         .collect();
     assert_eq!(keys, ["a:one", "a:two"]);
     // By legacy name: the variant and the definitions that were it.
-    let malformed = found(&stack, |c| matches!(c.name(), "MalformedInput"));
+    let malformed = found(&stack, |c| matches!(c.id(), "core/syntax"));
     assert_eq!(malformed.len(), 1);
     assert_eq!(malformed[0].severity, Severity::Info);
     assert_eq!(malformed[0].location.pack.as_ref().unwrap().name(), "pack1");
@@ -523,7 +546,7 @@ fn bc11_invalid_json_skipped_deviation() {
     assert_eq!(legacy(&array).biomes.len(), 1);
     assert_eq!(
         // By legacy name: the variant and the definitions that were it.
-        found(&array, |c| matches!(c.name(), "InvalidType")).len(),
+        found(&array, |c| matches!(c.id(), "core/invalid_type")).len(),
         1
     );
 }
@@ -687,7 +710,7 @@ fn bc14_overrides_client_biome() {
     let warned: Vec<_> = report
         .iter()
         // By legacy name: the variant and the definitions that were it.
-        .filter(|d| matches!(d.code.name(), "ClientBiomeOverriddenByBiomesClient"))
+        .filter(|d| matches!(d.code.id(), "core/client_biome_overridden_by_biomes_client"))
         .collect();
     assert_eq!(warned.len(), 1, "{warned:#?}");
     // Ours: vanilla overwrites in silence.
@@ -732,7 +755,7 @@ fn bc15_ignored_members() {
             "water_fog_distance": 1}}}"##,
     ]);
     // By legacy name: the variant and the definitions that were it.
-    let unknown = found(&stack, |c| matches!(c.name(), "UnrecognizedField"));
+    let unknown = found(&stack, |c| matches!(c.id(), "core/unrecognized_field"));
     let paths: Vec<String> = unknown
         .iter()
         .map(|d| d.location.json_path.to_string())
@@ -755,7 +778,7 @@ fn no_biomes_member_applies_nothing() {
     let stack = merged(&["{}"]);
     assert!(legacy(&stack).biomes.is_empty());
     // By legacy name: the variant and the definitions that were it.
-    let none = found(&stack, |c| matches!(c.name(), "NoEffect"));
+    let none = found(&stack, |c| matches!(c.id(), "core/no_effect"));
     assert_eq!(none.len(), 1);
     assert_eq!(none[0].severity, Severity::Info);
     let empty = merged(&[]);
@@ -783,7 +806,7 @@ fn the_lookup_falls_back_to_the_bare_name() {
 fn a_root_format_version_and_another_root_member_are_each_an_info() {
     let stack = merged(&[r#"{"format_version": "1.21.40", "note": 1, "biomes": {"a:one": {}}}"#]);
     // By legacy name: the variant and the definitions that were it.
-    let unknown = found(&stack, |c| matches!(c.name(), "UnrecognizedField"));
+    let unknown = found(&stack, |c| matches!(c.id(), "core/unrecognized_field"));
     let seen: Vec<(String, Severity)> = unknown
         .iter()
         .map(|d| (d.location.json_path.to_string(), d.severity))

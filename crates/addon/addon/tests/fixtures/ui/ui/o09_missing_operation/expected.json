@@ -12,7 +12,7 @@
   ],
   "diagnostics": [
     {
-      "code": "MissingRequiredField",
+      "code": "json_ui/pack_missing_operation",
       "severity": "error",
       "text": "ui/a.json (root): Missing operation.",
       "pack": 1,

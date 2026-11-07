@@ -120,7 +120,8 @@ fn a_beta_document_has_no_struct() {
     );
     let d = outcome.expect_err("no beta struct").diagnostics;
     assert!(
-        d.iter().any(|f| f.code.name() == "UnsupportedVersion"),
+        d.iter()
+            .any(|f| f.code.id() == "core/no_parser_for_version"),
         "{d:?}"
     );
 }

@@ -15,7 +15,7 @@ resolution = "not_found"
 hint = "ImportedAsJson"
 
 [[diagnostics]]
-code = "ScriptImportNotFound"
+code = "core/script_import_not_found"
 severity = "error"
 text = "ReferenceError: Import [data.json.js] not found."
 file = "scripts/main.js"

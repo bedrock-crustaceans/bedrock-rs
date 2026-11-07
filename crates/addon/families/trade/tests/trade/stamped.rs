@@ -9,16 +9,21 @@ use super::common::{above_info, fixture, found_at, loads, rejects, trade};
 #[test]
 fn t08_the_strict_slice_rejects_flat_trades_biomes_and_a_missing_total_exp_required() {
     let d = rejects(&fixture("t08_butcher_trades_1_26_10_strict.json"));
-    found_at(&d, "UnrecognizedField", Severity::Error, "tiers/0/trades");
     found_at(
         &d,
-        "UnrecognizedField",
+        "core/unrecognized_field",
+        Severity::Error,
+        "tiers/0/trades",
+    );
+    found_at(
+        &d,
+        "core/unrecognized_field",
         Severity::Error,
         "tiers/0/groups/0/trades/0/wants/0/choice/0/biomes",
     );
     found_at(
         &d,
-        "MissingRequiredField",
+        "core/missing_required_field",
         Severity::Error,
         "tiers/1/total_exp_required",
     );
@@ -37,7 +42,7 @@ fn t08_the_same_json_without_format_version_loads_through_the_legacy_parser() {
     assert_eq!(table.tiers[0].groups.len(), 2);
     found_at(
         document.diagnostics(),
-        "DroppedField",
+        "core/dropped_field",
         Severity::Info,
         "tiers/0/trades",
     );

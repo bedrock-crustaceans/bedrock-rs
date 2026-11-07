@@ -29,7 +29,7 @@ fn missing_version(json: &str) -> Diagnostics {
     let error = one_error(&found);
     assert!(
         // By legacy name: the variant and the definitions that were it.
-        matches!(error.code.name(), "MissingFormatVersion"),
+        matches!(error.code.id(), "core/version_not_processable"),
         "{json}: {found:#?}"
     );
     assert_eq!(error.code.to_string(), FORMAT_VERSION_TEXT, "{json}");
@@ -44,7 +44,7 @@ fn a_number_format_version_is_read_as_its_text() {
     let error = one_error(&found);
     assert!(
         // By legacy name: the variant and the definitions that were it.
-        matches!(error.code.name(), "UnsupportedVersion"),
+        matches!(error.code.id(), "crafting_catalog/below_floor"),
         "{found:#?}"
     );
     assert_eq!(
@@ -76,7 +76,10 @@ fn l1a_every_unreadable_format_version_is_the_missing_version_error() {
         let notes = notes(&found);
         assert_eq!(notes.len(), 1, "{version}: {found:#?}");
         // By legacy name: the variant and the definitions that were it.
-        assert!(matches!(notes[0].code.name(), "MalformedFormatVersion"));
+        assert!(matches!(
+            notes[0].code.id(),
+            "core/malformed_format_version"
+        ));
         assert_eq!(notes[0].severity, Severity::Info);
     }
 }
@@ -87,7 +90,7 @@ fn l1a_a_third_root_member_is_the_missing_version_error_with_the_envelope_text_a
     let notes = notes(&found);
     assert_eq!(notes.len(), 1, "{found:#?}");
     // By legacy name: the variant and the definitions that were it.
-    assert!(matches!(notes[0].code.name(), "MalformedInput"));
+    assert!(matches!(notes[0].code.id(), "core/document_member_count"));
     assert_eq!(notes[0].severity, Severity::Info);
     assert_eq!(
         notes[0].code.to_string(),
@@ -118,7 +121,7 @@ fn l1a_a_root_that_is_no_object_or_no_text_is_the_missing_version_error() {
     let found = CraftingCatalogBytes(b"{\"format_version\": \"1.21.60\", \xff}").rejected();
     let error = one_error(&found);
     // By legacy name: the variant and the definitions that were it.
-    assert!(matches!(error.code.name(), "MissingFormatVersion"));
+    assert!(matches!(error.code.id(), "core/version_not_processable"));
     assert_eq!(error.code.to_string(), FORMAT_VERSION_TEXT);
 }
 
@@ -161,7 +164,7 @@ fn l2_the_floor_is_checked_before_the_shape_and_the_payload_key() {
         let error = one_error(&found);
         assert!(
             // By legacy name: the variant and the definitions that were it.
-            matches!(error.code.name(), "UnsupportedVersion"),
+            matches!(error.code.id(), "crafting_catalog/below_floor"),
             "{members}: {found:#?}"
         );
         assert_eq!(error.code.to_string(), FORMAT_VERSION_TEXT, "{members}");
@@ -180,7 +183,7 @@ fn l4_the_payload_key_is_checked_before_the_engine_version() {
         let error = one_error(&found);
         assert!(
             // By legacy name: the variant and the definitions that were it.
-            matches!(error.code.name(), "MissingRequiredField"),
+            matches!(error.code.id(), "crafting_catalog/no_catalog_payload"),
             "{members}: {found:#?}"
         );
         assert_eq!(error.code.to_string(), PAYLOAD_TEXT, "{members}");
@@ -233,7 +236,7 @@ fn the_beta_literal_is_unsupported_where_beta_documents_are_allowed() {
     let error = one_error(&found);
     assert!(
         // By legacy name: the variant and the definitions that were it.
-        matches!(error.code.name(), "UnsupportedVersion"),
+        matches!(error.code.id(), "core/no_parser_for_version"),
         "{found:#?}"
     );
     assert_eq!(

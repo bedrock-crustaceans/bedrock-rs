@@ -42,7 +42,7 @@ fn shaped_1_20_10_no_unlock_is_rejected() {
     let rejected = rejected("shaped_1_20_10_no_unlock.json", &cx());
     let finding = one(&rejected.diagnostics, UNLOCK_REQUIRED, Severity::Error);
     // By legacy name: the variant and the definitions that were it.
-    assert!(matches!(finding.code.name(), "MissingRequiredField"));
+    assert!(matches!(finding.code.id(), "recipe/unlock_required"));
 }
 
 #[test]
@@ -123,7 +123,7 @@ fn shaped_missing_format_version_loads_as_1_0_0_with_a_kept_error() {
         .diagnostics()
         .iter()
         // By legacy name: the variant and the definitions that were it.
-        .filter(|d| matches!(d.code.name(), "MissingFormatVersion"))
+        .filter(|d| matches!(d.code.id(), "recipe/missing_version_tag"))
         .collect();
     assert_eq!(warnings.len(), 1, "{:#?}", document.diagnostics());
     assert_eq!(warnings[0].severity, Severity::Error);
@@ -489,7 +489,7 @@ fn tags_empty_is_logged_and_the_recipe_still_parsed() {
     let document = loaded("tags_empty.json", &cx());
     let finding = one_kept(document.diagnostics(), "No tags specified");
     // By legacy name: the variant and the definitions that were it.
-    assert!(matches!(finding.code.name(), "NoEffect"));
+    assert!(matches!(finding.code.id(), "recipe/no_tags"));
     assert!(document.tags().is_empty());
 }
 
@@ -514,7 +514,7 @@ fn payload_key_order_picks_shaped() {
             .diagnostics()
             .iter()
             // By legacy name: the variant and the definitions that were it.
-            .any(|d| matches!(d.code.name(), "IgnoredPayload") && d.severity == Severity::Info)
+            .any(|d| matches!(d.code.id(), "core/ignored_payload") && d.severity == Severity::Info)
     );
     clean(document.diagnostics());
 }
@@ -528,7 +528,7 @@ fn no_payload_key_is_skipped_as_having_no_identifier() {
         Severity::Error,
     );
     // By legacy name: the variant and the definitions that were it.
-    assert!(matches!(finding.code.name(), "MissingIdentifier"));
+    assert!(matches!(finding.code.id(), "recipe/no_identifier"));
     assert_eq!(args(finding), ["recipes/no_payload_key.json"]);
 }
 
@@ -551,7 +551,7 @@ fn format_version_array_loads_as_1_20_10() {
                 .diagnostics()
                 .iter()
                 // By legacy name: the variant and the definitions that were it.
-                .any(|d| matches!(d.code.name(), "MissingFormatVersion")),
+                .any(|d| matches!(d.code.id(), "recipe/missing_version_tag")),
             "{name}: {:#?}",
             document.diagnostics()
         );

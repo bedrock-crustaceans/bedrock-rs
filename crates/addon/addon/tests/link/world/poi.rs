@@ -69,7 +69,7 @@ fn m7_a_block_of_a_poi_type_that_nothing_defines_is_an_error_at_its_entry() {
         said(&found, &["block"]),
         // The registry's log is error level; the type keeps its other blocks.
         [finding(
-            "UnresolvedReference",
+            "poi/block_lookup_failed",
             Severity::Error,
             "poi/blocks/forge.json",
             "minecraft:poi_block/blocks/1",

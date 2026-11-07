@@ -25,9 +25,9 @@ fn a_legacy_box_without_half_dimensions_says_offset_field_required_and_skips_the
     assert_eq!(
         findings(document.diagnostics()),
         [
-            format!("Error {BOX}/half_dimensions InvalidValue: offset field required!"),
-            format!("Info {BOX}/surface_only InvalidValue: invalid value"),
-            format!("Info {BOX}/direction InvalidValue: invalid value"),
+            format!("Error {BOX}/half_dimensions particle/offset_required: offset field required!"),
+            format!("Info {BOX}/surface_only core/invalid_value: invalid value"),
+            format!("Info {BOX}/direction core/invalid_value: invalid value"),
         ]
     );
     // With `half_dimensions` the box reads on, without a line.
@@ -44,7 +44,7 @@ fn a_legacy_box_without_half_dimensions_says_offset_field_required_and_skips_the
     assert_eq!(
         texts(&cereal),
         [format!(
-            "Error {BOX}/half_dimensions MissingRequiredField: missing required field"
+            "Error {BOX}/half_dimensions core/missing_required_field: missing required field"
         )]
     );
 }
@@ -56,13 +56,15 @@ fn a_legacy_billboard_whose_direction_fails_says_so_and_skips_its_uv() {
     const PROPERLY: &str = "The direction sub section is not properly defined!";
     let uv =
         r#""uv": {"texture_width": 16, "texture_height": 16, "uv": [1, 1], "uv_size": [2, 2]}"#;
-    for (direction, first) in [
+    for (direction, id, first) in [
         (
             r#""x""#,
+            "direction_not_object",
             "The direction subsection is not defined as a proper json object!",
         ),
         (
             r#"{"mode": "custom"}"#,
+            "direction_custom",
             "The 'direction' sub section is not defined as a proper json object!",
         ),
     ] {
@@ -81,9 +83,11 @@ fn a_legacy_billboard_whose_direction_fails_says_so_and_skips_its_uv() {
         assert_eq!(
             findings(document.diagnostics()),
             [
-                format!("Error {BILLBOARD}/direction InvalidValue: {first}"),
-                format!("Error {BILLBOARD}/direction InvalidValue: {PROPERLY}"),
-                format!("Info {BILLBOARD}/uv InvalidValue: invalid value"),
+                format!("Error {BILLBOARD}/direction particle/{id}: {first}"),
+                format!(
+                    "Error {BILLBOARD}/direction particle/direction_not_properly_defined: {PROPERLY}"
+                ),
+                format!("Info {BILLBOARD}/uv core/invalid_value: invalid value"),
             ],
             "{direction}"
         );

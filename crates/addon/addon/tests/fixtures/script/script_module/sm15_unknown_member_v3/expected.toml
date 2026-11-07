@@ -2,6 +2,6 @@
 scope = "pack"
 
 [[diagnostic]]
-code = "UnrecognizedField"
+code = "core/unrecognized_field"
 severity = "error"
 path = "modules/0/main"

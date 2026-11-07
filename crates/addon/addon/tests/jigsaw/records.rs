@@ -45,7 +45,7 @@ fn missing_format_version<T: Content + std::fmt::Debug>(path: &str, key: &str, p
     let loaded = loads::<T>(path, &text);
     assert_eq!(
         names(loaded.diagnostics(), Severity::Info),
-        ["MissingFormatVersion"]
+        ["core/missing_format_version"]
     );
     assert_eq!(loaded.version().effective, FormatVersion::new(1, 21, 20));
 }
@@ -66,7 +66,7 @@ fn duplicate_identifier(directory: &str, key: &str, payload: &str) {
         .jigsaw()
         .diagnostics()
         // By legacy name: the variant and the definitions that were it.
-        .filter(|d| matches!(d.code.name(), "ShadowedDefinition"))
+        .filter(|d| matches!(d.code.id(), "core/shadowed_definition"))
         .map(|d| {
             assert_eq!(d.severity, Severity::Info);
             (
@@ -97,8 +97,8 @@ fn metadata_body_skipped() -> Result<(), &'static str> {
     if loaded.body != [0xde, 0xad] {
         return Err("the body is not kept");
     }
-    if names(loaded.diagnostics(), Severity::Info) != ["SkippedCacheDocument"] {
-        return Err("no SkippedCacheDocument info");
+    if names(loaded.diagnostics(), Severity::Info) != ["core/skipped_cache_document"] {
+        return Err("no core/skipped_cache_document info");
     }
     Ok(())
 }
@@ -122,7 +122,7 @@ fn jmeta01_typed_use_legacy_rotation_true_upgrades_without_it_with_a_dropped_fie
     let dropped: Vec<_> = outcome
         .diagnostics
         .iter()
-        .filter(|d| d.code.name() == "DroppedField")
+        .filter(|d| d.code.id() == "core/dropped_field")
         .collect();
     assert_eq!(dropped.len(), 1);
     assert_eq!(dropped[0].severity, Severity::Info);
@@ -156,7 +156,7 @@ fn structure_empty_start_pool_deviation() {
     let finding = loaded
         .diagnostics()
         .iter()
-        .find(|d| d.code.name() == "InvalidValue")
+        .find(|d| d.code.id() == "jigsaw/start_pool_empty")
         .expect("the builder's text");
     assert_eq!(finding.severity, Severity::Info, "the document stays");
     assert_eq!(
@@ -197,7 +197,7 @@ fn pool_element_redefinition_deviation() {
     let found = stack
         .jigsaw()
         .diagnostics()
-        .find(|d| d.code.name() == "InvalidValue")
+        .find(|d| d.code.id() == "jigsaw/element_redefined")
         .expect("the redefinition");
     assert_eq!(
         found.code.to_string(),

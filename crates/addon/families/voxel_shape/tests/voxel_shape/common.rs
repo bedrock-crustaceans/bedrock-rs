@@ -80,7 +80,7 @@ pub fn rejects(json: &str) -> Diagnostics {
 
 /// The findings whose code is `name`.
 pub fn with_code<'a>(d: &'a Diagnostics, name: &str) -> Vec<&'a Diagnostic> {
-    d.iter().filter(|f| f.code.name() == name).collect()
+    d.iter().filter(|f| f.code.id() == name).collect()
 }
 
 /// `(code name, text, JSON path)` of every finding, all of which must be errors.
@@ -90,7 +90,7 @@ pub fn errors(d: &Diagnostics) -> Vec<(&'static str, String, String)> {
         .map(|f| {
             assert_eq!(f.severity, Severity::Error, "{f:#?}");
             (
-                f.code.name(),
+                f.code.id(),
                 f.code.to_string(),
                 f.location.json_path.to_string(),
             )
@@ -121,7 +121,7 @@ pub fn error(code: &'static str, text: &str, path: &str) -> (&'static str, Strin
 /// it for `shapes/test.json`.
 pub fn failed() -> (&'static str, String, String) {
     error(
-        "DocumentRejected",
+        "voxel_shape/failed_to_load",
         "Failed to load voxel shape file shapes/test.json",
         "",
     )

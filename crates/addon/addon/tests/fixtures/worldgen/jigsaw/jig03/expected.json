@@ -12,25 +12,25 @@
   },
   "diagnostics": [
     {
-      "code": "UnrecognizedField",
+      "code": "core/unrecognized_field",
       "severity": "warning",
       "path": "worldgen/structures/ruin.json",
       "json_path": "minecraft:jigsaw/description/demo_flag"
     },
     {
-      "code": "UnrecognizedField",
+      "code": "core/unrecognized_field",
       "severity": "warning",
       "path": "worldgen/structures/ruin.json",
       "json_path": "minecraft:jigsaw/start_height/demo_hint"
     },
     {
-      "code": "UnrecognizedField",
+      "code": "core/unrecognized_field",
       "severity": "warning",
       "path": "worldgen/structures/ruin.json",
       "json_path": "minecraft:jigsaw/demo_note"
     },
     {
-      "code": "UnrecognizedField",
+      "code": "core/unrecognized_field",
       "severity": "warning",
       "path": "worldgen/template_pools/start.json",
       "json_path": "minecraft:template_pool/elements/0/element/demo_tag"

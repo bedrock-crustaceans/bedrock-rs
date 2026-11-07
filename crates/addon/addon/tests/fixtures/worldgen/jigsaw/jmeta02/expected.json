@@ -8,7 +8,7 @@
   },
   "diagnostics": [
     {
-      "code": "UnsupportedVersion",
+      "code": "core/no_parser_for_version",
       "severity": "error",
       "path": "worldgen/metadata/a.dat",
       "text": "unsupported version: no parser available for version 1.21.40"

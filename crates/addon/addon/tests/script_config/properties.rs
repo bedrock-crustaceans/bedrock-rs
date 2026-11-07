@@ -79,7 +79,7 @@ fn r4_an_unknown_key_is_an_info() {
     let properties = parse("my-own-key=1\nserver-name=x\n");
     let found = seen(properties.diagnostics());
     assert_eq!(found.len(), 1);
-    assert_eq!(found[0].code, "UnrecognizedField");
+    assert_eq!(found[0].code, "core/unrecognized_field");
     assert_eq!(found[0].severity, "info");
     assert_eq!(
         properties
@@ -168,7 +168,7 @@ fn p2_short_lines_and_p12_lines_without_an_equals_sign() {
     assert_eq!(found.len(), 1);
     assert_eq!(
         (found[0].code.as_str(), found[0].severity.as_str()),
-        ("NoEffect", "info")
+        ("core/no_effect", "info")
     );
     assert_eq!(
         properties
@@ -187,7 +187,7 @@ fn p12_bytes_that_are_not_utf8_are_replaced_with_an_information() {
     let properties = ServerProperties::parse(b"server-name=caf\xe9\n");
     assert_eq!(entries(&properties), [("server-name", "caf\u{fffd}")]);
     let finding = properties.diagnostics().iter().next().unwrap();
-    assert_eq!(finding.code.name(), "MalformedInput");
+    assert_eq!(finding.code.id(), "core/syntax");
     assert_eq!(finding.severity, Severity::Info);
 }
 
@@ -254,7 +254,10 @@ fn p11_an_empty_or_refused_later_line_leaves_the_earlier_value() {
     let (script, findings) =
         script("content-log-level=error\ncontent-log-level=\ncontent-log-level=loud\n");
     assert_eq!(script.content_log.level, ContentLogLevel::Error);
-    assert_eq!(findings, [error("InvalidEnumValue", "content-log-level")]);
+    assert_eq!(
+        findings,
+        [error("server_config/bad_log_level", "content-log-level")]
+    );
 }
 
 // ---- the script keys ----
@@ -381,7 +384,7 @@ fn sp10_bools_are_true_only_for_true() {
         let (script, findings) = self::script(&format!("{key}={value}\n"));
         assert_eq!(script.content_log.console, expected, "{value}");
         let expected = if warned {
-            vec![info("InvalidValue", key)]
+            vec![info("core/invalid_value", key)]
         } else {
             vec![]
         };
@@ -419,7 +422,7 @@ fn sp11_int_forms_follow_atoi() {
     }
     // Beyond `i32` the value is held to it: `ClampedValue`.
     let (_, findings) = self::script(&format!("{key}=2147483648\n"));
-    assert_eq!(findings, [info("ClampedValue", key)]);
+    assert_eq!(findings, [info("core/clamped_value", key)]);
 }
 
 #[test]
@@ -444,7 +447,7 @@ fn r8_a_negative_threshold_is_kept_with_an_information() {
     ] {
         let (script, findings) = self::script(&format!("{key}=-1\n"));
         assert_eq!(read(&script), -1, "{key}");
-        assert_eq!(findings, [info("InvalidValue", key)], "{key}");
+        assert_eq!(findings, [info("core/invalid_value", key)], "{key}");
         let (script, findings) = self::script(&format!("{key}=0\n"));
         assert_eq!(read(&script), 0, "{key}");
         assert!(findings.is_empty(), "{key}");
@@ -467,7 +470,7 @@ fn r9_the_memory_keys_are_held_to_2000() {
         assert!(findings.is_empty());
         let (script, findings) = self::script(&format!("{key}=2001\n"));
         assert_eq!(read(&script), 2000);
-        assert_eq!(findings, [info("ClampedValue", key)]);
+        assert_eq!(findings, [info("core/clamped_value", key)]);
     }
     // The thresholds have no such limit.
     let (script, findings) = self::script("script-watchdog-hang-threshold=600000\n");
@@ -486,7 +489,7 @@ fn a_negative_count_leaves_the_key_as_it_was() {
     ] {
         let (script, findings) = self::script(&format!("{key}=-1\n"));
         assert_eq!(script, ScriptProperties::default(), "{key}");
-        assert_eq!(findings, [info("InvalidValue", key)], "{key}");
+        assert_eq!(findings, [info("core/invalid_value", key)], "{key}");
     }
 }
 
@@ -536,11 +539,14 @@ fn r2_a_hash_after_a_valid_word_is_pointed_out() {
     ));
     assert_eq!(
         findings,
-        [error("InvalidEnumValue", key), info("InvalidValue", key)]
+        [
+            error("server_config/bad_auto_attach", key),
+            info("core/invalid_value", key)
+        ]
     );
     // Not when the word before it is no better.
     let (_, findings) = script(&format!("{key}=sometimes # dev\n"));
-    assert_eq!(findings, [error("InvalidEnumValue", key)]);
+    assert_eq!(findings, [error("server_config/bad_auto_attach", key)]);
 }
 
 #[test]
@@ -557,7 +563,7 @@ fn r11_the_debug_port_is_1_to_65535() {
         let script = properties.script(&mut findings);
         assert_eq!(script.debugger.force_inbound_port, None, "{outside}");
         let finding = findings.first_error().unwrap();
-        assert_eq!(finding.code.name(), "InvalidValue");
+        assert_eq!(finding.code.id(), "server_config/bad_port");
         assert_eq!(
             finding.code.to_string(),
             "Invalid script debugger port, must be in the range [ 1, 65535 ]"
@@ -595,7 +601,7 @@ fn r12_the_connect_address_is_host_and_port() {
         let script = properties.script(&mut findings);
         assert_eq!(script.debugger.connect_address, None, "{bad}");
         let finding = findings.first_error().unwrap();
-        assert_eq!(finding.code.name(), "InvalidValue");
+        assert_eq!(finding.code.id(), "server_config/bad_address");
         assert_eq!(
             finding.code.to_string(),
             "Invalid script debugger connect address, format must be host:port with port in the range [ 1, 65535 ]"
@@ -696,7 +702,7 @@ fn r12_the_host_of_the_connect_address_is_a_name_or_a_bracketed_address() {
 #[test]
 fn r14_an_auto_attach_mode_without_what_it_needs_is_noted() {
     let key = "script-debugger-auto-attach";
-    let unmet = [info("NoEffect", key)];
+    let unmet = [info("core/no_effect", key)];
     let cases: [(&str, bool); 8] = [
         ("script-debugger-auto-attach=connect\n", true),
         (
@@ -819,7 +825,7 @@ fn r4_the_keys_the_shipped_file_only_names_in_comments_are_known() {
         // And in another case each is the near miss of a known key.
         let upper = parse(&format!("{}=x\n", key.to_ascii_uppercase()));
         let finding = upper.diagnostics().iter().next().unwrap();
-        assert_eq!(finding.code.name(), "UnrecognizedField");
+        assert_eq!(finding.code.id(), "core/unrecognized_field");
         assert_eq!(finding.severity, Severity::Info, "{key}");
     }
 }

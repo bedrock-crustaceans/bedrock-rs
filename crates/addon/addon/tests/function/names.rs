@@ -38,8 +38,8 @@ fn f03_only_the_exact_mcfunction_extension_is_a_function() {
     assert_eq!(functions.diagnostics().count(), 0);
     // Nothing but the stack's own info for a pack without an icon.
     let report = stack.report();
-    let names: Vec<&str> = report.iter().map(|f| f.code.name()).collect();
-    assert_eq!(names, ["PackIconMissing"]);
+    let names: Vec<&str> = report.iter().map(|f| f.code.id()).collect();
+    assert_eq!(names, ["core/pack_icon_missing"]);
 }
 
 #[test]

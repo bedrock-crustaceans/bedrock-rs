@@ -1,7 +1,7 @@
 # Validation rule 1.
 
 [[diagnostic]]
-kind = "EmptyDocument"
+kind = "core/empty_document"
 severity = "info"
 file = "behavior_trees/empty.json"
 path = ""

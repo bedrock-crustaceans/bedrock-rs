@@ -57,12 +57,12 @@ fn a_file_that_is_no_array_is_rejected_on_its_own() {
     let path = PackPath::new(FILE).unwrap();
     let rejected = Flipbooks::parse(&path, b"{}", &LoadContext::detached()).unwrap_err();
     assert_eq!(
-        rejected.diagnostics.iter().next().unwrap().code.name(),
-        "InvalidValue"
+        rejected.diagnostics.iter().next().unwrap().code.id(),
+        "core/invalid_value"
     );
     let rejected = Flipbooks::parse(&path, b"[", &LoadContext::detached()).unwrap_err();
     assert_eq!(
-        rejected.diagnostics.iter().next().unwrap().code.name(),
-        "MalformedInput"
+        rejected.diagnostics.iter().next().unwrap().code.id(),
+        "core/syntax"
     );
 }

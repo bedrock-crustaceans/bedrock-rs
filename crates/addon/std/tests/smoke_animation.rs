@@ -93,12 +93,12 @@ impl Tally {
         let on_disk = animation_mcb(dir);
         let mut unsupported = Vec::new();
         for diagnostic in findings {
-            if diagnostic.code.name() == "UnsupportedFileFormat" {
+            if diagnostic.code.id() == "core/unsupported_file_format" {
                 unsupported.push(diagnostic.to_string());
             } else if diagnostic.severity >= Severity::Error {
                 self.errors.push(format!("{}: {diagnostic}", dir.display()));
             } else if diagnostic.severity == Severity::Warning {
-                *self.warnings.entry(diagnostic.code.name()).or_insert(0) += 1;
+                *self.warnings.entry(diagnostic.code.id()).or_insert(0) += 1;
             }
         }
         self.mcb += unsupported.len();

@@ -16,13 +16,13 @@ resolution = "not_found"
 hint = "ImportedAsJson"
 
 [[diagnostics]]
-code = "ScriptSyntaxError"
+code = "script/script_expecting_semicolon"
 severity = "error"
 text = "SyntaxError: expecting ';'    at main.js:1"
 file = "scripts/main.js"
 
 [[diagnostics]]
-code = "ScriptImportNotFound"
+code = "core/script_import_not_found"
 severity = "error"
 text = "ReferenceError: Import [data.json.js] not found."
 file = "scripts/main.js"

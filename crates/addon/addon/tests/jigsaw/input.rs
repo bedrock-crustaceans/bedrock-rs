@@ -19,8 +19,19 @@ fn structure(extra: &str) -> String {
 /// The errors of `d` as `(code, path)`.
 fn errors(d: &Diagnostics) -> Vec<(&'static str, String)> {
     d.iter()
-        .filter(|f| f.severity == Severity::Error && f.code.name() != "DocumentRejected")
-        .map(|f| (f.code.name(), f.location.json_path.to_string()))
+        .filter(|f| {
+            f.severity == Severity::Error
+                && !matches!(
+                    f.code.id(),
+                    "core/document_rejected"
+                        | "core/document_rejected_worded"
+                        | "jigsaw/pool_failed"
+                        | "jigsaw/processors_failed"
+                        | "jigsaw/set_failed"
+                        | "jigsaw/structure_failed"
+                )
+        })
+        .map(|f| (f.code.id(), f.location.json_path.to_string()))
         .collect()
 }
 
@@ -40,7 +51,7 @@ fn a_number_format_version_is_read_as_its_text() {
     let d = rejected::<JigsawStructure>("worldgen/structures/a.json", &text);
     assert_eq!(
         errors(&d),
-        [("UnsupportedVersion", "format_version".to_owned())]
+        [("core/no_parser_for_version", "format_version".to_owned())]
     );
 }
 
@@ -61,7 +72,7 @@ fn a_null_optional_member_of_a_structure_rejects_it() {
         let d = rejected::<JigsawStructure>("worldgen/structures/a.json", &text);
         assert_eq!(
             errors(&d),
-            [("InvalidType", format!("minecraft:jigsaw/{member}"))],
+            [("core/invalid_type", format!("minecraft:jigsaw/{member}"))],
             "{member}"
         );
     }
@@ -73,14 +84,17 @@ fn a_null_member_of_a_pool_a_set_and_a_processor_list_rejects_each() {
     let d = rejected::<TemplatePool>("worldgen/template_pools/p.json", pool);
     assert_eq!(
         errors(&d),
-        [("InvalidType", "minecraft:template_pool/fallback".to_owned())]
+        [(
+            "core/invalid_type",
+            "minecraft:template_pool/fallback".to_owned()
+        )]
     );
     let set = r#"{"format_version": "1.21.20", "minecraft:structure_set": {"description": {"identifier": "demo:s"}, "placement": {"type": "minecraft:random_spread", "salt": 1, "separation": 4, "spacing": 12, "spread_type": null}, "structures": [{"structure": "demo:a", "weight": 1}]}}"#;
     let d = rejected::<StructureSet>("worldgen/structure_sets/s.json", set);
     assert_eq!(
         errors(&d),
         [(
-            "InvalidType",
+            "core/invalid_type",
             "minecraft:structure_set/placement/spread_type".to_owned()
         )]
     );
@@ -89,7 +103,7 @@ fn a_null_member_of_a_pool_a_set_and_a_processor_list_rejects_each() {
     assert_eq!(
         errors(&d),
         [(
-            "InvalidType",
+            "core/invalid_type",
             "minecraft:processor_list/processors".to_owned()
         )]
     );

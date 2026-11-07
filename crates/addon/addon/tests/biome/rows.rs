@@ -124,7 +124,12 @@ fn below_floor(diagnostics: &Diagnostics, version: &str) -> Code {
     );
     let hints = with(diagnostics, |c| {
         // By legacy name: the variant and the definitions that were it.
-        matches!(c.name(), "BiomeFormatHint")
+        matches!(
+            c.id(),
+            "core/biome_format_hint_experimental"
+                | "core/biome_format_hint_experimental_surface"
+                | "core/biome_format_hint_legacy"
+        )
     });
     assert_eq!(hints.len(), 1, "one hint: {diagnostics:#?}");
     assert_eq!(hints[0].severity, Severity::Info);
@@ -179,7 +184,7 @@ fn b04b_envelope_edges() {
     assert!(has(
         &found,
         // By legacy name: the variant and the definitions that were it.
-        |c| matches!(c.name(), "MissingFormatVersion"),
+        |c| matches!(c.id(), "core/no_valid_version"),
         Severity::Error,
         "no valid version passed by the caller or found in the input"
     ));
@@ -190,7 +195,7 @@ fn b04b_envelope_edges() {
         has(
             &found,
             // By legacy name: the variant and the definitions that were it.
-            |c| matches!(c.name(), "MalformedFormatVersion"),
+            |c| matches!(c.id(), "core/malformed_format_version"),
             Severity::Error,
             "Malformed format version"
         ),
@@ -203,7 +208,7 @@ fn b04b_envelope_edges() {
     assert!(
         found.iter().any(
             // By legacy name: the variant and the definitions that were it.
-            |f| matches!(f.code.name(), "UnsupportedVersion")
+            |f| matches!(f.code.id(), "core/no_parser_for_version")
                 && f.severity == Severity::Error
                 && f.code.to_string().ends_with("1.21.0")
         ),
@@ -220,7 +225,7 @@ fn b04b_envelope_edges() {
     assert!(has(
         &found,
         // By legacy name: the variant and the definitions that were it.
-        |c| matches!(c.name(), "MalformedInput"),
+        |c| matches!(c.id(), "core/document_member_count"),
         Severity::Error,
         "A Minecraft Document must have exactly two members: \"format_version\" and a payload member"
     ));
@@ -240,7 +245,7 @@ fn b05_world_gate() {
     assert!(has(
         &found,
         // By legacy name: the variant and the definitions that were it.
-        |c| matches!(c.name(), "IgnoredFile"),
+        |c| matches!(c.id(), "biome/world_gate"),
         Severity::Error,
         "Custom Biomes can only be added for world versions 1.21.110 and up!"
     ));
@@ -348,7 +353,7 @@ fn b08_replace_biomes_nether() {
         has(
             &found,
             // By legacy name: the variant and the definitions that were it.
-            |c| matches!(c.name(), "InvalidValue"),
+            |c| matches!(c.id(), "biome/dimension_1_21_80"),
             Severity::Error,
             "Dimension must be 'minecraft:overworld' but is 'minecraft:nether'"
         ),
@@ -369,7 +374,7 @@ fn b09_replace_biomes_constraints() {
     assert!(has(
         &rejected(&empty, &context()),
         // By legacy name: the variant and the definitions that were it.
-        |c| matches!(c.name(), "InvalidValue"),
+        |c| matches!(c.id(), "biome/empty_replacements_1_26_0"),
         Severity::Error,
         "Expected array with at least 1 element"
     ));
@@ -384,7 +389,7 @@ fn b09_replace_biomes_constraints() {
     assert!(has(
         &rejected(&repeated, &context()),
         // By legacy name: the variant and the definitions that were it.
-        |c| matches!(c.name(), "InvalidValue"),
+        |c| matches!(c.id(), "biome/duplicate_pair"),
         Severity::Error,
         "Dimension and target biome pairing already defined: 'minecraft:overworld', 'plains'"
     ));
@@ -414,7 +419,7 @@ fn b10_nether_mesa_builder() {
     assert!(has(
         &found,
         // By legacy name: the variant and the definitions that were it.
-        |c| matches!(c.name(), "InvalidValue"),
+        |c| matches!(c.id(), "biome/nether_builders"),
         Severity::Error,
         "Biomes in Nether are only compatible with following Surface Builders: overworld, frozen_ocean, capped, the_end"
     ));
@@ -470,7 +475,7 @@ fn b13_unknown_component() {
     let found = rejected(&text, &context());
     let unrecognized = with(&found, |c| {
         // By legacy name: the variant and the definitions that were it.
-        matches!(c.name(), "UnrecognizedComponent")
+        matches!(c.id(), "core/unrecognized_component")
     });
     let paths: Vec<String> = unrecognized
         .iter()
@@ -528,7 +533,7 @@ fn a_null_member_refuses_the_biome_on_every_slice() {
             Err(refused) => refused.diagnostics,
         };
         // By legacy name: the variant and the definitions that were it.
-        let typed: Vec<_> = with(&found, |c| matches!(c.name(), "InvalidType"));
+        let typed: Vec<_> = with(&found, |c| matches!(c.id(), "core/invalid_type"));
         assert_eq!(typed.len(), 1, "{version} {components}: {found:#?}");
         assert_eq!(typed[0].severity, Severity::Error);
         assert_eq!(typed[0].location.json_path.to_string(), at, "{version}");
@@ -547,7 +552,7 @@ fn a_null_member_refuses_the_biome_on_every_slice() {
         beta.diagnostics
             .iter()
             // By legacy name: the variant and the definitions that were it.
-            .any(|d| matches!(d.code.name(), "InvalidType")
+            .any(|d| matches!(d.code.id(), "core/invalid_type")
                 && d.severity == Severity::Error
                 && d.location.json_path.to_string()
                     == "minecraft:biome/components/minecraft:climate/temperature"),
@@ -597,7 +602,7 @@ fn b14_1_26_30_noise_gradient() {
     let found = rejected(&biome("1.26.0", "test:gradient", &components), &context());
     let rejection = with(&found, |c| {
         // By legacy name: the variant and the definitions that were it.
-        matches!(c.name(), "InvalidEnumValue")
+        matches!(c.id(), "core/invalid_enum_value")
     });
     assert_eq!(rejection.len(), 1, "{found:#?}");
     assert_eq!(rejection[0].severity, Severity::Error);
@@ -634,7 +639,7 @@ fn b15_beta_environment_attributes() {
     assert!(has(
         &found.diagnostics,
         // By legacy name: the variant and the definitions that were it.
-        |c| matches!(c.name(), "BetaFeaturesNotEnabled"),
+        |c| matches!(c.id(), "core/beta_format_version"),
         Severity::Error,
         "Using a beta format_version is only allowed for base packs or when the BetaApis toggle is enabled."
     ));
@@ -687,7 +692,7 @@ fn b17_overrides() {
             has(
                 &refused.diagnostics,
                 // By legacy name: the variant and the definitions that were it.
-                |c| matches!(c.name(), "BetaFeaturesNotEnabled"),
+                |c| matches!(c.id(), "core/beta_format_version"),
                 Severity::Error,
                 "Using a beta format_version is only allowed for base packs or when the BetaApis toggle is enabled."
             ),
@@ -765,7 +770,7 @@ fn b19_1_26_20_noise_gradient_deviation() {
     let found = load_beta(&text, &base_game()).expect_err("rejected");
     let missing = with(&found.diagnostics, |c| {
         // By legacy name: the variant and the definitions that were it.
-        matches!(c.name(), "MissingRequiredField")
+        matches!(c.id(), "core/missing_required_field")
     });
     assert_eq!(missing.len(), 1, "{:#?}", found.diagnostics);
     assert_eq!(missing[0].severity, Severity::Error);
@@ -775,7 +780,7 @@ fn b19_1_26_20_noise_gradient_deviation() {
     );
     let unrecognized: Vec<String> = with(&found.diagnostics, |c| {
         // By legacy name: the variant and the definitions that were it.
-        matches!(c.name(), "UnrecognizedField")
+        matches!(c.id(), "core/unrecognized_field")
     })
     .iter()
     .map(|d| d.location.json_path.to_string())
@@ -857,7 +862,7 @@ fn b20a_a_range_in_another_form_refuses_the_biome() {
         let errors_found = errors(&found);
         assert_eq!(errors_found.len(), 1, "{range}: {found:#?}");
         // By legacy name: the variant and the definitions that were it.
-        assert!(matches!(errors_found[0].code.name(), "InvalidType"));
+        assert!(matches!(errors_found[0].code.id(), "core/invalid_type"));
         assert!(!errors_found[0].kept);
         assert_eq!(errors_found[0].location.json_path.to_string(), at);
     }
@@ -879,14 +884,14 @@ fn b20_noise_gradient_specifier_checks() {
     assert!(has(
         &rejected(&one("minecraft:grad"), &context()),
         // By legacy name: the variant and the definitions that were it.
-        |c| matches!(c.name(), "NamespaceRule"),
+        |c| matches!(c.id(), "biome/namespace_invalid"),
         Severity::Error,
         "string has invalid namespace (minecraft)"
     ));
     assert!(has(
         &rejected(&one("grad"), &context()),
         // By legacy name: the variant and the definitions that were it.
-        |c| matches!(c.name(), "NamespaceRule"),
+        |c| matches!(c.id(), "biome/namespace_missing"),
         Severity::Error,
         "string must be prefixed with a namespace (eg. namespace:value)"
     ));

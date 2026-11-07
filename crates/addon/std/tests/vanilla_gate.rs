@@ -168,7 +168,7 @@ impl Found {
         Found {
             pass,
             severity: finding.severity,
-            code: finding.code.name(),
+            code: finding.code.id(),
             folder,
             path: finding
                 .location
@@ -535,7 +535,7 @@ const EXPECTED: &[Expected] = &[
         pack: "behavior_packs/vanilla",
         pass: Pass::Load,
         path: "loot_tables/entities/armor_stand.json",
-        code: "MissingRequiredField",
+        code: "json_ui/type_not_specified",
         severity: Severity::Error,
         text: "There must be an \"entries\" array inside the loot table pool.",
         count: 1,
@@ -544,7 +544,7 @@ const EXPECTED: &[Expected] = &[
         pack: "behavior_packs/vanilla",
         pass: Pass::Load,
         path: "loot_tables/entities/boat.json",
-        code: "MissingRequiredField",
+        code: "json_ui/type_not_specified",
         severity: Severity::Error,
         text: "There must be an \"entries\" array inside the loot table pool.",
         count: 1,
@@ -621,7 +621,7 @@ const fn r7(pack: &'static str, path: &'static str, text: &'static str) -> Expec
         pack,
         pass: Pass::Link,
         path,
-        code: "TextureNotFound",
+        code: "core/texture_not_found",
         severity: Severity::Warning,
         text,
         count: 1,
@@ -869,7 +869,7 @@ const FABRICATED: Expected = Expected {
     pack: "behavior_packs/vanilla",
     pass: Pass::Load,
     path: "loot_tables/entities/boat.json",
-    code: "MissingRequiredField",
+    code: "json_ui/type_not_specified",
     severity: Severity::Warning,
     text: "There must be an \"entries\" array inside the loot table pool.",
     count: 1,
@@ -890,13 +890,13 @@ fn an_expected_entry_that_occurs_as_pinned_is_set_apart_and_the_rest_fails() {
     let pinned = found_for_test(
         "behavior_packs/vanilla",
         "loot_tables/entities/boat.json",
-        "MissingRequiredField",
+        "json_ui/type_not_specified",
         "There must be an \"entries\" array inside the loot table pool.",
     );
     let other = found_for_test(
         "behavior_packs/vanilla_1.20.0",
         "loot_tables/entities/boat.json",
-        "MissingRequiredField",
+        "json_ui/type_not_specified",
         "There must be an \"entries\" array inside the loot table pool.",
     );
     let sorted = sort_expected(&[&pinned, &other], &[FABRICATED]);
@@ -911,7 +911,7 @@ fn an_expected_entry_that_occurs_more_often_than_pinned_fails_the_gate() {
     let pinned = found_for_test(
         "behavior_packs/vanilla",
         "loot_tables/entities/boat.json",
-        "MissingRequiredField",
+        "json_ui/type_not_specified",
         "There must be an \"entries\" array inside the loot table pool.",
     );
     let sorted = sort_expected(&[&pinned, &pinned], &[FABRICATED]);
@@ -923,7 +923,7 @@ fn a_pin_matches_the_whole_path_the_whole_text_and_its_pass_only() {
     let finding = found_for_test(
         "behavior_packs/vanilla",
         "loot_tables/entities/boat.json",
-        "MissingRequiredField",
+        "json_ui/type_not_specified",
         "There must be an \"entries\" array inside the loot table pool.",
     );
     assert!(FABRICATED.matches(&finding), "the pin as written matches");

@@ -256,8 +256,8 @@ fn a_required_group_without_a_member_is_missing_when_nothing_failed() {
 #[test]
 fn a_float_that_narrows_is_told_as_lossy_or_read_silently() {
     for (rules, findings) in [
-        (SORTED, vec!["Info LossyConversion at x"]),
-        (GEOMETRY, vec!["Info LossyConversion at x"]),
+        (SORTED, vec!["Info core/lossy_conversion at x"]),
+        (GEOMETRY, vec!["Info core/lossy_conversion at x"]),
         (ANIMATION, vec![]),
     ] {
         let mut walk = walk(rules);
@@ -273,7 +273,7 @@ fn a_float_that_narrows_is_told_as_lossy_or_read_silently() {
                 format!(
                     "{:?} {} at {}",
                     d.severity,
-                    d.code.name(),
+                    d.code.id(),
                     d.location.json_path
                 )
             })
@@ -290,9 +290,9 @@ fn a_number_beyond_a_float_is_the_largest_float_with_an_information() {
         let told: Vec<_> = walk
             .diagnostics
             .iter()
-            .map(|d| format!("{:?} {}", d.severity, d.code.name()))
+            .map(|d| format!("{:?} {}", d.severity, d.code.id()))
             .collect();
-        assert_eq!(told, ["Info InvalidValue"]);
+        assert_eq!(told, ["Info core/invalid_value"]);
     }
 }
 
@@ -352,12 +352,12 @@ fn members_one_name_in_two_cases_tell_the_earlier_as_dropped() {
             format!(
                 "{:?} {} at {}",
                 d.severity,
-                d.code.name(),
+                d.code.id(),
                 d.location.json_path
             )
         })
         .collect();
-    assert_eq!(dropped, ["Info DroppedField at loop"]);
+    assert_eq!(dropped, ["Info core/dropped_field at loop"]);
     let spelled: Vec<_> = walk
         .non_canonical
         .iter()
@@ -386,7 +386,7 @@ fn three(text: &str) -> (Option<[Molang; 3]>, Vec<String>) {
     let findings = walk
         .diagnostics
         .iter()
-        .map(|d| format!("{} at {}", d.code.name(), d.location.json_path))
+        .map(|d| format!("{} at {}", d.code.id(), d.location.json_path))
         .collect();
     (read, findings)
 }
@@ -398,10 +398,10 @@ fn an_array_of_three_expressions_is_told_of_by_its_length_then_by_its_elements()
     // The length first: no element of an array of another length is read.
     for text in ["[]", "[1, {}]", "[1, {}, [], 4]", "7"] {
         let (read, findings) = three(text);
-        let code = if text == "7" {
-            "InvalidType"
-        } else {
-            "InvalidValue"
+        let code = match text {
+            "7" => "core/unknown_child_option",
+            "[1, {}, [], 4]" => "core/array_too_large",
+            _ => "core/array_too_small",
         };
         assert!(read.is_none(), "{text}");
         assert_eq!(findings, [format!("{code} at rotation")], "{text}");
@@ -411,7 +411,10 @@ fn an_array_of_three_expressions_is_told_of_by_its_length_then_by_its_elements()
     assert!(read.is_none());
     assert_eq!(
         findings,
-        ["InvalidType at rotation/0", "InvalidType at rotation/2"]
+        [
+            "core/unknown_child_option at rotation/0",
+            "core/unknown_child_option at rotation/2"
+        ]
     );
 }
 

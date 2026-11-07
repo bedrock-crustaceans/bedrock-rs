@@ -57,7 +57,7 @@ fn at_item(found: &Diagnostics) -> Vec<Diagnostic> {
 /// What a finding says: its code, severity and JSON path.
 fn said(finding: &Diagnostic) -> (&'static str, Severity, String) {
     (
-        finding.code.name(),
+        finding.code.id(),
         finding.severity,
         finding.location.json_path.to_string(),
     )
@@ -91,7 +91,11 @@ fn r32_an_icon_key_nothing_defines_is_a_kept_error_at_the_icon() {
     assert!(finding.kept);
     assert_eq!(
         said(finding),
-        ("UnresolvedReference", Severity::Error, ICON.to_owned())
+        (
+            "core/unresolved_reference_worded",
+            Severity::Error,
+            ICON.to_owned()
+        )
     );
     assert_eq!(finding.phase, Phase::Link);
     let pack = finding.location.pack.as_ref().expect("the pack");
@@ -118,12 +122,12 @@ fn r32_a_key_other_than_default_is_told_at_its_member() {
         found.iter().map(said).collect::<Vec<_>>(),
         [
             (
-                "UnresolvedReference",
+                "core/unresolved_reference_worded",
                 Severity::Error,
                 format!("{ICON}/textures/dyed")
             ),
             (
-                "UnresolvedReference",
+                "core/unresolved_reference_worded",
                 Severity::Error,
                 format!("{ICON}/textures/icon_trim")
             ),
@@ -148,7 +152,7 @@ fn r32_a_key_is_compared_as_written_and_a_miss_by_case_names_the_tile() {
     for (written, tile) in [("ruby", "Ruby"), ("RUBY", "Ruby"), ("Gem", "gem")] {
         let found = linked(&format!(r#""minecraft:icon": "{written}""#), GEMS);
         assert_eq!(found.len(), 1, "{written}: {found:#?}");
-        assert_eq!(said(&found[0]).0, "UnresolvedReference");
+        assert_eq!(said(&found[0]).0, "core/unresolved_reference_worded");
         let hint = ReferenceHint::CaseMismatch(tile.to_owned());
         assert_eq!(named(&found[0]), ("atlas key", written, Some(&hint)));
         assert_eq!(
@@ -175,13 +179,21 @@ fn r32_a_key_only_the_game_has_resolves_when_the_host_says_so() {
     // A host is believed when it says no.
     assert_eq!(
         world(hosted(&[("atlas key", "pear")])),
-        [("UnresolvedReference", Severity::Error, ICON.to_owned())]
+        [(
+            "core/unresolved_reference_worded",
+            Severity::Error,
+            ICON.to_owned()
+        )]
     );
     // Without a host the crate has no list of the game's tiles: the game's own resource pack
     // on the stack is what defines them.
     assert_eq!(
         world(LoadOptions::default()),
-        [("UnresolvedReference", Severity::Error, ICON.to_owned())]
+        [(
+            "core/unresolved_reference_worded",
+            Severity::Error,
+            ICON.to_owned()
+        )]
     );
 }
 
@@ -198,7 +210,11 @@ fn r32_the_1_20_50_texture_member_and_the_legacy_icon_are_checked() {
     );
     assert_eq!(
         found.iter().map(said).collect::<Vec<_>>(),
-        [("UnresolvedReference", Severity::Error, ICON.to_owned())]
+        [(
+            "core/unresolved_reference_worded",
+            Severity::Error,
+            ICON.to_owned()
+        )]
     );
     assert_eq!(named(&found[0]).1, "none");
     // The item format of 1.10: the icon is a client key of the legacy reader.
@@ -210,7 +226,11 @@ fn r32_the_1_20_50_texture_member_and_the_legacy_icon_are_checked() {
         let found = linked_at("1.10", components, GEMS);
         assert_eq!(
             found.iter().map(said).collect::<Vec<_>>(),
-            [("UnresolvedReference", Severity::Error, ICON.to_owned())],
+            [(
+                "core/unresolved_reference_worded",
+                Severity::Error,
+                ICON.to_owned()
+            )],
             "{components}"
         );
         assert_eq!(named(&found[0]).1, "none");
@@ -249,7 +269,11 @@ fn r32_every_icon_misses_an_atlas_that_was_not_built() {
     );
     assert_eq!(
         at_item(&found).iter().map(said).collect::<Vec<_>>(),
-        [("UnresolvedReference", Severity::Info, ICON.to_owned())]
+        [(
+            "core/unresolved_reference_worded",
+            Severity::Info,
+            ICON.to_owned()
+        )]
     );
 }
 
@@ -260,11 +284,15 @@ fn r32_without_an_item_atlas_and_without_a_host_no_name_is_compared() {
     let components = r#""minecraft:icon": { "textures": { "dyed": "none", "spare": "nope" } }"#;
     let alone = [
         (
-            "MissingRequiredField",
+            "core/missing_required_field_worded",
             Severity::Error,
             format!("{ICON}/textures"),
         ),
-        ("NoEffect", Severity::Info, format!("{ICON}/textures/spare")),
+        (
+            "core/no_effect",
+            Severity::Info,
+            format!("{ICON}/textures/spare"),
+        ),
     ];
     // No resource pack.
     let set = stacks_of(
@@ -294,7 +322,7 @@ fn r32_without_an_item_atlas_and_without_a_host_no_name_is_compared() {
             alone[0].clone(),
             alone[1].clone(),
             (
-                "UnresolvedReference",
+                "core/unresolved_reference_worded",
                 Severity::Error,
                 format!("{ICON}/textures/spare")
             ),
@@ -311,7 +339,7 @@ fn rule_10_textures_without_default_is_an_error_at_the_map() {
     assert_eq!(
         found.iter().map(said).collect::<Vec<_>>(),
         [(
-            "MissingRequiredField",
+            "core/missing_required_field_worded",
             Severity::Error,
             format!("{ICON}/textures")
         )]
@@ -335,14 +363,18 @@ fn rule_11_a_key_the_game_never_reads_is_a_lint_at_the_key() {
     assert_eq!(
         found.iter().map(said).collect::<Vec<_>>(),
         [
-            ("NoEffect", Severity::Info, format!("{ICON}/textures/spare")),
             (
-                "NoEffect",
+                "core/no_effect",
+                Severity::Info,
+                format!("{ICON}/textures/spare")
+            ),
+            (
+                "core/no_effect",
                 Severity::Info,
                 format!("{ICON}/textures/trim_palette")
             ),
             (
-                "NoEffect",
+                "core/no_effect",
                 Severity::Info,
                 format!("{ICON}/textures/palette")
             ),
@@ -373,9 +405,13 @@ fn rule_11_the_value_of_an_unread_key_is_still_an_atlas_key() {
     assert_eq!(
         found.iter().map(said).collect::<Vec<_>>(),
         [
-            ("NoEffect", Severity::Info, format!("{ICON}/textures/spare")),
             (
-                "UnresolvedReference",
+                "core/no_effect",
+                Severity::Info,
+                format!("{ICON}/textures/spare")
+            ),
+            (
+                "core/unresolved_reference_worded",
                 Severity::Error,
                 format!("{ICON}/textures/spare")
             ),
@@ -422,12 +458,12 @@ fn rule_24_a_material_palette_value_is_no_atlas_key() {
         found.iter().map(said).collect::<Vec<_>>(),
         [
             (
-                "NoEffect",
+                "core/no_effect",
                 Severity::Info,
                 format!("{ICON}/textures/steel_palette")
             ),
             (
-                "UnresolvedReference",
+                "core/unresolved_reference_worded",
                 Severity::Error,
                 format!("{ICON}/textures/steel_palette")
             ),
@@ -444,7 +480,11 @@ fn rule_12_a_tile_the_atlas_dropped_is_no_tile_and_no_near_miss() {
         assert_eq!(found.len(), 1, "{found:#?}");
         assert_eq!(
             said(&found[0]),
-            ("UnresolvedReference", Severity::Error, ICON.to_owned())
+            (
+                "core/unresolved_reference_worded",
+                Severity::Error,
+                ICON.to_owned()
+            )
         );
         assert_eq!(named(&found[0]), ("atlas key", written, None));
     }
@@ -459,7 +499,7 @@ fn rule_22_trimmable_armour_without_wearable_is_a_warning_at_the_components() {
     assert_eq!(
         found.iter().map(said).collect::<Vec<_>>(),
         [(
-            "MissingRequiredField",
+            "core/missing_required_field_worded",
             Severity::Warning,
             "minecraft:item/components".to_owned()
         )]
@@ -507,7 +547,7 @@ fn rule_21_trimmable_armour_without_an_icon_is_a_warning_at_the_components() {
         assert_eq!(
             found.iter().map(said).collect::<Vec<_>>(),
             [(
-                "MissingRequiredField",
+                "core/missing_required_field_worded",
                 Severity::Warning,
                 "minecraft:item/components".to_owned()
             )],
@@ -539,7 +579,7 @@ fn rule_23_trimmable_armour_worn_in_the_off_hand_is_a_warning_at_the_slot() {
     assert_eq!(
         found.iter().map(said).collect::<Vec<_>>(),
         [(
-            "InvalidValue",
+            "core/invalid_value_worded",
             Severity::Warning,
             "minecraft:item/components/minecraft:wearable/slot".to_owned()
         )]

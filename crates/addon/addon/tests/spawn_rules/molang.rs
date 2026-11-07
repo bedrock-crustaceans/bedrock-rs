@@ -95,7 +95,7 @@ mod compiled {
         d.iter()
             .filter(|f| {
                 // By legacy name: the variant and the definitions that were it.
-                matches!(f.code.name(), "InvalidMolang") && f.severity >= Severity::Warning
+                matches!(f.code.id(), "core/invalid_molang") && f.severity >= Severity::Warning
             })
             .count()
     }
@@ -132,7 +132,7 @@ mod compiled {
             .diagnostics()
             .iter()
             // By legacy name: the variant and the definitions that were it.
-            .filter(|f| matches!(f.code.name(), "InvalidMolang"))
+            .filter(|f| matches!(f.code.id(), "core/invalid_molang"))
             .map(|f| f.location.json_path.to_string())
             .collect();
         at.dedup();
@@ -193,7 +193,8 @@ mod compiled {
             low.diagnostics()
                 .iter()
                 // By legacy name: the variant and the definitions that were it.
-                .any(|f| matches!(f.code.name(), "InvalidMolang") && f.severity == Severity::Info),
+                .any(|f| matches!(f.code.id(), "core/invalid_molang")
+                    && f.severity == Severity::Info),
             "{:#?}",
             low.diagnostics()
         );

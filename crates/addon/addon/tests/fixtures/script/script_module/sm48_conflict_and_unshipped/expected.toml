@@ -3,13 +3,13 @@ scope = "module"
 beta_apis = true
 
 [[diagnostic]]
-code = "ScriptModuleVersionUnavailable"
+code = "core/script_module_version_unavailable"
 severity = "error"
 path = "dependencies/1"
 text = "Plugin [sm48] - module [sm48 - 3.2.1] requested invalid version [9.0.0] of [@minecraft/server].\nAvailable versions:\n0.1.0\n1.19.0\n2.8.0\n2.9.0-beta\n3.0.0-alpha"
 
 [[diagnostic]]
-code = "ScriptModuleVersionConflict"
+code = "core/script_module_version_conflict"
 severity = "error"
 path = "dependencies/1"
 text = "Plugin [sm48] - version conflict for module [@minecraft/server].\n [1.5.0] requested by [sm48 - 3.2.1],\n [9.0.0] requested by [sm48 - 3.2.1]"

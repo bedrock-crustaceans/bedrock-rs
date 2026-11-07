@@ -34,7 +34,7 @@ fn validate_reports_what_loading_would_without_the_file_s_closing_line() {
     assert_eq!(
         errors(&shape.validate(&user_pack())),
         [error(
-            "InvalidValue",
+            "voxel_shape/namespace_not_valid",
             "The `minecraft` namespace is not valid for custom voxel shape: `minecraft:slab`",
             "minecraft:voxel_shape/description/identifier"
         )]
@@ -43,7 +43,7 @@ fn validate_reports_what_loading_would_without_the_file_s_closing_line() {
     assert_eq!(
         errors(&shape.validate(&base_game())),
         [error(
-            "InvalidValue",
+            "voxel_shape/namespace_required",
             "The `minecraft` namespace is required for Vanilla shape: `mypack:slab`",
             "minecraft:voxel_shape/description/identifier"
         )]
@@ -55,7 +55,7 @@ fn validate_reports_what_loading_would_without_the_file_s_closing_line() {
     assert_eq!(
         errors(&flat.validate(&user_pack())),
         [error(
-            "InvalidValue",
+            "voxel_shape/box_invalid",
             "Box at index 1 is invalid for voxel shape `mypack:flat`",
             "minecraft:voxel_shape/shape/boxes/1"
         )]
@@ -70,16 +70,16 @@ fn validate_checks_the_schema_s_constraints_first() {
         kinds(&built(&long, Vec::new()).validate(&user_pack())),
         [
             kind(
-                "InvalidValue",
+                "core/invalid_value",
                 "minecraft:voxel_shape/description/identifier"
             ),
-            kind("InvalidValue", "minecraft:voxel_shape/shape/boxes"),
+            kind("core/invalid_value", "minecraft:voxel_shape/shape/boxes"),
         ]
     );
     assert_eq!(
         errors(&built("mypack:many", vec![SLAB; 33]).validate(&user_pack())),
         [error(
-            "InvalidValue",
+            "voxel_shape/too_many_boxes",
             " -> shape -> boxes: too many input elements, expected no more than 32",
             "minecraft:voxel_shape/shape/boxes"
         )]

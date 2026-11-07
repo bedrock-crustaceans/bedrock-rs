@@ -1,7 +1,7 @@
 //! `n01`–`n05`, `s01`–`s03`), the biome binding
 //! rows `b01`–`b02`, the accessor and where a definition is written.
 
-use bedrock_addon::diagnostic::{Diagnostic, Severity};
+use bedrock_addon::diagnostic::{Diagnostic, Kind, Severity};
 use bedrock_addon::document::{Placed, Registry};
 use bedrock_addon::families::fog::FogSettings;
 use bedrock_addon::id::FogId;
@@ -22,8 +22,20 @@ fn found<'r>(
 ) -> Vec<&'r Diagnostic> {
     registry
         .diagnostics()
-        .filter(|f| f.code.name() == name && f.severity == severity)
+        .filter(|f| f.code.id() == name && f.severity == severity)
         .collect()
+}
+
+/// Whether `id` is a definition the legacy `ShadowedDefinition` was.
+fn is_shadowed_definition(id: &str) -> bool {
+    matches!(
+        id,
+        "core/shadowed_definition"
+            | "core/shadowed_definition_worded"
+            | "dimension/replaced_registration"
+            | "item/overridden_by_a_higher_pack"
+            | "material/variant_replaced"
+    )
 }
 
 fn all(registry: &Registry<FogSettings>) -> Vec<String> {
@@ -36,7 +48,7 @@ fn n01_minecraft_namespace() {
         let d = rejected(parse(&named(version, "minecraft:fog_x", ""), &pack()));
         expect_at(
             &d,
-            "NamespaceRule",
+            "fog/minecraft_namespace",
             Severity::Error,
             NAMESPACE,
             "minecraft:fog_settings/description/identifier",
@@ -53,7 +65,11 @@ fn n01_minecraft_namespace() {
 fn n02_minecraft_namespace_uppercase() {
     for version in ["1.21.90", "1.26.20"] {
         let d = rejected(parse(&named(version, "Minecraft:fog_x", ""), &pack()));
-        assert_eq!(count(&d, "NamespaceRule", Severity::Error), 1, "{version}");
+        assert_eq!(
+            count(&d, "fog/minecraft_namespace", Severity::Error),
+            1,
+            "{version}"
+        );
     }
 }
 
@@ -72,7 +88,7 @@ fn n04_bare_minecraft_identifier() {
     for identifier in ["minecraft", "MINECRAFT"] {
         let d = rejected(parse(&named("1.26.20", identifier, ""), &pack()));
         assert_eq!(
-            count(&d, "NamespaceRule", Severity::Error),
+            count(&d, "fog/minecraft_namespace", Severity::Error),
             1,
             "{identifier}"
         );
@@ -94,12 +110,14 @@ fn a_document_that_fails_validation_is_not_asked_for_its_namespace() {
         &pack(),
     ));
     assert_eq!(
-        count(&d, "NamespaceRule", Severity::Error),
+        d.iter()
+            .filter(|f| f.kind() == Kind::Identifier && f.severity == Severity::Error)
+            .count(),
         0,
         "{:?}",
         lines(&d)
     );
-    assert_eq!(count(&d, "DocumentRejected", Severity::Error), 1);
+    assert_eq!(count(&d, "fog/failed_to_validate", Severity::Error), 1);
 }
 
 #[test]
@@ -117,7 +135,11 @@ fn n05_identifier_case() {
         registry.get(&id("demo:fog")).unwrap().origin().pack.index(),
         Some(1)
     );
-    assert!(found(registry, "ShadowedDefinition", Severity::Info).is_empty());
+    assert!(
+        registry
+            .diagnostics()
+            .all(|f| !(is_shadowed_definition(f.code.id()) && f.severity == Severity::Info))
+    );
 }
 
 /// `vanilla = "silently skipped"`.
@@ -131,7 +153,7 @@ fn s01_top_pack_wins_with_a_shadow_info_deviation() {
     let fog = registry.get(&id("demo:fog")).unwrap();
     assert_eq!(fog.origin().pack.index(), Some(0));
     assert!(fog.distance.is_some());
-    let shadowed = found(registry, "ShadowedDefinition", Severity::Info);
+    let shadowed = found(registry, "core/shadowed_definition", Severity::Info);
     assert_eq!(shadowed.len(), 1, "{:?}", all(registry));
     assert_eq!(
         shadowed[0]
@@ -152,10 +174,14 @@ fn s02_failed_top_falls_through() {
     let fog = registry.get(&id("demo:fog")).unwrap();
     assert_eq!(fog.origin().pack.index(), Some(1));
     assert_eq!(
-        found(registry, "UnsupportedVersion", Severity::Error).len(),
+        found(registry, "fog/unsupported_version", Severity::Error).len(),
         1
     );
-    assert!(found(registry, "ShadowedDefinition", Severity::Info).is_empty());
+    assert!(
+        registry
+            .diagnostics()
+            .all(|f| !(is_shadowed_definition(f.code.id()) && f.severity == Severity::Info))
+    );
     assert_eq!(registry.rejected().len(), 1);
 }
 
@@ -164,7 +190,7 @@ fn s03_empty_file() {
     let good = doc("1.26.20", "");
     let set = stacks(&[&[("fogs/a.json", ""), ("fogs/b.json", &good)]]);
     let registry = set.resource.fogs();
-    let empty = found(registry, "EmptyDocument", Severity::Error);
+    let empty = found(registry, "fog/empty_resource", Severity::Error);
     assert_eq!(empty.len(), 1, "{:?}", all(registry));
     assert_eq!(
         empty[0].code.to_string(),
@@ -224,7 +250,7 @@ const CLIENT_BIOME: &str = r#"{"format_version": "1.21.40", "minecraft:client_bi
 /// The names of the unresolved fog references of `d`, as each detail gives them.
 fn unresolved(d: &bedrock_addon::diagnostic::Diagnostics) -> Vec<String> {
     d.iter()
-        .filter(|f| f.code.name() == "UnresolvedReference")
+        .filter(|f| f.code.id() == "core/unresolved_reference_worded")
         .map(|f| {
             format!(
                 "{:?} {}{}",
@@ -319,23 +345,21 @@ fn s01_inside_one_pack_the_first_file_wins_deviation() {
         let fog = registry.get(&id("demo:fog")).unwrap();
         assert_eq!(fog.origin().path.as_str(), "fogs/a.json");
         assert!(fog.distance.is_some());
-        let shadowed = found(registry, "ShadowedDefinition", Severity::Info);
+        let shadowed = found(registry, "core/shadowed_definition", Severity::Info);
         assert_eq!(shadowed.len(), 1, "{:?}", all(registry));
         assert_eq!(
             shadowed[0].location.path.as_ref().unwrap().as_str(),
             "fogs/b.json"
         );
         // The game parsed the later file before it skipped it: its findings stay.
-        let unknown = found(registry, "UnrecognizedField", Severity::Info);
+        let unknown = found(registry, "core/unrecognized_field", Severity::Info);
         assert_eq!(unknown.len(), 1, "{:?}", all(registry));
         assert_eq!(
             unknown[0].location.path.as_ref().unwrap().as_str(),
             "fogs/b.json"
         );
         assert!(
-            all(registry)
-                .iter()
-                .all(|l| !l.contains("DuplicateIdentifier")),
+            registry.diagnostics().all(|f| f.kind() != Kind::Duplicate),
             "{:?}",
             all(registry)
         );
@@ -359,7 +383,7 @@ fn s01_three_files_of_one_pack_and_a_lower_pack() {
     assert_eq!(winner.origin().pack.index(), Some(0));
     assert_eq!(winner.origin().path.as_str(), "fogs/a.json");
     let mut shadowed: Vec<(Option<usize>, String)> =
-        found(registry, "ShadowedDefinition", Severity::Info)
+        found(registry, "core/shadowed_definition", Severity::Info)
             .iter()
             .map(|f| {
                 (

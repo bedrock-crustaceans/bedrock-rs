@@ -114,7 +114,7 @@ fn check(source: &str, dir: &Path) -> (usize, usize) {
     });
     for finding in about_shapes {
         if finding.severity == Severity::Warning {
-            *warnings.entry(finding.code.name()).or_default() += 1;
+            *warnings.entry(finding.code.id()).or_default() += 1;
         }
         if finding.severity < Severity::Error {
             continue;

@@ -202,8 +202,10 @@ fn told(d: &Diagnostics) -> Vec<String> {
     d.iter()
         .map(|f| {
             // By legacy name: the variant and the definitions that were it.
-            let code = match f.code.name() {
-                name @ ("UnrecognizedField" | "DroppedField" | "IgnoredMember") => name,
+            let code = match f.code.id() {
+                name @ ("core/unrecognized_field"
+                | "core/dropped_field"
+                | "core/ignored_member") => name,
                 _ => "other",
             };
             format!("{} {code} {:?}", f.location.json_path, f.severity)
@@ -214,17 +216,17 @@ fn told(d: &Diagnostics) -> Vec<String> {
 /// What the told list of a reading that does not make unknown members errors is, kept or not.
 fn told_at(severity: Severity) -> Vec<String> {
     [
-        ("marked/u", "UnrecognizedField"),
-        ("keeps/u", "UnrecognizedField"),
-        ("plain/u", "UnrecognizedField"),
-        ("reports/u", "UnrecognizedField"),
-        ("rejects/u", "DroppedField"),
-        ("ignores/u", "IgnoredMember"),
-        ("listed/0/u", "UnrecognizedField"),
-        ("map/k/u", "UnrecognizedField"),
-        ("field_keeps/u", "UnrecognizedField"),
-        ("field_reports/u", "UnrecognizedField"),
-        ("zz", "UnrecognizedField"),
+        ("marked/u", "core/unrecognized_field"),
+        ("keeps/u", "core/unrecognized_field"),
+        ("plain/u", "core/unrecognized_field"),
+        ("reports/u", "core/unrecognized_field"),
+        ("rejects/u", "core/dropped_field"),
+        ("ignores/u", "core/ignored_member"),
+        ("listed/0/u", "core/unrecognized_field"),
+        ("map/k/u", "core/unrecognized_field"),
+        ("field_keeps/u", "core/unrecognized_field"),
+        ("field_reports/u", "core/unrecognized_field"),
+        ("zz", "core/unrecognized_field"),
     ]
     .iter()
     .map(|(path, code)| format!("minecraft:toy/{path} {code} {severity:?}"))
@@ -331,7 +333,9 @@ fn pin_the_door_tells_a_reported_member_as_it_tells_a_kept_one() {
     let kept = kept(outcome.diagnostics.unknown());
     for (path, is_kept) in [("marked/u", true), ("reports/u", false), ("plain/u", false)] {
         assert!(
-            told.contains(&format!("minecraft:toy/{path} UnrecognizedField Warning")),
+            told.contains(&format!(
+                "minecraft:toy/{path} core/unrecognized_field Warning"
+            )),
             "{path}: {told:?}"
         );
         assert_eq!(

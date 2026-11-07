@@ -63,7 +63,7 @@ pub fn rejected(text: &str) -> Diagnostics {
 pub fn lines(diagnostics: &Diagnostics) -> Vec<String> {
     diagnostics
         .iter()
-        .map(|d| format!("{} {:?} | {d}", d.code.name(), d.severity))
+        .map(|d| format!("{} {:?} | {d}", d.code.id(), d.severity))
         .collect()
 }
 
@@ -75,7 +75,7 @@ pub fn one_error(diagnostics: &Diagnostics, code: &str, text: &str) {
         .filter(|d| d.severity == Severity::Error)
         .collect();
     assert_eq!(errors.len(), 1, "{:#?}", lines(diagnostics));
-    assert_eq!(errors[0].code.name(), code, "{:#?}", lines(diagnostics));
+    assert_eq!(errors[0].code.id(), code, "{:#?}", lines(diagnostics));
     assert!(
         errors[0].to_string().contains(text),
         "{:#?}",

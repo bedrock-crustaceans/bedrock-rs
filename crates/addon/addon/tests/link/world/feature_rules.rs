@@ -57,7 +57,7 @@ fn w8_a_feature_the_game_registers_in_code_resolves_without_a_host() {
     assert_eq!(
         said(&found, &["feature"]),
         [finding(
-            "UnresolvedReference",
+            "core/unresolved_reference",
             Severity::Info,
             RULE,
             AT,
@@ -75,7 +75,7 @@ fn w8_a_feature_nothing_defines_is_an_information_and_a_lint() {
     assert_eq!(
         said(&found, &["feature"]),
         [finding(
-            "UnresolvedReference",
+            "core/unresolved_reference",
             Severity::Info,
             RULE,
             AT,
@@ -122,14 +122,14 @@ fn w9_the_pregeneration_pass_places_cave_carvers_only() {
         assert!(
             found
                 .iter()
-                .filter(|finding| finding.code.name() == "InvalidReference")
+                .filter(|finding| finding.code.id() == "core/invalid_reference_worded")
                 .all(|finding| finding.kept),
             "{found:#?}"
         );
         said
     };
     let invalid = [finding(
-        "InvalidReference",
+        "core/invalid_reference_worded",
         Severity::Error,
         RULE,
         AT,
@@ -158,7 +158,7 @@ fn w9_the_pregeneration_pass_places_cave_carvers_only() {
             .iter()
             .map(|said| said.0)
             .collect::<Vec<_>>(),
-        ["UnresolvedReference"]
+        ["core/unresolved_reference"]
     );
 }
 
@@ -188,7 +188,7 @@ fn w10_a_rule_outside_the_games_packs_cannot_place_a_feature_of_an_internal_type
     assert_eq!(
         said(&found, &["feature"]),
         [finding(
-            "InvalidReference",
+            "core/invalid_reference_worded",
             Severity::Error,
             RULE,
             AT,
@@ -202,7 +202,7 @@ fn w10_a_rule_outside_the_games_packs_cannot_place_a_feature_of_an_internal_type
     assert!(
         found
             .iter()
-            .filter(|finding| finding.code.name() == "InvalidReference")
+            .filter(|finding| finding.code.id() == "core/invalid_reference_worded")
             .all(|finding| finding.kept),
         "{found:#?}"
     );

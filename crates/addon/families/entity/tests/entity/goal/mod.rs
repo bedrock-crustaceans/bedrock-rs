@@ -178,14 +178,14 @@ pub fn errors(d: &Diagnostics) -> Vec<&Diagnostic> {
 /// The finding with `code` (by variant) at `path`, if any.
 pub fn finding<'d>(d: &'d Diagnostics, code: &str, path: &str) -> Option<&'d Diagnostic> {
     d.iter()
-        .find(|d| d.code.name() == code && d.location.json_path.to_string() == path)
+        .find(|d| d.code.id() == code && d.location.json_path.to_string() == path)
 }
 
 /// Asserts there is a finding with `code` at `path` and `severity`.
 #[track_caller]
 pub fn assert_finding(d: &Diagnostics, code: &str, path: &str, severity: Severity) {
     let found = d.iter().any(|f| {
-        f.code.name() == code && f.location.json_path.to_string() == path && f.severity == severity
+        f.code.id() == code && f.location.json_path.to_string() == path && f.severity == severity
     });
     assert!(found, "{code} ({severity:?}) at {path} in {d:?}");
 }
@@ -193,5 +193,5 @@ pub fn assert_finding(d: &Diagnostics, code: &str, path: &str, severity: Severit
 /// `code` names a diagnostic code variant.
 #[allow(dead_code)]
 fn is_code(code: &Code, name: &str) -> bool {
-    code.name() == name
+    code.id() == name
 }

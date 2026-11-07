@@ -12,7 +12,7 @@ use crate::common::stacks;
 /// What a finding says: code, severity, JSON path and text.
 fn said(finding: &Diagnostic) -> (&'static str, Severity, String, String) {
     (
-        finding.code.name(),
+        finding.code.id(),
         finding.severity,
         finding.location.json_path.to_string(),
         finding.code.to_string(),
@@ -45,7 +45,7 @@ fn r40_an_event_key_that_is_no_level_sound_event_is_the_loads_kept_error() {
     assert_eq!(
         found,
         [(
-            "UnknownSound",
+            "sounds_json/not_an_event",
             Severity::Error,
             "individual_event_sounds/events/NotAnEvent".to_owned(),
             "Event name 'notanevent' is not a valid LevelSoundEvent".to_owned()
@@ -63,13 +63,13 @@ fn r41_a_base_that_is_no_block_sound_type_is_the_loads_kept_error() {
         found,
         [
             (
-                "UnresolvedReference",
+                "sounds_json/unknown_base",
                 Severity::Error,
                 "block_sounds/d/base".to_owned(),
                 "Unknown block base sound 'nope'".to_owned()
             ),
             (
-                "ReferenceCycle",
+                "sounds_json/recursive_base",
                 Severity::Error,
                 "block_sounds/self/base".to_owned(),
                 "Block base sound 'self' is recursively used".to_owned()

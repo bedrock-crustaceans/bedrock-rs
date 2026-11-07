@@ -163,8 +163,8 @@ fn smoke(source: &str, dir: &Path, origin: PackOrigin, broken: &[&str]) -> Stack
             let found: Vec<_> = rejection.diagnostics.iter().collect();
             assert_eq!(found.len(), 1, "{source}: {texture}: {rejection}");
             assert_eq!(
-                found[0].code.name(),
-                "TextureNotFound",
+                found[0].code.id(),
+                "texture_set/set_no_image",
                 "{source}: {texture}"
             );
             // the game's level-1 line, told as an information; the set is still rejected
@@ -205,12 +205,12 @@ fn smoke(source: &str, dir: &Path, origin: PackOrigin, broken: &[&str]) -> Stack
             Severity::Warning => "warning",
             _ => "info",
         };
-        *by_code.entry((level, finding.code.name())).or_default() += 1;
+        *by_code.entry((level, finding.code.id())).or_default() += 1;
     }
     let mut lints: BTreeMap<&str, usize> = BTreeMap::new();
     for finding in textures.diagnostics() {
-        let name = finding.code.name();
-        if name == "CapabilityHint" || name == "VibrantVisualsDisabledByPack" {
+        let name = finding.code.id();
+        if name == "core/capability_hint" || name == "core/vibrant_visuals_disabled_by_pack" {
             *lints.entry(name).or_default() += 1;
         }
     }

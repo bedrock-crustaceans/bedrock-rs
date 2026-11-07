@@ -58,7 +58,7 @@ fn found(d: &Diagnostics) -> Vec<(String, Severity, String)> {
     d.iter()
         .filter(|f| f.severity >= Severity::Warning)
         .map(|f| {
-            let name = f.code.name().to_owned();
+            let name = f.code.id().to_owned();
             (name, f.severity, f.location.json_path.to_string())
         })
         .collect()
@@ -141,7 +141,7 @@ fn the_engine_s_even_scatter_chance_loads_with_the_setter_warning() {
         assert_eq!(
             found(document.diagnostics()),
             [(
-                "ScatterParamValue".to_owned(),
+                "feature/scatter_chance_fraction".to_owned(),
                 Severity::Error,
                 at.to_owned()
             )],
@@ -175,7 +175,11 @@ fn the_engine_s_internal_features_load_only_from_a_base_game_pack() {
         let d = rejects(&text, &cx());
         assert_eq!(
             found(&d),
-            [("MissingToggles".to_owned(), Severity::Error, key.to_owned())],
+            [(
+                "feature/internal_type".to_owned(),
+                Severity::Error,
+                key.to_owned()
+            )],
             "{name}"
         );
     }
@@ -188,85 +192,85 @@ fn refused_search_bodies() -> Vec<(&'static str, String, &'static str, &'static 
         (
             "case-1.json",
             search("case-1.json"),
-            "InvalidType",
+            "core/invalid_type",
             "search_volume/max/0",
         ),
         (
             "case-22.json",
             search("case-22.json"),
-            "InvalidType",
+            "core/invalid_type",
             "search_volume/max/0",
         ),
         (
             "case-50.json",
             search("case-50.json"),
-            "InvalidType",
+            "core/invalid_type",
             "search_volume/max/0",
         ),
         (
             "case-5.json",
             search("case-5.json"),
-            "InvalidType",
+            "core/invalid_type",
             "search_volume/min",
         ),
         (
             "case-40.json",
             search("case-40.json"),
-            "InvalidType",
+            "core/invalid_type",
             "search_volume/max",
         ),
         (
             "case-35.json",
             search("case-35.json"),
-            "InvalidType",
+            "core/invalid_type",
             "search_volume",
         ),
         (
             "case-13.json",
             search("case-13.json"),
-            "InvalidType",
+            "core/invalid_type",
             "places_feature",
         ),
         (
             "case-27.json",
             search("case-27.json"),
-            "InvalidType",
+            "core/invalid_type",
             "places_feature",
         ),
         (
             "case-41.json",
             search("case-41.json"),
-            "InvalidType",
+            "core/invalid_type",
             "places_feature",
         ),
         (
             "case-45.json",
             search("case-45.json"),
-            "InvalidType",
+            "core/invalid_type",
             "places_feature",
         ),
         (
             "case-23.json",
             search("case-23.json"),
-            "InvalidType",
+            "core/invalid_type",
             "required_successes",
         ),
         (
             "case-17.json",
             search("case-17.json"),
-            "InvalidValue",
+            "core/outside_range",
             "required_successes",
         ),
         (
             "case-39.json",
             search("case-39.json"),
-            "InvalidValue",
+            "core/array_too_small",
             "search_volume/min",
         ),
         (
             "case-8.json",
             search("case-8.json"),
-            "MissingRequiredField",
+            "core/required_child",
             "search_volume",
         ),
     ]
@@ -278,19 +282,19 @@ fn refused_other_bodies() -> Vec<(&'static str, String, &'static str, &'static s
         (
             "case-21.json",
             body("case-21.json", SCATTER, "1.13.0"),
-            "InvalidType",
+            "core/invalid_type",
             "project_input_to_floor",
         ),
         (
             "case-52.json",
             body("case-52.json", SCATTER, "1.13.0"),
-            "InvalidType",
+            "core/invalid_type",
             "places_feature",
         ),
         (
             "case-4.json",
             body("case-4.json", SCATTER, "1.21.40"),
-            "UnrecognizedField",
+            "core/child_not_valid",
             "distribution/extra_field",
         ),
         (
@@ -300,7 +304,7 @@ fn refused_other_bodies() -> Vec<(&'static str, String, &'static str, &'static s
                 "minecraft:height_difference_filter_feature",
                 "1.21.40",
             ),
-            "MissingRequiredField",
+            "core/required_child",
             "search_radius",
         ),
     ]
@@ -330,7 +334,7 @@ fn the_engine_s_refused_bodies_name_their_finding() {
     assert_eq!(
         found(&d),
         ["x", "y", "z"].map(|c| (
-            "MissingRequiredField".to_owned(),
+            "core/required_child".to_owned(),
             Severity::Error,
             format!("{SCATTER}/distribution/{c}")
         ))
@@ -346,37 +350,37 @@ fn the_engine_s_refused_documents_name_their_finding() {
     for (name, code, text) in [
         (
             "case-12.json",
-            "MalformedInput",
+            "feature/invalid_json",
             "[Feature Registry] Passed in contents could not be evaluated as valid JSON in the following file: features/test.json",
         ),
         (
             "case-19.json",
-            "MissingRequiredField",
+            "feature/missing_identifier",
             "[Feature Registry] Missing description identifier for JSON in the following file: features/test.json",
         ),
         (
             "case-44.json",
-            "InvalidValue",
+            "feature/empty_identifier",
             "[Feature Registry] Empty description identifier for JSON in the following file: features/test.json",
         ),
         (
             "case-3.json",
-            "NamespaceRule",
+            "feature/not_namespaced",
             "The feature identifier 'test_feature' should be in the format namespace:id",
         ),
         (
             "main-2.json",
-            "UnknownPayloadKey",
+            "core/unknown_payload_key",
             "Could not find registered feature type that matches name 'test:custom_feature'",
         ),
         (
             "case-15.json",
-            "UnknownPayloadKey",
+            "core/unknown_payload_key",
             "Could not find registered feature type that matches name 'test:custom_feature'",
         ),
         (
             "case-16.json",
-            "UnknownPayloadKey",
+            "core/unknown_payload_key",
             "Could not find registered feature type that matches name 'test:custom_feature'",
         ),
     ] {
@@ -401,7 +405,11 @@ fn the_engine_s_document_starts_complete_to_single_block_features() {
         let d = rejects(&start, &cx());
         assert_eq!(
             found(&d),
-            [("MalformedInput".to_owned(), Severity::Error, String::new())],
+            [(
+                "feature/invalid_json".to_owned(),
+                Severity::Error,
+                String::new()
+            )],
             "{name}"
         );
         let whole = format!(

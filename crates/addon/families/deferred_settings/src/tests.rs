@@ -66,7 +66,7 @@ fn found(
             assert_eq!(f.severity, Severity::Error);
             assert!(f.kept);
             (
-                f.code.name(),
+                f.code.id(),
                 f.location
                     .path
                     .as_ref()
@@ -101,14 +101,14 @@ fn t04_a_local_light_of_no_block_is_an_unresolved_reference() {
         found(&link::check(&settings, &world)),
         [
             (
-                "UnresolvedReference",
+                "deferred_settings/not_a_block",
                 "local_lighting/local_lighting.json".to_owned(),
                 "minecraft:local_light_settings/demo:nothing".to_owned(),
                 "demo:nothing is not a block".to_owned(),
                 ": block 'demo:nothing'".to_owned(),
             ),
             (
-                "UnresolvedReference",
+                "deferred_settings/not_a_block",
                 "local_lighting/local_lighting.json".to_owned(),
                 "minecraft:local_light_settings/demo:also_nothing".to_owned(),
                 "demo:also_nothing is not a block".to_owned(),
@@ -213,14 +213,14 @@ fn w06_a_caustics_texture_must_be_an_image_of_whole_frames() {
         found(&link::check(&settings, &world)),
         [
             (
-                "TextureNotFound",
+                "deferred_settings/caustics_not_found",
                 "water/a_missing.json".to_owned(),
                 AT.to_owned(),
                 "Resource pack caustics texture could not be loaded. No texture could be found at \"textures/none\".".to_owned(),
                 ": texture 'textures/none'".to_owned(),
             ),
             (
-                "InvalidTexture",
+                "deferred_settings/caustics_undecodable",
                 "water/b_broken.json".to_owned(),
                 AT.to_owned(),
                 // An image that cannot be decoded: the game's text.
@@ -228,7 +228,7 @@ fn w06_a_caustics_texture_must_be_an_image_of_whole_frames() {
                 ": texture 'textures/broken'".to_owned(),
             ),
             (
-                "InvalidTexture",
+                "deferred_settings/caustics_frames",
                 "water/c_uneven.json".to_owned(),
                 AT.to_owned(),
                 // An image that does not divide into frames: the game's text.
@@ -294,7 +294,7 @@ fn r50_each_payload_has_the_noun_of_its_own_message() {
             _ => "",
         };
         (
-            finding.code.name(),
+            finding.code.id(),
             finding.severity,
             finding.code.to_string(),
             kind,
@@ -311,22 +311,22 @@ fn r50_each_payload_has_the_noun_of_its_own_message() {
             .collect::<Vec<_>>(),
         [
             (
-                "UnresolvedReference",
+                "deferred_settings/no_matching_settings",
                 Severity::Error,
                 text("lighting", "demo:l").as_str()
             ),
             (
-                "UnresolvedReference",
+                "deferred_settings/no_matching_settings",
                 Severity::Error,
                 text("atmosphere", "demo:a").as_str()
             ),
             (
-                "UnresolvedReference",
+                "deferred_settings/no_matching_settings",
                 Severity::Error,
                 text("water", "demo:w").as_str()
             ),
             (
-                "UnresolvedReference",
+                "deferred_settings/no_matching_settings",
                 Severity::Error,
                 text("color grading", "demo:g").as_str()
             ),
@@ -355,7 +355,7 @@ fn r50_a_default_identifier_the_map_lacks_is_the_games_could_not_find() {
         RegistryBuilder::new(CombineRule::top_wins(), CombineRule::top_wins(), &options).finish();
     let id = LightingSettingsId::parse("demo:gone");
     let finding = super::unresolved_default(&empty, &id, "lighting").expect("a finding");
-    assert_eq!(finding.code.name(), "UnresolvedReference");
+    assert_eq!(finding.code.id(), "deferred_settings/no_matching_settings");
     // The game logs it at the error level and goes on with its built-ins: a kept error.
     assert_eq!(finding.severity, Severity::Error);
     assert!(finding.kept);
@@ -728,7 +728,7 @@ fn the_files_of_a_stack_are_combined_in_near_linear_time() {
         let mut errors = 0;
         for finding in settings.diagnostics() {
             match finding.severity {
-                Severity::Info => *infos.entry(finding.code.name()).or_default() += 1,
+                Severity::Info => *infos.entry(finding.code.id()).or_default() += 1,
                 Severity::Error => errors += 1,
                 _ => {}
             }
@@ -740,11 +740,11 @@ fn the_files_of_a_stack_are_combined_in_near_linear_time() {
         assert_eq!(
             infos.into_iter().collect::<Vec<_>>(),
             [
-                ("CapabilityHint", 2),
-                ("ClampedValue", 2 * n),
-                ("IgnoredFile", 2 * n),
-                ("ShadowedDefinition", n + n / 4 - n / 16),
-                ("UnrecognizedField", 2 * n),
+                ("core/clamped_value", 2 * n),
+                ("core/ignored_file", 2 * n),
+                ("core/shadowed_definition", n + n / 4 - n / 16),
+                ("core/unrecognized_field", 2 * n),
+                ("deferred_settings/pbr_capability_hint", 2),
             ]
         );
     });

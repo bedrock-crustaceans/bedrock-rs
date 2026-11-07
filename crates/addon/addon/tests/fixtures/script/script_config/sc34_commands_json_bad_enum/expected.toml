@@ -1,7 +1,7 @@
 # families/script_config fixtures.md, row sc34_commands_json_bad_enum (probe D cmd_bad_enum).
 
 [[diagnostic]]
-code = "InvalidEnumValue"
+code = "server_config/bad_level"
 severity = "error"
 phase = "parse"
 file = "config/commands.json"

@@ -65,7 +65,7 @@ fn said(finding: &Diagnostic) -> Said {
         _ => ("", String::new()),
     };
     (
-        finding.code.name(),
+        finding.code.id(),
         finding.severity,
         finding.phase,
         finding
@@ -127,7 +127,7 @@ fn r30_a_name_no_rules_document_has_is_a_kept_error_at_the_member() {
     assert_eq!(
         of_kind(&found, "culling rules"),
         [(
-            "UnresolvedReference",
+            "core/unresolved_reference_worded",
             Severity::Error,
             Phase::Link,
             "bp 1".to_owned(),
@@ -315,7 +315,7 @@ fn r31_same_culling_layer_without_a_layer_is_told_at_the_rule_s_condition() {
     assert_eq!(
         no_layer(&found),
         [(
-            "NoEffect",
+            "core/no_effect_worded",
             Severity::Warning,
             Phase::Link,
             "rp 2".to_owned(),
@@ -378,7 +378,7 @@ mod parts {
         assert_eq!(
             of_kind(&found, "bone"),
             [(
-                "UnresolvedReference",
+                "core/unresolved_reference_worded",
                 Severity::Error,
                 Phase::Link,
                 "rp 2".to_owned(),
@@ -413,7 +413,7 @@ mod parts {
             of_kind(&found, "cube"),
             [
                 (
-                    "InvalidValue",
+                    "core/invalid_value_worded",
                     Severity::Error,
                     Phase::Link,
                     "rp 2".to_owned(),
@@ -423,7 +423,7 @@ mod parts {
                     "0".to_owned()
                 ),
                 (
-                    "InvalidValue",
+                    "core/invalid_value_worded",
                     Severity::Error,
                     Phase::Link,
                     "rp 2".to_owned(),

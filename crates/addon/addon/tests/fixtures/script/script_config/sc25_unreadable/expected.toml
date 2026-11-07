@@ -1,7 +1,7 @@
 # families/script_config fixtures.md, row sc25_unreadable (probe C; the test marks variables.json unreadable, a mode-000 file cannot be committed).
 
 [[diagnostic]]
-code = "ReadError"
+code = "server_config/config_open_failed"
 severity = "error"
 phase = "parse"
 file = "config/a0000000-0000-4000-8000-000000000001/variables.json"

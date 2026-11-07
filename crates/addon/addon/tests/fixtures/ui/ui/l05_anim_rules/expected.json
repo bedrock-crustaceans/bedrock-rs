@@ -1,19 +1,19 @@
 {
   "diagnostics": [
     {
-      "code": "InvalidValue",
+      "code": "json_ui/frame_count_zero",
       "severity": "info",
       "text": "FrameCount must be non-zero! Problem found in UIControlf1",
       "at": "f1/frame_count"
     },
     {
-      "code": "InvalidValue",
+      "code": "json_ui/x_count_differs",
       "severity": "info",
       "text": "The animation needs to have the same number x values.",
       "at": "o1"
     },
     {
-      "code": "InvalidEnumValue",
+      "code": "core/invalid_enum_value",
       "severity": "info",
       "text": "invalid enum value",
       "at": "u1/anim_type"

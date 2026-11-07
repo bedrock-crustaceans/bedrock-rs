@@ -39,7 +39,7 @@ fn linked(packs: Vec<Pack>) -> Vec<(&'static str, Severity, String, String)> {
         .filter(|f| f.location.path.as_ref().is_some_and(|p| p.as_str() == FILE))
         .map(|f| {
             (
-                f.code.name(),
+                f.code.id(),
                 f.severity,
                 f.location.json_path.to_string(),
                 f.code.to_string(),
@@ -66,7 +66,7 @@ fn v00_an_unknown_tile_is_an_unresolved_reference_deviation() {
     assert_eq!(
         linked(packs("v00_unknown_tile")),
         [found(
-            "UnresolvedReference",
+            "core/unresolved_reference",
             Info,
             "0/atlas_tile",
             "unresolved reference"
@@ -79,7 +79,7 @@ fn v07_an_unknown_tile_at_index_1_gets_vanilla_s_text() {
     assert_eq!(
         linked(packs("v07_unknown_tile_index_1")),
         [found(
-            "UnresolvedReference",
+            "flipbooks/tile_missing",
             Error,
             "0/atlas_tile",
             "Texture ghost is missing from atlas textures"
@@ -95,8 +95,18 @@ fn v01_an_atlas_index_out_of_range_is_an_error() {
     assert_eq!(
         linked(packs("v01_atlas_index_out_of_range")),
         [
-            found("InvalidValue", Error, "0/atlas_index", &text(2)),
-            found("InvalidValue", Error, "1/atlas_index", &text(-1)),
+            found(
+                "flipbooks/bad_atlas_index",
+                Error,
+                "0/atlas_index",
+                &text(2)
+            ),
+            found(
+                "flipbooks/bad_atlas_index",
+                Error,
+                "1/atlas_index",
+                &text(-1)
+            ),
         ]
     );
 }
@@ -107,7 +117,7 @@ fn v02_a_variant_out_of_range_is_clamped_deviation() {
     assert_eq!(
         linked(packs("v02_variant_out_of_range")),
         [found(
-            "ClampedValue",
+            "core/clamped_value",
             Info,
             "0/atlas_tile_variant",
             "value clamped into its range"
@@ -122,8 +132,8 @@ fn v04_a_frame_index_out_of_range_is_a_warning_deviation() {
     assert_eq!(
         linked(packs("v04_frame_index_out_of_range")),
         [
-            found("InvalidValue", Info, "0/frames/2", FRAME),
-            found("InvalidValue", Info, "0/frames/3", FRAME),
+            found("flipbooks/frame_out_of_range", Info, "0/frames/2", FRAME),
+            found("flipbooks/frame_out_of_range", Info, "0/frames/3", FRAME),
         ]
     );
 }
@@ -134,7 +144,7 @@ fn v05_an_image_without_a_frame_is_a_warning_deviation() {
     assert_eq!(
         linked(packs("v05_no_frames")),
         [found(
-            "InvalidValue",
+            "flipbooks/no_frames",
             Info,
             "0/flipbook_texture",
             "Flipbook texture should have at least one frame. "
@@ -148,7 +158,7 @@ fn v06_a_missing_image_is_an_info_deviation() {
     assert_eq!(
         linked(packs("v06_missing_image")),
         [found(
-            "TextureNotFound",
+            "flipbooks/no_metadata",
             Info,
             "0/flipbook_texture",
             "Texture metadata for texture: textures/blocks/nope is invalid"
@@ -174,11 +184,21 @@ fn v08_the_highest_pack_wins_and_inside_a_pack_the_extension_order() {
     };
     assert_eq!(
         linked(vec![pack(2, "1", &[".tga"]), pack(1, "0", &[])]),
-        [found("InvalidValue", Info, "0/frames/0", FRAME)]
+        [found(
+            "flipbooks/frame_out_of_range",
+            Info,
+            "0/frames/0",
+            FRAME
+        )]
     );
     // With no image in the top pack, the lower pack's `.jpg`: one frame.
     assert_eq!(
         linked(vec![pack(2, "1", &[".tga", ".png"]), pack(1, "0", &[])]),
-        [found("InvalidValue", Info, "0/frames/0", FRAME)]
+        [found(
+            "flipbooks/frame_out_of_range",
+            Info,
+            "0/frames/0",
+            FRAME
+        )]
     );
 }

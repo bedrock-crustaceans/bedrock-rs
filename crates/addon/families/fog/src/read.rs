@@ -599,7 +599,7 @@ mod tests {
                 "{:?}|{}|{}|{}|{:?}|kept={}",
                 finding.severity,
                 finding.location.json_path,
-                finding.code.name(),
+                finding.code.id(),
                 finding.code,
                 finding.location.span.map(|span| (span.offset, span.len)),
                 finding.kept,

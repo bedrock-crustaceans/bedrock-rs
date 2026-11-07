@@ -1,7 +1,7 @@
 # families/script_config fixtures.md, row sc45_net_not_object (probe F netnotobj).
 
 [[diagnostic]]
-code = "InvalidType"
+code = "core/invalid_type"
 severity = "info"
 phase = "parse"
 file = "config/default/permissions.json"

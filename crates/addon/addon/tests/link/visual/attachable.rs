@@ -16,7 +16,8 @@ const WAND: &str = "attachables/wand.json";
 const INFO: Severity = Severity::Info;
 const WARNING: Severity = Severity::Warning;
 const ERROR: Severity = Severity::Error;
-const UNRESOLVED: &str = "UnresolvedReference";
+const UNRESOLVED: &str = "core/unresolved_reference_worded";
+const UNRESOLVED_NOTE: &str = "core/unresolved_reference";
 
 fn at(member: &str) -> String {
     format!("minecraft:attachable/description/{member}")
@@ -80,7 +81,7 @@ fn item_hints(members: &str, load: LoadOptions) -> Vec<(String, String, Option<R
                 id,
                 hint,
             }) => {
-                assert_eq!(finding.code.name(), UNRESOLVED);
+                assert_eq!(finding.code.id(), UNRESOLVED_NOTE);
                 assert_eq!(finding.severity, INFO);
                 Some((
                     finding.location.json_path.to_string(),
@@ -215,7 +216,13 @@ fn r11_a_binding_of_a_replaced_document_is_told_at_its_own_file() {
     let found = set.link();
     assert_eq!(
         told(&found, "rp 3", WAND),
-        [says(UNRESOLVED, INFO, &at("item"), "item", "example:lost")]
+        [says(
+            UNRESOLVED_NOTE,
+            INFO,
+            &at("item"),
+            "item",
+            "example:lost"
+        )]
     );
     assert_eq!(told(&found, "rp 2", "attachables/new.json"), []);
 }
@@ -255,7 +262,7 @@ fn r12_a_material_resolves_in_lower_case_and_one_nothing_defines_is_a_kept_error
     assert!(
         found
             .iter()
-            .filter(|finding| finding.code.name() == UNRESOLVED)
+            .filter(|finding| finding.code.id() == UNRESOLVED)
             .all(|finding| finding.kept),
         "{found:#?}"
     );
@@ -283,7 +290,7 @@ fn r12_a_material_whose_shader_is_no_actor_shader_is_an_invalid_reference() {
         // Level 3 at draw time, the `Actor` variant drawn: a
         // kept error.
         [says(
-            "InvalidReference",
+            "core/invalid_reference_worded",
             ERROR,
             &at("materials/default"),
             "material",
@@ -293,12 +300,12 @@ fn r12_a_material_whose_shader_is_no_actor_shader_is_an_invalid_reference() {
     assert!(
         found
             .iter()
-            .filter(|finding| finding.code.name() == "InvalidReference")
+            .filter(|finding| finding.code.id() == "core/invalid_reference_worded")
             .all(|finding| finding.kept),
         "{found:#?}"
     );
     assert_eq!(
-        text_of(&found, WAND, "InvalidReference"),
+        text_of(&found, WAND, "core/invalid_reference_worded"),
         "Material shader \"shaders/my.vertex\" cannot be assigned to an entity"
     );
 }
@@ -335,7 +342,7 @@ fn r12_a_geometry_resolves_in_lower_case_and_one_nothing_defines_is_a_note() {
     assert_eq!(
         wand(members, &more),
         [says(
-            UNRESOLVED,
+            UNRESOLVED_NOTE,
             INFO,
             &at("geometry/Other"),
             "geometry",
@@ -364,14 +371,14 @@ fn r12_an_animation_resolves_by_its_prefix_and_one_nothing_defines_is_a_note() {
         wand(members, &more),
         [
             says(
-                UNRESOLVED,
+                UNRESOLVED_NOTE,
                 INFO,
                 &at("animations/N"),
                 "animation",
                 "animation.wand.nope"
             ),
             says(
-                UNRESOLVED,
+                UNRESOLVED_NOTE,
                 INFO,
                 &at("animations/c"),
                 "animation",
@@ -395,14 +402,14 @@ fn r12_a_render_controller_resolves_in_lower_case_and_one_nothing_defines_is_a_n
         wand(members, &more),
         [
             says(
-                UNRESOLVED,
+                UNRESOLVED_NOTE,
                 INFO,
                 &at("render_controllers/1/Controller.Render.Nope"),
                 "render controller",
                 "controller.render.nope"
             ),
             says(
-                UNRESOLVED,
+                UNRESOLVED_NOTE,
                 INFO,
                 &at("render_controllers/2"),
                 "render controller",
@@ -430,7 +437,7 @@ fn r7_a_texture_of_an_attachable_resolves_as_written_and_one_no_pack_has_is_the_
     assert_eq!(
         found,
         [says(
-            "TextureNotFound",
+            "core/texture_not_found_worded",
             WARNING,
             &at("textures/Other"),
             "texture",
@@ -464,7 +471,7 @@ mod rule_28 {
         );
         told(&found, "rp 2", WAND)
             .into_iter()
-            .filter(|said| said.0 == "IdentifierCollision")
+            .filter(|said| said.0 == "core/identifier_collision")
             .collect()
     }
 
@@ -472,7 +479,7 @@ mod rule_28 {
     fn rule_28_an_attachable_and_a_client_entity_of_one_identifier_collide_in_any_case_deviation() {
         let expected = |id: &str| {
             [says(
-                "IdentifierCollision",
+                "core/identifier_collision",
                 INFO,
                 &at("identifier"),
                 "entity",

@@ -151,7 +151,7 @@ fn v4_an_unknown_keyword_is_an_error_that_refuses_the_file_deviation() {
         assert!(parse(&text).is_err(), "{members}");
         assert_eq!(
             found(&text),
-            one("InvalidValue", Error, at, "invalid value"),
+            one("core/invalid_value", Error, at, "invalid value"),
             "{members}"
         );
     }
@@ -164,7 +164,7 @@ fn v4_a_keyword_is_matched_byte_for_byte() {
         let text = versioned(&format!(r#""depthFunc": "{value}""#));
         assert_eq!(
             found(&text),
-            one("InvalidValue", Error, "x/depthFunc", "invalid value"),
+            one("core/invalid_value", Error, "x/depthFunc", "invalid value"),
             "{value:?}"
         );
     }
@@ -179,7 +179,7 @@ fn v4_a_legacy_material_does_not_read_the_stage_and_the_comparison_of_a_sampler(
         if in_legacy {
             assert_eq!(
                 found(&text),
-                one("InvalidValue", Error, at, "invalid value"),
+                one("core/invalid_value", Error, at, "invalid value"),
                 "{members}"
             );
         } else {
@@ -193,7 +193,7 @@ fn m10_an_unknown_blend_factor_is_an_error() {
     let text = versioned(r#""blendSrc": "SrcAlpha""#);
     assert_eq!(
         found(&text),
-        one("InvalidValue", Error, "x/blendSrc", "invalid value")
+        one("core/invalid_value", Error, "x/blendSrc", "invalid value")
     );
     assert!(parse(&text).is_err());
 }
@@ -209,7 +209,7 @@ fn m27_the_pcf_filter_is_spelt_in_capitals() {
     assert_eq!(
         found(&versioned(header_spelling)),
         one(
-            "InvalidValue",
+            "core/invalid_value",
             Error,
             "x/samplerStates/0/textureFilter",
             "invalid value"
@@ -225,7 +225,7 @@ fn v4_a_sampler_entry_the_client_skips_has_its_keywords_unread() {
     assert_eq!(
         found(&no_index),
         one(
-            "MissingRequiredField",
+            "core/missing_required_field",
             Info,
             "x/samplerStates/0",
             "missing required field"
@@ -236,7 +236,7 @@ fn v4_a_sampler_entry_the_client_skips_has_its_keywords_unread() {
     assert_eq!(
         found(&out_of_range),
         one(
-            "InvalidValue",
+            "core/invalid_value",
             Info,
             "x/samplerStates/0/samplerIndex",
             "invalid value"
@@ -256,13 +256,13 @@ fn v4a_an_unknown_render_target_format_is_a_warning_deviation() {
         found(&text),
         [
             finding(
-                "InvalidValue",
+                "core/invalid_value",
                 Info,
                 "x/renderTargetFormats/0/1",
                 "invalid value"
             ),
             finding(
-                "InvalidValue",
+                "core/invalid_value",
                 Info,
                 "x/renderTargetFormats/1/0",
                 "invalid value"
@@ -302,7 +302,7 @@ fn m08_polygon_offset_is_named_as_ignored_and_the_other_states_are_kept() {
     assert_eq!(
         found(&text),
         one(
-            "NoEffect",
+            "material/state_ignored",
             Info,
             "x/states/0",
             "Render state PolygonOffset is ignored and will have no effect"
@@ -319,13 +319,17 @@ fn m08_polygon_offset_is_named_as_ignored_and_the_other_states_are_kept() {
     ] {
         let found = found(&versioned(members));
         assert_eq!(found.len(), 1, "{members}");
-        assert_eq!((found[0].0, found[0].1), ("NoEffect", Info), "{members}");
+        assert_eq!(
+            (found[0].0, found[0].1),
+            ("material/state_ignored", Info),
+            "{members}"
+        );
         assert!(found[0].2.ends_with("states/1"), "{members}");
     }
     assert_eq!(
         found(&legacy(r#""states": ["PolygonOffset"]"#)),
         one(
-            "NoEffect",
+            "material/state_ignored",
             Info,
             "x/states/0",
             "Render state PolygonOffset is ignored and will have no effect"
@@ -341,7 +345,7 @@ fn m09_an_unknown_render_state_is_reported_with_the_clients_text() {
     assert_eq!(
         found(&text),
         one(
-            "InvalidValue",
+            "material/state_unknown",
             Error,
             "x/+states/0",
             "Trying to use a non-existing render state DisableCull for this material!"
@@ -353,7 +357,7 @@ fn m09_an_unknown_render_state_is_reported_with_the_clients_text() {
     assert_eq!(
         found(&lower),
         one(
-            "InvalidValue",
+            "material/state_unknown",
             Error,
             "x/states/1",
             "Trying to use a non-existing render state blending for this material!"
@@ -367,7 +371,7 @@ fn m07_v8_a_prefix_on_a_key_without_one_is_unrecognized_and_kept_deviation() {
     assert_eq!(
         found(&text),
         one(
-            "UnrecognizedField",
+            "core/unrecognized_field",
             Info,
             "x/+vertexShader",
             "unrecognized field"
@@ -409,7 +413,7 @@ fn v8_every_plain_key_is_reported_under_both_prefixes_deviation() {
             assert_eq!(
                 found(&text),
                 one(
-                    "UnrecognizedField",
+                    "core/unrecognized_field",
                     Info,
                     &format!("x/{prefix}{key}"),
                     "unrecognized field"
@@ -436,7 +440,7 @@ fn v8_a_prefix_on_a_member_of_a_sampler_entry_or_of_a_face_is_unrecognized_devia
             assert_eq!(
                 found(&text),
                 one(
-                    "UnrecognizedField",
+                    "core/unrecognized_field",
                     Info,
                     &format!("x/samplerStates/0/{prefix}{key}"),
                     "unrecognized field"
@@ -456,7 +460,7 @@ fn v8_a_prefix_on_a_member_of_a_sampler_entry_or_of_a_face_is_unrecognized_devia
             assert_eq!(
                 found(&text),
                 one(
-                    "UnrecognizedField",
+                    "core/unrecognized_field",
                     Info,
                     &format!("x/backFace/{prefix}{key}"),
                     "unrecognized field"
@@ -484,7 +488,7 @@ fn m06_v9_a_misspelt_variants_key_is_unrecognized_deviation() {
             assert_eq!(
                 found(&text),
                 one(
-                    "UnrecognizedField",
+                    "core/unrecognized_field",
                     Info,
                     &format!("x/{prefix}{key}"),
                     "unrecognized field"
@@ -504,7 +508,12 @@ fn m05_v10_variants_that_are_no_array_are_not_read_deviation() {
         let text = versioned(&format!(r#""{key}": {{"skinning": {{}}}}"#));
         assert_eq!(
             found(&text),
-            one("InvalidType", Info, &format!("x/{key}"), "wrong JSON type"),
+            one(
+                "core/invalid_type",
+                Info,
+                &format!("x/{key}"),
+                "wrong JSON type"
+            ),
             "{key}"
         );
         let read = x(&text);
@@ -519,8 +528,13 @@ fn v10_an_element_of_variants_that_is_no_object_and_a_body_that_is_none_are_drop
     assert_eq!(
         found(&text),
         [
-            finding("InvalidType", Info, "x/variants/1", "wrong JSON type"),
-            finding("InvalidType", Info, "x/variants/2/b", "wrong JSON type"),
+            finding("core/invalid_type", Info, "x/variants/1", "wrong JSON type"),
+            finding(
+                "core/invalid_type",
+                Info,
+                "x/variants/2/b",
+                "wrong JSON type"
+            ),
         ]
     );
     let variants = x(&text).variants.replace.unwrap();
@@ -542,13 +556,13 @@ fn variants_are_read_in_order_with_their_bodies_checked_like_materials() {
         found(&text),
         [
             finding(
-                "InvalidValue",
+                "material/state_unknown",
                 Error,
                 "x/variants/1/skinning_color/+states/0",
                 "Trying to use a non-existing render state Nope for this material!"
             ),
             finding(
-                "InvalidValue",
+                "core/invalid_value",
                 Error,
                 "x/variants/1/skinning_color/blendSrc",
                 "invalid value"
@@ -582,7 +596,7 @@ fn m11_v12_a_sampler_index_of_8_is_out_of_range_and_7_is_the_last_deviation() {
     assert_eq!(
         found(&versioned(at_8)),
         one(
-            "InvalidValue",
+            "core/invalid_value",
             Info,
             "x/+samplerStates/0/samplerIndex",
             "invalid value"
@@ -604,13 +618,13 @@ fn m11_v12_a_sampler_index_of_8_is_out_of_range_and_7_is_the_last_deviation() {
         found(&legacy_8),
         [
             finding(
-                "InvalidValue",
+                "core/invalid_value",
                 Info,
                 "x/samplerStates/0/samplerIndex",
                 "invalid value"
             ),
             finding(
-                "InvalidValue",
+                "core/invalid_value",
                 Info,
                 "x/samplerStates/1/samplerIndex",
                 "invalid value"
@@ -629,7 +643,7 @@ fn m21_v21_minus_sampler_states_is_not_supported_deviation() {
     assert_eq!(
         found(&text),
         one(
-            "UnrecognizedField",
+            "core/unrecognized_field",
             Info,
             "x/-samplerStates",
             "unrecognized field"
@@ -642,7 +656,7 @@ fn m21_v21_minus_sampler_states_is_not_supported_deviation() {
     assert_eq!(
         found(&legacy(r#""-samplerStates": []"#)),
         one(
-            "UnrecognizedField",
+            "core/unrecognized_field",
             Info,
             "x/-samplerStates",
             "unrecognized field"
@@ -652,7 +666,7 @@ fn m21_v21_minus_sampler_states_is_not_supported_deviation() {
 
 /// The V22 finding at `at`.
 fn skipped(at: &str) -> Rendered {
-    finding("NoEffect", Info, at, "member has no effect")
+    finding("core/no_effect", Info, at, "member has no effect")
 }
 
 #[test]
@@ -748,7 +762,7 @@ fn m25_v23_a_sampler_entry_without_an_index_is_reported_deviation() {
     assert_eq!(
         found(&text),
         one(
-            "MissingRequiredField",
+            "core/missing_required_field",
             Info,
             "x/samplerStates/0",
             "missing required field"
@@ -763,7 +777,7 @@ fn m25_v23_a_sampler_entry_without_an_index_is_reported_deviation() {
     assert_eq!(
         found(&null),
         one(
-            "MissingRequiredField",
+            "core/missing_required_field",
             Info,
             "x/+samplerStates/1",
             "missing required field"
@@ -775,7 +789,7 @@ fn m25_v23_a_sampler_entry_without_an_index_is_reported_deviation() {
     assert_eq!(
         found(&legacy(r#""samplerStates": [{}]"#)),
         one(
-            "MissingRequiredField",
+            "core/missing_required_field",
             Info,
             "x/samplerStates/0",
             "missing required field"
@@ -790,7 +804,7 @@ fn m22_v24_minus_variants_is_never_read_deviation() {
     assert_eq!(
         found(&text),
         one(
-            "UnrecognizedField",
+            "core/unrecognized_field",
             Info,
             "c:entity_static/-variants",
             "unrecognized field"
@@ -810,7 +824,7 @@ fn m23_v25_render_target_formats_must_be_an_array_of_arrays_deviation() {
     // The flat form: each element is skipped.
     let flat_form =
         versioned(r#""renderTargetFormats": ["R8G8B8A8_UNORM", null, ["R8_UNORM"], 5]"#);
-    let wrong = |at: &str| finding("InvalidType", Info, at, "wrong JSON type");
+    let wrong = |at: &str| finding("core/invalid_type", Info, at, "wrong JSON type");
     assert_eq!(
         found(&flat_form),
         [
@@ -851,7 +865,7 @@ fn m24_is_animated_texture_is_kept_whatever_its_value() {
 #[test]
 fn v27_a_state_or_define_that_is_no_string_is_dropped_deviation() {
     // vanilla inserts the string conversion of a define that is no string; ours drops the entry.
-    let wrong = |at: &str| finding("InvalidType", Info, at, "wrong JSON type");
+    let wrong = |at: &str| finding("core/invalid_type", Info, at, "wrong JSON type");
     let text = versioned(r#""+states": ["Blending", 5, null], "+defines": [true, "A", {}]"#);
     assert_eq!(
         found(&text),
@@ -969,7 +983,7 @@ fn every_typed_member_is_read_into_its_field() {
 
 #[test]
 fn a_member_of_the_wrong_type_is_kept_and_not_read() {
-    let wrong = |at: &str| finding("InvalidType", Info, at, "wrong JSON type");
+    let wrong = |at: &str| finding("core/invalid_type", Info, at, "wrong JSON type");
     for (members, key) in [
         (r#""vertexShader": 5"#, "vertexShader"),
         (r#""fragmentShader": []"#, "fragmentShader"),
@@ -1015,7 +1029,7 @@ fn a_member_of_the_wrong_type_is_kept_and_not_read() {
             wrong("x/samplerStates/0"),
             wrong("x/samplerStates/1/samplerIndex"),
             finding(
-                "MissingRequiredField",
+                "core/missing_required_field",
                 Info,
                 "x/samplerStates/1",
                 "missing required field"
@@ -1045,7 +1059,7 @@ fn a_null_member_is_the_absent_member_and_is_kept() {
 
 #[test]
 fn an_unsigned_member_takes_whole_numbers_from_0_to_the_largest_u32() {
-    let invalid = |at: &str| finding("InvalidValue", Info, at, "invalid value");
+    let invalid = |at: &str| finding("core/invalid_value", Info, at, "invalid value");
     for key in ["stencilRef", "stencilReadMask", "stencilWriteMask"] {
         for ok in ["0", "255", "256", "4294967295", "3.0"] {
             assert_eq!(
@@ -1082,7 +1096,12 @@ fn an_unsigned_member_past_the_doubles_has_one_finding() {
                 let text = form(&format!(r#""{key}": {number}"#));
                 assert_eq!(
                     found(&text),
-                    one("InvalidValue", Info, &format!("x/{key}"), "invalid value"),
+                    one(
+                        "core/invalid_value",
+                        Info,
+                        &format!("x/{key}"),
+                        "invalid value"
+                    ),
                     "{key} {number}"
                 );
                 let read = x(&text);
@@ -1106,7 +1125,12 @@ fn an_unsigned_member_past_the_doubles_has_one_finding() {
         let text = versioned(&format!(r#""{key}": 1.7976931348623157e308"#));
         assert_eq!(
             found(&text),
-            one("InvalidValue", Info, &format!("x/{key}"), "invalid value")
+            one(
+                "core/invalid_value",
+                Info,
+                &format!("x/{key}"),
+                "invalid value"
+            )
         );
     }
 }
@@ -1115,7 +1139,7 @@ fn an_unsigned_member_past_the_doubles_has_one_finding() {
 fn a_bias_beyond_the_floats_is_the_largest_finite_float_with_a_warning_deviation() {
     // The JSON library's handling is not modelled; a number past the float range is never
     // loaded as an infinity the writer would then refuse.
-    let invalid = |at: &str| finding("InvalidValue", Info, at, "invalid value");
+    let invalid = |at: &str| finding("core/invalid_value", Info, at, "invalid value");
     for (number, expected) in [
         ("1e39", f32::MAX),
         ("-1e39", f32::MIN),
@@ -1130,7 +1154,7 @@ fn a_bias_beyond_the_floats_is_the_largest_finite_float_with_a_warning_deviation
                 found(&text),
                 [
                     invalid(&format!("x/{key}")),
-                    finding("InvalidValue", Error, "x/blendSrc", "invalid value")
+                    finding("core/invalid_value", Error, "x/blendSrc", "invalid value")
                 ],
                 "{key} {number}"
             );
@@ -1155,7 +1179,7 @@ fn a_bias_of_the_largest_double_as_written_is_beyond_the_floats_like_any_other()
     // The largest double is also what a number past the doubles is read as (`1e999`), whose
     // finding the clamp makes. Written out, it is a number like `1e39`: one finding, the
     // reader's, and the largest float of its sign.
-    let invalid = |at: &str| finding("InvalidValue", Info, at, "invalid value");
+    let invalid = |at: &str| finding("core/invalid_value", Info, at, "invalid value");
     for (number, expected) in [
         ("1.7976931348623157e308", f32::MAX),
         ("-1.7976931348623157e308", f32::MIN),
@@ -1168,7 +1192,12 @@ fn a_bias_of_the_largest_double_as_written_is_beyond_the_floats_like_any_other()
                 let text = form(&format!(r#""{key}": {number}"#));
                 assert_eq!(
                     found(&text),
-                    one("InvalidValue", Info, &format!("x/{key}"), "invalid value"),
+                    one(
+                        "core/invalid_value",
+                        Info,
+                        &format!("x/{key}"),
+                        "invalid value"
+                    ),
                     "{key} {number}"
                 );
                 let read = x(&text);
@@ -1243,7 +1272,7 @@ fn the_stencil_reference_override_takes_a_number_as_the_clients_as_bool_does() {
         assert_eq!(
             found(&text),
             [finding(
-                "InvalidType",
+                "core/invalid_type",
                 Info,
                 "x/stencilRefOverride",
                 "wrong JSON type"

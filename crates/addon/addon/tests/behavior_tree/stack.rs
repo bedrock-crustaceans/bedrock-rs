@@ -17,7 +17,7 @@ fn notices(stack: &PackStack<Behavior>) -> Vec<(&'static str, Severity)> {
     let mut found: Vec<_> = stack
         .behavior_trees()
         .diagnostics()
-        .map(|d| (d.code.name(), d.severity))
+        .map(|d| (d.code.id(), d.severity))
         .collect();
     found.sort_by_key(|(name, _)| *name);
     found
@@ -41,8 +41,8 @@ fn a_failed_higher_file_still_takes_its_name() {
     assert_eq!(
         notices(&stack),
         [
-            ("InvalidRoot", Severity::Error),
-            ("ShadowedDefinition", Severity::Info)
+            ("core/invalid_root", Severity::Error),
+            ("core/shadowed_definition", Severity::Info)
         ]
     );
 }
@@ -62,8 +62,8 @@ fn a_failed_last_file_of_a_pack_still_takes_its_name() {
         notices(&stack),
         [
             // ours, an information
-            ("DuplicateIdentifier", Severity::Info),
-            ("InvalidRoot", Severity::Error)
+            ("core/duplicate_identifier", Severity::Info),
+            ("core/invalid_root", Severity::Error)
         ]
     );
 }
@@ -84,7 +84,10 @@ fn a_higher_file_without_a_name_takes_nothing() {
     ]);
     let trees = stack.behavior_trees();
     assert_eq!(trees.get(&id("x")).unwrap().origin().pack.index(), Some(1));
-    assert_eq!(notices(&stack), [("MalformedInput", Severity::Error)]);
+    assert_eq!(
+        notices(&stack),
+        [("behavior_tree/parse_error", Severity::Error)]
+    );
 }
 
 #[test]
@@ -99,7 +102,10 @@ fn a_lower_pack_never_replaces_a_higher_one() {
     let x = trees.get(&id("x")).unwrap();
     assert_eq!(x.origin().pack.index(), Some(0));
     assert!(matches!(x.root, Node::Attack { .. }));
-    assert_eq!(notices(&stack), [("ShadowedDefinition", Severity::Info)]);
+    assert_eq!(
+        notices(&stack),
+        [("core/shadowed_definition", Severity::Info)]
+    );
     let finding = trees.diagnostics().next().unwrap();
     assert_eq!(
         finding
@@ -117,7 +123,7 @@ fn a_built_in_tree_wins_over_a_file_that_failed_under_its_name() {
     let trees = stack.behavior_trees();
     assert!(trees.get(&id("fly")).unwrap().origin().pack.is_app_data());
     // the failed file is rejected already: nothing of a pack was replaced
-    assert_eq!(notices(&stack), [("InvalidRoot", Severity::Error)]);
+    assert_eq!(notices(&stack), [("core/invalid_root", Severity::Error)]);
 }
 
 #[test]
@@ -148,8 +154,8 @@ fn the_replaced_trees_are_the_layers_of_their_name() {
     assert_eq!(
         notices(&stack),
         [
-            ("ShadowedByBuiltin", Severity::Info),
-            ("ShadowedDefinition", Severity::Info)
+            ("core/shadowed_by_builtin", Severity::Info),
+            ("core/shadowed_definition", Severity::Info)
         ]
     );
 }
@@ -168,7 +174,7 @@ fn only_the_extension_json_in_lower_case_is_a_tree_file() {
     let trees = stack.behavior_trees();
     assert_eq!(trees.len(), 10);
     assert!(trees.get(&id("ok")).is_some());
-    assert_eq!(notices(&stack), [("IgnoredFile", Severity::Info); 3]);
+    assert_eq!(notices(&stack), [("core/ignored_file", Severity::Info); 3]);
 }
 
 #[test]
@@ -214,7 +220,10 @@ fn a_failed_file_that_is_replaced_gets_no_notice() {
             .as_str(),
         "behavior_trees/b.json"
     );
-    assert_eq!(notices(&same_pack), [("InvalidRoot", Severity::Error)]);
+    assert_eq!(
+        notices(&same_pack),
+        [("core/invalid_root", Severity::Error)]
+    );
     let two_packs = stack_of(vec![
         tree_pack(1, &[("x.json", &tree_text("x", WAIT))]),
         tree_pack(2, &[("x.json", &tree_text("x", TWO))]),
@@ -229,7 +238,10 @@ fn a_failed_file_that_is_replaced_gets_no_notice() {
             .index(),
         Some(0)
     );
-    assert_eq!(notices(&two_packs), [("InvalidRoot", Severity::Error)]);
+    assert_eq!(
+        notices(&two_packs),
+        [("core/invalid_root", Severity::Error)]
+    );
 }
 
 // A file below `behavior_trees/` that is no `.json` file is reported from the pack's
@@ -256,7 +268,7 @@ fn a_stack_load_asks_for_the_json_files_only() {
         assert!(trees.get(&id("x")).is_some(), "{order:?}");
         let ignored: Vec<(Option<usize>, &str)> = trees
             .diagnostics()
-            .filter(|f| f.code.name() == "IgnoredFile")
+            .filter(|f| f.code.id() == "core/ignored_file")
             .map(|f| {
                 assert_eq!(f.severity, Severity::Info);
                 let pack = f

@@ -2,7 +2,7 @@
   "globals": {},
   "diagnostics": [
     {
-      "code": "MalformedInput",
+      "code": "json_ui/globals_not_parsed",
       "severity": "error",
       "text": "Could not parse file at the top of the stack: ui/_global_variables.json.",
       "pack": 0

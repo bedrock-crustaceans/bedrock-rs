@@ -89,7 +89,11 @@ fn a_failing_component_refuses_the_document() {
     let finding = outcome.diagnostics.iter().next().expect("a finding");
     // The member's finding alone: the document is refused, nothing is left to drop.
     assert_eq!(outcome.diagnostics.len(), 1, "{:?}", outcome.diagnostics);
-    assert!(finding.code.name() == "InvalidType", "{:?}", finding.code);
+    assert!(
+        finding.code.id() == "core/invalid_type",
+        "{:?}",
+        finding.code
+    );
     assert_eq!(finding.severity, Severity::Error);
     assert!(!finding.kept);
     assert_eq!(
@@ -213,7 +217,7 @@ fn a_synthesized_component_bypasses_the_gates() {
         outcome
             .diagnostics
             .first_error()
-            .is_some_and(|e| e.code.name() == "MissingToggles")
+            .is_some_and(|e| e.code.id() == "core/turn_on_toggle")
     );
 }
 
@@ -395,7 +399,7 @@ fn a_member_below_its_format_version_is_refused_when_present() {
             .iter()
             .map(|f| {
                 assert_eq!(f.severity, Severity::Error);
-                assert_eq!(f.code.name(), "UnsupportedVersion");
+                assert_eq!(f.code.id(), "core/use_format_version");
                 (f.location.json_path.to_string(), f.code.to_string())
             })
             .collect();

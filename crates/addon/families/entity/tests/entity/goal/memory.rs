@@ -29,10 +29,15 @@ fn v15_move_to_position_reads_its_members_and_not_the_draft_spellings() {
     let json = fixture_member(NAME, "draft_spellings");
     let (g, d) = goal::<goal::MemoryMoveToPosition>(MOVE_TO_POSITION, &json, ConvertMode::Strict);
     assert!(g.is_some(), "unknown members do not drop the goal");
-    assert_finding(&d, "UnrecognizedField", "speed_mod", Severity::Warning);
     assert_finding(
         &d,
-        "UnrecognizedField",
+        "core/unrecognized_field",
+        "speed_mod",
+        Severity::Warning,
+    );
+    assert_finding(
+        &d,
+        "core/unrecognized_field",
         "interval_seconds",
         Severity::Warning,
     );
@@ -88,7 +93,7 @@ fn every_memory_goal_takes_the_memory_goal_base() {
         assert!(d.is_empty(), "{key}: {d:?}");
         let (g, d) = strict(key, &format!("{{\"chance_to_start\": 2, {own}}}"));
         assert!(g.is_none(), "{key}");
-        assert_finding(&d, "InvalidValue", "chance_to_start", Severity::Error);
+        assert_finding(&d, "core/invalid_value", "chance_to_start", Severity::Error);
     }
     let (g, d) = goal::<goal::MemoryFollowTarget>(
         "minecraft:memory_behavior.follow_target",
@@ -102,7 +107,12 @@ fn every_memory_goal_takes_the_memory_goal_base() {
         r#"{"look_distance": 6, "target_entity": "demo:player", "look_time": 5}"#,
         ConvertMode::Strict,
     );
-    assert_finding(&d, "UnrecognizedField", "look_time", Severity::Warning);
+    assert_finding(
+        &d,
+        "core/unrecognized_field",
+        "look_time",
+        Severity::Warning,
+    );
 }
 
 /// `look_angle` is a two-component vector,
@@ -124,7 +134,7 @@ fn memory_look_at_entity_requires_its_distance_and_target_and_bounds_its_angle()
         r#"{"look_distance": 6, "look_angle": [400, 10], "target_entity": "demo:player"}"#,
     );
     assert!(g.is_none());
-    assert_finding(&d, "InvalidValue", "look_angle", Severity::Error);
+    assert_finding(&d, "core/invalid_value", "look_angle", Severity::Error);
     let (g, _) = strict(
         key,
         r#"{"look_distance": 6, "look_angle": 90, "target_entity": "demo:player"}"#,
@@ -132,8 +142,18 @@ fn memory_look_at_entity_requires_its_distance_and_target_and_bounds_its_angle()
     assert!(g.is_none(), "a lone number is no Vec2");
     let (g, d) = strict(key, r#"{"look_angle": [90, 90]}"#);
     assert!(g.is_none());
-    assert_finding(&d, "MissingRequiredField", "look_distance", Severity::Error);
-    assert_finding(&d, "MissingRequiredField", "target_entity", Severity::Error);
+    assert_finding(
+        &d,
+        "core/missing_required_field",
+        "look_distance",
+        Severity::Error,
+    );
+    assert_finding(
+        &d,
+        "core/missing_required_field",
+        "target_entity",
+        Severity::Error,
+    );
 }
 
 #[test]
@@ -205,7 +225,7 @@ fn memory_sensors_read_their_entries() {
     assert!(g.is_none(), "a sensor without entries is dropped");
     assert_finding(
         &d,
-        "MissingRequiredField",
+        "core/missing_required_field",
         "sensor_entries",
         Severity::Error,
     );
@@ -213,7 +233,7 @@ fn memory_sensors_read_their_entries() {
     assert!(g.is_none());
     assert_finding(
         &d,
-        "InvalidValue",
+        "core/invalid_value",
         "sensor_entries/0/cooldown",
         Severity::Error,
     );
@@ -319,14 +339,14 @@ fn the_1_26_50_brain_keys_without_a_suffix_or_below_the_version_are_refused() {
     let said = |found: &bedrock_addon_core::diagnostic::Diagnostics, code: &str| -> Vec<String> {
         found
             .iter()
-            .filter(|f| f.code.name() == code)
+            .filter(|f| f.code.id() == code)
             .map(|f| format!("{:?} {} {}", f.severity, f.kept, f.location.json_path))
             .collect()
     };
     // The generic goal rule's information ; the entity loads without the goal.
     assert!(bare.value.is_some(), "{:#?}", bare.diagnostics);
     assert_eq!(
-        said(&bare.diagnostics, "GenericGoalSuffixMissing"),
+        said(&bare.diagnostics, "core/generic_goal_suffix_missing"),
         ["Info false minecraft:entity/components/minecraft:memory_behavior.ram_attack"],
         "{:#?}",
         bare.diagnostics
@@ -360,7 +380,7 @@ fn the_1_26_50_brain_keys_without_a_suffix_or_below_the_version_are_refused() {
         );
         assert!(older.value.is_none(), "{key}: {:#?}", older.diagnostics);
         assert_eq!(
-            said(&older.diagnostics, "UnrecognizedComponent"),
+            said(&older.diagnostics, "core/unrecognized_component"),
             [format!("Error false minecraft:entity/components/{key}")],
             "{key}: {:#?}",
             older.diagnostics
@@ -375,33 +395,37 @@ fn the_1_26_50_brain_keys_without_a_suffix_or_below_the_version_are_refused() {
 #[test]
 fn a_memory_goal_duration_outside_its_constraint_is_refused() {
     let key = "minecraft:memory_behavior.wait";
-    let rows: [(&str, &str, &str); 4] = [
+    let rows: [(&str, &str, &str, &str); 4] = [
         (
             r#"{"duration": -1}"#,
             "duration",
             "the input must be a number >= 0",
+            "core/number_bound",
         ),
         (
             r#"{"duration": [-1, 2]}"#,
             "duration/0",
             "the input must be a number >= 0",
+            "core/number_bound",
         ),
         (
             r#"{"duration": {"min": 1, "max": -2}}"#,
             "duration/max",
             "the input must be a number >= 0",
+            "core/number_bound",
         ),
         (
             r#"{"duration": {"min": 3, "max": 2}}"#,
             "duration",
             "max value cannot be lower than min value",
+            "core/invalid_value_worded",
         ),
     ];
-    for (json, at, text) in rows {
+    for (json, at, text, id) in rows {
         let (g, d) = strict(key, json);
         assert!(g.is_none(), "{json}: {d:?}");
         assert!(
-            d.iter().any(|f| f.code.name() == "InvalidValue"
+            d.iter().any(|f| f.code.id() == id
                 && f.severity == Severity::Error
                 && f.location.json_path.to_string() == at
                 && f.code.to_string() == text),
@@ -417,39 +441,44 @@ fn a_memory_goal_duration_outside_its_constraint_is_refused() {
 /// `speed_modifier`, `goal_radius`, `maximum_range` are each at least 0.
 #[test]
 fn move_to_position_values_outside_their_constraints_are_refused() {
-    let rows: [(&str, &str, &str); 5] = [
+    let rows: [(&str, &str, &str, &str); 5] = [
         (
             r#""interval": -1"#,
             "interval",
             "the input must be a number >= 0",
+            "core/number_bound",
         ),
         (
             r#""interval": {"min": 4, "max": 2}"#,
             "interval",
             "max value cannot be lower than min value",
+            "core/invalid_value_worded",
         ),
         (
             r#""speed_modifier": -1"#,
             "speed_modifier",
             "the input must be a number >= 0",
+            "core/number_bound",
         ),
         (
             r#""goal_radius": -1"#,
             "goal_radius",
             "the input must be a number >= 0",
+            "core/number_bound",
         ),
         (
             r#""maximum_range": -1"#,
             "maximum_range",
             "the input must be a number >= 0",
+            "core/number_bound",
         ),
     ];
-    for (member, at, text) in rows {
+    for (member, at, text, id) in rows {
         let json = format!(r#"{{"memory": "demo:spot", {member}}}"#);
         let (g, d) = strict(MOVE_TO_POSITION, &json);
         assert!(g.is_none(), "{json}: {d:?}");
         assert!(
-            d.iter().any(|f| f.code.name() == "InvalidValue"
+            d.iter().any(|f| f.code.id() == id
                 && f.severity == Severity::Error
                 && f.location.json_path.to_string() == at
                 && f.code.to_string() == text),
@@ -547,7 +576,7 @@ fn a_typed_goal_range_refuses_the_legacy_range_spelling() {
         assert!(g.is_none(), "{key}: {d:?}");
         for end in ["range_min", "range_max"] {
             assert!(
-                d.iter().any(|f| f.code.name() == "UnrecognizedField"
+                d.iter().any(|f| f.code.id() == "core/unrecognized_field"
                     && f.severity == Severity::Error
                     && f.location.json_path.to_string() == format!("{at}/{end}")),
                 "{key} {end}: {d:?}"

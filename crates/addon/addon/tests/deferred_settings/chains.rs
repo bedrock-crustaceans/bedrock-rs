@@ -68,7 +68,7 @@ fn l01_the_1_21_40_alpha_is_dropped_with_an_info_deviation() {
     assert_eq!(
         infos(document.diagnostics()),
         [finding(
-            "DroppedField",
+            "core/dropped_field",
             "minecraft:lighting_settings/directional_lights/sun/color/0.0",
             "field dropped"
         )]
@@ -99,7 +99,7 @@ fn l07b_the_eight_digit_hex_colour_is_argb() {
     assert_eq!(
         at(&infos(document.diagnostics())),
         [(
-            "DroppedField",
+            "core/dropped_field",
             "minecraft:lighting_settings/directional_lights/sun/color"
         )]
     );
@@ -140,11 +140,11 @@ fn the_1_21_40_struct_keeps_the_alpha_as_written() {
         at(&infos(upgraded.diagnostics())),
         [
             (
-                "DroppedField",
+                "core/dropped_field",
                 "minecraft:lighting_settings/directional_lights/sun/color/0.0"
             ),
             (
-                "DroppedField",
+                "core/dropped_field",
                 "minecraft:lighting_settings/directional_lights/sun/color/0.5"
             ),
         ]
@@ -231,12 +231,12 @@ fn l05_keyframed_ambient_needs_1_26_0() {
         errors(&d),
         [
             finding(
-                "InvalidType",
+                "deferred_settings/rgb",
                 "minecraft:lighting_settings/ambient/color",
                 RGB_TEXT
             ),
             finding(
-                "InvalidType",
+                "deferred_settings/must_be_number",
                 "minecraft:lighting_settings/ambient/illuminance",
                 "the input must be a number"
             ),
@@ -248,7 +248,10 @@ fn l05_keyframed_ambient_needs_1_26_0() {
             "1.21.80",
             r#""sky": {"intensity": {"0.0": 1.0}}"#
         ))]),
-        [("InvalidType", "minecraft:lighting_settings/sky/intensity")]
+        [(
+            "deferred_settings/must_be_number",
+            "minecraft:lighting_settings/sky/intensity"
+        )]
     );
 }
 
@@ -266,22 +269,25 @@ fn l06_l3_one_file_with_five_lighting_violations_reports_each() {
         at(&errors(&d)),
         [
             (
-                "InvalidValue",
+                "core/outside_accepted_range",
                 "minecraft:lighting_settings/directional_lights/orbital/sun/illuminance"
             ),
             (
-                "InvalidValue",
+                "core/outside_accepted_range",
                 "minecraft:lighting_settings/directional_lights/orbital/orbital_offset_degrees"
             ),
             (
-                "InvalidValue",
+                "core/outside_accepted_range",
                 "minecraft:lighting_settings/emissive/desaturation"
             ),
             (
-                "InvalidValue",
+                "core/outside_accepted_range",
                 "minecraft:lighting_settings/ambient/illuminance"
             ),
-            ("InvalidValue", "minecraft:lighting_settings/sky/intensity"),
+            (
+                "core/outside_accepted_range",
+                "minecraft:lighting_settings/sky/intensity"
+            ),
         ]
     );
 }
@@ -399,7 +405,7 @@ fn l07_l2_ambient_needs_both_members() {
                 r##""ambient": {"color": "#FFFFFF"}"##
             ))]),
             [(
-                "MissingRequiredField",
+                "core/missing_required_field",
                 "minecraft:lighting_settings/ambient/illuminance"
             )],
             "{version}"
@@ -410,7 +416,7 @@ fn l07_l2_ambient_needs_both_members() {
                 r#""ambient": {"illuminance": 0.02}"#
             ))]),
             [(
-                "MissingRequiredField",
+                "core/missing_required_field",
                 "minecraft:lighting_settings/ambient/color"
             )],
             "{version}"
@@ -429,7 +435,7 @@ fn l07a_l5_a_colour_in_the_other_form_is_a_type_error() {
             r##""ambient": {"color": "#ffffffff", "illuminance": 0.02}"##
         )),
         finding(
-            "InvalidType",
+            "deferred_settings/rgb",
             "minecraft:lighting_settings/ambient/color",
             RGB_TEXT
         )
@@ -441,7 +447,7 @@ fn l07a_l5_a_colour_in_the_other_form_is_a_type_error() {
             r#""directional_lights": {"sun": {"color": {"0.5": [1, 2, 3]}}}"#
         )),
         finding(
-            "InvalidType",
+            "deferred_settings/rgba",
             "minecraft:lighting_settings/directional_lights/sun/color/0.5",
             RGBA_TEXT
         )
@@ -452,7 +458,7 @@ fn l07a_l5_a_colour_in_the_other_form_is_a_type_error() {
             r##""directional_lights": {"moon": {"color": {"0.5": "#010203"}}}"##
         )),
         finding(
-            "InvalidType",
+            "deferred_settings/rgba",
             "minecraft:lighting_settings/directional_lights/moon/color/0.5",
             RGBA_TEXT
         )
@@ -465,7 +471,7 @@ fn l07a_l5_a_colour_in_the_other_form_is_a_type_error() {
                 r#""directional_lights": {"sun": {"color": {"0.5": [1, 2, 3, 4]}}}"#
             )),
             finding(
-                "InvalidType",
+                "deferred_settings/rgb",
                 "minecraft:lighting_settings/directional_lights/sun/color/0.5",
                 RGB_TEXT
             ),
@@ -478,7 +484,7 @@ fn l07a_l5_a_colour_in_the_other_form_is_a_type_error() {
             r##""directional_lights": {"flash": {"color": "#FF010203"}}"##
         )),
         finding(
-            "InvalidType",
+            "deferred_settings/rgb",
             "minecraft:lighting_settings/directional_lights/flash/color",
             RGB_TEXT
         )
@@ -496,12 +502,12 @@ fn l08_flash_below_1_21_80_is_unknown_and_dropped_by_the_step() {
         infos(document.diagnostics()),
         [
             finding(
-                "UnrecognizedField",
+                "deferred_settings/needs_format_version",
                 "minecraft:lighting_settings/directional_lights/flash",
                 "flash needs format_version 1.21.80"
             ),
             finding(
-                "UnrecognizedField",
+                "core/unrecognized_field",
                 "minecraft:lighting_settings/directional_lights/note",
                 "unrecognized field"
             ),
@@ -524,7 +530,7 @@ fn l08_flash_below_1_21_80_is_unknown_and_dropped_by_the_step() {
     assert_eq!(
         at(&infos(again.diagnostics())),
         [(
-            "UnrecognizedField",
+            "core/unrecognized_field",
             "minecraft:lighting_settings/directional_lights/note"
         )]
     );
@@ -555,7 +561,11 @@ fn a_member_of_a_newer_struct_names_the_version_it_needs() {
         let document = loads::<LightingSettings>(&lighting(version, members));
         assert_eq!(
             infos(document.diagnostics()),
-            [finding("UnrecognizedField", path, text)],
+            [finding(
+                "deferred_settings/needs_format_version",
+                path,
+                text
+            )],
             "{version}"
         );
         // The step's own value stands: an inserted sky is 1.0, not the unknown member's.
@@ -578,7 +588,7 @@ fn l11_l1_a_lighting_file_without_description_loads_unnamed_deviation() {
         assert_eq!(
             infos(document.diagnostics()),
             [finding(
-                "MissingIdentifier",
+                "core/missing_identifier",
                 LIGHTING,
                 "no usable identifier"
             )],
@@ -591,7 +601,7 @@ fn l11_l1_a_lighting_file_without_description_loads_unnamed_deviation() {
                 r#""description": {}"#
             ))]),
             [(
-                "MissingRequiredField",
+                "core/missing_required_field",
                 "minecraft:lighting_settings/description/identifier"
             )],
             "{version}"
@@ -624,11 +634,11 @@ fn l13_a_sun_key_outside_the_day_is_dropped() {
         at(&infos(document.diagnostics())),
         [
             (
-                "KeyframeOutOfDomain",
+                "core/keyframe_out_of_domain",
                 "minecraft:lighting_settings/directional_lights/orbital/sun/illuminance/1.5"
             ),
             (
-                "KeyframeOutOfDomain",
+                "core/keyframe_out_of_domain",
                 "minecraft:lighting_settings/directional_lights/orbital/sun/illuminance/-0.1"
             ),
         ]
@@ -712,7 +722,7 @@ fn w01_sample_width_is_dropped_with_an_info_deviation() {
     assert_eq!(
         infos(document.diagnostics()),
         [finding(
-            "DroppedField",
+            "core/dropped_field",
             "minecraft:water_settings/waves/sampleWidth",
             "field dropped"
         )]
@@ -726,7 +736,10 @@ fn w01_sample_width_is_dropped_with_an_info_deviation() {
     ));
     assert_eq!(
         at(&infos(later.diagnostics())),
-        [("DroppedField", "minecraft:water_settings/waves/sampleWidth")]
+        [(
+            "core/dropped_field",
+            "minecraft:water_settings/waves/sampleWidth"
+        )]
     );
     assert_eq!(later.waves.clone().unwrap().direction_increment, Some(90.0));
     // Without the member the steps report nothing.
@@ -769,7 +782,7 @@ fn w02_the_vanilla_water_file_loads_and_resolves_the_games_values() {
             bedrock_addon::diagnostic::Severity::Info
         ),
         [finding(
-            "DroppedField",
+            "core/dropped_field",
             "minecraft:water_settings/waves/sampleWidth",
             "field dropped"
         )]
@@ -842,7 +855,7 @@ fn w03_w4_the_colour_contribution_needs_1_26_0() {
         assert_eq!(
             infos(document.diagnostics()),
             [finding(
-                "UnrecognizedField",
+                "deferred_settings/needs_format_version",
                 "minecraft:water_settings/biome_water_color_contribution",
                 "biome_water_color_contribution needs format_version 1.26.0"
             )],
@@ -852,7 +865,7 @@ fn w03_w4_the_colour_contribution_needs_1_26_0() {
     }
     assert_eq!(
         one_error::<WaterSettings>(&water("1.26.10", members)).0,
-        "UnsupportedVersion"
+        "core/no_parser_for_version"
     );
 }
 
@@ -875,7 +888,11 @@ fn w4_members_of_another_struct_are_unknown_with_the_version_they_need() {
         let document = loads::<WaterSettings>(&water(version, members));
         assert_eq!(
             infos(document.diagnostics()),
-            [finding("UnrecognizedField", path, text)]
+            [finding(
+                "deferred_settings/needs_format_version",
+                path,
+                text
+            )]
         );
         assert!(document.caustics.is_none());
         assert_eq!(document.waves().direction_increment, None);
@@ -888,7 +905,7 @@ fn w4_members_of_another_struct_are_unknown_with_the_version_they_need() {
         assert_eq!(
             infos(document.diagnostics()),
             [finding(
-                "UnrecognizedField",
+                "deferred_settings/no_longer_used",
                 "minecraft:water_settings/waves/sampleWidth",
                 "sampleWidth is no longer used (format_version 1.21.120)"
             )],
@@ -908,7 +925,7 @@ fn w04_w1_w2_description_is_required_from_1_26_20_deviation() {
     assert_eq!(
         at(&[one_error::<WaterSettings>(&doc("1.26.20", WATER, ""))]),
         [(
-            "MissingRequiredField",
+            "core/missing_required_field",
             "minecraft:water_settings/description"
         )]
     );
@@ -918,7 +935,11 @@ fn w04_w1_w2_description_is_required_from_1_26_20_deviation() {
         assert!(document.description.is_none());
         assert_eq!(
             infos(document.diagnostics()),
-            [finding("MissingIdentifier", WATER, "no usable identifier")],
+            [finding(
+                "core/missing_identifier",
+                WATER,
+                "no usable identifier"
+            )],
             "{version}"
         );
         // Such a value has no 1.26.20 form: the writer refuses it rather than write a file
@@ -933,7 +954,7 @@ fn w04_w1_w2_description_is_required_from_1_26_20_deviation() {
                 r#""description": {}"#
             ))]),
             [(
-                "MissingRequiredField",
+                "core/missing_required_field",
                 "minecraft:water_settings/description/identifier"
             )],
             "{version}"
@@ -953,16 +974,25 @@ fn w05_w3_one_file_with_five_water_violations_reports_each() {
         at(&found),
         [
             (
-                "InvalidValue",
+                "core/outside_accepted_range",
                 "minecraft:water_settings/particle_concentrations/cdom"
             ),
             (
-                "InvalidValue",
+                "core/outside_accepted_range",
                 "minecraft:water_settings/caustics/frame_length"
             ),
-            ("InvalidValue", "minecraft:water_settings/caustics/power"),
-            ("InvalidValue", "minecraft:water_settings/waves/octaves"),
-            ("InvalidValue", "minecraft:water_settings/waves/pull"),
+            (
+                "core/outside_accepted_range",
+                "minecraft:water_settings/caustics/power"
+            ),
+            (
+                "core/outside_accepted_range",
+                "minecraft:water_settings/waves/octaves"
+            ),
+            (
+                "core/outside_accepted_range",
+                "minecraft:water_settings/waves/pull"
+            ),
         ]
     );
     for (_, _, text) in &found {
@@ -1032,9 +1062,15 @@ fn w05_w3_each_water_range_is_checked_at_both_ends_of_its_bounds() {
         };
         for value in bad {
             let found = one_error::<WaterSettings>(&text(value));
+            // A fraction where the member is an integer is the plain invalid value.
+            let code = if member == "octaves" && value.contains('.') {
+                "core/invalid_value"
+            } else {
+                "core/outside_accepted_range"
+            };
             assert_eq!(
                 (found.0, found.1.as_str()),
-                ("InvalidValue", path.as_str()),
+                (code, path.as_str()),
                 "{member} {value}"
             );
         }
@@ -1061,7 +1097,7 @@ fn w05_w3_sample_width_has_its_own_range_and_a_number_is_the_one_type() {
     assert_eq!(
         one_error::<WaterSettings>(&water("1.26.20", r#""waves": {"depth": "1"}"#)),
         finding(
-            "InvalidType",
+            "deferred_settings/must_be_number",
             "minecraft:water_settings/waves/depth",
             "the input must be a number"
         )
@@ -1071,14 +1107,20 @@ fn w05_w3_sample_width_has_its_own_range_and_a_number_is_the_one_type() {
             "1.26.20",
             r#""waves": {"enabled": 1}"#
         ))]),
-        [("InvalidType", "minecraft:water_settings/waves/enabled")]
+        [(
+            "core/invalid_type",
+            "minecraft:water_settings/waves/enabled"
+        )]
     );
     assert_eq!(
         at(&[one_error::<WaterSettings>(&water(
             "1.26.20",
             r#""caustics": {"texture": 5}"#
         ))]),
-        [("InvalidType", "minecraft:water_settings/caustics/texture")]
+        [(
+            "core/invalid_type",
+            "minecraft:water_settings/caustics/texture"
+        )]
     );
 }
 
@@ -1327,7 +1369,7 @@ fn a07_a1_a2_description_is_required_from_1_26_20_deviation() {
             "1.26.20", ATMOSPHERE, ""
         ))]),
         [(
-            "MissingRequiredField",
+            "core/missing_required_field",
             "minecraft:atmosphere_settings/description"
         )]
     );
@@ -1337,7 +1379,7 @@ fn a07_a1_a2_description_is_required_from_1_26_20_deviation() {
     assert_eq!(
         infos(document.diagnostics()),
         [finding(
-            "MissingIdentifier",
+            "core/missing_identifier",
             ATMOSPHERE,
             "no usable identifier"
         )]
@@ -1351,7 +1393,7 @@ fn a07_a1_a2_description_is_required_from_1_26_20_deviation() {
                 r#""description": {}"#
             ))]),
             [(
-                "MissingRequiredField",
+                "core/missing_required_field",
                 "minecraft:atmosphere_settings/description/identifier"
             )]
         );
@@ -1445,19 +1487,19 @@ fn g03_g1_g2_each_grading_range_is_checked_at_both_ends() {
         at(&errors(&d)),
         [
             (
-                "InvalidValue",
+                "core/outside_accepted_range",
                 "minecraft:color_grading_settings/color_grading/midtones/contrast/1"
             ),
             (
-                "InvalidValue",
+                "core/outside_accepted_range",
                 "minecraft:color_grading_settings/color_grading/highlights/highlightsMin"
             ),
             (
-                "InvalidValue",
+                "core/outside_accepted_range",
                 "minecraft:color_grading_settings/color_grading/shadows/shadowsMax"
             ),
             (
-                "InvalidValue",
+                "core/outside_accepted_range",
                 "minecraft:color_grading_settings/color_grading/temperature/temperature"
             ),
         ]
@@ -1551,7 +1593,7 @@ fn g05_g3_an_unknown_operator_or_temperature_type_is_an_enum_error() {
             r#""tone_mapping": {"operator": "filmic"}"#
         ))]),
         [(
-            "InvalidEnumValue",
+            "core/invalid_enum_value",
             "minecraft:color_grading_settings/tone_mapping/operator"
         )]
     );
@@ -1561,7 +1603,7 @@ fn g05_g3_an_unknown_operator_or_temperature_type_is_an_enum_error() {
             r#""type": "kelvin""#
         ))]),
         [(
-            "InvalidEnumValue",
+            "core/invalid_enum_value",
             "minecraft:color_grading_settings/color_grading/temperature/type"
         )]
     );
@@ -1613,7 +1655,7 @@ fn g06_g4_temperature_at_1_21_40_is_unknown_with_the_version_it_needs() {
     assert_eq!(
         infos(document.diagnostics()),
         [finding(
-            "UnrecognizedField",
+            "deferred_settings/needs_format_version",
             "minecraft:color_grading_settings/color_grading/temperature",
             "temperature needs format_version 1.21.90"
         )]
@@ -1637,7 +1679,7 @@ fn g07_g6_description_and_its_identifier_are_optional_deviation() {
             assert_eq!(
                 infos(document.diagnostics()),
                 [finding(
-                    "MissingIdentifier",
+                    "core/missing_identifier",
                     GRADING,
                     "no usable identifier"
                 )],

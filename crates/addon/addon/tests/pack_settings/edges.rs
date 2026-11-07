@@ -71,15 +71,15 @@ fn a_bom_is_skipped() {
 #[test]
 fn bytes_that_are_not_utf8_or_nest_too_deep_or_are_no_json_fail_the_file() {
     let deep = format!("{}{}", "[".repeat(200), "]".repeat(200));
-    for bytes in [
-        &b"\xff\xfe{}"[..],
-        deep.as_bytes(),
-        b"{\"format_version\": ",
+    for (bytes, id) in [
+        (&b"\xff\xfe{}"[..], "core/syntax"),
+        (deep.as_bytes(), "core/syntax"),
+        (b"{\"format_version\": ", "core/document_json"),
     ] {
         let rejected = SavedSettings::parse(bytes).unwrap_err();
         assert_eq!(
             names(&rejected.diagnostics, Severity::Error),
-            ["MalformedInput", "DocumentRejected"]
+            [id, "pack_settings/load_failed"]
         );
         closes(&rejected.diagnostics, WORLD_FILE);
     }
@@ -116,13 +116,13 @@ fn the_versions_next_to_each_range_end() {
     assert!(at("1.21.100").unwrap().diagnostics().is_empty());
     assert_eq!(
         names(at("1.21.101").unwrap().diagnostics(), Severity::Info),
-        ["VanillaRejectsVersion"]
+        ["core/vanilla_rejects_version"]
     );
     // Below, at and above the newest struct.
     let below = at("1.26.39").unwrap();
     assert_eq!(
         names(below.diagnostics(), Severity::Info),
-        ["VanillaRejectsVersion"]
+        ["core/vanilla_rejects_version"]
     );
     assert_eq!(below.version().parsed_as.to_string(), "1.21.100");
     let newest = at("1.26.40").unwrap();
@@ -157,7 +157,7 @@ fn a_list_value_under_an_array_version_of_the_old_struct_is_a_type_error() {
     );
     assert_eq!(
         names(loaded.diagnostics(), Severity::Info),
-        ["FormatVersionArray"]
+        ["core/format_version_array"]
     );
 }
 
@@ -168,7 +168,7 @@ fn mismatch(found: &Diagnostics) -> bool {
     found
         .iter()
         // By legacy name: the variant and the definitions that were it.
-        .any(|d| matches!(d.code.name(), "PayloadKeyMismatch"))
+        .any(|d| matches!(d.code.id(), "core/payload_key_mismatch"))
 }
 
 #[test]
@@ -178,7 +178,7 @@ fn a_foreign_payload_key_is_not_looked_at_below_the_floor() {
     assert!(!mismatch(&found), "{found:#?}");
     assert_eq!(
         names(&found, Severity::Error),
-        ["UnsupportedVersion", "DocumentRejected"]
+        ["core/no_parser_for_version", "pack_settings/load_failed"]
     );
 }
 
@@ -196,7 +196,7 @@ fn a_foreign_payload_key_loads_under_an_array_version_and_in_either_member_order
             .diagnostics()
             .iter()
             // By legacy name: the variant and the definitions that were it.
-            .find(|d| matches!(d.code.name(), "PayloadKeyMismatch"))
+            .find(|d| matches!(d.code.id(), "core/payload_key_mismatch"))
             .unwrap();
         let span = warning.location.span.unwrap();
         let start = usize::try_from(span.offset).unwrap();
@@ -213,7 +213,7 @@ fn a_foreign_payload_key_with_an_escaped_quote_is_found_whole() {
         .diagnostics()
         .iter()
         // By legacy name: the variant and the definitions that were it.
-        .find(|d| matches!(d.code.name(), "PayloadKeyMismatch"))
+        .find(|d| matches!(d.code.id(), "core/payload_key_mismatch"))
         .unwrap();
     assert_eq!(warning.location.json_path.to_string(), "a\"b");
     let span = warning.location.span.unwrap();
@@ -229,7 +229,7 @@ fn two_foreign_members_are_the_envelope_error_without_a_mismatch_warning() {
     assert!(!mismatch(&found));
     assert_eq!(
         names(&found, Severity::Error),
-        ["MalformedInput", "DocumentRejected"]
+        ["core/document_member_count", "pack_settings/load_failed"]
     );
 }
 
@@ -283,17 +283,17 @@ fn every_failure_of_one_file_is_reported() {
     let errors: Vec<String> = found
         .iter()
         .filter(|d| d.severity == Severity::Error)
-        .map(|d| format!("{} {}", d.code.name(), d.location.json_path))
+        .map(|d| format!("{} {}", d.code.id(), d.location.json_path))
         .collect();
     assert_eq!(
         errors,
         [
-            "UnrecognizedField minecraft:pack_settings/extra",
-            "UnrecognizedField minecraft:pack_settings/settings/0/note",
-            "InvalidType minecraft:pack_settings/settings/0/pack_id",
-            "InvalidType minecraft:pack_settings/settings/0/values/a:x",
-            "InvalidType minecraft:pack_settings/settings/1/values/a:y",
-            "DocumentRejected ",
+            "core/unrecognized_field minecraft:pack_settings/extra",
+            "core/unrecognized_field minecraft:pack_settings/settings/0/note",
+            "core/invalid_type minecraft:pack_settings/settings/0/pack_id",
+            "core/invalid_type minecraft:pack_settings/settings/0/values/a:x",
+            "core/invalid_type minecraft:pack_settings/settings/1/values/a:y",
+            "pack_settings/load_failed ",
         ]
     );
 }
@@ -310,7 +310,11 @@ fn two_malformed_pack_ids_are_both_nil_and_duplicates() {
     // (the game takes the first match in silence).
     assert_eq!(
         names(loaded.diagnostics(), Severity::Info),
-        ["InvalidValue", "InvalidValue", "DuplicateIdentifier"]
+        [
+            "core/invalid_value",
+            "core/invalid_value",
+            "core/duplicate_identifier"
+        ]
     );
 }
 
@@ -331,7 +335,7 @@ fn three_entries_of_one_pack_warn_twice_and_distinct_packs_never() {
         .diagnostics()
         .iter()
         // By legacy name: the variant and the definitions that were it.
-        .filter(|d| matches!(d.code.name(), "DuplicateIdentifier"))
+        .filter(|d| matches!(d.code.id(), "core/duplicate_identifier"))
         .map(|d| d.location.json_path.to_string())
         .collect();
     assert_eq!(
@@ -392,7 +396,7 @@ fn saved_slider(x: f32) -> (SettingValue, Vec<&'static str>) {
 fn a_saved_slider_value_is_clamped_only_outside_the_closed_range() {
     assert_eq!(
         saved_slider(0.999),
-        (SettingValue::Float(1.0), vec!["SettingClamped"])
+        (SettingValue::Float(1.0), vec!["core/setting_clamped"])
     );
     assert_eq!(saved_slider(1.0), (SettingValue::Float(1.0), vec![]));
     assert_eq!(saved_slider(1.001), (SettingValue::Float(1.001), vec![]));
@@ -400,7 +404,7 @@ fn a_saved_slider_value_is_clamped_only_outside_the_closed_range() {
     assert_eq!(saved_slider(10.0), (SettingValue::Float(10.0), vec![]));
     assert_eq!(
         saved_slider(10.001),
-        (SettingValue::Float(10.0), vec!["SettingClamped"])
+        (SettingValue::Float(10.0), vec!["core/setting_clamped"])
     );
 }
 
@@ -422,7 +426,7 @@ fn a_slider_default_outside_its_range_is_clamped_like_a_saved_value() {
             settings.value("banana:slider"),
             Some(&SettingValue::Float(value))
         );
-        assert_eq!(names(&d, Severity::Info), ["SettingTypeMismatch"]);
+        assert_eq!(names(&d, Severity::Info), ["core/setting_type_mismatch"]);
     }
 }
 
@@ -472,7 +476,7 @@ fn each_kind_takes_only_its_own_kind_of_saved_value() {
                 assert!(d.is_empty(), "{name}: {d:#?}");
             } else {
                 assert_eq!(entry.value, entry.default, "{name} with {value:?}");
-                assert_eq!(names(&d, Severity::Info), ["SettingTypeMismatch"]);
+                assert_eq!(names(&d, Severity::Info), ["core/setting_type_mismatch"]);
                 assert_eq!(d.len(), 1);
             }
             // The admin API refuses the same values.
@@ -560,7 +564,7 @@ fn a_saved_value_named_like_a_label_text_has_no_definition() {
     let saved = entry_of(vec![("banana:label", SettingValue::Bool(true))]);
     let settings = PackSettings::new(PACK, &definitions, Some(&saved), &mut d);
     assert!(settings.values().is_empty());
-    assert_eq!(names(&d, Severity::Info), ["SettingUnknownName"]);
+    assert_eq!(names(&d, Severity::Info), ["core/setting_unknown_name"]);
 }
 
 #[test]

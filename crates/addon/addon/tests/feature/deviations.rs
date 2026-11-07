@@ -17,7 +17,7 @@ fn an_unparsed_carver_float_range_refuses_the_feature() {
         ),
         &cx(),
     );
-    error_at(&d, "InvalidValue", "y_scale");
+    error_at(&d, "feature/float_range_array", "y_scale");
     assert!(super::common::has_text(
         &d,
         "Float range array was not parsed. Float range arrays should have 2 values."
@@ -38,7 +38,7 @@ fn no_height_difference_is_a_kept_error() {
     assert_eq!(
         with(
             document.diagnostics(),
-            "MissingRequiredField",
+            "feature/no_height_differences",
             Severity::Error
         )
         .len(),
@@ -59,7 +59,11 @@ fn scatter_runtime_checks_are_kept_errors() {
         &cx(),
     );
     assert!(!document.diagnostics().has_errors());
-    kept_at(document.diagnostics(), "ScatterParamValue", "iterations");
+    kept_at(
+        document.diagnostics(),
+        "feature/iterations_negative",
+        "iterations",
+    );
 }
 
 #[test]
@@ -102,7 +106,7 @@ fn poplar_parts_are_gated_at_engine_1_26_40_deviation() {
     );
     error_at(
         &rejects(&json, &engine(1, 26, 30)),
-        "UnrecognizedField",
+        "core/child_not_valid",
         "poplar_trunk",
     );
     loads(&json, &engine(1, 26, 40));
@@ -120,7 +124,11 @@ fn a_bounding_box_setter_message_is_a_kept_error() {
         ),
         &base_game(),
     );
-    kept_at(document.diagnostics(), "InvalidValue", "bounding_box_max");
+    kept_at(
+        document.diagnostics(),
+        "feature/bounding_box",
+        "bounding_box_max",
+    );
 }
 
 #[test]
@@ -180,7 +188,7 @@ fn an_unknown_child_is_named_by_its_key_as_written() {
         let told: Vec<(String, String)> = found
             .iter()
             // By legacy name: the variant and the definitions that were it.
-            .filter(|f| matches!(f.code.name(), "UnrecognizedField"))
+            .filter(|f| matches!(f.code.id(), "core/child_not_valid"))
             .map(|f| (f.location.json_path.to_string(), f.code.to_string()))
             .collect();
         assert_eq!(

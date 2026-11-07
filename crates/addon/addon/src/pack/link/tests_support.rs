@@ -137,7 +137,7 @@ pub(in crate::pack::link) fn said(
         _ => ("", String::new()),
     };
     (
-        finding.code.name(),
+        finding.code.id(),
         finding.severity,
         finding.location.json_path.to_string(),
         kind,

@@ -322,7 +322,11 @@ fn m7_known_blocks_and_shadowed_types_are_not_reported() {
     )]);
     let found = link(&poi, &Vanilla);
     assert_eq!(found.len(), 1);
-    assert!(found.iter().all(|d| d.code.name() == "UnresolvedReference"));
+    assert!(
+        found
+            .iter()
+            .all(|d| d.code.id() == "poi/block_lookup_failed")
+    );
     assert_eq!(poi.diagnostics().count(), 0);
 }
 
@@ -480,7 +484,7 @@ fn the_byte_members_read_every_scalar_as_pinned() {
                         .map_or("-".to_owned(), |s| format!("{}+{}", s.offset, s.len));
                     format!(
                         "{} {:?} {} {span}",
-                        d.code.name(),
+                        d.code.id(),
                         d.severity,
                         d.location.json_path
                     )
@@ -502,25 +506,25 @@ fn the_byte_members_read_every_scalar_as_pinned() {
 
 /// The table as the strict wrappers read it.
 const BYTE_MEMBERS: &str = r#"tickets 3 => loaded {"format_version": "1.26.40","minecraft:poi_block": {"description": {"identifier": "test:forge"},"tickets": 3,"blocks": ["minecraft:anvil"]}} []
-tickets "3" => rejected [InvalidType Error minecraft:poi_block/tickets -; DocumentRejected Error  -]
-tickets 3.0 => rejected [InvalidType Error minecraft:poi_block/tickets -; DocumentRejected Error  -]
-tickets 0.5 => rejected [InvalidType Error minecraft:poi_block/tickets -; DocumentRejected Error  -]
-tickets -1 => rejected [InvalidValue Error minecraft:poi_block/tickets -; DocumentRejected Error  -]
-tickets 256 => rejected [InvalidValue Error minecraft:poi_block/tickets -; DocumentRejected Error  -]
-tickets true => rejected [InvalidType Error minecraft:poi_block/tickets -; DocumentRejected Error  -]
-tickets null => rejected [InvalidType Error minecraft:poi_block/tickets -; DocumentRejected Error  -]
-tickets 1e39 => rejected [InvalidType Error minecraft:poi_block/tickets -; DocumentRejected Error  -]
-tickets [] => rejected [InvalidType Error minecraft:poi_block/tickets -; DocumentRejected Error  -]
-tickets {} => rejected [InvalidType Error minecraft:poi_block/tickets -; DocumentRejected Error  -]
+tickets "3" => rejected [core/invalid_type Error minecraft:poi_block/tickets -; poi/failed_to_load Error  -]
+tickets 3.0 => rejected [core/invalid_type Error minecraft:poi_block/tickets -; poi/failed_to_load Error  -]
+tickets 0.5 => rejected [core/invalid_type Error minecraft:poi_block/tickets -; poi/failed_to_load Error  -]
+tickets -1 => rejected [core/invalid_value Error minecraft:poi_block/tickets -; poi/failed_to_load Error  -]
+tickets 256 => rejected [core/invalid_value Error minecraft:poi_block/tickets -; poi/failed_to_load Error  -]
+tickets true => rejected [core/invalid_type Error minecraft:poi_block/tickets -; poi/failed_to_load Error  -]
+tickets null => rejected [core/invalid_type Error minecraft:poi_block/tickets -; poi/failed_to_load Error  -]
+tickets 1e39 => rejected [core/invalid_type Error minecraft:poi_block/tickets -; poi/failed_to_load Error  -]
+tickets [] => rejected [core/invalid_type Error minecraft:poi_block/tickets -; poi/failed_to_load Error  -]
+tickets {} => rejected [core/invalid_type Error minecraft:poi_block/tickets -; poi/failed_to_load Error  -]
 usable_distance 3 => loaded {"format_version": "1.26.40","minecraft:poi_block": {"description": {"identifier": "test:forge"},"usable_distance": 3,"blocks": ["minecraft:anvil"]}} []
-usable_distance "3" => rejected [InvalidType Error minecraft:poi_block/usable_distance -; DocumentRejected Error  -]
-usable_distance 3.0 => rejected [InvalidType Error minecraft:poi_block/usable_distance -; DocumentRejected Error  -]
-usable_distance 0.5 => rejected [InvalidType Error minecraft:poi_block/usable_distance -; DocumentRejected Error  -]
-usable_distance -1 => rejected [InvalidValue Error minecraft:poi_block/usable_distance -; DocumentRejected Error  -]
-usable_distance 256 => rejected [InvalidValue Error minecraft:poi_block/usable_distance -; DocumentRejected Error  -]
-usable_distance true => rejected [InvalidType Error minecraft:poi_block/usable_distance -; DocumentRejected Error  -]
-usable_distance null => rejected [InvalidType Error minecraft:poi_block/usable_distance -; DocumentRejected Error  -]
-usable_distance 1e39 => rejected [InvalidType Error minecraft:poi_block/usable_distance -; DocumentRejected Error  -]
-usable_distance [] => rejected [InvalidType Error minecraft:poi_block/usable_distance -; DocumentRejected Error  -]
-usable_distance {} => rejected [InvalidType Error minecraft:poi_block/usable_distance -; DocumentRejected Error  -]
+usable_distance "3" => rejected [core/invalid_type Error minecraft:poi_block/usable_distance -; poi/failed_to_load Error  -]
+usable_distance 3.0 => rejected [core/invalid_type Error minecraft:poi_block/usable_distance -; poi/failed_to_load Error  -]
+usable_distance 0.5 => rejected [core/invalid_type Error minecraft:poi_block/usable_distance -; poi/failed_to_load Error  -]
+usable_distance -1 => rejected [core/invalid_value Error minecraft:poi_block/usable_distance -; poi/failed_to_load Error  -]
+usable_distance 256 => rejected [core/invalid_value Error minecraft:poi_block/usable_distance -; poi/failed_to_load Error  -]
+usable_distance true => rejected [core/invalid_type Error minecraft:poi_block/usable_distance -; poi/failed_to_load Error  -]
+usable_distance null => rejected [core/invalid_type Error minecraft:poi_block/usable_distance -; poi/failed_to_load Error  -]
+usable_distance 1e39 => rejected [core/invalid_type Error minecraft:poi_block/usable_distance -; poi/failed_to_load Error  -]
+usable_distance [] => rejected [core/invalid_type Error minecraft:poi_block/usable_distance -; poi/failed_to_load Error  -]
+usable_distance {} => rejected [core/invalid_type Error minecraft:poi_block/usable_distance -; poi/failed_to_load Error  -]
 "#;

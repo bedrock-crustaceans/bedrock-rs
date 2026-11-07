@@ -105,7 +105,7 @@ fn icon_findings(report: &bedrock_addon::pack::StackReport<'_>) -> Vec<(String, 
         })
         .map(|finding| {
             (
-                finding.code.name().to_owned(),
+                finding.code.id().to_owned(),
                 finding.severity,
                 finding
                     .location
@@ -151,7 +151,7 @@ fn a_stack_load_requests_no_byte_of_a_pack_icon() {
     assert_eq!(
         icon_findings(&report),
         [(
-            "PackIconMissing".to_owned(),
+            "core/pack_icon_missing".to_owned(),
             Severity::Info,
             "pack 2".to_owned()
         )]
@@ -162,9 +162,9 @@ fn a_stack_load_requests_no_byte_of_a_pack_icon() {
     assert_eq!(
         judged
             .iter()
-            .map(|finding| (finding.code.name(), finding.severity))
+            .map(|finding| (finding.code.id(), finding.severity))
             .collect::<Vec<_>>(),
-        [("InvalidValue", Severity::Info)]
+        [("core/invalid_value", Severity::Info)]
     );
 
     // With every file kept resident the icon is read as every other file is, for serving;
@@ -190,7 +190,7 @@ fn a_stack_load_requests_no_byte_of_a_pack_icon() {
     assert_eq!(
         icon_findings(&set.load_all()),
         [(
-            "PackIconMissing".to_owned(),
+            "core/pack_icon_missing".to_owned(),
             Severity::Info,
             "pack 2".to_owned()
         )]
@@ -275,7 +275,7 @@ fn load_all_reports_the_pack_selection_once() {
     let selection: Vec<_> = set.selection().iter().collect();
     // bundle, which names the pack)
     let of_scripts = |finding: &&bedrock_addon::diagnostic::Diagnostic| {
-        finding.code.name() == "ScriptFileNotLoadable"
+        finding.code.id() == "core/script_file_not_loadable"
     };
     let notes = report.iter().filter(of_scripts).count();
     assert_eq!(notes, usize::from(cfg!(feature = "script")));
@@ -284,7 +284,7 @@ fn load_all_reports_the_pack_selection_once() {
     let (icons, reported): (Vec<_>, Vec<_>) = report
         .iter()
         .filter(|finding| !of_scripts(finding))
-        .partition(|finding| finding.code.name() == "PackIconMissing");
+        .partition(|finding| finding.code.id() == "core/pack_icon_missing");
     assert_eq!(reported, selection);
     let stacked = set.behavior.packs().len() + set.resource.packs().len();
     assert!(stacked > 0);

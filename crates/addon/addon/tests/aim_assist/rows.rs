@@ -74,7 +74,7 @@ fn aa01_a_1_21_50_exclusion_list_becomes_block_and_entity_exclusions() {
     assert_eq!(
         errors(&d),
         [finding(
-            "UnrecognizedField",
+            "core/unrecognized_field_worded",
             &at_preset("exclusion_settings"),
             NOT_IN_SCHEMA
         )]
@@ -86,7 +86,7 @@ fn aa01_a_1_21_50_exclusion_list_becomes_block_and_entity_exclusions() {
     assert_eq!(
         errors(&d),
         [finding(
-            "UnrecognizedField",
+            "core/unrecognized_field_worded",
             &at_preset("exclusion_list"),
             NOT_IN_SCHEMA
         )]
@@ -144,7 +144,7 @@ fn aa02_a_1_21_120_preset_is_read_as_written() {
 fn aa03_below_1_21_50_nothing_loads() {
     for version in ["1.21.40", "1.0.0"] {
         let expected = [finding(
-            "UnsupportedVersion",
+            "core/no_parser_for_version",
             "format_version",
             &format!("unsupported version: no parser available for version {version}"),
         )];
@@ -166,7 +166,7 @@ fn aa04_an_unknown_member_fails_the_file() {
     assert_eq!(
         errors(&d),
         [finding(
-            "UnrecognizedField",
+            "core/unrecognized_field_worded",
             &at_preset("foo"),
             NOT_IN_SCHEMA
         )]
@@ -178,7 +178,7 @@ fn aa04_an_unknown_member_fails_the_file() {
     assert_eq!(
         errors(&d),
         [finding(
-            "UnrecognizedField",
+            "core/unrecognized_field_worded",
             &at_preset("exclusion_settings/items"),
             NOT_IN_SCHEMA
         )]
@@ -190,7 +190,7 @@ fn aa04_an_unknown_member_fails_the_file() {
     assert_eq!(
         errors(&d),
         [finding(
-            "UnrecognizedField",
+            "core/unrecognized_field_worded",
             &at_category("0/priorities/items"),
             NOT_IN_SCHEMA
         )]
@@ -201,7 +201,7 @@ fn aa04_an_unknown_member_fails_the_file() {
     assert_eq!(
         errors(&d),
         [finding(
-            "UnrecognizedField",
+            "core/unrecognized_field_worded",
             "minecraft:aim_assist_categories/foo",
             NOT_IN_SCHEMA
         )]
@@ -265,7 +265,7 @@ fn aa05_the_docs_object_form_of_the_lists_is_a_type_error() {
         assert_eq!(
             errors(&d),
             [finding(
-                "InvalidType",
+                "core/invalid_type_worded",
                 &at_preset(path),
                 "expected an array"
             )],
@@ -273,11 +273,16 @@ fn aa05_the_docs_object_form_of_the_lists_is_a_type_error() {
         );
     }
     // facet would read `[]` as an empty map: vanilla expects an object.
-    for (members, path) in [
-        (r#""item_settings": []"#, "item_settings"),
+    for (members, path, id) in [
+        (
+            r#""item_settings": []"#,
+            "item_settings",
+            "core/expected_object",
+        ),
         (
             r#""exclusion_settings": {"blocks": {}}"#,
             "exclusion_settings/blocks",
+            "core/invalid_type_worded",
         ),
     ] {
         let d = rejects(preset(&preset_json(
@@ -286,10 +291,7 @@ fn aa05_the_docs_object_form_of_the_lists_is_a_type_error() {
         )));
         let found = errors(&d);
         assert_eq!(found.len(), 1, "{members}: {found:?}");
-        assert_eq!(
-            (found[0].0, found[0].1.clone()),
-            ("InvalidType", at_preset(path))
-        );
+        assert_eq!((found[0].0, found[0].1.clone()), (id, at_preset(path)));
     }
     for members in [
         r#""identifier": 5"#,
@@ -299,7 +301,7 @@ fn aa05_the_docs_object_form_of_the_lists_is_a_type_error() {
     ] {
         let d = rejects(preset(&preset_json("1.21.120", members)));
         assert_eq!(errors(&d).len(), 1, "{members}");
-        assert_eq!(errors(&d)[0].0, "InvalidType", "{members}");
+        assert_eq!(errors(&d)[0].0, "core/invalid_type", "{members}");
     }
 }
 
@@ -389,21 +391,21 @@ fn aa07_a_missing_format_version_is_an_error() {
     ));
     assert_eq!(
         errors(&d),
-        [finding("MissingFormatVersion", "", NO_VERSION)]
+        [finding("core/no_valid_version", "", NO_VERSION)]
     );
     let d = rejects(categories(
         r#"{"minecraft:aim_assist_categories": {"categories": []}}"#,
     ));
     assert_eq!(
         errors(&d),
-        [finding("MissingFormatVersion", "", NO_VERSION)]
+        [finding("core/no_valid_version", "", NO_VERSION)]
     );
 }
 
 #[test]
 fn aa07b_envelope_edges() {
     let malformed = [finding(
-        "MalformedFormatVersion",
+        "core/malformed_format_version",
         "format_version",
         "Malformed format version",
     )];
@@ -422,13 +424,21 @@ fn aa07b_envelope_edges() {
     let d = rejects(preset(&text.replacen('{', r#"{"extra": 1, "#, 1)));
     assert_eq!(
         errors(&d),
-        [finding("UnrecognizedField", "extra", NOT_IN_SCHEMA)]
+        [finding(
+            "core/unrecognized_field_worded",
+            "extra",
+            NOT_IN_SCHEMA
+        )]
     );
     let text = categories_json("1.21.50", "");
     let d = rejects(categories(&text.replacen('{', r#"{"extra": 1, "#, 1)));
     assert_eq!(
         errors(&d),
-        [finding("UnrecognizedField", "extra", NOT_IN_SCHEMA)]
+        [finding(
+            "core/unrecognized_field_worded",
+            "extra",
+            NOT_IN_SCHEMA
+        )]
     );
     // Three integers route as a version, then fail the string bind of `format_version`.
     let d = rejects(preset(
@@ -438,7 +448,7 @@ fn aa07b_envelope_edges() {
     assert_eq!(found.len(), 1, "{found:?}");
     assert_eq!(
         (found[0].0, found[0].1.as_str()),
-        ("InvalidType", "format_version")
+        ("core/invalid_type", "format_version")
     );
     // A number is read as its text (`MinecraftDocumentInput`):
     // it routes as a version, then fails the string bind too.
@@ -449,7 +459,7 @@ fn aa07b_envelope_edges() {
     assert_eq!(found.len(), 1, "{found:?}");
     assert_eq!(
         (found[0].0, found[0].1.as_str()),
-        ("InvalidType", "format_version")
+        ("core/invalid_type", "format_version")
     );
     let d = rejects(categories(
         r#"{"format_version": 1.22, "minecraft:aim_assist_categories": {"categories": []}}"#,
@@ -457,18 +467,18 @@ fn aa07b_envelope_edges() {
     let found = errors(&d);
     assert_eq!(
         (found[0].0, found[0].1.as_str()),
-        ("InvalidType", "format_version")
+        ("core/invalid_type", "format_version")
     );
     let d = rejects(categories(
         r#"{"format_version": 1.20, "minecraft:aim_assist_categories": {"categories": []}}"#,
     ));
-    assert_eq!(errors(&d)[0].0, "UnsupportedVersion");
+    assert_eq!(errors(&d)[0].0, "core/no_parser_for_version");
     // The payload key is required by the root struct.
     let d = rejects(preset(r#"{"format_version": "1.21.120"}"#));
     assert_eq!(
         errors(&d),
         [finding(
-            "MissingRequiredField",
+            "core/missing_required_field_worded",
             "minecraft:aim_assist_preset",
             "missing required field"
         )]
@@ -477,7 +487,7 @@ fn aa07b_envelope_edges() {
     assert_eq!(
         errors(&d),
         [finding(
-            "MissingRequiredField",
+            "core/missing_required_field_worded",
             "minecraft:aim_assist_categories",
             "missing required field"
         )]
@@ -489,7 +499,7 @@ fn aa08_above_the_engine_nothing_loads() {
     let engine = bedrock_addon::version::ENGINE_VERSION;
     let above = format!("{}.{}.{}", engine.major, engine.minor, engine.patch + 10);
     let expected = [finding(
-        "UnsupportedVersion",
+        "core/no_parser_for_version",
         "format_version",
         &format!("unsupported version: no parser available for version {above}"),
     )];
@@ -513,7 +523,7 @@ fn aa09_a_preset_without_identifier_misses_a_required_field() {
     assert_eq!(
         errors(&d),
         [finding(
-            "MissingRequiredField",
+            "core/missing_required_field_worded",
             &at_preset("identifier"),
             "missing required field"
         )]
@@ -526,12 +536,12 @@ fn aa09_a_preset_without_identifier_misses_a_required_field() {
         errors(&d),
         [
             finding(
-                "MissingRequiredField",
+                "core/missing_required_field_worded",
                 &at_category("0/priorities"),
                 "missing required field"
             ),
             finding(
-                "MissingRequiredField",
+                "core/missing_required_field_worded",
                 &at_category("1/name"),
                 "missing required field"
             )
@@ -543,7 +553,7 @@ fn aa09_a_preset_without_identifier_misses_a_required_field() {
     assert_eq!(
         errors(&d),
         [finding(
-            "MissingRequiredField",
+            "core/missing_required_field_worded",
             "minecraft:aim_assist_categories/categories",
             "missing required field"
         )]
@@ -581,7 +591,7 @@ fn aa10_a_priority_above_100_rejects_the_file() {
         assert_eq!(
             errors(&d),
             [finding(
-                "InvalidValue",
+                "core/outside_accepted_range",
                 &at_category(&format!("1/priorities/{path}")),
                 RANGE
             )],
@@ -625,7 +635,7 @@ fn aa11_a_negative_priority_rejects_the_file() {
         assert_eq!(
             errors(&d),
             [finding(
-                "InvalidValue",
+                "core/invalid_value_worded",
                 &at_category(&format!("0/priorities/{path}")),
                 "invalid numeric value"
             )],
@@ -643,7 +653,13 @@ fn aa11_a_negative_priority_rejects_the_file() {
             &category("test:c", priorities),
         )));
         assert_eq!(errors(&d).len(), 1, "{priorities}");
-        assert_eq!(errors(&d)[0].0, "InvalidType", "{priorities}");
+        // facet reads `[]` as an empty map: vanilla expects an object.
+        let id = if priorities == r#""entities": []"# {
+            "core/expected_object"
+        } else {
+            "core/invalid_type"
+        };
+        assert_eq!(errors(&d)[0].0, id, "{priorities}");
     }
 }
 
@@ -660,7 +676,7 @@ fn aa12_one_category_without_a_namespace_drops_the_whole_file() {
     assert_eq!(
         errors(&d),
         [finding(
-            "InvalidValue",
+            "aim_assist/category_namespace",
             &at_category("1/name"),
             "Namespace required for category: default"
         )]
@@ -676,7 +692,15 @@ fn aa12_one_category_without_a_namespace_drops_the_whole_file() {
         let d = rejects(categories(&categories_json("1.21.50", &category(name, ""))));
         assert_eq!(
             errors(&d),
-            [finding("InvalidValue", &at_category("0/name"), text)],
+            [finding(
+                if text.starts_with("Namespace required") {
+                    "aim_assist/category_namespace"
+                } else {
+                    "aim_assist/category_format"
+                },
+                &at_category("0/name"),
+                text
+            )],
             "{name}"
         );
     }
@@ -716,7 +740,15 @@ fn aa13_a_preset_identifier_needs_one_namespace() {
             )));
             assert_eq!(
                 errors(&d),
-                [finding("InvalidValue", &at_preset("identifier"), text)],
+                [finding(
+                    if text.starts_with("Namespace required") {
+                        "aim_assist/preset_namespace"
+                    } else {
+                        "aim_assist/preset_format"
+                    },
+                    &at_preset("identifier"),
+                    text
+                )],
                 "{identifier} at {version}"
             );
         }
@@ -767,7 +799,15 @@ fn aa14_a_category_reference_needs_one_namespace() {
         )));
         assert_eq!(
             errors(&d),
-            [finding("InvalidValue", &at_preset(path), text)],
+            [finding(
+                if text.starts_with("Namespace required") {
+                    "aim_assist/category_id_namespace"
+                } else {
+                    "aim_assist/category_id_format"
+                },
+                &at_preset(path),
+                text
+            )],
             "{members}"
         );
     }
@@ -780,7 +820,7 @@ fn aa14_a_category_reference_needs_one_namespace() {
     assert_eq!(
         errors(&d),
         [finding(
-            "InvalidValue",
+            "aim_assist/category_id_namespace",
             &at_preset("default_item_settings"),
             "Namespace required for category Id: default"
         )]
@@ -829,12 +869,12 @@ fn aa15_the_docs_categories_example_is_rejected() {
         errors(&d),
         [
             finding(
-                "UnrecognizedField",
+                "core/unrecognized_field_worded",
                 &at_category("0/entity_default"),
                 NOT_IN_SCHEMA
             ),
             finding(
-                "UnrecognizedField",
+                "core/unrecognized_field_worded",
                 &at_category("0/block_dafault"),
                 NOT_IN_SCHEMA
             )
@@ -852,7 +892,7 @@ fn aa16_a_1_21_120_exclusion_settings_array_is_a_type_error() {
     assert_eq!(
         errors(&d),
         [finding(
-            "InvalidType",
+            "core/expected_object",
             &at_preset("exclusion_settings"),
             "expected an object"
         )]
@@ -986,7 +1026,7 @@ fn a_duplicate_member_keeps_its_last_value_whole() {
         &category("test:c", r#""entity_default": 5, "entity_default": 200"#),
     )));
     assert_eq!(errors(&d).len(), 1);
-    assert_eq!(errors(&d)[0].0, "InvalidValue");
+    assert_eq!(errors(&d)[0].0, "core/outside_accepted_range");
     // Two payloads at the root: the last one is the document.
     let d = rejects(preset(
         r#"{"format_version": "1.21.120",
@@ -996,7 +1036,7 @@ fn a_duplicate_member_keeps_its_last_value_whole() {
     assert_eq!(
         errors(&d),
         [finding(
-            "UnrecognizedField",
+            "core/unrecognized_field_worded",
             &at_preset("bogus"),
             NOT_IN_SCHEMA
         )]
@@ -1027,7 +1067,7 @@ fn an_error_only_the_typed_parse_finds_is_reported_the_same_beside_a_duplicate_m
         assert_eq!(
             errors(&doubled),
             [(
-                "InvalidType",
+                "core/invalid_type",
                 at_category("0/priorities/block_default"),
                 errors(&plain)[0].2.clone()
             )]
@@ -1059,7 +1099,7 @@ fn an_error_only_the_typed_parse_finds_is_reported_the_same_beside_a_duplicate_m
     assert_eq!(
         (errors(&d)[0].0, errors(&d)[0].1.clone()),
         (
-            "InvalidType",
+            "core/invalid_type",
             at_category("1/priorities/blocks/minecraft:stone")
         )
     );
@@ -1114,7 +1154,10 @@ fn the_span_of_a_member_written_twice_with_the_bad_value_last_is_the_last_value(
         assert_eq!(errors(&d).len(), 1, "{members}");
         assert_eq!(
             (errors(&d)[0].0, errors(&d)[0].1.clone()),
-            ("InvalidType", at_category("0/priorities/block_default")),
+            (
+                "core/invalid_type",
+                at_category("0/priorities/block_default")
+            ),
             "{members}"
         );
         let span = d.iter().next().unwrap().location.span.expect("a span");

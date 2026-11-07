@@ -101,7 +101,7 @@ fn field_of(kind: &str, body: &str, field: &str) -> (String, usize) {
     // the decorator of the table has no child here: rule 9's information is not about its parameter
     let about_the_parameter = findings
         .iter()
-        .filter(|finding| finding.code.name() != "InvalidNode")
+        .filter(|finding| finding.code.id() != "core/invalid_node")
         .count();
     (canon(value), about_the_parameter)
 }

@@ -38,7 +38,7 @@ fn found(d: &Diagnostics) -> Vec<(String, Severity, String, String)> {
     d.iter()
         .filter(|f| f.severity >= Severity::Warning)
         .map(|f| {
-            let name = f.code.name().to_owned();
+            let name = f.code.id().to_owned();
             (
                 name,
                 f.severity,
@@ -85,9 +85,9 @@ fn the_engine_s_spawn_rules_load_and_round_trip() {
 fn the_engine_s_unregistered_placement_loads_with_four_warnings() {
     let document = loads(&engine("case-7.json"), &experiment());
     let at = "minecraft:spawn_rules/placement";
-    let warning = |member: &str, text: &str| {
+    let warning = |code: &str, member: &str, text: &str| {
         (
-            "UnresolvedReference".to_owned(),
+            code.to_owned(),
             Severity::Warning,
             format!("{at}/{member}"),
             text.to_owned(),
@@ -97,18 +97,22 @@ fn the_engine_s_unregistered_placement_loads_with_four_warnings() {
         found(document.diagnostics()),
         [
             warning(
+                "spawn_rules/placement_type",
                 "type",
                 "Spawn Rules for 'type' in test:mob must use a registered placement type predicate"
             ),
             warning(
+                "spawn_rules/placement_heightmap",
                 "heightmap",
                 "Spawn Rules for 'heightmap' in test:mob must use a registered heightmap type"
             ),
             warning(
+                "spawn_rules/placement_obstruction",
                 "spawn_obstruction_predicate",
                 "Spawn Rules for 'spawn_obstruction_predicate' in test:mob must use a registered obstruction predicate"
             ),
             warning(
+                "spawn_rules/placement_predicate",
                 "spawn_predicate",
                 "Spawn Rules for 'spawn_predicate' in test:mob must use a registered entity spawn predicate"
             ),
@@ -124,7 +128,7 @@ fn the_engine_s_unregistered_placement_loads_with_four_warnings() {
 fn the_engine_s_spawn_rules_without_an_identifier_are_refused() {
     let at = "minecraft:spawn_rules/description/identifier";
     let closing = (
-        "DocumentRejected".to_owned(),
+        "spawn_rules/failed_rules".to_owned(),
         Severity::Error,
         String::new(),
         "Failed to load spawn rules".to_owned(),
@@ -133,7 +137,7 @@ fn the_engine_s_spawn_rules_without_an_identifier_are_refused() {
         found(&rejected(&engine("case-1.json"), &context())),
         [
             (
-                "MissingRequiredField".to_owned(),
+                "spawn/missing_identifier".to_owned(),
                 Severity::Error,
                 at.to_owned(),
                 "Missing identifier in spawn rule file".to_owned()
@@ -145,7 +149,7 @@ fn the_engine_s_spawn_rules_without_an_identifier_are_refused() {
     assert_eq!(refused.len(), 2, "{refused:#?}");
     assert_eq!(
         (refused[0].0.as_str(), refused[0].1, refused[0].2.as_str()),
-        ("MissingRequiredField", Severity::Error, at)
+        ("core/missing_required_field", Severity::Error, at)
     );
     assert_eq!(refused[1], closing);
 }
@@ -175,13 +179,13 @@ fn the_engine_s_spawn_groups() {
         found(&refused.diagnostics),
         [
             (
-                "MissingRequiredField".to_owned(),
+                "spawn/missing_identifier".to_owned(),
                 Severity::Error,
                 "minecraft:spawn_groups/description/identifier".to_owned(),
                 "Missing identifier in spawn rule file".to_owned()
             ),
             (
-                "DocumentRejected".to_owned(),
+                "spawn_groups/failed_groups".to_owned(),
                 Severity::Error,
                 String::new(),
                 "Failed to load spawn groups".to_owned()

@@ -137,7 +137,7 @@ fn a_finding_that_vanilla_words_carries_vanillas_text_and_ours_none() {
         ),
     ] {
         assert_ne!(finding.code, own, "the text is carried");
-        assert_eq!(finding.code.name(), own.name());
+        assert_eq!(finding.code.kind(), own.kind());
     }
 }
 

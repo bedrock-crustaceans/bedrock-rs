@@ -205,12 +205,12 @@ fn the_document_reader_returns_the_findings_of_a_file_that_loads() {
         .diagnostics()
         .iter()
         .filter(|d| d.severity == Severity::Info)
-        .map(|d| (d.code.name(), d.location.json_path.to_string()))
+        .map(|d| (d.code.id(), d.location.json_path.to_string()))
         .collect();
     assert_eq!(
         warnings,
         [(
-            "InvalidValue",
+            "core/invalid_value",
             "minecraft:pack_settings/settings/0/values/banana:slider".to_owned()
         )]
     );

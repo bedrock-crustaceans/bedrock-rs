@@ -54,7 +54,7 @@ fn a_failing_top_copy_leaves_the_path_without_a_table() {
         .filter(|d| d.severity == Severity::Error)
         .collect();
     assert_eq!(errors.len(), 1);
-    assert_eq!(errors[0].code.name(), "MalformedInput");
+    assert_eq!(errors[0].code.id(), "loot/invalid_table");
     assert_eq!(
         errors[0].location.path.as_ref().unwrap().as_str(),
         "loot_tables/chests/x.json"

@@ -83,11 +83,11 @@ fn v02_the_1_26_45_vanilla_roots_fail_on_a_1_26_20_engine_where_they_use_later_t
                     .diagnostics
                     .iter()
                     .filter(|f| f.severity == bedrock_addon::diagnostic::Severity::Error)
-                    .filter(|f| f.code.name() != "DocumentRejected")
+                    .filter(|f| f.code.id() != "ddui/failed_to_load")
                     .collect();
                 assert!(!errors.is_empty(), "{name}");
                 for error in errors {
-                    assert_eq!(error.code.name(), "InvalidValue", "{name}");
+                    assert_eq!(error.code.id(), "core/invalid_value", "{name}");
                     let written = spanned(text, error);
                     assert!(
                         [
@@ -154,9 +154,9 @@ fn v04_the_1_26_60_script_ui_roots_load_on_their_engine_and_write_back_as_author
         let d = rejects(root_in(text, &cx(E45, true)));
         let first = d.iter().next().unwrap();
         assert_eq!(first.severity, bedrock_addon::diagnostic::Severity::Error);
-        assert_eq!(first.code.name(), "InvalidValue", "{name}");
+        assert_eq!(first.code.id(), "core/invalid_value", "{name}");
         assert_eq!(spanned(text, first), r#""Form.Panel""#, "{name}");
-        assert_eq!(found(&d)[1].1, "FieldSinceEngine", "{name}");
+        assert_eq!(found(&d)[1].1, "core/field_since_engine", "{name}");
         assert!(found(&d)[1].3.contains("1.26.60"), "{:?}", found(&d)[1]);
     }
 }
@@ -523,7 +523,7 @@ fn a_number_beyond_a_double_in_attribs_refuses_the_file() {
             found(&refused),
             [
                 error(
-                    "MalformedInput",
+                    "core/document_json",
                     "",
                     "Failed to parse the Minecraft Document JSON: Number too big to be stored in double."
                 ),
@@ -642,12 +642,12 @@ fn an_exponent_beyond_a_double_in_attribs_refuses_the_file_at_the_member() {
         found(&refused),
         [
             error(
-                "InvalidValue",
+                "ddui/number_too_big",
                 at,
                 "Failed to parse the Minecraft Document JSON: Number too big to be stored in double."
             ),
             error(
-                "InvalidValue",
+                "ddui/number_too_big",
                 at,
                 "Failed to parse the Minecraft Document JSON: Number too big to be stored in double."
             ),
@@ -668,7 +668,7 @@ fn an_integer_beyond_a_double_in_attribs_refuses_the_file() {
             found(&refused),
             [
                 error(
-                    "MalformedInput",
+                    "core/document_json",
                     "",
                     "Failed to parse the Minecraft Document JSON: Number too big to be stored in double."
                 ),
@@ -709,7 +709,7 @@ fn a_number_beyond_a_double_at_the_deepest_level_the_reader_takes_refuses_the_fi
         found(&refused),
         [
             error(
-                "MalformedInput",
+                "core/document_json",
                 "",
                 "Failed to parse the Minecraft Document JSON: Number too big to be stored in double."
             ),

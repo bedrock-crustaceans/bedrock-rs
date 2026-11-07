@@ -109,7 +109,7 @@ pub fn rendered<'a>(diagnostics: impl IntoIterator<Item = &'a Diagnostic>) -> Ve
         .into_iter()
         .map(|finding| {
             (
-                finding.code.name(),
+                finding.code.id(),
                 finding.severity,
                 finding.code.to_string(),
             )

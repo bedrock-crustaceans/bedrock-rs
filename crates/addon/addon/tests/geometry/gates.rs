@@ -1,7 +1,7 @@
 //! The fixtures (g01–g29): the version gates, the schema of each era in
 //! its lenient and strict mode, the identifier rules and the parse-time checks.
 
-use bedrock_addon::diagnostic::Severity;
+use bedrock_addon::diagnostic::{Kind, Severity};
 use bedrock_addon::families::geometry::{CubeUv, FitToFrame, Locator};
 use bedrock_addon::version::FormatVersion;
 
@@ -35,7 +35,7 @@ fn g01_exceeds_engine() {
     let d = rejected(load(&geometry("9.0.0", "geometry.x", "")));
     expect_at(
         &d,
-        "UnsupportedVersion",
+        "geometry/exceeds_game_version",
         Severity::Error,
         "format_version",
         "Error: geometry file format version: 9.0.0 exceeds game version: 1.26.60. Skipping.",
@@ -51,7 +51,7 @@ fn g01_exceeds_engine() {
     ));
     expect(
         &d,
-        "UnsupportedVersion",
+        "geometry/exceeds_game_version",
         Severity::Error,
         "Error: geometry file format version: 1.26.40 exceeds game version: 1.26.20. Skipping.",
     );
@@ -63,7 +63,7 @@ fn g02_not_object() {
         let d = rejected(load(text));
         expect(
             &d,
-            "MalformedInput",
+            "geometry/not_an_object",
             Severity::Error,
             "geometry file could not be loaded: expected the contents to be inside a JSON object - The file has to start with an \"{\" and end with a \"}\"",
         );
@@ -78,7 +78,7 @@ fn g03_syntax_error() {
     ));
     assert_eq!(d.len(), 1);
     let finding = d.iter().next().unwrap();
-    assert_eq!(finding.code.name(), "MalformedInput");
+    assert_eq!(finding.code.id(), "core/parse_error");
     assert_eq!(finding.severity, Severity::Error);
     assert!(
         finding.code.to_string().starts_with("parse error:\n"),
@@ -93,7 +93,7 @@ fn a_file_nested_too_deep_is_a_parse_error() {
     let d = rejected(load(&text));
     expect(
         &d,
-        "MalformedInput",
+        "core/parse_error",
         Severity::Error,
         "parse error:\nnesting too deep",
     );
@@ -107,12 +107,17 @@ fn g04_strict_121_unknown_member() {
     let d = rejected(load(text));
     expect_at(
         &d,
-        "UnrecognizedField",
+        "core/child_not_valid",
         Severity::Error,
         "minecraft:geometry/0/bones/0/neverRender",
         "child 'neverRender' not valid here.",
     );
-    expect(&d, "InvalidValue", Severity::Error, DID_NOT_VALIDATE);
+    expect(
+        &d,
+        "geometry/did_not_validate",
+        Severity::Error,
+        DID_NOT_VALIDATE,
+    );
 }
 
 #[test]
@@ -120,7 +125,7 @@ fn g05_lenient_112_unknown_member() {
     let document = loaded(load(&with_bone("1.12.0", r#", "neverRender": true"#)));
     expect_at(
         document.diagnostics(),
-        "UnrecognizedField",
+        "core/unrecognized_field_worded",
         Severity::Info,
         "minecraft:geometry/0/bones/0/neverRender",
         "child 'neverRender' not valid here (removed; format_version < 1.19.30)",
@@ -143,7 +148,10 @@ fn an_unknown_member_is_judged_at_every_level_of_the_file() {
     };
     let document = loaded(load(&file("1.19.29")));
     let d = document.diagnostics();
-    assert_eq!(count(d, "UnrecognizedField", Severity::Info), 6);
+    assert_eq!(
+        count(d, "core/unrecognized_field_worded", Severity::Info),
+        6
+    );
     for at in [
         "extra_root",
         "minecraft:geometry/0/extra_geometry",
@@ -158,10 +166,10 @@ fn an_unknown_member_is_judged_at_every_level_of_the_file() {
         );
     }
     let d = rejected(load(&file("1.19.30")));
-    assert_eq!(count(&d, "UnrecognizedField", Severity::Error), 6);
+    assert_eq!(count(&d, "core/child_not_valid", Severity::Error), 6);
     expect(
         &d,
-        "UnrecognizedField",
+        "core/child_not_valid",
         Severity::Error,
         "child 'debug' not valid here.",
     );
@@ -172,17 +180,17 @@ fn a_member_of_the_wrong_type_is_removed_below_1_19_30_and_fatal_from_it() {
     let bone = r#", "pivot": "centre", "inflate": "1", "mirror": 1, "cubes": {}"#;
     let document = loaded(load(&with_bone("1.19.29", bone)));
     let d = document.diagnostics();
-    assert_eq!(count(d, "InvalidType", Severity::Info), 4);
+    assert_eq!(count(d, "core/unknown_child_option", Severity::Info), 4);
     expect_at(
         d,
-        "InvalidType",
+        "core/unknown_child_option",
         Severity::Info,
         "minecraft:geometry/0/bones/0/pivot",
         "unknown child schema option type.  Allowed types: array",
     );
     expect_at(
         d,
-        "InvalidType",
+        "core/unknown_child_option",
         Severity::Info,
         "minecraft:geometry/0/bones/0/mirror",
         "unknown child schema option type.  Allowed types: bool",
@@ -191,8 +199,13 @@ fn a_member_of_the_wrong_type_is_removed_below_1_19_30_and_fatal_from_it() {
     assert_eq!((body.pivot, body.inflate, body.mirror), (None, None, None));
     assert!(body.cubes.is_none());
     let d = rejected(load(&with_bone("1.19.30", bone)));
-    assert_eq!(count(&d, "InvalidType", Severity::Error), 4);
-    expect(&d, "InvalidValue", Severity::Error, DID_NOT_VALIDATE);
+    assert_eq!(count(&d, "core/unknown_child_option", Severity::Error), 4);
+    expect(
+        &d,
+        "geometry/did_not_validate",
+        Severity::Error,
+        DID_NOT_VALIDATE,
+    );
 }
 
 #[test]
@@ -200,7 +213,7 @@ fn g06_missing_identifier() {
     let text = r#"{"format_version": "1.12.0", "minecraft:geometry": [{"description": {}}]}"#;
     fails_schema(
         load(text),
-        "MissingRequiredField",
+        "core/required_child",
         "minecraft:geometry/0/description",
         "Required child identifier not found",
     );
@@ -261,13 +274,13 @@ fn every_required_member_is_required_in_the_lenient_mode_too() {
         ),
     ];
     for (text, message, at) in cases {
-        fails_schema(load(&text), "MissingRequiredField", at, message);
+        fails_schema(load(&text), "core/required_child", at, message);
     }
     // A required member of the wrong type is removed and then missing.
     let document = load(&with_bone("1.12.0", "").replace(r#""name": "body""#, r#""name": 5"#));
     fails_schema(
         document,
-        "MissingRequiredField",
+        "core/required_child",
         "minecraft:geometry/0/bones/0",
         "Required child name not found",
     );
@@ -277,25 +290,25 @@ fn every_required_member_is_required_in_the_lenient_mode_too() {
 fn g07_vec3_length() {
     fails_schema(
         load(&with_bone("1.16.0", r#", "pivot": [0, 1]"#)),
-        "InvalidValue",
+        "core/array_too_small",
         "minecraft:geometry/0/bones/0/pivot",
         "Array too small (2 < 3)",
     );
     fails_schema(
         load(&with_bone("1.16.0", r#", "pivot": [0, 1, 2, 3]"#)),
-        "InvalidValue",
+        "core/array_too_large",
         "minecraft:geometry/0/bones/0/pivot",
         "Array too large (4 > 3)",
     );
     fails_schema(
         load(&cube("1.16.0", r#"{"uv": [0, 1, 2]}"#)),
-        "InvalidValue",
+        "core/array_too_large",
         "minecraft:geometry/0/bones/0/cubes/0/uv",
         "Array too large (3 > 2)",
     );
     fails_schema(
         load(&cube("1.16.0", r#"{"uv": [0]}"#)),
-        "InvalidValue",
+        "core/array_too_small",
         "minecraft:geometry/0/bones/0/cubes/0/uv",
         "Array too small (1 < 2)",
     );
@@ -315,30 +328,38 @@ fn g08_inheritance_after_112() {
         let d = rejected(load(&file(version)));
         expect_at(
             &d,
-            "InvalidValue",
+            "geometry/no_namespace_custom",
             Severity::Error,
             "minecraft:geometry/1/description/identifier",
             "Error: namespaces are not supported for custom geometry: identifier: geometry.a:geometry.b",
         );
-        expect(&d, "InvalidValue", Severity::Error, DID_NOT_VALIDATE);
+        expect(
+            &d,
+            "geometry/did_not_validate",
+            Severity::Error,
+            DID_NOT_VALIDATE,
+        );
     }
     // From 1.19.30 the schema lets the `:` pass and the identifier loop refuses it: no
     // "didn't validate".
     let d = rejected(load(&file("1.19.30")));
-    assert_eq!(count(&d, "InvalidValue", Severity::Error), 1);
+    assert_eq!(
+        count(&d, "geometry/no_namespace_custom", Severity::Error),
+        1
+    );
 }
 
 #[test]
 fn an_identifier_needs_a_geometry_name_somewhere_in_it() {
     fails_schema(
         load(&geometry("1.12.0", "pig", "")),
-        "InvalidValue",
+        "core/invalid_value",
         "minecraft:geometry/0/description/identifier",
         "invalid value",
     );
     fails_schema(
         load(&geometry("1.21.0", "demo:pig", "")),
-        "InvalidValue",
+        "core/invalid_value",
         "minecraft:geometry/0/description/identifier",
         "invalid value",
     );
@@ -360,7 +381,7 @@ fn g09_custom_namespace_rejected() {
     let d = rejected(load(text));
     expect_at(
         &d,
-        "InvalidValue",
+        "geometry/no_namespace_custom",
         Severity::Error,
         "minecraft:geometry/1/description/identifier",
         "Error: namespaces are not supported for custom geometry: identifier: demo:geometry.x",
@@ -371,7 +392,7 @@ fn g09_custom_namespace_rejected() {
         let d = rejected(load_at(path, text, &base_game()));
         expect(
             &d,
-            "InvalidValue",
+            "geometry/no_namespace_internal",
             Severity::Error,
             "Error: namespaces are not supported for internal entity geometry: identifier: demo:geometry.x",
         );
@@ -380,7 +401,7 @@ fn g09_custom_namespace_rejected() {
     let d = rejected(load_at("models/blocks/x.json", text, &rp()));
     expect(
         &d,
-        "InvalidValue",
+        "geometry/no_namespace_custom",
         Severity::Error,
         "Error: namespaces are not supported for custom geometry: identifier: demo:geometry.x",
     );
@@ -396,7 +417,7 @@ fn g10_base_blocks_floor() {
     ));
     expect_at(
         &d,
-        "UnsupportedVersion",
+        "geometry/internal_blocks_floor",
         Severity::Error,
         "format_version",
         "Internal blocks are required to use geometry version >= 1.19.30",
@@ -441,12 +462,17 @@ fn g11_base_blocks_namespace() {
         ));
         if identifier == "minecraft:pig" {
             // The schema's validator refuses it first.
-            expect(&d, "InvalidValue", Severity::Error, DID_NOT_VALIDATE);
+            expect(
+                &d,
+                "geometry/did_not_validate",
+                Severity::Error,
+                DID_NOT_VALIDATE,
+            );
             continue;
         }
         expect(
             &d,
-            "InvalidValue",
+            "geometry/needs_minecraft_namespace",
             Severity::Error,
             &format!(
                 "Error: Internal block geometries required the minecraft namespace: {identifier}"
@@ -467,7 +493,7 @@ fn g12_embedded_before_121110() {
     let document = loaded(load(&transforms("1.21.100", both)));
     expect_at(
         document.diagnostics(),
-        "InvalidValue",
+        "geometry/embedded_too_old",
         Severity::Error,
         "minecraft:geometry/0/item_display_transforms/embedded",
         "\"item_display_transform\" for \"geometry.x\" is invalid - \"embedded\" can only be used in a file versioned 1.21.110 or higher",
@@ -544,13 +570,16 @@ fn g14_transform_ranges() {
     ] {
         expect_at(
             d,
-            "InvalidValue",
+            "geometry/transform_out_of_bounds",
             Severity::Error,
             &format!("{at}/{member}"),
             text,
         );
     }
-    assert_eq!(count(d, "InvalidValue", Severity::Error), 5);
+    assert_eq!(
+        count(d, "geometry/transform_out_of_bounds", Severity::Error),
+        5
+    );
     let t = document.value().geometries[0]
         .item_display_transforms
         .clone()
@@ -581,7 +610,11 @@ fn a_transform_vector_on_the_edge_of_its_range_is_applied() {
         let text = transforms("1.21.0", &format!(r#"{{"gui": {{"{member}": {vector}}}}}"#));
         let document = loaded(load(&text));
         assert_eq!(
-            count(document.diagnostics(), "InvalidValue", Severity::Error),
+            count(
+                document.diagnostics(),
+                "geometry/transform_out_of_bounds",
+                Severity::Error
+            ),
             1,
             "{member} {vector}"
         );
@@ -618,7 +651,7 @@ fn g15_uv_rotation() {
         assert_eq!(read, None, "{rotation}");
         expect_at(
             &d,
-            "InvalidValue",
+            "geometry/invalid_uv_rotation",
             Severity::Error,
             "minecraft:geometry/0/bones/0/cubes/0/uv/north/uv_rotation",
             &format!("Invalid uv rotation value '{shown}', valid values are 0, 90, 180 and 270"),
@@ -639,19 +672,19 @@ fn g15_uv_rotation() {
     assert_eq!(read, None);
     expect(
         &d,
-        "UnrecognizedField",
+        "core/unrecognized_field_worded",
         Severity::Info,
         "child 'uv_rotation' not valid here (removed; format_version < 1.19.30)",
     );
     fails_schema(
         load(&face("1.19.30", "90")),
-        "UnrecognizedField",
+        "core/child_not_valid",
         "minecraft:geometry/0/bones/0/cubes/0/uv/north/uv_rotation",
         "child 'uv_rotation' not valid here.",
     );
     fails_schema(
         load(&face("1.20.99", "90")),
-        "UnrecognizedField",
+        "core/child_not_valid",
         "minecraft:geometry/0/bones/0/cubes/0/uv/north/uv_rotation",
         "child 'uv_rotation' not valid here.",
     );
@@ -659,7 +692,7 @@ fn g15_uv_rotation() {
 
 #[test]
 fn g16_poly_mesh_counts() {
-    const AT: &str = "Error InvalidValue minecraft:geometry/0/bones/0/poly_mesh";
+    const AT: &str = "minecraft:geometry/0/bones/0/poly_mesh";
 
     let mesh = |positions: usize, normals: usize, uvs: usize, polys: &str| {
         let list = |n: usize, item: &str| vec![item; n].join(", ");
@@ -682,7 +715,7 @@ fn g16_poly_mesh_counts() {
                 format!(
                     "{:?} {} {} {}",
                     f.severity,
-                    f.code.name(),
+                    f.code.id(),
                     f.location.json_path,
                     f.code
                 )
@@ -693,25 +726,25 @@ fn g16_poly_mesh_counts() {
     assert_eq!(
         warnings(&mesh(4, 4, 4, "tri_list")),
         [format!(
-            "{AT} \"polys\" specifies \"tri_list\" but positions[] isn't a multiple of three?"
+            "Error geometry/not_triangles {AT} \"polys\" specifies \"tri_list\" but positions[] isn't a multiple of three?"
         )]
     );
     assert_eq!(
         warnings(&mesh(6, 6, 6, "quad_list")),
         [format!(
-            "{AT} \"polys\" specifies \"quad_list\" but positions[] isn't a multiple of four?"
+            "Error geometry/not_quads {AT} \"polys\" specifies \"quad_list\" but positions[] isn't a multiple of four?"
         )]
     );
     assert_eq!(
         warnings(&mesh(3, 2, 3, "tri_list")),
         [format!(
-            "{AT} No 'polys' section, and the number of positions, normals, and UVs aren't equal (3, 2, 3 resp)"
+            "Error geometry/no_polys_section {AT} No 'polys' section, and the number of positions, normals, and UVs aren't equal (3, 2, 3 resp)"
         )]
     );
     assert_eq!(
         warnings(&mesh(4, 4, 3, "quad_list")),
         [format!(
-            "{AT} No 'polys' section, and the number of positions, normals, and UVs aren't equal (4, 4, 3 resp)"
+            "Error geometry/no_polys_section {AT} No 'polys' section, and the number of positions, normals, and UVs aren't equal (4, 4, 3 resp)"
         )]
     );
     assert!(warnings(&mesh(3, 3, 3, "tri_list")).is_empty());
@@ -757,7 +790,16 @@ fn a_poly_mesh_position_normal_or_uv_of_another_length_fails_the_file() {
                     format!("minecraft:geometry/0/bones/0/poly_mesh/{member}/0"),
                 )
             };
-            fails_schema(load(&file), "InvalidValue", &at, text);
+            fails_schema(
+                load(&file),
+                if text.contains("too large") {
+                    "core/array_too_large"
+                } else {
+                    "core/array_too_small"
+                },
+                &at,
+                text,
+            );
         }
     }
     // The lengths the schema has load.
@@ -777,19 +819,19 @@ fn a_polygon_has_three_or_four_vertices_of_three_indices() {
     ))));
     fails_schema(
         load(&polys(&format!("[[{v}, {v}]]"))),
-        "InvalidValue",
+        "core/array_too_small",
         "minecraft:geometry/0/bones/0/poly_mesh/polys/0",
         "Array too small (2 < 3)",
     );
     fails_schema(
         load(&polys(&format!("[[{v}, {v}, {v}, {v}, {v}]]"))),
-        "InvalidValue",
+        "core/array_too_large",
         "minecraft:geometry/0/bones/0/poly_mesh/polys/0",
         "Array too large (5 > 4)",
     );
     fails_schema(
         load(&polys(&format!("[[{v}, {v}, [0, 1]]]"))),
-        "InvalidValue",
+        "core/array_too_small",
         "minecraft:geometry/0/bones/0/poly_mesh/polys/0/2",
         "Array too small (2 < 3)",
     );
@@ -803,7 +845,7 @@ fn g17_bone_case_merge() {
     let d = document.diagnostics();
     expect_at(
         d,
-        "DuplicateBone",
+        "core/duplicate_bone",
         Severity::Info,
         "minecraft:geometry/0/bones/2",
         "two bones collide after lower-casing",
@@ -841,7 +883,7 @@ fn a_bone_parent_that_is_no_bone_is_a_warning_and_a_cycle_is_an_information() {
     let d = document.diagnostics();
     expect_at(
         d,
-        "UnresolvedReference",
+        "geometry/bone_parent_missing",
         Severity::Info,
         "minecraft:geometry/0/bones/0/parent",
         "bone 'a' has parent 'ghost', which is not a bone of geometry 'geometry.x'",
@@ -851,7 +893,7 @@ fn a_bone_parent_that_is_no_bone_is_a_warning_and_a_cycle_is_an_information() {
     let document = loaded(load(&bones(r#"{"name": "a", "parent": "A"}"#)));
     expect_at(
         document.diagnostics(),
-        "ReferenceCycle",
+        "geometry/parent_is_self",
         Severity::Info,
         "minecraft:geometry/0/bones/0/parent",
         "Error: parenting model part to itself!",
@@ -862,7 +904,7 @@ fn a_bone_parent_that_is_no_bone_is_a_warning_and_a_cycle_is_an_information() {
            {"name": "leaf", "parent": "a"}, {"name": "root"}, {"name": "child", "parent": "root"}"#,
     )));
     let d = document.diagnostics();
-    assert_eq!(count(d, "ReferenceCycle", Severity::Info), 3);
+    assert_eq!(count(d, "core/reference_cycle", Severity::Info), 3);
     assert_eq!(d.len(), 3);
     for index in 0..3 {
         assert!(d.iter().any(|f| f.location.json_path.to_string()
@@ -878,7 +920,7 @@ fn g18_locator_object_needs_rotation() {
     for version in ["1.12.0", "1.26.40"] {
         fails_schema(
             load(&locator(version, r#"{"offset": [0, 0, 0]}"#)),
-            "MissingRequiredField",
+            "core/required_child",
             "minecraft:geometry/0/bones/0/locators/lead",
             "Required child rotation not found",
         );
@@ -898,7 +940,7 @@ fn g18_locator_object_needs_rotation() {
     // A name outside `[a-zA-Z0-9_.-]+` is no declared member.
     fails_schema(
         load(&with_bone("1.21.0", r#", "locators": {"a b": [0, 0, 0]}"#)),
-        "UnrecognizedField",
+        "core/child_not_valid",
         "minecraft:geometry/0/bones/0/locators/a b",
         "child 'a b' not valid here.",
     );
@@ -909,14 +951,14 @@ fn g19_strict_from_11930() {
     let bone = r#", "neverRender": true"#;
     fails_schema(
         load(&with_bone("1.19.30", bone)),
-        "UnrecognizedField",
+        "core/child_not_valid",
         "minecraft:geometry/0/bones/0/neverRender",
         "child 'neverRender' not valid here.",
     );
     let document = loaded(load(&with_bone("1.19.20", bone)));
     expect(
         document.diagnostics(),
-        "UnrecognizedField",
+        "core/unrecognized_field_worded",
         Severity::Info,
         "child 'neverRender' not valid here (removed; format_version < 1.19.30)",
     );
@@ -929,7 +971,7 @@ fn g20_empty_and_null() {
         let d = rejected(load(text));
         assert_eq!(d.len(), 1, "{text:?}");
         let finding = d.iter().next().unwrap();
-        assert_eq!(finding.code.name(), "EmptyDocument");
+        assert_eq!(finding.code.id(), "core/empty_document");
         assert_eq!(
             finding.severity,
             Severity::Info,
@@ -942,7 +984,7 @@ fn g20_empty_and_null() {
 fn g21_unknown_transform_key() {
     fails_schema(
         load(&transforms("1.21.0", r#"{"gui2": {}}"#)),
-        "UnrecognizedField",
+        "core/child_not_valid",
         "minecraft:geometry/0/item_display_transforms/gui2",
         "child 'gui2' not valid here.",
     );
@@ -953,7 +995,7 @@ fn g21_unknown_transform_key() {
             &transforms("1.21.0", r#"{"shelf": {}}"#),
             &engine(1, 26, 20),
         ),
-        "UnrecognizedField",
+        "core/child_not_valid",
         "minecraft:geometry/0/item_display_transforms/shelf",
         "child 'shelf' not valid here.",
     );
@@ -963,14 +1005,14 @@ fn g21_unknown_transform_key() {
             &transforms("1.21.0", r#"{"shelf": {}}"#),
             &engine(1, 26, 39),
         ),
-        "UnrecognizedField",
+        "core/child_not_valid",
         "minecraft:geometry/0/item_display_transforms/shelf",
         "child 'shelf' not valid here.",
     );
     // `item_display_transforms` itself is undeclared below 1.21.
     fails_schema(
         load(&transforms("1.20.80", "{}")),
-        "UnrecognizedField",
+        "core/child_not_valid",
         "minecraft:geometry/0/item_display_transforms",
         "child 'item_display_transforms' not valid here.",
     );
@@ -983,13 +1025,13 @@ fn g21_unknown_transform_key() {
     // A transform that is not an object fails its type.
     fails_schema(
         load(&transforms("1.21.0", r#"{"gui": null}"#)),
-        "InvalidType",
+        "core/unknown_child_option",
         "minecraft:geometry/0/item_display_transforms/gui",
         "unknown child schema option type.  Allowed types: object",
     );
     fails_schema(
         load(&transforms("1.21.0", "[]")),
-        "InvalidType",
+        "core/unknown_child_option",
         "minecraft:geometry/0/item_display_transforms",
         "unknown child schema option type.  Allowed types: object",
     );
@@ -1005,7 +1047,7 @@ fn g21b_shelf_before_12640_engine_12645() {
         ));
         expect_at(
             &d,
-            "InvalidValue",
+            "geometry/shelf_too_old",
             Severity::Error,
             "minecraft:geometry/0/item_display_transforms/shelf",
             "\"item_display_transform\" for \"geometry.x\" is invalid - \"shelf\" can only be used in a file version 1.26.40 or higher",
@@ -1031,7 +1073,7 @@ fn g22_fit_to_frame_outside_gui() {
                 "1.26.40",
                 &format!(r#"{{"{name}": {{"fit_to_frame": false}}}}"#),
             )),
-            "UnrecognizedField",
+            "core/child_not_valid",
             &format!("minecraft:geometry/0/item_display_transforms/{name}/fit_to_frame"),
             "child 'fit_to_frame' not valid here.",
         );
@@ -1050,7 +1092,7 @@ fn g22_fit_to_frame_outside_gui() {
                 "1.21.130",
                 &format!(r#"{{"{name}": {{"fit_to_frame": false}}}}"#),
             )),
-            "UnrecognizedField",
+            "core/child_not_valid",
             &format!("minecraft:geometry/0/item_display_transforms/{name}/fit_to_frame"),
             "child 'fit_to_frame' not valid here.",
         );
@@ -1078,13 +1120,13 @@ fn g23_locator_any_length_deviation() {
     ] {
         expect_at(
             d,
-            "InvalidValue",
+            "core/invalid_value",
             Severity::Info,
             &format!("minecraft:geometry/0/bones/0/locators/{at}"),
             "invalid value",
         );
     }
-    assert_eq!(count(d, "InvalidValue", Severity::Info), 4);
+    assert_eq!(count(d, "core/invalid_value", Severity::Info), 4);
     let locators = document.value().geometries[0].bones()[0]
         .locators
         .clone()
@@ -1104,13 +1146,13 @@ fn g24_v18_version_ceiling() {
     let file = |version: &str| format!(r#"{{"format_version": "{version}", "geometry.x": {{}}}}"#);
     fails_schema(
         load(&file("1.11.1")),
-        "UnsupportedVersion",
+        "geometry/above_max_version",
         "format_version",
         "Version 1.11.1 greater than max allowed version (1.11.0)",
     );
     fails_schema(
         load(&file("1.11.99")),
-        "UnsupportedVersion",
+        "geometry/above_max_version",
         "format_version",
         "Version 1.11.99 greater than max allowed version (1.11.0)",
     );
@@ -1124,7 +1166,7 @@ fn g25_render_group_id_negative() {
     for version in ["1.16.0", "1.21.0"] {
         fails_schema(
             load(&with_bone(version, r#", "render_group_id": -1"#)),
-            "InvalidValue",
+            "core/outside_range",
             "minecraft:geometry/0/bones/0/render_group_id",
             "Value '-1' outside valid range [0, 2147483647]",
         );
@@ -1133,13 +1175,13 @@ fn g25_render_group_id_negative() {
         load(
             r#"{"format_version": "1.8.0", "geometry.x": {"bones": [{"name": "a", "render_group_id": -7}]}}"#,
         ),
-        "InvalidValue",
+        "core/outside_range",
         "geometry.x/bones/0/render_group_id",
         "Value '-7' outside valid range [0, 2147483647]",
     );
     fails_schema(
         load(r#"{"geometry.x": {"bones": [{"name": "a", "render_group_id": -1}]}}"#),
-        "InvalidValue",
+        "core/outside_range",
         "geometry.x/bones/0/render_group_id",
         "Value '-1' outside valid range [0, 2147483647]",
     );
@@ -1157,12 +1199,17 @@ fn g26_geometry_array_empty() {
         let d = rejected(result);
         expect_at(
             &d,
-            "InvalidValue",
+            "core/array_too_small",
             Severity::Error,
             "minecraft:geometry",
             "Array too small (0 < 1)",
         );
-        expect(&d, "InvalidValue", Severity::Error, DID_NOT_VALIDATE);
+        expect(
+            &d,
+            "geometry/did_not_validate",
+            Severity::Error,
+            DID_NOT_VALIDATE,
+        );
     }
 }
 
@@ -1173,7 +1220,7 @@ fn g27_polys_string_value() {
             "1.16.0",
             r#", "poly_mesh": {"polys": "fan_list"}"#,
         )),
-        "InvalidValue",
+        "core/not_allowed_regex",
         "minecraft:geometry/0/bones/0/poly_mesh/polys",
         "Value 'fan_list' not allowed.  Must match at least one of the following regex patterns: tri_list, quad_list",
     );
@@ -1188,7 +1235,7 @@ fn g27_polys_string_value() {
     )));
     fails_schema(
         load(&with_bone("1.21.0", r#", "poly_mesh": {"polys": 5}"#)),
-        "InvalidType",
+        "core/unknown_child_option",
         "minecraft:geometry/0/bones/0/poly_mesh/polys",
         "unknown child schema option type.  Allowed types: array, string",
     );
@@ -1205,21 +1252,21 @@ fn a_coercion_of_a_keyed_file_is_told_at_the_member_of_the_file() {
     let d = document.diagnostics();
     expect_at(
         d,
-        "InvalidValue",
+        "geometry/uv_truncated",
         Severity::Info,
         "geometry.x:geometry.p/bones/0/cubes/0/uv/1",
         "box uv 3.5 is read as the whole number 3",
     );
     expect_at(
         d,
-        "ClampedValue",
+        "geometry/bounds_clamped",
         Severity::Info,
         "geometry.x:geometry.p/visible_bounds_width",
         "visible_bounds_width 80.000000 clamped to 50.000000",
     );
     expect_at(
         d,
-        "ClampedValue",
+        "geometry/bounds_clamped",
         Severity::Info,
         "geometry.a/visible_bounds_height",
         "visible_bounds_height 0.000000 clamped to 0.100000",
@@ -1232,7 +1279,7 @@ fn a_coercion_of_a_keyed_file_is_told_at_the_member_of_the_file() {
     // The bone it replaces is noted where the file has it.
     expect_at(
         d,
-        "DroppedField",
+        "core/dropped_field",
         Severity::Info,
         "geometry.a/bones/0",
         "field dropped",
@@ -1240,7 +1287,7 @@ fn a_coercion_of_a_keyed_file_is_told_at_the_member_of_the_file() {
     // And the name `B` it is one bone with `b` by.
     expect_at(
         d,
-        "InvalidValue",
+        "geometry/bone_lower_cased",
         Severity::Info,
         "geometry.a/bones/1/name",
         "bone name 'B' is read as 'b'",
@@ -1265,14 +1312,14 @@ fn g28_parse_coercions() {
     let d = document.diagnostics();
     expect_at(
         d,
-        "ClampedValue",
+        "geometry/bounds_clamped",
         Severity::Info,
         "minecraft:geometry/0/description/visible_bounds_width",
         "visible_bounds_width 0.000000 clamped to 0.100000",
     );
     expect_at(
         d,
-        "ClampedValue",
+        "geometry/bounds_clamped",
         Severity::Info,
         "minecraft:geometry/0/description/visible_bounds_height",
         "visible_bounds_height 80.000000 clamped to 50.000000",
@@ -1285,7 +1332,7 @@ fn g28_parse_coercions() {
     ] {
         expect_at(
             d,
-            "InvalidValue",
+            "geometry/uv_truncated",
             Severity::Info,
             &format!("minecraft:geometry/0/bones/0/cubes/{at}"),
             message,
@@ -1401,7 +1448,7 @@ fn a_missing_format_version_is_an_information_and_the_file_is_1_0_0_deviation() 
     assert_eq!(d.len(), 1);
     expect(
         d,
-        "MissingFormatVersion",
+        "core/missing_format_version",
         Severity::Info,
         "no format_version",
     );
@@ -1425,7 +1472,7 @@ fn an_unreadable_format_version_is_a_warning_and_the_file_is_1_0_0_deviation() {
         assert_eq!(d.len(), 1, "{written}");
         expect_at(
             d,
-            "MalformedFormatVersion",
+            "geometry/version_not_valid",
             Severity::Info,
             "format_version",
             &format!("format_version '{shown}' is not a valid version; treated as 1.0.0"),
@@ -1438,7 +1485,7 @@ fn an_unreadable_format_version_is_a_warning_and_the_file_is_1_0_0_deviation() {
     ));
     expect(
         &d,
-        "MissingRequiredField",
+        "core/required_child",
         Severity::Error,
         r"Required child geometry\.[a-zA-Z0-9_.'-:]+ not found",
     );
@@ -1452,7 +1499,11 @@ fn a_legacy_key_outside_the_geometry_pattern_is_an_unknown_member() {
     assert_eq!(document.value().geometries.len(), 1);
     assert_eq!(document.value().debug, Some(true));
     assert_eq!(
-        count(document.diagnostics(), "UnrecognizedField", Severity::Info),
+        count(
+            document.diagnostics(),
+            "core/unrecognized_field_worded",
+            Severity::Info
+        ),
         2
     );
 }
@@ -1461,13 +1512,13 @@ fn a_legacy_key_outside_the_geometry_pattern_is_an_unknown_member() {
 fn a_binding_of_the_wrong_json_type_fails_its_schema() {
     fails_schema(
         load(&with_bone("1.21.0", r#", "binding": {}"#)),
-        "InvalidType",
+        "core/unknown_child_option",
         "minecraft:geometry/0/bones/0/binding",
         "unknown child schema option type.  Allowed types: ExpressionNode",
     );
     fails_schema(
         load(&with_bone("1.21.0", r#", "binding": null"#)),
-        "InvalidType",
+        "core/unknown_child_option",
         "minecraft:geometry/0/bones/0/binding",
         "unknown child schema option type.  Allowed types: ExpressionNode",
     );
@@ -1482,8 +1533,13 @@ fn a_binding_of_the_wrong_json_type_fails_its_schema() {
 fn a_missing_required_member_is_not_reported_beside_another_failure_of_its_object() {
     let text = r#"{"format_version": "1.21.0", "minecraft:geometry": [{"description": {"identifier": "geometry.x"}, "bones": [{"neverRender": true}]}]}"#;
     let d = rejected(load(text));
-    assert_eq!(count(&d, "UnrecognizedField", Severity::Error), 1);
-    assert_eq!(count(&d, "MissingRequiredField", Severity::Error), 0);
+    assert_eq!(count(&d, "core/child_not_valid", Severity::Error), 1);
+    assert_eq!(
+        d.iter()
+            .filter(|f| f.kind() == Kind::MissingRequired && f.severity == Severity::Error)
+            .count(),
+        0
+    );
 }
 
 #[test]
@@ -1496,7 +1552,7 @@ fn an_int_member_with_a_fraction_or_beyond_an_i32_is_a_wrong_type() {
     for value in ["64.5", "2147483648", "-2147483649", "\"64\""] {
         fails_schema(
             load(&size(value)),
-            "InvalidType",
+            "core/unknown_child_option",
             "minecraft:geometry/0/description/texture_width",
             "unknown child schema option type.  Allowed types: int",
         );
@@ -1577,7 +1633,7 @@ fn a_keyed_file_of_1_12_0_is_read_by_the_keyed_reader_with_its_version() {
     let path = PackPath::from_static("pieces/hat/hat.geometry.json");
     let d = rejected(load_file(&path, KEYED.as_bytes(), &rp()));
     assert_eq!(
-        count(&d, "MissingRequiredField", Severity::Error),
+        count(&d, "core/required_child", Severity::Error),
         1,
         "{d:?}"
     );
@@ -1610,7 +1666,11 @@ fn a_keyed_file_of_1_12_0_is_read_by_the_keyed_reader_with_its_version() {
     assert_eq!(through_file.value(), through_keyed.value());
     // The engine's ceiling holds for the version the file states.
     let d = rejected(load_keyed_file(&path, KEYED.as_bytes(), &engine(1, 11, 0)));
-    assert_eq!(count(&d, "UnsupportedVersion", Severity::Error), 1, "{d:?}");
+    assert_eq!(
+        count(&d, "geometry/exceeds_game_version", Severity::Error),
+        1,
+        "{d:?}"
+    );
     // A modern file has no keyed model: its `minecraft:geometry` is no model of this door.
     let modern = r#"{ "format_version": "1.12.0", "minecraft:geometry": [ { "description": { "identifier": "geometry.x" } } ] }"#;
     assert!(load_keyed_file(&path, modern.as_bytes(), &rp()).is_err());
@@ -1625,7 +1685,7 @@ fn members_are_read_in_document_order() {
     )));
     let told: Vec<_> = d
         .iter()
-        .filter(|f| f.code.name() == "InvalidType")
+        .filter(|f| f.code.id() == "core/unknown_child_option")
         .map(|f| f.location.json_path.to_string())
         .collect();
     assert_eq!(
@@ -1650,7 +1710,7 @@ fn a_float_that_narrows_is_told_as_lossy() {
     let told: Vec<_> = document
         .diagnostics()
         .iter()
-        .filter(|f| f.code.name() == "LossyConversion")
+        .filter(|f| f.code.id() == "core/lossy_conversion")
         .map(|f| (f.severity, f.location.json_path.to_string()))
         .collect();
     assert_eq!(

@@ -87,7 +87,7 @@ fn findings(diagnostics: &Diagnostics) -> Vec<(&'static str, Severity, String)> 
         .iter()
         .map(|d| {
             let file = d.location.path.as_ref().map(ToString::to_string);
-            (d.code.name(), d.severity, file.unwrap_or_default())
+            (d.code.id(), d.severity, file.unwrap_or_default())
         })
         .collect()
 }
@@ -163,7 +163,7 @@ fn commands_json_is_read_at_the_root_only() {
     assert_eq!(
         findings(config.diagnostics()),
         [(
-            "IgnoredFile",
+            "core/ignored_file",
             Severity::Info,
             "config/default/commands.json".to_owned()
         )]
@@ -177,7 +177,7 @@ fn every_folder_is_read_whatever_its_name() {
     assert_eq!(
         findings(config.diagnostics()),
         [(
-            "MalformedInput",
+            "server_config/config_parse_failed_malformed_input",
             Severity::Error,
             "config/not-a-uuid/permissions.json".to_owned()
         )]
@@ -223,12 +223,12 @@ fn a_file_that_cannot_be_read_is_a_finding_and_the_folder_is_used() {
         findings(config.diagnostics()),
         [
             (
-                "ReadError",
+                "server_config/config_open_failed",
                 Severity::Error,
                 format!("config/{MODULE}/variables.json")
             ),
             (
-                "ReadError",
+                "server_config/config_open_failed",
                 Severity::Error,
                 "config/commands.json".to_owned()
             )
@@ -255,7 +255,7 @@ fn sc25_unreadable_a_file_of_mode_000_is_a_read_error() {
     let config = read_script_config(config_dir.path()).unwrap();
     assert!(config.packs[MODULE].variables.is_empty());
     let finding = config.diagnostics().first_error().unwrap();
-    assert_eq!(finding.code.name(), "ReadError");
+    assert_eq!(finding.code.id(), "server_config/config_open_failed");
     assert_eq!(
         finding.detail.as_deref(),
         Some(&bedrock_addon::diagnostic::DiagnosticDetail::Io(

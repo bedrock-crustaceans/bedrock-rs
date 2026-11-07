@@ -63,7 +63,7 @@ fn an_animate_condition_is_a_molang_string() {
     );
     // The crate's own: an information, the entry dropped.
     assert!(codes(&found, Severity::Warning).is_empty(), "{found:#?}");
-    assert!(codes(&found, Severity::Info).contains(&"InvalidType"));
+    assert!(codes(&found, Severity::Info).contains(&"core/invalid_type"));
 }
 
 #[test]
@@ -73,7 +73,10 @@ fn an_animate_object_with_two_members_is_reported() {
         r#"{ "description": { "identifier": "demo:x", "scripts": { "animate": [ { "a": "1", "b": "2" } ] } }, "components": {} }"#,
     );
     let (_, found) = stable(&text, &cx());
-    assert_eq!(codes(&found, Severity::Warning), ["InvalidValue"]);
+    assert_eq!(
+        codes(&found, Severity::Warning),
+        ["entity/animation_script_object_size"]
+    );
 }
 
 #[cfg(not(feature = "molang"))]
@@ -82,7 +85,7 @@ fn without_the_feature_expressions_are_not_checked() {
     let text = doc("1.26.50", &set_property(r#""query.is_baby ? 1 : 0""#));
     let (_, found) = stable(&text, &cx());
     assert!(
-        codes(&found, Severity::Info).contains(&"MolangNotChecked"),
+        codes(&found, Severity::Info).contains(&"core/molang_not_checked"),
         "{found:#?}"
     );
 }
@@ -99,7 +102,7 @@ fn a_rejected_animate_condition_behind_a_dropped_entry_is_at_the_index_of_the_fi
     let (_, found) = stable(&text, &compiling());
     let at: Vec<String> = found
         .iter()
-        .filter(|finding| finding.code.name() == "InvalidMolang")
+        .filter(|finding| finding.code.id() == "core/invalid_molang")
         .map(|finding| finding.location.json_path.to_string())
         .collect();
     assert!(!at.is_empty(), "{found:#?}");
@@ -139,15 +142,22 @@ fn m05_a_default_outside_the_allow_list_drops_the_property_group() {
         let (entity, found) = stable(&text, &compiling());
         assert!(entity.properties().is_empty(), "{default}");
         // "Error loading Actor Properties": the game's level-3 line, a kept error.
-        let group = with_code(&found, "DroppedField");
+        let group = with_code(&found, "entity/actor_properties_not_loaded");
         assert_eq!(
             group.last().map(|f| (f.severity, f.kept)),
             Some((Severity::Error, true)),
             "{default}"
         );
         let found = codes(&found, Severity::Warning);
-        assert!(found.contains(&"InvalidMolang"), "{default}: {found:?}");
-        assert_eq!(found.last(), Some(&"DroppedField"), "{default}");
+        assert!(
+            found.contains(&"core/invalid_molang"),
+            "{default}: {found:?}"
+        );
+        assert_eq!(
+            found.last(),
+            Some(&"entity/actor_properties_not_loaded"),
+            "{default}"
+        );
     }
 }
 
@@ -179,9 +189,9 @@ fn m06_a_set_property_expression_is_compiled() {
     let (entity, found) = stable(&text, &compiling());
     // The parser's level-3 line, and the entity loads without the response: a kept error.
     assert!(
-        found
-            .iter()
-            .any(|f| f.code.name() == "InvalidMolang" && f.severity == Severity::Error && f.kept),
+        found.iter().any(|f| f.code.id() == "core/invalid_molang"
+            && f.severity == Severity::Error
+            && f.kept),
         "{found:#?}"
     );
     assert_eq!(entity.events["demo:go"].node, json("{}"));
@@ -195,7 +205,10 @@ fn m06_an_object_set_property_value_is_invalid_and_dropped() {
     );
     let (entity, found) = stable(&text, &cx());
     // The response schema's type line, a kept error, and the response dropped.
-    assert_eq!(codes(&found, Severity::Warning), ["InvalidType"]);
+    assert_eq!(
+        codes(&found, Severity::Warning),
+        ["core/unknown_child_option"]
+    );
     assert!(
         found.iter().any(|f| f.kept
             && f.code.to_string() == "unknown child schema option type.  Allowed types:  'molang'"),
@@ -236,7 +249,7 @@ fn a_rejected_condition_behind_an_element_the_lenient_conversion_leaves_out_is_a
     );
     let at: Vec<String> = found
         .iter()
-        .filter(|finding| finding.code.name() == "InvalidMolang")
+        .filter(|finding| finding.code.id() == "core/invalid_molang")
         .map(|finding| finding.location.json_path.to_string())
         .collect();
     assert!(!at.is_empty(), "{found:#?}");
@@ -263,7 +276,7 @@ fn d5_a_rejected_lenient_eat_block_success_chance_takes_the_default() {
     };
     let (entity, found) = stable(&text("1.26.30"), &compiling());
     assert!(
-        codes(&found, Severity::Warning).contains(&"InvalidMolang"),
+        codes(&found, Severity::Warning).contains(&"core/invalid_molang"),
         "{found:#?}"
     );
     let goal = entity
@@ -297,7 +310,7 @@ fn m07_dynamic_component_typed_node() {
     let (entity, found) = stable(&text("1 +"), &compiling());
     assert_eq!(
         codes(&found, Severity::Warning),
-        ["InvalidMolang", "InvalidMolang"],
+        ["core/invalid_molang", "core/invalid_molang"],
         "{found:#?}"
     );
     assert!(entity.components.is_empty());
@@ -326,7 +339,7 @@ fn a_seat_rotation_expression_of_the_typed_rideable() {
     let (entity, found) = stable(&text("1.26.50", "1 +"), &compiling());
     assert_eq!(
         codes(&found, Severity::Warning),
-        ["InvalidMolang"],
+        ["core/invalid_molang"],
         "{found:#?}"
     );
     let rideable = entity.components.get::<Rideable>().expect("kept");
@@ -338,7 +351,7 @@ fn a_seat_rotation_expression_of_the_typed_rideable() {
     assert!(
         found
             .iter()
-            .any(|f| f.severity == Severity::Error && f.code.name() == "InvalidMolang"),
+            .any(|f| f.severity == Severity::Error && f.code.id() == "core/invalid_molang"),
         "{found:#?}"
     );
 }
@@ -369,7 +382,7 @@ fn told_of(rest: &str, cx: &bedrock_addon_core::load::LoadContext) -> (Vec<Strin
         .map(|f| {
             let path = f.location.json_path.to_string();
             let path = path.strip_prefix("minecraft:entity/").unwrap_or(&path);
-            format!("{} {:?} {path}", f.code.name(), f.severity)
+            format!("{} {:?} {path}", f.code.id(), f.severity)
         })
         .collect();
     let written = entity.to_json().expect("the entity writes");
@@ -404,7 +417,7 @@ fn m08_descriptor_tags_in_a_dynamic_component_compile_with_the_tag_queries_only(
                 &format!(r#""components": {{"{key}": {{"blocks_to_avoid": {member}}}}}"#),
                 &compiling(),
             );
-            let finding = format!("InvalidMolang Error components/{key}/{at}");
+            let finding = format!("core/invalid_molang Error components/{key}/{at}");
             assert!(!found.is_empty(), "{key} {member}");
             assert!(found.iter().all(|f| *f == finding), "{key}: {found:#?}");
             assert!(written.contains(r#""tags": "query.is_baby""#), "{written}");
@@ -420,7 +433,7 @@ fn m08_descriptor_tags_in_a_dynamic_component_compile_with_the_tag_queries_only(
         found
             .iter()
             .all(|f| f
-                == "InvalidMolang Error component_groups/g/minecraft:behavior.tempt/items/1/tags"),
+                == "core/invalid_molang Error component_groups/g/minecraft:behavior.tempt/items/1/tags"),
         "{found:#?}"
     );
     assert!(written.contains(r#""tags": "1 +""#), "{written}");
@@ -431,7 +444,7 @@ fn m08_descriptor_tags_in_a_dynamic_component_compile_with_the_tag_queries_only(
         &compiling(),
     );
     assert!(
-        found.iter().all(|f| !f.starts_with("InvalidMolang")),
+        found.iter().all(|f| !f.starts_with("core/invalid_molang")),
         "{found:#?}"
     );
 }
@@ -443,7 +456,7 @@ fn m08_descriptor_tags_in_a_dynamic_component_are_counted_without_a_check() {
         r#""components": {"minecraft:navigation.walk": {"blocks_to_avoid": [{"tags": "query.any_tag('trapdoors')"}]}}"#,
         &cx(),
     );
-    assert_eq!(found, ["MolangNotChecked Info minecraft:entity"]);
+    assert_eq!(found, ["core/molang_not_checked Info minecraft:entity"]);
 }
 
 /// A rejected `tags` of a descriptor in a TYPED component was
@@ -473,7 +486,7 @@ fn m08_a_rejected_descriptor_tags_in_a_typed_component_is_a_warning_and_the_desc
             let (found, written) = told_of(&section, &compiling());
             assert_eq!(
                 found,
-                [format!("InvalidMolang Error {below}/{at}")],
+                [format!("core/invalid_molang Error {below}/{at}")],
                 "{section}"
             );
             assert!(written.contains(r#""tags": "1 +""#), "{written}");
@@ -522,14 +535,14 @@ fn m08_descriptor_tags_of_every_descriptor_member_of_a_dynamic_component_are_com
         let (found, written) = told_of(&section, &compiling());
         assert_eq!(
             found,
-            [format!("InvalidMolang Error components/{at}")],
+            [format!("core/invalid_molang Error components/{at}")],
             "{component}"
         );
         assert!(written.contains(r#""tags": "1 +""#), "{written}");
         let (found, _) = told_of(&section, &cx());
         assert_eq!(
             found,
-            ["MolangNotChecked Info minecraft:entity"],
+            ["core/molang_not_checked Info minecraft:entity"],
             "{component}"
         );
         // An expression of the tag queries says nothing.

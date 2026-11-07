@@ -10,7 +10,7 @@
   },
   "diagnostics": [
     {
-      "code": "MissingFormatVersion",
+      "code": "core/missing_format_version",
       "severity": "info",
       "path": "worldgen/structures/ruin.json"
     }

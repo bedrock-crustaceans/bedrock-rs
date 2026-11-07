@@ -22,7 +22,7 @@ fn a_file_the_schema_loader_rejects_ends_with_the_failed_to_load_line() {
         (
             slab().replace("1.21.110", "1.21.100"),
             error(
-                "UnsupportedVersion",
+                "core/no_parser_for_version",
                 "unsupported version: no parser available for version 1.21.100",
                 "format_version",
             ),
@@ -30,7 +30,7 @@ fn a_file_the_schema_loader_rejects_ends_with_the_failed_to_load_line() {
         (
             slab().replace("1.21.110", &above.to_string()),
             error(
-                "UnsupportedVersion",
+                "core/no_parser_for_version",
                 &format!("unsupported version: no parser available for version {above}"),
                 "format_version",
             ),
@@ -38,7 +38,7 @@ fn a_file_the_schema_loader_rejects_ends_with_the_failed_to_load_line() {
         (
             slab().replace(r#""format_version": "1.21.110", "#, ""),
             error(
-                "MissingFormatVersion",
+                "core/no_valid_version",
                 "no valid version passed by the caller or found in the input",
                 "",
             ),
@@ -46,7 +46,7 @@ fn a_file_the_schema_loader_rejects_ends_with_the_failed_to_load_line() {
         (
             slab().replace(r#""1.21.110""#, r#""abc""#),
             error(
-                "MalformedFormatVersion",
+                "core/malformed_format_version",
                 "Malformed format version",
                 "format_version",
             ),
@@ -54,7 +54,7 @@ fn a_file_the_schema_loader_rejects_ends_with_the_failed_to_load_line() {
         (
             slab().replacen('{', r#"{"extra": 1, "#, 1),
             error(
-                "MalformedInput",
+                "core/document_member_count",
                 "A Minecraft Document must have exactly two members: \"format_version\" and a payload member",
                 "",
             ),
@@ -73,7 +73,7 @@ fn the_failed_to_load_line_names_the_file_s_path_in_the_pack() {
         &user_pack(),
     )
     .unwrap_err();
-    let closing = with_code(&rejected.diagnostics, "DocumentRejected");
+    let closing = with_code(&rejected.diagnostics, "voxel_shape/failed_to_load");
     assert_eq!(closing.len(), 1);
     assert_eq!(
         closing[0].code.to_string(),
@@ -118,8 +118,8 @@ fn every_member_is_required() {
         assert_eq!(
             kinds(&rejects(&text)),
             [
-                kind("MissingRequiredField", &format!("{PAYLOAD}/{path}")),
-                kind("DocumentRejected", ""),
+                kind("core/missing_required_field", &format!("{PAYLOAD}/{path}")),
+                kind("voxel_shape/failed_to_load", ""),
             ],
             "{text}"
         );
@@ -159,8 +159,8 @@ fn a_member_of_the_wrong_type_fails_the_file() {
         assert_eq!(
             kinds(&rejects(&text)),
             [
-                kind("InvalidType", &format!("{PAYLOAD}/{path}")),
-                kind("DocumentRejected", ""),
+                kind("core/invalid_type", &format!("{PAYLOAD}/{path}")),
+                kind("voxel_shape/failed_to_load", ""),
             ],
             "{text}"
         );
@@ -174,8 +174,8 @@ fn a_payload_that_is_no_object_fails_the_file() {
     assert_eq!(
         kinds(&rejects(text)),
         [
-            kind("MalformedInput", PAYLOAD),
-            kind("DocumentRejected", "")
+            kind("core/syntax", PAYLOAD),
+            kind("voxel_shape/failed_to_load", "")
         ]
     );
 }
@@ -186,7 +186,10 @@ fn an_unreadable_file_fails_with_the_failed_to_load_line() {
     let d = rejects(r#"{"format_version": "1.21.110", "minecraft:voxel_shape": "#);
     assert_eq!(
         kinds(&d),
-        [kind("MalformedInput", ""), kind("DocumentRejected", "")]
+        [
+            kind("core/document_json", ""),
+            kind("voxel_shape/failed_to_load", "")
+        ]
     );
     assert!(
         d.iter()
@@ -199,7 +202,10 @@ fn an_unreadable_file_fails_with_the_failed_to_load_line() {
     // An empty file.
     assert_eq!(
         kinds(&rejects("")),
-        [kind("EmptyDocument", ""), kind("DocumentRejected", "")]
+        [
+            kind("core/empty_document", ""),
+            kind("voxel_shape/failed_to_load", "")
+        ]
     );
     // Not UTF-8.
     let rejected = VoxelShape::parse(
@@ -210,7 +216,10 @@ fn an_unreadable_file_fails_with_the_failed_to_load_line() {
     .unwrap_err();
     assert_eq!(
         kinds(&rejected.diagnostics),
-        [kind("MalformedInput", ""), kind("DocumentRejected", "")]
+        [
+            kind("core/syntax", ""),
+            kind("voxel_shape/failed_to_load", "")
+        ]
     );
 }
 
@@ -226,7 +235,7 @@ const NOT_IN_SCHEMA: &str = "this member was found in the input, but is not pres
 /// The finding of the unknown member at `path` of the payload.
 fn unknown(path: &str) -> (&'static str, String, String) {
     error(
-        "UnrecognizedField",
+        "core/member_not_in_schema",
         NOT_IN_SCHEMA,
         &format!("{PAYLOAD}/{path}"),
     )

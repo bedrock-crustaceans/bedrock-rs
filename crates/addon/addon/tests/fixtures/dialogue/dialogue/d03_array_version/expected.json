@@ -3,14 +3,14 @@
   "rejected": 2,
   "diagnostics": [
     {
-      "code": "MalformedFormatVersion",
+      "code": "dialogue/no_format_version_malformed_format_version",
       "severity": "error",
       "path": "dialogue/mixed.json",
       "json_path": "format_version",
       "text": "JSON: mixed.json has an error: \n Couldn't find 'format_version' property."
     },
     {
-      "code": "MalformedFormatVersion",
+      "code": "dialogue/no_format_version_malformed_format_version",
       "severity": "error",
       "path": "dialogue/short.json",
       "json_path": "format_version",

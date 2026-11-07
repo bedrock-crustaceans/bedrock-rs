@@ -1,7 +1,7 @@
 {
   "diagnostics": [
     {
-      "code": "InvalidEnumValue",
+      "code": "json_ui/type_not_recognized",
       "severity": "info",
       "text": "Type 'carousel_label' not recognized for control: k",
       "at": "k/type"

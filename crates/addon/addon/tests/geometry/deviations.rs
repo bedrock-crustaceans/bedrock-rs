@@ -17,7 +17,7 @@ fn an_unknown_member_below_1_19_30_is_reported_where_vanilla_removes_it_silently
     assert_eq!(d.len(), 1);
     expect_at(
         d,
-        "UnrecognizedField",
+        "core/unrecognized_field_worded",
         Severity::Info,
         "minecraft:geometry/0/bones/0/glow",
         "child 'glow' not valid here (removed; format_version < 1.19.30)",
@@ -39,7 +39,7 @@ fn a_mirror_or_reset_the_pre_1_8_step_removes_is_noted_deviation() {
     for at in ["bones/1/mirror", "bones/1/reset"] {
         expect_at(
             d,
-            "ValueRewritten",
+            "core/value_rewritten",
             Severity::Info,
             &format!("geometry.x/{at}"),
             "value held in another form than it is written in",
@@ -48,7 +48,7 @@ fn a_mirror_or_reset_the_pre_1_8_step_removes_is_noted_deviation() {
     for at in ["bones/0/mirror", "bones/0/reset", "bones/0/cubes/0/mirror"] {
         expect_at(
             d,
-            "DroppedField",
+            "core/dropped_field",
             Severity::Info,
             &format!("geometry.x/{at}"),
             "field dropped",
@@ -69,7 +69,11 @@ fn the_cape_a_1_8_geometry_loses_is_noted_deviation() {
         r#"{"format_version": "1.8.0", "geometry.x": {"cape": "geometry.cape"}}"#,
     ));
     assert_eq!(
-        count(document.diagnostics(), "DroppedField", Severity::Info),
+        count(
+            document.diagnostics(),
+            "geometry/cape_dropped",
+            Severity::Info
+        ),
         1
     );
     assert_eq!(document.diagnostics().len(), 1);
@@ -109,7 +113,7 @@ fn a_clamped_bound_is_noted_deviation() {
     ));
     expect_at(
         document.diagnostics(),
-        "ClampedValue",
+        "geometry/bounds_clamped",
         Severity::Info,
         "minecraft:geometry/0/description/visible_bounds_width",
         "visible_bounds_width 51.000000 clamped to 50.000000",
@@ -121,7 +125,7 @@ fn a_clamped_bound_is_noted_deviation() {
 #[test]
 fn an_empty_file_is_noted_deviation() {
     let d = rejected(load(""));
-    assert_eq!(count(&d, "EmptyDocument", Severity::Info), 1);
+    assert_eq!(count(&d, "core/empty_document", Severity::Info), 1);
     assert!(!d.has_errors());
 }
 
@@ -132,7 +136,11 @@ fn two_bones_of_one_name_are_reported_deviation() {
         r#"{"format_version": "1.12.0", "minecraft:geometry": [{"description": {"identifier": "geometry.x"}, "bones": [{"name": "a"}, {"name": "A"}]}]}"#,
     ));
     assert_eq!(
-        count(document.diagnostics(), "DuplicateBone", Severity::Info),
+        count(
+            document.diagnostics(),
+            "core/duplicate_bone",
+            Severity::Info
+        ),
         1
     );
     assert_eq!(document.value().geometries[0].bones().len(), 1);
@@ -141,7 +149,7 @@ fn two_bones_of_one_name_are_reported_deviation() {
     // geometry '%s'" is not what is printed.
     expect_at(
         document.diagnostics(),
-        "DuplicateBone",
+        "core/duplicate_bone",
         Severity::Info,
         "minecraft:geometry/0/bones/1",
         "two bones collide after lower-casing",
@@ -150,7 +158,7 @@ fn two_bones_of_one_name_are_reported_deviation() {
     // gone (INFO, the game merges without a word).
     expect_at(
         document.diagnostics(),
-        "DroppedField",
+        "core/dropped_field",
         Severity::Info,
         "minecraft:geometry/0/bones/0",
         "field dropped",
@@ -192,7 +200,7 @@ fn a_bone_parent_that_is_no_bone_is_reported_deviation() {
     assert_eq!(
         count(
             document.diagnostics(),
-            "UnresolvedReference",
+            "geometry/bone_parent_missing",
             Severity::Info
         ),
         1
@@ -214,12 +222,12 @@ fn a_legacy_parent_no_pack_defines_is_an_error_deviation() {
     let errors: Vec<String> = registry
         .diagnostics()
         .filter(|d| d.severity == Severity::Error)
-        .map(|d| format!("{} {}", d.code.name(), d.code))
+        .map(|d| format!("{} {}", d.code.id(), d.code))
         .collect();
     assert_eq!(
         errors,
         [
-            "UnresolvedReference geometry 'geometry.child' inherits from 'geometry.nowhere', which is not defined"
+            "geometry/parent_not_defined geometry 'geometry.child' inherits from 'geometry.nowhere', which is not defined"
         ]
     );
 }
@@ -245,20 +253,20 @@ fn a_shelf_in_an_older_file_follows_the_engine_version_deviation() {
     let texts = |cx| {
         rejected(crate::common::load_at("models/entity/x.json", text, &cx))
             .iter()
-            .map(|d| format!("{:?} {} {}", d.severity, d.code.name(), d.code))
+            .map(|d| format!("{:?} {} {}", d.severity, d.code.id(), d.code))
             .collect::<Vec<_>>()
     };
     assert_eq!(
         texts(crate::common::engine(1, 26, 20)),
         [
-            "Error UnrecognizedField child 'shelf' not valid here.",
-            "Error InvalidValue geometry file didn't validate"
+            "Error core/child_not_valid child 'shelf' not valid here.",
+            "Error geometry/did_not_validate geometry file didn't validate"
         ]
     );
     assert_eq!(
         texts(crate::common::engine(1, 26, 45)),
         [
-            "Error InvalidValue \"item_display_transform\" for \"geometry.x\" is invalid - \"shelf\" can only be used in a file version 1.26.40 or higher"
+            "Error geometry/shelf_too_old \"item_display_transform\" for \"geometry.x\" is invalid - \"shelf\" can only be used in a file version 1.26.40 or higher"
         ]
     );
 }
@@ -286,7 +294,7 @@ fn a_number_beyond_f32_is_read_as_the_largest_finite_float_with_a_warning_deviat
         for member in ["inflate", "pivot/1", "pivot/2"] {
             expect_at(
                 d,
-                "InvalidValue",
+                "core/invalid_value",
                 Severity::Info,
                 &format!("{at}/{member}"),
                 "invalid value",
@@ -302,20 +310,24 @@ fn a_number_beyond_f32_is_read_as_the_largest_finite_float_with_a_warning_deviat
             infos += 1;
             expect_at(
                 d,
-                "InvalidValue",
+                "core/invalid_value",
                 Severity::Info,
                 &format!("{at}/binding"),
                 "invalid value",
             );
             assert!(matches!(bone.binding, Some(Molang::Const(x)) if x == f32::MIN));
         }
-        assert_eq!(count(d, "InvalidValue", Severity::Info), infos, "{version}");
+        assert_eq!(
+            count(d, "core/invalid_value", Severity::Info),
+            infos,
+            "{version}"
+        );
         // What was read can be written, and reads back to the same value without a finding.
         let written = document.to_json().unwrap();
         let again = loaded(load(&written));
         assert_eq!(again.value().geometries, document.value().geometries);
         assert_eq!(
-            count(again.diagnostics(), "InvalidValue", Severity::Info),
+            count(again.diagnostics(), "core/invalid_value", Severity::Info),
             0
         );
     }
@@ -324,7 +336,10 @@ fn a_number_beyond_f32_is_read_as_the_largest_finite_float_with_a_warning_deviat
         "1.26.40",
         r#", "inflate": 3.4028234663852886e38"#,
     )));
-    assert_eq!(count(edge.diagnostics(), "InvalidValue", Severity::Info), 0);
+    assert_eq!(
+        count(edge.diagnostics(), "core/invalid_value", Severity::Info),
+        0
+    );
     assert_eq!(
         edge.value().geometries[0].bones()[0].inflate,
         Some(f32::MAX)
@@ -342,11 +357,19 @@ fn a_geometry_list_left_empty_by_its_dropped_elements_loads_and_is_written_devia
     ));
     assert!(document.value().geometries.is_empty());
     assert_eq!(
-        count(document.diagnostics(), "InvalidType", Severity::Info),
+        count(
+            document.diagnostics(),
+            "core/unknown_child_option",
+            Severity::Info
+        ),
         2
     );
     assert_eq!(
-        count(document.diagnostics(), "InvalidValue", Severity::Error),
+        count(
+            document.diagnostics(),
+            "core/array_too_small",
+            Severity::Error
+        ),
         0
     );
     let text = document.to_json().unwrap();
@@ -358,14 +381,21 @@ fn a_geometry_list_left_empty_by_its_dropped_elements_loads_and_is_written_devia
     let again = loaded(load(&text));
     assert_eq!(again.value(), document.value());
     assert_eq!(again.to_json().unwrap(), text, "the written text is stable");
-    assert_eq!(count(again.diagnostics(), "InvalidType", Severity::Info), 1);
+    assert_eq!(
+        count(
+            again.diagnostics(),
+            "core/unknown_child_option",
+            Severity::Info
+        ),
+        1
+    );
     // A list WRITTEN empty is refused, as in the game ("Array too small").
     let d = rejected(load(
         r#"{"format_version": "1.12.0", "minecraft:geometry": []}"#,
     ));
     expect_at(
         &d,
-        "InvalidValue",
+        "core/array_too_small",
         Severity::Error,
         "minecraft:geometry",
         "Array too small (0 < 1)",
@@ -407,12 +437,15 @@ fn a_locator_left_out_for_a_vector_of_another_length_is_told_at_the_locator_devi
                     .rsplit_once("/locators/")
                     .map_or("", |(_, at)| at)
                     .to_owned();
-                format!("{} {:?} {at}", f.code.name(), f.severity)
+                format!("{} {:?} {at}", f.code.id(), f.severity)
             })
             .collect();
         assert_eq!(
             told,
-            ["InvalidValue Info k/offset", "DroppedField Info k"],
+            [
+                "core/invalid_value Info k/offset",
+                "core/dropped_field Info k"
+            ],
             "{version}"
         );
         let written = document.to_json().expect("the geometry writes");
@@ -490,7 +523,7 @@ fn a_poly_mesh_index_that_is_not_written_as_given_is_told_at_the_element_deviati
                     .rsplit_once("/polys/")
                     .map_or("", |(_, at)| at)
                     .to_owned();
-                format!("{} {:?} {at}", f.code.name(), f.severity)
+                format!("{} {:?} {at}", f.code.id(), f.severity)
             })
             .collect()
     };
@@ -505,9 +538,9 @@ fn a_poly_mesh_index_that_is_not_written_as_given_is_told_at_the_element_deviati
             &mesh("[[[0, 0, 0], [1.5, -2, 4294967296000], [2, 0, 0]]]")
         )),
         [
-            "InvalidValue Info 0/1/0",
-            "InvalidValue Info 0/1/1",
-            "InvalidValue Info 0/1/2",
+            "geometry/index_not_whole Info 0/1/0",
+            "geometry/index_not_whole Info 0/1/1",
+            "geometry/index_not_whole Info 0/1/2",
         ],
         "an index that is not written as given is not told"
     );
@@ -516,7 +549,7 @@ fn a_poly_mesh_index_that_is_not_written_as_given_is_told_at_the_element_deviati
             r#"{{"format_version": "1.8.0", "geometry.x": {{"bones": [{{"name": "b"{}}}]}}}}"#,
             mesh("[[[0, 0, 0], [1.5, 1, 0], [2, 0, 0]]]")
         )),
-        ["InvalidValue Info 0/1/0"]
+        ["geometry/index_not_whole Info 0/1/0"]
     );
     assert!(
         told(&with_bone(
@@ -544,7 +577,7 @@ fn poly_findings(polys: &str) -> (Vec<String>, String) {
         .map(|f| {
             let at = f.location.json_path.to_string();
             let at = at.rsplit_once("/polys/").map_or("", |(_, at)| at);
-            format!("{} {:?} {at}", f.code.name(), f.severity)
+            format!("{} {:?} {at}", f.code.id(), f.severity)
         })
         .collect();
     (told, doc.to_json().unwrap_or_default())
@@ -571,7 +604,7 @@ fn a_poly_mesh_index_of_a_whole_number_of_32_bits_is_carried_exactly_deviation()
 #[test]
 fn a_poly_mesh_index_beyond_f32_is_told_once_deviation() {
     let (told, _) = poly_findings("[[[0, 0, 0], [1, 0, 0], [2, 0, 1e39]]]");
-    assert_eq!(told, ["InvalidValue Info 0/2/2"]);
+    assert_eq!(told, ["geometry/index_not_whole Info 0/2/2"]);
 }
 
 /// The game gives an empty name no node (inferred): ours keeps a bone whose name
@@ -605,7 +638,7 @@ fn a_bone_with_an_empty_name_is_kept_and_keyed_deviation() {
     ));
     expect_at(
         document.diagnostics(),
-        "DuplicateBone",
+        "core/duplicate_bone",
         Severity::Info,
         "minecraft:geometry/0/bones/1",
         "two bones collide after lower-casing",

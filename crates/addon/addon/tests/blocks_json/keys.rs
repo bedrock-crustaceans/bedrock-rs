@@ -11,7 +11,7 @@ fn old_name(key: &str, name: &str, blocks: &[&str]) -> Found {
         out
     });
     vanilla(
-        "DeprecatedMember",
+        "blocks_json/old_name",
         E,
         key,
         &format!(
@@ -77,7 +77,10 @@ fn a_legacy_name_is_split_below_its_gate_and_an_error_from_it() {
             assert!(flattened.registry().is_empty(), "{key} at {gate}");
             let found = flattened.problems();
             assert_eq!(found.len(), 1, "{key} at {gate}");
-            assert_eq!((found[0].code, found[0].severity), ("DeprecatedMember", E));
+            assert_eq!(
+                (found[0].code, found[0].severity),
+                ("blocks_json/old_name", E)
+            );
         }
     }
 }
@@ -243,7 +246,11 @@ fn lava_cauldron_is_dropped_at_every_version_deviation() {
                 &format!(r#""{key}": {{"textures": "c"}}"#),
             ));
             assert!(loaded.registry().is_empty(), "{version}");
-            assert_eq!(loaded.found(), [ours("IgnoredMember", I, key)], "{version}");
+            assert_eq!(
+                loaded.found(),
+                [ours("core/ignored_member", I, key)],
+                "{version}"
+            );
         }
     }
     // The namespaced key bypasses the legacy handling: an ordinary name.
@@ -271,10 +278,10 @@ fn the_quirks_of_key_resolution() {
     assert_eq!(
         loaded.found(),
         [
-            ours("IgnoredMember", I, "chalkboard"),
-            ours("IdentifierNamespaced", I, "minecraft:wool"),
-            ours("ShadowedDefinition", I, "red_mushroom_block"),
-            ours("InvalidType", I, "x"),
+            ours("core/ignored_member", I, "chalkboard"),
+            ours("core/identifier_namespaced", I, "minecraft:wool"),
+            ours("core/shadowed_definition", I, "red_mushroom_block"),
+            ours("core/invalid_type", I, "x"),
         ]
     );
 }
@@ -287,7 +294,7 @@ fn a_member_that_is_not_an_object_is_skipped_deviation() {
         assert!(loaded.registry().is_empty(), "{value}");
         assert_eq!(
             loaded.found(),
-            [ours("InvalidType", I, "obsidian")],
+            [ours("core/invalid_type", I, "obsidian")],
             "{value}"
         );
     }
@@ -324,8 +331,8 @@ fn both_mushroom_blocks_feed_the_stem_in_key_order_deviation() {
     assert_eq!(
         loaded.found(),
         [
-            ours("ShadowedDefinition", I, "brown_mushroom_block"),
-            ours("ShadowedDefinition", I, "red_mushroom_block"),
+            ours("core/shadowed_definition", I, "brown_mushroom_block"),
+            ours("core/shadowed_definition", I, "red_mushroom_block"),
         ]
     );
     // Case does not matter, at any version.
@@ -404,8 +411,8 @@ fn a_namespaced_legacy_key_names_the_data_0_block_deviation() {
     assert_eq!(
         loaded.found(),
         [
-            ours("IdentifierNamespaced", I, "MINECRAFT:Log"),
-            ours("IdentifierNamespaced", I, "minecraft:monster_egg"),
+            ours("core/identifier_namespaced", I, "MINECRAFT:Log"),
+            ours("core/identifier_namespaced", I, "minecraft:monster_egg"),
         ]
     );
     // At 1.1.0 too: the namespaced key is never split.
@@ -428,7 +435,10 @@ fn a_repeated_key_keeps_its_last_value_with_a_warning_per_earlier_one() {
     // The last value whole: the first one's `sound` is gone with it.
     assert_eq!(loaded.textures("dirt"), six("b"));
     assert_eq!(loaded.block("dirt").sound(), "normal");
-    assert_eq!(loaded.found(), [ours("DuplicateIdentifier", I, "dirt")]);
+    assert_eq!(
+        loaded.found(),
+        [ours("core/duplicate_identifier", I, "dirt")]
+    );
     // Three times: two earlier values, two warnings.
     let loaded = load_one(
         r#"{"format_version": "1.21.40", "dirt": {"textures": "a"}, "dirt": {"textures": "b"},
@@ -442,10 +452,10 @@ fn a_repeated_key_keeps_its_last_value_with_a_warning_per_earlier_one() {
     assert_eq!(
         loaded.found(),
         [
-            ours("DuplicateIdentifier", I, "dirt"),
-            ours("DuplicateIdentifier", I, "dirt"),
-            ours("DuplicateIdentifier", I, "glass"),
-            ours("InvalidType", I, "glass"),
+            ours("core/duplicate_identifier", I, "dirt"),
+            ours("core/duplicate_identifier", I, "dirt"),
+            ours("core/duplicate_identifier", I, "glass"),
+            ours("core/invalid_type", I, "glass"),
         ]
     );
     // A repeated `format_version`: the last one is the file's.
@@ -455,7 +465,7 @@ fn a_repeated_key_keeps_its_last_value_with_a_warning_per_earlier_one() {
     assert_eq!(loaded.textures("white_wool"), six("w:0"));
     assert_eq!(
         loaded.found(),
-        [ours("DuplicateIdentifier", I, "format_version")]
+        [ours("core/duplicate_identifier", I, "format_version")]
     );
     // A repeated member inside an entry is not a repeated key of the file.
     let loaded = load_one(&file(r#""dirt": {"textures": "a", "textures": "b"}"#));

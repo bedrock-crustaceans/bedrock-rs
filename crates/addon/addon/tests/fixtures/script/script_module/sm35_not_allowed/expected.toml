@@ -2,7 +2,7 @@
 scope = "module"
 
 [[diagnostic]]
-code = "ScriptModulePermission"
+code = "script/plugin_module_not_configured"
 severity = "error"
 path = "dependencies/0"
 text = "Plugin [sm35 - 3.2.1] - requesting dependency on module [@minecraft/common] but it is not configured to use it."

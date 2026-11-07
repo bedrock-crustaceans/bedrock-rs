@@ -1,7 +1,7 @@
 //! The rows that need the whole stack (`bp.aim_assist()`): aa12 (nothing registered), aa18,
 //! aa19, and the rows of the link pass: the lookup half of aa04b, C3 and C4.
 
-use bedrock_addon::diagnostic::{Diagnostics, Severity};
+use bedrock_addon::diagnostic::{Diagnostics, Kind, Severity};
 use bedrock_addon::id::{AimAssistCategoryId, AimAssistPresetId};
 use bedrock_addon::load::LoadOptions;
 use bedrock_addon::pack::{PackOrigin, PackRepository, WorldPacks};
@@ -81,7 +81,7 @@ fn aa18_the_higher_pack_wins_per_identifier() {
     assert!(aim.diagnostics().all(|f| f.severity < Severity::Warning));
     assert_eq!(
         aim.diagnostics()
-            .filter(|f| f.code.name() == "ShadowedDefinition")
+            .filter(|f| f.code.id() == "core/shadowed_definition")
             .count(),
         2
     );
@@ -184,12 +184,12 @@ fn aa12_a_rejected_categories_file_registers_none_of_its_categories() {
         errors(aim.diagnostics()),
         [
             finding(
-                "InvalidValue",
+                "aim_assist/category_namespace",
                 "minecraft:aim_assist_categories/categories/1/name",
                 "Namespace required for category: default"
             ),
             finding(
-                "InvalidValue",
+                "aim_assist/preset_namespace",
                 "minecraft:aim_assist_preset/identifier",
                 "Namespace required for preset Id: nonamespace"
             )
@@ -226,7 +226,7 @@ fn unresolved(d: &Diagnostics) -> Vec<String> {
         // A miss the rule tells (a warning) or the game's validator logs (a content-log
         // error, W3-A).
         .filter(|f| {
-            f.code.name() == "UnresolvedReference"
+            f.code.kind() == Kind::UnresolvedReference
                 && matches!(f.severity, Severity::Warning | Severity::Error)
         })
         .map(|f| {
@@ -287,7 +287,7 @@ fn a_camera_presets_aim_assist_preset_resolves_against_the_aim_assist_presets() 
     // C3: neither folder checks it, an information of ours.
     let told: Vec<String> = d
         .iter()
-        .filter(|f| f.code.name() == "UnresolvedReference" && f.severity == Severity::Info)
+        .filter(|f| f.code.kind() == Kind::UnresolvedReference && f.severity == Severity::Info)
         .map(|f| {
             f.detail
                 .as_ref()

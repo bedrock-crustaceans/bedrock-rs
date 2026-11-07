@@ -3,7 +3,7 @@ scope = "module"
 beta_apis = true
 
 [[diagnostic]]
-code = "ScriptModuleVersionConflict"
+code = "core/script_module_version_conflict"
 severity = "error"
 path = "dependencies/0"
 text = "Plugin [sm50] - version conflict for module [@minecraft/server].\n [1.19.0] requested by [sm50 - 3.2.1],\n [2.9.0-beta] requested by [@minecraft/server-ui-bindings - 2.2.0-beta]"

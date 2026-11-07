@@ -7,6 +7,7 @@
 //! number with `errc` 22; the strict reader's float read takes numbers only. The game's own tests load `"ambient_occlusion": false` in a
 //! `1.20.0` block .
 
+use bedrock_addon::diagnostic::Kind;
 use bedrock_addon::families::block::component::{LightEmission, MaterialInstances};
 
 use super::common::{context, document, loads, rejected};
@@ -61,7 +62,7 @@ fn a_legacy_ambient_occlusion_string_still_rejects_the_block() {
     assert!(
         d.iter()
             // By legacy name: the variant and the definitions that were it.
-            .any(|f| matches!(f.code.name(), "InvalidType")),
+            .any(|f| matches!(f.code.id(), "core/invalid_type")),
         "{d:#?}"
     );
 }
@@ -73,7 +74,7 @@ fn a_cereal_ambient_occlusion_bool_is_not_taken() {
     assert!(
         d.iter()
             // By legacy name: the variant and the definitions that were it.
-            .any(|f| matches!(f.code.name(), "InvalidType")),
+            .any(|f| matches!(f.code.id(), "core/invalid_type")),
         "{d:#?}"
     );
 }
@@ -150,7 +151,7 @@ fn a_cereal_integer_member_takes_the_integer_tokens_only() {
         assert!(
             // By legacy name: the variant and the definitions that were it.
             d.iter()
-                .any(|f| matches!(f.code.name(), "InvalidType" | "InvalidValue")),
+                .any(|f| matches!(f.code.kind(), Kind::WrongType | Kind::InvalidValue)),
             "{written}: {d:#?}"
         );
     }
@@ -163,7 +164,7 @@ fn a_legacy_integer_member_still_rejects_a_string() {
     assert!(
         d.iter()
             // By legacy name: the variant and the definitions that were it.
-            .any(|f| matches!(f.code.name(), "InvalidType")),
+            .any(|f| matches!(f.code.id(), "core/invalid_type")),
         "{d:#?}"
     );
 }
@@ -181,7 +182,7 @@ fn a_legacy_light_emission_out_of_range_after_the_read_rejects_the_block() {
         assert!(
             d.iter()
                 // By legacy name: the variant and the definitions that were it.
-                .any(|f| matches!(f.code.name(), "InvalidValue")
+                .any(|f| f.code.kind() == Kind::InvalidValue
                     && f.location
                         .json_path
                         .to_string()
@@ -201,7 +202,7 @@ fn a_legacy_friction_out_of_range_after_the_read_rejects_the_block() {
         assert!(
             d.iter()
                 // By legacy name: the variant and the definitions that were it.
-                .any(|f| matches!(f.code.name(), "InvalidValue")
+                .any(|f| f.code.kind() == Kind::InvalidValue
                     && f.location
                         .json_path
                         .to_string()

@@ -38,6 +38,18 @@ fn sky_of(stack: &PackStack<Resource>, identifier: &str) -> Option<String> {
     }
 }
 
+/// Whether `code` is a definition the legacy `ShadowedDefinition` was.
+fn is_shadowed_definition(code: &Code) -> bool {
+    matches!(
+        code.id(),
+        "core/shadowed_definition"
+            | "core/shadowed_definition_worded"
+            | "dimension/replaced_registration"
+            | "item/overridden_by_a_higher_pack"
+            | "material/variant_replaced"
+    )
+}
+
 /// The findings of the registry with a code `code` accepts.
 fn found(stack: &PackStack<Resource>, code: impl Fn(&Code) -> bool) -> Vec<Diagnostic> {
     stack
@@ -108,7 +120,7 @@ fn st01_first_wins() {
         Some("#333333")
     );
     assert_eq!(biomes.len(), 2);
-    let shadowed = found(&stack, |c| c.name() == "ShadowedDefinition");
+    let shadowed = found(&stack, |c| c.id() == "core/shadowed_definition");
     assert_eq!(shadowed.len(), 1, "{shadowed:#?}");
     assert_eq!(shadowed[0].severity, Severity::Info);
     assert_eq!(
@@ -152,7 +164,7 @@ fn st02_failed_load_does_not_claim() {
     );
     assert_eq!(stack.client_biomes().rejected().len(), 1);
     assert!(found(&stack, |c| c.is(&codes::CLIENT_BIOME_SHADOWS_LOWER_PACKS)).is_empty());
-    assert!(found(&stack, |c| c.name() == "ShadowedDefinition").is_empty());
+    assert!(found(&stack, is_shadowed_definition).is_empty());
 }
 
 /// A document the client's own component checks reject has already claimed its identifier:
@@ -196,7 +208,7 @@ fn a_glue_failure_claims_the_identifier() {
             .any(|d| d.code.to_string() == "Volume multiplier must be between 0 and 1, inclusive.")
     );
     // Beside the claim's warning the lower pack's document says it is the shadowed one.
-    let shadowed = found(&stack, |c| c.name() == "ShadowedDefinition");
+    let shadowed = found(&stack, |c| c.id() == "core/shadowed_definition");
     assert_eq!(shadowed.len(), 1, "{shadowed:#?}");
     assert_eq!(shadowed[0].severity, Severity::Info);
     assert_eq!(file(&shadowed[0]).0, "bottom");
@@ -267,7 +279,7 @@ fn st03_glue_failure_shadows() {
     );
     let stacks = world_stacks(vec![top, bottom], LoadOptions::default());
     let report = stacks.link();
-    let unresolved = linked(&report, |c| c.name() == "UnresolvedReference");
+    let unresolved = linked(&report, |c| c.id() == "core/unresolved_reference_worded");
     assert_eq!(unresolved.len(), 1, "{unresolved:#?}");
     assert_eq!(unresolved[0].severity, Severity::Error);
     assert_eq!(
@@ -315,7 +327,7 @@ fn st04_unknown_biome() {
     );
     let stacks = world_stacks(vec![only], LoadOptions::default());
     let report = stacks.link();
-    let unresolved = linked(&report, |c| c.name() == "UnresolvedReference");
+    let unresolved = linked(&report, |c| c.id() == "core/unresolved_reference_worded");
     assert_eq!(unresolved.len(), 1, "{unresolved:#?}");
     assert_eq!(unresolved[0].severity, Severity::Error);
     assert_eq!(
@@ -390,7 +402,7 @@ fn st05_glue_messages() {
         );
         let stacks = world_stacks(vec![only], LoadOptions::default());
         let report = stacks.link();
-        let unresolved: Vec<_> = linked(&report, |c| c.name() == "UnresolvedReference")
+        let unresolved: Vec<_> = linked(&report, |c| c.id() == "core/unresolved_reference_worded")
             .into_iter()
             .filter(|d| d.code.to_string() == text)
             .collect();
@@ -476,13 +488,13 @@ fn a_second_document_in_one_pack_is_dropped_deviation() {
         sky_of(&stack, "minecraft:plains").as_deref(),
         Some("#aaaaaa")
     );
-    let duplicates = found(&stack, |c| c.name() == "DuplicateIdentifier");
+    let duplicates = found(&stack, |c| c.id() == "core/duplicate_identifier");
     assert_eq!(duplicates.len(), 2, "{duplicates:#?}");
     // The client has no line for it: an information of ours.
     assert!(duplicates.iter().all(|d| d.severity == Severity::Info));
     let files: Vec<String> = duplicates.iter().map(|d| file(d).1).collect();
     assert_eq!(files, ["biomes/b.json", "biomes/c.json"]);
-    assert!(found(&stack, |c| c.name() == "ShadowedDefinition").is_empty());
+    assert!(found(&stack, is_shadowed_definition).is_empty());
 }
 
 /// Beta documents go to the beta registry (from a base-game pack, or with Beta APIs).
@@ -561,11 +573,11 @@ fn a_same_pack_loser_keeps_its_parse_findings() {
         sky_of(&stack, "minecraft:plains").as_deref(),
         Some("#aaaaaa")
     );
-    let duplicates = found(&stack, |c| c.name() == "DuplicateIdentifier");
+    let duplicates = found(&stack, |c| c.id() == "core/duplicate_identifier");
     assert_eq!(duplicates.len(), 1, "{duplicates:#?}");
     assert_eq!(file(&duplicates[0]).1, "biomes/b.json");
     // The parse's information: a colour channel above 255, clamped.
-    let clamped = found(&stack, |c| c.name() == "InvalidValue");
+    let clamped = found(&stack, |c| c.id() == "core/invalid_value");
     assert_eq!(clamped.len(), 1, "{clamped:#?}");
     assert_eq!(clamped[0].severity, Severity::Info);
     assert_eq!(file(&clamped[0]).1, "biomes/b.json");
@@ -614,7 +626,7 @@ fn a_shadowed_document_is_not_glue_checked() {
     let all: Vec<_> = stack.client_biomes().diagnostics().collect();
     assert_eq!(all.len(), 1, "{all:#?}");
     // By legacy name: the variant and the definitions that were it.
-    assert_eq!(all[0].code.name(), "ShadowedDefinition");
+    assert_eq!(all[0].code.id(), "core/shadowed_definition");
     assert_eq!(file(all[0]).0, "bottom");
     // The same document on top is the claiming one: it is checked, fails, and still claims.
     let top = pack(1, "top", PackOrigin::User, vec![bad("biomes/plains.json")]);
@@ -642,7 +654,7 @@ fn a_shadowed_document_is_not_glue_checked() {
         ("top".to_owned(), "biomes/plains.json".to_owned())
     );
     // The lower document is shadowed all the same: its own info, beside the claim's warning.
-    let shadowed = found(&stack, |c| c.name() == "ShadowedDefinition");
+    let shadowed = found(&stack, |c| c.id() == "core/shadowed_definition");
     assert_eq!(shadowed.len(), 1, "{shadowed:#?}");
     assert_eq!(shadowed[0].severity, Severity::Info);
     assert_eq!(
@@ -680,7 +692,7 @@ fn a_document_for_an_unknown_biome_is_still_glue_checked_deviation() {
     let all: Vec<_> = stack.client_biomes().diagnostics().collect();
     assert_eq!(all.len(), 1, "{all:#?}");
     // By legacy name: the variant and the definitions that were it.
-    assert_eq!(all[0].code.name(), "InvalidValue");
+    assert_eq!(all[0].code.id(), "client_biome/volume");
     assert_eq!(all[0].severity, Severity::Error);
     assert_eq!(
         all[0].code.to_string(),

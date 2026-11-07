@@ -159,7 +159,7 @@
 5
 
 == {
-rejected: ["MalformedInput "]
+rejected: ["core/syntax "]
 == GAME, min_delay set to 5 and event_name to "music.edited"
 {
   "game": {

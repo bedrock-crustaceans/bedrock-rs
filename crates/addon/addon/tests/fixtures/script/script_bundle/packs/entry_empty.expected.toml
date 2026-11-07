@@ -6,7 +6,7 @@ main = ""
 
 # ours: the module starts no plugin, so main.js is listed and not read (no import site)
 [[diagnostics]]
-code = "InvalidValue"
+code = "script/plugin_entry_not_supported_invalid_value"
 severity = "error"
 text = "Plugin [SB_entry_empty - 1.0.0] - entry [] not supported for runtime [JavaScript]."
 file = "manifest.json"

@@ -4,7 +4,7 @@
 //! member, as the file has it. Every test loads a legacy document of the version the step
 //! upgrades from through `Block::parse`.
 
-use bedrock_addon::diagnostic::{Phase, Severity};
+use bedrock_addon::diagnostic::{Disposition, Kind, Phase, Severity};
 use bedrock_addon::document::Content;
 use bedrock_addon::json::Value;
 
@@ -25,7 +25,7 @@ fn misread(version: &str, payload: &str) -> (Vec<String>, Value) {
             f.phase == Phase::Upgrade
                 && f.severity == Severity::Info
                 // By legacy name: the variant and the definitions that were it.
-                && f.code.name() == "InvalidType"
+                && f.code.id() == "core/invalid_type"
         })
         .map(|f| f.location.json_path.to_string())
         .collect();
@@ -310,13 +310,13 @@ fn a_value_a_step_reads_as_another_value_is_told() {
         (
             r#""components": {"minecraft:block_light_absorption": true}"#,
             "minecraft:block/components/minecraft:block_light_absorption",
-            "InvalidType",
+            "core/invalid_type",
             Severity::Info,
         ),
         (
             r#""components": {"minecraft:block_light_absorption": 3.7}"#,
             "minecraft:block/components/minecraft:block_light_absorption",
-            "InvalidValue",
+            "core/invalid_value",
             Severity::Info,
         ),
         (
@@ -324,25 +324,25 @@ fn a_value_a_step_reads_as_another_value_is_told() {
             // "Members of component %s will be thrown away as part of the upgrade": the
             // game's level-3 line, once at the component.
             "minecraft:block/components/minecraft:block_light_emission",
-            "DroppedField",
+            "block/members_thrown_away",
             Severity::Error,
         ),
         (
             r#""components": {}, "events": 7"#,
             "minecraft:block/events",
-            "InvalidType",
+            "core/invalid_type",
             Severity::Info,
         ),
         (
             r#""components": {"minecraft:rotation": null}"#,
             "minecraft:block/components/minecraft:rotation",
-            "InvalidType",
+            "core/invalid_type",
             Severity::Info,
         ),
         (
             r#""components": {"tag:ore": 7}"#,
             "minecraft:block/components/tag:ore",
-            "InvalidType",
+            "core/invalid_type",
             Severity::Info,
         ),
     ];
@@ -361,7 +361,7 @@ fn a_value_a_step_reads_as_another_value_is_told() {
             .iter()
             .filter(|f| f.phase == Phase::Upgrade && f.location.json_path.to_string() == at)
             .filter(|f| f.severity == severity)
-            .map(|f| f.code.name().to_owned())
+            .map(|f| f.code.id().to_owned())
             .collect();
         assert!(
             told.contains(&code.to_owned()),
@@ -379,14 +379,14 @@ fn a_value_a_step_reads_as_another_value_is_told() {
     )
     .unwrap_or_else(|rejected| panic!("{:#?}", rejected.diagnostics));
     assert!(block.diagnostics().iter().any(|f| {
-        f.code.name() == "UnrecognizedField"
+        f.code.id() == "core/unrecognized_field"
             && f.location.json_path.to_string() == "minecraft:block/description/use_beta_features"
     }));
     assert!(
         !block
             .diagnostics()
             .iter()
-            .any(|f| f.code.name() == "InvalidType")
+            .any(|f| f.code.id() == "core/invalid_type")
     );
 }
 
@@ -409,7 +409,7 @@ fn a_legacy_creative_category_is_told_at_the_member_the_file_has() {
         parse(text)
             .diagnostics()
             .iter()
-            .filter(|f| f.code.name() == "InvalidValue" && f.phase == Phase::Upgrade)
+            .filter(|f| f.code.kind() == Kind::InvalidValue && f.phase == Phase::Upgrade)
             .map(|f| f.location.json_path.to_string())
             .collect()
     };
@@ -439,7 +439,7 @@ fn a_legacy_creative_category_is_told_at_the_member_the_file_has() {
             .diagnostics()
             .iter()
             .filter(|f| f.phase == Phase::Upgrade && f.severity == Severity::Info)
-            .map(|f| format!("{} {}", f.code.name(), f.location.json_path))
+            .map(|f| format!("{} {}", f.code.id(), f.location.json_path))
             .collect()
     };
     assert_eq!(
@@ -448,8 +448,8 @@ fn a_legacy_creative_category_is_told_at_the_member_the_file_has() {
         ),
         [
             // The group the 1.21.30 step writes under vanilla's namespace.
-            "DeprecatedMember minecraft:block/components/minecraft:creative_category/group",
-            "MissingRequiredField minecraft:block/components/minecraft:creative_category/category"
+            "core/deprecated_member minecraft:block/components/minecraft:creative_category/group",
+            "core/missing_required_field minecraft:block/components/minecraft:creative_category/category"
         ]
     );
     assert_eq!(
@@ -457,8 +457,8 @@ fn a_legacy_creative_category_is_told_at_the_member_the_file_has() {
             r#"{"format_version": "1.19.20", "minecraft:block": {"description": {"identifier": "demo:x", "menu_category": {"group": "g"}}, "components": {}}}"#
         ),
         [
-            "DeprecatedMember minecraft:block/description/menu_category/group",
-            "MissingRequiredField minecraft:block/description/menu_category/category"
+            "core/deprecated_member minecraft:block/description/menu_category/group",
+            "core/missing_required_field minecraft:block/description/menu_category/category"
         ]
     );
     let refused = parse(
@@ -475,7 +475,7 @@ fn a_legacy_creative_category_is_told_at_the_member_the_file_has() {
         block
             .diagnostics()
             .iter()
-            .all(|f| f.code.name() != "UnrecognizedField")
+            .all(|f| f.code.kind() != Kind::UnknownMember(Disposition::Kept))
     );
 }
 
@@ -510,7 +510,7 @@ fn an_invalid_type_of_a_cereal_component_has_the_span_of_its_token() {
             .map(|f| {
                 let span = f.location.span.expect("a span");
                 (
-                    f.code.name().to_owned(),
+                    f.code.id().to_owned(),
                     &text[span.offset as usize..(span.offset + span.len) as usize],
                 )
             })

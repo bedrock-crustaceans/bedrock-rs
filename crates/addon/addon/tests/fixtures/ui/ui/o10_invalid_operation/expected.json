@@ -13,7 +13,7 @@
   ],
   "diagnostics": [
     {
-      "code": "InvalidEnumValue",
+      "code": "json_ui/pack_invalid_operation_name",
       "severity": "error",
       "text": "ui/a.json (root): Invalid operation 'prepend'.",
       "pack": 1,

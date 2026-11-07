@@ -1350,23 +1350,23 @@ fn same_but_order(a: &Read, b: &Read) -> bool {
 /// that make a place "told as not read". A finding of any other code (the
 /// `MolangNotChecked` INFO at the payload, most of all) says nothing of a value below it.
 const NOT_READ: &[&str] = &[
-    "DroppedField",
+    "core/dropped_field",
     // The name four of `DroppedField`'s sites have now (a member read and kept nowhere):
     // the same statement of the same members, no new place.
-    "MemberNotKept",
-    "DroppedComponent",
-    "DeprecatedMember",
-    "UnrecognizedField",
-    "UnrecognizedComponent",
-    "InvalidType",
-    "InvalidValue",
+    "core/member_not_kept",
+    "core/dropped_component",
+    "core/deprecated_member",
+    "core/unrecognized_field",
+    "core/unrecognized_component",
+    "core/invalid_type",
+    "core/invalid_value",
     // A value its member's reader does not take (a number where a component's object is
     // read): the member is not read.
-    "MalformedInput",
+    "core/syntax",
     // "Two versions of the same component found": the newer-named one of the file goes.
-    "DuplicateComponentVersion",
+    "core/duplicate_component_version",
     // A member the game never looks up (the particle's legacy `camera_distance_fade`).
-    "NoEffect",
+    "core/no_effect",
 ];
 
 /// The scalars of `value` (no keys), sorted.
@@ -1444,7 +1444,10 @@ fn clamped_at(node: &Node, outcome: &Outcome) -> bool {
     outcome
         .findings
         .iter()
-        .any(|finding| code(finding) == "ClampedValue" && path_of(finding) == node.path)
+        .any(|finding| {
+            finding.code.kind() == bedrock_addon::diagnostic::Kind::Clamped
+                && path_of(finding) == node.path
+        })
 }
 
 /// Whether `at` is a component of an entity (`minecraft:entity/components/<key>` or
@@ -1466,7 +1469,7 @@ fn rewritten_at(node: &Node, outcome: &Outcome) -> bool {
     outcome
         .findings
         .iter()
-        .any(|finding| code(finding) == "ValueRewritten" && path_of(finding) == node.path)
+        .any(|finding| code(finding) == "core/value_rewritten" && path_of(finding) == node.path)
 }
 
 /// Whether a finding at `at` is at the member the place's value MOVED to ("said elsewhere"):
@@ -1622,7 +1625,7 @@ impl Changed<'_, '_> {
                 component_level(at)
                     && *at != node.path
                     && node.path.starts_with(at)
-                    && text.starts_with("ValueRewritten")
+                    && text.starts_with("core/value_rewritten")
             })
         };
         let ours_at: Vec<Vec<String>> = outcome.findings.iter().map(path_of).collect();
@@ -1769,7 +1772,7 @@ impl Changed<'_, '_> {
                 component_level(at)
                     && *at != node.path
                     && node.path.starts_with(at)
-                    && text.starts_with("ValueRewritten")
+                    && text.starts_with("core/value_rewritten")
                     && !self
                         .outcome
                         .findings

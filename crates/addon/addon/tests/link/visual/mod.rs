@@ -33,7 +33,7 @@ pub fn told_of(finding: &Diagnostic) -> Told {
         _ => ("", String::new()),
     };
     (
-        finding.code.name(),
+        finding.code.id(),
         finding.severity,
         finding.location.json_path.to_string(),
         kind,
@@ -75,7 +75,7 @@ pub fn says(
 pub fn text_of(findings: &Diagnostics, path: &str, code: &str) -> String {
     let found: Vec<_> = super::common::in_file(findings, path)
         .into_iter()
-        .filter(|finding| finding.code.name() == code)
+        .filter(|finding| finding.code.id() == code)
         .collect();
     assert_eq!(found.len(), 1, "{found:#?}");
     found[0].code.to_string()

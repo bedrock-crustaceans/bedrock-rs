@@ -83,7 +83,7 @@ fn check_recipes(source: &str, dirs: &[&Path], world_behavior: &[u8], flattened:
     let mut warnings: BTreeMap<&str, usize> = BTreeMap::new();
     for finding in recipes.diagnostics() {
         if finding.severity == Severity::Warning {
-            *warnings.entry(finding.code.name()).or_default() += 1;
+            *warnings.entry(finding.code.id()).or_default() += 1;
         }
         if finding.severity < Severity::Error {
             continue;
@@ -93,7 +93,7 @@ fn check_recipes(source: &str, dirs: &[&Path], world_behavior: &[u8], flattened:
             continue;
         }
         // By legacy name: the definitions that were `DuplicateIdentifier` and the variant.
-        if flattened && finding.code.name() == "DuplicateIdentifier" {
+        if flattened && finding.code.id() == "recipe/duplicate_identifier" {
             merged += 1;
             continue;
         }

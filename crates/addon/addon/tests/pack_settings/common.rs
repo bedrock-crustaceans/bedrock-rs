@@ -63,7 +63,7 @@ pub fn names(diagnostics: &Diagnostics, severity: Severity) -> Vec<&'static str>
     diagnostics
         .iter()
         .filter(|d| d.severity == severity)
-        .map(|d| d.code.name())
+        .map(|d| d.code.id())
         .collect()
 }
 

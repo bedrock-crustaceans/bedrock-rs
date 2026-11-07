@@ -7,7 +7,7 @@
 //! The files under `fixtures/item/attachable/vanilla/` are copied from the game's sample
 //! resource pack (1.26.50), `resource_pack/attachables/`.
 
-use bedrock_addon::diagnostic::{JsonPathSegment, Severity};
+use bedrock_addon::diagnostic::{Diagnostics, Disposition, JsonPathSegment, Kind, Severity};
 use bedrock_addon::document::{Content, Placed};
 use bedrock_addon::families::attachable::{Attachable, Condition, ItemBinding};
 use bedrock_addon::id::AttachableId;
@@ -17,9 +17,19 @@ use bedrock_addon::visual::HeldItemScale;
 
 use super::common::*;
 
+/// Requires no finding of `kind`.
+#[track_caller]
+fn none_of_kind(d: &Diagnostics, kind: Kind) {
+    assert!(
+        d.iter().all(|f| f.kind() != kind),
+        "{}",
+        lines(d).join("\n")
+    );
+}
+
 const FAMILY: &str = "attachable";
 const ITEM_AT: &str = "minecraft:attachable/description/item";
-const NOT_VALID: &str = "UnrecognizedField";
+const NOT_VALID: &str = "core/child_not_valid";
 const TYPE_ERROR: &str = "unknown child schema option type.  Allowed types: ";
 const VERSION_NOT_GIVEN: &str = "Warning: The \"format_version\" field was not given. Fields from format version 1.8.0 and older will be loaded. Update your targeted \"format_version\" to use fields from newer versions.";
 
@@ -136,7 +146,7 @@ fn a05_missing_version_deviation() {
     let document = loaded(attachable(&text, &cx()));
     expect(
         document.diagnostics(),
-        "MissingFormatVersion",
+        "core/version_not_given_legacy_fields",
         Severity::Warning,
         VERSION_NOT_GIVEN,
     );
@@ -157,14 +167,14 @@ fn a05_missing_version_with_item_is_rejected_as_any_1_8_document() {
     let d = rejected(attachable(&text, &cx()));
     expect(
         &d,
-        "MissingFormatVersion",
+        "core/version_not_given_legacy_fields",
         Severity::Warning,
         VERSION_NOT_GIVEN,
     );
     expect(&d, NOT_VALID, Severity::Error, &child("item"));
     // The warning comes first.
-    let position = |name: &str| d.iter().position(|f| f.code.name() == name).unwrap();
-    assert!(position("MissingFormatVersion") < position(NOT_VALID));
+    let position = |name: &str| d.iter().position(|f| f.code.id() == name).unwrap();
+    assert!(position("core/version_not_given_legacy_fields") < position(NOT_VALID));
 }
 
 #[test]
@@ -173,7 +183,7 @@ fn a06_below_floor() {
     let d = rejected(attachable(&text, &cx()));
     expect(
         &d,
-        "UnsupportedVersion",
+        "core/version_below_min",
         Severity::Error,
         "Version 1.7.0 below min required version (1.10.0)",
     );
@@ -191,7 +201,7 @@ fn a07_major_zero() {
     let d = rejected(outcome);
     expect(
         &d,
-        "UnsupportedVersion",
+        "visual/unknown_version",
         Severity::Error,
         "Unknown/unsupported version value specified in format_version field in attachables/a07.json",
     );
@@ -203,7 +213,7 @@ fn a08_above_engine() {
     assert_eq!(ENGINE_VERSION, FormatVersion::new(1, 26, 60));
     expect(
         &d,
-        "UnsupportedVersion",
+        "visual/actor_above_engine",
         Severity::Error,
         "Error: actor resource file has format version: 99.0.0 exceeds game version: 1.26.60. Skipping.",
     );
@@ -219,11 +229,11 @@ fn a09_beta_literal() {
         let d = rejected(attachable(&ghost("beta", ""), &cx));
         expect(
             &d,
-            "UnsupportedVersion",
+            "visual/unknown_version",
             Severity::Error,
             "Unknown/unsupported version value specified in format_version field in attachables/x.json",
         );
-        none(&d, "BetaFeaturesNotEnabled");
+        none_of_kind(&d, Kind::Toggle);
     }
 }
 
@@ -310,7 +320,7 @@ fn a13_item_multi_member_binds_the_smallest_key_deviation() {
         assert_eq!(condition_text(&condition), "q.is_sneaking");
         expect_at(
             document.diagnostics(),
-            "DroppedField",
+            "core/dropped_field",
             Severity::Info,
             "minecraft:attachable/description/item/example:b",
         );
@@ -334,7 +344,7 @@ fn a13_bytes_decide_which_member_binds_and_every_other_is_dropped() {
     let dropped: Vec<String> = document
         .diagnostics()
         .iter()
-        .filter(|f| f.code.name() == "DroppedField")
+        .filter(|f| f.code.id() == "core/dropped_field")
         .map(|f| {
             assert_eq!(f.severity, Severity::Info);
             f.location.json_path.to_string()
@@ -352,7 +362,7 @@ fn a13_bytes_decide_which_member_binds_and_every_other_is_dropped() {
         &ghost("1.10.0", r#""item": {"example:a": "1.0"}"#),
         &cx(),
     ));
-    none(one.diagnostics(), "DroppedField");
+    none_of_kind(one.diagnostics(), Kind::UnknownMember(Disposition::Dropped));
 }
 
 #[test]
@@ -361,11 +371,11 @@ fn a14_item_empty_object() {
         let d = rejected(attachable(&ghost(version, r#""item": {}"#), &cx()));
         expect(
             &d,
-            "MissingRequiredField",
+            "core/required_child",
             Severity::Error,
             "Required child [a-zA-Z0-9_.:-]+ not found",
         );
-        expect_at(&d, "MissingRequiredField", Severity::Error, ITEM_AT);
+        expect_at(&d, "core/required_child", Severity::Error, ITEM_AT);
         assert_eq!(d.len(), 1, "{}", lines(&d).join("\n"));
     }
 }
@@ -386,11 +396,11 @@ fn a15_item_wrong_type() {
             let d = rejected(attachable(&ghost(version, &members), &cx()));
             expect(
                 &d,
-                "InvalidValue",
+                "attachable/unknown_item_type",
                 Severity::Error,
                 &format!("{TYPE_ERROR}string, object"),
             );
-            expect_at(&d, "InvalidValue", Severity::Error, ITEM_AT);
+            expect_at(&d, "attachable/unknown_item_type", Severity::Error, ITEM_AT);
             assert_eq!(d.len(), 1, "{value}: {}", lines(&d).join("\n"));
         }
     }
@@ -405,7 +415,7 @@ fn a16_item_non_string_condition() {
             let document = loaded(attachable(&ghost(version, &members), &cx()));
             expect_at(
                 document.diagnostics(),
-                "InvalidValue",
+                "core/invalid_value",
                 Severity::Info,
                 "minecraft:attachable/description/item/example:wand",
             );
@@ -423,7 +433,7 @@ fn a16_item_non_string_condition() {
             let members = format!(r#""item": {{"example:wand": {boolean}}}"#);
             let document = loaded(attachable(&ghost(version, &members), &cx()));
             clean(document.diagnostics());
-            none(document.diagnostics(), "InvalidValue");
+            none_of_kind(document.diagnostics(), Kind::InvalidValue);
             let (_, condition) = document.binding().unwrap();
             assert_eq!(condition_text(&condition), text);
             assert!(!condition.is_never());
@@ -436,7 +446,7 @@ fn a16_only_the_member_that_binds_is_warned_about_as_a_number() {
     // `example:b` is dropped (rule 17); its number binds nothing and gets no second finding.
     let members = r#""item": {"example:b": 1, "example:a": "q.is_sneaking"}"#;
     let document = loaded(attachable(&ghost("1.10.0", members), &cx()));
-    none(document.diagnostics(), "InvalidValue");
+    none_of_kind(document.diagnostics(), Kind::InvalidValue);
     // the drop is an information: nothing at warning level
     assert_eq!(
         document.diagnostics().at_least(Severity::Warning).count(),
@@ -447,7 +457,7 @@ fn a16_only_the_member_that_binds_is_warned_about_as_a_number() {
     let document = loaded(attachable(&ghost("1.10.0", members), &cx()));
     expect_at(
         document.diagnostics(),
-        "InvalidValue",
+        "core/invalid_value",
         Severity::Info,
         "minecraft:attachable/description/item/example:a",
     );
@@ -473,13 +483,13 @@ fn a16_a_condition_that_is_no_number_boolean_or_string_fails_the_file() {
                 let d = rejected(attachable(&ghost(version, &members), &cx()));
                 expect(
                     &d,
-                    "InvalidType",
+                    "core/unknown_child_option",
                     Severity::Error,
                     &format!("{TYPE_ERROR}molang"),
                 );
                 expect_at(
                     &d,
-                    "InvalidType",
+                    "core/unknown_child_option",
                     Severity::Error,
                     &format!("{ITEM_AT}/{key}"),
                 );
@@ -553,7 +563,7 @@ fn a17b_the_key_pattern_at_its_edges() {
         lines(&d),
         [
             format!("Error {NOT_VALID} {ITEM_AT}/example:b c child 'example:b c' not valid here."),
-            format!("Info DroppedField {ITEM_AT}/example:b c field dropped"),
+            format!("Info core/dropped_field {ITEM_AT}/example:b c field dropped"),
         ]
     );
     // And one that would bind, beside a member that is fine.
@@ -563,7 +573,7 @@ fn a17b_the_key_pattern_at_its_edges() {
         lines(&d),
         [
             format!("Error {NOT_VALID} {ITEM_AT}/example b child 'example b' not valid here."),
-            format!("Info DroppedField {ITEM_AT}/example:a field dropped"),
+            format!("Info core/dropped_field {ITEM_AT}/example:a field dropped"),
         ]
     );
 }
@@ -577,7 +587,7 @@ fn a17b_a_string_form_outside_the_pattern_is_warned_about_and_kept() {
             let document = loaded(attachable(&ghost(version, &members), &cx()));
             expect_at(
                 document.diagnostics(),
-                "InvalidValue",
+                "core/invalid_value",
                 Severity::Info,
                 ITEM_AT,
             );

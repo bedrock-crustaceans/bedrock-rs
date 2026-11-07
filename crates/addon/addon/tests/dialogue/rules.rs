@@ -1,7 +1,7 @@
 //! The validation rules and the upgrade steps that no fixture row covers on
 //! its own, and both ends of every rule's range.
 
-use bedrock_addon::diagnostic::{Code, Diagnostics, JsonPath, Severity, codes};
+use bedrock_addon::diagnostic::{Code, Diagnostics, JsonPath, Kind, Severity, codes};
 use bedrock_addon::families::dialogue::codes as dialogue_codes;
 use bedrock_addon::families::dialogue::{ActionMode, DialogueScene, DialogueText, NpcAction};
 use bedrock_addon::id::DialogueSceneTag;
@@ -228,7 +228,7 @@ fn text_forms_are_read_as_vanilla_reads_them() {
         // ours, an information
         assert_eq!(
             names(&diagnostics, Severity::Info),
-            ["InvalidType"],
+            ["core/invalid_type"],
             "{value}"
         );
     }
@@ -272,9 +272,9 @@ fn a_dropped_scene_is_an_error_in_the_registry_and_a_kept_error_in_the_file() {
         .diagnostics()
         .iter()
         .filter(|d| d.severity == Severity::Error && d.kept)
-        .map(|d| d.code.name())
+        .map(|d| d.code.id())
         .collect();
-    assert_eq!(kept, ["MissingRequiredField"]);
+    assert_eq!(kept, ["dialogue/no_text"]);
     let stack = stack(vec![pack(
         10,
         vec![("dialogue/a.json".to_owned(), text.into_bytes())],
@@ -286,9 +286,9 @@ fn a_dropped_scene_is_an_error_in_the_registry_and_a_kept_error_in_the_file() {
     let errors: Vec<_> = registry
         .diagnostics()
         .filter(|d| d.severity == Severity::Error)
-        .map(|d| d.code.name())
+        .map(|d| d.code.id())
         .collect();
-    assert_eq!(errors, ["MissingRequiredField"]);
+    assert_eq!(errors, ["dialogue/no_text"]);
 }
 
 // ---- buttons and commands -------------------------------------------------------------------
@@ -337,13 +337,13 @@ fn a_button_name_that_is_absent_or_null_is_missing_and_another_type_invalid() {
         let code = &diagnostics.iter().next().unwrap().code;
         assert_eq!(
             // By legacy name: the variant and the definitions that were it.
-            matches!(code.name(), "MissingRequiredField"),
+            matches!(code.id(), "dialogue/no_button_name_missing_required_field"),
             missing,
             "{button}: {code:?}"
         );
         assert_eq!(
             // By legacy name: the variant and the definitions that were it.
-            matches!(code.name(), "InvalidType"),
+            matches!(code.id(), "dialogue/no_button_name_invalid_type"),
             !missing,
             "{button}: {code:?}"
         );
@@ -546,10 +546,7 @@ fn the_label_is_cut_at_17_code_points_not_bytes_and_long_scene_texts_are_not() {
         let (scene, diagnostics) = with_buttons(&format!(r#"{{"name": {name}}}"#));
         (
             scene.buttons.as_deref().unwrap()[0].label(),
-            diagnostics
-                .iter()
-                .map(|d| d.code.name())
-                .collect::<Vec<_>>(),
+            diagnostics.iter().map(|d| d.code.id()).collect::<Vec<_>>(),
         )
     };
     let e16 = "é".repeat(16);
@@ -557,7 +554,7 @@ fn the_label_is_cut_at_17_code_points_not_bytes_and_long_scene_texts_are_not() {
     assert_eq!(label(&format!("\"{e16}\"")), (e16.clone(), vec![]));
     assert_eq!(
         label(&format!("\"{e17}\"")),
-        (e16.clone(), vec!["ClampedValue"])
+        (e16.clone(), vec!["core/clamped_value"])
     );
     // The evaluated text is what is measured: a short text in a long object is not cut.
     assert_eq!(
@@ -566,7 +563,7 @@ fn the_label_is_cut_at_17_code_points_not_bytes_and_long_scene_texts_are_not() {
     );
     assert_eq!(
         label(r#"{"rawtext": [{"text": "ABCDEFGHIJKLMNOPQ"}]}"#),
-        ("ABCDEFGHIJKLMNOP".to_owned(), vec!["ClampedValue"])
+        ("ABCDEFGHIJKLMNOP".to_owned(), vec!["core/clamped_value"])
     );
     // An object that is not a raw-text object is its own JSON text.
     assert_eq!(label(r#"{"foo": 1}"#), ("{\"foo\":1}\n".to_owned(), vec![]));
@@ -642,7 +639,7 @@ fn three_packs_with_one_tag_keep_the_bottom_one_and_report_the_two_above() {
         .diagnostics()
         .map(|d| {
             (
-                d.code.name(),
+                d.code.id(),
                 d.location
                     .pack
                     .as_ref()
@@ -654,10 +651,10 @@ fn three_packs_with_one_tag_keep_the_bottom_one_and_report_the_two_above() {
     assert_eq!(
         found,
         [
-            ("DuplicateIdentifier", Some(0)),
-            ("DuplicateIdentifier", Some(1)),
-            ("ShadowedDefinition", Some(0)),
-            ("ShadowedDefinition", Some(1)),
+            ("core/shadowed_definition", Some(0)),
+            ("core/shadowed_definition", Some(1)),
+            ("dialogue/duplicate", Some(0)),
+            ("dialogue/duplicate", Some(1)),
         ]
     );
     // Without `keep_shadowed` only the effective scene is listed.
@@ -682,7 +679,7 @@ fn scene_tags_are_case_sensitive_and_a_dropped_scene_does_not_reserve_its_tag() 
     assert!(
         registry
             .diagnostics()
-            .all(|d| d.code.name() != "DuplicateIdentifier")
+            .all(|d| d.code.kind() != Kind::Duplicate)
     );
 }
 
@@ -827,7 +824,7 @@ fn a_skipped_file_and_a_dropped_scene_report_no_unknown_members() {
     // a kept error
     assert_eq!(
         names(document.diagnostics(), Severity::Error),
-        ["MissingRequiredField"]
+        ["dialogue/no_text"]
     );
 }
 
@@ -847,7 +844,7 @@ fn version_outcome(written: &str) -> Result<String, &'static str> {
                 "format_version",
                 "{written}"
             );
-            Err(error.code.name())
+            Err(error.code.id())
         }
     }
 }
@@ -888,7 +885,7 @@ fn the_floor_is_1_14_0_inclusive_and_there_is_no_ceiling() {
     ] {
         assert_eq!(
             version_outcome(written),
-            Err("UnsupportedVersion"),
+            Err("dialogue/out_of_range"),
             "{written}"
         );
     }
@@ -934,15 +931,18 @@ fn a_version_vanilla_cannot_read_is_malformed_and_an_absent_or_null_one_missing(
     ] {
         assert_eq!(
             version_outcome(written),
-            Err("MalformedFormatVersion"),
+            Err("dialogue/no_format_version_malformed_format_version"),
             "{written}"
         );
     }
-    assert_eq!(version_outcome("null"), Err("MissingFormatVersion"));
+    assert_eq!(
+        version_outcome("null"),
+        Err("dialogue/no_format_version_missing_format_version")
+    );
     let diagnostics = rejected(r#"{"minecraft:npc_dialogue": {"scenes": []}}"#);
     assert_eq!(
         names(&diagnostics, Severity::Error),
-        ["MissingFormatVersion"]
+        ["dialogue/no_format_version_missing_format_version"]
     );
 }
 
@@ -1063,17 +1063,21 @@ fn the_registry_reports_the_findings_of_a_scene_dropped_for_its_empty_tag_and_of
     assert!(registry.rejected().is_empty());
     let found: Vec<_> = registry
         .diagnostics()
-        .map(|d| (d.code.name(), d.severity, d.location.path.is_some()))
+        .map(|d| (d.code.id(), d.severity, d.location.path.is_some()))
         .collect();
     assert_eq!(
         found,
         [
             // the beta version is ours (an information), the two command lines the game's
             // (kept errors)
-            ("InvalidValue", Severity::Info, true),
-            ("UnrecognizedField", Severity::Info, true),
-            ("InvalidType", Severity::Error, true),
-            ("InvalidType", Severity::Error, true),
+            ("core/invalid_value", Severity::Info, true),
+            ("core/unrecognized_field", Severity::Info, true),
+            (
+                "dialogue/no_button_name_invalid_type",
+                Severity::Error,
+                true
+            ),
+            ("dialogue/scene_command_type", Severity::Error, true),
         ]
     );
 }
@@ -1209,7 +1213,7 @@ fn version_array_elements_convert_to_unsigned_as_jsoncpp_does() {
     ] {
         assert_eq!(
             version_outcome(written),
-            Err("UnsupportedVersion"),
+            Err("dialogue/out_of_range"),
             "{written}"
         );
     }
@@ -1231,7 +1235,7 @@ fn version_array_elements_convert_to_unsigned_as_jsoncpp_does() {
     ] {
         assert_eq!(
             version_outcome(written),
-            Err("MalformedFormatVersion"),
+            Err("dialogue/no_format_version_malformed_format_version"),
             "{written}"
         );
     }

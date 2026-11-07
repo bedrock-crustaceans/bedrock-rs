@@ -42,7 +42,7 @@ mod tests {
         assert_eq!(
             all_said(&found),
             [(
-                "UnresolvedReference",
+                "core/unresolved_reference",
                 Severity::Warning,
                 String::new(),
                 "block",

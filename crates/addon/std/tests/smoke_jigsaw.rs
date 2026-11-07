@@ -93,11 +93,7 @@ fn load_jigsaw(driver: &Driver, repository: &PackRepository, roots: &[PathBuf]) 
             finding.location.json_path
         );
         if finding.severity < Severity::Error {
-            findings.push(format!(
-                "{} {} ({at})",
-                finding.severity,
-                finding.code.name()
-            ));
+            findings.push(format!("{} {} ({at})", finding.severity, finding.code.id()));
             continue;
         }
         if finding.is(&core_codes::UNSUPPORTED_FILE_FORMAT) && mcb < on_disk {

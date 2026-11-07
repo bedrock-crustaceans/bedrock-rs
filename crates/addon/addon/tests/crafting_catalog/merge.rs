@@ -94,7 +94,7 @@ fn m05_a_duplicate_is_dropped_with_vanilla_s_error_and_the_first_placement_wins(
     assert_eq!(
         found(merged),
         [(
-            "IdentifierCollision".to_owned(),
+            "crafting_catalog/duplicate_item".to_owned(),
             Severity::Error,
             "pack1".to_owned(),
             "You can only add an item to the crafting item catalog once. Found duplicate minecraft:stone"
@@ -127,7 +127,7 @@ fn m06_duplicates_in_one_file_compare_the_identifier_and_the_aux_value() {
         .map(|(code, severity, pack, text)| {
             assert_eq!(
                 (code.as_str(), severity, pack.as_str()),
-                ("IdentifierCollision", Severity::Error, "pack0")
+                ("crafting_catalog/duplicate_item", Severity::Error, "pack0")
             );
             text
         })
@@ -177,7 +177,7 @@ fn m08_a_bad_aux_value_is_dropped_with_vanilla_s_error() {
     assert_eq!(
         found(merged),
         [(
-            "InvalidValue".to_owned(),
+            "crafting_catalog/invalid_aux".to_owned(),
             Severity::Error,
             "pack0".to_owned(),
             "Invalid aux value in item ID \"custom:item3:not_an_aux_value\"".to_owned()

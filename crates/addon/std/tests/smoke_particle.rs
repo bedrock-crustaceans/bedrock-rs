@@ -163,7 +163,7 @@ fn load_pack(driver: &mut Driver, root: &Path, outcome: &mut Outcome) {
     for finding in of_particles {
         *outcome
             .stack_codes
-            .entry(format!("{:?} {}", finding.severity, finding.code.name()))
+            .entry(format!("{:?} {}", finding.severity, finding.code.id()))
             .or_insert(0) += 1;
         if finding.is(&core_codes::UNSUPPORTED_FILE_FORMAT) {
             unsupported += 1;
@@ -218,7 +218,8 @@ fn load_pack(driver: &mut Driver, root: &Path, outcome: &mut Outcome) {
             let text = text(&folder, &relative, finding);
             // By name: INVALID_MOLANG and MOLANG_LINT, and the family raises that still build
             // the legacy variants.
-            if finding.code.name() == "InvalidMolang" || finding.code.name() == "MolangLint" {
+            if finding.code.id() == "core/invalid_molang" || finding.code.id() == "core/molang_lint"
+            {
                 outcome
                     .molang
                     .push(format!("{:?} {text}", finding.severity));
@@ -226,7 +227,7 @@ fn load_pack(driver: &mut Driver, root: &Path, outcome: &mut Outcome) {
             if finding.severity == Severity::Warning {
                 let entry = outcome
                     .warnings
-                    .entry(finding.code.name().to_owned())
+                    .entry(finding.code.id().to_owned())
                     .or_insert((0, text.clone()));
                 entry.0 += 1;
             }
@@ -340,7 +341,7 @@ fn sample_packs_particles_load_without_errors() {
     // (`geyser_plume`, `noxious_gas_particle`, `sulfur_bubble_particle`).
     assert_eq!(
         stack_pass(&outcome),
-        (192, 0, vec![("Info InvalidValue", 3)], vec![])
+        (192, 0, vec![("Info core/invalid_value", 3)], vec![])
     );
     // the dropped `velocity` is an information: the game drops it silently
     assert_eq!(warnings(&outcome), [] as [(&str, usize); 0]);
@@ -397,7 +398,12 @@ fn client_install_a_particles_load_without_errors() {
     assert_eq!(outcome.mcb.total(), 195);
     assert_eq!(
         stack_pass(&outcome),
-        (206, 0, vec![("Info InvalidValue", 2)], vec!["chemistry"])
+        (
+            206,
+            0,
+            vec![("Info core/invalid_value", 2)],
+            vec!["chemistry"]
+        )
     );
     // the dropped `velocity` is an information: the game drops it silently
     assert_eq!(warnings(&outcome), [] as [(&str, usize); 0]);

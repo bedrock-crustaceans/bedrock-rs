@@ -16,13 +16,13 @@ const PAYLOAD: &str = r#"{"description": {"identifier": "a:b"}, "rules": []}"#;
 
 /// The closing "Missing object" line, after a finding that carries a text of its own.
 fn closing_missing_object() -> (&'static str, String, String) {
-    missing_object("DocumentRejected", "")
+    missing_object("block_culling/missing_object_document_rejected", "")
 }
 
 /// "no parser available" for `version`.
 fn no_parser(version: &str) -> (&'static str, String, String) {
     error(
-        "UnsupportedVersion",
+        "core/no_parser_for_version",
         &format!("unsupported version: no parser available for version {version}"),
         "format_version",
     )
@@ -34,7 +34,10 @@ fn v01_text_that_is_not_json() {
     // object".
     let found = errors(&rejects(&fixture("v01_bad_json.json")));
     assert_eq!(found.len(), 2, "{found:#?}");
-    assert_eq!((found[0].0, found[0].2.as_str()), ("MalformedInput", ""));
+    assert_eq!(
+        (found[0].0, found[0].2.as_str()),
+        ("core/document_json", "")
+    );
     assert_eq!(found[1], closing_missing_object());
     for text in ["", "[]", "5", "\"x\"", "{", "\u{0}"] {
         let found = errors(&rejects(text));
@@ -76,12 +79,18 @@ fn v02_a_missing_format_version_is_not_floored() {
     let json = format!(r#"{{"minecraft:block_culling_rules": {PAYLOAD}}}"#);
     assert_eq!(
         errors(&rejects(&json)),
-        [missing_object("MissingFormatVersion", "")]
+        [missing_object(
+            "block_culling/missing_object_missing_format_version",
+            ""
+        )]
     );
     // In a base-game pack too.
     assert_eq!(
         errors(&rejects_in(&json, &base_game())),
-        [missing_object("MissingFormatVersion", "")]
+        [missing_object(
+            "block_culling/missing_object_missing_format_version",
+            ""
+        )]
     );
 }
 
@@ -92,7 +101,7 @@ fn v03_a_third_root_member() {
     );
     let found = errors(&rejects(&json));
     assert_eq!(found.len(), 2, "{found:#?}");
-    assert_eq!(found[0].0, "MalformedInput");
+    assert_eq!(found[0].0, "core/document_member_count");
     assert_eq!(found[1], closing_missing_object());
     // One member is not two either.
     let found = errors(&rejects(r#"{"format_version": "1.21.80"}"#));
@@ -111,7 +120,10 @@ fn v04_another_payload_key() {
         let json = format!(r#"{{"format_version": "1.21.80", "{key}": {PAYLOAD}}}"#);
         assert_eq!(
             errors(&rejects(&json)),
-            [missing_object("MissingPayload", "")],
+            [missing_object(
+                "block_culling/missing_object_missing_payload",
+                ""
+            )],
             "{key}"
         );
     }
@@ -122,7 +134,10 @@ fn v05_below_the_floor_is_missing_object_only() {
     for version in ["1.20.50", "1.20.59", "1.19.0", "0.0.0", "1.2.3"] {
         assert_eq!(
             errors(&rejects(&document(version, "a:b", &[]))),
-            [missing_object("UnsupportedVersion", "format_version")],
+            [missing_object(
+                "block_culling/missing_object_unsupported_version",
+                "format_version"
+            )],
             "{version}"
         );
     }
@@ -132,7 +147,10 @@ fn v05_below_the_floor_is_missing_object_only() {
     );
     assert_eq!(
         errors(&rejects(&json)),
-        [missing_object("UnsupportedVersion", "format_version")]
+        [missing_object(
+            "block_culling/missing_object_unsupported_version",
+            "format_version"
+        )]
     );
 }
 
@@ -223,7 +241,10 @@ fn v10_the_floor_itself_loads_through_the_1_20_60_struct() {
 fn v11_a_pre_release_of_the_floor_is_below_it() {
     assert_eq!(
         errors(&rejects(&document("1.20.60-beta.1", "a:b", &[]))),
-        [missing_object("UnsupportedVersion", "format_version")]
+        [missing_object(
+            "block_culling/missing_object_unsupported_version",
+            "format_version"
+        )]
     );
 }
 
@@ -243,7 +264,10 @@ fn v12_a_version_that_is_not_one() {
         );
         assert_eq!(
             errors(&rejects(&json)),
-            [missing_object("MalformedFormatVersion", "format_version")],
+            [missing_object(
+                "block_culling/missing_object_malformed_format_version",
+                "format_version"
+            )],
             "{version}"
         );
     }
@@ -278,7 +302,7 @@ fn content_after_the_document_is_ignored_with_one_warning_at_its_span() {
     assert_eq!(document.rules.len(), 1);
     let found: Vec<_> = document.diagnostics().iter().collect();
     assert_eq!(found.len(), 1, "{found:#?}");
-    assert_eq!(found[0].code.name(), "MalformedInput");
+    assert_eq!(found[0].code.id(), "core/syntax");
     assert_eq!(
         found[0].severity,
         bedrock_addon_core::diagnostic::Severity::Info

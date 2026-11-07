@@ -1,7 +1,7 @@
 # Validation rule 6, the root: the tree is not registered.
 
 [[diagnostic]]
-kind = "UnknownNode"
+kind = "core/unknown_node"
 severity = "error"
 file = "behavior_trees/craft.json"
 path = "minecraft:behavior_tree/minecraft:root/minecraft:craft_item"

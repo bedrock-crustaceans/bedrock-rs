@@ -25,11 +25,11 @@ fn t04_every_legacy_form_reads_as_parse_range_does() {
     );
     let d = document.diagnostics();
     // Op 5: the array swaps, the object raises `max` (ours: a warning; vanilla is silent).
-    found_at(d, "ClampedValue", Severity::Info, &wants(2));
-    found_at(d, "ClampedValue", Severity::Info, &wants(3));
+    found_at(d, "core/clamped_value", Severity::Info, &wants(2));
+    found_at(d, "core/clamped_value", Severity::Info, &wants(3));
     // Op 4: a bound of 0 or less becomes 1 (ours: a warning; vanilla is silent).
-    found_at(d, "InvalidValue", Severity::Info, &wants(4));
-    found_at(d, "InvalidValue", Severity::Info, &wants(5));
+    found_at(d, "core/invalid_value", Severity::Info, &wants(4));
+    found_at(d, "core/invalid_value", Severity::Info, &wants(5));
     assert_eq!(d.len(), 4, "{d:#?}");
 }
 
@@ -45,7 +45,7 @@ fn t04_a_stamped_string_or_array_quantity_is_a_type_error() {
             ),
         ));
         let at = "tiers/0/groups/0/trades/0/wants/0/quantity";
-        found_at(&d, "InvalidType", Severity::Error, at);
+        found_at(&d, "core/invalid_type", Severity::Error, at);
     }
 }
 
@@ -61,7 +61,7 @@ fn t04_a_stamped_zero_quantity_violates_min_1() {
             ),
         ));
         assert_eq!(
-            with(&d, "InvalidValue", Severity::Error).len(),
+            with(&d, "core/invalid_value", Severity::Error).len(),
             1,
             "{quantity}: {d:#?}"
         );
@@ -88,7 +88,7 @@ fn legacy(quantity: &str) -> (Option<Quantity>, (u32, u32), Vec<&'static str>) {
                 f.location.json_path.to_string(),
                 "tiers/0/trades/0/wants/0/quantity"
             );
-            f.code.name()
+            f.code.id()
         })
         .collect();
     (item.quantity, item.quantity_range(), codes)
@@ -105,11 +105,15 @@ fn a_legacy_bound_below_one_becomes_one_with_an_information_deviation() {
     assert_eq!(legacy("1"), (Some(Quantity::Exact(1)), (1, 1), vec![]));
     assert_eq!(
         legacy("0"),
-        (Some(Quantity::Exact(1)), (1, 1), vec!["InvalidValue"])
+        (Some(Quantity::Exact(1)), (1, 1), vec!["core/invalid_value"])
     );
     assert_eq!(
         legacy(r#"{"min": 0, "max": 3}"#),
-        (Some(range(Some(1), Some(3))), (1, 3), vec!["InvalidValue"])
+        (
+            Some(range(Some(1), Some(3))),
+            (1, 3),
+            vec!["core/invalid_value"]
+        )
     );
     assert_eq!(
         legacy(r#"{"min": 1, "max": 3}"#),
@@ -117,11 +121,19 @@ fn a_legacy_bound_below_one_becomes_one_with_an_information_deviation() {
     );
     assert_eq!(
         legacy(r#""-2-3""#),
-        (Some(range(Some(1), Some(3))), (1, 3), vec!["InvalidValue"])
+        (
+            Some(range(Some(1), Some(3))),
+            (1, 3),
+            vec!["core/invalid_value"]
+        )
     );
     assert_eq!(
         legacy("[]"),
-        (Some(range(Some(1), Some(1))), (1, 1), vec!["InvalidValue"])
+        (
+            Some(range(Some(1), Some(1))),
+            (1, 1),
+            vec!["core/invalid_value"]
+        )
     );
     // `max` alone below 1: it is below `min` too, so it is raised as well.
     assert_eq!(
@@ -129,12 +141,16 @@ fn a_legacy_bound_below_one_becomes_one_with_an_information_deviation() {
         (
             Some(range(Some(2), Some(2))),
             (2, 2),
-            vec!["InvalidValue", "ClampedValue"]
+            vec!["core/invalid_value", "core/clamped_value"]
         )
     );
     assert_eq!(
         legacy(r#"{"max": 0}"#),
-        (Some(range(None, Some(1))), (1, 1), vec!["InvalidValue"])
+        (
+            Some(range(None, Some(1))),
+            (1, 1),
+            vec!["core/invalid_value"]
+        )
     );
 }
 
@@ -143,7 +159,11 @@ fn a_legacy_min_above_max_is_swapped_or_raised_with_an_information_deviation() {
     // Vanilla is silent (). The array swaps, the others raise `max`.
     assert_eq!(
         legacy("[5, 2]"),
-        (Some(range(Some(2), Some(5))), (2, 5), vec!["ClampedValue"])
+        (
+            Some(range(Some(2), Some(5))),
+            (2, 5),
+            vec!["core/clamped_value"]
+        )
     );
     assert_eq!(
         legacy("[2, 5]"),
@@ -155,7 +175,11 @@ fn a_legacy_min_above_max_is_swapped_or_raised_with_an_information_deviation() {
     );
     assert_eq!(
         legacy(r#"{"min": 5, "max": 2}"#),
-        (Some(range(Some(5), Some(5))), (5, 5), vec!["ClampedValue"])
+        (
+            Some(range(Some(5), Some(5))),
+            (5, 5),
+            vec!["core/clamped_value"]
+        )
     );
     assert_eq!(
         legacy(r#"{"min": 5, "max": 5}"#),
@@ -163,7 +187,11 @@ fn a_legacy_min_above_max_is_swapped_or_raised_with_an_information_deviation() {
     );
     assert_eq!(
         legacy(r#""4-2""#),
-        (Some(range(Some(4), Some(4))), (4, 4), vec!["ClampedValue"])
+        (
+            Some(range(Some(4), Some(4))),
+            (4, 4),
+            vec!["core/clamped_value"]
+        )
     );
     assert_eq!(
         legacy(r#""2-4""#),
@@ -197,7 +225,7 @@ fn the_other_legacy_forms() {
     );
     assert_eq!(
         legacy("2.7"),
-        (Some(Quantity::Exact(2)), (2, 2), vec!["InvalidValue"])
+        (Some(Quantity::Exact(2)), (2, 2), vec!["core/invalid_value"])
     );
     assert_eq!(legacy("2.0"), (Some(Quantity::Exact(2)), (2, 2), vec![]));
     // A bound beyond the newest form's `u32`, or beyond an `int`: the bound of the type, said.
@@ -206,7 +234,7 @@ fn the_other_legacy_forms() {
         (
             Some(Quantity::Exact(u32::MAX)),
             (u32::MAX, u32::MAX),
-            vec!["InvalidValue"]
+            vec!["core/invalid_value"]
         )
     );
     assert_eq!(
@@ -214,7 +242,7 @@ fn the_other_legacy_forms() {
         (
             Some(range(Some(1), Some(2_147_483_647))),
             (1, 2_147_483_647),
-            vec!["InvalidValue"]
+            vec!["core/invalid_value"]
         )
     );
     assert_eq!(
@@ -222,16 +250,20 @@ fn the_other_legacy_forms() {
         (
             Some(range(Some(1), Some(5))),
             (1, 5),
-            vec!["InvalidValue", "ClampedValue"]
+            vec!["core/invalid_value", "core/clamped_value"]
         )
     );
     // A string that is no range, and a type `parseRange` does not read: 1..1 (vanilla: in
     // silence; ours says it).
     assert_eq!(
         legacy(r#""many""#),
-        (Some(range(Some(1), Some(1))), (1, 1), vec!["InvalidValue"])
+        (
+            Some(range(Some(1), Some(1))),
+            (1, 1),
+            vec!["core/invalid_value"]
+        )
     );
-    assert_eq!(legacy("true"), (None, (1, 1), vec!["InvalidType"]));
+    assert_eq!(legacy("true"), (None, (1, 1), vec!["core/invalid_type"]));
 }
 
 #[test]
@@ -320,32 +352,56 @@ fn a_stamped_negative_or_fractional_quantity_is_an_error() {
 fn a_negative_bound_is_an_invalid_value_like_a_negative_quantity() {
     let quantity = "tiers/0/groups/0/trades/0/wants/0/quantity";
     for (text, code, path) in [
-        ("-1", "InvalidValue", quantity.to_owned()),
-        (r#"{"min": -1}"#, "InvalidValue", format!("{quantity}/min")),
-        (r#"{"max": -1}"#, "InvalidValue", format!("{quantity}/max")),
+        ("-1", "core/invalid_value", quantity.to_owned()),
         (
-            r#"{"min": 2, "max": -3}"#,
-            "InvalidValue",
+            r#"{"min": -1}"#,
+            "core/invalid_value",
+            format!("{quantity}/min"),
+        ),
+        (
+            r#"{"max": -1}"#,
+            "core/invalid_value",
             format!("{quantity}/max"),
         ),
-        ("0", "InvalidValue", quantity.to_owned()),
-        (r#"{"min": 0}"#, "InvalidValue", format!("{quantity}/min")),
-        ("4294967296", "InvalidType", quantity.to_owned()),
+        (
+            r#"{"min": 2, "max": -3}"#,
+            "core/invalid_value",
+            format!("{quantity}/max"),
+        ),
+        ("0", "core/invalid_value", quantity.to_owned()),
+        (
+            r#"{"min": 0}"#,
+            "core/invalid_value",
+            format!("{quantity}/min"),
+        ),
+        ("4294967296", "core/invalid_type", quantity.to_owned()),
         (
             r#"{"min": 4294967296}"#,
-            "InvalidType",
+            "core/invalid_type",
             format!("{quantity}/min"),
         ),
         (
             r#"{"max": 4294967296}"#,
-            "InvalidType",
+            "core/invalid_type",
             format!("{quantity}/max"),
         ),
-        (r#""1""#, "InvalidType", quantity.to_owned()),
-        (r#"{"min": "1"}"#, "InvalidType", format!("{quantity}/min")),
-        (r#"{"max": [1]}"#, "InvalidType", format!("{quantity}/max")),
-        ("1.5", "InvalidType", quantity.to_owned()),
-        (r#"{"max": 1.5}"#, "InvalidType", format!("{quantity}/max")),
+        (r#""1""#, "core/invalid_type", quantity.to_owned()),
+        (
+            r#"{"min": "1"}"#,
+            "core/invalid_type",
+            format!("{quantity}/min"),
+        ),
+        (
+            r#"{"max": [1]}"#,
+            "core/invalid_type",
+            format!("{quantity}/max"),
+        ),
+        ("1.5", "core/invalid_type", quantity.to_owned()),
+        (
+            r#"{"max": 1.5}"#,
+            "core/invalid_type",
+            format!("{quantity}/max"),
+        ),
     ] {
         let d = rejects(&doc(
             Some("1.21.30"),
@@ -358,7 +414,7 @@ fn a_negative_bound_is_an_invalid_value_like_a_negative_quantity() {
         let errors: Vec<_> = d
             .iter()
             .filter(|f| f.severity == Severity::Error)
-            .map(|f| (f.code.name().to_owned(), f.location.json_path.to_string()))
+            .map(|f| (f.code.id().to_owned(), f.location.json_path.to_string()))
             .collect();
         assert_eq!(errors, [(code.to_owned(), path)], "{text}");
     }

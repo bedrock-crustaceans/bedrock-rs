@@ -80,7 +80,7 @@ fn load_features(
     let mut warnings = Vec::new();
     for finding in features.diagnostics() {
         if finding.severity == Severity::Warning {
-            warnings.push(finding.code.name().to_owned());
+            warnings.push(finding.code.id().to_owned());
         }
         if finding.severity < Severity::Error {
             continue;

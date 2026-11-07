@@ -114,7 +114,7 @@ fn check_items(
         .diagnostics()
         .filter(|f| {
             f.severity == Severity::Info
-                && f.code.name() == "ValueRewritten"
+                && f.code.id() == "core/value_rewritten"
                 && f.location
                     .json_path
                     .to_string()

@@ -85,7 +85,7 @@ fn shown<'a>(findings: impl IntoIterator<Item = &'a Diagnostic>) -> Vec<Found> {
             } else {
                 format!("{file}:{place}")
             };
-            (f.code.name(), f.severity, at)
+            (f.code.id(), f.severity, at)
         })
         .collect()
 }
@@ -105,20 +105,20 @@ fn at(code: &'static str, severity: Severity, place: &str) -> Found {
 
 /// V1: the file is no strict JSON.
 fn v1() -> Found {
-    at("MalformedInput", Info, "")
+    at("core/syntax", Info, "")
 }
 /// V2 (a scalar root), V3 (an object root) and V9 (images the list omits) are about the list
 /// as a whole.
 fn whole() -> Found {
-    at("InvalidValue", Info, "")
+    at("core/invalid_value", Info, "")
 }
 /// V4 (not a string), V5 (an extension), V6 (not normalised): about one entry.
 fn entry(index: usize) -> Found {
-    at("InvalidValue", Info, &index.to_string())
+    at("core/invalid_value", Info, &index.to_string())
 }
 /// V8: no file of the pack matches the entry.
 fn stale(index: usize) -> Found {
-    at("TextureNotFound", Info, &index.to_string())
+    at("core/texture_not_found", Info, &index.to_string())
 }
 
 fn claims(stack: &PackStack<Resource>) -> Vec<(String, usize)> {
@@ -150,7 +150,7 @@ fn tl01_the_misnamed_sample_list_is_never_read() {
     assert!(stack.texture_lists().lists.is_empty());
     assert_eq!(
         found(&stack),
-        [at("IgnoredFile", Info, "textures/texture_list.json:")]
+        [at("core/ignored_file", Info, "textures/texture_list.json:")]
     );
     let claims = claims(&stack);
     assert_eq!(claims.len(), 20);
@@ -184,7 +184,7 @@ fn tl04_a_base_game_pack_without_a_list_gets_vanilla_s_developer_log_line() {
     let findings: Vec<_> = stack.texture_lists().diagnostics().collect();
     assert_eq!(
         shown(findings.iter().copied()),
-        [at("MissingRequiredField", Info, "")]
+        [at("texture_list/no_list_in_base_pack", Info, "")]
     );
     assert_eq!(
         findings[0].code.to_string(),
@@ -309,7 +309,7 @@ fn tl10_unnormalised_entries_are_kept_verbatim_deviation() {
 #[test]
 fn tl11_an_entry_outside_textures_is_an_info_deviation() {
     let stack = stack("tl11_outside_textures");
-    assert_eq!(found(&stack), [at("InvalidValue", Info, "0")]);
+    assert_eq!(found(&stack), [at("core/invalid_value", Info, "0")]);
     assert_eq!(
         stack.texture_files().source("ui/foo"),
         Some(image(0, "ui/foo.png"))
@@ -344,7 +344,7 @@ fn a_complete_list_is_no_finding() {
 #[test]
 fn tl14_a_duplicate_entry_is_an_info_and_one_claim_deviation() {
     let stack = stack("tl14_duplicates");
-    assert_eq!(found(&stack), [at("DuplicateIdentifier", Info, "0")]);
+    assert_eq!(found(&stack), [at("core/duplicate_identifier", Info, "0")]);
     assert_eq!(claims(&stack), [claim(A, 0)]);
 }
 
@@ -426,7 +426,10 @@ fn tl17b_a_subpack_replaces_a_scalar_base() {
     let ((base, findings), (subpack, _)) = base_and_subpack("tl17b_subpack_scalar_base");
     assert_eq!(base.mode(Some(&subpack)), list(&["textures/b"]));
     // V2 is still reported on the base file.
-    assert_eq!(shown(findings.iter()), [at("InvalidValue", Info, ":")]);
+    assert_eq!(
+        shown(findings.iter()),
+        [at("core/invalid_value", Info, ":")]
+    );
 }
 
 #[test]
@@ -434,7 +437,10 @@ fn tl17c_a_subpack_drops_the_entries_of_an_object_base() {
     let ((base, findings), (subpack, _)) = base_and_subpack("tl17c_subpack_object_base");
     assert_eq!(base.entries, ["textures/a", "textures/c"]);
     assert_eq!(base.mode(Some(&subpack)), list(&["textures/b"]));
-    assert_eq!(shown(findings.iter()), [at("InvalidValue", Info, ":")]);
+    assert_eq!(
+        shown(findings.iter()),
+        [at("core/invalid_value", Info, ":")]
+    );
 }
 
 #[test]
@@ -480,7 +486,7 @@ fn tl21_an_upper_case_extension_is_not_found_by_the_scan_deviation() {
     assert_eq!(claims(&stack), []);
     assert_eq!(
         found(&stack),
-        [at("IgnoredFile", Info, "textures/blocks/a.PNG:")]
+        [at("core/ignored_file", Info, "textures/blocks/a.PNG:")]
     );
 }
 
@@ -630,8 +636,8 @@ fn tl30_the_shipped_misnamed_list_of_a_base_game_pack() {
     assert_eq!(
         found(&stack),
         [
-            at("MissingRequiredField", Info, ""),
-            at("IgnoredFile", Info, "textures/texture_list.json:"),
+            at("texture_list/no_list_in_base_pack", Info, ""),
+            at("core/ignored_file", Info, "textures/texture_list.json:"),
         ]
     );
 }

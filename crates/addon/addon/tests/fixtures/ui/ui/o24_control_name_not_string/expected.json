@@ -12,7 +12,7 @@
   ],
   "diagnostics": [
     {
-      "code": "MissingRequiredField",
+      "code": "json_ui/pack_missing_array_name",
       "severity": "error",
       "text": "ui/a.json (root): Missing either the field 'array_name' or 'control_name'. ",
       "pack": 1,

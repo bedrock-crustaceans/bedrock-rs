@@ -240,3 +240,23 @@ fn every_id_names_its_owner_first() {
         "ids outside their owner's prefix: {wrong:?}"
     );
 }
+
+/// The map the pin rename reads: one `legacy<TAB>id` line per definition that
+/// [`was`](bedrock_addon::diagnostic::CodeDef::was) a legacy variant, sorted. Run it with
+/// `--run-ignored ignored-only -- --nocapture` and every family on.
+#[test]
+#[ignore = "a dump for the pin rename, not a check"]
+fn print_the_legacy_map() {
+    let mut lines: Vec<String> = tables()
+        .into_iter()
+        .flat_map(|(_, table)| table.iter())
+        .filter_map(|meta| {
+            meta.legacy()
+                .map(|legacy| format!("{legacy}\t{}", meta.id()))
+        })
+        .collect();
+    lines.sort();
+    for line in lines {
+        println!("{line}");
+    }
+}

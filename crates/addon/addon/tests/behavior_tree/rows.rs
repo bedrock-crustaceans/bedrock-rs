@@ -2,7 +2,7 @@
 //! and compared with its `expected.json` and `expected.toml` (`check`), then the row's own
 //! claims are asserted.
 
-use bedrock_addon::diagnostic::{Code, Phase, Severity, codes};
+use bedrock_addon::diagnostic::{Code, Kind, Phase, Severity, codes};
 use bedrock_addon::diagnostic::{Diagnostics, JsonPath};
 use bedrock_addon::document::{Registry, Rejected};
 use bedrock_addon::families::behavior_tree::codes as bt_codes;
@@ -126,7 +126,12 @@ fn bt08_a_syntax_error_skips_the_file_with_vanillas_text() {
         rejected.origin.path.as_str(),
         "behavior_trees/truncated.json"
     );
-    let finding = one(&rejected.diagnostics, "MalformedInput", Severity::Error, "");
+    let finding = one(
+        &rejected.diagnostics,
+        "behavior_tree/parse_error",
+        Severity::Error,
+        "",
+    );
     assert!(finding.is(&bt_codes::PARSE_ERROR));
     let message = finding.syntax_message().expect("the reader's message");
     // `parse error:\n%s` with the reader's message
@@ -152,7 +157,12 @@ fn bt09_an_empty_file_is_skipped_with_an_information() {
     let stack = check("bt09_empty_file");
     let trees = stack.behavior_trees();
     let rejected = only_rejected(trees);
-    let finding = one(&rejected.diagnostics, "EmptyDocument", Severity::Info, "");
+    let finding = one(
+        &rejected.diagnostics,
+        "core/empty_document",
+        Severity::Info,
+        "",
+    );
     assert!(finding.is(&codes::EMPTY_DOCUMENT));
     // an information only (vanilla is silent): nothing here is an error, and the file is still
     // not a tree
@@ -180,7 +190,7 @@ fn bt10_a_file_without_a_usable_name_is_skipped() {
     for rejected in trees.rejected() {
         let finding = one(
             &rejected.diagnostics,
-            "MissingRequiredField",
+            "core/missing_required_field",
             Severity::Error,
             "minecraft:behavior_tree/minecraft:name",
         );
@@ -200,7 +210,7 @@ fn bt27_a_payload_or_root_that_is_not_an_object_has_no_name() {
     for rejected in trees.rejected() {
         one(
             &rejected.diagnostics,
-            "MissingRequiredField",
+            "core/missing_required_field",
             Severity::Error,
             "minecraft:behavior_tree/minecraft:name",
         );
@@ -216,7 +226,7 @@ fn bt11_a_root_with_two_members_is_not_registered() {
     let rejected = only_rejected(trees);
     one(
         &rejected.diagnostics,
-        "InvalidRoot",
+        "core/invalid_root",
         Severity::Error,
         "minecraft:behavior_tree/minecraft:root",
     );
@@ -232,7 +242,7 @@ fn bt12_an_unknown_root_type_is_not_registered_deviation() {
     let rejected = only_rejected(trees);
     let finding = one(
         &rejected.diagnostics,
-        "UnknownNode",
+        "core/unknown_node",
         Severity::Error,
         "minecraft:behavior_tree/minecraft:root/minecraft:craft_item",
     );
@@ -289,7 +299,7 @@ fn bt26_a_bool_is_integral_and_numeric_and_a_real_is_no_integer() {
     // Read as 1, and told (ours, an information).
     one(
         findings,
-        "InvalidType",
+        "core/invalid_type",
         Severity::Info,
         &format!("{ROOT}/minecraft:wait_ticks/num_of_ticks"),
     );
@@ -299,7 +309,7 @@ fn bt26_a_bool_is_integral_and_numeric_and_a_real_is_no_integer() {
     assert_eq!(ticks, &param(0, "target_num_of_ticks"));
     one(
         findings,
-        "LiteralIgnored",
+        "core/literal_ignored",
         Severity::Info,
         &format!("{ROOT}/minecraft:wait_ticks/num_of_ticks"),
     );
@@ -315,7 +325,7 @@ fn bt26_a_bool_is_integral_and_numeric_and_a_real_is_no_integer() {
     assert_eq!(distance_epsilon, &param(0.0, ""));
     one(
         findings,
-        "InvalidType",
+        "core/invalid_type",
         Severity::Info,
         &format!("{ROOT}/minecraft:move_to/distance_epsilon"),
     );
@@ -351,7 +361,7 @@ fn bt17_a_failed_search_radius_is_32() {
         if name == "far" {
             one(
                 findings,
-                "LiteralIgnored",
+                "core/literal_ignored",
                 Severity::Info,
                 &format!("{ROOT}/minecraft:find_block/search_radius"),
             );
@@ -393,7 +403,7 @@ fn bt19_position_arrays() {
     // The game's level-3 line, and the tree loads: a kept error.
     let finding = one(
         findings,
-        "InvalidType",
+        "behavior_tree/expected_integral",
         Severity::Error,
         &format!("{ROOT}/minecraft:look_at/block_pos/1"),
     );
@@ -406,7 +416,7 @@ fn bt19_position_arrays() {
     assert_eq!(block_pos, &param([0, 0, 0], "target_block_pos"));
     one(
         findings,
-        "LiteralIgnored",
+        "core/literal_ignored",
         Severity::Info,
         &format!("{ROOT}/minecraft:look_at/block_pos"),
     );
@@ -446,7 +456,7 @@ fn bt28_both_fly_literals_are_one_value() {
     assert_eq!((flying, throw), (param(false, ""), param(false, "")));
     one(
         findings,
-        "LiteralIgnored",
+        "core/literal_ignored",
         Severity::Info,
         &format!("{ROOT}/minecraft:fly/should_be_flying_bool"),
     );
@@ -478,7 +488,7 @@ fn bt23_an_unknown_body_key_is_reported_and_kept() {
     assert_eq!(ticks, &param(2, ""));
     let finding = one(
         findings,
-        "UnrecognizedField",
+        "core/unrecognized_field",
         Severity::Info,
         &format!("{ROOT}/minecraft:wait_ticks/ticks"),
     );
@@ -545,7 +555,7 @@ fn bt13_an_unknown_child_is_dropped_and_the_rest_loads() {
     // vanilla's level-3 text, and the tree loads without the child: a kept error.
     let finding = one(
         findings,
-        "UnknownNode",
+        "core/unknown_node",
         Severity::Error,
         &format!("{ROOT}/minecraft:sequence/children/1/minecraft:dance"),
     );
@@ -564,7 +574,7 @@ fn bt14_children_that_are_no_nodes() {
     assert_eq!(children, &None);
     let finding = one(
         findings,
-        "InvalidType",
+        "core/invalid_type",
         Severity::Info,
         &format!("{ROOT}/minecraft:sequence/children"),
     );
@@ -580,7 +590,7 @@ fn bt14_children_that_are_no_nodes() {
     for index in [0, 1] {
         one(
             findings,
-            "InvalidNode",
+            "core/invalid_node",
             Severity::Info,
             &format!("{ROOT}/minecraft:selector/children/{index}"),
         );
@@ -597,7 +607,7 @@ fn bt15_a_decorator_without_a_child() {
     assert_eq!(child, &None);
     one(
         findings,
-        "InvalidNode",
+        "core/invalid_node",
         Severity::Info,
         &format!("{ROOT}/minecraft:inverter/child"),
     );
@@ -624,7 +634,7 @@ fn bt21_a_subtree_and_its_data_items() {
     for index in [2, 3] {
         let finding = one(
             findings,
-            "InvalidType",
+            "core/invalid_type",
             Severity::Info,
             &format!("{ROOT}/minecraft:subtree/data_items/{index}"),
         );
@@ -637,7 +647,7 @@ fn bt21_a_subtree_and_its_data_items() {
         !stack
             .behavior_trees()
             .diagnostics()
-            .any(|d| d.code.name() == "UnresolvedReference")
+            .any(|d| d.code.kind() == Kind::UnresolvedReference)
     );
 }
 

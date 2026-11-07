@@ -34,7 +34,10 @@ fn new_shape_without_the_experiment() {
     );
     let document = loads(&text, &context());
     let warnings = names(document.diagnostics(), Severity::Info);
-    assert!(warnings.contains(&"UnrecognizedField") && warnings.contains(&"MissingRequiredField"));
+    assert!(
+        warnings.contains(&"core/unrecognized_field")
+            && warnings.contains(&"core/missing_required_field")
+    );
 }
 
 #[test]
@@ -55,7 +58,7 @@ fn missing_format_version() {
         let document = loads(text, &cx);
         assert_eq!(
             names(document.diagnostics(), Severity::Info),
-            ["MissingFormatVersion"]
+            ["core/missing_format_version"]
         );
     }
 }
@@ -70,7 +73,7 @@ fn new_shape_below_1_21_60() {
     assert!(matches!(document.value(), SpawnRules::Standard(_)));
     assert_eq!(
         names(document.diagnostics(), Severity::Info),
-        ["UnrecognizedField", "UnrecognizedField"]
+        ["core/unrecognized_field", "core/unrecognized_field"]
     );
 }
 
@@ -80,13 +83,13 @@ fn a_version_below_1_8_0_is_rejected() {
         &document("1.7.0", r#"{"description": {"identifier": "x:mob"}}"#),
         &context(),
     );
-    assert_eq!(names(&d, Severity::Error)[0], "UnsupportedVersion");
+    assert_eq!(names(&d, Severity::Error)[0], "core/no_parser_for_version");
 }
 
 #[test]
 fn a_json_syntax_error_is_malformed_input() {
     let d = rejected(r#"{"format_version": "1.8.0", "#, &context());
-    assert_eq!(names(&d, Severity::Error), ["MalformedInput"]);
+    assert_eq!(names(&d, Severity::Error), ["core/syntax"]);
 }
 
 #[test]
@@ -97,7 +100,7 @@ fn an_unknown_population_control_is_an_info() {
     );
     assert_eq!(
         names(loads(&text, &context()).diagnostics(), Severity::Info),
-        ["InvalidEnumValue"]
+        ["spawn_rules/no_population_control"]
     );
 }
 
@@ -106,7 +109,7 @@ fn a_wrong_typed_weight_is_coerced_with_an_info() {
     let (c, _, d) = condition(r#""minecraft:weight": {"default": "50"}"#);
     assert_eq!(
         (c.spawn_weight(), names(&d, Severity::Info)),
-        (0, vec!["InvalidType"])
+        (0, vec!["core/invalid_type"])
     );
 }
 
@@ -116,7 +119,7 @@ fn a_condition_that_is_no_object_is_left_out() {
     assert!(standard(&document).conditions.as_ref().unwrap().is_empty());
     assert_eq!(
         names(document.diagnostics(), Severity::Info),
-        ["InvalidType"]
+        ["core/invalid_type"]
     );
 }
 
@@ -124,7 +127,10 @@ fn a_condition_that_is_no_object_is_left_out() {
 fn untyped_herd_or_permutation() {
     let (_, r, d) = condition(r#""minecraft:herd": [3], "minecraft:permute_type": ["x"]"#);
     assert!(r.herds.is_empty() && r.permutations.is_empty());
-    assert_eq!(names(&d, Severity::Info), ["InvalidType", "InvalidType"]);
+    assert_eq!(
+        names(&d, Severity::Info),
+        ["core/invalid_type", "core/invalid_type"]
+    );
 }
 
 #[test]
@@ -133,13 +139,13 @@ fn a_permutation_weight_below_1_is_left_out() {
     assert!(r.permutations.is_empty());
     // ours, an information
     assert_eq!(names(&d, Severity::Warning), [] as [&str; 0]);
-    assert_eq!(names(&d, Severity::Info), ["InvalidValue"]);
+    assert_eq!(names(&d, Severity::Info), ["core/invalid_value"]);
 }
 
 #[test]
 fn unknown_condition_key() {
     let (_, _, d) = condition(r#""weight": 1"#);
-    assert_eq!(names(&d, Severity::Info), ["UnrecognizedField"]);
+    assert_eq!(names(&d, Severity::Info), ["core/unrecognized_field"]);
 }
 
 #[test]
@@ -152,17 +158,17 @@ fn ignored_shapes() {
         r#""minecraft:permute_type": 1"#,
     ] {
         let (_, _, d) = condition(body);
-        assert_eq!(names(&d, Severity::Info), ["InvalidType"], "{body}");
+        assert_eq!(names(&d, Severity::Info), ["core/invalid_type"], "{body}");
     }
     let (_, _, d) = condition(r#""minecraft:difficulty_filter": {"max": "x"}"#);
-    assert_eq!(names(&d, Severity::Info), ["InvalidEnumValue"]);
+    assert_eq!(names(&d, Severity::Info), ["core/invalid_enum_value"]);
 }
 
 #[test]
 fn failed_block_descriptor() {
     let (_, r, d) = condition(r#""minecraft:spawns_on_block_prevented_filter": [{"name": 1}]"#);
     assert!(r.spawns_on_blocks_prevented.is_empty());
-    assert_eq!(names(&d, Severity::Error), ["InvalidValue"]);
+    assert_eq!(names(&d, Severity::Error), ["shapes/block_descriptor_name"]);
 }
 
 #[test]
@@ -175,7 +181,7 @@ fn conditions_not_an_array() {
     assert!(standard(&document).conditions.is_none());
     assert_eq!(
         names(document.diagnostics(), Severity::Info),
-        ["InvalidType"]
+        ["core/invalid_type"]
     );
 }
 
@@ -198,7 +204,7 @@ fn legacy_shape_at_1_21_60() {
     assert!(
         d.iter()
             // By legacy name: the variant and the definitions that were it.
-            .any(|f| matches!(f.code.name(), "MissingRequiredField"))
+            .any(|f| matches!(f.code.id(), "core/missing_required_field"))
     );
 }
 
@@ -210,7 +216,7 @@ fn engine_version_unsupported() {
     );
     assert_eq!(
         names(&rejected(&text, &experiment()), Severity::Error)[0],
-        "UnsupportedVersion"
+        "core/no_parser_for_version"
     );
 }
 
@@ -219,7 +225,7 @@ fn a_simplified_file_with_a_third_root_member_is_malformed() {
     let text = r#"{"format_version": "1.21.60", "minecraft:spawn_rules": {"description": {"identifier": "x:mob"}}, "x": 1}"#;
     assert_eq!(
         names(&rejected(text, &experiment()), Severity::Error)[0],
-        "MalformedInput"
+        "core/document_member_count"
     );
 }
 
@@ -238,8 +244,7 @@ fn placement_names_built_in_only() {
         "1.21.60",
         r#"{"description": {"identifier": "x:mob"}, "placement": {"spawn_predicate": "x:script_predicate"}}"#,
     );
-    assert!(
-        load(&text, &experiment())
-            .is_ok_and(|d| names(d.diagnostics(), Severity::Warning) == ["UnresolvedReference"])
-    );
+    assert!(load(&text, &experiment()).is_ok_and(
+        |d| names(d.diagnostics(), Severity::Warning) == ["spawn_rules/placement_predicate"]
+    ));
 }

@@ -92,7 +92,7 @@ pub fn lines(d: &Diagnostics) -> Vec<String> {
             format!(
                 "{:?} {} {} {}",
                 f.severity,
-                f.code.name(),
+                f.code.id(),
                 f.location.json_path,
                 f.code
             )
@@ -103,7 +103,7 @@ pub fn lines(d: &Diagnostics) -> Vec<String> {
 /// The finding with code `name` and severity, if any.
 pub fn find<'d>(d: &'d Diagnostics, name: &str, severity: Severity) -> Option<&'d Diagnostic> {
     d.iter()
-        .find(|f| f.code.name() == name && f.severity == severity)
+        .find(|f| f.code.id() == name && f.severity == severity)
 }
 
 /// Requires a finding with code `name`, `severity` and vanilla's `text` exactly.
@@ -111,7 +111,7 @@ pub fn find<'d>(d: &'d Diagnostics, name: &str, severity: Severity) -> Option<&'
 pub fn expect(d: &Diagnostics, name: &str, severity: Severity, text: &str) {
     assert!(
         d.iter()
-            .any(|f| f.code.name() == name && f.severity == severity && f.code.to_string() == text),
+            .any(|f| f.code.id() == name && f.severity == severity && f.code.to_string() == text),
         "no {severity:?} {name} \"{text}\" in\n{}",
         lines(d).join("\n")
     );
@@ -121,7 +121,7 @@ pub fn expect(d: &Diagnostics, name: &str, severity: Severity, text: &str) {
 #[track_caller]
 pub fn expect_prefix(d: &Diagnostics, name: &str, severity: Severity, prefix: &str) {
     assert!(
-        d.iter().any(|f| f.code.name() == name
+        d.iter().any(|f| f.code.id() == name
             && f.severity == severity
             && f.code.to_string().starts_with(prefix)),
         "no {severity:?} {name} \"{prefix}…\" in\n{}",

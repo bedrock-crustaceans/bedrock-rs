@@ -269,7 +269,8 @@ mod tests {
         ] {
             let (read, written) = both_findings(text);
             assert!(
-                read.iter().any(|d| d.code.name() == "DocumentRejected"),
+                read.iter()
+                    .any(|d| d.code.id() == "spawn_groups/failed_groups"),
                 "{text}: {read:?}"
             );
             assert_eq!(written, read, "{text}");

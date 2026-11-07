@@ -595,7 +595,7 @@ mod prepass {
     /// A failed read as the finding sees it: its code, path and span.
     fn failure(error: &SliceError) -> (String, String, (u32, u32)) {
         (
-            error.code_with_path(error.has_path()).name().to_owned(),
+            error.code_with_path(error.has_path()).id().to_owned(),
             error.relative_path().to_string(),
             (error.span.offset, error.span.len),
         )

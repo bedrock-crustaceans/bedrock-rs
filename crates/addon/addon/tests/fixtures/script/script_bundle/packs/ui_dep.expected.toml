@@ -37,13 +37,13 @@ normalized = "@minecraft/server-ui-bindings"
 resolution = "native"
 
 [[diagnostics]]
-code = "ScriptModuleRestricted"
+code = "core/script_module_restricted"
 severity = "info"
 text = "Import failed, can not load restricted module '@minecraft/server-ui-private-bindings' from 'main.js'."
 file = "scripts/main.js"
 
 [[diagnostics]]
-code = "ScriptModuleUnrecognized"
+code = "core/script_module_unrecognized"
 severity = "info"
 text = "Module [@minecraft/server-admin] is unrecognized. If this is a Native module, did you remember to add it to your manifest.json?"
 file = "scripts/main.js"

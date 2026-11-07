@@ -108,7 +108,7 @@ fn collect<'a>(
                 .push(bedrock_addon::diagnostic::testing::legacy_debug(finding));
             *outcome
                 .warnings_by_code
-                .entry(finding.code.name())
+                .entry(finding.code.id())
                 .or_insert(0) += 1;
         }
         if finding.severity < Severity::Error {

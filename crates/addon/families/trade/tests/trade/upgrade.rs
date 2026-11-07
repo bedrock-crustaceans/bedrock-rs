@@ -39,7 +39,7 @@ fn run(item: &str, version: Option<(u16, u16, u16)>) -> StepOutput {
 
 /// Whether `out` has a finding of code `name`.
 fn reported(out: &StepOutput, name: &str) -> bool {
-    out.diagnostics.iter().any(|f| f.code.name() == name)
+    out.diagnostics.iter().any(|f| f.code.id() == name)
 }
 
 /// JSON text as a `Value`.
@@ -114,8 +114,8 @@ fn a_quantity_bound_below_one_becomes_one() {
         "0 did not become 1"
     );
     assert!(
-        reported(&out, "InvalidValue"),
-        "the clamp raised no InvalidValue"
+        reported(&out, "core/invalid_value"),
+        "the clamp raised no core/invalid_value"
     );
     let out = run(&item("1"), None);
     assert_eq!(
@@ -140,8 +140,8 @@ fn a_quantity_with_min_above_max_is_ordered() {
             "the range was not ordered as vanilla orders it"
         );
         assert!(
-            reported(&out, "ClampedValue"),
-            "the reordering raised no ClampedValue"
+            reported(&out, "core/clamped_value"),
+            "the reordering raised no core/clamped_value"
         );
     }
     let out = run(&item(r#"{"min": 2, "max": 5}"#), None);

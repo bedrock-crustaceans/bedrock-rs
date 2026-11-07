@@ -248,7 +248,7 @@
 []
 
 == {
-rejected: ["MalformedInput "]
+rejected: ["core/syntax "]
 == STONE, the break sound renamed to "dig.edited" and stone's base set to "slab"
 {
   "block_sounds": {

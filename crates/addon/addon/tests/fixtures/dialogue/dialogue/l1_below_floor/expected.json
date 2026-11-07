@@ -3,7 +3,7 @@
   "rejected": 1,
   "diagnostics": [
     {
-      "code": "UnsupportedVersion",
+      "code": "dialogue/out_of_range",
       "severity": "error",
       "path": "dialogue/old.json",
       "json_path": "format_version",

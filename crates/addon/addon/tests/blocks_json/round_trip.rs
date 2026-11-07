@@ -2,7 +2,7 @@
 //! generated ones. A file writes back the members it holds, as it holds them, and what it
 //! writes reads back to the same file and the same merged blocks.
 
-use bedrock_addon::diagnostic::Diagnostics;
+use bedrock_addon::diagnostic::{Diagnostics, Kind};
 use bedrock_addon::document::{Content, Document};
 use bedrock_addon::families::blocks_json::BlocksJson;
 use bedrock_addon::json::{EncodeError, Value};
@@ -24,7 +24,7 @@ fn parse(text: &str) -> Result<Document<BlocksJson>, Diagnostics> {
 /// `(code, path)` of every finding.
 fn codes(d: &Diagnostics) -> Vec<(&'static str, String)> {
     d.iter()
-        .map(|f| (f.code.name(), f.location.json_path.to_string()))
+        .map(|f| (f.code.id(), f.location.json_path.to_string()))
         .collect()
 }
 
@@ -63,7 +63,7 @@ fn vanilla_s_own_files_round_trip() {
         }
         // The findings too, but for a repeated key, which is written once.
         let repeated =
-            |f: &&bedrock_addon::diagnostic::Diagnostic| f.code.name() != "DuplicateIdentifier";
+            |f: &&bedrock_addon::diagnostic::Diagnostic| f.code.id() != "core/duplicate_identifier";
         assert_eq!(
             before.registry().diagnostics().filter(repeated).count(),
             after.registry().diagnostics().count(),
@@ -520,7 +520,7 @@ fn member_order(text: &str) -> Vec<(String, Vec<String>)> {
 fn findings_but_rewrites(d: &Diagnostics) -> Vec<(&'static str, String)> {
     codes(d)
         .into_iter()
-        .filter(|(code, _)| !matches!(*code, "DuplicateIdentifier" | "ClampedValue"))
+        .filter(|(code, _)| !matches!(*code, "core/duplicate_identifier" | "core/clamped_value"))
         .collect()
 }
 
@@ -567,7 +567,7 @@ fn four_thousand_generated_files_round_trip() {
         let rewrites: Vec<&'static str> = codes(document.diagnostics())
             .into_iter()
             .map(|(code, _)| code)
-            .filter(|code| matches!(*code, "DuplicateIdentifier" | "ClampedValue"))
+            .filter(|code| matches!(*code, "core/duplicate_identifier" | "core/clamped_value"))
             .collect();
         let value = |text: &str| bedrock_addon::json::from_str::<Value>(text).unwrap();
         if rewrites.is_empty() {
@@ -604,8 +604,8 @@ fn four_thousand_generated_files_round_trip() {
                 version_not_first += 1;
             }
         } else {
-            repeated += usize::from(rewrites.contains(&"DuplicateIdentifier"));
-            clamped += usize::from(rewrites.contains(&"ClampedValue"));
+            repeated += usize::from(rewrites.contains(&"core/duplicate_identifier"));
+            clamped += usize::from(rewrites.contains(&"core/clamped_value"));
         }
         let read = parse(&written).unwrap_or_else(|d| panic!("{text}\n{written}\n{d:#?}"));
         assert_eq!(read.value(), document.value(), "{text}");
@@ -676,7 +676,7 @@ fn an_integer_beyond_64_bits_is_a_number_wherever_it_stands() {
     let loaded = load_one(&text);
     assert_eq!(
         found_at(&loaded, "obsidian/sound"),
-        [("InvalidType", String::new())]
+        [("core/invalid_type", String::new())]
     );
     assert_eq!(loaded.block("obsidian").sound.as_deref(), Some(""));
     written(&text);
@@ -689,7 +689,7 @@ fn an_integer_beyond_64_bits_is_a_number_wherever_it_stands() {
     assert_eq!(
         found_at(&loaded, "obsidian/textures"),
         [(
-            "InvalidType",
+            "blocks_json/bad_textures",
             "'minecraft:obsidian' | Invalid or incomplete texture list.".to_owned()
         )]
     );
@@ -799,7 +799,7 @@ fn a_number_beyond_a_double_is_held_as_the_largest_finite_one_and_written_back_d
         let document = parse(text).unwrap_or_else(|d| panic!("{text}: {d:#?}"));
         let clamped: Vec<_> = codes(document.diagnostics())
             .into_iter()
-            .filter(|(code, path)| *code == "ClampedValue" && path == at)
+            .filter(|(code, path)| *code == "core/clamped_value" && path == at)
             .collect();
         assert_eq!(clamped.len(), 1, "{text}: {:#?}", document.diagnostics());
         let written = round_trips(&document);
@@ -823,7 +823,7 @@ fn a_number_beyond_a_double_is_held_as_the_largest_finite_one_and_written_back_d
             .filter(|f| f.at == "dirt/ambient_occlusion_exponent")
             .map(|f| f.code)
             .collect();
-        assert_eq!(at_member, ["ClampedValue", "InvalidValue"]);
+        assert_eq!(at_member, ["core/clamped_value", "core/invalid_value"]);
         assert_eq!(loaded.block("dirt").ambient_occlusion_exponent, Some(read));
         let written = parse(&text).unwrap().to_json().unwrap();
         assert_eq!(
@@ -869,9 +869,9 @@ fn an_integer_beyond_a_double_is_held_as_the_largest_finite_one_deviation() {
         let document = parse(&text).unwrap_or_else(|d| panic!("{text}: {d:#?}"));
         let clamped: Vec<_> = codes(document.diagnostics())
             .into_iter()
-            .filter(|(code, _)| *code == "ClampedValue")
+            .filter(|(code, _)| *code == "core/clamped_value")
             .collect();
-        assert_eq!(clamped, [("ClampedValue", at.to_owned())], "{text}");
+        assert_eq!(clamped, [("core/clamped_value", at.to_owned())], "{text}");
         let written = round_trips(&document);
         assert_eq!(
             bedrock_addon::json::from_str::<Value>(&written).unwrap(),
@@ -887,9 +887,10 @@ fn an_integer_beyond_a_double_is_held_as_the_largest_finite_one_deviation() {
     let text = format!(r#"{{"dirt":{{"brightness_gamma":{within}}}}}"#);
     let document = parse(&text).unwrap();
     assert!(
-        codes(document.diagnostics())
+        document
+            .diagnostics()
             .iter()
-            .all(|(code, _)| *code != "ClampedValue"),
+            .all(|f| f.code.kind() != Kind::Clamped),
         "{:#?}",
         document.diagnostics()
     );
@@ -909,7 +910,7 @@ fn an_integer_beyond_a_double_is_held_as_the_largest_finite_one_deviation() {
             .filter(|f| f.at == "dirt/ambient_occlusion_exponent")
             .map(|f| f.code)
             .collect();
-        assert_eq!(at_member, ["ClampedValue", "InvalidValue"]);
+        assert_eq!(at_member, ["core/clamped_value", "core/invalid_value"]);
         assert_eq!(loaded.block("dirt").ambient_occlusion_exponent, Some(read));
         let written = parse(&text).unwrap().to_json().unwrap();
         assert_eq!(
@@ -927,7 +928,7 @@ fn a_repeated_key_is_written_once_where_its_last_value_stands() {
     assert_eq!(
         codes(document.diagnostics())
             .iter()
-            .filter(|(code, _)| *code == "DuplicateIdentifier")
+            .filter(|(code, _)| *code == "core/duplicate_identifier")
             .count(),
         2
     );
@@ -954,8 +955,8 @@ fn a_member_repeated_inside_an_entry_is_written_once_where_its_last_value_stands
     assert_eq!(
         codes(document.diagnostics()),
         [
-            ("MissingFormatVersion", String::new()),
-            ("IgnoredMember", "a/extra".to_owned())
+            ("blocks_json/version_not_given", String::new()),
+            ("core/ignored_member", "a/extra".to_owned())
         ]
     );
     let written = round_trips(&document);

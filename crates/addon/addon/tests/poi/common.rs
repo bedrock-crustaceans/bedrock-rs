@@ -212,7 +212,7 @@ pub fn names<'a>(
     findings
         .into_iter()
         .filter(|d| d.severity == severity && !is_closing(d))
-        .map(|d| d.code.name())
+        .map(|d| d.code.id())
         .collect()
 }
 
@@ -223,7 +223,7 @@ pub fn describe<'a>(findings: impl IntoIterator<Item = &'a Diagnostic>) -> Strin
             out,
             "\n  {} {} {:?} {} {}",
             f.severity,
-            f.code.name(),
+            f.code.id(),
             f.location.path.as_ref().map(PackPath::as_str),
             f.location.json_path,
             f.code

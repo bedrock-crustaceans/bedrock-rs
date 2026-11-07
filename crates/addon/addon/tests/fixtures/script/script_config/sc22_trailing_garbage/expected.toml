@@ -1,7 +1,7 @@
 # families/script_config fixtures.md, row sc22_trailing_garbage (probe C2).
 
 [[diagnostic]]
-code = "MalformedInput"
+code = "core/syntax"
 severity = "info"
 phase = "parse"
 file = "config/a0000000-0000-4000-8000-000000000001/permissions.json"

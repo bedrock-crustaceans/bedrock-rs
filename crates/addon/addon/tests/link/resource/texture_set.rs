@@ -36,7 +36,7 @@ fn linked(packs: &[&[(&'static str, &'static [u8])]]) -> Diagnostics {
 /// What a finding says: its code, severity and JSON path.
 fn said(finding: &Diagnostic) -> (&'static str, Severity, String) {
     (
-        finding.code.name(),
+        finding.code.id(),
         finding.severity,
         finding.location.json_path.to_string(),
     )
@@ -56,7 +56,7 @@ fn v12_a_layer_image_whose_header_does_not_decode_is_an_error_at_the_layer() {
     assert_eq!(
         at_set(&found),
         [(
-            "LayerImageUndecodable",
+            "core/layer_image_undecodable",
             Severity::Error,
             "minecraft:texture_set/color".to_owned()
         )]
@@ -87,7 +87,7 @@ fn v13_a_layer_image_of_a_channel_count_the_layer_does_not_take_is_an_error_at_t
     assert_eq!(
         world(2),
         [(
-            "LayerImageFormat",
+            "core/layer_image_format",
             Severity::Error,
             "minecraft:texture_set/metalness_emissive_roughness_subsurface".to_owned()
         )]
@@ -104,7 +104,7 @@ fn v13_a_layer_image_of_a_channel_count_the_layer_does_not_take_is_an_error_at_t
     assert_eq!(
         color(4),
         [(
-            "LayerImageFormat",
+            "core/layer_image_format",
             Severity::Error,
             "minecraft:texture_set/color".to_owned()
         )]
@@ -130,12 +130,12 @@ fn v12_v13_every_image_layer_of_a_set_is_checked() {
         said,
         [
             (
-                "LayerImageFormat",
+                "core/layer_image_format",
                 Severity::Error,
                 "minecraft:texture_set/normal".to_owned()
             ),
             (
-                "LayerImageUndecodable",
+                "core/layer_image_undecodable",
                 Severity::Error,
                 "minecraft:texture_set/metalness_emissive_roughness".to_owned()
             ),
@@ -245,7 +245,7 @@ fn v13_judges_a_tga_and_a_colour_mapped_png_by_their_decoded_channels() {
     assert_eq!(
         at_set(&found),
         [(
-            "LayerImageFormat",
+            "core/layer_image_format",
             Severity::Error,
             "minecraft:texture_set/metalness_emissive_roughness_subsurface".to_owned()
         )]
@@ -259,7 +259,7 @@ fn v13_judges_a_tga_and_a_colour_mapped_png_by_their_decoded_channels() {
     assert_eq!(
         at_set(&found),
         [(
-            "LayerImageFormat",
+            "core/layer_image_format",
             Severity::Error,
             "minecraft:texture_set/color".to_owned()
         )]
@@ -272,7 +272,7 @@ fn v13_judges_a_tga_and_a_colour_mapped_png_by_their_decoded_channels() {
     assert_eq!(
         at_set(&found),
         [(
-            "LayerImageUndecodable",
+            "core/layer_image_undecodable",
             Severity::Error,
             "minecraft:texture_set/metalness_emissive_roughness_subsurface".to_owned()
         )]

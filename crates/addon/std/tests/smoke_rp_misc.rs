@@ -96,7 +96,7 @@ fn tally<'a>(
         if finding.severity == Severity::Error {
             errors.push(finding.to_string());
         }
-        let key = format!("{} ({})", finding.code.name(), finding.severity);
+        let key = format!("{} ({})", finding.code.id(), finding.severity);
         *counts.entry(key).or_default() += 1;
     }
     assert!(
@@ -257,7 +257,7 @@ fn check_client(source: &str, root: &Path, want: &Expected) {
         (want.vanilla_splashes, want.splash_pool),
         "{source}: vanilla's own list, and the pool beta's copy leaves"
     );
-    exactly(&counts, &[("SplashesReplaced (info)", 1)], source);
+    exactly(&counts, &[("core/splashes_replaced (info)", 1)], source);
     println!(
         "smoke_rp_misc[{source}]: splashes: {copies} copies, pool of {}, lowest copy {} texts; {counts:?}",
         pool.len(),
@@ -283,7 +283,11 @@ fn check_client(source: &str, root: &Path, want: &Expected) {
     );
     // `MissingRequiredField` informations for the two lists the `beta` file lacks: addons and
     // editor.
-    exactly(&counts, &[("MissingRequiredField (info)", 2)], source);
+    exactly(
+        &counts,
+        &[("loading_messages/list_missing (info)", 2)],
+        source,
+    );
     let lowest = loading.layers().last().unwrap();
     assert!(
         lowest.tips(MessageList::Beginner).len() > 3,
@@ -315,7 +319,7 @@ fn check_client(source: &str, root: &Path, want: &Expected) {
     let in_vain: Vec<&str> = report
         .iter()
         // By legacy name: `IGNORED_FILE`, `IGNORED_FILE_WORDED` and the variant a family raises.
-        .filter(|d| d.code.name() == "IgnoredFile")
+        .filter(|d| d.code.id() == "core/ignored_file")
         .filter_map(|d| d.location.path.as_ref().map(PackPath::as_str))
         .filter(|path| {
             *path == bedrock_addon::families::credits::CREDITS_PATH
@@ -383,7 +387,7 @@ fn check_client(source: &str, root: &Path, want: &Expected) {
     );
     // The two of the font list (the alias font and the scale override) are informations of the
     // crate's own and are all: no finding about a font file.
-    exactly(&counts, &[("InvalidValue (info)", 2)], source);
+    exactly(&counts, &[("core/invalid_value (info)", 2)], source);
     println!(
         "smoke_rp_misc[{source}]: fonts: 2 fonts, 4 aliases, {} emoticons, {} smooth pages; {counts:?}",
         emoticons.len(),
@@ -458,7 +462,7 @@ fn check_client(source: &str, root: &Path, want: &Expected) {
     );
     assert!(infos.rejected().is_empty(), "{source}");
     // The one side file without an image is an `IgnoredFile` information.
-    exactly(&counts, &[("IgnoredFile (info)", 1)], source);
+    exactly(&counts, &[("core/ignored_file (info)", 1)], source);
     println!(
         "smoke_rp_misc[{source}]: ui side files: {} paths from {on_disk} files in {} packs; {counts:?}",
         infos.iter().count(),
@@ -483,7 +487,7 @@ fn check_client(source: &str, root: &Path, want: &Expected) {
     for (pack, skin_count, findings) in [
         ("custom", 0, &[][..]),
         ("persona", 0, &[][..]),
-        ("vanilla", 10, &[("InvalidValue (info)", 1)][..]),
+        ("vanilla", 10, &[("core/invalid_value (info)", 1)][..]),
     ] {
         let dir = root.join("skin_packs").join(pack);
         let skins = std::fs::read(dir.join("skins.json"))
@@ -572,7 +576,7 @@ fn sample_packs_ui_side_files_load_without_errors() {
     assert!(infos.rejected().is_empty());
     assert_eq!(on_disk, 383, "side files");
     // The one side file without an image is an `IgnoredFile` information.
-    exactly(&counts, &[("IgnoredFile (info)", 1)], "sample packs");
+    exactly(&counts, &[("core/ignored_file (info)", 1)], "sample packs");
     println!("smoke_rp_misc[sample packs]: ui side files: {on_disk}; {counts:?}");
     // The families without a file are empty and silent.
     assert_eq!(rp.splashes().diagnostics().count(), 0);

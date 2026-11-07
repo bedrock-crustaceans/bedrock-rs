@@ -107,9 +107,9 @@ fn check(source: &str, dir: &Path, expected: &[(&str, usize)]) -> usize {
     let mut notes: BTreeMap<&str, usize> = BTreeMap::new();
     for finding in geometries.diagnostics() {
         match finding.severity {
-            Severity::Warning => *warnings.entry(finding.code.name()).or_default() += 1,
+            Severity::Warning => *warnings.entry(finding.code.id()).or_default() += 1,
             severity if severity < Severity::Warning => {
-                *notes.entry(finding.code.name()).or_default() += 1;
+                *notes.entry(finding.code.id()).or_default() += 1;
             }
             _ => {}
         }
@@ -185,7 +185,12 @@ fn s05_sample_packs_geometry_loads_without_errors() {
         .resource
         .geometries()
         .diagnostics()
-        .filter(|d| matches!(d.code.name(), "DuplicateBone" | "ReferenceCycle"))
+        .filter(|d| {
+            matches!(
+                d.code.id(),
+                "core/duplicate_bone" | "geometry/parent_is_self"
+            )
+        })
         .map(|d| {
             assert_eq!(d.severity, Severity::Info, "{d}");
             format!(

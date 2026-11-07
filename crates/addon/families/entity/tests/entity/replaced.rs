@@ -22,7 +22,7 @@ fn told(version: &str, identifier: &str, rest: &str) -> (Vec<String>, String) {
         .map(|f| {
             let path = f.location.json_path.to_string();
             let path = path.strip_prefix("minecraft:entity/").unwrap_or(&path);
-            format!("{} {:?} {path}", f.code.name(), f.severity)
+            format!("{} {:?} {path}", f.code.id(), f.severity)
         })
         .collect();
     let written = entity.to_json().expect("the entity writes");
@@ -49,7 +49,7 @@ fn case_1_a_target_range_beside_max_dist_is_noted_as_replaced() {
     );
     has(
         &found,
-        "DroppedField Info components/minecraft:behavior.drop_item_for/target_range",
+        "core/dropped_field Info components/minecraft:behavior.drop_item_for/target_range",
     );
     assert!(
         written.contains(r#""target_range": [ 3.0, 3.0, 3.0 ]"#),
@@ -62,7 +62,7 @@ fn case_1_a_target_range_beside_max_dist_is_noted_as_replaced() {
         r#""components": {"minecraft:behavior.drop_item_for": {"priority": 1, "max_dist": 3, "target_range": [3, 3, 3]}}"#,
     );
     assert!(
-        !found.iter().any(|f| f.starts_with("DroppedField")),
+        !found.iter().any(|f| f.starts_with("core/dropped_field")),
         "{found:#?}"
     );
 }
@@ -76,7 +76,7 @@ fn case_2_a_max_wait_time_beside_wait_time_is_noted_as_replaced() {
     );
     has(
         &found,
-        "DroppedField Info components/minecraft:behavior.explore_outskirts/max_wait_time",
+        "core/dropped_field Info components/minecraft:behavior.explore_outskirts/max_wait_time",
     );
     assert!(written.contains(r#""max_wait_time": 30"#), "{written}");
     assert!(!written.contains("99"), "{written}");
@@ -108,7 +108,7 @@ fn case_3_a_trigger_s_filters_and_event_go_into_the_on_damage_it_has() {
         } else {
             "components/minecraft:damage_sensor/on_damage/event"
         };
-        has(&found, &format!("DroppedField Info {at}"));
+        has(&found, &format!("core/dropped_field Info {at}"));
     }
 }
 
@@ -121,11 +121,11 @@ fn case_4_an_entry_of_breeds_with_a_later_entry_of_its_mate_replaces_is_noted() 
     );
     has(
         &found,
-        "DroppedField Info components/minecraft:breedable/breeds_with/0/breed_event",
+        "core/dropped_field Info components/minecraft:breedable/breeds_with/0/breed_event",
     );
     has(
         &found,
-        "DroppedField Info components/minecraft:breedable/breeds_with/0/baby_type",
+        "core/dropped_field Info components/minecraft:breedable/breeds_with/0/baby_type",
     );
     assert!(written.contains(r#""demo:a": "demo:c""#), "{written}");
     assert!(!written.contains("x:first"), "{written}");
@@ -136,7 +136,7 @@ fn case_4_an_entry_of_breeds_with_a_later_entry_of_its_mate_replaces_is_noted() 
         r#""components": {"minecraft:breedable": {"breeds_with": [{"mate_type": "demo:a", "baby_type": "demo:b"}, {"mate_type": "demo:d", "baby_type": "demo:c"}]}}"#,
     );
     assert!(
-        !found.iter().any(|f| f.starts_with("DroppedField")),
+        !found.iter().any(|f| f.starts_with("core/dropped_field")),
         "{found:#?}"
     );
 }
@@ -148,7 +148,10 @@ fn case_5_an_offspring_of_the_file_the_breedable_split_replaces_is_noted() {
         "demo:x",
         r#""components": {"minecraft:breedable": {"breeds_with": {"mate_type": "demo:a", "baby_type": "demo:b"}}, "minecraft:offspring": {"offspring_pairs": {"demo:z": "demo:y"}, "blend_attributes": false}}"#,
     );
-    has(&found, "DroppedField Info components/minecraft:offspring");
+    has(
+        &found,
+        "core/dropped_field Info components/minecraft:offspring",
+    );
     assert!(written.contains(r#""demo:a": "demo:b""#), "{written}");
     assert!(!written.contains("demo:z"), "{written}");
     // A `breedable` that gives no offspring leaves the file's own where it is.
@@ -158,7 +161,7 @@ fn case_5_an_offspring_of_the_file_the_breedable_split_replaces_is_noted() {
         r#""components": {"minecraft:breedable": {"require_tame": false}, "minecraft:offspring": {"offspring_pairs": {"demo:z": "demo:y"}}}"#,
     );
     assert!(
-        !found.iter().any(|f| f.starts_with("DroppedField")),
+        !found.iter().any(|f| f.starts_with("core/dropped_field")),
         "{found:#?}"
     );
     assert!(written.contains(r#""demo:z": "demo:y""#), "{written}");
@@ -185,7 +188,7 @@ fn case_6_the_turtle_s_own_lightning_multiplier_the_fixer_replaces_is_noted() {
             "minecraft:turtle",
             &format!(r#""components": {{"minecraft:damage_sensor": {sensor}}}"#),
         );
-        has(&found, &format!("DroppedField Info {at}"));
+        has(&found, &format!("core/dropped_field Info {at}"));
         assert!(
             written.contains(r#""damage_multiplier": 2000"#),
             "{sensor}: {written}"
@@ -214,13 +217,13 @@ fn case_7_the_pufferfish_s_own_groups_and_events_the_fixer_replaces_are_noted() 
     // the file's; the empty event holds nothing and is not noted.
     has(
         &found,
-        "DroppedField Info component_groups/minecraft:pufferfish_puffed",
+        "core/dropped_field Info component_groups/minecraft:pufferfish_puffed",
     );
     has(
         &found,
-        "DroppedField Info component_groups/minecraft:full_puff",
+        "core/dropped_field Info component_groups/minecraft:full_puff",
     );
-    has(&found, "DroppedField Info events/minecraft:on_puff");
+    has(&found, "core/dropped_field Info events/minecraft:on_puff");
     assert!(
         !found
             .iter()
@@ -259,7 +262,7 @@ fn a_component_a_step_renames_over_one_the_file_has_is_noted() {
             "demo:x",
             &format!(r#""components": {{"{old}": {{"priority": 1}}, "{new}": {{"priority": 2}}}}"#),
         );
-        has(&found, &format!("DroppedField Info components/{new}"));
+        has(&found, &format!("core/dropped_field Info components/{new}"));
         // The same value in both: nothing is replaced.
         let (found, _) = told(
             version,
@@ -267,7 +270,7 @@ fn a_component_a_step_renames_over_one_the_file_has_is_noted() {
             &format!(r#""components": {{"{old}": {{"priority": 1}}, "{new}": {{"priority": 1}}}}"#),
         );
         // (A marker's legacy reader tells `priority` itself: not the step's note.)
-        has_not(&found, &format!("DroppedField Info components/{new}"));
+        has_not(&found, &format!("core/dropped_field Info components/{new}"));
     }
 }
 
@@ -329,6 +332,27 @@ fn a_finding_of_a_member_a_step_moved_names_the_member_of_the_file() {
 
 // --- more cases ---------
 
+/// The ids of the definitions of the dropped kind that the entity and the core declare.
+const DROPPED: [&str; 9] = [
+    "core/dropped_field",
+    "core/dropped_field_worded",
+    "core/dropped_component",
+    "core/dropped_component_worded",
+    "entity/actor_properties_not_loaded",
+    "entity/member_removed_by_upgrade",
+    "entity/component_removed_by_upgrade",
+    "entity/damage_sensor_not_added",
+    "entity/null_group_removed",
+];
+
+/// Requires no finding of the dropped kind told as `<severity> <path>`.
+#[track_caller]
+fn has_not_dropped(found: &[String], told: &str) {
+    for id in DROPPED {
+        has_not(found, &format!("{id} {told}"));
+    }
+}
+
 #[track_caller]
 fn has_not(found: &[String], finding: &str) {
     assert!(
@@ -339,7 +363,7 @@ fn has_not(found: &[String], finding: &str) {
 
 #[test]
 fn case_r2_1_a_movement_type_beside_simulate_waves_is_noted_as_replaced() {
-    let at = "DroppedField Info components/minecraft:buoyant/movement_type";
+    let at = "core/dropped_field Info components/minecraft:buoyant/movement_type";
     let (found, written) = told(
         "1.26.0",
         "demo:x",
@@ -365,8 +389,8 @@ fn case_r2_1_a_movement_type_beside_simulate_waves_is_noted_as_replaced() {
 
 #[test]
 fn case_r2_2_a_pushable_by_component_the_pushable_split_replaces_is_noted() {
-    let entity = "DroppedField Info components/minecraft:pushable_by_entity";
-    let block = "DroppedField Info components/minecraft:pushable_by_block";
+    let entity = "core/dropped_field Info components/minecraft:pushable_by_entity";
+    let block = "core/dropped_field Info components/minecraft:pushable_by_block";
     let (found, written) = told(
         "1.26.0",
         "demo:x",
@@ -393,7 +417,7 @@ fn case_r2_2_a_pushable_by_component_the_pushable_split_replaces_is_noted() {
     // (it binds nothing): the file's component is the game's unknown-member line.
     has(
         &found,
-        "UnrecognizedField Error components/minecraft:pushable_by_entity/presets",
+        "core/child_not_valid Error components/minecraft:pushable_by_entity/presets",
     );
     assert!(!written.contains(r#""pushable_by": "all""#), "{written}");
     // In a group, at the group.
@@ -404,7 +428,7 @@ fn case_r2_2_a_pushable_by_component_the_pushable_split_replaces_is_noted() {
     );
     has(
         &found,
-        "DroppedField Info component_groups/g/minecraft:pushable_by_block",
+        "core/dropped_field Info component_groups/g/minecraft:pushable_by_block",
     );
 }
 
@@ -417,7 +441,7 @@ fn case_r2_3_an_impact_damage_knockback_flag_the_step_sets_is_noted() {
     );
     has(
         &found,
-        "DroppedField Info components/minecraft:projectile/on_hit/impact_damage/apply_knockback_to_blocking_targets",
+        "core/dropped_field Info components/minecraft:projectile/on_hit/impact_damage/apply_knockback_to_blocking_targets",
     );
     assert!(
         written.contains(r#""apply_knockback_to_blocking_targets": true"#),
@@ -430,7 +454,7 @@ fn case_r2_3_an_impact_damage_knockback_flag_the_step_sets_is_noted() {
     );
     has(
         &found,
-        "DroppedField Info component_groups/g/minecraft:projectile/on_hit/impact_damage/apply_knockback_to_blocking_targets",
+        "core/dropped_field Info component_groups/g/minecraft:projectile/on_hit/impact_damage/apply_knockback_to_blocking_targets",
     );
     let (found, _) = told(
         "1.21.100",
@@ -438,7 +462,7 @@ fn case_r2_3_an_impact_damage_knockback_flag_the_step_sets_is_noted() {
         r#""components": {"minecraft:projectile": {"on_hit": {"impact_damage": {"damage": 1, "apply_knockback_to_blocking_targets": true}}}}"#,
     );
     assert!(
-        !found.iter().any(|f| f.starts_with("DroppedField")),
+        !found.iter().any(|f| f.starts_with("core/dropped_field")),
         "{found:#?}"
     );
 }
@@ -452,7 +476,7 @@ fn case_r2_4_a_subsensors_that_is_no_list_is_noted_as_replaced() {
     );
     has(
         &found,
-        "InvalidType Info components/minecraft:entity_sensor/subsensors",
+        "core/invalid_type Info components/minecraft:entity_sensor/subsensors",
     );
     assert!(!written.contains("x:f"), "{written}");
     let (found, _) = told(
@@ -462,7 +486,7 @@ fn case_r2_4_a_subsensors_that_is_no_list_is_noted_as_replaced() {
     );
     has(
         &found,
-        "InvalidType Info component_groups/g/minecraft:entity_sensor/subsensors",
+        "core/invalid_type Info component_groups/g/minecraft:entity_sensor/subsensors",
     );
     // A list of the file is kept behind the one the root members make.
     let (found, written) = told(
@@ -562,8 +586,8 @@ fn a_legacy_goal_member_that_is_an_empty_list_goes_alone() {
     // schema reader of `melee_attack` (typed first at 1.26.0) fails on the list from 1.15.0
     // The game's type line, the goal at its defaults.
     for (goal, finding, kept) in [
-        ("random_stroll", "InvalidValue Info", true),
-        ("melee_attack", "InvalidType Error", false),
+        ("random_stroll", "core/invalid_value Info", true),
+        ("melee_attack", "core/unknown_child_option Error", false),
     ] {
         let (found, written) = told(
             "1.16.0",
@@ -599,14 +623,14 @@ fn an_entry_of_a_legacy_interact_list_that_does_not_read_goes_alone_and_is_told_
     // game's type line, and keeps the entry.
     has(
         &found,
-        "InvalidType Error components/minecraft:interact/0/swing",
+        "core/unknown_child_option Error components/minecraft:interact/0/swing",
     );
     has(
         &found,
-        "InvalidType Error components/minecraft:interact/2/cooldown",
+        "core/unknown_child_option Error components/minecraft:interact/2/cooldown",
     );
-    has_not(&found, "DroppedField Info components/minecraft:interact/0");
-    has_not(&found, "DroppedField Info components/minecraft:interact");
+    has_not_dropped(&found, "Info components/minecraft:interact/0");
+    has_not_dropped(&found, "Info components/minecraft:interact");
     assert!(written.contains(r#""cooldown": 1"#), "{written}");
     assert!(written.contains(r#""cooldown": 2.5"#), "{written}");
     assert!(written.contains(r#""use_item": true"#), "{written}");
@@ -621,43 +645,43 @@ fn what_a_step_takes_apart_and_does_not_read_is_told_where_the_file_has_it() {
             "1.12.0",
             "demo:x",
             r#""components": {"minecraft:fall_damage": {"value": 2, "zz": 3}}"#,
-            "UnrecognizedField Info components/minecraft:fall_damage/zz",
+            "core/unrecognized_field Info components/minecraft:fall_damage/zz",
         ),
         (
             "1.12.0",
             "demo:x",
             r#""components": {"minecraft:scheduler": {"scheduled_events": [{"zz": 3, "scheduled_event": {"event": "e"}}]}}"#,
-            "UnrecognizedField Info components/minecraft:scheduler/scheduled_events/0/zz",
+            "core/unrecognized_field Info components/minecraft:scheduler/scheduled_events/0/zz",
         ),
         (
             "1.12.0",
             "demo:x",
             r#""component_groups": {"g": {"minecraft:environment_sensor": [{"zz": 3, "on_environment": {"event": "e"}}]}}"#,
-            "UnrecognizedField Info component_groups/g/minecraft:environment_sensor/0/zz",
+            "core/unrecognized_field Info component_groups/g/minecraft:environment_sensor/0/zz",
         ),
         (
             "1.21.120",
             "demo:x",
             r#""components": {"minecraft:breedable": {"breeds_with": [{"mate_type": "demo:a", "baby_type": "demo:b"}, {"mate_type": 7, "baby_type": "demo:c"}]}}"#,
-            "DroppedField Info components/minecraft:breedable/breeds_with/1",
+            "core/dropped_field Info components/minecraft:breedable/breeds_with/1",
         ),
         (
             "1.21.120",
             "demo:x",
             r#""components": {"minecraft:breedable": {"breeds_with": {"mate_type": 7, "baby_type": "demo:c"}}}"#,
-            "DroppedField Info components/minecraft:breedable/breeds_with",
+            "core/dropped_field Info components/minecraft:breedable/breeds_with",
         ),
         (
             "1.18.0",
             "minecraft:ocelot",
             r#""components": {}, "component_groups": {"minecraft:wild_child_ocelot_spawn": {"minecraft:spawn_entity": {"entities": {"spawn_entity": "demo:mine"}}}}, "events": {"minecraft:entity_spawned": {}}"#,
-            "DroppedField Info component_groups/minecraft:wild_child_ocelot_spawn/minecraft:spawn_entity",
+            "core/dropped_field Info component_groups/minecraft:wild_child_ocelot_spawn/minecraft:spawn_entity",
         ),
         (
             "1.21.100",
             "demo:x",
             r#""components": {"minecraft:behavior.take_block": {"priority": 1, "xz_range": [1, 2, 9]}}"#,
-            "UnrecognizedField Info components/minecraft:behavior.take_block/xz_range/2",
+            "core/unrecognized_field Info components/minecraft:behavior.take_block/xz_range/2",
         ),
         // (From 1.21.89 a strict slice refuses it: told below.) An element beyond
         // the two the legacy range reader reads is the crate's word: an information.
@@ -665,7 +689,7 @@ fn what_a_step_takes_apart_and_does_not_read_is_told_where_the_file_has_it() {
             "1.21.80",
             "demo:x",
             r#""components": {"minecraft:behavior.place_block": {"priority": 1, "y_range": [1, 2, 9]}}"#,
-            "UnrecognizedField Info components/minecraft:behavior.place_block/y_range/2",
+            "core/unrecognized_field Info components/minecraft:behavior.place_block/y_range/2",
         ),
     ];
     let mut wrong = Vec::new();
@@ -689,7 +713,7 @@ fn a_half_of_a_1_26_30_ranged_interval_that_is_no_number_is_the_game_s_type_line
         let (found, written) = told(version, "demo:x", rest);
         has(
             &found,
-            "InvalidType Error components/minecraft:behavior.ranged_attack/attack_interval_min",
+            "core/unknown_child_option Error components/minecraft:behavior.ranged_attack/attack_interval_min",
         );
         assert!(
             !found
@@ -727,7 +751,7 @@ fn b2_a_hurt_when_wet_that_makes_no_rain_entry_is_told_at_the_component() {
         let (found, written) = told("1.12.0", "demo:x", rest);
         has(
             &found,
-            &format!("DroppedComponent Info {at}/minecraft:hurt_when_wet"),
+            &format!("entity/component_removed_by_upgrade Info {at}/minecraft:hurt_when_wet"),
         );
         assert!(!written.contains("in_water_or_rain"), "{written}");
     }
@@ -753,7 +777,7 @@ fn b2_a_member_of_hurt_when_wet_beside_its_value_is_told() {
     );
     has(
         &found,
-        "UnrecognizedField Info components/minecraft:hurt_when_wet/zz",
+        "core/unrecognized_field Info components/minecraft:hurt_when_wet/zz",
     );
     assert!(written.contains("in_water_or_rain"), "{written}");
 }
@@ -783,7 +807,7 @@ fn b3a_a_fall_damage_beside_a_damage_sensor_without_a_trigger_list_is_carried() 
         );
         has(
             &found,
-            &format!("InvalidType Info {section}/minecraft:damage_sensor{at}"),
+            &format!("core/invalid_type Info {section}/minecraft:damage_sensor{at}"),
         );
     }
     // A `null` sensor is an absent one: the trigger is made and nothing is told.
@@ -826,7 +850,7 @@ fn b3b_a_stop_if_holding_item_of_the_file_below_1_26_30_is_told() {
             let here: Vec<_> = found.iter().filter(|f| f.ends_with(at)).collect();
             assert_eq!(
                 here,
-                [&format!("UnrecognizedField Info {at}")],
+                [&format!("core/unrecognized_field Info {at}")],
                 "{version} {value}: {found:#?}"
             );
         }
@@ -858,7 +882,7 @@ fn b3c_the_upgrades_that_go_with_an_entity_version_are_told() {
             ),
         );
         // An information of the crate's own (no game line for the member).
-        has(&found, "DroppedField Info upgrades");
+        has(&found, "core/dropped_field Info upgrades");
         assert!(!written.contains("upgrades"), "{written}");
     }
     // A failure inside `entity_version` takes the whole member: told at the member too.
@@ -870,10 +894,10 @@ fn b3c_the_upgrades_that_go_with_an_entity_version_are_told() {
     has(
         &found,
         // The game's level-3 structure line, a kept error.
-        "InvalidValue Error description/entity_version/upgrades/0/name",
+        "entity/no_string_name Error description/entity_version/upgrades/0/name",
     );
-    has(&found, "DroppedField Info description/entity_version");
-    has_not(&found, "DroppedField Info upgrades");
+    has(&found, "core/dropped_field Info description/entity_version");
+    has_not(&found, "core/dropped_field Info upgrades");
     // The handlers of a version that reads stay, and nothing is told.
     let (found, written) = told(
         "1.26.30",
@@ -882,7 +906,7 @@ fn b3c_the_upgrades_that_go_with_an_entity_version_are_told() {
     );
     assert!(written.contains(r#""upgrades": { "h": {} }"#), "{written}");
     assert!(
-        !found.iter().any(|f| f.starts_with("DroppedField")),
+        !found.iter().any(|f| f.starts_with("core/dropped_field")),
         "{found:#?}"
     );
 }
@@ -898,11 +922,11 @@ fn b3d_a_member_of_entity_version_the_reader_does_not_read_is_told() {
     );
     has(
         &found,
-        "UnrecognizedField Info description/entity_version/yy",
+        "core/unrecognized_field Info description/entity_version/yy",
     );
     has(
         &found,
-        "UnrecognizedField Info description/entity_version/upgrades/0/zz",
+        "core/unrecognized_field Info description/entity_version/upgrades/0/zz",
     );
     assert!(written.contains(r#""name": "h""#), "{written}");
 }
@@ -917,14 +941,14 @@ fn b3e_the_skip_key_and_a_payload_version_that_is_not_the_document_s_are_told() 
             "demo:x",
             r#""components": {}, "do_not_upgrade": true"#,
         );
-        has(&found, "DroppedField Info do_not_upgrade");
+        has(&found, "core/dropped_field Info do_not_upgrade");
         assert!(!written.contains("do_not_upgrade"), "{written}");
         let (found, _) = told(
             version,
             "demo:x",
             r#""components": {}, "format_version": "1.2.0""#,
         );
-        has(&found, "UnrecognizedField Info format_version");
+        has(&found, "core/unrecognized_field Info format_version");
         // The payload's version that IS the document's says nothing.
         let (found, _) = told(
             version,
@@ -1017,7 +1041,10 @@ fn m2_a_half_of_a_ranged_radius_is_told_at_the_member_the_file_has() {
     );
     // The legacy schema reader's type line; strict at 1.20.0, the goal at its
     // defaults.
-    has(&found, &format!("InvalidType Error {at}/attack_radius_min"));
+    has(
+        &found,
+        &format!("core/unknown_child_option Error {at}/attack_radius_min"),
+    );
     assert!(
         !found.iter().any(|f| f.contains("attack_range")),
         "{found:#?}"
@@ -1081,7 +1108,7 @@ fn a_legacy_addrider_without_an_entity_type_makes_no_rider() {
             "{component}: {found:#?}"
         );
         for member in dropped {
-            has(&found, &format!("DroppedField Info {at}/{member}"));
+            has(&found, &format!("core/dropped_field Info {at}/{member}"));
         }
         assert!(
             written.contains(r#""riders": []"#)
@@ -1103,34 +1130,34 @@ fn m2_a_finding_of_a_member_a_lenient_component_read_moved_names_the_member_of_t
         // type line at the member the file has.
         (
             r#""minecraft:addrider": {"entity_type": 5}"#,
-            "InvalidType Error components/minecraft:addrider/entity_type",
+            "core/unknown_child_option Error components/minecraft:addrider/entity_type",
             "riders",
         ),
         (
             r#""minecraft:addrider": {"entity_type": "minecraft:skeleton", "spawn_event": 7}"#,
-            "InvalidType Error components/minecraft:addrider/spawn_event",
+            "core/unknown_child_option Error components/minecraft:addrider/spawn_event",
             "riders",
         ),
         (
             r#""minecraft:projectile": {"on_hit": {"mob_effect": {"effect": "poison", "amplifier": "strong", "durationeasy": 5}}}"#,
-            "InvalidValue Info components/minecraft:projectile/on_hit/mob_effect/amplifier",
+            "core/invalid_value Info components/minecraft:projectile/on_hit/mob_effect/amplifier",
             "effects",
         ),
         (
             // A number, not a bool: the 1.26.30 step makes a bool the name it stands for
             // under the alias too.
             r#""minecraft:projectile": {"shouldbounce": 7}"#,
-            "InvalidValue Info components/minecraft:projectile/shouldbounce",
+            "core/invalid_value Info components/minecraft:projectile/shouldbounce",
             "projectile/should_bounce",
         ),
         (
             r#""minecraft:projectile": {"hitWater": "yes"}"#,
-            "InvalidValue Info components/minecraft:projectile/hitWater",
+            "core/invalid_value Info components/minecraft:projectile/hitWater",
             "projectile/hit_water",
         ),
         (
             r#""minecraft:projectile": {"on_hit": {"impact_damage": {"catchFire": "yes"}}}"#,
-            "InvalidValue Info components/minecraft:projectile/on_hit/impact_damage/catchFire",
+            "core/invalid_value Info components/minecraft:projectile/on_hit/impact_damage/catchFire",
             "impact_damage/catch_fire",
         ),
     ];
@@ -1185,7 +1212,7 @@ fn a_bool_under_the_alias_shouldbounce_is_converted_as_should_bounce_is() {
         );
         assert_eq!(
             found,
-            [format!("InvalidValue Error {at}/shouldbounce")],
+            [format!("entity/not_a_valid_value Error {at}/shouldbounce")],
             "{version}"
         );
         assert!(written.contains(r#""should_bounce": "no""#), "{written}");
@@ -1197,7 +1224,7 @@ fn a_bool_under_the_alias_shouldbounce_is_converted_as_should_bounce_is() {
         );
         assert_eq!(
             found,
-            [format!("UnrecognizedField Info {at}/shouldbounce")],
+            [format!("core/unrecognized_field Info {at}/shouldbounce")],
             "{version}"
         );
         assert!(
@@ -1214,7 +1241,7 @@ fn a_bool_under_the_alias_shouldbounce_is_converted_as_should_bounce_is() {
             "demo:x",
             &format!(r#""components": {{"minecraft:projectile": {{"{member}": true}}}}"#),
         );
-        assert_eq!(found, [format!("InvalidValue Info {at}/{member}")]);
+        assert_eq!(found, [format!("core/invalid_value Info {at}/{member}")]);
         assert!(written.contains(r#""should_bounce": "no""#), "{written}");
     }
 }
@@ -1270,7 +1297,7 @@ fn k92_the_impact_damage_of_a_projectile_under_its_aliases_is_converted_by_the_1
         assert_eq!(found, as_written, "{version}");
         assert_eq!(
             found[0],
-            "InvalidValue Info components/minecraft:projectile/onHit/impact_damage/powermultiplier",
+            "core/invalid_value Info components/minecraft:projectile/onHit/impact_damage/powermultiplier",
             "{version}"
         );
     }
@@ -1309,7 +1336,7 @@ fn the_old_flag_of_impact_damage_under_its_alias_is_converted_by_the_1_26_30_ste
         assert_eq!(
             found,
             [
-                "InvalidType Info components/minecraft:projectile/on_hit/impact_damage/semirandomdiffdamage"
+                "core/invalid_type Info components/minecraft:projectile/on_hit/impact_damage/semirandomdiffdamage"
             ],
             "{version}"
         );
@@ -1319,7 +1346,7 @@ fn the_old_flag_of_impact_damage_under_its_alias_is_converted_by_the_1_26_30_ste
         assert_eq!(
             found,
             [
-                "DroppedField Info components/minecraft:projectile/on_hit/impact_damage/semirandomdiffdamage"
+                "entity/member_removed_by_upgrade Info components/minecraft:projectile/on_hit/impact_damage/semirandomdiffdamage"
             ],
             "{version}"
         );
@@ -1340,7 +1367,7 @@ fn the_old_flag_of_impact_damage_under_its_alias_is_converted_by_the_1_26_30_ste
         assert_eq!(
             found,
             [format!(
-                "UnrecognizedField Info components/minecraft:projectile/on_hit/impact_damage/{member}"
+                "core/unrecognized_field Info components/minecraft:projectile/on_hit/impact_damage/{member}"
             )]
         );
         // Told, not kept.
@@ -1383,7 +1410,7 @@ fn the_1_21_110_step_sets_the_knockback_flag_below_on_hit_and_not_below_its_alia
         assert_eq!(
             found,
             [format!(
-                "DroppedField Info {at}/on_hit/impact_damage/{flag}"
+                "core/dropped_field Info {at}/on_hit/impact_damage/{flag}"
             )],
             "{version}"
         );
@@ -1452,7 +1479,7 @@ fn a_legacy_goal_range_written_min_max_keeps_the_member_default() {
         for end in ["min", "max"] {
             has(
                 &found,
-                &format!("DroppedField Info {at}{key}/{member}/{end}"),
+                &format!("core/dropped_field Info {at}{key}/{member}/{end}"),
             );
         }
         assert!(
@@ -1487,7 +1514,7 @@ fn a_legacy_look_time_reads_min_max_and_not_the_range_spelling() {
     );
     assert!(written.contains(r#""look_time": { "min": 1"#), "{written}");
     assert!(
-        !found.iter().any(|f| f.contains("DroppedField")),
+        !found.iter().any(|f| f.contains("core/dropped_field")),
         "{found:?}"
     );
     let (found, written) = told(
@@ -1496,7 +1523,7 @@ fn a_legacy_look_time_reads_min_max_and_not_the_range_spelling() {
         r#""components": {"minecraft:behavior.look_at_player": {"priority": 1, "look_time": {"range_min": 1, "range_max": 3}}}"#,
     );
     for end in ["range_min", "range_max"] {
-        has(&found, &format!("DroppedField Info {at}/{end}"));
+        has(&found, &format!("core/dropped_field Info {at}/{end}"));
     }
     assert!(!written.contains(r#""look_time""#), "{written}");
 }
@@ -1548,7 +1575,7 @@ fn a_legacy_look_time_string_is_read_as_parse_range_reads_it() {
         text.contains(r#""look_time": { "min": 2, "max": 4 }"#),
         "{text}"
     );
-    has(&found, &format!("ValueRewritten Info {at}"));
+    has(&found, &format!("core/value_rewritten Info {at}"));
 }
 
 /// Where in the file a member a step moved is, as the loaded document's findings answer it
@@ -1587,11 +1614,7 @@ fn a_finding_in_a_file_with_a_byte_order_mark_is_at_the_file_s_offset() {
     let spans: Vec<(String, u32)> = rejected
         .diagnostics
         .iter()
-        .filter_map(|f| {
-            f.location
-                .span
-                .map(|s| (f.code.name().to_owned(), s.offset))
-        })
+        .filter_map(|f| f.location.span.map(|s| (f.code.id().to_owned(), s.offset)))
         .collect();
     let at = u32::try_from(text.find('@').unwrap()).unwrap();
     assert!(

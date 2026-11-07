@@ -165,7 +165,9 @@ fn linked_over(own: bool, game: Pack, host: bool, lints: bool) -> Diagnostics {
 fn told(found: &Diagnostics, file: &str, kind: &str, name: &str) -> Vec<Severity> {
     found
         .iter()
-        .filter(|finding| finding.code.name() == "UnresolvedReference")
+        .filter(|finding| {
+            finding.code.kind() == bedrock_addon::diagnostic::Kind::UnresolvedReference
+        })
         .filter(|finding| {
             finding
                 .location
@@ -373,7 +375,7 @@ fn a_source_of_the_games_pack_that_is_not_resident_is_no_whole_view_and_is_told_
         ] {
             let told = found
                 .iter()
-                .filter(|finding| finding.code.name() == "FileNotLoaded")
+                .filter(|finding| finding.code.id() == "core/file_not_loaded")
                 .filter(|finding| finding.phase == Phase::Link)
                 .filter(|finding| {
                     finding

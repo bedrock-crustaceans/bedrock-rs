@@ -78,7 +78,7 @@ pub fn at_severity<'a>(
         .filter(|f| f.severity == severity)
         .map(|f| {
             (
-                f.code.name(),
+                f.code.id(),
                 f.location.json_path.to_string(),
                 f.code.to_string(),
             )
@@ -108,7 +108,7 @@ pub fn finding(code: &'static str, path: &str, message: &str) -> (&'static str, 
 
 /// The closing line of a preset file that failed.
 pub fn failed_presets() -> (&'static str, String, String) {
-    finding("DocumentRejected", "", "Failed to load camera presets")
+    finding("camera/failed_presets", "", "Failed to load camera presets")
 }
 
 /// A preset document at `version` with `members` (a JSON object's members).
@@ -206,7 +206,7 @@ pub fn group(cameras: &Cameras, severity: Severity) -> Vec<(&'static str, String
     cameras
         .diagnostics()
         .filter(|f| f.severity == severity && !is_validator_line(f))
-        .map(|f| (f.code.name(), f.code.to_string()))
+        .map(|f| (f.code.id(), f.code.to_string()))
         .collect()
 }
 

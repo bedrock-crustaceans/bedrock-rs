@@ -17,13 +17,18 @@ fn round_trip(name: &str) {
     let written = first.to_json().expect("writable");
     let second = parse_text(WORLD, &written).unwrap_or_else(|r| panic!("{:#?}", r.diagnostics));
     let codes = |d: &bedrock_addon::diagnostic::Diagnostics| {
-        d.iter().map(|d| d.code.name()).collect::<Vec<_>>()
+        d.iter().map(|d| d.code.id()).collect::<Vec<_>>()
     };
     // The reread finds what the first read found, apart from the version infos (the writer
     // picks its own version).
     let first_codes: Vec<_> = codes(first.diagnostics())
         .into_iter()
-        .filter(|c| !matches!(*c, "VanillaRejectsVersion" | "FormatVersionArray"))
+        .filter(|c| {
+            !matches!(
+                *c,
+                "core/vanilla_rejects_version" | "core/format_version_array"
+            )
+        })
         .collect();
     assert_eq!(codes(second.diagnostics()), first_codes, "{name}");
     assert_eq!(first.value(), second.value(), "{name}");

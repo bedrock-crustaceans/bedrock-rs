@@ -27,7 +27,7 @@
     feature = "server_sound_definitions",
 ))]
 
-use bedrock_addon::diagnostic::{Diagnostics, Severity, codes};
+use bedrock_addon::diagnostic::{Diagnostics, Kind, Severity, codes};
 use bedrock_addon::document::{Content, Document, Rejected};
 use bedrock_addon::load::{Experiment, Experiments, LoadContext, LoadOptions};
 use bedrock_addon::pack::PackType;
@@ -37,6 +37,22 @@ use uuid::Uuid;
 
 /// What a load told of the version: the floor or no-parser text with its version, or the
 /// malformed or loaded outcome.
+/// The definitions of a `format_version` that is not a version at all.
+const MALFORMED_FORMAT_VERSION: &[&str] = &[
+    "block_culling/missing_object_malformed_format_version",
+    "blocks_json/version_invalid",
+    "client_biome/no_valid_version",
+    "core/malformed_format_version",
+    "core/malformed_format_version_worded",
+    "ddui/malformed_version",
+    "deferred_settings/malformed_version",
+    "dialogue/no_format_version_malformed_format_version",
+    "geometry/version_not_valid",
+    "item/version_not_readable",
+    "jigsaw/bad_format_version_string",
+    "texture_set/set_bad_version",
+];
+
 fn told<T>(outcome: &Result<Document<T>, Rejected>) -> String {
     let findings: &Diagnostics = match outcome {
         Ok(document) => document.diagnostics(),
@@ -66,16 +82,24 @@ fn told<T>(outcome: &Result<Document<T>, Rejected>) -> String {
                         .template()
                 ));
             }
-            // By legacy name: a family's own definition of a fixed sentence that was the
-            // variant's `Fixed` text.
-            code if code.name() == "UnsupportedVersion" && code.args().is_empty() => {
+            // A family's own definition of a fixed sentence that was the variant's `Fixed` text.
+            code if code.kind() == Kind::UnsupportedVersion
+                && code.id() != "core/vanilla_rejects_version"
+                && code.args().is_empty() =>
+            {
                 lines.push(format!("fixed {:?}", code.vanilla().unwrap_or_default()));
             }
-            // By legacy name: the variant and the definitions that were it.
-            code if code.name() == "MalformedFormatVersion" => lines.push("malformed".to_owned()),
+            // The variant and the definitions that were it.
+            code if MALFORMED_FORMAT_VERSION.contains(&code.id()) => {
+                lines.push("malformed".to_owned())
+            }
             _ => {}
         }
-        assert!(finding.code.name() != "UnsupportedVersion" || finding.severity == Severity::Error);
+        assert!(
+            finding.code.kind() != Kind::UnsupportedVersion
+                || finding.code.id() == "core/vanilla_rejects_version"
+                || finding.severity == Severity::Error
+        );
     }
     if outcome.is_ok() {
         lines.push("loaded".to_owned());

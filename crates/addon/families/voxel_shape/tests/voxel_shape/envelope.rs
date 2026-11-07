@@ -1,6 +1,6 @@
 //! The version window and the envelope: vs02 and the version-window rows.
 
-use bedrock_addon_core::diagnostic::Severity;
+use bedrock_addon_core::diagnostic::{Kind, Severity};
 
 use super::common::*;
 
@@ -12,7 +12,11 @@ fn vs02_below_1_21_110_there_is_no_parser() {
     assert_eq!(
         errors(&rejects(&text)),
         [
-            error("UnsupportedVersion", NO_PARSER_1_21_100, "format_version"),
+            error(
+                "core/no_parser_for_version",
+                NO_PARSER_1_21_100,
+                "format_version"
+            ),
             failed()
         ]
     );
@@ -22,7 +26,7 @@ fn vs02_below_1_21_110_there_is_no_parser() {
 fn a_pre_release_of_the_floor_is_below_it_and_named_as_written() {
     let text = slab().replace("1.21.110", "1.21.110-beta.2");
     let d = rejects(&text);
-    let found = with_code(&d, "UnsupportedVersion");
+    let found = with_code(&d, "core/no_parser_for_version");
     assert_eq!(found.len(), 1, "{d:#?}");
     assert_eq!(
         found[0].code.to_string(),
@@ -34,7 +38,7 @@ fn a_pre_release_of_the_floor_is_below_it_and_named_as_written() {
 fn an_array_version_below_the_floor_is_named_in_dotted_form() {
     let text = slab().replace(r#""1.21.110""#, "[1, 21, 100]");
     let d = rejects(&text);
-    let found = with_code(&d, "UnsupportedVersion");
+    let found = with_code(&d, "core/no_parser_for_version");
     assert_eq!(found.len(), 1, "{d:#?}");
     assert_eq!(found[0].code.to_string(), NO_PARSER_1_21_100);
 }
@@ -46,8 +50,8 @@ fn below_the_floor_the_member_count_is_not_checked() {
         .replace("1.21.110", "1.21.100")
         .replacen('{', r#"{"extra": 1, "#, 1);
     let d = rejects(&text);
-    assert!(with_code(&d, "MalformedInput").is_empty(), "{d:#?}");
-    let found = with_code(&d, "UnsupportedVersion");
+    assert!(d.iter().all(|f| f.code.kind() != Kind::Syntax), "{d:#?}");
+    let found = with_code(&d, "core/no_parser_for_version");
     assert_eq!(found.len(), 1, "{d:#?}");
     assert_eq!(found[0].code.to_string(), NO_PARSER_1_21_100);
 }
@@ -56,7 +60,7 @@ fn below_the_floor_the_member_count_is_not_checked() {
 #[track_caller]
 fn no_valid_version(text: &str) {
     let d = rejects(text);
-    let found = with_code(&d, "MissingFormatVersion");
+    let found = with_code(&d, "core/no_valid_version");
     assert_eq!(found.len(), 1, "{text}: {d:#?}");
     assert_eq!(found[0].severity, Severity::Error);
     assert_eq!(
@@ -65,7 +69,12 @@ fn no_valid_version(text: &str) {
     );
     let others: Vec<_> = d
         .iter()
-        .filter(|f| !matches!(f.code.name(), "MissingFormatVersion" | "DocumentRejected"))
+        .filter(|f| {
+            !matches!(
+                f.code.id(),
+                "core/no_valid_version" | "voxel_shape/failed_to_load"
+            )
+        })
         .collect();
     assert!(others.is_empty(), "{text}: {others:#?}");
 }
@@ -89,7 +98,10 @@ fn a_payload_under_another_name_is_missing_deviation() {
     let text = slab().replace("minecraft:voxel_shape", "minecraft:voxel_shapes");
     assert_eq!(
         kinds(&rejects(&text)),
-        [kind("MissingPayload", ""), kind("DocumentRejected", "")]
+        [
+            kind("core/payload_under_other_key", ""),
+            kind("voxel_shape/failed_to_load", "")
+        ]
     );
 }
 
@@ -103,7 +115,7 @@ fn a_beta_document_has_no_parser() {
         errors(&rejects_in(&text, &cx)),
         [
             error(
-                "UnsupportedVersion",
+                "core/no_parser_for_version",
                 "unsupported version: no parser available for version beta",
                 "format_version"
             ),
@@ -114,8 +126,8 @@ fn a_beta_document_has_no_parser() {
         kinds(&rejects(&text)),
         [
             // Without the toggle too: the slice is selected first.
-            kind("UnsupportedVersion", "format_version"),
-            kind("DocumentRejected", "")
+            kind("core/no_parser_for_version", "format_version"),
+            kind("voxel_shape/failed_to_load", "")
         ]
     );
 }
@@ -136,7 +148,7 @@ fn a_number_format_version_is_read_as_its_text() {
         errors(&rejects(&text)),
         [
             error(
-                "UnsupportedVersion",
+                "core/no_parser_for_version",
                 "unsupported version: no parser available for version 1.21.0",
                 "format_version"
             ),

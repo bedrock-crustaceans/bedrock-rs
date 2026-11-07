@@ -140,7 +140,7 @@ fn deviation_texts_ours_where_vanillas_was_not_recovered() {
         document
             .diagnostics()
             .iter()
-            .filter(|f| f.code.name() == "DroppedComponent")
+            .filter(|f| f.code.id() == "item/foil_ignored")
             .all(|f| f.severity == bedrock_addon_core::diagnostic::Severity::Info)
     );
 }

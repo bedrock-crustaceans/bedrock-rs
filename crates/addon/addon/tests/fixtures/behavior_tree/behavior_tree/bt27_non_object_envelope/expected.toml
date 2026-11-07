@@ -1,13 +1,13 @@
 # Validation rule 3: a payload or a root that is not an object has no name.
 
 [[diagnostic]]
-kind = "MissingRequiredField"
+kind = "core/missing_required_field"
 severity = "error"
 file = "behavior_trees/string_payload.json"
 path = "minecraft:behavior_tree/minecraft:name"
 
 [[diagnostic]]
-kind = "MissingRequiredField"
+kind = "core/missing_required_field"
 severity = "error"
 file = "behavior_trees/array_root.json"
 path = "minecraft:behavior_tree/minecraft:name"

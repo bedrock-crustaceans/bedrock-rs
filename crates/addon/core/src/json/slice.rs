@@ -779,7 +779,11 @@ mod tests {
     fn a_blank_slice_is_an_empty_document() {
         let error = parse_at::<Inner>(JsonSlice::new(" \n ")).unwrap_err();
         let finding = error.into_diagnostic(&JsonPath::new(), |code, _| code);
-        assert!(finding.code.name() == "EmptyDocument", "{:?}", finding.code);
+        assert!(
+            finding.code.id() == "core/empty_document",
+            "{:?}",
+            finding.code
+        );
     }
 
     #[test]
@@ -787,7 +791,7 @@ mod tests {
         let error = parse_at::<Inner>(JsonSlice::new(r#"{"v": "x"}"#)).unwrap_err();
         let text = error.error.kind.to_string();
         let finding = error.into_diagnostic(&JsonPath::of_keys(["base"]), |code, error| {
-            assert!(code.name() == "InvalidType", "{code:?}");
+            assert!(code.id() == "core/invalid_type", "{code:?}");
             assert_eq!(*error.relative_path(), JsonPath::of_keys(["v"]));
             assert!(error.has_path());
             assert!(!error.is_blank());
@@ -808,14 +812,14 @@ mod tests {
         let text = r#"{"v": [1]}"#;
         let error = parse_at::<Inner>(JsonSlice::new(text)).unwrap_err();
         assert!(
-            error.code_with_path(true).name() == "InvalidType",
+            error.code_with_path(true).id() == "core/invalid_type",
             "at a member, a token of the wrong kind is a type error"
         );
         let finding = error.into_diagnostic(&JsonPath::of_keys(["base"]), |_, error| {
             error.code_with_path(false)
         });
         assert!(
-            finding.code.name() == "MalformedInput",
+            finding.code.id() == "core/syntax",
             "graded as at the root, it is malformed input: {:?}",
             finding.code
         );

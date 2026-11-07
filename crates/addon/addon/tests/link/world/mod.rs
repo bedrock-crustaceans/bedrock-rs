@@ -44,7 +44,7 @@ pub fn said_of(finding: &Diagnostic) -> Said {
         _ => ("", String::new()),
     };
     (
-        finding.code.name(),
+        finding.code.id(),
         finding.severity,
         finding
             .location
@@ -91,7 +91,7 @@ pub fn finding(
 /// An `UnresolvedReference` warning.
 pub fn unresolved_warning(file: &str, path: &str, kind: &'static str, id: &str) -> Said {
     finding(
-        "UnresolvedReference",
+        "core/unresolved_reference_worded",
         Severity::Warning,
         file,
         path,
@@ -103,13 +103,27 @@ pub fn unresolved_warning(file: &str, path: &str, kind: &'static str, id: &str) 
 /// An `UnresolvedReference` information: a reference of ours that the game's link pass has no
 /// line for.
 pub fn unresolved_info(file: &str, path: &str, kind: &'static str, id: &str) -> Said {
-    finding("UnresolvedReference", Severity::Info, file, path, kind, id)
+    finding(
+        "core/unresolved_reference",
+        Severity::Info,
+        file,
+        path,
+        kind,
+        id,
+    )
 }
 
 /// An `UnresolvedReference` error: a reference the game's link pass holds and logs at the
 /// content log's error level.
 pub fn unresolved_error(file: &str, path: &str, kind: &'static str, id: &str) -> Said {
-    finding("UnresolvedReference", Severity::Error, file, path, kind, id)
+    finding(
+        "core/unresolved_reference_worded",
+        Severity::Error,
+        file,
+        path,
+        kind,
+        id,
+    )
 }
 
 /// The texts of the findings of `findings` whose reference is of `kind`.

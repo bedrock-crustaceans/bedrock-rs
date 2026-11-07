@@ -601,7 +601,7 @@ fn in_class(class: &str, c: char) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bedrock_addon_core::diagnostic::Severity;
+    use bedrock_addon_core::diagnostic::{Disposition, Kind, Severity};
 
     /// The door's `JsonCpp` scalar profile takes, for each scalar type the table names, the
     /// token types the table's node takes: `int` an integer or real, `float` an integer, real
@@ -926,7 +926,7 @@ mod tests {
                     let value = format!(r#"{{"{spelling}": {}}}"#, sample(&member.options[0]));
                     let (_, found) = load(&document("1.20.0", key, &value, ""));
                     for f in &found {
-                        if f.code.name() == "UnrecognizedField" && !f.kept {
+                        if f.code.kind() == Kind::UnknownMember(Disposition::Kept) && !f.kept {
                             wrong.push(format!("{key}.{spelling}: {}", f.location.json_path));
                         }
                     }

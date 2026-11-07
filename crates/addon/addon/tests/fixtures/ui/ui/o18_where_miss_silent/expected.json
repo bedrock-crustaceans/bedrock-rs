@@ -1,7 +1,7 @@
 {
   "diagnostics": [
     {
-      "code": "UnmatchedCondition",
+      "code": "core/unmatched_condition",
       "severity": "info",
       "pack": 1
     }

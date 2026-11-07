@@ -192,7 +192,7 @@ fn report(source: &str, sounds: &Sounds<'_>, warnings: &[(&str, usize)]) -> Vec<
     let mut errors = Vec::new();
     for finding in sounds.diagnostics() {
         *by_code
-            .entry((finding.severity, finding.code.name()))
+            .entry((finding.severity, finding.code.id()))
             .or_insert(0) += 1;
         if finding.severity >= Severity::Error {
             errors.push(finding.to_string());
@@ -261,7 +261,7 @@ fn unresolved(sounds: &Sounds<'_>) -> BTreeMap<String, usize> {
     let mut out = BTreeMap::new();
     for finding in &sounds.links {
         if let Some(DiagnosticDetail::Reference { kind, id, .. }) = finding.detail.as_deref()
-            && finding.code.name() == "UnresolvedReference"
+            && finding.code.id() == "core/unresolved_reference"
             && *kind == SOUND_FILE_KIND
         {
             *out.entry(id.clone()).or_insert(0) += 1;
@@ -326,7 +326,7 @@ fn client_install_b_sounds_load_and_every_name_resolves() {
     let cleared = sounds
         .bindings
         .diagnostics()
-        .filter(|d| d.code.name() == "SoundsJsonTableCleared")
+        .filter(|d| d.code.id() == "core/sounds_json_table_cleared")
         .count();
     let entities = &sounds.bindings.entity_sounds.entities;
     let keyed = entities
@@ -378,11 +378,8 @@ fn client_install_b_sounds_load_and_every_name_resolves() {
         (4890, 4786, 104, 0),
         "audio extension counts"
     );
-    assert!(
-        sounds
-            .diagnostics()
-            .all(|d| d.severity < Severity::Warning || d.code.name() != "UnresolvedReference"),
-    );
+    assert!(sounds.diagnostics().all(|d| d.severity < Severity::Warning
+        || d.code.kind() != bedrock_addon::diagnostic::Kind::UnresolvedReference),);
 }
 
 #[test]
@@ -414,7 +411,7 @@ fn client_install_a_sounds_load_and_the_dangling_names_are_reported() {
     let cleared = sounds
         .bindings
         .diagnostics()
-        .filter(|d| d.code.name() == "SoundsJsonTableCleared")
+        .filter(|d| d.code.id() == "core/sounds_json_table_cleared")
         .count();
     assert_eq!(
         (cleared, sounds.bindings.entity_sounds.entities.len()),
@@ -433,7 +430,7 @@ fn client_install_a_sounds_load_and_the_dangling_names_are_reported() {
         sounds
             .files
             .findings()
-            .filter(|d| d.code.name() == "UnresolvedReference")
+            .filter(|d| d.code.id() == "entity/eat_block_invalid_block")
             .all(|d| d.severity == Severity::Info)
     );
 }
@@ -601,7 +598,14 @@ fn every_event_key_of_vanillas_sounds_json_files_is_a_known_level_sound_event() 
             document
                 .diagnostics()
                 .iter()
-                .filter(|d| d.code.name() == "UnknownSound")
+                .filter(|d| {
+                    matches!(
+                        d.code.id(),
+                        "core/unknown_sound"
+                            | "core/unknown_sound_worded"
+                            | "sounds_json/not_an_event"
+                    )
+                })
                 .map(|d| format!("{}: {d}", file.display())),
         );
     }

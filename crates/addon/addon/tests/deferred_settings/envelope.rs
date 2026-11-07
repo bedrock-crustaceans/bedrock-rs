@@ -38,7 +38,11 @@ fn every_payload(json: impl Fn(&str) -> String, expected: (&'static str, &str, &
 fn c01_a_root_with_the_payload_alone_is_not_two_members() {
     every_payload(
         |key| format!(r#"{{"{key}": {{}}}}"#),
-        ("MissingFormatVersion", "", TWO_MEMBERS),
+        (
+            "deferred_settings/member_count_without_version",
+            "",
+            TWO_MEMBERS,
+        ),
     );
 }
 
@@ -46,7 +50,7 @@ fn c01_a_root_with_the_payload_alone_is_not_two_members() {
 fn c02_a_third_root_member_is_not_two_members() {
     every_payload(
         |key| format!(r#"{{"format_version": "1.21.40", "{key}": {{}}, "extra": 1}}"#),
-        ("MalformedInput", "", TWO_MEMBERS),
+        ("core/document_member_count", "", TWO_MEMBERS),
     );
 }
 
@@ -54,7 +58,11 @@ fn c02_a_third_root_member_is_not_two_members() {
 fn c02_three_members_without_a_version_are_not_two_members() {
     every_payload(
         |key| format!(r#"{{"{key}": {{}}, "a": 1, "b": 2}}"#),
-        ("MissingFormatVersion", "", TWO_MEMBERS),
+        (
+            "deferred_settings/member_count_without_version",
+            "",
+            TWO_MEMBERS,
+        ),
     );
 }
 
@@ -63,7 +71,7 @@ fn c03_two_format_version_members_have_no_payload() {
     every_payload(
         |_| r#"{"format_version": "1.21.40", "format_version": "1.21.40"}"#.to_owned(),
         (
-            "MissingPayload",
+            "core/payload_missing",
             "",
             "The payload of the Minecraft Document is missing",
         ),
@@ -78,7 +86,7 @@ fn a_payload_written_twice_makes_three_members() {
     );
     assert_eq!(
         one_error::<ShadowSettings>(&json),
-        finding("MalformedInput", "", TWO_MEMBERS)
+        finding("core/document_member_count", "", TWO_MEMBERS)
     );
 }
 
@@ -88,7 +96,7 @@ fn c03b_a_foreign_payload_key_is_a_missing_payload_deviation() {
     assert_eq!(
         one_error::<LightingSettings>(r#"{"format_version": "1.21.40", "foo": {}}"#),
         finding(
-            "MissingPayload",
+            "core/payload_under_other_key",
             "",
             "The payload key does not match the expected one. Expected: 'minecraft:lighting_settings'. Actual: 'foo'."
         )
@@ -96,16 +104,16 @@ fn c03b_a_foreign_payload_key_is_a_missing_payload_deviation() {
     // Optional below 1.26.20 for water and atmosphere too.
     assert_eq!(
         one_error::<WaterSettings>(r#"{"format_version": "1.26.0", "foo": {}}"#).0,
-        "MissingPayload"
+        "core/payload_under_other_key"
     );
     assert_eq!(
         one_error::<AtmosphereSettings>(r#"{"format_version": "1.21.40", "foo": {}}"#).0,
-        "MissingPayload"
+        "core/payload_under_other_key"
     );
     assert_eq!(
         one_error::<LocalLightSettings>(r#"{"format_version": "1.21.120", "foo": {}}"#),
         finding(
-            "MissingPayload",
+            "core/payload_under_other_key",
             "",
             "The payload key does not match the expected one. Expected: 'minecraft:local_light_settings'. Actual: 'foo'."
         )
@@ -118,13 +126,13 @@ fn c03b_a_foreign_payload_key_at_1_26_20_is_a_missing_required_member() {
         at(&[one_error::<WaterSettings>(
             r#"{"format_version": "1.26.20", "foo": {}}"#
         )]),
-        [("MissingRequiredField", WATER)]
+        [("core/missing_required_field", WATER)]
     );
     assert_eq!(
         at(&[one_error::<AtmosphereSettings>(
             r#"{"format_version": "1.26.20", "foo": {}}"#
         )]),
-        [("MissingRequiredField", ATMOSPHERE)]
+        [("core/missing_required_field", ATMOSPHERE)]
     );
 }
 
@@ -133,7 +141,7 @@ fn c04_a_syntax_error_is_the_document_json_text() {
     let (code, path, text) = one_error::<ShadowSettings>(&format!(
         r#"{{"format_version": "1.21.80" "{SHADOWS}": {{}}}}"#
     ));
-    assert_eq!((code, path.as_str()), ("MalformedInput", ""));
+    assert_eq!((code, path.as_str()), ("core/document_json", ""));
     assert!(
         text.starts_with("Failed to parse the Minecraft Document JSON: "),
         "{text}"
@@ -154,7 +162,11 @@ fn c05_an_unreadable_format_version_is_malformed() {
     ] {
         every_payload(
             |key| format!(r#"{{"format_version": {version}, "{key}": {{}}}}"#),
-            ("MalformedFormatVersion", "format_version", MALFORMED),
+            (
+                "deferred_settings/malformed_version",
+                "format_version",
+                MALFORMED,
+            ),
         );
     }
 }
@@ -163,11 +175,19 @@ fn c05_an_unreadable_format_version_is_malformed() {
 fn c06_c17_a_partial_version_is_x_y_0_and_needs_an_exact_struct() {
     assert_eq!(
         one_error::<LightingSettings>(&doc("1.21", LIGHTING, "")),
-        finding("UnsupportedVersion", "format_version", &no_parser("1.21.0"))
+        finding(
+            "core/no_parser_for_version",
+            "format_version",
+            &no_parser("1.21.0")
+        )
     );
     assert_eq!(
         one_error::<CubemapSettings>(&doc("1.21", CUBEMAP, "")),
-        finding("UnsupportedVersion", "format_version", &no_parser("1.21.0"))
+        finding(
+            "core/no_parser_for_version",
+            "format_version",
+            &no_parser("1.21.0")
+        )
     );
     let lighting = loads::<LightingSettings>(&doc("1.26", LIGHTING, ""));
     assert_eq!(lighting.version().parsed_as, FormatVersion::new(1, 26, 0));
@@ -215,7 +235,11 @@ fn c07_above_the_last_struct_there_is_no_parser() {
     ] {
         assert_eq!(
             found,
-            finding("UnsupportedVersion", "format_version", &no_parser(version))
+            finding(
+                "core/no_parser_for_version",
+                "format_version",
+                &no_parser(version)
+            )
         );
     }
 }
@@ -228,7 +252,11 @@ fn c08_the_beta_literal_has_no_struct_deviation() {
     let json = doc("beta", SHADOWS, "");
     assert_eq!(
         one_error::<ShadowSettings>(&json),
-        finding("UnsupportedVersion", "format_version", MALFORMED)
+        finding(
+            "deferred_settings/beta_unsupported",
+            "format_version",
+            MALFORMED
+        )
     );
     let mut cx = LoadContext::detached();
     cx.beta_apis = true;
@@ -237,25 +265,37 @@ fn c08_the_beta_literal_has_no_struct_deviation() {
         .diagnostics;
     assert_eq!(
         errors(&d),
-        [finding("UnsupportedVersion", "format_version", MALFORMED)]
+        [finding(
+            "deferred_settings/beta_unsupported",
+            "format_version",
+            MALFORMED
+        )]
     );
     // A payload with a chain says the same.
     assert_eq!(
         one_error::<WaterSettings>(&doc("beta", WATER, "")),
-        finding("UnsupportedVersion", "format_version", MALFORMED)
+        finding(
+            "deferred_settings/beta_unsupported",
+            "format_version",
+            MALFORMED
+        )
     );
     let d = parse_with::<WaterSettings>(&doc("beta", WATER, ""), &cx)
         .unwrap_err()
         .diagnostics;
     assert_eq!(
         errors(&d),
-        [finding("UnsupportedVersion", "format_version", MALFORMED)]
+        [finding(
+            "deferred_settings/beta_unsupported",
+            "format_version",
+            MALFORMED
+        )]
     );
     // A pre-release of a struct's version is no "beta": no parser, by its own text.
     assert_eq!(
         one_error::<ShadowSettings>(&doc("1.21.80-beta.1", SHADOWS, "")),
         finding(
-            "UnsupportedVersion",
+            "core/no_parser_for_version",
             "format_version",
             &no_parser("1.21.80-beta.1")
         )
@@ -267,7 +307,7 @@ fn c16_between_two_structs_there_is_no_parser() {
     assert_eq!(
         one_error::<LightingSettings>(&doc("1.21.50", LIGHTING, "")),
         finding(
-            "UnsupportedVersion",
+            "core/no_parser_for_version",
             "format_version",
             &no_parser("1.21.50")
         )
@@ -275,19 +315,23 @@ fn c16_between_two_structs_there_is_no_parser() {
     assert_eq!(
         one_error::<WaterSettings>(&doc("1.21.100", WATER, "")),
         finding(
-            "UnsupportedVersion",
+            "core/no_parser_for_version",
             "format_version",
             &no_parser("1.21.100")
         )
     );
     assert_eq!(
         one_error::<AtmosphereSettings>(&doc("1.26.0", ATMOSPHERE, "")),
-        finding("UnsupportedVersion", "format_version", &no_parser("1.26.0"))
+        finding(
+            "core/no_parser_for_version",
+            "format_version",
+            &no_parser("1.26.0")
+        )
     );
     assert_eq!(
         one_error::<ColorGradingSettings>(&doc("1.21.80", GRADING, "")),
         finding(
-            "UnsupportedVersion",
+            "core/no_parser_for_version",
             "format_version",
             &no_parser("1.21.80")
         )
@@ -299,7 +343,7 @@ fn c18_a_prerelease_tag_equals_no_struct_version() {
     assert_eq!(
         one_error::<LightingSettings>(&doc("1.21.80-beta.1", LIGHTING, "")),
         finding(
-            "UnsupportedVersion",
+            "core/no_parser_for_version",
             "format_version",
             &no_parser("1.21.80-beta.1")
         )
@@ -308,7 +352,7 @@ fn c18_a_prerelease_tag_equals_no_struct_version() {
     assert_eq!(
         one_error::<LightingSettings>(&doc("1.21.40-beta.1", LIGHTING, "")),
         finding(
-            "UnsupportedVersion",
+            "core/no_parser_for_version",
             "format_version",
             &no_parser("1.21.40-beta.1")
         )
@@ -319,11 +363,11 @@ fn c18_a_prerelease_tag_equals_no_struct_version() {
 fn c19_two_members_and_no_version_is_no_valid_version() {
     every_payload(
         |key| format!(r#"{{"{key}": {{}}, "foo": 1}}"#),
-        ("MissingFormatVersion", "", NO_VERSION),
+        ("core/no_valid_version", "", NO_VERSION),
     );
     every_payload(
         |_| r#"{"foo": {}, "bar": 1}"#.to_owned(),
-        ("MissingFormatVersion", "", NO_VERSION),
+        ("core/no_valid_version", "", NO_VERSION),
     );
 }
 
@@ -333,13 +377,13 @@ fn c21_an_array_version_selects_a_struct_and_then_is_no_string() {
         at(&[one_error::<PbrFallbackSettings>(&format!(
             r#"{{"format_version": [1, 21, 40], "{PBR}": {{}}}}"#
         ))]),
-        [("InvalidType", "format_version")]
+        [("core/invalid_type", "format_version")]
     );
     assert_eq!(
         at(&[one_error::<LightingSettings>(&format!(
             r#"{{"format_version": [1, 26, 0], "{LIGHTING}": {{}}}}"#
         ))]),
-        [("InvalidType", "format_version")]
+        [("core/invalid_type", "format_version")]
     );
     // An array naming no struct version has no parser first.
     assert_eq!(
@@ -347,7 +391,7 @@ fn c21_an_array_version_selects_a_struct_and_then_is_no_string() {
             r#"{{"format_version": [1, 21, 50], "{PBR}": {{}}}}"#
         )),
         finding(
-            "UnsupportedVersion",
+            "core/no_parser_for_version",
             "format_version",
             &no_parser("1.21.50")
         )
@@ -359,7 +403,7 @@ fn l10_w07_k04_below_the_first_struct_there_is_no_parser() {
     assert_eq!(
         one_error::<LightingSettings>(&doc("1.21.30", LIGHTING, "")),
         finding(
-            "UnsupportedVersion",
+            "core/no_parser_for_version",
             "format_version",
             &no_parser("1.21.30")
         )
@@ -367,7 +411,7 @@ fn l10_w07_k04_below_the_first_struct_there_is_no_parser() {
     assert_eq!(
         one_error::<WaterSettings>(&doc("1.21.30", WATER, "")),
         finding(
-            "UnsupportedVersion",
+            "core/no_parser_for_version",
             "format_version",
             &no_parser("1.21.30")
         )
@@ -375,7 +419,7 @@ fn l10_w07_k04_below_the_first_struct_there_is_no_parser() {
     assert_eq!(
         one_error::<CubemapSettings>(&doc("1.21.120", CUBEMAP, "")),
         finding(
-            "UnsupportedVersion",
+            "core/no_parser_for_version",
             "format_version",
             &no_parser("1.21.120")
         )
@@ -383,7 +427,7 @@ fn l10_w07_k04_below_the_first_struct_there_is_no_parser() {
     assert_eq!(
         one_error::<ShadowSettings>(&doc("1.21.70", SHADOWS, "")),
         finding(
-            "UnsupportedVersion",
+            "core/no_parser_for_version",
             "format_version",
             &no_parser("1.21.70")
         )
@@ -391,7 +435,7 @@ fn l10_w07_k04_below_the_first_struct_there_is_no_parser() {
     assert_eq!(
         one_error::<LocalLightSettings>(&doc("1.21.110", LOCAL, "")),
         finding(
-            "UnsupportedVersion",
+            "core/no_parser_for_version",
             "format_version",
             &no_parser("1.21.110")
         )
@@ -399,7 +443,7 @@ fn l10_w07_k04_below_the_first_struct_there_is_no_parser() {
     assert_eq!(
         one_error::<PbrFallbackSettings>(&doc("1.21.39", PBR, "")),
         finding(
-            "UnsupportedVersion",
+            "core/no_parser_for_version",
             "format_version",
             &no_parser("1.21.39")
         )
@@ -418,12 +462,12 @@ fn c09_an_unknown_member_is_kept_with_a_warning_deviation() {
         infos(document.diagnostics()),
         [
             finding(
-                "UnrecognizedField",
+                "core/unrecognized_field",
                 "minecraft:shadow_settings/mystery",
                 "unrecognized field"
             ),
             finding(
-                "UnrecognizedField",
+                "core/unrecognized_field",
                 "minecraft:shadow_settings/extra",
                 "unrecognized field"
             ),
@@ -460,7 +504,7 @@ fn an_empty_file_and_a_non_object_root_are_rejected() {
     assert_eq!(rejects::<ShadowSettings>("").iter().count(), 1);
     assert_eq!(
         at(&errors(&rejects::<ShadowSettings>("[]"))),
-        [("MalformedInput", "")]
+        [("core/document_json", "")]
     );
     let d = ShadowSettings::parse(
         &bedrock_addon::storage::PackPath::from_static("shadows/global.json"),
@@ -469,7 +513,7 @@ fn an_empty_file_and_a_non_object_root_are_rejected() {
     )
     .unwrap_err()
     .diagnostics;
-    assert_eq!(at(&errors(&d)), [("MalformedInput", "")]);
+    assert_eq!(at(&errors(&d)), [("core/syntax", "")]);
 }
 
 #[test]
@@ -482,7 +526,7 @@ fn a_payload_that_is_no_object_is_a_type_error() {
                 r#"{{"format_version": "{}", "{key}": {payload}}}"#,
                 version_of(key)
             );
-            let expected = finding("InvalidType", key, "expected an object");
+            let expected = finding("core/expected_object", key, "expected an object");
             let found = match key {
                 LIGHTING => one_error::<LightingSettings>(&json),
                 WATER => one_error::<WaterSettings>(&json),

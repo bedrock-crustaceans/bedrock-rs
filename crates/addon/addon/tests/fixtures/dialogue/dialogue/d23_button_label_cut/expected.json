@@ -3,7 +3,7 @@
   "rejected": 0,
   "diagnostics": [
     {
-      "code": "ClampedValue",
+      "code": "core/clamped_value",
       "severity": "info",
       "path": "dialogue/labels.json",
       "json_path": "minecraft:npc_dialogue/scenes/0/buttons/0/name"

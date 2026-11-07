@@ -235,11 +235,11 @@ fn an_unloaded_pack_lists_its_files_without_their_bytes() {
                 .as_ref()
                 .is_some_and(|path| *path == lamp)
         })
-        .map(|finding| finding.code.name())
+        .map(|finding| finding.code.id())
         .collect();
     // The file is a block: without the block collection nothing asks for it at the load.
     if cfg!(feature = "block") {
-        assert_eq!(loaded, ["FileNotLoaded"]);
+        assert_eq!(loaded, ["core/file_not_loaded"]);
     } else {
         assert_eq!(loaded, [""; 0]);
     }

@@ -29,7 +29,7 @@ fn findings<T: Content>(path: &'static str, text: &str) -> Vec<Diagnostic> {
 
 /// The variant name of a finding's code.
 fn code(finding: &Diagnostic) -> String {
-    finding.code.name().to_owned()
+    finding.code.id().to_owned()
 }
 
 /// Requires the findings at `at` among `found` to be `expected`, by code and severity: what
@@ -73,54 +73,54 @@ told_once! {
     // `MinecraftDocumentInput`'s error.
     block_friction: bedrock_addon::families::block::Block, "blocks/x.json",
         r#"{"format_version": "1.21.60", "minecraft:block": {"description": {"identifier": "demo:x"}, "components": {"minecraft:friction": 1e999}}}"#,
-        "" => "MalformedInput" Error; // a `MinecraftDocumentInput` refuses the number
+        "" => "core/document_json" Error; // a `MinecraftDocumentInput` refuses the number
     block_light_emission: bedrock_addon::families::block::Block, "blocks/x.json",
         r#"{"format_version": "1.21.60", "minecraft:block": {"description": {"identifier": "demo:x"}, "components": {"minecraft:light_emission": 1e999}}}"#,
-        "" => "MalformedInput" Error; // a `MinecraftDocumentInput` refuses the number
+        "" => "core/document_json" Error; // a `MinecraftDocumentInput` refuses the number
     block_seconds_to_destroy: bedrock_addon::families::block::Block, "blocks/x.json",
         r#"{"format_version": "1.21.60", "minecraft:block": {"description": {"identifier": "demo:x"}, "components": {"minecraft:destructible_by_mining": {"seconds_to_destroy": 1e999}}}}"#,
-        "" => "MalformedInput" Error; // a `MinecraftDocumentInput` refuses the number
+        "" => "core/document_json" Error; // a `MinecraftDocumentInput` refuses the number
     item_max_stack_size: bedrock_addon::families::item::Item, "items/x.json",
         r#"{"format_version": "1.21.0", "minecraft:item": {"description": {"identifier": "demo:x"}, "components": {"minecraft:max_stack_size": 1e999, "minecraft:glint": true}}}"#,
-        "" => "MalformedInput" Error, "MalformedInput" Error; // refused
+        "" => "item/root_not_object" Error, "item/invalid_json_object" Error; // refused
     // A plain float member: the number is read at the width of a float, and the one
     // finding is the clamp's information; a number no double holds refuses the
     // item (a `MinecraftDocumentInput`).
     item_cooldown_duration_beyond_a_float: bedrock_addon::families::item::Item, "items/x.json",
         r#"{"format_version": "1.21.0", "minecraft:item": {"description": {"identifier": "demo:x"}, "components": {"minecraft:cooldown": {"category": "demo", "duration": 1e39}}}}"#,
-        "minecraft:item/components/minecraft:cooldown/duration" => "InvalidValue" Info;
+        "minecraft:item/components/minecraft:cooldown/duration" => "core/invalid_value" Info;
     item_cooldown_duration_beyond_a_double: bedrock_addon::families::item::Item, "items/x.json",
         r#"{"format_version": "1.21.0", "minecraft:item": {"description": {"identifier": "demo:x"}, "components": {"minecraft:cooldown": {"category": "demo", "duration": 1e999}}}}"#,
-        "" => "MalformedInput" Error, "MalformedInput" Error; // refused
+        "" => "item/root_not_object" Error, "item/invalid_json_object" Error; // refused
     spawn_weight_default: bedrock_addon::families::spawn_rules::SpawnRules, "spawn_rules/x.json",
         r#"{"format_version": "1.8.0", "minecraft:spawn_rules": {"description": {"identifier": "demo:x", "population_control": "animal"}, "conditions": [{"minecraft:spawns_on_surface": {}, "minecraft:weight": {"default": 1e999}}]}}"#,
-        "minecraft:spawn_rules/conditions/0/minecraft:weight/default" => "InvalidType" Info;
+        "minecraft:spawn_rules/conditions/0/minecraft:weight/default" => "core/invalid_type" Info;
     loot_rolls: bedrock_addon::families::loot::LootTable, "loot_tables/x.json",
         r#"{"pools": [{"rolls": 1e999, "entries": [{"type": "item", "name": "minecraft:stone"}]}]}"#,
-        "pools/0/rolls" => "InvalidType" Info;
+        "pools/0/rolls" => "core/invalid_type" Info;
     recipe_result_count: bedrock_addon::families::recipe::Recipe, "recipes/x.json",
         r#"{"format_version": "1.12.0", "minecraft:recipe_shapeless": {"description": {"identifier": "demo:x"}, "tags": ["crafting_table"], "ingredients": ["minecraft:stone"], "result": {"item": "minecraft:stone", "count": 1e999}}}"#,
-        "minecraft:recipe_shapeless/result/count" => "InvalidType" Info;
+        "minecraft:recipe_shapeless/result/count" => "core/invalid_type" Info;
     biome_climate_temperature: bedrock_addon::families::biome::Biome, "biomes/x.json",
         r#"{"format_version": "1.21.110", "minecraft:biome": {"description": {"identifier": "demo:x"}, "components": {"minecraft:climate": {"temperature": 1e999}}}}"#,
-        "" => "MalformedInput" Error; // refused
+        "" => "core/document_json" Error; // refused
     // A `format_version` that gives no version (the clamped double's text is none) is
     // "Malformed format version" before any reader runs: one error, no clamp warning.
     manifest_format_version: bedrock_addon::manifest::Manifest, "manifest.json",
         r#"{"format_version": 1e999, "header": {"name": "x", "uuid": "00000000-0000-0000-0000-000000000001", "version": [1, 0, 0], "min_engine_version": [1, 21, 0]}, "modules": [{"type": "data", "uuid": "00000000-0000-0000-0000-000000000002", "version": [1, 0, 0]}]}"#,
-        "format_version" => "MalformedFormatVersion" Error;
+        "format_version" => "core/malformed_format_version" Error;
     terrain_texture_mip_fade_amount: bedrock_addon::families::texture_atlas::TextureAtlas, "textures/terrain_texture.json",
         r#"{"texture_name": "atlas.terrain", "texture_data": {"dirt": {"textures": "textures/blocks/dirt", "mip_fade_amount": 1e999}}}"#,
-        "texture_data/dirt/mip_fade_amount" => "InvalidValue" Info;
+        "texture_data/dirt/mip_fade_amount" => "core/invalid_value" Info;
     atlas_padding: bedrock_addon::families::texture_atlas::TextureAtlas, "textures/terrain_texture.json",
         r#"{"texture_name": "atlas.terrain", "padding": 1e999, "texture_data": {"dirt": {"textures": "textures/blocks/dirt"}}}"#,
-        "padding" => "InvalidValue" Info;
+        "padding" => "core/invalid_value" Info;
     flipbook_ticks_per_frame: bedrock_addon::families::flipbooks::Flipbooks, "textures/flipbook_textures.json",
         r#"[{"flipbook_texture": "textures/blocks/x", "atlas_tile": "x", "ticks_per_frame": 1e999}]"#,
-        "0/ticks_per_frame" => "InvalidValue" Info;
+        "0/ticks_per_frame" => "core/invalid_value" Info;
     music_min_delay: bedrock_addon::families::music::MusicDefinitions, "sounds/music_definitions.json",
         r#"{"game": {"event_name": "music.game", "min_delay": 1e999, "max_delay": 180.5, "replace": false}, "format_version": "1.0.0"}"#,
-        "game/min_delay" => "InvalidValue" Info;
+        "game/min_delay" => "core/invalid_value" Info;
 }
 
 /// A manifest refuses a version with an element that is no integer at the version itself:
@@ -138,7 +138,7 @@ fn manifest_header_version_patch() {
     assert_eq!(
         told,
         [(
-            "WrongTypeProperty".to_owned(),
+            "core/manifest_wrong_type".to_owned(),
             Severity::Error,
             "header/version".to_owned()
         )]
@@ -165,15 +165,15 @@ fn flipbook_ticks_per_frame_in_a_stack() {
         &found,
         "0/ticks_per_frame",
         // the flipbook load lints are informations
-        &[("InvalidValue", Severity::Info)],
+        &[("core/invalid_value", Severity::Info)],
     );
     // The lower copy's number is below 1 as an integer: its two findings, and no third.
     assert_told_once(
         &found,
         "1/ticks_per_frame",
         &[
-            ("InvalidValue", Severity::Info),
-            ("ClampedValue", Severity::Info),
+            ("core/invalid_value", Severity::Info),
+            ("core/clamped_value", Severity::Info),
         ],
     );
 }

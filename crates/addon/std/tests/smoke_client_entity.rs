@@ -77,12 +77,12 @@ impl Tally {
         let mut unsupported = Vec::new();
         for diagnostic in registry.diagnostics() {
             let diagnostic: &Diagnostic = diagnostic;
-            if diagnostic.code.name() == "UnsupportedFileFormat" {
+            if diagnostic.code.id() == "core/unsupported_file_format" {
                 unsupported.push(diagnostic.to_string());
             } else if diagnostic.severity >= Severity::Error {
                 self.errors.push(format!("{}: {diagnostic}", at.display()));
             } else {
-                let key = format!("{:?} {}", diagnostic.severity, diagnostic.code.name());
+                let key = format!("{:?} {}", diagnostic.severity, diagnostic.code.id());
                 if diagnostic.severity == Severity::Warning
                     && self.findings.get(&key).is_none_or(|n| *n < 3)
                 {

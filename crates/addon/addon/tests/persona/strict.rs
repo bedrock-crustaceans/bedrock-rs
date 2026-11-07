@@ -43,7 +43,7 @@ fn a_meta_file_with_the_required_members_loads() {
 fn an_unknown_member_invalidates_the_piece() {
     assert_eq!(
         refused_with(r#""hat_size": 3"#),
-        ["error UnrecognizedField hat_size"]
+        ["error core/unrecognized_field hat_size"]
     );
 }
 
@@ -52,7 +52,7 @@ fn color_swatches_is_no_member_from_1_26_40() {
     // the string is not in the game; M3.
     assert_eq!(
         refused_with(r#""color_swatches": ["primary"]"#),
-        ["error UnrecognizedField color_swatches"]
+        ["error core/unrecognized_field color_swatches"]
     );
 }
 
@@ -78,7 +78,7 @@ fn an_unknown_member_of_an_entry_invalidates_the_piece() {
     ] {
         assert_eq!(
             refused_with(members),
-            [format!("error UnrecognizedField {path}")],
+            [format!("error core/unrecognized_field {path}")],
             "{members}"
         );
     }
@@ -106,7 +106,7 @@ fn a_name_outside_the_bound_enum_invalidates_the_piece() {
     ] {
         assert_eq!(
             refused_with(members),
-            [format!("error InvalidEnumValue {path}")],
+            [format!("error core/invalid_enum_line {path}")],
             "{members}"
         );
     }
@@ -130,7 +130,7 @@ fn a_piece_type_outside_the_bound_enum_invalidates_the_piece() {
         );
         assert_eq!(
             refused(&load(&text)),
-            ["error InvalidEnumValue piece_type"],
+            ["error core/invalid_enum_line piece_type"],
             "{name}"
         );
     }
@@ -182,7 +182,7 @@ fn a_member_of_another_json_type_invalidates_the_piece() {
     ] {
         assert_eq!(
             refused_with(members),
-            [format!("error InvalidType {path}")],
+            [format!("error core/invalid_type {path}")],
             "{members}"
         );
     }
@@ -204,12 +204,12 @@ fn a_null_member_invalidates_the_piece() {
     ] {
         assert_eq!(
             refused_with(members),
-            [format!("error InvalidType {path}")],
+            [format!("error core/invalid_type {path}")],
             "{members}"
         );
     }
     let text = r#"{ "piece_id": null, "piece_name": "hat", "piece_type": "persona_hair" }"#;
-    assert_eq!(refused(&load(text)), ["error InvalidType piece_id"]);
+    assert_eq!(refused(&load(text)), ["error core/invalid_type piece_id"]);
 }
 
 #[test]
@@ -228,7 +228,7 @@ fn a_missing_required_member_invalidates_the_piece() {
     ] {
         assert_eq!(
             refused(&load(text)),
-            [format!("error MissingRequiredField {path}")],
+            [format!("error core/missing_required_field {path}")],
             "{text}"
         );
     }
@@ -249,7 +249,7 @@ fn a_missing_required_member_invalidates_the_piece() {
     ] {
         assert_eq!(
             refused_with(members),
-            [format!("error MissingRequiredField {path}")],
+            [format!("error core/missing_required_field {path}")],
             "{members}"
         );
     }

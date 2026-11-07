@@ -218,7 +218,7 @@ const TOLD_NOT_WRITTEN: &[(&str, &str, Phase, &str, &str)] = &[(
     "item",
     "item without components",
     Phase::Validate,
-    "InvalidValue",
+    "core/invalid_value",
     "no registered component is left",
 )];
 
@@ -426,7 +426,7 @@ fn written(
                             // The load's own word that the newest format does not hold
                             // it: an information of ours.
                             finding.severity == Severity::Info
-                                && finding.code.name() == *code
+                                && finding.code.id() == *code
                                 && matches!(
                                     finding.detail.as_deref(),
                                     Some(bedrock_addon::diagnostic::DiagnosticDetail::Note(text))

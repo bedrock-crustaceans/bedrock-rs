@@ -153,7 +153,7 @@ fn s03_only_beta_loads_and_every_pack_may_load_it() {
         assert_eq!(
             refused(&text),
             [error(
-                "UnsupportedVersion",
+                "core/no_parser_for_version",
                 "format_version",
                 &format!("{NO_PARSER}{version}")
             )],
@@ -176,7 +176,7 @@ fn s03_only_beta_loads_and_every_pack_may_load_it() {
     assert_eq!(
         refused(&text),
         [error(
-            "UnsupportedVersion",
+            "ddui/no_valid_version",
             "format_version",
             "no valid version passed by the caller or found in the input"
         )]
@@ -189,7 +189,7 @@ fn s04_a_style_without_a_component_is_refused() {
     assert_eq!(
         refused(&style_json("")),
         [error(
-            "InvalidValue",
+            "core/invalid_value",
             "minecraft:ui-style/components",
             "invalid value"
         )]
@@ -200,12 +200,12 @@ fn s04_a_style_without_a_component_is_refused() {
         refused(&text),
         [
             error(
-                "UnrecognizedField",
+                "core/unrecognized_field",
                 "minecraft:ui-style/parts",
                 "unrecognized field"
             ),
             error(
-                "MissingRequiredField",
+                "core/missing_required_field",
                 "minecraft:ui-style/components",
                 "missing required field"
             ),
@@ -221,7 +221,7 @@ fn s05_an_unknown_component_or_member_refuses_the_file() {
     assert_eq!(
         refused(&text),
         [error(
-            "UnrecognizedComponent",
+            "core/unrecognized_component",
             "minecraft:ui-style/components/minecraft:form_button",
             "unrecognized component"
         )]
@@ -230,7 +230,7 @@ fn s05_an_unknown_component_or_member_refuses_the_file() {
     assert_eq!(
         refused(&text),
         [error(
-            "UnrecognizedField",
+            "core/unrecognized_field",
             "minecraft:ui-style/components/minecraft:form_panel/margin",
             "unrecognized field"
         )]
@@ -242,7 +242,7 @@ fn s05_an_unknown_component_or_member_refuses_the_file() {
     assert_eq!(
         refused(&text),
         [error(
-            "UnrecognizedField",
+            "core/unrecognized_field",
             "minecraft:ui-style/description/name",
             "unrecognized field"
         )]
@@ -274,7 +274,7 @@ fn s06_a_null_member_is_a_wrong_type() {
         assert_eq!(got.len(), 1, "{member}: {got:?}");
         assert_eq!(
             (got[0].0, got[0].1, got[0].2.as_str()),
-            (Severity::Error, "InvalidType", at)
+            (Severity::Error, "core/invalid_type", at)
         );
     }
 }
@@ -301,31 +301,35 @@ fn s07_a_padding_is_two_or_four_integers() {
     assert_eq!(read("[1, 2, 3, 4]"), Some(BoxSize::Four([1, 2, 3, 4])));
     assert_eq!(BoxSize::Two([1, 2]).sides(), [1, 2, 1, 2]);
     round_trips(&padding("[0, 2147483647, -2147483648, 3]"));
-    for (value, text) in [
-        ("[]", BOX_2),
-        ("[1]", BOX_2),
-        ("[1, 2, 3]", BOX_4),
-        ("[1, 2, 3, 4, 5]", BOX_4),
-        ("[2147483648, 0]", BOX_2),
-        ("[-2147483649, 0]", BOX_2),
+    for (value, text, id) in [
+        ("[]", BOX_2, "ddui/box_size_2"),
+        ("[1]", BOX_2, "ddui/box_size_2"),
+        ("[1, 2, 3]", BOX_4, "ddui/box_size_4"),
+        ("[1, 2, 3, 4, 5]", BOX_4, "ddui/box_size_4"),
+        ("[2147483648, 0]", BOX_2, "ddui/box_size_2"),
+        ("[-2147483649, 0]", BOX_2, "ddui/box_size_2"),
     ] {
-        assert_eq!(
-            refused(&padding(value)),
-            [error("InvalidValue", at, text)],
-            "{value}"
-        );
+        assert_eq!(refused(&padding(value)), [error(id, at, text)], "{value}");
     }
     assert_eq!(
         refused(&padding("[1.5, 2]")),
-        [error("InvalidType", &format!("{at}/0"), "wrong JSON type")]
+        [error(
+            "core/invalid_type",
+            &format!("{at}/0"),
+            "wrong JSON type"
+        )]
     );
     assert_eq!(
         refused(&padding("[1, \"2\"]")),
-        [error("InvalidType", &format!("{at}/1"), "wrong JSON type")]
+        [error(
+            "core/invalid_type",
+            &format!("{at}/1"),
+            "wrong JSON type"
+        )]
     );
     assert_eq!(
         refused(&padding("4")),
-        [error("InvalidType", at, "wrong JSON type")]
+        [error("core/invalid_type", at, "wrong JSON type")]
     );
 }
 
@@ -359,30 +363,30 @@ fn s08_a_colour_is_rgba_or_rgb_as_integers_or_hex() {
     assert_eq!(rgb, StyleColor::HexRgb("#aBcDeF".to_owned()));
     assert_eq!(rgb.rgba(), Some([0xab, 0xcd, 0xef, 0xff]));
     round_trips(&label(r##""#40aBcDeF""##));
-    for (value, text) in [
-        ("[256, 0, 0, 0]", RGBA),
-        ("[-1, 0, 0, 0]", RGBA),
-        ("[0, 0]", RGBA),
-        ("[0, 0, 0, 0, 0]", RGBA),
-        ("[256, 0, 0]", RGB),
-        (r##""#12345""##, RGBA),
-        (r##""#GGGGGG""##, RGB),
-        (r#""FFFFFFFF""#, RGBA),
-        (r#""""#, RGBA),
+    for (value, text, id) in [
+        ("[256, 0, 0, 0]", RGBA, "ddui/color_rgba"),
+        ("[-1, 0, 0, 0]", RGBA, "ddui/color_rgba"),
+        ("[0, 0]", RGBA, "ddui/color_rgba"),
+        ("[0, 0, 0, 0, 0]", RGBA, "ddui/color_rgba"),
+        ("[256, 0, 0]", RGB, "ddui/color_rgb"),
+        (r##""#12345""##, RGBA, "ddui/color_rgba"),
+        (r##""#GGGGGG""##, RGB, "ddui/color_rgb"),
+        (r#""FFFFFFFF""#, RGBA, "ddui/color_rgba"),
+        (r#""""#, RGBA, "ddui/color_rgba"),
     ] {
-        assert_eq!(
-            refused(&label(value)),
-            [error("InvalidValue", at, text)],
-            "{value}"
-        );
+        assert_eq!(refused(&label(value)), [error(id, at, text)], "{value}");
     }
     assert_eq!(
         refused(&label("[1, 2, 3.0]")),
-        [error("InvalidType", &format!("{at}/2"), "wrong JSON type")]
+        [error(
+            "core/invalid_type",
+            &format!("{at}/2"),
+            "wrong JSON type"
+        )]
     );
     assert_eq!(
         refused(&label("{}")),
-        [error("InvalidType", at, "wrong JSON type")]
+        [error("core/invalid_type", at, "wrong JSON type")]
     );
 }
 
@@ -395,7 +399,7 @@ fn s09_a_text_field_needs_its_four_colours() {
     assert_eq!(
         refused(&text),
         [error(
-            "MissingRequiredField",
+            "core/missing_required_field",
             "minecraft:ui-style/components/minecraft:form_textfield/selection_background_color",
             "missing required field"
         )]
@@ -429,13 +433,13 @@ fn s10_an_image_repeat_is_stretch_or_repeat() {
     for value in [r#""Stretch""#, r#""tile""#, r#""""#] {
         assert_eq!(
             refused(&panel(value)),
-            [error("InvalidValue", at, "invalid value")],
+            [error("core/invalid_value", at, "invalid value")],
             "{value}"
         );
     }
     assert_eq!(
         refused(&panel("0")),
-        [error("InvalidType", at, "wrong JSON type")]
+        [error("core/invalid_type", at, "wrong JSON type")]
     );
 }
 
@@ -449,7 +453,7 @@ fn s11_the_namespace_rules_of_roots_hold_for_styles() {
     assert_eq!(
         got,
         [error(
-            "InvalidValue",
+            "ddui/not_namespaced",
             at,
             "string must be prefixed with a namespace (eg. namespace:value)"
         )]
@@ -458,7 +462,7 @@ fn s11_the_namespace_rules_of_roots_hold_for_styles() {
     let got = refused(&vanilla);
     assert_eq!(
         (got[0].0, got[0].1, got[0].2.as_str()),
-        (Severity::Error, "NamespaceRule", at)
+        (Severity::Error, "ddui/external_namespace", at)
     );
     assert!(
         got[0].3.starts_with(
@@ -469,7 +473,7 @@ fn s11_the_namespace_rules_of_roots_hold_for_styles() {
     let got = found(&rejects(style_in(&style_json(components), &cx(E60, true))));
     assert_eq!(
         (got[0].0, got[0].1, got[0].2.as_str()),
-        (Severity::Error, "NamespaceRule", at)
+        (Severity::Error, "ddui/builtin_namespace", at)
     );
     assert!(
         got[0].3.starts_with(
@@ -558,8 +562,8 @@ fn s14_the_stack_stores_styles_by_identifier() {
         document.components.form_label.as_ref().unwrap().color,
         Some(StyleColor::Rgb([2, 2, 2]))
     );
-    let codes: Vec<&str> = ui.diagnostics().map(|f| f.code.name()).collect();
-    assert_eq!(codes, ["ShadowedDefinition", "IgnoredFile"]);
+    let codes: Vec<&str> = ui.diagnostics().map(|f| f.code.id()).collect();
+    assert_eq!(codes, ["core/shadowed_definition", "core/ignored_file"]);
     assert!(ui.roots.is_empty() && ui.compositions.is_empty());
     // A refused style is no style, and its findings are the group's.
     let stack = super::common::stack(vec![external(

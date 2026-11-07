@@ -11,19 +11,19 @@
   },
   "diagnostics": [
     {
-      "code": "UnrecognizedField",
+      "code": "core/unrecognized_field",
       "severity": "warning",
       "path": "worldgen/structures/b_typed.json",
       "json_path": "minecraft:jigsaw/pool_aliases/0/type"
     },
     {
-      "code": "UnrecognizedField",
+      "code": "core/unrecognized_field",
       "severity": "warning",
       "path": "worldgen/structures/b_typed.json",
       "json_path": "minecraft:jigsaw/pool_aliases/1/type"
     },
     {
-      "code": "UnrecognizedField",
+      "code": "core/unrecognized_field",
       "severity": "warning",
       "path": "worldgen/structures/b_typed.json",
       "json_path": "minecraft:jigsaw/pool_aliases/2/type"

@@ -105,8 +105,8 @@ fn load_structures(driver: &Driver, repository: &PackRepository, packs_dir: &Pat
     };
     for finding in structures.diagnostics() {
         match finding.severity {
-            Severity::Info => outcome.infos.push(finding.code.name().to_owned()),
-            Severity::Warning => outcome.warnings.push(finding.code.name().to_owned()),
+            Severity::Info => outcome.infos.push(finding.code.id().to_owned()),
+            Severity::Warning => outcome.warnings.push(finding.code.id().to_owned()),
             _ => {}
         }
         if finding.severity < Severity::Error {

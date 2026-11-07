@@ -140,7 +140,7 @@ fn outcome(
                 matches!(segment, bedrock_addon_core::diagnostic::JsonPathSegment::Key(key) if key == member)
             })
         })
-        .map(|f| format!("{} {:?}", f.code.name(), f.severity))
+        .map(|f| format!("{} {:?}", f.code.id(), f.severity))
         .collect();
     match written {
         Ok(text) if text.contains(token) => {
@@ -296,27 +296,27 @@ fn every_member_of_the_legacy_reading_is_written_or_told_by_both_writers_at_ever
 /// What becomes of each member in each context, by the version the outcome starts at:
 /// `newest | as read`. (A third-party component-based item below 1.20.0 is rejected.)
 const EXPECTED: &[&str] = &[
-    "allow-listed: category `description:category` 1.16.100: told InvalidValue Info | written",
-    "allow-listed: category `description:category` 1.20.20: told DroppedField Info | written",
-    "allow-listed: category `description:category` 1.20.60: written, told UnrecognizedField Warning + InvalidValue Info | written, told UnrecognizedField Warning",
-    "allow-listed: category `description:category` 1.21.60: refused | written, told UnrecognizedField Warning",
-    "allow-listed: category `description:category` 1.21.110: written, told UnrecognizedField Warning + InvalidValue Info | written, told UnrecognizedField Warning",
+    "allow-listed: category `description:category` 1.16.100: told core/invalid_value Info | written",
+    "allow-listed: category `description:category` 1.20.20: told core/dropped_field Info | written",
+    "allow-listed: category `description:category` 1.20.60: written, told core/unrecognized_field Warning + core/invalid_value Info | written, told core/unrecognized_field Warning",
+    "allow-listed: category `description:category` 1.21.60: refused | written, told core/unrecognized_field Warning",
+    "allow-listed: category `description:category` 1.21.110: written, told core/unrecognized_field Warning + core/invalid_value Info | written, told core/unrecognized_field Warning",
     "allow-listed: category `description:category` 1.26.30: rejected | rejected",
     "allow-listed: block `minecraft:block` 1.16.100: written | written",
-    "allow-listed: mining_speed `minecraft:mining_speed` 1.16.100: told DroppedField Info | written",
-    "allow-listed: mining_speed `minecraft:mining_speed` 1.20.30: told DeprecatedMember Error | told DeprecatedMember Error",
+    "allow-listed: mining_speed `minecraft:mining_speed` 1.16.100: told core/dropped_field Info | written",
+    "allow-listed: mining_speed `minecraft:mining_speed` 1.20.30: told item/mining_speed_deprecated Error | told item/mining_speed_deprecated Error",
     "allow-listed: frame_count `minecraft:frame_count` 1.16.100: written | written",
-    "allow-listed: creative_category `minecraft:creative_category` 1.16.100: told DroppedField Info | written",
-    "allow-listed: creative_category `minecraft:creative_category` 1.20.20: told DeprecatedMember Error | told DeprecatedMember Error",
+    "allow-listed: creative_category `minecraft:creative_category` 1.16.100: told core/dropped_field Info | written",
+    "allow-listed: creative_category `minecraft:creative_category` 1.20.20: told item/creative_category_deprecated Error | told item/creative_category_deprecated Error",
     "allow-listed: tags `tag:zz_tag` 1.16.100: written | written",
-    "allow-listed: tags `tag:zz_tag` 1.20.50: told DeprecatedMember Error | told DeprecatedMember Error",
-    "allow-listed: is_glint `minecraft:foil` 1.16.100: told DroppedField Info | written",
-    "allow-listed: is_glint `minecraft:foil` 1.20.20: told DeprecatedMember Error | told DeprecatedMember Error",
-    "allow-listed: seed `minecraft:seed` 1.16.100: told DroppedField Info | told DroppedField Info",
-    "allow-listed: seed `minecraft:seed` 1.19.83: told DeprecatedMember Warning | told DeprecatedMember Warning",
+    "allow-listed: tags `tag:zz_tag` 1.20.50: told item/tag_deprecated Error | told item/tag_deprecated Error",
+    "allow-listed: is_glint `minecraft:foil` 1.16.100: told core/dropped_field Info | written",
+    "allow-listed: is_glint `minecraft:foil` 1.20.20: told item/foil_deprecated Error | told item/foil_deprecated Error",
+    "allow-listed: seed `minecraft:seed` 1.16.100: told core/dropped_field Info | told core/dropped_field Info",
+    "allow-listed: seed `minecraft:seed` 1.19.83: told item/seed_deprecated Warning | told item/seed_deprecated Warning",
     "allow-listed: shared `minecraft:use_duration` 1.16.100: written | written",
     "allow-listed: shared `minecraft:rarity` 1.16.100: written | written",
-    "allow-listed: shared `minecraft:use_modifiers` 1.16.100: told DroppedField Info | written, told DroppedField Info",
+    "allow-listed: shared `minecraft:use_modifiers` 1.16.100: told core/dropped_field Info | written, told core/dropped_field Info",
     "allow-listed: shared `minecraft:use_modifiers` 1.20.50: written | written",
     "allow-listed: shared `minecraft:hover_text_color` 1.16.100: written | written",
     "allow-listed: shared `minecraft:use_animation` 1.16.100: written | written",
@@ -331,36 +331,36 @@ const EXPECTED: &[&str] = &[
     "allow-listed: shared `minecraft:can_destroy_in_creative` 1.16.100: written | written",
     "allow-listed: shared `minecraft:allow_off_hand` 1.16.100: written | written",
     "third-party: category `description:category` 1.16.100: rejected | rejected",
-    "third-party: category `description:category` 1.20.0: told InvalidValue Info | written",
-    "third-party: category `description:category` 1.20.20: told DroppedField Info | written",
-    "third-party: category `description:category` 1.20.60: written, told UnrecognizedField Warning + InvalidValue Info | written, told UnrecognizedField Warning",
-    "third-party: category `description:category` 1.21.60: refused | written, told UnrecognizedField Warning",
-    "third-party: category `description:category` 1.21.110: written, told UnrecognizedField Warning + InvalidValue Info | written, told UnrecognizedField Warning",
+    "third-party: category `description:category` 1.20.0: told core/invalid_value Info | written",
+    "third-party: category `description:category` 1.20.20: told core/dropped_field Info | written",
+    "third-party: category `description:category` 1.20.60: written, told core/unrecognized_field Warning + core/invalid_value Info | written, told core/unrecognized_field Warning",
+    "third-party: category `description:category` 1.21.60: refused | written, told core/unrecognized_field Warning",
+    "third-party: category `description:category` 1.21.110: written, told core/unrecognized_field Warning + core/invalid_value Info | written, told core/unrecognized_field Warning",
     "third-party: category `description:category` 1.26.30: rejected | rejected",
     "third-party: block `minecraft:block` 1.16.100: rejected | rejected",
     "third-party: block `minecraft:block` 1.20.0: written | written",
     "third-party: mining_speed `minecraft:mining_speed` 1.16.100: rejected | rejected",
-    "third-party: mining_speed `minecraft:mining_speed` 1.20.0: told DroppedField Info | written",
-    "third-party: mining_speed `minecraft:mining_speed` 1.20.30: told DeprecatedMember Error | told DeprecatedMember Error",
+    "third-party: mining_speed `minecraft:mining_speed` 1.20.0: told core/dropped_field Info | written",
+    "third-party: mining_speed `minecraft:mining_speed` 1.20.30: told item/mining_speed_deprecated Error | told item/mining_speed_deprecated Error",
     "third-party: frame_count `minecraft:frame_count` 1.16.100: rejected | rejected",
     "third-party: frame_count `minecraft:frame_count` 1.20.0: written | written",
     "third-party: creative_category `minecraft:creative_category` 1.16.100: rejected | rejected",
-    "third-party: creative_category `minecraft:creative_category` 1.20.0: told DroppedField Info | written",
-    "third-party: creative_category `minecraft:creative_category` 1.20.20: told DeprecatedMember Error | told DeprecatedMember Error",
+    "third-party: creative_category `minecraft:creative_category` 1.20.0: told core/dropped_field Info | written",
+    "third-party: creative_category `minecraft:creative_category` 1.20.20: told item/creative_category_deprecated Error | told item/creative_category_deprecated Error",
     "third-party: tags `tag:zz_tag` 1.16.100: rejected | rejected",
     "third-party: tags `tag:zz_tag` 1.20.0: written | written",
-    "third-party: tags `tag:zz_tag` 1.20.50: told DeprecatedMember Error | told DeprecatedMember Error",
+    "third-party: tags `tag:zz_tag` 1.20.50: told item/tag_deprecated Error | told item/tag_deprecated Error",
     "third-party: is_glint `minecraft:foil` 1.16.100: rejected | rejected",
-    "third-party: is_glint `minecraft:foil` 1.20.0: told DroppedComponent Info | told DroppedComponent Info",
-    "third-party: is_glint `minecraft:foil` 1.20.20: told DeprecatedMember Error | told DeprecatedMember Error",
+    "third-party: is_glint `minecraft:foil` 1.20.0: told item/foil_ignored Info | told item/foil_ignored Info",
+    "third-party: is_glint `minecraft:foil` 1.20.20: told item/foil_deprecated Error | told item/foil_deprecated Error",
     "third-party: seed `minecraft:seed` 1.16.100: rejected | rejected",
-    "third-party: seed `minecraft:seed` 1.20.0: told DeprecatedMember Warning | told DeprecatedMember Warning",
+    "third-party: seed `minecraft:seed` 1.20.0: told item/seed_deprecated Warning | told item/seed_deprecated Warning",
     "third-party: shared `minecraft:use_duration` 1.16.100: rejected | rejected",
     "third-party: shared `minecraft:use_duration` 1.20.0: written | written",
     "third-party: shared `minecraft:rarity` 1.16.100: rejected | rejected",
     "third-party: shared `minecraft:rarity` 1.20.0: written | written",
     "third-party: shared `minecraft:use_modifiers` 1.16.100: rejected | rejected",
-    "third-party: shared `minecraft:use_modifiers` 1.20.0: told DroppedField Info | written, told DroppedField Info",
+    "third-party: shared `minecraft:use_modifiers` 1.20.0: told core/dropped_field Info | written, told core/dropped_field Info",
     "third-party: shared `minecraft:use_modifiers` 1.20.50: written | written",
     "third-party: shared `minecraft:hover_text_color` 1.16.100: rejected | rejected",
     "third-party: shared `minecraft:hover_text_color` 1.20.0: written | written",
@@ -400,7 +400,7 @@ fn an_item_written_as_it_was_read_has_only_the_members_of_its_format() {
             .map(|f| {
                 format!(
                     "{} {:?} at {}",
-                    f.code.name(),
+                    f.code.id(),
                     f.severity,
                     f.location.json_path
                 )
@@ -478,7 +478,7 @@ fn a_top_level_category_is_kept_where_its_format_tells_of_it_and_noted_where_it_
                 })
             })
             .filter(|f| f.location.json_path.segments().len() == 3)
-            .map(|f| format!("{} {:?} {:?}", f.code.name(), f.severity, f.phase))
+            .map(|f| format!("{} {:?} {:?}", f.code.id(), f.severity, f.phase))
             .collect()
     };
     for version in VERSIONS
@@ -490,7 +490,7 @@ fn a_top_level_category_is_kept_where_its_format_tells_of_it_and_noted_where_it_
             // a modern slice: the unknown member is an error that rejects the item
             assert_eq!(
                 at_category(&rejects(&text, &cx)),
-                ["UnrecognizedField Error Parse"],
+                ["core/unrecognized_field Error Parse"],
                 "{version}"
             );
             continue;
@@ -502,7 +502,7 @@ fn a_top_level_category_is_kept_where_its_format_tells_of_it_and_noted_where_it_
             let second = loads(&written, &cx);
             assert_eq!(
                 at_category(first.diagnostics()),
-                ["DroppedField Info Upgrade"],
+                ["core/dropped_field Info Upgrade"],
                 "{version}"
             );
             assert!(!written.contains("Nature"), "{version}: {written}");
@@ -520,8 +520,8 @@ fn a_top_level_category_is_kept_where_its_format_tells_of_it_and_noted_where_it_
             assert_eq!(
                 at_category(first.diagnostics()),
                 [
-                    "UnrecognizedField Warning Parse",
-                    "InvalidValue Info Validate"
+                    "core/unrecognized_field Warning Parse",
+                    "core/invalid_value Info Validate"
                 ],
                 "{version}"
             );
@@ -558,7 +558,7 @@ fn rarity_told(version: &str, value: &str) -> Vec<String> {
         .map(|f| {
             format!(
                 "{} {:?} at {}",
-                f.code.name(),
+                f.code.id(),
                 f.severity,
                 f.location.json_path
             )
@@ -694,14 +694,13 @@ fn an_unknown_member_of_a_side_car_digger_is_kept_and_told() {
         // item is refused; the reading of what is inside is still told.
         let diagnostics = findings(&text, &cx);
         assert!(
-            diagnostics
-                .iter()
-                .any(|f| f.severity == Severity::Error && f.code.name() == "DeprecatedMember"),
+            diagnostics.iter().any(|f| f.severity == Severity::Error
+                && f.code.id() == "item/deprecated_components_deprecated"),
             "{version}: {diagnostics:#?}"
         );
         let told: Vec<String> = diagnostics
             .iter()
-            .filter(|f| f.code.name() == "UnrecognizedField")
+            .filter(|f| f.code.id() == "core/unrecognized_field")
             .map(|f| format!("{:?} at {}", f.severity, f.location.json_path))
             .collect();
         let at = "minecraft:item/__deprecated_components/legacy_on_dig_trigger";
@@ -725,19 +724,19 @@ fn an_unknown_member_of_a_side_car_digger_is_kept_and_told() {
 const EXPECTED_UNREAD: &[(&str, &[&str], &str)] = &[
     (
         "[1]",
-        &["MalformedInput Info at minecraft:item/components/minecraft:rarity"],
+        &["core/syntax Info at minecraft:item/components/minecraft:rarity"],
         "absent",
     ),
     (
         "true",
-        &["InvalidType Info at minecraft:item/components/minecraft:rarity"],
+        &["core/invalid_type Info at minecraft:item/components/minecraft:rarity"],
         "absent",
     ),
     (
         r#"{"value": {"a": 1}}"#,
         &[
-            "DroppedComponent Info at minecraft:item/components/minecraft:rarity",
-            "InvalidType Info at minecraft:item/components/minecraft:rarity/value/a",
+            "core/dropped_component Info at minecraft:item/components/minecraft:rarity",
+            "core/invalid_type Info at minecraft:item/components/minecraft:rarity/value/a",
         ],
         "absent",
     ),
@@ -794,19 +793,12 @@ fn an_unknown_description_member_of_an_older_file_is_kept_and_told_only_by_the_n
     let told: Vec<String> = first
         .diagnostics()
         .iter()
-        .filter(|f| f.code.name() == "InvalidValue")
-        .map(|f| {
-            format!(
-                "{} {:?} at {}",
-                f.code.name(),
-                f.phase,
-                f.location.json_path
-            )
-        })
+        .filter(|f| f.code.id() == "core/invalid_value")
+        .map(|f| format!("{} {:?} at {}", f.code.id(), f.phase, f.location.json_path))
         .collect();
     assert_eq!(
         told,
-        ["InvalidValue Validate at minecraft:item/description/zz_unknown"]
+        ["core/invalid_value Validate at minecraft:item/description/zz_unknown"]
     );
     let written = written_at_1_26_0(&first.to_json());
     assert!(written.contains(r#""zz_unknown": 1"#), "{written}");
@@ -826,7 +818,7 @@ fn a_hand_written_side_car_refuses_the_item_as_a_deprecated_name() {
     let d = rejects(text, &cx);
     assert!(
         d.iter().any(|f| f.severity == Severity::Error
-            && f.code.name() == "DeprecatedMember"
+            && f.code.id() == "item/deprecated_components_deprecated"
             && f.location.json_path.to_string() == "minecraft:item/__deprecated_components"),
         "{d:#?}"
     );

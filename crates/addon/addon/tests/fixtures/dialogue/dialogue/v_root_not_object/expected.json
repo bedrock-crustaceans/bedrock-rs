@@ -3,21 +3,21 @@
   "rejected": 3,
   "diagnostics": [
     {
-      "code": "MalformedInput",
+      "code": "dialogue/root_not_object",
       "severity": "error",
       "path": "dialogue/array.json",
       "json_path": "",
       "text": "JSON: array.json has an error: \n Root value is not a object"
     },
     {
-      "code": "MalformedInput",
+      "code": "dialogue/root_not_object",
       "severity": "error",
       "path": "dialogue/null.json",
       "json_path": "",
       "text": "JSON: null.json has an error: \n Root value is not a object"
     },
     {
-      "code": "MalformedInput",
+      "code": "dialogue/root_not_object",
       "severity": "error",
       "path": "dialogue/number.json",
       "json_path": "",

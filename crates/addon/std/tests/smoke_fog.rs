@@ -100,17 +100,21 @@ fn assert_loads(
     tally.fogs = registry.len();
     let mut unsupported = Vec::new();
     for diagnostic in registry.diagnostics() {
-        if diagnostic.code.name() == "UnsupportedFileFormat" {
+        if diagnostic.code.id() == "core/unsupported_file_format" {
             unsupported.push(diagnostic.to_string());
         } else if diagnostic.severity >= Severity::Error {
             tally.errors.push(diagnostic.to_string());
         } else if diagnostic.severity == Severity::Warning {
-            *tally.warnings.entry(diagnostic.code.name()).or_insert(0) += 1;
+            *tally.warnings.entry(diagnostic.code.id()).or_insert(0) += 1;
         } else {
-            *tally.infos.entry(diagnostic.code.name()).or_insert(0) += 1;
+            *tally.infos.entry(diagnostic.code.id()).or_insert(0) += 1;
         }
     }
-    tally.shadowed = tally.infos.get("ShadowedDefinition").copied().unwrap_or(0);
+    tally.shadowed = tally
+        .infos
+        .get("core/shadowed_definition")
+        .copied()
+        .unwrap_or(0);
     tally.mcb = unsupported.len();
     if unsupported.len() > on_disk {
         tally.errors.extend(unsupported);

@@ -1,15 +1,15 @@
 //! `sounds.json`: the rows `sj02`–`sj16` of the fixtures (the vanilla row `sj01` is the smoke
 //! test's) and the rules of the file, both ends pinned.
 
-use bedrock_addon::diagnostic::Severity;
+use bedrock_addon::diagnostic::{Kind, Severity};
 use bedrock_addon::document::{Merged, RawLayer};
 use bedrock_addon::families::sounds_json::{SoundBindings, SoundRange};
 use bedrock_addon::load::LoadOptions;
 use bedrock_addon::pack::{PackStack, Resource};
 
 use super::common::{
-    BINDINGS, copies, describe, expect_clean, expect_none, expect_one, found, json, pack_bytes,
-    pack_of, stack_of,
+    BINDINGS, Findable, copies, describe, expect_clean, expect_none, expect_one, found, json,
+    pack_bytes, pack_of, stack_of,
 };
 
 /// A range of two bounds.
@@ -21,7 +21,7 @@ fn range(min: f32, max: f32) -> SoundRange {
 /// content-log error of `LevelSoundEventMap::getIdOtherwiseContentError`, after which the file
 /// loads, a kept error.
 fn unknown_events(sounds: &Merged<SoundBindings, RawLayer>) -> Vec<String> {
-    found(sounds, "UnknownSound")
+    found(sounds, "sounds_json/not_an_event")
         .iter()
         .filter(|d| d.severity == Severity::Error && d.kept)
         .map(|d| {
@@ -281,8 +281,8 @@ fn sj06_a_base_cycle_and_an_unknown_base() {
         paths_with(sounds, "Unknown block base sound 'nope'"),
         ["block_sounds/d/base"]
     );
-    assert_eq!(found(sounds, "ReferenceCycle").len(), 3);
-    assert_eq!(found(sounds, "UnresolvedReference").len(), 1);
+    assert_eq!(found(sounds, "sounds_json/recursive_base").len(), 3);
+    assert_eq!(found(sounds, "sounds_json/unknown_base").len(), 1);
     // the two lines are the game's content-log errors, the file loads: kept
     assert!(
         sounds
@@ -310,9 +310,9 @@ fn sj07_events_are_optional_only_with_a_base() {
         paths_with(sounds, "Expected \"events\" object"),
         ["block_sounds/bare", "entity_sounds/entities/pig"]
     );
-    assert_eq!(found(sounds, "MissingRequiredField").len(), 2);
+    assert_eq!(found(sounds, "sounds_json/expected_events").len(), 2);
     assert!(
-        found(sounds, "MissingRequiredField")
+        found(sounds, "sounds_json/expected_events")
             .iter()
             .all(|d| d.severity == Severity::Error && d.kept)
     );
@@ -328,7 +328,7 @@ fn a_section_or_entry_that_is_no_object_asks_for_no_events() {
         ],
     );
     let sounds = stack.sounds_json();
-    expect_none(sounds, "MissingRequiredField");
+    expect_none(sounds, "sounds_json/expected_events");
     // A block entry that is no object registers an empty type.
     assert!(sounds.block_sounds["stone"].sounds.events.is_empty());
     assert!(
@@ -353,7 +353,7 @@ fn a_section_or_entry_that_is_no_object_asks_for_no_events() {
     );
     expect_one(
         stack.sounds_json(),
-        "MissingRequiredField",
+        "sounds_json/expected_events",
         Severity::Error,
         "Expected \"events\" object",
     );
@@ -364,7 +364,7 @@ fn named_sounds_need_their_sounds_object() {
     let stack = copies(BINDINGS, &[r#"{"individual_named_sounds": {"volume": 1}}"#]);
     expect_one(
         stack.sounds_json(),
-        "MissingRequiredField",
+        "sounds_json/expected_sounds",
         Severity::Error,
         "Expected \"sounds\" object",
     );
@@ -374,7 +374,7 @@ fn named_sounds_need_their_sounds_object() {
     );
     expect_one(
         stack.sounds_json(),
-        "MissingRequiredField",
+        "sounds_json/expected_sounds",
         Severity::Error,
         "Expected \"sounds\" object",
     );
@@ -385,7 +385,7 @@ fn named_sounds_need_their_sounds_object() {
     ] {
         expect_none(
             copies(BINDINGS, &[silent]).sounds_json(),
-            "MissingRequiredField",
+            "sounds_json/expected_sounds",
         );
     }
     // Names compare with case.
@@ -462,7 +462,7 @@ fn sj10b_a_client_biome_ambient_sound_that_is_no_named_sound_is_an_unknown_sound
     let report = set.link();
     let unknown: Vec<_> = report
         .iter()
-        .filter(|d| d.code.name() == "UnknownSound")
+        .filter(|d| d.code.id() == "core/unknown_sound_worded")
         .collect();
     assert_eq!(unknown.len(), 1, "{unknown:#?}");
     assert_eq!(unknown[0].severity, Severity::Error);
@@ -514,7 +514,11 @@ fn sj11_variant_errors() {
             "entity_sounds/entities/scalar_map/variants"
         ]
     );
-    assert_eq!(found(sounds, "MissingRequiredField").len(), 4);
+    assert_eq!(
+        found(sounds, "sounds_json/expected_key").len()
+            + found(sounds, "sounds_json/expected_map").len(),
+        4
+    );
     let entities = &sounds.entity_sounds.entities;
     assert!(entities["none"].variants.is_none());
     let empty = entities["empty"].variants.as_ref().unwrap();
@@ -583,7 +587,7 @@ fn sj08_the_variant_key_keeps_the_supplying_packs_molang_version() {
         .as_object()
         .unwrap();
     assert_eq!(cat_json.get("__molang_version"), Some(&json("0")));
-    expect_none(sounds, "SoundsJsonTableCleared");
+    expect_none(sounds, "core/sounds_json_table_cleared");
 }
 
 #[test]
@@ -619,7 +623,7 @@ fn sj09_an_overlay_without_entity_sounds_leaves_the_entity_table() {
         );
         assert_eq!(bindings.entity_sounds.defaults.events["ambient"].sound, "d");
         assert_eq!(bindings.interactive_sounds.entity_sounds.entities.len(), 1);
-        expect_none(sounds, "SoundsJsonTableCleared");
+        expect_none(sounds, "core/sounds_json_table_cleared");
         assert_eq!(sounds.diagnostics().count(), 0, "{:#?}", describe(sounds));
         // Nothing the copy did not write reaches the merged document.
         let merged = bindings.json().as_object().unwrap();
@@ -666,18 +670,21 @@ fn sj09_an_overlay_with_entity_sounds_but_no_entities_clears_the_table() {
     );
     expect_one(
         sounds,
-        "SoundsJsonTableCleared",
+        "core/sounds_json_table_cleared",
         Severity::Info,
         "entity_sounds/entities",
     );
-    assert_eq!(pack_of(found(sounds, "SoundsJsonTableCleared")[0]), Some(0));
+    assert_eq!(
+        pack_of(found(sounds, "core/sounds_json_table_cleared")[0]),
+        Some(0)
+    );
     assert_eq!(sounds.diagnostics().count(), 1, "{:#?}", describe(sounds));
     // An `entity_sounds` that is no object is one without `entities` too.
     let stack = copies(BINDINGS, &[SJ09_BASE, r#"{ "entity_sounds": 5 }"#]);
     assert!(stack.sounds_json().entity_sounds.entities.is_empty());
     expect_one(
         stack.sounds_json(),
-        "SoundsJsonTableCleared",
+        "core/sounds_json_table_cleared",
         Severity::Info,
         "entity_sounds/entities",
     );
@@ -709,17 +716,17 @@ fn an_overlay_with_its_own_table_or_over_no_table_clears_nothing() {
             r#"{"entity_sounds": {"entities": {"cow": {"events": {}}}}}"#,
         ],
     );
-    expect_none(stack.sounds_json(), "SoundsJsonTableCleared");
+    expect_none(stack.sounds_json(), "core/sounds_json_table_cleared");
     assert_eq!(stack.sounds_json().entity_sounds.entities.len(), 2);
     let stack = copies(
         BINDINGS,
         &[r#"{"block_sounds": {}}"#, r#"{"block_sounds": {}}"#],
     );
-    expect_none(stack.sounds_json(), "SoundsJsonTableCleared");
+    expect_none(stack.sounds_json(), "core/sounds_json_table_cleared");
     // The lowest copy has nothing below it to clear.
     expect_none(
         copies(BINDINGS, &[r#"{"block_sounds": {}}"#]).sounds_json(),
-        "SoundsJsonTableCleared",
+        "core/sounds_json_table_cleared",
     );
 }
 
@@ -738,13 +745,13 @@ fn sj13_an_overlay_with_a_map_only_clears_the_key() {
     assert_eq!(variants.map.len(), 2);
     expect_one(
         sounds,
-        "MissingRequiredField",
+        "sounds_json/expected_key",
         Severity::Error,
         "Expected \"key\" expression for entity with sound variants",
     );
     expect_one(
         sounds,
-        "SoundsJsonTableCleared",
+        "core/sounds_json_table_cleared",
         Severity::Info,
         "entity_sounds/entities/cat/variants/key",
     );
@@ -752,12 +759,12 @@ fn sj13_an_overlay_with_a_map_only_clears_the_key() {
     let keyed = r#"{"entity_sounds": {"entities": {"cat": {"variants": {"key": "'y'", "map": {"y": {"events": {}}}}}}}}"#;
     expect_none(
         copies(BINDINGS, &[base, keyed]).sounds_json(),
-        "SoundsJsonTableCleared",
+        "core/sounds_json_table_cleared",
     );
     let plain = r#"{"entity_sounds": {"entities": {"cat": {"events": {}}}}}"#;
     expect_none(
         copies(BINDINGS, &[plain, over]).sounds_json(),
-        "SoundsJsonTableCleared",
+        "core/sounds_json_table_cleared",
     );
 }
 
@@ -776,7 +783,7 @@ fn sj12_an_interactive_variant_key_gets_no_injected_version() {
         "s"
     );
     // Ours: the info of rule 19, for the entry without a written version only.
-    let infos: Vec<String> = found(sounds, "InvalidValue")
+    let infos: Vec<String> = found(sounds, "core/invalid_value")
         .iter()
         .filter(|d| d.severity == Severity::Info)
         .map(|d| d.location.json_path.to_string())
@@ -785,7 +792,14 @@ fn sj12_an_interactive_variant_key_gets_no_injected_version() {
         infos,
         ["interactive_sounds/entity_sounds/entities/x/variants"]
     );
-    expect_none(sounds, "MissingRequiredField");
+    assert!(
+        sounds
+            .findings()
+            .iter()
+            .all(|d| d.code.kind() != Kind::MissingRequired),
+        "no missing required field in {:#?}",
+        describe(sounds)
+    );
 }
 
 #[test]
@@ -798,7 +812,14 @@ fn sj14_section_guards_and_interactive_defaults() {
                          "bare": {}}}}}"#],
     );
     let sounds = stack.sounds_json();
-    expect_none(sounds, "MissingRequiredField");
+    assert!(
+        sounds
+            .findings()
+            .iter()
+            .all(|d| d.code.kind() != Kind::MissingRequired),
+        "no missing required field in {:#?}",
+        describe(sounds)
+    );
     let interactive = &sounds.interactive_sounds.entity_sounds;
     let step = &interactive.defaults.events["step"]["default"];
     assert_eq!(
@@ -812,7 +833,7 @@ fn sj14_section_guards_and_interactive_defaults() {
     // `events` is never required here.
     assert!(interactive.entities["bare"].sounds.events.is_empty());
     // Ours (vanilla: dropped silently): the unknown event, an information.
-    let unknown = found(sounds, "UnknownSound");
+    let unknown = found(sounds, "core/unknown_sound");
     assert_eq!(unknown.len(), 1, "{:#?}", describe(sounds));
     assert_eq!(unknown[0].severity, Severity::Info);
     assert_eq!(sounds.diagnostics().count(), 1, "{:#?}", describe(sounds));
@@ -826,7 +847,7 @@ fn unknown_members_of_the_bindings_are_reported_and_the_known_ones_not() {
               "individual_event_sounds": {"events": {"break": {"sound": "a", "loud": 1}}, "odd": 1},
               "interactive_sounds": {"entities": null, "odd": 1}}"#],
     );
-    let paths: Vec<String> = found(stack.sounds_json(), "UnrecognizedField")
+    let paths: Vec<String> = found(stack.sounds_json(), "core/unrecognized_field")
         .iter()
         .map(|d| d.location.json_path.to_string())
         .collect();
@@ -879,7 +900,7 @@ mod molang {
         );
         let stack = versioned(&[(Some("[1, 21, 100]"), &text)], checked());
         let sounds = stack.sounds_json();
-        let invalid = found(sounds, "InvalidMolang");
+        let invalid = found(sounds, "core/invalid_molang");
         assert!(!invalid.is_empty(), "{:#?}", describe(sounds));
         for finding in &invalid {
             assert_eq!(
@@ -896,7 +917,7 @@ mod molang {
             describe(sounds)
         );
         assert!(invalid.iter().all(|d| !d.rejects()));
-        expect_none(sounds, "MolangLint");
+        expect_none(sounds, "core/molang_lint");
         assert_eq!(
             sounds.diagnostics().count(),
             invalid.len(),
@@ -941,7 +962,9 @@ mod molang {
             .diagnostics()
             .iter()
             // a kept error
-            .filter(|d| d.code.name() == "InvalidMolang" && d.severity == Severity::Error && d.kept)
+            .filter(|d| {
+                d.code.id() == "core/invalid_molang" && d.severity == Severity::Error && d.kept
+            })
             .map(ToString::to_string)
             .collect();
         assert!(
@@ -987,7 +1010,7 @@ mod molang {
                 .map(|v| v.0),
             Some(13)
         );
-        expect_none(sounds, "MolangNotChecked");
+        expect_none(sounds, "core/molang_not_checked");
     }
 }
 
@@ -1000,14 +1023,14 @@ fn without_the_compile_check_the_keys_are_counted_once() {
     // `LoadOptions::default()` carries no compile check, with or without the feature.
     let stack = copies(BINDINGS, &[text]);
     let sounds = stack.sounds_json();
-    expect_one(sounds, "MolangNotChecked", Severity::Info, "");
+    expect_one(sounds, "core/molang_not_checked", Severity::Info, "");
     assert_eq!(
-        found(sounds, "MolangNotChecked")[0]
+        found(sounds, "core/molang_not_checked")[0]
             .code
             .args_of(&bedrock_addon::diagnostic::codes::MOLANG_NOT_CHECKED),
         Some(&["2".to_owned()][..])
     );
-    expect_none(sounds, "InvalidMolang");
+    expect_none(sounds, "core/invalid_molang");
     // No key, no note.
     let stack = copies(
         BINDINGS,
@@ -1074,7 +1097,7 @@ fn an_unparsable_bindings_base_names_its_path() {
     let stack = copies(BINDINGS, &["nope", "{}"]);
     expect_one(
         stack.sounds_json(),
-        "MalformedInput",
+        "core/stack_top_unparsable",
         Severity::Error,
         "Could not parse file at the top of the stack: sounds.json.",
     );

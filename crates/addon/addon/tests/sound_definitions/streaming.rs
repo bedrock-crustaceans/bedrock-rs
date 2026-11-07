@@ -218,18 +218,11 @@ fn allow_concurrent_streaming_defaults_to_true_and_reads_as_written_from_1_26_50
     let findings: Vec<String> = document
         .diagnostics()
         .iter()
-        .map(|d| {
-            format!(
-                "{} {:?} {}",
-                d.code.name(),
-                d.severity,
-                d.location.json_path
-            )
-        })
+        .map(|d| format!("{} {:?} {}", d.code.id(), d.severity, d.location.json_path))
         .collect();
     assert_eq!(
         findings,
-        ["InvalidValue Info sound_definitions/x/sounds/0/allow_concurrent_streaming"]
+        ["core/invalid_value Info sound_definitions/x/sounds/0/allow_concurrent_streaming"]
     );
 }
 
@@ -257,10 +250,10 @@ fn the_ten_embedded_functional_documents_run_both_steps_without_a_message() {
         let findings: Vec<String> = document
             .diagnostics()
             .iter()
-            .map(|d| format!("{} {}", d.code.name(), d.location.json_path))
+            .map(|d| format!("{} {}", d.code.id(), d.location.json_path))
             .collect();
         let expected: &[&str] = if *name == "player-1" {
-            &["InvalidValue sound_definitions/game_music_event/category"]
+            &["core/invalid_value sound_definitions/game_music_event/category"]
         } else {
             &[]
         };

@@ -42,7 +42,7 @@ fn d01_union_sorted() {
 #[test]
 fn d02_defs_parse_error() {
     let stack = check("d02_defs_parse_error");
-    let text = &texts(&stack, "MalformedInput")[0];
+    let text = &texts(&stack, "json_ui/parse_error")[0];
     assert!(
         text.starts_with("JSON Parse error in file: ui/_ui_defs.json\n\n") && text.ends_with('\n'),
         "{text:?}"
@@ -57,7 +57,7 @@ fn d03_missing_file() {
     let missing = stack
         .ui()
         .diagnostics()
-        .find(|d| d.code.name() == "UnresolvedReference")
+        .find(|d| d.code.id() == "json_ui/not_loaded")
         .unwrap();
     // reported against the pack that lists the file, at its list
     assert_eq!(missing.location.pack.as_ref().unwrap().index(), Some(0));
@@ -87,7 +87,7 @@ fn a_finding_about_a_listed_file_is_at_its_element_of_the_list() {
     let mut at: Vec<(&str, Option<usize>, String, String)> = stack
         .ui()
         .diagnostics()
-        .filter(|d| matches!(d.code.name(), "UnresolvedReference" | "FileNotLoaded"))
+        .filter(|d| matches!(d.code.id(), "json_ui/not_loaded" | "core/file_not_loaded"))
         .map(|d| {
             assert_eq!(d.severity, Severity::Info);
             assert_eq!(
@@ -95,7 +95,7 @@ fn a_finding_about_a_listed_file_is_at_its_element_of_the_list() {
                 "ui/_ui_defs.json"
             );
             (
-                d.code.name(),
+                d.code.id(),
                 d.location.pack.as_ref().unwrap().index(),
                 d.location.json_path.to_string(),
                 d.code.to_string(),
@@ -115,18 +115,18 @@ fn a_finding_about_a_listed_file_is_at_its_element_of_the_list() {
     assert_eq!(
         at,
         [
-            row("FileNotLoaded", 0, "ui_defs/2", unread.clone()),
-            row("FileNotLoaded", 1, "ui_defs/2", unread),
+            row("core/file_not_loaded", 0, "ui_defs/2", unread.clone()),
+            row("core/file_not_loaded", 1, "ui_defs/2", unread),
             row(
-                "UnresolvedReference",
+                "json_ui/not_loaded",
                 0,
                 "ui_defs/3",
                 not_loaded("ui/yy.json")
             ),
             // the non-string element reads as the empty path (d05)
-            row("UnresolvedReference", 0, "ui_defs/4", not_loaded("")),
+            row("json_ui/not_loaded", 0, "ui_defs/4", not_loaded("")),
             row(
-                "UnresolvedReference",
+                "json_ui/not_loaded",
                 1,
                 "ui_defs/0",
                 not_loaded("ui/zz.json")
@@ -160,8 +160,8 @@ fn a_list_that_names_itself_or_the_global_variables_finds_both() {
     ];
     for packs in [&[files][..], &[files, files][..]] {
         let stack = stack_of(packs);
-        assert_eq!(texts(&stack, "UnresolvedReference"), Vec::<String>::new());
-        assert_eq!(texts(&stack, "FileNotLoaded"), Vec::<String>::new());
+        assert_eq!(texts(&stack, "json_ui/not_loaded"), Vec::<String>::new());
+        assert_eq!(texts(&stack, "core/file_not_loaded"), Vec::<String>::new());
         let ui = stack.ui();
         // what they always are
         assert!(ui.get(ROOT_NAMESPACE, "j").is_some());
@@ -187,7 +187,7 @@ fn a_list_that_names_itself_or_the_global_variables_finds_both() {
         "ui/_ui_defs.json",
         r#"{ "ui_defs": ["ui/_global_variables.json"] }"#,
     )]]);
-    assert_eq!(texts(&stack, "UnresolvedReference").len(), 1);
+    assert_eq!(texts(&stack, "json_ui/not_loaded").len(), 1);
 }
 
 #[test]
@@ -228,7 +228,7 @@ fn an_empty_combined_list_is_an_info_deviation() {
         assert_eq!(
             findings(&stack),
             vec![(
-                "NoUiDefinitions",
+                "core/no_ui_definitions",
                 Severity::Info,
                 "no UI definition files".to_owned()
             )]
@@ -241,7 +241,7 @@ fn an_empty_combined_list_is_an_info_deviation() {
     assert!(stack.ui().layers().is_empty());
     // one listed path is enough for no info, even when the file is missing
     let stack = stack_of(&[&[("ui/_ui_defs.json", r#"{ "ui_defs": ["ui/a.json"] }"#)]]);
-    assert!(texts(&stack, "NoUiDefinitions").is_empty());
+    assert!(texts(&stack, "core/no_ui_definitions").is_empty());
 }
 
 #[test]
@@ -258,7 +258,7 @@ fn a_listed_path_outside_ui_is_not_read_deviation() {
     assert_eq!(
         findings(&stack),
         vec![(
-            "FileNotLoaded",
+            "core/file_not_loaded",
             Severity::Info,
             "file indexed but not loaded".to_owned()
         )]
@@ -280,7 +280,7 @@ fn a_listed_file_that_is_no_json_file_is_not_read_deviation() {
         ("ui/b.JSON", r#"{ "j": { "type": "panel" } }"#),
     ]]);
     let found: Vec<&str> = findings(&stack).iter().map(|(name, _, _)| *name).collect();
-    assert_eq!(found, ["FileNotLoaded", "FileNotLoaded"]);
+    assert_eq!(found, ["core/file_not_loaded", "core/file_not_loaded"]);
     assert!(stack.ui().get(ROOT_NAMESPACE, "k").is_none());
     assert!(stack.ui().get(ROOT_NAMESPACE, "j").is_some());
 }
@@ -356,7 +356,7 @@ fn a_path_key_fails_at_each_step() {
             &[("ui/a.json", &overlay)],
         ]);
         assert_eq!(
-            texts(&stack, "UnresolvedReference"),
+            texts(&stack, "json_ui/pack_missing_control"),
             vec![format!("ui/a.json: Can't find the control: {key}")]
         );
     }
@@ -402,7 +402,7 @@ fn m09_three_packs_order() {
 #[test]
 fn m10_overlay_parse_error() {
     let stack = check("m10_overlay_parse_error");
-    let text = &texts(&stack, "MalformedInput")[0];
+    let text = &texts(&stack, "json_ui/pack_parse_error")[0];
     assert!(
         text.starts_with("ui/a.json: Unable to parse UI JSON file with stack: "),
         "{text:?}"
@@ -412,7 +412,7 @@ fn m10_overlay_parse_error() {
 #[test]
 fn m11_base_parse_error() {
     let stack = check("m11_base_parse_error");
-    let text = &texts(&stack, "MalformedInput")[0];
+    let text = &texts(&stack, "json_ui/parse_error")[0];
     assert!(
         text.starts_with("JSON Parse error in file: ui/a.json\n\n"),
         "{text:?}"
@@ -487,7 +487,7 @@ fn m15_invalid_child_names_base() {
     let finding = stack
         .ui()
         .diagnostics()
-        .find(|d| d.code.name() == "InvalidValue")
+        .find(|d| d.code.id() == "json_ui/invalid_names")
         .expect("the L5 finding");
     assert_eq!(finding.severity, Severity::Error);
     assert!(finding.kept, "{finding}");
@@ -501,7 +501,7 @@ fn an_empty_child_name_is_invalid_too() {
         r#"{ "namespace": "a", "leaf": { "type": "label", "text": "t" },
             "root": { "type": "panel", "controls": [ { "@a.leaf": {} }, { "x@a.leaf": {} } ] } }"#,
     );
-    let texts = texts(&stack, "InvalidValue");
+    let texts = texts(&stack, "json_ui/invalid_names");
     assert_eq!(texts.len(), 1);
     assert!(
         texts[0].contains("Controls:\n\nFile name:ui/a.json"),
@@ -538,7 +538,7 @@ fn names_already_invalid_in_the_base_are_not_reported_again() {
         &[("ui/a.json", r#"{ "root": { "layer": 1 } }"#)],
     ]);
     assert!(stack.ui().reports.is_empty());
-    assert_eq!(texts(&stack, "InvalidValue").len(), 1);
+    assert_eq!(texts(&stack, "json_ui/invalid_names").len(), 1);
 }
 
 #[test]
@@ -908,7 +908,7 @@ fn a_where_object_matches_on_one_equal_member_only() {
             .as_array()
             .unwrap()
             .len();
-        (left, texts(&stack, "UnmatchedCondition").len())
+        (left, texts(&stack, "core/unmatched_condition").len())
     };
     assert_eq!(removed(r##"{ "binding_name": "#b" }"##), (2, 0));
     // a member with another value, or one the element lacks, is no match
@@ -932,7 +932,7 @@ fn a_scalar_where_on_an_empty_array_matches_nothing() {
             r#"{ "root": { "modifications": [ { "array_name": "bindings", "operation": "remove", "where": true } ] } }"#,
         )],
     ]);
-    assert_eq!(texts(&stack, "UnmatchedCondition").len(), 1);
+    assert_eq!(texts(&stack, "core/unmatched_condition").len(), 1);
     // no array is invented where nothing was inserted
     assert!(
         control(&stack, ROOT_NAMESPACE, "root")
@@ -1003,7 +1003,11 @@ fn a_namespace_that_is_no_string_leaves_the_file_in_root() {
     assert!(stack.ui().get("_root", "k").is_some());
     assert_eq!(
         findings(&stack),
-        vec![("InvalidType", Severity::Info, "wrong JSON type".to_owned())]
+        vec![(
+            "core/invalid_type",
+            Severity::Info,
+            "wrong JSON type".to_owned()
+        )]
     );
 }
 
@@ -1037,7 +1041,7 @@ fn r05_cycle_deviation() {
 #[test]
 fn a_definition_that_names_itself_is_a_cycle() {
     let stack = one_file(r#"{ "namespace": "a", "k@a.k": { "type": "panel" } }"#);
-    assert_eq!(texts(&stack, "ReferenceCycle").len(), 1);
+    assert_eq!(texts(&stack, "core/reference_cycle").len(), 1);
 }
 
 #[test]
@@ -1186,7 +1190,7 @@ fn nesting_up_to_the_json_depth_limit_loads_and_deeper_is_no_json() {
     assert_eq!(depth, 40);
     // past the limit the copy is no JSON: the file contributes nothing
     let stack = one_file(&nested(60));
-    assert_eq!(texts(&stack, "MalformedInput").len(), 1);
+    assert_eq!(texts(&stack, "json_ui/parse_error").len(), 1);
     assert!(stack.ui().files.is_empty());
 }
 
@@ -1322,7 +1326,7 @@ fn a_cycle_of_twenty_thousand_bases_resolves_in_linear_time() {
         let (stack, took) = timed_load(&text);
         assert_eq!(stack.ui().controls().count(), count);
         // every member of the cycle is reported, and nothing is inherited from an empty cycle
-        assert_eq!(texts(&stack, "ReferenceCycle").len(), count);
+        assert_eq!(texts(&stack, "core/reference_cycle").len(), count);
         assert_eq!(control(&stack, "a", "d7").body(), json("{}"));
         took
     });
@@ -1405,7 +1409,7 @@ fn a_cycle_where_every_definition_adds_a_member_loads_in_linear_time() {
         }
         text.push_str(" }");
         let (stack, took) = timed_load(&text);
-        assert_eq!(texts(&stack, "ReferenceCycle").len(), count);
+        assert_eq!(texts(&stack, "core/reference_cycle").len(), count);
         let seventh = control(&stack, "a", "d7");
         assert_eq!(seventh.get("$m7"), Some(&json("7")));
         assert_eq!(seventh.get("$m6"), Some(&json("6")));
@@ -1452,7 +1456,7 @@ fn children_naming_the_definitions_of_a_long_chain_are_checked_in_linear_time() 
         // the one finding is the animation whose own `to` does not pair with the inherited
         // `from`
         assert_eq!(
-            texts(&stack, "InvalidValue"),
+            texts(&stack, "json_ui/x_count_differs"),
             ["The animation needs to have the same number x values."]
         );
         assert_eq!(findings(&stack).len(), 1, "{:?}", findings(&stack));
@@ -1580,7 +1584,7 @@ fn a_definition_leading_into_a_cycle_inherits_around_it_once() {
         control(&stack, "a", "q").body(),
         json(r#"{ "x": "q", "only_q": 2, "hole": 5, "only_p": 1 }"#)
     );
-    assert_eq!(texts(&stack, "ReferenceCycle").len(), 3);
+    assert_eq!(texts(&stack, "core/reference_cycle").len(), 3);
 }
 
 #[test]
@@ -1661,7 +1665,7 @@ fn a_null_member_of_a_base_is_not_inherited() {
 fn a_missing_base_is_reported_along_the_whole_chain() {
     let stack =
         one_file(r#"{ "namespace": "a", "k@j": { "type": "panel" }, "j@gone": { "layer": 1 } }"#);
-    assert_eq!(texts(&stack, "UnresolvedReference").len(), 2);
+    assert_eq!(texts(&stack, "core/unresolved_reference").len(), 2);
     assert_eq!(control(&stack, "a", "k").get("layer"), Some(&json("1")));
 }
 
@@ -1888,7 +1892,7 @@ fn the_table_and_control_creation_findings_are_informations() {
         .diagnostics()
         .map(|d| {
             (
-                d.code.name(),
+                d.code.id(),
                 d.severity,
                 d.detail.as_deref().map(ToString::to_string),
             )
@@ -1896,10 +1900,10 @@ fn the_table_and_control_creation_findings_are_informations() {
         .collect();
     let names: Vec<&str> = found.iter().map(|(name, _, _)| *name).collect();
     for code in [
-        "DuplicateIdentifier",
-        "UnresolvedReference",
-        "ReferenceCycle",
-        "MissingRequiredField",
+        "core/duplicate_identifier",
+        "core/unresolved_reference",
+        "core/reference_cycle",
+        "json_ui/type_not_specified",
     ] {
         assert!(names.contains(&code), "{code}: {found:#?}");
     }
@@ -1911,7 +1915,7 @@ fn the_table_and_control_creation_findings_are_informations() {
     );
     let creation = found
         .iter()
-        .find(|(name, _, _)| *name == "MissingRequiredField")
+        .find(|(name, _, _)| *name == "json_ui/type_not_specified")
         .unwrap();
     assert_eq!(
         creation.2.as_deref(),

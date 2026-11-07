@@ -33,7 +33,7 @@ fn f04_the_1_21_40_members_are_unknown_in_a_1_21_30_document() {
             &format!("{ENFORCE}, {member}"),
         );
         let d = rejects(&json, &cx());
-        error_at(&d, "UnrecognizedField", tail);
+        error_at(&d, "core/child_not_valid", tail);
     }
 }
 
@@ -45,7 +45,7 @@ fn f04_a_weighted_places_block_is_the_wrong_type_in_a_1_21_30_document() {
         &format!(r#"{ENFORCE}, "places_block": [{{"block": "minecraft:stone", "weight": 1}}]"#),
     );
     let d = rejects(&json, &cx());
-    error_at(&d, "InvalidType", "places_block");
+    error_at(&d, "core/invalid_type", "places_block");
 }
 
 #[test]
@@ -56,7 +56,7 @@ fn f04b_enforce_placement_rules_is_required() {
         r#""enforce_survivability_rules": true, "places_block": "minecraft:stone""#,
     );
     let d = rejects(&json, &cx());
-    error_at(&d, "MissingRequiredField", "enforce_placement_rules");
+    error_at(&d, "core/required_child", "enforce_placement_rules");
 }
 
 #[test]
@@ -75,7 +75,11 @@ fn f04b_min_sides_must_attach_above_4_is_invalid() {
         &format!(r#"{ENFORCE}, "may_attach_to": {{"min_sides_must_attach": 5}}"#),
     );
     let d = rejects(&json, &cx());
-    error_at(&d, "InvalidValue", "may_attach_to/min_sides_must_attach");
+    error_at(
+        &d,
+        "core/outside_range",
+        "may_attach_to/min_sides_must_attach",
+    );
 }
 
 #[test]
@@ -138,7 +142,7 @@ fn f06_a_tags_places_block_is_rejected_at_1_21_40() {
     );
     let d = rejects(&json, &cx());
     // A specifier has no tag form; the option matches no shape.
-    error_at(&d, "InvalidType", "places_block");
+    error_at(&d, "core/invalid_type", "places_block");
 }
 
 #[test]
@@ -172,12 +176,12 @@ fn a_state_value_no_double_holds_is_the_largest_finite_double_and_the_feature_is
             .diagnostics()
             .iter()
             .filter(|f| f.location.json_path.to_string() == at)
-            .map(|f| (f.code.name(), f.severity))
+            .map(|f| (f.code.id(), f.severity))
             .collect();
         assert_eq!(
             told,
             [(
-                "InvalidValue",
+                "core/invalid_value",
                 bedrock_addon_core::diagnostic::Severity::Info
             )],
             "{number}"
@@ -224,7 +228,7 @@ fn a_null_required_member_is_missing() {
         r#""enforce_placement_rules": null, "enforce_survivability_rules": true, "places_block": "minecraft:stone""#,
     );
     let d = rejects(&json, &cx());
-    error_at(&d, "MissingRequiredField", "enforce_placement_rules");
+    error_at(&d, "core/required_child", "enforce_placement_rules");
 }
 
 /// `early_out_scheme: null` reads as the member left out (the
@@ -268,7 +272,7 @@ fn a_null_optional_member_is_told_once() {
     let told: Vec<_> = document
         .diagnostics()
         .iter()
-        .filter(|f| f.code.name() == "ValueRewritten")
+        .filter(|f| f.code.id() == "core/value_rewritten")
         .collect();
     assert_eq!(told.len(), 1, "{:#?}", document.diagnostics());
     assert!(

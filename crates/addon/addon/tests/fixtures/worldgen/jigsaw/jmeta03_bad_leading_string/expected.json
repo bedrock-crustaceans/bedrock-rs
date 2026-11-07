@@ -8,7 +8,7 @@
   },
   "diagnostics": [
     {
-      "code": "MalformedFormatVersion",
+      "code": "jigsaw/bad_format_version_string",
       "severity": "error",
       "path": "worldgen/metadata/a.dat",
       "text": "Failed to parse format version string of file worldgen/metadata/a.dat; it will be skipped."

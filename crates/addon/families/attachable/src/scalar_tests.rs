@@ -122,7 +122,7 @@ fn line(text: &str) -> String {
                 .map_or("-".to_owned(), |s| format!("{}+{}", s.offset, s.len));
             format!(
                 "{} {:?} {} {span}",
-                d.code.name(),
+                d.code.id(),
                 d.severity,
                 d.location.json_path
             )

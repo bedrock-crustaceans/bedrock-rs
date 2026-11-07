@@ -21,7 +21,7 @@ fn accepted(boxes: &[(&str, &str)]) {
 /// V3's finding for box `index` of `minecraft:<name>`.
 fn invalid(index: usize, name: &str) -> [(&'static str, String, String); 1] {
     [error(
-        "InvalidValue",
+        "voxel_shape/box_invalid",
         &format!("Box at index {index} is invalid for voxel shape `minecraft:{name}`"),
         &format!("{BOXES}/{index}"),
     )]
@@ -30,7 +30,7 @@ fn invalid(index: usize, name: &str) -> [(&'static str, String, String); 1] {
 /// V4's finding for box `index` of `minecraft:<name>`.
 fn outside(index: usize, name: &str) -> [(&'static str, String, String); 1] {
     [error(
-        "InvalidValue",
+        "voxel_shape/box_out_of_bounds",
         &format!(
             "Box at index {index} in voxel shape 'minecraft:{name}' is outside the allowed bounds of (-14, -14, -14) to (30, 30, 30)."
         ),
@@ -41,7 +41,7 @@ fn outside(index: usize, name: &str) -> [(&'static str, String, String); 1] {
 /// V5's finding for `minecraft:<name>`.
 fn no_overlap(name: &str) -> [(&'static str, String, String); 1] {
     [error(
-        "InvalidValue",
+        "voxel_shape/no_overlap",
         &format!(
             "Voxel shape 'minecraft:{name}' has no boxes that overlap the base block (0-16 pixels on all axes)."
         ),
@@ -52,7 +52,7 @@ fn no_overlap(name: &str) -> [(&'static str, String, String); 1] {
 /// V6's finding for `minecraft:<name>`: `extent` pixels on `axis`.
 fn too_wide(name: &str, axis: &str, extent: &str) -> [(&'static str, String, String); 1] {
     [error(
-        "InvalidValue",
+        "voxel_shape/extent_too_wide",
         &format!(
             "Total extent of voxel shape 'minecraft:{name}' on axis {axis} is {extent} pixels, which exceeds the maximum of 30 pixels (1 block + 14 pixels)."
         ),

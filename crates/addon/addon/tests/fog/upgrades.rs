@@ -223,7 +223,7 @@ fn u02_to_cereal_all_required() {
     );
     // The one finding of the pair: the transition of `air`.
     assert_eq!(
-        count(before.diagnostics(), "DroppedField", Severity::Info),
+        count(before.diagnostics(), "core/dropped_field", Severity::Info),
         1
     );
     clean(before.diagnostics());
@@ -242,13 +242,13 @@ fn u03_nonwater_transition_dropped_deviation() {
     for entry in ["air", "weather", "lava", "lava_resistance", "powder_snow"] {
         let members = format!(r#""distance": {{"{entry}": {{{AIR}, {transition}}}}}"#);
         let document = loaded(parse(&doc("1.21.90", &members), &pack()));
-        let dropped = find(document.diagnostics(), "DroppedField", Severity::Info).unwrap();
+        let dropped = find(document.diagnostics(), "core/dropped_field", Severity::Info).unwrap();
         assert_eq!(
             dropped.location.json_path.to_string(),
             format!("minecraft:fog_settings/distance/{entry}/transition_fog")
         );
         assert_eq!(
-            count(document.diagnostics(), "DroppedField", Severity::Info),
+            count(document.diagnostics(), "core/dropped_field", Severity::Info),
             1
         );
         let text = document.to_json().unwrap();
@@ -311,7 +311,7 @@ fn u05_colour_array_old_era_deviation() {
     assert_eq!(air_color(&document), FogColor::Array([255, 0, 128]));
     assert_eq!(air_color(&document).unit_rgb(), [1.0, 0.0, 128.0 / 255.0]);
     assert_eq!(
-        count(document.diagnostics(), "ClampedValue", Severity::Info),
+        count(document.diagnostics(), "core/clamped_value", Severity::Info),
         2
     );
     clean(document.diagnostics());
@@ -326,13 +326,13 @@ fn u05_colour_array_old_era_deviation() {
     assert_eq!(air_color(&document), FogColor::Array([255, 255, 0]));
     assert_eq!(air_color(&document).unit_rgb(), [1.0, 1.0, 0.0]);
     assert_eq!(
-        count(document.diagnostics(), "InvalidValue", Severity::Error),
+        count(document.diagnostics(), "fog/integral", Severity::Error),
         2
     );
     assert!(document.diagnostics().iter().all(|f| f.kept));
     expect(
         document.diagnostics(),
-        "InvalidValue",
+        "fog/integral",
         Severity::Error,
         "Expected Integral Number.",
     );
@@ -344,15 +344,15 @@ fn u05_colour_array_old_era_deviation() {
     let told: Vec<_> = document
         .diagnostics()
         .iter()
-        .map(|f| (f.code.name(), f.severity, f.location.json_path.to_string()))
+        .map(|f| (f.code.id(), f.severity, f.location.json_path.to_string()))
         .collect();
     let at = |index: usize| format!("minecraft:fog_settings/distance/air/fog_color/{index}");
     assert_eq!(
         told,
         [
-            ("DroppedField", Severity::Info, at(3)),
-            ("InvalidType", Severity::Info, at(0)),
-            ("InvalidType", Severity::Info, at(2)),
+            ("core/dropped_field", Severity::Info, at(3)),
+            ("core/invalid_type", Severity::Info, at(0)),
+            ("core/invalid_type", Severity::Info, at(2)),
         ]
     );
     // The schema's colour validator reads each element as a float, which fails
@@ -367,7 +367,12 @@ fn u05_colour_array_old_era_deviation() {
     );
     let d = rejected(parse(&with(r#"[0, "1", 0]"#), &pack()));
     refused(&d);
-    expect(&d, "InvalidType", Severity::Error, "Expected Number.");
+    expect(
+        &d,
+        "fog/expected_number",
+        Severity::Error,
+        "Expected Number.",
+    );
 
     // A coefficient is clamped to 0–1 when it is used, silently.
     let media = r#""volumetric": {"media_coefficients": {"air": {"scattering": [2.0, -1.0, 0.5], "absorption": [0, 0, 0]}}}"#;
@@ -412,19 +417,24 @@ fn u07_density_rules_refuse_an_older_file_too() {
     let entry = "minecraft:fog_settings/volumetric/density/air";
     expect(
         &d,
-        "InvalidValue",
+        "fog/max_height_required",
         Severity::Error,
         "Value for 'max_density_height' is required unless 'uniform' equals true.",
     );
     expect(
         &d,
-        "InvalidValue",
+        "fog/zero_height_required",
         Severity::Error,
         "Value for 'zero_density_height' is required unless 'uniform' equals true.",
     );
     assert_eq!(
         d.iter()
-            .filter(|f| f.code.name() == "InvalidValue")
+            .filter(|f| {
+                matches!(
+                    f.code.id(),
+                    "fog/max_height_required" | "fog/zero_height_required"
+                )
+            })
             .map(|f| f.location.json_path.to_string())
             .collect::<Vec<_>>(),
         [entry, entry]
@@ -442,7 +452,7 @@ fn u07_density_rules_refuse_an_older_file_too() {
     ));
     expect(
         &d,
-        "InvalidValue",
+        "fog/uniform_heights",
         Severity::Error,
         "Values for 'max_density_height' and 'zero_density_height' are not used when 'uniform' equals true.",
     );
@@ -455,14 +465,14 @@ fn u08_negative_fog_end_both_eras() {
     let d = rejected(parse(&doc("1.21.90", &negative), &pack()));
     expect(
         &d,
-        "InvalidValue",
+        "core/outside_range",
         Severity::Error,
         "Value '-5.000000' outside valid range [0.000000, 340282346638528859811704183484516925440.000000]",
     );
     refused(&d);
     let d = rejected(parse(&doc("1.26.20", &negative), &pack()));
     assert_eq!(
-        count(&d, "InvalidValue", Severity::Error),
+        count(&d, "core/invalid_value", Severity::Error),
         1,
         "{:?}",
         lines(&d)
@@ -477,7 +487,9 @@ fn u08_negative_fog_end_both_eras() {
     for version in ["1.21.90", "1.26.20"] {
         let d = rejected(parse(&doc(version, &seconds("-1")), &pack()));
         assert!(
-            count(&d, "InvalidValue", Severity::Error) >= 1,
+            count(&d, "core/outside_range", Severity::Error)
+                + count(&d, "core/invalid_value", Severity::Error)
+                >= 1,
             "{version}: {:?}",
             lines(&d)
         );
@@ -514,11 +526,17 @@ fn settings_the_newest_parser_refuses_are_refused_in_the_older_schema_too() {
     ] {
         for version in ["1.16.100", "1.21.90", "1.26.20"] {
             let d = rejected(parse(&doc(version, &members), &pack()));
-            expect(&d, "InvalidValue", Severity::Error, text);
+            let id = if text.starts_with("Values for") {
+                "fog/uniform_heights"
+            } else if text.contains("was less than") {
+                "fog/end_below_start"
+            } else {
+                "fog/max_height_required"
+            };
+            expect(&d, id, Severity::Error, text);
             assert!(
                 d.iter()
-                    .any(|f| f.code.name() == "InvalidValue"
-                        && f.location.json_path.to_string() == at),
+                    .any(|f| f.code.id() == id && f.location.json_path.to_string() == at),
                 "{version} {members}: {:?}",
                 lines(&d)
             );
@@ -595,7 +613,7 @@ fn h4_an_era_refuses_the_members_a_later_era_adds() {
         ));
         expect_at(
             &d,
-            "UnrecognizedField",
+            "core/child_not_valid",
             Severity::Error,
             &format!("child '{member}' not valid here."),
             path,

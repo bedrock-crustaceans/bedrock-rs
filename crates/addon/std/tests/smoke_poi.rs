@@ -133,7 +133,7 @@ fn load_poi(driver: &Driver, repository: &PackRepository, roots: &[PathBuf], poi
             finding.location.json_path
         );
         if finding.severity < Severity::Error {
-            findings.push(format!("{} {}", finding.severity, finding.code.name()));
+            findings.push(format!("{} {}", finding.severity, finding.code.id()));
             continue;
         }
         if finding.is(&codes::UNSUPPORTED_FILE_FORMAT) && mcb < on_disk {
@@ -253,7 +253,7 @@ fn the_vanilla_1_26_20_set_loads_from_disk_through_the_driver() {
     // Without the experiment the same pack loads nothing and says so once.
     let outcome = load_poi(&driver, &repository, &roots, false);
     assert_eq!((outcome.types, outcome.tags, outcome.rejected), (0, 0, 0));
-    assert_eq!(outcome.findings, ["info MissingToggles"]);
+    assert_eq!(outcome.findings, ["info core/missing_toggles"]);
     assert!(outcome.errors.is_empty());
 }
 

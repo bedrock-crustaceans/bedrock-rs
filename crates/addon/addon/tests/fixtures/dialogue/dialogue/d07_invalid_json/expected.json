@@ -3,7 +3,7 @@
   "rejected": 1,
   "diagnostics": [
     {
-      "code": "MalformedInput",
+      "code": "dialogue/reader",
       "severity": "error",
       "path": "dialogue/truncated.json",
       "json_path": ""

@@ -109,7 +109,7 @@ fn every_vanilla_goal_reads_cleanly_and_round_trips() {
                 Some(d) => {
                     for finding in &d {
                         let lenient_unknown = matches!(mode, ConvertMode::Lenient)
-                            && finding.code.name() == "UnrecognizedField";
+                            && finding.code.id() == "core/unrecognized_field";
                         let line = format!("{name} {key} {}", finding.location.json_path);
                         if lenient_unknown {
                             unknown.push(line);

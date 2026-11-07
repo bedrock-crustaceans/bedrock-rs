@@ -50,7 +50,7 @@ fn a_root_that_is_not_an_object_is_skipped() {
         Severity::Error,
     );
     // By legacy name: the variant and the definitions that were it.
-    assert!(matches!(finding.code.name(), "MalformedInput"));
+    assert!(matches!(finding.code.id(), "recipe/root_not_object"));
 }
 
 #[test]
@@ -62,7 +62,7 @@ fn a_syntax_error_is_skipped() {
         Severity::Error,
     );
     // By legacy name: the variant and the definitions that were it.
-    assert!(matches!(finding.code.name(), "MalformedInput"));
+    assert!(matches!(finding.code.id(), "recipe/json_error"));
 }
 
 #[test]
@@ -78,7 +78,7 @@ fn a_missing_or_empty_identifier_is_skipped() {
         let diagnostics = rejects(text.as_bytes(), &cx());
         let finding = one(&diagnostics, "JSON: {} has no identifier", Severity::Error);
         // By legacy name: the variant and the definitions that were it.
-        assert!(matches!(finding.code.name(), "MissingIdentifier"));
+        assert!(matches!(finding.code.id(), "recipe/no_identifier"));
     }
 }
 

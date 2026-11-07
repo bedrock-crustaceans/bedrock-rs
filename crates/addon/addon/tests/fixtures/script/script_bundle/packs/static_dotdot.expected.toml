@@ -15,13 +15,13 @@ resolution = "not_found"
 hint = "EscapesRoot"
 
 [[diagnostics]]
-code = "ScriptFileNotLoadable"
+code = "core/script_file_not_loadable"
 severity = "info"
 text = "script file can never be loaded"
 file = "escape.js"
 
 [[diagnostics]]
-code = "ScriptImportNotFound"
+code = "core/script_import_not_found"
 severity = "error"
 text = "ReferenceError: Import [../escape.js] not found."
 file = "scripts/main.js"

@@ -2,7 +2,7 @@
 //! (`sg30`–`sg39a`). Rows marked [test] reproduce vanilla's `SpawnGroupDataLoaderUnitTests` with
 //! their template.
 
-use bedrock_addon::diagnostic::{Code, Diagnostics, Severity};
+use bedrock_addon::diagnostic::{Code, Diagnostics, Kind, Severity};
 use bedrock_addon::document::{Content, Document};
 use bedrock_addon::families::spawn_groups::SpawnGroup;
 use bedrock_addon::families::spawn_rules::{Difficulty, MobSpawnRules};
@@ -46,18 +46,15 @@ fn one(body: &str) -> (i32, MobSpawnRules, Diagnostics) {
 }
 
 fn invalid_type(code: &Code) -> bool {
-    // By legacy name: the variant and the definitions that were it.
-    matches!(code.name(), "InvalidType")
+    code.kind() == Kind::WrongType
 }
 
 fn invalid_value(code: &Code) -> bool {
-    // By legacy name: the variant and the definitions that were it.
-    matches!(code.name(), "InvalidValue")
+    code.kind() == Kind::InvalidValue
 }
 
 fn missing_field(code: &Code) -> bool {
-    // By legacy name: the variant and the definitions that were it.
-    matches!(code.name(), "MissingRequiredField")
+    code.kind() == Kind::MissingRequired
 }
 
 #[test]
@@ -98,7 +95,7 @@ fn sg12_weight() {
     assert_eq!(one(r#""minecraft:weight": { "default": -3 }"#).0, 0);
     let (weight, _, d) = one(r#""minecraft:weight": 5"#);
     assert_eq!(weight, 100);
-    assert_eq!(names(&d, Severity::Info), ["InvalidType"]);
+    assert_eq!(names(&d, Severity::Info), ["spawn/weight_object"]);
 }
 
 #[test]
@@ -165,7 +162,7 @@ fn sg16_permute() {
     );
     let unknown = with(&d, |c| {
         // By legacy name: the variant and the definitions that were it.
-        matches!(c.name(), "UnrecognizedField")
+        matches!(c.id(), "core/unrecognized_field")
     });
     assert_eq!(
         paths(&unknown),
@@ -232,7 +229,7 @@ fn sg21_difficulty() {
     assert_eq!(r.difficulty_min, Difficulty::Easy);
     let (_, r, d) = one(r#""minecraft:difficulty_filter": { "min": "extreme" }"#);
     assert_eq!(r.difficulty_min, Difficulty::Peaceful);
-    assert_eq!(names(&d, Severity::Info), ["InvalidEnumValue"]);
+    assert_eq!(names(&d, Severity::Info), ["core/invalid_enum_value"]);
 }
 
 #[test]
@@ -248,7 +245,7 @@ fn sg23_distance_above_cap() {
     assert_eq!((r.spawn_distance_min, r.spawn_distance_max), (2, 1024));
     assert_eq!(r.spawn_distance_cap, 1024);
     // C7's clamp is an info.
-    assert_eq!(names(&d, Severity::Info), ["ClampedValue"]);
+    assert_eq!(names(&d, Severity::Info), ["core/clamped_value"]);
     // The spawn-rules parser caps the same condition at 128.
     let rules =
         crate::common::condition(r#""minecraft:distance_filter": { "min": 2, "max": 1025 }"#).1;
@@ -343,13 +340,16 @@ fn sg28_spawn_event_ignored() {
 fn sg28a_value_coercion() {
     let (weight, _, d) = one(r#""minecraft:weight": { "default": "50" }"#);
     assert_eq!(weight, 0);
-    assert_eq!(names(&d, Severity::Info), ["InvalidType"]);
+    assert_eq!(names(&d, Severity::Info), ["core/invalid_type"]);
     let (_, r, d) = one(r#""minecraft:herd": { "min_size": true, "max_size": 2.9 }"#);
     assert_eq!((r.herds[0].min_size, r.herds[0].max_size), (1, 2));
-    assert_eq!(names(&d, Severity::Info), ["InvalidType", "InvalidType"]);
+    assert_eq!(
+        names(&d, Severity::Info),
+        ["core/invalid_type", "core/invalid_type"]
+    );
     let (_, r, d) = one(r#""minecraft:difficulty_filter": { "min": 1 }"#);
     assert_eq!(r.difficulty_min, Difficulty::Peaceful);
-    assert_eq!(names(&d, Severity::Info), ["InvalidType"]);
+    assert_eq!(names(&d, Severity::Info), ["core/invalid_type"]);
 }
 
 #[test]
@@ -380,7 +380,10 @@ fn sg28c_permute_weight_zero() {
     assert!(r.permutations.is_empty());
     assert_eq!(r.guaranteed, vec![(2, EntityId::parse("x:b"))]);
     // ours, informations
-    assert_eq!(names(&d, Severity::Info), ["InvalidValue", "InvalidValue"]);
+    assert_eq!(
+        names(&d, Severity::Info),
+        ["core/invalid_value", "core/invalid_value"]
+    );
 }
 
 #[test]
@@ -398,7 +401,7 @@ fn sg28d_delay_clamp() {
     ));
     assert_eq!((r.delay_min, r.delay_max), (0, 4));
     let (_, r, d) = one(r#""minecraft:delay_filter": 7"#);
-    assert_eq!(names(&d, Severity::Info), ["InvalidType"]);
+    assert_eq!(names(&d, Severity::Info), ["spawn/delay_object"]);
     assert_eq!(
         (
             r.delay_min,
@@ -442,7 +445,7 @@ fn sg30_below_floor() {
         has_text(
             &d,
             // By legacy name: the variant and the definitions that were it.
-            |c| matches!(c.name(), "UnsupportedVersion"),
+            |c| matches!(c.id(), "core/no_parser_for_version"),
             Severity::Error,
             "unsupported version: no parser available for version 1.7.0"
         ),
@@ -454,7 +457,7 @@ fn sg30_below_floor() {
 #[test]
 fn sg31_above_engine() {
     let d = rejected(&versioned(r#""99.0.0""#));
-    assert_eq!(names(&d, Severity::Error)[0], "UnsupportedVersion");
+    assert_eq!(names(&d, Severity::Error)[0], "core/no_parser_for_version");
 }
 
 #[test]
@@ -466,7 +469,7 @@ fn sg32_missing_version() {
         has_text(
             &d,
             // By legacy name: the variant and the definitions that were it.
-            |c| matches!(c.name(), "MissingFormatVersion"),
+            |c| matches!(c.id(), "core/no_valid_version"),
             Severity::Error,
             "no valid version passed by the caller or found in the input"
         ),
@@ -483,7 +486,7 @@ fn sg33_malformed_version() {
             has_text(
                 &d,
                 // By legacy name: the variant and the definitions that were it.
-                |c| matches!(c.name(), "MalformedFormatVersion"),
+                |c| matches!(c.id(), "core/malformed_format_version"),
                 Severity::Error,
                 "Malformed format version"
             ),
@@ -527,12 +530,16 @@ fn sg36_wrong_payload_key() {
     let text = r#"{"format_version": "1.11.0", "minecraft:spawn_rules": {"description": {"identifier": "x:g"}}}"#;
     let d = rejected(text);
     // `MissingPayload` with vanilla's text (V7).
-    assert_eq!(names(&d, Severity::Error)[0], "MissingPayload", "{d:#?}");
+    assert_eq!(
+        names(&d, Severity::Error)[0],
+        "spawn/missing_identifier_payload",
+        "{d:#?}"
+    );
     assert!(
         has_text(
             &d,
             // By legacy name: the variant and the definitions that were it.
-            |c| matches!(c.name(), "MissingPayload"),
+            |c| matches!(c.id(), "spawn/missing_identifier_payload"),
             Severity::Error,
             "Missing identifier in spawn rule file"
         ),
@@ -548,7 +555,7 @@ fn sg37_root_not_object() {
         has_text(
             &d,
             // By legacy name: the variant and the definitions that were it.
-            |c| matches!(c.name(), "MalformedInput"),
+            |c| matches!(c.id(), "spawn/not_an_object"),
             Severity::Error,
             "Spawn rules json was not formatted as an object"
         ),
@@ -559,7 +566,7 @@ fn sg37_root_not_object() {
         has_text(
             &d,
             // By legacy name: the variant and the definitions that were it.
-            |c| matches!(c.name(), "MissingFormatVersion"),
+            |c| matches!(c.id(), "core/no_valid_version"),
             Severity::Error,
             "no valid version passed by the caller or found in the input"
         ),
@@ -572,7 +579,7 @@ fn sg39_json_syntax_error() {
     let d = rejected(
         r#"{ "format_version": "1.11.0", "minecraft:spawn_groups": { "description": { "identifier": "x:g" }, } "#,
     );
-    assert_eq!(names(&d, Severity::Error), ["MalformedInput"], "{d:#?}");
+    assert_eq!(names(&d, Severity::Error), ["core/syntax"], "{d:#?}");
 }
 
 #[test]
@@ -588,7 +595,7 @@ fn sg39a_nested_version_only() {
     let d = rejected(text);
     assert_eq!(
         names(&d, Severity::Error)[0],
-        "MissingFormatVersion",
+        "core/no_valid_version",
         "{d:#?}"
     );
 }
@@ -614,7 +621,7 @@ fn sg38_no_conditions() {
         // ours, an information
         assert_eq!(
             names(document.diagnostics(), Severity::Info),
-            ["EmptyDocument"],
+            ["core/empty_document"],
             "{text}"
         );
         assert!(document.spawn_rules().is_empty());
@@ -630,7 +637,7 @@ fn sg38_no_conditions_deviation() {
     );
     let empty = with(document.diagnostics(), |c| {
         // By legacy name: the variant and the definitions that were it.
-        matches!(c.name(), "EmptyDocument")
+        matches!(c.id(), "core/empty_document")
     });
     assert_eq!(empty[0].severity, Severity::Info);
 }
@@ -666,7 +673,7 @@ fn an_unknown_condition_key_is_an_info() {
     let document = loads(&group(r#""minecraft:spawns_on_moon": {}"#));
     assert_eq!(
         names(document.diagnostics(), Severity::Info),
-        ["UnrecognizedField"]
+        ["core/unrecognized_field"]
     );
 }
 

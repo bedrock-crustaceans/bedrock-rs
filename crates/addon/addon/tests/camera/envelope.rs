@@ -18,7 +18,7 @@ fn cam03_a_preset_without_format_version_is_not_loaded() {
     assert_eq!(
         errors(&d),
         [
-            finding("MissingFormatVersion", "", NO_VERSION),
+            finding("core/no_valid_version", "", NO_VERSION),
             failed_presets()
         ]
     );
@@ -40,7 +40,7 @@ fn cam03b_an_unreadable_preset_version_is_malformed() {
         assert_eq!(
             errors(&d),
             [
-                finding("MalformedFormatVersion", "format_version", MALFORMED),
+                finding("core/malformed_format_version", "format_version", MALFORMED),
                 failed_presets()
             ],
             "{version}"
@@ -57,14 +57,14 @@ fn cam03b_a_three_integer_preset_version_routes_then_fails_the_string_bind() {
     assert_eq!(found.len(), 2, "{found:?}");
     assert_eq!(
         (found[0].0, found[0].1.as_str()),
-        ("InvalidType", "format_version")
+        ("core/invalid_type", "format_version")
     );
     assert_eq!(found[1], failed_presets());
     // Routed first: the same array below the floor is unsupported.
     let d = rejects(preset(&format!(
         r#"{{"format_version": [1, 0, 0], {PRESET}}}"#
     )));
-    assert_eq!(errors(&d)[0].0, "UnsupportedVersion");
+    assert_eq!(errors(&d)[0].0, "core/no_parser_for_version");
 }
 
 #[test]
@@ -75,7 +75,7 @@ fn cam03b_a_third_root_member_of_a_preset_is_an_unknown_member() {
     assert_eq!(
         errors(&d),
         [finding(
-            "UnrecognizedField",
+            "core/unrecognized_field_worded",
             "extra",
             "Unrecognized field on camera preset!"
         )]
@@ -89,7 +89,7 @@ fn cam03b_a_preset_without_its_payload_misses_a_required_member() {
         errors(&d),
         [
             finding(
-                "MissingRequiredField",
+                "core/missing_required_field_worded",
                 "minecraft:camera_preset",
                 "missing required field"
             ),
@@ -107,9 +107,9 @@ fn cam03b_a_third_root_member_of_a_spline_file_fails_the_envelope() {
     assert_eq!(
         errors(&d),
         [
-            finding("MalformedInput", "", TWO_MEMBERS),
+            finding("core/document_member_count", "", TWO_MEMBERS),
             finding(
-                "DocumentRejected",
+                "camera/splines_failed",
                 "",
                 "Custom camera splines not loaded correctly."
             )
@@ -126,14 +126,14 @@ fn cam03b_a_spline_file_without_or_with_an_unreadable_version_is_not_loaded() {
     let d = rejects(spline(&format!("{{{payload}}}")));
     assert_eq!(
         errors(&d)[0],
-        finding("MissingFormatVersion", "", NO_VERSION)
+        finding("core/no_valid_version", "", NO_VERSION)
     );
     let d = rejects(spline(&format!(
         r#"{{"format_version": "abc", {payload}}}"#
     )));
     assert_eq!(
         errors(&d)[0],
-        finding("MalformedFormatVersion", "format_version", MALFORMED)
+        finding("core/malformed_format_version", "format_version", MALFORMED)
     );
     // A three-integer array is a version: the spline struct does not bind `format_version`.
     loads(spline(&format!(
@@ -146,7 +146,7 @@ fn cam03b_a_spline_file_without_or_with_an_unreadable_version_is_not_loaded() {
         assert_eq!(
             errors(&d)[0],
             finding(
-                "UnsupportedVersion",
+                "core/no_parser_for_version",
                 "format_version",
                 &format!("unsupported version: no parser available for version {version}")
             ),
@@ -166,11 +166,11 @@ fn a_number_version_is_read_as_its_text_as_minecraft_document_input_reads_it() {
     assert_eq!(found.len(), 2, "{found:?}");
     assert_eq!(
         (found[0].0, found[0].1.as_str()),
-        ("InvalidType", "format_version")
+        ("core/invalid_type", "format_version")
     );
     assert_eq!(found[1], failed_presets());
     let d = rejects(preset(&format!(r#"{{"format_version": 1.19, {PRESET}}}"#)));
-    assert_eq!(errors(&d)[0].0, "UnsupportedVersion");
+    assert_eq!(errors(&d)[0].0, "core/no_parser_for_version");
     // A spline file and a camera entity document do not bind `format_version`: they load.
     let payload = format!(
         r#""minecraft:camera_custom_splines": {{"splines": [{}]}}"#,
@@ -182,7 +182,7 @@ fn a_number_version_is_read_as_its_text_as_minecraft_document_input_reads_it() {
         Some(bedrock_addon::version::FormatVersion::new(1, 26, 0))
     );
     let rejected = rejects(spline(&format!(r#"{{"format_version": 1.25, {payload}}}"#)));
-    assert_eq!(errors(&rejected)[0].0, "UnsupportedVersion");
+    assert_eq!(errors(&rejected)[0].0, "core/no_parser_for_version");
     let text = entity_json("minecraft:free", "").replace(r#""1.26.10""#, "1.26");
     let document = loads(entity(&text));
     assert_eq!(
@@ -201,7 +201,7 @@ fn a_number_version_of_a_camera_list_stays_malformed() {
     let d = rejects(list(&text));
     assert_eq!(
         errors(&d)[0],
-        finding("MalformedFormatVersion", "format_version", MALFORMED)
+        finding("core/malformed_format_version", "format_version", MALFORMED)
     );
 }
 
@@ -214,7 +214,7 @@ fn a_camera_list_with_trailing_content_reads_list_not_json_as_written() {
         list_json("1.21.60", "ex:l", r#"["minecraft:free"]"#)
     );
     let expected = finding(
-        "MalformedInput",
+        "camera/list_not_json",
         "",
         "Camera List file cameras/lists/test.json is not valid JSON: \
          content after the JSON value is ignored",

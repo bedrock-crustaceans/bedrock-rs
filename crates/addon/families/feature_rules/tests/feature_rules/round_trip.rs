@@ -93,7 +93,7 @@ fn r17_with_an_engine_of_1_26_20_the_1_26_30_file_selects_no_parser() {
 #[test]
 fn a_rule_above_the_engine_is_unsupported_with_the_puv_text() {
     let d = rejects(&vanilla_input("without_distribution", "1.27.0"));
-    let found = with_code(&d, "UnsupportedVersion");
+    let found = with_code(&d, "core/no_parser_for_version");
     assert_eq!(found.len(), 1, "{d:#?}");
     assert_eq!(
         found[0].code.to_string(),

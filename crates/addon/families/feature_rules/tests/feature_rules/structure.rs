@@ -13,7 +13,7 @@ fn r07_an_unknown_member_of_conditions_warns_and_the_rule_loads() {
         r#""placement_pass": "surface_pass", "foo": 1"#,
     );
     let document = loads(&text);
-    let found = with_code(document.diagnostics(), "UnrecognizedField");
+    let found = with_code(document.diagnostics(), "core/unrecognized_field");
     assert_eq!(found.len(), 1, "{:#?}", document.diagnostics());
     assert_eq!(found[0].severity, Severity::Warning);
     assert_eq!(
@@ -41,7 +41,7 @@ fn rule_6_unknown_members_warn_at_every_level() {
         r#""places_feature": "demo:feature", "foo": 1"#,
     );
     let document = loads(&text);
-    let mut paths: Vec<String> = with_code(document.diagnostics(), "UnrecognizedField")
+    let mut paths: Vec<String> = with_code(document.diagnostics(), "core/unrecognized_field")
         .iter()
         .map(|f| f.location.json_path.to_string())
         .collect();
@@ -65,7 +65,7 @@ fn r08_a_distribution_without_z_is_a_missing_member_and_the_file_is_skipped() {
         Some(r#"{"iterations": 1, "x": 0, "y": 0}"#),
     );
     let d = rejects(&text);
-    let found = with_code(&d, "MissingRequiredField");
+    let found = with_code(&d, "core/missing_required_field");
     assert_eq!(found.len(), 1, "{d:#?}");
     assert_eq!(found[0].severity, Severity::Error);
 }
@@ -107,13 +107,13 @@ fn rule_6_every_required_member_is_required() {
         assert!(full.contains(from), "{what}: {full}");
         let d = rejects(&full.replacen(from, to, 1));
         assert!(
-            !with_code(&d, "MissingRequiredField").is_empty(),
+            !with_code(&d, "core/missing_required_field").is_empty(),
             "{what}: {d:#?}"
         );
     }
     let without_conditions =
         full.replace(r#", "conditions": {"placement_pass": "surface_pass"}"#, "");
-    assert!(!with_code(&rejects(&without_conditions), "MissingRequiredField").is_empty());
+    assert!(!with_code(&rejects(&without_conditions), "core/missing_required_field").is_empty());
     for (what, chance) in [
         ("numerator", r#"{"denominator": 2}"#),
         ("denominator", r#"{"numerator": 1}"#),
@@ -127,7 +127,7 @@ fn rule_6_every_required_member_is_required() {
         );
         let d = rejects(&text);
         assert!(
-            !with_code(&d, "MissingRequiredField").is_empty(),
+            !with_code(&d, "core/missing_required_field").is_empty(),
             "{what}: {d:#?}"
         );
     }
@@ -143,7 +143,7 @@ fn rule_6_a_wrong_json_type_skips_the_file() {
     ] {
         let d = rejects(&rule("1.13.0", "surface_pass", Some(distribution)));
         assert!(
-            !with_code(&d, "InvalidType").is_empty(),
+            !with_code(&d, "core/invalid_type").is_empty(),
             "{distribution}: {d:#?}"
         );
     }
@@ -151,7 +151,7 @@ fn rule_6_a_wrong_json_type_skips_the_file() {
         r#""placement_pass": "surface_pass""#,
         r#""placement_pass": 6"#,
     ));
-    assert!(!with_code(&d, "InvalidType").is_empty(), "{d:#?}");
+    assert!(!with_code(&d, "core/invalid_type").is_empty(), "{d:#?}");
 }
 
 #[test]
@@ -213,7 +213,7 @@ fn r12_coordinate_eval_order_defaults_to_xzy_and_an_unknown_name_skips_the_file(
         "surface_pass",
         Some(r#"{"iterations": 1, "coordinate_eval_order": "abc", "x": 0, "y": 0, "z": 0}"#),
     ));
-    let found = with_code(&d, "InvalidEnumValue");
+    let found = with_code(&d, "core/invalid_enum_value");
     assert_eq!(found.len(), 1, "{d:#?}");
     assert_eq!(found[0].severity, Severity::Error);
 }
@@ -237,7 +237,7 @@ fn r19_the_network_binder_s_pascal_case_names_are_invalid_enum_values() {
         );
         let d = rejects(&text);
         assert_eq!(
-            with_code(&d, "InvalidEnumValue").len(),
+            with_code(&d, "core/invalid_enum_value").len(),
             1,
             "{x} {order}: {d:#?}"
         );
@@ -252,7 +252,7 @@ fn r11_an_unknown_distribution_name_skips_the_file() {
         "surface_pass",
         Some(&distribution("1", x, "0", "0")),
     ));
-    let found = with_code(&d, "InvalidEnumValue");
+    let found = with_code(&d, "core/invalid_enum_value");
     assert_eq!(found.len(), 1, "{d:#?}");
     assert_eq!(
         found[0].location.json_path.to_string(),
@@ -275,7 +275,7 @@ fn a_member_named_like_a_kept_field_is_an_unknown_member() {
     .replace(r#""iterations": 1"#, r#""iterations": 1, "extra": 2"#);
     let document = loads(&text);
     assert_eq!(
-        with_code(document.diagnostics(), "UnrecognizedField").len(),
+        with_code(document.diagnostics(), "core/unrecognized_field").len(),
         2
     );
     let description = bedrock_addon_core::diagnostic::JsonPath::of_keys([
@@ -302,7 +302,7 @@ fn rule_6_a_non_string_enum_member_is_an_invalid_enum_value() {
             )),
         );
         let d = rejects(&text);
-        let found = with_code(&d, "InvalidEnumValue");
+        let found = with_code(&d, "core/invalid_enum_value");
         assert_eq!(found.len(), 1, "{x} {order}: {d:#?}");
         assert_eq!(found[0].severity, Severity::Error);
     }
@@ -318,7 +318,7 @@ fn rule_6_a_numerator_of_another_type_is_refused_at_its_member() {
         ),
     );
     let d = rejects(&text);
-    let found = with_code(&d, "InvalidType");
+    let found = with_code(&d, "core/invalid_type");
     assert_eq!(found.len(), 1, "{d:#?}");
     assert_eq!(found[0].severity, Severity::Error);
     assert_eq!(

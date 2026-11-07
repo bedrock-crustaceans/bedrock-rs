@@ -8,13 +8,13 @@ reachable_static = ["main.js"]
 reachable_dynamic = []
 
 [[diagnostics]]
-code = "ScriptEvalWithoutCapability"
+code = "core/script_eval_without_capability"
 severity = "info"
 text = "eval without the script_eval capability"
 file = "scripts/main.js"
 
 [[diagnostics]]
-code = "ScriptEvalWithoutCapability"
+code = "core/script_eval_without_capability"
 severity = "info"
 text = "eval without the script_eval capability"
 file = "scripts/main.js"

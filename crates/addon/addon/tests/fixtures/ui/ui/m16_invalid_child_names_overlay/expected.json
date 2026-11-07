@@ -12,7 +12,7 @@
   ],
   "diagnostics": [
     {
-      "code": "InvalidValue",
+      "code": "json_ui/pack_invalid_child_names",
       "severity": "warning",
       "text": "ui/a.json: Child controls must have unique names: x\nIn the future this will be an error and this file won't load.",
       "pack": 1

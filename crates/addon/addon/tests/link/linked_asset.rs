@@ -184,12 +184,9 @@ fn every_expected_text_of_the_missing_references_suite_is_one_finding() {
         })
         .filter(|f| {
             f.severity != bedrock_addon::diagnostic::Severity::Error
-                || !matches!(
-                    f.code.name(),
-                    "UnresolvedReference" | "TextureNotFound" | "UnknownSound"
-                )
+                || f.code.kind() != bedrock_addon::diagnostic::Kind::UnresolvedReference
         })
-        .map(|f| format!("{:?} {} {}", f.severity, f.code.name(), f.code))
+        .map(|f| format!("{:?} {} {}", f.severity, f.code.id(), f.code))
         .collect();
     assert_eq!(wrong_grade, Vec::<String>::new());
     // And one finding per place: no file and member carries the same line twice.
@@ -308,9 +305,9 @@ fn at(
         .filter(|f| {
             f.location.path.as_ref().is_some_and(|p| p.as_str() == file)
                 && f.location.json_path.to_string() == path
-                && f.code.name() == "UnresolvedReference"
+                && f.code.kind() == bedrock_addon::diagnostic::Kind::UnresolvedReference
         })
-        .map(|f| (f.code.name(), f.severity, f.code.to_string()))
+        .map(|f| (f.code.id(), f.severity, f.code.to_string()))
         .collect()
 }
 
@@ -331,27 +328,31 @@ fn the_new_references_on_both_sides() {
             "blocks/block_with_references.json",
             "minecraft:block/components/minecraft:destructible_by_mining/item_specific_speeds/0/item",
             "-> components -> minecraft:destructible_by_mining -> item_specific_speeds[0] -> item:  Missing referenced asset test:item",
+            "core/unresolved_reference_worded",
         ),
         (
             "item_catalog/crafting_item_catalog.json",
             "minecraft:crafting_items_catalog/categories/0/groups/0/group_identifier/icon",
             "-> categories[0] -> groups[0] -> group_identifier -> icon:  Missing referenced asset test:item",
+            "crafting_catalog/missing_item",
         ),
         (
             "item_catalog/crafting_item_catalog.json",
             "minecraft:crafting_items_catalog/categories/0/groups/0/items/0",
             "-> categories[0] -> groups[0] -> items[0]:  Missing referenced asset test:item",
+            "crafting_catalog/missing_item",
         ),
         (
             "biomes/biome_with_references.client_biome.json",
             "minecraft:client_biome/components/minecraft:biome_music/music_definition",
             "-> components -> minecraft:biome_music -> music_definition:  Missing referenced asset test_music",
+            "core/unresolved_reference_worded",
         ),
     ];
-    for (file, path, text) in cases {
+    for (file, path, text, code) in cases {
         assert_eq!(
             at(&alone, file, path),
-            [("UnresolvedReference", Severity::Error, text.to_owned())],
+            [(code, Severity::Error, text.to_owned())],
             "{path}"
         );
         assert_eq!(at(&defined, file, path), [], "{path}");

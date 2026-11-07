@@ -3,7 +3,7 @@
   "rejected": 1,
   "diagnostics": [
     {
-      "code": "InvalidType",
+      "code": "dialogue/no_scene_tag_invalid_type",
       "severity": "error",
       "path": "dialogue/tags.json",
       "json_path": "minecraft:npc_dialogue/scenes/1/scene_tag",

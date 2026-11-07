@@ -3,14 +3,14 @@
   "rejected": 0,
   "diagnostics": [
     {
-      "code": "DuplicateIdentifier",
+      "code": "dialogue/duplicate",
       "severity": "error",
       "path": "dialogue/shared.json",
       "json_path": "minecraft:npc_dialogue/scenes/0",
       "text": "JSON: shared.json has an error: \n A scene with a scene name of 'shared' already exists. Skipping scene..."
     },
     {
-      "code": "ShadowedDefinition",
+      "code": "core/shadowed_definition",
       "severity": "info",
       "path": "dialogue/shared.json"
     }

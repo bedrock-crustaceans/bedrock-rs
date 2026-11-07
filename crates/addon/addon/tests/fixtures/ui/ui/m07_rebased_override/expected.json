@@ -58,14 +58,14 @@
   },
   "diagnostics": [
     {
-      "code": "RebasedOverride",
+      "code": "core/rebased_override",
       "severity": "info",
       "text": "overlay `name@base` key shadows a base name",
       "pack": 1,
       "at": "root@a.other"
     },
     {
-      "code": "DuplicateIdentifier",
+      "code": "core/duplicate_identifier",
       "severity": "info",
       "text": "duplicate identifier",
       "at": "root@a.other"

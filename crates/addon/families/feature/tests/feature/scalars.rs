@@ -20,7 +20,7 @@ fn read(json: &str) -> (bool, Vec<String>) {
                 "{:?}|{}|{:?}|{:?}",
                 f.severity,
                 f.location.json_path,
-                f.code.name(),
+                f.code.id(),
                 f.location.span.map(|s| (s.offset, s.len))
             )
         })
@@ -69,30 +69,30 @@ fn a_bool_float_and_string_member_read_every_token_as_pinned() {
 
 const EXPECTED: &str = r#"
     floor true: true []
-    chance true: false ["Error|minecraft:multiface_feature/chance_of_spreading|\"InvalidType\"|Some((285, 21))"]
-    name true: false ["Error|minecraft:structure_template_feature/structure_name|\"InvalidType\"|Some((111, 16))"]
-    floor 1: false ["Error|minecraft:multiface_feature/can_place_on_floor|\"InvalidType\"|Some((257, 20))"]
+    chance true: false ["Error|minecraft:multiface_feature/chance_of_spreading|\"core/invalid_type\"|Some((285, 21))"]
+    name true: false ["Error|minecraft:structure_template_feature/structure_name|\"core/invalid_type\"|Some((111, 16))"]
+    floor 1: false ["Error|minecraft:multiface_feature/can_place_on_floor|\"core/invalid_type\"|Some((257, 20))"]
     chance 1: true []
-    name 1: false ["Error|minecraft:structure_template_feature/structure_name|\"InvalidType\"|Some((111, 16))"]
-    floor 0: false ["Error|minecraft:multiface_feature/can_place_on_floor|\"InvalidType\"|Some((257, 20))"]
+    name 1: false ["Error|minecraft:structure_template_feature/structure_name|\"core/invalid_type\"|Some((111, 16))"]
+    floor 0: false ["Error|minecraft:multiface_feature/can_place_on_floor|\"core/invalid_type\"|Some((257, 20))"]
     chance 0: true []
-    name 0: false ["Error|minecraft:structure_template_feature/structure_name|\"InvalidType\"|Some((111, 16))"]
-    floor 1.5: false ["Error|minecraft:multiface_feature/can_place_on_floor|\"InvalidType\"|Some((257, 20))"]
-    chance 1.5: false ["Error|minecraft:multiface_feature/chance_of_spreading|\"InvalidValue\"|None"]
-    name 1.5: false ["Error|minecraft:structure_template_feature/structure_name|\"InvalidType\"|Some((111, 16))"]
-    floor "true": false ["Error|minecraft:multiface_feature/can_place_on_floor|\"InvalidType\"|Some((257, 20))"]
-    chance "true": false ["Error|minecraft:multiface_feature/chance_of_spreading|\"InvalidType\"|Some((285, 21))"]
-    name "true": false ["Error|minecraft:structure_template_feature/constraints|\"MissingRequiredField\"|Some((135, 1))"]
-    floor "1": false ["Error|minecraft:multiface_feature/can_place_on_floor|\"InvalidType\"|Some((257, 20))"]
-    chance "1": false ["Error|minecraft:multiface_feature/chance_of_spreading|\"InvalidType\"|Some((285, 21))"]
-    name "1": false ["Error|minecraft:structure_template_feature/constraints|\"MissingRequiredField\"|Some((132, 1))"]
-    floor null: false ["Error|minecraft:multiface_feature/can_place_on_floor|\"MissingRequiredField\"|Some((279, 4))", "Info|minecraft:multiface_feature/can_place_on_floor|\"ValueRewritten\"|None"]
-    chance null: false ["Error|minecraft:multiface_feature/chance_of_spreading|\"MissingRequiredField\"|Some((312, 1))", "Info|minecraft:multiface_feature/chance_of_spreading|\"ValueRewritten\"|None"]
-    name null: false ["Error|minecraft:structure_template_feature/structure_name|\"MissingRequiredField\"|Some((133, 1))", "Info|minecraft:structure_template_feature/structure_name|\"ValueRewritten\"|None"]
-    floor 1e39: false ["Error|minecraft:multiface_feature/can_place_on_floor|\"InvalidType\"|Some((257, 20))"]
-    chance 1e39: false ["Error|minecraft:multiface_feature/chance_of_spreading|\"InvalidType\"|Some((285, 21))"]
-    name 1e39: false ["Error|minecraft:structure_template_feature/structure_name|\"InvalidType\"|Some((111, 16))"]
-    floor []: false ["Error|minecraft:multiface_feature/can_place_on_floor/0|\"InvalidType\"|Some((280, 1))"]
-    chance []: false ["Error|minecraft:multiface_feature/chance_of_spreading/0|\"InvalidType\"|Some((309, 1))"]
-    name []: false ["Error|minecraft:structure_template_feature/structure_name/0|\"InvalidType\"|Some((130, 1))"]
+    name 0: false ["Error|minecraft:structure_template_feature/structure_name|\"core/invalid_type\"|Some((111, 16))"]
+    floor 1.5: false ["Error|minecraft:multiface_feature/can_place_on_floor|\"core/invalid_type\"|Some((257, 20))"]
+    chance 1.5: false ["Error|minecraft:multiface_feature/chance_of_spreading|\"core/outside_range\"|None"]
+    name 1.5: false ["Error|minecraft:structure_template_feature/structure_name|\"core/invalid_type\"|Some((111, 16))"]
+    floor "true": false ["Error|minecraft:multiface_feature/can_place_on_floor|\"core/invalid_type\"|Some((257, 20))"]
+    chance "true": false ["Error|minecraft:multiface_feature/chance_of_spreading|\"core/invalid_type\"|Some((285, 21))"]
+    name "true": false ["Error|minecraft:structure_template_feature/constraints|\"core/required_child\"|Some((135, 1))"]
+    floor "1": false ["Error|minecraft:multiface_feature/can_place_on_floor|\"core/invalid_type\"|Some((257, 20))"]
+    chance "1": false ["Error|minecraft:multiface_feature/chance_of_spreading|\"core/invalid_type\"|Some((285, 21))"]
+    name "1": false ["Error|minecraft:structure_template_feature/constraints|\"core/required_child\"|Some((132, 1))"]
+    floor null: false ["Error|minecraft:multiface_feature/can_place_on_floor|\"core/required_child\"|Some((279, 4))", "Info|minecraft:multiface_feature/can_place_on_floor|\"core/value_rewritten\"|None"]
+    chance null: false ["Error|minecraft:multiface_feature/chance_of_spreading|\"core/required_child\"|Some((312, 1))", "Info|minecraft:multiface_feature/chance_of_spreading|\"core/value_rewritten\"|None"]
+    name null: false ["Error|minecraft:structure_template_feature/structure_name|\"core/required_child\"|Some((133, 1))", "Info|minecraft:structure_template_feature/structure_name|\"core/value_rewritten\"|None"]
+    floor 1e39: false ["Error|minecraft:multiface_feature/can_place_on_floor|\"core/invalid_type\"|Some((257, 20))"]
+    chance 1e39: false ["Error|minecraft:multiface_feature/chance_of_spreading|\"core/invalid_type\"|Some((285, 21))"]
+    name 1e39: false ["Error|minecraft:structure_template_feature/structure_name|\"core/invalid_type\"|Some((111, 16))"]
+    floor []: false ["Error|minecraft:multiface_feature/can_place_on_floor/0|\"core/invalid_type\"|Some((280, 1))"]
+    chance []: false ["Error|minecraft:multiface_feature/chance_of_spreading/0|\"core/invalid_type\"|Some((309, 1))"]
+    name []: false ["Error|minecraft:structure_template_feature/structure_name/0|\"core/invalid_type\"|Some((130, 1))"]
 "#;

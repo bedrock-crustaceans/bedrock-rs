@@ -4,7 +4,7 @@
 //! tessellation fallback of Upcoming Creator Features (V12, V13, L13).
 
 use bedrock_addon::diagnostic::{
-    Diagnostic, DiagnosticDetail, Diagnostics, Phase, ReferenceHint, Severity,
+    Diagnostic, DiagnosticDetail, Diagnostics, Kind, Phase, ReferenceHint, Severity,
 };
 use bedrock_addon::load::LoadOptions;
 use bedrock_addon::pack::LinkOptions;
@@ -51,7 +51,7 @@ fn said(finding: &Diagnostic) -> Said {
         _ => ("", String::new()),
     };
     (
-        finding.code.name(),
+        finding.code.id(),
         finding.severity,
         finding.phase,
         finding
@@ -84,7 +84,29 @@ fn of<'a>(found: &'a Diagnostics, code: &str) -> Vec<&'a Diagnostic> {
     found
         .iter()
         .filter(|finding| {
-            finding.code.name() == code
+            finding.code.id() == code
+                && finding
+                    .location
+                    .path
+                    .as_ref()
+                    .is_some_and(|path| path.as_str() == BLOCKS)
+        })
+        .collect()
+}
+
+/// The findings of `blocks.json` about an unknown sound, with the game's sentence or without.
+fn of_sounds(found: &Diagnostics) -> Vec<&Diagnostic> {
+    let mut told = of(found, "core/unknown_sound");
+    told.extend(of(found, "core/unknown_sound_worded"));
+    told
+}
+
+/// The findings of `blocks.json` whose code is of the kind `kind`.
+fn of_kind(found: &Diagnostics, kind: Kind) -> Vec<&Diagnostic> {
+    found
+        .iter()
+        .filter(|finding| {
+            finding.code.kind() == kind
                 && finding
                     .location
                     .path
@@ -107,7 +129,10 @@ fn r27_a_key_of_a_block_a_pack_defines_is_no_finding() {
         &[("blocks/lamp.json", &block("demo:lamp", DRAWN))],
         &[(BLOCKS, &file(r#""demo:lamp": {"sound": "glass"}"#))],
     );
-    assert!(of(&found, "UnresolvedReference").is_empty(), "{found:#?}");
+    assert!(
+        of_kind(&found, Kind::UnresolvedReference).is_empty(),
+        "{found:#?}"
+    );
 }
 
 #[test]
@@ -116,7 +141,10 @@ fn r27_a_key_of_a_block_of_the_game_is_no_finding_with_a_host_and_without() {
     let files: Vec<(&'static str, &str)> = files.iter().map(|(p, t)| (*p, t.as_str())).collect();
     // Without a host the crate's own list of the game's blocks answers.
     let found = link(&[], &files);
-    assert!(of(&found, "UnresolvedReference").is_empty(), "{found:#?}");
+    assert!(
+        of_kind(&found, Kind::UnresolvedReference).is_empty(),
+        "{found:#?}"
+    );
     // A host is asked by the block's full name.
     let found = link_with(
         &[],
@@ -124,10 +152,13 @@ fn r27_a_key_of_a_block_of_the_game_is_no_finding_with_a_host_and_without() {
         hosted(&[("block", "minecraft:dirt")]),
         LinkOptions::default(),
     );
-    assert!(of(&found, "UnresolvedReference").is_empty(), "{found:#?}");
+    assert!(
+        of_kind(&found, Kind::UnresolvedReference).is_empty(),
+        "{found:#?}"
+    );
     // And it is believed when it says no.
     let found = link_with(&[], &files, hosted(&[]), LinkOptions::default());
-    let missing = of(&found, "UnresolvedReference");
+    let missing = of(&found, "core/unresolved_reference_worded");
     assert_eq!(missing.len(), 1, "{found:#?}");
     assert_eq!(missing[0].code.to_string(), no_such_block("dirt"));
 }
@@ -138,12 +169,12 @@ fn r27_a_key_nothing_defines_is_a_warning_at_the_key() {
         &[("blocks/lamp.json", &block("demo:lamp", DRAWN))],
         &[(BLOCKS, &file(r#""demo:ghost": {}, "demo:lamp": {}"#))],
     );
-    let missing = of(&found, "UnresolvedReference");
+    let missing = of(&found, "core/unresolved_reference_worded");
     assert_eq!(missing.len(), 1, "{found:#?}");
     assert_eq!(
         said(missing[0]),
         (
-            "UnresolvedReference",
+            "core/unresolved_reference_worded",
             Severity::Warning,
             Phase::Link,
             "rp 2".to_owned(),
@@ -165,7 +196,11 @@ fn r27_a_key_nothing_defines_is_a_warning_at_the_key() {
             ..Default::default()
         },
     );
-    assert_eq!(of(&found, "UnresolvedReference").len(), 1, "{found:#?}");
+    assert_eq!(
+        of(&found, "core/unresolved_reference_worded").len(),
+        1,
+        "{found:#?}"
+    );
 }
 
 #[test]
@@ -179,7 +214,7 @@ fn r27_a_bare_key_is_a_block_of_the_game_in_lower_case() {
             &file(r#""Dirt": {}, "minecraft:Gravel": {}, "minecraft:sand": {}, "Nope": {}"#),
         )],
     );
-    let missing = of(&found, "UnresolvedReference");
+    let missing = of(&found, "core/unresolved_reference_worded");
     assert_eq!(missing.len(), 1, "{found:#?}");
     // The key is told as the file has it.
     assert_eq!(missing[0].location.json_path.to_string(), "Nope");
@@ -199,7 +234,7 @@ fn r27_a_key_of_another_namespace_is_compared_as_written() {
             &file(r#""demo:Lamp": {}, "lamp": {}, "demo:lamp": {}"#),
         )],
     );
-    let missing = of(&found, "UnresolvedReference");
+    let missing = of(&found, "core/unresolved_reference_worded");
     let paths: Vec<String> = missing
         .iter()
         .map(|finding| finding.location.json_path.to_string())
@@ -218,17 +253,27 @@ fn r27_a_name_the_client_still_answers_to_is_a_block_with_any_host() {
     // game's blocks has `sea_lantern` alone.
     let entries = file(r#""seaLantern": {"sound": "glass"}"#);
     let found = link(&[], &[(BLOCKS, &entries)]);
-    assert!(of(&found, "UnresolvedReference").is_empty(), "{found:#?}");
+    assert!(
+        of_kind(&found, Kind::UnresolvedReference).is_empty(),
+        "{found:#?}"
+    );
     let found = link_with(
         &[],
         &[(BLOCKS, &entries)],
         hosted(&[]),
         LinkOptions::default(),
     );
-    assert!(of(&found, "UnresolvedReference").is_empty(), "{found:#?}");
+    assert!(
+        of_kind(&found, Kind::UnresolvedReference).is_empty(),
+        "{found:#?}"
+    );
     // The name is the game's alone.
     let found = link(&[], &[(BLOCKS, &file(r#""demo:seaLantern": {}"#))]);
-    assert_eq!(of(&found, "UnresolvedReference").len(), 1, "{found:#?}");
+    assert_eq!(
+        of(&found, "core/unresolved_reference_worded").len(),
+        1,
+        "{found:#?}"
+    );
 }
 
 #[test]
@@ -243,7 +288,7 @@ fn r27_a_key_two_packs_write_is_told_once_at_the_higher_pack() {
         LoadOptions::default(),
     );
     let found = set.link();
-    let missing = of(&found, "UnresolvedReference");
+    let missing = of(&found, "core/unresolved_reference_worded");
     assert_eq!(missing.len(), 1, "{found:#?}");
     assert_eq!(said(missing[0]).3, "rp 3");
 }
@@ -271,7 +316,7 @@ mod textures {
 
     /// The findings about a tile of the terrain atlas.
     fn tiles(found: &Diagnostics) -> Vec<&Diagnostic> {
-        of(found, "UnresolvedReference")
+        of_kind(found, Kind::UnresolvedReference)
             .into_iter()
             .filter(|finding| said(finding).6 == "atlas key")
             .collect()
@@ -317,7 +362,11 @@ mod textures {
             ],
         );
         assert!(tiles(&found).is_empty(), "{found:#?}");
-        assert_eq!(of(&found, "UnresolvedReference").len(), 1, "{found:#?}");
+        assert_eq!(
+            of(&found, "core/unresolved_reference_worded").len(),
+            1,
+            "{found:#?}"
+        );
     }
 
     #[test]
@@ -382,7 +431,7 @@ mod textures {
         assert_eq!(
             said(missing[0]),
             (
-                "UnresolvedReference",
+                "core/unresolved_reference_worded",
                 Severity::Info,
                 Phase::Link,
                 "rp 2".to_owned(),
@@ -539,7 +588,7 @@ fn r28_without_the_texture_feature_nothing_is_reported() {
             ),
         ],
     );
-    let tiles = of(&found, "UnresolvedReference")
+    let tiles = of_kind(&found, Kind::UnresolvedReference)
         .into_iter()
         .filter(|finding| said(finding).6 == "atlas key")
         .count();
@@ -556,7 +605,10 @@ mod sounds {
 
     fn unknown(entries: &str, sounds: &str) -> Vec<Said> {
         let found = link(&[], &[(BLOCKS, &file(entries)), ("sounds.json", sounds)]);
-        of(&found, "UnknownSound").into_iter().map(said).collect()
+        of(&found, "core/unknown_sound")
+            .into_iter()
+            .map(said)
+            .collect()
     }
 
     #[test]
@@ -575,7 +627,7 @@ mod sounds {
         assert_eq!(
             unknown(r#""dirt": {"sound": "stone"}"#, SOUNDS),
             [(
-                "UnknownSound",
+                "core/unknown_sound",
                 Severity::Info,
                 Phase::Link,
                 "rp 2".to_owned(),
@@ -599,9 +651,9 @@ mod sounds {
             vec![(BLOCKS, entries.as_str())],
         ] {
             let found = link(&[], &resource);
-            assert!(of(&found, "UnknownSound").is_empty(), "{found:#?}");
+            assert!(of_sounds(&found).is_empty(), "{found:#?}");
             let found = link_with(&[], &resource, hosted(&[]), LinkOptions::default());
-            assert!(of(&found, "UnknownSound").is_empty(), "{found:#?}");
+            assert!(of_sounds(&found).is_empty(), "{found:#?}");
         }
         // The game's sound types are in its own `sounds.json`: with a table on the stack a
         // host is not asked.
@@ -611,7 +663,7 @@ mod sounds {
             hosted(&[("block sound", "squeaky")]),
             LinkOptions::default(),
         );
-        assert_eq!(of(&found, "UnknownSound").len(), 1, "{found:#?}");
+        assert_eq!(of(&found, "core/unknown_sound").len(), 1, "{found:#?}");
     }
 
     #[test]
@@ -638,7 +690,10 @@ mod sounds {
                 ("sounds.json", SOUNDS),
             ],
         );
-        let told: Vec<Said> = of(&found, "UnknownSound").into_iter().map(said).collect();
+        let told: Vec<Said> = of(&found, "core/unknown_sound")
+            .into_iter()
+            .map(said)
+            .collect();
         assert_eq!(told.len(), 1, "{found:#?}");
         assert_eq!(told[0].5, "wool/sound");
     }
@@ -658,7 +713,7 @@ fn r29_without_the_sound_feature_nothing_is_reported() {
             ),
         ],
     );
-    assert!(of(&found, "UnknownSound").is_empty(), "{found:#?}");
+    assert!(of_sounds(&found).is_empty(), "{found:#?}");
 }
 
 // ---- V11 --------------------------------------------------------------------------------------
@@ -672,12 +727,12 @@ fn v11_an_unused_exponent_is_told_at_the_member_of_the_entry() {
             &file(r#""demo:lamp": {"ambient_occlusion_exponent": 0.5}"#),
         )],
     );
-    let unused = of(&found, "NoEffect");
+    let unused = of(&found, "core/no_effect_worded");
     assert_eq!(unused.len(), 1, "{found:#?}");
     assert_eq!(
         said(unused[0]),
         (
-            "NoEffect",
+            "core/no_effect_worded",
             Severity::Warning,
             Phase::Link,
             "rp 2".to_owned(),
@@ -720,7 +775,7 @@ fn v11_the_exponent_is_the_merged_one_and_the_component_a_base_component() {
         LoadOptions::default(),
     );
     let found = set.link();
-    assert!(of(&found, "NoEffect").is_empty(), "{found:#?}");
+    assert!(of_kind(&found, Kind::NeverApplies).is_empty(), "{found:#?}");
     // A block without the component, and a block of the game no pack defines: nothing.
     let found = link(
         &[(
@@ -734,7 +789,7 @@ fn v11_the_exponent_is_the_merged_one_and_the_component_a_base_component() {
             ),
         )],
     );
-    assert!(of(&found, "NoEffect").is_empty(), "{found:#?}");
+    assert!(of_kind(&found, Kind::NeverApplies).is_empty(), "{found:#?}");
 }
 
 // ---- R28, R29, V11: the pack that wrote the member ---------------------------------------------
@@ -755,7 +810,7 @@ fn mushroom_tiles_told(entries: &str) -> Vec<(String, String)> {
     let found = set.link();
     let mut told: Vec<(String, String)> = found
         .iter()
-        .filter(|finding| finding.code.name() == "UnresolvedReference")
+        .filter(|finding| finding.code.id() == "core/unresolved_reference_worded")
         .map(said)
         .filter(|said| said.4 == BLOCKS && said.7.starts_with("ghost_"))
         .map(|said| (said.5, said.7))
@@ -886,8 +941,10 @@ fn r28_r29_v11_a_member_a_lower_pack_wrote_is_told_at_that_packs_file() {
             .iter()
             .filter(|finding| {
                 matches!(
-                    finding.code.name(),
-                    "UnresolvedReference" | "UnknownSound" | "NoEffect"
+                    finding.code.id(),
+                    "core/unresolved_reference_worded"
+                        | "core/unknown_sound"
+                        | "core/no_effect_worded"
                 )
             })
             .map(said)
@@ -904,20 +961,36 @@ fn r28_r29_v11_a_member_a_lower_pack_wrote_is_told_at_that_packs_file() {
     assert_eq!(
         told(r#""demo:lamp": {"isotropic": true}"#),
         [
-            at("rp 2", "ambient_occlusion_exponent", "NoEffect"),
-            at("rp 2", "carried_textures", "UnresolvedReference"),
-            at("rp 2", "sound", "UnknownSound"),
-            at("rp 2", "textures", "UnresolvedReference"),
+            at(
+                "rp 2",
+                "ambient_occlusion_exponent",
+                "core/no_effect_worded"
+            ),
+            at(
+                "rp 2",
+                "carried_textures",
+                "core/unresolved_reference_worded"
+            ),
+            at("rp 2", "sound", "core/unknown_sound"),
+            at("rp 2", "textures", "core/unresolved_reference_worded"),
         ]
     );
     // A member the higher pack writes too is the higher pack's.
     assert_eq!(
         told(r#""demo:lamp": {"sound": "creaky", "textures": "phantom"}"#),
         [
-            at("rp 2", "ambient_occlusion_exponent", "NoEffect"),
-            at("rp 2", "carried_textures", "UnresolvedReference"),
-            at("rp 3", "sound", "UnknownSound"),
-            at("rp 3", "textures", "UnresolvedReference"),
+            at(
+                "rp 2",
+                "ambient_occlusion_exponent",
+                "core/no_effect_worded"
+            ),
+            at(
+                "rp 2",
+                "carried_textures",
+                "core/unresolved_reference_worded"
+            ),
+            at("rp 3", "sound", "core/unknown_sound"),
+            at("rp 3", "textures", "core/unresolved_reference_worded"),
         ]
     );
 }
@@ -959,7 +1032,7 @@ fn v12_each_of_the_four_drawing_members_counts_and_no_other() {
         assert_eq!(
             told(entry),
             [(
-                "NoEffect",
+                "core/no_effect_worded",
                 Severity::Warning,
                 Phase::Link,
                 "rp 2".to_owned(),

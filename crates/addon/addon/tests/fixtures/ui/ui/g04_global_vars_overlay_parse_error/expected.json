@@ -5,7 +5,7 @@
   },
   "diagnostics": [
     {
-      "code": "MalformedInput",
+      "code": "core/syntax",
       "severity": "info",
       "pack": 1
     }

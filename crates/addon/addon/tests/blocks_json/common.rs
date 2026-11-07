@@ -168,7 +168,7 @@ impl Found {
     pub fn of(f: &Diagnostic) -> Self {
         let shown = f.code.to_string();
         Self {
-            code: f.code.name(),
+            code: f.code.id(),
             severity: f.severity,
             at: f.location.json_path.to_string(),
             text: if has_vanilla_text(f) {

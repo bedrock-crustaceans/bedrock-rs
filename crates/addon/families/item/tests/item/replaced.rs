@@ -21,7 +21,7 @@ fn told(version: &str, components: &str, cx: &LoadContext) -> (Vec<String>, Stri
         .diagnostics()
         .iter()
         .map(|f| {
-            let code: String = f.code.name().to_owned();
+            let code: String = f.code.id().to_owned();
             let at = f.location.json_path.to_string();
             let at = at.strip_prefix("minecraft:item/").unwrap_or(&at).to_owned();
             format!("{code} {:?} at {at}", f.severity)
@@ -82,7 +82,7 @@ fn case_8_a_use_modifiers_no_slice_of_its_version_binds_is_told_as_not_written()
     );
     has(
         &found,
-        "DroppedField Info at components/minecraft:use_modifiers",
+        "core/dropped_field Info at components/minecraft:use_modifiers",
     );
     assert!(written.contains(r#""use_duration": 3.0"#), "{written}");
     assert!(!written.contains("movement_modifier"), "{written}");
@@ -94,7 +94,7 @@ fn case_8_a_use_modifiers_no_slice_of_its_version_binds_is_told_as_not_written()
     );
     has(
         &found,
-        "DroppedField Info at components/minecraft:use_modifiers",
+        "core/dropped_field Info at components/minecraft:use_modifiers",
     );
     assert!(!written.contains("use_modifiers"), "{written}");
     // From 1.20.50 the component is bound, and the legacy duration is written over its own
@@ -106,7 +106,7 @@ fn case_8_a_use_modifiers_no_slice_of_its_version_binds_is_told_as_not_written()
     );
     has(
         &found,
-        "DroppedField Info at components/minecraft:use_modifiers/use_duration",
+        "core/dropped_field Info at components/minecraft:use_modifiers/use_duration",
     );
     assert!(
         written.contains(r#""use_duration": 2.0, "movement_modifier": 0.5"#),
@@ -119,7 +119,7 @@ fn case_8_a_use_modifiers_no_slice_of_its_version_binds_is_told_as_not_written()
         &third_party(),
     );
     assert!(
-        !found.iter().any(|f| f.starts_with("DroppedField")),
+        !found.iter().any(|f| f.starts_with("core/dropped_field")),
         "{found:#?}"
     );
 }
@@ -143,7 +143,7 @@ fn case_9_a_member_of_use_duration_nothing_reads_is_told_and_kept_where_the_step
         assert_eq!(
             found
                 .iter()
-                .any(|f| f == "UnrecognizedField Info at components/minecraft:use_duration/a"),
+                .any(|f| f == "core/unrecognized_field Info at components/minecraft:use_duration/a"),
             !kept,
             "{version}: {found:#?}"
         );
@@ -159,7 +159,10 @@ fn case_10_a_tags_component_no_slice_of_its_version_binds_is_noted_beside_a_tag_
         r#""minecraft:tags": {"tags": ["b"]}, "tag:a": {}"#,
     ] {
         let (found, written) = told("1.20.40", components, &third_party());
-        has(&found, "DroppedField Info at components/minecraft:tags");
+        has(
+            &found,
+            "core/dropped_field Info at components/minecraft:tags",
+        );
         assert!(
             written.contains(r#""minecraft:tags": { "tags": [ "a" ] }"#),
             "{components}: {written}"
@@ -178,7 +181,7 @@ fn case_11_a_legacy_creative_category_the_written_item_has_no_place_for_is_told(
     // and the folder gives no conversion: a value this library loses, a warning.
     has(
         &found,
-        "DroppedField Info at components/minecraft:creative_category",
+        "core/dropped_field Info at components/minecraft:creative_category",
     );
     assert!(!written.contains("itemGroup"), "{written}");
 }
@@ -192,19 +195,19 @@ fn case_12_the_unknown_members_of_a_component_a_step_removes_are_told() {
     );
     has(
         &found,
-        "UnrecognizedField Warning at components/minecraft:on_use/zz_a",
+        "core/unrecognized_field Warning at components/minecraft:on_use/zz_a",
     );
     has(
         &found,
-        "UnrecognizedField Warning at components/minecraft:weapon/zz_b",
+        "core/unrecognized_field Warning at components/minecraft:weapon/zz_b",
     );
     has(
         &found,
-        "UnrecognizedField Warning at components/minecraft:on_use_on/zz_c",
+        "core/unrecognized_field Warning at components/minecraft:on_use_on/zz_c",
     );
     has(
         &found,
-        "DeprecatedMember Info at components/minecraft:weapon/on_hurt_entity",
+        "core/deprecated_member Info at components/minecraft:weapon/on_hurt_entity",
     );
     for gone in ["zz_a", "zz_b", "zz_c"] {
         assert!(!written.contains(gone), "{gone}: {written}");
@@ -217,7 +220,7 @@ fn case_12_the_unknown_members_of_a_component_a_step_removes_are_told() {
     );
     has(
         &found,
-        "UnrecognizedField Warning at components/minecraft:chargeable/d",
+        "core/unrecognized_field Warning at components/minecraft:chargeable/d",
     );
 }
 
@@ -235,7 +238,7 @@ fn a_finding_of_the_modifiers_a_step_made_names_the_member_of_the_file() {
     );
     has(
         &found,
-        "InvalidValue Info at components/minecraft:use_duration",
+        "core/invalid_value Info at components/minecraft:use_duration",
     );
 }
 
@@ -254,7 +257,7 @@ fn a_legacy_use_duration_that_is_no_number_is_told_from_1_20_50() {
             &format!(r#""minecraft:use_duration": {value}"#),
             &third_party(),
         );
-        has(&found, &format!("InvalidType Info at {at}"));
+        has(&found, &format!("core/invalid_type Info at {at}"));
         assert!(!written.contains("use_modifiers"), "{value}: {written}");
     }
     // `null` is absent in the legacy chain (rule N1): nothing is told, nothing made.
@@ -279,7 +282,7 @@ fn an_icon_textures_beside_the_legacy_texture_is_noted() {
     );
     has(
         &found,
-        "DroppedField Info at components/minecraft:icon/textures",
+        "core/dropped_field Info at components/minecraft:icon/textures",
     );
     assert!(written.contains(r#""default": "demo_sword""#), "{written}");
     assert!(!written.contains("other"), "{written}");
@@ -294,7 +297,7 @@ fn a_wearable_protection_the_armor_s_is_written_over_is_noted() {
     );
     has(
         &found,
-        "DroppedField Info at components/minecraft:wearable/protection",
+        "core/dropped_field Info at components/minecraft:wearable/protection",
     );
     assert!(written.contains(r#""protection": 5"#), "{written}");
     // The same points: nothing is replaced.
@@ -304,7 +307,9 @@ fn a_wearable_protection_the_armor_s_is_written_over_is_noted() {
         &allowlisted(),
     );
     assert!(
-        !found.iter().any(|f| f.starts_with("DroppedField Info")),
+        !found
+            .iter()
+            .any(|f| f.starts_with("core/dropped_field Info")),
         "{found:#?}"
     );
 }
@@ -325,14 +330,17 @@ fn a_component_with_one_member_of_another_type_refuses_the_item_in_the_legacy_ch
         &third_party(),
     );
     assert!(
-        d.iter().any(|f| f.code.name() == "InvalidType"
+        d.iter().any(|f| f.code.id() == "core/invalid_type"
             && f.severity == bedrock_addon_core::diagnostic::Severity::Error
             && f.location.json_path.to_string()
                 == "minecraft:item/components/minecraft:durability/damage_chance"),
         "{d:#?}"
     );
     assert!(
-        !d.iter().any(|f| f.code.name() == "DroppedComponent"),
+        !d.iter().any(|f| f.code.kind()
+            == bedrock_addon_core::diagnostic::Kind::UnknownMember(
+                bedrock_addon_core::diagnostic::Disposition::Dropped
+            )),
         "{d:#?}"
     );
 }
@@ -361,13 +369,13 @@ fn a_member_out_of_its_range_refuses_the_item_at_every_version() {
     ] {
         let d = rejects(&item(version, "demo:x", components), &third_party());
         assert!(
-            d.iter().any(|f| f.code.name() == "InvalidValue"
+            d.iter().any(|f| f.code.id() == "core/invalid_value"
                 && f.severity == bedrock_addon_core::diagnostic::Severity::Error
                 && f.location.json_path.to_string() == format!("minecraft:item/{member}")),
             "{version}: {d:#?}"
         );
         assert!(
-            !d.iter().any(|f| f.code.name() == "DroppedComponent"
+            !d.iter().any(|f| f.code.id() == "core/dropped_component"
                 && f.location.json_path.to_string() == format!("minecraft:item/{component}")),
             "{version}: {d:#?}"
         );
@@ -379,7 +387,7 @@ fn a_member_out_of_its_range_refuses_the_item_at_every_version() {
     );
     has(
         &found,
-        "InvalidValue Info at components/minecraft:storage_item/max_weight_limit",
+        "core/invalid_value Info at components/minecraft:storage_item/max_weight_limit",
     );
     assert!(!written.contains("storage_item"), "{written}");
 }
@@ -411,7 +419,7 @@ fn a_negative_legacy_use_duration_is_told_at_the_member_of_the_file_and_not_carr
     assert!(
         found
             .iter()
-            .any(|f| f.starts_with("InvalidValue Info at components/minecraft:use_duration")),
+            .any(|f| f.starts_with("core/invalid_value Info at components/minecraft:use_duration")),
         "{found:#?}"
     );
     assert!(
@@ -437,7 +445,8 @@ fn a_negative_legacy_use_duration_of_the_legacy_read_alone_is_told_and_gives_no_
         assert!(
             found
                 .iter()
-                .any(|f| f.starts_with("InvalidValue Info at components/minecraft:use_duration")),
+                .any(|f| f
+                    .starts_with("core/invalid_value Info at components/minecraft:use_duration")),
             "{found:#?}"
         );
         assert!(!written.contains("use_modifiers"), "{written}");
@@ -450,7 +459,7 @@ fn a_negative_legacy_use_duration_of_the_legacy_read_alone_is_told_and_gives_no_
         &third_party(),
     );
     assert!(
-        !found.iter().any(|f| f.starts_with("DroppedField")),
+        !found.iter().any(|f| f.starts_with("core/dropped_field")),
         "{found:#?}"
     );
     assert!(written.contains(r#""use_duration": 2.0"#), "{written}");
@@ -475,7 +484,7 @@ fn told_of_payload(version: &str, rest: &str, cx: &LoadContext) -> (Vec<String>,
                 .diagnostics
                 .iter()
                 .map(|f| {
-                    let code: String = f.code.name().to_owned();
+                    let code: String = f.code.id().to_owned();
                     let at = f.location.json_path.to_string();
                     let at = at.strip_prefix("minecraft:item/").unwrap_or(&at).to_owned();
                     format!("{code} {:?} at {at}", f.severity)
@@ -496,7 +505,7 @@ fn told_of_payload(version: &str, rest: &str, cx: &LoadContext) -> (Vec<String>,
         .diagnostics()
         .iter()
         .map(|f| {
-            let code: String = f.code.name().to_owned();
+            let code: String = f.code.id().to_owned();
             let at = f.location.json_path.to_string();
             let at = at.strip_prefix("minecraft:item/").unwrap_or(&at).to_owned();
             format!("{code} {:?} at {at}", f.severity)
@@ -518,7 +527,7 @@ fn the_side_car_of_the_file_a_step_writes_over_or_does_not_read_is_told() {
         r#""components": {"minecraft:food": {"nutrition": 4, "on_consume": {"event": "e"}}}, "__deprecated_components": {"on_consume_trigger": {"on_consume_trigger": {"event": "x:own"}}}"#,
         &allowlisted(),
     );
-    has(&found, "DroppedField Info at __deprecated_components");
+    has(&found, "core/dropped_field Info at __deprecated_components");
     assert!(written.contains(r#""event": "e""#), "{written}");
     assert!(!written.contains("x:own"), "{written}");
     // From 1.20.30 the side-car is read: a slot a step fills over what the file holds there
@@ -530,10 +539,13 @@ fn the_side_car_of_the_file_a_step_writes_over_or_does_not_read_is_told() {
     );
     // (the side-car is a deprecated name of the 1.20.30 root, which the game refuses, so no
     // step runs and nothing is written:)
-    has(&found, "DeprecatedMember Error at __deprecated_components");
     has(
         &found,
-        "MemberNotKept Info at __deprecated_components/on_use/zz",
+        "item/deprecated_components_deprecated Error at __deprecated_components",
+    );
+    has(
+        &found,
+        "core/member_not_kept Info at __deprecated_components/on_use/zz",
     );
     assert!(written.is_empty(), "{written}");
     // The same trigger: nothing is replaced.
@@ -542,7 +554,10 @@ fn the_side_car_of_the_file_a_step_writes_over_or_does_not_read_is_told() {
         r#""components": {"minecraft:on_use": {"on_use": {"event": "e"}}}, "__deprecated_components": {"on_use": {"on_use_trigger": {"event": "e"}}}"#,
         &allowlisted(),
     );
-    has(&found, "DeprecatedMember Error at __deprecated_components");
+    has(
+        &found,
+        "item/deprecated_components_deprecated Error at __deprecated_components",
+    );
 }
 
 #[test]
@@ -554,7 +569,7 @@ fn the_members_of_an_armor_the_1_20_20_step_removes_and_does_not_read_are_told()
     );
     has(
         &found,
-        "UnrecognizedField Warning at components/minecraft:armor/zz",
+        "core/unrecognized_field Warning at components/minecraft:armor/zz",
     );
 }
 
@@ -569,11 +584,11 @@ fn a_deprecated_on_dig_of_a_legacy_digger_the_1_20_50_step_writes_over_is_told()
     );
     has(
         &found,
-        "DroppedField Info at components/minecraft:digger/__deprecated_on_dig",
+        "core/dropped_field Info at components/minecraft:digger/__deprecated_on_dig",
     );
     has(
         &found,
-        "DroppedField Info at components/minecraft:digger/destroy_speeds/0/__deprecated_on_dig",
+        "core/dropped_field Info at components/minecraft:digger/destroy_speeds/0/__deprecated_on_dig",
     );
     assert!(!written.contains("x:own"), "{written}");
     assert!(
@@ -599,7 +614,7 @@ fn what_a_typed_read_does_not_hold_is_told_where_the_file_has_it() {
         &allowlisted(),
     );
     assert!(
-        d.iter().any(|f| f.code.name() == "MemberNotKept"
+        d.iter().any(|f| f.code.id() == "core/member_not_kept"
             && f.severity == bedrock_addon_core::diagnostic::Severity::Error
             && f.location.json_path.to_string()
                 == "minecraft:item/components/minecraft:durability/damage_chance/zz"),
@@ -618,7 +633,7 @@ fn what_a_typed_read_does_not_hold_is_told_where_the_file_has_it() {
         ),
     ] {
         let (found, written) = told(version, components, &allowlisted());
-        has(&found, &format!("MemberNotKept Warning at {at}"));
+        has(&found, &format!("core/member_not_kept Warning at {at}"));
         assert!(!written.contains("zz"), "{version}: {written}");
     }
 }
@@ -634,7 +649,7 @@ fn a_storage_weight_component_of_the_file_the_1_21_60_split_writes_over_is_noted
     );
     has(
         &found,
-        "DroppedField Info at components/minecraft:storage_weight_limit",
+        "core/dropped_field Info at components/minecraft:storage_weight_limit",
     );
     assert!(written.contains(r#""max_weight_limit": 32"#), "{written}");
     assert!(!written.contains("33"), "{written}");
@@ -654,7 +669,7 @@ fn a_movement_modifier_out_of_the_modifiers_range_is_told_and_not_carried() {
     has(
         &found,
         // ours, an information
-        "InvalidValue Info at components/minecraft:chargeable/movement_modifier",
+        "core/invalid_value Info at components/minecraft:chargeable/movement_modifier",
     );
     assert!(!written.contains("movement_modifier"), "{written}");
     assert_eq!(rewritten(&written, &allowlisted()), written);
@@ -665,7 +680,7 @@ fn a_movement_modifier_out_of_the_modifiers_range_is_told_and_not_carried() {
         &allowlisted(),
     );
     assert!(
-        !found.iter().any(|f| f.starts_with("InvalidValue")),
+        !found.iter().any(|f| f.starts_with("core/invalid_value")),
         "{found:#?}"
     );
     assert!(written.contains(r#""movement_modifier": 1.0"#), "{written}");
@@ -726,17 +741,17 @@ fn a_failed_component_read_rejects_the_item_in_a_cereal_and_in_a_legacy_one() {
     let cases = [
         (
             r#""minecraft:durability": {"max_durability": 9, "damage_chance": {"min": "a"}}, "minecraft:max_stack_size": 3"#,
-            "InvalidType",
+            "core/invalid_type",
             "minecraft:item/components/minecraft:durability/damage_chance",
         ),
         (
             r#""minecraft:cooldown": {"duration": 1.0}, "minecraft:max_stack_size": 3"#,
-            "MissingRequiredField",
+            "core/missing_required_field",
             "minecraft:item/components/minecraft:cooldown/category",
         ),
     ];
     let name =
-        |d: &bedrock_addon_core::diagnostic::Diagnostic| -> String { d.code.name().to_owned() };
+        |d: &bedrock_addon_core::diagnostic::Diagnostic| -> String { d.code.id().to_owned() };
     for (components, code, at) in cases {
         for version in ["1.21.0", "1.26.30", "1.26.50"] {
             let d = rejects(&item(version, "demo:x", components), &third_party());

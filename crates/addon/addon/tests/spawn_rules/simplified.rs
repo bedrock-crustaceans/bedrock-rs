@@ -12,13 +12,18 @@ use super::common::{
 };
 
 fn unresolved(code: &Code) -> bool {
-    // By legacy name: the variant and the definitions that were it.
-    matches!(code.name(), "UnresolvedReference")
+    matches!(
+        code.id(),
+        "spawn_rules/placement_type"
+            | "spawn_rules/placement_heightmap"
+            | "spawn_rules/placement_obstruction"
+            | "spawn_rules/placement_predicate"
+    )
 }
 
 fn unrecognized(code: &Code) -> bool {
     // By legacy name: the variant and the definitions that were it.
-    matches!(code.name(), "UnrecognizedField")
+    matches!(code.id(), "core/unrecognized_field")
 }
 
 /// A simplified document of `x:mob` at `version` with `body` after the description.
@@ -110,7 +115,7 @@ fn s03_spawn_simplified_placement() {
     );
     assert_eq!(
         names(unknown.diagnostics(), Severity::Info),
-        ["UnresolvedReference"]
+        ["spawn_rules/placement_type"]
     );
     assert!(!unknown.diagnostics().has_errors());
     assert_eq!(
@@ -218,7 +223,7 @@ fn s14_simplified_missing_identifier() {
     );
     let found = with(&d, |c| {
         // By legacy name: the variant and the definitions that were it.
-        matches!(c.name(), "MissingRequiredField")
+        matches!(c.id(), "core/missing_required_field")
     });
     assert_eq!(
         paths(&found),
@@ -270,7 +275,7 @@ fn s16_simplified_constraints() {
             &experiment(),
         );
         // By legacy name: the variant and the definitions that were it.
-        let found = with(&d, |c| matches!(c.name(), "InvalidValue"));
+        let found = with(&d, |c| matches!(c.id(), "core/invalid_value"));
         assert_eq!(paths(&found), [at], "{body}");
         assert_eq!(found[0].severity, Severity::Error);
         assert!(closes_with(&d, "Failed to load spawn rules"));
@@ -298,7 +303,7 @@ fn s17_simplified_required_weights() {
         assert!(
             d.iter().any(
                 // By legacy name: the variant and the definitions that were it.
-                |f| matches!(f.code.name(), "MissingRequiredField")
+                |f| matches!(f.code.id(), "core/missing_required_field")
                     && f.severity == Severity::Error
             ),
             "{body}: {d:#?}"
@@ -325,7 +330,7 @@ fn s18_simplified_legacy_shape_at_1_21_60() {
     );
     let missing = with(&d, |c| {
         // By legacy name: the variant and the definitions that were it.
-        matches!(c.name(), "MissingRequiredField")
+        matches!(c.id(), "core/missing_required_field")
     });
     assert_eq!(
         paths(&missing),
@@ -341,7 +346,7 @@ fn s19_simplified_envelope() {
         has_text(
             &d,
             // By legacy name: the variant and the definitions that were it.
-            |c| matches!(c.name(), "MalformedInput"),
+            |c| matches!(c.id(), "core/document_member_count"),
             Severity::Error,
             "A Minecraft Document must have exactly two members: \"format_version\" and a payload member"
         ),
@@ -352,12 +357,15 @@ fn s19_simplified_envelope() {
     // `MissingPayload` with vanilla's text: the loader builds its input with the key
     // `minecraft:spawn_rules` (`getResources`), so `initAsJson`'s
     // `checkPayloadKey` refuses the other key.
-    assert_eq!(names(&d, Severity::Error)[0], "MissingPayload");
+    assert_eq!(
+        names(&d, Severity::Error)[0],
+        "core/payload_under_other_key"
+    );
     assert!(
         has_text(
             &d,
             // By legacy name: the variant and the definitions that were it.
-            |c| matches!(c.name(), "MissingPayload"),
+            |c| matches!(c.id(), "core/payload_under_other_key"),
             Severity::Error,
             "The payload key does not match the expected one. Expected: 'minecraft:spawn_rules'. Actual: 'minecraft:spawn_groups'."
         ),
@@ -376,13 +384,13 @@ fn s20_simplified_routing_edges() {
     assert!(matches!(missing.value(), SpawnRules::Standard(_)));
     assert_eq!(
         names(missing.diagnostics(), Severity::Info),
-        ["MissingFormatVersion"]
+        ["core/missing_format_version"]
     );
     for version in ["1.7.0", "99.0.0"] {
         let d = rejected(&modern(version, r#", "conditions": []"#), &cx);
         assert_eq!(
             names(&d, Severity::Error)[0],
-            "UnsupportedVersion",
+            "core/no_parser_for_version",
             "{version}"
         );
     }
@@ -412,7 +420,7 @@ fn s20_new_keys_without_the_experiment_deviation() {
     // G2: vanilla never looks at `placement` or the unprefixed keys; ours warns, and the missing pool leaves the rules unregistered.
     let off = loads(&modern("1.21.60", REGISTERED), &context());
     assert!(
-        names(off.diagnostics(), Severity::Info).contains(&"MissingRequiredField"),
+        names(off.diagnostics(), Severity::Info).contains(&"core/missing_required_field"),
         "{:#?}",
         off.diagnostics()
     );
@@ -426,7 +434,7 @@ fn s20b_simplified_at_engine() {
         has_text(
             &d,
             // By legacy name: the variant and the definitions that were it.
-            |c| matches!(c.name(), "UnsupportedVersion"),
+            |c| matches!(c.id(), "core/no_parser_for_version"),
             Severity::Error,
             &format!("unsupported version: no parser available for version {engine}")
         ),
@@ -458,7 +466,7 @@ fn s21_simplified_herd_object() {
         &experiment(),
     );
     assert!(d.has_errors());
-    assert_eq!(names(&d, Severity::Error)[0], "InvalidType", "{d:#?}");
+    assert_eq!(names(&d, Severity::Error)[0], "core/invalid_type", "{d:#?}");
 }
 
 #[test]
@@ -536,7 +544,7 @@ fn s16b_simplified_wrong_typed_scalars_are_refused_at_their_member() {
         let found: Vec<_> = d
             .iter()
             // By legacy name: the variant and the definitions that were it.
-            .filter(|f| matches!(f.code.name(), "InvalidType"))
+            .filter(|f| matches!(f.code.id(), "core/invalid_type"))
             .collect();
         assert_eq!(found.len(), 1, "{body}: {d:#?}");
         assert_eq!(found[0].severity, Severity::Error, "{body}");

@@ -1,13 +1,13 @@
 {
   "diagnostics": [
     {
-      "code": "InvalidEnumValue",
+      "code": "core/invalid_enum_value",
       "severity": "info",
       "text": "invalid enum value",
       "at": "t4/tiled"
     },
     {
-      "code": "InvalidEnumValue",
+      "code": "core/invalid_enum_value",
       "severity": "info",
       "text": "invalid enum value",
       "at": "t5/tiled"

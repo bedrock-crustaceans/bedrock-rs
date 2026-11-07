@@ -70,7 +70,7 @@ fn quiet(found: &Diagnostics) -> bool {
 /// Whether `found` has a finding of `code` at `severity` at a path ending in `tail`.
 fn told(found: &Diagnostics, code: &str, severity: Severity, tail: &str) -> bool {
     found.iter().any(|f| {
-        f.code.name() == code
+        f.code.id() == code
             && f.severity == severity
             && f.location.json_path.to_string().ends_with(tail)
     })
@@ -223,7 +223,12 @@ fn an_invalid_buoyant_movement_type_is_waves_below_the_target_and_an_error_at_it
     // The legacy reader's string node takes the name and the game logs no text for it
     // here: the crate's own finding is an information.
     assert!(
-        told(&found, "InvalidValue", Severity::Info, "movement_type"),
+        told(
+            &found,
+            "core/invalid_value",
+            Severity::Info,
+            "movement_type"
+        ),
         "{found:#?}"
     );
     let found = outcome(&wrapped("1.26.60", "minecraft:buoyant", &ac(11)), &cx()).diagnostics;
@@ -277,7 +282,7 @@ fn assert_error_at(version: &str, key: &str, value: &str, tail: &str, code: &str
     let found = outcome(&wrapped(version, key, value), &cx()).diagnostics;
     assert!(
         found.iter().any(|f| f.severity == Severity::Error
-            && f.code.name() == code
+            && f.code.id() == code
             && f.location.json_path.to_string().ends_with(tail)),
         "{version} {key} {value}: no {code} error at {tail}: {found:#?}"
     );
@@ -330,7 +335,7 @@ fn attack_takes_a_scalar_damage_below_the_target_and_refuses_a_string_at_it() {
         "minecraft:attack",
         &ac(24),
         "damage",
-        "InvalidType",
+        "core/invalid_type",
     );
 }
 
@@ -366,7 +371,7 @@ fn spell_effects_read_their_effects_and_an_infinite_duration() {
         "minecraft:spell_effects",
         &ac(27),
         "add_effects",
-        "InvalidType",
+        "core/invalid_type",
     );
 }
 
@@ -394,7 +399,7 @@ fn a_spell_effect_takes_its_defaults_and_a_lone_removed_effect_is_a_list() {
         "minecraft:spell_effects",
         r#"{"remove_effects": "bad_omen"}"#,
         "remove_effects",
-        "InvalidType",
+        "core/invalid_type",
     );
 }
 
@@ -413,7 +418,7 @@ fn a_lone_transformation_sound_is_a_list_only_below_the_target() {
         "minecraft:transformation",
         r#"{"transformation_sound": "unfect"}"#,
         "transformation_sound",
-        "InvalidType",
+        "core/invalid_type",
     );
 }
 
@@ -490,7 +495,7 @@ fn healable_takes_a_lone_effect_and_string_items_only_below_the_target() {
         "minecraft:healable",
         &ac(33),
         "effects",
-        "InvalidType",
+        "core/invalid_type",
     );
     let lone = written("1.26.50", "minecraft:healable", &ac(33));
     assert_eq!(
@@ -589,7 +594,7 @@ fn teleport_s_camel_case_spellings_are_no_members() {
         "minecraft:teleport",
         value,
         "minecraft:teleport/lightTeleportChance",
-        "UnrecognizedField",
+        "core/unrecognized_field",
     );
 }
 
@@ -610,11 +615,16 @@ fn trail_reads_its_new_members_at_the_target_and_ignores_them_below() {
     assert_eq!(at(&trail, "replaceable_blocks"), Some(json("[]")));
     assert!(quiet(&found), "{found:#?}");
     assert!(
-        told(&found, "DroppedField", Severity::Info, "radius"),
+        told(&found, "core/dropped_field", Severity::Info, "radius"),
         "{found:#?}"
     );
     assert!(
-        told(&found, "DroppedField", Severity::Info, "replaceable_blocks"),
+        told(
+            &found,
+            "core/dropped_field",
+            Severity::Info,
+            "replaceable_blocks"
+        ),
         "{found:#?}"
     );
     for version in ["1.26.60", "1.26.50"] {
@@ -636,14 +646,14 @@ fn a_trail_radius_outside_its_bounds_is_an_error_at_the_target() {
         "minecraft:trail",
         r#"{"radius": 17}"#,
         "radius",
-        "InvalidValue",
+        "core/invalid_value",
     );
     assert_error_at(
         "1.26.60",
         "minecraft:trail",
         r#"{"radius": -2}"#,
         "radius",
-        "InvalidValue",
+        "core/invalid_value",
     );
 }
 
@@ -695,14 +705,14 @@ fn a_transformation_delay_outside_its_bounds_is_an_error_at_the_target() {
         "minecraft:transformation",
         r#"{"delay": {"block_chance": 2}}"#,
         "block_chance",
-        "InvalidValue",
+        "core/invalid_value",
     );
     assert_error_at(
         "1.26.60",
         "minecraft:transformation",
         r#"{"delay": {"value": -1}}"#,
         "value",
-        "InvalidValue",
+        "core/invalid_value",
     );
 }
 
@@ -776,7 +786,7 @@ fn a_renamed_legacy_member_written_null_is_told_where_the_file_has_it() {
         assert!(quiet(&found), "{key}: {found:#?}");
         let notes: Vec<String> = found
             .iter()
-            .filter(|f| f.code.name() == "ValueRewritten")
+            .filter(|f| f.code.id() == "core/value_rewritten")
             .map(|f| f.location.json_path.to_string())
             .collect();
         assert_eq!(notes.len(), 1, "{key}: {found:#?}");
@@ -802,7 +812,7 @@ fn a_typed_component_written_null_is_absent() {
             "{version} {key}: {components:?}"
         );
         assert!(
-            found.iter().any(|f| f.code.name() == "ValueRewritten"
+            found.iter().any(|f| f.code.id() == "core/value_rewritten"
                 && f.location.json_path.to_string().ends_with(key)),
             "{version} {key}: {found:#?}"
         );
@@ -840,7 +850,7 @@ fn inventory_reads_its_values_and_defaults() {
         "minecraft:inventory",
         &ac(30),
         "inventory_size",
-        "InvalidType",
+        "core/invalid_type",
     );
 }
 
@@ -1021,7 +1031,7 @@ fn rideable_reads_its_values_and_defaults() {
         "minecraft:rideable",
         r#"{"dismount_mode": "sideways"}"#,
         "dismount_mode",
-        "InvalidEnumValue",
+        "core/invalid_enum_value",
     );
 }
 
@@ -1064,14 +1074,14 @@ fn a_seat_camera_member_outside_its_range_is_an_error_at_the_target() {
         "minecraft:rideable",
         r#"{"seats": [{"third_person_camera_radius": 65}]}"#,
         "third_person_camera_radius",
-        "InvalidValue",
+        "core/invalid_value",
     );
     assert_error_at(
         "1.26.60",
         "minecraft:rideable",
         r#"{"seats": [{"camera_relax_distance_smoothing": 0.5}]}"#,
         "camera_relax_distance_smoothing",
-        "InvalidValue",
+        "core/invalid_value",
     );
 }
 
@@ -1115,7 +1125,7 @@ fn pushable_by_block_is_memberless() {
         "minecraft:pushable_by_block",
         value,
         "minecraft:pushable_by_block/unexpected_field",
-        "UnrecognizedField",
+        "core/unrecognized_field",
     );
     let (components, found) =
         written_components(&wrapped("1.26.50", "minecraft:pushable_by_block", value));
@@ -1165,7 +1175,7 @@ fn annotation_break_door_reads_its_values_and_defaults() {
         "minecraft:annotation.break_door",
         &ac(21),
         "break_time",
-        "InvalidType",
+        "core/invalid_type",
     );
 }
 
@@ -1245,7 +1255,7 @@ fn the_vanilla_1_26_60_entities_load_typed_and_round_trip() {
             .iter()
             .filter(|f| f.severity >= Severity::Warning)
             .filter(|f| {
-                !(f.code.name() == "UnresolvedReference"
+                !(f.code.id() == "core/unresolved_reference"
                     && f.location.json_path.to_string().contains("/events/"))
             })
             .collect();
@@ -1385,7 +1395,7 @@ fn a_vector_object_missing_a_coordinate_is_told() {
         let (components, found) = written_components(&wrapped(version, key, value));
         assert!(quiet(&found), "{version} {key}: {found:#?}");
         assert!(
-            found.iter().any(|f| f.code.name() == "ValueRewritten"
+            found.iter().any(|f| f.code.id() == "core/value_rewritten"
                 && f.severity == Severity::Info
                 && f.location.json_path.to_string().ends_with(member_at)),
             "{version} {key}: {found:#?}"
@@ -1461,7 +1471,7 @@ fn a_bad_nested_value_of_a_schema_reader_defaults_the_whole_component_from_1_15_
             })
             .unwrap_or_else(|| panic!("{key}: no kept error at {tail}: {found:#?}"));
         assert_eq!(line.severity, Severity::Error, "{key}");
-        assert_eq!(line.code.name(), "InvalidType", "{key}");
+        assert_eq!(line.code.id(), "core/unknown_child_option", "{key}");
         assert_eq!(
             line.code.to_string(),
             format!("unknown child schema option type.  Allowed types: {allowed}"),
@@ -1498,7 +1508,7 @@ fn below_1_15_0_a_bad_nested_value_of_a_schema_reader_is_taken_out_alone() {
     assert_eq!(at(&healable, "items/1/effects/0/chance"), Some(json("0.5")));
     assert!(
         found.iter().any(|f| f.kept
-            && f.code.name() == "InvalidType"
+            && f.code.id() == "core/unknown_child_option"
             && f.location
                 .json_path
                 .to_string()
@@ -1583,7 +1593,7 @@ fn a_legacy_range_object_reads_only_range_min_and_range_max() {
             assert!(
                 told(
                     &found,
-                    "DroppedField",
+                    "core/dropped_field",
                     Severity::Info,
                     &format!("{member_key}/{bound}")
                 ),
@@ -1612,7 +1622,12 @@ fn a_legacy_range_bound_that_is_no_number_reads_as_zero_with_an_information() {
     assert_eq!(at(&timer, "time/min"), Some(json("0")));
     assert!(!found.iter().any(|f| f.kept), "{found:#?}");
     assert!(
-        told(&found, "InvalidValue", Severity::Info, "time/range_min"),
+        told(
+            &found,
+            "core/invalid_value",
+            Severity::Info,
+            "time/range_min"
+        ),
         "{found:#?}"
     );
     assert!(
@@ -1652,7 +1667,7 @@ fn the_hand_written_legacy_readers_keep_the_element() {
         // A hand-written reader says nothing of a value of another type: the crate's finding is
         // an information.
         assert!(
-            told(&found, "InvalidValue", Severity::Info, warned_at),
+            told(&found, "core/invalid_value", Severity::Info, warned_at),
             "{key}: {found:#?}"
         );
         assert!(!found.iter().any(|f| f.kept), "{key}: {found:#?}");
@@ -1685,7 +1700,7 @@ fn a_bad_nested_value_is_an_error_at_the_target() {
             "items/0/priority",
         ),
     ] {
-        assert_error_at("1.26.60", key, value, tail, "InvalidType");
+        assert_error_at("1.26.60", key, value, tail, "core/invalid_type");
     }
 }
 
@@ -1706,7 +1721,7 @@ fn a_real_bound_of_a_legacy_integer_range_is_truncated() {
     assert!(
         told(
             &found,
-            "ValueRewritten",
+            "core/value_rewritten",
             Severity::Info,
             "cured_discount/range_min"
         ),
@@ -1730,7 +1745,7 @@ fn a_legacy_transformation_delay_of_another_type_is_told_with_the_legacy_text() 
         .map(|f| {
             format!(
                 "{} {:?} {} {}",
-                f.code.name(),
+                f.code.id(),
                 f.severity,
                 f.location.json_path,
                 f.code
@@ -1740,7 +1755,7 @@ fn a_legacy_transformation_delay_of_another_type_is_told_with_the_legacy_text() 
     assert_eq!(
         texts,
         [
-            "InvalidValue Error minecraft:entity/components/minecraft:transformation/delay Expected Number or Object."
+            "entity/delay_not_number_or_object Error minecraft:entity/components/minecraft:transformation/delay Expected Number or Object."
         ],
         "{found:#?}"
     );
@@ -1758,11 +1773,11 @@ fn a_legacy_transformation_delay_of_another_type_is_told_with_the_legacy_text() 
                 .to_string()
                 .ends_with("transformation/delay")
         })
-        .map(|f| format!("{} {:?}", f.code.name(), f.severity))
+        .map(|f| format!("{} {:?}", f.code.id(), f.severity))
         .collect();
     assert_eq!(
         at_delay,
-        ["InvalidType Error"],
+        ["core/invalid_type Error"],
         "{:#?}",
         refused.diagnostics
     );
@@ -1809,7 +1824,7 @@ fn a_typed_component_range_refuses_the_legacy_range_spelling() {
                 key,
                 value,
                 &format!("{at}/{end}"),
-                "UnrecognizedField",
+                "core/unrecognized_field",
             );
         }
     }

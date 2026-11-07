@@ -137,7 +137,7 @@ fn malformed(error: &facet_json::DeserializeError) -> String {
     let code = code_for_deserialize_error_kind(&error.kind, error.path.is_some(), false);
     match code.args_of(&codes::SYNTAX) {
         Some(message) => message[0].clone(),
-        None => panic!("not MalformedInput: {code:?}"),
+        None => panic!("not core/syntax: {code:?}"),
     }
 }
 

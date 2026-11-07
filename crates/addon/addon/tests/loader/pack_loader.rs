@@ -509,7 +509,7 @@ fn icon_findings(pack: &Pack) -> Vec<(&'static str, Severity, String)> {
         .iter()
         .map(|d| {
             (
-                d.code.name(),
+                d.code.id(),
                 d.severity,
                 d.location.path.as_ref().unwrap().as_str().to_owned(),
             )
@@ -536,17 +536,17 @@ fn pi01_to_pi04_the_pack_icon_lints() {
     let at = "pack_icon.png".to_owned();
     assert_eq!(
         icon_findings(&pack_with_icon(None)),
-        [("PackIconMissing", Severity::Info, at.clone())]
+        [("core/pack_icon_missing", Severity::Info, at.clone())]
     );
     let jpeg = b"\xff\xd8\xff\xe0\x00\x10JFIF".to_vec();
     assert_eq!(
         icon_findings(&pack_with_icon(Some(jpeg))),
-        [("InvalidValue", Severity::Info, at.clone())]
+        [("core/invalid_value", Severity::Info, at.clone())]
     );
     let shape = pack_with_icon(Some(png(256, 128)));
     assert_eq!(
         icon_findings(&shape),
-        [("PackIconShape", Severity::Info, at)]
+        [("core/pack_icon_shape", Severity::Info, at)]
     );
     assert_eq!(
         shape
@@ -561,7 +561,7 @@ fn pi01_to_pi04_the_pack_icon_lints() {
     // The signature alone is a PNG to `Pack::icon`, and no image to the lint.
     let truncated = pack_with_icon(Some(b"\x89PNG\r\n\x1a\n".to_vec()));
     assert!(truncated.icon().is_some());
-    assert_eq!(icon_findings(&truncated)[0].0, "InvalidValue");
+    assert_eq!(icon_findings(&truncated)[0].0, "core/invalid_value");
 }
 
 /// A folder pack opened by a loader has its files indexed, not read: `Pack::icon` is `None`
@@ -586,7 +586,7 @@ fn an_indexed_icon_is_not_missing_and_not_judged() {
             .next()
             .unwrap()
             .code
-            .name(),
-        "PackIconShape"
+            .id(),
+        "core/pack_icon_shape"
     );
 }
